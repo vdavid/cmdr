@@ -386,12 +386,12 @@ impl SmbVolume {
     /// when only some members opened; installs nothing when none did, so listings
     /// fall straight through to the main session.
     pub(super) async fn open_scan_pool(&self) {
-        // A superseded volume no longer owns its id: the index and enrichment
+        // A retired share no longer owns its id: the index and enrichment
         // passes that the pool exists for now run against the successor, so
         // opening extra connections here would be pure waste.
         if self.inner.unmounted.load(Ordering::Relaxed)
-            || self.is_superseded()
-            || self.connection_state() != ConnectionState::Direct
+            || self.inner.is_retired()
+            || self.inner.connection_state() != ConnectionState::Direct
         {
             return;
         }
@@ -408,8 +408,8 @@ impl SmbVolume {
             );
             return;
         }
-        // Re-check: a slow set of logins gives on_unmount / on_superseded a window to run.
-        if self.inner.unmounted.load(Ordering::Relaxed) || self.is_superseded() {
+        // Re-check: a slow set of logins gives an unmount or a retirement a window to land.
+        if self.inner.unmounted.load(Ordering::Relaxed) || self.inner.is_retired() {
             return; // drop `slots` → closes the freshly-opened sessions
         }
         let pool = ScanPool::from_slots(slots, params, volume_id.clone());

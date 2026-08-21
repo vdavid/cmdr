@@ -416,7 +416,7 @@ fn rerooting_addresses_the_new_mount_over_the_same_session() {
     // The same session, not a copy of it: a connection-state change on one
     // instance is visible through the other. That's what "no session churn"
     // means, and it's why a running copy survives a promotion.
-    vol.transition_to_direct();
+    vol.inner.transition_to_direct();
     assert_eq!(
         promoted_smb.connection_state(),
         ConnectionState::Direct,
@@ -597,20 +597,12 @@ async fn foreground_pending_tracks_navigation_on_this_share_only() {
 
 // ── Reconnect tests (no Docker, no real network) ────────────────
 
-/// Helper that flips a test volume into `Direct` so we can test the
-/// "already connected" no-op path without needing a real session.
-fn make_test_volume_direct() -> SmbVolume {
-    let vol = make_test_volume();
-    vol.inner.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
-    vol
-}
-
 #[tokio::test]
 async fn attempt_reconnect_noop_when_already_direct() {
     // If state is Direct, the helper bails early without building a session.
     // This is the path concurrent callers hit after the winner finishes.
     let vol = make_test_volume_direct();
-    let result = vol.do_attempt_reconnect().await;
+    let result = vol.inner.do_attempt_reconnect().await;
     assert!(result.is_ok(), "expected Ok when already Direct, got {:?}", result);
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
 }
@@ -621,7 +613,7 @@ async fn attempt_reconnect_bails_when_unmounted() {
     // (otherwise we'd leak a watcher + smb2 session into an orphaned volume).
     let vol = make_test_volume();
     vol.inner.unmounted.store(true, Ordering::Relaxed);
-    let result = vol.do_attempt_reconnect().await;
+    let result = vol.inner.do_attempt_reconnect().await;
     assert!(
         matches!(result, Err(VolumeError::DeviceDisconnected(_))),
         "expected DeviceDisconnected when unmounted, got {:?}",
@@ -640,8 +632,8 @@ async fn single_flight_concurrent_callers_serialize() {
     let vol = Arc::new(make_test_volume_direct());
     let v2 = Arc::clone(&vol);
     let v3 = Arc::clone(&vol);
-    let (r1, r2) = tokio::join!(async move { v2.do_attempt_reconnect().await }, async move {
-        v3.do_attempt_reconnect().await
+    let (r1, r2) = tokio::join!(async move { v2.inner.do_attempt_reconnect().await }, async move {
+        v3.inner.do_attempt_reconnect().await
     });
     assert!(r1.is_ok());
     assert!(r2.is_ok());
@@ -656,9 +648,9 @@ async fn transition_to_disconnected_idempotent() {
     // no-op (returns the same value).
     let vol = make_test_volume_direct();
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
-    vol.transition_to_disconnected();
+    vol.inner.transition_to_disconnected();
     assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
-    vol.transition_to_disconnected();
+    vol.inner.transition_to_disconnected();
     assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
 }
 
@@ -666,9 +658,9 @@ async fn transition_to_disconnected_idempotent() {
 async fn transition_to_direct_idempotent() {
     let vol = make_test_volume();
     assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
-    vol.transition_to_direct();
+    vol.inner.transition_to_direct();
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
-    vol.transition_to_direct();
+    vol.inner.transition_to_direct();
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
 }
 
@@ -728,16 +720,13 @@ fn on_superseded_retires_the_id_but_keeps_the_session() {
 
     vol.on_superseded();
 
-    assert!(
-        vol.inner.superseded.load(Ordering::Relaxed),
-        "the volume knows it's retired"
-    );
+    assert!(vol.inner.is_retired(), "the volume knows it's retired");
     assert!(
         !vol.inner.unmounted.load(Ordering::Relaxed),
         "supersede must not mark the volume dead: holders still use it"
     );
     assert_eq!(
-        vol.connection_state(),
+        vol.inner.connection_state(),
         ConnectionState::Direct,
         "the session is still up, so ops on a held reference must not be gated off"
     );
@@ -753,7 +742,7 @@ fn on_superseded_retires_the_id_but_keeps_the_session() {
 #[tokio::test]
 async fn open_scan_pool_noops_when_superseded() {
     let vol = make_test_volume_direct();
-    vol.inner.superseded.store(true, Ordering::Relaxed);
+    vol.inner.retirement.retire();
     vol.open_scan_pool().await;
     assert!(
         vol.inner.scan_pool.read().await.is_none(),
@@ -783,39 +772,6 @@ async fn close_scan_pool_is_idempotent_noop() {
     vol.close_scan_pool().await;
     vol.close_scan_pool().await;
     assert!(vol.inner.scan_pool.read().await.is_none());
-}
-
-/// Creates a test SmbVolume in disconnected state (no real connection).
-fn make_test_volume() -> SmbVolume {
-    let params = SmbConnectionParams {
-        server: "192.168.1.100".to_string(),
-        share_name: "TestShare".to_string(),
-        port: 445,
-        username: "Guest".to_string(),
-        password: String::new(),
-    };
-    let mount_path = PathBuf::from("/Volumes/TestShare");
-    SmbVolume {
-        name: "TestShare".to_string(),
-        mount_path: mount_path.clone(),
-        mount_root_gone: AtomicBool::new(false),
-        inner: Arc::new(SmbVolumeInner {
-            share_name: "TestShare".to_string(),
-            volume_id: "volumestestshare".to_string(),
-            params: Arc::new(tokio::sync::RwLock::new(params)),
-            client: Arc::new(tokio::sync::Mutex::new(None)),
-            tree: Arc::new(tokio::sync::RwLock::new(None)),
-            state: Arc::new(AtomicU8::new(ConnectionState::Disconnected as u8)),
-            watcher_cancel: std::sync::Mutex::new(None),
-            reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
-            unmounted: Arc::new(AtomicBool::new(false)),
-            superseded: Arc::new(AtomicBool::new(false)),
-            instance_id: 0,
-            scan_pool: tokio::sync::RwLock::new(None),
-            scan_session_refs: AtomicUsize::new(0),
-            active_mount_path: Arc::new(StdRwLock::new(mount_path)),
-        }),
-    }
 }
 
 // ── SmbReadStream consumer tests ────────────────────────────────

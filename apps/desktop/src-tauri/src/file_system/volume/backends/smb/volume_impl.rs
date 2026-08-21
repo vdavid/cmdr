@@ -13,6 +13,7 @@ use super::{
     SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage, foreground_yield,
 };
 use crate::file_system::listing::FileEntry;
+use cmdr_fs::volume::Retirement;
 use log::{debug, trace, warn};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -936,7 +937,7 @@ impl Volume for SmbVolume {
     }
 
     fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(self.do_attempt_reconnect())
+        Box::pin(self.inner.do_attempt_reconnect())
     }
 
     fn reconnect_with_credentials<'a>(
@@ -944,7 +945,17 @@ impl Volume for SmbVolume {
         username: String,
         password: String,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(self.do_reconnect_with_credentials(username, password))
+        Box::pin(self.inner.do_reconnect_with_credentials(username, password))
+    }
+
+    /// The share's retirement flag, so the registry can tell this volume when it
+    /// stops serving it.
+    ///
+    /// Share-scoped, not instance-scoped: an instance re-rooted onto a surviving
+    /// mount is the same share, the same session, and the same watcher, so the
+    /// answer has to live where they do.
+    fn retirement(&self) -> Option<&Retirement> {
+        Some(&self.inner.retirement)
     }
 
     /// Retire this instance without touching the live smb2 session.
@@ -964,11 +975,13 @@ impl Volume for SmbVolume {
     /// successor now owns: the watcher (see below), the scan pool, the
     /// `volume-connection-changed` events, and the index-resume hook. Two watchers
     /// on one id double-feed the index, and the retired one's death path
-    /// (`spawn_watcher_death_reconnect`) resolves the id through the manager and
-    /// would mark the SUCCESSOR disconnected.
+    /// (`spawn_watcher_death_reconnect`) would otherwise keep driving that id.
+    ///
+    /// The registry retires a volume it REMOVES; a hand-over like this one has to
+    /// say so itself, since the id lives on under the successor.
     fn on_superseded(&self) {
-        self.inner.superseded.store(true, Ordering::Relaxed);
-        self.stop_watcher();
+        self.inner.retirement.retire();
+        self.inner.stop_watcher();
         debug!(
             "SmbVolume for {}: superseded by a newer instance; session left up for in-flight work",
             self.inner.share_name

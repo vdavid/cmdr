@@ -160,3 +160,57 @@ pub(super) async fn cleanup_test_prefix(vol: &SmbVolume, mount_path: &Path, uniq
         log::warn!("cleanup_test_prefix: failed to delete prefix dir {rel_dir}: {e:?}");
     }
 }
+
+// ── Session-free volume builders ────────────────────────────────
+//
+// A hand-built `SmbVolume` with no client and no tree, for the unit tests that
+// exercise state transitions, retirement, and the reconnect early-exits without
+// a server. `connect_smb_volume` is the Docker path above.
+
+/// A disconnected test volume for the share `TestShare` at `/Volumes/TestShare`.
+pub(super) fn make_test_volume() -> SmbVolume {
+    make_test_volume_with_id("volumestestshare")
+}
+
+/// A disconnected test volume under an explicit volume id, for the tests that
+/// register it in the process-global `VolumeManager` and so need a unique one.
+pub(super) fn make_test_volume_with_id(volume_id: &str) -> SmbVolume {
+    let params = SmbConnectionParams {
+        server: "192.168.1.100".to_string(),
+        share_name: "TestShare".to_string(),
+        port: 445,
+        username: "Guest".to_string(),
+        password: String::new(),
+    };
+    let mount_path = PathBuf::from("/Volumes/TestShare");
+    let volume_id = volume_id.to_string();
+    SmbVolume {
+        name: "TestShare".to_string(),
+        mount_path: mount_path.clone(),
+        mount_root_gone: AtomicBool::new(false),
+        inner: Arc::new_cyclic(|me| SmbVolumeInner {
+            share_name: "TestShare".to_string(),
+            volume_id,
+            params: Arc::new(tokio::sync::RwLock::new(params)),
+            client: Arc::new(tokio::sync::Mutex::new(None)),
+            tree: Arc::new(tokio::sync::RwLock::new(None)),
+            state: Arc::new(AtomicU8::new(ConnectionState::Disconnected as u8)),
+            watcher_cancel: std::sync::Mutex::new(None),
+            reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
+            unmounted: Arc::new(AtomicBool::new(false)),
+            retirement: Arc::new(Retirement::new()),
+            me: me.clone(),
+            scan_pool: tokio::sync::RwLock::new(None),
+            scan_session_refs: AtomicUsize::new(0),
+            active_mount_path: Arc::new(StdRwLock::new(mount_path)),
+        }),
+    }
+}
+
+/// A test volume already flipped to `Direct`, for the paths that only run on a
+/// connected volume (the reconnect no-op, the watch-coverage claim).
+pub(super) fn make_test_volume_direct() -> SmbVolume {
+    let vol = make_test_volume();
+    vol.inner.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
+    vol
+}

@@ -36,7 +36,7 @@ async fn smb_integration_listing_watch_coverage_flips_with_connection() {
         "expected full coverage on a freshly-connected Docker volume"
     );
 
-    vol.transition_to_disconnected();
+    vol.inner.transition_to_disconnected();
     assert_eq!(
         vol.listing_watch_coverage(Path::new("/")),
         WatchCoverage::None,
@@ -104,7 +104,7 @@ async fn smb_integration_attempt_reconnect_rebuilds_session() {
         let mut tree_guard = vol.inner.tree.write().await;
         *tree_guard = None;
     }
-    vol.transition_to_disconnected();
+    vol.inner.transition_to_disconnected();
     assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
 
     // Hot-path op should fail: clone_session refuses while Disconnected.
@@ -116,7 +116,8 @@ async fn smb_integration_attempt_reconnect_rebuilds_session() {
     );
 
     // Reconnect should rebuild the session and flip back to Direct.
-    vol.do_attempt_reconnect()
+    vol.inner
+        .do_attempt_reconnect()
         .await
         .expect("attempt_reconnect should succeed against a live Docker SMB");
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
@@ -137,7 +138,7 @@ async fn smb_integration_attempt_reconnect_noop_when_already_direct() {
     let vol = make_docker_volume().await;
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
     let start = std::time::Instant::now();
-    vol.do_attempt_reconnect().await.unwrap();
+    vol.inner.do_attempt_reconnect().await.unwrap();
     let elapsed = start.elapsed();
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
     // No-op should be effectively instant. Any real session build would
@@ -778,9 +779,10 @@ async fn smb_integration_superseded_volume_reconnects_without_reclaiming_the_id(
         let mut tree_guard = vol.inner.tree.write().await;
         *tree_guard = None;
     }
-    vol.transition_to_disconnected();
+    vol.inner.transition_to_disconnected();
 
-    vol.do_attempt_reconnect()
+    vol.inner
+        .do_attempt_reconnect()
         .await
         .expect("a retired volume still rebuilds for the operation holding it");
     assert_eq!(vol.connection_state(), ConnectionState::Direct);

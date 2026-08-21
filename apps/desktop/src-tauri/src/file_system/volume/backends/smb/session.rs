@@ -6,12 +6,13 @@ use super::events::emit_state_change;
 use super::mapping::map_smb_error;
 use super::state::ConnectionState;
 use super::{SmbConnectionParams, SmbVolume, VolumeError};
+use cmdr_fs::volume::Retirement;
 use cmdr_fs::volume::host::events::VolumeConnection;
 use log::{debug, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::Duration;
 
 pub(super) static CLIENT_LOCK_TICKET: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -20,7 +21,7 @@ impl SmbVolume {
     /// Checks that the connection is in `Direct` state. Returns
     /// `DeviceDisconnected` for `Disconnected`.
     fn check_connection(&self) -> Result<(), VolumeError> {
-        match self.connection_state() {
+        match self.inner.connection_state() {
             ConnectionState::Direct => Ok(()),
             ConnectionState::Disconnected => Err(VolumeError::DeviceDisconnected(
                 "SMB connection is disconnected".to_string(),
@@ -100,7 +101,7 @@ impl SmbVolume {
                         "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
                         op_name, self.inner.share_name, e
                     );
-                    self.transition_to_disconnected();
+                    self.inner.transition_to_disconnected();
                 } else if matches!(
                     kind,
                     smb2::ErrorKind::NotFound | smb2::ErrorKind::IsADirectory | smb2::ErrorKind::AlreadyExists
@@ -130,7 +131,7 @@ impl SmbVolume {
     where
         F: FnOnce(&mut SmbClient, &Tree) -> Result<T, smb2::Error>,
     {
-        if self.connection_state() == ConnectionState::Disconnected {
+        if self.inner.connection_state() == ConnectionState::Disconnected {
             return Err(VolumeError::DeviceDisconnected(
                 "SMB connection is disconnected".to_string(),
             ));
@@ -160,7 +161,7 @@ impl SmbVolume {
                         "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
                         op_name, self.inner.share_name, e
                     );
-                    self.transition_to_disconnected();
+                    self.inner.transition_to_disconnected();
                 } else if matches!(kind, smb2::ErrorKind::NotFound) {
                     debug!("SmbVolume::{}(share={}): {}", op_name, self.inner.share_name, e);
                 } else {
@@ -224,16 +225,16 @@ pub(super) async fn refresh_credentials_from_store(params: &SmbConnectionParams)
 /// `Disconnected` and emit `volume-connection-changed`. Mirrors `handle_smb_result`
 /// for contexts without `&self` (the streaming-read producer task).
 ///
-/// `superseded` is the volume's flag: a retired instance still tracks its own
-/// state for the holders reading through it, but must not announce a disconnect
-/// under a volume id a healthy successor now owns.
-pub(super) fn update_state_on_smb_error(state: &AtomicU8, superseded: &AtomicBool, volume_id: &str, err: &smb2::Error) {
+/// `retirement` is the share's flag: a retired share still tracks its own state
+/// for the holders reading through it, but must not announce a disconnect under a
+/// volume id somebody else now owns.
+pub(super) fn update_state_on_smb_error(state: &AtomicU8, retirement: &Retirement, volume_id: &str, err: &smb2::Error) {
     if matches!(
         err.kind(),
         smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired
     ) {
         let prev = state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
-        if prev != ConnectionState::Disconnected as u8 && !superseded.load(Ordering::Relaxed) {
+        if prev != ConnectionState::Disconnected as u8 && !retirement.is_retired() {
             emit_state_change(volume_id, ConnectionState::Disconnected.into());
         }
     }

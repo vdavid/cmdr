@@ -158,7 +158,7 @@ impl SmbVolume {
         let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
 
         let state_arc = Arc::clone(&self.inner.state);
-        let superseded_arc = Arc::clone(&self.inner.superseded);
+        let retirement = Arc::clone(&self.inner.retirement);
         let volume_id = self.inner.volume_id.clone();
         let share_name = self.inner.share_name.clone();
         let smb_path_owned = smb_path.to_string();
@@ -172,7 +172,7 @@ impl SmbVolume {
             let mut download = match tree.download(&mut conn, &smb_path_owned).await {
                 Ok(d) => d,
                 Err(e) => {
-                    update_state_on_smb_error(&state_arc, &superseded_arc, &volume_id, &e);
+                    update_state_on_smb_error(&state_arc, &retirement, &volume_id, &e);
                     warn!(
                         "SmbVolume::download(share={}, path={}): {}",
                         share_name, smb_path_owned, e
@@ -208,7 +208,7 @@ impl SmbVolume {
                             }
                         }
                         Some(Err(e)) => {
-                            update_state_on_smb_error(&state_arc, &superseded_arc, &volume_id, &e);
+                            update_state_on_smb_error(&state_arc, &retirement, &volume_id, &e);
                             warn!(
                                 "SmbVolume::download(share={}, path={}): chunk error: {}",
                                 share_name, smb_path_owned, e

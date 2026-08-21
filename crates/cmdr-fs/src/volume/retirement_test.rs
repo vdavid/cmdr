@@ -11,7 +11,7 @@ struct Session {
 
 fn handle_over(session: &Arc<Session>) -> (SelfHandle<Session>, Arc<Retirement>) {
     let retirement = Arc::new(Retirement::new());
-    (SelfHandle::new(session, &retirement), retirement)
+    (SelfHandle::new(Arc::downgrade(session), &retirement), retirement)
 }
 
 #[test]

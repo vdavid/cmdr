@@ -392,7 +392,7 @@ impl SmbVolume {
                                 "SmbVolume::scan_for_copy_batch(share={}): connection lost ({}), transitioning to Disconnected",
                                 self.inner.share_name, e
                             );
-                            self.transition_to_disconnected();
+                            self.inner.transition_to_disconnected();
                         } else {
                             warn!("SmbVolume::scan_for_copy_batch(share={}): {}", self.inner.share_name, e);
                         }

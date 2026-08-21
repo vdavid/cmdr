@@ -14,9 +14,12 @@
 //! state machine, just now backend-triggered on watcher death (not only on the
 //! next FE backoff tick / hot-path op).
 
+use super::smb::SmbVolumeInner;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed, refresh_archive_listings};
+use crate::file_system::volume::Volume;
 use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::volume::SelfHandle;
 use cmdr_index::{WatchGap, WatchScope};
 use log::{debug, info, warn};
 use smb2::{ClientConfig, FileNotifyAction, SmbClient};
@@ -43,11 +46,14 @@ fn to_nfd_display_path(mount_path: &Path, relative: &str) -> PathBuf {
     }
 }
 
-/// Stats a file via the main SmbVolume connection (through VolumeManager).
-async fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
-    let vm = crate::file_system::volume::manager::get_volume_manager();
-    let vol = vm.get(volume_id)?;
-    vol.get_metadata(path).await.ok()
+/// Stats a file over the share's MAIN session, deliberately not this watcher's
+/// dedicated one.
+///
+/// Answers `None` once the share is gone or the registry has retired it: a stat
+/// through a share the app no longer routes to would feed the listing cache for
+/// an id that belongs to somebody else.
+async fn stat_via_share(share: &SelfHandle<SmbVolumeInner>, path: &Path) -> Option<FileEntry> {
+    share.live()?.at_active_root().get_metadata(path).await.ok()
 }
 
 /// When a changed SMB path is a supported archive, refreshes any open listing
@@ -82,6 +88,7 @@ async fn maybe_refresh_archive_listings(volume_id: &str, archive_path: &Path) {
 async fn process_event_batch(
     events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>>,
     volume_id: &str,
+    share: &SelfHandle<SmbVolumeInner>,
     mount_path: &Path,
 ) {
     for (parent_path, events) in &events_by_dir {
@@ -106,7 +113,7 @@ async fn process_event_batch(
             match action {
                 FileNotifyAction::Added => {
                     let entry_path = to_nfd_display_path(mount_path, filename);
-                    match stat_via_volume(volume_id, &entry_path).await {
+                    match stat_via_share(share, &entry_path).await {
                         Some(entry) => {
                             notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                         }
@@ -123,7 +130,7 @@ async fn process_event_batch(
                 }
                 FileNotifyAction::Modified => {
                     let entry_path = to_nfd_display_path(mount_path, filename);
-                    match stat_via_volume(volume_id, &entry_path).await {
+                    match stat_via_share(share, &entry_path).await {
                         Some(entry) => {
                             notify_directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
                         }
@@ -146,7 +153,7 @@ async fn process_event_batch(
                 FileNotifyAction::RenamedNewName => {
                     let entry_path = to_nfd_display_path(mount_path, filename);
                     if let Some(old_name) = pending_old_name.take() {
-                        match stat_via_volume(volume_id, &entry_path).await {
+                        match stat_via_share(share, &entry_path).await {
                             Some(new_entry) => {
                                 notify_directory_changed(
                                     volume_id,
@@ -161,7 +168,7 @@ async fn process_event_batch(
                         }
                     } else {
                         // Got new name without old name, treating as add
-                        if let Some(entry) = stat_via_volume(volume_id, &entry_path).await {
+                        if let Some(entry) = stat_via_share(share, &entry_path).await {
                             notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                         }
                     }
@@ -183,13 +190,17 @@ async fn process_event_batch(
 ///
 /// The volume a watcher task belongs to.
 ///
-/// `instance_id` is what distinguishes this volume from any successor that later
-/// takes the same `volume_id`: a watcher dying around a supersede must not drive
-/// the state of the volume that replaced it. See
+/// `share` is what distinguishes this volume from any successor that later takes
+/// the same `volume_id`, and from the same volume after the app has forgotten it:
+/// a watcher dying around a supersede must not drive the state of the volume that
+/// replaced it, and one outliving an eject must not act at all. See
 /// `smb::reconnect::spawn_watcher_death_reconnect`.
 pub(super) struct WatchedVolume {
+    /// The id every listing-cache notification is keyed on. Carried as an owned
+    /// string rather than read off `share`, because the notifications have to keep
+    /// naming the id even on the pass where the share stops answering.
     pub(super) volume_id: String,
-    pub(super) instance_id: u64,
+    pub(super) share: SelfHandle<SmbVolumeInner>,
     /// Where the share is mounted right now. Shared with the `SmbVolume` instances
     /// of this share (`smb::SmbVolumeInner::active_mount_path`) and re-read once
     /// per event batch, so a promotion to another mount root re-points the paths
@@ -211,7 +222,7 @@ pub(super) async fn run_smb_watcher(
 ) {
     let WatchedVolume {
         volume_id,
-        instance_id,
+        share,
         mount_path: active_mount_path,
     } = volume;
     // ── Main watcher loop ──────────────────────────────────────────
@@ -329,7 +340,7 @@ pub(super) async fn run_smb_watcher(
                         },
                         _ = &mut cancel_rx => {
                             // Process what we have, then exit
-                            process_event_batch(events_by_dir, &volume_id, &mount_path).await;
+                            process_event_batch(events_by_dir, &volume_id, &share, &mount_path).await;
                             debug!("smb_watcher({}): cancelled during debounce, closing", share_name);
                             if let Err(e) = watcher.close().await {
                                 debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
@@ -366,7 +377,7 @@ pub(super) async fn run_smb_watcher(
                     events_by_dir.len()
                 );
 
-                process_event_batch(events_by_dir, &volume_id, &mount_path).await;
+                process_event_batch(events_by_dir, &volume_id, &share, &mount_path).await;
             }
             Err(e) => {
                 // Check for STATUS_NOTIFY_ENUM_DIR (buffer overflow).
@@ -414,7 +425,7 @@ pub(super) async fn run_smb_watcher(
                 // which rebuilds the session, respawns this watcher, and resumes the
                 // drive index — so an enabled NAS index doesn't go dark until the
                 // user intervenes. Coalesces with any FE-driven reconnect.
-                super::smb::spawn_watcher_death_reconnect(volume_id.clone(), instance_id);
+                super::smb::spawn_watcher_death_reconnect(share.clone());
                 return;
             }
         }

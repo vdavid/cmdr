@@ -1,7 +1,13 @@
-//! Connection-state enum plus the SmbVolume state-transition and query methods.
+//! Connection-state enum plus the share's state-transition and query methods.
+//!
+//! They live on [`SmbVolumeInner`], the share-scoped half: connection health,
+//! retirement, and the events they emit belong to the SHARE, not to one of the
+//! mount roots it is reachable through. [`SmbVolume`] passes the two public ones
+//! through.
 
-use super::SmbVolume;
 use super::events::emit_state_change;
+use super::{SmbVolume, SmbVolumeInner};
+use cmdr_fs::volume::SelfHandle;
 use cmdr_fs::volume::host::events::VolumeConnection;
 use std::sync::atomic::Ordering;
 
@@ -51,29 +57,37 @@ impl From<ConnectionState> for VolumeConnection {
     }
 }
 
-impl SmbVolume {
-    /// Returns the current connection state.
-    pub fn connection_state(&self) -> ConnectionState {
-        ConnectionState::from_u8(self.inner.state.load(Ordering::Relaxed))
+impl SmbVolumeInner {
+    /// This share's own handle, for the background work (the watcher, the
+    /// watcher-death reconnect loop) that has to keep asking whether the registry
+    /// still serves it. See `cmdr_fs::volume::SelfHandle`.
+    pub(super) fn self_handle(&self) -> SelfHandle<SmbVolumeInner> {
+        SelfHandle::new(self.me.clone(), &self.retirement)
     }
 
-    /// Whether a newer instance owns this volume's id (see `on_superseded`).
+    /// Returns the current connection state.
+    pub(super) fn connection_state(&self) -> ConnectionState {
+        ConnectionState::from_u8(self.state.load(Ordering::Relaxed))
+    }
+
+    /// Whether this share has stopped owning its volume id: superseded by a newer
+    /// instance, or removed from the registry outright.
     ///
-    /// A retired instance keeps serving the holders that already have it, but
-    /// it must stay silent about the id: the state the frontend, the index, and
-    /// the reconnect machinery care about is the SUCCESSOR's. Emitting
+    /// A retired share keeps serving the holders that already have it, but it
+    /// must stay silent about the id: the state the frontend, the index, and the
+    /// reconnect machinery care about belongs to somebody else. Emitting
     /// `volume-connection-changed` from here would tell the app a healthy volume
     /// just disconnected.
-    pub(super) fn is_superseded(&self) -> bool {
-        self.inner.superseded.load(Ordering::Relaxed)
+    pub(super) fn is_retired(&self) -> bool {
+        self.retirement.is_retired()
     }
 
-    /// `emit_state_change` for this volume, suppressed once superseded.
+    /// `emit_state_change` for this volume, suppressed once retired.
     pub(super) fn emit_state_change_for_id(&self, state: VolumeConnection) {
-        if self.is_superseded() {
+        if self.is_retired() {
             return;
         }
-        emit_state_change(&self.inner.volume_id, state);
+        emit_state_change(&self.volume_id, state);
     }
 
     /// Snapshot the smb2 client's diagnostics tree.
@@ -86,8 +100,8 @@ impl SmbVolume {
     ///
     /// Used by the debug-window SMB diagnostics dashboard. Safe to call
     /// at 1 Hz; cheap even at higher rates.
-    pub async fn diagnostics(&self) -> Option<smb2::Diagnostics> {
-        let guard = self.inner.client.lock().await;
+    pub(super) async fn diagnostics(&self) -> Option<smb2::Diagnostics> {
+        let guard = self.client.lock().await;
         guard.as_ref().map(|c| c.diagnostics())
     }
 
@@ -96,10 +110,7 @@ impl SmbVolume {
     /// to avoid event spam when several in-flight ops all see the same broken
     /// session).
     pub(super) fn transition_to_disconnected(&self) {
-        let prev = self
-            .inner
-            .state
-            .swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+        let prev = self.state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
         if prev != ConnectionState::Disconnected as u8 {
             self.emit_state_change_for_id(ConnectionState::Disconnected.into());
         }
@@ -109,9 +120,24 @@ impl SmbVolume {
     /// state was something else. Called by `attempt_reconnect` after a successful
     /// session rebuild.
     pub(super) fn transition_to_direct(&self) {
-        let prev = self.inner.state.swap(ConnectionState::Direct as u8, Ordering::Relaxed);
+        let prev = self.state.swap(ConnectionState::Direct as u8, Ordering::Relaxed);
         if prev != ConnectionState::Direct as u8 {
             self.emit_state_change_for_id(ConnectionState::Direct.into());
         }
+    }
+}
+
+/// Instance-level pass-throughs to the share, for the callers that hold an
+/// `SmbVolume` rather than its inner state: the connection-quality indicator and
+/// the debug window's diagnostics dashboard.
+impl SmbVolume {
+    /// Returns the current connection state.
+    pub fn connection_state(&self) -> ConnectionState {
+        self.inner.connection_state()
+    }
+
+    /// Snapshot the smb2 client's diagnostics tree.
+    pub async fn diagnostics(&self) -> Option<smb2::Diagnostics> {
+        self.inner.diagnostics().await
     }
 }

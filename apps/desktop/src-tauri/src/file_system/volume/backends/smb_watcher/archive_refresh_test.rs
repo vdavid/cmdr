@@ -24,6 +24,7 @@ use crate::file_system::listing::caching_test_support::{TestListing, TestListing
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::backends::archive::test_fixtures::{FixtureFile, build_zip, stored};
 use crate::file_system::volume::manager::get_volume_manager;
+use cmdr_fs::volume::{Retirement, SelfHandle};
 
 /// A temp directory with a `.zip` inside, cleaned up on drop. The temp dir plays
 /// the role of the SMB mount root; the zip sits directly under it so a share-root
@@ -84,6 +85,14 @@ async fn register_parent_and_resolve(volume_id: &str, zip_path: &Path) {
     assert!(resolved.is_archive, "the zip path must resolve to an ArchiveVolume");
 }
 
+/// A share handle that has already gone, which is what these tests want: there
+/// is no SMB session here, so every `stat_via_share` answers `None` and the
+/// batch takes its "couldn't stat, skipping" arm. The archive-inner refresh
+/// under test is deliberately independent of that stat.
+fn no_live_share() -> SelfHandle<super::SmbVolumeInner> {
+    SelfHandle::new(std::sync::Weak::new(), &Arc::new(Retirement::new()))
+}
+
 /// One `Modified` event naming `filename` under the mount root, ready for
 /// `process_event_batch`.
 fn modified_batch(
@@ -118,6 +127,7 @@ async fn a_modified_zip_event_refreshes_the_inner_listing() {
     process_event_batch(
         modified_batch(&fixture.mount_path, "bundle.zip"),
         &volume_id,
+        &no_live_share(),
         &fixture.mount_path,
     )
     .await;
@@ -153,6 +163,7 @@ async fn a_modified_non_archive_event_leaves_the_inner_listing_alone() {
     process_event_batch(
         modified_batch(&fixture.mount_path, "notes.txt"),
         &volume_id,
+        &no_live_share(),
         &fixture.mount_path,
     )
     .await;

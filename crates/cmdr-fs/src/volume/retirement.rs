@@ -66,12 +66,17 @@ pub struct SelfHandle<T> {
 impl<T> SelfHandle<T> {
     /// A handle to `target`, live until it is dropped or `retirement` is retired.
     ///
+    /// Takes the `Weak` rather than the `Arc` so a backend can hand itself its
+    /// own handle from inside `Arc::new_cyclic`, which is where the state a
+    /// watcher hangs off is usually built. From an `Arc` in hand, pass
+    /// `Arc::downgrade(&state)`.
+    ///
     /// `retirement` must be the very flag the volume publishes through
     /// `Volume::retirement`, or the registry's answer lands somewhere nobody
     /// reads.
-    pub fn new(target: &Arc<T>, retirement: &Arc<Retirement>) -> Self {
+    pub fn new(target: Weak<T>, retirement: &Arc<Retirement>) -> Self {
         Self {
-            target: Arc::downgrade(target),
+            target,
             retirement: Arc::clone(retirement),
         }
     }

@@ -23,6 +23,7 @@ use super::{
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::volume::{Retirement, SelfHandle};
 use log::{debug, info, trace, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
@@ -60,7 +61,7 @@ use streams::{
 // External surface: keep these paths stable at
 // `crate::file_system::volume::backends::smb::<name>`.
 pub use events::{emit_fell_back_to_os_mount, set_app_handle};
-pub(crate) use reconnect::spawn_watcher_death_reconnect;
+pub(in crate::file_system::volume::backends) use reconnect::spawn_watcher_death_reconnect;
 
 /// A volume backed by an SMB share, using smb2 for direct protocol access.
 ///
@@ -98,9 +99,6 @@ pub(crate) struct SmbConnectionParams {
     pub username: String,
     pub password: String,
 }
-
-/// Hands out a fresh `SmbVolume::instance_id` per constructed volume.
-static NEXT_INSTANCE_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 /// A `Volume` instance addressing one mount root of a share, over the shared
 /// [`SmbVolumeInner`] every instance of that share rides.
@@ -174,25 +172,26 @@ pub(super) struct SmbVolumeInner {
     /// Once `true`, the volume is permanently dead; `attempt_reconnect` becomes
     /// a no-op error.
     unmounted: Arc<AtomicBool>,
-    /// Set by `on_superseded` when a newer instance takes over this volume's id
-    /// in the `VolumeManager`. The session stays up for whoever still holds this
-    /// instance, but everything scoped to the ID (the watcher, the scan pool,
-    /// `volume-connection-changed` events, the index-resume hook) belongs to the
-    /// successor now and must go quiet here. See `DETAILS.md` § "Supersede vs.
-    /// unmount".
-    superseded: Arc<AtomicBool>,
+    /// Whether this share still owns its volume id in the `VolumeManager`.
+    ///
+    /// Set two ways, both of them the registry's answer rather than the
+    /// backend's: `on_superseded` when a newer instance takes the id over, and
+    /// the registry itself when the volume leaves it entirely. The session stays
+    /// up for whoever still holds an instance, but everything scoped to the ID
+    /// (the watcher, the scan pool, `volume-connection-changed` events, the
+    /// index-resume hook) belongs to somebody else now and must go quiet here.
+    /// See `DETAILS.md` § "Supersede vs. unmount".
+    retirement: Arc<Retirement>,
+    /// This share's own `Weak`, for [`SmbVolumeInner::self_handle`]. Built by
+    /// `Arc::new_cyclic`, because the watcher this feeds is spawned from inside
+    /// the share's own methods, where no `Arc` to it is in hand.
+    me: std::sync::Weak<SmbVolumeInner>,
     /// The per-scan connection pool: extra smb2 sessions that background bulk work
     /// (the index scan's listings, media enrichment's prefetch reads) spreads
     /// across, opened lazily on `begin_scan_session` and torn down when the LAST
     /// concurrent session ends. `None` between scans (steady-state footprint is
     /// just the one browsing session). See `scan_pool.rs`.
     scan_pool: tokio::sync::RwLock<Option<Arc<scan_pool::ScanPool>>>,
-    /// Distinguishes this instance from any successor that later takes the same
-    /// `volume_id`. The watcher carries it so its death path can tell "MY volume
-    /// lost its connection" from "a volume that replaced me is fine" — without
-    /// it, a retired watcher dying just after the swap marks the healthy
-    /// successor disconnected. See `reconnect::spawn_watcher_death_reconnect`.
-    instance_id: u64,
     /// How many scan sessions are open right now. Two background users can overlap
     /// (an index rescan kicked while an enrichment pass runs); the pool must
     /// survive until the LAST one ends, or one user's `end_scan_session` tears the
@@ -228,13 +227,14 @@ impl SmbVolume {
     ) -> Self {
         let share_name = params.share_name.clone();
         let mount_path = mount_path.into();
+        let volume_id = volume_id.into();
         Self {
             name: name.into(),
             mount_path: mount_path.clone(),
             mount_root_gone: AtomicBool::new(false),
-            inner: Arc::new(SmbVolumeInner {
+            inner: Arc::new_cyclic(|me| SmbVolumeInner {
                 share_name,
-                volume_id: volume_id.into(),
+                volume_id,
                 params: Arc::new(tokio::sync::RwLock::new(params)),
                 client: Arc::new(tokio::sync::Mutex::new(Some(client))),
                 tree: Arc::new(tokio::sync::RwLock::new(Some(Arc::new(tree)))),
@@ -242,15 +242,37 @@ impl SmbVolume {
                 watcher_cancel: std::sync::Mutex::new(None),
                 reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
                 unmounted: Arc::new(AtomicBool::new(false)),
-                superseded: Arc::new(AtomicBool::new(false)),
-                instance_id: NEXT_INSTANCE_ID.fetch_add(1, Ordering::Relaxed),
+                retirement: Arc::new(Retirement::new()),
+                me: me.clone(),
                 scan_pool: tokio::sync::RwLock::new(None),
                 scan_session_refs: AtomicUsize::new(0),
                 active_mount_path: Arc::new(StdRwLock::new(mount_path)),
             }),
         }
     }
+}
 
+impl SmbVolumeInner {
+    /// This share as a path-addressing volume, rooted where the registry serves
+    /// it right now.
+    ///
+    /// Path translation is per mount root (`SmbVolume::to_smb_path` strips it),
+    /// so share-scoped background work that needs to stat a path has to pick one,
+    /// and the active root is the one every path such work builds already comes
+    /// from. Everything live is shared with the registered instances — the same
+    /// session, the same state — so this is one allocation and no I/O.
+    pub(super) fn at_active_root(self: Arc<Self>) -> SmbVolume {
+        let mount_path = self.active_mount_path.read_ignore_poison().clone();
+        SmbVolume {
+            name: self.share_name.clone(),
+            mount_path,
+            mount_root_gone: AtomicBool::new(false),
+            inner: self,
+        }
+    }
+}
+
+impl SmbVolume {
     /// Another instance of this SAME share, addressing `new_root`.
     ///
     /// The registry's promotion path (`manager/roots.rs`), through
@@ -305,7 +327,7 @@ pub async fn connect_smb_volume(
 ) -> Result<SmbVolume, smb2::Error> {
     let (client, tree) = build_session(&params).await?;
     let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree);
-    vol.spawn_watcher(&params);
+    vol.inner.spawn_watcher(&params);
     // PII-free analytics: a direct SMB connection succeeded. No host / share / credential
     // identifiers ever cross.
     crate::analytics::posthog::capture("smb_connected", serde_json::json!({}));
@@ -350,6 +372,9 @@ mod smb_integration_test;
 #[cfg(test)]
 #[path = "../smb_media_fetch_integration_test.rs"]
 mod smb_media_fetch_integration_test;
+#[cfg(test)]
+#[path = "../smb_retirement_test.rs"]
+mod smb_retirement_test;
 #[cfg(test)]
 #[path = "../smb_soak_test.rs"]
 mod smb_soak_test;
