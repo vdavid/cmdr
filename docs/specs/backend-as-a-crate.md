@@ -4,18 +4,16 @@
 boundary to write them behind. Verifying a change to one backend means compiling 332k lines. Meanwhile the seams that
 would fix this already exist and already have a working client.
 
-**Where it stands**: `SmbVolume` no longer reaches into the app at all (step 3, done) — every question it asks goes
-through its `VolumeHost`. What's left is moving the code down, and that is one milestone with the test re-homing, not
-three (step 4 below has the measurement).
-
-**Size**: several days for what remains, essentially all of it splitting tests that grew to cover both sides of the
-boundary. FTP afterwards is its own effort and is blocked on one product decision.
+**Where it stands**: the extraction is DONE. `crates/cmdr-smb/` holds the protocol layer and the backend, and
+`cargo check -p cmdr-smb --all-targets` is a complete verification loop with none of the app in it. What remains under
+this heading is FTP, which is its own effort and is blocked on one product decision, plus the module-cycle ratchet,
+which was never SMB-specific.
 
 **Read first**: `crates/cmdr-fs/src/volume/host/DETAILS.md`, which carries the seam set, the nine-step recipe for
-writing a new backend, and the two costs this does NOT buy. Then
-`apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions".
+writing a new backend, and the two costs this does NOT buy. Then `crates/cmdr-smb/DETAILS.md`, which is what a finished
+extraction looks like.
 
-Already shipped, and the reason this is a finish rather than a start: the seam design
+The groundwork under it: the seam design
 (`crates/cmdr-fs/src/volume/host/`, nine files), the staging split (`3f11fea44`), the app-side adapters (`fe33825a8`),
 the `cmdr-archive` pilot (`6d435cdf7`, and it genuinely uses the seams), and the `SmbConnectionChanged` →
 `VolumeConnectionChanged` rename (`057cc9e64`) that older plans list as still blocking.
@@ -25,9 +23,9 @@ not get faster** (every Rust check shares one `rustInputs` set and runs `--works
 11% SLOWER after a backend edit because of the extra relink. The win is the inner loop on the backend itself, measured
 at 83 to 85% for the index crate.
 
-## The work: extract `cmdr-smb`
+## The work: extract `cmdr-smb` — shipped
 
-In order. Steps 1 to 3 have shipped; step 4 is everything that's left, and it's the large one.
+Kept as the record of how a backend gets extracted, because FTP and S3 will follow the same five steps.
 
 1. ~~**Split `network/`.**~~ **Done.** `crates/cmdr-smb/` holds the protocol helpers (`build_smb_addr`, the `classify_*`
    / `is_auth_error` pair, the share-listing vocabulary, and the two `smb2` listing calls); discovery, upgrade, mounts,
@@ -68,65 +66,39 @@ In order. Steps 1 to 3 have shipped; step 4 is everything that's left, and it's 
    - The `#[cfg(any(target_os = ...))]` guards around the backend's index calls are gone: `IndexNotifier` compiles
      everywhere and the app's adapter gates its own MTP arm.
 
-4. **Steps 4 and 5 are ONE milestone with the prod-code move, and the move must not land first.** Measured 2026-08-21 by
-   doing the move and compiling: prod code in `crates/cmdr-smb/src/volume/` with the suites left app-side gives **158
-   errors in `cargo check -p cmdr --all-targets`**, and none of them are fixable by anything short of the widening step
-   4 exists to refuse.
+4. ~~**Move the prod code down and re-home the suites.**~~ **Done, and it was one milestone for the reason this
+   entry predicted**: prod code in `crates/cmdr-smb/src/volume/` with the suites left app-side gave 158 errors in
+   `cargo check -p cmdr --all-targets`, because the SMB suites are WHITE-BOX tests of the backend rather than black-box
+   tests through `Volume`.
 
-   The SMB suites are WHITE-BOX tests of the backend, not black-box tests through `Volume`. What they reach, per file
-   (`inner:N` counts `.inner` field accesses):
+   **The split rule that came out of it, and the one a new backend should copy**: a cell lives with whatever it
+   ASSERTS, never with whatever it connects to. Both sides connect to the same containers. So the `Volume` contract,
+   the byte path, the conformance promises, the retirement wiring, and the watcher's routing went into the crate; every
+   cell driving `write_operations`, the volume registry, the listing cache, archive routing, or media enrichment stayed
+   in the app. Two cells split out of crate-side suites into a new app-side `smb_app_integration_test.rs` (a pane close
+   must not kill the watcher; a local file streams onto the share), and `smb_retirement_test.rs` dissolved entirely —
+   its registry half was already covered generically by `manager::tests::unregistering_a_volume_retires_it`.
 
-   - `smb_test.rs` (995 lines, `inner:23`) — `to_smb_path`, `to_display_path`, `map_smb_error`,
-     `fits_one_compound_write`, `SmbReadStream`, `SMB_STREAM_CHANNEL_CAPACITY`, `filetime_to_unix_secs`,
-     `directory_entry_to_file_entry`, `fs_info_to_space_info`, `ConnectionState`, `open_scan_pool` / `close_scan_pool`.
-     Its ONLY app dependency is `priority::foreground::note_foreground_activity_on`.
-   - `smb_test_support.rs` (221, `inner:1`) — builds an `SmbVolumeInner` by struct literal, so every field of it.
-   - `smb_integration_test.rs` (797, `inner:16`), `smb_media_fetch_integration_test.rs` (164, `inner:3`),
-     `smb_retirement_test.rs` (93, `inner:2`), `smb_soak_test.rs` (413, `inner:1`), `smb_transfer_semantics_test.rs`
-     (733, `inner:1`) — between them they touch `client`, `tree`, `scan_pool`, `watcher_cancel`, `unmounted`, `params`,
-     `self_handle`, `do_attempt_reconnect`, `transition_to_disconnected`.
-   - `smb_archive_integration_test.rs`, `smb_full_concurrency_test.rs`, `smb_streaming_integration_test.rs`,
-     `smb_stress_test.rs` — `list_directory_impl`, `negotiated_max_write`, `InlineReadStream`, `CLIENT_LOCK_TICKET`.
-   - `smb_conformance_test.rs` and `smb_transfer_safety_test.rs` reach nothing private.
+   **`volume::testing` is what makes that split cheap**: one fixture module under the `testing` feature, holding the
+   Docker connection, the naming and cleanup helpers, and the byte-integrity hashers, shared across the seam. It hands
+   out fixtures and three numbers (`negotiated_max_write`, `session_credits`, `client_lock_tickets_issued`) and never
+   `.inner`, which is the line between a fixture module and the white-box surface this step existed to refuse.
 
-   **`.inner.client` / `.inner.tree` / `.inner.scan_pool` are the session's guts**, so there is no narrow
-   `testing`-gated white-box surface to build: a surface that satisfies these suites is the whole struct.
+   Widened beyond the `detach_session_for_test` this entry sanctioned: `SmbConnectionParams`, `SmbVolume::volume_id`,
+   and `ConnectionState`, all three because the public `connect_smb_volume` takes or returns them. `SmbVolumeInner`
+   went the other way and is private now.
 
-   **Do it the way the archive pilot did**: move prod and tests in one milestone. The archive pilot left exactly ONE
-   app-side test (`archive_watch_integration_test.rs`, the half that asserts on the app's listing cache) and moved the
-   rest. The same split applies here — `smb_test.rs` and `smb_test_support.rs` are pure backend and belong in the crate;
-   the suites that drive `write_operations`, `operation_log`, or `volume::manager` are the app half and need SPLITTING
-   rather than moving.
+   Three things fell out that weren't planned. Deleting `#![allow(dead_code)]` found `with_smb_sync` (no caller at all)
+   and `PoolSlots::any_alive` (three assertions duplicating the ones beside them), both now gone. Deleting
+   `#![allow(unused_imports)]`, which existed because `mod.rs` doubled as the suites' prelude, found a dead `PathBuf`
+   import and moved the prelude to `test_support.rs` where it belongs. And `smb_test.rs` (995 lines) split into six
+   files colocated with the modules they test, which is what the file-length allowlist entry should have been all
+   along.
 
-   **`smb_watcher/archive_refresh_test.rs` (178 lines) is the model split, and the cheapest one to do first.** Its
-   backend half — a `Modified` event on a supported-archive name reaches `refresh_archive_listings`, a non-archive name
-   doesn't — becomes a `RecordingListings` assertion in the crate with no app in it. Its app half, what a refresh DOES
-   to the listing cache, already exists as
-   `listing/listing_host.rs::the_archive_refresh_re_reads_the_listings_under_its_path`, whose doc comment points at this
-   file and needs repointing when it goes.
+5. ~~**Decide the test-visibility question.**~~ **Done**, settled as above and written down in
+   `crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
 
-   **The prod move itself is mechanical, about half an hour**, and it compiles clean once done
-   (`cargo check -p cmdr-smb --all-targets` was green; only the app-side test target failed). The recipe, verified:
-
-   - `git mv` `backends/smb/*.rs` to `crates/cmdr-smb/src/volume/`, and `backends/smb_watcher.rs` to
-     `crates/cmdr-smb/src/volume/watcher.rs`. Being a child of `volume/` is what turns
-     `pub(in …::backends) spawn_watcher_death_reconnect` into a plain `pub(super)`.
-   - `Cargo.toml` gains `cmdr-fs`, `tokio` (`macros`, `rt`, `sync`, `time`, and deliberately not `rt-multi-thread`),
-     `tokio-util` (default-features off, matching `cmdr-fs`), `futures-util`, `unicode-normalization`, plus
-     dev-dependencies on `cmdr-fs/testing` and `tokio/rt-multi-thread`.
-   - In `volume/mod.rs`: the `use super::{…}` vocabulary block becomes `use cmdr_fs::volume::{…}`, `cmdr_smb::`
-     self-references become `crate::`, `super::super::smb_watcher::` becomes `super::watcher::`, and
-     `SmbConnectionParams` plus `SmbVolume::volume_id` become `pub` with doc comments (`#![deny(missing_docs)]`).
-   - App side: `backends/smb.rs` replaces `backends/smb/`, holding `pub use cmdr_smb::volume::*;` — the shape
-     `backends/archive.rs` already has. `#[path]` on a module declared in `backends/smb.rs` resolves relative to
-     `backends/`, so the suites' paths lose their `../` prefix.
-   - `SmbConnectionState` drops out of `backends/mod.rs`'s re-export block (only the backend used it).
-   - `detach_session_for_test` becomes `#[cfg(any(test, feature = "testing"))] pub`, and the app's `testing` feature
-     forwards `cmdr-smb/testing`. That forward also turns `smb2/testing` on for every app DEV target, which is harmless
-     (`smb-e2e` already does it) but worth knowing.
-   - Keep `#![allow(dead_code)]` on the backend only while the suites are away: `volume_id`, `PoolSlots::any_alive`, and
-     `with_smb_sync` have no non-test caller. Delete the allow when they land, or a genuinely dead item in this backend
-     stops being a finding.
+**What's left of this effort**: FTP (below), and the module-cycle ratchet (next section), which is independent.
 
 ## Guard it: the module-cycle ratchet
 
