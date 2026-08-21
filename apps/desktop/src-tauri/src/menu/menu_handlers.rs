@@ -9,7 +9,9 @@
 //! The other two live-update lanes moved out: `accelerators.rs` for shortcut
 //! strings, `view_mode_items.rs` for the per-pane view-mode items.
 
-use tauri::{AppHandle, Manager, Runtime};
+#[cfg(target_os = "macos")]
+use tauri::Runtime;
+use tauri::{AppHandle, Manager};
 
 use crate::ignore_poison::IgnorePoison;
 

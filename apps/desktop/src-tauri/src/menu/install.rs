@@ -10,13 +10,15 @@
 
 use tauri::Manager;
 
+#[cfg(target_os = "macos")]
 use crate::file_system;
+#[cfg(target_os = "macos")]
+use crate::ignore_poison::IgnorePoison;
 use crate::intl;
 use crate::licensing;
 use crate::settings::loader::Settings;
 
 use super::{MenuState, ViewMode};
-use crate::ignore_poison::IgnorePoison;
 
 /// Build the menu bar in the user's language, run the macOS post-construction
 /// passes, and place the `MenuState` the frontend and IPC layer mutate.
