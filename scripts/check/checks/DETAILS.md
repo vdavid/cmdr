@@ -22,9 +22,12 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   auto-removing it).
 - **Not every file here is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test
   duration flagger" has the why), `docs_graph.go` is a shared library behind both `docs-reachable` and the
-  `--docs-graph` renderer in `../docs_graph_render.go`, and `e2e-build.go` owns producing the Playwright lane's binary
-  (compile, find, sign, freshness stamp) so `desktop-svelte-e2e-playwright.go` is left with running the suite against
-  it. None appears in `AllChecks`.
+  `--docs-graph` renderer in `../docs_graph_render.go`, and three files carve the Playwright lane into stages so
+  `desktop-svelte-e2e-playwright.go` is left with the shard plan and the run: `e2e-build.go` produces the binary
+  (compile, find, sign, freshness stamp), `e2e-playwright-app.go` owns one shard's lifecycle (fixtures, MCP ports, the
+  Tauri process, socket wait, teardown), and `e2e-output.go` turns a raw transcript into a printable summary. That last
+  one is shared with the Linux Docker lane and the build, which is why it lives under the neutral `e2e-` prefix rather
+  than the check's own name. None appears in `AllChecks`.
 - **`changelog-commit-links.go` resolves every commit hash in `CHANGELOG.md` through ONE `git cat-file --batch-check`
   process**, not a process per reference. The recognition rule is § "CHANGELOG commit refs" below.
 
