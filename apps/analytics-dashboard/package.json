@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "svelte-kit sync",
     "preinstall": "npx only-allow pnpm",
     "dev": "vite dev --port 4830",
     "build": "vite build",

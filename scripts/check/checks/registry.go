@@ -1010,8 +1010,14 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		NotInCI:     "CI's dashboard job runs `pnpm exec svelte-kit sync` directly as a setup step",
 		DependsOn:   []string{"oxfmt"},
-		Inputs:      dashboardInputs,
-		Run:         RunDashboardSvelteKitSync,
+		// IsFast because both its dependents are, and `FilterFastChecks` keeps only fast entries:
+		// left out, `--fast` drops this one and runs `dashboard-svelte-check` / `dashboard-knip`
+		// against a `.svelte-kit/` that a fresh worktree hasn't generated yet. Neither degrades
+		// gracefully there — they fail on the missing `tsconfig.json` and nine unresolved
+		// `./$types` imports. It's a sub-second generate step, so the lane pays almost nothing.
+		IsFast: true,
+		Inputs: dashboardInputs,
+		Run:    RunDashboardSvelteKitSync,
 	},
 	{
 		ID:          "dashboard-eslint",
