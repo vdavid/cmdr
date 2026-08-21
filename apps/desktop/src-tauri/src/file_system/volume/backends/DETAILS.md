@@ -286,7 +286,7 @@ Why this is the whole fix, cheaply:
 - **Fires independent of the stat.** The refresh runs even when the pre-refresh `get_metadata` fails (a mid-write, truncated `.zip`): `refresh_archive_listings` keeps the previous inner listing on an unreadable parse rather than blanking the pane, and the next change event retries.
 - **NOT a freshness claim.** This is a visible-listing UX nicety, a SEPARATE consumer from the write-op fresh-listing oracle. `ArchiveVolume::listing_watch_coverage` stays `None` for a remote parent regardless (the SMB watcher is lossy under load, so the oracle must keep re-reading pre-flight scans honestly). The remote-archive freshness decision and the guardrail test are in `crates/cmdr-archive/src/watch/DETAILS.md` § "remote archives have NO live watch". MTP keeps manual refresh (F5) as its contract.
 
-Tests: `smb_watcher/archive_refresh_test.rs` (a Modified `.zip` event refreshes the inner listing; a non-archive change doesn't — the extension gate).
+Tests, split along the seam: the ROUTING (which events reach `refresh_archive_listings`, with what path) is `smb_watcher/archive_refresh_test.rs`, a `RecordingListings` assertion with no archive and no filesystem in it; what a refresh DOES to the cache is `listing/listing_host.rs::the_archive_refresh_re_reads_the_listings_under_its_path`.
 
 ## Supersede vs. unmount
 
