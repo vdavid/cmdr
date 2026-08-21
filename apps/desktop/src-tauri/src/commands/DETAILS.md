@@ -72,8 +72,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   footprint, mimalloc's own accounting, the registered malloc zones, and the kernel's VM map by tag with a per-tag
   region-size histogram. That last field is why it exists: a repeated exact region size is a fingerprint of whatever
   asked for those bytes, and it is what produced the first real candidate for a 643 MB block three investigations had
-  left anonymous
-  (`../../../../../docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`). Deliberately NOT `debug_assertions`-gated:
+  left anonymous (`../../../../../docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`). `sqlitePageCache` adds the
+  fifth accountant, `cmdr_fs::sqlite_util::query_page_cache_usage` plus `live_read_connections`: SQLite's page slab is a
+  leaked Rust allocation, so it's a fixed 64 MiB inside the mimalloc total that no other field names, and the whole
+  point of one payload is that nobody has to know to go ask SQLite separately. Deliberately NOT
+  `debug_assertions`-gated:
   the readings that matter come from a shipped build under a real workload, which is the one condition a debug-only
   command can't reach. Carries no paths or names, only counts. Runs off the IPC thread (one syscall per map entry) with
   a 5 s backstop.

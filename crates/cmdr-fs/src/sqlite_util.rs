@@ -1,8 +1,10 @@
 //! Small SQLite helpers shared by every store: the process-wide page-cache slab
 //! and the connection factories that install it, the per-connection page-cache
-//! budgets that have to ADD UP to that slab, the per-thread connection cache the
-//! read paths keep (and the live count that watches it against its budget), and
-//! freelist reclamation for the writer threads.
+//! budgets that have to ADD UP to that slab, the runtime reading of what the slab
+//! actually holds (which the app's `get_memory_diagnostics` folds in, since the
+//! slab is otherwise an anonymous 64 MiB of the Rust heap), the per-thread
+//! connection cache the read paths keep (and the live count that watches it
+//! against its budget), and freelist reclamation for the writer threads.
 //!
 //! It lives here rather than in the app because the slab is exactly ONE per
 //! process and five stores share it — the three index DBs plus the agent's and the
@@ -178,6 +180,93 @@ fn report(outcome: SharedPageCache) -> SharedPageCache {
         }
     }
     outcome
+}
+
+// ── Page-cache accounting ────────────────────────────────────────────
+
+/// What SQLite's process-wide page memory looks like right now.
+///
+/// The slab is one leaked Rust allocation, so it lands INSIDE the app's
+/// mimalloc total with nothing naming it: a memory reading that stops at
+/// "the Rust heap holds X" leaves 64 MiB of X anonymous. These counters name
+/// it, and say how much of it is real — the slab is handed out zeroed and only
+/// the slots SQLite actually takes become dirty pages.
+///
+/// Read alongside [`live_read_connections`]: `used_bytes` pegged at
+/// `slab_bytes` with the connection count past [`READ_CONNECTION_BUDGET`] is
+/// the treadmill [`SHARED_PAGE_CACHE_BYTES`] describes, not a healthy cache.
+// DEFAULT-OK: all zeros is the truthful reading for a process whose SQLite never
+// initialized — no slab, no connections, so no pages held anywhere. It's the one
+// failure path [`query_page_cache_usage`] has.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PageCacheUsage {
+    /// The installed slab's size in bytes, or `0` when it isn't installed
+    /// (`SharedPageCache::TooLate` or `Rejected`), in which case every page
+    /// below is coming from the heap.
+    pub slab_bytes: u64,
+    /// Slab bytes currently holding database pages.
+    pub used_bytes: u64,
+    /// The high-water mark of `used_bytes` over the process's life. A peak at
+    /// `slab_bytes` means the slab ran full at least once, even if it isn't now.
+    pub peak_used_bytes: u64,
+    /// Page-cache bytes SQLite took from the HEAP because the slab couldn't
+    /// serve them. Expected to be zero; anything else means page memory is
+    /// growing outside the budget.
+    pub overflow_bytes: u64,
+    /// The high-water mark of `overflow_bytes`.
+    pub peak_overflow_bytes: u64,
+}
+
+/// Read SQLite's own page-cache accounting, converted to bytes.
+///
+/// Cheap: two `sqlite3_status64` calls, each taking a static mutex briefly. Safe
+/// to call before any connection exists — it installs the slab first, so reading
+/// the counters can't be what defeats it.
+pub fn query_page_cache_usage() -> PageCacheUsage {
+    let (slot_bytes, slab_bytes) = match ensure_shared_page_cache() {
+        SharedPageCache::Installed { slot_bytes, slots } => (slot_bytes as u64, (slot_bytes * slots) as u64),
+        SharedPageCache::TooLate | SharedPageCache::Rejected(_) => (0, 0),
+    };
+
+    // The counters live behind a static mutex SQLite allocates during
+    // `sqlite3_initialize`, so reading them initializes the library. That's the
+    // same door a connection open goes through, and the slab above has already
+    // gone through `sqlite3_config` by now, so the one ordering that matters
+    // (config, then initialize) holds either way.
+    // SAFETY: `sqlite3_initialize` takes no arguments, is idempotent, and is
+    // documented as callable from any thread.
+    if unsafe { ffi::sqlite3_initialize() } != ffi::SQLITE_OK {
+        return PageCacheUsage::default();
+    }
+
+    // `PAGECACHE_USED` counts SLOTS, `PAGECACHE_OVERFLOW` counts BYTES. Mixing
+    // those up is a 4,000× reading.
+    let (used_slots, peak_used_slots) = status_counter(ffi::SQLITE_STATUS_PAGECACHE_USED);
+    let (overflow_bytes, peak_overflow_bytes) = status_counter(ffi::SQLITE_STATUS_PAGECACHE_OVERFLOW);
+
+    PageCacheUsage {
+        slab_bytes,
+        used_bytes: used_slots * slot_bytes,
+        peak_used_bytes: peak_used_slots * slot_bytes,
+        overflow_bytes,
+        peak_overflow_bytes,
+    }
+}
+
+/// One `sqlite3_status64` counter as `(current, highwater)`, or zeros if SQLite
+/// rejects the op. A diagnostic reading is never worth an abort.
+fn status_counter(op: c_int) -> (u64, u64) {
+    let mut current: i64 = 0;
+    let mut highwater: i64 = 0;
+    // SAFETY: `sqlite3_status64` writes two `sqlite3_int64` out-parameters, both
+    // live `i64`s here, and takes no ownership. Callable from any thread once
+    // SQLite is initialized, which the caller above guarantees.
+    let rc = unsafe { ffi::sqlite3_status64(op, &raw mut current, &raw mut highwater, 0) };
+    if rc == ffi::SQLITE_OK {
+        (current.max(0) as u64, highwater.max(0) as u64)
+    } else {
+        (0, 0)
+    }
 }
 
 // ── Connection factories ─────────────────────────────────────────────

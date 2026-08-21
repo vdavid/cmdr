@@ -3482,8 +3482,9 @@ export const commands = {
    */
   openSystemSettingsUrl: (url: string) => typedError<null, string>(__TAURI_INVOKE('open_system_settings_url', { url })),
   /**
-   *  Snapshot this process's memory: the footprint, both allocators' own accounting, and
-   *  the kernel's VM map folded by tag with a per-tag region-size histogram.
+   *  Snapshot this process's memory: the footprint, both allocators' own accounting,
+   *  SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag
+   *  region-size histogram.
    *
    *  `sizesPerTag` caps the histogram (0 asks for tag totals only); it's clamped to
    *  [`MAX_SIZES_PER_TAG`]. Runs off the IPC thread because the walk costs one syscall per
@@ -6798,6 +6799,12 @@ export type MemoryDiagnostics = {
   // The biggest registered zone by in-use bytes, as `[name, bytes]`.
   largestSystemZone: SystemZone | null
   /**
+   *  SQLite's process-wide page memory, which belongs to no allocator above:
+   *  the slab is a leaked Rust allocation, so it's a fixed 64 MiB sitting
+   *  INSIDE `rustHeapCommittedBytes` that nothing else here names.
+   */
+  sqlitePageCache: SqlitePageCache
+  /**
    *  The kernel's VM map folded by tag, biggest dirty total first. Empty if the walk
    *  failed or timed out.
    */
@@ -9326,6 +9333,46 @@ export type SpaceInfo = {
   availableBytes: number
   // In bytes.
   usedBytes: number
+}
+
+/**
+ *  SQLite's page memory: the one process-wide slab every store's cached database
+ *  pages come out of, plus the read-connection count that decides whether it can
+ *  stay a cap.
+ *
+ *  `usedBytes` pegged at `slabBytes` with `liveReadConnections` past the budget
+ *  it was sized for is the treadmill `cmdr_fs::sqlite_util` describes, not a
+ *  healthy cache.
+ */
+export type SqlitePageCache = {
+  /**
+   *  The slab's size, or `0` if it failed to install (which the `sqlite` log
+   *  target would have warned about at startup).
+   */
+  slabBytes: number
+  /**
+   *  Slab bytes currently holding database pages. The slab is handed to SQLite
+   *  zeroed, so this is roughly the part of it that's dirty.
+   */
+  usedBytes: number
+  /**
+   *  The high-water mark of `usedBytes`. At `slabBytes` it means the slab ran
+   *  full at least once, even if it isn't now.
+   */
+  peakUsedBytes: number
+  /**
+   *  Page-cache bytes SQLite took from the heap because the slab couldn't
+   *  serve them. Expected to be `0`.
+   */
+  overflowBytes: number
+  // The high-water mark of `overflowBytes`.
+  peakOverflowBytes: number
+  /**
+   *  Read connections open across every thread. They're thread-local and live
+   *  as long as their thread, so this tracks tokio's blocking pool; each one
+   *  adds its `cache_size` to SQLite's global ceiling on retained pages.
+   */
+  liveReadConnections: number
 }
 
 // Result of starting a streaming directory listing

@@ -14,6 +14,13 @@
 //! allocations that dominate `MALLOC_LARGE`. The kernel's VM map sees both, because both
 //! take their pages from it. `cmdr_fs::process_memory` owns that argument and the FFI.
 //!
+//! **It also names the one big block neither allocator explains.** SQLite serves every
+//! store's cached database pages from a single process-wide slab, which is a leaked Rust
+//! allocation: 64 MiB sitting inside the mimalloc total with nothing pointing at it.
+//! `sqlitePageCache` says how big it is, how much of it is really held, and how many read
+//! connections are pushing on it, so the answer to "what is Cmdr holding?" doesn't
+//! require knowing to go ask SQLite separately (`cmdr_fs::sqlite_util`).
+//!
 //! **How to read the payload.** Sort by `dirtyBytes` and start at the top. Then look at
 //! each big tag's `sizes`: a repeated EXACT region size is a fingerprint, because macOS
 //! gives every allocation past its 127 KB large-zone threshold a region sized to the
@@ -77,6 +84,10 @@ pub struct MemoryDiagnostics {
     pub system_zone_count: u32,
     /// The biggest registered zone by in-use bytes, as `[name, bytes]`.
     pub largest_system_zone: Option<SystemZone>,
+    /// SQLite's process-wide page memory, which belongs to no allocator above:
+    /// the slab is a leaked Rust allocation, so it's a fixed 64 MiB sitting
+    /// INSIDE `rustHeapCommittedBytes` that nothing else here names.
+    pub sqlite_page_cache: SqlitePageCache,
     /// The kernel's VM map folded by tag, biggest dirty total first. Empty if the walk
     /// failed or timed out.
     pub tags: Vec<MemoryTag>,
@@ -97,6 +108,36 @@ pub struct SystemZone {
     pub name: String,
     /// Bytes it reports as handed out.
     pub in_use_bytes: u64,
+}
+
+/// SQLite's page memory: the one process-wide slab every store's cached database
+/// pages come out of, plus the read-connection count that decides whether it can
+/// stay a cap.
+///
+/// `usedBytes` pegged at `slabBytes` with `liveReadConnections` past the budget
+/// it was sized for is the treadmill `cmdr_fs::sqlite_util` describes, not a
+/// healthy cache.
+#[derive(Debug, Clone, Copy, Default, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SqlitePageCache {
+    /// The slab's size, or `0` if it failed to install (which the `sqlite` log
+    /// target would have warned about at startup).
+    pub slab_bytes: u64,
+    /// Slab bytes currently holding database pages. The slab is handed to SQLite
+    /// zeroed, so this is roughly the part of it that's dirty.
+    pub used_bytes: u64,
+    /// The high-water mark of `usedBytes`. At `slabBytes` it means the slab ran
+    /// full at least once, even if it isn't now.
+    pub peak_used_bytes: u64,
+    /// Page-cache bytes SQLite took from the heap because the slab couldn't
+    /// serve them. Expected to be `0`.
+    pub overflow_bytes: u64,
+    /// The high-water mark of `overflowBytes`.
+    pub peak_overflow_bytes: u64,
+    /// Read connections open across every thread. They're thread-local and live
+    /// as long as their thread, so this tracks tokio's blocking pool; each one
+    /// adds its `cache_size` to SQLite's global ceiling on retained pages.
+    pub live_read_connections: u32,
 }
 
 /// One VM tag's share of the address space: the rows `vmmap -summary` prints.
@@ -136,8 +177,9 @@ pub struct MemoryRegionSize {
 
 // ── The command ───────────────────────────────────────────────────────
 
-/// Snapshot this process's memory: the footprint, both allocators' own accounting, and
-/// the kernel's VM map folded by tag with a per-tag region-size histogram.
+/// Snapshot this process's memory: the footprint, both allocators' own accounting,
+/// SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag
+/// region-size histogram.
 ///
 /// `sizesPerTag` caps the histogram (0 asks for tag totals only); it's clamped to
 /// [`MAX_SIZES_PER_TAG`]. Runs off the IPC thread because the walk costs one syscall per
@@ -165,6 +207,7 @@ fn empty_snapshot() -> MemoryDiagnostics {
         system_zones_reserved_bytes: 0,
         system_zone_count: 0,
         largest_system_zone: None,
+        sqlite_page_cache: SqlitePageCache::default(),
         tags: Vec::new(),
         total_dirty_bytes: 0,
         total_region_count: 0,
@@ -178,6 +221,7 @@ fn collect(sizes_per_tag: usize) -> MemoryDiagnostics {
     let heap = cmdr_fs::process_memory::query_mimalloc_heap();
     let zones = cmdr_fs::process_memory::query_system_malloc_zones();
     let regions = cmdr_fs::process_memory::query_vm_regions(sizes_per_tag);
+    let page_cache = cmdr_fs::sqlite_util::query_page_cache_usage();
 
     MemoryDiagnostics {
         phys_footprint_bytes: vm.as_ref().map_or(0, |v| v.phys_footprint),
@@ -191,6 +235,14 @@ fn collect(sizes_per_tag: usize) -> MemoryDiagnostics {
         largest_system_zone: zones
             .largest_zone
             .map(|(name, in_use_bytes)| SystemZone { name, in_use_bytes }),
+        sqlite_page_cache: SqlitePageCache {
+            slab_bytes: page_cache.slab_bytes,
+            used_bytes: page_cache.used_bytes,
+            peak_used_bytes: page_cache.peak_used_bytes,
+            overflow_bytes: page_cache.overflow_bytes,
+            peak_overflow_bytes: page_cache.peak_overflow_bytes,
+            live_read_connections: u32::try_from(cmdr_fs::sqlite_util::live_read_connections()).unwrap_or(u32::MAX),
+        },
         tags: regions
             .as_ref()
             .map(|map| {
@@ -243,6 +295,31 @@ mod tests {
         assert!(
             snapshot.tags.iter().all(|t| t.sizes.len() <= 8),
             "the histogram honors the caller's cap"
+        );
+    }
+
+    /// The gap this closes: SQLite's page-cache slab is a fixed 64 MiB inside
+    /// the mimalloc total that nothing else in the payload names, so a reader
+    /// asking "what is Cmdr holding?" used to have to know to check SQLite
+    /// separately. One call now answers the whole question.
+    #[tokio::test]
+    async fn the_snapshot_names_sqlites_page_cache_too() {
+        let snapshot = get_memory_diagnostics(4).await;
+        let sqlite = &snapshot.sqlite_page_cache;
+
+        let budget = cmdr_fs::sqlite_util::SHARED_PAGE_CACHE_BYTES as u64;
+        assert!(
+            sqlite.slab_bytes > 0 && budget - sqlite.slab_bytes < 8 * 1024,
+            "the slab fills its budget bar the slot remainder, got {}",
+            sqlite.slab_bytes
+        );
+        assert!(
+            sqlite.used_bytes <= sqlite.slab_bytes,
+            "what the slab holds is a share of it, never more"
+        );
+        assert_eq!(
+            sqlite.overflow_bytes, 0,
+            "page memory outside the budget would mean the slab stopped describing it"
         );
     }
 

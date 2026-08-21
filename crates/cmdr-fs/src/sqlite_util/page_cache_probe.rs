@@ -35,18 +35,6 @@ const CONNECTIONS: usize = 132;
 /// scan really wants more cache than it is allowed and the caches compete.
 const DB_PAGES: usize = 4_000;
 
-/// Read one `sqlite3_status64` counter's current value.
-fn status(op: c_int) -> i64 {
-    let mut current: i64 = 0;
-    let mut highwater: i64 = 0;
-    // SAFETY: `sqlite3_status64` writes two live `i64` out-parameters and takes no
-    // ownership. Safe from any thread once SQLite is initialized, which opening a
-    // connection guarantees.
-    let rc = unsafe { ffi::sqlite3_status64(op, &raw mut current, &raw mut highwater, 0) };
-    assert_eq!(rc, ffi::SQLITE_OK, "sqlite3_status64({op}) failed with {rc}");
-    current
-}
-
 #[test]
 #[ignore = "measurement harness: it reports numbers, it doesn't assert them"]
 #[allow(clippy::print_stdout, reason = "a measurement harness prints its measurements")]
@@ -91,12 +79,10 @@ fn page_cache_probe() {
     let per_reader_kib = page_cache_kib(&readers[0]);
     let slab_mib = SHARED_PAGE_CACHE_BYTES / (1024 * 1024);
     let ceiling_mib = (CONNECTIONS as i64 * per_reader_kib) / 1024;
-    let slot_bytes = match ensure_shared_page_cache() {
-        SharedPageCache::Installed { slot_bytes, .. } => slot_bytes,
-        other => panic!("the slab must be installed, got {other:?}"),
-    };
-    let from_slab_mib = (status(ffi::SQLITE_STATUS_PAGECACHE_USED) * slot_bytes as i64) / (1024 * 1024);
-    let from_heap_bytes = status(ffi::SQLITE_STATUS_PAGECACHE_OVERFLOW);
+    let usage = query_page_cache_usage();
+    assert!(usage.slab_bytes > 0, "the slab must be installed, got {usage:?}");
+    let from_slab_mib = usage.used_bytes / (1024 * 1024);
+    let from_heap_bytes = usage.overflow_bytes;
 
     println!("── page-cache probe ───────────────────────────────");
     println!("  read connections        {CONNECTIONS}");
@@ -108,5 +94,5 @@ fn page_cache_probe() {
         "  pages served from HEAP  {} MiB  ({from_heap_bytes} B) ← what the slab does not describe",
         from_heap_bytes / (1024 * 1024)
     );
-    println!("  slab in use             {}%", from_slab_mib * 100 / slab_mib as i64);
+    println!("  slab in use             {}%", from_slab_mib * 100 / slab_mib as u64);
 }

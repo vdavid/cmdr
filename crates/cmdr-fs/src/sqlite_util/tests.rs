@@ -4,18 +4,6 @@ use super::*;
 
 // ── Shared page cache ────────────────────────────────────────────────
 
-/// Read one `sqlite3_status64` counter's current value.
-fn sqlite_status(op: c_int) -> i64 {
-    let mut current: i64 = 0;
-    let mut highwater: i64 = 0;
-    // SAFETY: `sqlite3_status64` writes two `sqlite3_int64` out-parameters,
-    // both live `i64`s here, and takes no ownership. It's safe to call from any
-    // thread once SQLite is initialized, which opening a connection guarantees.
-    let rc = unsafe { ffi::sqlite3_status64(op, &raw mut current, &raw mut highwater, 0) };
-    assert_eq!(rc, ffi::SQLITE_OK, "sqlite3_status64({op}) failed with {rc}");
-    current
-}
-
 /// The slab has to be handed to SQLite BEFORE the library initializes itself,
 /// which the first connection open does. Every factory in this module installs
 /// it first, so by the time any store has a connection the answer is
@@ -82,8 +70,55 @@ fn cached_pages_come_from_the_shared_slab() {
     assert_eq!(count, 200);
 
     assert!(
-        sqlite_status(ffi::SQLITE_STATUS_PAGECACHE_USED) > 0,
+        query_page_cache_usage().used_bytes > 0,
         "cached pages must come out of the shared slab"
+    );
+}
+
+/// The slab has to be readable at RUNTIME, not only from a test: it's memory
+/// neither allocator `get_memory_diagnostics` reads can see, so without this
+/// reading 64 MiB of the footprint has no owner in the one payload that answers
+/// "what is Cmdr holding?".
+#[test]
+fn the_page_cache_reading_describes_the_slab_and_what_it_holds() {
+    let dir = tempfile::tempdir().expect("create temp dir");
+    let conn = open(&dir.path().join("usage.db")).expect("open db");
+    conn.execute_batch("CREATE TABLE t (id INTEGER PRIMARY KEY); INSERT INTO t VALUES (1);")
+        .expect("write a page");
+
+    let usage = query_page_cache_usage();
+    assert_eq!(
+        usage.slab_bytes,
+        ensure_shared_page_cache().bytes() as u64,
+        "the reading reports the slab actually installed"
+    );
+    assert!(usage.used_bytes > 0, "a written page is held in the slab");
+    assert!(
+        usage.used_bytes <= usage.slab_bytes,
+        "what the slab holds can't exceed the slab: {usage:?}"
+    );
+    assert!(
+        usage.peak_used_bytes >= usage.used_bytes,
+        "a high-water mark is a mark, not a second current reading: {usage:?}"
+    );
+}
+
+/// Reading the counters initializes SQLite, and SQLite refuses the slab once it
+/// is initialized. So the reading has to install the slab on its way in, or a
+/// diagnostic taken early enough would COST the process its page-cache budget.
+/// Nextest gives each test its own process, which is what makes "first call
+/// wins" testable at all.
+#[test]
+fn reading_the_page_cache_before_any_connection_opens_still_leaves_the_slab_installed() {
+    let usage = query_page_cache_usage();
+    assert!(usage.slab_bytes > 0, "the reading installed the slab itself: {usage:?}");
+
+    let conn = open_in_memory().expect("open in-memory db");
+    conn.execute_batch("CREATE TABLE t (id INTEGER PRIMARY KEY);")
+        .expect("create table");
+    assert!(
+        matches!(ensure_shared_page_cache(), SharedPageCache::Installed { .. }),
+        "and a connection opened afterwards finds it there"
     );
 }
 
