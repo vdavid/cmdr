@@ -36,12 +36,14 @@ In order. Only 5e is large.
    `events::volume_mapping`. Measured on cargo-modules 0.26.0: the nine-module component became six (all
    `backends::smb::*` parent ↔ child), and `network` is in no cycle but its own pair with `mdns_discovery`.
 
-2. **Turn the two registry reach-backs into a `Weak` handle.** Half a day, plus one small design call.
-   `reconnect.rs:306` and `smb_watcher.rs:48` both call `get_volume_manager()`. The "one architecturally awkward site"
-   older plans worried about dissolved when the seams landed: both are the backend asking about ITSELF, and `Weak`
-   answers both with no seam at all. ⚠️ **Residual gap, genuinely open**: a volume can be removed from the registry
-   without being superseded or unmounted, and nothing on the volume records that, so "am I retired?" stays unanswerable
-   from inside. Needs an answer before this approach is safe.
+2. ~~**Turn the two registry reach-backs into a `Weak` handle.**~~ **Done.** Both are the backend asking about ITSELF,
+   and a `SelfHandle<SmbVolumeInner>` (a `Weak` plus the registry's `Retirement` flag) answers both with no seam at all.
+   The residual gap is closed the way it had to be: the registry writes "you left" into a flag the volume publishes
+   through `Volume::retirement`, at the two ways out of the registry and deliberately NOT on a replace (a re-root hands
+   the id to a share that is still live). Shared-lifecycle work, so every backend inherits it. Two things fell out that
+   were not planned: `SmbVolume::instance_id` and both `downcast_ref` calls are gone (identity is a pointer now), and
+   the reconnect state machine moved from `SmbVolume` onto `SmbVolumeInner`, where it already only ever reached — which
+   makes step 5's `use super::*` question smaller, since `state.rs` and `reconnect.rs` no longer touch the instance.
 
 3. **Switch the 13 real seam calls and repoint the seven re-export paths.** A day. Fully settled. The 13: keychain ×3,
    `notify_directory_changed` / `refresh_archive_listings` ×2, `try_get_authoritative_listing` ×3, `smb_concurrency`,

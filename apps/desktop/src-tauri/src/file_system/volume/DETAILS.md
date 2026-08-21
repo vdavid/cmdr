@@ -359,6 +359,26 @@ lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full inci
 **Decision**: `VolumeManager::register_if_absent` for watcher registrations
 **Why**: When the mount flow pre-registers an `SmbVolume`, the FSEvents watcher would overwrite it with a `LocalPosixVolume` via `register`. `register_if_absent` is a no-op if a volume is already registered, preserving the `SmbVolume`. The existing `register` (overwrite) is kept for explicit replacement (like SmbVolume replacing itself on reconnect).
 
+### Leaving the registry
+
+**Decision**: `VolumeManager` retires a volume as it removes it, at the two ways out (`unregister`, and
+`roots::remove_root`'s last-mount arm), through `Volume::retirement`. It does NOT retire on a replace.
+
+**Why**: a backend that runs anything outliving one call has to know whether the app still routes to it, and it cannot
+work that out for itself. Being replaced it learns from `on_superseded`; being unmounted it learns from `on_unmount`;
+being simply REMOVED (an eject, an archive-cache eviction, the last mount root going away) it learned from nothing, so
+"am I still live?" was unanswerable from inside. The state a watcher hangs off stays alive as long as any in-flight
+holder has it — a running transfer holds one for its whole duration — so a dropped share kept reconnecting.
+
+**Why not on a replace**: a re-root hands the id to another instance of a share that is still live and still watching,
+and retiring there stands a healthy volume down. An upgrade's predecessor is retired by the hand-over itself. Both
+non-retirements are pinned (`manager.rs::replacing_a_volume_at_its_own_root_retires_nobody`,
+`roots.rs::promoting_a_surviving_mount_retires_nobody`).
+
+Retirement is one-way, so a volume that comes back is a fresh instance under a fresh registration — which is what every
+re-register path already builds. Full rationale, and the `SelfHandle` a backend reads the flag through:
+`crates/cmdr-fs/src/volume/host/DETAILS.md` § "The two registry reach-backs".
+
 ### A volume ID owns a set of mount roots
 
 **Decision**: a registry entry (`manager/roots.rs::Registration`) is the volume plus the SET of mount roots known to

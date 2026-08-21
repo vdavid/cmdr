@@ -132,13 +132,13 @@ The FE reconnect manager only runs its backoff while a `FilePane` subscribes to 
 disconnect (no pane open, or a restart) left an enabled NAS index dark until the user manually re-enabled. Two backend
 hooks close that, both funneling through the ONE reconnect path (`do_attempt_reconnect`):
 
-- **`spawn_watcher_death_reconnect(volume_id)`** (in `smb/reconnect.rs`, kicked from the watcher's fatal-error exit). The watcher
+- **`spawn_watcher_death_reconnect(share)`** (in `smb/reconnect.rs`, kicked from the watcher's fatal-error exit). The watcher
   runs on its own dedicated smb2 session; that session erroring proves the server connection broke. A background
   disconnect may not have touched the MAIN session yet, so it can still read `Direct` — meaning `do_attempt_reconnect`
   would no-op. So the kick FIRST marks the volume `Disconnected`, then drives `do_attempt_reconnect` on a bounded, growing
   backoff (`WATCHER_DEATH_RECONNECT_BACKOFF`: ~6 tries over ~4 min, then gives up quietly — never hammering a truly-down
-  server). It re-resolves the volume from the manager each iteration (an unmount/replace swaps the instance) and stops
-  early on unmount, on a race back to `Direct` (an FE reconnect won), or on an auth failure (`PermissionDenied` — the FE
+  server). It re-upgrades its share handle each iteration (a retirement or an unmount can land inside any sleep) and
+  stops early on unmount, on a race back to `Direct` (an FE reconnect won), or on an auth failure (`PermissionDenied` — the FE
   "Sign in" flow owns that; retrying risks locking the account). Single-flight `reconnect_lock` coalesces it with any
   concurrent FE reconnect.
 - **`indexing::resume_smb_index_if_enabled(volume_id)`** fires at every session-install success — `do_attempt_reconnect`
@@ -295,6 +295,13 @@ Tests: `smb_watcher/archive_refresh_test.rs` (a Modified `.zip` event refreshes 
 - **`on_superseded`**: a NEWER instance took this volume's id in the `VolumeManager`, but the device is still there.
   Sole caller: `network::smb_upgrade::register_replacing_predecessor`.
 
+Both record the same fact through the same flag, `SmbVolumeInner::retirement` (a `cmdr_fs::volume::Retirement`): this
+share no longer owns its volume id. The registry sets it too, for the third way out that neither hook covers — a volume
+REMOVED without being replaced or unmounted (an eject, the last mount root of a share going away). Everything that reads
+it treats the three alike, because to the watcher, the scan pool, and the connection events they are the same thing. Why
+the registry is the writer, and why a re-root deliberately isn't a retirement:
+`crates/cmdr-fs/src/volume/host/DETAILS.md` § "The two registry reach-backs".
+
 **The invariant: a superseded volume keeps serving its holders.** The `VolumeManager` is not the only owner of a
 `Volume`. Anything that resolved the id earlier holds an `Arc` for the whole duration of its work:
 
@@ -323,9 +330,11 @@ connection that was still healthy (a redundant upgrade pass replaced the volume 
 A superseded volume still **reconnects** for the holders on it (their only recovery path, since they can't move to the
 successor) — silently, without respawning a watcher.
 
-**Watcher identity, not just id.** `spawn_watcher_death_reconnect` takes the dying watcher's `SmbVolume::instance_id`
-and re-resolves the manager entry against it on every backoff step. A watcher dying in the window around a swap would
-otherwise resolve the id to the SUCCESSOR and mark a perfectly healthy volume `Disconnected`.
+**Watcher identity is a pointer, not an id.** `spawn_watcher_death_reconnect` takes the dying watcher's
+`SelfHandle<SmbVolumeInner>` and re-upgrades it on every backoff step, so it acts only for the share it was spawned for.
+Resolving the id instead would answer with the SUCCESSOR after a swap and mark a perfectly healthy volume
+`Disconnected`, and would keep answering after an eject for as long as any in-flight holder kept the share allocated.
+`smb_retirement_test.rs` pins all three answers.
 
 ## Re-rooting a share
 

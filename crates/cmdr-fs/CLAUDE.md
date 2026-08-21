@@ -8,8 +8,9 @@ crate.
 ## Module map
 
 - `volume/`: the `Volume` trait, its types, `InMemoryVolume`, `ids` + `canonical_root` (the ID funnel, plus double-mount
-  collapse), `friendly_error/` (typed, word-free classification), and `host/` — what a backend needs from the app, as
-  named traits. Read `src/volume/host/CLAUDE.md` before writing a backend or moving one out of the app.
+  collapse), `retirement.rs` (how background work learns it stopped being the live volume), `friendly_error/` (typed,
+  word-free classification), and `host/` — what a backend needs from the app, as named traits. Read
+  `src/volume/host/CLAUDE.md` before writing a backend or moving one out of the app.
 - `entry.rs` + `icons/`: `FileEntry` and the two disk-free classifiers `get_icon_id` calls. What every listing yields.
 - `sqlite_util.rs`: the ONE process-wide page-cache slab plus the connection factories all five stores open through.
 - `staging.rs`: `StagingTemp`, the ONLY way to name a scratch file. Whether the user SEES one is app-side
@@ -46,7 +47,7 @@ crate.
   index DB, `lastUsedPaths`, tab state, and routing, so a lossy one hands two disks one identity and sends reads (and
   deletes) to the wrong disk. Add a constructor there.
 - **Nothing here produces user-facing prose.** Errors carry typed reasons and structured params; the frontend renders
-  every word. `pluralize` and `display_size` are the named exceptions.
+  every word. `pluralize` and `display_size` are the exceptions.
 
 Composition rationale, the four cuts that made the closure finite, and what deliberately stayed in the app:
 `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

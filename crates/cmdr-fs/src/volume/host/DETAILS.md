@@ -196,25 +196,38 @@ to hand the seam a struct and hope its serialization is PII-free.
 
 The honest list, and the most useful thing in this document.
 
-### The two registry reach-backs, which need no seam after all
+### The two registry reach-backs need no seam: `Retirement` plus a `SelfHandle`
 
-`reconnect.rs::still_the_same_volume` and `smb_watcher.rs::stat_via_volume` both call
-`get_volume_manager().get(volume_id)`, and a `VolumeRegistry` seam looks like the obvious answer. It isn't. Both are the
-backend asking about ITSELF:
+`reconnect.rs` and `smb_watcher.rs` used to call `get_volume_manager().get(volume_id)` from inside the backend, and a
+`VolumeRegistry` seam looks like the obvious replacement. It isn't: both are the backend asking about ITSELF, and going
+out through the registry to ask makes the answer wrong in two directions.
 
-- `still_the_same_volume` resolves the id, downcasts to `SmbVolume`, and compares `instance_id` — it's asking "am I
-  still the live instance whose watcher died?", so a supersede can't make a healthy volume mark itself disconnected.
-- `stat_via_volume` resolves the id to reach the MAIN session's `get_metadata`, deliberately not the watcher's dedicated
-  session.
+- An id resolves to whatever holds it NOW, so a watcher dying in the window around a supersede drove the SUCCESSOR's
+  state. That is why an `instance_id` counter had to exist, and why the resolve had to downcast to compare it.
+- A volume the registry has DROPPED still resolves to nothing only if nobody holds it. A running copy holds an `Arc` for
+  its whole duration, so a dropped share kept its reconnect loop alive.
 
-A `Weak` handle to the volume answers both without a registry: upgrade per iteration (the loop already re-resolves every
-iteration for exactly the reason `Weak` handles for free), and identity is then a pointer, not an id plus a counter plus
-a downcast. That deletes the awkwardness rather than wrapping it, and it removes the last thing that would have forced a
-seam to hand back an `Arc<dyn Volume>` for a backend to downcast to its own concrete struct.
+**The shape.** `Retirement` is a one-way flag the volume publishes through `Volume::retirement`; `SelfHandle<T>` pairs
+it with a `Weak<T>` to the state a backend's background work hangs off, and `live()` answers only while both agree.
+Identity becomes a pointer, so the counter and both downcasts are gone, and this removes the last thing that would have
+forced a seam to hand back an `Arc<dyn Volume>` for a backend to downcast to its own concrete struct.
 
-The residual gap is real and worth stating: a volume can be REMOVED from the registry without being superseded or
-unmounted, and no flag on the volume records that. Whatever shape wins, the host has to tell a volume it's been retired,
-or "am I still live?" stays unanswerable from inside.
+**Who writes the flag, and why that split.** The registry is the only writer of "you left", set at the two ways out of
+it (`VolumeManager::unregister` and `roots::remove_root`'s last-mount arm). A backend writes it only for a hand-over it
+performs itself, from `Volume::on_superseded`, because the id lives on under the successor and the registry sees a
+replace rather than a removal.
+
+**Never on a replace, and pinned by tests rather than by a rule.** A re-root hands the id to another instance of a share
+that is still live and still watching, so retiring there stands a healthy volume down. `manager.rs`'s
+`replacing_a_volume_at_its_own_root_retires_nobody` and `roots.rs`'s `promoting_a_surviving_mount_retires_nobody` both
+go red on an over-eager fix.
+
+**Scope it to the state, not to the instance.** SMB keeps the flag on `SmbVolumeInner`, the share-scoped half, because a
+re-rooted instance is the same share, the same session, and the same watcher. A per-instance flag would retire the
+share's watcher on a promotion that was supposed to save it.
+
+**Retirement is one-way, so a comeback is a fresh instance.** Every re-register path already builds one. A backend that
+cached and re-registered the same `Arc` would hand the registry a volume that is permanently retired.
 
 ### Visibility that has no cross-crate equivalent
 
@@ -252,8 +265,12 @@ surfaces at the end of a move: check every `[\`Type::method\`]` link for an app-
    number, so a forgotten row costs speed and nothing else.
 8. Report connection transitions through `events()`, comparing against your previous state so a server that's down
    doesn't emit one per failed operation.
-9. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
-   from drifting into a per-entry loop.
+9. If anything you spawn outlives one call (a watcher, a reconnect loop), keep a `Retirement`, publish it from
+   `Volume::retirement`, and reach your own state through a `SelfHandle` rather than an id you look up. Without it the
+   registry has nowhere to write "you left", and your background work keeps running against a volume the app has
+   forgotten. § "The two registry reach-backs" has the full rationale.
+10. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
+    from drifting into a per-entry loop.
 
 ## Where the app answers each seam
 
