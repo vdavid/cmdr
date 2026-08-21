@@ -106,7 +106,7 @@ Rules for writing them:
   SMB fixtures), `scripts/`. The other three apps are listed above.
 - `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file index, media index, folder
   importance), `cmdr-archive` (the zip/tar/7z backend, and the model a new backend crate copies), and `cmdr-smb` (the
-  SMB protocol layer, mid-extraction) carry no `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a
+  SMB backend and its protocol layer) carry no `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a
   vendored `fsevent-stream` fork. Details: `docs/architecture.md`.
 - `brand/`: tracked brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),

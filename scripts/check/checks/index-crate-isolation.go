@@ -64,12 +64,7 @@ type surfaceCeilings struct {
 // surfaceGuardedCrates are the guarded crates whose public surface is ALSO capped.
 // Not every guarded crate is: `cmdr-fs` is deliberately absent, because it's shared
 // vocabulary whose whole job is to be named from everywhere, so a count of its `pub`
-// items would measure the wrong thing. `cmdr-smb` is absent for a reason with an END
-// DATE: the SMB extraction lands in stages (`docs/specs/backend-as-a-crate.md`), and
-// every stage moves more of the backend down, so a ceiling set now would mean asking
-// David to raise it at each one — which trains exactly the reflex the ceiling exists
-// to prevent. Its dependency tree is guarded from day one; the surface ceiling gets
-// measured and added when the last stage lands.
+// items would measure the wrong thing.
 //
 // HandleType names the one type whose methods get their own bucket, or is empty when
 // the crate has no such type. A backend crate doesn't: its API is the `Volume` trait
@@ -159,6 +154,16 @@ var surfaceGuardedCrates = []struct {
 			HandleMethods:  40,
 			PublicModules:  17,
 			SubsystemItems: 156,
+		},
+	},
+	{
+		// Measured 2026-08-22, at the extraction, with no headroom. What each item is
+		// for: `crates/cmdr-smb/DETAILS.md` § "The public surface is capped".
+		Name: "cmdr-smb",
+		Ceilings: surfaceCeilings{
+			RootPromises:   15,
+			PublicModules:  4,
+			SubsystemItems: 18,
 		},
 	},
 	{

@@ -137,15 +137,14 @@ All under `apps/desktop/src-tauri/src/`.
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
 - `file_system/volume/backends/`: Per-backend `Volume` impls: `LocalPosixVolume`, `MtpVolume`, `SmbVolume` (+
   `SmbWatcher`), `InMemoryVolume`
-- `file_system/volume/backends/`'s `archive.rs`: a re-export of the `cmdr-archive` crate under its original path, plus
-  the app-side half of its watch tests. Routing (which paths cross into an archive), the archive LRU, and edit driving
-  stay app-side; the backend itself is `crates/cmdr-archive/`
+- `file_system/volume/backends/`'s `archive.rs` and `smb.rs`: re-exports of the `cmdr-archive` and `cmdr-smb` crates
+  under their original paths, plus the app-side half of each one's suites. What stays app-side is what needs the app:
+  archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving for both
 - `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
   hooks, typed git-error classification (`FriendlyGitErrorKind`)
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
 - `network/`: SMB's app-side half: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting,
-  Keychain, the auto-upgrade passes, and the frontend's connection events. The protocol layer under it is
-  `crates/cmdr-smb/`
+  Keychain, the auto-upgrade passes, and the frontend's connection events. The backend under it is `crates/cmdr-smb/`
 - `clipboard/`: File clipboard (Cmd+C/X/V) with NSPasteboard interop; tracks cut state and validates at paste
 - `secrets/`: Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. SMB creds +
   AI keys
@@ -257,9 +256,9 @@ vendored fork are ordinary members.
   core (central-directory parse, synthetic tree, streaming decompress, Zip Slip defense) and the shared boundary
   detector its host routes with. The first backend in its own crate, so it's the worked example for the next one. See
   `crates/cmdr-archive/CLAUDE.md`
-- `crates/cmdr-smb/`: the SMB backend's protocol layer — address building, `smb2::Error` classification, and the
-  share-listing vocabulary (`ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError`). Mid-extraction: the
-  `SmbVolume` backend itself is still app-side, and moves down in stages (`docs/specs/backend-as-a-crate.md`). What
+- `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
+  watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address
+  building, `smb2::Error` classification, the share-listing vocabulary). The second backend in its own crate; what
   belongs on each side of the boundary, and why: `crates/cmdr-smb/CLAUDE.md`
 - `crates/cmdr-index/`: the index — everything Cmdr knows about what's on a volume, what's inside its images, and which
   of its folders matter — behind one `Index` handle the host builds and holds. Tauri-free: everything it needs from an

@@ -2,11 +2,19 @@
 
 ## Where the boundary runs, and why
 
-The app's `network/` module grew as one pile: mDNS discovery, share listing, mounting, the keychain, the auto-upgrade
-passes, and the Tauri events, plus a handful of pure functions over `smb2`'s own types that ended up there for no reason
-beyond proximity. This crate is those pure functions, plus the vocabulary they speak.
+Two boundaries run through this crate, and they answer different questions.
 
-The test is a single question: **can the protocol and its own types answer this?**
+**The backend / app boundary** is the `Volume` trait plus the `VolumeHost` seams: `SmbVolume` implements one and asks
+everything else through the other, so nothing here names the app. What stayed up there is what genuinely needs the app —
+finding a share and mounting it, deciding when to replace a kernel mount with a direct session, and driving transfers.
+`apps/desktop/src-tauri/src/file_system/volume/backends/smb.rs` lists it.
+
+**The protocol / app boundary** is older and sits inside `network/`, which grew as one pile: mDNS discovery, share
+listing, mounting, the keychain, the auto-upgrade passes, and the Tauri events, plus a handful of pure functions over
+`smb2`'s own types that ended up there for no reason beyond proximity. `src/{types,errors,connection}.rs` is those pure
+functions, plus the vocabulary they speak.
+
+The test for the second one is a single question: **can the protocol and its own types answer this?**
 
 Here, because the answer is yes:
 
@@ -62,12 +70,16 @@ feature is off by default for the crate that declares it.
 One consequence worth knowing: **a test that needs the Docker fixture ports can live on either side of the boundary.**
 Whichever crate's test target enables the feature, the one `smb2` gets it.
 
-## What this crate deliberately doesn't have
+## The public surface is capped
 
-- **No public-surface ceiling in `index-crate-isolation`.** `cmdr-archive` has one because its extraction is finished
-  and its surface is the audited answer. Setting one here would mean raising it at every remaining stage, which trains
-  the reflex the ceiling exists to prevent. The dependency guard applies from day one; the ceiling gets measured when
-  the last stage lands. Reasoning in `scripts/check/checks/index-crate-isolation.go`.
+`index-crate-isolation` holds this crate to 15 root promises, 4 public modules, and 18 public items inside them, set on
+2026-08-22 to exactly what the crate exposed the day the extraction finished — no headroom, so the first addition has to
+be argued for. Which audience each item serves, and why `volume::testing` counts apart:
+`scripts/check/checks/index-crate-isolation.go`.
+
+The thing that surface protects is that a backend's API is the `Volume` trait it implements, which is `cmdr-fs`'s
+promise rather than this crate's. Everything counted here exists because something in `network/` or the debug window has
+to build a share or ask after one.
 
 ## Layout
 
