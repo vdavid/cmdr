@@ -39,6 +39,10 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	cmd := exec.Command("cargo", append([]string{"nextest", "run"}, baseArgs...)...)
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
+	// nextest colours its output under a forced-colour environment (`FORCE_COLOR` /
+	// `CLICOLOR_FORCE`), and everything below reads it with line-anchored patterns, so
+	// normalise once at the boundary rather than trusting "not a TTY" to mean "no colour".
+	output = StripANSI(output)
 	// Before the verdict branch, so a red run records WHICH tests went red. Only the
 	// first run is recorded: the contention re-run below re-executes a named subset
 	// under a different profile, and logging those as extra results would make a
@@ -168,6 +172,7 @@ func nextestContentionRunner(workDir string, baseArgs []string) ContentionRunner
 		cmd := exec.Command("cargo", args...)
 		cmd.Dir = workDir
 		out, err := RunCommand(cmd, true)
+		out = StripANSI(out)
 		if err != nil && !nextestRanRE.MatchString(out) {
 			return "", fmt.Errorf("contention re-run under profile %s could not run: %w", profile, err)
 		}

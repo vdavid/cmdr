@@ -293,6 +293,7 @@ const dockerControlTimeout = 30 * time.Second
 func dockerContentionRunner(container string, selection []string) ContentionRunner {
 	return func(profile string, names []string) (string, error) {
 		out, err := dockerExec(container, containerNextestScript(containerRerunArgs(profile, selection, names)...))
+		out = StripANSI(out)
 		if err != nil && !nextestRanRE.MatchString(out) {
 			return "", fmt.Errorf("contention re-run under profile %s could not run in the container: %w", profile, err)
 		}
@@ -415,7 +416,10 @@ var testProgressNoiseRE = regexp.MustCompile(
 // (multiple test binaries, multi-line panic messages, debconf noise after the
 // suite exits) and can only ever keep too much, never drop a real signal.
 func trimRustTestProgress(output string) string {
-	lines := strings.Split(output, "\n")
+	// Normalise first: nextest colours its output under a forced-colour environment, and
+	// every pattern here is line-anchored, so an unnormalised buffer keeps all ~6 000
+	// progress lines and buries the diagnosis under them.
+	lines := strings.Split(StripANSI(output), "\n")
 	kept := make([]string, 0, len(lines))
 	for _, line := range lines {
 		if testProgressNoiseRE.MatchString(line) {

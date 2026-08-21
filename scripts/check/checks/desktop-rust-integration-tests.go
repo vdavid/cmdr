@@ -91,6 +91,8 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		"-E", "test(smb_integration_)")...)
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
+	// See `desktop-rust-tests.go`: captured nextest output is not plain text by default.
+	output = StripANSI(output)
 	// Before the verdict branch, so a red run records WHICH tests went red
 	// (`test-log.go`); the contention re-run below is deliberately not recorded.
 	ctx.RecordTests(ParseNextestResults(output)...)

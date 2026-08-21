@@ -208,3 +208,50 @@ func TestWaitUntilPanicFormatStillMatchesTheClassifier(t *testing.T) {
 		t.Fatalf("the wait_until panic format in %s changed; update inTestDeadlineRE in rust-test-diagnostics.go to match", path)
 	}
 }
+
+// colorizedFailureRun is a VERBATIM excerpt of a real `pnpm check rust-tests` capture
+// from an agent session (M1 Max, cargo-nextest 0.9.136, 2026-08-21). nextest colours
+// its output whenever `FORCE_COLOR` / `CLICOLOR_FORCE` is set, which the Claude Code
+// harness and several terminals do, so a captured buffer is NOT plain text just
+// because it isn't a TTY.
+const colorizedFailureRun = "\x1b[32;1m        PASS\x1b[0m [   0.046s] (   8/6333) \x1b[35;1mcmdr\x1b[0m \x1b[36magent::chat::budget::tests\x1b[0m\x1b[36m::\x1b[0m\x1b[34;1ma_size_above_the_known_window_warns_and_is_still_used\x1b[0m\n" +
+	"\x1b[31;1m     TIMEOUT\x1b[0m [   8.005s] (5307/6333) \x1b[35;1mcmdr\x1b[0m \x1b[36mpriority::roots::tests\x1b[0m\x1b[36m::\x1b[0m\x1b[34;1ma_protected_folder_is_taken_on_trust_while_the_fda_gate_is_pending\x1b[0m\n" +
+	"            ────────────\n" +
+	"\x1b[31;1m     Summary\x1b[0m [  34.534s] \x1b[1m6333\x1b[0m tests run: \x1b[1m6332\x1b[0m \x1b[32;1mpassed\x1b[0m, \x1b[1m1\x1b[0m \x1b[31;1mtimed out\x1b[0m, \x1b[1m158\x1b[0m \x1b[33;1mskipped\x1b[0m\n"
+
+// The whole contention/diagnosis apparatus reads captured nextest text with
+// line-anchored regexes. Under a forced-colour environment every status token is
+// preceded by an SGR escape, so an unnormalised parser matches NOTHING and the run
+// degrades silently: no deadline diagnosis, no isolated re-run, no per-test log rows,
+// and a retry-rescued run reported as a clean pass. Every one of those is the exact
+// failure the tooling exists to prevent, so the parsers normalise before matching.
+func TestParsersReadColourisedNextestOutput(t *testing.T) {
+	failures := ClassifyRustFailures(colorizedFailureRun)
+	if len(failures) != 1 {
+		t.Fatalf("expected 1 classified failure, got %d: %+v", len(failures), failures)
+	}
+	if failures[0].Class != ClassNextestCap {
+		t.Errorf("class = %v, want a cap kill", failures[0].Class)
+	}
+	if failures[0].Name != "priority::roots::tests::a_protected_folder_is_taken_on_trust_while_the_fda_gate_is_pending" {
+		t.Errorf("name = %q", failures[0].Name)
+	}
+
+	records := ParseNextestResults(colorizedFailureRun)
+	if len(records) != 2 {
+		t.Fatalf("expected 2 per-test records, got %d: %+v", len(records), records)
+	}
+}
+
+// The colour codes also hide the PASS/SKIP lines from the trimmer, so a red run dumps
+// every one of thousands of progress lines and buries the diagnosis under them (one
+// real capture came to 1.2 MB).
+func TestTrimRustTestProgressDropsColourisedPassLines(t *testing.T) {
+	trimmed := trimRustTestProgress(colorizedFailureRun)
+	if strings.Contains(trimmed, "a_size_above_the_known_window_warns_and_is_still_used") {
+		t.Errorf("colourised PASS line survived the trim:\n%s", trimmed)
+	}
+	if !strings.Contains(trimmed, "a_protected_folder_is_taken_on_trust_while_the_fda_gate_is_pending") {
+		t.Errorf("the TIMEOUT line must survive the trim:\n%s", trimmed)
+	}
+}

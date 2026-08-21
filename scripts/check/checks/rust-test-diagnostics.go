@@ -57,6 +57,25 @@ type RustFailure struct {
 	Detail string // for ClassInTestDeadline, the `wait_until` description
 }
 
+// ansiSGRRE matches the colour escapes nextest writes into its output. It colours
+// whenever `FORCE_COLOR` / `CLICOLOR_FORCE` is set, which the Claude Code harness and
+// several terminals do, so a captured (non-TTY) buffer is NOT plain text by default.
+// Every parser below is line-anchored, so an unnormalised buffer matches NOTHING and
+// the whole apparatus degrades in silence: no deadline diagnosis, no isolated re-run,
+// no per-test log rows, and a retry-rescued run reported as a clean pass. Normalise
+// before matching; ❗ never assume "not a TTY" means "no colour".
+var ansiSGRRE = regexp.MustCompile("\x1b\\[[0-9;]*m")
+
+// StripANSI removes colour escapes so the line-anchored parsers below see the shape
+// they were written against. Idempotent and cheap, so it is safe to apply again at a
+// lane boundary that has already normalised.
+func StripANSI(output string) string {
+	if !strings.Contains(output, "\x1b[") {
+		return output
+	}
+	return ansiSGRRE.ReplaceAllString(output, "")
+}
+
 // nextest status lines share a shape: `<STATUS> [ 0.009s] (2/4) <binary> <test::path>`.
 // The counter is optional (it's `(───)` before a slot is assigned) and its INSIDES may
 // contain spaces: nextest right-aligns the index to the total's width, so a 4 802-test
@@ -88,6 +107,7 @@ var (
 // reports the same flake twice, as `TRY n PASS` during the run and `FLAKY n/m` in the
 // summary block.
 func ParseFlakyTests(output string) []FlakyTest {
+	output = StripANSI(output)
 	type key struct{ binary, name string }
 	seen := map[key]FlakyTest{}
 	var order []key
@@ -136,6 +156,7 @@ func ParseFlakyTests(output string) []FlakyTest {
 // `TRY n FAIL` lines are ignored: those are retried attempts, reported separately by
 // ParseFlakyTests when they eventually pass, and by their own final status when they don't.
 func ClassifyRustFailures(output string) []RustFailure {
+	output = StripANSI(output)
 	lines := strings.Split(output, "\n")
 	type key struct{ binary, name string }
 	seen := map[key]bool{}
@@ -275,6 +296,7 @@ var nextestAttemptRE = regexp.MustCompile(`\d+`)
 // binaries. Output with no test phase in it (a build break) yields no records,
 // which is the honest answer; the caller still fails on its own evidence.
 func ParseNextestResults(output string) []TestRecord {
+	output = StripANSI(output)
 	var records []TestRecord
 	for line := range strings.SplitSeq(output, "\n") {
 		m := nextestResultRE.FindStringSubmatch(line)
