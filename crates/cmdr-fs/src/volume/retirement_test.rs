@@ -1,23 +1,32 @@
 //! The liveness question a backend's background work asks every iteration.
 
-use super::retirement::{Retirement, SelfHandle};
+use super::retirement::{Retirement, Retires, SelfHandle};
 use std::sync::Arc;
 
 /// Stands in for whatever share-scoped state a backend hangs its background
 /// work off (for SMB, the session and its connection state).
 struct Session {
     name: &'static str,
+    retirement: Retirement,
 }
 
-fn handle_over(session: &Arc<Session>) -> (SelfHandle<Session>, Arc<Retirement>) {
-    let retirement = Arc::new(Retirement::new());
-    (SelfHandle::new(Arc::downgrade(session), &retirement), retirement)
+impl Retires for Session {
+    fn retirement(&self) -> &Retirement {
+        &self.retirement
+    }
+}
+
+fn session(name: &'static str) -> Arc<Session> {
+    Arc::new(Session {
+        name,
+        retirement: Retirement::new(),
+    })
 }
 
 #[test]
 fn a_registered_volume_answers_with_its_own_state() {
-    let session = Arc::new(Session { name: "public" });
-    let (handle, _retirement) = handle_over(&session);
+    let session = session("public");
+    let handle = SelfHandle::new(Arc::downgrade(&session));
 
     assert_eq!(
         handle.live().map(|s| s.name),
@@ -32,10 +41,10 @@ fn a_registered_volume_answers_with_its_own_state() {
 /// "still allocated" is not "still registered", and only the registry knows.
 #[test]
 fn a_retired_volume_stops_answering_even_while_its_state_is_alive() {
-    let session = Arc::new(Session { name: "public" });
-    let (handle, retirement) = handle_over(&session);
+    let session = session("public");
+    let handle = SelfHandle::new(Arc::downgrade(&session));
 
-    retirement.retire();
+    session.retirement().retire();
 
     assert!(
         handle.live().is_none(),
@@ -49,8 +58,8 @@ fn a_retired_volume_stops_answering_even_while_its_state_is_alive() {
 
 #[test]
 fn a_dropped_volume_stops_answering() {
-    let session = Arc::new(Session { name: "public" });
-    let (handle, _retirement) = handle_over(&session);
+    let session = session("public");
+    let handle = SelfHandle::new(Arc::downgrade(&session));
 
     drop(session);
 

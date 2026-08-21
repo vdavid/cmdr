@@ -24,7 +24,7 @@ use crate::file_system::listing::caching_test_support::{TestListing, TestListing
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::backends::archive::test_fixtures::{FixtureFile, build_zip, stored};
 use crate::file_system::volume::manager::get_volume_manager;
-use cmdr_fs::volume::{Retirement, SelfHandle};
+use cmdr_fs::volume::SelfHandle;
 
 /// A temp directory with a `.zip` inside, cleaned up on drop. The temp dir plays
 /// the role of the SMB mount root; the zip sits directly under it so a share-root
@@ -90,7 +90,7 @@ async fn register_parent_and_resolve(volume_id: &str, zip_path: &Path) {
 /// batch takes its "couldn't stat, skipping" arm. The archive-inner refresh
 /// under test is deliberately independent of that stat.
 fn no_live_share() -> SelfHandle<super::SmbVolumeInner> {
-    SelfHandle::new(std::sync::Weak::new(), &Arc::new(Retirement::new()))
+    SelfHandle::new(std::sync::Weak::new())
 }
 
 /// One `Modified` event naming `filename` under the mount root, ready for

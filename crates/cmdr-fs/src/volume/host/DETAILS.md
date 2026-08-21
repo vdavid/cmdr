@@ -207,10 +207,12 @@ out through the registry to ask makes the answer wrong in two directions.
 - A volume the registry has DROPPED still resolves to nothing only if nobody holds it. A running copy holds an `Arc` for
   its whole duration, so a dropped share kept its reconnect loop alive.
 
-**The shape.** `Retirement` is a one-way flag the volume publishes through `Volume::retirement`; `SelfHandle<T>` pairs
-it with a `Weak<T>` to the state a backend's background work hangs off, and `live()` answers only while both agree.
-Identity becomes a pointer, so the counter and both downcasts are gone, and this removes the last thing that would have
-forced a seam to hand back an `Arc<dyn Volume>` for a backend to downcast to its own concrete struct.
+**The shape.** `Retirement` is a one-way flag the volume publishes through `Volume::retirement`. `SelfHandle<T>` is a
+`Weak<T>` to the state a backend's background work hangs off, where `T: Retires` carries the same flag, and `live()`
+answers only while the state is both allocated and unretired. The handle holds nothing but the `Weak`, so it cannot be
+built over a flag other than the one the state publishes. Identity becomes a pointer, so the counter and both downcasts
+are gone, and this removes the last thing that would have forced a seam to hand back an `Arc<dyn Volume>` for a backend
+to downcast to its own concrete struct.
 
 **Who writes the flag, and why that split.** The registry is the only writer of "you left", set at the two ways out of
 it (`VolumeManager::unregister` and `roots::remove_root`'s last-mount arm). A backend writes it only for a hand-over it

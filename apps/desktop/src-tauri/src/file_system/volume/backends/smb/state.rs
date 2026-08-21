@@ -7,8 +7,8 @@
 
 use super::events::emit_state_change;
 use super::{SmbVolume, SmbVolumeInner};
-use cmdr_fs::volume::SelfHandle;
 use cmdr_fs::volume::host::events::VolumeConnection;
+use cmdr_fs::volume::{Retirement, Retires, SelfHandle};
 use std::sync::atomic::Ordering;
 
 /// Connection health states for an SmbVolume.
@@ -57,12 +57,20 @@ impl From<ConnectionState> for VolumeConnection {
     }
 }
 
+/// The share carries the flag, so a promotion (which builds another instance over
+/// the SAME inner) can't retire a watcher that is still the live one.
+impl Retires for SmbVolumeInner {
+    fn retirement(&self) -> &Retirement {
+        &self.retirement
+    }
+}
+
 impl SmbVolumeInner {
     /// This share's own handle, for the background work (the watcher, the
     /// watcher-death reconnect loop) that has to keep asking whether the registry
     /// still serves it. See `cmdr_fs::volume::SelfHandle`.
     pub(super) fn self_handle(&self) -> SelfHandle<SmbVolumeInner> {
-        SelfHandle::new(self.me.clone(), &self.retirement)
+        SelfHandle::new(self.me.clone())
     }
 
     /// Returns the current connection state.

@@ -1303,7 +1303,7 @@ pub mod host;
 pub use capabilities::VolumeCapabilities;
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
-pub use retirement::{Retirement, SelfHandle};
+pub use retirement::{Retirement, Retires, SelfHandle};
 pub use types::*;
 
 #[cfg(test)]
