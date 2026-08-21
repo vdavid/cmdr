@@ -105,8 +105,8 @@ describe('determineNavigationPath', () => {
     mockGetLastUsedPath.mockResolvedValue('/Users/test/last-used')
 
     // pathExists returns false for otherPane (different volume), true for lastUsedPath
-    mockPathExists.mockImplementation(
-      (p: string): Promise<boolean> => (p === '/Users/test/last-used' ? Promise.resolve(true) : Promise.resolve(false)),
+    mockPathExists.mockImplementation((p: string): Promise<boolean> =>
+      p === '/Users/test/last-used' ? Promise.resolve(true) : Promise.resolve(false),
     )
 
     const resultPromise = determineNavigationPath('root', '/', '/', defaultOtherPane)
@@ -249,8 +249,8 @@ describe('resolveValidPath', () => {
   })
 
   it('walks up parent tree to find existing directory', async () => {
-    mockPathExists.mockImplementation(
-      (p: string): Promise<boolean> => (p === '/Users/test' ? Promise.resolve(true) : Promise.resolve(false)),
+    mockPathExists.mockImplementation((p: string): Promise<boolean> =>
+      p === '/Users/test' ? Promise.resolve(true) : Promise.resolve(false),
     )
 
     const resultPromise = resolveValidPath('/Users/test/documents/subfolder')
@@ -264,8 +264,8 @@ describe('resolveValidPath', () => {
   })
 
   it('falls back to ~ if no parent exists', async () => {
-    mockPathExists.mockImplementation(
-      (p: string): Promise<boolean> => (p === '~' ? Promise.resolve(true) : Promise.resolve(false)),
+    mockPathExists.mockImplementation((p: string): Promise<boolean> =>
+      p === '~' ? Promise.resolve(true) : Promise.resolve(false),
     )
 
     const resultPromise = resolveValidPath('/nonexistent/deep/path')
@@ -276,8 +276,8 @@ describe('resolveValidPath', () => {
   })
 
   it('falls back to / if ~ does not exist', async () => {
-    mockPathExists.mockImplementation(
-      (p: string): Promise<boolean> => (p === '/' ? Promise.resolve(true) : Promise.resolve(false)),
+    mockPathExists.mockImplementation((p: string): Promise<boolean> =>
+      p === '/' ? Promise.resolve(true) : Promise.resolve(false),
     )
 
     const resultPromise = resolveValidPath('/nonexistent/path')

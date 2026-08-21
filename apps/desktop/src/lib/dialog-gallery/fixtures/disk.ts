@@ -91,16 +91,14 @@ function deleteFixture(
 ): DeleteFixture {
   const entries = options.entries ?? sources(disk, count)
   return {
-    sourceItems: entries.map(
-      (entry): DeleteSourceItem => ({
-        name: entry.name,
-        size: entry.size,
-        isDirectory: entry.isDirectory,
-        isSymlink: entry.isSymlink,
-        recursiveSize: entry.recursiveSize,
-        recursiveFileCount: entry.recursiveFileCount,
-      }),
-    ),
+    sourceItems: entries.map((entry): DeleteSourceItem => ({
+      name: entry.name,
+      size: entry.size,
+      isDirectory: entry.isDirectory,
+      isSymlink: entry.isSymlink,
+      recursiveSize: entry.recursiveSize,
+      recursiveFileCount: entry.recursiveFileCount,
+    })),
     sourcePaths: entries.map((entry) => entry.path),
     sourceFolderPath: disk.root,
     isPermanent: options.isPermanent,
