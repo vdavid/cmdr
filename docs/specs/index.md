@@ -27,7 +27,8 @@ that lives beside the code, and git holds the history.
       no boundary to write them behind.** `SmbVolume` reaches into the app at 30 places and nothing stops the 31st. The
       seams, the staging split, the app-side adapters, and the `cmdr-archive` pilot all shipped, so this is a finish
       rather than a start: extract `cmdr-smb`, guard it with a module-cycle ratchet, then prove the seams with FTP.
-      **About a week for SMB**, dominated by re-homing 5,845 lines of tests. Two decisions inside: the ratchet's metric
+      **Step 1 shipped** (the protocol layer is `crates/cmdr-smb`, and the `network` ↔ SMB cycle is cut); steps 2-5 and
+      the ratchet remain, dominated by re-homing 5,845 lines of tests. Two decisions inside: the ratchet's metric
       (the obvious one fires on good refactors) and FTP's concurrency knob.
 - [ ] 2026-08-21 `indexing-loose-ends.md` - **The coverage machine works; these are the threads left hanging.** Phased
       indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled: a rename that
