@@ -27,10 +27,11 @@ the fixed `[1,77]` tokenization.
   verified compile, so a package-only check would report the feature missing on every later launch.
 - **Turning the toggle off ≠ erase.** Existing embeddings stay searchable; only `media_index_delete_clip_model` removes
   them.
-- **The first encode of a session buys ~430–590 MB for the process's whole life.** `WORKER` is a `OnceLock`, both towers
-  load together, and Core ML allocates their weights through the SYSTEM allocator, so `query_mimalloc_heap` shows none
-  of it. Measured, plus the compute-unit lever that moves it 35×: `DETAILS.md` § "What holding the towers costs". ❌
-  Don't change `load_model_at`'s `MLComputeUnits::All` on the memory number alone; the speed side is unmeasured.
+- **The first encode of a session buys ~435 MB for the process's whole life**, and 80% of it is the TEXT tower, which an
+  enrichment pass never calls. `WORKER` is a `OnceLock`, both towers load together, and Core ML allocates their weights
+  through the SYSTEM allocator, so `query_mimalloc_heap` shows none of it. Per-tower numbers plus the compute-unit lever
+  that moves it 35×: `DETAILS.md` § "What holding the towers costs". ❌ Don't change `load_model_at`'s
+  `MLComputeUnits::All` on the memory number alone; the speed side is unmeasured.
 
 The model evidence, the towers, install + reclaim, the gate, and the query path: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.

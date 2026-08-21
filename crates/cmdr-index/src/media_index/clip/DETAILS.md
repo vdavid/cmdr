@@ -111,14 +111,19 @@ afterwards. This is the steady-state idle cost named in
 ⚠️ **It is invisible to `query_mimalloc_heap`.** Core ML allocates through the SYSTEM allocator, and mimalloc is not a
 registered macOS zone, so a Rust-side heap reading reports none of this.
 
-The regions are the model's weight matrices, one malloc each, and they add up exactly (409,468,928 on the
-two-embedding-copy run):
+The regions are the model's weight matrices, one malloc each, and they add up to the byte (310,444,032 on the reference
+run):
 
-- `101,187,584` x 1-2 — the text tower's `49,408 x 512` fp32 token embedding. The sharpest fingerprint in the process:
-  nothing else is this size. The copy count varies run to run, and that variance IS the 307-412 MB spread.
-- `4,194,304` x ~25 — text-tower MLP matrices, `512 x 2048` fp32, two per block.
-- `3,145,728` x ~13 — text-tower fused QKV projections, `512 x 1536` fp32, one per block.
-- `2,359,296` x ~26 — image-tower MLP matrices at the shipped 8-bit palettization, `768 x 3072 x 1 byte`.
+- `101,187,584` x 1-2: the text tower's `49,408 x 512` fp32 token embedding. The sharpest fingerprint in the process,
+  because nothing else is this size. The copy count varies run to run, and that variance IS the 307-412 MB spread.
+- `4,194,304` x ~24: text-tower MLP matrices, `512 x 2048` fp32, two per block.
+- `3,145,728` x ~14: text-tower fused QKV projections, `512 x 1536` fp32, one per block.
+- `2,359,296` x ~25: image-tower MLP matrices at the shipped 8-bit palettization, `768 x 3072 x 1 byte`.
+
+**The split between the towers is measured, not inferred** (`CMDR_CLIP_TOWER=image|text` loads one alone): the image
+tower is 64.6 MB of `MALLOC_LARGE` plus 65.5 MB of `MALLOC_SMALL`, the **text tower 251.5 MB plus 84.8 MB**. So the
+tower whose only job is encoding a typed query is about 80% of the bill, and the one enrichment runs in a loop is the
+cheap half, because it ships 8-bit palettized and the text tower ships fp32.
 
 **The compute-unit assignment decides the whole bill**, which is the lead any fix starts from (`CMDR_CLIP_COMPUTE_UNITS`
 in the residency test switches it):
@@ -131,9 +136,9 @@ in the residency test switches it):
 of permanent residency against enrichment speed, and that trade has NOT been measured. The `CLAUDE.md` guardrail against
 changing `load_model_at`'s `MLComputeUnits::All` on the memory number alone rests on exactly this gap.
 
-The second lead is scope rather than precision: `load_towers` loads BOTH towers whichever one is wanted, so a single
-typed search query pays for the image tower and an enrichment pass pays for the text tower. Each tower is independently
-loadable and the text tower is the expensive one (~348 MB of the total, fp32 on disk at 253,750,976 bytes).
+The second lead is scope rather than precision, and it is the bigger one: `load_towers` loads BOTH towers whichever one
+is wanted, so an enrichment pass pays 251.5 MB for a text tower it will never call, and a single typed search query pays
+64.6 MB for an image tower it will never call. Each is independently loadable today.
 
 ## Model install (`install.rs`, plan Decision 9)
 
@@ -179,8 +184,9 @@ CMDR_CLIP_MODEL_DIR=~/Library/Application\ Support/com.veszelovszki.cmdr/clip-mo
   cargo nextest run -p cmdr-index --run-ignored only clip::macos::residency_test --no-capture
 ```
 
-`CMDR_CLIP_COMPUTE_UNITS=cpu|cpu-gpu|cpu-ane` re-runs the same measurement under the other assignments; only the shipped
-`All` carries assertions, the rest report and return.
+`CMDR_CLIP_COMPUTE_UNITS=cpu|cpu-gpu|cpu-ane` re-runs the same measurement under the other assignments, and
+`CMDR_CLIP_TOWER=image|text` loads one tower alone to attribute the bill between them. Only the shipped configuration
+(both towers, `All`) carries assertions; every other combination reports its numbers and returns.
 
 ## Frontend
 

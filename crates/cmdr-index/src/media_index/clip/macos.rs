@@ -469,31 +469,57 @@ mod residency_test {
         }
     }
 
-    /// Load both towers from their cached `.mlmodelc` under `units`. Mirrors
-    /// [`load_model_at`] except for the configurable compute units.
-    fn load_towers_with(model_dir: &Path, units: MLComputeUnits) -> ClipModels {
-        let load = |tower| {
-            let url = file_url(&compiled_path(model_dir, tower));
-            autoreleasepool(|_| {
-                // SAFETY: as `load_model_at` — a fresh configuration, a valid enum value,
-                // and a valid file URL to a compiled `.mlmodelc`; the `_error` variant
-                // returns a typed error rather than throwing.
-                unsafe {
-                    let config = MLModelConfiguration::new();
-                    config.setComputeUnits(units);
-                    MLModel::modelWithContentsOfURL_configuration_error(&url, &config)
-                }
-                .expect("the compiled tower should load")
-            })
-        };
-        ClipModels {
-            image: load(&CLIP_TOWERS[0]),
-            text: load(&CLIP_TOWERS[1]),
+    /// Which towers to load. Production always loads both together, whichever one
+    /// the caller wanted; `CMDR_CLIP_TOWER=image|text` splits them so the bill can
+    /// be attributed per tower, which is the evidence behind "load them
+    /// separately" as a fix.
+    fn towers_from_env() -> (bool, bool) {
+        match std::env::var("CMDR_CLIP_TOWER").as_deref() {
+            Ok("image") => (true, false),
+            Ok("text") => (false, true),
+            _ => (true, true),
         }
+    }
+
+    /// Load one tower from its cached `.mlmodelc` under `units`. Mirrors
+    /// [`load_model_at`] except for the configurable compute units.
+    fn load_tower_with(model_dir: &Path, tower: &ClipTowerSpec, units: MLComputeUnits) -> Retained<MLModel> {
+        let url = file_url(&compiled_path(model_dir, tower));
+        autoreleasepool(|_| {
+            // SAFETY: as `load_model_at` — a fresh configuration, a valid enum value,
+            // and a valid file URL to a compiled `.mlmodelc`; the `_error` variant
+            // returns a typed error rather than throwing.
+            unsafe {
+                let config = MLModelConfiguration::new();
+                config.setComputeUnits(units);
+                MLModel::modelWithContentsOfURL_configuration_error(&url, &config)
+            }
+            .expect("the compiled tower should load")
+        })
     }
 
     fn malloc_large(map: &cmdr_fs::process_memory::VmRegionMap) -> Option<&cmdr_fs::process_memory::TagUsage> {
         map.tags.iter().find(|t| t.tag == TAG_MALLOC_LARGE)
+    }
+
+    /// One zero-input encode through a loaded image tower, which is what makes Core
+    /// ML materialize its weights.
+    fn predict_image(model: &MLModel) -> Result<Vec<f32>, ClipError> {
+        autoreleasepool(|_| {
+            let arr = float32_multiarray(
+                &[1, 3, IMAGE_SIDE as isize, IMAGE_SIDE as isize],
+                &vec![0.0f32; IMAGE_PIXELS],
+            )?;
+            predict(model, "image", &arr)
+        })
+    }
+
+    /// The same for a text tower.
+    fn predict_text(model: &MLModel) -> Result<Vec<f32>, ClipError> {
+        autoreleasepool(|_| {
+            let arr = int32_multiarray(&[1, CONTEXT_LENGTH as isize], &vec![0i32; CONTEXT_LENGTH])?;
+            predict(model, "input_ids", &arr)
+        })
     }
 
     /// Holding both CLIP towers costs a few hundred MB of `MALLOC_LARGE`, in
@@ -532,12 +558,21 @@ mod residency_test {
         let before_large = malloc_large(&before).map_or(0, |t| t.dirty_bytes);
 
         let units = compute_units_from_env();
-        eprintln!("compute units: {units:?}");
-        let models = load_towers_with(&model_dir, units);
-        // Core ML materializes a tower's weights lazily, so a load without a
-        // predict measures the compile, not the residency.
-        models.encode_image(&vec![0.0f32; IMAGE_PIXELS]).expect("image encode");
-        models.encode_text(&vec![0i32; CONTEXT_LENGTH]).expect("text encode");
+        let (want_image, want_text) = towers_from_env();
+        eprintln!("compute units: {units:?}, image tower: {want_image}, text tower: {want_text}");
+        // Core ML materializes a tower's weights lazily, so a load without a predict
+        // measures the compile, not the residency. Each tower is held until after
+        // the snapshot below.
+        let image = want_image.then(|| {
+            let model = load_tower_with(&model_dir, &CLIP_TOWERS[0], units);
+            predict_image(&model).expect("image encode");
+            model
+        });
+        let text = want_text.then(|| {
+            let model = load_tower_with(&model_dir, &CLIP_TOWERS[1], units);
+            predict_text(&model).expect("text encode");
+            model
+        });
 
         let after = query_vm_regions(24).expect("the VM map is walkable in-process");
         let large = malloc_large(&after).expect("the towers put weights in MALLOC_LARGE");
@@ -553,11 +588,13 @@ mod residency_test {
             eprintln!("  tag {:>3} {:<48} dirty={:>12}", tag.tag, tag.name, tag.dirty_bytes);
         }
 
-        // Only the shipped assignment carries a contract. Under `CPUOnly` and
-        // `CPUAndNeuralEngine` Core ML leaves the weights in the mmap'd `weight.bin`
-        // and mallocs two scratch buffers instead — ~12 MB, not ~410 — so those runs
+        // Only the shipped configuration carries a contract: both towers, `All`.
+        // Under `CPUOnly` and `CPUAndNeuralEngine` Core ML leaves the weights in the
+        // mmap'd `weight.bin` and mallocs two scratch buffers instead (~12 MB rather
+        // than ~410), and a single-tower run is an attribution measurement. Those
         // report their numbers and assert nothing.
-        if units != MLComputeUnits::All {
+        if units != MLComputeUnits::All || !want_image || !want_text {
+            drop((image, text));
             return;
         }
 
@@ -584,6 +621,6 @@ mod residency_test {
             );
         }
 
-        drop(models);
+        drop((image, text));
     }
 }
