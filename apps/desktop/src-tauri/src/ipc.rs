@@ -699,6 +699,17 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // "What is Cmdr holding right now?" — the memory diagnostic surface. macOS
+            // only (the Mach queries behind it don't exist elsewhere), and deliberately
+            // NOT `debug_assertions`-gated: the readings that matter come from a shipped
+            // build under a real workload, which is the one condition a debug-only
+            // command can't reach.
+            cfg(target_os = "macos") {
+                typed: [
+                    crate::commands::memory_diagnostics::get_memory_diagnostics,
+                ]
+                dispatch_only: []
+            }
             // The custom updater.
             cfg(target_os = "macos") {
                 typed: [

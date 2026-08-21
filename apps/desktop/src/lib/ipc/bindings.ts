@@ -3482,6 +3482,19 @@ export const commands = {
    */
   openSystemSettingsUrl: (url: string) => typedError<null, string>(__TAURI_INVOKE('open_system_settings_url', { url })),
   /**
+   *  Snapshot this process's memory: the footprint, both allocators' own accounting, and
+   *  the kernel's VM map folded by tag with a per-tag region-size histogram.
+   *
+   *  `sizesPerTag` caps the histogram (0 asks for tag totals only); it's clamped to
+   *  [`MAX_SIZES_PER_TAG`]. Runs off the IPC thread because the walk costs one syscall per
+   *  map entry — single-digit milliseconds for a few thousand regions, but not free.
+   *
+   *  Reading the result: module docs. macOS only; the Mach queries behind it don't exist
+   *  elsewhere.
+   */
+  getMemoryDiagnostics: (sizesPerTag: number) =>
+    __TAURI_INVOKE<MemoryDiagnostics>('get_memory_diagnostics', { sizesPerTag }),
+  /**
    *  Fetches `latest.json` (via the update check proxy for analytics) and returns update info
    *  if a newer version is available.
    *
@@ -6749,6 +6762,90 @@ export type MediaIndexVolumeState = {
   keptCount: number | null
 }
 
+// A snapshot of the whole process's memory, from every accountant at once.
+export type MemoryDiagnostics = {
+  /**
+   *  The honest total: what Activity Monitor's "Memory" column shows and what jetsam
+   *  keys on. `0` if the kernel query failed.
+   */
+  physFootprintBytes: number
+  /**
+   *  The high-water mark of `physFootprintBytes` over the process's life, when the
+   *  kernel reports it.
+   */
+  physFootprintPeakBytes: number | null
+  /**
+   *  Resident set size. Counts graphics and shared mappings that aren't real memory
+   *  pressure, so prefer the footprint.
+   */
+  residentBytes: number
+  /**
+   *  What mimalloc — our global allocator, so essentially every Rust allocation — has
+   *  committed from the OS.
+   */
+  rustHeapCommittedBytes: number
+  // The high-water mark of `rustHeapCommittedBytes`.
+  rustHeapPeakCommittedBytes: number
+  /**
+   *  What the registered macOS malloc zones report as handed out: WebKit,
+   *  Objective-C, and C-library allocations. ❌ Never the Rust heap.
+   */
+  systemZonesInUseBytes: number
+  // What those zones hold from the OS, in use or not.
+  systemZonesReservedBytes: number
+  // How many zones were registered at snapshot time.
+  systemZoneCount: number
+  // The biggest registered zone by in-use bytes, as `[name, bytes]`.
+  largestSystemZone: SystemZone | null
+  /**
+   *  The kernel's VM map folded by tag, biggest dirty total first. Empty if the walk
+   *  failed or timed out.
+   */
+  tags: MemoryTag[]
+  // Dirty bytes across every region the walk saw.
+  totalDirtyBytes: number
+  // How many map entries the walk saw.
+  totalRegionCount: number
+  /**
+   *  True when the walk stopped at its ceiling, so `tags` is a floor rather than a
+   *  total. A runaway is exactly when a diagnostic must not quietly under-report.
+   */
+  truncated: boolean
+}
+
+// One distinct region size under a tag.
+export type MemoryRegionSize = {
+  // The size every region in this group has, in bytes.
+  regionBytes: number
+  // How many regions are exactly this size.
+  count: number
+  // Dirty bytes across the group.
+  dirtyBytes: number
+}
+
+// One VM tag's share of the address space: the rows `vmmap -summary` prints.
+export type MemoryTag = {
+  // The raw `user_tag` from the map entry.
+  tag: number
+  // Its `vmmap`-style name, or `tag-<n>` for one we don't carry a name for.
+  name: string
+  // Pages this process wrote, so pages it pays for. The column to read.
+  dirtyBytes: number
+  // Dirty pages since compressed or swapped out.
+  swappedBytes: number
+  // Resident bytes, clean pages (mapped files, shared text) included.
+  residentBytes: number
+  // Address space reserved, most of which is typically untouched.
+  virtualBytes: number
+  // How many map entries carry this tag.
+  regionCount: number
+  /**
+   *  The tag's distinct region sizes, biggest dirty total first. The fingerprint
+   *  field: see the module docs.
+   */
+  sizes: MemoryRegionSize[]
+}
+
 /**
  *  What the memory watchdog did, as a typed variant rather than a string the
  *  frontend would have to match on.
@@ -9414,6 +9511,14 @@ export type SystemSnapshot = {
  */
 export type SystemTextSizeChanged = {
   multiplier: number
+}
+
+// The biggest registered malloc zone.
+export type SystemZone = {
+  // The zone's own name, for example `DefaultMallocZone` or `WebKit Malloc`.
+  name: string
+  // Bytes it reports as handed out.
+  inUseBytes: number
 }
 
 /**

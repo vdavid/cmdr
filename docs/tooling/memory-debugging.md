@@ -40,6 +40,31 @@ RESIDENT.
 Per-line RAM in the app's own log: launch with `CMDR_LOG_RAM_USE=1` (see `logging.md`), which makes every log line carry
 the current footprint — the cheapest way to correlate a climb with what the backend was doing.
 
+## How to name an anonymous block (start here)
+
+A tag total tells you the size. The **per-tag histogram of distinct region sizes** tells you the shape, and the shape is
+what names things: macOS gives every allocation past its 127 KB large-zone threshold a VM region sized to the request,
+so a repeated exact size is a fingerprint of whatever asked for those bytes.
+
+Against a live app, any build, no app support needed:
+
+```
+PID=$(pgrep -x Cmdr | head -1)
+vmmap "$PID" | awk '$1 == "MALLOC_LARGE" { print $4 }' | sort | uniq -c | sort -rn | head -12
+```
+
+Known fingerprints so far:
+
+- **`96.5M`** (101,187,584 bytes) — the CLIP text tower's `49,408 × 512` fp32 token embedding. If it's there, the CLIP
+  towers are loaded and cost 307–412 MB of `MALLOC_LARGE` plus 120–176 MB of `MALLOC_SMALL` for the process's whole
+  life. Expect `4096K`, `3072K`, and `2304K` in the dozens beside it.
+  `docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`.
+
+In a dev build, `get_memory_diagnostics(sizesPerTag)` returns the same histogram as structured data plus the footprint
+and BOTH allocators' own accounting in one payload — the only reading that spans mimalloc and the system zones at once.
+It's an ordinary IPC command (`apps/desktop/src-tauri/src/commands/memory_diagnostics.rs`), macOS only, and its module
+docs say how to read the payload.
+
 ## How to attribute (which code allocates)
 
 ```
@@ -74,5 +99,8 @@ Read these before re-deriving anything; between them they cover every cause foun
   thread-local connections, and the importance rescore treadmill. Start here for "it's high but not climbing".
 - `docs/notes/memory-runaway-rust-heap-2026-07-25.md` — the RUNAWAY (up to 50 GB): a walk that materialized every image
   path. Also the origin of the `IOAccelerator` trap above.
+- `docs/notes/idle-malloc-large-clip-towers-2026-08-21.md` — what the 643 MB `MALLOC_LARGE` in that idle profile is:
+  Core ML holding the two CLIP towers, which nothing had been able to name because Core ML allocates through the SYSTEM
+  allocator and so falls between both of Cmdr's allocator APIs. Also the origin of the region-histogram method above.
 - `docs/notes/high-memory-gpu-compositor-investigation-2026-07.md` — superseded; its conclusion is wrong (it read the
   mislabel as GPU memory). Kept for the measurement methodology only.

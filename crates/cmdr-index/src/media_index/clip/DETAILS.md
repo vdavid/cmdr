@@ -101,8 +101,8 @@ reference.
 
 ## What holding the towers costs
 
-**Both towers loaded and predicted-through cost 307-412 MB of `MALLOC_LARGE` plus ~120-176 MB of `MALLOC_SMALL`, and
-the process never gets it back** (measured on an M1 Max, macOS 26.5, debug build, `MLComputeUnits::All`, 2026-08-21, by
+**Both towers loaded and predicted-through cost 307-412 MB of `MALLOC_LARGE` plus ~120-176 MB of `MALLOC_SMALL`, and the
+process never gets it back** (measured on an M1 Max, macOS 26.5, debug build, `MLComputeUnits::All`, 2026-08-21, by
 `clip::macos::residency_test`). `WORKER` is a `OnceLock`, so the first encode of the session loads both towers and they
 stay for the process lifetime whether or not anything encodes again, whether or not the user turns semantic search off
 afterwards. This is the steady-state idle cost named in
@@ -120,16 +120,16 @@ two-embedding-copy run):
 - `3,145,728` x ~13 — text-tower fused QKV projections, `512 x 1536` fp32, one per block.
 - `2,359,296` x ~26 — image-tower MLP matrices at the shipped 8-bit palettization, `768 x 3072 x 1 byte`.
 
-**The compute-unit assignment decides the whole bill**, which is the lead any fix starts from
-(`CMDR_CLIP_COMPUTE_UNITS` in the residency test switches it):
+**The compute-unit assignment decides the whole bill**, which is the lead any fix starts from (`CMDR_CLIP_COMPUTE_UNITS`
+in the residency test switches it):
 
 - `All` (shipped) and `CPUAndGPU`: ~410 MB. The GPU path materializes every weight matrix as its own buffer.
 - `CPUOnly` and `CPUAndNeuralEngine`: **11.8 MB, two regions.** Core ML leaves the weights in the mmap'd `weight.bin`
   and allocates two scratch buffers (9,437,184 and 2,359,296 bytes).
 
 ⚠️ Those numbers are load-and-predict-once residency, not a claim about throughput. Dropping the GPU would trade ~400 MB
-of permanent residency against enrichment speed, and that trade has NOT been measured. ❌ Don't change
-`load_model_at`'s `MLComputeUnits::All` on the strength of the memory number alone.
+of permanent residency against enrichment speed, and that trade has NOT been measured. The `CLAUDE.md` guardrail against
+changing `load_model_at`'s `MLComputeUnits::All` on the memory number alone rests on exactly this gap.
 
 The second lead is scope rather than precision: `load_towers` loads BOTH towers whichever one is wanted, so a single
 typed search query pays for the image tower and an enrichment pass pays for the text tower. Each tower is independently
@@ -175,7 +175,7 @@ engine decision went to `usearch` by a measured spike; `sqlite-vec` was disquali
 env-gated because it needs the real ~267 MB model on disk:
 
 ```sh
-CMDR_CLIP_MODEL_DIR=~/Library/Application\ Support/com.getcmdr.app/clip-model \
+CMDR_CLIP_MODEL_DIR=~/Library/Application\ Support/com.veszelovszki.cmdr/clip-model \
   cargo nextest run -p cmdr-index --run-ignored only clip::macos::residency_test --no-capture
 ```
 

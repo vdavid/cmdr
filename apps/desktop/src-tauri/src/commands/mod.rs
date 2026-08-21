@@ -24,6 +24,8 @@ pub mod licensing;
 pub mod logging;
 pub mod mcp;
 pub mod media_index;
+#[cfg(target_os = "macos")]
+pub mod memory_diagnostics;
 pub mod menu;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;

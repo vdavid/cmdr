@@ -67,6 +67,15 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `get_smb_diagnostics(volume_id)` (a snapshot of one volume's `smb2::SmbClient`). The snapshot DTOs mirror
   `smb2::Diagnostics` & friends with `specta::Type` derives (so `smb2` needn't depend on specta), one `impl From` per
   type.
+- **`memory_diagnostics.rs`** (macOS only): `get_memory_diagnostics(sizes_per_tag)` — one payload answering "what is
+  Cmdr holding right now, and what shape is it in?". Folds `cmdr_fs::process_memory`'s four readers together: the
+  footprint, mimalloc's own accounting, the registered malloc zones, and the kernel's VM map by tag with a per-tag
+  region-size histogram. That last field is why it exists: a repeated exact region size is a fingerprint of whatever
+  asked for those bytes, and it is what finally named a 643 MB block three investigations had left anonymous
+  (`../../../../../docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`). Deliberately NOT `debug_assertions`-gated:
+  the readings that matter come from a shipped build under a real workload, which is the one condition a debug-only
+  command can't reach. Carries no paths or names, only counts. Runs off the IPC thread (one syscall per map entry) with
+  a 5 s backstop.
 - **`eject.rs`**: `eject_volume(volume_id)` + `get_busy_volume_ids()`, thin delegates. The teardown logic (kind
   dispatch, the pure unit-tested `decide_eject_action`, the busy-volume guard, and the `diskutil`/`umount`/MTP
   shell-out) lives in `file_system::volume::eject`; the command only maps the typed `EjectError` to `IpcError`

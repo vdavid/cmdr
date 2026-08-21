@@ -507,7 +507,7 @@ mod residency_test {
     /// `#[ignore]`d and env-gated: it needs the real ~267 MB model on disk.
     ///
     /// ```sh
-    /// CMDR_CLIP_MODEL_DIR=~/Library/Application\ Support/com.getcmdr.app/clip-model \
+    /// CMDR_CLIP_MODEL_DIR=~/Library/Application\ Support/com.veszelovszki.cmdr/clip-model \
     ///   cargo nextest run -p cmdr-index --run-ignored only clip::macos::residency_test --no-capture
     /// ```
     #[test]

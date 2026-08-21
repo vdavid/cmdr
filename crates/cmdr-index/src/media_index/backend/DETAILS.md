@@ -93,5 +93,5 @@ worker pool are in `../scheduler/DETAILS.md` § Parallel enrichment.
 `what_one_vision_analyze_leaves_resident` (`#[ignore]`d, run by name) measures what Vision's own models cost to keep
 loaded, the companion to `../clip/DETAILS.md` § "What holding the towers costs". **Vision is cheap: ~49 MB of total
 dirty growth for a first analyze, of which only 2.1 MB is `MALLOC_LARGE`** (M1 Max, macOS 26.5, debug build,
-2026-08-21). Recorded because it's a clean negative — Apple runs OCR, classification, and feature print largely out of
-process, so ❌ don't reach for Vision when attributing a large in-process block.
+2026-08-21). Recorded because it's a clean negative: Apple runs OCR, classification, and feature print largely out of
+process, so Vision is the wrong suspect when attributing a large in-process block.
