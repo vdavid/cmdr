@@ -99,8 +99,9 @@ Read these before re-deriving anything; between them they cover every cause foun
   thread-local connections, and the importance rescore treadmill. Start here for "it's high but not climbing".
 - `docs/notes/memory-runaway-rust-heap-2026-07-25.md` — the RUNAWAY (up to 50 GB): a walk that materialized every image
   path. Also the origin of the `IOAccelerator` trap above.
-- `docs/notes/idle-malloc-large-clip-towers-2026-08-21.md` — what the 643 MB `MALLOC_LARGE` in that idle profile is:
-  Core ML holding the two CLIP towers, which nothing had been able to name because Core ML allocates through the SYSTEM
-  allocator and so falls between both of Cmdr's allocator APIs. Also the origin of the region-histogram method above.
+- `docs/notes/idle-malloc-large-clip-towers-2026-08-21.md` — the leading candidate for the 643 MB `MALLOC_LARGE` in that
+  idle profile: Core ML holding the two CLIP towers, at a measured 307–412 MB, which nothing had been able to name
+  because Core ML allocates through the SYSTEM allocator and so falls between both of Cmdr's allocator APIs. Also the
+  origin of the region-histogram method above.
 - `docs/notes/high-memory-gpu-compositor-investigation-2026-07.md` — superseded; its conclusion is wrong (it read the
   mislabel as GPU memory). Kept for the measurement methodology only.

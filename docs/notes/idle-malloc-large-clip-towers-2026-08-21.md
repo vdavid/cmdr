@@ -1,8 +1,9 @@
-# The 643 MB `MALLOC_LARGE` is on-device model weights (2026-08-21)
+# Naming the 643 MB `MALLOC_LARGE`: the CLIP towers cost 307–412 MB, permanently (2026-08-21)
 
-**What this settles:** the largest unattributed block in Cmdr's idle profile is Core ML holding the two CLIP towers.
-Measured: **307–412 MB of `MALLOC_LARGE` plus 120–176 MB of `MALLOC_SMALL`, held for the process lifetime**, paid the
-moment anything encodes once, and **80% of it is the TEXT tower**, which an enrichment pass never calls.
+**What this settles:** holding Cmdr's two CLIP towers costs **307–412 MB of `MALLOC_LARGE` plus 120–176 MB of
+`MALLOC_SMALL`, for the whole process lifetime**, paid the moment anything encodes once, and **80% of it is the TEXT
+tower**, which an enrichment pass never calls. That is measured, and it is the first thing found with every property the
+643 MB block had: large, steady, not SQLite, not the Rust heap, invisible to both allocator APIs.
 
 **What it does not settle:** whether the CLIP worker was alive in the specific prod run that produced the 643 MB, and
 what the 230–340 MB residual is. § "One command settles it" is the discriminator, and it is one command.

@@ -373,8 +373,9 @@ mod tests {
         // no allocator API can name still gets named. ❌ Break this and the region
         // histogram stops being evidence.
         //
-        // 9 MiB is not arbitrary: it's the size the CLIP image tower's Core ML weight
-        // buffers land on (`docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`).
+        // 9 MiB is not arbitrary: it's one of the two exact sizes the 2026-07-28 idle
+        // profile reported for its unattributed block, and a Core ML scratch buffer
+        // lands on it (`docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`).
         const BLOCK: usize = 9 * 1024 * 1024;
 
         let before = query_vm_regions(64).expect("walkable");

@@ -40,10 +40,11 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   20-second windows on the same idle process disagreed about which thread dominated. It also carries the two footprint
   blocks nothing has explained yet (643 MB `MALLOC_LARGE`, 947 MB Rust heap) and the proof the first of them is not
   SQLite page cache.
-- `idle-malloc-large-clip-towers-2026-08-21.md` — most of that 643 MB is Core ML holding the two CLIP towers: **307–412
-  MB of `MALLOC_LARGE` plus 120–176 MB of `MALLOC_SMALL`, from the first encode of a session until the process exits**,
-  and invisible to `query_mimalloc_heap` because Core ML allocates through the system allocator. The region sizes ARE
-  the weight matrices and they sum exactly, which is what turned a size into a name. Carries the method (a per-tag
+- `idle-malloc-large-clip-towers-2026-08-21.md` — the leading candidate for most of that 643 MB, measured: Core ML
+  holding the two CLIP towers costs **307–412 MB of `MALLOC_LARGE` plus 120–176 MB of `MALLOC_SMALL`, from the first
+  encode of a session until the process exits**, 80% of it the text tower that enrichment never calls, and all of it
+  invisible to `query_mimalloc_heap` because Core ML allocates through the system allocator. The region sizes ARE the
+  weight matrices and they sum exactly, which is what turned a size into a name. Carries the method (a per-tag
   region-size histogram is a fingerprint), the 35× compute-unit lever, the clean negative on Vision, the ranked fix
   options none of which were taken, and the one `vmmap` line that confirms or refutes it on a live prod build.
 
