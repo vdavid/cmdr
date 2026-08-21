@@ -164,15 +164,16 @@ impl Service {
 
         if misses.is_empty() {
             if let Some(rollup) = ALL_CACHED_LOG.record("service") {
-                // allowed-pluralize-noun: diagnostic log line; a one-path batch reading "1 paths" costs a reader nothing.
                 if rollup.is_rolled_up() {
                     log::debug!(
                         target: "sync_status",
+                        // allowed-pluralize-noun: diagnostic log line; a one-path ask reading "1 paths" costs a reader nothing.
                         "{requested} paths, all cached ×{} in {}s",
                         rollup.count,
                         rollup.elapsed.as_secs()
                     );
                 } else {
+                    // allowed-pluralize-noun: diagnostic log line; a one-path ask reading "1 paths" costs a reader nothing.
                     log::debug!(target: "sync_status", "{requested} paths, all cached");
                 }
             }
