@@ -58,8 +58,9 @@ futures-util = "0.3"
 # macOS mounts hand out NFD paths and SMB servers speak NFC, so every
 # cache-facing path this backend builds is re-normalized on the way through.
 unicode-normalization = "0.1"
-# The byte-integrity hashers in `volume::testing`. Optional, enabled only by the
-# `testing` feature, so no shipped build carries it.
+# The byte-integrity hashers in `volume::testing`. Optional and enabled only by the
+# `testing` feature, so this crate's own shipped build doesn't link it. (The app
+# binary carries blake3 regardless, through `cmdr-fs`'s volume IDs.)
 blake3 = { version = "1.8.3", optional = true }
 
 [dev-dependencies]
