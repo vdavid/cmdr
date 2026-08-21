@@ -152,9 +152,10 @@ impl MediaScheduler {
         }
     }
 
-    /// Run one SCOPED live tick for a volume: walk only `touched_dirs`, enrich the stale
-    /// covered images, and GC deletions SCOPED to those dirs. Blocking (SQLite + backend),
-    /// so the caller runs it off the async worker. Returns the number of images enriched.
+    /// Run one SCOPED live tick for a volume: filter `touched_dirs` down to the ones
+    /// coverage could reach, walk only those, enrich the stale covered images, and GC
+    /// deletions SCOPED to the dirs it walked. Blocking (SQLite + backend), so the caller
+    /// runs it off the async worker. Returns the number of images enriched.
     ///
     /// Gated on the master toggle (off ⇒ no-op) and skip-on-`None` for an unregistered
     /// read pool, like the full pass. It does NOT `mark_deferred_for_importance` on an
