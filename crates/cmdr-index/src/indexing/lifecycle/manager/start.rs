@@ -6,12 +6,32 @@
 //! when the journal has a gap. `resume_or_scan` in `manager.rs` picks between
 //! them; everything after either one starts is the same live-event machinery.
 
-use super::*;
-use crate::indexing::events::announce_whole_volume_walk;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use super::{IndexManager, ScanCalibration, local_rescan_reconciles, perform_registry_rescan};
+use crate::indexing::IndexPathSpace;
+use crate::indexing::events::{
+    ActivityPhase, DEBUG_STATS, IndexEvent, RescanReason, ScanRunKind, announce_whole_volume_walk,
+    emit_rescan_notification, set_phase_for,
+};
 use crate::indexing::lifecycle::cover;
+use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
+use crate::indexing::lifecycle::rescan_request::ScanStartError;
+use crate::indexing::lifecycle::state;
+use crate::indexing::reconcile::local_reconcile;
 use crate::indexing::reconcile::reconciler::EventReconciler;
+use crate::indexing::scanner::{self, ScanConfig};
+use crate::indexing::store::IndexStore;
 use crate::indexing::watch::branches::{self, AfterWalk, WatchScope};
-use crate::indexing::watch::event_loop::{LiveConfig, run_live_event_loop};
+use crate::indexing::watch::event_loop::{
+    JOURNAL_GAP_THRESHOLD, LiveConfig, ReplayConfig, run_live_event_loop, run_replay_event_loop,
+};
+use crate::indexing::watch::watcher::{self, DriveWatcher};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::pluralize;
 
 impl IndexManager {
     /// Take this volume's ground for a run that walks it WHOLE, or say what kind

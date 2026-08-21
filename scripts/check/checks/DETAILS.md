@@ -907,8 +907,11 @@ belongs in the slow group, never in `--fast`. Run Tarjan on the FILTERED graph y
 2. **A top-level `use super::*` fabricates edges with no symbol basis.** `cargo-modules` resolves the glob to every item
    the parent re-exports, so a submodule gains a fake edge to every sibling. `#[cfg(test)]` modules are excluded from
    the graph entirely (verified with cargo-modules 0.27.0, 2026-08-21), so the many `use super::*` lines in sibling
-   `*_test.rs` files are harmless; a glob in a PRODUCTION file is not. Two live ones,
-   `indexing/lifecycle/manager/{start.rs,phased.rs}`, are why that component reads larger than its real coupling.
+   `*_test.rs` files are harmless; a glob in a PRODUCTION file is not. De-globbing the two that were live in
+   `indexing/lifecycle/manager/{start.rs,phased.rs}` took `cmdr-index`'s largest raw component from 19 modules to 15 and
+   dropped `watch::event_loop` out of the `lifecycle` tangle entirely, with no behavior change: the glob had let
+   `manager.rs` carry seven imports that only its children used, and every one of them printed as a `manager` edge.
+   The remaining globs all sit in `#[cfg(test)] mod bench;` files, which are gated out the same way test modules are.
 3. **`--no-traits` does not filter `From` impls.** A `From` in module A for a type in module B prints as a real A → B
    edge.
 4. **An impl's methods are attributed to the module defining the TYPE, not the one holding the `impl` block.** So moving

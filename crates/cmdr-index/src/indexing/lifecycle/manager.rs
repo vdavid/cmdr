@@ -10,22 +10,19 @@ use super::phases;
 use super::state::{self, Handover};
 use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{
-    ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexEvent, IndexStatusResponse, PhaseRecord,
-    RescanReason, ScanRunKind, emit_rescan_notification, set_phase_for,
+    ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexStatusResponse, PhaseRecord, RescanReason,
+    ScanRunKind, emit_rescan_notification, set_phase_for,
 };
-use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
 use crate::indexing::lifecycle::rescan_request::ScanStartError;
-use crate::indexing::reconcile::local_reconcile;
 use crate::indexing::reconcile::reconciler;
-use crate::indexing::scanner::{self, ScanConfig};
+use crate::indexing::scanner;
 use crate::indexing::store::IndexStore;
 use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::watch::branches;
-use crate::indexing::watch::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
+use crate::indexing::watch::event_loop::JOURNAL_GAP_THRESHOLD;
 use crate::indexing::watch::watcher::{self, DriveWatcher};
-use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
+use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::ignore_poison::IgnorePoison;
-use cmdr_fs::pluralize::pluralize;
 
 // ── IndexManager ─────────────────────────────────────────────────────
 

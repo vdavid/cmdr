@@ -19,10 +19,17 @@
 //! - **The first walk waits for the branch-watch resume.** Starting it earlier
 //!   silently costs the epoch bump that makes last session's rows read as stale.
 
-use super::*;
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use super::{IndexManager, ScanCalibration};
+use crate::indexing::events::ScanRunKind;
 use crate::indexing::lifecycle::phases::{self, MachineContext};
+use crate::indexing::lifecycle::rescan_request::ScanStartError;
 use crate::indexing::scanner::{exclusion_policy_stamp_message, index_predates_exclusion_policy};
+use crate::indexing::store::IndexStore;
 use crate::indexing::watch::branches;
+use crate::indexing::writer::WriteMessage;
 
 /// Where a volume sits between "the launch route handed it to the phase machine"
 /// and "the machine is running".
