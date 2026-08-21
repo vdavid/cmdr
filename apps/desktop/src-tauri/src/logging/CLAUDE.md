@@ -7,6 +7,7 @@ filtering**: the file target is locked at Debug, the terminal defaults to Info.
 
 - **`mod.rs`**: the resolved-log-dir and keep-count state plus the log-file listing and pruning helpers (DETAILS §
   "What lives in `mod.rs`")
+- **`startup.rs`**: `init`, the one call `lib.rs` makes at startup (DETAILS § "Startup sequence")
 - **`dispatch.rs`**: `init` (builds + installs the fern tree), `set_stdout_threshold` / `stdout_threshold` (the verbose
   toggle knob, a single AtomicU8)
 - **`coalesce.rs`**: `CoalescingWriter`, the file chain's terminal writer; collapses identical-line floods so a runaway
@@ -50,7 +51,5 @@ Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: `
   `Cmdr_<timestamp>.log`, is rejected and swept at startup.
 - **`eager_prune(dir, 0)` wipes everything including the live file** (file-rotate re-creates it on the next write).
   That's correct for "the user just disabled logging": stop capturing now, not at the next restart.
-- **Log-dir resolution must stay in sync across `lib.rs` and the settings early-load helpers.** `lib.rs` resolves it in
-  `setup()`; `early_load_max_log_storage_mb` / `early_load_verbose_logging` (`settings::loader`) mirror the
-  `CMDR_DATA_DIR` fallback but use `dirs::data_dir` + bundle id, not Tauri's `app_data_dir`. A bundle-id change touches
-  both.
+- **Log-dir resolution is mirrored in `settings::loader`'s `early_load_*` helpers**, which resolve it a second way; a
+  bundle-id change touches both (DETAILS § "Startup sequence").

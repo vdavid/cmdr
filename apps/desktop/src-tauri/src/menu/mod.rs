@@ -24,6 +24,7 @@
 
 mod accelerators;
 mod command_map;
+pub mod install;
 #[cfg(not(target_os = "macos"))]
 mod linux;
 #[cfg(target_os = "macos")]
@@ -43,6 +44,8 @@ mod tag_icons;
 mod view_mode_items;
 
 use std::collections::HashMap;
+
+use crate::ignore_poison::IgnorePoison as _;
 #[cfg(target_os = "macos")]
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -340,6 +343,29 @@ impl<R: Runtime> Default for MenuState<R> {
             #[cfg(target_os = "macos")]
             viewer_word_wrap: Mutex::new(None),
         }
+    }
+}
+
+impl<R: Runtime> MenuState<R> {
+    /// Store every item reference a freshly built bar hands back, and return the bar itself.
+    ///
+    /// Both paths that build a bar end in the same assignments: the startup build
+    /// (`install::at_startup`) and a language rebuild (`rebuild::rebuild_menu_bar`).
+    /// Handing the `Menu` back only from here means a new [`MenuItems`] field can't be
+    /// stored in one path and quietly forgotten in the other.
+    pub fn store_item_refs(&self, items: MenuItems<R>) -> Menu<R> {
+        *self.show_hidden_files.lock_ignore_poison() = Some(items.show_hidden_files);
+        *self.view_mode_full_left.lock_ignore_poison() = Some(items.view_mode_full_left);
+        *self.view_mode_brief_left.lock_ignore_poison() = Some(items.view_mode_brief_left);
+        *self.view_mode_full_right.lock_ignore_poison() = Some(items.view_mode_full_right);
+        *self.view_mode_brief_right.lock_ignore_poison() = Some(items.view_mode_brief_right);
+        *self.view_left_pane_submenu.lock_ignore_poison() = Some(items.view_left_pane_submenu);
+        *self.view_right_pane_submenu.lock_ignore_poison() = Some(items.view_right_pane_submenu);
+        *self.pin_tab.lock_ignore_poison() = Some(items.pin_tab);
+        *self.reopen_closed_tab.lock_ignore_poison() = Some(items.reopen_closed_tab);
+        *self.items.lock_ignore_poison() = items.items;
+        *self.sort_submenu.lock_ignore_poison() = Some(items.sort_submenu);
+        items.menu
     }
 }
 

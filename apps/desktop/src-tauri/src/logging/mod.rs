@@ -22,6 +22,7 @@
 mod coalesce;
 pub mod dispatch;
 pub mod ram_gauge;
+pub mod startup;
 
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;

@@ -208,6 +208,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `quit/`: The quit gate. Both exit paths ask it first; with non-instant operations in flight it holds the exit, raises
   the countdown dialog, and runs the teardown on its own deadline. See `apps/desktop/src-tauri/src/quit/CLAUDE.md` and
   the frontend `apps/desktop/src/lib/quit/CLAUDE.md`
+- `app_lifecycle.rs`: The two Tauri builder handlers `lib.rs` names: `on_window_event` (main-window focus, close, and
+  destroy; viewer-window teardown) and `on_run_event` (ready, exit requested, exit), plus the shared
+  stop-background-services path all three shutdown routes take
 - `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
 - `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable. The Help
   menu carries the "What's new" item (above "Send feedback…")

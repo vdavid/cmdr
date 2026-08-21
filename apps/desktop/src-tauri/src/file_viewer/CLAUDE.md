@@ -34,7 +34,7 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - **`ViewerSession.backend` is `Arc<ArcSwap<Box<dyn FileViewerBackend>>>`** (not `Arc<dyn>` or `RwLock`): background
   rebuilds replace the backend without blocking the `get_lines` read path. Each backend is immutable.
 - **`SESSIONS` is freed on BOTH close paths.** The titlebar-X path never fires `viewer_close`; it's covered by a
-  `WindowEvent::Destroyed` branch in `lib.rs::on_window_event` for `viewer-*` labels (via `WINDOW_TO_SESSION`) — else
+  `WindowEvent::Destroyed` branch in `app_lifecycle::on_window_event` for `viewer-*` labels (via `WINDOW_TO_SESSION`) — else
   titlebar-closed viewers leak sessions. The `cmdr-media://` token is dropped at this same choke point
   (`media::drop_token`); don't drop it elsewhere, or a closed viewer leaks a live token mapping a path. The scheme handler
   serves `Content-Type` from stored magic bytes (never the extension), runs its OWN `spawn_blocking` + timeout, and 404s

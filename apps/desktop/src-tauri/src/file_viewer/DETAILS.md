@@ -431,7 +431,7 @@ returns `{ ok, error }` and the page matches on `error.kind`.
 ## Gotchas
 
 - **SESSIONS is freed on both close paths.** The in-app close path fires the `viewer_close` IPC; the titlebar-X path
-  (which never fires that IPC) is covered by a Rust `WindowEvent::Destroyed` branch in `lib.rs::on_window_event` for
+  (which never fires that IPC) is covered by a Rust `WindowEvent::Destroyed` branch in `app_lifecycle::on_window_event` for
   `viewer-*` labels, which calls `session::close_session_for_window(label)`. The window→session link lives in a
   `WINDOW_TO_SESSION` map populated at `viewer_open` time (the FE passes `getCurrentWindow().label`). `close_session`
   also drops the matching map entry, so a normal IPC close doesn't leave a stale mapping. Without the window-event

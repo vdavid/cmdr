@@ -49,22 +49,10 @@ pub fn rebuild_menu_bar<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .load(std::sync::atomic::Ordering::Relaxed);
 
     let menu_items = super::build_menu(app, show_hidden, view_mode, has_existing_license)?;
+    let new_menu = menu_state.store_item_refs(menu_items);
 
     #[cfg(target_os = "macos")]
-    let main_menu_clone = menu_items.menu.clone();
-    let new_menu = menu_items.menu;
-
-    *menu_state.show_hidden_files.lock_ignore_poison() = Some(menu_items.show_hidden_files);
-    *menu_state.view_mode_full_left.lock_ignore_poison() = Some(menu_items.view_mode_full_left);
-    *menu_state.view_mode_brief_left.lock_ignore_poison() = Some(menu_items.view_mode_brief_left);
-    *menu_state.view_mode_full_right.lock_ignore_poison() = Some(menu_items.view_mode_full_right);
-    *menu_state.view_mode_brief_right.lock_ignore_poison() = Some(menu_items.view_mode_brief_right);
-    *menu_state.view_left_pane_submenu.lock_ignore_poison() = Some(menu_items.view_left_pane_submenu);
-    *menu_state.view_right_pane_submenu.lock_ignore_poison() = Some(menu_items.view_right_pane_submenu);
-    *menu_state.pin_tab.lock_ignore_poison() = Some(menu_items.pin_tab);
-    *menu_state.reopen_closed_tab.lock_ignore_poison() = Some(menu_items.reopen_closed_tab);
-    *menu_state.items.lock_ignore_poison() = menu_items.items;
-    *menu_state.sort_submenu.lock_ignore_poison() = Some(menu_items.sort_submenu);
+    let main_menu_clone = new_menu.clone();
 
     install(app, &menu_state, new_menu)?;
 

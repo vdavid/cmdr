@@ -23,6 +23,8 @@ window focus context.
   (`build_context_menu`), breadcrumb / tab / network-host / volume-selector-row context menus
   (`build_volume_row_context_menu`: favorite Rename/Remove or volume Eject), the viewer-window menu
   (`build_viewer_menu`), plus the `FileContextInfo` and `ContextMenuResult` types.
+- `install.rs`: `at_startup`, the single call `lib.rs` makes in `setup`: pin the UI language, build the bar,
+  run the macOS AppKit passes, and place the `MenuState` everything else mutates. Order inside is load-bearing.
 - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher, plus the macOS
   post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` and
   `send_native_edit_action` (the actual objc2 FFI lives in `macos_appkit.rs`).

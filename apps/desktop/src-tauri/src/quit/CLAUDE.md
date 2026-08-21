@@ -17,7 +17,7 @@ stops everything and exits inside a hard budget.
   `tests::the_deadline_fires_when_the_frontend_never_answers`.
 - **It runs on a dedicated OS thread, not a tokio task**, so a saturated runtime can't delay the one timer whose job is
   firing when other things are stuck.
-- **Both entry points route here** (`lib.rs`): `RunEvent::ExitRequested` (⌘Q, menu, dock, logout, every
+- **Both entry points route here** (`app_lifecycle.rs`): `RunEvent::ExitRequested` (⌘Q, menu, dock, logout, every
   `AppHandle::exit`) and the main window's `CloseRequested`, which must `api.prevent_close()` when the gate holds — a
   closed main window takes the dialog with it. ❌ Don't tear down AI / MCP / mDNS before asking: a "Keep working" leaves
   the app running.

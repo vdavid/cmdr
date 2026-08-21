@@ -83,6 +83,7 @@ mod accent_color_linux;
 pub mod agent;
 mod ai;
 mod analytics;
+mod app_lifecycle;
 pub mod benchmark;
 mod child_window_state;
 mod clipboard;
@@ -180,7 +181,6 @@ mod window_state;
 #[cfg(not(target_os = "macos"))]
 mod stubs;
 
-use menu::{MenuState, ViewMode};
 use tauri::Manager;
 
 // `greet` and the rest of the Tauri command surface live in `ipc.rs`, which
@@ -339,99 +339,7 @@ pub fn run() {
                 app.set_activation_policy(tauri::ActivationPolicy::Prohibited);
             }
 
-            // === Logging setup ===
-            //
-            // Hand-rolled fern dispatch tree (`logging::dispatch::init`) replaces
-            // `tauri-plugin-log`. Why: per-output level filtering. File target locked at
-            // Debug (error reports need the context); stdout defaults to Info (clean for
-            // `pnpm dev`) with `RUST_LOG` per-module overrides applied to stdout only.
-            // The verbose toggle bumps stdout to Debug via an AtomicU8, no logger
-            // rebuild, no records lost.
-            //
-            // Log directory priority:
-            // 1. CMDR_LOG_DIR env var (explicit override)
-            // 2. CMDR_DATA_DIR env var → <CMDR_DATA_DIR>/logs/ (dev and E2E test isolation)
-            // 3. Default per-OS app log dir (production)
-            let resolved_log_dir: std::path::PathBuf = if let Ok(log_dir) = std::env::var("CMDR_LOG_DIR") {
-                std::path::PathBuf::from(log_dir)
-            } else if let Ok(data_dir) = std::env::var("CMDR_DATA_DIR") {
-                std::path::PathBuf::from(data_dir).join("logs")
-            } else {
-                #[cfg(target_os = "macos")]
-                {
-                    dirs::home_dir()
-                        .map(|h| h.join("Library/Logs/com.veszelovszki.cmdr"))
-                        .unwrap_or_else(|| std::path::PathBuf::from("./logs"))
-                }
-                #[cfg(not(target_os = "macos"))]
-                {
-                    dirs::data_local_dir()
-                        .map(|d| d.join("com.veszelovszki.cmdr/logs"))
-                        .unwrap_or_else(|| std::path::PathBuf::from("./logs"))
-                }
-            };
-
-            // Read the log-storage cap from settings.json *before* the AppHandle is
-            // wired into the rest of setup. 0 = disabled (drop the file chain entirely).
-            // None = no setting yet → 200 MB default. Any other value = N MB cap, mapped
-            // to keep-N where N = ceil(N / 50).
-            let cap_mb = settings::early_load_max_log_storage_mb().unwrap_or(200);
-            let file_logging_enabled = cap_mb > 0;
-            let keep_count: usize = if file_logging_enabled {
-                cap_mb.div_ceil(50) as usize
-            } else {
-                0
-            };
-
-            // Cache for the rest of the app (error-report bundle builder, eager-prune callers).
-            logging::set_log_dir(resolved_log_dir.clone());
-            logging::set_keep_count(keep_count);
-
-            // Verbose-toggle default: if the saved setting is on, start with stdout at Debug.
-            // We have to read settings *before* dispatch::init so the AtomicU8 is set
-            // correctly before any logs fire. Use the early-load helper since the full
-            // settings load happens later in setup().
-            let verbose_default = settings::early_load_verbose_logging().unwrap_or(false);
-
-            let init_result = logging::dispatch::init(logging::dispatch::InitOptions {
-                log_dir: file_logging_enabled.then_some(resolved_log_dir),
-                keep_count,
-                rust_log: std::env::var("RUST_LOG").ok(),
-            });
-            // Apply verbose default after init (init resets the threshold from RUST_LOG).
-            // RUST_LOG always wins. Only bump if RUST_LOG didn't set a base level.
-            if std::env::var("RUST_LOG").is_err() && verbose_default {
-                logging::dispatch::set_stdout_threshold(log::LevelFilter::Debug);
-            }
-            if let Err(err) = init_result {
-                // Don't panic. A logger collision (rare; tests, double-init) is recoverable.
-                // The `log` macros become no-ops, which is exactly the behavior callers expect
-                // when no logger is registered. Write directly to stderr; we don't have a
-                // logger to fall back to.
-                use std::io::Write as _;
-                let _ = writeln!(std::io::stderr(), "Failed to install fern logger: {err}");
-            }
-
-            // One-shot startup sweep: pre-`319d5d37` `tauri-plugin-log` left rotated files
-            // named `Cmdr_<timestamp>.log` behind. Idempotent. Logs INFO per file removed.
-            if let Some(dir) = logging::log_dir() {
-                // allowed-discarded-outcome: the count is logged per file inside; a startup sweep has nobody to report a total to.
-                logging::cleanup_legacy_log_files(dir);
-            }
-
-            // One-line marker so the resolved log-storage state is visible at startup.
-            match logging::keep_count() {
-                0 => log::info!(
-                    target: "cmdr_lib::logging",
-                    "Log storage disabled (advanced.maxLogStorageMb = 0). Error reports cannot be sent.",
-                ),
-                n => log::info!(
-                    target: "cmdr_lib::logging",
-                    "Log storage enabled: keep up to {} × 50 MB ({} MB cap)",
-                    pluralize::pluralize(n as u64, "file"),
-                    n * 50,
-                ),
-            }
+            logging::startup::init();
 
             // Claim the data dir before anything opens a database. Two processes on one data dir
             // means two index writers handing out the same entry IDs, which corrupts the index
@@ -735,80 +643,7 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             file_system::upgrade_existing_smb_mounts(app.handle().clone());
 
-            // Check if there's an existing license (for menu text)
-            let has_existing_license = licensing::get_license_info(app.handle()).is_some();
-
-            // The menu bar is built next, and it reads the catalog through
-            // `menu_t`, so the language the user pinned (or `'system'`, meaning
-            // the OS's answer) has to be known first. `settings.json` is already
-            // on hand; the frontend re-pushes the same value when it loads, and
-            // `set_ui_language` rebuilds the bar if the two ever disagree.
-            // The `bool` means "rebuild the menu bar", and there is no menu bar yet: it's built a few
-            // statements down, already in the right language.
-            // allowed-discarded-outcome: nothing to rebuild before the first build
-            intl::set_language_preference(saved_settings.appearance_language.clone());
-
-            // Build and set the application menu with persisted showHiddenFiles
-            // Note: view mode is per-pane and managed by frontend, so we default to Brief here
-            let menu_items = menu::build_menu(
-                app.handle(),
-                saved_settings.show_hidden_files,
-                ViewMode::Brief,
-                has_existing_license,
-            )?;
-            // On macOS, keep a clone of the main menu so `activate_window_menu` can swap the
-            // app-level menu bar back to it on main / Settings / Debug focus-gain. The clone shares
-            // the same underlying items (Tauri's `Menu` is reference-counted), so the item refs
-            // stored below keep mutating the live menu. macOS has a single app-level menu bar
-            // (tauri-apps/tauri#5768), so there's no per-window menu to set here.
-            #[cfg(target_os = "macos")]
-            let main_menu_clone = menu_items.menu.clone();
-            app.set_menu(menu_items.menu)?;
-
-            // Remove macOS system-injected Edit menu items and register Help menu for search
-            #[cfg(target_os = "macos")]
-            menu::cleanup_macos_menus(app.handle());
-
-            // Set SF Symbol icons on menu items (macOS only)
-            #[cfg(target_os = "macos")]
-            menu::set_macos_menu_icons(app.handle());
-
-            // Subscribe to NSWorkspace launch/terminate notifications so the "Open with"
-            // candidate cache invalidates when the user installs or removes apps.
-            #[cfg(target_os = "macos")]
-            file_system::open_with::start_invalidation_observer();
-
-            // Store the CheckMenuItem references in app state
-            let menu_state = MenuState::default();
-            // Cached so a language-change rebuild puts the same licence wording
-            // back without repeating the lookup.
-            menu_state
-                .has_existing_license
-                .store(has_existing_license, std::sync::atomic::Ordering::Relaxed);
-            *menu_state.show_hidden_files.lock_ignore_poison() = Some(menu_items.show_hidden_files);
-            *menu_state.view_mode_full_left.lock_ignore_poison() = Some(menu_items.view_mode_full_left);
-            *menu_state.view_mode_brief_left.lock_ignore_poison() = Some(menu_items.view_mode_brief_left);
-            *menu_state.view_mode_full_right.lock_ignore_poison() = Some(menu_items.view_mode_full_right);
-            *menu_state.view_mode_brief_right.lock_ignore_poison() = Some(menu_items.view_mode_brief_right);
-            *menu_state.view_left_pane_submenu.lock_ignore_poison() = Some(menu_items.view_left_pane_submenu);
-            *menu_state.view_right_pane_submenu.lock_ignore_poison() = Some(menu_items.view_right_pane_submenu);
-            *menu_state.pin_tab.lock_ignore_poison() = Some(menu_items.pin_tab);
-            *menu_state.reopen_closed_tab.lock_ignore_poison() = Some(menu_items.reopen_closed_tab);
-            *menu_state.items.lock_ignore_poison() = menu_items.items;
-            *menu_state.sort_submenu.lock_ignore_poison() = Some(menu_items.sort_submenu);
-
-            // On macOS, build the shared viewer menu once and store it (plus the main-menu clone and
-            // the viewer word-wrap ref). `activate_window_menu` swaps the app-level menu bar between
-            // these on window focus-gain; `viewer_set_word_wrap` flips the stored CheckMenuItem.
-            #[cfg(target_os = "macos")]
-            {
-                *menu_state.main_menu.lock_ignore_poison() = Some(main_menu_clone);
-                let viewer_menu_items = menu::build_viewer_menu(app.handle())?;
-                *menu_state.viewer_word_wrap.lock_ignore_poison() = Some(viewer_menu_items.word_wrap);
-                *menu_state.viewer_menu.lock_ignore_poison() = Some(viewer_menu_items.menu);
-            }
-
-            app.manage(menu_state);
+            menu::install::at_startup(app, &saved_settings)?;
 
             // Set window title based on license status
             let license_status = licensing::get_app_status(app.handle());
@@ -952,118 +787,8 @@ pub fn run() {
         })
         .on_menu_event(menu::handle_menu_event)
         .invoke_handler(invoke_handler)
-        .on_window_event(|window, event| {
-            // Main-window focus re-checks the FDA gate so the Downloads
-            // watcher starts/stops on transitions. Covers the "user
-            // toggled FDA in System Settings, came back to Cmdr" path
-            // without polling. Idempotent when nothing changed.
-            if let tauri::WindowEvent::Focused(true) = event
-                && window.label() == "main"
-            {
-                if let Err(err) = downloads::refresh_runtime(window.app_handle()) {
-                    log::warn!(
-                        target: "downloads::watcher",
-                        "Focus-driven gate re-check failed: {err}",
-                    );
-                }
-                // Re-evaluate the global-shortcut registration too: if FDA
-                // flipped between blur and focus, register/unregister to
-                // match. Idempotent when nothing changed.
-                downloads::refresh_global_go_to_latest_shortcut(window.app_handle());
-            }
-            // Closing the main window quits the whole app (settings, debug, and
-            // viewer windows included) — but only once the quit gate says so.
-            // With work in flight the gate holds the exit, asks the user, and
-            // runs its own countdown; the window must STAY OPEN for that, or
-            // the dialog it's about to show goes with it. Nothing is torn down
-            // on this path until the gate has waved the quit through, so a
-            // "Keep working" leaves AI, MCP, and mDNS running. See `quit/`.
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event
-                && window.label() == "main"
-            {
-                if quit::request_quit(window.app_handle()) == quit::QuitOutcome::Held {
-                    api.prevent_close();
-                } else {
-                    ai::manager::shutdown();
-                    mcp::stop_mcp_server();
-                    #[cfg(any(target_os = "macos", target_os = "linux"))]
-                    network::mdns_discovery::stop_discovery();
-                    window.app_handle().exit(0);
-                }
-            }
-            // Clean up app-wide resources only when the main window is destroyed
-            if let tauri::WindowEvent::Destroyed = event
-                && window.label() == "main"
-            {
-                ai::manager::shutdown();
-                mcp::stop_mcp_server();
-                #[cfg(any(target_os = "macos", target_os = "linux"))]
-                network::mdns_discovery::stop_discovery();
-            }
-            // Free a viewer session when its window is destroyed. Closing a viewer
-            // via the titlebar X never fires the FE `viewer_close` IPC (that only
-            // runs from the in-app close path), so without this the `ViewerSession`
-            // (backend, line index, watcher thread) leaked until app quit.
-            // `close_session_for_window` is idempotent: if the FE already closed the
-            // session via IPC, the lookup is a no-op.
-            if let tauri::WindowEvent::Destroyed = event
-                && window.label().starts_with("viewer-")
-            {
-                file_viewer::close_session_for_window(window.label());
-            }
-        })
+        .on_window_event(app_lifecycle::on_window_event)
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|_app, event| {
-            match event {
-                tauri::RunEvent::Ready => {
-                    // Install drag image detection swizzle. Needs a live webview to
-                    // discover wry's ObjC class, so it runs at Ready (not setup).
-                    #[cfg(target_os = "macos")]
-                    drag_image_detection::install(_app.clone());
-                }
-                // ⌘Q, the app menu's Quit, the Dock's Quit, a logout or
-                // restart, and every `AppHandle::exit` in the app all land
-                // here. With non-instant work in flight the gate holds the
-                // exit and takes the decision over (dialog + its own
-                // countdown); with nothing running this is a pass-through and
-                // the app quits exactly as it always did.
-                //
-                // A `restart()` carries `RESTART_EXIT_CODE`, for which Tauri
-                // ignores `prevent_exit` outright — asking there would show a
-                // dialog nobody could answer, so the gate never sees it.
-                tauri::RunEvent::ExitRequested { ref api, code, .. } => {
-                    if code != Some(tauri::RESTART_EXIT_CODE)
-                        && quit::request_quit(_app) == quit::QuitOutcome::Held
-                    {
-                        api.prevent_exit();
-                    }
-                }
-                tauri::RunEvent::Exit => {
-                    // Flush window geometry synchronously: the debounced writer
-                    // may have a pending change the process won't outlive.
-                    window_state::save_on_exit(_app);
-
-                    // Stop any live search walk. Coverage stays honest either way
-                    // (a directory is marked listed only once its rows are
-                    // written, so a walk cut off mid-flight claims nothing it
-                    // didn't read), but a walk reading a disk for a window that
-                    // no longer exists is work nobody asked for.
-                    search::cancel_all_live_runs();
-
-                    // Restore ptpcamerad before exit so we don't leave the system
-                    // with the daemon disabled after Cmdr closes
-                    #[cfg(target_os = "macos")]
-                    if let Err(e) = mtp::macos_workaround::restore_ptpcamerad() {
-                        log::warn!("Failed to restore ptpcamerad on exit: {}", e);
-                    }
-
-                    ai::manager::shutdown();
-                    mcp::stop_mcp_server();
-                    #[cfg(any(target_os = "macos", target_os = "linux"))]
-                    network::mdns_discovery::stop_discovery();
-                }
-                _ => {}
-            }
-        });
+        .run(app_lifecycle::on_run_event);
 }

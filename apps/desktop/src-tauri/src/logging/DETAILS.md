@@ -22,6 +22,23 @@ Per-output filtering matters because error-report bundles need debug context reg
 single shared level you either bake terminal noise into the file (annoying for dev) or skimp on file context (bad for
 error reports). Two independent chains avoid the tradeoff.
 
+## Startup sequence
+
+`startup::init`, called once from `lib.rs`'s `setup` before anything can log, does five things in order: resolve the log
+directory, read the storage cap and the verbose toggle, install the fern tree via `dispatch::init`, sweep the legacy
+`Cmdr_<timestamp>.log` files an older build left, and log the resolved state.
+
+The order is forced. `dispatch::init` reads `RUST_LOG` and resets the stdout threshold, so the verbose default has to be
+known BEFORE it runs or the first records go out at the wrong level; and this all happens before the full settings load,
+which is why `settings::loader` carries `early_load_max_log_storage_mb` / `early_load_verbose_logging` at all.
+
+Directory priority: `CMDR_LOG_DIR`, then `<CMDR_DATA_DIR>/logs`, then the per-OS app log dir
+(`~/Library/Logs/com.veszelovszki.cmdr` on macOS, `dirs::data_local_dir()/com.veszelovszki.cmdr/logs` elsewhere).
+
+**Gotcha**: the early-load helpers MIRROR that resolution rather than calling into it. They run before an `AppHandle`
+exists, so they reach for `dirs::data_dir` plus the bundle id where `startup::init` can use Tauri's `app_data_dir`. The
+two agree today; a bundle-id change has to touch both.
+
 ## What lives in `mod.rs`
 
 - **`set_log_dir(path)` / `log_dir()`**: cache the resolved dir at logger-init; the error-report bundle builder reads it

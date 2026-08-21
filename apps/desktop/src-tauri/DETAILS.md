@@ -11,6 +11,24 @@ it. Anything that relaunches the app against a live data dir (an updater path, a
 harness) must let the old process exit, or wait out the lock's ~5 s retry window. Mechanism, rationale, and
 the retry-window callers: `docs/tooling/instance-isolation.md` § Instance lock.
 
+## What `lib.rs` is, and what it deliberately isn't
+
+`lib.rs`'s `run()` is the wiring: the Tauri builder chain, the `setup` hook's startup sequence, and the names of the
+handlers. It is the ONE place a reader can see startup order, and order here is load-bearing (the hosts before any
+background work, the logger before the data-dir claim, settings before the menu bar). So the long linear run of
+`x::init(app.handle())` calls stays: breaking it into "phases" would hide the sequence behind function names without
+adding a boundary anybody owns.
+
+What does move out is any block with a real owner elsewhere. Three live outside today:
+
+- `logging::startup::init()`: resolve the log dir, read the two early settings, install the fern tree, sweep legacy files.
+- `menu::install::at_startup(app, &settings)`: pin the UI language, build the bar, run the macOS AppKit passes, place `MenuState`.
+- `app_lifecycle::{on_window_event, on_run_event}`: the two builder handlers, plus the shared `stop_background_services`
+  all three shutdown routes take (main window closed, main window destroyed, process exiting; none implies the others).
+
+The test for moving a block: it has a module that already owns the subject, and moving it doesn't hide an ordering
+constraint. A block whose only home would be "startup, part 4" stays in `lib.rs`.
+
 ## Which Apple APIs skip the main-thread rule
 
 `CLAUDE.md` requires an `objc2::MainThreadMarker` for AppKit/Cocoa main-thread-only calls. These are thread-safe and

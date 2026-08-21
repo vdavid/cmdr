@@ -1,18 +1,17 @@
 # Menu system
 
 Native menu bar for macOS and Linux: builds platform menus from scratch in the user's language, handles events, syncs
-accelerators to user shortcuts, and enables items by focus context.
+accelerators to user shortcuts, and enables items by focus.
 
 ## Module map
 
 - `mod.rs` (shared types, enums, event structs, menu state), `command_map.rs` (item IDs + the `menu_id_to_command` /
   `command_id_to_menu_id` maps).
-- `menu_items.rs` / `menu_structure.rs`: piece builders and hierarchical assembly. `menu_handlers.rs`: the click
-  dispatcher. `accelerators.rs` / `view_mode_items.rs`: the two live-update lanes.
-  `media_index_items.rs`: the image-search-items decider. `macos.rs` / `linux.rs`: platform menu bars,
-  assembling shared pieces (`build_sort_submenu`, `build_zoom_submenu`, `build_view_mode_items`) around their own
-  layouts. `macos_appkit.rs`: the objc2 passes that fix the bar up. `open_with.rs`: the macOS "Open with" submenu.
-  `rebuild.rs`: rebuilding it in a new language. `mnemonics.rs`: the Linux underline-letter allocator.
+- `menu_items.rs` / `menu_structure.rs`: piece builders and assembly. `install.rs`: the startup build.
+  `menu_handlers.rs`: clicks; `accelerators.rs` and `view_mode_items.rs`: live updates. `media_index_items.rs`: the
+  image-search-items decider. `macos.rs` / `linux.rs`: platform menu bars, assembling shared pieces
+  (`build_sort_submenu`, `build_zoom_submenu`, `build_view_mode_items`) around their layouts. `macos_appkit.rs`: the
+  objc2 fix-up passes. `open_with.rs`: the macOS "Open with" submenu. `rebuild.rs`: rebuilding in a new language. `mnemonics.rs`: the Linux underline-letter allocator.
 
 ## Must-knows
 
