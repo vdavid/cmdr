@@ -16,12 +16,13 @@ that lives beside the code, and git holds the history.
       caller outside `wake/tests/`. Needs a tap adapter and a scheduler. **About a day and a half, fully design-settled,
       blocked on nothing.** The highest ratio of user-visible payoff to effort in the folder.
 - [ ] 2026-08-21 `idle-cost.md` - **Cmdr costs too much while you're not using it.** An idle prod build burned 110
-      minutes of CPU over 9.1 hours at a 1.78 GB footprint, writing 141,072 log lines in six hours. Five items: the
-      sync-status negative-answer TTL, a media tick that walks before it gates (⚠️ a data-loss trap, not a perf tweak),
-      naming the unattributed 643 MB, making the SQLite page-cache bound real, and bounding the reconcile drain's
-      arrival rate. **Three to four days, plus one design decision** that gates the largest item and has four mutually
-      exclusive candidate shapes. Read `docs/notes/idle-cpu-attribution-2026-08-03.md` first: four hypotheses here were
-      refuted by measurement.
+      minutes of CPU over 9.1 hours at a 1.78 GB footprint. Two items left, and both wait on a measurement rather than
+      on effort: the CLIP towers (an enrichment pass holds 251.5 MB of text tower it never calls, gated on one
+      confirming command on David's laptop), and the reconcile drain's unbounded arrival rate (demoted to "read the
+      churn line for a week, then choose between four candidate shapes", one of which needs David's call on whether the
+      rescan walk may read the shipped `SYSTEM_DIR_EXCLUDES`). **About a day of build work, plus a week of passive
+      observation before the second item can be ranked.** Read `docs/notes/idle-cpu-attribution-2026-08-03.md` first:
+      four hypotheses here were refuted by measurement.
 - [ ] 2026-08-21 `backend-as-a-crate.md` - **S3, FTP(S), SFTP, WebDAV, and NFS are the top planned feature, and there's
       no boundary to write them behind.** `SmbVolume` reaches into the app at 30 places and nothing stops the 31st. The
       seams, the staging split, the app-side adapters, and the `cmdr-archive` pilot all shipped, so this is a finish
