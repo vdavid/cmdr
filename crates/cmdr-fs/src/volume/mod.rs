@@ -513,6 +513,23 @@ pub trait Volume: Send + Sync {
         None
     }
 
+    /// This volume's [`Retirement`] flag, when it keeps one.
+    ///
+    /// The registry retires a volume as it leaves the registry, and this is how
+    /// it reaches the flag: it holds a `dyn Volume` and knows nothing about any
+    /// backend's concrete type. A backend reads the same flag back through a
+    /// [`SelfHandle`], which is how its watcher and its reconnect loop learn they
+    /// have nothing left to act on.
+    ///
+    /// **Default is `None`**, and that's the honest answer for a backend whose
+    /// work never outlives one operation: a local filesystem, an in-archive
+    /// listing, a test double. Override it the moment you spawn something that
+    /// keeps running between calls, or that thing keeps running after the app has
+    /// forgotten your volume. `volume/host/DETAILS.md` § "Writing a new backend".
+    fn retirement(&self) -> Option<&Retirement> {
+        None
+    }
+
     /// Called when the volume is about to be unmounted/unregistered.
     ///
     /// Implementations can use this to clean up resources (disconnect network
@@ -1263,6 +1280,7 @@ mod capabilities;
 mod ids;
 mod in_memory;
 pub mod mtp_ids;
+mod retirement;
 mod types;
 
 // Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
@@ -1285,6 +1303,7 @@ pub mod host;
 pub use capabilities::VolumeCapabilities;
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
+pub use retirement::{Retirement, SelfHandle};
 pub use types::*;
 
 #[cfg(test)]
@@ -1295,5 +1314,7 @@ mod in_memory_scan_test;
 mod in_memory_stream_test;
 #[cfg(test)]
 mod in_memory_test;
+#[cfg(test)]
+mod retirement_test;
 #[cfg(test)]
 mod root_anchored_path_test;

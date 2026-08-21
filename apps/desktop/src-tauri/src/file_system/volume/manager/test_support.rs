@@ -1,8 +1,14 @@
 //! Test isolation for the process-global `VolumeManager`.
 
+use cmdr_fs::volume::Retirement;
+use std::future::Future;
+use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::Arc;
 
 use super::{Volume, get_volume_manager};
+use crate::file_system::listing::FileEntry;
+use crate::file_system::volume::VolumeError;
 
 /// A registration in the process-global `VolumeManager`, reverted on drop.
 ///
@@ -56,5 +62,81 @@ impl Drop for TestVolumeRegistration {
             Some(previous) => manager.force_register(&self.volume_id, previous),
             None => manager.unregister(&self.volume_id),
         }
+    }
+}
+
+/// A path-addressed volume that keeps a [`Retirement`], so a test can ask
+/// whether the registry told it that it's out.
+///
+/// The flag is SHARED with every instance a re-root produces, the way a real
+/// backend shares the state its background work hangs off: an `SmbVolume`
+/// re-rooted onto a surviving mount is the same share, the same session, and the
+/// same watcher, so retiring one instance would stand the live one down.
+pub(crate) struct RetiringVolume {
+    root: PathBuf,
+    retirement: Arc<Retirement>,
+}
+
+impl RetiringVolume {
+    /// A volume rooted at `root`, plus a reader for its retirement flag.
+    pub(crate) fn at(root: &str) -> (Arc<Self>, impl Fn() -> bool) {
+        let retirement = Arc::new(Retirement::new());
+        let reader = Arc::clone(&retirement);
+        let volume = Arc::new(Self {
+            root: PathBuf::from(root),
+            retirement,
+        });
+        (volume, move || reader.is_retired())
+    }
+}
+
+impl Volume for RetiringVolume {
+    fn name(&self) -> &str {
+        "retiring"
+    }
+
+    fn root(&self) -> &Path {
+        &self.root
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn retirement(&self) -> Option<&Retirement> {
+        Some(&self.retirement)
+    }
+
+    fn rerooted(&self, new_root: &Path) -> Option<Arc<dyn Volume>> {
+        Some(Arc::new(Self {
+            root: new_root.to_path_buf(),
+            retirement: Arc::clone(&self.retirement),
+        }))
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(Vec::new()) })
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { false })
+    }
+
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 }

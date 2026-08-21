@@ -218,6 +218,7 @@ impl VolumeManager {
             Promotion::AlreadyBest | Promotion::NoRootsLeft => {
                 let entry = volumes.remove(&id).expect("found under this key a moment ago");
                 self.clear_default_if(&id);
+                super::retire(&entry.volume);
                 RootRemoval::Unregistered {
                     id,
                     volume: entry.volume,
@@ -709,5 +710,42 @@ mod tests {
         );
 
         manager.unregister(id);
+    }
+
+    // ── Retirement through the unmount path ─────────────────────
+
+    use crate::file_system::volume::manager::test_support::RetiringVolume;
+
+    /// Losing the LAST mount really does end the volume, so its background work
+    /// has to learn that. `remove_root` is a second way out of the registry
+    /// beside `unregister`, and a volume that leaves either way is equally gone.
+    #[test]
+    fn losing_the_last_mount_retires_the_volume() {
+        let manager = VolumeManager::new();
+        let (volume, is_retired) = RetiringVolume::at("/Volumes/naspi");
+        manager.register("naspi", volume);
+
+        manager.remove_root(Path::new("/Volumes/naspi"));
+
+        assert!(
+            is_retired(),
+            "the volume left the registry, so nothing may keep acting for it"
+        );
+    }
+
+    /// The share is still there, reached through a surviving mount, and the
+    /// promoted instance shares the state the background work hangs off. Retiring
+    /// here would stop the watcher of a share that is perfectly healthy.
+    #[test]
+    fn promoting_a_surviving_mount_retires_nobody() {
+        let manager = VolumeManager::new();
+        let (volume, is_retired) = RetiringVolume::at("/Volumes/naspi");
+        manager.register("naspi", Arc::clone(&volume) as Arc<dyn Volume>);
+        manager.register("naspi", volume.rerooted(Path::new("/Volumes/naspi-1")).unwrap());
+
+        let outcome = manager.remove_root(Path::new("/Volumes/naspi"));
+
+        assert!(matches!(outcome, RootRemoval::Promoted { .. }), "expected a promotion");
+        assert!(!is_retired(), "the share is still registered, just at another mount");
     }
 }

@@ -177,7 +177,10 @@ impl VolumeManager {
     ///
     /// If this was the default volume, the default is cleared.
     pub fn unregister(&self, id: &str) {
-        self.volumes.write_ignore_poison().remove(id);
+        let removed = self.volumes.write_ignore_poison().remove(id);
+        if let Some(entry) = removed {
+            retire(&entry.volume);
+        }
         self.clear_default_if(id);
     }
 
@@ -270,6 +273,24 @@ impl VolumeManager {
     }
 }
 
+/// Tell a volume the registry no longer serves it, so whatever it runs in the
+/// background (a watcher, a reconnect backoff loop) stands down.
+///
+/// Called from the two ways out of the registry, [`VolumeManager::unregister`]
+/// and `roots::remove_root`'s last-mount arm, and from nowhere else. ❌ Not on a
+/// REPLACE: a re-root hands the ID to another instance of a share that is still
+/// live and still watching, and retiring there stops a healthy volume. An
+/// upgrade's predecessor is retired by the hand-over itself, through
+/// `Volume::on_superseded`.
+///
+/// A backend with nothing running between calls keeps no flag and this is a
+/// no-op. See `cmdr_fs::volume::Retirement`.
+pub(super) fn retire(volume: &Arc<dyn Volume>) {
+    if let Some(retirement) = volume.retirement() {
+        retirement.retire();
+    }
+}
+
 impl Default for VolumeManager {
     fn default() -> Self {
         Self::new()
@@ -292,6 +313,7 @@ pub(crate) fn get_volume_manager() -> &'static VolumeManager {
 mod tests {
     use super::super::InMemoryVolume;
     use super::*;
+    use test_support::RetiringVolume;
 
     #[test]
     fn test_new_creates_empty_manager() {
@@ -644,5 +666,60 @@ mod tests {
 
         // Permanent volume should still exist
         assert!(manager.get("permanent").is_some());
+    }
+
+    // ── Retirement ──────────────────────────────────────────────
+    //
+    // A volume's background work (a watcher, a reconnect backoff loop) outlives
+    // any one call, so it has to keep asking whether the registry still serves
+    // the volume it was spawned for. Only the registry knows, so the registry
+    // writes the answer down. See `cmdr_fs::volume::Retirement`.
+
+    #[test]
+    fn unregistering_a_volume_retires_it() {
+        let manager = VolumeManager::new();
+        let (volume, is_retired) = RetiringVolume::at("/Volumes/naspi");
+        manager.register("naspi", volume);
+        assert!(!is_retired(), "a registered volume is live");
+
+        manager.unregister("naspi");
+
+        assert!(
+            is_retired(),
+            "nothing routes to this volume any more, so its background work must stand down"
+        );
+    }
+
+    /// Replacing a volume is NOT removing it, and the difference decides whether
+    /// a healthy share keeps its watcher. The registry replaces an entry for two
+    /// reasons: an upgrade (a fresh volume over a fresh session, whose
+    /// predecessor is retired by the caller through `Volume::on_superseded`), and
+    /// a re-root onto a surviving mount (the SAME share, deliberately still
+    /// live). Retiring on every replace would stand the re-rooted share down.
+    #[test]
+    fn replacing_a_volume_at_its_own_root_retires_nobody() {
+        let manager = VolumeManager::new();
+        let (incumbent, incumbent_retired) = RetiringVolume::at("/Volumes/naspi");
+        let (successor, successor_retired) = RetiringVolume::at("/Volumes/naspi");
+        manager.register("naspi", incumbent);
+
+        manager.register("naspi", successor);
+
+        assert!(
+            !incumbent_retired() && !successor_retired(),
+            "who retires on a hand-over is the hand-over's business, not the registry's"
+        );
+    }
+
+    /// A backend with nothing running between calls answers `None`, and the
+    /// registry has to cope rather than assume every volume keeps a flag.
+    #[test]
+    fn a_volume_that_keeps_no_flag_unregisters_fine() {
+        let manager = VolumeManager::new();
+        manager.register("test", Arc::new(InMemoryVolume::new("Test Volume")));
+
+        manager.unregister("test");
+
+        assert_eq!(manager.count(), 0);
     }
 }
