@@ -102,9 +102,6 @@ libc = "0.2"
 # macOS-only: `platform_case_compare` is a binary compare on Linux, matching
 # ext4/btrfs.
 unicode-normalization = "0.1"
-# Reading the private File Provider domain-id extended attribute, the one
-# exclusion probe that isn't pure string work.
-xattr = "1"
 # The FSEvents watcher with event IDs and `sinceWhen` replay. Our vendored fork:
 # upstream has no event-ID surface, which is what makes gap detection possible.
 cmdr-fsevent-stream = { path = "../fsevent-stream" }

@@ -29,8 +29,6 @@ use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 mod exclusions;
 pub use exclusions::SYSTEM_DIR_EXCLUDES;
-#[cfg(target_os = "macos")]
-mod file_provider;
 pub(in crate::indexing) use exclusions::*;
 
 mod heartbeat;
@@ -179,8 +177,8 @@ impl ScanRoot {
 /// boundary and must never become one: they report the same device as `$HOME`
 /// and belong to the boot volume's scope. The guarded walker's stall detection is
 /// what makes descending into a disconnected one safe, which is why this needs no
-/// help from `file_provider::domain_id_for_dir` — that probe answers a different
-/// question (where a volume ROOT sits, for the pseudo-filesystem rule).
+/// help from `cmdr_fs::file_provider::domain_id_for_dir` — that probe answers a
+/// different question (where a volume ROOT sits, for the pseudo-filesystem rule).
 #[derive(Debug, Clone)]
 struct WalkPolicy {
     /// What the scan root is, which decides what the walk may do to the ground

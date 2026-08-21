@@ -115,7 +115,7 @@ volume's `dir_stats`.
   that honestly rather than this rule guessing.
 - **⚠️ File Provider domains are NOT a boundary** (Decision 16). Dropbox, iCloud Drive, and Google Drive report the same
   device as `$HOME` and belong to the boot volume's scope; the guarded walker's stall detection is what makes descending
-  into a disconnected one safe. ❌ Never repurpose `file_provider::domain_id_for_dir` (wired as
+  into a disconnected one safe. ❌ Never repurpose `cmdr_fs::file_provider::domain_id_for_dir` (wired as
   `RootProbes::is_domain_root`) as a cut — it answers where a volume ROOT sits, for the pseudo-filesystem rule.
 - **A full scan pins nothing**, deliberately: it bounds itself by path prefix (`/Volumes/` under `BootDisk`) and pinning
   it would silently change what a boot index contains for anyone with a disk image mounted in their home dir.
@@ -284,13 +284,15 @@ the walk path. The domain probe is additionally **boot-disk-tier only**: it's a 
 a network mount where any syscall blocks indefinitely, and providers register their domains in the home dir anyway, so
 there'd be nothing to find.
 
-**Recognizing a File Provider domain root** (`file_system::file_provider::domain_id_for_dir`): a domain root carries the
+**Recognizing a File Provider domain root** (`cmdr_fs::file_provider::domain_id_for_dir`): a domain root carries the
 `com.apple.file-provider-domain-id` xattr; its children, `~/Library/CloudStorage` itself, and ordinary folders don't. ~5
 µs, a plain APFS read with no XPC, works while the provider is offline, needs no entitlement. It resolves Dropbox,
 Google Drive, MacDroid, and iCloud Drive — and iCloud's domain root is `~/Library/Mobile Documents`, which is NOT under
 `~/Library/CloudStorage`, which is exactly why a path-prefix heuristic was rejected. Full measurements, the
 authoritative-but-costly `NSFileProviderManager` alternative, and the dead ends:
-`docs/notes/fileprovider-domain-detection.md` (verified on macOS 26.5.2, build 25F84, 2026-07-20).
+`docs/notes/fileprovider-domain-detection.md` (verified on macOS 26.5.2, build 25F84, 2026-07-20). The reader lives in
+`crates/cmdr-fs/src/file_provider.rs`, because the app's sync badge asks the sibling question ("is any ANCESTOR a domain
+root?") off the same marker and neither side may own the other's copy.
 
 **The xattr is a private Apple detail, so this is an OPTIMIZATION, never a safety guarantee.** It's undocumented and not
 contractual; if Apple drops it, unrecognized domain roots simply go back to being walked. Nothing may depend on it for

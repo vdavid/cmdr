@@ -14,6 +14,8 @@ crate.
 - `sqlite_util.rs`: the ONE process-wide page-cache slab plus the connection factories all five stores open through.
 - `staging.rs`: `StagingTemp`, the ONLY way to name a scratch file. Whether the user SEES one is app-side
   (`file_system::staging`).
+- `file_provider.rs`: the `com.apple.file-provider-domain-id` marker. `domain_id_for_dir` for the index scanner's "is
+  this a domain root?", `FileProviderDomains` for the sync badge's "is any ancestor one?".
 - Leaves: `archive_format.rs` (sole source of truth for archive detection), `filesystem_kind.rs` (classification only),
   `firmlinks.rs` (`normalize_path`; the index and the app's watchers have to agree on it), plus `log_rollup`,
   `tcc_paths`, `ignore_poison`, `pluralize`, `thread_qos`, `thread_cpu`, `process_memory`, `testing`.

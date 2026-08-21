@@ -58,6 +58,9 @@ rusqlite = { version = "0.40", features = ["bundled", "collation", "fallible_uin
 dirs = "6"
 # uid/gid → name resolution for `FileEntry`'s owner and group columns.
 uzers = "0.12.2"
+# Reading the private File Provider domain-id extended attribute (`file_provider`),
+# the marker that tells a cloud provider's tree from an ordinary folder.
+xattr = "1"
 # The unique suffix every staged scratch name ends in (`staging`). A caller can
 # also supply one, so the type is part of the mint API rather than an internal
 # detail: a safe-overwrite gives its temp and its aside the same UUID.

@@ -20,6 +20,7 @@
 
 pub mod archive_format;
 pub mod entry;
+pub mod file_provider;
 pub mod filesystem_kind;
 pub mod firmlinks;
 pub mod icons;

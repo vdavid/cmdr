@@ -153,22 +153,15 @@ impl RootProbes {
 }
 
 /// The production domain-root probe: a File Provider domain root carries the
-/// `com.apple.file-provider-domain-id` xattr (~5 µs, no XPC, no hang risk). Always
-/// `false` off macOS, which has no File Provider.
+/// `com.apple.file-provider-domain-id` xattr (~5 µs, no XPC, no hang risk). Off
+/// macOS there are no File Provider domains, so the marker is simply never there.
 ///
 /// It's an OPTIMIZATION, never a guarantee: the xattr is a private Apple detail, so
-/// a `false` here means "not recognized", not "proven ordinary". See the private
-/// `super::file_provider` module (private, so not linkable from rustdoc).
+/// a `false` here means "not recognized", not "proven ordinary". The reader, the
+/// evidence, and the ancestor-walk sibling the sync badge uses:
+/// [`cmdr_fs::file_provider`].
 fn is_file_provider_domain_root(path: &str) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        super::file_provider::domain_id_for_dir(path).is_some()
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = path;
-        false
-    }
+    cmdr_fs::file_provider::domain_id_for_dir(path).is_some()
 }
 
 /// Whether `dir` holds ALL of `proc`, `sys`, and `dev` as child DIRECTORIES: the
