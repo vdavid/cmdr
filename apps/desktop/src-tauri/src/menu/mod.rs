@@ -10,16 +10,19 @@
 //!   accelerator/label platform-aware helpers, `register_item`, and `truncate_for_menu_label`.
 //! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher, context menus (file,
 //!   breadcrumb, tab, network host), viewer menu, plus `FileContextInfo` / `ContextMenuResult`.
-//! - `menu_handlers.rs`: event handlers and live-update helpers: `handle_menu_event` (the
-//!   `.on_menu_event` dispatcher wired into the Tauri builder), `rebuild_view_mode_items`,
-//!   `sync_view_mode_check_states`, `update_menu_item_accelerator`,
-//!   `frontend_shortcut_to_accelerator`, and the macOS post-construction helpers
-//!   (`cleanup_macos_menus`, `set_macos_menu_icons`).
+//! - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher wired into the Tauri
+//!   builder, plus the macOS post-construction helpers it shares a platform with
+//!   (`cleanup_macos_menus`, `set_macos_menu_icons`, and the responder-chain edit actions).
+//! - `accelerators.rs`: `frontend_shortcut_to_accelerator` (frontend glyphs → Tauri accelerator
+//!   strings) and `update_menu_item_accelerator` (swapping one on a live item).
+//! - `view_mode_items.rs`: keeping the per-pane view-mode items in step, via a full
+//!   `rebuild_view_mode_items` or a cheap `sync_view_mode_check_states`.
 //! - `macos.rs` / `linux.rs`: platform-specific menu bar shape.
 //! - `macos_appkit.rs`: the objc2 passes that fix the built menu bar up (`cleanup_macos_menus`,
 //!   `set_macos_menu_icons`), plus the `MENU_BAR_ICONS` table.
 //! - `open_with.rs` (macOS): "Open with" submenu builder.
 
+mod accelerators;
 mod command_map;
 #[cfg(not(target_os = "macos"))]
 mod linux;
@@ -37,6 +40,7 @@ pub mod open_with;
 mod rebuild;
 #[cfg(target_os = "macos")]
 mod tag_icons;
+mod view_mode_items;
 
 use std::collections::HashMap;
 #[cfg(target_os = "macos")]
@@ -51,15 +55,13 @@ use tauri::{
 // Re-export the public API consumed from outside the menu module.
 // All menu item ID constants and the ID ↔ command-registry mapping functions live in
 // `command_map`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
+pub use accelerators::{frontend_shortcut_to_accelerator, update_menu_item_accelerator};
 pub use command_map::*;
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
+pub use menu_handlers::handle_menu_event;
 #[cfg(target_os = "macos")]
 pub use menu_handlers::{
     cleanup_macos_menus, cleanup_macos_menus_from_command, set_macos_menu_icons, set_macos_menu_icons_from_command,
-};
-pub use menu_handlers::{
-    frontend_shortcut_to_accelerator, handle_menu_event, rebuild_view_mode_items, sync_view_mode_check_states,
-    update_menu_item_accelerator,
 };
 pub use menu_items::pin_tab_label;
 pub use menu_structure::{
@@ -67,6 +69,7 @@ pub use menu_structure::{
     build_parent_row_context_menu, build_tab_context_menu, build_viewer_menu, build_volume_row_context_menu,
 };
 pub use rebuild::rebuild_menu_bar;
+pub use view_mode_items::{rebuild_view_mode_items, sync_view_mode_check_states};
 
 /// `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden
 /// files") flipped a setting from the native menu. The menu click is the

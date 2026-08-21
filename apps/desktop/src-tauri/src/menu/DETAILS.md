@@ -23,10 +23,13 @@ window focus context.
   (`build_context_menu`), breadcrumb / tab / network-host / volume-selector-row context menus
   (`build_volume_row_context_menu`: favorite Rename/Remove or volume Eject), the viewer-window menu
   (`build_viewer_menu`), plus the `FileContextInfo` and `ContextMenuResult` types.
-- `menu_handlers.rs`: event-handler and live-update helpers: `rebuild_view_mode_items`,
-  `sync_view_mode_check_states`, `update_menu_item_accelerator`, `frontend_shortcut_to_accelerator`,
-  and the macOS post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` (the
-  actual objc2 FFI lives in `macos.rs`).
+- `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher, plus the macOS
+  post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` and
+  `send_native_edit_action` (the actual objc2 FFI lives in `macos_appkit.rs`).
+- `accelerators.rs`: `frontend_shortcut_to_accelerator` (frontend glyphs to Tauri accelerator
+  strings) and `update_menu_item_accelerator` (swapping one on a live item).
+- `view_mode_items.rs`: `rebuild_view_mode_items` (full remove/recreate/reinsert when the active pane
+  or a shortcut moved) and `sync_view_mode_check_states` (the cheap check-state-only path).
 - `macos.rs`: `build_menu_macos`, the full macOS menu bar. Building only.
 - `macos_appkit.rs`: the two passes that reach past Tauri into AppKit once the bar is built:
   `cleanup_macos_menus` (removes system-injected Edit items, registers the Help menu) and
