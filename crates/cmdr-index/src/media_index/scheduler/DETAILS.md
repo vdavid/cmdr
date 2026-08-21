@@ -11,8 +11,8 @@ pass bodies (`run_pass_blocking`, `run_network_pass_blocking`, `folder_scores`, 
 `coordinator.rs` holds the pure, testable `PassCoordinator` (one pass per volume, coalesced re-run — covered by
 `coalescing_tests`); `lifecycle.rs` holds the scheduling/wiring layer (`start`, `kick_all_ready_passes_with`,
 `kick_network_pass`, `wire_volume`, `spawn_pass`, `local_should_enrich`, `local_dir_may_be_covered`, `pass_coverage`,
-`PassKind`); `enrich.rs` holds the walk + the shared enrich/GC core; `pool.rs` the parallel workers; `live.rs` the
-live-follow tick (with `live_tests.rs` and `live_bench.rs`, the `#[ignore]`d cost harness behind
+`pass_gates`, `PassKind`); `enrich.rs` holds the walk + the shared enrich/GC core; `pool.rs` the parallel workers;
+`live.rs` the live-follow tick (with `live_tests.rs` and `live_bench.rs`, the `#[ignore]`d cost harness behind
 `docs/notes/live-tick-cost-2026-08-21.md`); `reclaim.rs` the user-explicit prune. `kick_tests.rs` owns the shared test
 fixtures (`build_index`, the importance/media seeders, `reset_gate`) that `live_tests` and `reclaim_tests` reach for.
 The starting and kicking entry points are `MediaScheduler::{start, kick_all_ready_passes, kick_network_pass}` in

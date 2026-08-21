@@ -310,9 +310,7 @@ impl MediaScheduler {
         // so a folder excluded WHILE this pass runs is vetoed immediately — the veto is
         // a hard privacy line, not a tuning knob that can wait for the next pass.
         let config = network::config::snapshot();
-        let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_deref(), &config, volume_id) };
-        let is_excluded = |path: &str| -> bool { network::config::is_excluded(path) };
-        let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
+        let (should_enrich, is_excluded, folder_score) = lifecycle::pass_gates(scores.as_deref(), &config, volume_id);
         let ordered = enrich::prioritized(&images, &folder_score);
 
         // Progress + terminal emitters. The guard emits `Failed` on drop if the

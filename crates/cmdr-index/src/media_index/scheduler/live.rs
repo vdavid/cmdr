@@ -62,7 +62,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use super::enrich::{self, EnrichGates, GcScope, PassHooks, enrich_and_gc_scoped, walk_image_entries_in_dirs};
 use super::{
     BeginOutcome, EnrichProgressEmitter, EnrichProgressSink, EnrichTerminalGuard, FinishOutcome,
-    MediaEnrichTerminalReason, MediaScheduler, NoopProgressSink, gate, load_statuses, local_should_enrich, network,
+    MediaEnrichTerminalReason, MediaScheduler, NoopProgressSink, gate, load_statuses, network,
 };
 use crate::indexing::lifecycle::lifecycle_bus;
 
@@ -213,9 +213,8 @@ impl MediaScheduler {
             .writer_for(&self.data_dir, volume_id)
             .map_err(|e| e.to_string())?;
 
-        let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_deref(), &config, volume_id) };
-        let is_excluded = |path: &str| -> bool { network::config::is_excluded(path) };
-        let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
+        let (should_enrich, is_excluded, folder_score) =
+            super::lifecycle::pass_gates(scores.as_deref(), &config, volume_id);
         let ordered = enrich::prioritized(&images, &folder_score);
 
         // Progress honesty: light up the indicator ONLY when the enrichable

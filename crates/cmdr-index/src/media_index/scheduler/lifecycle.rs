@@ -83,6 +83,30 @@ pub(crate) fn local_dir_may_be_covered(
     }
 }
 
+/// The three per-image predicates every enrich pass runs its walk through, built
+/// from ONE start-of-pass snapshot: "should this image be enriched", "is this image
+/// privacy-vetoed", and "how important is its folder".
+///
+/// The full pass and the live tick need the identical trio over the identical
+/// inputs, so it's built here once. Coverage comes from the `scores` snapshot the
+/// pass opened with; the exclusion predicate reads config LIVE on every call, because
+/// the privacy veto is a hard line that must not wait for the next pass.
+pub(super) fn pass_gates<'a>(
+    scores: Option<&'a HashMap<String, f64>>,
+    config: &'a network::config::NetworkEnrichConfig,
+    volume_id: &'a str,
+) -> (
+    impl Fn(&str) -> bool + 'a,
+    impl Fn(&str) -> bool + 'a,
+    impl Fn(&str) -> f64 + 'a,
+) {
+    (
+        move |path: &str| local_should_enrich(path, scores, config, volume_id),
+        |path: &str| network::config::is_excluded(path),
+        move |dir: &str| scores.and_then(|m| m.get(dir)).copied().unwrap_or(0.0),
+    )
+}
+
 /// The coverage inputs one pass runs with: the folder scores to gate on, and whether
 /// the pass left an importance-gated remainder behind.
 pub(super) struct PassCoverage {
