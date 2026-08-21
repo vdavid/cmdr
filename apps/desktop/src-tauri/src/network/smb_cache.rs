@@ -3,7 +3,7 @@
 //! Provides caching functionality for share listing results to reduce
 //! network round-trips and improve responsiveness.
 
-use crate::network::smb_types::{AuthMode, ShareListResult};
+use cmdr_smb::{AuthMode, ShareListResult};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -83,7 +83,7 @@ pub fn get_cached_shares_auth_mode(host_id: &str) -> Option<AuthMode> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::network::smb_types::ShareInfo;
+    use cmdr_smb::ShareInfo;
 
     #[test]
     fn test_cache_operations() {

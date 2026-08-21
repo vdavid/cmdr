@@ -26,12 +26,15 @@ at 83 to 85% for the index crate.
 
 In order. Only 5e is large.
 
-1. **Split `network/`.** Half a day. Design settled, no product decisions. Protocol helpers (`build_smb_addr`,
-   `is_auth_error`, `smb_types`) move down into the crate; discovery, upgrade, and UI wiring stay in the app. This also
-   cuts a back-edge nobody has noticed: `network/smb_upgrade.rs:220` imports
-   `crate::file_system::volume::SmbConnectionState`, and because `cargo-modules` resolves a re-export to its DEFINING
-   module, that single line welds SMB and `network/` into a live nine-module cycle. Nothing in `network/` names
-   `backends::smb` textually, so this looks like nothing and is load-bearing. Prerequisite for everything below.
+1. ~~**Split `network/`.**~~ **Done.** `crates/cmdr-smb/` holds the protocol helpers (`build_smb_addr`, the `classify_*`
+   / `is_auth_error` pair, the share-listing vocabulary, and the two `smb2` listing calls); discovery, upgrade, mounts,
+   the keychain, and the UI wiring stayed in the app. The nine-module `network` ↔ SMB cycle is cut, but NOT at the line
+   this plan predicted: `smb_upgrade.rs:220` draws no edge at all (the type it imports lives in `cmdr-fs`, which
+   `--no-externs` drops). The real weld was an `impl From<ConnectionState> for network::VolumeConnection` in
+   `smb/state.rs`, misread as a `network →` edge because `cargo-modules` attributes an impl to the module defining the
+   type it PRODUCES. The backend now converts into the seam's `VolumeConnection` and emits through
+   `events::volume_mapping`. Measured on cargo-modules 0.26.0: the nine-module component became six (all
+   `backends::smb::*` parent ↔ child), and `network` is in no cycle but its own pair with `mdns_discovery`.
 
 2. **Turn the two registry reach-backs into a `Weak` handle.** Half a day, plus one small design call.
    `reconnect.rs:306` and `smb_watcher.rs:48` both call `get_volume_manager()`. The "one architecturally awkward site"
@@ -53,14 +56,25 @@ In order. Only 5e is large.
 
 5. **Re-home 5,845 lines of `smb_*_test.rs`.** Several days, and the bulk of the cost. Including the Docker-gated
    integration tests, and confirming `desktop-rust-integration-tests`' name filter still selects them. The archive pilot
-   showed the real work is SPLITTING tests that grew to cover both sides, not moving them. Also unverified: whether
-   `smb2 = { features = ["testing"] }` forwards correctly through the extra crate hop for the `smb-e2e` feature.
+   showed the real work is SPLITTING tests that grew to cover both sides, not moving them.
+
+   **The `smb2/testing` forward is no longer a risk: verified.** `smb-e2e = ["cmdr-smb/testing"]` →
+   `testing = ["smb2/testing"]` turns the feature on for the single `smb2` in the graph, so the app's own direct `smb2`
+   calls (`network::virtual_smb_hosts`) see it with no second forward. Confirmed by
+   `cargo tree -p cmdr -e features -i smb2 --features smb-e2e` and a real
+   `cargo check -p cmdr --lib --examples --features smb-e2e` (2026-08-21). One thing to know when re-homing: `cmdr-smb`
+   has no self dev-dependency, so a `smb2/testing`-gated item is NOT reachable from a plain `cargo test -p cmdr-smb` —
+   add one the way `cmdr-archive/Cargo.toml` does.
 
 ## Guard it: the module-cycle ratchet
 
 Nothing stops a subsystem re-welding, and it has already happened twice unobserved. Re-measured on 2026-08-21 with
 `cargo-modules` 0.27.0: `cmdr-index`'s largest component is **19** (an older plan claims six) and `cmdr` is **11**
 (claims ten). Modules in some cycle total 187, against a claimed post-work 132.
+
+⚠️ **The tool version moves the absolute numbers**, so measure before AND after a cut on whatever version is installed
+rather than diffing against a figure written down here. Step 1 was measured on 0.26.0, which reports `cmdr` at 128 of
+528 modules in a cycle where 0.27.0 reports 126 of 522.
 
 ⚠️ **The obvious check has a bad failure mode, and this needs deciding before it is built.** Most of that regrowth is
 not coupling: `lifecycle/state.rs` became `lifecycle/state/` with eight children, which improved the code and would have

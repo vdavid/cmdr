@@ -143,7 +143,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
   hooks, typed git-error classification (`FriendlyGitErrorKind`)
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
-- `network/`: SMB: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting, Keychain
+- `network/`: SMB's app-side half: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting,
+  Keychain, the auto-upgrade passes, and the frontend's connection events. The protocol layer under it is
+  `crates/cmdr-smb/`
 - `clipboard/`: File clipboard (Cmd+C/X/V) with NSPasteboard interop; tracks cut state and validates at paste
 - `secrets/`: Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. SMB creds +
   AI keys
@@ -236,10 +238,10 @@ All under `apps/desktop/src-tauri/src/`.
 
 ## Workspace crates
 
-All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, and `cmdr-archive` carry no `tauri` dependency
-and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public
-surface of `cmdr-index` and `cmdr-archive` at the numbers their audits landed on. The two dev CLIs and the vendored fork
-are ordinary members.
+All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, and `cmdr-smb` carry no `tauri`
+dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps
+the public surface of `cmdr-index` and `cmdr-archive` at the numbers their audits landed on. The two dev CLIs and the
+vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -255,6 +257,10 @@ are ordinary members.
   core (central-directory parse, synthetic tree, streaming decompress, Zip Slip defense) and the shared boundary
   detector its host routes with. The first backend in its own crate, so it's the worked example for the next one. See
   `crates/cmdr-archive/CLAUDE.md`
+- `crates/cmdr-smb/`: the SMB backend's protocol layer — address building, `smb2::Error` classification, and the
+  share-listing vocabulary (`ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError`). Mid-extraction: the
+  `SmbVolume` backend itself is still app-side, and moves down in stages (`docs/specs/backend-as-a-crate.md`). What
+  belongs on each side of the boundary, and why: `crates/cmdr-smb/CLAUDE.md`
 - `crates/cmdr-index/`: the index — everything Cmdr knows about what's on a volume, what's inside its images, and which
   of its folders matter — behind one `Index` handle the host builds and holds. Tauri-free: everything it needs from an
   application arrives through the traits in `host/`, and everything it reports leaves through an `EventSink`. Three

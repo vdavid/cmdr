@@ -6,7 +6,7 @@ use super::events::emit_state_change;
 use super::mapping::map_smb_error;
 use super::state::ConnectionState;
 use super::{SmbConnectionParams, SmbVolume, VolumeError};
-use crate::network::VolumeConnection;
+use cmdr_fs::volume::host::events::VolumeConnection;
 use log::{debug, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
@@ -176,7 +176,7 @@ impl SmbVolume {
 /// Builds a fresh smb2 session using the given params. Returns the connected
 /// client + tree on success.
 pub(super) async fn build_session(params: &SmbConnectionParams) -> Result<(SmbClient, Tree), smb2::Error> {
-    use crate::network::smb_connection::build_smb_addr;
+    use cmdr_smb::build_smb_addr;
 
     let config = ClientConfig {
         addr: build_smb_addr(&params.server, params.port),

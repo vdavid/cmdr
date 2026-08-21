@@ -33,13 +33,10 @@ pub mod smb_client;
 #[cfg(target_os = "linux")]
 mod linux_distro;
 mod smb_cache;
-pub(crate) mod smb_connection;
 #[cfg(target_os = "linux")]
 mod smb_smbclient;
 mod smb_smbutil;
-mod smb_types;
 pub(crate) mod smb_upgrade;
-pub(crate) mod smb_util;
 
 // The "we're stuck on the kernel mount" notice's once-per-server ledger. Lives
 // beside `smb_upgrade` (its only caller) rather than inside it, so the ledger is

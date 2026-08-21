@@ -1305,6 +1305,7 @@ dependencies = [
  "cmdr-archive",
  "cmdr-fs",
  "cmdr-index",
+ "cmdr-smb",
  "cocoon",
  "core-foundation 0.10.1",
  "core-services",
@@ -1495,6 +1496,16 @@ dependencies = [
  "unicode-normalization",
  "usearch",
  "zip 8.6.0",
+]
+
+[[package]]
+name = "cmdr-smb"
+version = "0.0.0"
+dependencies = [
+ "log",
+ "serde",
+ "smb2",
+ "specta",
 ]
 
 [[package]]

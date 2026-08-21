@@ -1,8 +1,10 @@
-//! SMB utility functions.
+//! Turning an [`smb2::Error`] into something a caller can act on.
 //!
-//! Contains error classification and share type conversion utilities.
+//! Two questions, and they're not the same one: [`is_auth_error`] answers "would
+//! credentials help?", which every retry and fallback path asks; the `classify_*`
+//! pair turns the error into the typed [`ShareListError`] a host renders.
 
-use crate::network::smb_types::{ShareInfo, ShareListError};
+use crate::types::ShareListError;
 use smb2::ErrorKind;
 
 /// Checks if an error is an authentication error (including signing requirement).
@@ -48,15 +50,9 @@ pub fn classify_error(err: &smb2::Error) -> ShareListError {
 /// credentials are wrong (`AuthFailed`), not that authentication is required.
 /// `SigningRequired` is deliberately NOT remapped: it's a protocol capability mismatch,
 /// not a credential problem. Everything else falls through to [`classify_error`].
-// Consumed by the macOS arm of `smb_client` today (Linux's authenticated fallback goes
-// through smbclient); the classifier itself is platform-agnostic.
-#[cfg_attr(
-    not(target_os = "macos"),
-    allow(
-        dead_code,
-        reason = "consumed by the macOS arm of smb_client; Linux goes through smbclient"
-    )
-)]
+///
+/// Only the macOS host calls this today (Linux's authenticated fallback goes through
+/// `smbclient`); the classifier itself is platform-agnostic.
 pub fn classify_authenticated_error(err: &smb2::Error) -> ShareListError {
     match err.kind() {
         ErrorKind::AuthRequired | ErrorKind::AccessDenied => ShareListError::AuthFailed {
@@ -64,23 +60,6 @@ pub fn classify_authenticated_error(err: &smb2::Error) -> ShareListError {
         },
         _ => classify_error(err),
     }
-}
-
-/// Converts smb2 share info to Cmdr's ShareInfo type.
-/// smb2's `list_shares()` already filters to disk shares and strips `$` shares.
-pub fn convert_shares(shares: Vec<smb2::ShareInfo>) -> Vec<ShareInfo> {
-    shares
-        .into_iter()
-        .map(|share| ShareInfo {
-            name: share.name,
-            is_disk: true,
-            comment: if share.comment.is_empty() {
-                None
-            } else {
-                Some(share.comment)
-            },
-        })
-        .collect()
 }
 
 #[cfg(test)]
@@ -185,32 +164,5 @@ mod tests {
             ShareListError::AuthRequired { .. } => {}
             e => panic!("Expected AuthRequired, got {:?}", e),
         }
-    }
-
-    #[test]
-    fn test_convert_shares() {
-        let smb2_shares = vec![
-            smb2::ShareInfo {
-                name: "Documents".to_string(),
-                share_type: 0,
-                comment: "My documents".to_string(),
-            },
-            smb2::ShareInfo {
-                name: "Public".to_string(),
-                share_type: 0,
-                comment: String::new(),
-            },
-        ];
-
-        let result = convert_shares(smb2_shares);
-        assert_eq!(result.len(), 2);
-
-        assert_eq!(result[0].name, "Documents");
-        assert!(result[0].is_disk);
-        assert_eq!(result[0].comment.as_deref(), Some("My documents"));
-
-        assert_eq!(result[1].name, "Public");
-        assert!(result[1].is_disk);
-        assert!(result[1].comment.is_none());
     }
 }

@@ -6,7 +6,7 @@ use super::mapping::map_smb_error;
 use super::session::{build_session, refresh_credentials_from_store};
 use super::state::ConnectionState;
 use super::{SmbConnectionParams, SmbVolume, Volume, VolumeError};
-use crate::network::VolumeConnection;
+use cmdr_fs::volume::host::events::VolumeConnection;
 use log::{debug, info, warn};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -40,7 +40,7 @@ impl SmbVolume {
     /// `SmbVolume::attempt_reconnect`; the watcher bails on errors and we
     /// respawn here on the next successful reconnect).
     pub(super) fn spawn_watcher(&self, params: &SmbConnectionParams) {
-        use crate::network::smb_connection::build_smb_addr;
+        use cmdr_smb::build_smb_addr;
 
         // A superseded instance no longer owns its volume id, and the watcher is
         // id-scoped: it feeds the listing cache and the index for that id, and
@@ -124,7 +124,7 @@ impl SmbVolume {
         let first_attempt = build_session(&params_snapshot).await;
         let (client, tree) = match first_attempt {
             Ok(pair) => pair,
-            Err(err) if crate::network::smb_util::is_auth_error(&err) => {
+            Err(err) if cmdr_smb::is_auth_error(&err) => {
                 // Cached creds may be stale. Re-pull from the secret store and retry once.
                 info!(
                     "SmbVolume::attempt_reconnect(share={}): cached credentials rejected, re-pulling from secret store",

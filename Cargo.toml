@@ -4,6 +4,7 @@ members = [
   "crates/cmdr-archive",
   "crates/cmdr-fs",
   "crates/cmdr-index",
+  "crates/cmdr-smb",
   "crates/fsevent-stream",
   "crates/index-query",
   "crates/operation-log-dump",

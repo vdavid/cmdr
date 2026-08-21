@@ -27,7 +27,7 @@ match, accepted as an over-redaction (rare phrasing without an article between `
 
 An SMB login has three parts in our logs, and they don't carry the same weight. The **account name** is a real
 identifier, as personal as the email pattern, and it appeared verbatim in three places (`commands/network.rs` twice,
-`network/smb_connection.rs` once), so `account` collapses it to `<user>`. The **share name** appears in ~40 debug lines
+`crates/cmdr-smb/src/connection.rs` once), so `account` collapses it to `<user>`. The **share name** appears in ~40 debug lines
 and is what makes a bundle readable ("which share was this?"); a share is usually a generic label (`media`, `public`,
 `backups`), so it ships as-is. **Hosts** were already handled for the shapes that identify a person or a network
 (`mdns`, `ipv4`, `ipv6`, `smb_uri`); a bare NetBIOS name (`server=NASPOLYA`) still ships, which is the known remaining

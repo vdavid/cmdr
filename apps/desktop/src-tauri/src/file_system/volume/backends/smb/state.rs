@@ -2,7 +2,7 @@
 
 use super::SmbVolume;
 use super::events::emit_state_change;
-use crate::network::VolumeConnection;
+use cmdr_fs::volume::host::events::VolumeConnection;
 use std::sync::atomic::Ordering;
 
 /// Connection health states for an SmbVolume.
@@ -31,7 +31,13 @@ impl ConnectionState {
     }
 }
 
-/// Widens the internal state machine into the wire enum the frontend reads.
+/// Widens the internal state machine into the backend-facing enum every
+/// connecting backend reports in (`cmdr_fs::volume::host::events`).
+///
+/// Deliberately NOT the frontend's wire enum: `events::volume_mapping` owns that
+/// translation for every backend, and converting straight to it here would weld
+/// the SMB backend to the app's `network` module in a cycle (a `From` impl is
+/// attributed to the module defining the type it produces).
 ///
 /// One-directional on purpose: `VolumeConnection::NeedsCredentials` has no
 /// `ConnectionState` counterpart. It's emitted straight from the reconnect

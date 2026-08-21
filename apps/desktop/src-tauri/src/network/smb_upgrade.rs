@@ -97,7 +97,7 @@ enum DirectConnectOutcome {
 /// A stale Keychain password therefore looked exactly like a flaky server, and
 /// the share sat silently on the kernel mount at a fraction of the speed.
 fn log_direct_connect_failure(server: &str, share: &str, err: &smb2::Error, outcome: DirectConnectOutcome) {
-    let auth = crate::network::smb_util::is_auth_error(err);
+    let auth = cmdr_smb::is_auth_error(err);
     match (outcome, auth) {
         (DirectConnectOutcome::StaysOnKernelMount, true) => log::warn!(
             target: "smb_fallback",
@@ -412,7 +412,7 @@ pub(crate) async fn try_smb_upgrade(
     volume_id: &str,
 ) -> Result<(), UpgradeError> {
     use crate::file_system::volume::smb::connect_smb_volume;
-    use crate::network::smb_util::is_auth_error;
+    use cmdr_smb::is_auth_error;
     use std::sync::Arc;
 
     // Resolve mDNS service names to connectable addresses

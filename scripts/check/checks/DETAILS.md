@@ -911,14 +911,19 @@ belongs in the slow group, never in `--fast`. Run Tarjan on the FILTERED graph y
    `indexing/lifecycle/manager/{start.rs,phased.rs}`, are why that component reads larger than its real coupling.
 3. **`--no-traits` does not filter `From` impls.** A `From` in module A for a type in module B prints as a real A → B
    edge.
-4. **An inherent-impl method is attributed to the module defining its TYPE, not the one holding the `impl` block.** So
-   moving a struct while leaving a method that RETURNS it behind fabricates an edge in the opposite direction from the
-   one you were cutting. **When a cut doesn't produce the number you simulated, suspect where a returned type is defined
-   before you suspect the analysis.**
-5. **A re-export resolves to the DEFINING module.** Importing `crate::file_system::volume::SmbConnectionState` through a
-   facade still draws the edge to `backends::smb::state`, where the enum lives. That single line
-   (`network/smb_upgrade.rs:220`) is the entire back-edge welding `network` to the SMB backend; nothing in `network/`
-   names `backends::smb` textually, so grep will not find it for you.
+4. **An impl's methods are attributed to the module defining the TYPE, not the one holding the `impl` block.** So moving
+   a struct while leaving a method that RETURNS it behind fabricates an edge in the opposite direction from the one you
+   were cutting. **When a cut doesn't produce the number you simulated, suspect where a returned type is defined before
+   you suspect the analysis.** Traps 3 and 4 compound, and together they made the single edge that welded `network` to
+   the SMB backend for months: an `impl From<ConnectionState> for network::VolumeConnection` sitting in
+   `backends/smb/state.rs` printed as `network::VolumeConnection::from → backends::smb::state`, so it read as `network/`
+   reaching into the backend when the code does the reverse. **Nothing under `network/` named `backends::smb` textually,
+   so grep never finds an edge of this shape.** Locate it by re-running WITHOUT `--no-fns` and grepping for the
+   `-> "<target module>"` line: the source node names the function, which names the impl.
+5. **A re-export resolves to the DEFINING module.** Importing a facade path draws the edge to wherever the item is
+   really declared, not the facade. For an item that a workspace crate defines, `--no-externs` then drops the edge
+   entirely, so a facade import can be invisible rather than misattributed. Either way the printed source is not where
+   you'd look.
 
 ### Zero is not the target, and a small max SCC is not a design goal by itself
 
@@ -939,9 +944,19 @@ that score highest on the graph; the highest-scoring single edge in the index en
 `IndexPhase::Running(Box<IndexManager>)`, an honest ownership relation whose removal would trade a clear ownership story
 for acyclicity.
 
-### The numbers, measured 2026-08-21 on `main` (cargo-modules 0.27.0)
+### The numbers
 
-Maximum strongly-connected component per crate, and modules trapped in some cycle:
+Maximum strongly-connected component per crate, and modules trapped in some cycle. ⚠️ **The tool version changes the
+absolute numbers**, so measure before AND after a cut on whatever version you have rather than comparing against a
+figure recorded here.
+
+Measured 2026-08-21 with cargo-modules 0.26.0, after the SMB protocol layer moved into `cmdr-smb` and the
+`From<ConnectionState>` edge above was cut — `cmdr`: max 11 (`write_operations::*`), 127 of 525 modules in a cycle. Next
+largest: `file_viewer::*` (10), then `menu::*` (8), then `backends::smb::*` (6, all parent ↔ child). `network` is in no
+cycle but its own `network` ↔ `network::mdns_discovery` pair. Before the cut, on the same version: max 11, 128 of 528,
+and `backends::smb::*` + `network` + `network::mdns_discovery` was a single nine-module component.
+
+Measured 2026-08-21 with cargo-modules 0.27.0, before the cut:
 
 - `cmdr`: max 11 (`write_operations::*`), 126 of 522 modules in a cycle. Next largest: `file_viewer::*` (10), then
   `backends::smb::*` + `network` (9).
@@ -1037,13 +1052,13 @@ doubles as production code.
 
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
   scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
-  `cmdr-index`, `cmdr-fs`, `cmdr-archive` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its `cargo metadata`
-  tree, plus a per-bucket public-surface ceiling on `cmdr-index` and `cmdr-archive`. `cmdr-fs` is deliberately uncapped:
-  it's shared vocabulary whose job is to be named from everywhere. See
-  `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
-  `index-crate-isolation.go` for the archive ones, and why raising either needs David's say-so). The crates' code is
-  also covered by the desktop Rust lanes above, which all run workspace-wide; this scope is for checks about the crate
-  boundary itself.
+  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its
+  `cargo metadata` tree, plus a per-bucket public-surface ceiling on `cmdr-index` and `cmdr-archive`. `cmdr-fs` and
+  `cmdr-smb` are deliberately uncapped (the first permanently, the second until its extraction finishes): it's shared
+  vocabulary whose job is to be named from everywhere. See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what
+  each index number means, the crate's own entry in `index-crate-isolation.go` for the archive ones, and why raising
+  either needs David's say-so). The crates' code is also covered by the desktop Rust lanes above, which all run
+  workspace-wide; this scope is for checks about the crate boundary itself.
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every

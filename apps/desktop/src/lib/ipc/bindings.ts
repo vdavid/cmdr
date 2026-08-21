@@ -3947,7 +3947,9 @@ export type AttachmentRef = {
 
 // Authentication mode detected for a host.
 export type AuthMode =
+  // The server let an anonymous session list its shares.
   | 'guest_allowed'
+  // The server turned the anonymous session away; a sign-in is needed.
   | 'creds_required'
   // Not yet checked or check failed.
   | 'unknown'
@@ -9091,9 +9093,11 @@ export type SettingsChanged = {
 
 // Information about a discovered share.
 export type ShareInfo = {
+  // The share name as the server spells it (`archive`, never `//nas/archive`).
   name: string
   // False for printer/IPC shares.
   isDisk: boolean
+  // The server's own description of the share, when it set one.
   comment: string | null
 }
 
@@ -9104,22 +9108,64 @@ export type ShareInfo = {
  *  while keeping a flat JSON shape (`{ "type": "...", "message": "..." }`).
  */
 export type ShareListError =
-  | { type: 'host_unreachable'; message: string }
-  | { type: 'timeout'; message: string }
-  | { type: 'auth_required'; message: string }
+  // The server is offline, or nothing is listening on the SMB port.
+  | {
+      type: 'host_unreachable'
+      // The diagnostic detail, for logs. The host renders the user's words.
+      message: string
+    }
+  // The server accepted the connection and then went quiet.
+  | {
+      type: 'timeout'
+      // The diagnostic detail, for logs. The host renders the user's words.
+      message: string
+    }
+  // The server turned an anonymous session away; credentials are needed.
+  | {
+      type: 'auth_required'
+      // The diagnostic detail, for logs. The host renders the user's words.
+      message: string
+    }
   // Guest access won't work.
-  | { type: 'signing_required'; message: string }
-  | { type: 'auth_failed'; message: string }
-  | { type: 'protocol_error'; message: string }
-  | { type: 'resolution_failed'; message: string }
+  | {
+      type: 'signing_required'
+      // The diagnostic detail, for logs. The host renders the user's words.
+      message: string
+    }
+  // The credentials the caller supplied were rejected.
+  | {
+      type: 'auth_failed'
+      // The diagnostic detail, for logs. The host renders the user's words.
+      message: string
+    }
+  // The exchange broke down in a way none of the other variants describes.
+  | {
+      type: 'protocol_error'
+      // The diagnostic detail, for logs. The host renders the user's words.
+      message: string
+    }
+  // The hostname never resolved to an address.
+  | {
+      type: 'resolution_failed'
+      // The diagnostic detail, for logs. The host renders the user's words.
+      message: string
+    }
   // A required CLI tool is not installed.
-  | { type: 'missing_dependency'; message: string; installCommand: string | null }
+  | {
+      type: 'missing_dependency'
+      // The diagnostic detail, for logs. The host renders the user's words.
+      message: string
+      // What the user would run to install it, when there's a one-liner.
+      installCommand: string | null
+    }
 
 // Result of a share listing operation.
 export type ShareListResult = {
   // Already filtered to disk shares only.
   shares: ShareInfo[]
+  // What the listing attempt learned about the server's auth stance.
   authMode: AuthMode
+  // True when this answer came from the in-memory cache rather than the wire.
   fromCache: boolean
 }
 

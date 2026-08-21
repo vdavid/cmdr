@@ -4,7 +4,7 @@
 //! transitions can emit `volume-connection-changed` and
 //! `smb-fell-back-to-os-mount` events to the frontend.
 
-use crate::network::VolumeConnection;
+use cmdr_fs::volume::host::events::{VolumeConnection, VolumeEventSink};
 use log::warn;
 use std::sync::{Mutex as StdMutex, OnceLock};
 use tauri::AppHandle;
@@ -25,16 +25,16 @@ fn get_app_handle() -> Option<AppHandle> {
     APP_HANDLE.get().and_then(|m| m.lock().ok()).and_then(|g| g.clone())
 }
 
+/// Reports a session-state transition to the frontend.
+///
+/// Goes through `events::volume_mapping`, the same adapter a backend on a
+/// `VolumeHost` gets handed, so the backend-facing → wire enum mapping stays in
+/// one place and this backend speaks no `network` type. Once `SmbVolume` carries
+/// a host, this becomes `host.events().connection_changed(...)` and the
+/// `AppHandle` above goes away.
 pub(super) fn emit_state_change(volume_id: &str, state: VolumeConnection) {
-    use tauri_specta::Event;
-    if let Some(app) = get_app_handle()
-        && let Err(e) = (crate::network::VolumeConnectionChanged {
-            volume_id: volume_id.to_string(),
-            state,
-        })
-        .emit(&app)
-    {
-        warn!("Failed to emit volume-connection-changed: {}", e);
+    if let Some(app) = get_app_handle() {
+        crate::events::volume_mapping::TauriVolumeEvents::new(app).connection_changed(volume_id, state);
     }
 }
 

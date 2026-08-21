@@ -1,0 +1,33 @@
+[package]
+name = "cmdr-smb"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# "This is a test build." Its whole job is to forward `smb2/testing`, which
+# publishes `smb2::testing`'s port accessors for the Docker-backed SMB fixture
+# stack. The app turns it on through its own `smb-e2e` feature, and cargo's
+# feature unification means the app's DIRECT `smb2` dependency sees the feature
+# too — so `network::virtual_smb_hosts` keeps compiling without a second
+# `smb2/testing` forward. Never enable in a production build.
+testing = ["smb2/testing"]
+
+[dependencies]
+# The SMB client. Same version and features the app pins, so one `smb2` resolves
+# for the whole graph and a feature turned on here reaches every consumer of it.
+smb2 = { version = "0.18.1", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+# Type export for the Rust↔TS bindings: `ShareListResult` and friends cross IPC.
+# Pinned to the EXACT same version the app uses, for the reason `cmdr-fs` gives:
+# two `specta` crates in one graph would make these `Type` impls stop satisfying
+# `tauri-specta`, and the app's command signatures collect them transitively.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+log = "0.4"

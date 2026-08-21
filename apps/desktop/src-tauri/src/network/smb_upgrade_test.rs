@@ -637,7 +637,7 @@ fn an_auth_rejection_is_invisible_to_upgrade_failure_so_the_log_asks_is_auth_err
     };
 
     assert!(
-        crate::network::smb_util::is_auth_error(&rejected),
+        cmdr_smb::is_auth_error(&rejected),
         "a rejected password must be recognizable as auth, or the log can't name it"
     );
     assert_eq!(

@@ -4,8 +4,7 @@
 //! the pure Rust smb-rs implementation fails (for example, with certain Samba servers).
 
 #[cfg(target_os = "macos")]
-use crate::network::smb_types::AuthMode;
-use crate::network::smb_types::{ShareInfo, ShareListError, ShareListResult};
+use cmdr_smb::{AuthMode, ShareInfo, ShareListError, ShareListResult};
 #[cfg(target_os = "macos")]
 use log::debug;
 
@@ -115,7 +114,7 @@ pub async fn list_shares_smbutil(
     let shares = super::smb_smbclient::run_smbclient_list(host, port, None).await?;
     Ok(ShareListResult {
         shares,
-        auth_mode: super::smb_types::AuthMode::GuestAllowed,
+        auth_mode: AuthMode::GuestAllowed,
         from_cache: false,
     })
 }
@@ -151,7 +150,7 @@ pub async fn list_shares_smbutil_with_auth(
     let shares = super::smb_smbclient::run_smbclient_list(host, port, Some((username, password))).await?;
     Ok(ShareListResult {
         shares,
-        auth_mode: super::smb_types::AuthMode::CredsRequired,
+        auth_mode: AuthMode::CredsRequired,
         from_cache: false,
     })
 }

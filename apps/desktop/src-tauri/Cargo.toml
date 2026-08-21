@@ -20,7 +20,12 @@ playwright-e2e = ["dep:tauri-plugin-playwright", "cmdr-fs/playwright-e2e"]
 # Virtual MTP device for E2E testing (registers a fake Android device). Never enable in production builds.
 virtual-mtp = ["mtp-rs/virtual-device"]
 # Virtual SMB hosts for E2E testing (injects synthetic network hosts). Never enable in production builds.
-smb-e2e = ["smb2/testing"]
+#
+# It forwards through `cmdr-smb`, which owns the SMB protocol layer, rather than
+# naming `smb2/testing` directly: cargo unifies features across the graph, so the
+# one `smb2` everything resolves to gets `testing` turned on and this crate's own
+# direct `smb2` calls (`network::virtual_smb_hosts`) see it too.
+smb-e2e = ["cmdr-smb/testing"]
 # "This is a test build.", forwarded to the two crates that act on it. They widen
 # their test-only scaffolding (`cmdr_index::testing`, `cmdr_fs::testing`) from
 # `#[cfg(test)]` to `pub`, which is the only way this crate's tests can reach it:
@@ -55,6 +60,11 @@ cmdr-fs = { path = "../../../crates/cmdr-fs" }
 # no `tauri` in its tree, so the ~10 codec crates it needs stay out of this
 # manifest and `cargo check -p cmdr-archive` verifies it without building the app.
 cmdr-archive = { path = "../../../crates/cmdr-archive" }
+# The SMB protocol layer: the share-listing vocabulary, the smb2 error
+# classification, and the address builder. No `tauri` in its tree, so
+# `cargo check -p cmdr-smb` verifies it without building the app. Discovery,
+# mounts, the keychain, and every event stay here in `network/`.
+cmdr-smb = { path = "../../../crates/cmdr-smb" }
 # The index: the file index, the media index, and folder importance, behind one
 # `Index` handle. Tauri-free by design and enforced — the app is its host, which
 # is why every seam it needs is answered in `src/index_host.rs` and nowhere else.

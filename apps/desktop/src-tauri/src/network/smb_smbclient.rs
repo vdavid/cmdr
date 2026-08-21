@@ -4,7 +4,7 @@
 //! package) when the pure Rust smb-rs implementation fails on Linux. This is the Linux
 //! equivalent of the macOS `smbutil` fallback in `smb_smbutil.rs`.
 
-use crate::network::smb_types::{ShareInfo, ShareListError};
+use cmdr_smb::{ShareInfo, ShareListError};
 use log::{debug, warn};
 use std::io::Write;
 use std::path::{Path, PathBuf};

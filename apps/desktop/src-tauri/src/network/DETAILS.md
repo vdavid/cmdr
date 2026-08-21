@@ -19,13 +19,11 @@ of the app build.
 - **E2E testing**: `virtual_smb_hosts.rs`: Injects 14 synthetic `NetworkHost` entries for smb2's consumer Docker containers. Hosts come from `SMB_E2E_{SVC}_HOST` (default `localhost`). Ports come from `SMB_E2E_{SVC}_PORT` when set, else `smb2::testing::*_port()` (which reads `SMB_CONSUMER_*_PORT`, default 10480+). `SMB_E2E_*_PORT` is the test-suite contract (same var the frontend fixture reads), so backend and fixture agree on which port to connect to. This matters inside Docker where containers listen on `:445` internally but `SMB_CONSUMER_*_PORT` would point at the host-side mapping. Gated behind `smb-e2e` Cargo feature. Never enabled in production.
 - **Share listing**: Split across multiple files:
   - `smb_client.rs`: Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb2 first, falls back to smbutil (macOS only)
-  - `smb_connection.rs`: TCP connection establishment and share listing via `smb2::SmbClient`
   - `smb_cache.rs`: 30-second in-memory cache for share lists, keyed by server address
   - `smb_smbutil.rs`: `smbutil view -G` fallback for older Samba/NAS servers (macOS); on Linux delegates to `smb_smbclient`
   - `smb_smbclient.rs`: `smbclient -L` fallback for Linux (requires `samba-client` package)
   - `linux_distro.rs`: Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
-  - `smb_types.rs`: Shared types (`ShareInfo`, `AuthMode`, `ShareListError`, etc.)
-  - `smb_util.rs`: Helpers: error classification (`classify_error`, `is_auth_error`) and `convert_shares` (maps `smb2::ShareInfo` to Cmdr's `ShareInfo`)
+  - The protocol layer under all of them is the `cmdr-smb` crate: the addr builder, the guest / authenticated `smb2::SmbClient` listing calls, the `classify_*` / `is_auth_error` classification, and the `ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError` vocabulary. `crates/cmdr-smb/DETAILS.md` says what belongs there and what stays here
   - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by both fire-and-forget auto-upgrade paths), `try_smb_upgrade`, `UpgradeResult`/`UpgradeError` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
@@ -127,9 +125,8 @@ cleartext password into `ps`-readable argv). See the "smbutil / smbclient fallba
 
 ### Always use IP when available
 
-smb2 uses the addr host component in UNC paths (`\\server\IPC$`). When hostname has a `.local` suffix, strip it
-before passing as addr (some servers reject `.local` in UNC paths). Always pass resolved IP from mDNS discovery when
-available. If IP unavailable, use derived hostname with `.local` stripped.
+Always pass the resolved IP from mDNS discovery when one is available; fall back to the hostname otherwise. The
+`.local` strip that fallback needs is `cmdr_smb::build_smb_addr`'s, and the reason for it lives with that code.
 
 ### Guest-first auth flow
 
@@ -142,8 +139,8 @@ available. If IP unavailable, use derived hostname with `.local` stripped.
 
 `smb2` crate may fail on older Samba servers with RPC incompatibility. Classify error as `ProtocolError`, then try a platform-specific CLI fallback. Two error classes are NOT protocol errors and must not trigger the fallback (both kept the fallback warn crying wolf when they misclassified):
 
-- A refused/unreachable TCP connect: `classify_error` (in `smb_util.rs`) maps `smb2::Error::Io` with `ConnectionRefused` / `HostUnreachable` / `NetworkUnreachable` io kinds to `ShareListError::HostUnreachable`, so an offline server skips the fallback (the same dead port refuses any client).
-- A guest/anonymous SessionSetup the server rejects on auth grounds: macOS smbd answers with `STATUS_ACCOUNT_RESTRICTION` (0xC000006E), and smb2 ≥0.13.1 classifies the whole logon-rejection NTSTATUS family as `ErrorKind::AuthRequired`, so `is_auth_error` routes it to the credentials path (keychain → prompt) instead of the CLI fallback. Pinned by `smb_util.rs::test_guest_rejection_status_is_auth_error`.
+- A refused/unreachable TCP connect: `cmdr_smb::classify_error` maps `smb2::Error::Io` with `ConnectionRefused` / `HostUnreachable` / `NetworkUnreachable` io kinds to `ShareListError::HostUnreachable`, so an offline server skips the fallback (the same dead port refuses any client).
+- A guest/anonymous SessionSetup the server rejects on auth grounds: macOS smbd answers with `STATUS_ACCOUNT_RESTRICTION` (0xC000006E), and smb2 ≥0.13.1 classifies the whole logon-rejection NTSTATUS family as `ErrorKind::AuthRequired`, so `is_auth_error` routes it to the credentials path (keychain → prompt) instead of the CLI fallback. Pinned by `crates/cmdr-smb/src/errors.rs::test_guest_rejection_status_is_auth_error`.
 
 The fallback paths:
 - **macOS:** `smbutil view -G -N` (guest) or `smbutil view -N` (Keychain-backed; smbutil reads the system Keychain itself). **No authenticated smbutil fallback** — see the credential-channel note below.
@@ -289,6 +286,25 @@ manual install paths). A notice describes a situation, not an event: once the se
 genuine regression is worth saying out loud again. Without the clear, one bad startup would mute the notice for the
 rest of the run.
 
+## The one edge that must not come back
+
+`network/` and the SMB backend (`file_system/volume/backends/smb/`) sat in a single nine-module dependency cycle for a
+long time, and the edge that closed it was invisible to grep: no line under `network/` named `backends::smb`. It was an
+`impl From<ConnectionState> for network::VolumeConnection` living in `smb/state.rs`. `cargo-modules` attributes an impl
+to the module that defines the type it PRODUCES, so the edge printed as `network → backends::smb::state` and looked
+like `network/` reaching into the backend.
+
+The cut: the backend converts into `cmdr_fs::volume::host::events::VolumeConnection`, the backend-facing enum every
+connecting backend reports in, and `events::volume_mapping` widens that into the wire enum for the frontend. That
+adapter already existed for backends on a `VolumeHost`; SMB now shares it instead of hand-rolling a second emit. With
+the edge gone, `network` is in no cycle but its own parent ↔ `mdns_discovery` pair, and the backend's component is six
+modules of parent ↔ child.
+
+**So: a type in `network/` must never be constructible from a backend type.** The direction that stays legal is the
+backend naming `cmdr_fs` and `cmdr_smb` types, plus `network/` calling into the backend explicitly the way
+`smb_upgrade.rs` does. The trap and its four siblings are catalogued in `scripts/check/checks/DETAILS.md` § "Rust module
+cycles"; re-measure there before trusting any number.
+
 ## Gotchas
 
 - **Don't hold mutex during DNS resolution**: `get_host_for_resolution` / `update_host_resolution` extract host info and release the mutex before blocking DNS, then re-acquire to update. Holding the mutex across network calls risks deadlock.
@@ -297,10 +313,8 @@ rest of the run.
 - **mDNS service type must include `.local.`**: `mdns-sd` requires full form `"_smb._tcp.local."` (trailing dot). Without it, browse() fails silently.
 - **Account name is keyed by server identity, not the raw string**: `make_account_name` runs the server through `server_identity::credential_key` (lowercase + strip the mDNS service suffix / `.local` down to the bare instance name), so `Naspolya`, `naspolya.local`, and `Naspolya._smb._tcp.local` all key the same entry. Without this the frontend saved under the mDNS instance name while the OS-mount upgrade path looked up by the `statfs` service name, so a just-saved password was never found on the next connect (the picker kept showing the `os_mount` dot and re-prompted). IP literals have no bare form and pass through unchanged.
 - **Linux `gio mount` requires GVFS**: The `gvfs-smb` package must be installed. Standard on Ubuntu/Fedora GNOME desktops. KDE desktops may need it explicitly.
-- **`ShareListError` uses internally tagged serde format** (`#[serde(tag = "type")]`) with struct variants. This keeps a flat JSON shape (`{ "type": "protocol_error", "message": "..." }`). The `MissingDependency` variant adds an optional `installCommand` field. When adding new variants, use struct syntax (not tuple).
 - **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:10480` gives "Broken pipe", but `//localhost:10480` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
-- **Mount URL must include port when non-standard**: `mount_share_sync` builds `smb://server:port/share` for non-445 ports. The port is passed as a separate parameter through `mount_share` → `mount_share_sync`, not embedded in the server string (embedding it would cause `build_smb_addr` to double the port: `localhost:10480:10480`). `SmbMountInfo.port` extracts the port from `statfs` mount source for upgrade paths.
-- **Strip `.local` from addr for smb2**: `smb2::Connection::connect()` extracts `server_name` from the addr string and uses it in UNC paths. Passing `"foo.local:445"` creates `\\foo.local\IPC$` which some servers reject. The `build_addr` helper in `smb_connection.rs` handles this.
+- **Mount URL must include port when non-standard**: `mount_share_sync` builds `smb://server:port/share` for non-445 ports. The port is passed as a separate parameter through `mount_share` → `mount_share_sync`, not embedded in the server string (embedding it would cause `cmdr_smb::build_smb_addr` to double the port: `localhost:10480:10480`). `SmbMountInfo.port` extracts the port from `statfs` mount source for upgrade paths.
 - **Manual hosts always set `hostname`**: The share listing pipeline guards on `host.hostname` being truthy. `create_network_host` always sets `hostname` (to the address, even for IPs) so manual hosts flow through the pipeline correctly.
 - **SMB upgrade waits briefly for mDNS to warm**: When macOS auto-remounts an SMB share at login, FSEvents fires before
   mDNS has discovered the host, so `statfs` gives us an IP but the host map is empty. Stored Keychain credentials are

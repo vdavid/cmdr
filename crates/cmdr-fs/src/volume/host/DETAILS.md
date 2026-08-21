@@ -185,10 +185,10 @@ to hand the seam a struct and hope its serialization is PII-free.
 - **Anything computable from a `&str`.** Volume id vocabulary (`smb_volume_id`, `mtp_ids`), archive detection
   (`archive_format::has_supported_archive_extension`), firmlink normalization. If you can compute the answer without
   asking anyone, it's vocabulary — move it down, don't make it a method.
-- **Protocol helpers that happen to live in the app.** `network::smb_connection::build_smb_addr` and
-  `network::smb_util::is_auth_error` read like host reaches and aren't: they're pure functions over SMB's own types that
-  ended up in `network/` for historical reasons. They move INTO the backend crate. Splitting `network/` that way is part
-  of extracting SMB: the protocol helpers go down, the discovery, upgrade, and UI wiring stay.
+- **Protocol helpers that happen to live in the app.** `build_smb_addr` and `is_auth_error` read like host reaches and
+  aren't: they're pure functions over SMB's own types, and they now live in `crates/cmdr-smb/` with the share-listing
+  vocabulary. Discovery, upgrade, mounts, the keychain, and the UI wiring stayed in `network/`. The boundary test and
+  the full split: `crates/cmdr-smb/DETAILS.md`.
 - **User-facing prose.** A backend emits typed values; the host renders every word. Diagnostic strings for `log::` are
   fine and stay English.
 
@@ -290,9 +290,11 @@ Three things the adapters found that aren't trait shape, and matter to whoever w
   so the adapter is unconditional; only the app's own call sites carry
   `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
 
-`cmdr-archive` is the only backend on the seams so far. The app-resident ones still reach `listing::caching`,
-`network::keychain`, and the rest directly, and each switches over when it moves into its own crate. Which ones will and
-won't: § "Which backends move" below.
+`cmdr-archive` is the only backend on the seams so far, with one exception: SMB already reports connection transitions
+through `VolumeConnection` and `events::volume_mapping`, because converting straight to the app's wire enum welded the
+backend and `network/` into one cycle. It still reaches `listing::caching`, `network::keychain`, and the rest directly,
+as do the other app-resident backends; each switches over when it moves into its own crate. Which ones will and won't: §
+"Which backends move" below.
 
 ## What a backend crate buys, and the two things it doesn't
 
@@ -326,12 +328,12 @@ ratio, as an order-of-magnitude reading.
 nothing extra and gets the full benefit. The retrofits are judged one at a time, because retrofitting is where all the
 cost sits:
 
-- **SMB is the one worth retrofitting**, and only when someone is about to spend sustained time inside it. Its coupling
-  is roughly two dozen sites against archive's three, plus the four structural problems this document enumerates: the
-  `pub(in …)` visibility, the `use super::*` test modules, the `network/` split, and the registry reach-backs. Its test
-  surface is 5,343 lines against archive's 3,376, and the archive move showed the real cost is app-side test re-homing
-  rather than path rewriting — budget for SPLITTING tests that grew to cover both sides of the boundary, not moving
-  them.
+- **SMB is the one worth retrofitting**, and it's underway in `crates/cmdr-smb/` (the protocol layer landed; the
+  `Volume` impl hasn't). Its coupling is roughly two dozen sites against archive's three, plus the four structural
+  problems this document enumerates: the `pub(in …)` visibility, the `use super::*` test modules, the `network/` split
+  (done), and the registry reach-backs. Its test surface is 5,343 lines against archive's 3,376, and the archive move
+  showed the real cost is app-side test re-homing rather than path rewriting — budget for SPLITTING tests that grew to
+  cover both sides of the boundary, not moving them.
 - **`local_posix` and MTP are permanently app-resident.** Both refusals are written out with their reasons in
   `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions", because that's where
   someone proposing "let's complete the set" will be standing.

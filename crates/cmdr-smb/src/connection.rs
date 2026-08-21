@@ -1,7 +1,4 @@
-//! SMB connection establishment utilities.
-//!
-//! Provides functions for connecting to SMB servers and listing shares
-//! using the smb2 library (pure Rust implementation).
+//! Reaching an SMB server: the address string, and the two share-listing calls.
 
 use log::debug;
 use smb2::{ClientConfig, SmbClient};
@@ -16,17 +13,15 @@ pub fn build_smb_addr(hostname: &str, port: u16) -> String {
     format!("{}:{}", host, port)
 }
 
-/// Determines the server address string for smb2.
-/// Prefers IP address over hostname. Strips `.local` suffix from hostnames
-/// because smb2 uses the addr host component in UNC paths (`\\server\IPC$`),
-/// and some servers reject `.local` in UNC paths.
+/// Determines the server address string for smb2, preferring an IP over a hostname.
+///
+/// An IP needs no `.local` handling, so it's formatted directly; a hostname goes
+/// through [`build_smb_addr`] for the strip.
 fn build_addr(hostname: &str, ip_address: Option<&str>, port: u16) -> String {
-    let host = if let Some(ip) = ip_address {
-        ip.to_string()
-    } else {
-        hostname.strip_suffix(".local").unwrap_or(hostname).to_string()
-    };
-    format!("{}:{}", host, port)
+    match ip_address {
+        Some(ip) => format!("{}:{}", ip, port),
+        None => build_smb_addr(hostname, port),
+    }
 }
 
 /// Attempts to list shares as guest (anonymous).
@@ -100,6 +95,16 @@ mod tests {
     #[test]
     fn test_build_addr_no_local_suffix() {
         assert_eq!(build_addr("nas", None, 445), "nas:445");
+    }
+
+    /// `build_smb_addr` is what the SMB backend calls to reach a server, so the
+    /// `.local` strip has to hold on the PUBLIC entry point, not only on the
+    /// private variant the share-listing path uses.
+    #[test]
+    fn build_smb_addr_strips_local_and_keeps_the_port_separate() {
+        assert_eq!(build_smb_addr("nas.local", 445), "nas:445");
+        assert_eq!(build_smb_addr("nas", 445), "nas:445");
+        assert_eq!(build_smb_addr("192.168.1.50", 10480), "192.168.1.50:10480");
     }
 
     #[test]

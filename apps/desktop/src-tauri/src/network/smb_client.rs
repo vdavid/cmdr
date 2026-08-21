@@ -9,12 +9,12 @@ use std::time::Duration;
 // Re-export public types (re-exports of items used in smb_client's public API)
 pub use super::smb_cache::get_cached_shares_auth_mode;
 pub use super::smb_cache::invalidate_cache;
-pub use super::smb_types::{AuthMode, ShareListError, ShareListResult};
+pub use cmdr_smb::{AuthMode, ShareListError, ShareListResult};
 
 // Internal imports
 use super::smb_cache::{DEFAULT_CACHE_TTL_MS, DEFAULT_LIST_SHARES_TIMEOUT_MS, cache_shares, get_cached_shares};
-use super::smb_connection::{try_list_shares_as_guest, try_list_shares_authenticated};
 use super::smb_smbutil::{list_shares_smbutil, list_shares_smbutil_authenticated_from_keychain};
+use cmdr_smb::{try_list_shares_as_guest, try_list_shares_authenticated};
 // macOS no longer shells out with explicit credentials (the URL-embedded password leaks into
 // argv); only the non-macOS authed fallback (smbclient `-A` authfile) still uses this.
 #[cfg(not(target_os = "macos"))]
@@ -22,8 +22,7 @@ use super::smb_smbutil::list_shares_smbutil_with_auth;
 // Only the macOS arm classifies the raw smb2 failure of an authenticated listing
 // (Linux retries via the smbclient authfile fallback instead).
 #[cfg(target_os = "macos")]
-use super::smb_util::classify_authenticated_error;
-use super::smb_util::{classify_error, convert_shares, is_auth_error};
+use cmdr_smb::{classify_authenticated_error, classify_error, convert_shares, is_auth_error};
 
 /// Lists shares on a network host.
 ///
