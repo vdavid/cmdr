@@ -89,7 +89,8 @@ What the tree holds today, section by section. "Shipped" means in `main` with te
   model actually received them: `propose::evidence::ImageFactsLedger` is scoped per chat thread, and
   `propose_rename_plan` refuses a plan citing content the ledger has no delivery for. This exists because 12 real files
   got fabricated names. Any future `Propose` tool inherits the obligation. See
-  `docs/specs/agent-context-harness-plan.md`.
+  `apps/desktop/src-tauri/src/agent/tools/propose/DETAILS.md` § Evidence, and invariant 6 in
+  `apps/desktop/src-tauri/src/agent/DETAILS.md`.
 
 ## 1. What this is
 
@@ -808,7 +809,9 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
 
 ## 17. Build order
 
-**Superseded in part by `docs/specs/agent-suggested-ops-plan.md` (2026-08-18).** David's call: milestones 1, 2, 4, and 5
+**Superseded in part (David's call, 2026-08-18); the shape decisions now live in
+`apps/desktop/src-tauri/src/agent/store/proposals/DETAILS.md`, and what remains unbuilt is
+`docs/specs/agent-wake-loop.md`.** David's call: milestones 1, 2, 4, and 5
 below ship as ONE release rather than staged, because a proposal store with no window, or a window with one op kind, is
 not a shippable half. That plan absorbs them and carries the shape decisions (a group is one verb and one destination;
 freeze moves from creation to approval). The ordering rationale below still explains WHY the original sequence was
