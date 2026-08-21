@@ -18,32 +18,33 @@ translated into nine locales, so a change means re-translating those keys, and n
    (`{countText} operations couldn't finish. Open the operation queue to see why.`), plus
    `fileOperations.transferProgress.queuedToastCount` and the three dismiss labels. Also worth a look, added after the
    drafts: `queue.chip.ariaLabel` and `queue.chip.scanningAriaLabel`.
-2. **Four rename-chaining toasts**, in `en/fileExplorer.json`: `chainKeptOriginalName`, `chainKeptOriginalNameAndOthers`,
-   `unconfirmed` (`Couldn't confirm the rename of "{name}". The volume may be slow, so the rename may still have gone
-   through.`), and `unconfirmedAndOthers`.
+2. **Four rename-chaining toasts**, in `en/fileExplorer.json`: `chainKeptOriginalName`,
+   `chainKeptOriginalNameAndOthers`, `unconfirmed`
+   (`Couldn't confirm the rename of "{name}". The volume may be slow, so the rename may still have gone through.`), and
+   `unconfirmedAndOthers`.
 3. **Three Duplicate strings**: `commands.fileDuplicate.label`, its palette description
    (`Make a copy of the selected files in the same folder`), and `menu.file.duplicate`. Note the nine locale labels were
-   chosen as each language's own Finder word rather than a dictionary translation, for example Hungarian
-   "Megkettőzés"; the choice of convention is worth knowing even under the translations-reviewed-later caveat.
+   chosen as each language's own Finder word rather than a dictionary translation, for example Hungarian "Megkettőzés";
+   the choice of convention is worth knowing even under the translations-reviewed-later caveat.
 4. **`Hide Others` and `Show All`** kept muda's Title Case while every neighbour is sentence case. Matching AppKit's own
    convention is defensible, but it is not written down anywhere, so today it reads as an oversight. Fix or document.
 
 ## Product calls that gate real work
 
-5. **Should a file that exhausts its retries stop the operation, or should the batch carry on?**
-   Today one unrecoverable file ends a 700-file copy. Carrying on needs a terminal event shape that can say "finished,
-   N files missing", a frontend that shows which ones, and journal semantics for a partially-successful operation.
-   Several days, and it is a product call first. Recorded at `transfer/DETAILS.md` § "Not done here".
+5. **Should a file that exhausts its retries stop the operation, or should the batch carry on?** Today one unrecoverable
+   file ends a 700-file copy. Carrying on needs a terminal event shape that can say "finished, N files missing", a
+   frontend that shows which ones, and journal semantics for a partially-successful operation. Several days, and it is a
+   product call first. Recorded at `transfer/DETAILS.md` § "Not done here".
 
 6. **Per-rule approval for a long job's tail.** For a 500-file rename, should approval move from per-item to per-rule,
    where the user carefully reviews a trial batch of five to 10 and the remainder runs as one background operation with
-   progress, cancel, and undo? Options: **(a)** yes, accepting that this is a write-engine change and that the
-   plan-call compaction idea then evaporates; **(b)** no, keep per-item approval and build compaction instead;
-   **(c)** defer both. This has blocked its two dependent milestones since July.
+   progress, cancel, and undo? Options: **(a)** yes, accepting that this is a write-engine change and that the plan-call
+   compaction idea then evaporates; **(b)** no, keep per-item approval and build compaction instead; **(c)** defer both.
+   This has blocked its two dependent milestones since July.
 
-7. **Does the `write_operations` module tangle get scoped into the backend-crate effort, or stand alone?**
-   It is now the app crate's largest genuine cycle at 11 sibling modules with no parent node, and nothing owns it.
-   Scoping it needs an edge analysis first, about half a day.
+7. **Does the `write_operations` module tangle get scoped into the backend-crate effort, or stand alone?** It is now the
+   app crate's largest genuine cycle at 11 sibling modules with no parent node, and nothing owns it. Scoping it needs an
+   edge analysis first, about half a day.
 
 ## Three questions I recommend closing as already answered
 
@@ -68,8 +69,8 @@ design.
     frontend's 0.87, and it is also the codebase's top bug source. `AGENTS.md` says the fix is to make each invariant
     unrepresentable in a type rather than to raise the number. Worth scheduling rather than letting it drift.
 
-12. **A per-test duration budget for the Rust suites**, mirroring the two seconds E2E already enforces.
-    ⚠️ **Not decidable yet.** The figure everyone quotes (16 of about 4,900 tests over two seconds) cannot currently be
+12. **A per-test duration budget for the Rust suites**, mirroring the two seconds E2E already enforces. ⚠️ **Not
+    decidable yet.** The figure everyone quotes (16 of about 4,900 tests over two seconds) cannot currently be
     re-derived, because until the ANSI fix landing alongside this restructure, nextest's coloured output made every
     line-anchored parser match almost nothing: a recent `rust-tests` run logged 32 of about 4,900 tests. Land the fix,
     take one clean full run, then decide against real numbers.

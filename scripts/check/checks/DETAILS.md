@@ -741,9 +741,9 @@ Gotchas for anyone touching this:
   which the Claude Code harness does, so "we piped it into a buffer, so there's no TTY" is not a reason to skip
   normalising. Every pattern here is line-anchored, so a colourised buffer matches NOTHING and the lane degrades in
   total silence: no deadline diagnosis, no contention re-run, no rows in `~/cmdr-test-log.csv`, no retry-pass warn, and
-  a 1.2 MB raw dump because the progress trimmer misses too (verified against a real agent-session capture,
-  2026-08-21). `StripANSI` runs at each lane's capture boundary AND inside every parser; it is idempotent, so the
-  double application is deliberate cheapness rather than an oversight, and a new lane can't forget it.
+  a 1.2 MB raw dump because the progress trimmer misses too (verified against a real agent-session capture, 2026-08-21).
+  `StripANSI` runs at each lane's capture boundary AND inside every parser; it is idempotent, so the double application
+  is deliberate cheapness rather than an oversight, and a new lane can't forget it.
 - **The parsers are pinned to real nextest 0.9.136 output**, captured from a probe crate rather than written from
   memory. The fixtures in `rust-test-diagnostics_test.go` are verbatim, including the `(2/4)` progress counter and the
   `(───)` placeholder. Keep them verbatim when the pinned nextest version moves.
