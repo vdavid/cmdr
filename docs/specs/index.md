@@ -24,13 +24,14 @@ that lives beside the code, and git holds the history.
       observation before the second item can be ranked.** Read `docs/notes/idle-cpu-attribution-2026-08-03.md` first:
       four hypotheses here were refuted by measurement.
 - [ ] 2026-08-21 `backend-as-a-crate.md` - **S3, FTP(S), SFTP, WebDAV, and NFS are the top planned feature, and there's
-      no boundary to write them behind.** `SmbVolume` reaches into the app at 30 places and nothing stops the 31st. The
-      seams, the staging split, the app-side adapters, and the `cmdr-archive` pilot all shipped, so this is a finish
-      rather than a start: extract `cmdr-smb`, guard it with a module-cycle ratchet, then prove the seams with FTP.
-      **Steps 1-2 shipped** (the protocol layer is `crates/cmdr-smb`, the `network` ↔ SMB cycle is cut, and the two
-      registry reach-backs are a `Weak` handle over a registry-set retirement flag); steps 3-5 and the ratchet remain,
-      dominated by re-homing 5,845 lines of tests. Two decisions inside: the ratchet's metric (the obvious one fires on
-      good refactors) and FTP's concurrency knob.
+      no boundary to write them behind.** The seams, the staging split, the app-side adapters, and the `cmdr-archive`
+      pilot all shipped, so this is a finish rather than a start: extract `cmdr-smb`, guard it with a module-cycle
+      ratchet, then prove the seams with FTP. **Steps 1-3 shipped**: the protocol layer is `crates/cmdr-smb`, the
+      `network` ↔ SMB cycle is cut, the two registry reach-backs are a `Weak` handle over a registry-set retirement
+      flag, and `SmbVolume` now asks a `VolumeHost` for every one of its 24 former app reaches. What remains is moving
+      the code down, which is ONE milestone with re-homing 5,845 lines of white-box tests and not three (measured: the
+      move alone leaves 158 app-side compile errors that only unacceptable widening could fix). Two decisions inside:
+      the ratchet's metric (the obvious one fires on good refactors) and FTP's concurrency knob.
 - [ ] 2026-08-21 `indexing-loose-ends.md` - **The coverage machine works; these are the threads left hanging.** Phased
       indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled: a rename that
       closes one plan outright, the verifier mark with its abandoned-ground trigger, Spotlight recency for a true first
