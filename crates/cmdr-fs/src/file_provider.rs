@@ -8,9 +8,10 @@
 //! present on the domain root only — not on its children, not on
 //! `~/Library/CloudStorage` itself, and not on ordinary folders.
 //!
-//! Reading it costs ~5 µs: a plain APFS xattr read, no XPC, no provider process,
-//! so it works while the provider is offline and can't hang. It needs no
-//! entitlement.
+//! The syscall itself costs ~5 µs: a plain APFS xattr read, no XPC, no provider
+//! process, so it works while the provider is offline and can't hang. It needs no
+//! entitlement. (A whole `domain_id_for_dir` call around it measured 13.9 µs on a
+//! busy machine, so budget for the read, not for the syscall alone.)
 //!
 //! Two consumers, two questions:
 //!
@@ -187,9 +188,9 @@ impl FileProviderDomains {
     /// Whether `dir` is inside a File Provider domain.
     ///
     /// Costs one xattr read per path component the first time it sees a
-    /// directory (~5 µs each), then a hash lookup until the answer expires. Every
-    /// ancestor it walks past is memoized too, so the second directory in a tree
-    /// stops at the first remembered one.
+    /// directory, then a hash lookup (measured at 91 ns) until the answer expires.
+    /// Every ancestor it walks past is memoized too, so the second directory in a
+    /// tree stops at the first remembered one.
     #[must_use]
     pub fn membership_of_dir(&self, dir: &Path) -> DomainMembership {
         let now = (self.clock)();

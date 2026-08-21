@@ -104,8 +104,8 @@ directory, so a row costs one xattr read on itself and a hash lookup for its fol
 
 **Measured** (`bench.rs::bench_outside_a_domain`, 884 files in `/usr/bin`, release, macOS 26.6, 2026-08-21): **13.9 µs
 per path against 63.9 µs** for the same probe forced down the full path. The leaf xattr read is essentially all of that
-13.9 µs — the memoized directory verdict is 91 ns — so if this ever needs to be cheaper, that read is the thing to
-sharpen (`xattr::get` sizes the value with one syscall and reads it with a second), ❌ not the walk.
+13.9 µs — the memoized directory verdict is 91 ns — so the leaf read is where to look if this ever needs to be cheaper
+(`xattr::get` sizes the value with one syscall and reads it with a second). The walk is already free.
 
 **Why the leaf is read at all, rather than only the parent's ancestors:** a domain root is a row in its parent's
 listing, and its parent is an ordinary folder. `~/Library/CloudStorage/Dropbox` answers
