@@ -9,6 +9,18 @@ import (
 	"time"
 )
 
+// smbIntegrationFilter selects every Docker-backed SMB cell and nothing else.
+//
+// Two halves, because the suites live on two sides of a crate boundary. In the APP
+// crate the name prefix is the only signal, and it has to stay one: `smb_soak_copy_loop`
+// and the NAS bench are `#[ignore]`d there too, and neither belongs in a gating lane.
+// In `cmdr-smb` every `#[ignore]`d test is a Docker cell by construction — there is no
+// other reason to ignore one in a crate with no app around it — so the whole binary
+// qualifies, and a new cell there can be named for what it asserts instead of carrying
+// a prefix whose omission would silently keep it out of CI. `package`, not `binary`:
+// nextest matches a lib test target by binary id, which is not the crate name.
+const smbIntegrationFilter = "test(smb_integration_) + package(cmdr-smb)"
+
 // RunRustIntegrationTests runs the Docker-backed SMB Rust integration tests.
 //
 // Container lifecycle: managed by the runner-level SMB orchestrator (see
@@ -40,8 +52,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		)
 	}
 
-	// Workspace-wide, so an `smb_integration_*` test keeps being found after it
-	// moves into a crate. The filter expression is what narrows the run, not the
+	// Workspace-wide; the filter expression is what narrows the run, not the
 	// package selection. The features come along for the ride even though no SMB
 	// test needs them: asking cargo a different question than `desktop-rust-tests`
 	// does would make the two lanes rebuild `cmdr` for each other, every run.
@@ -80,15 +91,13 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// Measured: the same 35 tests are ~4s in debug vs ~1m52s in release, where
 	// ~all the release time was the disjoint compile, not the SMB execution. The
 	// tests are correctness checks (pass/fail), not benchmarks, so `-O` doesn't
-	// change their outcome — verified all 35 pass in debug. nextest's expression
-	// filter matches only our `smb_integration_*` tests, so unrelated `#[ignore]`
-	// tests are still skipped.
+	// change their outcome — verified all 35 pass in debug.
 	// `--run-ignored only` rides in baseArgs so the contention re-run inherits it: these
 	// tests are all `#[ignore]`-gated, so a re-run without it would select nothing and
 	// read as "everything passed alone".
 	baseArgs := append([]string{"--locked", "--run-ignored", "only"}, laneArgs...)
 	cmd := exec.Command("cargo", append(append([]string{"nextest", "run"}, baseArgs...),
-		"-E", "test(smb_integration_)")...)
+		"-E", smbIntegrationFilter)...)
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	// See `desktop-rust-tests.go`: captured nextest output is not plain text by default.

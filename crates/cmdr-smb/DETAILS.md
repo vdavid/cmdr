@@ -50,9 +50,10 @@ question — what went wrong, and would credentials help — and keeping a succe
 `smb2::list_shares()` already filters to disk shares and strips `$` shares, which is why `is_disk` is unconditionally
 true: the field exists for the frontend's benefit, not as a filter this crate applies.
 
-## Why the `testing` feature does nothing of its own
+## What the `testing` feature does, and the cargo rule behind it
 
-It forwards `smb2/testing` and stops there. The app's `smb-e2e` feature turns it on, which reaches `smb2` through
+Two things: it publishes `volume::testing` (the shared Docker fixtures, plus the `blake3` they hash with), and it
+forwards `smb2/testing`. The app's `smb-e2e` feature turns it on for the second reason, reaching `smb2` through
 `cmdr-smb` rather than naming `smb2/testing` directly.
 
 That works because cargo unifies features per package across the whole resolved graph: there is one `smb2` node, and a
@@ -74,12 +75,22 @@ Whichever crate's test target enables the feature, the one `smb2` gets it.
 
 `index-crate-isolation` holds this crate to 15 root promises, 4 public modules, and 18 public items inside them, set on
 2026-08-22 to exactly what the crate exposed the day the extraction finished — no headroom, so the first addition has to
-be argued for. Which audience each item serves, and why `volume::testing` counts apart:
-`scripts/check/checks/index-crate-isolation.go`.
+be argued for.
 
-The thing that surface protects is that a backend's API is the `Volume` trait it implements, which is `cmdr-fs`'s
-promise rather than this crate's. Everything counted here exists because something in `network/` or the debug window has
-to build a share or ask after one.
+**A backend's API is the `Volume` trait it implements**, which is `cmdr-fs`'s promise rather than this crate's, so none
+of its methods are counted here. Everything that IS counted exists because something outside has to build a share or ask
+after one, and a new item should name which of two audiences it serves:
+
+- **The protocol layer**, for `network/`'s discovery and share-listing passes: `build_smb_addr`, the two
+  `try_list_shares_*` calls, the three `classify_*` / `is_auth_error` readers, `convert_shares`, and the four vocabulary
+  types that cross IPC.
+- **Constructing and asking after a share**, for `network/smb_upgrade.rs` and the debug window's diagnostics dashboard:
+  `connect_smb_volume`, `SmbVolume` with `new` / `volume_id` / `connection_state` / `diagnostics`, `SmbConnectionParams`
+  with its five fields, and `ConnectionState`.
+
+Four public modules is the whole tree a host can name a path into: `connection`, `errors`, `types`, `volume`. Everything
+under `volume` except the four items above is private, `SmbVolumeInner` included, and `volume::testing` is
+`testing`-gated so it counts apart — which is what keeps the app's SMB suites from becoming a reason to widen this.
 
 ## Layout
 
@@ -103,10 +114,9 @@ to build a share or ask after one.
 The suites split by what a cell ASSERTS, never by what it connects to. Both sides connect to the same containers through
 `volume::testing`.
 
-- **Here**, if the assertion is about this backend: the `Volume` contract against a real server (`integration_test.rs`),
-  the byte path (`streaming_integration_test.rs`), the shared conformance promises (`conformance_test.rs`), the
-  session-free unit surface (`unit_test.rs`), the retirement wiring (`retirement_test.rs`), and the watcher's
-  archive-refresh routing (`watcher/archive_refresh_test.rs`).
+- **Here**, if the assertion is about this backend: the `Volume` contract against a real server, the byte path, the
+  shared conformance promises, the retirement wiring, the watcher's archive-refresh routing, and every session-free unit
+  case. § "The suites" below has the file-by-file map.
 - **In the app**, if the assertion is about what the APP does with a share: every cell driving `write_operations`, the
   volume registry, the listing cache, archive routing, or media enrichment. The app's `smb_app_integration_test.rs`
   holds the two that don't fit either heading — a pane close must not kill the watcher (the pane-close IPC is the
@@ -327,8 +337,8 @@ path that isn't on this volume genuinely isn't found there, and the caller surfa
 `exists` maps the error to `false` (the honest answer to the question it was asked), and the post-mutation listing-cache
 patches go through `display_path_for`, which returns an `Option` so a write that already succeeded is never reported as
 failed because its parent path didn't convert. The Docker integration tests address the fixture share the same way
-production does, through `smb_test_support::share_path` (and `smb_index_scan_test::unique_base`), so a test path is
-either relative or absolute under `TEST_MOUNT_ROOT`; ❌ never a bare `format!("/{name}")`, which reads as a real
+production does, through `volume::testing::share_path` (and, app-side, `smb_index_scan_test::unique_base`), so a test
+path is either relative or absolute under `TEST_MOUNT_ROOT`; ❌ never a bare `format!("/{name}")`, which reads as a real
 absolute path somewhere else entirely.
 
 **Decision**: `map_smb_error` maps `ErrorKind::InvalidName` to its own `VolumeError::InvalidName`, never the `IoError`
@@ -510,23 +520,30 @@ display paths used for cache lookups.
 
 Which side each one lives on, and why: § "Which side a test lives on" above.
 
-- `unit_test.rs` — no Docker, no network: type mapping (`DirectoryEntry`→`FileEntry`, `FsInfo`→`SpaceInfo`,
-  `smb2::Error`→`VolumeError`), connection-state transitions, path conversion, capability flags, the reconnect
-  early-exits, and the channel-backed `SmbReadStream` consumer. Runs by default.
-- `integration_test.rs` — connection management (watcher and state gates, reconnect, supersede), core CRUD, scan and
-  conflict preview, the scan pool.
+- **Server-free, colocated with the module each covers**: `mapping_test.rs` (`DirectoryEntry`→`FileEntry`,
+  `FsInfo`→`SpaceInfo`, `smb2::Error`→`VolumeError`), `state_test.rs` (the binary state machine and how it widens),
+  `volume_impl_test.rs` (path translation both ways, re-rooting, every capability flag), `reconnect_test.rs` (the
+  reconnect early-exits, the transitions and the events they suppress, the watch-coverage gate, both retirement paths),
+  `streams_test.rs` (the channel-backed `SmbReadStream` consumer and the single-shot write promise), `scan_test.rs` (the
+  progress ticker), `retirement_test.rs`, `watcher/archive_refresh_test.rs`, and the inline `mod tests` in
+  `foreground_yield.rs` and `scan_pool.rs`. These run by default.
+- `integration_test.rs` — what a share does with FILES against a real server: core CRUD, single-chunk streaming smoke,
+  the copy and conflict scans, space info.
+- `session_integration_test.rs` — what the SESSION does: the connection gate the fresh-listing oracle reads, the
+  reconnect cycle, the refcounted scan pool, and what a supersede leaves alone.
 - `streaming_integration_test.rs` — the whole byte path: `open_read_stream` / `write_from_stream` across progress,
   cancel, cancel-by-drop, multi-chunk files, and the error / partial-cleanup paths with the `ErroringReadStream` double,
   plus the two compound-frame shape assertions.
 - `conformance_test.rs` — the `cmdr_fs::volume::conformance` promises, answered by a real server rather than an
   in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`.
-- `retirement_test.rs`, `watcher/archive_refresh_test.rs`, and the inline `mod tests` in `foreground_yield.rs` and
-  `scan_pool.rs` — server-free.
-- `test_support.rs` — the session-free builders (a struct-literal `SmbVolumeInner` with no client and no tree), and a
-  re-export of `volume::testing` so one glob covers both.
+- `test_support.rs` — the session-free builders (a struct-literal `SmbVolumeInner` with no client and no tree), the
+  vocabulary every suite globs, and a re-export of `volume::testing` so one `use` covers all three.
 
 Every Docker cell is `#[ignore]`d, so a default run skips it. Start the containers with
-`apps/desktop/test/smb-servers/start.sh` and run `cargo nextest run smb_integration --run-ignored all`. The fixture
-ports come from the environment (`SMB_CONSUMER_GUEST_PORT` and friends, defaulting to smb2's own 10480 / 10481 / 10488 /
-10493); Cmdr's stack publishes 11480+ so both harnesses coexist, and the check runner exports the override. The full
-container list: `apps/desktop/test/smb-servers/README.md`.
+`apps/desktop/test/smb-servers/start.sh` and run `cargo nextest run smb_integration --run-ignored all`. A new Docker
+cell here can be named for what it asserts: `desktop-rust-integration-tests` selects this whole binary's ignored tests,
+precisely because every `#[ignore]` in a crate with no app around it IS a Docker cell. The app's SMB cells have no such
+luxury and still need the `smb_integration_` prefix the same lane filters them by. The fixture ports come from the
+environment (`SMB_CONSUMER_GUEST_PORT` and friends, defaulting to smb2's own 10480 / 10481 / 10488 / 10493); Cmdr's
+stack publishes 11480+ so both harnesses coexist, and the check runner exports the override. The full container list:
+`apps/desktop/test/smb-servers/README.md`.

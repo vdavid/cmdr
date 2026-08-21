@@ -177,7 +177,7 @@ successor) — silently, without respawning a watcher.
 `SelfHandle<SmbVolumeInner>` and re-upgrades it on every backoff step, so it acts only for the share it was spawned for.
 Resolving the id instead would answer with the SUCCESSOR after a swap and mark a perfectly healthy volume
 `Disconnected`, and would keep answering after an eject for as long as any in-flight holder kept the share allocated.
-`smb_retirement_test.rs` pins all three answers.
+`cmdr-smb`'s `retirement_test.rs` pins all three answers, and `manager::tests::unregistering_a_volume_retires_it` pins the registry's side of them.
 
 
 ## Gotchas
@@ -237,7 +237,7 @@ renames retain normal POSIX replacement semantics because the caller explicitly 
 ## Where the shared conformance assertions live
 
 `cmdr_fs::volume::conformance` holds the promises no backend may quietly opt out of, and each backend runs the ones it
-can: `mtp_conformance_test.rs` and `smb_conformance_test.rs` collect them per backend, LocalPosix keeps its in
+can: `mtp_conformance_test.rs` and `cmdr-smb`'s `conformance_test.rs` collect them per backend, LocalPosix keeps its in
 `local_posix_test.rs`, and `mtp_delete_test.rs` stays separate because the non-recursion contract is the one MTP has to
 IMPLEMENT rather than inherit (`MtpDeleteScope`), with enough scaffolding to earn its own file.
 

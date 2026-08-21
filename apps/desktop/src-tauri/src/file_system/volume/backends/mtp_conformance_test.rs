@@ -6,7 +6,7 @@
 //! `cmdr_fs::volume::conformance` holds EVERY backend to. `mtp_delete_test.rs`
 //! is the third sibling — the non-recursion contract needs enough MTP-specific
 //! scaffolding (`MtpDeleteScope`) to earn its own file. The SMB twin is
-//! `smb_conformance_test.rs`.
+//! `cmdr-smb`'s `volume::conformance_test`.
 //!
 //! Every test here drives a virtual MTP device, so the whole file carries that
 //! feature gate (declared in `backends/mod.rs`).

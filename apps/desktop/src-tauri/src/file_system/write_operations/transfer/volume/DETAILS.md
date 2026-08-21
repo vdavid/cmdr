@@ -422,9 +422,9 @@ that name is what the source actually gave us. The alternative (failing such a c
 
 Pinned by `strategy_single_shot_tests.rs` (both directions: single-shot writes at the final name with no rename;
 too big, or a backend that makes no promise, still stages; a caller temp is never converted),
-`staged_write::tests::a_single_shot_write_targets_the_final_name_and_needs_no_landing`, `smb_test.rs` (the boundary of
+`staged_write::tests::a_single_shot_write_targets_the_final_name_and_needs_no_landing`, `cmdr-smb`'s `streams_test.rs` (the boundary of
 `fits_one_compound_write`, and no promise without a live session), and — against real Samba —
-`smb_streaming_integration_test.rs::smb_integration_a_single_shot_write_leaves_as_one_compound_frame`, which counts wire
+`cmdr-smb`'s `streaming_integration_test.rs::smb_integration_a_single_shot_write_leaves_as_one_compound_frame`, which counts wire
 frames to prove the promised write really is one compound frame.
 
 ## Pause and the concurrent copy path
