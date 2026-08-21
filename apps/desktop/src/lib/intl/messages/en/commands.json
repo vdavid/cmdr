@@ -860,7 +860,8 @@
   },
   "commands.suggestedOpsShow.label": "Suggested ops",
   "@commands.suggestedOpsShow.label": {
-    "description": "Command name that opens the Suggested ops dialog, where the user reviews file operations Ask Cmdr has suggested. Appears in the command palette and the View menu."
+    "description": "Command name that opens the Suggested ops dialog, where the user reviews file operations Ask Cmdr has suggested. Appears in the command palette and the View menu.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.suggestedOpsShow.description": "Review the file operations Ask Cmdr suggested, and decide what runs",
   "@commands.suggestedOpsShow.description": {

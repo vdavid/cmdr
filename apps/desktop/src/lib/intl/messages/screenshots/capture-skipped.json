@@ -23,6 +23,7 @@
   "gallery-redundant:selection-add-empty-folder",
   "gallery-redundant:selection-remove-mixed-folder",
   "gallery-redundant:bulk-rename-review-long-names",
+  "gallery-unavailable:suggested-ops",
   "gallery-unavailable:delete-ai-model",
   "gallery-redundant:connect-to-server-idle",
   "gallery-redundant:quit-confirmation-several-operations",

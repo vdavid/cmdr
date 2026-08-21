@@ -363,15 +363,18 @@
     "description": "Body of the notification that appears when Cmdr couldn''t open its own faster connection to a network share, so the share is running on the connection macOS provides. It explains the speed cost and points at the button below it (the \"osMountFallback.retry\" key). <shareName> wraps the share''s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"4x\" and \"100x\" are speed multipliers; write them the way your language writes multipliers. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
       "share": "the name of the network share, for example archive or Photos"
-    }
+    },
+    "screenshot": "about-commercial.png"
   },
   "fileExplorer.network.osMountFallback.retry": "Try connecting directly",
   "@fileExplorer.network.osMountFallback.retry": {
-    "description": "Button inside that notification. Pressing it retries Cmdr''s own faster connection to the share. Matches the \"connectDirectly\" wording used in the volume menu; keep the two consistent in your language."
+    "description": "Button inside that notification. Pressing it retries Cmdr''s own faster connection to the share. Matches the \"connectDirectly\" wording used in the volume menu; keep the two consistent in your language.",
+    "screenshot": "about-commercial.png"
   },
   "fileExplorer.network.osMountFallback.closeTooltip": "Dismiss",
   "@fileExplorer.network.osMountFallback.closeTooltip": {
-    "description": "Hover tooltip on the X that closes that notification. Named separately from the retry button so it''s clear which control does what."
+    "description": "Hover tooltip on the X that closes that notification. Named separately from the retry button so it''s clear which control does what.",
+    "screenshot": "about-commercial.png"
   },
   "fileExplorer.network.connectDialog.title": "Connect to server",
   "@fileExplorer.network.connectDialog.title": {

@@ -561,6 +561,7 @@
       "settings.appearance.tintSmb.description",
       "settings.appearance.tintSmb.label",
       "settings.appearance.tintTriggerAria",
+      "settings.control.resetToDefault",
       "settings.listing.stripedRows.description",
       "settings.listing.stripedRows.label",
       "settings.section.advanced",
@@ -1333,6 +1334,7 @@
       "commands.fileCopyPath.label",
       "commands.fileDelete.label",
       "commands.fileDeletePermanently.label",
+      "commands.fileDuplicate.label",
       "commands.fileEdit.label",
       "commands.fileGetInfo.mac.label",
       "commands.fileMove.label",
@@ -1397,6 +1399,7 @@
       "commands.sortDescending.label",
       "commands.sortSet.label",
       "commands.sortToggleOrder.label",
+      "commands.suggestedOpsShow.label",
       "commands.tabClose.label",
       "commands.tabCloseOthers.label",
       "commands.tabMcpAction.label",
@@ -2133,7 +2136,6 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.functionKeyBar.actionWithShortcut",
@@ -2280,6 +2282,7 @@
       "commands.fileCopyPath.label",
       "commands.fileDelete.label",
       "commands.fileDeletePermanently.label",
+      "commands.fileDuplicate.label",
       "commands.fileEdit.label",
       "commands.fileGetInfo.mac.label",
       "commands.fileMove.label",
@@ -2328,6 +2331,7 @@
       "commands.sortBySize.label",
       "commands.sortDescending.label",
       "commands.sortToggleOrder.label",
+      "commands.suggestedOpsShow.label",
       "commands.tabClose.label",
       "commands.tabCloseOthers.label",
       "commands.tabNew.label",
@@ -2409,7 +2413,6 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.functionKeyBar.actionWithShortcut",
@@ -3002,7 +3005,10 @@
   },
   "toast-tab": {
     "screenshot": "toast-tab.png",
-    "keys": ["commands.handler.noRecentlyClosedTabs", "ui.toast.dismissAria"]
+    "keys": [
+      "commands.handler.noRecentlyClosedTabs",
+      "ui.toast.dismissAria"
+    ]
   },
   "toast-zoom-in": {
     "screenshot": "toast-zoom-in.png",
@@ -3208,7 +3214,9 @@
       "onboarding.wizard.next",
       "onboarding.wizard.progressLabel",
       "onboarding.wizard.stepProgress",
-      "onboarding.wizard.title"
+      "onboarding.wizard.title",
+      "settings.appearance.language.opt.system",
+      "ui.select.placeholder"
     ]
   },
   "onboarding-ai": {
@@ -3288,9 +3296,10 @@
       "onboarding.wizard.next",
       "onboarding.wizard.progressLabel",
       "onboarding.wizard.stepProgress",
-      "onboarding.wizard.title"
-    ],
-    "uiZoom": 75
+      "onboarding.wizard.title",
+      "settings.appearance.language.opt.system",
+      "ui.select.placeholder"
+    ]
   },
   "onboarding-beta": {
     "screenshot": "onboarding-beta.png",
@@ -3366,7 +3375,9 @@
       "onboarding.wizard.progressLabel",
       "onboarding.wizard.stepProgress",
       "onboarding.wizard.title",
-      "settings.analytics.enabled.description"
+      "settings.analytics.enabled.description",
+      "settings.appearance.language.opt.system",
+      "ui.select.placeholder"
     ]
   },
   "onboarding-optional": {
@@ -3435,7 +3446,9 @@
       "onboarding.wizard.backAria",
       "onboarding.wizard.progressLabel",
       "onboarding.wizard.stepProgress",
-      "onboarding.wizard.title"
+      "onboarding.wizard.title",
+      "settings.appearance.language.opt.system",
+      "ui.select.placeholder"
     ]
   },
   "whats-new": {
@@ -3509,6 +3522,7 @@
       "indexing.progress.percentEta",
       "indexing.replay.detail",
       "indexing.run.changeCheck",
+      "indexing.run.firstIndex",
       "indexing.run.update",
       "indexing.scan.counters",
       "indexing.scan.countersElapsed",
@@ -3517,6 +3531,7 @@
       "indexing.step.findFiles",
       "indexing.step.findFilesChangeCheck",
       "indexing.step.findFilesFirstScan",
+      "indexing.step.findFilesPhased",
       "indexing.step.saveFileList",
       "indexing.step.statusActive",
       "indexing.step.statusDone",
@@ -3591,13 +3606,6 @@
   "quick-look-hint": {
     "screenshot": "quick-look-hint.png",
     "keys": [
-      "fileExplorer.columns.ext",
-      "fileExplorer.columns.modified",
-      "fileExplorer.columns.size",
-      "fileExplorer.dirSize.contentLabel",
-      "fileExplorer.dirSize.noFiles",
-      "fileExplorer.dirSize.noFolders",
-      "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.quickLookHint.configurable",
       "fileExplorer.quickLookHint.dontShowAgain",
       "fileExplorer.quickLookHint.enterOpens",
@@ -4315,6 +4323,62 @@
       "errors.write.sourceNotFound.message.copy",
       "errors.write.sourceNotFound.suggestion",
       "errors.write.sourceNotFound.title",
+      "fileExplorer.breadcrumb.navigateTooltip",
+      "fileExplorer.columns.ext",
+      "fileExplorer.columns.modified",
+      "fileExplorer.columns.name",
+      "fileExplorer.columns.size",
+      "fileExplorer.dirSize.contentLabel",
+      "fileExplorer.dirSize.dirPlaceholder",
+      "fileExplorer.dirSize.noFiles",
+      "fileExplorer.dirSize.noFolders",
+      "fileExplorer.dirSize.onDiskLabel",
+      "fileExplorer.functionKeyBar.actionWithShortcut",
+      "fileExplorer.functionKeyBar.copyAction",
+      "fileExplorer.functionKeyBar.copyLabel",
+      "fileExplorer.functionKeyBar.deleteAction",
+      "fileExplorer.functionKeyBar.deleteLabel",
+      "fileExplorer.functionKeyBar.editAction",
+      "fileExplorer.functionKeyBar.editLabel",
+      "fileExplorer.functionKeyBar.moveAction",
+      "fileExplorer.functionKeyBar.moveLabel",
+      "fileExplorer.functionKeyBar.newFolderAction",
+      "fileExplorer.functionKeyBar.newFolderLabel",
+      "fileExplorer.functionKeyBar.renameAction",
+      "fileExplorer.functionKeyBar.renameLabel",
+      "fileExplorer.functionKeyBar.toolbarAriaLabel",
+      "fileExplorer.functionKeyBar.viewAction",
+      "fileExplorer.functionKeyBar.viewLabel",
+      "fileExplorer.list.empty",
+      "fileExplorer.list.fileListAriaLabel",
+      "fileExplorer.navigation.driveIndex.ariaLabel",
+      "fileExplorer.navigation.driveIndex.durationSec",
+      "fileExplorer.navigation.driveIndex.tooltipFresh",
+      "fileExplorer.pane.diskUsageAriaLabel",
+      "fileExplorer.pane.fileExplorerAriaLabel",
+      "fileExplorer.pane.filePaneAriaLabel",
+      "fileExplorer.pane.resizePanesAriaLabel",
+      "fileExplorer.selectionInfo.noSelection",
+      "fileExplorer.selectionInfo.noSelectionDirs",
+      "fileExplorer.selectionInfo.noSelectionFiles",
+      "fileExplorer.selectionInfo.nothingHere",
+      "fileExplorer.tabBar.newTabAriaLabel",
+      "fileExplorer.tabBar.paneTabsAriaLabel",
+      "fileOperations.errorDialog.close",
+      "fileOperations.errorDialog.technicalDetails",
+      "ui.modalDialog.close"
+    ]
+  },
+  "transfer-error-destination_not_found": {
+    "screenshot": "transfer-error-destination_not_found.png",
+    "keys": [
+      "commands.sortByExtension.label",
+      "commands.sortByModified.label",
+      "commands.sortByName.label",
+      "commands.sortBySize.label",
+      "errors.write.destinationNotFound.message.copy",
+      "errors.write.destinationNotFound.suggestion",
+      "errors.write.destinationNotFound.title",
       "fileExplorer.breadcrumb.navigateTooltip",
       "fileExplorer.columns.ext",
       "fileExplorer.columns.modified",
@@ -6696,10 +6760,13 @@
       "onboarding.wizard.progressLabel",
       "onboarding.wizard.stepProgress",
       "onboarding.wizard.title",
+      "settings.appearance.language.label",
+      "settings.appearance.language.opt.system",
       "settings.fileOperations.mtpEnabled.label",
       "settings.indexing.enabled.label",
       "settings.network.enabled.label",
-      "settings.updates.autoCheck.label"
+      "settings.updates.autoCheck.label",
+      "ui.select.placeholder"
     ]
   },
   "whats-new-empty": {
@@ -7036,6 +7103,7 @@
       "commands.fileCopyPath.label",
       "commands.fileDelete.label",
       "commands.fileDeletePermanently.label",
+      "commands.fileDuplicate.label",
       "commands.fileEdit.label",
       "commands.fileGetInfo.mac.label",
       "commands.fileMove.label",
@@ -7100,6 +7168,7 @@
       "commands.sortDescending.label",
       "commands.sortSet.label",
       "commands.sortToggleOrder.label",
+      "commands.suggestedOpsShow.label",
       "commands.tabClose.label",
       "commands.tabCloseOthers.label",
       "commands.tabMcpAction.label",
@@ -7278,9 +7347,10 @@
       "fileExplorer.dirSize.dirPlaceholder",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
+      "fileExplorer.dirSize.lowerBoundLine",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
+      "fileExplorer.dirSize.unknownTooltip",
       "fileExplorer.functionKeyBar.actionWithShortcut",
       "fileExplorer.functionKeyBar.copyAction",
       "fileExplorer.functionKeyBar.copyLabel",
@@ -7356,6 +7426,9 @@
       "fileExplorer.navigation.driveIndex.ariaLabel",
       "fileExplorer.navigation.driveIndex.durationSec",
       "fileExplorer.navigation.driveIndex.tooltipFresh",
+      "fileExplorer.network.osMountFallback.closeTooltip",
+      "fileExplorer.network.osMountFallback.message",
+      "fileExplorer.network.osMountFallback.retry",
       "fileExplorer.pane.diskUsageAriaLabel",
       "fileExplorer.pane.fileExplorerAriaLabel",
       "fileExplorer.pane.filePaneAriaLabel",
@@ -7377,7 +7450,8 @@
       "licensing.about.srTitle",
       "licensing.about.tagline",
       "licensing.about.version",
-      "ui.modalDialog.close"
+      "ui.modalDialog.close",
+      "ui.toast.dismissAria"
     ]
   },
   "about-perpetual": {
@@ -7419,6 +7493,9 @@
       "fileExplorer.navigation.driveIndex.ariaLabel",
       "fileExplorer.navigation.driveIndex.durationSec",
       "fileExplorer.navigation.driveIndex.tooltipFresh",
+      "fileExplorer.network.osMountFallback.closeTooltip",
+      "fileExplorer.network.osMountFallback.message",
+      "fileExplorer.network.osMountFallback.retry",
       "fileExplorer.pane.diskUsageAriaLabel",
       "fileExplorer.pane.fileExplorerAriaLabel",
       "fileExplorer.pane.filePaneAriaLabel",
@@ -7440,7 +7517,8 @@
       "licensing.about.srTitle",
       "licensing.about.tagline",
       "licensing.about.version",
-      "ui.modalDialog.close"
+      "ui.modalDialog.close",
+      "ui.toast.dismissAria"
     ]
   },
   "commercial-reminder": {
@@ -7482,6 +7560,9 @@
       "fileExplorer.navigation.driveIndex.ariaLabel",
       "fileExplorer.navigation.driveIndex.durationSec",
       "fileExplorer.navigation.driveIndex.tooltipFresh",
+      "fileExplorer.network.osMountFallback.closeTooltip",
+      "fileExplorer.network.osMountFallback.message",
+      "fileExplorer.network.osMountFallback.retry",
       "fileExplorer.pane.diskUsageAriaLabel",
       "fileExplorer.pane.fileExplorerAriaLabel",
       "fileExplorer.pane.filePaneAriaLabel",
@@ -7498,7 +7579,8 @@
       "licensing.commercialReminder.priceInfo",
       "licensing.commercialReminder.title",
       "licensing.commercialReminder.usingPersonal",
-      "ui.modalDialog.close"
+      "ui.modalDialog.close",
+      "ui.toast.dismissAria"
     ]
   },
   "expiration": {
@@ -7624,7 +7706,9 @@
       "onboarding.stepFda.welcome.title",
       "onboarding.wizard.progressLabel",
       "onboarding.wizard.stepProgress",
-      "onboarding.wizard.title"
+      "onboarding.wizard.title",
+      "settings.appearance.language.opt.system",
+      "ui.select.placeholder"
     ]
   },
   "onboarding-fda-denied": {
@@ -7692,7 +7776,9 @@
       "onboarding.stepFda.welcome.title",
       "onboarding.wizard.progressLabel",
       "onboarding.wizard.stepProgress",
-      "onboarding.wizard.title"
+      "onboarding.wizard.title",
+      "settings.appearance.language.opt.system",
+      "ui.select.placeholder"
     ]
   }
 }

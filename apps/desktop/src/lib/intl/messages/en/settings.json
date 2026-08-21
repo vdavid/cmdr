@@ -2195,7 +2195,7 @@
   "settings.control.resetToDefault": "Reset to default",
   "@settings.control.resetToDefault": {
     "description": "Tooltip and aria-label for the per-setting reset button, which restores a setting to its default value. Keep concise.",
-    "screenshot": "settings-ai-mcp-server.png"
+    "screenshot": "settings-appearance.png"
   },
   "settings.control.restartRequired": "Restart required",
   "@settings.control.restartRequired": {
