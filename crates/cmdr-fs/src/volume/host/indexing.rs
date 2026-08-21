@@ -40,7 +40,7 @@ pub enum WatchGap {
 /// What a backend owes the file index.
 ///
 /// Cmdr answers both from the index handle; a test or a tool answers neither
-/// ([`NoIndexNotifier`]).
+/// (`NoIndexNotifier`).
 pub trait IndexNotifier: Send + Sync {
     /// Live watching on `volume_id` broke, and here's how.
     ///

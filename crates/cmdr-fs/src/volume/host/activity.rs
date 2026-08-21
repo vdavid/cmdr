@@ -25,7 +25,7 @@ use std::time::Duration;
 /// What the user is doing right now, as far as a backend needs to know.
 ///
 /// Cmdr answers this from the app's foreground-activity tracker; a test or a
-/// tool sees a permanently quiet machine ([`AlwaysIdle`]).
+/// tool sees a permanently quiet machine (`AlwaysIdle`).
 pub trait UserActivity: Send + Sync {
     /// Whether `volume_id` has been untouched by the user for at least
     /// `threshold`.

@@ -28,7 +28,7 @@ pub enum VolumeConnection {
 /// Where a backend's typed events go.
 ///
 /// Cmdr answers this from the app's event layer, where the Tauri payload types
-/// live; a test or a tool answers nothing ([`NoVolumeEvents`]).
+/// live; a test or a tool answers nothing (`NoVolumeEvents`).
 pub trait VolumeEventSink: Send + Sync {
     /// A volume's connection state changed.
     ///

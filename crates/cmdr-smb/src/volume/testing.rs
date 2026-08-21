@@ -8,11 +8,11 @@
 //! the same way, so the plumbing is here rather than duplicated across the seam.
 //!
 //! Everything here goes through the backend's ordinary surface. ❌ Nothing may
-//! hand out [`SmbVolumeInner`](super::SmbVolumeInner), its client, its tree, or
-//! its scan pool: a test that needs those is a white-box test of this backend
-//! and belongs in this crate. The three accessors that do read the session
-//! ([`negotiated_max_write`], [`session_credits`], [`client_lock_tickets_issued`])
-//! answer with a number and nothing else.
+//! hand out the share's inner state, its client, its tree, or its scan pool: a
+//! test that needs those is a white-box test of this backend and belongs in this
+//! crate. [`negotiated_max_write`] and [`session_credits`] do reach the session,
+//! and [`client_lock_tickets_issued`] a process-wide counter, but each answers
+//! with a number and nothing else.
 //!
 //! Gated behind the `testing` feature, so it exists in dev targets and in no
 //! shipped build. See `DETAILS.md` § "Which side a test lives on".

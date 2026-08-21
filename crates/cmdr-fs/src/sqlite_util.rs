@@ -99,7 +99,8 @@ static SHARED_PAGE_CACHE: LazyLock<SharedPageCache> = LazyLock::new(install_shar
 ///
 /// `sqlite3_config` only works BEFORE SQLite initializes itself, and SQLite
 /// initializes on the first connection open. So this runs from [`open`],
-/// [`open_read_only`], and [`open_in_memory`] — the only ways the app opens a
+/// [`open_read_only`], and `open_in_memory` (`testing`-gated, so rustdoc can't
+/// link it) — the only ways the app opens a
 /// connection — which makes "the slab is installed first" true by construction
 /// rather than by an ordering someone has to remember. The
 /// `desktop-rust-sqlite-open-direct` check keeps it that way.

@@ -22,7 +22,7 @@ pub type BackendName = &'static str;
 /// What the user has tuned for a backend.
 ///
 /// Cmdr answers this from stored settings; a test or a tool gets the built-in
-/// defaults ([`DefaultBackendSettings`]).
+/// defaults (`DefaultBackendSettings`).
 pub trait BackendSettings: Send + Sync {
     /// How many operations this backend may have in flight against one volume.
     ///
@@ -44,7 +44,7 @@ pub trait BackendSettings: Send + Sync {
 /// default install, not like whatever the last person tuned their NAS to.
 pub(super) struct DefaultBackendSettings;
 
-/// What [`DefaultBackendSettings`] answers. Enough parallelism to beat a
+/// What `DefaultBackendSettings` answers. Enough parallelism to beat a
 /// strictly-serial dispatch, low enough that no server is stressed by it.
 const DEFAULT_MAX_CONCURRENT_OPERATIONS: usize = 4;
 

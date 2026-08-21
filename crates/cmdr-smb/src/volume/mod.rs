@@ -1,9 +1,15 @@
-//! SMB volume implementation using direct smb2 protocol operations.
+//! The SMB backend: a `Volume` over a live smb2 session.
 //!
-//! Wraps an smb2 session to provide file system access through the Volume trait.
-//! The share remains OS-mounted (for Finder/Terminal/drag-drop compatibility),
-//! but all Cmdr file operations go through smb2's pipelined I/O for better
-//! performance and fail-fast behavior.
+//! The share is also OS-mounted, for Finder / Terminal / drag-and-drop
+//! compatibility, but none of Cmdr's own I/O goes near that mount: every read,
+//! write, listing, and change notification rides smb2's pipelined session
+//! instead, which is both faster and fail-fast where a wedged kernel mount
+//! blocks for minutes.
+//!
+//! Nothing here names the application. What the backend needs from it arrives
+//! through the [`VolumeHost`] seams it is handed in [`connect_smb_volume`] and
+//! keeps on the share-scoped inner state. `CLAUDE.md` has the must-knows,
+//! `DETAILS.md` the lifecycles and the decisions.
 
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::Retirement;
@@ -89,7 +95,7 @@ pub struct SmbConnectionParams {
 /// A `Volume` instance addressing one mount root of a share, over the shared
 /// per-share state (`SmbVolumeInner`) every instance of that share rides.
 ///
-/// The split is what makes [`Volume::rerooted`] free: a share reached through two
+/// The split is what makes [`Volume::rerooted`](cmdr_fs::volume::Volume::rerooted) free: a share reached through two
 /// mount points is ONE session, and moving the registry's ID from a dead mount to
 /// a live one only has to hand out another instance over the same
 /// `Arc<SmbVolumeInner>`. Nothing re-authenticates, no transport is rebuilt, and

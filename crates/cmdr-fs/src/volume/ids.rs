@@ -189,7 +189,7 @@ pub fn mtp_device_id(serial_or_location: &str) -> String {
 ///
 /// True for anything that isn't [`DEFAULT_VOLUME_ID`], a `cloud-`/`fav-` literal
 /// ID (neither is derived from a volume's identity), or a `{scheme}-…-{digest}`
-/// ID from [`derived_id`]. Used by the index's startup sweep to delete the
+/// ID from `derived_id` (private). Used by the index's startup sweep to delete the
 /// databases stranded by the switch to identity-keyed IDs.
 ///
 /// Both ways of being wrong are cheap: a missed legacy ID leaves one stale file,

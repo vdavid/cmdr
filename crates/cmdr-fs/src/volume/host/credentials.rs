@@ -45,7 +45,7 @@ pub struct CredentialsNotStored;
 /// entry, so one password covers every share on the server.
 ///
 /// Cmdr answers this from the macOS Keychain; a test or a tool answers nothing
-/// ([`NoCredentials`]).
+/// (`NoCredentials`).
 pub trait CredentialStore: Send + Sync {
     /// What's stored for `service` (and `scope`, when given), if anything.
     ///

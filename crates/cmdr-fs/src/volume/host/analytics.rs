@@ -22,7 +22,7 @@
 /// Where PII-free product counters go.
 ///
 /// Cmdr answers this from the app's analytics layer, behind the user's consent
-/// setting; a test or a tool answers nothing ([`NoAnalytics`]).
+/// setting; a test or a tool answers nothing (`NoAnalytics`).
 pub trait AnalyticsSink: Send + Sync {
     /// Records that `event` happened, with `properties` describing it.
     ///
