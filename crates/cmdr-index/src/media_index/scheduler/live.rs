@@ -28,11 +28,13 @@
 //!   scoped walk — that would delete every row outside the touched dirs.
 //!
 //! ❗ **The filtered set is ONE set with three consumers**: the walk, the GC scope, and
-//! `coverage::patch_touched_dirs`. Filter the walk alone and every stored row under a
-//! dropped dir is "in scope, absent from the walk, therefore deleted" — every OCR text,
-//! Vision tag, and CLIP embedding in it. Hand the patch the unfiltered set and every
-//! dropped dir's cached count is replaced by zero. Both are pinned by tests in
-//! `kick_tests.rs` that were watched failing under exactly those mutations.
+//! `coverage::patch_touched_dirs`. Filtering the walk alone would make every stored row
+//! under a dropped dir "in scope, absent from the walk, therefore deleted" — every OCR
+//! text, Vision tag, and CLIP embedding in it — and would replace every dropped dir's
+//! cached count with zero. The walk hands back a
+//! [`WalkedDirs`](super::enrich::WalkedDirs) token that the other two are the only
+//! consumers of, so that divergence doesn't compile; `live_tests.rs` covers what it
+//! would have cost.
 //!
 //! ## The guardrails
 //!

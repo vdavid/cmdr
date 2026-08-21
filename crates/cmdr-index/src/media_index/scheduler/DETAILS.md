@@ -186,17 +186,19 @@ plus a `list_children_on`) against 0.03 µs for the filter, and on a machine who
 is ineligible; when NOTHING survives the filter the tick returns before opening the index, loading `media_status`, or
 spawning a writer (release build, M1 Max, `live_bench.rs`, 2026-08-21 — `docs/notes/live-tick-cost-2026-08-21.md`). ❗
 The filtered set then goes to ALL THREE consumers or none: the walk, `GcScope::TouchedDirs`, and
-`coverage::patch_touched_dirs`. Filter the walk alone and every stored row under a dropped dir is "in scope, absent from
-the walk, therefore deleted"; hand the patch the unfiltered dirs and every dropped dir's cached count is replaced by
-zero. Both are pinned by tests that were watched failing under exactly those mutations
+`coverage::patch_touched_dirs`. Filtering the walk alone would make every stored row under a dropped dir "in scope,
+absent from the walk, therefore deleted"; handing the patch the unfiltered dirs would replace every dropped dir's cached
+count with zero. The walk returns a `WalkedDirs` token (private field, minted only there) that the other two are the
+only consumers of, so the divergence doesn't compile. The two tests in `live_tests.rs` cover what it would have cost
 (`a_live_tick_keeps_every_row_in_a_dir_its_coverage_filter_dropped`,
-`a_live_tick_leaves_the_cached_counts_of_a_dir_it_filtered_out_alone`).
+`a_live_tick_leaves_the_cached_counts_of_a_dir_it_filtered_out_alone`); both were watched failing under exactly those
+mutations while the sets were still two plain `HashSet`s.
 
 The filter itself is `lifecycle::local_dir_may_be_covered`, and it is a PROVABLE superset of the per-image
 `local_should_enrich` rather than a documented promise: the score map is keyed by the parent folder (the dir itself),
 and `NetworkEnrichConfig::may_cover_within` additionally keeps any dir an override entry names something at or under —
 the only way `covers` can answer differently for a file than for its parent, since an entry could BE that file's path. A
-proptest in `kick_tests.rs` holds the implication over overrides, scores, and both scopes.
+proptest in `live_tests.rs` holds the implication over overrides, scores, and both scopes.
 
 Two consequences, taken deliberately. **A tick's prompt GC and its counts patch reach only the dirs it walked**: a
 vanished file's row in an uncovered dir waits for the next full pass (which still whole-store GCs it), and an uncovered
@@ -284,11 +286,11 @@ the whole-store trap, the sibling re-qualify, the DEFER of a below-threshold fol
 (both keeping deferred rows for GC), and the mid-`analyze` exclusion veto. The master-toggle behavior is pinned by
 `a_pass_no_ops_while_disabled_and_enriches_once_enabled` (the disable → no-op → re-enable → enrich cycle) and
 `disabling_the_master_toggle_stops_a_running_pass_and_keeps_rows` (real red→green: the running pass stops early, rows
-preserved). `kick_tests.rs` runs the tick end to end over a registered read pool (re-enrich-on-modify, below-threshold
-defer, exclusion veto, index-confirmed GC, unmount deletes nothing) plus the scheduler retro-delete (prunes a local
-folder, skips a volume the folder isn't under, maps a network folder into the volume's index space). `reclaim_tests.rs`
-covers the partition + prune arithmetic; `pool/tests.rs` the live width changes; `enrich_memory_tests.rs` the walk's
-allocation guards.
+preserved). `live_tests.rs` runs the tick end to end over a registered read pool (re-enrich-on-modify, below-threshold
+defer, exclusion veto, index-confirmed GC, the two coverage-filter data-safety anchors, unmount deletes nothing);
+`kick_tests.rs` the scheduler retro-delete (prunes a local folder, skips a volume the folder isn't under, maps a network
+folder into the volume's index space). `reclaim_tests.rs` covers the partition + prune arithmetic; `pool/tests.rs` the
+live width changes; `enrich_memory_tests.rs` the walk's allocation guards.
 
 The async wire-up (`ready_volumes_with_kind` sweep → `wire_volume` → `run_pass_blocking`) is covered indirectly by the
 reactive pieces (bus-edge consumption + coalescer + the enrich core); a full end-to-end async test needs the

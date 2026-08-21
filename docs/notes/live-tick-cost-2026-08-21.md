@@ -95,10 +95,15 @@ tag, and CLIP embedding it holds, against `media_index/CLAUDE.md`'s "uncovered r
 `coverage::patch_touched_dirs` has the same shape one step over: it replaces each dir it is handed with a count taken
 from the walk, so a dropped dir would be replaced by zero.
 
-One filtered set now reaches all three. Two regression tests in `scheduler/kick_tests.rs` pin it
+One filtered set now reaches all three, and the walk hands it back as a `WalkedDirs` token only the walk can mint. The
+GC scope and the counts patch take nothing else, so "filter the walk, keep the old GC scope" is a **compile error**
+rather than a silent deletion.
+
+Two regression tests in `scheduler/live_tests.rs` cover the behavior anyway
 (`a_live_tick_keeps_every_row_in_a_dir_its_coverage_filter_dropped`,
 `a_live_tick_leaves_the_cached_counts_of_a_dir_it_filtered_out_alone`), and **both were watched failing** under exactly
-that mutation before being kept.
+that mutation while the sets were still two plain `HashSet`s. They stay as the anchor for what the type is protecting: a
+type stops today's mistake, and the tests say what the mistake would have cost.
 
 The filter's own correctness is a proof rather than a promise. `NetworkEnrichConfig::may_cover_within` also keeps a
 directory that an override entry names something at or under, which is the only way `covers` can answer differently for

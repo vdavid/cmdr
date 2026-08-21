@@ -65,7 +65,7 @@ pub fn local_should_enrich(
 /// deliberate superset of `covers` over `dir`'s children. So a live tick can drop an
 /// uncovered directory before touching the index and still walk every image the
 /// per-image gate would have enriched. The implication is pinned by a property test
-/// (`kick_tests`), because a filter that ever loses to the gate is the scoped-GC
+/// (`live_tests`), because a filter that ever loses to the gate is the scoped-GC
 /// data-safety trap.
 ///
 /// It is a filter, ❌ never a substitute for the per-image gate: it says a directory is
