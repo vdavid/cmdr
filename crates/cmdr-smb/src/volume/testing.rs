@@ -227,13 +227,13 @@ pub async fn session_credits(vol: &SmbVolume) -> Option<u16> {
 /// `client-mutex:` log lines it says whether the wedged pass was still acquiring
 /// the mutex or had stopped asking.
 pub fn client_lock_tickets_issued() -> u64 {
-    super::CLIENT_LOCK_TICKET.load(Ordering::Relaxed)
+    super::session::CLIENT_LOCK_TICKET.load(Ordering::Relaxed)
 }
 
 /// A whole buffer as a one-chunk [`VolumeReadStream`], for a suite that needs to
 /// drive `write_from_stream` without a second volume behind it.
 pub fn inline_read_stream(bytes: Vec<u8>) -> Box<dyn VolumeReadStream> {
-    Box::new(super::InlineReadStream::new(bytes))
+    Box::new(super::streams::InlineReadStream::new(bytes))
 }
 
 #[cfg(test)]

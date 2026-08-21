@@ -4,7 +4,6 @@
 //! protocol handed us.
 
 use super::*;
-use crate::volume::test_support::*;
 
 #[test]
 fn filetime_to_unix_secs_known_date() {

@@ -1,7 +1,6 @@
 //! The copy-scan progress ticker's counting contract.
 
 use super::*;
-use crate::volume::test_support::*;
 
 /// The counts a scan reports must be CUMULATIVE for the call: the caller shifts
 /// them by its own baseline across several calls, so a per-entry (or per-path)

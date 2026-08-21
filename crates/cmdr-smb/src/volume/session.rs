@@ -4,8 +4,9 @@
 
 use super::mapping::map_smb_error;
 use super::state::ConnectionState;
-use super::{SmbConnectionParams, SmbVolume, VolumeError};
+use super::{SmbConnectionParams, SmbVolume};
 use cmdr_fs::volume::Retirement;
+use cmdr_fs::volume::VolumeError;
 use cmdr_fs::volume::host::VolumeHost;
 use log::{debug, warn};
 use smb2::client::tree::Tree;

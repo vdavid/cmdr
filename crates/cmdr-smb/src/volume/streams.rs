@@ -4,11 +4,12 @@
 //! Also the inherent `write_from_stream_impl` body that the `write_from_stream`
 //! trait method in `volume_impl` delegates to.
 
+use super::SmbVolume;
 use super::mapping::map_smb_error;
 use super::session::update_state_on_smb_error;
-use super::{MutationEvent, SmbVolume, Volume, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{MutationEvent, Volume, VolumeError, VolumeReadStream};
 use log::{debug, warn};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 

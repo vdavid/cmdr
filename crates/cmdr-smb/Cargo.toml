@@ -67,8 +67,8 @@ blake3 = { version = "1.8.3", optional = true }
 # leaves it off for the lib, so a shipped build carries no fixtures and no
 # `blake3`. Same shape as the app's own self dev-dependency.
 cmdr-smb = { path = ".", features = ["testing"] }
-# `InMemoryVolume`, `TestDir`, `wait_until_async`, and the recording / scripted
-# host-seam fakes this crate's tests assert against.
+# `InMemoryVolume` and the recording / scripted host-seam fakes this crate's
+# tests assert against.
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # The Docker-backed suites drive real concurrency, so their tests need a
 # multi-threaded runtime the lib deliberately can't build for itself.

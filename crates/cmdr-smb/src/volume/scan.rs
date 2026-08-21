@@ -3,10 +3,11 @@
 //! `scan_for_copy_batch_impl`, `scan_for_conflicts_impl`), which the trait
 //! methods in `volume_impl` delegate to.
 
+use super::SmbVolume;
 use super::mapping::map_smb_error;
-use super::{BatchScanResult, CopyScanResult, ScanConflict, SmbVolume, SourceItemInfo, VolumeError};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::ListingProgress;
+use cmdr_fs::volume::{BatchScanResult, CopyScanResult, ScanConflict, SourceItemInfo, VolumeError};
 use log::{debug, warn};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;

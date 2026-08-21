@@ -5,8 +5,9 @@
 use super::mapping::map_smb_error;
 use super::session::{build_session, refresh_credentials_from_store};
 use super::state::ConnectionState;
-use super::{SmbConnectionParams, SmbVolumeInner, VolumeError};
+use super::{SmbConnectionParams, SmbVolumeInner};
 use cmdr_fs::volume::SelfHandle;
+use cmdr_fs::volume::VolumeError;
 use cmdr_fs::volume::host::credentials::StoredCredentials;
 use cmdr_fs::volume::host::events::VolumeConnection;
 use log::{debug, info, warn};

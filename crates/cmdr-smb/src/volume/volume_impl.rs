@@ -8,12 +8,13 @@
 use super::mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info};
 use super::state::ConnectionState;
 use super::streams::InlineReadStream;
-use super::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbVolume, SourceItemInfo, SpaceInfo,
-    Volume, VolumeError, VolumeReadStream, WatchCoverage, foreground_yield,
-};
+use super::{SmbVolume, foreground_yield};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::SmbConnectionState;
+use cmdr_fs::volume::{
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError, VolumeReadStream, WatchCoverage,
+};
 use cmdr_fs::volume::{ListingProgress, Retirement};
 use log::{debug, trace, warn};
 use std::path::{Path, PathBuf};
@@ -142,7 +143,7 @@ impl Volume for SmbVolume {
     /// moment either instance is alive, they SHARE one session, and retiring the
     /// old one would stop the watcher and the scan pool the new one is about to
     /// serve from. The registry drops the old instance right after swapping it in,
-    /// so the overlap is transient by construction. `../DETAILS.md` § "Re-rooting
+    /// so the overlap is transient by construction. `DETAILS.md` § "Re-rooting
     /// a share".
     fn rerooted(&self, new_root: &Path) -> Option<std::sync::Arc<dyn Volume>> {
         Some(std::sync::Arc::new(self.instance_at_root(new_root)))

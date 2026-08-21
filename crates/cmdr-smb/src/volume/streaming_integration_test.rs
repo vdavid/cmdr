@@ -10,10 +10,11 @@
 //! `#[cfg(test)]` submodule of `smb`; shared helpers come from
 //! `super::smb_test_support`.
 
+use super::streams::InlineReadStream;
 use super::test_support::*;
 use super::*;
-use cmdr_fs::testing::TestDir;
 use cmdr_fs::volume::InMemoryVolume;
+use std::pin::Pin;
 
 // ── SMB streaming integration tests (Docker) ───────────────────
 

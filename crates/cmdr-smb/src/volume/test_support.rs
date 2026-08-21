@@ -13,6 +13,18 @@ use super::*;
 
 pub(super) use super::testing::*;
 
+// The vocabulary the suites speak, re-exported so one glob covers it. It lives
+// here rather than as a prelude on `mod.rs` because the prod modules import what
+// they use: an `allow(unused_imports)` over the whole backend would hide a
+// genuinely dead import in any of them.
+pub(super) use cmdr_fs::entry::FileEntry;
+pub(super) use cmdr_fs::volume::host::VolumeHost;
+pub(super) use cmdr_fs::volume::{SourceItemInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage};
+pub(super) use std::path::PathBuf;
+pub(super) use std::sync::Arc;
+pub(super) use std::sync::atomic::Ordering;
+pub(super) use std::time::Duration;
+
 /// A disconnected test volume for the share `TestShare` at `/Volumes/TestShare`.
 pub(super) fn make_test_volume() -> SmbVolume {
     make_test_volume_with_id("volumestestshare")

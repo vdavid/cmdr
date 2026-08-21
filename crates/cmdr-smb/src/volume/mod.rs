@@ -5,30 +5,16 @@
 //! but all Cmdr file operations go through smb2's pipelined I/O for better
 //! performance and fail-fast behavior.
 
-#![allow(
-    unused_imports,
-    reason = "mod.rs holds the backend shared prelude and re-exports submodule internals so the sibling #[cfg(test)] modules resolve them through `super::*`"
-)]
-
-use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::volume::Retirement;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
-use cmdr_fs::volume::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
-    VolumeError, VolumeReadStream, WatchCoverage,
-};
-use cmdr_fs::volume::{Retirement, SelfHandle};
-use log::{debug, info, trace, warn};
+use smb2::SmbClient;
 use smb2::client::tree::Tree;
-use smb2::{ClientConfig, SmbClient};
-use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
-use std::sync::{Mutex as StdMutex, OnceLock, RwLock as StdRwLock};
-use std::time::Duration;
+use std::sync::RwLock as StdRwLock;
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize};
 
 mod foreground_yield;
 mod mapping;
@@ -44,17 +30,12 @@ mod watcher;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 
-// Internal re-exports: pull submodule items into the `smb` root so the sibling
-// `#[cfg(test)]` modules (declared below) reach them through `use super::*`,
-// and so cross-module references resolve unqualified.
-use mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info, map_smb_error};
-use session::{CLIENT_LOCK_TICKET, build_session, refresh_credentials_from_store, update_state_on_smb_error};
+// The backend's own public vocabulary, hoisted so callers write
+// `cmdr_smb::volume::ConnectionState`.
 pub use state::ConnectionState;
-use streams::{
-    ASSUMED_MAX_WRITE, InlineReadStream, SMB_STREAM_CHANNEL_CAPACITY, SmbReadStream, fits_one_compound_write,
-};
 
 use reconnect::spawn_watcher_death_reconnect;
+use session::build_session;
 
 /// This backend's settings namespace, for everything it reads through
 /// [`VolumeHost::settings`]. A namespace, not a classification: nothing branches
@@ -106,14 +87,14 @@ pub struct SmbConnectionParams {
 }
 
 /// A `Volume` instance addressing one mount root of a share, over the shared
-/// [`SmbVolumeInner`] every instance of that share rides.
+/// per-share state (`SmbVolumeInner`) every instance of that share rides.
 ///
 /// The split is what makes [`Volume::rerooted`] free: a share reached through two
 /// mount points is ONE session, and moving the registry's ID from a dead mount to
 /// a live one only has to hand out another instance over the same
 /// `Arc<SmbVolumeInner>`. Nothing re-authenticates, no transport is rebuilt, and
 /// whoever still holds the old instance (a running copy, an open viewer stream)
-/// keeps working at the root it was handed. See `../DETAILS.md` § "Re-rooting a
+/// keeps working at the root it was handed. See `DETAILS.md` § "Re-rooting a
 /// share".
 pub struct SmbVolume {
     /// Display name (share name).

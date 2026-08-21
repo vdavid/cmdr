@@ -1,7 +1,6 @@
 //! The share's binary connection-state machine, and how it widens.
 
 use super::*;
-use crate::volume::test_support::*;
 
 #[test]
 fn connection_state_round_trip() {

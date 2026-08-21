@@ -1,8 +1,8 @@
 //! Pure type-mapping helpers: smb2 types -> Volume types, and smb2 errors
 //! -> `VolumeError`. No shared state; the cleanest extraction.
 
-use super::{SpaceInfo, VolumeError};
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::{SpaceInfo, VolumeError};
 
 /// Converts an `smb2::FileTime` to seconds since the Unix epoch, matching
 /// `FileEntry.modified_at` / `created_at` (seconds, like `LocalPosixVolume`).
