@@ -99,6 +99,42 @@ build, the CoreGraphics `CGBitmapContextCreate` render). The tokenizer (`tokeniz
 produces the fixed `[1,77]` int32 sequence (`[BOS] content [EOS]`, EOS-padded), pinned bit-exact to the HuggingFace
 reference.
 
+## What holding the towers costs
+
+**Both towers loaded and predicted-through cost 307-412 MB of `MALLOC_LARGE` plus ~120-176 MB of `MALLOC_SMALL`, and
+the process never gets it back** (measured on an M1 Max, macOS 26.5, debug build, `MLComputeUnits::All`, 2026-08-21, by
+`clip::macos::residency_test`). `WORKER` is a `OnceLock`, so the first encode of the session loads both towers and they
+stay for the process lifetime whether or not anything encodes again, whether or not the user turns semantic search off
+afterwards. This is the steady-state idle cost named in
+`../../../../../docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`.
+
+⚠️ **It is invisible to `query_mimalloc_heap`.** Core ML allocates through the SYSTEM allocator, and mimalloc is not a
+registered macOS zone, so a Rust-side heap reading reports none of this.
+
+The regions are the model's weight matrices, one malloc each, and they add up exactly (409,468,928 on the
+two-embedding-copy run):
+
+- `101,187,584` x 1-2 — the text tower's `49,408 x 512` fp32 token embedding. The sharpest fingerprint in the process:
+  nothing else is this size. The copy count varies run to run, and that variance IS the 307-412 MB spread.
+- `4,194,304` x ~25 — text-tower MLP matrices, `512 x 2048` fp32, two per block.
+- `3,145,728` x ~13 — text-tower fused QKV projections, `512 x 1536` fp32, one per block.
+- `2,359,296` x ~26 — image-tower MLP matrices at the shipped 8-bit palettization, `768 x 3072 x 1 byte`.
+
+**The compute-unit assignment decides the whole bill**, which is the lead any fix starts from
+(`CMDR_CLIP_COMPUTE_UNITS` in the residency test switches it):
+
+- `All` (shipped) and `CPUAndGPU`: ~410 MB. The GPU path materializes every weight matrix as its own buffer.
+- `CPUOnly` and `CPUAndNeuralEngine`: **11.8 MB, two regions.** Core ML leaves the weights in the mmap'd `weight.bin`
+  and allocates two scratch buffers (9,437,184 and 2,359,296 bytes).
+
+⚠️ Those numbers are load-and-predict-once residency, not a claim about throughput. Dropping the GPU would trade ~400 MB
+of permanent residency against enrichment speed, and that trade has NOT been measured. ❌ Don't change
+`load_model_at`'s `MLComputeUnits::All` on the strength of the memory number alone.
+
+The second lead is scope rather than precision: `load_towers` loads BOTH towers whichever one is wanted, so a single
+typed search query pays for the image tower and an enrichment pass pays for the text tower. Each tower is independently
+loadable and the text tower is the expensive one (~348 MB of the total, fp32 on disk at 253,750,976 bytes).
+
 ## Model install (`install.rs`, plan Decision 9)
 
 New code reusing only `ai::download::download_file` (the resumable HTTP GET). Distinct from the GGUF two-flag gate: Core
@@ -134,6 +170,17 @@ off, no model is installed, or the volume has no CLIP embeddings — so the UI v
 **Latency:** the text tower is kept warm (a cold Core ML load is 1–2 s; a warm encode ~2 ms — spike numbers); the vector
 top-k is brute force below ~50k stored vectors and the per-volume ANN index at or above it (`../ann/DETAILS.md` — the
 engine decision went to `usearch` by a measured spike; `sqlite-vec` was disqualified as not actually ANN).
+
+**The residency harness** behind § "What holding the towers costs" is `clip::macos::residency_test`, `#[ignore]`d and
+env-gated because it needs the real ~267 MB model on disk:
+
+```sh
+CMDR_CLIP_MODEL_DIR=~/Library/Application\ Support/com.getcmdr.app/clip-model \
+  cargo nextest run -p cmdr-index --run-ignored only clip::macos::residency_test --no-capture
+```
+
+`CMDR_CLIP_COMPUTE_UNITS=cpu|cpu-gpu|cpu-ane` re-runs the same measurement under the other assignments; only the shipped
+`All` carries assertions, the rest report and return.
 
 ## Frontend
 

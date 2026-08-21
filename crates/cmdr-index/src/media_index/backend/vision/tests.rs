@@ -286,6 +286,62 @@ fn real_analyze_of_a_photo_is_self_similar_and_over_naspi_when_mounted() {
     );
 }
 
+/// What Vision's own models cost to keep loaded, measured rather than assumed.
+///
+/// Vision loads Apple's OCR / classifier / feature-print models on first use and
+/// caches them for the process, through the SYSTEM allocator — so like the CLIP
+/// towers they are a steady-state cost an idle Cmdr keeps paying, and one
+/// `query_mimalloc_heap` is structurally blind to. Companion measurement to
+/// `clip::macos::residency_test`; both feed
+/// `docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`.
+///
+/// `#[ignore]`d because it measures rather than asserts a contract, and because a
+/// first Vision call on a cold machine is slow.
+///
+/// ```sh
+/// cargo nextest run -p cmdr-index --run-ignored only vision::tests::what_one_vision_analyze_leaves_resident --no-capture
+/// ```
+#[test]
+#[ignore = "a measurement, not a contract; run it by name"]
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement harness prints its table to stderr for `--no-capture`; it never runs in the app or CI"
+)]
+fn what_one_vision_analyze_leaves_resident() {
+    use cmdr_fs::process_memory::query_vm_regions;
+
+    /// The `MALLOC_LARGE` user tag from `<mach/vm_statistics.h>`.
+    const TAG_MALLOC_LARGE: u32 = 3;
+
+    let before = query_vm_regions(0).expect("the VM map is walkable in-process");
+    let before_large = before
+        .tags
+        .iter()
+        .find(|t| t.tag == TAG_MALLOC_LARGE)
+        .map_or(0, |t| t.dirty_bytes);
+    let before_dirty = before.total_dirty_bytes;
+
+    let backend = VisionOcrBackend::new();
+    backend
+        .analyze(&input(&fixture_path().to_string_lossy()))
+        .expect("the fixture analyzes");
+
+    let after = query_vm_regions(16).expect("the VM map is walkable in-process");
+    eprintln!(
+        "total dirty {before_dirty} -> {} after one Vision analyze",
+        after.total_dirty_bytes
+    );
+    for tag in after.tags.iter().take(10) {
+        eprintln!("  tag {:>3} {:<48} dirty={:>12}", tag.tag, tag.name, tag.dirty_bytes);
+    }
+    if let Some(large) = after.tags.iter().find(|t| t.tag == TAG_MALLOC_LARGE) {
+        eprintln!("MALLOC_LARGE dirty {before_large} -> {}", large.dirty_bytes);
+        for group in &large.sizes {
+            eprintln!("  {:>12} bytes x {:>4}", group.region_bytes, group.count);
+        }
+    }
+}
+
 #[test]
 fn engine_version_is_nonempty_stable_and_shaped() {
     let backend = VisionOcrBackend::new();

@@ -418,3 +418,172 @@ pub fn encode_text(ids: Vec<i32>) -> Result<Vec<f32>, ClipError> {
 pub fn encode_image(pixels: Vec<f32>) -> Result<Vec<f32>, ClipError> {
     worker().ok_or(ClipError::NotAvailable)?.encode_image(pixels)
 }
+
+// ── What the loaded towers cost, measured ──────────────────────────────────
+//
+// Both towers load once on the worker thread and are held for the process
+// lifetime, so their weights are a STEADY-STATE cost an idle Cmdr pays forever.
+// That cost is a constant of the model, not of the machine or the workload,
+// which is what makes it measurable anywhere rather than only under a real
+// user's ten-hour session.
+
+#[cfg(test)]
+mod residency_test {
+    use cmdr_fs::process_memory::query_vm_regions;
+
+    use super::*;
+
+    /// The `MALLOC_LARGE` user tag from `<mach/vm_statistics.h>`: macOS routes
+    /// every allocation past its 127 KB large-zone threshold to a VM region of
+    /// exactly the requested size, so Core ML's weight buffers land here one
+    /// matrix per region.
+    const TAG_MALLOC_LARGE: u32 = 3;
+
+    /// The text tower's token embedding: 49,408 BPE tokens × 512 dims × fp32. The
+    /// single biggest region either tower produces, and the sharpest fingerprint in
+    /// the whole map — nothing else in the process is this size.
+    const TOKEN_EMBEDDING_BYTES: u64 = 49_408 * 512 * 4;
+    /// A text-tower MLP matrix: 512 × 2048 × fp32, two per transformer block.
+    const TEXT_MLP_BYTES: u64 = 512 * 2048 * 4;
+    /// A text-tower fused QKV projection: 512 × 1536 × fp32, one per block.
+    const TEXT_QKV_BYTES: u64 = 512 * 1536 * 4;
+    /// An image-tower MLP matrix at the shipped 8-bit palettization: 768 × 3072 × 1
+    /// byte. The same 2,359,296 the 2026-07-28 idle profile reported as "2.25 MB".
+    const IMAGE_MLP_BYTES: u64 = 768 * 3072;
+
+    fn model_dir_or_skip() -> Option<PathBuf> {
+        let dir = PathBuf::from(std::env::var("CMDR_CLIP_MODEL_DIR").ok()?);
+        dir.is_dir().then_some(dir)
+    }
+
+    /// Which compute units to load under. Production always uses `All`
+    /// ([`load_model_at`]); `CMDR_CLIP_COMPUTE_UNITS` lets a measurement ask what
+    /// the other three cost, because the assignment decides what precision Core ML
+    /// materializes the weights at, and that decides the bill.
+    fn compute_units_from_env() -> MLComputeUnits {
+        match std::env::var("CMDR_CLIP_COMPUTE_UNITS").as_deref() {
+            Ok("cpu") => MLComputeUnits::CPUOnly,
+            Ok("cpu-gpu") => MLComputeUnits::CPUAndGPU,
+            Ok("cpu-ane") => MLComputeUnits::CPUAndNeuralEngine,
+            _ => MLComputeUnits::All,
+        }
+    }
+
+    /// Load both towers from their cached `.mlmodelc` under `units`. Mirrors
+    /// [`load_model_at`] except for the configurable compute units.
+    fn load_towers_with(model_dir: &Path, units: MLComputeUnits) -> ClipModels {
+        let load = |tower| {
+            let url = file_url(&compiled_path(model_dir, tower));
+            autoreleasepool(|_| {
+                // SAFETY: as `load_model_at` — a fresh configuration, a valid enum value,
+                // and a valid file URL to a compiled `.mlmodelc`; the `_error` variant
+                // returns a typed error rather than throwing.
+                unsafe {
+                    let config = MLModelConfiguration::new();
+                    config.setComputeUnits(units);
+                    MLModel::modelWithContentsOfURL_configuration_error(&url, &config)
+                }
+                .expect("the compiled tower should load")
+            })
+        };
+        ClipModels {
+            image: load(&CLIP_TOWERS[0]),
+            text: load(&CLIP_TOWERS[1]),
+        }
+    }
+
+    fn malloc_large(map: &cmdr_fs::process_memory::VmRegionMap) -> Option<&cmdr_fs::process_memory::TagUsage> {
+        map.tags.iter().find(|t| t.tag == TAG_MALLOC_LARGE)
+    }
+
+    /// Holding both CLIP towers costs a few hundred MB of `MALLOC_LARGE`, in
+    /// regions shaped like the model's weight matrices.
+    ///
+    /// This is the measurement behind `docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`:
+    /// Core ML allocates through the SYSTEM allocator, not through our mimalloc
+    /// global, so tower weights are invisible to `query_mimalloc_heap` and land
+    /// in the block that three memory investigations could not name.
+    ///
+    /// `#[ignore]`d and env-gated: it needs the real ~267 MB model on disk.
+    ///
+    /// ```sh
+    /// CMDR_CLIP_MODEL_DIR=~/Library/Application\ Support/com.getcmdr.app/clip-model \
+    ///   cargo nextest run -p cmdr-index --run-ignored only clip::macos::residency_test --no-capture
+    /// ```
+    #[test]
+    #[ignore = "needs the real CLIP model on disk; set CMDR_CLIP_MODEL_DIR"]
+    #[allow(
+        clippy::print_stderr,
+        reason = "an ignored measurement harness prints its table to stderr for `--no-capture`; it never runs in the app or CI"
+    )]
+    fn holding_both_clip_towers_costs_malloc_large_in_weight_matrix_sized_regions() {
+        let Some(model_dir) = model_dir_or_skip() else {
+            eprintln!("CMDR_CLIP_MODEL_DIR unset or not a directory — nothing measured");
+            return;
+        };
+
+        // Compile first if the `.mlmodelc` cache is cold, so the measurement below
+        // sees residency rather than an on-device compile running inside it.
+        if !CLIP_TOWERS.iter().all(|t| compiled_path(&model_dir, t).is_dir()) {
+            drop(load_towers(&model_dir).expect("the towers should load"));
+        }
+
+        let before = query_vm_regions(0).expect("the VM map is walkable in-process");
+        let before_large = malloc_large(&before).map_or(0, |t| t.dirty_bytes);
+
+        let units = compute_units_from_env();
+        eprintln!("compute units: {units:?}");
+        let models = load_towers_with(&model_dir, units);
+        // Core ML materializes a tower's weights lazily, so a load without a
+        // predict measures the compile, not the residency.
+        models.encode_image(&vec![0.0f32; IMAGE_PIXELS]).expect("image encode");
+        models.encode_text(&vec![0i32; CONTEXT_LENGTH]).expect("text encode");
+
+        let after = query_vm_regions(24).expect("the VM map is walkable in-process");
+        let large = malloc_large(&after).expect("the towers put weights in MALLOC_LARGE");
+
+        eprintln!(
+            "MALLOC_LARGE dirty {before_large} -> {} ({} regions)",
+            large.dirty_bytes, large.region_count
+        );
+        for group in &large.sizes {
+            eprintln!("  {:>12} bytes x {:>4}", group.region_bytes, group.count);
+        }
+        for tag in after.tags.iter().take(10) {
+            eprintln!("  tag {:>3} {:<48} dirty={:>12}", tag.tag, tag.name, tag.dirty_bytes);
+        }
+
+        // Only the shipped assignment carries a contract. Under `CPUOnly` and
+        // `CPUAndNeuralEngine` Core ML leaves the weights in the mmap'd `weight.bin`
+        // and mallocs two scratch buffers instead — ~12 MB, not ~410 — so those runs
+        // report their numbers and assert nothing.
+        if units != MLComputeUnits::All {
+            return;
+        }
+
+        // 307 MB and 412 MB both observed across runs on one machine: Core ML keeps
+        // either one or two copies of the 101 MB token embedding, and that's the whole
+        // spread. The floor is set below the low end on purpose — this test is here to
+        // catch "the towers stopped costing hundreds of MB", not to pin a number that
+        // moves with a Core ML build.
+        let growth = large.dirty_bytes.saturating_sub(before_large);
+        assert!(
+            growth > 250 * 1024 * 1024,
+            "the shipped `All` assignment materializes both towers' weights: expected >250 MB, saw {growth}"
+        );
+        // The four region sizes below ARE the towers' fingerprint: on the reference
+        // measurement they account for every byte of the growth exactly
+        // (2 × 101,187,584 + 25 × 4,194,304 + 13 × 3,145,728 + 26 × 2,359,296 =
+        // 409,468,928). That exactness is what lets a `memory_regions` reading off a
+        // live app say "these bytes are CLIP" rather than "these bytes are big".
+        for expected in [TOKEN_EMBEDDING_BYTES, TEXT_MLP_BYTES, TEXT_QKV_BYTES, IMAGE_MLP_BYTES] {
+            assert!(
+                large.sizes.iter().any(|s| s.region_bytes == expected),
+                "expected a {expected}-byte region group, saw {:?}",
+                large.sizes.iter().map(|s| s.region_bytes).collect::<Vec<_>>()
+            );
+        }
+
+        drop(models);
+    }
+}
