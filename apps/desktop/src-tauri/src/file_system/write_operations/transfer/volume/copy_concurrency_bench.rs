@@ -582,14 +582,20 @@ async fn connect_target() -> Target {
                 .unwrap_or(10480);
             let volume_id = smb_volume_id("127.0.0.1", port, "public");
             let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
-            let volume = connect_smb_volume("public", "/tmp/smb-bench-mount", &volume_id, params)
-                .await
-                .unwrap_or_else(|e| {
-                    panic!(
-                        "no Docker SMB container at 127.0.0.1:{port} \
+            let volume = connect_smb_volume(
+                "public",
+                "/tmp/smb-bench-mount",
+                &volume_id,
+                params,
+                crate::volume_host::host(),
+            )
+            .await
+            .unwrap_or_else(|e| {
+                panic!(
+                    "no Docker SMB container at 127.0.0.1:{port} \
                          (./apps/desktop/test/smb-servers/start.sh): {e:?}"
-                    )
-                });
+                )
+            });
             Target {
                 label: format!("Docker Samba (loopback, 127.0.0.1:{port}/public)"),
                 volume: Arc::new(volume),
@@ -606,9 +612,15 @@ async fn connect_target() -> Target {
             let user = std::env::var("SMB2_TEST_NAS_USER").unwrap_or_else(|_| "david".to_owned());
             let volume_id = smb_volume_id(&host, 445, &share);
             let params = SmbConnectionParams::new(&host, &share, 445, Some(user.as_str()), Some(password.as_str()));
-            let volume = connect_smb_volume(&share, "/Volumes/naspi-m43-bench", &volume_id, params)
-                .await
-                .unwrap_or_else(|e| panic!("cannot reach the NAS at {host}/{share}: {e:?}"));
+            let volume = connect_smb_volume(
+                &share,
+                "/Volumes/naspi-m43-bench",
+                &volume_id,
+                params,
+                crate::volume_host::host(),
+            )
+            .await
+            .unwrap_or_else(|e| panic!("cannot reach the NAS at {host}/{share}: {e:?}"));
             let volume: Arc<dyn Volume> = Arc::new(volume);
             // The scratch root is created once and left in place; only the
             // per-rep directories under it come and go.

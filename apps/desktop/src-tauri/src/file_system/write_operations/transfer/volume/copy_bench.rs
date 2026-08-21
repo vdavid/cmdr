@@ -50,9 +50,15 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
     let smb_setup_start = Instant::now();
     let smb_volume_id = smb_volume_id(&host, 445, "naspi");
     let params = SmbConnectionParams::new(&host, "naspi", 445, Some("david"), Some(password.as_str()));
-    let smb_volume = connect_smb_volume("naspi", "/Volumes/naspi-bench-p4", &smb_volume_id, params)
-        .await
-        .expect("SMB connect failed (is QNAP at 192.168.1.111 reachable?)");
+    let smb_volume = connect_smb_volume(
+        "naspi",
+        "/Volumes/naspi-bench-p4",
+        &smb_volume_id,
+        params,
+        crate::volume_host::host(),
+    )
+    .await
+    .expect("SMB connect failed (is QNAP at 192.168.1.111 reachable?)");
     let smb_setup = smb_setup_start.elapsed();
 
     // ── Set up destination (local temp dir) ───────────────────────

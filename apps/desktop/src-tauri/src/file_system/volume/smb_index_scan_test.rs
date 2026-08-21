@@ -47,9 +47,15 @@ async fn connect_public() -> Arc<dyn Volume> {
     let port = guest_port();
     let volume_id = smb_volume_id("127.0.0.1", port, "public");
     let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
-    let vol = connect_smb_volume("public", TEST_MOUNT_ROOT, &volume_id, params)
-        .await
-        .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}: {e:?}"));
+    let vol = connect_smb_volume(
+        "public",
+        TEST_MOUNT_ROOT,
+        &volume_id,
+        params,
+        crate::volume_host::host(),
+    )
+    .await
+    .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}: {e:?}"));
     Arc::new(vol)
 }
 

@@ -66,14 +66,26 @@ impl BackendSettings for AppBackendSettings {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Mutex, MutexGuard};
+
     use super::*;
     use crate::file_system::{set_smb_concurrency, smb_concurrency};
+
+    /// The concurrency setting is one process-global atomic, so two tests that
+    /// both write it and then read it back have to take turns. Without this they
+    /// see each other's values and fail on whichever ran second.
+    static SETTING: Mutex<()> = Mutex::new(());
+
+    fn one_writer_at_a_time() -> MutexGuard<'static, ()> {
+        SETTING.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
 
     /// The seam has to see what the user last set, not a value captured when the
     /// volume mounted. The clamp is the app's, and it applies through the seam
     /// too.
     #[test]
     fn smb_reads_the_live_setting_and_its_clamp() {
+        let _turn = one_writer_at_a_time();
         let previous = smb_concurrency();
 
         set_smb_concurrency(7);
@@ -94,6 +106,7 @@ mod tests {
     /// connections.
     #[test]
     fn a_namespace_with_no_row_gets_the_cautious_default_not_the_smb_slider() {
+        let _turn = one_writer_at_a_time();
         let previous = smb_concurrency();
 
         set_smb_concurrency(32);

@@ -344,7 +344,17 @@ pub(crate) async fn register_smb_volume(
 
     let params =
         crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
-    match connect_with_retry(|| connect_smb_volume(share, mount_path, &volume_id, params.clone())).await {
+    match connect_with_retry(|| {
+        connect_smb_volume(
+            share,
+            mount_path,
+            &volume_id,
+            params.clone(),
+            crate::volume_host::host(),
+        )
+    })
+    .await
+    {
         Ok(volume) => {
             // Overwrite-with-retire so SmbVolume always wins over any
             // LocalPosixVolume the watcher may have registered in the race
@@ -428,7 +438,11 @@ pub(crate) async fn try_smb_upgrade(
 
     let params =
         crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
-    match connect_with_retry(|| connect_smb_volume(share, mount_path, volume_id, params.clone())).await {
+    match connect_with_retry(|| {
+        connect_smb_volume(share, mount_path, volume_id, params.clone(), crate::volume_host::host())
+    })
+    .await
+    {
         Ok(volume) => {
             register_replacing_predecessor(volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);

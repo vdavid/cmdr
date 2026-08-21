@@ -412,11 +412,11 @@ pub fn run() {
             // executor. Disable/forget need no handle.
             commands::indexing::set_app_handle(app.handle().clone());
 
-            // Stash the AppHandle so SmbVolume can emit `volume-connection-changed`
-            // events when sessions die or come back. The frontend reconnect
-            // manager listens for these to drive its per-volume backoff cycle.
+            // Stash the AppHandle so a share that stays on the slow kernel mount
+            // can say so. Session-state transitions need no handle here: they go
+            // through the volume host's event seam, wired in `volume_host`.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            file_system::volume::smb::set_app_handle(app.handle().clone());
+            network::os_mount_notice::set_app_handle(app.handle().clone());
 
             // Stash the AppHandle so the drag-out file-promise machinery can
             // dispatch session cleanup (freeing the retained promise delegates)

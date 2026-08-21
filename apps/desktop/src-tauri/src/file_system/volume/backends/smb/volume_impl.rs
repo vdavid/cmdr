@@ -12,8 +12,8 @@ use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SmbVolume,
     SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage, foreground_yield,
 };
-use crate::file_system::listing::FileEntry;
-use cmdr_fs::volume::Retirement;
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::{ListingProgress, Retirement};
 use log::{debug, trace, warn};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -161,7 +161,7 @@ impl Volume for SmbVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let entries = self.list_directory_impl(path).await?;
@@ -170,7 +170,7 @@ impl Volume for SmbVolume {
             // / dirs / bytes from the returned entries so the FE scan dialog
             // doesn't see "0 bytes, 0 dirs" climbing on Direct SMB scans.
             if let Some(on_progress) = on_progress {
-                let mut tally = crate::file_system::volume::ListingProgress::default();
+                let mut tally = ListingProgress::default();
                 for e in &entries {
                     if e.is_directory {
                         tally.dirs += 1;
@@ -380,11 +380,13 @@ impl Volume for SmbVolume {
     }
 
     fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move { foreground_yield::foreground_pending(&self.inner.volume_id) })
+        Box::pin(async move { foreground_yield::foreground_pending(self.inner.host(), &self.inner.volume_id) })
     }
 
     fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move { foreground_yield::wait_until_foreground_idle(&self.inner.volume_id).await })
+        Box::pin(
+            async move { foreground_yield::wait_until_foreground_idle(self.inner.host(), &self.inner.volume_id).await },
+        )
     }
 
     fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
@@ -416,7 +418,12 @@ impl Volume for SmbVolume {
         mutation: MutationEvent,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         Box::pin(async move {
-            use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+            use cmdr_fs::volume::DirectoryChange;
+
+            // One call per MUTATION, never per entry: the host walks every cached
+            // listing on the volume, so a per-entry caller turns one directory into
+            // a quadratic sweep.
+            let listings = self.inner.host().listings();
 
             match mutation {
                 MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
@@ -428,7 +435,7 @@ impl Volume for SmbVolume {
                             } else {
                                 DirectoryChange::Modified(entry)
                             };
-                            notify_directory_changed(&self.inner.volume_id, parent_path, change);
+                            listings.directory_changed(&self.inner.volume_id, parent_path, change);
                         }
                         Err(e) => {
                             warn!(
@@ -440,13 +447,13 @@ impl Volume for SmbVolume {
                     }
                 }
                 MutationEvent::Deleted(name) => {
-                    notify_directory_changed(&self.inner.volume_id, parent_path, DirectoryChange::Removed(name));
+                    listings.directory_changed(&self.inner.volume_id, parent_path, DirectoryChange::Removed(name));
                 }
                 MutationEvent::Renamed { from, to } => {
                     let new_path = parent_path.join(&to);
                     match self.get_metadata(&new_path).await {
                         Ok(entry) => {
-                            notify_directory_changed(
+                            listings.directory_changed(
                                 &self.inner.volume_id,
                                 parent_path,
                                 DirectoryChange::Renamed {
@@ -755,7 +762,7 @@ impl Volume for SmbVolume {
     fn scan_for_copy_batch_with_progress<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         self.scan_for_copy_batch_impl(paths, on_progress)
     }
@@ -773,13 +780,11 @@ impl Volume for SmbVolume {
     }
 
     fn max_concurrent_ops(&self) -> usize {
-        // Reads the `network.smbConcurrency` setting (default 10, clamped 1..=32).
-        // Updated at app startup from `settings.json` via
-        // `file_system::set_smb_concurrency`. Lock-free atomic load on every
-        // call, so a settings change in the current session applies on the next
-        // batch-copy dispatch (no reconnect required; Connection::clone is
-        // cheap).
-        crate::file_system::smb_concurrency()
+        // Read per batch dispatch, never captured at construction: the user moves
+        // the slider and the next batch picks it up, with no remount. What the
+        // host resolves the `"smb"` namespace to is its business (today the
+        // `network.smbConcurrency` setting, default 10, clamped to 1..=32).
+        self.inner.host().settings().max_concurrent_operations(super::BACKEND)
     }
 
     fn open_read_stream<'a>(

@@ -7,6 +7,7 @@ use super::session::{build_session, refresh_credentials_from_store};
 use super::state::ConnectionState;
 use super::{SmbConnectionParams, SmbVolumeInner, VolumeError};
 use cmdr_fs::volume::SelfHandle;
+use cmdr_fs::volume::host::credentials::StoredCredentials;
 use cmdr_fs::volume::host::events::VolumeConnection;
 use log::{debug, info, warn};
 use std::sync::Arc;
@@ -58,6 +59,11 @@ impl SmbVolumeInner {
         let password = params.password.clone();
         let volume = super::super::smb_watcher::WatchedVolume {
             volume_id: self.volume_id.clone(),
+            // The watcher outlives the call that spawned it and reports listing
+            // changes and watch gaps for the whole share, so it carries its own
+            // clone of the share's host rather than reaching back through a
+            // handle that stops answering the moment the share is retired.
+            host: self.host.clone(),
             // The share this watcher belongs to, as a handle rather than an id:
             // it answers "is this still the volume the app routes to?" without a
             // registry lookup that could resolve to a SUCCESSOR, and it stops
@@ -70,7 +76,10 @@ impl SmbVolumeInner {
             mount_path: Arc::clone(&self.active_mount_path),
         };
 
-        tokio::spawn(super::super::smb_watcher::run_smb_watcher(
+        // The app's runtime, never `tokio::spawn`: a backend's watcher can be
+        // started from a synchronous setup hook or an OS thread with no reactor,
+        // where `tokio::spawn` panics.
+        self.host.runtime().spawn(super::super::smb_watcher::run_smb_watcher(
             addr, share, username, password, volume, cancel_rx,
         ));
 
@@ -135,7 +144,7 @@ impl SmbVolumeInner {
                     "SmbVolumeInner::attempt_reconnect(share={}): cached credentials rejected, re-pulling from secret store",
                     self.share_name
                 );
-                match refresh_credentials_from_store(&params_snapshot).await {
+                match refresh_credentials_from_store(&self.host, &params_snapshot).await {
                     Some(refreshed)
                         if refreshed.username != params_snapshot.username
                             || refreshed.password != params_snapshot.password =>
@@ -220,9 +229,8 @@ impl SmbVolumeInner {
         // launch/upgrade half lives in `smb_upgrade::register_smb_volume`. Skipped
         // when retired: the index for this id belongs to whoever holds it now, which
         // ran the same hook when it registered.
-        #[cfg(any(target_os = "macos", target_os = "linux"))]
         if !self.is_retired() {
-            crate::index_host::index().resume_after_reconnect(self.volume_id.clone());
+            self.host.indexing().resume_after_reconnect(&self.volume_id);
         }
 
         info!("SmbVolumeInner::attempt_reconnect(share={}): success", self.share_name);
@@ -241,12 +249,22 @@ impl SmbVolumeInner {
         password: String,
     ) -> Result<(), VolumeError> {
         let server = { self.params.read().await.server.clone() };
-        if let Err(e) = crate::network::keychain::save_credentials(&server, None, &username, &password) {
+        // Server-level (`scope: None`), so one password covers every share on it.
+        let stored = StoredCredentials {
+            username: username.clone(),
+            secret: password.clone(),
+        };
+        if self
+            .host
+            .credentials()
+            .save_credentials(&server, None, &stored)
+            .is_err()
+        {
             // Non-fatal: the in-memory params below still carry the creds for this
             // reconnect; only the "silent next time" guarantee is lost.
             warn!(
-                "SmbVolumeInner::reconnect_with_credentials(share={}): saving credentials failed: {}",
-                self.share_name, e
+                "SmbVolumeInner::reconnect_with_credentials(share={}): the secret store didn't take the credentials",
+                self.share_name
             );
         }
         {
@@ -317,7 +335,10 @@ pub(in crate::file_system::volume::backends) fn spawn_watcher_death_reconnect(sh
         Some(inner)
     }
 
-    tokio::spawn(async move {
+    let Some(runtime) = share.live().map(|inner| inner.host.runtime()) else {
+        return; // gone or retired before the loop even started
+    };
+    runtime.spawn(async move {
         // The watcher's session died ⇒ the server connection is gone. Mark the
         // share Disconnected so `do_attempt_reconnect` actually rebuilds (it
         // no-ops while Direct) and respawns the watcher.

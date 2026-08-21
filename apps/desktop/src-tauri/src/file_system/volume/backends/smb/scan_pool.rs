@@ -53,7 +53,7 @@ use super::session::build_session;
 use super::state::ConnectionState;
 use super::streams::InlineReadStream;
 use super::{SmbConnectionParams, SmbVolume, Volume, VolumeError, VolumeReadStream};
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
 use smb2::SmbClient;
 use smb2::client::tree::Tree;
 use std::path::Path;
@@ -171,6 +171,10 @@ pub(super) struct ScanPool {
     /// failing auth just give up and listings fall back to the main session.
     params: SmbConnectionParams,
     volume_id: String,
+    /// The runtime member reconnects spawn onto, taken from the share's host.
+    /// ❌ Never `tokio::spawn`: a pool can be opened from a context with no
+    /// ambient reactor.
+    runtime: tokio::runtime::Handle,
     /// Set once at teardown; stops in-flight member-reconnect loops from
     /// installing sessions into a pool that's going away.
     closed: AtomicBool,
@@ -184,6 +188,7 @@ impl ScanPool {
         slots_sessions: Vec<Option<MemberSession>>,
         params: SmbConnectionParams,
         volume_id: String,
+        runtime: tokio::runtime::Handle,
     ) -> Arc<Self> {
         let n = slots_sessions.len();
         let slots = PoolSlots::new(n);
@@ -204,6 +209,7 @@ impl ScanPool {
             slots,
             params,
             volume_id,
+            runtime,
             closed: AtomicBool::new(false),
         });
         for idx in dead {
@@ -270,7 +276,7 @@ impl ScanPool {
             return; // one already running
         }
         let pool = Arc::clone(self);
-        tokio::spawn(async move {
+        self.runtime.clone().spawn(async move {
             pool.reconnect_member(idx).await;
             pool.slots.end_reconnect(idx);
         });
@@ -412,7 +418,7 @@ impl SmbVolume {
         if self.inner.unmounted.load(Ordering::Relaxed) || self.inner.is_retired() {
             return; // drop `slots` → closes the freshly-opened sessions
         }
-        let pool = ScanPool::from_slots(slots, params, volume_id.clone());
+        let pool = ScanPool::from_slots(slots, params, volume_id.clone(), self.inner.host().runtime());
         *self.inner.scan_pool.write().await = Some(pool);
         log::info!("smb scan pool: opened {live}/{SCAN_POOL_SIZE} extra connections for '{volume_id}'");
     }

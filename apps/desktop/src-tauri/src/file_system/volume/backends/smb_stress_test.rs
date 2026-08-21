@@ -285,7 +285,7 @@ async fn connect_docker_smb_volume(port: u16, mount_label: &str) -> SmbVolume {
     let mount_path = format!("/Volumes/{mount_label}");
     let volume_id = smb_volume_id("127.0.0.1", port, "public");
     let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
-    connect_smb_volume("public", &mount_path, &volume_id, params)
+    connect_smb_volume("public", &mount_path, &volume_id, params, crate::volume_host::host())
         .await
         .unwrap_or_else(|e| panic!("connect to 127.0.0.1:{port} failed: {e:?}"))
 }

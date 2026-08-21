@@ -5,8 +5,8 @@
 //! mount roots it is reachable through. [`SmbVolume`] passes the two public ones
 //! through.
 
-use super::events::emit_state_change;
 use super::{SmbVolume, SmbVolumeInner};
+use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::events::VolumeConnection;
 use cmdr_fs::volume::{Retirement, Retires, SelfHandle};
 use std::sync::atomic::Ordering;
@@ -66,6 +66,13 @@ impl Retires for SmbVolumeInner {
 }
 
 impl SmbVolumeInner {
+    /// Everything this share asks the app around it. Shared with the background
+    /// work that outlives a single call: the watcher reports listing changes and
+    /// watch gaps through the same host the share was built with.
+    pub(super) fn host(&self) -> &VolumeHost {
+        &self.host
+    }
+
     /// This share's own handle, for the background work (the watcher, the
     /// watcher-death reconnect loop) that has to keep asking whether the registry
     /// still serves it. See `cmdr_fs::volume::SelfHandle`.
@@ -90,12 +97,17 @@ impl SmbVolumeInner {
         self.retirement.is_retired()
     }
 
-    /// `emit_state_change` for this volume, suppressed once retired.
+    /// Reports a session-state transition for this volume, suppressed once
+    /// retired.
+    ///
+    /// A retired share still tracks its own state for whoever holds it, but the
+    /// id belongs to somebody else now: announcing a disconnect under it would
+    /// tell the frontend a healthy volume just went down.
     pub(super) fn emit_state_change_for_id(&self, state: VolumeConnection) {
         if self.is_retired() {
             return;
         }
-        emit_state_change(&self.volume_id, state);
+        self.host.events().connection_changed(&self.volume_id, state);
     }
 
     /// Snapshot the smb2 client's diagnostics tree.

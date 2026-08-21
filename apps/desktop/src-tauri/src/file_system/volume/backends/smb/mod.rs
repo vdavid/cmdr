@@ -20,9 +20,10 @@ use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SourceItemInfo,
     SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
-use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::try_get_authoritative_listing;
-use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::host::settings::BackendName;
 use cmdr_fs::volume::{Retirement, SelfHandle};
 use log::{debug, info, trace, warn};
 use smb2::client::tree::Tree;
@@ -34,9 +35,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
 use std::sync::{Mutex as StdMutex, OnceLock, RwLock as StdRwLock};
 use std::time::Duration;
-use tauri::AppHandle;
 
-mod events;
 mod foreground_yield;
 mod mapping;
 mod reconnect;
@@ -50,7 +49,6 @@ mod volume_impl;
 // Internal re-exports: pull submodule items into the `smb` root so the sibling
 // `#[cfg(test)]` modules (declared below) reach them through `use super::*`,
 // and so cross-module references resolve unqualified.
-use events::emit_state_change;
 use mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info, map_smb_error};
 use session::{CLIENT_LOCK_TICKET, build_session, refresh_credentials_from_store, update_state_on_smb_error};
 use state::ConnectionState;
@@ -60,8 +58,13 @@ use streams::{
 
 // External surface: keep these paths stable at
 // `crate::file_system::volume::backends::smb::<name>`.
-pub use events::{emit_fell_back_to_os_mount, set_app_handle};
 pub(in crate::file_system::volume::backends) use reconnect::spawn_watcher_death_reconnect;
+
+/// This backend's settings namespace, for everything it reads through
+/// [`VolumeHost::settings`]. A namespace, not a classification: nothing branches
+/// on it, and the app resolves it through a table
+/// (`file_system::backend_settings`).
+const BACKEND: BackendName = "smb";
 
 /// A volume backed by an SMB share, using smb2 for direct protocol access.
 ///
@@ -204,6 +207,11 @@ pub(super) struct SmbVolumeInner {
     /// of leaving the watcher feeding a mount that's gone. ❌ Not a second source
     /// of truth for `root()`: an instance's own `mount_path` is what it addresses.
     active_mount_path: Arc<StdRwLock<PathBuf>>,
+    /// Everything this backend asks the application around it: the pane listings,
+    /// the secret store, the file index, the frontend event channel, the live
+    /// concurrency knob, and the runtime background work spawns onto. A value the
+    /// app hands down at construction, never a static this crate reaches for.
+    host: VolumeHost,
 }
 
 impl SmbVolume {
@@ -217,6 +225,7 @@ impl SmbVolume {
     ///   current session and to rebuild it on `attempt_reconnect`
     /// * `client` - Connected `SmbClient`
     /// * `tree` - Connected `Tree` for the share
+    /// * `host` - Everything the backend asks the app around it (see [`VolumeHost`])
     pub fn new(
         name: impl Into<String>,
         mount_path: impl Into<PathBuf>,
@@ -224,6 +233,7 @@ impl SmbVolume {
         params: SmbConnectionParams,
         client: SmbClient,
         tree: Tree,
+        host: VolumeHost,
     ) -> Self {
         let share_name = params.share_name.clone();
         let mount_path = mount_path.into();
@@ -247,6 +257,7 @@ impl SmbVolume {
                 scan_pool: tokio::sync::RwLock::new(None),
                 scan_session_refs: AtomicUsize::new(0),
                 active_mount_path: Arc::new(StdRwLock::new(mount_path)),
+                host,
             }),
         }
     }
@@ -324,13 +335,14 @@ pub async fn connect_smb_volume(
     mount_path: &str,
     volume_id: &str,
     params: SmbConnectionParams,
+    host: VolumeHost,
 ) -> Result<SmbVolume, smb2::Error> {
     let (client, tree) = build_session(&params).await?;
-    let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree);
+    let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree, host);
     vol.inner.spawn_watcher(&params);
     // PII-free analytics: a direct SMB connection succeeded. No host / share / credential
     // identifiers ever cross.
-    crate::analytics::posthog::capture("smb_connected", serde_json::json!({}));
+    vol.inner.host.analytics().record("smb_connected", &[]);
     Ok(vol)
 }
 

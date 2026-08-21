@@ -13,7 +13,6 @@
     "apps/desktop/src-tauri/src/file_system/listing/diff_emitter.rs": 6,
     "apps/desktop/src-tauri/src/file_system/listing/operations.rs": 5,
     "apps/desktop/src-tauri/src/file_system/listing/streaming.rs": 4,
-    "apps/desktop/src-tauri/src/file_system/volume/backends/smb/events.rs": 2,
     "apps/desktop/src-tauri/src/file_system/volume/backends/smb/reconnect.rs": 2,
     "apps/desktop/src-tauri/src/file_system/volume/backends/smb/volume_impl.rs": 1,
     "apps/desktop/src-tauri/src/file_system/watcher.rs": 3,

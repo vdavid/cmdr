@@ -1,7 +1,7 @@
 //! Background SMB change watcher.
 //!
 //! Long-polls `CHANGE_NOTIFY` on the share root, debounces events, and feeds
-//! them into `notify_directory_changed`. Spawned by `SmbVolume::spawn_watcher`
+//! them to the host's listing seam. Spawned by `SmbVolume::spawn_watcher`
 //! with its own dedicated smb2 session (a separate TCP connection from the
 //! volume's primary client), so the watcher's long-polls don't multiplex with
 //! heavy concurrent writes on the main connection.
@@ -15,12 +15,12 @@
 //! next FE backoff tick / hot-path op).
 
 use super::smb::SmbVolumeInner;
-use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed, refresh_archive_listings};
-use crate::file_system::volume::Volume;
-use crate::ignore_poison::RwLockIgnorePoison;
-use cmdr_fs::volume::SelfHandle;
-use cmdr_index::{WatchGap, WatchScope};
+use cmdr_fs::archive_format::has_supported_archive_extension;
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::host::indexing::WatchGap;
+use cmdr_fs::volume::{DirectoryChange, SelfHandle, Volume};
 use log::{debug, info, warn};
 use smb2::{ClientConfig, FileNotifyAction, SmbClient};
 use std::collections::HashMap;
@@ -74,23 +74,27 @@ async fn stat_via_share(share: &SelfHandle<SmbVolumeInner>, path: &Path) -> Opti
 /// `archive_path` must already be the normalized display path (backslash→slash,
 /// NFC→NFD) the cache lookups use — pass the `to_nfd_display_path` result, the
 /// same normalization every other cache-facing path in this file goes through.
-async fn maybe_refresh_archive_listings(volume_id: &str, archive_path: &Path) {
+async fn maybe_refresh_archive_listings(host: &VolumeHost, volume_id: &str, archive_path: &Path) {
     let is_archive = archive_path
         .file_name()
         .and_then(|name| name.to_str())
-        .is_some_and(super::archive::has_supported_archive_extension);
+        .is_some_and(has_supported_archive_extension);
     if is_archive {
-        refresh_archive_listings(volume_id, archive_path).await;
+        host.listings().refresh_archive_listings(volume_id, archive_path).await;
     }
 }
 
 /// Processes a batch of collected events per directory into `DirectoryChange` notifications.
 async fn process_event_batch(
+    host: &VolumeHost,
     events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>>,
     volume_id: &str,
     share: &SelfHandle<SmbVolumeInner>,
     mount_path: &Path,
 ) {
+    // One seam call per event, never per directory ENTRY: a batch past
+    // `WATCHER_BATCH_THRESHOLD` collapses to a single `FullRefresh`.
+    let listings = host.listings();
     for (parent_path, events) in &events_by_dir {
         if events.len() > WATCHER_BATCH_THRESHOLD {
             debug!(
@@ -98,7 +102,7 @@ async fn process_event_batch(
                 events.len(),
                 parent_path.display()
             );
-            notify_directory_changed(volume_id, parent_path, DirectoryChange::FullRefresh);
+            listings.directory_changed(volume_id, parent_path, DirectoryChange::FullRefresh);
             continue;
         }
 
@@ -115,7 +119,7 @@ async fn process_event_batch(
                     let entry_path = to_nfd_display_path(mount_path, filename);
                     match stat_via_share(share, &entry_path).await {
                         Some(entry) => {
-                            notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
+                            listings.directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                         }
                         None => {
                             debug!(
@@ -126,13 +130,13 @@ async fn process_event_batch(
                     }
                 }
                 FileNotifyAction::Removed => {
-                    notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(file_name_only));
+                    listings.directory_changed(volume_id, parent_path, DirectoryChange::Removed(file_name_only));
                 }
                 FileNotifyAction::Modified => {
                     let entry_path = to_nfd_display_path(mount_path, filename);
                     match stat_via_share(share, &entry_path).await {
                         Some(entry) => {
-                            notify_directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
+                            listings.directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
                         }
                         None => {
                             debug!(
@@ -145,7 +149,7 @@ async fn process_event_batch(
                     // open archive-inner listing (independent of the stat above,
                     // which may fail mid-write — the refresh handles a truncated
                     // archive gracefully).
-                    maybe_refresh_archive_listings(volume_id, &entry_path).await;
+                    maybe_refresh_archive_listings(host, volume_id, &entry_path).await;
                 }
                 FileNotifyAction::RenamedOldName => {
                     pending_old_name = Some(file_name_only);
@@ -155,7 +159,7 @@ async fn process_event_batch(
                     if let Some(old_name) = pending_old_name.take() {
                         match stat_via_share(share, &entry_path).await {
                             Some(new_entry) => {
-                                notify_directory_changed(
+                                listings.directory_changed(
                                     volume_id,
                                     parent_path,
                                     DirectoryChange::Renamed { old_name, new_entry },
@@ -163,25 +167,25 @@ async fn process_event_batch(
                             }
                             None => {
                                 // Couldn't stat new name: emit remove + skip add
-                                notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
+                                listings.directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
                             }
                         }
                     } else {
                         // Got new name without old name, treating as add
                         if let Some(entry) = stat_via_share(share, &entry_path).await {
-                            notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
+                            listings.directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                         }
                     }
                     // A temp+rename swap over the backing `.zip` (the editor /
                     // safe-overwrite path) also refreshes any open inner listing.
-                    maybe_refresh_archive_listings(volume_id, &entry_path).await;
+                    maybe_refresh_archive_listings(host, volume_id, &entry_path).await;
                 }
             }
         }
 
         // If we have a dangling old name with no new name, treat as remove
         if let Some(old_name) = pending_old_name {
-            notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
+            listings.directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
         }
     }
 }
@@ -200,6 +204,11 @@ pub(super) struct WatchedVolume {
     /// string rather than read off `share`, because the notifications have to keep
     /// naming the id even on the pass where the share stops answering.
     pub(super) volume_id: String,
+    /// Everything the watcher asks the app: pane listings and the file index.
+    /// Its own clone rather than a read off `share`, for the same reason
+    /// `volume_id` is owned — a retired share stops answering, and the watcher
+    /// still has to report the exit it is on its way to.
+    pub(super) host: VolumeHost,
     pub(super) share: SelfHandle<SmbVolumeInner>,
     /// Where the share is mounted right now. Shared with the `SmbVolume` instances
     /// of this share (`smb::SmbVolumeInner::active_mount_path`) and re-read once
@@ -222,6 +231,7 @@ pub(super) async fn run_smb_watcher(
 ) {
     let WatchedVolume {
         volume_id,
+        host,
         share,
         mount_path: active_mount_path,
     } = volume;
@@ -244,13 +254,11 @@ pub(super) async fn run_smb_watcher(
     };
     // A watcher that can't even establish its session can't keep the index
     // Fresh, so each setup-failure return flips a Fresh index Stale. Cheap
-    // no-op when the volume isn't indexed or is already Stale.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    // no-op when the volume isn't indexed or is already Stale, which is why
+    // there's no "is this worth reporting?" branch here.
     let mark_stale = || {
-        crate::index_host::index().on_watch_gap(WatchScope::Volume(&volume_id), WatchGap::WatcherStopped);
+        host.indexing().watch_gap(&volume_id, WatchGap::WatcherStopped);
     };
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    let mark_stale = || {};
 
     let mut client = match SmbClient::connect(config).await {
         Ok(c) => c,
@@ -340,7 +348,7 @@ pub(super) async fn run_smb_watcher(
                         },
                         _ = &mut cancel_rx => {
                             // Process what we have, then exit
-                            process_event_batch(events_by_dir, &volume_id, &share, &mount_path).await;
+                            process_event_batch(&host, events_by_dir, &volume_id, &share, &mount_path).await;
                             debug!("smb_watcher({}): cancelled during debounce, closing", share_name);
                             if let Err(e) = watcher.close().await {
                                 debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
@@ -377,7 +385,7 @@ pub(super) async fn run_smb_watcher(
                     events_by_dir.len()
                 );
 
-                process_event_batch(events_by_dir, &volume_id, &share, &mount_path).await;
+                process_event_batch(&host, events_by_dir, &volume_id, &share, &mount_path).await;
             }
             Err(e) => {
                 // Check for STATUS_NOTIFY_ENUM_DIR (buffer overflow).
@@ -392,13 +400,13 @@ pub(super) async fn run_smb_watcher(
                         "smb_watcher({}): STATUS_NOTIFY_ENUM_DIR, emitting FullRefresh for share root",
                         share_name
                     );
-                    notify_directory_changed(&volume_id, &mount_path, DirectoryChange::FullRefresh);
+                    host.listings()
+                        .directory_changed(&volume_id, &mount_path, DirectoryChange::FullRefresh);
                     // Index freshness: overflow means the server dropped change
                     // records we can't recover, so the index may have drifted.
                     // Mark it Stale (the index's overflow policy; the watcher
                     // itself keeps running — a different path from a disconnect).
-                    #[cfg(any(target_os = "macos", target_os = "linux"))]
-                    crate::index_host::index().on_watch_gap(WatchScope::Volume(&volume_id), WatchGap::EventsOverflowed);
+                    host.indexing().watch_gap(&volume_id, WatchGap::EventsOverflowed);
                     // The pipelined-next CHANGE_NOTIFY is already outstanding,
                     // so events arriving during the consumer's re-scan land in
                     // it. Keep watching.
@@ -416,8 +424,7 @@ pub(super) async fn run_smb_watcher(
                 // longer be trusted. Flip it Stale (the `WatcherDied` freshness
                 // seam). A later reconnect respawns the watcher but does NOT restore Fresh
                 // — only a rescan does (the "admittedly stale" model).
-                #[cfg(any(target_os = "macos", target_os = "linux"))]
-                crate::index_host::index().on_watch_gap(WatchScope::Volume(&volume_id), WatchGap::WatcherStopped);
+                host.indexing().watch_gap(&volume_id, WatchGap::WatcherStopped);
                 let _ = watcher.close().await;
                 // Backend-autonomous recovery: the watcher's dedicated session
                 // dying proves the server connection broke. Drive a bounded-backoff

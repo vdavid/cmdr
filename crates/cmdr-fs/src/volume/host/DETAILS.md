@@ -80,10 +80,10 @@ with archive, MTP, and local POSIX checked for anything SMB doesn't exercise.
 
 ### `ListingHost`
 
-- `directory_changed` ⇐ `listing::caching::notify_directory_changed`. SMB calls it from four arms of
-  `volume_impl.rs::notify_mutation` and from nine arms of the watcher's event batch; MTP calls it from four. One call
-  covers three host concerns — the panes, the file index, the cloud-badge cache — so a backend never learns which of
-  them exist.
+- `directory_changed` ⇐ `listing::caching::notify_directory_changed`. SMB calls it from three arms of
+  `volume_impl.rs::notify_mutation` and from ten of the watcher's (nine in the event batch, one for an overflow
+  `FullRefresh`); MTP calls it from four. One call covers three host concerns — the panes, the file index, the
+  cloud-badge cache — so a backend never learns which of them exist.
 - `authoritative_listing` ⇐ `listing::caching::try_get_authoritative_listing`. The fresh-listing oracle, consulted per
   unique parent directory by SMB's and MTP's batch scans.
 - `refresh_archive_listings` ⇐ `listing::caching::refresh_archive_listings`. Two callers, both watching the drive that
@@ -113,10 +113,9 @@ spawned. Wrapping that in a trait would be rebuilding tokio's API, worse.
 
 ### `VolumeEventSink`
 
-⇐ `smb/events.rs`, which today holds a `OnceLock<Mutex<Option<AppHandle>>>` set from `lib.rs::setup` and emits
-`network::VolumeConnectionChanged` through `tauri_specta::Event`. The seam carries `VolumeConnection`, a three-variant
-enum; the payload struct, its derives, and the wire enum it serializes stay app-side. The two enums meet in exactly one
-match, in `events/volume_mapping.rs`.
+⇐ a global `AppHandle` the SMB backend used to hold, emitting `network::VolumeConnectionChanged` through
+`tauri_specta::Event`. The seam carries `VolumeConnection`, a three-variant enum; the payload struct, its derives, and
+the wire enum it serializes stay app-side. The two enums meet in exactly one match, in `events/volume_mapping.rs`.
 
 `NeedsCredentials` is worth its own variant even though SMB's internal state machine is binary
 (`Direct ⇄ Disconnected`): it's the one transition the backend must NOT retry its way out of, and a string would let a
@@ -309,11 +308,15 @@ Three things the adapters found that aren't trait shape, and matter to whoever w
   so the adapter is unconditional; only the app's own call sites carry
   `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
 
-`cmdr-archive` is the only backend on the seams so far, with one exception: SMB already reports connection transitions
-through `VolumeConnection` and `events::volume_mapping`, because converting straight to the app's wire enum welded the
-backend and `network/` into one cycle. It still reaches `listing::caching`, `network::keychain`, and the rest directly,
-as do the other app-resident backends; each switches over when it moves into its own crate. Which ones will and won't: §
-"Which backends move" below.
+`cmdr-archive` and SMB are both fully on the seams: SMB takes a `VolumeHost` in `connect_smb_volume`, keeps it on the
+share-scoped `SmbVolumeInner`, and reaches nothing in the app directly. `local_posix` and MTP still call
+`listing::caching`, `network::keychain`, and the rest, and stay app-resident on purpose. Which backends move and which
+don't: § "Which backends move" below.
+
+**Only the event sink needs a running app.** `volume_host::host()` hands out the app's real adapters even before
+`install()`, leaving only the frontend channel (and the app's runtime) unwired, because the listing cache, secret store,
+index handle, priority tracker, and settings are all process-global. That's what lets an app-side backend test drive a
+real volume and assert on the real listing cache without standing a Tauri app up.
 
 ## What a backend crate buys, and the two things it doesn't
 

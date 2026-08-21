@@ -5,9 +5,8 @@
 
 use super::mapping::map_smb_error;
 use super::{BatchScanResult, CopyScanResult, ScanConflict, SmbVolume, SourceItemInfo, VolumeError};
-use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::try_get_authoritative_listing;
-use crate::file_system::volume::ListingProgress;
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::ListingProgress;
 use log::{debug, warn};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -202,8 +201,8 @@ impl SmbVolume {
                 });
             }
 
-            // Oracle short-circuit: group inputs by parent and ask
-            // `try_get_authoritative_listing` for each unique parent. Any path whose
+            // Oracle short-circuit: group inputs by parent and ask the host's
+            // `authoritative_listing` for each unique parent. Any path whose
             // parent is watcher-backed gets its size + is_directory from the
             // cached `FileEntry` (no SMB stat). Remaining paths fall through
             // to the pipelined-stat flow below. Decision is per-parent: one
@@ -222,9 +221,12 @@ impl SmbVolume {
                 let mut parent_cache: HashMap<PathBuf, Option<Vec<FileEntry>>> = HashMap::new();
                 for (idx, path) in paths.iter().enumerate() {
                     let original_parent = path.parent().unwrap_or(Path::new("")).to_path_buf();
-                    let entries = parent_cache
-                        .entry(original_parent.clone())
-                        .or_insert_with(|| try_get_authoritative_listing(&self.inner.volume_id, &original_parent));
+                    let entries = parent_cache.entry(original_parent.clone()).or_insert_with(|| {
+                        self.inner
+                            .host()
+                            .listings()
+                            .authoritative_listing(&self.inner.volume_id, &original_parent)
+                    });
 
                     let Some(cached_entries) = entries.as_ref() else {
                         leftover_indices.push(idx);

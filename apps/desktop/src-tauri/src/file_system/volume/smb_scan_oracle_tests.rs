@@ -59,11 +59,15 @@ async fn make_docker_volume() -> SmbVolume {
         .unwrap_or(10480);
     let volume_id = smb_volume_id("127.0.0.1", port, "public");
     let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
-    connect_smb_volume("public", "/tmp/smb-test-mount", &volume_id, params)
-        .await
-        .unwrap_or_else(|e| {
-            panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
-        })
+    connect_smb_volume(
+        "public",
+        "/tmp/smb-test-mount",
+        &volume_id,
+        params,
+        crate::volume_host::host(),
+    )
+    .await
+    .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})"))
 }
 
 #[tokio::test]

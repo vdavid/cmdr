@@ -265,6 +265,10 @@ using the app: `announce_os_mount_fallback` emits `SmbFellBackToOsMount { volume
 a notice with a "Try connecting directly" button (`src/lib/file-explorer/network/DETAILS.md` § "The OS-mount fallback
 notice").
 
+**The module holds the `AppHandle` for it**, stashed from `lib.rs::setup`. It's the only `AppHandle` this corner of the
+app needs: a share's session-state transitions go out through the volume host's event seam instead, so the SMB backend
+names no `tauri` type at all.
+
 **Only the auto paths speak.** `register_smb_volume` is the fallback that nobody asked for and nothing else announces:
 the startup pass over existing mounts and the FSEvents mount watcher both land there. `try_smb_upgrade` (the manual
 "Connect directly") returns its failure to the caller, who is a person watching a spinner, so a notice there would say

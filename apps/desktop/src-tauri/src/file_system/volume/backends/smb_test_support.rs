@@ -22,11 +22,15 @@ pub(super) async fn make_docker_volume() -> SmbVolume {
         .unwrap_or(10480);
     let volume_id = smb_volume_id("127.0.0.1", port, "public");
     let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
-    connect_smb_volume("public", TEST_MOUNT_ROOT, &volume_id, params)
-        .await
-        .unwrap_or_else(|e| {
-            panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
-        })
+    connect_smb_volume(
+        "public",
+        TEST_MOUNT_ROOT,
+        &volume_id,
+        params,
+        crate::volume_host::host(),
+    )
+    .await
+    .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})"))
 }
 
 /// An absolute share path the way production builds one: `{mount root}/{relative}`.
@@ -203,6 +207,7 @@ pub(super) fn make_test_volume_with_id(volume_id: &str) -> SmbVolume {
             scan_pool: tokio::sync::RwLock::new(None),
             scan_session_refs: AtomicUsize::new(0),
             active_mount_path: Arc::new(StdRwLock::new(mount_path)),
+            host: crate::volume_host::host(),
         }),
     }
 }

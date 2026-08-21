@@ -2,7 +2,7 @@
 //! -> `VolumeError`. No shared state; the cleanest extraction.
 
 use super::{SpaceInfo, VolumeError};
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
 
 /// Converts an `smb2::FileTime` to seconds since the Unix epoch, matching
 /// `FileEntry.modified_at` / `created_at` (seconds, like `LocalPosixVolume`).

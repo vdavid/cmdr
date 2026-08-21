@@ -2,12 +2,11 @@
 //! smb2 error-handling helpers (`handle_smb_result`, `with_smb_sync`,
 //! `update_state_on_smb_error`) plus session (re)build helpers.
 
-use super::events::emit_state_change;
 use super::mapping::map_smb_error;
 use super::state::ConnectionState;
 use super::{SmbConnectionParams, SmbVolume, VolumeError};
 use cmdr_fs::volume::Retirement;
-use cmdr_fs::volume::host::events::VolumeConnection;
+use cmdr_fs::volume::host::VolumeHost;
 use log::{debug, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
@@ -198,15 +197,23 @@ pub(super) async fn build_session(params: &SmbConnectionParams) -> Result<(SmbCl
 /// Re-fetches credentials from the secret store for the given server/share.
 /// Returns `None` if nothing is stored (in which case the cached creds are all
 /// we have to work with).
-pub(super) async fn refresh_credentials_from_store(params: &SmbConnectionParams) -> Option<SmbConnectionParams> {
+///
+/// Narrow first, then wide: a share-level entry beats the server-level one a
+/// sign-in saves, so a share with its own password keeps it.
+pub(super) async fn refresh_credentials_from_store(
+    host: &VolumeHost,
+    params: &SmbConnectionParams,
+) -> Option<SmbConnectionParams> {
     let server = params.server.clone();
     let share = params.share_name.clone();
+    let host = host.clone();
 
+    // The store is synchronous down to the OS call, so it stays off the async
+    // worker it would otherwise block.
     let creds = tokio::task::spawn_blocking(move || {
-        // Try share-level first (more specific), then server-level.
-        crate::network::keychain::get_credentials(&server, Some(&share))
-            .or_else(|_| crate::network::keychain::get_credentials(&server, None))
-            .ok()
+        host.credentials()
+            .credentials(&server, Some(&share))
+            .or_else(|| host.credentials().credentials(&server, None))
     })
     .await
     .ok()
@@ -217,7 +224,7 @@ pub(super) async fn refresh_credentials_from_store(params: &SmbConnectionParams)
         share_name: params.share_name.clone(),
         port: params.port,
         username: creds.username,
-        password: creds.password,
+        password: creds.secret,
     })
 }
 
@@ -228,14 +235,21 @@ pub(super) async fn refresh_credentials_from_store(params: &SmbConnectionParams)
 /// `retirement` is the share's flag: a retired share still tracks its own state
 /// for the holders reading through it, but must not announce a disconnect under a
 /// volume id somebody else now owns.
-pub(super) fn update_state_on_smb_error(state: &AtomicU8, retirement: &Retirement, volume_id: &str, err: &smb2::Error) {
+pub(super) fn update_state_on_smb_error(
+    host: &VolumeHost,
+    state: &AtomicU8,
+    retirement: &Retirement,
+    volume_id: &str,
+    err: &smb2::Error,
+) {
     if matches!(
         err.kind(),
         smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired
     ) {
         let prev = state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
         if prev != ConnectionState::Disconnected as u8 && !retirement.is_retired() {
-            emit_state_change(volume_id, ConnectionState::Disconnected.into());
+            host.events()
+                .connection_changed(volume_id, ConnectionState::Disconnected.into());
         }
     }
 }

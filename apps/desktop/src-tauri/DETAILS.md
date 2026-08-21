@@ -49,6 +49,12 @@ constructor, so a test can build one with fakes and pass it in, and nothing need
 `volume_host::host()` is only where the app parks the one it built. Each adapter lives beside the subsystem that can
 answer it, listed in `crates/cmdr-fs/src/volume/host/DETAILS.md` and `index_host.rs`.
 
+**Only the frontend event channel needs a running app**, so `volume_host::host()` hands out the real wiring even before
+`install()` and leaves that one seam (plus the app's runtime) unanswered. Everything else — the listing cache, the
+secret store, the index handle, the priority tracker, the settings module — is process-global and works in a test
+binary. That's what lets an app-side backend test drive a real volume and then assert on the real listing cache
+without standing a Tauri app up; a test that wants FAKES builds its own host instead.
+
 ## Number types over IPC (`ipc.rs`, specta bindings)
 
 Tauri's IPC serializes through JSON, so the generated `bindings.ts` never sees a JS `bigint`.

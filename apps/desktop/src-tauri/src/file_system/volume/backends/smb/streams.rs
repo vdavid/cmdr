@@ -162,8 +162,11 @@ impl SmbVolume {
         let volume_id = self.inner.volume_id.clone();
         let share_name = self.inner.share_name.clone();
         let smb_path_owned = smb_path.to_string();
+        // The producer outlives this call and reports a mid-stream session loss,
+        // so it carries its own clone of the host.
+        let host = self.inner.host().clone();
 
-        tokio::spawn(async move {
+        self.inner.host().runtime().spawn(async move {
             // The task owns its `Connection` clone and an `Arc<Tree>` reference.
             // No lock is held, so other tasks can spawn in parallel and each
             // drive their own download on a fresh `Connection` clone, all
@@ -172,7 +175,7 @@ impl SmbVolume {
             let mut download = match tree.download(&mut conn, &smb_path_owned).await {
                 Ok(d) => d,
                 Err(e) => {
-                    update_state_on_smb_error(&state_arc, &retirement, &volume_id, &e);
+                    update_state_on_smb_error(&host, &state_arc, &retirement, &volume_id, &e);
                     warn!(
                         "SmbVolume::download(share={}, path={}): {}",
                         share_name, smb_path_owned, e
@@ -208,7 +211,7 @@ impl SmbVolume {
                             }
                         }
                         Some(Err(e)) => {
-                            update_state_on_smb_error(&state_arc, &retirement, &volume_id, &e);
+                            update_state_on_smb_error(&host, &state_arc, &retirement, &volume_id, &e);
                             warn!(
                                 "SmbVolume::download(share={}, path={}): chunk error: {}",
                                 share_name, smb_path_owned, e

@@ -14,7 +14,7 @@ Frontend: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`. Auth-flow back
   fallback), `smb_upgrade.rs`.
 - Mount/auth/state: `mount.rs` / `mount_linux.rs`, `keychain.rs`, `known_shares.rs`, `server_identity.rs`,
   `credential_store.rs` (`KeychainCredentials`, the `CredentialStore` seam), `os_mount_notice.rs` (the fallback
-  notice's once-per-server ledger).
+  notice: its once-per-server ledger AND the `AppHandle` it emits through).
 
 ## Must-knows
 

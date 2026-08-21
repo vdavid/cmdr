@@ -697,6 +697,7 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
         "/tmp/smb-test-mount",
         &volume_id,
         smb_vol.inner.params.read().await.clone(),
+        crate::volume_host::host(),
     )
     .await
     .expect("second connection to the Docker SMB container");

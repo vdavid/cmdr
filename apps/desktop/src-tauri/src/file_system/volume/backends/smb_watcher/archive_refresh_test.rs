@@ -125,6 +125,7 @@ async fn a_modified_zip_event_refreshes_the_inner_listing() {
     );
 
     process_event_batch(
+        &crate::volume_host::host(),
         modified_batch(&fixture.mount_path, "bundle.zip"),
         &volume_id,
         &no_live_share(),
@@ -161,6 +162,7 @@ async fn a_modified_non_archive_event_leaves_the_inner_listing_alone() {
 
     // A plain text sibling changed, not the archive: the inner refresh must not fire.
     process_event_batch(
+        &crate::volume_host::host(),
         modified_batch(&fixture.mount_path, "notes.txt"),
         &volume_id,
         &no_live_share(),

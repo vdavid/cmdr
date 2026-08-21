@@ -107,9 +107,15 @@ async fn make_docker_auth_volume() -> SmbVolume {
         .unwrap_or(10481);
     let volume_id = smb_volume_id("127.0.0.1", port, "private");
     let params = SmbConnectionParams::new("127.0.0.1", "private", port, Some("testuser"), Some("testpass"));
-    connect_smb_volume("private", "/tmp/smb-soak-mount", &volume_id, params)
-        .await
-        .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB auth container at 127.0.0.1:{port} ({e:?})"))
+    connect_smb_volume(
+        "private",
+        "/tmp/smb-soak-mount",
+        &volume_id,
+        params,
+        crate::volume_host::host(),
+    )
+    .await
+    .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB auth container at 127.0.0.1:{port} ({e:?})"))
 }
 
 #[tokio::test]

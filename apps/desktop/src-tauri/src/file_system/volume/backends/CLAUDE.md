@@ -11,6 +11,10 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
 
 ## SMB must-knows
 
+- **Everything SMB asks the app goes through the `VolumeHost`** it takes in `connect_smb_volume` and keeps on
+  `SmbVolumeInner`. A direct `listing::caching` / `network::keychain` / `index_host` / `posthog` / `tokio::spawn` call
+  is a bug, and a compile error once the backend is a crate. Seam rules:
+  `crates/cmdr-fs/src/volume/host/CLAUDE.md`.
 - **The watcher runs on a DEDICATED session** (stacked CHANGE_NOTIFY long-polls wedge Samba) **and never reconnects
   itself**: on death it kicks the ONE reconnect path (`spawn_watcher_death_reconnect`), which respawns it AND resumes
   the index. ❌ No second reconnect loop, and ❌ never cancel it on a pane close.
