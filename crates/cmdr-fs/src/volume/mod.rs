@@ -978,7 +978,7 @@ pub trait Volume: Send + Sync {
     /// A backend may route it over scan-scoped resources so concurrent background
     /// reads don't serialize on — or compete with — the session the pane browses
     /// through: `SmbVolume` serves small hinted files from its scan-connection
-    /// pool via the 1-RTT compound read (see `smb/scan_pool.rs`). Semantically
+    /// pool via the 1-RTT compound read (see `crates/cmdr-smb/src/volume/scan_pool.rs`). Semantically
     /// identical to [`open_read_stream_with_hint`](Self::open_read_stream_with_hint),
     /// which is also the default.
     #[allow(
@@ -1099,7 +1099,7 @@ pub trait Volume: Send + Sync {
     /// write holds an OPEN handle across the pause, so the destination yield MUST
     /// be bounded (a hard cap in `CheckpointStream`), never the unbounded park the
     /// read side uses. Only SMB opts in: its writes are discrete SMB2 WRITE chunks
-    /// with NO oplock or lease requested (`smb/streams.rs`), so a brief, capped
+    /// with NO oplock or lease requested (`crates/cmdr-smb/src/volume/streams.rs`), so a brief, capped
     /// park between chunks is safe. ❌ MTP must NEVER opt in: an MTP upload streams
     /// inside ONE `SendObject` PTP transaction, so pausing mid-write would PIN the
     /// device session, the opposite of the read side.

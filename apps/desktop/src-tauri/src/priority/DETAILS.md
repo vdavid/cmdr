@@ -11,7 +11,7 @@ between images, between chunks) where it polls cheap state; a central scheduler 
 cancellation machinery for no behavior we need. The priority order is enforced by three pairwise edges:
 
 1. **Transfers yield to interactive** — `SmbVolume`'s foreground-yield methods
-   (`file_system/volume/backends/smb/foreground_yield.rs`) park `CheckpointStream` between chunks while the share's
+   (`crates/cmdr-smb/src/volume/foreground_yield.rs`) park `CheckpointStream` between chunks while the share's
    per-volume foreground timestamp is fresh. MTP answers the same question from its own per-device gate (a PTP session
    has an explicit holder; time-based signals aren't needed there).
 2. **Drive indexing yields to both** — `indexing/network_scanner/scan_pace.rs` drops the walk's listing budget to ONE

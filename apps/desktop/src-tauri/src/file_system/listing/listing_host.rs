@@ -138,9 +138,9 @@ mod tests {
 
     /// The archive refresh re-reads every open listing at or inside the path it's
     /// given, which is what a pane browsing INSIDE an archive has instead of a
-    /// watchable filesystem path. Archive-specific routing is covered by
-    /// `smb_watcher/archive_refresh_test.rs`; what's pinned here is that the seam
-    /// reaches the real refresh rather than a stub.
+    /// watchable filesystem path. Which events reach it is the SMB watcher's half,
+    /// covered by `crates/cmdr-smb/src/volume/watcher/archive_refresh_test.rs`;
+    /// what's pinned here is that the seam reaches the real refresh, not a stub.
     #[test]
     fn the_archive_refresh_re_reads_the_listings_under_its_path() {
         let volume_id = unique_test_id("listing-host-archive");

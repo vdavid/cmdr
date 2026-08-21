@@ -144,10 +144,6 @@ impl PoolSlots {
         self.alive[idx].store(false, Ordering::Relaxed);
     }
 
-    pub(super) fn any_alive(&self) -> bool {
-        self.alive.iter().any(|a| a.load(Ordering::Relaxed))
-    }
-
     /// Claim the (single) reconnect for slot `idx`. Returns `true` if the caller
     /// now owns it, `false` if a reconnect is already in flight for this slot.
     pub(super) fn try_begin_reconnect(&self, idx: usize) -> bool {
@@ -302,7 +298,7 @@ impl ScanPool {
                     log::debug!("smb scan pool: member {idx} for '{}' reconnected", self.volume_id);
                     return;
                 }
-                Err(e) if cmdr_smb::is_auth_error(&e) => {
+                Err(e) if crate::is_auth_error(&e) => {
                     // The main session owns the credential-refresh / needs_credentials
                     // flow. A pool member is an accelerator: give up quietly and let
                     // listings fall back to the main session.
@@ -547,6 +543,7 @@ impl SmbVolume {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::volume::test_support::*;
 
     /// Round-robin hands out each live slot in turn and cycles.
     #[test]
@@ -583,9 +580,7 @@ mod tests {
     fn all_dead_yields_none() {
         let slots = PoolSlots::new(3);
         assert!(slots.next_alive().is_none(), "fresh slots start dead");
-        assert!(!slots.any_alive());
         slots.mark_alive(2);
-        assert!(slots.any_alive());
         assert_eq!(slots.next_alive(), Some(2));
         slots.mark_dead(2);
         assert!(slots.next_alive().is_none());
@@ -596,7 +591,6 @@ mod tests {
     fn empty_pool_never_selects() {
         let slots = PoolSlots::new(0);
         assert!(slots.next_alive().is_none());
-        assert!(!slots.any_alive());
     }
 
     /// The reconnect guard is single-flight: the first claimant wins, later ones
@@ -609,5 +603,43 @@ mod tests {
         assert!(slots.try_begin_reconnect(1), "a different slot is independent");
         slots.end_reconnect(0);
         assert!(slots.try_begin_reconnect(0), "a fresh claim wins after the first ends");
+    }
+
+    /// A superseded volume must not open NEW background connections: the scan pool
+    /// exists to speed up indexing and enrichment for the live volume id, which the
+    /// successor now owns. (The live open/close path is the Docker test.)
+    #[tokio::test]
+    async fn open_scan_pool_noops_when_superseded() {
+        let vol = make_test_volume_direct();
+        vol.inner.retirement.retire();
+        vol.open_scan_pool().await;
+        assert!(
+            vol.inner.scan_pool.read().await.is_none(),
+            "a retired volume opens no new pool connections"
+        );
+    }
+
+    /// Opening the scan pool no-ops when the volume is disconnected: it must not try
+    /// to `build_session` (a real network round trip) against a dead volume. Cheap,
+    /// server-free coverage of the guard; the live open/list/close path is the
+    /// Docker integration test.
+    #[tokio::test]
+    async fn open_scan_pool_noops_when_disconnected() {
+        let vol = make_test_volume(); // Disconnected, no session
+        vol.open_scan_pool().await;
+        assert!(
+            vol.inner.scan_pool.read().await.is_none(),
+            "a disconnected volume opens no scan pool"
+        );
+    }
+
+    /// Closing the scan pool with none open is a no-op (idempotent), so
+    /// `end_scan_session` / `on_unmount` are always safe to call.
+    #[tokio::test]
+    async fn close_scan_pool_is_idempotent_noop() {
+        let vol = make_test_volume();
+        vol.close_scan_pool().await;
+        vol.close_scan_pool().await;
+        assert!(vol.inner.scan_pool.read().await.is_none());
     }
 }

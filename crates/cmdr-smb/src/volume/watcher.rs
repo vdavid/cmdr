@@ -14,7 +14,7 @@
 //! state machine, just now backend-triggered on watcher death (not only on the
 //! next FE backoff tick / hot-path op).
 
-use super::smb::SmbVolumeInner;
+use super::SmbVolumeInner;
 use cmdr_fs::archive_format::has_supported_archive_extension;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
@@ -432,7 +432,7 @@ pub(super) async fn run_smb_watcher(
                 // which rebuilds the session, respawns this watcher, and resumes the
                 // drive index — so an enabled NAS index doesn't go dark until the
                 // user intervenes. Coalesces with any FE-driven reconnect.
-                super::smb::spawn_watcher_death_reconnect(share.clone());
+                super::spawn_watcher_death_reconnect(share.clone());
                 return;
             }
         }

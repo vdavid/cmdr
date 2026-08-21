@@ -10,7 +10,6 @@
 //! helpers come from `super::smb_test_support`.
 
 use super::smb_test_support::*;
-use super::*;
 
 use cmdr_index::media_index::network::fetch::os_join;
 use cmdr_index::media_index::testing::{ByteFetcher, FetchError, VolumeByteFetcher};
@@ -105,14 +104,11 @@ async fn smb_integration_media_fetch_parallel_reads_over_the_scan_pool() {
         names.push((name, content));
     }
 
-    // Open the scan session TWICE (an index rescan overlapping an enrichment
-    // pass): the pool must survive the first end and close only after the last.
+    // Fetch over an open scan session, which is what the enrichment pass does:
+    // the reads below go out over the pool's extra connections rather than the
+    // browsing session. The pool's own refcounting is the backend's contract and
+    // is pinned by `cmdr-smb`'s `smb_integration_a_scan_session_pair_shares_one_pool`.
     vol.begin_scan_session().await;
-    vol.begin_scan_session().await;
-    assert!(
-        vol.inner.scan_pool.read().await.is_some(),
-        "the pooled connections come up with the scan session"
-    );
 
     let fetcher = Arc::new(VolumeByteFetcher::new(vol.clone(), tokio::runtime::Handle::current()));
 
@@ -145,18 +141,7 @@ async fn smb_integration_media_fetch_parallel_reads_over_the_scan_pool() {
     .expect("blocking task");
     assert!(results, "every concurrent pooled fetch must return exact bytes");
 
-    // Refcount: the FIRST end must leave the pool up for the sibling session…
     vol.end_scan_session().await;
-    assert!(
-        vol.inner.scan_pool.read().await.is_some(),
-        "ending one of two scan sessions must not tear the pool down"
-    );
-    // …and the LAST end closes it.
-    vol.end_scan_session().await;
-    assert!(
-        vol.inner.scan_pool.read().await.is_none(),
-        "the last scan session's end closes the pool"
-    );
 
     for (name, _) in &names {
         vol.delete(Path::new(name)).await.expect("cleanup");

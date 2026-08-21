@@ -15,10 +15,10 @@ pub mod archive;
 mod local_posix;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;
+// A re-export of the `cmdr-smb` crate under its original path, plus the app-side
+// half of its suites. See `smb.rs`.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod smb;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-mod smb_watcher;
 
 pub use local_posix::LocalPosixVolume;
 /// Cross-platform volume used-bytes helper (NSURL purgeable-aware on macOS,
@@ -35,8 +35,8 @@ pub use smb::SmbVolume;
 // `super::Volume`, `super::VolumeError`, `super::MutationEvent`, etc. without
 // having to spell `crate::file_system::volume::...` everywhere.
 pub(crate) use super::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SourceItemInfo,
-    SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError, VolumeReadStream, WatchCoverage,
 };
 
 #[cfg(test)]

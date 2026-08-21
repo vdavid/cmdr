@@ -12,15 +12,27 @@ publish = false
 workspace = true
 
 [features]
-# "This is a test build." Its whole job is to forward `smb2/testing`, which
-# publishes `smb2::testing`'s port accessors for the Docker-backed SMB fixture
-# stack. The app turns it on through its own `smb-e2e` feature, and cargo's
-# feature unification means the app's DIRECT `smb2` dependency sees the feature
-# too — so `network::virtual_smb_hosts` keeps compiling without a second
-# `smb2/testing` forward. Never enable in a production build.
-testing = ["smb2/testing"]
+# "This is a test build." Two effects:
+#
+# 1. It forwards `smb2/testing`, which publishes `smb2::testing`'s port accessors
+#    for the Docker-backed SMB fixture stack. The app turns it on through its own
+#    `smb-e2e` feature, and cargo's feature unification means the app's DIRECT
+#    `smb2` dependency sees the feature too — so `network::virtual_smb_hosts`
+#    keeps compiling without a second `smb2/testing` forward.
+# 2. It widens `volume::testing` (the Docker fixture connection, the share-path
+#    and unique-name helpers, the recursive cleanup, and the byte-integrity
+#    hashers) from `#[cfg(test)]`-only to `pub`, so the APP's SMB suites — the
+#    ones that drive the transfer pipeline and belong on that side of the seam —
+#    share one set of fixtures with this crate's own instead of growing a second,
+#    drifting copy. `blake3` comes along for the hashers.
+#
+# Never enable in a production build.
+testing = ["smb2/testing", "dep:blake3"]
 
 [dependencies]
+# The `Volume` trait, every type it exchanges, and the host seams this backend
+# asks the app through. The only crate below this one.
+cmdr-fs = { path = "../cmdr-fs" }
 # The SMB client. Same version and features the app pins, so one `smb2` resolves
 # for the whole graph and a feature turned on here reaches every consumer of it.
 smb2 = { version = "0.18.1", features = ["serde"] }
@@ -31,3 +43,33 @@ serde = { version = "1", features = ["derive"] }
 # `tauri-specta`, and the app's command signatures collect them transitively.
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
 log = "0.4"
+# The backend's own async surface: `tokio::sync` for the session locks, `time`
+# for the reconnect backoff and the watcher debounce, `rt` for the handle
+# background work spawns onto, and `macros` for `select!`. Deliberately NOT
+# `rt-multi-thread`: the runtime is the app's, handed down through
+# `VolumeHost::runtime`, and a backend that could build its own would.
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+# `CancellationToken`, on the cancelable listing path. Default features off, the
+# same shape `cmdr-fs` pins, so no second copy enters the graph.
+tokio-util = { version = "0.7.18", default-features = false }
+# `FuturesUnordered`, which is how the scan walk and the scan pool keep N
+# listings in flight on one session.
+futures-util = "0.3"
+# macOS mounts hand out NFD paths and SMB servers speak NFC, so every
+# cache-facing path this backend builds is re-normalized on the way through.
+unicode-normalization = "0.1"
+# The byte-integrity hashers in `volume::testing`. Optional, enabled only by the
+# `testing` feature, so no shipped build carries it.
+blake3 = { version = "1.8.3", optional = true }
+
+[dev-dependencies]
+# Depending on ourselves turns the `testing` feature on for every DEV target and
+# leaves it off for the lib, so a shipped build carries no fixtures and no
+# `blake3`. Same shape as the app's own self dev-dependency.
+cmdr-smb = { path = ".", features = ["testing"] }
+# `InMemoryVolume`, `TestDir`, `wait_until_async`, and the recording / scripted
+# host-seam fakes this crate's tests assert against.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# The Docker-backed suites drive real concurrency, so their tests need a
+# multi-threaded runtime the lib deliberately can't build for itself.
+tokio = { version = "1", features = ["rt-multi-thread"] }

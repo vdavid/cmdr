@@ -1,6 +1,6 @@
 //! Translate live SMB `CHANGE_NOTIFY` events into per-volume index writes.
 //!
-//! The SMB watcher (`file_system/volume/backends/smb_watcher.rs`) already turns
+//! The SMB watcher (`crates/cmdr-smb/src/volume/watcher.rs`) already turns
 //! `CHANGE_NOTIFY` into [`DirectoryChange`]s and feeds them to
 //! `caching::notify_directory_changed` for the open pane. This module is the
 //! SECOND consumer: it keeps the volume's persisted index in sync with the same

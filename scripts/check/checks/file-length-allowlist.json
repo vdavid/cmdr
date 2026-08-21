@@ -95,6 +95,8 @@
     "crates/cmdr-index/src/media_index/scheduler/enrich_tests.rs": 1262,
     "scripts/check/checks/desktop-rust-cfg-gate_test.go": 1228,
     "scripts/check/checks/lock-poison.go": 890,
-    "scripts/check/checks/lock-poison_test.go": 975
+    "scripts/check/checks/lock-poison_test.go": 975,
+    "crates/cmdr-index/src/media_index/scheduler/kick_tests.rs": 880,
+    "crates/cmdr-smb/src/volume/volume_impl.rs": 1049
   }
 }

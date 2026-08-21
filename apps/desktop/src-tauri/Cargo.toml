@@ -33,7 +33,11 @@ smb-e2e = ["cmdr-smb/testing"]
 # consumer compiles it as a dependency.
 # Enabled automatically for every dev target and only for those; see the self
 # dev-dependency under `[dev-dependencies]`. Never enable in production builds.
-testing = ["cmdr-archive/testing", "cmdr-fs/testing", "cmdr-index/testing"]
+# `cmdr-smb/testing` is in the list for `cmdr_smb::volume::testing` (the shared
+# Docker fixtures the app's SMB suites connect through). It also turns
+# `smb2/testing` on for every dev target, which is harmless: `smb-e2e` already
+# does that, and nothing here reads `smb2::testing`.
+testing = ["cmdr-archive/testing", "cmdr-fs/testing", "cmdr-index/testing", "cmdr-smb/testing"]
 
 [[bin]]
 name = "Cmdr"

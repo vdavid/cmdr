@@ -42,7 +42,7 @@ impl SmbVolumeInner {
     /// `SmbVolumeInner::do_attempt_reconnect`; the watcher bails on errors and we
     /// respawn here on the next successful reconnect).
     pub(super) fn spawn_watcher(&self, params: &SmbConnectionParams) {
-        use cmdr_smb::build_smb_addr;
+        use crate::build_smb_addr;
 
         // A retired share no longer owns its volume id, and the watcher is
         // id-scoped: it feeds the listing cache and the index for that id, and
@@ -57,7 +57,7 @@ impl SmbVolumeInner {
         let share = params.share_name.clone();
         let username = params.username.clone();
         let password = params.password.clone();
-        let volume = super::super::smb_watcher::WatchedVolume {
+        let volume = super::watcher::WatchedVolume {
             volume_id: self.volume_id.clone(),
             // The watcher outlives the call that spawned it and reports listing
             // changes and watch gaps for the whole share, so it carries its own
@@ -79,7 +79,7 @@ impl SmbVolumeInner {
         // The app's runtime, never `tokio::spawn`: a backend's watcher can be
         // started from a synchronous setup hook or an OS thread with no reactor,
         // where `tokio::spawn` panics.
-        self.host.runtime().spawn(super::super::smb_watcher::run_smb_watcher(
+        self.host.runtime().spawn(super::watcher::run_smb_watcher(
             addr, share, username, password, volume, cancel_rx,
         ));
 
@@ -138,7 +138,7 @@ impl SmbVolumeInner {
         let first_attempt = build_session(&params_snapshot).await;
         let (client, tree) = match first_attempt {
             Ok(pair) => pair,
-            Err(err) if cmdr_smb::is_auth_error(&err) => {
+            Err(err) if crate::is_auth_error(&err) => {
                 // Cached creds may be stale. Re-pull from the secret store and retry once.
                 info!(
                     "SmbVolumeInner::attempt_reconnect(share={}): cached credentials rejected, re-pulling from secret store",
@@ -324,7 +324,7 @@ fn reconnect_backoff_should_give_up(err: &VolumeError) -> bool {
 /// mark the SUCCESSOR disconnected, and one dying after an eject must not keep a
 /// reconnect loop running against a share the app has forgotten; the handle
 /// answers both, because it is the share itself rather than a name to look up.
-pub(in crate::file_system::volume::backends) fn spawn_watcher_death_reconnect(share: SelfHandle<SmbVolumeInner>) {
+pub(super) fn spawn_watcher_death_reconnect(share: SelfHandle<SmbVolumeInner>) {
     /// The share, while it is still worth acting for: still allocated, still the
     /// registry's, and not unmounted.
     fn still_worth_reconnecting(share: &SelfHandle<SmbVolumeInner>) -> Option<Arc<SmbVolumeInner>> {
@@ -445,3 +445,7 @@ mod reconnect_backoff_tests {
         }));
     }
 }
+
+#[cfg(test)]
+#[path = "reconnect_test.rs"]
+mod reconnect_test;

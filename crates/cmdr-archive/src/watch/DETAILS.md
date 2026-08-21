@@ -78,18 +78,18 @@ close:
   `apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` on `VolumeManager::resolve`). So a copy/delete inside a
   remote archive always sizes against a fresh parse, never a stale cache.
 - **Push-refresh for an EXTERNAL edit of a remote `.zip`: SMB yes, MTP no.** SMB: the recursive share watcher
-  (`smb_watcher.rs`) already receives a `CHANGE_NOTIFY` for any changed `.zip` on the share, so its Modified/Renamed
-  handlers ALSO call `caching::refresh_archive_listings` for a supported-archive path, pushing an out-of-band edit to
-  any open inner listing. That refresh is a SEPARATE, visible-listing-only consumer from this `listing_watch_coverage`
-  oracle: the flag stays `false` for a remote parent regardless (the SMB watcher is lossy under load, so the write-op
-  oracle must keep re-reading pre-flight scans honestly — see
-  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "SMB archive push-refresh" for the mechanism and
-  `src/volume_test.rs`'s `remote_backed_archive_never_reports_watch_coverage` pinning it). MTP: nothing forwards an
-  out-of-band change to an open inner listing (MTP's `ObjectInfoChanged` is absent on many devices and hooking it isn't
-  a clean few-liner), so an MTP-backed archive pane shows the zip as of its last read until the user re-navigates or
-  refreshes (F5). For both, the app's OWN edit refreshes the pane through the normal listing-cache path (the edit's
-  driver invalidates the `(parent_id, archive_path)` listing on completion), and the `(path, size, mtime)` cache key
-  forces a re-parse on the next read, so a stale render can never outlive a navigation.
+  (`crates/cmdr-smb/src/volume/watcher.rs`) already receives a `CHANGE_NOTIFY` for any changed `.zip` on the share, so
+  its Modified/Renamed handlers ALSO call `caching::refresh_archive_listings` for a supported-archive path, pushing an
+  out-of-band edit to any open inner listing. That refresh is a SEPARATE, visible-listing-only consumer from this
+  `listing_watch_coverage` oracle: the flag stays `false` for a remote parent regardless (the SMB watcher is lossy under
+  load, so the write-op oracle must keep re-reading pre-flight scans honestly — see `crates/cmdr-smb/DETAILS.md` § "SMB
+  archive push-refresh" for the mechanism and `src/volume_test.rs`'s
+  `remote_backed_archive_never_reports_watch_coverage` pinning it). MTP: nothing forwards an out-of-band change to an
+  open inner listing (MTP's `ObjectInfoChanged` is absent on many devices and hooking it isn't a clean few-liner), so an
+  MTP-backed archive pane shows the zip as of its last read until the user re-navigates or refreshes (F5). For both, the
+  app's OWN edit refreshes the pane through the normal listing-cache path (the edit's driver invalidates the
+  `(parent_id, archive_path)` listing on completion), and the `(path, size, mtime)` cache key forces a re-parse on the
+  next read, so a stale render can never outlive a navigation.
 
 **Interaction with mutation.** A zip edit's FINAL atomic rename over `foo.zip` is a change event this watch catches —
 that IS the desired post-edit refresh. A concurrent browse in the other pane reading the archive mid-edit sees either

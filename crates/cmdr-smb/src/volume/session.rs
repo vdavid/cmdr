@@ -1,5 +1,5 @@
 //! Connection/session management: session cloning, connection checks, and the
-//! smb2 error-handling helpers (`handle_smb_result`, `with_smb_sync`,
+//! smb2 error-handling helpers (`handle_smb_result`,
 //! `update_state_on_smb_error`) plus session (re)build helpers.
 
 use super::mapping::map_smb_error;
@@ -121,62 +121,12 @@ impl SmbVolume {
             }
         }
     }
-
-    /// Runs an smb2 operation synchronously. For sync-only contexts (`on_unmount`, tests).
-    ///
-    /// This exists only for contexts where
-    /// no async runtime is available (for example, cleanup paths called from drop-like code).
-    fn with_smb_sync<F, T>(&self, op_name: &str, f: F) -> Result<T, VolumeError>
-    where
-        F: FnOnce(&mut SmbClient, &Tree) -> Result<T, smb2::Error>,
-    {
-        if self.inner.connection_state() == ConnectionState::Disconnected {
-            return Err(VolumeError::DeviceDisconnected(
-                "SMB connection is disconnected".to_string(),
-            ));
-        }
-
-        let tree_arc = {
-            let guard = self.inner.tree.blocking_read();
-            guard
-                .as_ref()
-                .cloned()
-                .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?
-        };
-
-        let mut guard = self.inner.client.blocking_lock();
-
-        let client = guard
-            .as_mut()
-            .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?;
-
-        match f(client, &tree_arc) {
-            Ok(val) => Ok(val),
-            Err(e) => {
-                let kind = e.kind();
-
-                if matches!(kind, smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired) {
-                    warn!(
-                        "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
-                        op_name, self.inner.share_name, e
-                    );
-                    self.inner.transition_to_disconnected();
-                } else if matches!(kind, smb2::ErrorKind::NotFound) {
-                    debug!("SmbVolume::{}(share={}): {}", op_name, self.inner.share_name, e);
-                } else {
-                    warn!("SmbVolume::{}(share={}): {}", op_name, self.inner.share_name, e);
-                }
-
-                Err(map_smb_error(e))
-            }
-        }
-    }
 }
 
 /// Builds a fresh smb2 session using the given params. Returns the connected
 /// client + tree on success.
 pub(super) async fn build_session(params: &SmbConnectionParams) -> Result<(SmbClient, Tree), smb2::Error> {
-    use cmdr_smb::build_smb_addr;
+    use crate::build_smb_addr;
 
     let config = ClientConfig {
         addr: build_smb_addr(&params.server, params.port),

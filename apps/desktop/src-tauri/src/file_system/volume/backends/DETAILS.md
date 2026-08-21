@@ -1,18 +1,17 @@
 # Volume backends details
 
 Pull-tier docs for `file_system/volume/backends/`: per-backend architecture, lifecycle flows, and decision rationale.
-Must-know invariants and gotchas live in `CLAUDE.md`. The trait shape, capability matrix, streaming
-patterns, and "Building a new volume" checklist live in the parent `../DETAILS.md`. When you're
-modifying `SmbVolume`, `MtpVolume`, `LocalPosixVolume`, the SMB watcher, or `InMemoryVolume`, read here.
+Must-know invariants and gotchas live in `CLAUDE.md`. The trait shape, capability matrix, streaming patterns, and
+"Building a new volume" checklist live in the parent `../DETAILS.md`. When you're modifying `MtpVolume`,
+`LocalPosixVolume`, or `InMemoryVolume`, read here; for `SmbVolume` and its watcher, `crates/cmdr-smb/DETAILS.md`.
 
 ## Key files
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` §
-Module map. `smb/` splits into `state`, `mapping`, `session`, `reconnect`, `streams`, `scan`, `scan_pool`,
-`foreground_yield`, and `volume_impl`; `mtp/` into `mod.rs` and `scan.rs`. What each piece DOES is in the sections below (§ "SMB auto-upgrade
-lifecycle", § "SMB live-reconnect lifecycle", § "SMB scan-connection pool", § "Per-backend decisions" for the session
-split / watcher session / `write_from_stream` shape, § Testing for the SMB suites and their `#[path = "../smb_*.rs"]`
-wiring), or in `crates/cmdr-archive/DETAILS.md` for `ArchiveVolume`. Only the layout facts that none of those carry live here:
+Module map. `mtp/` splits into `mod.rs` and `scan.rs`. What each piece DOES is in the sections below (§ "SMB
+auto-upgrade lifecycle", § "Per-backend decisions", § Testing), or in `crates/cmdr-archive/DETAILS.md` for
+`ArchiveVolume` and `crates/cmdr-smb/DETAILS.md` for `SmbVolume`. Only the layout facts that none of those carry live
+here:
 
 - **The SMB backend owns no `AppHandle` and names no `tauri` type.** Every reach into the app goes through the
   `VolumeHost` it takes in `connect_smb_volume` and stores on `SmbVolumeInner`: pane listings, the secret store, the
@@ -21,24 +20,13 @@ wiring), or in `crates/cmdr-archive/DETAILS.md` for `ArchiveVolume`. Only the la
 - **The `smb-fell-back-to-os-mount` notice is app-side, both halves.** `network/os_mount_notice.rs` decides whether to
   speak (once per server per run) and emits the event, holding the only `AppHandle` this corner of the app needs. The
   typed `tauri_specta::Event` structs and the wire `VolumeConnection` enum stay in the always-compiled `network/mod.rs`,
-  so `collect_events!` in `ipc.rs` can reference them on EVERY platform; the `smb/` module is `#[cfg]`-gated to macOS
+  so `collect_events!` in `ipc.rs` can reference them on EVERY platform; the `smb` module is `#[cfg]`-gated to macOS
   and Linux (as is `mtp/`), and moving a struct in there breaks the Windows build of the event collector.
 - **`volume-connection-changed` is backend-neutral, and SMB is only its first emitter.** Any backend that holds a
   session (FTP, S3, SFTP) emits the same event and inherits the frontend's unreachable banner, per-volume backoff, and
   "Sign in" prompt for free. ❌ Don't add a second, backend-named connection event: widen `VolumeConnection` and reuse
-  this one. The `From<ConnectionState>` impl in `smb/state.rs` shows the shape a backend supplies, mapping its own
+  this one. The `From<ConnectionState>` impl in `crates/cmdr-smb/src/volume/state.rs` shows the shape a backend supplies, mapping its own
   internal state machine onto the wire enum.
-- **`smb/volume_impl.rs` holds the ENTIRE `impl Volume for SmbVolume`** because a trait impl can't be split across
-  files. The heavy bodies live as inherent `*_impl` methods in `scan.rs` / `streams.rs`, with `volume_impl.rs` reduced
-  to one-line delegators. A new trait method goes here and delegates; don't try to move a trait method out. It sits on
-  the `file-length` allowlist at its full size on purpose: the trait is wide, so the file is long, and the seams worth
-  having (`session`, `reconnect`, `streams`, `scan_pool`) are already taken. See `e5ea10d02`, which reverted four splits
-  invented to satisfy the line counter and named this module's split as the model of a real one.
-- **`smb/foreground_yield.rs` answers "should a background transfer stand aside?" WITHOUT a per-device gate.** MTP has
-  an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so the signal here
-  is time-based instead: the share counts as busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last navigation on
-  it. Scope is PER VOLUME on purpose, so browsing a local folder never slows a NAS copy. `CheckpointStream`'s auto-yield
-  parks on these two functions and `SmbVolume`'s `Volume` foreground-yield methods delegate to them.
 - **`in_memory.rs`'s `with_file_count` builder is what makes `InMemoryVolume` usable for stress tests**, not just CRUD
   unit tests.
 
@@ -109,159 +97,21 @@ because the running pass re-scans at act time.
 The failure this prevents: two "Connect directly" clicks nine seconds apart replaced one healthy volume three times in
 15 seconds, and the third replacement landed in the middle of a 3 GB copy to the NAS.
 
-## SMB live-reconnect lifecycle
+## The SMB backend
 
-When a hot-path op hits `ConnectionLost` / `SessionExpired`, `handle_smb_result` flips state to `Disconnected` and
-`transition_to_disconnected` emits `volume-connection-changed { volumeId, state: "disconnected" }`. The frontend reconnect
-manager listens for this event and runs a per-volume backoff cycle (timer-driven, calling the
-`reconnect_smb_volume(volumeId)` Tauri command on each tick).
+Everything about `SmbVolume` itself — the reconnect lifecycle, the scan-connection pool, re-rooting, the archive
+push-refresh, and its decisions — moved with the code to `crates/cmdr-smb/DETAILS.md`. What stays on this side is the
+auto-upgrade lifecycle above (it is `network/`'s, not the backend's) and the app-side half of the suites, in
+`smb_app_integration_test.rs`.
 
-`SmbVolume::do_attempt_reconnect` is the single source of truth for re-establishing the session:
-
-1. Acquires `reconnect_lock` (single-flight: concurrent FE-cycle and lazy-nav callers wait here).
-2. If state is already `Direct`, returns Ok cheaply.
-3. Tries `build_session()` with the cached `SmbConnectionParams` (the credentials that worked at original connect).
-4. If that fails with an auth error, calls `refresh_credentials_from_store` (which re-reads through `host.credentials()`, share-level first then server-level) and retries once with the fresh creds. On success, the new credentials replace the cached ones via `params.write()`.
-5. On success: installs the new client + tree, restarts the watcher with `spawn_watcher` (the prior watcher is cancelled via `stop_watcher` first), then `transition_to_direct` flips state and emits `volume-connection-changed { state: "connected" }`. Doing the state flip last means observers wake up to a fully-installed session.
-6. On failure: state stays `Disconnected`. The FE backoff cycle decides whether to retry. **Auth give-up is special**: when the failure is an auth error and the refreshed store creds also fail (or there are none), `do_attempt_reconnect` emits `volume-connection-changed { state: "needs_credentials" }` before returning Err. `NeedsCredentials` is a transient signal for the frontend, not a `ConnectionState` variant: the backend state machine stays binary Direct/Disconnected, which is why `From<ConnectionState> for VolumeConnection` (in `smb/state.rs`) only ever produces the other two and the give-up path names the variant directly. That `VolumeConnection` is the BACKEND-FACING enum, `cmdr_fs::volume::host::events::VolumeConnection`, not the frontend's wire enum: the backend hands it to `host.events().connection_changed(...)`, whose app-side answer is `events::volume_mapping::TauriVolumeEvents`, and that adapter alone widens it into `network::VolumeConnection`. Converting straight into a `network` type here is what welded the backend and `network/` into one module cycle for months; the invariant that keeps it apart, and how it hid from grep, is `network/CLAUDE.md` plus `network/DETAILS.md` § "The one edge that must not come back". The reconnect manager flips to `needs-auth`, stops the futile backoff, and FilePane shows a "Sign in" prompt (`SmbReauthView`) instead of the generic "unreachable" banner. The user signs in via `Volume::reconnect_with_credentials` (Tauri `reconnect_smb_volume_with_credentials`), which persists the new password server-level (so the next reconnect is silent), updates the in-memory params, and runs `do_attempt_reconnect`. If the new creds are also wrong, it re-emits `needs_credentials` — a bad retry re-prompts rather than dead-ending.
-
-Credentials are kept in memory for the lifetime of the `SmbVolume` (no security concern: they're already in the
-process's address space for every smb2 call). Only re-pulled from the secret store on auth failure, in case the user
-updated them.
-
-### Backend-autonomous reconnect and index resume
-
-The FE reconnect manager only runs its backoff while a `FilePane` subscribes to the volume, so before this a background
-disconnect (no pane open, or a restart) left an enabled NAS index dark until the user manually re-enabled. Two backend
-hooks close that, both funneling through the ONE reconnect path (`do_attempt_reconnect`):
-
-- **`spawn_watcher_death_reconnect(share)`** (in `smb/reconnect.rs`, kicked from the watcher's fatal-error exit). The watcher
-  runs on its own dedicated smb2 session; that session erroring proves the server connection broke. A background
-  disconnect may not have touched the MAIN session yet, so it can still read `Direct` — meaning `do_attempt_reconnect`
-  would no-op. So the kick FIRST marks the volume `Disconnected`, then drives `do_attempt_reconnect` on a bounded, growing
-  backoff (`WATCHER_DEATH_RECONNECT_BACKOFF`: ~6 tries over ~4 min, then gives up quietly — never hammering a truly-down
-  server). It re-upgrades its share handle each iteration (a retirement or an unmount can land inside any sleep) and
-  stops early on unmount, on a race back to `Direct` (an FE reconnect won), or on an auth failure (`PermissionDenied` — the FE
-  "Sign in" flow owns that; retrying risks locking the account). Single-flight `reconnect_lock` coalesces it with any
-  concurrent FE reconnect.
-- **`indexing::resume_smb_index_if_enabled(volume_id)`** fires at every session-install success — `do_attempt_reconnect`
-  (in-place reconnect), `register_smb_volume` (launch/auto-upgrade), and `try_smb_upgrade` (manual "Connect directly").
-  It's fire-and-forget (spawns, so it never starts the async indexer under `reconnect_lock` / a registry lock), a no-op
-  if the index is already active, and gated on the PERSISTED per-volume state — resume ONLY when the share carries the
-  user's enable AND they haven't turned indexing off (the sticky `user_disabled` marker; `disable_drive_index` keeps the
-  DB for fast re-enable but records intent). Registering flows through the indexing lifecycle registration bus, so the media
-  scheduler resumes enrichment with no scheduler changes. The resumed index loads Stale (we weren't watching while
-  disconnected); a rescan restores Fresh. Canonical detail lives in `indexing/DETAILS.md` § "SMB indexing and the
-  freshness model"; this bullet is the volume-side trigger map.
-
-## SMB scan-connection pool
-
-Canonical home for the per-scan connection pool (`smb/scan_pool.rs`).
-
-A cold NAS index scan is metadata-read-bound, but the ceiling is **per-connection serialization in the server's ksmbd**,
-not the disks: one SMB connection can't drive the server's read queue deep enough regardless of the SMB in-flight
-window. NAS-side measurement (2026-07-22) held total in-flight depth constant and varied only the TCP connection count;
-4 connections raised read IOPS ~1.75× at flat disk latency and lifted cold client throughput ~3.8×. Evidence:
-`~/projects-git/vdavid/smb2/docs/benchmark-findings.md` §§ "Directory-listing throughput probe" and "NAS-side ground truth" — link, don't
-restate.
-
-So background bulk work opens `SCAN_POOL_SIZE` (4) EXTRA smb2 sessions (separate TCP connections) for its duration and
-spreads across them; the pane's own session keeps serving browsing. Two users today: the index scan's directory
-listings, and media enrichment's parallel prefetch reads.
-
-- **Lifecycle, refcounted.** Opened LAZILY on `Volume::begin_scan_session` (`SmbVolume::open_scan_pool`, idempotent),
-  closed when the LAST concurrent scan session ends (`scan_session_refs`, a saturating counter — an index rescan and an
-  enrichment pass can overlap, and either one's `end_scan_session` must not tear the pool out from under the other);
-  `on_unmount` tears it down synchronously regardless (`close_scan_pool_sync` flips the pool's `closed` flag so
-  reconnect loops bail — a member must not keep walking an unmounted volume). `on_superseded` does NOT close it (an
-  in-flight scan is still drawing from it); it only stops a retired volume opening a NEW one. Steady-state footprint between scans is
-  unchanged (`scan_pool: RwLock<Option<Arc<ScanPool>>>` is `None`). The index-scan lifecycle brackets the spawned walk
-  task (`indexing/lifecycle/network_scan.rs`); the media pass brackets via a drop-guard in its scheduler — both run
-  `end` on every outcome.
-- **Invisible to the scanner.** The `network_scanner` walk is unchanged and transport-agnostic; it keeps calling
-  `list_directory_for_scan`, which draws from the pool (round-robin) when one is active and falls back to the main
-  session otherwise. **Pacing stays in the scanner** (`network_scanner/scan_pace.rs`): the global in-flight budget caps
-  the pool's total concurrency, so "drop to 1 while the user browses" survives for free. The pool never owns pacing.
-- **A pool member is a full `SmbClient` + `Tree`** from the same `build_session` the main path uses; `Connection::clone`
-  only multiplexes over ONE session, so separate connections mean separate `SmbClient`s. Each member has its own async
-  `Mutex` (cloning the `Connection` needs `&mut`), so different members list truly in parallel; the lock is held only to
-  clone (microseconds), never across a `build_session`.
-- **Selection is a pure, unit-tested `PoolSlots`** (round-robin `next_alive`, `mark_dead`/`mark_alive`, single-flight
-  `try_begin_reconnect`), decoupled from the real sessions so the handout/replacement logic is testable server-free.
-- **Failure handling.** A listing failing with a typed `ConnectionLost`/`SessionExpired` is retried on a sibling member,
-  the dead member is dropped, and a single-flight background task reconnects it (`build_session`, bounded growing backoff
-  `POOL_MEMBER_RECONNECT_BACKOFF`; gives up on auth — the MAIN session owns the credential-refresh / `needs_credentials` flow).
-  A dead member NEVER transitions the main volume's connection state. A per-directory error (permission, not-found) is
-  the same on any connection, so it's surfaced immediately, not retried. If every member is momentarily dead, the
-  listing falls back to the main session, which keeps the scan progressing and, if it too is dead, yields the
-  `DeviceDisconnected` the scanner's terminal-disconnect path expects. Members open STAGGERED at pool open; a rejected
-  Nth session (server session cap) just means the pool runs with fewer.
-- **Params are a snapshot.** If the main session refreshes credentials mid-scan (password change), members failing auth
-  give up and listings fall back to the main session (documented degradation, not a correctness issue).
-- **Reads: compound-only on members** (`open_read_stream_for_scan_impl`). Media enrichment's prefetch reads small
-  HINTED files from pool members via the 1-RTT `read_file_compound` (dead member ⇒ sibling retry, exactly like a
-  listing; size drift or a too-large file ⇒ main-session streaming). Members deliberately never serve STREAMING reads:
-  a member dying mid-stream would surface as a transport error the pool can't transparently retry for the consumer —
-  the main session, with its reconnect machinery and connection-state signaling, owns streaming.
 
 ## Per-backend decisions
-
-**Decision**: `SmbVolume::to_smb_path` returns `Result<String, VolumeError>` and refuses a path outside the mount root
-**Why**: it turns a path the frontend sent into the share-relative string that goes on the wire, and every way of GUESSING an answer for an out-of-root path put a real request at a real, wrong place. It compared the root as a raw STRING, so with root `/Volumes/naspi` a path under the sibling mount `/Volumes/naspi-1/x` stripped to `-1/x` — a legal file name on the share, which the server would happily create or delete. Anything that matched neither fell through to "strip the leading slash", so `/Users/me/notes.txt` went out as the share-relative `Users/me/notes.txt`. Matching whole path COMPONENTS (`Path::strip_prefix`) kills the first, and `VolumeError::NotFound` for the rest kills the second: a path that isn't on this volume genuinely isn't found there, and the caller surfaces that instead of acting elsewhere. `exists` maps the error to `false` (the honest answer to the question it was asked), and the post-mutation listing-cache patches go through `display_path_for`, which returns an `Option` so a write that already succeeded is never reported as failed because its parent path didn't convert. The Docker integration tests address the fixture share the same way production does, through `smb_test_support::share_path` (and `smb_index_scan_test::unique_base`), so a test path is either relative or absolute under `TEST_MOUNT_ROOT`; ❌ never a bare `format!("/{name}")`, which reads as a real absolute path somewhere else entirely.
 
 **Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups
 **Why**: `notify_mutation` needs to call `host.listings().directory_changed(volume_id, ...)` to find the right cached listings. The volume_id is computed at creation time (`smb_volume_id(server, port, share)` for SMB so two same-named shares on different servers don't collide — see `volumes/CLAUDE.md` § "Volume IDs"; `"{device_id}:{storage_id}"` for MTP) and stored on the struct rather than recomputed on every mutation.
 
-**Decision**: `map_smb_error` maps `ErrorKind::InvalidName` to its own `VolumeError::InvalidName`, never the `IoError` catch-all
-**Why**: `STATUS_OBJECT_NAME_INVALID` means the server refused the NAME, so it never looked for the file and the identical request can only fail the identical way. As an `IoError` it inherited the wrong behavior twice over: `retry.rs::is_retryable` would have burned the full backoff re-sending a hopeless write, and the dialog would have offered "couldn't copy the file" plus a Retry button instead of the one thing that works (rename it). The typed variant carries end to end: `friendly_error::kinds::invalid_name` on the listing path (`NeedsAction`, ❌ no retry hint) and `WriteOperationError::InvalidName` on the write path, which names the failing file so a 5,000-item transfer says WHICH one to rename. smb2 ≥ 0.18 maps the characters SMB2 forbids outright (`"`, `*`, `:`, `<`, `>`, `?`, `\`, `|`, control characters, trailing space or period) into the Unicode private-use area, so those copy through fine; what still reaches this arm is a reserved Windows device name (`CON`, `NUL`, `LPT1`), a name past the server's own length limit, or a character its filesystem can't store. The status is also in smb2's table now, so the technical-details line reads `STATUS_OBJECT_NAME_INVALID` rather than bare `0xC0000033`.
-
-**Decision**: `SmbVolume::supports_local_fs_access()` returns `false`, but `paths_are_os_visible()` answers for the mount
-**Why**: `SmbVolume` handles listing updates via `notify_mutation` using its own smb2 `get_metadata`. A `std::fs`-based synthetic diff path (`emit_synthetic_entry_diff`) would be redundant and would go through the slow OS mount. Returning `false` skips it. But "Cmdr shouldn't use `std::fs` here" is a different claim from "no other app can open these paths": the sneaky mount keeps the share at `mount_path` and every path this volume hands out is an absolute path under it. The macOS drag-out path needs the second answer, so it reads `paths_are_os_visible()`. While it read the first one, a drag out of an SMB pane published `NSFilePromiseProvider` items with an empty pasteboard, which Finder accepts and every other drop target (browser upload widget, mail composer, editor) rejects — so dragging NAS files into an email did nothing while the same drag from Finder's mount worked. ❌ Don't collapse the two flags: five write/caching call sites read `supports_local_fs_access()` as "is this remote?", where `false` stays the honest answer. `paths_are_os_visible()` is `true` only while the mount is actually there — see § "Re-rooting a share" for how the registry tells the volume otherwise.
-
-**Decision**: `SmbVolume` splits session storage: `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>`
-**Why**: Keeping the session in one `Mutex<Option<(SmbClient, Tree)>>` would force the streaming-read producer and the compound read/write fast-paths to hold the mutex for the entire transfer, serializing every concurrent copy through it. `smb2::Connection` is `Clone` (cheap `Arc::clone`, all clones multiplex frames over one SMB session), so splitting the Tree out lets us briefly lock the client, clone its `Connection`, and release the lock, then drive `Tree::download` / `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned `Connection` with no lock held. N concurrent copies on one `SmbVolume` pipeline N operations over the single session instead of queuing on the mutex. Tree lives in a `RwLock` because we only take read locks in the hot path (cloning an `Arc<Tree>`) and only write on disconnect. The streaming-write path uses the same clone-and-release shape (see the `write_from_stream` Decision below), so the client mutex is never held across I/O.
-
-**Decision**: `SmbVolume::local_path()` returns `None`
-**Why**: `local_path()` is checked in `volume/copy.rs` to decide whether to use native OS copy APIs. If SmbVolume returned `Some(mount_path)`, copies would go through the slow OS mount, which is exactly what we're trying to avoid. `root()` still returns the mount path for frontend path resolution.
-
-**Decision**: SmbVolume background watcher runs on a dedicated smb2 session, not a clone of the volume's main connection
-**Why**: smb2 0.10 made `Watcher` `'static` (owns a `Connection` clone), so technically the watcher could share the volume's session via `clone_session`. Empirically it can't: stacking the watcher's CHANGE_NOTIFY long-polls on the same TCP session as heavy concurrent writes wedges Samba — `smb_integration_concurrent_streaming_writes_no_deadlock` hangs against `smb-consumer-maxreadsize` (64 KB max read/write, 8 concurrent writers, 200 × 1 MB files). The dedicated session keeps the watcher's traffic out of the writers' way at the cost of a separate TCP+auth. What we *do* keep from the new API: the watcher is `'static` (no borrow on the watcher task's `client`), and the pipelining (one CHANGE_NOTIFY pre-issued so events during consumer processing don't fall in a re-arm gap). Stat calls for new/modified files still go through `VolumeManager::get(volume_id).get_metadata(...)` (the main session), so the cmdr-side `notify_mutation` cache patch from our own writes lands first regardless.
-
-**Decision**: Watcher task is not stored on `SmbVolume`, only the cancel sender is
-**Why**: The spawned task owns its own `Watcher` and `SmbClient`. Storing them on the struct alongside the cancel sender would just duplicate ownership without buying anything — `watcher.next_events()` is `&mut self`, so the task is the only thing that can drive it anyway. The `watcher_cancel: Mutex<Option<oneshot::Sender<()>>>` on the struct provides clean shutdown.
-
-**Decision**: Watcher doesn't reconnect itself; on death it KICKS the one reconnect path
-**Why**: When `next_events` errors with anything but `NOTIFY_ENUM_DIR`, the watcher's task returns. It must NOT run its own reconnect-with-backoff loop: two state machines tracking the same "is the session alive" question diverge — the watcher's internal retries would swallow real disconnections the FE reconnect manager surfaces. So the watcher still owns no reconnect logic; it just calls `spawn_watcher_death_reconnect(volume_id)`, which drives `do_attempt_reconnect` (the single source of truth) on a bounded backoff. One reconnect path, one source of truth — now triggered on watcher death too, not only by the next hot-path op / FE backoff tick. See § "Backend-autonomous reconnect and index resume" for why the kick marks the volume `Disconnected` first.
-
-**Decision**: we run `smb2`'s deadline and keepalive defaults unchanged, and read none of them as a liveness verdict
-**Why**: every wait a request can make is bounded by the crate, so Cmdr needs no timeout layer of its own. A frame gets 20 s to reach the socket (`Error::SendTimeout`); once out, the server gets 30 s of SILENCE (not elapsed time — every interim `STATUS_PENDING` restarts the clock, so a multi-minute write to a loaded NAS is never cut off), stretched to 6× that on a connection an ECHO probe has just proven alive. A breach tears the connection down, which is why `retry.rs` sees a typed `DeviceDisconnected` / `ConnectionTimeout` instead of a hang. The ECHO keepalive (5 s, on by default) only probes when the wire has gone quiet with work outstanding, so a busy transfer pays nothing for it. ❌ **A missed probe is NOT evidence of death** and nothing here may treat it as such: a QNAP TS-464 drops probes precisely while it writes (measured 2026-08-02: 1 of 3 dropped under write load, 0 of 3 idle). The crate agrees — its only death verdict, `Error::ServerUnresponsive`, needs a request to burn its whole deadline AND the connection to have put nothing at all on the wire meanwhile. That is also why `SmbVolume::connection_liveness()` stays unimplemented; the full argument and what `smb2` would have to expose to change it: `write_operations/transfer/DETAILS.md` § "The watchdog ACTS".
-
-**Read `sent_age` before drawing any conclusion from a stall.** `None` means the request never reached the wire, so
-the server has not been asked yet and none of the deadlines above are even running; a `Some` age is the only number
-that says how long the server has actually been silent.
-
-**Silence measured across a frozen Cmdr is discounted, not counted** (`smb2` 0.18.1+). Every clock in the crate measures wall time, so a stretch where this process was not scheduled at all — a laptop sleep, an App Nap, a machine starved by a parallel build — used to read as the server going quiet, and the reconnect that followed was against a NAS that had been answering the whole time (2026-08-08: three freezes of 62 s, 175 s, and 355 s in twelve minutes). The crate now recognizes the gap from its own loop cadence and shifts every liveness clock forward by it. Two consequences for Cmdr: an `SmbVolume` reconnect after a wake is now evidence about the *network*, not about the sleep, and `MetricsSnapshot::scheduling_stalls` (surfaced through `commands/smb_diagnostics.rs`) is the counter that says whether the app stopped running. ❌ Don't add a Cmdr-side sleep/wake hook for this — the crate handles any stall from any cause, and a hook would only cover the one macOS reports.
-
-**Decision**: the watcher's dedicated session is probed like any other, and a watcher death stays cheap
-**Why**: CHANGE_NOTIFY is exempt from the request deadline by design (it waits for an event that may never come), so that connection is bounded by connection-wide silence instead — which is the only thing that lets a watcher on a dead session ever find out, and it's what feeds `spawn_watcher_death_reconnect`. The cost of a false one is small by construction: the kick marks the volume `Disconnected` and rebuilds the session, while an in-flight transfer holds its own `Arc<Tree>` + `Connection` clone and runs on. ⚠️ Unverified: whether a NAS busy enough to drop 6 consecutive probes (30 s of total silence on that session) can trigger this during a large copy. It has not been observed; if watcher deaths ever cluster with heavy transfers, that is the mechanism to suspect, and the fix is `Connection::set_response_timeout` on the watcher's session alone.
-
-**Decision**: Watcher debounces 200ms per batch, `FullRefresh` above 50 events per directory
-**Why**: Prevents 1000 individual stat calls when 1000 files are copied. The 200ms window collects events that arrive in rapid succession. The 50-event threshold for `FullRefresh` avoids O(n) stat calls for bulk operations.
-
-**Decision**: `write_from_stream` uses a cloned `Connection` + `Arc<Tree>` (owned `FileWriter`)
-**Why**: `FileWriter` owns its `Connection` (cheap `Arc::clone`) and `Arc<Tree>` rather than borrowing `&'a mut Connection`. `write_from_stream` calls `clone_session` once up front and drives both the compound fast-path AND the streaming fallback on the same owned `Connection` clone. The client mutex is held only for the few microseconds of `clone_session()`, never across I/O. **Don't switch back to a borrowed `FileWriter<'a>` that holds the client mutex across the upload**: that shape deadlocks under sustained concurrent pressure (the two-phase brief-clone-then-long-hold pattern is the QNAP deadlock reproducer). The regression is pinned by `smb_integration_concurrent_streaming_writes_no_deadlock`. The architectural property we get from owned `FileWriter`: N concurrent streaming writes on one `SmbVolume` pipeline N WRITE chains over a single SMB session, multiplexed by `MessageId` in smb2's receiver task. No external locking, no mutex contention on the hot copy path.
-
-**Decision**: `write_from_stream` ERROR paths delete the partial file, mirroring the cancel branch
-**Why**: Once the streaming `FileWriter` is open and bytes have streamed into it, an early error (mid-stream source-read error, `write_chunk` failure, `finish` failure, the compound-fallback writer's `write_chunk`/`finish`) would otherwise leave a half-written file at the user's intended destination name — corrupt bytes presented as a real file (violates AGENTS.md principle #4). The cancel branch already cleaned up (`writer.abort()` + best-effort `delete_file` on a fresh cloned session); every owned-writer error site now does the same. **`abort()` before delete is load-bearing**: dropping a `FileWriter` without `finish()`/`abort()` leaks the SMB handle (smb2's `FileWriter::Drop` only logs, never sends CLOSE), so a fresh-session `delete_file` (CREATE-with-delete-on-close) hits a sharing violation against the still-open handle and the partial lingers. So: `write_chunk`/source-read errors `writer.abort().await` first (writer still owned), then `delete_partial()`. `finish()` consumes the writer, so on its failure the handle is already gone — best-effort `delete_partial()` only. The compound FAST-path (`write_file_compound`) is atomic CREATE+WRITE+FLUSH+CLOSE and the compound DRAIN loop buffers in memory before any handle opens, so neither leaves a streamed partial — those propagate their error unchanged. The original error always propagates (never `Cancelled`); cleanup is best-effort and never masks it. Pinned by `smb_integration_write_from_stream_source_error_deletes_partial` (source errors after the first chunk; asserts the propagated `IoError` and that no file remains at the destination). Don't refactor the owned-writer error sites into a post-block catch-all that loses the writer — you'd lose the `abort()` and the delete would no-op against the leaked handle.
-
-**Decision**: `SmbVolume` overrides `scan_for_copy_batch` to pipeline per-path stats over a single SMB session
-**Why**: A naive scan phase that loops `scan_for_copy` per top-level source costs N sequential RTTs before the copy phase can start. For a 100-file copy over a ~60 ms Tailscale link that's ~5 s of serial stats. The override clones `smb2::Connection` per path under a brief client-mutex acquire (cheap `Arc::clone`, all clones multiplex over the same SMB session), releases the lock, then drives `tree.stat(&mut conn, path)` on each clone inside a `FuturesUnordered`. Empty root paths skip the stat. Single-path batches fall through to `scan_recursive` so one-file drag-drops don't pay the batch machinery cost. Directories found during the stat phase recurse sequentially afterward; parallel directory recursion is a future enhancement. Measured 6.5× wall-clock win at 100 × 10 KB: 6.11 s → 947 ms. See `docs/notes/phase4-rtt-investigation.md` for the wire trace. **Oracle layered on top**: before the pipelined-stat block runs, every input path's parent is checked against the fresh-listing oracle (`host.listings().authoritative_listing(volume_id, parent)`). Oracle-served paths get their size + `is_directory` from the cached `FileEntry` and are removed from the leftover set; only the leftover paths go through the pipelined stat. Decision is per-parent: one batch can mix oracle-served and pipelined-stat paths, and if every path resolves via the oracle the stat pipeline is skipped entirely.
-
 **Decision**: `MtpVolume` overrides `scan_for_copy_batch_with_progress` to group selected paths by parent and list each parent once
 **Why**: MTP has no single-file stat call: `get_metadata(path)` lists the parent directory and searches by name. A naive scan that called `get_metadata` per path would re-list `/DCIM/Camera` (15k entries, ~17 s over USB) for every selected photo. The override groups the input paths by parent, calls `list_directory(parent, on_progress)` once per unique parent, and indexes the entries by name for O(1) lookups. **Oracle layered on top**: before listing a parent, the override consults `try_get_authoritative_listing(volume_id, parent)`; on hit, the cached entries replace the listing call entirely (no USB I/O for that parent). On miss the single-listing-per-parent path runs, so cold-cache perf is preserved. Decision is per-parent; one batch can mix watcher-fresh and cold parents.
-
-**Decision**: `SmbVolume` has a compound fast-path in `open_read_stream_with_hint` and `write_from_stream` for files ≤ `max_read_size` / `max_write_size`
-**Why**: The streaming open+read+close sequence costs 3 RTTs per file. For small files (typical 10 KB copies on a NAS) that dominates wall-clock at high-latency links (~60 ms RTT → ~180 ms/file just for protocol overhead, not data). `smb2` already exposes `Tree::read_file_compound` (CREATE+READ+CLOSE in a single compound frame = 1 RTT) and `Tree::write_file_compound` (CREATE+WRITE+FLUSH+CLOSE = 1 RTT). The copy pipeline feeds per-file size hints from the pre-copy scan; when the size is known and fits in one READ/WRITE, we take the compound path. Falls back cleanly to the streaming reader/writer when the hint is missing or the file is too big. Small compound reads return a `Vec<u8>` wrapped as a single-chunk `InlineReadStream` so the consumer API stays shaped the same. See `docs/notes/phase4-rtt-investigation.md` for the measurement. The WRITE side's condition is also a DATA-SAFETY contract: `write_is_single_shot` answers with the same `fits_one_compound_write` the fast path branches on, and the transfer layer skips its `.cmdr-tmp-*` staging on the strength of that answer. What the backend owes in return (short sources stay on the compound path, a post-CREATE failure cleans up after itself): `write_operations/transfer/DETAILS.md` § "The single-shot exemption".
 
 **Decision**: `LocalPosixVolume::write_from_stream` `sync_data`s each file (+ best-effort parent-dir fsync) before it returns
 **Why**: Every cross-volume copy/move that lands on a local disk (MTP → Local, SMB → Local, USB import) flows through this one method. A bare `file.flush()` finish is a userspace no-op on a raw `std::fs::File`, so the bytes would sit only in the OS page cache when the op reports "complete" — letting the user eject / sleep and lose data (on a move, from both sides, since the source delete runs after the copy reports Ok). The `sync_data` (fdatasync) gives the "durable as each file completes" property the local-FS chunked copy already has (`transfer/chunked_copy.rs`), so a crash mid-batch leaves earlier files safe. The parent-dir fsync makes the file's directory entry durable too. Both are best-effort on error: a failure logs under `target: "write_durability"` and continues rather than failing a completed multi-GB transfer at the final fsync (matching `durability::flush_created_destinations`). Non-local backends (MTP/SMB/InMemory) need no equivalent — durability there is the device/server's concern. Pinned by `local_posix_test::test_write_from_stream_multichunk_is_durable_and_correct` (content-correctness regression guard; the fdatasync itself isn't observable from a unit test).
@@ -275,18 +125,8 @@ that says how long the server has actually been silent.
 **Decision**: a backend never registers itself; an outside wiring module does
 **Why**: registration needs to know both the concrete volume type and the manager, and a backend that reaches the registry to insert itself draws a dependency edge back up into the layer that knows every backend — which is exactly what welds a subsystem into one cycle and what a backend crate cannot do at all. `network/smb_upgrade.rs` and `mtp/volume_wiring.rs` are the two structural twins to copy: the backend exposes a constructor and, where it needs to trigger registration from deep inside (MTP's attach/detach), a `OnceLock` hook the wiring module fills at startup. **Preserve the ORDERING deliberately when you wire one**: MTP's connect path registers volumes before starting its event loop, and a hook adds an indirection that can quietly change when that happens. This is not settleable by static analysis; verify against a real device or the `virtual-mtp` feature.
 
-## SMB archive push-refresh
+The SMB backend's own decisions moved with its code: `crates/cmdr-smb/DETAILS.md` § "Decisions".
 
-The recursive share watcher already refreshes the DIRECTORY listing showing a changed `.zip` (its new size/mtime). On top of that, `process_event_batch`'s Modified and RenamedNewName handlers call `maybe_refresh_archive_listings(volume_id, entry_path)`: when `entry_path`'s name is a supported archive (`archive::has_supported_archive_extension`, the single-source predicate `format_for_name` backs), it fires the same `caching::refresh_archive_listings` the local `archive::watch` fires, pushing an out-of-band edit of the `.zip` to any open archive-INNER listing.
-
-Why this is the whole fix, cheaply:
-
-- **Same consumer, same key.** `refresh_archive_listings` scans `LISTING_CACHE` for keys at/inside the archive path and re-reads them; `volume_id` here is the parent DRIVE id, which is exactly what archive listings key on, so no rekeying. It's a no-op when the path isn't an archive or no inner listing is open, and the watcher already runs for the whole volume lifetime — so the only added cost is a re-parse when a `.zip` actually changes AND an inner pane is open.
-- **`entry_path` is already normalized.** It's the `to_nfd_display_path` result, so it went through the same backslash→slash + NFC→NFD normalization every other cache-facing path in `smb_watcher.rs` uses. Passing the raw event filename would miss the cache.
-- **Fires independent of the stat.** The refresh runs even when the pre-refresh `get_metadata` fails (a mid-write, truncated `.zip`): `refresh_archive_listings` keeps the previous inner listing on an unreadable parse rather than blanking the pane, and the next change event retries.
-- **NOT a freshness claim.** This is a visible-listing UX nicety, a SEPARATE consumer from the write-op fresh-listing oracle. `ArchiveVolume::listing_watch_coverage` stays `None` for a remote parent regardless (the SMB watcher is lossy under load, so the oracle must keep re-reading pre-flight scans honestly). The remote-archive freshness decision and the guardrail test are in `crates/cmdr-archive/src/watch/DETAILS.md` § "remote archives have NO live watch". MTP keeps manual refresh (F5) as its contract.
-
-Tests, split along the seam: the ROUTING (which events reach `refresh_archive_listings`, with what path) is `smb_watcher/archive_refresh_test.rs`, a `RecordingListings` assertion with no archive and no filesystem in it; what a refresh DOES to the cache is `listing/listing_host.rs::the_archive_refresh_re_reads_the_listings_under_its_path`.
 
 ## Supersede vs. unmount
 
@@ -339,48 +179,6 @@ Resolving the id instead would answer with the SUCCESSOR after a swap and mark a
 `Disconnected`, and would keep answering after an eject for as long as any in-flight holder kept the share allocated.
 `smb_retirement_test.rs` pins all three answers.
 
-## Re-rooting a share
-
-macOS mounts one share at several roots (`/Volumes/naspi` AND `/Volumes/naspi-1`) and they all derive one volume ID, so
-the registry tracks the SET of roots and promotes a survivor when the active one dies (`volume/DETAILS.md` § "A volume
-ID owns a set of mount roots"). `SmbVolume` implements `Volume::rerooted`, because the OS mount is only an addressing
-prefix here: Cmdr's own I/O rides the smb2 session.
-
-**Shape**: `SmbVolume` is a thin instance over an `Arc<SmbVolumeInner>`. The instance holds what belongs to ONE mount
-root (`name`, `mount_path`, `mount_root_gone`); the inner holds the session and everything scoped to the SHARE (client,
-tree, params, connection state, watcher handle, scan pool, `instance_id`, refcounts). `rerooted` is therefore one
-allocation over the same inner: no re-auth, no transport rebuild, no session churn.
-
-**Why the instance's root is immutable**: `Volume::root()` hands out a `&Path`, with ~115 call sites. Making the root
-interior-mutable to reroot in place would either change that signature across the codebase or hand out a borrow that can
-change under the caller. A new instance moves the root without either.
-
-**The two instances overlap, briefly and by design.** For the moment between `rerooted` returning and the registry
-dropping the old one, both address the same live session — and whoever grabbed the old one earlier (a running transfer,
-an open viewer stream) keeps using it at the root it was handed, which is correct: its paths were built there.
-❌ A promotion must therefore NEVER call `on_superseded` or `on_unmount` on the old instance. Both act on the SHARED
-inner: `on_superseded` stops the watcher and quiets the id, `on_unmount` drops the session outright — the teardown that
-once killed a live NAS copy (§ "Supersede vs. unmount"). `manager/roots.rs::promote_to_best_root` swaps the volume
-without either hook, which is what makes this safe.
-
-**Honesty about the mount** (`mount_root_gone`): when the registry proves an instance's root is gone and has no live
-sibling to promote to, it calls `Volume::note_root_mount_gone` (`manager/roots.rs::tell_volume_if_its_root_is_dead`, run
-after every move of the active seat), and `paths_are_os_visible()` answers `false` from then on. Cmdr keeps browsing the
-share over smb2 — which is why the bug was invisible — but a `file://` URL under a dead mount opens nowhere, so the
-drag-out and Quick Look paths have to stop being told it does. A PUSH rather than a pull: the volume can't ask (nothing
-may probe a mount), and a backend reaching into the registry from a capability flag would invert the dependency and risk
-the registry's own lock. The flag lives on the INSTANCE, since it's a fact about one mount root, so a promotion onto a
-live root starts honest again. ❌ Still not the same question as `supports_local_fs_access()`; see the Decision below.
-
-**Known gap**: nothing detects a mount that dies WITHOUT an unmount event, and a NAS dropping off the network is exactly
-that (macOS leaves the mount wedged). Probing is banned, and a direct `SmbVolume`'s own errors carry no errno
-(`map_smb_error` sets `raw_os_error: None`), so `volume::note_root_failure` can't fire for one either. Until some
-evidence arrives on its own, an SMB volume on a wedged mount still claims OS visibility.
-
-**The watcher follows the active root.** It belongs to the session, not to one mount, and the absolute paths its
-notifications carry decide which cached listing they patch. So `SmbVolumeInner::active_mount_path` (a std `RwLock<PathBuf>`,
-shared with the watcher task and re-read once per event batch) is updated by a reroot; a watcher pinned to the old root
-would keep feeding paths that no longer name anything.
 
 ## Gotchas
 
@@ -390,36 +188,22 @@ would keep feeding paths that no longer name anything.
 **Gotcha**: `MtpVolume::get_metadata` is expensive: it lists the entire parent directory
 **Why**: MTP has no single-file stat call. `get_metadata` lists the parent directory and searches for the entry by name. This is used by `notify_mutation` after each self-mutation (create, delete, rename) and is acceptable because those are infrequent, but avoid calling it in hot paths.
 
-**Gotcha**: Watcher filenames from SMB use backslashes; must normalize to forward slashes
-**Why**: SMB servers send paths like `papers\new-file.txt`. The watcher normalizes these to `papers/new-file.txt` before extracting parent directories and constructing display paths.
-
-**Gotcha**: Watcher filenames are NFC (from server) but macOS mount paths are NFD
-**Why**: SMB servers return NFC-normalized filenames. macOS filesystem paths use NFD. The watcher NFD-normalizes filenames before constructing display paths used for cache lookups.
-
 ## Testing
 
 - `in_memory_test.rs`: unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
 - `local_posix_test.rs`: real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
 - `mtp/` inline tests: path conversion and capability flags (no device needed)
-- `smb_test.rs`: SMB unit tests (no server needed): type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo,
-  Error→VolumeError), connection state transitions, path conversion, capability flags, and the channel-backed
-  `SmbReadStream` consumer. These run by default.
-- The SMB test suites live in files under `backends/` wired as `#[cfg(test)] #[path = "../smb_*.rs"] mod`s of `smb`
-  from `smb/mod.rs` (so `super::*` still reaches the backend's private items; the `../` hops up out of the `smb/`
-  directory), split by theme: `smb_test.rs` (unit, above), `smb_integration_test.rs`
-  (connection management, core CRUD, basic streaming smoke, scan/conflict preview), `smb_streaming_integration_test.rs`
-  (the full read/write streaming surface: progress, cancel, large multi-chunk files, plus the error/cleanup paths with
-  the `ErroringReadStream` double), `smb_transfer_semantics_test.rs` (high-level merge/move contracts driven through
-  the transfer pipelines), `smb_stress_test.rs` (concurrency: the no-deadlock guard with its `MutexCaptureLogger`
-  machinery, and the 100-file content-integrity test), `smb_full_concurrency_test.rs` (below), and `smb_soak_test.rs`
-  (below). Cross-suite helpers
-  (`make_docker_volume`, `test_dir_name`, `ensure_clean`, `hash_bytes`, `hash_volume_file`, `TEST_PREFIX_ROOT`,
-  `cleanup_test_prefix`) live in `smb_test_support.rs` as `pub(super)` items.
-- **Docker SMB integration tests** (the themed `smb_*_test.rs` Docker suites above): `#[ignore]` tests that require Docker SMB containers
-  (start with `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`.
-  Connect via `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`),
-  `readonly_port()` (10488), `slow_port()` (10493, 200ms latency). Use these for testing real SMB protocol behavior
-  (streaming, error paths, network edge cases). See `apps/desktop/test/smb-servers/README.md` for the full container
+- **The SMB suites are split across the crate boundary**, and which side a cell lives on is decided by what it
+  asserts, not by what it connects to: `crates/cmdr-smb/DETAILS.md` § "Which side a test lives on". The cells that stay
+  here are the ones driving THIS app — the transfer pipeline (`smb_transfer_semantics_test.rs`,
+  `smb_transfer_safety_test.rs`, `smb_full_concurrency_test.rs`, `smb_stress_test.rs`, `smb_soak_test.rs`), archive
+  routing (`smb_archive_integration_test.rs`), media enrichment (`smb_media_fetch_integration_test.rs`), and the two
+  odd ones out in `smb_app_integration_test.rs`. They connect through `cmdr_smb::volume::testing`, wrapped by
+  `smb_test_support.rs` so the volume they get is wired to the app's real `VolumeHost`.
+- **Docker SMB integration tests**: `#[ignore]` tests that require Docker SMB containers (start with
+  `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`. Connect via
+  `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()`
+  (10488), `slow_port()` (10493, 200ms latency). See `apps/desktop/test/smb-servers/README.md` for the full container
   list and env var overrides.
 - **Full-concurrency copy** (`smb_full_concurrency_test.rs`): the automated net under the 2026-07-31 transfer wedge
   (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). 400 local sources onto the share through

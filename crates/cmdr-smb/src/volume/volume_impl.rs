@@ -9,10 +9,11 @@ use super::mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_in
 use super::state::ConnectionState;
 use super::streams::InlineReadStream;
 use super::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SmbVolume,
-    SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage, foreground_yield,
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbVolume, SourceItemInfo, SpaceInfo,
+    Volume, VolumeError, VolumeReadStream, WatchCoverage, foreground_yield,
 };
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::SmbConnectionState;
 use cmdr_fs::volume::{ListingProgress, Retirement};
 use log::{debug, trace, warn};
 use std::path::{Path, PathBuf};
@@ -371,7 +372,7 @@ impl Volume for SmbVolume {
         // An UPLOAD to this share (local → SMB) writes in discrete SMB2 WRITE
         // chunks and holds only a file handle between them, with NO oplock or
         // lease requested (`create_file_writer` → `OplockLevel::None`, no durable
-        // context; see `smb/streams.rs`). So a running upload can stand aside for
+        // context; see `streams.rs`). So a running upload can stand aside for
         // the user browsing the same share between chunks. `CheckpointStream` caps
         // each such park so the open write handle never sits idle long enough for
         // the server to reap it. Contrast the read side (`supports_foreground_yield`):
@@ -1042,3 +1043,7 @@ impl Volume for SmbVolume {
         debug!("SmbVolume cleanup for {}: smb2 session dropped", self.inner.share_name);
     }
 }
+
+#[cfg(test)]
+#[path = "volume_impl_test.rs"]
+mod volume_impl_test;

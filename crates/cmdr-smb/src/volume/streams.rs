@@ -498,3 +498,7 @@ impl SmbVolume {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "streams_test.rs"]
+mod streams_test;

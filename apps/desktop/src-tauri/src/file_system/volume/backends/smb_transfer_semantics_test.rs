@@ -18,6 +18,7 @@
 
 use super::smb_test_support::*;
 use super::*;
+use std::sync::atomic::AtomicUsize;
 
 /// FOLDER MERGE on a real SMB server: a Local source directory landing on a
 /// pre-existing same-named SMB destination directory MERGES into it — with a deep
@@ -570,7 +571,7 @@ async fn smb_integration_compress_local_files_onto_the_share() {
 
     // No upload temp debris left at the destination.
     let leftovers: Vec<String> = smb_vol
-        .list_directory_impl(Path::new(&base))
+        .list_directory(Path::new(&base), None)
         .await
         .unwrap()
         .into_iter()
@@ -674,7 +675,7 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
         let landed = Arc::clone(&landed);
         async move {
             loop {
-                if let Ok(entries) = vol.list_directory_impl(Path::new(&dest)).await {
+                if let Ok(entries) = vol.list_directory(Path::new(&dest), None).await {
                     landed.store(entries.len(), Ordering::Relaxed);
                 }
                 // allowed-test-sleep: the probe's own polling interval; the test's
@@ -696,7 +697,7 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
         "public",
         "/tmp/smb-test-mount",
         &volume_id,
-        smb_vol.inner.params.read().await.clone(),
+        docker_guest_params(),
         crate::volume_host::host(),
     )
     .await
@@ -716,7 +717,7 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
 
     // Every file landed, whole and correct. A dropped session mid-copy would
     // leave the tail missing or truncated.
-    let entries = smb_vol.list_directory_impl(Path::new(&base)).await.unwrap();
+    let entries = smb_vol.list_directory(Path::new(&base), None).await.unwrap();
     assert_eq!(entries.len(), FILE_COUNT, "every file must have landed");
     for i in [0usize, FILE_COUNT / 2, FILE_COUNT - 1] {
         let path = format!("{base}/file-{i:03}.bin");

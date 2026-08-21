@@ -176,7 +176,7 @@ All credential storage backends now live in `crate::secrets` (see `secrets/CLAUD
 
 ### "Sneaky mount" for SmbVolume
 
-When the user mounts an SMB share, we establish a parallel smb2 connection alongside the OS mount. The OS mount provides Finder/Terminal/drag-drop compatibility, while Cmdr's file operations use the smb2 session for better performance and fail-fast behavior. The `SmbVolume` is registered in `VolumeManager` before the FSEvents watcher fires, using `register` (overwrite). When the watcher fires, `register_if_absent` is a no-op since the SmbVolume is already registered. See `file_system/volume/backends/smb/mod.rs` for the implementation.
+When the user mounts an SMB share, we establish a parallel smb2 connection alongside the OS mount. The OS mount provides Finder/Terminal/drag-drop compatibility, while Cmdr's file operations use the smb2 session for better performance and fail-fast behavior. The `SmbVolume` is registered in `VolumeManager` before the FSEvents watcher fires, using `register` (overwrite). When the watcher fires, `register_if_absent` is a no-op since the SmbVolume is already registered. See `crates/cmdr-smb/src/volume/mod.rs` for the implementation.
 
 ### `register_replacing_predecessor` retires the displaced volume; it never unmounts it
 
@@ -292,9 +292,9 @@ rest of the run.
 
 ## The one edge that must not come back
 
-`network/` and the SMB backend (`file_system/volume/backends/smb/`) sat in a single nine-module dependency cycle for a
+`network/` and the SMB backend (`crates/cmdr-smb/src/volume/`) sat in a single nine-module dependency cycle for a
 long time, and the edge that closed it was invisible to grep: no line under `network/` named `backends::smb`. It was an
-`impl From<ConnectionState> for network::VolumeConnection` living in `smb/state.rs`. `cargo-modules` attributes an impl
+`impl From<ConnectionState> for network::VolumeConnection` living in `crates/cmdr-smb/src/volume/state.rs`. `cargo-modules` attributes an impl
 to the module that defines the type it PRODUCES, so the edge printed as `network → backends::smb::state` and looked
 like `network/` reaching into the backend.
 

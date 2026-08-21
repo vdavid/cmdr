@@ -390,7 +390,7 @@ is asked of the destination, and the SMB backend answers with the SAME function 
 has no WRITE to compound with and takes the streaming writer). Two copies of that threshold IS the bug; don't
 introduce one.
 
-**Backend obligations** taken on with a `true` answer, both in `smb/streams.rs`:
+**Backend obligations** taken on with a `true` answer, both in `crates/cmdr-smb/src/volume/streams.rs`:
 
 - The drained buffer, not the promised size, decides the final branch. A source that yields SHORT still goes out as one
   compound frame rather than dropping into the multi-round-trip streaming writer, which would be a broken promise at an

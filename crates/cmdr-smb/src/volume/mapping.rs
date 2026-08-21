@@ -80,3 +80,7 @@ pub(super) fn map_smb_error(err: smb2::Error) -> VolumeError {
         },
     }
 }
+
+#[cfg(test)]
+#[path = "mapping_test.rs"]
+mod mapping_test;

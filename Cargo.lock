@@ -1502,10 +1502,17 @@ dependencies = [
 name = "cmdr-smb"
 version = "0.0.0"
 dependencies = [
+ "blake3",
+ "cmdr-fs",
+ "cmdr-smb",
+ "futures-util",
  "log",
  "serde",
  "smb2",
  "specta",
+ "tokio",
+ "tokio-util",
+ "unicode-normalization",
 ]
 
 [[package]]

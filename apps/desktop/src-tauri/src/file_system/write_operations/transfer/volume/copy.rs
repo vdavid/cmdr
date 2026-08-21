@@ -504,7 +504,7 @@ fn format_skipped_suffix(files_skipped: usize, bytes_skipped: u64) -> String {
 ///
 /// Exposed as `pub(crate)` under `cfg(test)` so integration tests in sibling
 /// modules (for example the SMB concurrent-copy cross-contamination test in
-/// `volume/backends/smb/`) can drive the real copy pipeline with a
+/// `crates/cmdr-smb/src/volume/`) can drive the real copy pipeline with a
 /// `CollectorEventSink` instead of spinning up a full Tauri app. In
 /// production, the only caller is `copy_between_volumes` in this file.
 ///

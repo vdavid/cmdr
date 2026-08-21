@@ -9,21 +9,15 @@
     unused_imports,
     reason = "mod.rs holds the backend shared prelude and re-exports submodule internals so the sibling #[cfg(test)] modules resolve them through `super::*`"
 )]
-// Scaffolding only the sibling `#[cfg(test)] mod smb_*` modules call (`volume_id`,
-// `PoolSlots::any_alive`, `with_smb_sync`), which `deny(unused)` flags against a
-// non-test build. Scoped to this backend on purpose: every other backend under
-// `backends/` compiles clean without it, so a new dead item here is a real finding
-// rather than something the umbrella swallows.
-#![allow(dead_code, reason = "reached only from the sibling #[cfg(test)] SMB modules")]
 
-use super::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SourceItemInfo,
-    SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
-};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
+use cmdr_fs::volume::{
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError, VolumeReadStream, WatchCoverage,
+};
 use cmdr_fs::volume::{Retirement, SelfHandle};
 use log::{debug, info, trace, warn};
 use smb2::client::tree::Tree;
@@ -45,20 +39,22 @@ mod session;
 mod state;
 mod streams;
 mod volume_impl;
+mod watcher;
+
+#[cfg(any(test, feature = "testing"))]
+pub mod testing;
 
 // Internal re-exports: pull submodule items into the `smb` root so the sibling
 // `#[cfg(test)]` modules (declared below) reach them through `use super::*`,
 // and so cross-module references resolve unqualified.
 use mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info, map_smb_error};
 use session::{CLIENT_LOCK_TICKET, build_session, refresh_credentials_from_store, update_state_on_smb_error};
-use state::ConnectionState;
+pub use state::ConnectionState;
 use streams::{
     ASSUMED_MAX_WRITE, InlineReadStream, SMB_STREAM_CHANNEL_CAPACITY, SmbReadStream, fits_one_compound_write,
 };
 
-// External surface: keep these paths stable at
-// `crate::file_system::volume::backends::smb::<name>`.
-pub(in crate::file_system::volume::backends) use reconnect::spawn_watcher_death_reconnect;
+use reconnect::spawn_watcher_death_reconnect;
 
 /// This backend's settings namespace, for everything it reads through
 /// [`VolumeHost::settings`]. A namespace, not a classification: nothing branches
@@ -94,12 +90,18 @@ const BACKEND: BackendName = "smb";
 /// address space, used on every smb2 call). On auth failure we
 /// re-pull from the secret store in case the user updated them.
 #[derive(Debug, Clone)]
-pub(crate) struct SmbConnectionParams {
-    /// Resolved server address (IP or hostname, ready to pass to `build_smb_addr`).
+pub struct SmbConnectionParams {
+    /// Resolved server address (IP or hostname, ready to pass to
+    /// [`build_smb_addr`](crate::build_smb_addr)).
     pub server: String,
+    /// The share on that server, without leading or trailing separators.
     pub share_name: String,
+    /// The TCP port the server listens on (445 everywhere but a test fixture).
     pub port: u16,
+    /// The account to authenticate as. `"Guest"` for an unauthenticated share.
     pub username: String,
+    /// Its password, empty for a guest connection. Held in memory for the
+    /// volume's lifetime, because every smb2 call needs it.
     pub password: String,
 }
 
@@ -133,7 +135,7 @@ pub struct SmbVolume {
 
 /// The share-scoped half of an [`SmbVolume`]: the smb2 session and the state that
 /// must stay single across every mount root the share is reachable through.
-pub(super) struct SmbVolumeInner {
+struct SmbVolumeInner {
     /// SMB share name. Mirrors `params.share_name`, kept here for cheap reads
     /// in log lines and hot paths without locking `params`.
     share_name: String,
@@ -300,19 +302,22 @@ impl SmbVolume {
         }
     }
 
-    /// Returns the volume ID (mirrors `smb_volume_id(server, port, share)`).
-    pub(crate) fn volume_id(&self) -> &str {
+    /// Returns the volume ID (mirrors
+    /// [`smb_volume_id`](cmdr_fs::volume::smb_volume_id)`(server, port, share)`),
+    /// which is the key every listing-cache lookup and every
+    /// `volume-connection-changed` event this share sends is made under.
+    pub fn volume_id(&self) -> &str {
         &self.inner.volume_id
     }
 
     /// Test-only: drops the smb2 client session. After calling this, any code
     /// path that tries to acquire the client mutex sees `None` and returns
-    /// `VolumeError::DeviceDisconnected`. Used by
-    /// `smb_scan_oracle_tests::smb_scan_uses_oracle_on_hit_skips_stat_pipeline`
-    /// to prove the oracle short-circuit doesn't touch the SMB session: if it
-    /// did, the scan would fail with DeviceDisconnected after this call.
-    #[cfg(test)]
-    pub(in crate::file_system::volume) async fn detach_session_for_test(&self) {
+    /// [`VolumeError::DeviceDisconnected`]. The app's
+    /// `smb_scan_uses_oracle_on_hit_skips_stat_pipeline` proves the scan
+    /// oracle's short-circuit doesn't touch the SMB session with it: if it did,
+    /// the scan would fail with `DeviceDisconnected` after this call.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn detach_session_for_test(&self) {
         let mut client_guard = self.inner.client.lock().await;
         *client_guard = None;
     }
@@ -364,47 +369,22 @@ impl SmbConnectionParams {
     }
 }
 
-// These test submodules live as sibling files next to this `smb/` directory
-// (matching the `in_memory_test.rs` / `local_posix_test.rs` convention) but are
-// children of the `smb` module so `super::*` reaches the backend private items.
-// `#[path]` is relative to this `mod.rs`, so each points up into `backends/`.
+// The suites that assert on this backend's own behavior. They live here rather
+// than in the app because they are WHITE-BOX tests: they build an
+// `SmbVolumeInner` by struct literal, drive `do_attempt_reconnect` directly, and
+// read the client, tree, and scan pool out of the session. The app keeps the
+// SMB cells whose other half is the app's own machinery (the transfer pipeline,
+// the volume registry, the listing cache); see `DETAILS.md` § "Which side a test
+// lives on".
 #[cfg(test)]
-#[path = "../smb_archive_integration_test.rs"]
-mod smb_archive_integration_test;
-
+mod conformance_test;
 #[cfg(test)]
-#[path = "../smb_conformance_test.rs"]
-mod smb_conformance_test;
+mod integration_test;
 #[cfg(test)]
-#[path = "../smb_full_concurrency_test.rs"]
-mod smb_full_concurrency_test;
+mod retirement_test;
 #[cfg(test)]
-#[path = "../smb_integration_test.rs"]
-mod smb_integration_test;
+mod session_integration_test;
 #[cfg(test)]
-#[path = "../smb_media_fetch_integration_test.rs"]
-mod smb_media_fetch_integration_test;
+mod streaming_integration_test;
 #[cfg(test)]
-#[path = "../smb_retirement_test.rs"]
-mod smb_retirement_test;
-#[cfg(test)]
-#[path = "../smb_soak_test.rs"]
-mod smb_soak_test;
-#[cfg(test)]
-#[path = "../smb_streaming_integration_test.rs"]
-mod smb_streaming_integration_test;
-#[cfg(test)]
-#[path = "../smb_stress_test.rs"]
-mod smb_stress_test;
-#[cfg(test)]
-#[path = "../smb_test.rs"]
-mod smb_test;
-#[cfg(test)]
-#[path = "../smb_test_support.rs"]
-mod smb_test_support;
-#[cfg(test)]
-#[path = "../smb_transfer_safety_test.rs"]
-mod smb_transfer_safety_test;
-#[cfg(test)]
-#[path = "../smb_transfer_semantics_test.rs"]
-mod smb_transfer_semantics_test;
+mod test_support;

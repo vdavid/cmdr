@@ -57,8 +57,8 @@ The resumed index loads Stale: we weren't watching while disconnected, so a resc
 
 ### Live SMB watch → index (`smb/watch.rs`)
 
-The SMB watcher (`file_system/volume/backends/smb_watcher.rs`) already turns `CHANGE_NOTIFY` into `DirectoryChange`s for
-the open pane. This layer is a SECOND consumer so the persisted index stays correct under live mutation.
+The SMB watcher (`crates/cmdr-smb/src/volume/watcher.rs`) already turns `CHANGE_NOTIFY` into `DirectoryChange`s for the
+open pane. This layer is a SECOND consumer so the persisted index stays correct under live mutation.
 `notify_directory_changed` calls `apply_smb_change(volume_id, parent_path, &change)` **first, before any pane-listing
 work** — ahead of the "no listing matches, bail" early-return — because the watcher runs for the whole volume's
 lifetime, not just while a pane shows the share, so the index must update even with zero open listings.

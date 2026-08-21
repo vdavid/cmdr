@@ -92,8 +92,7 @@ fn open_fd_count() -> usize {
 /// time; exhaustion would stall future reads). Returns `None` if the
 /// session isn't available.
 async fn smb_credits_snapshot(vol: &SmbVolume) -> Option<u16> {
-    let guard = vol.inner.client.lock().await;
-    guard.as_ref().map(|c| c.credits())
+    session_credits(vol).await
 }
 
 /// Connects to the `smb-consumer-auth` Docker container (share `private`,

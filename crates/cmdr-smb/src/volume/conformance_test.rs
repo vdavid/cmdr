@@ -10,7 +10,7 @@
 //! Declared as a `#[cfg(test)]` submodule of `smb`; helpers come from
 //! `super::smb_test_support`.
 
-use super::smb_test_support::*;
+use super::test_support::*;
 use super::*;
 
 /// The shared `Volume::delete` non-recursion assertion, against a real SMB

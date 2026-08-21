@@ -85,7 +85,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `file_transfer_completed` (backend, `write_operations/types.rs` `TauriEventSink::emit_complete`): `op` (copy/move),
   `item_count` bucket, `had_conflicts` bool (proxied from `files_skipped > 0`); never names/paths.
 - `delete_used` (backend, same sink): `trashed` bool, `item_count` bucket.
-- `smb_connected` (backend, `volume/backends/smb/mod.rs` `connect_smb_volume`): no host/share/credential props.
+- `smb_connected` (backend, `crates/cmdr-smb/src/volume/mod.rs` `connect_smb_volume`): no host/share/credential props.
 - `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`): no device/product props.
 - `settings_opened` (frontend, `command-handlers/app-dialog-handlers.ts` `app.settings`): no props.
 - `error_encountered` (backend, `listing/streaming.rs` `TauriListingEventSink::emit_error`): `category` enum (from the

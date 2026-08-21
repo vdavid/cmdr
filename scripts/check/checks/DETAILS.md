@@ -916,10 +916,10 @@ belongs in the slow group, never in `--fast`. Run Tarjan on the FILTERED graph y
    were cutting. **When a cut doesn't produce the number you simulated, suspect where a returned type is defined before
    you suspect the analysis.** Traps 3 and 4 compound, and together they made the single edge that welded `network` to
    the SMB backend for months: an `impl From<ConnectionState> for network::VolumeConnection` sitting in
-   `backends/smb/state.rs` printed as `network::VolumeConnection::from → backends::smb::state`, so it read as `network/`
-   reaching into the backend when the code does the reverse. **Nothing under `network/` named `backends::smb` textually,
-   so grep never finds an edge of this shape.** Locate it by re-running WITHOUT `--no-fns` and grepping for the
-   `-> "<target module>"` line: the source node names the function, which names the impl.
+   `crates/cmdr-smb/src/volume/state.rs` printed as `network::VolumeConnection::from → backends::smb::state`, so it read
+   as `network/` reaching into the backend when the code does the reverse. **Nothing under `network/` named
+   `backends::smb` textually, so grep never finds an edge of this shape.** Locate it by re-running WITHOUT `--no-fns`
+   and grepping for the `-> "<target module>"` line: the source node names the function, which names the impl.
 5. **A re-export resolves to the DEFINING module.** Importing a facade path draws the edge to wherever the item is
    really declared, not the facade. For an item that a workspace crate defines, `--no-externs` then drops the edge
    entirely, so a facade import can be invisible rather than misattributed. Either way the printed source is not where

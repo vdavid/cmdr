@@ -75,8 +75,8 @@ single call.
 
 ## Seam by seam: what each one replaces
 
-Measured against the SMB backend (`file_system/volume/backends/smb/**` plus `smb_watcher.rs`), the most entangled one,
-with archive, MTP, and local POSIX checked for anything SMB doesn't exercise.
+Measured against the SMB backend (`crates/cmdr-smb/src/volume/**` plus `crates/cmdr-smb/src/volume/watcher.rs`), the
+most entangled one, with archive, MTP, and local POSIX checked for anything SMB doesn't exercise.
 
 ### `ListingHost`
 
@@ -132,14 +132,15 @@ for FTP. `secret` rather than `password` because S3's is an access key.
 
 ### `IndexNotifier`
 
-⇐ `index_host::index().on_watch_gap` (three sites in `smb_watcher.rs`: both setup failures, the overflow arm, and the
-fatal-error exit) and `.resume_after_reconnect` (one, in `reconnect.rs`, fired while the reconnect lock is held).
+⇐ `index_host::index().on_watch_gap` (three sites in `crates/cmdr-smb/src/volume/watcher.rs`: both setup failures, the
+overflow arm, and the fatal-error exit) and `.resume_after_reconnect` (one, in `reconnect.rs`, fired while the reconnect
+lock is held).
 
 **Why a trait rather than a `cmdr-index` dependency.** A backend crate could import the index handle — both are
-Tauri-free crates, and `smb_watcher.rs` already imports `cmdr_index::{WatchGap, WatchScope}` today. It shouldn't:
-depending on the index would put a quarter of the codebase inside `cargo check -p cmdr-ftp` for the sake of two method
-calls, which is the exact inner-loop win the crate boundary is being built to get. So `WatchGap` here is the seam's own,
-and the app's adapter maps it.
+Tauri-free crates, and `crates/cmdr-smb/src/volume/watcher.rs` already imports `cmdr_index::{WatchGap, WatchScope}`
+today. It shouldn't: depending on the index would put a quarter of the codebase inside `cargo check -p cmdr-ftp` for the
+sake of two method calls, which is the exact inner-loop win the crate boundary is being built to get. So `WatchGap` here
+is the seam's own, and the app's adapter maps it.
 
 **`WatchScope` isn't here.** Its `Device` variant exists for MTP, where one PTP session carries several volumes and a
 reset invalidates all of them at once. That's the transport layer's shape, and MTP is app-resident. A volume backend
@@ -162,10 +163,10 @@ backend wants them.
 
 ### `UserActivity`
 
-⇐ `priority::foreground::global().idle_for_volume(...)`, via `smb/foreground_yield.rs`. The seam reports the raw signal;
-the threshold stays at the call site, because how long counts as "busy" belongs to the work standing aside — a transfer
-that parks outright wants 500 ms, an index scan that merely narrows wants far longer, and each writes its constant
-beside its reasoning.
+⇐ `priority::foreground::global().idle_for_volume(...)`, via `crates/cmdr-smb/src/volume/foreground_yield.rs`. The seam
+reports the raw signal; the threshold stays at the call site, because how long counts as "busy" belongs to the work
+standing aside — a transfer that parks outright wants 500 ms, an index scan that merely narrows wants far longer, and
+each writes its constant beside its reasoning.
 
 The scope is per volume, and that's the whole point: browsing a local folder must never slow a copy off a NAS.
 
@@ -197,9 +198,9 @@ The honest list, and the most useful thing in this document.
 
 ### The two registry reach-backs need no seam: `Retirement` plus a `SelfHandle`
 
-`reconnect.rs` and `smb_watcher.rs` used to call `get_volume_manager().get(volume_id)` from inside the backend, and a
-`VolumeRegistry` seam looks like the obvious replacement. It isn't: both are the backend asking about ITSELF, and going
-out through the registry to ask makes the answer wrong in two directions.
+`reconnect.rs` and `crates/cmdr-smb/src/volume/watcher.rs` used to call `get_volume_manager().get(volume_id)` from
+inside the backend, and a `VolumeRegistry` seam looks like the obvious replacement. It isn't: both are the backend
+asking about ITSELF, and going out through the registry to ask makes the answer wrong in two directions.
 
 - An id resolves to whatever holds it NOW, so a watcher dying in the window around a supersede drove the SUCCESSOR's
   state. That is why an `instance_id` counter had to exist, and why the resolve had to downcast to compare it.
@@ -240,9 +241,10 @@ so leaving it would make the item vanish from a consumer's test build. This proj
 
 ### Test modules reached through `use super::*`
 
-SMB's `#[cfg(test)] mod smb_*` children close over `smb/mod.rs`'s prelude glob, which re-exports submodule internals
-specifically so they resolve. What that glob actually pulls in wasn't determinable without building. It's the biggest
-unknown in moving SMB, and it's test-only, which is why the pilot backend is one with no `cfg(test)` behavior at all.
+SMB's `#[cfg(test)] mod smb_*` children close over `crates/cmdr-smb/src/volume/mod.rs`'s prelude glob, which re-exports
+submodule internals specifically so they resolve. What that glob actually pulls in wasn't determinable without building.
+It's the biggest unknown in moving SMB, and it's test-only, which is why the pilot backend is one with no `cfg(test)`
+behavior at all.
 
 ### The archive rustdoc link
 

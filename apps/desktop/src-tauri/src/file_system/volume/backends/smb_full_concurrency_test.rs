@@ -26,6 +26,7 @@
 
 use super::smb_test_support::*;
 use super::*;
+use std::sync::atomic::AtomicBool;
 
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::{
@@ -166,7 +167,7 @@ fn peak_in_flight(progress: &[WriteProgressEvent]) -> u32 {
 fn spawn_staging_probe(vol: Arc<SmbVolume>, dir: String, seen: Arc<AtomicBool>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         loop {
-            if let Ok(entries) = vol.list_directory_impl(Path::new(&dir)).await
+            if let Ok(entries) = vol.list_directory(Path::new(&dir), None).await
                 && entries.iter().any(|entry| entry.name.contains(".cmdr-tmp-"))
             {
                 seen.store(true, Ordering::SeqCst);
@@ -235,8 +236,7 @@ async fn smb_integration_many_files_at_full_concurrency_land_intact() {
     // hardcoded number: `max_write` differs per server (and per dialect), and a
     // "large" file that still fits one compound write would silently test the
     // fast path twice.
-    let max_write = smb_vol
-        .negotiated_max_write()
+    let max_write = negotiated_max_write(&smb_vol)
         .await
         .expect("a live session reports its negotiated params");
     let large_bytes = usize::try_from(max_write + 64 * 1024).expect("max_write fits usize on any host we run on");
@@ -341,7 +341,7 @@ async fn smb_integration_many_files_at_full_concurrency_land_intact() {
     }
 
     let landed = smb_vol
-        .list_directory_impl(Path::new(&base))
+        .list_directory(Path::new(&base), None)
         .await
         .expect("list the destination");
     let leftovers: Vec<&str> = landed

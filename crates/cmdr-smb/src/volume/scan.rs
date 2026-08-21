@@ -474,3 +474,7 @@ impl SmbVolume {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "scan_test.rs"]
+mod scan_test;

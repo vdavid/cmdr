@@ -166,7 +166,7 @@ Pinned by `browsing_the_share_throttles_the_scan_to_one_listing_in_flight`,
 `a_continuously_browsed_share_still_finishes_its_scan` (the anti-starvation guarantee, end to end),
 `browsing_a_different_volume_does_not_throttle_the_scan` (the scope decision), and the pure-decision tests in
 `pace_tests.rs` (including `the_budget_is_never_zero_for_any_input`). The transfer side of the same problem lives in
-`file_system/volume/backends/smb/foreground_yield.rs`.
+`crates/cmdr-smb/src/volume/foreground_yield.rs`.
 
 ## NAS snapshot/system dirs aren't recursed (`system_dirs.rs`)
 

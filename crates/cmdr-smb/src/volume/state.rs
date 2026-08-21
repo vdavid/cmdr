@@ -160,4 +160,19 @@ impl SmbVolume {
     pub async fn diagnostics(&self) -> Option<smb2::Diagnostics> {
         self.inner.diagnostics().await
     }
+
+    /// The client's current SMB credit count, or `None` while disconnected.
+    ///
+    /// A single number off the same brief client-mutex hold `diagnostics` takes.
+    /// The soak suite samples it between iterations, where a credit leak shows up
+    /// as a slow bleed long before it stalls a read.
+    #[cfg(any(test, feature = "testing"))]
+    pub(super) async fn session_credits(&self) -> Option<u16> {
+        let guard = self.inner.client.lock().await;
+        guard.as_ref().map(|c| c.credits())
+    }
 }
+
+#[cfg(test)]
+#[path = "state_test.rs"]
+mod state_test;

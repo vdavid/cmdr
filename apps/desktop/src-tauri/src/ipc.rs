@@ -863,7 +863,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             VolumeContextAction,
             LowDiskSpacePayload, // event_name = "low-disk-space"
             // Session health of a connecting volume. Backend-neutral: SMB emits it
-            // today (file_system/volume/backends/smb/), the next connecting backend
+            // today (crates/cmdr-smb/src/volume/), the next connecting backend
             // reuses it. The type lives in `network/mod.rs` so it resolves on every
             // platform (see its doc comment).
             VolumeConnectionChanged,

@@ -19,7 +19,12 @@
 //! Nothing here may name the app, and `index-crate-isolation` enforces that:
 //! `cargo check -p cmdr-smb` is the whole verification loop.
 //!
-//! Three modules, all re-exported at the root so callers write `cmdr_smb::`:
+//! [`volume`] is the backend itself: an [`SmbVolume`](volume::SmbVolume) over a
+//! live smb2 session, plus its watcher, reconnect loop, and scan pool. It asks
+//! the app around it nothing directly; every question goes through the
+//! `VolumeHost` seams it is handed at construction.
+//!
+//! Three more modules, all re-exported at the root so callers write `cmdr_smb::`:
 //!
 //! - [`types`] — the share-listing vocabulary ([`ShareInfo`], [`AuthMode`],
 //!   [`ShareListResult`], [`ShareListError`]). These cross IPC, so they carry
@@ -32,9 +37,17 @@
 //! See `CLAUDE.md` for the must-knows and `DETAILS.md` for the boundary's
 //! rationale.
 
+//noinspection RsUnusedImport
+// We dev-depend on ourselves so the `testing` feature is on for dev targets and
+// off for the lib (see `Cargo.toml`). That makes `cmdr_smb` an extern crate of
+// its own test target, which `unused_crate_dependencies` reports.
+#[cfg(test)]
+use cmdr_smb as _;
+
 pub mod connection;
 pub mod errors;
 pub mod types;
+pub mod volume;
 
 pub use connection::{build_smb_addr, try_list_shares_as_guest, try_list_shares_authenticated};
 pub use errors::{classify_authenticated_error, classify_error, is_auth_error};

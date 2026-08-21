@@ -13,6 +13,7 @@
 use super::smb_test_support::*;
 use super::*;
 use crate::file_system::volume::smb_volume_id;
+use std::sync::OnceLock;
 
 /// Cross-task content integrity: 100 concurrent SMB → local copies, each file
 /// with unique deterministic content. After the batch completes, every
@@ -352,7 +353,7 @@ async fn run_concurrent_write_pass(
         let name = format!("f_{i:04}.bin");
         let dest_abs = dest_dir_abs.join(&name);
         let buf = std::fs::read(local_dir.path().join(&name)).unwrap();
-        let stream: Box<dyn VolumeReadStream> = Box::new(InlineReadStream::new(buf.clone()));
+        let stream: Box<dyn VolumeReadStream> = inline_read_stream(buf.clone());
         let size = buf.len() as u64;
         let progress = |_a: u64, _b: u64| -> std::ops::ControlFlow<()> { std::ops::ControlFlow::Continue(()) };
         let bytes = vol
@@ -413,7 +414,7 @@ async fn run_concurrent_write_pass(
             };
             let mutex_dump = tail(&logger.mutex_lines);
             let recv_dump = tail(&logger.recv_lines);
-            let last_ticket = CLIENT_LOCK_TICKET.load(Ordering::Relaxed);
+            let last_ticket = client_lock_tickets_issued();
             Some(format!(
                 "regression: HANG after {:?} (timeout={}s) n_files={} n_conflicts={} last_ticket={}\n\
                  ── last {} client-mutex lines ──\n{}\n── last {} recv lines ──\n{}\n",
@@ -480,7 +481,7 @@ async fn smb_integration_concurrent_streaming_writes_no_deadlock() {
     crate::file_system::set_smb_concurrency(8);
 
     let vol = Arc::new(connect_docker_smb_volume(port, "cmdr-regression-maxreadsize").await);
-    let mount_path = vol.mount_path.clone();
+    let mount_path = vol.root().to_path_buf();
 
     let result = std::panic::AssertUnwindSafe(run_concurrent_write_pass(
         Arc::clone(&vol),

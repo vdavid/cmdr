@@ -8,7 +8,7 @@
 //! 2. **File transfers** (user-initiated write operations: copy, move, delete,
 //!    drag-out) — [`transfers`]' per-volume gauge, fed by the write-operation
 //!    lifecycle. Transfers yield to (1) via the `Volume` foreground-yield methods
-//!    (`file_system/volume/backends/smb/foreground_yield.rs`) and trump all indexing.
+//!    (`crates/cmdr-smb/src/volume/foreground_yield.rs`) and trump all indexing.
 //! 3. **Indexing** (drive indexing AND image indexing/enrichment) — lowest. Never
 //!    signals; only reads (1) and (2) and stands aside.
 //!

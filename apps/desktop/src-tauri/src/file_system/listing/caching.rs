@@ -848,7 +848,7 @@ fn find_listings_under_path_on_volume(
 /// Two callers fire this when the backing `.zip` changes: the local archive
 /// content watch (`archive::watch`, a `notify` watch on a LOCAL parent) and the
 /// SMB share watcher (`smb_watcher`, for a REMOTE parent that has no local
-/// `notify` transport — see `backends/DETAILS.md` § "SMB archive push-refresh").
+/// `notify` transport — see `crates/cmdr-smb/DETAILS.md` § "SMB archive push-refresh").
 /// It deliberately does NOT go through [`notify_directory_changed`]: that
 /// function runs the drive-index sync (`apply_smb_change`) up front, and an
 /// archive-inner path (`/…/foo.zip/dir`) isn't a real filesystem path, so feeding

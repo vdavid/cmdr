@@ -1,32 +1,53 @@
 # `cmdr-smb`
 
-The SMB backend's protocol layer: everything Cmdr says to an SMB server that needs no application around it. Address
-building, error classification, and the share-listing vocabulary.
-
-**Mid-extraction.** The `SmbVolume` backend itself still lives in the app (`file_system/volume/backends/smb/`); it moves
-down here in stages. The plan and what's left: `docs/specs/backend-as-a-crate.md`. Writing a NEW backend? Copy
-`crates/cmdr-archive/`, which is finished; this crate isn't the model yet.
+Everything Cmdr says to an SMB server: the `SmbVolume` backend and the protocol layer under it. No `tauri`, no app.
+Discovery, the keychain, mounts, the upgrade passes, and every word a human reads stay in the app's `network/`.
 
 ## Module map
 
-- `src/types.rs`: `ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError`, plus `convert_shares`. These cross
-  IPC, so they carry serde and `specta::Type`.
-- `src/errors.rs`: `is_auth_error` (would credentials help?) and the `classify_*` pair (`smb2::Error` →
-  `ShareListError`).
-- `src/connection.rs`: `build_smb_addr`, and the guest / authenticated share-listing calls.
+- `src/volume/`: the backend. `mod.rs` (the two structs and the shared prelude), `volume_impl.rs` (the whole
+  `impl Volume`, delegating to `scan` / `streams`), `session` + `reconnect` + `state` (the share-scoped session and its
+  health), `scan_pool`, `mapping`, `foreground_yield`, `watcher/`, `testing` (the Docker fixtures).
+- `src/{types,errors,connection}.rs`: the share-listing vocabulary, `smb2::Error` classification, the address builder.
+  Re-exported at the root, so callers write `cmdr_smb::`.
 
-## Must-knows
+## Backend must-knows
 
-- **The boundary test is "can the protocol and its own types answer this?"** Yes → here. No (mDNS, keychain, kernel
-  mounts, upgrade passes, anything the frontend sees) → the app's `network/`. Rationale and the full split:
-  `DETAILS.md`.
-- **`cargo check -p cmdr-smb` is the whole verification loop.** Nothing here may name the app; `index-crate-isolation`
-  forbids `tauri` / `tauri-specta` / `cmdr` anywhere in this crate's tree.
-- **`specta` is pinned to the exact version the app uses.** Two `specta` crates in one graph make these `Type` impls
-  stop satisfying `tauri-specta`, and the app's command signatures collect them transitively.
-- **The `testing` feature exists only to forward `smb2/testing`**, which the app's `smb-e2e` turns on through this
-  crate. Cargo unifies features across the graph, so the app's own direct `smb2` calls see it too. ❌ Never gate
-  behavior on `cfg(test)`; use `any(test, feature = "testing")`.
-- **`#![deny(missing_docs)]` holds.** A new `pub` item, field, or enum variant needs a doc comment.
-- **No user-facing prose.** A `message: String` on `ShareListError` is a diagnostic for logs; the host renders every
-  word a human reads.
+- **Everything the backend asks the app goes through the `VolumeHost`** it takes in `connect_smb_volume` and keeps on
+  `SmbVolumeInner` (seams: `crates/cmdr-fs/src/volume/host/CLAUDE.md`). Background work spawns onto `host.runtime()`.
+- **The watcher runs on a DEDICATED session** (stacked CHANGE_NOTIFY long-polls wedge Samba) **and never reconnects
+  itself**: on death it kicks the ONE reconnect path (`spawn_watcher_death_reconnect`), which respawns it AND resumes
+  the index. ❌ No second reconnect loop, and never cancel it on a pane close.
+- **`SmbVolume` is a per-mount-root instance over a shared `Arc<SmbVolumeInner>`**; `rerooted` moves a share to another
+  mount for one allocation, and share-scoped background work reads `SmbVolumeInner::self_handle()` rather than the
+  volume id, which answers with the SUCCESSOR after a swap.
+- **A replaced volume is SUPERSEDED, never unmounted**: `on_superseded` retires the id-scoped parts and leaves `state` /
+  `tree` / `client` alone for the transfers still holding an `Arc` (tearing it down once killed a live NAS copy). ❌ A
+  promotion must never call either hook on the instance it replaces: both act on the SHARED session.
+- **`paths_are_os_visible()` tracks the MOUNT, not the backend kind** (latched off by `note_root_mount_gone`). ❌ Never
+  hardcode it `true`: smb2 keeps browsing a share whose mount is gone, so the drag it breaks fails silently.
+- **`write_from_stream` drives an OWNED `FileWriter` on a cloned `Connection`**, ❌ never one borrowed while the client
+  mutex is held across the upload (the QNAP deadlock). Error paths `abort()` then delete the partial, or corrupt bytes
+  linger at the destination.
+- **Bulk work draws on the refcounted pool of extra sessions** (`scan_pool.rs`); a dead member retries on a sibling and
+  ❌ never moves the MAIN volume's connection state.
+- **smb2 bounds every wait itself**: ❌ no timeout layer of ours, and never read a missed keepalive as death.
+- **`to_smb_path` matches the root by COMPONENT and `NotFound`s anything outside it**; guessing sent real requests to
+  the wrong place.
+- **Watcher filenames need NFC→NFD normalizing and ❌ nothing else**: smb2 already decodes separators, so a `\` in a
+  filename is part of its NAME; re-normalizing loses the entry.
+
+## Crate must-knows
+
+- **`cargo check -p cmdr-smb --all-targets` is the whole verification loop**, because nothing here may name the app:
+  `index-crate-isolation` forbids `tauri` / `tauri-specta` / `cmdr` in this crate's tree.
+- **`specta` is pinned to the app's exact version.** Two `specta` crates in one graph make these `Type` impls stop
+  satisfying `tauri-specta`, and the app's command signatures collect them transitively.
+- **A test that reads `.inner` belongs HERE**, and `volume::testing` ❌ never hands `.inner` out. Which side a cell
+  lives on: `DETAILS.md` § "Which side a test lives on".
+- **`#![deny(missing_docs)]` holds**, and ❌ no user-facing prose: a `message: String` on `ShareListError` is a log
+  diagnostic, and the host renders every word a human reads.
+- ❌ Never gate behavior on `cfg(test)`; use `any(test, feature = "testing")`, or it flips silently the moment a
+  consumer compiles this crate as a dependency.
+
+Reconnect and scan-pool lifecycles, re-rooting, the decisions, and the suites: `DETAILS.md`. Read it first.

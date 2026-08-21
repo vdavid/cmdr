@@ -179,10 +179,10 @@ Escape/Cancel returns to the share list. Non-auth errors (unreachable, timeout, 
 
 When a direct-SMB session drops mid-use, four pieces coordinate to recover:
 
-1. **Backend** (`SmbVolume::handle_smb_result` in `volume/backends/smb/session.rs`) detects `ConnectionLost` /
+1. **Backend** (`SmbVolume::handle_smb_result` in `crates/cmdr-smb/src/volume/session.rs`) detects `ConnectionLost` /
    `SessionExpired`, flips to `Disconnected`, and emits `volume-connection-changed { volumeId, state: "disconnected" }`.
    The event is backend-neutral (any connecting backend emits it); everything below is what the frontend does with it,
-   and a new backend inherits all of it. (See `volume/backends/DETAILS.md` § SMB live-reconnect lifecycle.)
+   and a new backend inherits all of it. (See `crates/cmdr-smb/DETAILS.md` § SMB live-reconnect lifecycle.)
 2. **`stores/volume-store.svelte.ts`** patches the matching volume's `smbConnectionState`, keeping the picker dot, the
    breadcrumb, and `currentVolumeInfo` reactive without waiting for the next `volumes-changed`.
 3. **`smb-reconnect-manager.svelte.ts`** (if any subscribers are present) starts a per-volume backoff cycle calling

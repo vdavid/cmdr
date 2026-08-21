@@ -134,7 +134,7 @@ async fn upload_temp_lingers(vol: &SmbVolume, zip_path: &Path) -> bool {
         "{}.cmdr-tmp-",
         zip_path.file_name().expect("zip name").to_string_lossy()
     );
-    vol.list_directory_impl(Path::new("/"))
+    vol.list_directory(Path::new("/"), None)
         .await
         .map(|entries| entries.iter().any(|e| e.name.starts_with(&temp_prefix)))
         .unwrap_or(false)

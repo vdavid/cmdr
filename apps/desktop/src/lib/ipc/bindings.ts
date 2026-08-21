@@ -10069,7 +10069,7 @@ export type VolumeCapabilities = {
  *  `volume-connection-changed`.
  *
  *  Deliberately wider than any backend's internal state machine. SMB's
- *  `ConnectionState` (`file_system/volume/backends/smb/state.rs`) is binary,
+ *  `ConnectionState` (`crates/cmdr-smb/src/volume/state.rs`) is binary,
  *  `Direct ⇄ Disconnected`, and widens into `Connected` / `Disconnected` through a
  *  `From` impl there. `NeedsCredentials` has no counterpart in it: no backend ever
  *  rests in that state, it rides alongside a failed reconnect attempt. The OS-mount

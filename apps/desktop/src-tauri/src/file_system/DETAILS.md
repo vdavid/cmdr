@@ -24,7 +24,7 @@ its batched add landed after the rename event that would have cleared it.
 cache is filled is what makes the fix safe. The cache stays the truth; every accessor re-tests on every fetch, so an
 entry the pane received can always be taken away again. Filtering the watcher instead inverts the bug into a worse one:
 a full listing shows the temp, the watcher skips the removal that would clear it, and the pane keeps an entry pointing
-at nothing. The `.sb-` filter lived in `smb_watcher.rs` from 2026-04-10 to 2026-08-01 and had exactly that ghost — its
+at nothing. The `.sb-` filter lived in `crates/cmdr-smb/src/volume/watcher.rs` from 2026-04-10 to 2026-08-01 and had exactly that ghost — its
 `continue` sat above the `match action`, so it skipped `Removed` too.
 
 **Re-testing on every fetch is not the same as re-deriving the whole sequence on every fetch**, and conflating the two
