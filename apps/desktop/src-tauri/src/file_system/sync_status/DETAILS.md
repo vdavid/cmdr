@@ -133,9 +133,19 @@ actually is, and the memo makes its cost a rounding error.
   before believing a negative. A machine with provider folders that carry no marker gets `Undetermined` and no fast path
   at all — if Apple ever drops the xattr, badges keep working and only the shortcut is lost.
 
+**The assumption underneath:** taking the shortcut skips the `stat`, so it also skips the `SF_DATALESS` check, and that
+is only safe because a dataless stub is a File Provider fault — nothing outside a domain can be one. If that ever stops
+holding, an `OnlineOnly` badge outside a domain would silently disappear, and the fix is to keep the `stat` (~1-3 µs)
+and shortcut only the `NSURL` read.
+
 **Accepted edge:** a symlink pointing at a file inside a domain, from outside one, reads as not cloud-managed. The walk
 canonicalizes the DIRECTORY (which is what makes iCloud's "Desktop & Documents Folders" work, where `~/Desktop` is a
 link into the domain) but not the leaf, because leaves are files and there are millions of them.
+
+**Conservative edge in the backstop:** `~/Library/Mobile Documents` can exist without iCloud Drive being on, and then it
+carries no marker. On a machine with no other provider that reads as "the marker is gone", so the fast path switches
+itself off and every path goes back to the full probe. Slower, never wrong, and it costs nothing on a machine that has
+any live domain at all.
 
 ## Decision: pass `isDirectory:` when building the `NSURL`
 

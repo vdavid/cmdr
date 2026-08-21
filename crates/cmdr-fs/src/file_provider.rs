@@ -282,6 +282,11 @@ impl FileProviderDomains {
     ///
     /// A machine with no providers at all vouches trivially: there's nothing to
     /// mis-report, and the recheck picks up the first provider the user installs.
+    ///
+    /// It errs conservative on purpose. `~/Library/Mobile Documents` can exist with
+    /// iCloud Drive switched off, carrying no marker, and on a machine with no other
+    /// provider that reads as "the marker is gone" — so the fast path switches
+    /// itself off and every caller falls back. Slower, never wrong.
     fn marker_is_trustworthy(&self, now: Instant) -> bool {
         if let Some(decided) = self.state.lock_ignore_poison().marker
             && self.is_fresh(&decided, now)
