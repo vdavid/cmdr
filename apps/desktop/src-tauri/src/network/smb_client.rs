@@ -22,7 +22,8 @@ use super::smb_smbutil::list_shares_smbutil_with_auth;
 // Only the macOS arm classifies the raw smb2 failure of an authenticated listing
 // (Linux retries via the smbclient authfile fallback instead).
 #[cfg(target_os = "macos")]
-use cmdr_smb::{classify_authenticated_error, classify_error, convert_shares, is_auth_error};
+use cmdr_smb::classify_authenticated_error;
+use cmdr_smb::{classify_error, convert_shares, is_auth_error};
 
 /// Lists shares on a network host.
 ///

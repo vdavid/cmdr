@@ -3,8 +3,9 @@
 //! Provides fallback share listing using the macOS `smbutil` command when
 //! the pure Rust smb-rs implementation fails (for example, with certain Samba servers).
 
-#[cfg(target_os = "macos")]
-use cmdr_smb::{AuthMode, ShareInfo, ShareListError, ShareListResult};
+// `AuthMode` stays fully qualified at its three call sites: two are Linux-only and
+// one is macOS-only, so an import would be unused on one platform or the other.
+use cmdr_smb::{ShareInfo, ShareListError, ShareListResult};
 #[cfg(target_os = "macos")]
 use log::debug;
 
@@ -23,7 +24,7 @@ pub async fn list_shares_smbutil(
 
     Ok(ShareListResult {
         shares,
-        auth_mode: AuthMode::GuestAllowed,
+        auth_mode: cmdr_smb::AuthMode::GuestAllowed,
         from_cache: false,
     })
 }
@@ -64,7 +65,7 @@ pub async fn list_shares_smbutil_authenticated_from_keychain(
 
     Ok(ShareListResult {
         shares,
-        auth_mode: AuthMode::CredsRequired, // User is authenticated via Keychain
+        auth_mode: cmdr_smb::AuthMode::CredsRequired, // User is authenticated via Keychain
         from_cache: false,
     })
 }
@@ -114,7 +115,7 @@ pub async fn list_shares_smbutil(
     let shares = super::smb_smbclient::run_smbclient_list(host, port, None).await?;
     Ok(ShareListResult {
         shares,
-        auth_mode: AuthMode::GuestAllowed,
+        auth_mode: cmdr_smb::AuthMode::GuestAllowed,
         from_cache: false,
     })
 }
@@ -150,7 +151,7 @@ pub async fn list_shares_smbutil_with_auth(
     let shares = super::smb_smbclient::run_smbclient_list(host, port, Some((username, password))).await?;
     Ok(ShareListResult {
         shares,
-        auth_mode: AuthMode::CredsRequired,
+        auth_mode: cmdr_smb::AuthMode::CredsRequired,
         from_cache: false,
     })
 }

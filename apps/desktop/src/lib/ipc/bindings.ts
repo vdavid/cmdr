@@ -9111,49 +9111,49 @@ export type ShareListError =
   // The server is offline, or nothing is listening on the SMB port.
   | {
       type: 'host_unreachable'
-      // The diagnostic detail, for logs. The host renders the user's words.
+      // Diagnostic detail, for logs.
       message: string
     }
   // The server accepted the connection and then went quiet.
   | {
       type: 'timeout'
-      // The diagnostic detail, for logs. The host renders the user's words.
+      // Diagnostic detail, for logs.
       message: string
     }
   // The server turned an anonymous session away; credentials are needed.
   | {
       type: 'auth_required'
-      // The diagnostic detail, for logs. The host renders the user's words.
+      // Diagnostic detail, for logs.
       message: string
     }
   // Guest access won't work.
   | {
       type: 'signing_required'
-      // The diagnostic detail, for logs. The host renders the user's words.
+      // Diagnostic detail, for logs.
       message: string
     }
   // The credentials the caller supplied were rejected.
   | {
       type: 'auth_failed'
-      // The diagnostic detail, for logs. The host renders the user's words.
+      // Diagnostic detail, for logs.
       message: string
     }
   // The exchange broke down in a way none of the other variants describes.
   | {
       type: 'protocol_error'
-      // The diagnostic detail, for logs. The host renders the user's words.
+      // Diagnostic detail, for logs.
       message: string
     }
   // The hostname never resolved to an address.
   | {
       type: 'resolution_failed'
-      // The diagnostic detail, for logs. The host renders the user's words.
+      // Diagnostic detail, for logs.
       message: string
     }
   // A required CLI tool is not installed.
   | {
       type: 'missing_dependency'
-      // The diagnostic detail, for logs. The host renders the user's words.
+      // Diagnostic detail, for logs.
       message: string
       // What the user would run to install it, when there's a one-liner.
       installCommand: string | null
