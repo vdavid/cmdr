@@ -51,6 +51,11 @@ putting the previous contents back (removing a file that wasn't there before). A
 green-but-identical run doesn't churn mtimes, and the snapshot is dropped either way so a second call can't undo a later
 write.
 
+`earn()` is also where `i18n-capture.ts` runs `oxfmt` over the two artifacts. The spec writes them with plain
+`JSON.stringify(…, 2)`, which oxfmt reflows, so without that step every capture run hands the next `pnpm check` a format
+diff in a tracked file nobody hand-edited. Formatting AFTER `earn()` keeps the guard honest: a rolled-back run restores
+the old bytes and never reformats anything.
+
 **A DELETED surface leaves the report by hand.** The main pass builds its map from `{}`, but the license and FDA passes
 load the committed report and merge into it, so a surface that no longer exists anywhere (a dialog case that was
 removed) survives until the next full main capture — and until then the report describes a screen the app can't show.

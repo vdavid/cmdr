@@ -221,6 +221,29 @@ async function killAppAndWait(timeoutMs = 10000): Promise<void> {
   })
 }
 
+/**
+ * Formats the two tracked artifacts a green run just rewrote.
+ *
+ * The capture spec writes them with plain `JSON.stringify(…, 2)`, which oxfmt
+ * reflows (a short `keys` array collapses onto one line), so without this every
+ * run hands the next `pnpm check` a diff in a file nobody hand-edited. Same
+ * reason the coupler formats its coverage report.
+ *
+ * Called AFTER `earn()` on purpose: a run that didn't finish has its old bytes
+ * put back, and reformatting before that would rewrite what the guard is about
+ * to restore. An overflow pass never gets here (`main` returns earlier), which
+ * is right: its output is gitignored.
+ */
+function formatTrackedArtifacts(): void {
+  const paths = ['capture-report.json', 'capture-skipped.json'].map((name) => join(screenshotsBaseDir, name))
+  const fmt = spawnSync('pnpm', ['exec', 'oxfmt', ...paths], { cwd: desktopDir, stdio: 'inherit' })
+  if (fmt.status !== 0) {
+    console.warn(
+      '[i18n-capture] oxfmt did not exit cleanly on the tracked artifacts; run `pnpm exec oxfmt` on them manually.',
+    )
+  }
+}
+
 async function main() {
   // Coexisting with a running Cmdr is safe (PID-scoped teardown, window-ID-scoped
   // capture); just warn, since a busy screen can spoil separate-window shots.
@@ -379,6 +402,8 @@ async function main() {
   // Complete and green: the rewritten report and skip list describe what this run
   // actually photographed, so they stay.
   trackedArtifacts.earn()
+
+  formatTrackedArtifacts()
   console.log('[i18n-capture] done. Next: `pnpm i18n:couple` to write @key.screenshot couplings.')
 }
 
