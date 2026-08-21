@@ -20,14 +20,19 @@ pub struct KeychainCredentials;
 impl CredentialStore for KeychainCredentials {
     fn credentials(&self, service: &str, scope: Option<&str>) -> Option<StoredCredentials> {
         // A miss and an unreadable store are the same answer to a backend: it
-        // falls back to what it was handed, or connects as a guest. The
-        // distinction is logged where it happens, in `keychain`.
-        keychain::get_credentials(service, scope)
-            .ok()
-            .map(|stored| StoredCredentials {
+        // falls back to what it was handed, or connects as a guest.
+        match keychain::get_credentials(service, scope) {
+            Ok(stored) => Some(StoredCredentials {
                 username: stored.username,
                 secret: stored.password,
-            })
+            }),
+            Err(e) => {
+                // DEBUG, not WARN: "nothing stored for this server" is the
+                // ordinary answer for a guest share, and every reconnect asks.
+                log::debug!(target: "volume", "no stored credentials for {service}: {e}");
+                None
+            }
+        }
     }
 
     fn save_credentials(
@@ -36,8 +41,13 @@ impl CredentialStore for KeychainCredentials {
         scope: Option<&str>,
         credentials: &StoredCredentials,
     ) -> Result<(), CredentialsNotStored> {
-        keychain::save_credentials(service, scope, &credentials.username, &credentials.secret)
-            .map_err(|_| CredentialsNotStored)
+        // The typed reason stops here — the seam carries only "it didn't land" —
+        // so this is the last place that can say WHY, and a sign-in that silently
+        // stops being remembered is exactly what someone would file a bug about.
+        keychain::save_credentials(service, scope, &credentials.username, &credentials.secret).map_err(|e| {
+            log::warn!(target: "volume", "the secret store wouldn't keep the credentials for {service}: {e}");
+            CredentialsNotStored
+        })
     }
 }
 
