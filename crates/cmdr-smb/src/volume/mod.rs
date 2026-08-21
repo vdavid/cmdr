@@ -276,7 +276,8 @@ impl SmbVolume {
     /// Another instance of this SAME share, addressing `new_root`.
     ///
     /// The registry's promotion path (`manager/roots.rs`), through
-    /// [`Volume::rerooted`]. Everything live is shared, so this is one allocation
+    /// [`Volume::rerooted`](cmdr_fs::volume::Volume::rerooted). Everything live is shared,
+    /// so this is one allocation
     /// and no I/O; the share-scoped watcher is re-pointed at the new root so its
     /// listing-cache notifications keep landing where the panes are.
     fn instance_at_root(&self, new_root: &Path) -> Self {
@@ -299,7 +300,8 @@ impl SmbVolume {
 
     /// Test-only: drops the smb2 client session. After calling this, any code
     /// path that tries to acquire the client mutex sees `None` and returns
-    /// [`VolumeError::DeviceDisconnected`]. The app's
+    /// [`VolumeError::DeviceDisconnected`](cmdr_fs::volume::VolumeError::DeviceDisconnected).
+    /// The app's
     /// `smb_scan_uses_oracle_on_hit_skips_stat_pipeline` proves the scan
     /// oracle's short-circuit doesn't touch the SMB session with it: if it did,
     /// the scan would fail with `DeviceDisconnected` after this call.
