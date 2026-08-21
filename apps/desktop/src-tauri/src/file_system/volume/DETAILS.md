@@ -47,6 +47,22 @@ Every non-forced `LocalPosixVolume::rename` is atomic-no-overwrite. macOS uses `
 `renameat2(RENAME_NOREPLACE)`, covering the boot volume, attached local volumes, and cloud folders registered under
 their own volume IDs. A separate metadata check followed by plain `rename` is not an acceptable substitute.
 
+## Resolving a path: archive routing
+
+`VolumeManager::resolve(volume_id, path)` (`manager/archive_routing.rs`) answers "which volume serves this path": the
+registered volume for `volume_id`, or a read-only `ArchiveVolume` when the path crosses a `.zip` boundary. It's async
+because confirming that boundary on a remote parent (direct SMB / MTP) costs a `get_metadata` plus a four-byte
+`read_range` over the network; a local parent confirms with a zero-network `std::fs` stat and magic sniff.
+
+- **`ResolvedVolume.path` is the caller's input path, verbatim.** An archive resolve only swaps the volume; the
+  `ArchiveVolume` maps the whole `/…/foo.zip/inner` path into its own namespace via `inner_path()`. Adoption sites read
+  `resolved.path`, so the "path unchanged" contract lives in one place.
+- **`resolve_local_only` is the sync sibling that confirms LOCAL boundaries only**, and its one caller is the write-op
+  fresh-listing oracle (`listing::caching::try_get_authoritative_listing`), which runs on sync recursive scan walkers.
+  That oracle guards remote archives separately, so local-only routing is sufficient there.
+- **An archive LRU caps registrations at 16.** Browsing many zips must not leak volumes, parents, and index caches;
+  eviction is harmless, since the next navigation re-resolves lazily.
+
 ## Trait capability model
 
 Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new volume types can be added incrementally. Key capability flags:
