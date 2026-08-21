@@ -1,7 +1,8 @@
 //! Small SQLite helpers shared by every store: the process-wide page-cache slab
 //! and the connection factories that install it, the per-connection page-cache
-//! budget, the per-thread connection cache the read paths keep, and freelist
-//! reclamation for the writer threads.
+//! budgets that have to ADD UP to that slab, the per-thread connection cache the
+//! read paths keep (and the live count that watches it against its budget), and
+//! freelist reclamation for the writer threads.
 //!
 //! It lives here rather than in the app because the slab is exactly ONE per
 //! process and five stores share it — the three index DBs plus the agent's and the
@@ -15,6 +16,7 @@
 use std::ffi::{c_int, c_void};
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use rusqlite::{Connection, OpenFlags, ffi};
 
@@ -30,11 +32,20 @@ use rusqlite::{Connection, OpenFlags, ffi};
 /// pool rather than anything semantic (156 were open in a profiled prod session:
 /// v0.36.2, ~10 h uptime, macOS 26.5.2, `lsof` + `footprint -s`, 2026-07-28).
 ///
-/// 64 MiB holds a whole `wal_autocheckpoint` window for two concurrently
-/// scanning volumes ([`WRITE_PAGE_CACHE_KIB`] each) plus every hot DB's upper
-/// b-tree levels and a real leaf working set, and it's ~5x below the 310 MB
-/// ceiling the per-connection budgets alone imposed. Rationale, the fixed-cost
-/// tradeoff, and the alternatives weighed:
+/// 64 MiB is the sum of the two things that can fill it: a whole
+/// `wal_autocheckpoint` window each for the
+/// [`CONCURRENTLY_SCANNING_WRITERS`] it's sized for, plus the entire
+/// [`READ_CONNECTION_BUDGET`] at [`READ_PAGE_CACHE_KIB`] apiece. The const
+/// assertion beside those keeps the arithmetic honest.
+///
+/// ⚠️ A slab SMALLER than what the budgets add up to isn't a cap, it's a
+/// treadmill: it runs permanently full, `pcache1`'s under-pressure flag latches
+/// on, and every fetch recycles from the global LRU under the `PGroup` mutex
+/// (measured: 132 read connections scanning continuously held 63 of the 64 MiB
+/// at the old 8 MiB read budget, 17 MiB at the current one —
+/// `sqlite_util/page_cache_probe.rs`, release build, 2026-08-21).
+///
+/// Rationale, the fixed-cost tradeoff, and the alternatives weighed:
 /// `indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".
 pub const SHARED_PAGE_CACHE_BYTES: usize = 64 * 1024 * 1024;
 
@@ -245,31 +256,78 @@ fn record_open(db_path: &Path) {
 /// [`SHARED_PAGE_CACHE_BYTES`] several times over.
 pub const WRITE_PAGE_CACHE_KIB: i64 = 16_384;
 
-/// Page cache for a READ-ONLY connection, in KiB (8 MiB), applied as the
-/// negative `PRAGMA cache_size` form.
+/// Page cache for a READ-ONLY connection, in KiB, applied as the negative
+/// `PRAGMA cache_size` form.
 ///
-/// With the shared slab installed this is an upper bound per connection, NOT a
-/// reservation: pages come out of [`SHARED_PAGE_CACHE_BYTES`], SQLite runs one
-/// global LRU across every cache (the bundled build defines
-/// `SQLITE_ENABLE_MEMORY_MANAGEMENT`, so all caches share one `PGroup`), and a
-/// connection that never runs a query costs nothing. So a hot enrichment
-/// connection gets a generous working set while a hundred idle ones don't add
-/// up — which is exactly what the per-connection-only model couldn't do.
+/// NOT a reservation, and barely a per-connection cap. Under the unified `PGroup`
+/// the bundled build runs (`SQLITE_ENABLE_MEMORY_MANAGEMENT`), a cache that has
+/// reached its own `nMax` RECYCLES the global LRU's tail instead of allocating,
+/// and that tail may belong to any connection — so a hot enrichment connection
+/// still grows a real working set, by taking pages back from idle peers.
 ///
-/// Still smaller than [`WRITE_PAGE_CACHE_KIB`]: reads never commit or
-/// checkpoint, so there's no dirty-page window to hold, and 8 MiB comfortably
-/// covers the upper interior levels of the hot b-trees plus a directory's worth
-/// of leaves (the enrichment path's point lookups and range scans).
-pub const READ_PAGE_CACHE_KIB: i64 = 8_192;
+/// What the number really buys is process-wide. SQLite's ONE ceiling on retained
+/// pages is `pGroup->nMaxPage`, the SUM of every open connection's `cache_size`;
+/// past it an unpinned page is freed outright rather than kept. Read connections
+/// therefore contribute `count × this number`, with `count` tracking tokio's
+/// blocking-thread pool. So this is sized so that [`READ_CONNECTION_BUDGET`] of
+/// them fit inside [`SHARED_PAGE_CACHE_BYTES`] beside the writers, which is
+/// asserted below — not sized for what one connection would enjoy.
+///
+/// ⚠️ Safe to be this small ONLY for a read-only connection: `pcache.c` keeps
+/// `eCreate == 2` while a cache has no dirty pages, so `pcache1FetchStage2`'s
+/// "abort when the cache is nearly full" step (which tests `nMax * 9/10`) can
+/// never fire on one. A writer has dirty pages, hence [`WRITE_PAGE_CACHE_KIB`].
+///
+/// ⚠️ `cache_size` ALSO sets the sorter's in-memory budget (`vdbesort.c`), whose
+/// floor is 1 MiB, so a read connection running a big `ORDER BY` sorts against
+/// that floor now. Which query, and why it's affordable: the `DETAILS.md` section
+/// below.
+///
+/// Mechanism, the amalgamation references, and the sizing:
+/// `indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".
+pub const READ_PAGE_CACHE_KIB: i64 = 128;
+
+/// How many read connections the sizing budgets for, process-wide.
+///
+/// Nothing bounds the real count structurally: read connections are thread-local
+/// and live as long as their thread (`indexing/read/enrichment.rs`'s
+/// `THREAD_CONNS`, `ImportanceIndex`'s `READ_CONNS`), each holding up to
+/// [`THREAD_CONN_SLOTS`], so the count tracks tokio's blocking-thread pool. A
+/// profiled prod session had **156 open** across 69 blocking threads (v0.36.2,
+/// ~10 h uptime, macOS 26.5.2, `lsof` + `footprint -s`, 2026-07-28); 256 covers
+/// that with room for the three-slot cache to hold more per thread.
+///
+/// So it's a budget, and it is WATCHED rather than trusted:
+/// [`live_read_connections`] counts what the caches actually hold, and the first
+/// crossing logs a `warn!` naming the ceiling it implies.
+pub const READ_CONNECTION_BUDGET: usize = 256;
+
+/// How many write connections can be filling their page cache at once: the two
+/// concurrently scanning volumes [`SHARED_PAGE_CACHE_BYTES`] is sized for.
+///
+/// More write connections than this exist (one per open database), but a writer
+/// that isn't scanning holds nothing, and two volumes scanning at once is the
+/// busiest shape the app produces.
+const CONCURRENTLY_SCANNING_WRITERS: usize = 2;
 
 const _: () = assert!(
     READ_PAGE_CACHE_KIB < WRITE_PAGE_CACHE_KIB,
     "read connections must stay cheaper than the single write connection"
 );
 
+/// The whole design in one line: SQLite's own ceiling on retained pages
+/// (`pGroup->nMaxPage` = `Σ cache_size`) never exceeds the memory we handed it.
+///
+/// Break it and the 64 MiB stops describing anything: the slab runs permanently
+/// full, `pcache1`'s under-pressure flag latches on, and every page fetch recycles
+/// from the global LRU under the `PGroup` mutex instead of the cheap path — with
+/// nothing ever shrinking back at idle, because the "free this page outright"
+/// branch in `pcache1Unpin` only fires above `nMaxPage`.
 const _: () = assert!(
-    (WRITE_PAGE_CACHE_KIB as usize) * 1024 * 2 <= SHARED_PAGE_CACHE_BYTES,
-    "the shared slab must hold two concurrent writers' autocheckpoint windows"
+    CONCURRENTLY_SCANNING_WRITERS * (WRITE_PAGE_CACHE_KIB as usize)
+        + READ_CONNECTION_BUDGET * (READ_PAGE_CACHE_KIB as usize)
+        <= SHARED_PAGE_CACHE_BYTES / 1024,
+    "the writers the slab is sized for plus the whole read-connection budget must fit inside the slab"
 );
 
 /// Apply the page-cache budget for this connection's role: [`READ_PAGE_CACHE_KIB`]
@@ -346,9 +404,14 @@ pub fn page_cache_kib(conn: &Connection) -> i64 {
 /// left pane's volume and the right pane's closed and reopened on every
 /// alternation, re-running the pragmas and the collation registration and
 /// throwing away the connection's whole `prepare_cached` statement cache —
-/// recompiling those statements is the expensive part. A handful of slots costs
-/// nothing now that [`SHARED_PAGE_CACHE_BYTES`] decouples memory from connection
-/// count.
+/// recompiling those statements is the expensive part. A handful of slots is
+/// affordable because [`READ_PAGE_CACHE_KIB`] is sized against
+/// [`READ_CONNECTION_BUDGET`] rather than against one connection, so a slot costs
+/// 128 KiB of the page ceiling rather than 8 MiB of it.
+///
+/// Every entry is counted in [`live_read_connections`], including the ones this
+/// cache evicts and the ones it takes down with a dying thread, so the budget is
+/// observable rather than hoped for.
 ///
 /// Not thread-safe by design: it lives in a `thread_local!` `RefCell`, so there
 /// is no lock. ❌ Don't wrap it in a mutex.
@@ -363,6 +426,45 @@ pub struct ThreadConnCache {
 /// (search, the importance scheduler) landing on the same blocking thread
 /// without evicting either pane.
 pub const THREAD_CONN_SLOTS: usize = 3;
+
+/// Read connections the process's [`ThreadConnCache`]s hold right now.
+static LIVE_READ_CONNECTIONS: AtomicUsize = AtomicUsize::new(0);
+
+/// Latched the first time the count passes [`READ_CONNECTION_BUDGET`], so the
+/// warning is one line rather than one per open from then on.
+static READ_BUDGET_EXCEEDED: AtomicBool = AtomicBool::new(false);
+
+/// How many read connections are open across every thread right now.
+///
+/// The page-cache sizing budgets for [`READ_CONNECTION_BUDGET`] of them; this is
+/// what the process actually has. Multiply by [`READ_PAGE_CACHE_KIB`] for their
+/// share of SQLite's global ceiling on retained pages.
+pub fn live_read_connections() -> usize {
+    LIVE_READ_CONNECTIONS.load(Ordering::Relaxed)
+}
+
+/// Count one newly opened read connection, and say so once if that puts the
+/// process past the budget its page cache was sized for.
+fn count_read_connection_opened() {
+    let live = LIVE_READ_CONNECTIONS.fetch_add(1, Ordering::Relaxed) + 1;
+    if live > READ_CONNECTION_BUDGET && !READ_BUDGET_EXCEEDED.swap(true, Ordering::Relaxed) {
+        let ceiling_mib = (live * READ_PAGE_CACHE_KIB as usize) / 1024;
+        log::warn!(
+            target: "sqlite",
+            "{} open, past the {READ_CONNECTION_BUDGET} the page cache is sized for; their share of SQLite's global page ceiling is now ~{ceiling_mib} MiB against a {} MiB slab, so the slab can run permanently full",
+            crate::pluralize::pluralize(live as u64, "read connection"),
+            SHARED_PAGE_CACHE_BYTES / (1024 * 1024)
+        );
+    }
+}
+
+/// Count `n` read connections going away (evicted, retired, or dropped with
+/// their thread).
+fn count_read_connections_closed(n: usize) {
+    if n > 0 {
+        LIVE_READ_CONNECTIONS.fetch_sub(n, Ordering::Relaxed);
+    }
+}
 
 impl ThreadConnCache {
     /// An empty cache holding at most `capacity` connections.
@@ -400,12 +502,16 @@ impl ThreadConnCache {
             None => {
                 // Retire a same-path entry at a stale generation: the caller
                 // invalidated it, so it must not linger behind the new one.
+                let held = self.entries.len();
                 self.entries.retain(|(p, _, _)| p != db_path);
+                count_read_connections_closed(held - self.entries.len());
                 let conn = open(db_path)?;
                 if self.entries.len() >= self.capacity {
                     self.entries.pop();
+                    count_read_connections_closed(1);
                 }
                 self.entries.insert(0, (db_path.to_path_buf(), generation, conn));
+                count_read_connection_opened();
             }
         }
         let (_, _, conn) = self
@@ -436,6 +542,15 @@ impl ThreadConnCache {
     }
 }
 
+impl Drop for ThreadConnCache {
+    /// A thread dying takes its connections with it, so the process-wide count
+    /// has to follow. Tokio retires an idle blocking thread after ten seconds,
+    /// so this runs routinely rather than only at shutdown.
+    fn drop(&mut self) {
+        count_read_connections_closed(self.entries.len());
+    }
+}
+
 // ── Freelist reclamation ─────────────────────────────────────────────
 
 /// Reclaim freed pages via `PRAGMA incremental_vacuum`, stepping until the pragma
@@ -459,5 +574,7 @@ pub fn run_incremental_vacuum(conn: &Connection, cap: Option<i64>) -> rusqlite::
     Ok(())
 }
 
+#[cfg(test)]
+mod page_cache_probe;
 #[cfg(test)]
 mod tests;

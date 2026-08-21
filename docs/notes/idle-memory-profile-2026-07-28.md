@@ -22,7 +22,8 @@ only ever land in `MALLOC_SMALL`: the bundled build defines `SQLITE_ENABLE_MEMOR
 `pcache1.separateCache = 0`, there is no bulk allocation, and every overflow page is an individual ~4.1 KB
 `sqlite3Malloc` — below macOS's 127 KB large-zone threshold. The shared slab this note led to proved it from the other
 side: `MALLOC_SMALL` fell 405 → 152 MB (−62%) while `MALLOC_LARGE` moved 730 → 643 MB (−12%), in regions of 9 MB and
-2.25 MB. What that 643 MB IS remains unidentified: `idle-cpu-attribution-2026-08-03.md` § "Still open".
+2.25 MB. That 643 MB has since been named, and it is Core ML holding the two CLIP towers, nothing to do with SQLite:
+`idle-malloc-large-clip-towers-2026-08-21.md`.
 
 WebKit and the compositor were NOT involved: `WebKit malloc` was 4.6 MB, `IOAccelerator (graphics)` 1.3 MB. CPU was 122
 minutes over 10 hours.
@@ -37,15 +38,18 @@ They accumulate because read connections are **thread-local and live as long as 
 (`indexing/read/enrichment.rs`'s `THREAD_CONN`, `ImportanceIndex`'s `READ_CONN`), so the count tracks tokio's
 blocking-thread pool (69 threads at sample time), not anything semantic.
 
-**Fixed** in two steps:
+**Fixed** in three steps:
 
 1. Split the per-connection budget by role in one place (`sqlite_util::apply_page_cache`): 16 MiB for the single writer
    per DB, a small budget for read-only opens. That dropped the ceiling from 2.5 GB to ~310 MB, but it was a ceiling,
    not a cure: the connections still accumulated, and 310 MB still scaled with a number nothing controls.
 2. Made total page memory ONE number: a 64 MiB process-wide slab handed to SQLite via
    `sqlite3_config(SQLITE_CONFIG_PAGECACHE, …)` before the first connection opens. Page memory is now independent of
-   connection count and shared dynamically, which also let the read budget go back UP (to 8 MiB per connection, an upper
-   bound out of the slab rather than a reservation).
+   connection count and shared dynamically.
+3. Made the per-connection numbers add up to the slab rather than to 32x it. SQLite's one ceiling on retained pages is
+   `Σ cache_size`, so a generous read budget multiplied straight back into the number nothing controls; the read budget
+   is 128 KiB now, and 256 of them plus the two writers the slab is sized for come to exactly 64 MiB. Measured at the
+   132 connections profiled here: the slab went from holding 63 of its 64 MiB to 17.
 
 Rationale, the sizing, the ordering guarantee, and the alternative weighed:
 `crates/cmdr-index/src/indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".

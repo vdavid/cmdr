@@ -246,12 +246,12 @@ sharing dynamic instead of first-come-first-served. Slot size is `4096 + sqlite3
 rounded to 8, queried rather than guessed: a slot one byte too small is never used and every allocation silently falls
 through to the heap (verified against the bundled amalgamation's `pcache1Alloc`, libsqlite3-sys 0.38.1, 2026-07-29).
 
-**Why 64 MiB.** It holds a whole `wal_autocheckpoint` window (16 MiB) for two concurrently scanning volumes plus every
-hot DB's upper b-tree levels and a real leaf working set, and it's ~5x below the 310 MB the per-connection ceiling
-allowed at the profiled connection count. The tradeoff is honest: the slab is allocated and touched up front, so it's a
-FIXED resident cost even for a session that opens one small DB, where the old model would have held less. We take that
-trade because the failure the profile found was steady-state growth, not a peak, and a predictable 64 MiB beats an
-unpredictable 310 MB.
+**Why 64 MiB.** It's the sum of the two things that can fill it, and that addition closes exactly: a whole
+`wal_autocheckpoint` window (16 MiB) for each of the two concurrently scanning volumes, plus the entire read-connection
+budget (see "the per-connection budgets" below). The tradeoff is honest: the slab is address space we hand SQLite up
+front, so a session that opens one small DB reserves the whole 64 MiB even though it dirties only what it uses. We take
+that trade because the failure the profile found was steady-state growth, not a peak, and a predictable number beats an
+unpredictable one.
 
 **Ordering is the whole game.** `sqlite3_config` only works before SQLite initializes itself, and the first connection
 opened ANYWHERE in the process initializes it. So every connection opens through
@@ -266,29 +266,79 @@ bound with no reclaim heuristics, it degrades gracefully (SQLite falls back to `
 exhausted, and flips a global under-pressure flag that makes every cache recycle rather than grow), and it leaves the
 heap accounting alone.
 
-### The per-connection budgets on top
+### The per-connection budgets on top, and what they add up to
 
 `apply_pragmas` takes a `readonly` flag and delegates to `crate::sqlite_util::apply_page_cache`, which every store's
-`apply_pragmas` shares: `WRITE_PAGE_CACHE_KIB` (16 MiB) for a write connection, `READ_PAGE_CACHE_KIB` (8 MiB) for a
-read-only one. With the slab installed these are UPPER BOUNDS per connection, not reservations, so they no longer
-multiply into a process-wide number. One helper rather than five copies of a literal, because the failure mode is
-silent: a store that keeps its own number drifts and nothing complains.
+`apply_pragmas` shares: `WRITE_PAGE_CACHE_KIB` (16 MiB) for a write connection, `READ_PAGE_CACHE_KIB` (128 KiB) for a
+read-only one. One helper rather than five copies of a literal, because the failure mode is silent: a store that keeps
+its own number drifts and nothing complains.
+
+**What `cache_size` actually does under a unified `PGroup`** (read against the bundled amalgamation, SQLite 3.53.2 via
+libsqlite3-sys 0.38.1, 2026-08-21). Two mechanisms, and only the second is a cap:
+
+- A cache that has reached its own `nMax` RECYCLES the global LRU's tail instead of allocating a page
+  (`pcache1FetchStage2` step 4). The tail may belong to any connection, so a hot reader still grows a real working set,
+  by taking pages back from idle peers. `cache_size` is NOT a per-connection cap on that.
+- It adds itself to `pGroup->nMaxPage` (`pcache1Cachesize`), and `pcache1Unpin` frees an unpinned page outright rather
+  than keeping it once `nPurgeable > nMaxPage`. So SQLite enforces exactly ONE ceiling on retained pages, and it is
+  `Σ cache_size` over every open connection.
+
+**So the sizing is an addition, and it has to close.** `SHARED_PAGE_CACHE_BYTES` (64 MiB) =
+`CONCURRENTLY_SCANNING_WRITERS` (2) × `WRITE_PAGE_CACHE_KIB` (16 MiB) + `READ_CONNECTION_BUDGET` (256) ×
+`READ_PAGE_CACHE_KIB` (128 KiB), exactly. A const assertion in `sqlite_util.rs` holds the arithmetic, and
+`the_read_connection_budget_fits_inside_the_shared_slab` re-derives it from the KiB real connections report, so a pragma
+that silently doesn't land fails the test rather than the invariant.
 
 **Why the write budget is 16 MiB.** It's coupled to `wal_autocheckpoint = 4000` (~16 MiB of 4 KiB pages, set in the same
 function): the cache is sized to hold what a whole autocheckpoint window dirties, so a big write batch commits without
 evicting pages it's about to touch again. Change one and reconsider the other. There is at most ONE write connection per
-DB (the single writer thread).
+DB (the single writer thread), and one that isn't scanning holds nothing, which is why the slab budgets for two rather
+than for every open database.
 
-**Why reads get 8 MiB.** It comfortably holds the upper interior levels of the hot b-trees plus a directory's worth of
-leaves, which is what the enrichment path needs: point lookups on `(parent_id, name_folded)` and one range scan. A
-whole-index working set never fits (a 6.9M-row index runs ~170 k leaf pages) and the OS file cache backs those anyway.
-Reads never commit or checkpoint, so nothing here touches the WAL.
+**Why reads get only 128 KiB (~30 pages).** Their count is the term that scales with nothing: read connections are
+thread-local and live as long as their thread, so it tracks tokio's blocking pool. Anything generous here multiplies by
+that number into `nMaxPage`. It costs the reader little, because of the recycle mechanism above, and because a
+whole-index working set never fit anyway (a 6.9M-row index runs ~170 k leaf pages) — the OS file cache backs those. ⚠️
+It is safe to be this small ONLY for read-only connections: `pcache.c` keeps `eCreate == 2` while a cache has no dirty
+pages, so `pcache1FetchStage2`'s "abort when nearly full" step (which tests `nMax * 9/10`) can never fire on one.
+
+⚠️ **`cache_size` also sets the SORTER's budget**, which is the one non-obvious cost here. `vdbesort.c` takes
+`mxPmaSize = MAX(SQLITE_SORTER_PMASZ x page_size, cache_size)`, and `SQLITE_SORTER_PMASZ` defaults to 250 pages, so the
+floor is 1 MiB. A read connection running a big `ORDER BY` now sorts against that floor rather than against 8 MiB: more
+PMAs written to the temp file, more runs to merge. The query that reaches it is `ImportanceIndex::above_threshold(0.0)`
+over every scored folder, and that one is already cached behind `../../media_index/coverage/scores.rs`, so it runs once
+per volume rather than once per UI query. Any read budget at or below 1 MiB gives the identical sorter budget, so this
+is the price of a per-connection number small enough to bound at all, not of 128 KiB specifically.
+
+**Measured** (`crates/cmdr-fs/src/sqlite_util/page_cache_probe.rs`, the `#[ignore]`d harness, release build, M1 Max,
+2026-08-21), 132 read connections — the profiled prod count — scanning a 16 MB database continuously:
+
+- Global ceiling (`Σ nMax`): **1,056 MiB → 16 MiB**.
+- Slab actually held: **63 MiB of 64 → 17 MiB**. At 98% the slab ran permanently full, which latches `pcache1`'s
+  under-pressure flag and pushes every fetch onto the global-LRU recycle path under the `PGroup` mutex, with nothing
+  ever shrinking back at idle.
+- Heap overflow (`SQLITE_STATUS_PAGECACHE_OVERFLOW`): **0 both ways**. The old ceiling never leaked page cache onto the
+  heap; the slab held the line by running full. The win is the ~46 MiB the slab stops pinning and the pressure it stops
+  running under, not a reclaimed gigabyte.
+
+**Alternative weighed: cutting the connection COUNT instead.** It's the other factor in the product, and it's the one
+that tracks nothing semantic, so it looks like the better lever. It isn't reachable: the count is
+`live blocking threads × slots per thread × 2 thread-locals`, and the only structural cap on the first term is tokio's
+`max_blocking_threads` (512 by default; `../../media_index/coverage/scores.rs` records the episode where the app
+actually reached it). Lowering that risks deadlocking blocking work against itself, and the honest alternative —
+retiring thread-local read connections on a timer, or pooling them — is a read-path restructure, not a budget change. So
+the count stays free and the per-connection number carries the bound.
+
+**The budget is watched, not enforced.** Nothing bounds the connection count structurally, so
+`sqlite_util::live_read_connections` counts what the `ThreadConnCache`s hold and the first crossing of
+`READ_CONNECTION_BUDGET` logs a `warn!` naming the ceiling it implies. If that line ever appears in a log, the number to
+change is the budget or the per-connection KiB, together.
 
 **Test coverage**: `sqlite_util::tests` pins the slab (installed before any connection opens, budget numbers, and
-`SQLITE_STATUS_PAGECACHE_USED > 0` proving pages really come from it), and
-`read_connections_get_a_smaller_page_cache_than_write_connections`, one per store (`tests/open_and_recover.rs` here and
-in `importance/store`, `media_index/store`, `agent/store`, `operation_log/store`), asserts the exact KiB each role opens
-with.
+`SQLITE_STATUS_PAGECACHE_USED > 0` proving pages really come from it), the summed bound, and the live-connection
+counter; and `read_connections_get_a_smaller_page_cache_than_write_connections`, one per store
+(`tests/open_and_recover.rs` here and in `importance/store`, `media_index/store`, `agent/store`, `operation_log/store`),
+asserts the exact KiB each role opens with.
 
 ## Prepared statements on the hot write path
 

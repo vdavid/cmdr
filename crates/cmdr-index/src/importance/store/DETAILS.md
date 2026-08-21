@@ -97,10 +97,10 @@ stamped generation → the read probe sees it → the write-path-bound probe rec
 
 Both factories open through `crate::sqlite_util`, so the process-wide page-cache slab is installed before SQLite
 initializes; ❌ never `rusqlite::Connection::open*` directly. `connection.rs`'s `apply_pragmas` mirrors the index
-store's, page-cache budget included: it delegates to `crate::sqlite_util::apply_page_cache`, so a read connection caps
-at 8 MiB and the writer at 16 MiB, both drawn from the shared slab. ❌ Don't set `cache_size` locally.
-`importance-root.db` was the single biggest contributor to the 156 connections a profiled prod session accumulated,
-which is why the bound lives in the slab rather than in these numbers. Rationale and measurements:
+store's, page-cache budget included: it delegates to `crate::sqlite_util::apply_page_cache`, so a read connection runs
+`READ_PAGE_CACHE_KIB` and the writer `WRITE_PAGE_CACHE_KIB`, both served from the shared slab. ❌ Don't set `cache_size`
+locally. `importance-root.db` was the single biggest contributor to the 156 connections a profiled prod session
+accumulated, which is why the bound lives in the slab rather than in these numbers. Rationale and measurements:
 `indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".
 
 ## Errors

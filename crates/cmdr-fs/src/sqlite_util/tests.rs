@@ -38,12 +38,14 @@ fn the_shared_page_cache_is_installed_before_any_connection_opens() {
 
 /// Pin the resolved budget, so a future edit can't silently re-inflate the
 /// process's SQLite memory. The slab is the WHOLE page-cache budget; the
-/// per-role numbers are upper bounds per connection out of it.
+/// per-role numbers are each connection's contribution to SQLite's global
+/// ceiling, and they multiply by the connection count.
 #[test]
 fn the_page_cache_budgets_are_pinned() {
     assert_eq!(SHARED_PAGE_CACHE_BYTES, 64 * 1024 * 1024, "shared slab is 64 MiB");
-    assert_eq!(WRITE_PAGE_CACHE_KIB, 16_384, "write connections cap at 16 MiB");
-    assert_eq!(READ_PAGE_CACHE_KIB, 8_192, "read connections cap at 8 MiB");
+    assert_eq!(WRITE_PAGE_CACHE_KIB, 16_384, "write connections contribute 16 MiB each");
+    assert_eq!(READ_PAGE_CACHE_KIB, 128, "read connections contribute 128 KiB each");
+    assert_eq!(READ_CONNECTION_BUDGET, 256, "the read budget covers 256 connections");
 
     let installed = ensure_shared_page_cache();
     let bytes = installed.bytes();
@@ -82,6 +84,98 @@ fn cached_pages_come_from_the_shared_slab() {
     assert!(
         sqlite_status(ffi::SQLITE_STATUS_PAGECACHE_USED) > 0,
         "cached pages must come out of the shared slab"
+    );
+}
+
+/// The bound the whole page-cache design rests on.
+///
+/// SQLite enforces exactly ONE ceiling on retained pages — `pGroup->nMaxPage`,
+/// which is the SUM of every open connection's `cache_size` — so the read
+/// connections' share of it is `count × READ_PAGE_CACHE_KIB`, and `count` tracks
+/// tokio's blocking-thread pool rather than anything semantic. Budgeted at
+/// [`READ_CONNECTION_BUDGET`], that share plus the concurrently scanning writers
+/// the slab is sized for has to fit INSIDE the slab. Otherwise the slab isn't a
+/// cap, it's a treadmill: it runs permanently full, `pcache1`'s under-pressure
+/// flag latches on, and nothing ever shrinks back at idle, because the branch
+/// that frees a page outright only fires above `nMaxPage`.
+///
+/// Measured off REAL connections rather than read from the constant: the bound is
+/// only real if the pragma actually lands.
+#[test]
+fn the_read_connection_budget_fits_inside_the_shared_slab() {
+    let dir = tempfile::tempdir().expect("create temp dir");
+    let db_path = dir.path().join("bound.db");
+    {
+        let conn = open(&db_path).expect("create db");
+        conn.execute_batch("CREATE TABLE t (id INTEGER PRIMARY KEY);")
+            .expect("create table");
+    }
+
+    let readers: Vec<Connection> = (0..8)
+        .map(|_| {
+            let conn = open_read_only(&db_path).expect("open read-only");
+            apply_page_cache(&conn, true).expect("apply the read budget");
+            conn
+        })
+        .collect();
+    for conn in &readers {
+        assert_eq!(
+            page_cache_kib(conn),
+            READ_PAGE_CACHE_KIB,
+            "a read connection must open with the read budget"
+        );
+    }
+    let per_reader_kib = page_cache_kib(&readers[0]);
+
+    let writer = open(&db_path).expect("open read-write");
+    apply_page_cache(&writer, false).expect("apply the write budget");
+    let per_writer_kib = page_cache_kib(&writer);
+
+    let ceiling_kib =
+        READ_CONNECTION_BUDGET as i64 * per_reader_kib + CONCURRENTLY_SCANNING_WRITERS as i64 * per_writer_kib;
+    let slab_kib = (SHARED_PAGE_CACHE_BYTES / 1024) as i64;
+    assert!(
+        ceiling_kib <= slab_kib,
+        "SQLite's global page ceiling must fit inside the slab: read {READ_CONNECTION_BUDGET} x {per_reader_kib} KiB + scanning-write {CONCURRENTLY_SCANNING_WRITERS} x {per_writer_kib} KiB = {ceiling_kib} KiB against a {slab_kib} KiB slab"
+    );
+}
+
+/// The budget is watched rather than trusted, so the watcher has to be right: a
+/// cache's opens, its evictions, its generation retires, and its own death all
+/// have to move the process-wide count.
+///
+/// Reads the counter as a DELTA. `nextest` forks a process per test, so nothing
+/// else is moving it here.
+#[test]
+fn the_live_read_connection_count_follows_the_caches() {
+    let before = live_read_connections();
+    let opener = CountingOpener::new();
+    {
+        let mut cache = ThreadConnCache::new(2);
+        let (a, b, c) = (Path::new("/a.db"), Path::new("/b.db"), Path::new("/c.db"));
+
+        cache.with(a, 0, opener.open(), |_| ()).expect("a");
+        cache.with(b, 0, opener.open(), |_| ()).expect("b");
+        assert_eq!(live_read_connections() - before, 2, "each open counts once");
+
+        cache.with(c, 0, opener.open(), |_| ()).expect("c");
+        assert_eq!(
+            live_read_connections() - before,
+            2,
+            "an eviction releases the connection it dropped"
+        );
+
+        cache.with(c, 1, opener.open(), |_| ()).expect("c at a new generation");
+        assert_eq!(
+            live_read_connections() - before,
+            2,
+            "a generation retire swaps one connection for one, not two"
+        );
+    }
+    assert_eq!(
+        live_read_connections(),
+        before,
+        "a dying thread takes its whole cache's connections with it"
     );
 }
 
