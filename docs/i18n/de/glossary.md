@@ -1172,3 +1172,31 @@ erscheinen.
 - **forget (Server, Passwort) → `vergessen`** · bereits im Katalog (`fileExplorer.network.share.forgetPassword`) · high.
 - **Deliberately identical to English** (`sameAsSourceJustification` gesetzt): `menu.bar.tab` (Tab), `menu.view.zoom`
   (Zoom), `menu.sort.name` (Name), `menu.tag.orange` (Orange), `menu.view.askCmdr` (Produktname).
+
+## SMB-Fallback-Hinweis: die Freigabe hängt an der Systemverbindung (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+
+- **"macOS's native SMB network connection" → `die eigene SMB-Netzwerkverbindung von macOS`** · Katalog-Konsistenz mit
+  `Systemverbindung` (siehe unten) plus die Stilregel „kein Genitiv auf Markennamen“ · high. `nativ` bleibt draußen: die
+  de-Referenzsammlung belegt das Adjektiv nirgends im UI-Deutsch (nur in englischen MS-`descrip`-Texten),
+  `eigene … von macOS` sagt dasselbe mit deutschen Mitteln.
+- **system connection (die vom OS bereitgestellte SMB-Verbindung) → `Systemverbindung`** · bereits im Katalog gesetzt
+  (`fileExplorer.pane.directConnectionTooSlowToast`/`.directConnectionUnexpectedToast`,
+  `fileExplorer.navigation.connectionTooltipSystem`, `fileOperations.transferDialog.smbNativeNote`) · high. Der
+  Fallback-Hinweis beschreibt dieselbe Verbindung ausführlicher, bleibt aber im selben Wortfeld.
+- **"Couldn't directly connect to X" → `Die direkte Verbindung zu X kam nicht zustande.`** · wortgleicher Rahmen aus
+  `fileExplorer.pane.directConnectionUnexpectedToast` · high. Kein „Fehler“, kein „fehlgeschlagen“ (Stilregel), und der
+  fehlende Subjekt-Slot des Englischen wird durch das Nominalsubjekt gefüllt, statt Cmdr die Schuld zu geben.
+- **"Try connecting directly" (Taste im Hinweis) → `Direkte Verbindung versuchen`** · deckt sich mit
+  `fileExplorer.navigation.connectingDirectly` („Direkte Verbindung wird hergestellt …“) und dem gesetzten „Connect
+  directly“ → „Direkt verbinden“ · high. ❌ Nicht „Direkt verbinden versuchen“: zwei Infinitive hintereinander lesen
+  sich holprig; das Nomen `Direkte Verbindung` trägt dieselbe Bedeutung.
+- **"Dismiss" (Tooltip auf dem X einer Benachrichtigung) → `Schließen`** · identisch zu
+  `lowDiskSpace.toast.closeTooltip` (gleicher `sourceHash`) und zum gesetzten Eintrag „dismiss (button closing a dialog)
+  → Schließen“ · high. Abgegrenzt von `Ausblenden`, das für das Wegräumen einer Vorgangszeile reserviert ist.
+- **Multiplikatoren `4x` / `100x` → `4-mal` / `100-mal`** · Duden-Schreibung mit Ziffer (Bindestrich) · high. In der
+  Referenzsammlung ist kein Multiplikator belegt, deshalb entscheidet die Rechtschreibnorm. Das Englische klebt das
+  „(sometimes 100x)“ mitten in den Vergleich; im Deutschen muss `langsamer … als` zusammenbleiben, also wandert der
+  Nachtrag ans Satzende: „… 4-mal langsamer ist als die direkte Verbindung von Cmdr, manchmal sogar 100-mal.“
+- **button (Bedienelement auf dem Bildschirm) → `die Taste`** · macOS de („klicke … auf die Taste „+“ (Hinzufügen)“) und
+  der bestehende de-Katalog („Klicke unten auf die Taste „+“…“, „klicke einfach auf die Taste unten“) · high. ❌ Nicht
+  MS-Terminologies `Schaltfläche`: das ist die Windows-Konvention.

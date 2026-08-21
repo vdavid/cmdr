@@ -15,7 +15,10 @@ sources, not a guess:
 - GNOME Nautilus and Xfce Thunar Dutch use formal `u` ("Wanneer u een bestand via e-mail verstuurt …"). That is the
   open-source desktop convention (Tier 3), not ours; don't copy it.
 - Cmdr is a macOS app with a friendly voice that even signs onboarding as David, so `je` is both the macOS-native choice
-  and the right tonal fit. (No Microsoft `nl` style-guide PDF is in the pile, but macOS Tier 1 is decisive on its own.)
+  and the right tonal fit. Microsoft's `nl` style guide (`microsoft-style-guides/StyleGuide.pdf` in the pile) agrees: it
+  records that the historically formal second person has given way to `je` in consumer-facing products, and that the
+  Microsoft voice avoids an unnecessarily formal tone (pp. 12, 20, verified 2026-08-21). macOS Tier 1 would decide it
+  alone anyway.)
 
 ## Voice and tone
 
@@ -101,6 +104,10 @@ Duplicating the whole sentence per branch works too but rots twice as fast.
   German. Overflow-check the layout against the pseudolocale (`en-XA`); watch buttons and toasts.
 - **Compound nouns concatenate** ("crashrapport", "foutcode"). Correct Dutch; don't space-separate them.
 - **Numbers and dates come from the formatter layer** (comma decimal, period thousands). Never hardcode separators.
+- **Speed multipliers**: write them as digits plus `x` and the equality shape, `4x zo langzaam als …` /
+  `4x zo snel als …`, not `4x langzamer dan`, which leaves open whether the factor applies to the difference or the
+  whole. The Microsoft style guide prescribes digits for units and percentages; the shape itself has no pile precedent,
+  so it's a judgment call (see the glossary's `osMountFallback` pass).
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -126,6 +133,9 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
 - **"No progress for {duration}" → "Al {duration} geen voortgang"**: `voortgang` is settled, but nothing in the pile
   phrases an elapsed stall, so the "al X geen Y" shape is a judgment call. Confirm it reads natural in the progress
   dialog and on a queue row.
+- **"4x slower" → "4x zo langzaam als"** (`osMountFallback.message`): nothing in the pile puts a multiplier in front of
+  a comparative, so the equality shape is a judgment call over the shorter, more colloquial "4x langzamer dan". Confirm
+  which one reads better in a toast.
 - **"The transfer has stopped moving" → "De overdracht komt niet meer vooruit"**: picked over the more idiomatic
   standstill phrase "ligt stil", which sits too close to the neighbouring "Gepauzeerd" state. Confirm the tradeoff.
 

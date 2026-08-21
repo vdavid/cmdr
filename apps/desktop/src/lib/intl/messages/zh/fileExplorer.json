@@ -263,6 +263,18 @@
   "@fileExplorer.network.authFailed": {
     "sourceHash": "93821eb"
   },
+  "fileExplorer.network.osMountFallback.message": "无法直接连接到 <shareName>{share}</shareName>。你已经连上了，但用的是 macOS 内建的 SMB 网络连接，大多数情况下它比 Cmdr 的直接连接慢 4 倍（有时能慢 100 倍）。点按下方的按钮再试一次。",
+  "@fileExplorer.network.osMountFallback.message": {
+    "sourceHash": "368f523"
+  },
+  "fileExplorer.network.osMountFallback.retry": "试试直接连接",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "sourceHash": "fb3905d"
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "关闭",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
   "fileExplorer.network.connectDialog.title": "连接服务器",
   "@fileExplorer.network.connectDialog.title": {
     "sourceHash": "de6cce0"

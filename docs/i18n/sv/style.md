@@ -185,6 +185,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   000), but `formatNumber()`/`formatByteSize()` produce these from the locale: never hardcode separators in a string.
 - **Length.** Swedish runs close to English in width, so overflow risk is lower than German, but still overflow-check
   the layout against the pseudolocale (`en-XA`).
+- **Genitive on a brand: pick by the name's final sound.** A name ending in an s-sound (`macOS`, `iOS`) takes no
+  genitive ending and no apostrophe in Swedish: "macOS inbyggda SMB-anslutning", matching the catalog's "macOS
+  textstorlek". A name ending in a consonant takes the plain `-s`: "Cmdrs direktanslutning". Never write `macOS'`.
+- **Multipliers use `gånger`, not `x`.** English's "4x slower" becomes "fyra gånger långsammare"; the spell-out rule
+  (one through nine as words, 10+ as digits) applies inside the multiplier, so "fyra gånger" but "100 gånger".
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

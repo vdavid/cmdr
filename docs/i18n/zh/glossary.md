@@ -1213,3 +1213,23 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
 - **Eject → `推出`、Disconnect → `断开连接`、Remove（从列表中移除）→ `移除`** · macOS Finder · high。
 - **括号与引号用全角**：`{app}（默认）`、`推出（{name}）`、`拷贝“{name}”`。占位符本身保持半角原样。
 - **有意与英文相同**（已写 `sameAsSourceJustification`）：`menu.zoom.percent*` 与 `menu.view.askCmdr`。
+
+## 系统连接回退通知（`fileExplorer.network.osMountFallback.*`，2026-08-21）
+
+Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时弹出的通知。语气是安抚，不是报错：共享能用，只是慢。
+
+- **native（macOS 内建的）→ `内建`** · macOS Finder/AppKit `zh-CN` 只用 `内建`（4 处，`内置`、`自带` 各 0 处）·
+  `high`。目录里此前混用 `内置`（4 处）和 `自带`（1 处），以后统一到 `内建`。
+- **macOS's native SMB network connection → `macOS 内建的 SMB 网络连接`** · 与目录里已定的 `系统连接`
+  （`fileExplorer.pane.directConnection*Toast`、`fileExplorer.navigation.connectionTooltipSystem`）指同一件事；这条正文第一次介绍它，所以写全称，短提示里继续用
+  `系统连接` · `high`。
+- **"4x slower" 这类倍数 → `慢 4 倍`** · 用阿拉伯数字 + `倍`，前后加空格。中文口语里 `慢 N 倍`
+  略有歧义（1/N 还是 1/(N+1)），但这里传达的是「慢很多」，精确值不承重；需要精确时改写成 `速度只有…的 1/4` · `high`。
+- **click（按钮/链接）→ `点按`** · macOS `zh-CN` 全用 `点按`（`点击` 0 处），onboarding 的
+  `点按下方的 <strong>…</strong>` 已是同一句式 · `high`。目录里 `点击` 还有 10 处，以后向 `点按` 收敛。
+- **Try connecting directly（按钮）→ `试试直接连接`** · 复用已定的 `直接连接`（`fileExplorer.navigation.connectDirectly`
+  = `直接连接，访问更快`）；`试试` 是动词重叠的祈使式，保留英文 "Try" 的「不一定成」的意味，比 `尝试`
+  更贴 Cmdr 的口语声音 · `high`。
+- **Dismiss（关闭通知的 X 的悬停提示）→ `关闭`** · 与 `lowDiskSpace.toast.closeTooltip` 完全同一个控件、同一个
+  `sourceHash`，直接复用 · `confirmed`。注意与 `queue.row.dismiss*` 的 `忽略` 区分：`忽略`
+  是写在按钮上的「不再管它」，X 的提示是 `关闭`。

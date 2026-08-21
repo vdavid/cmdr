@@ -1307,3 +1307,32 @@ det Apple inte namnger. RAW-familj: **enkla apostrofer**, ett `''` skulle synas 
   fortfarande reserverat för permanent radering, enligt `style.md`.
 - **Avsiktligt identiska med engelskan** (med `sameAsSourceJustification`): `menu.view.zoom`, `menu.tag.orange`,
   `menu.view.askCmdr`.
+
+## Aviseringen när Cmdr fastnade på systemanslutningen (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+
+Tre nycklar: brödtexten i aviseringen som visas när Cmdrs egen, snabbare SMB-anslutning inte gick att öppna, knappen som
+gör ett nytt försök, och krysstipset. Delningen fungerar; det enda som är sämre är farten, så tonen är lugn och
+förklarande, aldrig varnande.
+
+- **native (macOS egen SMB-väg) → `inbyggd`** · macOS `sv` (`Inbyggd skärm`, `Inbyggd Retina-skärm`, `Inbyggd kamera`,
+  verifierat i piles `sv/macOS/`, 2026-08-21) och katalogens `settings.mediaIndex.privacyNote` ("Apples inbyggda
+  Vision-ramverk") · `high`. ❌ Inte Microsofts `ursprunglig` (`SWEDISH.tbx`, term 83512): den termen betyder
+  original-/ursprungsformat, inte "det som operativsystemet själv tillhandahåller". Samma väg heter `systemanslutning` i
+  `navigation.connectionTooltipSystem` och `fileOperations.transferDialog.smbNativeNote`; här nämns `macOS`
+  uttryckligen, precis som i engelskan, så `inbyggd` bär beskrivningen och `systemanslutning` namnet.
+- **Genitiv på `macOS` → bar form före substantivet (`macOS inbyggda SMB-anslutning`)** · katalogens etablerade mönster
+  (`macOS textstorlek`, `macOS säkerhetspolicyer`) · `high`. Namn som slutar på s-ljud tar varken `-s` eller apostrof på
+  svenska. `Cmdr` slutar på konsonant och tar däremot vanlig genitiv: `Cmdrs direktanslutning` (samma som katalogens
+  `Cmdrs nästa fullständiga genomsökning`).
+- **Multiplikator `4x` / `100x` → `fyra gånger` / `100 gånger`** · katalogens `network.reconnect.twice` ("två gånger")
+  och `driveIndex.tooltipCoalesced` ("{countText} gånger") · `high`. Svenskan skriver multiplikatorn med `gånger`, och
+  siffergränsen (ett till nio med bokstäver, 10+ med siffror) gäller som vanligt, därför `fyra` men `100`.
+- **"Try connecting directly" (knappen) → `Försök ansluta direkt`** · imperativ enligt `style.md`, och samma ordval som
+  `navigation.connectDirectly` ("Anslut direkt för snabbare åtkomst") och `pane.connectedDirectlyToast` · `high`.
+  `direkt` läses här som direktanslutning tack vare brödtexten ovanför, inte som "omedelbart".
+- **"Dismiss" (krysset) → `Avfärda`** · glossarets dismiss-post (macOS AppKit `Avfärda popover`) och systernyckeln
+  `lowDiskSpace.toast.closeTooltip`, som redan säger `Avfärda` · `high`. `Stäng` är fortsatt reserverat för dialoger och
+  fönster.
+- **Utelämnat `network` i "native SMB network connection"** · `SMB-nätverksanslutning` blir ett tungt trippelkompositum
+  utan att tillföra något: SMB ÄR nätverk, och aviseringen visas i nätverksvyn. `macOS inbyggda SMB-anslutning` säger
+  samma sak och läses som svenska.

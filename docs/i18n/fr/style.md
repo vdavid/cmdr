@@ -219,6 +219,9 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
 - **Restructurable placeholders**: a `{name}` or `{path}` that lands next to a gendered adjective forces agreement the
   catalog can't resolve. Phrase so the placeholder stays in a neutral slot (name the object, not an agreeing
   participle): this is the same discipline as the gender rule above.
+- **Speed multipliers spell out "fois".** English UI writes `4x` / `100x`; French prose writes "4 fois plus lente",
+  "parfois 100 fois". Keep the digit, drop the `x`: the bare `x` form reads as English marketing copy. See `glossary.md`
+  § Notification de repli sur le montage macOS.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

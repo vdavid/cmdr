@@ -1541,3 +1541,34 @@ verschijnen.
 - **disconnect → `Verbreek verbinding`** · macOS Finder `nl` („Verbreek”), aangevuld tot een begrijpelijk label · high.
 - **Bewust gelijk aan het Engels** (met `sameAsSourceJustification`): `menu.bar.help`, `menu.app.onboarding`,
   `menu.file.open`, `menu.view.zoom`, `menu.zoom.in`, `menu.zoom.percent*`, `menu.view.askCmdr`.
+
+## De terugvalmelding voor de systeem-SMB-verbinding (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+
+De melding die verschijnt als Cmdrs eigen (snellere) SMB-verbinding niet lukte en de share via macOS' eigen verbinding
+draait. Toon: geruststellend, geen foutmelding. De share werkt, hij is alleen trager.
+
+- **native (door het besturingssysteem geleverd) → `systeemeigen`** · Microsoft-terminologie (`native` → `systeemeigen`)
+  · high. Gebruikt in `de systeemeigen SMB-netwerkverbinding van macOS`. Het bestaande `fileOperations.*.smbNativeNote`
+  noemt dezelfde verbinding kort `de systeemverbinding`; beide slaan op één ding, de korte vorm waar de context al over
+  SMB gaat, de lange waar de melding het begrip introduceert.
+- **network connection → `netwerkverbinding`** · Microsoft-terminologie (`network connection` → `netwerkverbinding`) ·
+  high. Samengesteld met het protocol als `SMB-netwerkverbinding` (streepje na een initiaalwoord, zoals `SMB-share`).
+- **`Nx slower/faster` (snelheidsvermenigvuldiger) → `Nx zo langzaam/snel als …`** · high voor de cijfers (de
+  Microsoft-stijlgids schrijft cijfers voor meeteenheden en percentages voor), tentative voor de vorm:
+  `4x langzamer dan` bestaat ook, maar `4x zo langzaam als` is ondubbelzinnig (bij `langzamer dan` twist men over of de
+  factor op het verschil of op het geheel slaat). Total Commander `nl` levert de bijvoeglijke vorm (`Langzamer` /
+  `Sneller`, sleutels 2095/2096); niets in de stapel zet er een vermenigvuldiger voor, dus de vorm is een oordeel.
+- **"Click the button below" → `Klik op de knop hieronder`** · Microsoft-stijlgids standaardiseert het voorzetsel
+  (`Klik op de knop <naam>`), en de catalogus gebruikt `hieronder` al (`Klik hieronder op <restart>…`) · high.
+- **"Couldn't directly connect to X" → `Direct verbinden met X lukte niet`** · de catalogusbrede weergave van "failed"
+  (`X lukte niet`, zie boven) toegepast op de infinitiefgroep; vermijdt `mislukt` en `fout` volgens Cmdrs stemregel ·
+  high.
+- **"Try connecting directly" (knop) → `Probeer direct te verbinden`** · bare-stem imperatief zoals
+  `fileExplorer.network.retry` (`Probeer opnieuw`), met het `direct` + `verbinden` van
+  `fileExplorer.navigation.connectDirectly` (`Verbind direct voor snellere toegang`) en van de aanhaling
+  `‘Verbind direct’` in `smbNativeNote` · high.
+- **"Dismiss" (sluitknop van deze melding) → `Sluit`** · dezelfde waarde als `lowDiskSpace.toast.closeTooltip`, en het
+  gevestigde `dismiss → Sluit` / MS `dismiss → sluiten` · high. Niet het tweede `dismiss`-gebruik (`Wis`), want hier
+  wordt een melding gesloten, geen rij uit een lijst gewist.
+- **Cmdrs bezit → `van Cmdr`** (`de directe verbinding van Cmdr`) · de catalogus gebruikt overwegend `van Cmdr`
+  (`de AI van Cmdr`, `de index van Cmdr`); de genitief `Cmdrs` komt maar één keer voor · high.

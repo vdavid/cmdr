@@ -1592,3 +1592,38 @@ dans le menu.
   typographique du catalogue `fr`.
 - **Identiques à l'anglais à dessein** (avec `sameAsSourceJustification`) : `menu.app.services`, `menu.sort.extension`,
   `menu.view.zoom`, `menu.tag.orange`, `menu.view.askCmdr`.
+
+## Notification de repli sur le montage macOS (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+
+Trois chaînes : le corps de la notification qui explique qu'un partage tourne sur la connexion SMB fournie par macOS,
+son bouton de reprise, et l'infobulle de sa croix de fermeture.
+
+- **native (au sens « fournie par le système ») → `native`** · terminologie Microsoft FRA (`native format` →
+  `format natif`, `native integration` → `intégration native`) · high. « la connexion réseau SMB native de macOS ».
+- **network connection → `connexion réseau`** · terminologie Microsoft FRA (`network connection` → `connexion réseau`) ·
+  high.
+- **Multiplicateurs de vitesse (`4x`, `100x`) → `4 fois`, `100 fois`** · le français écrit un multiplicateur en toutes
+  lettres dans une phrase ; `4x` est une forme marketing anglaise. Nautilus `fr` atteste le comparatif nu (« La
+  recherche sera plus lente ») · high.
+- **slower → `plus lent(e)`** · Nautilus `fr` (« La recherche sera plus lente », « Afficher les fichiers cachés de
+  manière ombragée (plus lent) ») · high. L'accord se fait avec l'objet nommé (`la connexion … plus lente`), jamais avec
+  la personne.
+- **Click the button below → `Cliquez sur le bouton ci-dessous`** · macOS Finder atteste `ci-dessous` (« Faites glisser
+  vos tags favoris dans la zone ci-dessous ») · high.
+- **Dismiss (infobulle de fermeture d'une notification) → `Ignorer`** · terminologie Microsoft FRA (`dismiss` →
+  `ignorer`) et `lowDiskSpace.toast.closeTooltip` du catalogue `fr` · confirmed. Même choix que la liste crash-reporter
+  du guide de style ; `Fermer` est réservé à la fermeture d'une fenêtre.
+- **Try connecting directly (bouton) → `Essayer de se connecter directement`** · reprend le verbe de
+  `fileExplorer.navigation.connectDirectly` (« Se connecter directement pour un accès plus rapide ») et de
+  `fileOperations.transferDialog.smbNativeNote` (« Se connecter directement ») · high. L'infinitif est la forme des
+  libellés d'action ; on garde le verbe plutôt que la tournure nominale « Tenter une connexion directe », le catalogue
+  `fr` dérivant déjà vers le nom.
+- **`You are connected` → `Vous y avez bien accès`** · le participe `connecté` genre l'utilisateur ; on nomme l'accès,
+  pas la personne (règle du guide de style). `bien` porte la réassurance de l'anglais : le partage fonctionne, il est
+  seulement plus lent.
+- **`Couldn't directly connect` → `La connexion directe … n'a pas pu être établie`** · calque exactement
+  `fileExplorer.pane.directConnectionUnexpectedToast` (« La connexion directe à {server} n'a pas pu être établie »), ce
+  qui garde la famille cohérente et évite « erreur » / « échec ».
+- **`for most connections` → `dans la plupart des cas`** · départ délibéré du littéral : `connexion` apparaît déjà trois
+  fois dans la phrase, et `pour la plupart des connexions` en ajoutait une quatrième. `dans la plupart des cas` est la
+  tournure française idiomatique et ne perd rien du sens.

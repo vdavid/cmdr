@@ -1307,3 +1307,26 @@ bù vào chỗ Apple không đặt tên. Họ RAW: **dấu nháy đơn**, một 
 - **Eject → `Tháo`, Disconnect → `Ngắt kết nối`, Remove (khỏi một danh sách) → `Gỡ bỏ`** · macOS Finder và Thunar `vi` ·
   high. `Gỡ bỏ` tránh nghe giống `Xóa` (xóa tệp).
 - **Giống hệt tiếng Anh có chủ đích** (`sameAsSourceJustification`): `menu.zoom.percent*` và `menu.view.askCmdr`.
+
+## Thông báo dự phòng khi phải dùng kết nối SMB của macOS (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+
+Ba khóa: phần thân thông báo, nút thử lại, và tooltip của nút X. Dùng lại từ vựng đã chốt của nhóm
+`fileExplorer.network` /`navigation` (kết nối trực tiếp → `kết nối trực tiếp`, share → `mục chia sẻ`, thử lại →
+`thử lại`, dismiss → `bỏ qua`). Giọng văn trấn an, không báo lỗi: mục chia sẻ vẫn chạy được, chỉ là chậm.
+
+- **native (kết nối SMB có sẵn của macOS) → `tích hợp sẵn`** · thuật ngữ Microsoft (`built-in toolbar` →
+  `thanh công cụ tích hợp sẵn`; MS dịch `native` thành `riêng`, nhưng `riêng của macOS` dễ đọc nhầm thành "chỉ dành cho
+  macOS") · high. Cả câu: `kết nối mạng SMB tích hợp sẵn của macOS`. Các thông báo anh em vẫn gọi nó là
+  `kết nối hệ thống` khi không cần nêu tên SMB.
+- **"4x slower" → `chậm hơn 4 lần`, "(sometimes 100x)" → `(đôi khi là 100 lần)`** · không nguồn nào trong pile có bội
+  số; `<số> lần` là cách viết bội số chuẩn của tiếng Việt, và `chậm hơn N lần` rõ hơn `chậm gấp N lần` khi so sánh hai
+  bên · tentative. Đặt vế so sánh sau: `chậm hơn 4 lần so với kết nối trực tiếp của Cmdr`.
+- **"which is …" (mệnh đề quan hệ giải thích) → `vốn …`** · `vốn` là cách nối tự nhiên cho mệnh đề nêu tính chất sẵn có,
+  tránh phải cắt thành hai câu · high (ngữ pháp phổ thông).
+- **"Click the button below" → `Hãy bấm nút bên dưới`** · macOS `vi` có cả hai mảnh: `hãy bấm vào nút Thêm (+)`
+  (SystemSettings) và `vùng bên dưới` (Finder `993.title`) · high.
+- **"Try connecting directly" (nút) → `Thử kết nối trực tiếp`** · ghép `Thử lại` (`fileExplorer.network.retry`) với
+  `Kết nối trực tiếp để truy cập nhanh hơn` (`fileExplorer.navigation.connectDirectly`), cắt phần đuôi vì nút nằm ngay
+  trong thông báo đã giải thích lợi ích · high.
+- **Dismiss (tooltip nút X) → `Bỏ qua`** · dùng lại `lowDiskSpace.toast.closeTooltip`; thuật ngữ Microsoft (`dismiss` →
+  `bỏ qua`) · high.

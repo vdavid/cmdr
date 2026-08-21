@@ -150,6 +150,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   `apps/desktop/src/lib/units/duration.ts` always emits digits plus Latin unit letters (`45s`, `2m 30s`, `1h 5m`). So a
   duration placeholder can never take a Hungarian suffix (there's no reliable harmony for it, and the abbreviation isn't
   a Hungarian word). Put it in front of a postposition (`{duration} óta`, `{duration} van hátra`), never `{duration}-e`.
+- **Multipliers spell the number out, no digits: `négyszer`, `százszor`, never `4x` or `4-szer`.** The Microsoft
+  Hungarian style guide § 4.1.10 says numbers are written out when a suffix is attached to them (its own examples:
+  `tízféle`, `kéthetente`), and the multiplier `-szor`/`-szer`/`-ször` is exactly such a suffix. The pile agrees: every
+  multiplier in it is a word (`kétszer`, `háromszor`, `többször`, `háromszoros`), and there is not one digit+suffix
+  form. Applies to speed comparisons in copy (`négyszer lassabb`), not to formatter output.
 - **Numbers and dates come from the formatter layer.** Hungarian uses a comma decimal and space thousands separator, and
   a native `YYYY. MM. DD.` date order; `formatNumber()`/`formatByteSize()`/the date formatters produce these from the
   locale. Never hardcode separators or date order in a string.

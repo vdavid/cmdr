@@ -264,6 +264,18 @@
   "@fileExplorer.network.authFailed": {
     "sourceHash": "93821eb"
   },
+  "fileExplorer.network.osMountFallback.message": "Det gick inte att ansluta direkt till <shareName>{share}</shareName>. Du är ansluten, men bara via macOS inbyggda SMB-anslutning, som för de flesta anslutningar är fyra gånger långsammare än Cmdrs direktanslutning (ibland 100 gånger). Klicka på knappen nedan för att försöka igen.",
+  "@fileExplorer.network.osMountFallback.message": {
+    "sourceHash": "368f523"
+  },
+  "fileExplorer.network.osMountFallback.retry": "Försök ansluta direkt",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "sourceHash": "fb3905d"
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "Avfärda",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
   "fileExplorer.network.connectDialog.title": "Anslut till server",
   "@fileExplorer.network.connectDialog.title": {
     "sourceHash": "de6cce0"

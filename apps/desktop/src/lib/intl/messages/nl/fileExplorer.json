@@ -265,6 +265,18 @@
   "@fileExplorer.network.authFailed": {
     "sourceHash": "93821eb"
   },
+  "fileExplorer.network.osMountFallback.message": "Direct verbinden met <shareName>{share}</shareName> lukte niet. Je bent verbonden, maar alleen via de systeemeigen SMB-netwerkverbinding van macOS, die voor de meeste verbindingen 4x zo langzaam is als de directe verbinding van Cmdr (soms 100x). Klik op de knop hieronder om het opnieuw te proberen.",
+  "@fileExplorer.network.osMountFallback.message": {
+    "sourceHash": "368f523"
+  },
+  "fileExplorer.network.osMountFallback.retry": "Probeer direct te verbinden",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "sourceHash": "fb3905d"
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "Sluit",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
   "fileExplorer.network.connectDialog.title": "Verbind met server",
   "@fileExplorer.network.connectDialog.title": {
     "sourceHash": "de6cce0"

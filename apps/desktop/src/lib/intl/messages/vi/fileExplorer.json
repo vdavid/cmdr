@@ -264,6 +264,18 @@
   "@fileExplorer.network.authFailed": {
     "sourceHash": "93821eb"
   },
+  "fileExplorer.network.osMountFallback.message": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>. Bạn vẫn đang kết nối, nhưng chỉ qua kết nối mạng SMB tích hợp sẵn của macOS, vốn chậm hơn 4 lần so với kết nối trực tiếp của Cmdr ở hầu hết các kết nối (đôi khi là 100 lần). Hãy bấm nút bên dưới để thử lại.",
+  "@fileExplorer.network.osMountFallback.message": {
+    "sourceHash": "368f523"
+  },
+  "fileExplorer.network.osMountFallback.retry": "Thử kết nối trực tiếp",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "sourceHash": "fb3905d"
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "Bỏ qua",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
   "fileExplorer.network.connectDialog.title": "Kết nối với máy chủ",
   "@fileExplorer.network.connectDialog.title": {
     "sourceHash": "de6cce0"

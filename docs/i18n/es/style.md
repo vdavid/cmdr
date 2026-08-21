@@ -135,6 +135,10 @@ strings are counted, so no plural branches are needed there.
   with three dots"), so the Spanish value uses three ASCII dots too: "Enviando...". macOS's own string is "Enviando…"
   (one Unicode char); we follow Cmdr's catalog convention, not macOS's, to keep the source/translation shapes aligned.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
+- **Speed multipliers (`4x`, `100x`) spell the "times" out: `4 veces más lenta`, `(a veces, 100 veces)`.** The `4x`
+  notation belongs to English UI prose; Spanish writes `N veces`. Keep the figure in digits (not `cuatro`): these are
+  comparative technical numbers and the digits carry the same punch they do in English. Worked example:
+  `fileExplorer.network.osMountFallback.message`.
 - **"for {duration}" (a stretch of time still running) → `desde hace {duration}`.** `durante` names a finished span and
   `hace` alone names a point in the past; only `desde hace` says "for the last X, and still". Applies to every
   elapsed-time line ("No progress for 45s" → "Sin progreso desde hace 45 s").

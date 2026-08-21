@@ -264,6 +264,18 @@
   "@fileExplorer.network.authFailed": {
     "sourceHash": "93821eb"
   },
+  "fileExplorer.network.osMountFallback.message": "Não foi possível conectar diretamente a <shareName>{share}</shareName>. Você está conectado, mas apenas pela conexão de rede SMB nativa do macOS, que, na maioria das conexões, é 4x mais lenta do que a conexão direta do Cmdr (às vezes 100x). Clique no botão abaixo para tentar novamente.",
+  "@fileExplorer.network.osMountFallback.message": {
+    "sourceHash": "368f523"
+  },
+  "fileExplorer.network.osMountFallback.retry": "Tentar conectar diretamente",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "sourceHash": "fb3905d"
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "Dispensar",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
   "fileExplorer.network.connectDialog.title": "Conectar ao servidor",
   "@fileExplorer.network.connectDialog.title": {
     "sourceHash": "de6cce0"

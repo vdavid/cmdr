@@ -1519,3 +1519,38 @@ szóhasználatot, a Microsoft-terminológia azt, aminek az Apple-nél nincs neve
   („commander” → elöl képzett magánhangzók → `-ből`) · high. Az `en` érték szándékosan kisbetűs `cmdr`, ezért a magyar
   is az marad.
 - **Szándékosan azonos az angollal** (`sameAsSourceJustification`): `menu.zoom.percent*` és `menu.view.askCmdr`.
+
+### Rendszerkapcsolatra visszaeső SMB-buborék (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+
+Három kulcs: a buborék szövege, a benne lévő gomb és a bezáró X elemleírása. Akkor jelenik meg, amikor a Cmdr saját,
+gyorsabb kapcsolata nem jött létre, és a megosztás a macOS kapcsolatán fut. A hangnem megnyugtató, nem riasztó: a
+megosztás működik, csak lassabb.
+
+- **native (a macOS saját SMB-kapcsolata) → `natív`** · Microsoft-terminológia (Tier 2, `native` = `natív`, melléknév,
+  HUN; `natív mód`, `natív formátum`, `natív fájl`) · high. A macOS `hu` sehol nem használja a szót (az Apple kerüli),
+  tehát nincs Tier-1 ellenbizonyíték. A `beépített` NEM ennek a szava: az a `built-in` fordítása, és így is szállítjuk
+  (`settings.mediaIndex.privacyNote` „Apple beépített Vision keretrendszerével”).
+- **Ugyanezt a kapcsolatot a katalógus máshol `rendszerkapcsolat`-nak hívja** (`smbNativeNote` ×2, a négy
+  `pane.directConnection*Toast`), mert ott az angol is „system connection”. Itt az angol kifejezetten megnevezi a
+  macOS-t és az SMB-t, ezért a hosszabb, névadó alak marad. Ugyanaz a dolog, két angol megnevezés.
+- **„Couldn''t directly connect to X” → `Nem sikerült közvetlenül csatlakozni ehhez: X`** · a katalógus saját,
+  szállított szerkezete (`network.share.connectFailedTitle` = „Nem sikerült csatlakozni ehhez: {hostName}”,
+  `navigation.driveIndex.refusedUpgradeFailed` = „A Cmdr nem tudott közvetlenül csatlakozni ehhez: {name}…”) · high. A
+  kettőspontos hely azért kell, mert a `{share}` értéke ismeretlen, tehát nem toldalékolható (`style.md` §
+  Agglutination). A `<shareName>` címke a kettőspont utáni névre kerül.
+- **„Try connecting directly” (gomb) → `Próbálkozás közvetlen kapcsolattal`** · névszói címkealak (`style.md` §
+  Formality), és a fejszava a szállított `navigation.connectDirectly` = „Közvetlen kapcsolat a gyorsabb hozzáférésért”
+  szókincse · high a szókincsre, `tentative` a gombalakra. A puszta `Közvetlen kapcsolat` rövidebb lenne, de elveszne
+  belőle az angol „Try” óvatossága (a közvetlen kapcsolat egyszer már nem jött létre). Hossz: 34 karakter az angol 24
+  helyett, szűk buborékban ez az egyetlen túlcsordulási kockázat a három kulcs közül.
+- **Dismiss → `Elvetés`** · VÁLTOZATLANUL átvéve a `lowDiskSpace.toast.closeTooltip` értékéből (azonos `sourceHash`,
+  `48845bf`), és ez a katalógus hét helyén szállított `Dismiss` · high.
+- **„4x slower … (sometimes 100x)” → `négyszer … (néha százszor is)`**: a szorzószám magyarul kiírva, számjegy nélkül.
+  Indoklás és forrás: `style.md` § Notes and decisions, szorzószámok.
+- **„for most connections” → `a legtöbb esetben`** (nem `a legtöbb kapcsolatnál`): a mondatban már három `kapcsolat`
+  szerepel (`kapcsolatán`, `kapcsolatánál`, plus a gomb), a negyedik magyarul zsúfolt. A jelentés ugyanaz.
+- **`sameAsSourceJustification` egyik kulcsnál sem kell**: mindhárom érték eltér az angoltól.
+- ⚠️ Már meglévő ellentmondás, NEM ebben a passzban javítva: a `fileOperations.transferDialog.smbNativeNote` idézőjelben
+  a „Közvetlen csatlakozás” menüpontra küldi a felhasználót, de a kötetválasztóban valójában
+  `navigation.connectDirectly` = „Közvetlen kapcsolat a gyorsabb hozzáférésért” áll. A két hely egy kulcs átírásával
+  összehangolható.

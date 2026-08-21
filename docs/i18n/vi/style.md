@@ -159,6 +159,10 @@ Vietnamese has no grammatical number, so one form covers all counts.
   against English's `No progress for {duration}` (~3× the character count) in a narrow row that otherwise shows
   `còn {duration}`. Overflow-check that cell specifically; if it clips, shorten the ROW string alone (for example
   `Đứng yên {duration}`) and keep the dialog line full, rather than trimming both.
+- **Multipliers (`4x`, `100x`) spell out as `<số> lần`**: `4x slower` → `chậm hơn 4 lần`, with the compared thing
+  trailing (`so với kết nối trực tiếp của Cmdr`). Vietnamese has no `x` multiplier notation in UI text, and no pile
+  source attests one; `lần` is the standard counter. Prefer `chậm hơn N lần` over `chậm gấp N lần` when two things are
+  being compared.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

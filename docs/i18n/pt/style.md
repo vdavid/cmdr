@@ -129,6 +129,9 @@ Two mechanics that bite in Portuguese specifically:
   vem do Finder. Evidência e exceções: `glossary.md` § Menus nativos.
 - Roster: Cmdr ships pt-BR for wave 1; pt-PT is a separate wave-2 variant (vocabulary, você/tu, spelling). See
   `../language-selection-decisions.md`.
+- **Multiplicadores de velocidade** ("4x slower") ficam colados ao numeral, com `x` minúsculo e sem espaço nem `×`:
+  `4x mais lenta`, `(às vezes 100x)`. O comparativo usa `do que`, não `que`. Evidência e a chave onde isso aparece:
+  `glossary.md` § Aviso de conexão pelo sistema.
 - Quotation marks: pt-BR commonly uses curly "" (like English); pt-PT traditionally uses guillemets «». Match the chosen
   variant.
 - Decimal/thousands: both use comma decimal, period (pt-PT) or period/space thousands. `Intl` handles this; don't

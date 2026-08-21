@@ -1287,3 +1287,34 @@ Microsoft lo que Apple no nombra. Familia RAW: **apóstrofos simples**, un `''` 
   high.
 - **Idénticos al inglés a propósito** (con `sameAsSourceJustification`): `menu.view.zoom`, `menu.window.zoom`,
   `menu.zoom.percent*` y `menu.view.askCmdr`.
+
+## El aviso de la conexión que macOS presta (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+
+Tres claves: el cuerpo del aviso que aparece cuando Cmdr no consiguió abrir su propia conexión al recurso compartido y
+este funciona con la que da macOS, el botón que reintenta, y el tooltip de la X.
+
+- **"You are connected" → `Tienes acceso`** · reestructurado para no generar al usuario: `estás conectado/a` obliga a un
+  adjetivo con género (macOS lo resuelve con `^[Conectado](inflect: true…)`, un mecanismo que ICU no tiene).
+  `Tienes acceso` dice el mismo hecho tranquilizador, es neutro y evita una cuarta aparición de "conexión" en la frase ·
+  high
+- **"macOS's native SMB network connection" → `la conexión de red SMB nativa de macOS`** · calco directo; `SMB` y
+  `macOS` verbatim (lista de no-traducir). Nota: cuando la frase NO nombra a macOS, el catálogo ya dice
+  `la conexión del sistema` (`fileExplorer.pane.directConnection*Toast`); aquí el inglés sí la nombra, así que se
+  traduce entera · high
+- **Multiplicadores de velocidad (`4x`, `100x`) → `4 veces más lenta`, `(a veces, 100 veces)`** · el español no usa la
+  notación `4x` en prosa de interfaz; se escribe con `veces`. Se mantienen las cifras en dígitos (no `cuatro`) porque
+  son datos técnicos comparativos y así conservan el golpe que tienen en inglés · high
+- **"for most connections" → `en la mayoría de las conexiones`**, colocado antes del comparativo · en español el
+  `más lenta que…` tiene que quedar junto a su término de comparación, así que el paréntesis `(a veces, 100 veces)` se
+  mueve al final de la frase, detrás de `la conexión directa de Cmdr` · high
+- **"Click the button below to try again." → `Haz clic en el botón de abajo para volver a intentarlo.`** ·
+  `haz clic en el botón` es la fórmula de macOS (AppKit Printing, "click the Add (+) button" → "haz clic en el botón
+  Añadir (+)") y ya está en el catálogo (`onboarding`, "basta con que hagas clic en el botón de abajo");
+  `volver a intentarlo` es la forma del catálogo, hermana del `Inténtalo de nuevo` de macOS · high
+- **"Try connecting directly" (botón) → `Intentar conectar directamente`** · infinitivo, como todo botón (guía de
+  estilo), y reutiliza el verbo ya asentado en `fileExplorer.navigation.connectDirectly` ("Conectar directamente para un
+  acceso más rápido") y `fileExplorer.pane.connectedDirectlyToast` · high
+- **"Dismiss" (tooltip de la X) → `Descartar`** · misma clave de origen (`sourceHash` `48845bf`) que
+  `lowDiskSpace.toast.closeTooltip`, que ya dice `Descartar`; reafirma la entrada de la guía de estilo · high
+  (consistency-settled)
+- Sin `sameAsSourceJustification`: los tres valores difieren del inglés.

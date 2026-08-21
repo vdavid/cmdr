@@ -179,6 +179,11 @@ Dateien".
   separators.
 - **A space goes before the percent sign** (`{percent} %`, "Auf 100 % zoomen"), per DIN 5008 and the rest of the
   catalog. English writes `50%`; German doesn't. Same for unit symbols after a number.
+- **Multipliers keep the digit and take a hyphen** (`4x` → „4-mal“, `100x` → „100-mal“, Duden). English can wedge the
+  aside into the middle of the comparison („4x slower for most connections (sometimes 100x) than …“); German has to keep
+  `langsamer … als` together, so move the aside to the end of the sentence.
+- **`button` on screen is „die Taste“**, not MS-terminology's „Schaltfläche“ (Windows convention); macOS de and the
+  existing catalog both say „Klicke unten auf die Taste …“. Terms: `glossary.md`.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

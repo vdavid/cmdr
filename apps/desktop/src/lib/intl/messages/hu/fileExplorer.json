@@ -264,6 +264,18 @@
   "@fileExplorer.network.authFailed": {
     "sourceHash": "93821eb"
   },
+  "fileExplorer.network.osMountFallback.message": "Nem sikerült közvetlenül csatlakozni ehhez: <shareName>{share}</shareName>. Csatlakozva vagy, de csak a macOS natív SMB-hálózati kapcsolatán keresztül, ami a legtöbb esetben négyszer (néha százszor is) lassabb a Cmdr közvetlen kapcsolatánál. Az újrapróbálkozáshoz kattints az alábbi gombra.",
+  "@fileExplorer.network.osMountFallback.message": {
+    "sourceHash": "368f523"
+  },
+  "fileExplorer.network.osMountFallback.retry": "Próbálkozás közvetlen kapcsolattal",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "sourceHash": "fb3905d"
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "Elvetés",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
   "fileExplorer.network.connectDialog.title": "Kapcsolódás szerverhez",
   "@fileExplorer.network.connectDialog.title": {
     "sourceHash": "de6cce0"

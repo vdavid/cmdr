@@ -1124,3 +1124,38 @@ menu.
   fica reservado para arquivos, como manda o `style.md`.
 - **Idênticos ao inglês de propósito** (com `sameAsSourceJustification`): `menu.view.zoom`, `menu.window.zoom`,
   `menu.zoom.percent*`, `menu.view.askCmdr`.
+
+### Aviso de conexão pelo sistema (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+
+A notificação que aparece quando o Cmdr não conseguiu abrir a própria conexão direta e o compartilhamento ficou na
+conexão que o macOS oferece. É tranquilizadora, não alarmante: o compartilhamento funciona, só está lento.
+
+- "Couldn''t directly connect to X" · **Não foi possível conectar diretamente a X** · a abertura "Não foi possível …" já
+  fixada na seção Error-copy-phrasings, e `fileExplorer.network.share.connectFailedTitle` ("Não foi possível conectar a
+  {hostName}") dá a regência `conectar a` · confirmed. O advérbio fica colado ao verbo (`conectar diretamente`),
+  acompanhando `fileExplorer.navigation.connectingDirectly`.
+- "You are connected" · **Você está conectado** · macOS Finder pt-BR usa exatamente essa forma ("Você já está conectado
+  a este servidor, o qual não permite múltiplas conexões…", `LocalizableMerged.json`) · confirmed. É o masculino não
+  marcado que o `style.md` autoriza quando não dá para reestruturar; aqui a Apple é a própria fonte.
+- native (conexão do sistema operacional) · **nativa** · uso corrente pt-BR no pile (`modo nativo`, `aplicativo nativo`,
+  `autenticação nativa`) · high. "conexão de rede SMB nativa do macOS".
+- "4x slower" / "(sometimes 100x)" · **4x mais lenta** / **(às vezes 100x)** · o multiplicador em pt-BR se escreve
+  colado ao numeral, sem espaço nem `×`; **mais lenta** vem de `conexão mais lenta` (terminologia da Microsoft) · high.
+  Comparativo com **do que** (`4x mais lenta do que a conexão direta do Cmdr`), a forma cuidada do pt-BR.
+- "Click the button below" · **Clique no botão abaixo** · o padrão `clique em … abaixo` já publicado em
+  `onboarding.stepFda.step1`/`postAction.body` · high. E "to try again" → **para tentar novamente**, o fecho do Finder
+  pt-BR ("Desbloqueie o disco e tente novamente.") e o valor já publicado em `fileExplorer.network.retry`.
+- "Try connecting directly" (botão) · **Tentar conectar diretamente** · casa com
+  `fileExplorer.navigation.connectDirectly` ("Conectar diretamente para acesso mais rápido") e com
+  `fileExplorer.network.retry` ("Tentar novamente") · high. O botão é curto de propósito: o "para acesso mais rápido" do
+  item de menu já está explicado no corpo do aviso.
+- "Dismiss" (fechar o aviso) · **Dispensar** · a linha `dismiss` do glossário (seção do chip de progresso), com seis
+  ocorrências no catálogo · confirmed. ❌ Não reusar o **Descartar** de `lowDiskSpace.toast.closeTooltip`: aquele é a
+  inconsistência já sinalizada naquela seção, não o termo fixado.
+- **A ordem da oração muda**: o inglês diz "4x slower for most connections (sometimes 100x) than …"; em português o
+  adjunto vem antes do comparativo
+  (`que, na maioria das conexões, é 4x mais lenta do que a conexão direta do Cmdr (às vezes 100x)`), porque separar
+  "mais lenta" do seu "do que" trava a leitura.
+- Marcadores brasileiros do lote: **compartilhamento** (nunca "partilha"), **conectado/conectar** (nunca "ligado"),
+  gerúndio nenhum a conferir aqui. Varredura pt-PT (ficheiro, `estar a` + infinitivo, consoante, próclise, Rever,
+  alterar o nome, você omitido): zero ocorrências. Nenhum valor precisa de `sameAsSourceJustification`.
