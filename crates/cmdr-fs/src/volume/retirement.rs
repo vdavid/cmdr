@@ -13,11 +13,11 @@ use std::sync::{Arc, Weak};
 
 /// The registry's record that a volume is no longer the one its ID points at.
 ///
-/// **The volume registry is the only writer.** It retires a volume when the
-/// volume leaves the registry, and a backend that is being replaced rather than
-/// removed retires itself from `Volume::on_superseded`. Nothing else may call
+/// **Only a hand-over writes it.** The registry retires a volume it REMOVES; a
+/// backend retires itself from `Volume::on_superseded`, where the registry sees a
+/// replace and the id lives on under the successor. Nothing else may call
 /// [`retire`](Self::retire): a volume that retires itself while still registered
-/// goes quiet while the app still routes work to it.
+/// goes quiet while the app is still routing work to it.
 ///
 /// One-way, deliberately. Coming back means a fresh volume instance and a fresh
 /// registration, which is what every re-register path already builds, so there
@@ -102,7 +102,7 @@ impl<T> Clone for SelfHandle<T> {
 impl<T> std::fmt::Debug for SelfHandle<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SelfHandle")
-            .field("live", &self.target.strong_count().gt(&0))
+            .field("live", &(self.target.strong_count() > 0))
             .field("retired", &self.retirement.is_retired())
             .finish()
     }
