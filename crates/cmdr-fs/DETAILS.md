@@ -323,18 +323,18 @@ across three memory investigations (`../../docs/notes/idle-memory-profile-2026-0
 `MallocStackLogging` relaunch, and covering BOTH allocators because every allocator ultimately takes its pages from the
 kernel.
 
-The per-tag histogram of distinct region sizes is the part that names things. macOS routes any allocation past its
-127 KB large-zone threshold to a VM region of exactly the requested size, so a repeated exact size under `MALLOC_LARGE`
-is a fingerprint of whatever asked for that many bytes. That is how the CLIP Core ML towers were identified from a
-region table alone: 101,187,584 bytes is the text tower's `49,408 × 512` fp32 token embedding and nothing else in the
-process (`../cmdr-index/src/media_index/clip/DETAILS.md` § "What holding the towers costs"). The mechanism is asserted,
-not assumed: `a_big_system_zone_block_becomes_a_malloc_large_region_of_exactly_its_size`.
+The per-tag histogram of distinct region sizes is the part that names things. macOS routes any allocation past its 127
+KB large-zone threshold to a VM region of exactly the requested size, so a repeated exact size under `MALLOC_LARGE` is a
+fingerprint of whatever asked for that many bytes. That is how the CLIP Core ML towers were identified from a region
+table alone: 101,187,584 bytes is the text tower's `49,408 × 512` fp32 token embedding and nothing else in the process
+(`../cmdr-index/src/media_index/clip/DETAILS.md` § "What holding the towers costs"). The mechanism is asserted, not
+assumed: `a_big_system_zone_block_becomes_a_malloc_large_region_of_exactly_its_size`.
 
 ⚠️ **`<mach/vm_region.h>` lives inside `#pragma pack(push, 4)`, so `VmRegionSubmapInfo64` must be
 `#[repr(C, packed(4))]`.** With plain `#[repr(C)]` the `u64` `offset` field gets 4 bytes of padding the kernel didn't
 write, every field after it reads 4 bytes late, and the walk returns plausible-looking nonsense rather than an error:
-tags above 255 (the tag space only goes to 255), a region count an order of magnitude short, and a freshly allocated
-9 MiB block absent from the map entirely (verified on macOS 26.5, 2026-08-21).
+tags above 255 (the tag space only goes to 255), a region count an order of magnitude short, and a freshly allocated 9
+MiB block absent from the map entirely (verified on macOS 26.5, 2026-08-21).
 
 Cost is one syscall per map entry, so it is snapshot-only — never per watchdog tick or per log line, unlike the
 `task_info` readers beside it.
