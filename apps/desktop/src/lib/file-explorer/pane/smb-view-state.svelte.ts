@@ -15,6 +15,7 @@
 import { getIpcErrorMessage } from '$lib/tauri-commands/ipc-types'
 import { disconnectSmbVolume, upgradeToSmbVolumeWithCredentials, type UpgradeResult } from '$lib/tauri-commands'
 import { directConnectionUnavailableMessage } from '../network/upgrade-messages'
+import { registerSmbLoginHost } from '../network/smb-login-hosts'
 import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
@@ -121,6 +122,13 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     }
     return unsubscribe
   })
+
+  // Offer this pane as a place to render the credential form. Anything outside a
+  // pane that hits `credentialsNeeded` — the OS-mount fallback notice's retry
+  // button — has nowhere else to raise it. Deliberately reads nothing reactive, so
+  // the registration lasts the pane's whole life; `getVolumeId` is read live at
+  // prompt time.
+  $effect(() => registerSmbLoginHost({ getVolumeId: deps.getVolumeId, open: handleSmbUpgradeLogin }))
 
   function handleSmbReconnectCancel(): void {
     smbReconnectManager.cancel(deps.getVolumeId())

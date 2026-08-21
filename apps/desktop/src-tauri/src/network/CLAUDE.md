@@ -12,7 +12,8 @@ background: `docs/notes/smb-auth-flow-redesign.md`.
 - Share listing: `smb_client.rs` (guest→keychain→prompt), `smb_connection.rs`, `smb_cache.rs`, `smb_smbutil.rs` /
   `smb_smbclient.rs` (CLI fallback), `smb_util.rs`, `smb_upgrade.rs`.
 - Mount/auth/state: `mount.rs` / `mount_linux.rs`, `keychain.rs`, `known_shares.rs`, `server_identity.rs`,
-  `credential_store.rs` (`KeychainCredentials`, the store as a storage backend asks for it).
+  `credential_store.rs` (`KeychainCredentials`, the store as a storage backend asks for it), `os_mount_notice.rs`
+  (the fallback notice's once-per-server ledger).
 
 ## Must-knows
 
@@ -22,8 +23,7 @@ background: `docs/notes/smb-auth-flow-redesign.md`.
   `Naspolya._smb._tcp.local` where we mount `192.168.1.111`; a string compare splits one NAS in two (breaks session
   reuse, forces a dup mount, mis-keys creds).
 - **mDNS is gated**: startup fires it only if `network.enabled && (firstTriggerDone || smb-e2e)`, so a fresh install
-  holds the macOS "find devices" prompt until a network action calls `ensure_network_discovery_started`. Runtime mirror
-  `NETWORK_ENABLED`; check `is_network_enabled()` before mDNS.
+  holds the macOS "find devices" prompt until `ensure_network_discovery_started`. Check `is_network_enabled()` first.
 - **Every NetFS mount sets `UIOption = NoUI`**: without it NetFS routes auth failures to NetAuthAgent (a system dialog
   pops, blocks, returns -6600 on dismiss) even with explicit creds. `NoUI` returns typed codes for our own form.
 - **Re-register via `register_replacing_predecessor`, never a bare overwrite**: it retires the displaced volume via

@@ -7,6 +7,9 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 - **`network-store.svelte.ts`**: Module-level `$state` singleton for all network data
 - **`lazy-trigger.ts`**: Single chokepoint for kicking off mDNS discovery on user intent
 - **`upgrade-messages.ts`**: `UpgradeFailure` → the toast copy for a direct connection that didn't happen
+- **`direct-connect.ts`**: the whole "Connect directly" flow, shared by every entry point
+- **`smb-login-hosts.ts`**: which pane can render the credential form right now
+- **`os-mount-notice-bridge.ts`** + **`SmbOsMountFallbackToastContent.svelte`**: the slow-connection notice + retry
 - **`NetworkBrowser.svelte`**: Host list table, rendered when pane is on the `network` volume
 - **`ShareBrowser.svelte`**: Share list for a host, handles auth flow
 - **`NetworkLoginForm.svelte`**: Credential form rendered inside `ShareBrowser`
@@ -21,34 +24,30 @@ Full architecture, data flows, auth-flow detail, and decision rationale: `DETAIL
 - **Never import raw `$state` from `network-store.svelte.ts`; use the exported getters.** Svelte 5 `$state` is reactive
   only inside `.svelte` / `.svelte.ts` files, so a raw import from a plain `.ts` silently loses reactivity.
 - **`lazy-trigger.ts`'s `triggerNetworkDiscovery()` is the single chokepoint for starting mDNS.** Call it on any user
-  networking intent (Network view, Connect to server, smb2 upgrade). Don't gate on `network.enabled` at call sites: the
-  helper does that. Discovery runs lazily (not at startup) because macOS fires the Local Network permission prompt the
-  moment mDNS browsing starts, and forcing that on fresh installs before any context is wrong. The `smb-e2e` build still
-  starts at launch so tests don't wait.
+  networking intent; don't gate on `network.enabled` yourself, the helper does. Discovery is lazy because mDNS browsing
+  fires the macOS Local Network prompt, which a fresh install shouldn't meet with no context. `DETAILS.md`.
 - **A direct-connection failure arrives as a typed `UpgradeFailure`, never a sentence**: the words live in
   `upgrade-messages.ts` + the `directConnection*Toast` keys. ❌ Never toast `String(e)` or a backend message.
+- **`direct-connect.ts::connectDirectly` is the ONE upgrade flow**: yellow dot, breadcrumb submenu, and fallback-notice
+  button all press it. Route a new entry point through it instead of re-inlining the saved-password probe and the toast
+  lifecycle. It always tells the user something before resolving, so a button can call it bare. `DETAILS.md`.
 - **Don't pre-check `hasSmbCredentials` before `getSmbCredentials`.** Each macOS Keychain access can trigger a system
   prompt, so a pre-check doubles the prompts. Call `getSmbCredentials` directly and catch.
-- **Share activation never pre-prompts** (`activateShare`, every path): when `authMode === 'creds_required'` it tries
-  stored creds then attempts the mount with whatever it has. An already-mounted share short-circuits in the backend (no
-  re-auth), and a genuinely-locked share surfaces the login form via `NetworkMountView`'s mount-failure handler. A
-  pre-prompt here was a real bug. Pinned by `ShareBrowser.test.ts`.
+- **Share activation never pre-prompts** (`activateShare`, every path): try stored creds, then mount with whatever we
+  have, and let the mount failure raise the form. A pre-prompt here was a real bug; pinned by `ShareBrowser.test.ts`.
 - **Mount-phase auth failures route to the login form, not a dead-end error pane.** `NetworkMountView.svelte` (in
   `../pane/`) renders `NetworkLoginForm` on auth-class mount errors (`auth_failed` / `auth_required`, including NetAuth
   -6600); non-auth errors keep the error pane. Pinned by `../pane/NetworkMountView.test.ts`.
 - **`NetworkMountView` must propagate its local `currentNetworkHost` via `onNetworkHostChange`.** It's mirrored in the
   parent `FilePane` (`initialNetworkHost` prop). Without propagation, switching volumes away from Network and back
   re-mounts with a stale host and opens `ShareBrowser` for the wrong host.
-- **Credential status is keyed by lowercase `host.name`** (the stable Bonjour service name), not IP/hostname, which both
-  drift (DHCP, mDNS vs DNS).
+- **Credential status is keyed by lowercase `host.name`** (the stable Bonjour name); IP and hostname both drift.
 - **`network` volume ID is virtual**: the `smb://` path is a sentinel, not a real mount. Mounted shares appear as
   separate `VolumeInfo` entries with real IDs.
 - **Tab key in `NetworkLoginForm` calls `stopPropagation()`** so the parent pane handler doesn't read it as a
   pane-switch shortcut while tabbing between fields.
-- **`connectionMode` in `NetworkLoginForm` is `$derived.by` from `authMode`; the `RadioGroup` writes it via
-  `onValueChange` (not `bind:value`).** Assigning the derived sets a runtime override; it re-evaluates to reset the
-  default when `authMode` changes (for example on retry). One-way `value=` + `onValueChange` also sidesteps binding
-  `RadioGroup`'s `string` value to the narrower `ConnectionMode`.
+- **`NetworkLoginForm`'s `connectionMode` is a `$derived.by` the `RadioGroup` writes via `onValueChange`, never
+  `bind:value`.** Binding would pin the derived and stop it resetting when `authMode` changes. `DETAILS.md`.
 - **Host list MCP sync encodes metadata into the `name` field** as a flat string (MCP `PaneFileEntry` has only `name` /
   `path` / `isDirectory`), so agents read the IP, hostname, share count, and status the UI shows. The connect row syncs
   as `+ Connect to server...` with path `smb://connect`.

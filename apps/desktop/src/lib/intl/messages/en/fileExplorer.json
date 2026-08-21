@@ -358,6 +358,21 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
+  "fileExplorer.network.osMountFallback.message": "Couldn''t directly connect to <shareName>{share}</shareName>. You are connected, but only via macOS''s native SMB network connection, which is 4x slower for most connections (sometimes 100x) than Cmdr''s direct connection. Click the button below to try again.",
+  "@fileExplorer.network.osMountFallback.message": {
+    "description": "Body of the notification that appears when Cmdr couldn''t open its own faster connection to a network share, so the share is running on the connection macOS provides. It explains the speed cost and points at the button below it (the \"osMountFallback.retry\" key). <shareName> wraps the share''s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"4x\" and \"100x\" are speed multipliers; write them the way your language writes multipliers. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
+    "placeholders": {
+      "share": "the name of the network share, for example archive or Photos"
+    }
+  },
+  "fileExplorer.network.osMountFallback.retry": "Try connecting directly",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "description": "Button inside that notification. Pressing it retries Cmdr''s own faster connection to the share. Matches the \"connectDirectly\" wording used in the volume menu; keep the two consistent in your language."
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "Dismiss",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "description": "Hover tooltip on the X that closes that notification. Named separately from the retry button so it''s clear which control does what."
+  },
   "fileExplorer.network.connectDialog.title": "Connect to server",
   "@fileExplorer.network.connectDialog.title": {
     "description": "Title of the dialog for manually connecting to a network server by typing its address.",

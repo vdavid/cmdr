@@ -107,6 +107,65 @@ User activates "Connect to server..." row → ConnectToServerDialog opens
                  └─ if sharePath → autoMountShare triggers mount
 ```
 
+## Connect directly
+
+`direct-connect.ts::connectDirectly(volumeId, raiseCredentialsForm)` is the single implementation behind every "turn
+this OS-mounted share into a direct smb2 session" affordance: the yellow-dot popup and the dropdown submenu in
+`../navigation/VolumeBreadcrumb.svelte`, and the retry button on the OS-mount fallback notice.
+
+The sequence, and who speaks at each step:
+
+1. `triggerNetworkDiscovery()` — the direct connect opens a TCP socket to a private IP, which fires the macOS Local
+   Network prompt anyway, so this is the honest moment to also start mDNS.
+2. A persistent "Connecting directly…" toast goes up and comes down on every exit path.
+3. `upgradeToSmbVolume(volumeId)`. `success` → success toast + `requestVolumeRefresh()`. A typed `networkError` → the
+   `upgrade-messages.ts` sentence for that `UpgradeFailure`.
+4. `credentialsNeeded` → `systemHasSavedSmbPassword` (a prompt-free probe). If macOS/Finder saved one, a native primer
+   dialog ("Use the saved password?") cushions the system Keychain consent dialog, whose own text we can't customize. On
+   "Use saved password", `upgradeToSmbVolumeUsingSavedPassword` reads consent → direct smb2 → copies the password into
+   Cmdr's store.
+5. Anything still short of a session goes to `raiseCredentialsForm`, which the caller supplies.
+
+Two properties callers rely on:
+
+- **It never resolves without having said something.** Every branch, including a thrown IPC error and a
+  `raiseCredentialsForm` that returns `false`, raises a toast first. That's what lets a button call it bare and be sure
+  a press can't look inert.
+- **The returned `DirectConnectOutcome` describes the volume, not the call.** `connected` / `askingForCredentials` /
+  `stillOnOsMount` is exactly the distinction a notice needs to decide whether it still has anything to say.
+
+The credential form is the one piece the flow can't own: it renders inside a pane (`FilePane` off
+`smbView.smbUpgradeLogin`). `VolumeBreadcrumb` passes its own pane's opener, so the form lands where the click was.
+Anything outside a pane passes `smb-login-hosts.ts::promptForSmbCredentials`, which each `createSmbViewState` registers
+into for its pane's lifetime; it prefers a pane already showing that volume and falls back to any pane, mirroring how
+the breadcrumb dropdown already opens a form for a volume the pane isn't on. It returns `false` when nothing is mounted
+to host the form, which is what turns an impossible prompt into a sentence instead of silence.
+
+## The OS-mount fallback notice
+
+**The gap it fills.** A direct connect that fails on the AUTO paths (the startup pass over existing mounts, the FSEvents
+mount watcher) leaves the share working on the macOS kernel mount, at a fraction of the speed and outside Cmdr's
+control, announced by nothing louder than a yellow dot the user has no reason to be looking at. That silence once cost
+an evening of debugging a "slow" transfer. The manual "Connect directly" path is deliberately NOT a source here: it
+already reports its own failure to the person who clicked it.
+
+**The flow.** The backend emits `smb-fell-back-to-os-mount { volumeId, share }` at most once per SERVER per app run (the
+ledger and its rationale: `src-tauri/src/network/DETAILS.md` § "Telling the user about a kernel-mount fallback").
+`os-mount-notice-bridge.ts`, mounted from `routes/(main)/+page.svelte` beside the other event bridges, turns it into a
+persistent INFO toast rendering `SmbOsMountFallbackToastContent.svelte`, dedup id `smb-os-mount:<volumeId>`.
+
+**Dismissal watches the volume list, not the button.** A share can reach a direct session four ways: this notice's
+button, the yellow dot, the breadcrumb submenu, and the pane's credential form after a working password. All four end in
+`register_replacing_predecessor`, which broadcasts the volume list, so the bridge dismisses on any `volumes-changed`
+carrying that volume as `direct`. One rule covers every route, and a fifth route can't forget it. The check is stateless
+(dismissing a toast that isn't up is a no-op), so there's no frontend ledger to fall out of step with the backend's.
+
+**What the button does on a second failure.** It runs `connectDirectly`, which raises its own error toast naming the
+typed reason, and the notice STAYS UP with the button live again: the situation it describes hasn't changed, and the
+next press is worth making once the server wakes or the password is fixed. It retires itself on `connected` (the share
+is fast now) and on `askingForCredentials` (the form is a better surface for the same job, and two stacked prompts for
+one share is noise). A press while an attempt is in flight is ignored.
+
 ## Mount-phase auth failures
 
 `NetworkMountView.svelte` (in `../pane/`) renders `NetworkLoginForm` instead of its error pane whenever

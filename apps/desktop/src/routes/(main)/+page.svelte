@@ -95,6 +95,7 @@
     import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
     import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
     import { startLowDiskSpaceEventBridge } from '$lib/low-disk-space/event-bridge.svelte'
+    import { startOsMountNoticeBridge } from '$lib/file-explorer/network/os-mount-notice-bridge'
     import { startDragOutEventBridge } from '$lib/file-explorer/drag/drag-out-event-bridge'
     import { revealSearchResultInPane } from '$lib/file-explorer/navigation/navigate-and-select'
     import {
@@ -476,6 +477,11 @@
         // persistent warn toast or a macOS notification per the settings value.
         const unlistenLowDiskSpace = await startLowDiskSpaceEventBridge()
         tauriUnlistenFns.push(unlistenLowDiskSpace)
+        // OS-mount fallback notice: one `smb-fell-back-to-os-mount` listener turning
+        // the backend's once-per-server signal into a persistent toast with a
+        // "Try connecting directly" button, retired when the share goes direct.
+        const unlistenOsMountNotice = await startOsMountNoticeBridge()
+        tauriUnlistenFns.push(unlistenOsMountNotice)
         // Drag-out completion bridge: one `drag-out-session-started` +
         // `drag-out-session-complete` pair per drag session, turned into a single
         // signs-of-life → completion toast (downloading a phone/NAS file to

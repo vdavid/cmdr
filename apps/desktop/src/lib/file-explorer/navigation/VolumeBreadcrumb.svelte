@@ -11,22 +11,14 @@
         rescanDriveIndex,
         resolvePathVolume,
         showVolumeRowContextMenu,
-        upgradeToSmbVolume,
-        systemHasSavedSmbPassword,
-        upgradeToSmbVolumeUsingSavedPassword,
         type MediaIndexVolumeState,
         type UpgradeResult,
     } from '$lib/tauri-commands'
     import { getEnrichingVolumes } from '$lib/indexing/media-enrich-state.svelte'
     import { SvelteMap } from 'svelte/reactivity'
     import type { UnlistenFn } from '@tauri-apps/api/event'
-    import { ask } from '@tauri-apps/plugin-dialog'
-    import { triggerNetworkDiscovery } from '../network/lazy-trigger'
-    import { directConnectionUnavailableMessage } from '../network/upgrade-messages'
-    import { getAppLogger } from '$lib/logging/logger'
-
-    const log = getAppLogger('fileExplorer')
-    import { addToast, dismissToast } from '$lib/ui/toast'
+    import { connectDirectly } from '../network/direct-connect'
+    import { addToast } from '$lib/ui/toast'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import {
         getNetworkEnabled,
@@ -573,77 +565,14 @@
         breadcrumbPopup.close()
         if (!vid) return
 
-        // Direct smb2 upgrade opens a TCP socket to a private IP, which triggers macOS's
-        // Local Network prompt on its own, so this is the right moment to also kick off
-        // mDNS discovery for the rest of the network UI.
-        triggerNetworkDiscovery()
-
-        const connectingToastId = addToast(tString('fileExplorer.navigation.connectingDirectly'), { dismissal: 'persistent' })
-
-        try {
-            const result = await upgradeToSmbVolume(vid)
-            dismissToast(connectingToastId)
-
-            if (result.status === 'success') {
-                addToast(tString('fileExplorer.pane.connectedDirectlyToast'), { level: 'success' })
-                requestVolumeRefresh()
-            } else if (result.status === 'credentialsNeeded') {
-                // Before asking the user to type a password, see if macOS/Finder already
-                // saved one for this share (prompt-free probe). If so, offer to reuse it.
-                if (await tryUseSavedPassword(vid, result.displayName)) return
-                onSmbUpgradeLogin?.(result, vid)
-            } else {
-                addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
-            }
-        } catch (e) {
-            dismissToast(connectingToastId)
-            log.error('Direct SMB connection attempt broke down', { error: String(e) })
-            addToast(tString('fileExplorer.pane.directConnectionUnavailableToast'), { level: 'error' })
-        }
-    }
-
-    /**
-     * If macOS/Finder already saved a password for this share, offer to reuse it (so the
-     * user doesn't retype it). A prompt-free probe decides whether to offer; on "Use
-     * saved password" we prime the user (the macOS Keychain consent dialog comes next,
-     * and we can't customize its text) then read+connect. Returns `true` when it fully
-     * handled the connection (connected, or the saved password was absent/denied/failed
-     * and we routed to the login form), so the caller skips its own login-form trigger.
-     * Returns `false` when there's nothing saved or the user chose to type it instead.
-     */
-    async function tryUseSavedPassword(vid: string, displayName: string): Promise<boolean> {
-        if (!(await systemHasSavedSmbPassword(vid))) return false
-
-        const useSaved = await ask(tString('fileExplorer.navigation.useSavedPasswordMessage', { displayName }), {
-            title: tString('fileExplorer.navigation.useSavedPasswordTitle'),
-            kind: 'info',
-            okLabel: tString('fileExplorer.navigation.useSavedPasswordConfirm'),
-            cancelLabel: tString('fileExplorer.navigation.useSavedPasswordCancel'),
+        // The flow itself lives in `../network/direct-connect`, shared with the retry
+        // button on the OS-mount fallback notice. Credentials land in THIS pane's login
+        // form: the dropdown can list any volume, and the form belongs where the click was.
+        await connectDirectly(vid, (info, volumeId) => {
+            if (!onSmbUpgradeLogin) return false
+            onSmbUpgradeLogin(info, volumeId)
+            return true
         })
-        if (!useSaved) return false
-
-        const savedToastId = addToast(tString('fileExplorer.navigation.connectingWithSavedPassword'), { dismissal: 'persistent' })
-        try {
-            const r = await upgradeToSmbVolumeUsingSavedPassword(vid)
-            dismissToast(savedToastId)
-            if (r.status === 'success') {
-                addToast(tString('fileExplorer.pane.connectedDirectlyToast'), { level: 'success' })
-                requestVolumeRefresh()
-                return true
-            }
-            if (r.status === 'credentialsNeeded') {
-                // Saved password was absent/denied/wrong — fall to the login form.
-                onSmbUpgradeLogin?.(r, vid)
-                return true
-            }
-            addToast(directConnectionUnavailableMessage(r.reason, r.displayName), { level: 'error' })
-            return true
-        } catch (e) {
-            dismissToast(savedToastId)
-            log.error('Direct SMB connection attempt broke down', { error: String(e) })
-            addToast(tString('fileExplorer.pane.directConnectionUnavailableToast'), { level: 'error' })
-            return true
-        }
     }
 
     // Per-row right-click context menu. Favorites get Rename / Remove; ejectable

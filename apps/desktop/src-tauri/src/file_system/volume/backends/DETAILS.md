@@ -15,9 +15,10 @@ split / watcher session / `write_from_stream` shape, § Testing for the SMB suit
 wiring), or in `crates/cmdr-archive/DETAILS.md` for `ArchiveVolume`. Only the layout facts that none of those carry live here:
 
 - **`smb/events.rs` deliberately does NOT own `VolumeConnectionChanged`.** It holds the global `AppHandle`
-  (`set_app_handle` from `lib.rs::setup`) and `emit_state_change`, but the typed `tauri_specta::Event` struct and its
-  `VolumeConnection` state enum stay in the always-compiled `network/mod.rs`, so `collect_events!` in `ipc.rs` can
-  reference them on EVERY platform. The `smb/` module is `#[cfg]`-gated to macOS and Linux (as is `mtp/`); moving the
+  (`set_app_handle` from `lib.rs::setup`), `emit_state_change`, and `emit_fell_back_to_os_mount` (the
+  `smb-fell-back-to-os-mount` notice; whether it fires is decided by `network/os_mount_notice.rs`, which is where the
+  once-per-server rule lives), but the typed `tauri_specta::Event` structs and the `VolumeConnection` state enum stay in
+  the always-compiled `network/mod.rs`, so `collect_events!` in `ipc.rs` can reference them on EVERY platform. The `smb/` module is `#[cfg]`-gated to macOS and Linux (as is `mtp/`); moving the
   struct in here breaks the Windows build of the event collector.
 - **`volume-connection-changed` is backend-neutral, and SMB is only its first emitter.** Any backend that holds a
   session (FTP, S3, SFTP) emits the same event and inherits the frontend's unreachable banner, per-volume backoff, and

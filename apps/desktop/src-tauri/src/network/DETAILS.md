@@ -261,6 +261,34 @@ Level follows what happens to the user, since that decides whether anything else
 silently stays on the kernel mount is a WARN even for auth (nobody will be asked anything), while the manual "Connect
 directly" path's auth failure is an INFO (a credentials prompt follows immediately).
 
+## Telling the user about a kernel-mount fallback
+
+The log above answers "why is this share slow" for whoever reads logs. `os_mount_notice.rs` answers it for the person
+using the app: `announce_os_mount_fallback` emits `SmbFellBackToOsMount { volume_id, share }`, and the frontend raises
+a notice with a "Try connecting directly" button (`src/lib/file-explorer/network/DETAILS.md` § "The OS-mount fallback
+notice").
+
+**Only the auto paths speak.** `register_smb_volume` is the fallback that nobody asked for and nothing else announces:
+the startup pass over existing mounts and the FSEvents mount watcher both land there. `try_smb_upgrade` (the manual
+"Connect directly") returns its failure to the caller, who is a person watching a spinner, so a notice there would say
+the same thing twice.
+
+**Once per SERVER per run, not once per share.** Both auto paths call `register_smb_volume` once per MOUNTED SHARE, and
+what failed is a property of the connection to the server: a stale password or a sleeping host rejects every share on
+it identically. A NAS whose shares all remount at login would raise one notice per share, which is worse than the
+silence it replaces.
+
+**The ledger asks `server_identity::same_server`, not a string key.** `statfs` echoes back whichever name form each
+mount used, so one NAS arrives as `192.168.1.111` on one mount and `Naspolya._smb._tcp.local` on the next. That's also
+why the ledger is a `Vec` rather than a `HashSet`: identity here is an equivalence relation over the live mDNS state,
+not a value to hash. Its one weak spot is the same one `same_server` documents — before discovery warms, an IP and a
+name look like two servers, so the worst case is two notices rather than one, never a missed one.
+
+**A landed direct session clears the server's entry** (`clear_os_mount_notice`, called from both the auto and the
+manual install paths). A notice describes a situation, not an event: once the server is off the slow path, the next
+genuine regression is worth saying out loud again. Without the clear, one bad startup would mute the notice for the
+rest of the run.
+
 ## Gotchas
 
 - **Don't hold mutex during DNS resolution**: `get_host_for_resolution` / `update_host_resolution` extract host info and release the mutex before blocking DNS, then re-acquire to update. Holding the mutex across network calls risks deadlock.

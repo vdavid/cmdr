@@ -86,7 +86,10 @@ fn clearing_one_server_leaves_the_others_told() {
 
     notices.forget("alpha.local", &[]);
 
-    assert!(notices.claim("alpha.local", &[]), "alpha was forgotten, so it speaks again");
+    assert!(
+        notices.claim("alpha.local", &[]),
+        "alpha was forgotten, so it speaks again"
+    );
     assert!(!notices.claim("beta.local", &[]), "beta was never forgotten");
 }
 

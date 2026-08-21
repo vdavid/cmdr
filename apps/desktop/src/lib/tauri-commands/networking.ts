@@ -2,7 +2,13 @@
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '$lib/ipc/bindings'
-import type { MountResult, NetworkHostContextAction, SmbCredentials, UpgradeResult } from '$lib/ipc/bindings'
+import type {
+  MountResult,
+  NetworkHostContextAction,
+  SmbCredentials,
+  SmbFellBackToOsMount,
+  UpgradeResult,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 import type {
   AuthOptions,
@@ -516,6 +522,20 @@ export async function showNetworkHostContextMenu(
  */
 export function onNetworkHostContextAction(handler: (payload: NetworkHostContextAction) => void): Promise<UnlistenFn> {
   return events.networkHostContextAction.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Subscribes to the notice that a share Cmdr tried to take over is staying on the
+ * macOS kernel mount (slower, and outside Cmdr's control).
+ *
+ * Fires at most once per server per app run: the backend's notice ledger collapses
+ * the one-call-per-mounted-share fallback into one message. Call the returned
+ * `UnlistenFn` on destroy.
+ */
+export function onSmbFellBackToOsMount(handler: (payload: SmbFellBackToOsMount) => void): Promise<UnlistenFn> {
+  return events.smbFellBackToOsMount.listen((event) => {
     handler(event.payload)
   })
 }

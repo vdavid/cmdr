@@ -680,6 +680,13 @@ injected accessors (the `type-to-jump-controller` idiom, not a state-owning `.sv
 `adoptListing` share `loadGeneration`, so they live in the loader too. `cleanup()` (called from FilePane's `onDestroy`)
 owns the full listing teardown (`cancelListing` + `listDirectoryEnd` + `evictPerPathIconsForDir` + the six `unlisten*`).
 
+**Every pane offers itself as a host for the SMB credential form (`smb-view-state.svelte.ts`).** `createSmbViewState`
+registers `handleSmbUpgradeLogin` into `../network/smb-login-hosts.ts` for the pane's whole life. `NetworkLoginForm`
+renders inside a pane, so anything app-global that hits `credentialsNeeded` — the OS-mount fallback notice's retry
+button — has no surface of its own; the registry hands it one, preferring a pane already showing that volume. The
+registering `$effect` deliberately reads nothing reactive (the volume is read live through `getVolumeId` at prompt
+time), so a navigation doesn't churn the registration.
+
 **The walk-up fallback re-resolves the target's OWNING volume (`listing-loader.ts::navigateToFallback`).** All four
 "what I'm showing is gone" recoveries funnel here — the `onListingError` deleted-path branch, `deleted-dir-poll.ts`, the
 `onDirectoryDeleted` handler in `listing-diff-sync.svelte.ts`, and the two SMB cancel/disconnect handlers in

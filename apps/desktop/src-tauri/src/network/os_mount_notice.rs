@@ -60,7 +60,7 @@ pub(crate) fn announce_os_mount_fallback(server: &str, volume_id: &str, share: &
     if !OS_MOUNT_NOTICES.lock_ignore_poison().claim(server, &hosts) {
         return;
     }
-    log::debug!("Telling the frontend {server}/{share} stays on the macOS kernel mount");
+    log::debug!("Telling the frontend about the kernel-mount fallback on {server}/{share}");
     crate::file_system::volume::smb::emit_fell_back_to_os_mount(volume_id, share);
 }
 
