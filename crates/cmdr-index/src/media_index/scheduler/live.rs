@@ -103,6 +103,25 @@ fn live_debounce_wait(last_started: Option<Instant>, now: Instant, window: Durat
     }
 }
 
+/// Record one tick that enriched and GC'd nothing — the normal case on a machine whose
+/// churn is builds, not photos. It was ~1,500 lines an hour, so it rolls up into one line
+/// a minute per volume instead. The zero case still reaches the bundle (that ticks fire
+/// and enrich nothing is exactly the "why aren't my photos indexed?" evidence), just once
+/// per window rather than once per tick.
+fn log_idle_tick(volume_id: &str, touched: usize) {
+    if let Some(batch) = IDLE_TICKS.record(volume_id) {
+        let rolled_up = if batch.is_rolled_up() {
+            format!(" ×{} in {}s", batch.count, batch.elapsed.as_secs())
+        } else {
+            String::new()
+        };
+        log::debug!(
+            target: "media_index",
+            "live tick of '{volume_id}': nothing to enrich or GC{rolled_up} ({touched} touched dir(s))",
+        );
+    }
+}
+
 impl MediaScheduler {
     /// Accumulate `dirs` (touched directory paths) into the volume's pending live set.
     fn accumulate_touched_dirs(&self, volume_id: &str, dirs: Vec<String>) {
@@ -138,17 +157,6 @@ impl MediaScheduler {
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
             return Ok(0);
         };
-        // The scoped walk: only the touched dirs' qualifying images. Don't early-return on
-        // an empty result — an emptied touched dir still needs its stored rows scoped-GC'd.
-        let images = pool
-            .with_conn(|conn| walk_image_entries_in_dirs(conn, touched_dirs))
-            .map_err(|e| format!("read pool error: {e}"))??;
-
-        let statuses = load_statuses(&self.data_dir, volume_id);
-        let writer = self
-            .writers
-            .writer_for(&self.data_dir, volume_id)
-            .map_err(|e| e.to_string())?;
 
         // The SAME coverage gates as the full pass (scope + importance threshold +
         // override), read from the start-of-tick snapshot; the privacy exclusion is read
@@ -157,7 +165,38 @@ impl MediaScheduler {
         let threshold = gate::importance_threshold();
         let scores = super::lifecycle::pass_coverage(gate::scope(), || self.folder_scores(volume_id, threshold)).scores;
         let config = network::config::snapshot();
-        let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_ref(), &config, volume_id) };
+
+        // ONE filtered set, and every consumer below takes THIS one: the walk, the
+        // scoped GC, and the coverage-counts patch. Filtering the walk alone would leave
+        // the GC holding rows that are "in scope but not walked" and delete every one of
+        // them (§ the scoped-GC trap in `DETAILS.md`), and would zero the cached counts
+        // of every dir it dropped.
+        let covered_dirs: HashSet<String> = touched_dirs
+            .iter()
+            .filter(|dir| super::lifecycle::local_dir_may_be_covered(dir, scores.as_deref(), &config, volume_id))
+            .cloned()
+            .collect();
+        if covered_dirs.is_empty() {
+            // Nothing here could enrich, so there is nothing to walk, nothing in GC
+            // scope, and nothing to patch. The common case on a machine whose churn is
+            // build output: this is the whole tick.
+            log_idle_tick(volume_id, touched_dirs.len());
+            return Ok(0);
+        }
+
+        // The scoped walk: only the covered dirs' qualifying images. Don't early-return on
+        // an empty result — an emptied covered dir still needs its stored rows scoped-GC'd.
+        let images = pool
+            .with_conn(|conn| walk_image_entries_in_dirs(conn, &covered_dirs))
+            .map_err(|e| format!("read pool error: {e}"))??;
+
+        let statuses = load_statuses(&self.data_dir, volume_id);
+        let writer = self
+            .writers
+            .writer_for(&self.data_dir, volume_id)
+            .map_err(|e| e.to_string())?;
+
+        let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_deref(), &config, volume_id) };
         let is_excluded = |path: &str| -> bool { network::config::is_excluded(path) };
         let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
         let ordered = enrich::prioritized(&images, &folder_score);
@@ -198,9 +237,10 @@ impl MediaScheduler {
             &EnrichGates {
                 should_enrich: &should_enrich,
                 is_excluded: &is_excluded,
-                // SCOPED GC: only rows under the touched dirs are candidates, so a row in a
-                // dir this tick never walked is never deleted (the scoped-GC data-safety trap).
-                gc_scope: GcScope::TouchedDirs(touched_dirs),
+                // SCOPED GC: only rows under the dirs this tick WALKED are candidates, so a
+                // row in a dir the tick never walked — filtered out, or never touched at
+                // all — is never deleted (the scoped-GC data-safety trap).
+                gc_scope: GcScope::TouchedDirs(&covered_dirs),
                 clip_stamp: clip_stamp.as_deref(),
             },
             &hooks,
@@ -221,39 +261,27 @@ impl MediaScheduler {
             // The volume's embeddings changed; drop the resident vector cache so the next
             // find-similar / dedup reloads (as the full pass does).
             super::super::vector::cache::invalidate(&super::super::store::media_db_path(&self.data_dir, volume_id));
-            // The qualifying set shifted, but ONLY within the touched dirs — patch just those
-            // in the cached counts instead of invalidating the whole volume (a full rebuild is
-            // the O(entries) cold walk the cache exists to avoid). A GC'd deletion or a
-            // new/changed image both move a touched dir's qualifying count, so this runs on the
-            // same condition as the vector invalidate. `images` is the scoped walk over
-            // `touched_dirs`; a no-op if no counts are cached yet.
-            super::super::coverage::patch_touched_dirs(volume_id, touched_dirs, &images);
+            // The qualifying set shifted, but ONLY within the dirs this tick walked — patch
+            // just those in the cached counts instead of invalidating the whole volume (a
+            // full rebuild is the O(entries) cold walk the cache exists to avoid). A GC'd
+            // deletion or a new/changed image both move a walked dir's qualifying count, so
+            // this runs on the same condition as the vector invalidate. `images` is the
+            // scoped walk over `covered_dirs`, so patching exactly those dirs is what keeps
+            // the patch complete per dir; a no-op if no counts are cached yet.
+            super::super::coverage::patch_touched_dirs(volume_id, &covered_dirs, &images);
         }
-        // A tick that changed something always says so. A tick that found nothing
-        // to do is the normal case on a machine whose churn is builds, not photos,
-        // and it was ~1,500 lines an hour; it rolls up into one line a minute per
-        // volume instead. The zero case still reaches the bundle (that ticks fire
-        // and enrich nothing is exactly the "why aren't my photos indexed?"
-        // evidence), just once per window rather than once per tick.
+        // A tick that changed something always says so; one that didn't rolls up.
         if summary.enriched > 0 || summary.gc_count > 0 {
             log::debug!(
                 target: "media_index",
-                "live tick '{volume_id}': {} enriched, {} GC'd across {} touched dir(s)",
+                "live tick '{volume_id}': {} enriched, {} GC'd across {} of {} touched dir(s)",
                 summary.enriched,
                 summary.gc_count,
+                covered_dirs.len(),
                 touched_dirs.len(),
             );
-        } else if let Some(batch) = IDLE_TICKS.record(volume_id) {
-            let rolled_up = if batch.is_rolled_up() {
-                format!(" ×{} in {}s", batch.count, batch.elapsed.as_secs())
-            } else {
-                String::new()
-            };
-            log::debug!(
-                target: "media_index",
-                "live tick of '{volume_id}': nothing to enrich or GC{rolled_up} ({} touched dir(s))",
-                touched_dirs.len(),
-            );
+        } else {
+            log_idle_tick(volume_id, touched_dirs.len());
         }
         Ok(summary.enriched)
     }

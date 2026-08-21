@@ -83,6 +83,49 @@ fn scored_local_enriches_folders_in_the_map_and_defers_the_rest() {
     );
 }
 
+// ── Pure: the directory filter never loses to the per-image gate ────────────
+
+proptest::proptest! {
+    /// The one property a live tick's directory filter has to have: whatever the
+    /// overrides, the scores, and the paths turn out to be, an image the per-image gate
+    /// would enrich lives in a directory the filter keeps.
+    ///
+    /// It matters far beyond the enriching: a tick hands the SAME filtered set to its
+    /// walk and to `GcScope::TouchedDirs`, so a directory the filter drops is a
+    /// directory whose stored rows are never GC candidates. If the filter could ever
+    /// drop a directory the gate would have enriched, the two would disagree about
+    /// which directories a tick covers, which is where rows get deleted for being
+    /// "in scope but not walked".
+    #[test]
+    fn a_dir_the_filter_drops_holds_no_image_the_gate_would_enrich(
+        dir in proptest::sample::select(vec!["/", "/a", "/a/b", "/a/b/c", "/ab"]),
+        name in proptest::sample::select(vec!["p.jpg", "b", "c"]),
+        always in proptest::collection::vec(
+            proptest::sample::select(vec!["/", "/a", "/a/b", "/a/b/c", "/a/b/c.jpg", "/ab"]),
+            0..3,
+        ),
+        scored in proptest::collection::vec(proptest::sample::select(vec!["/", "/a", "/a/b", "/ab"]), 0..3),
+        volume_override in proptest::bool::ANY,
+        unscored in proptest::bool::ANY,
+    ) {
+        let config = NetworkEnrichConfig {
+            opted_in_volumes: Default::default(),
+            always_index_volumes: if volume_override { [ROOT.to_string()].into_iter().collect() } else { Default::default() },
+            always_index_folders: always.iter().map(|s| s.to_string()).collect(),
+            excluded_folders: Default::default(),
+        };
+        let scores: HashMap<String, f64> = scored.iter().map(|s| (s.to_string(), 0.9)).collect();
+        let scores = if unscored { None } else { Some(&scores) };
+        let path = if dir == "/" { format!("/{name}") } else { format!("{dir}/{name}") };
+        if local_should_enrich(&path, scores, &config, ROOT) {
+            proptest::prop_assert!(
+                lifecycle::local_dir_may_be_covered(dir, scores, &config, ROOT),
+                "the gate enriches {path} but the filter drops {dir}"
+            );
+        }
+    }
+}
+
 // ── Pure: the per-volume "was deferred" flag (the unscored → scored bridge) ──
 
 #[test]
@@ -786,9 +829,11 @@ fn a_live_tick_defers_a_below_threshold_folder() {
 #[test]
 fn a_live_tick_never_enriches_an_excluded_folder() {
     // The privacy veto holds on a live tick: an excluded folder never enriches, even when
-    // importance covers it.
+    // importance covers it. The automatic scope is what makes the seeded score cover
+    // /secret, so the veto is the ONLY thing stopping the tick here.
     let _guard = crate::test_read_pool_lock();
     reset_gate();
+    use_automatic_scope();
     gate::set_enabled(true);
     let dir = tempfile::tempdir().expect("temp");
     let index_path = dir.path().join("index-root.db");
@@ -822,6 +867,10 @@ fn a_live_tick_gcs_an_index_confirmed_removal() {
     // row is scoped-GC'd — while keep.jpg (present) survives.
     let _guard = crate::test_read_pool_lock();
     reset_gate();
+    // Importance-driven coverage, matching the seeded scores below: a tick only walks —
+    // and so only GCs within — the dirs its coverage filter keeps, so /photos has to be
+    // a covered dir for this to be about GC at all.
+    use_automatic_scope();
     gate::set_enabled(true);
     let dir = tempfile::tempdir().expect("temp");
     let index_path = dir.path().join("index-root.db");
@@ -848,6 +897,109 @@ fn a_live_tick_gcs_an_index_confirmed_removal() {
 
     crate::test_uninstall_root_read_pool();
     reset_gate();
+}
+
+#[test]
+fn a_live_tick_keeps_every_row_in_a_dir_its_coverage_filter_dropped() {
+    // ❗ THE scoped-GC data-safety anchor. A tick filters its touched dirs by coverage
+    // before walking, and hands the SAME filtered set to the walk, to
+    // `GcScope::TouchedDirs`, and to the counts patch. Filter the WALK ALONE and every
+    // stored row under a dropped dir becomes "in scope, absent from the walk, therefore
+    // deleted" — every OCR text, Vision tag, and CLIP embedding in it, against
+    // `media_index/CLAUDE.md`'s "uncovered rows STAY".
+    //
+    // `/uncovered/kept.jpg` is the row that dies if the two sets ever come apart: its
+    // file is still right there in the index, and only a GC scope wider than the walk
+    // can reach it. `/covered/gone.jpg` is the control — filtering must not cost the
+    // tick the GC it's for.
+    let _guard = crate::test_read_pool_lock();
+    reset_gate();
+    use_automatic_scope();
+    gate::set_enabled(true);
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    // Both files are PRESENT in the index; `gone.jpg` never was.
+    build_index(&index_path, &[("/covered", "a.jpg"), ("/uncovered", "kept.jpg")]);
+    crate::test_install_root_read_pool(index_path).expect("install pool");
+    // Only /covered is scored, so the filter drops /uncovered.
+    seed_importance_full_pass(dir.path(), &[("/covered", 0.9)]);
+    seed_media_row(dir.path(), "/uncovered/kept.jpg");
+    seed_media_row(dir.path(), "/covered/gone.jpg");
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    sched
+        .run_live_tick_blocking(ROOT, &touched(&["/covered", "/uncovered"]))
+        .expect("tick");
+
+    let store = MediaStore::open(&media_db_path(dir.path(), ROOT)).expect("open");
+    assert!(
+        store.status_for("/uncovered/kept.jpg").expect("read").is_some(),
+        "a row in a filtered-out dir is NEVER a GC candidate — its dir was never walked"
+    );
+    assert!(
+        store.status_for("/covered/gone.jpg").expect("read").is_none(),
+        "and the dirs that DID survive the filter still get their vanished rows collected"
+    );
+
+    crate::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+#[test]
+fn a_live_tick_leaves_the_cached_counts_of_a_dir_it_filtered_out_alone() {
+    // The third consumer of the filtered set, and the third way to get it wrong: the
+    // eligible-counts patch replaces each dir it's handed with a fresh count taken from
+    // the walk. Hand it the UNFILTERED dirs against a filtered walk and every dropped
+    // dir's count is replaced by zero — the coverage badge silently loses images that
+    // are still on disk.
+    let _guard = crate::test_read_pool_lock();
+    reset_gate();
+    use_automatic_scope();
+    gate::set_enabled(true);
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/covered", "a.jpg"), ("/uncovered", "b.jpg")]);
+    crate::test_install_root_read_pool(index_path).expect("install pool");
+    seed_importance_full_pass(dir.path(), &[("/covered", 0.9)]);
+    // A warm counts cache, as a completed pass would leave it.
+    crate::media_index::coverage::replace_from_entries(
+        ROOT,
+        &[image_entry("/covered/a.jpg"), image_entry("/uncovered/b.jpg")],
+    );
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    // /covered/a.jpg enriches, so the patch runs (it only fires on a tick that changed
+    // something).
+    assert_eq!(
+        sched
+            .run_live_tick_blocking(ROOT, &touched(&["/covered", "/uncovered"]))
+            .expect("tick"),
+        1
+    );
+
+    let counts = crate::media_index::coverage::cached(ROOT).expect("counts stayed cached");
+    assert_eq!(
+        counts.per_folder.get("/uncovered"),
+        Some(&1),
+        "a filtered-out dir keeps the count the last full walk gave it"
+    );
+    assert_eq!(counts.per_folder.get("/covered"), Some(&1), "and the walked dir is fresh");
+    assert_eq!(counts.total, 2, "so the volume total doesn't lose the dropped dir");
+
+    crate::media_index::coverage::invalidate(ROOT);
+    crate::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+/// A present, unenriched image entry at `path`, for seeding the counts cache the way a
+/// completed pass's walk would.
+fn image_entry(path: &str) -> enrich::ImageEntry {
+    enrich::ImageEntry {
+        path: path.to_string(),
+        mtime: Some(1),
+        size: Some(1),
+        kind: MediaKind::Image,
+    }
 }
 
 #[test]

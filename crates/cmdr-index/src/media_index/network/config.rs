@@ -50,6 +50,22 @@ impl NetworkEnrichConfig {
             || self.always_index_folders.iter().any(|f| path_is_within(os_path, f))
     }
 
+    /// Whether an "always index" override could cover ANY file directly inside the
+    /// folder `dir` — the DIRECTORY-level question a pass asks before it walks a
+    /// directory at all, where [`Self::covers`] answers the per-file one.
+    ///
+    /// True on three counts: the whole volume is an override, an ancestor folder (or
+    /// `dir` itself) is one, or an override entry names something at or under `dir`.
+    /// That third count is what makes this a provable SUPERSET of `covers` over `dir`'s
+    /// children: `covers` is a prefix test, so `covers(v, "{dir}/{name}")` can only be
+    /// true where `covers(v, dir)` is, or where the override entry IS `"{dir}/{name}"`,
+    /// and an entry at or under `dir` is exactly that case. A filter built on this can
+    /// therefore never drop a file the per-file gate would have taken, whatever an
+    /// override entry turns out to name.
+    pub fn may_cover_within(&self, volume_id: &str, dir: &str) -> bool {
+        self.covers(volume_id, dir) || self.always_index_folders.iter().any(|f| path_is_within(f, dir))
+    }
+
     /// Whether an image at OS path `os_path` is under a user-excluded folder — a hard
     /// veto that beats any "always index" override (the privacy complement).
     pub fn is_excluded(&self, os_path: &str) -> bool {
@@ -208,6 +224,28 @@ mod tests {
         // Folder override on a different volume.
         assert!(cfg.covers("other", "/Volumes/naspi/Photos/2026/x.jpg"));
         assert!(!cfg.covers("other", "/Volumes/naspi/Docs/x.jpg"));
+    }
+
+    #[test]
+    fn may_cover_within_keeps_the_dir_holding_an_override_entry() {
+        // The boundary the directory filter rests on. An override entry names a folder
+        // in practice, but `covers` is a plain prefix test, so it would ALSO cover a
+        // file whose path is that entry exactly. A dir filter built on `covers` alone
+        // would drop that file's parent and lose it; this keeps the parent.
+        let cfg = NetworkEnrichConfig {
+            always_index_folders: ["/Users/dave/Photos".to_string()].into_iter().collect(),
+            ..NetworkEnrichConfig::default()
+        };
+        assert!(cfg.may_cover_within("vol", "/Users/dave/Photos"), "the entry itself");
+        assert!(cfg.may_cover_within("vol", "/Users/dave/Photos/2026"), "a dir under it");
+        assert!(
+            cfg.may_cover_within("vol", "/Users/dave"),
+            "and its PARENT, because the entry could name a file directly inside it"
+        );
+        assert!(cfg.may_cover_within("vol", "/"), "up to the root, for the same reason");
+        // A dir on neither side of the entry's chain is dropped: that's the whole point.
+        assert!(!cfg.may_cover_within("vol", "/Users/dave/Docs"));
+        assert!(!cfg.may_cover_within("vol", "/Users/dave/Photos2"), "a name-prefix sibling");
     }
 
     #[test]

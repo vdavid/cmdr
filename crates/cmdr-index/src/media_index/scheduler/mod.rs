@@ -82,6 +82,8 @@ mod enrich_tests;
 #[cfg(test)]
 mod kick_tests;
 #[cfg(test)]
+mod live_bench;
+#[cfg(test)]
 mod reclaim_tests;
 
 // ── The scheduler handle ────────────────────────────────────────────────────
@@ -306,7 +308,7 @@ impl MediaScheduler {
         // so a folder excluded WHILE this pass runs is vetoed immediately — the veto is
         // a hard privacy line, not a tuning knob that can wait for the next pass.
         let config = network::config::snapshot();
-        let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_ref(), &config, volume_id) };
+        let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_deref(), &config, volume_id) };
         let is_excluded = |path: &str| -> bool { network::config::is_excluded(path) };
         let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
         let ordered = enrich::prioritized(&images, &folder_score);
@@ -386,25 +388,15 @@ impl MediaScheduler {
     /// importance is unavailable. ❌ Never fall back to "enrich all": importance takes
     /// seconds to land, the slider is forward-only, and an enrich-all pass
     /// over-indexes the volume permanently (`CLAUDE.md` § `folder_scores` `None`).
-    /// Reads through `ImportanceIndex` (the read API answers OFFLINE), never a raw
-    /// `rusqlite` dep.
-    pub(crate) fn folder_scores(&self, volume_id: &str, threshold: f64) -> Option<HashMap<String, f64>> {
-        use crate::importance::{ImportanceIndex, SignalSet};
-        let index = ImportanceIndex::open(&self.data_dir, volume_id, SignalSet::all());
-        // "Importance unavailable" (missing DB / offline / genuinely unscored) ⇒
-        // `None`. Keys on live weight rows, not solely the generation stamp — an
-        // incrementally-maintained or schema-recreated store has usable weights at
-        // generation 0 (`ImportanceIndex::is_scored`).
-        if !index.is_scored() {
-            return None;
-        }
-        match index.above_threshold(threshold) {
-            Ok(weights) => Some(weights.into_iter().map(|w| (w.path, w.score.value())).collect()),
-            Err(e) => {
-                log::warn!(target: "media_index", "importance read failed for '{volume_id}': {e}");
-                None
-            }
-        }
+    /// Answered from `coverage::importance_scores`, the subscription-backed cache — ❌
+    /// never `above_threshold` directly. A direct read sorts every scored folder in
+    /// SQLite and rebuilds the map: a measured 45.8 ms at 90,308 folders against 1.4 µs
+    /// warm from the cache, and the LIVE TICK asks once a minute per volume forever
+    /// (release build, M1 Max, `scheduler/live_bench.rs`, 2026-08-21 —
+    /// `docs/notes/live-tick-cost-2026-08-21.md`). The `Arc` is the cache's own map, so
+    /// a caller holds a handle rather than tens of MB of its own.
+    pub(crate) fn folder_scores(&self, volume_id: &str, threshold: f64) -> Option<Arc<HashMap<String, f64>>> {
+        super::coverage::importance_scores(&self.data_dir, volume_id, Some(threshold))
     }
 
     /// Retro-delete every stored row at or under `folder` (an OS-mount path) across the

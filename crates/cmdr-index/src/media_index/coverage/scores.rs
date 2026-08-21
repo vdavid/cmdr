@@ -57,9 +57,29 @@ struct CachedScores {
     notices: Receiver<WeightsChanged>,
 }
 
-/// Per-volume score caches. Entries live for the process, like the recompute bus
+/// What a cached entry is an entry FOR: one importance store, which is one volume
+/// inside one data dir. Keyed by both because the volume id alone doesn't name a store —
+/// the app has exactly one data dir, so this changes nothing in production, and it means
+/// two tests over their own temp dirs can't read each other's scores through a
+/// process-global map.
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct StoreKey {
+    data_dir: std::path::PathBuf,
+    volume_id: String,
+}
+
+impl StoreKey {
+    fn new(data_dir: &Path, volume_id: &str) -> StoreKey {
+        StoreKey {
+            data_dir: data_dir.to_path_buf(),
+            volume_id: volume_id.to_string(),
+        }
+    }
+}
+
+/// Per-store score caches. Entries live for the process, like the recompute bus
 /// itself: an unmounted volume's entry costs one map and stays correct if it returns.
-static CACHE: LazyLock<Mutex<HashMap<String, CachedScores>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+static CACHE: LazyLock<Mutex<HashMap<StoreKey, CachedScores>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// What draining the notices told us to do with a cached entry.
 #[derive(Debug, PartialEq)]
@@ -159,12 +179,13 @@ fn read_all(data_dir: &Path, volume_id: &str) -> Option<HashMap<String, f64>> {
 /// argument also covers the gate's threshold-filtered view: two public functions would
 /// spend one of the crate's capped public items on a projection this one can serve.
 fn all_scores(data_dir: &Path, volume_id: &str) -> Option<Arc<HashMap<String, f64>>> {
+    let key = StoreKey::new(data_dir, volume_id);
     let mut cache = CACHE.lock_ignore_poison();
     // Taking the entry OUT hands us its receiver to carry into the rebuild below. ❌
     // Don't `resubscribe()` there instead: a fresh receiver starts at the channel's
     // tail, so a notice sent between the drain and the resubscribe would be skipped,
     // and this receiver is already positioned exactly after the last notice we read.
-    if let Some(mut entry) = cache.remove(volume_id) {
+    if let Some(mut entry) = cache.remove(&key) {
         match drain(&mut entry.notices) {
             Refresh::Fresh => {}
             Refresh::Patch { upserted, removed } => patch(&mut entry, &upserted, &removed),
@@ -181,14 +202,14 @@ fn all_scores(data_dir: &Path, volume_id: &str) -> Option<Arc<HashMap<String, f6
             }
         }
         let all = Arc::clone(&entry.all);
-        cache.insert(volume_id.to_string(), entry);
+        cache.insert(key, entry);
         return Some(all);
     }
-    // First read for this volume: subscribe BEFORE reading, same gap-free reason.
+    // First read for this store: subscribe BEFORE reading, same gap-free reason.
     let notices = subscribe(volume_id);
     let all = Arc::new(read_all(data_dir, volume_id)?);
     cache.insert(
-        volume_id.to_string(),
+        key,
         CachedScores {
             all: Arc::clone(&all),
             projection: None,
@@ -231,7 +252,7 @@ pub fn importance_scores(data_dir: &Path, volume_id: &str, at_least: Option<f64>
     // `all`, and the cache is only where the answer gets kept. ❌ Never `?` on the entry
     // here — `None` is the "importance never scored this volume" signal that sends the
     // coverage gates to override-only, and a lost race must not forge it.
-    let entry = cache.get_mut(volume_id);
+    let entry = cache.get_mut(&StoreKey::new(data_dir, volume_id));
     if let Some(entry) = &entry
         && let Some((cached_threshold, projection)) = &entry.projection
         && cached_threshold.to_bits() == threshold.to_bits()
@@ -255,17 +276,17 @@ pub fn importance_scores(data_dir: &Path, volume_id: &str, at_least: Option<f64>
     Some(projection)
 }
 
-/// Drop ONE volume's cached entry, so a test starts from a cold cache for its own
-/// volume. Test-only, and deliberately NOT re-exported from `coverage`: every caller
-/// is inside this crate, so widening it would spend one of the crate's capped public
-/// items (`index-crate-isolation`) on nothing.
+/// Drop ONE volume's cached entries (in every data dir), so a test starts from a cold
+/// cache for its own volume. Test-only, and deliberately NOT re-exported from
+/// `coverage`: every caller is inside this crate, so widening it would spend one of the
+/// crate's capped public items (`index-crate-isolation`) on nothing.
 ///
 /// ❌ Per volume, never the whole map: these tests run in parallel against one
 /// process-wide cache, and clearing all of it dropped a sibling test's entry between
 /// its patch and its read.
 #[cfg(test)]
 fn clear_cache_for_test(volume_id: &str) {
-    CACHE.lock_ignore_poison().remove(volume_id);
+    CACHE.lock_ignore_poison().retain(|key, _| key.volume_id != volume_id);
 }
 
 #[cfg(test)]

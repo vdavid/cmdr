@@ -53,12 +53,43 @@ pub fn local_should_enrich(
     }
 }
 
+/// Whether ANY image directly inside the directory `dir` could pass
+/// [`local_should_enrich`] — the DIRECTORY-level coverage filter, over the same two
+/// inputs (`config.covers` and the score map) that the per-image gate reads.
+///
+/// **The contract that makes it usable as a filter:** for every file name,
+/// `local_should_enrich("{dir}/{name}", ..)` implies `local_dir_may_be_covered(dir, ..)`
+/// over the same `scores` and `config`. Both halves hold structurally: the score map is
+/// keyed by the PARENT folder, which is `dir` itself, and
+/// [`may_cover_within`](network::config::NetworkEnrichConfig::may_cover_within) is a
+/// deliberate superset of `covers` over `dir`'s children. So a live tick can drop an
+/// uncovered directory before touching the index and still walk every image the
+/// per-image gate would have enriched. The implication is pinned by a property test
+/// (`kick_tests`), because a filter that ever loses to the gate is the scoped-GC
+/// data-safety trap.
+///
+/// It is a filter, ❌ never a substitute for the per-image gate: it says a directory is
+/// WORTH walking, and `local_should_enrich` still decides each image (the two answers
+/// differ exactly where an override entry names a single file).
+pub(crate) fn local_dir_may_be_covered(
+    dir: &str,
+    scores: Option<&HashMap<String, f64>>,
+    config: &network::config::NetworkEnrichConfig,
+    volume_id: &str,
+) -> bool {
+    match scores {
+        None => config.may_cover_within(volume_id, dir),
+        Some(map) => config.may_cover_within(volume_id, dir) || map.contains_key(dir),
+    }
+}
+
 /// The coverage inputs one pass runs with: the folder scores to gate on, and whether
 /// the pass left an importance-gated remainder behind.
 pub(super) struct PassCoverage {
     /// The folder scores the coverage gate consults, or `None` for OVERRIDE-ONLY
-    /// coverage (see [`local_should_enrich`]).
-    pub(super) scores: Option<HashMap<String, f64>>,
+    /// coverage (see [`local_should_enrich`]). An `Arc` because it's the score cache's
+    /// own map: a pass reads it, it never owns it.
+    pub(super) scores: Option<Arc<HashMap<String, f64>>>,
     /// Whether this pass DEFERRED an importance-gated remainder, so the unscored →
     /// scored bridge should re-kick it once importance lands.
     pub(super) deferred_on_importance: bool,
@@ -80,7 +111,7 @@ pub(super) struct PassCoverage {
 /// mechanism.
 pub(super) fn pass_coverage(
     scope: gate::IndexScope,
-    load_scores: impl FnOnce() -> Option<HashMap<String, f64>>,
+    load_scores: impl FnOnce() -> Option<Arc<HashMap<String, f64>>>,
 ) -> PassCoverage {
     if !scope.consults_importance() {
         return PassCoverage {
@@ -487,7 +518,7 @@ mod tests {
         let mut read_importance = false;
         let coverage = pass_coverage(gate::IndexScope::ChosenFolders, || {
             read_importance = true;
-            Some(HashMap::from([("/anything".to_string(), 1.0)]))
+            Some(Arc::new(HashMap::from([("/anything".to_string(), 1.0)])))
         });
         assert!(!read_importance, "the narrow scope must not read importance at all");
         assert!(coverage.scores.is_none(), "override-only coverage");
@@ -497,7 +528,7 @@ mod tests {
     #[test]
     fn the_automatic_scope_defers_only_when_importance_is_unavailable() {
         let scored = pass_coverage(gate::IndexScope::ByImportance, || {
-            Some(HashMap::from([("/photos".to_string(), 0.9)]))
+            Some(Arc::new(HashMap::from([("/photos".to_string(), 0.9)])))
         });
         assert!(scored.scores.is_some());
         assert!(!scored.deferred_on_importance);
@@ -516,9 +547,9 @@ mod tests {
         // would rank it nowhere, and a high-importance folder they didn't name doesn't.
         let config = config_with_folder("/Users/dave/Photos");
         let coverage = pass_coverage(gate::IndexScope::ChosenFolders, || {
-            Some(HashMap::from([("/Users/dave/Work".to_string(), 1.0)]))
+            Some(Arc::new(HashMap::from([("/Users/dave/Work".to_string(), 1.0)])))
         });
-        let covered = |path: &str| local_should_enrich(path, coverage.scores.as_ref(), &config, "vol");
+        let covered = |path: &str| local_should_enrich(path, coverage.scores.as_deref(), &config, "vol");
 
         assert!(covered("/Users/dave/Photos/2026/a.jpg"), "a chosen folder enriches");
         assert!(covered("/Users/dave/Photos/a.jpg"));
@@ -534,9 +565,9 @@ mod tests {
         // Same chosen folder, same scores, the other scope: now importance broadens it.
         let config = config_with_folder("/Users/dave/Photos");
         let coverage = pass_coverage(gate::IndexScope::ByImportance, || {
-            Some(HashMap::from([("/Users/dave/Work".to_string(), 1.0)]))
+            Some(Arc::new(HashMap::from([("/Users/dave/Work".to_string(), 1.0)])))
         });
-        let covered = |path: &str| local_should_enrich(path, coverage.scores.as_ref(), &config, "vol");
+        let covered = |path: &str| local_should_enrich(path, coverage.scores.as_deref(), &config, "vol");
 
         assert!(
             covered("/Users/dave/Photos/2026/a.jpg"),
