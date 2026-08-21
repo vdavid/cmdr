@@ -1,5 +1,5 @@
-//! M4.6 bench: what the sync-status rework costs in threads, wall time, and CPU,
-//! measured against a real File Provider folder.
+//! What the sync-status rework costs in threads, wall time, and CPU, measured
+//! against a real File Provider folder.
 //!
 //! Run it against a cloud folder (the incident's was a 764-file Dropbox one):
 //!
@@ -112,8 +112,8 @@ fn live_thread_count() -> usize {
     }
 }
 
-/// The shape this module had before M4: a fresh fan-out per call, no cache, and no
-/// deadline that the work itself honours.
+/// The shape this module had before the pool-and-cache rework: a fresh fan-out per
+/// call, no cache, and no deadline that the work itself honours.
 fn legacy_fan_out(paths: &[String], threads_spawned: &Arc<AtomicUsize>) -> HashMap<String, SyncKnowledge> {
     const LEGACY_STACK_SIZE: usize = 8 * 1024 * 1024;
     if paths.is_empty() {

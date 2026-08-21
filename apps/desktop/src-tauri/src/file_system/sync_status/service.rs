@@ -240,8 +240,6 @@ impl Service {
         self.shared.cache.invalidate_path(path);
     }
 
-    /// How many fan-outs this service has ever started. The whole point of M4.2 is
-    /// that this stays put while the frontend re-asks for the same paths.
     /// Threads the probe pool holds. The bench reports it; the incident's `sample`
     /// runs are what it is compared against.
     #[cfg(test)]
@@ -249,6 +247,9 @@ impl Service {
         self.pool.worker_count()
     }
 
+    /// How many fan-outs this service has ever started. The whole point of
+    /// coalescing is that this stays put while the frontend re-asks for the same
+    /// paths.
     #[cfg(test)]
     fn batches_started(&self) -> usize {
         self.batches_started.load(Ordering::SeqCst)
@@ -443,8 +444,8 @@ mod tests {
         assert_eq!(probed_count(&probed), 20);
     }
 
-    /// M4.4: a second identical request costs no provider calls at all. Pre-fix,
-    /// the 3 s idle poll re-queried every visible path forever.
+    /// A second identical request costs no provider calls at all. Pre-fix, the
+    /// 3 s idle poll re-queried every visible path forever.
     #[tokio::test]
     async fn a_repeat_request_is_served_from_cache() {
         let (probe, probed) = FakeProbe::instant();
@@ -460,8 +461,8 @@ mod tests {
         assert_eq!(probed_count(&probed), 30, "the second round asked the provider nothing");
     }
 
-    /// M4.2: a second ask for paths already in flight joins that batch instead of
-    /// starting a parallel fan-out. This is the frontend's retry-after-timeout,
+    /// Coalescing: a second ask for paths already in flight joins that batch
+    /// instead of starting a parallel fan-out. This is the frontend's retry-after-timeout,
     /// which is how the incident had two rounds of threads live at once.
     #[tokio::test]
     async fn a_second_request_for_in_flight_paths_joins_instead_of_fanning_out() {
@@ -502,9 +503,9 @@ mod tests {
         );
     }
 
-    /// M4.1: a caller that gave up doesn't hold anything, and the work it started
-    /// still lands in the cache, so the next poll is free rather than a fresh
-    /// fan-out into the same unresponsive provider.
+    /// A caller that gave up doesn't hold anything, and the work it started still
+    /// lands in the cache, so the next poll is free rather than a fresh fan-out
+    /// into the same unresponsive provider.
     #[tokio::test]
     async fn a_timed_out_request_keeps_its_results() {
         let (probe, probed, release) = FakeProbe::held();
@@ -533,8 +534,8 @@ mod tests {
         );
     }
 
-    /// M4.1: the user scrolls, so the paths still queued for the old visible range
-    /// must never reach the provider.
+    /// The user scrolls, so the paths still queued for the old visible range must
+    /// never reach the provider.
     #[tokio::test]
     async fn superseding_a_batch_stops_its_queued_paths() {
         let (probe, probed, release) = FakeProbe::held();

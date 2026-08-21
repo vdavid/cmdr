@@ -113,11 +113,11 @@ listing, and its parent is an ordinary folder. `~/Library/CloudStorage/Dropbox` 
 `~/Library/CloudStorage` itself answers "not applicable". Deciding membership from the parent alone would drop the badge
 from every provider's top-level row.
 
-**This reverses an earlier "don't build it", and the difference is the memo.** M4.5 proposed the same check PER PATH,
-and per path it doesn't pay: the walk costs about as much as the ~22 µs the `getResourceValue` short-circuit already
-costs outside a domain (`docs/notes/sync-status-pool-bench-2026-07-31.md`). Per DIRECTORY it's one walk for the whole
-folder, and — the part M4.5 didn't have — it is what makes the 30-minute `structural` tier a structural claim instead of
-a guess.
+**This reverses an earlier "don't build it", and the difference is the memo.** The same ancestor walk was once weighed
+as a PER-PATH check, and per path it doesn't pay: the walk costs about as much as the ~22 µs the `getResourceValue`
+short-circuit already costs outside a domain (`docs/notes/sync-status-pool-bench-2026-07-31.md`). Per DIRECTORY it's one
+walk for the whole folder, and — the part the per-path version couldn't have — it is what makes the 30-minute
+`structural` tier a structural claim instead of a guess.
 
 **Why an ancestor walk rather than enumerating the domain roots once:** there is no way to enumerate them.
 `getDomainsWithCompletionHandler` returns nothing to a non-extension-hosting app (measured), and the only other
