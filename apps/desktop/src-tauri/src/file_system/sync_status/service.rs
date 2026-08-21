@@ -22,10 +22,11 @@
 //!    nothing. Only the paths already inside a synchronous XPC call have to finish;
 //!    that is the one thing no cancellation can take back.
 
-use super::SyncStatus;
 use super::cache::{Cache, Ttls};
 use super::pool::{Pool, PoolConfig};
+use super::{SyncKnowledge, SyncStatus};
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::log_rollup::LogRollup;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -35,7 +36,13 @@ use tokio::sync::watch;
 
 /// The per-path probe. Injected so the batching, caching, and cancellation
 /// behaviour can be tested without a File Provider (and without XPC in a unit test).
-pub(super) type Probe = Arc<dyn Fn(&Path) -> SyncStatus + Send + Sync>;
+pub(super) type Probe = Arc<dyn Fn(&Path) -> SyncKnowledge + Send + Sync>;
+
+/// Rate limit for the "nothing to do" line. The pane re-asks about its visible
+/// range every 3 s, and once a directory's answers are cached that ask resolves
+/// without touching anything — worth one line a minute as proof the pipe is
+/// flowing, not twenty. Keyed by nothing: there's one service.
+static ALL_CACHED_LOG: LogRollup = LogRollup::new(Duration::from_secs(60));
 
 pub(super) struct Service {
     pool: Pool,
@@ -110,12 +117,26 @@ impl Batch {
 
 impl Service {
     pub(super) fn new(probe: Probe, pool: PoolConfig, cache_capacity: usize, ttls: Ttls) -> Self {
+        Self::with_cache(Cache::new(cache_capacity, ttls), probe, pool)
+    }
+
+    /// The service with the cache's clock in the test's hand, so "this answer
+    /// survived half an hour of polling" is an assertion rather than a wait.
+    #[cfg(test)]
+    pub(super) fn with_clock(
+        probe: Probe,
+        pool: PoolConfig,
+        cache_capacity: usize,
+        ttls: Ttls,
+        clock: super::cache::Clock,
+    ) -> Self {
+        Self::with_cache(Cache::with_clock(cache_capacity, ttls, clock), probe, pool)
+    }
+
+    fn with_cache(cache: Cache, probe: Probe, pool: PoolConfig) -> Self {
         Self {
             pool: Pool::new(pool),
-            shared: Arc::new(Shared {
-                cache: Cache::new(cache_capacity, ttls),
-                probe,
-            }),
+            shared: Arc::new(Shared { cache, probe }),
             inflight: Mutex::new(None),
             batches_started: AtomicUsize::new(0),
         }
@@ -134,16 +155,23 @@ impl Service {
         let mut misses = Vec::new();
         for path in paths {
             match self.shared.cache.get(Path::new(&path)) {
-                Some(status) => {
-                    resolved.insert(path, status);
+                Some(knowledge) => {
+                    resolved.insert(path, knowledge.status());
                 }
                 None => misses.push(path),
             }
         }
 
         if misses.is_empty() {
-            // allowed-pluralize-noun: diagnostic log line; a one-path batch reading "1 paths" costs a reader nothing.
-            log::debug!(target: "sync_status", "{requested} paths, all cached");
+            if let Some(batch) = ALL_CACHED_LOG.record("service") {
+                // allowed-pluralize-noun: diagnostic log line; a one-path batch reading "1 paths" costs a reader nothing.
+                log::debug!(
+                    target: "sync_status",
+                    "{requested} paths, all cached ({} such asks in {:?})",
+                    batch.count,
+                    batch.elapsed
+                );
+            }
             return (resolved, false);
         }
 
@@ -151,8 +179,8 @@ impl Service {
         let ran_out_of_time = tokio::time::timeout(deadline, batch.wait()).await.is_err();
 
         for path in misses {
-            if let Some(status) = self.shared.cache.get(Path::new(&path)) {
-                resolved.insert(path, status);
+            if let Some(knowledge) = self.shared.cache.get(Path::new(&path)) {
+                resolved.insert(path, knowledge.status());
             }
         }
 
@@ -184,17 +212,19 @@ impl Service {
     /// Bounded by `deadline` the same way, and the answer still populates the cache
     /// even when the wait expires first.
     pub(super) fn status_within_blocking(&self, path: &str, deadline: Duration) -> SyncStatus {
-        if let Some(status) = self.shared.cache.get(Path::new(path)) {
-            return status;
+        if let Some(knowledge) = self.shared.cache.get(Path::new(path)) {
+            return knowledge.status();
         }
         let (answer_tx, answer_rx) = std::sync::mpsc::channel();
         let shared = Arc::clone(&self.shared);
         let path = path.to_string();
         self.pool.submit(Box::new(move || {
-            let status = shared.probe_and_cache(&path);
-            let _ = answer_tx.send(status);
+            let knowledge = shared.probe_and_cache(&path);
+            let _ = answer_tx.send(knowledge);
         }));
-        answer_rx.recv_timeout(deadline).unwrap_or_default()
+        answer_rx
+            .recv_timeout(deadline)
+            .map_or(SyncStatus::Unknown, SyncKnowledge::status)
     }
 
     pub(super) fn invalidate_dir(&self, dir: &Path) {
@@ -287,10 +317,10 @@ impl Service {
 
 impl Shared {
     /// Probes one path and caches the answer.
-    fn probe_and_cache(&self, path: &str) -> SyncStatus {
-        let status = (self.probe)(Path::new(path));
-        self.cache.put(Path::new(path), status);
-        status
+    fn probe_and_cache(&self, path: &str) -> SyncKnowledge {
+        let knowledge = (self.probe)(Path::new(path));
+        self.cache.put(Path::new(path), knowledge);
+        knowledge
     }
 }
 
@@ -310,8 +340,10 @@ mod tests {
     };
 
     const TTLS: Ttls = Ttls {
-        stable: Duration::from_secs(60),
+        settled: Duration::from_secs(60),
         transitional: Duration::from_secs(2),
+        structural: Duration::from_secs(30 * 60),
+        indeterminate: Duration::from_secs(2),
     };
 
     /// A probe that counts how many paths actually reached it, and can be held
@@ -319,14 +351,22 @@ mod tests {
     struct FakeProbe {
         probed: Arc<Mutex<Vec<String>>>,
         gate: Option<Arc<Mutex<mpsc::Receiver<()>>>>,
+        answer: SyncKnowledge,
     }
 
     impl FakeProbe {
         fn instant() -> (Probe, Arc<Mutex<Vec<String>>>) {
+            Self::answering(SyncKnowledge::Synced)
+        }
+
+        /// A probe that always reports `answer`, so a test can pick which TTL tier
+        /// the cached entries land in.
+        fn answering(answer: SyncKnowledge) -> (Probe, Arc<Mutex<Vec<String>>>) {
             let probed = Arc::new(Mutex::new(Vec::new()));
             let fake = FakeProbe {
                 probed: Arc::clone(&probed),
                 gate: None,
+                answer,
             };
             (Arc::new(move |path: &Path| fake.call(path)), probed)
         }
@@ -339,18 +379,34 @@ mod tests {
             let fake = FakeProbe {
                 probed: Arc::clone(&probed),
                 gate: Some(Arc::new(Mutex::new(gate))),
+                answer: SyncKnowledge::Synced,
             };
             (Arc::new(move |path: &Path| fake.call(path)), probed, release)
         }
 
-        fn call(&self, path: &Path) -> SyncStatus {
+        fn call(&self, path: &Path) -> SyncKnowledge {
             self.probed
                 .lock_ignore_poison()
                 .push(path.to_string_lossy().into_owned());
             if let Some(gate) = &self.gate {
                 let _ = gate.lock_ignore_poison().recv();
             }
-            SyncStatus::Synced
+            self.answer
+        }
+    }
+
+    /// A clock the test steps by hand, so "an hour of polling" costs no wall time.
+    struct TestClock(Arc<Mutex<Instant>>);
+
+    impl TestClock {
+        fn new() -> (Self, super::super::cache::Clock) {
+            let shared = Arc::new(Mutex::new(Instant::now()));
+            let read = Arc::clone(&shared);
+            (Self(shared), Box::new(move || *read.lock_ignore_poison()))
+        }
+
+        fn advance(&self, by: Duration) {
+            *self.0.lock_ignore_poison() += by;
         }
     }
 
@@ -538,21 +594,84 @@ mod tests {
         );
     }
 
+    /// The whole of "stop re-probing paths that are not cloud files": an idle pane
+    /// on an ordinary folder asks about it forever, and after the first round it
+    /// costs nothing. Pre-fix the answer aged out after 60 s, which is what put 43
+    /// sync-status batches a minute on an idle app.
+    ///
+    /// The pairing with the test below is the change: this one says expiry no
+    /// longer drives the re-probe, that one says invalidation still does. Trusting
+    /// invalidation over expiry is only safe with both.
+    #[tokio::test]
+    async fn a_not_a_cloud_file_answer_outlasts_the_idle_poll_by_far() {
+        let (probe, probed) = FakeProbe::answering(SyncKnowledge::NotCloudManaged);
+        let (clock, read) = TestClock::new();
+        let service = Service::with_clock(probe, POOL, 1024, TTLS, read);
+
+        let requested = paths("/plain", 10);
+        let (statuses, _) = service.statuses_within(requested.clone(), WAIT).await;
+        assert_eq!(probed_count(&probed), 10);
+        assert_eq!(
+            statuses.get("/plain/file0.txt"),
+            Some(&SyncStatus::Unknown),
+            "no badge, because no provider owns it"
+        );
+
+        // Twenty minutes of idle polling, each step past the settled tier that used
+        // to expire this answer every 60 s.
+        for _ in 0..20 {
+            clock.advance(TTLS.settled + Duration::from_secs(1));
+            service.statuses_within(requested.clone(), WAIT).await;
+        }
+        assert_eq!(
+            probed_count(&probed),
+            10,
+            "twenty minutes of polling an ordinary folder cost no provider calls at all"
+        );
+
+        // Still bounded, so a provider installed later is eventually noticed.
+        clock.advance(TTLS.structural);
+        service.statuses_within(requested, WAIT).await;
+        assert_eq!(probed_count(&probed), 20, "the structural answer expires in the end");
+    }
+
+    /// A read that didn't answer is not a fact about the file, so it must not be
+    /// remembered like one: the retry comes seconds later, not half an hour.
+    #[tokio::test]
+    async fn a_failed_read_is_retried_almost_immediately() {
+        let (probe, probed) = FakeProbe::answering(SyncKnowledge::Indeterminate);
+        let (clock, read) = TestClock::new();
+        let service = Service::with_clock(probe, POOL, 1024, TTLS, read);
+
+        let requested = paths("/plain", 4);
+        service.statuses_within(requested.clone(), WAIT).await;
+        assert_eq!(probed_count(&probed), 4);
+
+        clock.advance(TTLS.indeterminate + Duration::from_millis(1));
+        service.statuses_within(requested, WAIT).await;
+        assert_eq!(probed_count(&probed), 8, "the failure was retried, not cached");
+    }
+
     /// Invalidation reaches the provider again rather than serving the old answer.
+    /// With the negative answer now living half an hour, this is what keeps a badge
+    /// honest: every realistic way a file's cloud state changes goes through an FS
+    /// event or an explicit invalidation, so trusting invalidation over expiry is
+    /// exactly as safe as this test is.
     #[tokio::test]
     async fn invalidation_forces_a_re_probe() {
-        let (probe, probed) = FakeProbe::instant();
+        // The longest-lived answer there is, so this can't pass by expiry.
+        let (probe, probed) = FakeProbe::answering(SyncKnowledge::NotCloudManaged);
         let service = Service::new(probe, POOL, 1024, TTLS);
 
-        let requested = paths("/cloud", 3);
+        let requested = paths("/plain", 3);
         service.statuses_within(requested.clone(), WAIT).await;
         assert_eq!(probed_count(&probed), 3);
 
-        service.invalidate_dir(Path::new("/cloud"));
+        service.invalidate_dir(Path::new("/plain"));
         service.statuses_within(requested.clone(), WAIT).await;
         assert_eq!(probed_count(&probed), 6, "the whole directory was re-probed");
 
-        service.invalidate_path(Path::new("/cloud/file1.txt"));
+        service.invalidate_path(Path::new("/plain/file1.txt"));
         service.statuses_within(requested, WAIT).await;
         assert_eq!(probed_count(&probed), 7, "only the invalidated path was re-probed");
     }

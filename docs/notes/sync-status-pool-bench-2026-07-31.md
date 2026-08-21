@@ -82,6 +82,12 @@ would save ~22 µs on paths that are already nearly free, save nothing on the pa
 the hint says "yes, probe"), and add an xattr read plus an ancestor walk of its own. The TTL cache absorbs the 22 µs
 anyway, once per directory.
 
-Conclusion: don't build it. If a future measurement ever revives the idea, the probe belongs in `cmdr-fs` as shared
-vocabulary, not duplicated app-side — `crates/cmdr-index/src/indexing/scanner/file_provider.rs` owns the canonical one
-today and the app must not reach into that crate.
+Conclusion, as of this bench: don't build it PER PATH, which is what was proposed.
+
+**Superseded on 2026-08-21, and the measurement above is why it changed shape rather than being ignored.** The check now
+runs per DIRECTORY, memoized (`cmdr_fs::file_provider::FileProviderDomains`), so the ~22 µs it saves is multiplied by
+the whole visible range while the walk is paid once. The bigger half is that a structural negative is a permanent fact
+where a probe's negative wasn't, which is what let the cached "not a cloud file" answer go from 60 seconds to 30
+minutes and take an idle app's 43 sync-status batches a minute with it. The reasoning lives with the code:
+`apps/desktop/src-tauri/src/file_system/sync_status/DETAILS.md`. As predicted here, the probe moved to `cmdr-fs` as
+shared vocabulary rather than being duplicated app-side.

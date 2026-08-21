@@ -31,7 +31,7 @@
     reason = "Bench harness reports its own numbers via eprintln so `--nocapture` shows them next to test output"
 )]
 
-use super::{SERVICE, SyncStatus, probe};
+use super::{SERVICE, SyncKnowledge, probe};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -114,7 +114,7 @@ fn live_thread_count() -> usize {
 
 /// The shape this module had before M4: a fresh fan-out per call, no cache, and no
 /// deadline that the work itself honours.
-fn legacy_fan_out(paths: &[String], threads_spawned: &Arc<AtomicUsize>) -> HashMap<String, SyncStatus> {
+fn legacy_fan_out(paths: &[String], threads_spawned: &Arc<AtomicUsize>) -> HashMap<String, SyncKnowledge> {
     const LEGACY_STACK_SIZE: usize = 8 * 1024 * 1024;
     if paths.is_empty() {
         return HashMap::new();

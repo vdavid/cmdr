@@ -201,6 +201,26 @@ impl FileProviderDomains {
         }
     }
 
+    /// Whether `path` — a file OR a directory — is inside a File Provider domain.
+    ///
+    /// Same walk as [`membership_of_dir`](Self::membership_of_dir) on the parent,
+    /// plus one unmemoized read on `path` itself when the parent is
+    /// [`Outside`](DomainMembership::Outside): a domain root is a directory like
+    /// any other and shows up as a row in its parent's listing, so it has to be
+    /// able to answer [`Inside`](DomainMembership::Inside) for itself. The leaf
+    /// read stays out of the memo because leaves are files, and there are millions
+    /// of them.
+    #[must_use]
+    pub fn membership_of(&self, path: &Path) -> DomainMembership {
+        let Some(parent) = path.parent() else {
+            return self.membership_of_dir(path);
+        };
+        match self.membership_of_dir(parent) {
+            DomainMembership::Outside if (self.probes.domain_id)(path).is_some() => DomainMembership::Inside,
+            verdict => verdict,
+        }
+    }
+
     /// The memoized ancestor walk. `Some(true)` = a domain root is at or above
     /// `dir`, `Some(false)` = none is, `None` = `dir` couldn't be resolved.
     fn walk_verdict(&self, dir: &Path, now: Instant) -> Option<bool> {
@@ -275,6 +295,29 @@ impl FileProviderDomains {
 
     fn is_fresh<T>(&self, decided: &Decided<T>, now: Instant) -> bool {
         now.saturating_duration_since(decided.at) < self.recheck_after
+    }
+
+    /// A resolver that treats exactly `roots` as domain roots and vouches for the
+    /// marker, so a test can shape a machine's cloud domains without having one.
+    /// macOS refuses `com.apple.*` xattrs to an unentitled process, which is why
+    /// this can't be done by writing the real marker onto a fixture directory.
+    #[cfg(any(test, feature = "testing"))]
+    #[must_use]
+    pub fn with_domain_roots(roots: Vec<PathBuf>, recheck_after: Duration) -> Self {
+        let marked = roots.clone();
+        Self::with_probes(
+            recheck_after,
+            Probes {
+                domain_id: Box::new(move |path| {
+                    marked
+                        .iter()
+                        .any(|root| root == path)
+                        .then(|| "com.example.provider/domain".to_string())
+                }),
+                candidates: Box::new(move || Some(roots.clone())),
+            },
+            Box::new(Instant::now),
+        )
     }
 }
 
@@ -485,6 +528,33 @@ mod tests {
             resolver.membership_of_dir(&mobile_documents),
             DomainMembership::Inside,
             "the domain root itself is in the domain"
+        );
+    }
+
+    /// A domain root is a row in its parent's listing, and its parent is an
+    /// ordinary folder. Asking about the ROW has to find the domain the row is.
+    #[test]
+    fn a_domain_root_is_inside_its_own_domain_even_though_its_parent_is_not() {
+        let machine = Machine::new();
+        let (root, dropbox) = tree(&["CloudStorage", "Dropbox"]);
+        machine.add_domain_root(&dropbox);
+        let cloud_storage = root.path().canonicalize().expect("canonical").join("CloudStorage");
+        let resolver = machine.resolver();
+
+        assert_eq!(
+            resolver.membership_of(&dropbox),
+            DomainMembership::Inside,
+            "the domain root itself"
+        );
+        assert_eq!(
+            resolver.membership_of(&cloud_storage),
+            DomainMembership::Outside,
+            "the plain folder holding it"
+        );
+        assert_eq!(
+            resolver.membership_of(&dropbox.join("photo.jpg")),
+            DomainMembership::Inside,
+            "a file inside the domain"
         );
     }
 

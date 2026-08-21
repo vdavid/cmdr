@@ -2,12 +2,13 @@
 
 ## Module map
 
-- **`probe.rs`** — the OS question for one file. `stat`'s `SF_DATALESS` flag answers "is this a stub?" off the inode for
-  free; an `NSURL` ubiquitous-item resource value answers "is it moving right now?" and is the expensive, unbounded
-  part.
+- **`probe.rs`** — the OS question for one file, in three tiers. Is any ancestor a File Provider domain root
+  (`cmdr_fs::file_provider`, an xattr read memoized per directory)? If not, done. Then `stat`'s `SF_DATALESS` flag
+  answers "is this a stub?" off the inode; then an `NSURL` ubiquitous-item resource value answers "is it moving right
+  now?", the expensive, unbounded part.
 - **`pool.rs`** — a long-lived, hard-capped set of 8 MB-stack OS threads. Generic over boxed jobs; sync status is its
   only consumer today.
-- **`cache.rs`** — answers keyed by directory then file name, with a two-tier TTL, LRU-by-directory eviction, and an
+- **`cache.rs`** — answers keyed by directory then file name, with a four-tier TTL, LRU-by-directory eviction, and an
   injected clock so TTL behaviour is testable without sleeping.
 - **`service.rs`** — cache lookup, batch join-or-supersede, cancellation, and the deadline. The public functions in
   `mod.rs` are one-line delegates to a `LazyLock<Service>`.
@@ -59,17 +60,80 @@ The cold-sweep trade is visible in the bench: 766 paths at once takes four worke
 where sixteen finished in 957 ms. That's accepted, because the remaining answers land in the cache behind the deadline
 and the next poll picks them up for free.
 
-## Decision: TTLs of 60 s stable and 2 s transitional
+## Decision: four TTL tiers, because `Unknown` was two different facts
 
-**Why:** `Uploading` and `Downloading` exist in order to become something else, so a badge stuck on them is a lie the
-user can see; 2 s keeps them honest while still collapsing a render burst into one query. `Synced`, `OnlineOnly`, and
-`Unknown` are settled, and every realistic way they change either produces an FSEvent (which invalidates through
-`notify_directory_changed`) or is a user action that invalidates explicitly (`cloud_actions.rs`). So the stable tier can
-be generous, and 60 s means a folder the user is staring at costs one round of provider calls a minute in the worst
-case, none in the normal one.
+**Why:** the badge has five states but the cache has to reason about four LIFETIMES, and one of the five was carrying
+two of them. `SyncStatus::Unknown` means "no badge" both for "no cloud provider owns this file" (permanent) and for "the
+read didn't answer" (a failure that must be retried). They shared the 60 s stable tier, which made both wrong at once:
+the permanent answer expired every minute, and a failed read would have been remembered as fact by any attempt to
+lengthen it.
 
-`Unknown` sits in the stable tier deliberately: for the overwhelming majority of files (everything not in a cloud
-folder) it is the permanent, correct answer, and it's what a whole ordinary directory returns.
+So the cache stores `SyncKnowledge`, not `SyncStatus`. It has six variants, `Unknown` is not one of them, and each maps
+to exactly one tier:
+
+- **`transitional`, 2 s** — `Uploading` / `Downloading`. These exist in order to become something else, so a badge stuck
+  on them is a lie the user can see. Short enough to follow the transfer, long enough to collapse a render burst into
+  one query.
+- **`settled`, 60 s** — `Synced` / `OnlineOnly`. Every realistic way they change either produces an FSEvent (which
+  invalidates through `notify_directory_changed`) or is a user action that invalidates explicitly (`cloud_actions.rs`),
+  so a folder the user is staring at costs one round of provider calls a minute in the worst case and none in the
+  normal one.
+- **`structural`, 30 min** — `NotCloudManaged`. The permanent, correct answer for nearly every file on the machine. It
+  changes only when a provider is installed (bounded by the domain resolver's own re-check, below) or when the file
+  moves into a synced folder (which invalidates the directory). ❗ It stays BOUNDED rather than "forever until
+  invalidated": nothing on the invalidation path fires when a user signs into iCloud, so an unbounded answer would be
+  wrong until the next restart, and the bound costs one round of probes per folder per half hour.
+- **`indeterminate`, 2 s** — `Indeterminate`. A read that didn't answer says nothing about the file, so it's cached only
+  to damp a retry burst.
+
+The type is what enforces this rather than a comment: `Ttls::for_knowledge` is a total match over `SyncKnowledge`, so a
+new kind of answer cannot silently inherit somebody else's lifetime.
+
+**What it was worth:** an idle app ran about 43 sync-status batches a minute learning "still not a cloud file", purely
+because the negative expired every 60 s while `notify_directory_changed` was already invalidating on every real change.
+⚠️ That is an IO-and-provider-load win, ❌ not a CPU one — the sync-status probe's CPU claim was refuted by measurement
+(`docs/notes/idle-cpu-attribution-2026-08-03.md` § "wrong answer 3": 3.4% of busy CPU but 0.2% of USERSPACE CPU, with
+1,964 of 2,037 samples per thread inside the `stat` itself).
+
+## Decision: skip the provider entirely outside a File Provider domain
+
+**Why:** the cheapest question is the structural one. `cmdr_fs::file_provider::FileProviderDomains` answers "is any
+ancestor of this path a domain root?" from an xattr the provider daemon writes, memoized per directory — so an ordinary
+folder's whole visible range costs one ancestor walk instead of a `stat` plus an `NSURL` resource-value read per row.
+The probe returns `NotCloudManaged` without touching the filesystem at all.
+
+**This reverses an earlier "don't build it", and the difference is the memo.** M4.5 proposed the same check PER PATH,
+and per path it doesn't pay: the walk costs about as much as the ~22 µs the `getResourceValue` short-circuit already
+costs outside a domain (`docs/notes/sync-status-pool-bench-2026-07-31.md`). Per DIRECTORY it's one walk for the whole
+folder, and — the part M4.5 didn't have — it is what makes the 30-minute `structural` tier a structural claim instead of
+a guess.
+
+**Why an ancestor walk rather than enumerating the domain roots once:** there is no way to enumerate them.
+`getDomainsWithCompletionHandler` returns nothing to a non-extension-hosting app (measured), and the only other
+enumeration is "look in the places domains usually live", which is the path-prefix heuristic the research note rejects:
+it misses `~/Library/Mobile Documents` (iCloud Drive's domain root is that directory itself, not its
+`com~apple~CloudDocs` child) and breaks for any provider that registers elsewhere. The walk finds a domain wherever it
+actually is, and the memo makes its cost a rounding error.
+
+**Two bounds keep it honest**, both in `cmdr-fs`:
+
+- Every verdict expires after 10 minutes, so installing Dropbox or signing into iCloud is noticed without a restart.
+- The marker is a private, undocumented Apple xattr, so the resolver checks it against the domains THIS machine has
+  before believing a negative. A machine with provider folders that carry no marker gets `Undetermined` and no fast path
+  at all — if Apple ever drops the xattr, badges keep working and only the shortcut is lost.
+
+**Accepted edge:** a symlink pointing at a file inside a domain, from outside one, reads as not cloud-managed. The walk
+canonicalizes the DIRECTORY (which is what makes iCloud's "Desktop & Documents Folders" work, where `~/Desktop` is a
+link into the domain) but not the leaf, because leaves are files and there are millions of them.
+
+## Decision: pass `isDirectory:` when building the `NSURL`
+
+**Why:** `NSURL(fileURLWithPath:)` stats the path to decide directory-ness, and the probe has just stat'ed it. Measured
+on macOS 26.6 (2026-08-21, 200,000 iterations per variant, `target/scratch/urlbench.swift` shape): building the URL
+costs 4.08 µs without `isDirectory:` and 0.53 µs with it, against 3.16 µs for a bare `stat()` on the same path; the
+gap survives all the way through `getResourceValue` (35.4 µs → 30.4 µs), so the syscall is **removed, not deferred** to
+the first resource-value read. ⚠️ The value must come from that same `metadata()` call, never a guess: `isDirectory:`
+decides whether the URL keeps a trailing slash, which changes the path the File Provider machinery matches on.
 
 ## Decision: the cache is keyed by directory, not by full path
 
@@ -103,17 +167,6 @@ would substitute, and lets the batch keep running so the answer is ready next ti
 `commands/sync_status.rs` still owns the *value* of the deadline, so the "every FS-touching command is timed" contract
 holds; it just hands it down rather than wrapping.
 
-## Decision: don't build M4.5's cheap negative path
-
-**Why:** measured, not assumed. A whole non-cloud directory (884 files in `/usr/bin`) costs ~19 ms wall and ~22 µs per
-path, because `getResourceValue` short-circuits when no File Provider manages the URL — there's no XPC round-trip to
-skip. Inside a domain, where a domain-root hint would say "yes, probe", the cost is ~4.5 ms per path. So the proposed
-optimization saves microseconds on the cheap paths, nothing on the expensive ones, and adds an xattr read plus an
-ancestor walk. Numbers: `docs/notes/sync-status-pool-bench-2026-07-31.md`.
-
-If it's ever revived, the domain-root probe belongs in `cmdr-fs` as shared vocabulary. The canonical implementation is
-`crates/cmdr-index/src/indexing/scanner/file_provider.rs`, which the app must not reach into (`index-crate-isolation`).
-
 ## Testing
 
 - `pool.rs` tests pin the properties that matter with jobs that block on a channel, standing in for a provider that
@@ -122,7 +175,15 @@ If it's ever revived, the domain-root probe belongs in `cmdr-fs` as shared vocab
 - `service.rs` tests inject a counting `Probe`, so join, supersede, cancellation, the deadline, and the cache are all
   observable without a File Provider. `batches_started()` is the test-only hook that makes "joined rather than fanned
   out" an exact assertion instead of a timing guess.
-- `cache.rs` tests step an injected clock rather than sleeping past a tiny TTL.
+- `cache.rs` tests step an injected clock rather than sleeping past a tiny TTL, and `service.rs` borrows the same clock
+  through `Service::with_clock` so "twenty minutes of idle polling cost zero provider calls" is an exact assertion.
+  ❗ The pair that IS the change: `a_not_a_cloud_file_answer_outlasts_the_idle_poll_by_far` (expiry no longer drives the
+  re-probe) and `invalidation_forces_a_re_probe` (invalidation still does, on the longest-lived tier there is). The
+  whole design is trusting invalidation over expiry, so neither test means much without the other.
+- `probe.rs` tests inject the domain resolver (`FileProviderDomains::with_domain_roots`) rather than depending on which
+  cloud apps the machine running them has. A path that doesn't exist is the lever: outside a domain the shortcut answers
+  `NotCloudManaged` without a syscall, inside one the `stat` runs and fails, so the two answers prove the shortcut
+  really skipped the filesystem.
 - Real XPC latency is only measurable against a real provider, which is what `bench.rs` is for.
 
 ## Follow-ups

@@ -45,6 +45,43 @@ pub enum SyncStatus {
     Unknown,
 }
 
+/// What we learned about one file, which is more than the badge shows.
+///
+/// [`SyncStatus::Unknown`] means "no badge" for two opposite reasons, and they
+/// want opposite cache lifetimes: "no cloud provider manages this file" is
+/// structural and outlives any TTL, while "the read didn't answer" is a failure
+/// that has to be retried soon. Keeping them apart in the TYPE is what stops a
+/// failed read being remembered for half an hour — the cache stores this, and
+/// `Unknown` can't be put into it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SyncKnowledge {
+    Synced,
+    OnlineOnly,
+    Uploading,
+    Downloading,
+    /// No File Provider domain manages this path, so it has no cloud state at all.
+    /// The permanent, correct answer for the overwhelming majority of files.
+    NotCloudManaged,
+    /// Nothing came back: the file vanished mid-probe, or the resource-value read
+    /// failed. Says nothing about the file, so it's cached only long enough to
+    /// damp a retry burst.
+    Indeterminate,
+}
+
+impl SyncKnowledge {
+    /// The badge the frontend draws for this. Both "no cloud file" and "no answer"
+    /// collapse to [`SyncStatus::Unknown`], which is the absence of a badge.
+    fn status(self) -> SyncStatus {
+        match self {
+            Self::Synced => SyncStatus::Synced,
+            Self::OnlineOnly => SyncStatus::OnlineOnly,
+            Self::Uploading => SyncStatus::Uploading,
+            Self::Downloading => SyncStatus::Downloading,
+            Self::NotCloudManaged | Self::Indeterminate => SyncStatus::Unknown,
+        }
+    }
+}
+
 /// Sizing of the thread pool the probe runs on.
 ///
 /// `target_workers` is deliberately far below `available_parallelism()`: the work
@@ -63,8 +100,10 @@ const POOL: PoolConfig = PoolConfig {
 const CACHE_CAPACITY: usize = 4096;
 
 const TTLS: Ttls = Ttls {
-    stable: Duration::from_secs(60),
+    settled: Duration::from_secs(60),
     transitional: Duration::from_secs(2),
+    structural: Duration::from_secs(30 * 60),
+    indeterminate: Duration::from_secs(2),
 };
 
 static SERVICE: LazyLock<Service> =

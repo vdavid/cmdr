@@ -19,7 +19,7 @@
 //! `docs/testing.md` bans. The clock closure lets a test step time by an exact
 //! amount; production passes `Instant::now`.
 
-use super::SyncStatus;
+use super::SyncKnowledge;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -27,29 +27,41 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-/// How long each answer stays good.
+/// How long each answer stays good. One tier per KIND of answer, so no two facts
+/// with different lifetimes can share a number by accident.
 #[derive(Clone, Copy, Debug)]
 pub(super) struct Ttls {
-    /// `Synced` / `OnlineOnly` / `Unknown`: settled answers. A change here is
-    /// either a user action (which invalidates explicitly) or an FS event (which
-    /// invalidates through the watcher), so this can be generous.
-    pub stable: Duration,
+    /// `Synced` / `OnlineOnly`: settled answers about a cloud file. A change here
+    /// is either a user action (which invalidates explicitly) or an FS event
+    /// (which invalidates through the watcher), so this can be generous.
+    pub settled: Duration,
     /// `Uploading` / `Downloading`: states that exist to become another state. Short
     /// enough that the badge follows the transfer, long enough to collapse the
     /// pane's render bursts into one query.
     pub transitional: Duration,
+    /// `NotCloudManaged`: no provider owns this file. Structural, so it changes
+    /// only when a provider appears or the file moves into a synced folder: the
+    /// first is bounded by the domain resolver's own re-check, the second
+    /// invalidates the directory. Long, so an idle pane stops re-asking.
+    pub structural: Duration,
+    /// `Indeterminate`: the read didn't answer. That says nothing about the file,
+    /// so it's cached only long enough to damp a retry burst — ❌ never long
+    /// enough to remember a failure as if it were a fact.
+    pub indeterminate: Duration,
 }
 
 impl Ttls {
-    fn for_status(&self, status: SyncStatus) -> Duration {
-        match status {
-            SyncStatus::Uploading | SyncStatus::Downloading => self.transitional,
-            SyncStatus::Synced | SyncStatus::OnlineOnly | SyncStatus::Unknown => self.stable,
+    fn for_knowledge(&self, knowledge: SyncKnowledge) -> Duration {
+        match knowledge {
+            SyncKnowledge::Uploading | SyncKnowledge::Downloading => self.transitional,
+            SyncKnowledge::Synced | SyncKnowledge::OnlineOnly => self.settled,
+            SyncKnowledge::NotCloudManaged => self.structural,
+            SyncKnowledge::Indeterminate => self.indeterminate,
         }
     }
 }
 
-type Clock = Box<dyn Fn() -> Instant + Send + Sync>;
+pub(super) type Clock = Box<dyn Fn() -> Instant + Send + Sync>;
 
 pub(super) struct Cache {
     state: Mutex<CacheState>,
@@ -72,7 +84,7 @@ struct DirCache {
 }
 
 struct CacheEntry {
-    status: SyncStatus,
+    knowledge: SyncKnowledge,
     stored_at: Instant,
 }
 
@@ -101,22 +113,22 @@ impl Cache {
 
     /// The cached status for `path`, or `None` when it's absent or stale. A stale
     /// entry is dropped on the way out so it can't accumulate.
-    pub(super) fn get(&self, path: &Path) -> Option<SyncStatus> {
+    pub(super) fn get(&self, path: &Path) -> Option<SyncKnowledge> {
         let (dir, name) = split(path)?;
         let now = (self.clock)();
         let mut state = self.state.lock_ignore_poison();
         let dir_cache = state.dirs.get_mut(dir)?;
         dir_cache.last_used = now;
         let entry = dir_cache.statuses.get(name)?;
-        if now.saturating_duration_since(entry.stored_at) < self.ttls.for_status(entry.status) {
-            return Some(entry.status);
+        if now.saturating_duration_since(entry.stored_at) < self.ttls.for_knowledge(entry.knowledge) {
+            return Some(entry.knowledge);
         }
         dir_cache.statuses.remove(name);
         state.entries -= 1;
         None
     }
 
-    pub(super) fn put(&self, path: &Path, status: SyncStatus) {
+    pub(super) fn put(&self, path: &Path, knowledge: SyncKnowledge) {
         let Some((dir, name)) = split(path) else {
             return;
         };
@@ -129,7 +141,7 @@ impl Cache {
         dir_cache.last_used = now;
         let replaced = dir_cache
             .statuses
-            .insert(name.to_os_string(), CacheEntry { status, stored_at: now });
+            .insert(name.to_os_string(), CacheEntry { knowledge, stored_at: now });
         if replaced.is_none() {
             state.entries += 1;
         }
@@ -191,8 +203,10 @@ mod tests {
     use std::sync::Arc;
 
     const TTLS: Ttls = Ttls {
-        stable: Duration::from_secs(60),
+        settled: Duration::from_secs(60),
         transitional: Duration::from_secs(2),
+        structural: Duration::from_secs(30 * 60),
+        indeterminate: Duration::from_secs(2),
     };
 
     /// A clock the test steps by hand, so TTL assertions never depend on wall time.
@@ -219,18 +233,18 @@ mod tests {
     #[test]
     fn a_stored_status_reads_back() {
         let (cache, _clock) = cache_with_clock(64);
-        cache.put(Path::new("/cloud/a.txt"), SyncStatus::Synced);
-        assert_eq!(cache.get(Path::new("/cloud/a.txt")), Some(SyncStatus::Synced));
+        cache.put(Path::new("/cloud/a.txt"), SyncKnowledge::Synced);
+        assert_eq!(cache.get(Path::new("/cloud/a.txt")), Some(SyncKnowledge::Synced));
         assert_eq!(cache.get(Path::new("/cloud/b.txt")), None, "an unseen path is a miss");
     }
 
-    /// Both TTL tiers expire, and the transitional one expires first: an
+    /// Both cloud-state tiers expire, and the transitional one expires first: an
     /// `Uploading` badge must not outlive the upload by a minute.
     #[test]
-    fn transitional_entries_expire_before_stable_ones() {
+    fn transitional_entries_expire_before_settled_ones() {
         let (cache, clock) = cache_with_clock(64);
-        cache.put(Path::new("/cloud/up.txt"), SyncStatus::Uploading);
-        cache.put(Path::new("/cloud/done.txt"), SyncStatus::Synced);
+        cache.put(Path::new("/cloud/up.txt"), SyncKnowledge::Uploading);
+        cache.put(Path::new("/cloud/done.txt"), SyncKnowledge::Synced);
 
         clock.advance(TTLS.transitional + Duration::from_millis(1));
         assert_eq!(
@@ -240,15 +254,50 @@ mod tests {
         );
         assert_eq!(
             cache.get(Path::new("/cloud/done.txt")),
-            Some(SyncStatus::Synced),
+            Some(SyncKnowledge::Synced),
             "the settled entry is still good"
         );
 
-        clock.advance(TTLS.stable);
+        clock.advance(TTLS.settled);
         assert_eq!(
             cache.get(Path::new("/cloud/done.txt")),
             None,
             "the settled entry aged out"
+        );
+    }
+
+    /// The split that makes the long TTL safe: "no provider owns this file" is
+    /// structural and holds for half an hour, while "the read didn't answer" is a
+    /// failure and is forgotten in seconds. Before the split both were `Unknown`
+    /// and shared one tier, so either the negative expired every minute (43
+    /// sync-status batches a minute on an idle app) or a failed read would have
+    /// been remembered as fact.
+    #[test]
+    fn a_structural_negative_outlives_a_failed_read_by_far() {
+        let (cache, clock) = cache_with_clock(64);
+        cache.put(Path::new("/plain/notes.txt"), SyncKnowledge::NotCloudManaged);
+        cache.put(Path::new("/plain/gone.txt"), SyncKnowledge::Indeterminate);
+
+        clock.advance(TTLS.indeterminate + Duration::from_millis(1));
+        assert_eq!(
+            cache.get(Path::new("/plain/gone.txt")),
+            None,
+            "the failed read is retried almost immediately"
+        );
+
+        clock.advance(TTLS.settled);
+        assert_eq!(
+            cache.get(Path::new("/plain/notes.txt")),
+            Some(SyncKnowledge::NotCloudManaged),
+            "an ordinary file is still known to be ordinary a minute later"
+        );
+
+        clock.advance(TTLS.structural);
+        assert_eq!(
+            cache.get(Path::new("/plain/notes.txt")),
+            None,
+            "and the structural answer is still bounded, so a provider installed \
+             later is eventually noticed"
         );
     }
 
@@ -257,7 +306,7 @@ mod tests {
     #[test]
     fn reading_a_stale_entry_drops_it() {
         let (cache, clock) = cache_with_clock(64);
-        cache.put(Path::new("/cloud/up.txt"), SyncStatus::Uploading);
+        cache.put(Path::new("/cloud/up.txt"), SyncKnowledge::Uploading);
         assert_eq!(cache.entry_count(), 1);
         clock.advance(TTLS.transitional + Duration::from_millis(1));
         assert_eq!(cache.get(Path::new("/cloud/up.txt")), None);
@@ -267,28 +316,28 @@ mod tests {
     #[test]
     fn invalidate_dir_forgets_that_directory_only() {
         let (cache, _clock) = cache_with_clock(64);
-        cache.put(Path::new("/cloud/a.txt"), SyncStatus::Synced);
-        cache.put(Path::new("/cloud/b.txt"), SyncStatus::OnlineOnly);
-        cache.put(Path::new("/other/c.txt"), SyncStatus::Synced);
+        cache.put(Path::new("/cloud/a.txt"), SyncKnowledge::Synced);
+        cache.put(Path::new("/cloud/b.txt"), SyncKnowledge::OnlineOnly);
+        cache.put(Path::new("/other/c.txt"), SyncKnowledge::Synced);
 
         cache.invalidate_dir(Path::new("/cloud"));
 
         assert_eq!(cache.get(Path::new("/cloud/a.txt")), None);
         assert_eq!(cache.get(Path::new("/cloud/b.txt")), None);
-        assert_eq!(cache.get(Path::new("/other/c.txt")), Some(SyncStatus::Synced));
+        assert_eq!(cache.get(Path::new("/other/c.txt")), Some(SyncKnowledge::Synced));
         assert_eq!(cache.entry_count(), 1);
     }
 
     #[test]
     fn invalidate_path_forgets_one_file_only() {
         let (cache, _clock) = cache_with_clock(64);
-        cache.put(Path::new("/cloud/a.txt"), SyncStatus::Synced);
-        cache.put(Path::new("/cloud/b.txt"), SyncStatus::Synced);
+        cache.put(Path::new("/cloud/a.txt"), SyncKnowledge::Synced);
+        cache.put(Path::new("/cloud/b.txt"), SyncKnowledge::Synced);
 
         cache.invalidate_path(Path::new("/cloud/a.txt"));
 
         assert_eq!(cache.get(Path::new("/cloud/a.txt")), None);
-        assert_eq!(cache.get(Path::new("/cloud/b.txt")), Some(SyncStatus::Synced));
+        assert_eq!(cache.get(Path::new("/cloud/b.txt")), Some(SyncKnowledge::Synced));
         assert_eq!(cache.entry_count(), 1);
     }
 
@@ -298,7 +347,7 @@ mod tests {
     fn evicts_least_recently_used_directories_at_capacity() {
         let (cache, clock) = cache_with_clock(4);
         for dir in 0..8 {
-            cache.put(Path::new(&format!("/dir{dir}/file.txt")), SyncStatus::Synced);
+            cache.put(Path::new(&format!("/dir{dir}/file.txt")), SyncKnowledge::Synced);
             clock.advance(Duration::from_millis(1));
         }
         assert!(
@@ -308,7 +357,7 @@ mod tests {
         );
         assert_eq!(
             cache.get(Path::new("/dir7/file.txt")),
-            Some(SyncStatus::Synced),
+            Some(SyncKnowledge::Synced),
             "the newest directory survived"
         );
         assert_eq!(cache.get(Path::new("/dir0/file.txt")), None, "the oldest was evicted");
@@ -317,7 +366,7 @@ mod tests {
     #[test]
     fn a_path_without_a_file_name_is_not_cached() {
         let (cache, _clock) = cache_with_clock(64);
-        cache.put(Path::new("/"), SyncStatus::Synced);
+        cache.put(Path::new("/"), SyncKnowledge::Synced);
         assert_eq!(cache.entry_count(), 0);
         assert_eq!(cache.get(Path::new("/")), None);
     }
