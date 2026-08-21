@@ -107,11 +107,20 @@ pub enum DomainMembership {
 /// unentitled process, so a fixture can't have a real one).
 struct Probes {
     /// The domain marker on one directory, `None` when it isn't a domain root.
-    domain_id: Box<dyn Fn(&Path) -> Option<String> + Send + Sync>,
+    domain_id: DomainIdProbe,
     /// Where this machine's domain roots would be, or `None` when that couldn't
     /// be listed at all (which makes the marker un-vouchable rather than absent).
-    candidates: Box<dyn Fn() -> Option<Vec<PathBuf>> + Send + Sync>,
+    candidates: CandidateProbe,
 }
+
+/// Reads the domain marker off one path.
+type DomainIdProbe = Box<dyn Fn(&Path) -> Option<String> + Send + Sync>;
+
+/// Lists where this machine's domain roots would be.
+type CandidateProbe = Box<dyn Fn() -> Option<Vec<PathBuf>> + Send + Sync>;
+
+/// Reads the wall clock, injected so a test can step the re-check window.
+type Clock = Box<dyn Fn() -> Instant + Send + Sync>;
 
 /// Answers "is this directory inside a File Provider domain?" without asking a
 /// provider anything.
@@ -131,10 +140,12 @@ struct Probes {
 pub struct FileProviderDomains {
     probes: Probes,
     recheck_after: Duration,
-    clock: Box<dyn Fn() -> Instant + Send + Sync>,
+    clock: Clock,
     state: Mutex<State>,
 }
 
+// DEFAULT-OK: an empty memo is the absence of any claim about any directory — the
+// resolver simply hasn't looked yet, and every read of it re-derives.
 #[derive(Default)]
 struct State {
     /// Directory → what the ancestor walk concluded, and when. Holds the raw walk
@@ -164,11 +175,7 @@ impl FileProviderDomains {
         )
     }
 
-    fn with_probes(
-        recheck_after: Duration,
-        probes: Probes,
-        clock: Box<dyn Fn() -> Instant + Send + Sync>,
-    ) -> Self {
+    fn with_probes(recheck_after: Duration, probes: Probes, clock: Clock) -> Self {
         Self {
             probes,
             recheck_after,
@@ -593,7 +600,14 @@ mod tests {
         let resolver = machine.resolver();
         assert_eq!(resolver.membership_of_dir(&deep), DomainMembership::Outside);
 
-        machine.add_domain_root(&root.path().canonicalize().expect("canonical").join("CloudStorage").join("Dropbox"));
+        machine.add_domain_root(
+            &root
+                .path()
+                .canonicalize()
+                .expect("canonical")
+                .join("CloudStorage")
+                .join("Dropbox"),
+        );
         assert_eq!(
             resolver.membership_of_dir(&deep),
             DomainMembership::Outside,

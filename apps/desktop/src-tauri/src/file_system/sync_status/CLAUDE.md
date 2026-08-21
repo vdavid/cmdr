@@ -10,12 +10,12 @@ Design rationale, the incident behind it, and the tuning numbers: `DETAILS.md`.
 - **The probe ends in a synchronous XPC call that can block forever.** `NSURL getResourceValue` reaches
   `fileproviderd` and the provider's `.appex`; there is no timeout on it and no way to cancel it once entered. Every
   design choice here follows from that.
-- **Outside a File Provider domain the probe answers with no syscall at all**, from `cmdr_fs::file_provider`'s memoized
-  ancestor walk. So a change to `probe.rs` that assumes the `stat` always runs is wrong for nearly every file on the
-  machine.
+- **Outside a File Provider domain the probe answers from one xattr read**, skipping both the `stat` and the provider
+  round-trip (`cmdr_fs::file_provider`, memoized per directory; 13.9 µs a path against 63.9 µs for the full probe). So a
+  change to `probe.rs` that assumes the `stat` always runs is wrong for nearly every file on the machine.
 - **The cache stores `SyncKnowledge`, not `SyncStatus`, and that's load-bearing.** `Unknown` means both "no provider
   owns this file" (kept 30 min) and "the read didn't answer" (kept 2 s); the badge collapses them, the cache must not.
-  ❌ Never widen a TTL tier to cover a second kind of answer — add a variant.
+  A new kind of answer earns a variant, so `Ttls::for_knowledge` has to say out loud how long it lives.
 - **The probe runs on `pool.rs` and nowhere else.** Never rayon (2 MB stacks blow up on provider override chains, see
   `file_system/CLAUDE.md`), never tokio's blocking pool (`spawn_blocking` work can't be cancelled, and the runtime needs
   those threads). The pool is hard-capped at `max_workers` threads for the process lifetime, including ones lost inside

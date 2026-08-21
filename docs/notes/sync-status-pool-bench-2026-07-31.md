@@ -84,10 +84,14 @@ anyway, once per directory.
 
 Conclusion, as of this bench: don't build it PER PATH, which is what was proposed.
 
-**Superseded on 2026-08-21, and the measurement above is why it changed shape rather than being ignored.** The check now
-runs per DIRECTORY, memoized (`cmdr_fs::file_provider::FileProviderDomains`), so the ~22 µs it saves is multiplied by
-the whole visible range while the walk is paid once. The bigger half is that a structural negative is a permanent fact
-where a probe's negative wasn't, which is what let the cached "not a cloud file" answer go from 60 seconds to 30
-minutes and take an idle app's 43 sync-status batches a minute with it. The reasoning lives with the code:
+**Superseded on 2026-08-21, and the measurement above is why it changed shape rather than being ignored.** The ancestor
+walk is now memoized per DIRECTORY (`cmdr_fs::file_provider::FileProviderDomains`), so it's paid once for a whole
+visible range instead of once per path, and only the leaf's own marker read is per path. Re-measured on the same folder
+by `bench.rs::bench_outside_a_domain` (release, macOS 26.6, this machine): **13.9 µs per path with the shortcut against
+63.9 µs without it**, where the memoized directory verdict is 91 ns and the rest is the leaf read.
+
+The bigger half isn't the microseconds: a structural negative is a permanent fact where a probe's negative wasn't, which
+is what let the cached "not a cloud file" answer go from 60 seconds to 30 minutes and take an idle app's 43 sync-status
+batches a minute with it. The reasoning lives with the code:
 `apps/desktop/src-tauri/src/file_system/sync_status/DETAILS.md`. As predicted here, the probe moved to `cmdr-fs` as
 shared vocabulary rather than being duplicated app-side.

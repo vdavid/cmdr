@@ -2,11 +2,13 @@
 //!
 //! Three tiers, cheapest first:
 //!
-//! 1. **Is a File Provider domain anywhere above this path?** An xattr read on the
-//!    parent directory's ancestors (~5 µs, memoized per directory,
-//!    `cmdr_fs::file_provider`). For a file no provider manages — nearly every
+//! 1. **Is a File Provider domain at or above this path?** One xattr read on the
+//!    path itself plus a per-directory memo of its ancestors
+//!    (`cmdr_fs::file_provider`). For a file no provider manages — nearly every
 //!    file on the machine — the answer is [`SyncKnowledge::NotCloudManaged`] and
-//!    neither of the next two tiers runs at all.
+//!    neither of the next two tiers runs. Measured at 13.9 µs per path against
+//!    63.9 µs for the full probe (`bench.rs::bench_outside_a_domain`, 884 files in
+//!    `/usr/bin`, macOS 26.6, 2026-08-21).
 //! 2. `stat`'s `SF_DATALESS` flag answers "is this a stub?" off the inode. No
 //!    provider process is involved.
 //! 3. An `NSURL` ubiquitous-item resource value answers "is it moving right now?".
@@ -43,12 +45,14 @@ pub(super) fn sync_status_for(path: &Path) -> SyncKnowledge {
 
 /// The probe with its domain resolver injected, so a test can drive the
 /// no-domain-here shortcut without a real File Provider.
-fn knowledge_for(path: &Path, domains: &FileProviderDomains) -> SyncKnowledge {
+pub(super) fn knowledge_for(path: &Path, domains: &FileProviderDomains) -> SyncKnowledge {
     use std::os::macos::fs::MetadataExt;
 
     if domains.membership_of(path) == DomainMembership::Outside {
-        // Nothing manages this file, so there is no state to ask about — and no
-        // reason to spend a `stat` or an `NSURL` on finding that out again.
+        // Nothing manages this file, so there is no state to ask about, and no
+        // reason to spend a `stat` and an `NSURL` resource-value read finding that
+        // out. `Undetermined` deliberately falls through: it means the marker
+        // couldn't be vouched for, and then the provider's own answer is all we have.
         return SyncKnowledge::NotCloudManaged;
     }
 
@@ -157,21 +161,21 @@ mod tests {
     }
 
     /// The shortcut is the whole point: outside every domain, a path is answered
-    /// without a `stat` or an `NSURL` at all.
+    /// without the `stat` and without the provider round-trip.
     ///
     /// A path that doesn't exist is what makes that observable: the shortcut
     /// answers `NotCloudManaged`, while the same path INSIDE a domain reaches the
     /// `stat`, fails it, and answers `Indeterminate`. Same path, two answers, and
-    /// only one of them can have touched the filesystem.
+    /// only one of them can have run the `stat`.
     #[test]
-    fn a_path_outside_every_domain_is_answered_without_touching_the_filesystem() {
+    fn a_path_outside_every_domain_skips_the_stat_and_the_provider() {
         let dir = TestDir::new("sync-status-probe");
         let missing = dir.join("not-there.txt");
 
         assert_eq!(
             knowledge_for(&missing, &no_domains()),
             SyncKnowledge::NotCloudManaged,
-            "no domain above it, so no provider owns it and nothing was read"
+            "no domain above it, so no provider owns it and the stat never ran"
         );
         assert_eq!(
             knowledge_for(&missing, &domain_at(&dir)),
@@ -181,8 +185,8 @@ mod tests {
     }
 
     /// A real file outside every domain takes the same shortcut, so an ordinary
-    /// folder costs one memoized xattr read per row instead of a `stat` plus an
-    /// `NSURL` resource-value read.
+    /// folder costs one xattr read per row instead of a `stat` plus an `NSURL`
+    /// resource-value read.
     #[test]
     fn an_ordinary_file_is_not_cloud_managed() {
         let dir = TestDir::new("sync-status-probe");

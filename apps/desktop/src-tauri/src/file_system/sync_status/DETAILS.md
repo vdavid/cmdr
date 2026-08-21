@@ -91,16 +91,27 @@ new kind of answer cannot silently inherit somebody else's lifetime.
 
 **What it was worth:** an idle app ran about 43 sync-status batches a minute learning "still not a cloud file", purely
 because the negative expired every 60 s while `notify_directory_changed` was already invalidating on every real change.
-⚠️ That is an IO-and-provider-load win, ❌ not a CPU one — the sync-status probe's CPU claim was refuted by measurement
-(`docs/notes/idle-cpu-attribution-2026-08-03.md` § "wrong answer 3": 3.4% of busy CPU but 0.2% of USERSPACE CPU, with
-1,964 of 2,037 samples per thread inside the `stat` itself).
+⚠️ Sized honestly that is an IO-and-provider-load win; the probe's claim on CPU was refuted by measurement
+(`docs/notes/idle-cpu-attribution-2026-08-03.md`, wrong answer 3: 3.4% of busy CPU but 0.2% of USERSPACE CPU, with
+1,964 of 2,037 samples per thread inside the `stat` itself). Don't quote a CPU number for this anywhere.
 
 ## Decision: skip the provider entirely outside a File Provider domain
 
-**Why:** the cheapest question is the structural one. `cmdr_fs::file_provider::FileProviderDomains` answers "is any
-ancestor of this path a domain root?" from an xattr the provider daemon writes, memoized per directory — so an ordinary
-folder's whole visible range costs one ancestor walk instead of a `stat` plus an `NSURL` resource-value read per row.
-The probe returns `NotCloudManaged` without touching the filesystem at all.
+**Why:** the cheapest question is the structural one. `cmdr_fs::file_provider::FileProviderDomains` answers "is this
+path, or any ancestor of it, a domain root?" from an xattr the provider daemon writes. The ancestor walk is memoized per
+directory, so a row costs one xattr read on itself and a hash lookup for its folder, and the probe returns
+`NotCloudManaged` without the `stat` and without the provider round-trip.
+
+**Measured** (`bench.rs::bench_outside_a_domain`, 884 files in `/usr/bin`, release, macOS 26.6, 2026-08-21): **13.9 µs
+per path against 63.9 µs** for the same probe forced down the full path. The leaf xattr read is essentially all of that
+13.9 µs — the memoized directory verdict is 91 ns — so if this ever needs to be cheaper, that read is the thing to
+sharpen (`xattr::get` sizes the value with one syscall and reads it with a second), ❌ not the walk.
+
+**Why the leaf is read at all, rather than only the parent's ancestors:** a domain root is a row in its parent's
+listing, and its parent is an ordinary folder. `~/Library/CloudStorage/Dropbox` answers
+`NSURLUbiquitousItemIsUploadingKey = false` (verified 2026-08-21) — that is, it carries a real badge — while
+`~/Library/CloudStorage` itself answers "not applicable". Deciding membership from the parent alone would drop the badge
+from every provider's top-level row.
 
 **This reverses an earlier "don't build it", and the difference is the memo.** M4.5 proposed the same check PER PATH,
 and per path it doesn't pay: the walk costs about as much as the ~22 µs the `getResourceValue` short-circuit already

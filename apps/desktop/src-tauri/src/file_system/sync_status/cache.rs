@@ -139,9 +139,13 @@ impl Cache {
             statuses: HashMap::new(),
         });
         dir_cache.last_used = now;
-        let replaced = dir_cache
-            .statuses
-            .insert(name.to_os_string(), CacheEntry { knowledge, stored_at: now });
+        let replaced = dir_cache.statuses.insert(
+            name.to_os_string(),
+            CacheEntry {
+                knowledge,
+                stored_at: now,
+            },
+        );
         if replaced.is_none() {
             state.entries += 1;
         }

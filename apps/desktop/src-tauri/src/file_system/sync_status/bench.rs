@@ -243,6 +243,53 @@ async fn bench_steady_pane() {
     eprintln!("    threads live now  {}", live_thread_count());
 }
 
+/// What the structural shortcut is worth on an ORDINARY folder, which is nearly
+/// every folder: the cost of one probe with the domain resolver saying "no domain
+/// above this" against the same probe forced down the full `stat` + `NSURL` path.
+///
+/// Needs no File Provider, so it runs against any directory (`/usr/bin` by default,
+/// the same 884-file folder `docs/notes/sync-status-pool-bench-2026-07-31.md`
+/// measured the ~22 µs-per-path figure on).
+#[test]
+#[ignore = "measurement, not an assertion: run it with --nocapture when re-tuning"]
+fn bench_outside_a_domain() {
+    let dir = bench_dir().unwrap_or_else(|| "/usr/bin".to_string());
+    let all = paths_in(&dir);
+    if all.is_empty() {
+        eprintln!("skipped: no files in {dir}");
+        return;
+    }
+
+    let per_path = |domains: &cmdr_fs::file_provider::FileProviderDomains| {
+        let started = Instant::now();
+        for path in &all {
+            let _ = probe::knowledge_for(Path::new(path), domains);
+        }
+        started.elapsed() / u32::try_from(all.len()).unwrap_or(1)
+    };
+
+    let root = Path::new(&dir).canonicalize().expect("canonical bench dir");
+    // The "before" side: a scripted domain root above the folder forces every path
+    // down the full `stat` + `NSURL` path, which is what every path used to cost.
+    let forced = cmdr_fs::file_provider::FileProviderDomains::with_domain_roots(vec![root], Duration::from_secs(600));
+    // The "after" side is the REAL resolver: its per-path cost is a live `getxattr`
+    // on the leaf plus a memo hit for the directory, so a scripted one would flatter
+    // the number by leaving the syscall out.
+    let real = cmdr_fs::file_provider::FileProviderDomains::new(Duration::from_secs(600));
+    assert_eq!(
+        real.membership_of_dir(Path::new(&dir)),
+        cmdr_fs::file_provider::DomainMembership::Outside,
+        "this bench needs an ordinary folder; {dir} is in a domain or the marker isn't vouched for here"
+    );
+
+    // Full path first, so the page cache can't favour the number we're advertising.
+    let full = per_path(&forced);
+    let skipped = per_path(&real);
+    eprintln!("\n  outside a domain, {} files in {dir}", all.len());
+    eprintln!("    full probe (stat + NSURL)   {full:>9.2?} per path");
+    eprintln!("    structural shortcut         {skipped:>9.2?} per path");
+}
+
 /// A first render of the whole folder: every path, cold.
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs a real File Provider folder in CMDR_SYNC_STATUS_BENCH_DIR"]
