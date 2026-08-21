@@ -14,7 +14,7 @@
 //! writer-driven and reaches nothing above it. Keeping them in separate files is what
 //! keeps that a one-way dependency (see [`super`]).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use rusqlite::Connection;
@@ -22,7 +22,7 @@ use rusqlite::Connection;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 use crate::media_index::paths::parent_dir;
-use crate::media_index::scheduler::enrich::{ImageEntry, for_each_qualifying_image};
+use crate::media_index::scheduler::enrich::{ImageEntry, WalkedDirs, for_each_qualifying_image};
 
 use super::rollup::build_subtree_rollup;
 
@@ -167,26 +167,23 @@ pub(crate) fn replace_from_entries(volume_id: &str, entries: &[ImageEntry]) {
     invalidate_eligible_rollup(volume_id);
 }
 
-/// The pure patch: `existing` with exactly `touched_dirs` replaced by their fresh per-tick
-/// counts from `entries` (a live tick's scoped `walk_image_entries_in_dirs` result). Each
-/// touched dir's cached count becomes the tick's fresh count — dropped from `per_folder`
-/// when it falls to zero (the map only holds folders with ≥ 1 image) — and `total` moves by
-/// the net delta. Every other folder is untouched. Pure, so the arithmetic is unit-testable.
-fn patch_counts(
-    existing: &FolderImageCounts,
-    touched_dirs: &HashSet<String>,
-    entries: &[ImageEntry],
-) -> FolderImageCounts {
+/// The pure patch: `existing` with exactly the WALKED dirs replaced by their fresh
+/// per-tick counts from `entries` (a live tick's scoped `walk_image_entries_in_dirs`
+/// result). Each walked dir's cached count becomes the tick's fresh count — dropped from
+/// `per_folder` when it falls to zero (the map only holds folders with ≥ 1 image) — and
+/// `total` moves by the net delta. Every other folder is untouched. Pure, so the
+/// arithmetic is unit-testable.
+fn patch_counts(existing: &FolderImageCounts, walked: WalkedDirs<'_>, entries: &[ImageEntry]) -> FolderImageCounts {
     // Fresh per-dir counts from the tick's scoped walk. Its entries are direct children of
-    // the touched dirs, so every key here is one of `touched_dirs`; a touched dir now holding
-    // no qualifying image is simply absent (its fresh count is 0).
+    // the walked dirs, so every key here is one of them; a walked dir now holding no
+    // qualifying image is simply absent (its fresh count is 0).
     let mut fresh: HashMap<&str, u64> = HashMap::new();
     for image in entries {
         *fresh.entry(parent_dir(&image.path)).or_default() += 1;
     }
     let mut per_folder = existing.per_folder.clone();
     let mut delta: i64 = 0;
-    for dir in touched_dirs {
+    for dir in walked.iter() {
         let old = per_folder.get(dir.as_str()).copied().unwrap_or(0);
         let new = fresh.get(dir.as_str()).copied().unwrap_or(0);
         delta += new as i64 - old as i64;
@@ -202,17 +199,25 @@ fn patch_counts(
     }
 }
 
-/// Patch a volume's CACHED counts for exactly the `touched_dirs` a live tick re-walked,
-/// from that tick's scoped `entries` (see [`patch_counts`]). A tick walks only the touched
-/// dirs, so it can't rebuild the whole cache — it patches those dirs in place instead of
-/// invalidating (a full rebuild is the O(entries) cold walk this whole cache exists to
-/// avoid). A no-op when the volume has no cached counts yet: the next preview builds them.
-pub(crate) fn patch_touched_dirs(volume_id: &str, touched_dirs: &HashSet<String>, entries: &[ImageEntry]) {
+/// Patch a volume's CACHED counts for exactly the dirs a live tick re-walked, from that
+/// tick's scoped `entries` (see [`patch_counts`]). A tick walks only some dirs, so it
+/// can't rebuild the whole cache — it patches those in place instead of invalidating (a
+/// full rebuild is the O(entries) cold walk this whole cache exists to avoid). A no-op
+/// when the volume has no cached counts yet: the next preview builds them.
+///
+/// Each dir named by `walked` is REPLACED by its count in `entries`, so naming a dir the
+/// walk skipped would replace its count with zero and silently lose images that are still
+/// on disk. That's why the dirs arrive as a [`WalkedDirs`] token the walk itself mints,
+/// rather than as a set a caller chooses.
+///
+/// The flip side: a dir the tick's coverage filter dropped keeps whatever count the last
+/// whole-volume walk gave it, until a full pass refills the cache.
+pub(crate) fn patch_touched_dirs(volume_id: &str, walked: WalkedDirs<'_>, entries: &[ImageEntry]) {
     let mut cache = COUNTS.lock_ignore_poison();
     let Some(existing) = cache.get(volume_id) else {
         return;
     };
-    let patched = patch_counts(existing, touched_dirs, entries);
+    let patched = patch_counts(existing, walked, entries);
     cache.insert(volume_id.to_string(), Arc::new(patched));
     drop(cache);
     // The eligible set moved for the touched dirs, so its cached rollup is stale.

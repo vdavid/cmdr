@@ -99,6 +99,14 @@ consults `network::config` (a process-global `RwLock`) each pass, seeded from `l
 live-applied through the `media_index_set_*` commands. Folder overrides store absolute OS-mount paths; `path_is_within`
 is a trailing-slash-safe prefix so `/Photos2` isn't "within" `/Photos`.
 
+**Two coverage questions, one prefix test.** `covers(volume_id, os_path)` answers it for a FILE.
+`may_cover_within(volume_id, dir)` answers it for a DIRECTORY, for a caller deciding whether a directory is worth
+walking at all (the media live tick's filter — `scheduler/DETAILS.md` § The coverage filter). It is deliberately a
+SUPERSET: on top of `covers(dir)` it also keeps any directory an override entry names something at or under. Overrides
+are folders in practice, but `covers` is a plain prefix test, so an entry that happened to name a FILE would cover that
+file while covering neither its parent nor anything else — and the extra term is exactly what stops a directory filter
+from dropping that file's parent. It costs one more pass over the same small set.
+
 `config` also holds `excluded_folders`, the privacy veto — the ONE live-read part of the config (the retro-delete that
 rides it is in `../DETAILS.md` § Per-folder photo-search exclude).
 

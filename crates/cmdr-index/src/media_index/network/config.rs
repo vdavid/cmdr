@@ -62,7 +62,7 @@ impl NetworkEnrichConfig {
     /// and an entry at or under `dir` is exactly that case. A filter built on this can
     /// therefore never drop a file the per-file gate would have taken, whatever an
     /// override entry turns out to name.
-    pub fn may_cover_within(&self, volume_id: &str, dir: &str) -> bool {
+    pub(crate) fn may_cover_within(&self, volume_id: &str, dir: &str) -> bool {
         self.covers(volume_id, dir) || self.always_index_folders.iter().any(|f| path_is_within(f, dir))
     }
 
@@ -245,7 +245,10 @@ mod tests {
         assert!(cfg.may_cover_within("vol", "/"), "up to the root, for the same reason");
         // A dir on neither side of the entry's chain is dropped: that's the whole point.
         assert!(!cfg.may_cover_within("vol", "/Users/dave/Docs"));
-        assert!(!cfg.may_cover_within("vol", "/Users/dave/Photos2"), "a name-prefix sibling");
+        assert!(
+            !cfg.may_cover_within("vol", "/Users/dave/Photos2"),
+            "a name-prefix sibling"
+        );
     }
 
     #[test]

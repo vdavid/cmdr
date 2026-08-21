@@ -3,12 +3,15 @@
 //!
 //! **Why a cache at all.** Reading a volume's scores is `above_threshold(0.0)`: an
 //! ordered read of EVERY scored folder, which SQLite runs as an external merge sort
-//! (a measured 368,043 scored folders on one root). That is fine once per enrichment
-//! pass and ruinous per UI query — and the file-status badge asks per visible range,
-//! per pane, on every listing swap and enrichment tick. Uncached, those queries piled
-//! up on the blocking pool until it hit its 512-thread cap, and every OTHER
-//! `spawn_blocking` in the app (directory listings, the volume list) starved behind
-//! them.
+//! (a measured 368,043 scored folders on one root), plus rebuilding a map that size.
+//! Ruinous per UI query — the file-status badge asks per visible range, per pane, on
+//! every listing swap and enrichment tick. Uncached, those queries piled up on the
+//! blocking pool until it hit its 512-thread cap, and every OTHER `spawn_blocking` in
+//! the app (directory listings, the volume list) starved behind them. Ruinous on a
+//! timer too: it was 45.8 ms of every 60-second media live tick at 90,308 folders
+//! (release build, M1 Max, `scheduler/live_bench.rs`, 2026-08-21 —
+//! `docs/notes/live-tick-cost-2026-08-21.md`). Every consumer reads through here now,
+//! passes included.
 //!
 //! **Why a subscription and not a generation stamp.** An INCREMENTAL rescore writes
 //! rows at the CURRENT generation without bumping it (`importance/writer.rs`), so a

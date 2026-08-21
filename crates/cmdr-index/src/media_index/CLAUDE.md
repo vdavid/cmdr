@@ -36,8 +36,9 @@ This file owns the leaves: `coverage/`, `gate.rs` (toggle / scope / threshold / 
   `walk_image_entries` (one path `String` per image was the 50 GB launch runaway). Polls and startup read
   `coverage::cached`; only user-initiated settings reads call `get_or_build`. `None` means "no number yet", ❌ never
   `0`. `accounted` is INCREMENTAL (writer ±1), ❌ never rebuilt from a walk nor merged into `eligible`.
-- **Scores reach a UI path ONLY via `coverage::importance_scores`** (cached off the recompute subscription). ❌ Never
-  `above_threshold` direct: it sorts every scored folder, and per badge query that froze the app.
+- **Scores reach EVERY consumer ONLY via `coverage::importance_scores`** (cached off the recompute subscription; keyed
+  by data dir AND volume). ❌ Never `above_threshold` direct: it sorts every scored folder — per badge query that froze
+  the app, and 45.8 ms of every live tick at 90,308 folders.
 - **Cancellation hooks the EXISTING indexing watchdog** (❌ no second one; one shared memory ceiling), between images
   via `gate::should_stop` (watchdog OR toggle OFF); ❌ don't narrow it to `is_cancelled`.
 - **CLIP is a SEPARATE vector space from the Vision feature print**; ❌ never cosine-compare the two.

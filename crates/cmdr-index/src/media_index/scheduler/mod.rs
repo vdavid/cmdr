@@ -84,6 +84,8 @@ mod kick_tests;
 #[cfg(test)]
 mod live_bench;
 #[cfg(test)]
+mod live_tests;
+#[cfg(test)]
 mod reclaim_tests;
 
 // ── The scheduler handle ────────────────────────────────────────────────────

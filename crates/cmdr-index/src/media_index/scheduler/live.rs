@@ -10,17 +10,29 @@
 //!
 //! ## What a tick does
 //!
-//! - **Walks only the touched dirs** ([`walk_image_entries_in_dirs`]), sibling-aware per
+//! - **Gates before it walks.** The coverage gates resolve first, and the touched dirs are
+//!   filtered down to the ones that could enrich
+//!   ([`local_dir_may_be_covered`](super::lifecycle::local_dir_may_be_covered)). Walking a
+//!   dir costs a `resolve_path` plus a `list_children_on`; deciding not to costs a prefix
+//!   check. When nothing survives, the tick returns without opening the index at all.
+//! - **Walks only the surviving dirs** ([`walk_image_entries_in_dirs`]), sibling-aware per
 //!   directory, never the whole index.
 //! - **Enriches the stale, covered images** through the SAME per-image loop as the full
 //!   pass (`enrich_and_gc`), honoring the coverage gates, the live exclusion veto, and
 //!   the `(path, mtime, size)` + stamp staleness key — so a modified image re-enriches
 //!   and an untouched one is a no-op.
-//! - **GCs deletions SCOPED to the touched dirs** ([`GcScope::TouchedDirs`]). An index
+//! - **GCs deletions SCOPED to the dirs it WALKED** ([`GcScope::TouchedDirs`]). An index
 //!   removal is a fact about the tree (like importance's subtree clear), not a scan-state
 //!   inference, so deleting a confirmed-gone row here doesn't violate the
 //!   GC-needs-a-complete-tree doctrine. Crucially it must NEVER whole-store GC against a
 //!   scoped walk — that would delete every row outside the touched dirs.
+//!
+//! ❗ **The filtered set is ONE set with three consumers**: the walk, the GC scope, and
+//! `coverage::patch_touched_dirs`. Filter the walk alone and every stored row under a
+//! dropped dir is "in scope, absent from the walk, therefore deleted" — every OCR text,
+//! Vision tag, and CLIP embedding in it. Hand the patch the unfiltered set and every
+//! dropped dir's cached count is replaced by zero. Both are pinned by tests in
+//! `kick_tests.rs` that were watched failing under exactly those mutations.
 //!
 //! ## The guardrails
 //!
@@ -186,7 +198,9 @@ impl MediaScheduler {
 
         // The scoped walk: only the covered dirs' qualifying images. Don't early-return on
         // an empty result — an emptied covered dir still needs its stored rows scoped-GC'd.
-        let images = pool
+        // It hands back the dirs it covered as a `WalkedDirs` token, which is the ONLY
+        // thing the GC scope and the counts patch below accept.
+        let (walked, images) = pool
             .with_conn(|conn| walk_image_entries_in_dirs(conn, &covered_dirs))
             .map_err(|e| format!("read pool error: {e}"))??;
 
@@ -240,7 +254,7 @@ impl MediaScheduler {
                 // SCOPED GC: only rows under the dirs this tick WALKED are candidates, so a
                 // row in a dir the tick never walked — filtered out, or never touched at
                 // all — is never deleted (the scoped-GC data-safety trap).
-                gc_scope: GcScope::TouchedDirs(&covered_dirs),
+                gc_scope: GcScope::TouchedDirs(walked),
                 clip_stamp: clip_stamp.as_deref(),
             },
             &hooks,
@@ -268,7 +282,7 @@ impl MediaScheduler {
             // this runs on the same condition as the vector invalidate. `images` is the
             // scoped walk over `covered_dirs`, so patching exactly those dirs is what keeps
             // the patch complete per dir; a no-op if no counts are cached yet.
-            super::super::coverage::patch_touched_dirs(volume_id, &covered_dirs, &images);
+            super::super::coverage::patch_touched_dirs(volume_id, walked, &images);
         }
         // A tick that changed something always says so; one that didn't rolls up.
         if summary.enriched > 0 || summary.gc_count > 0 {
@@ -277,7 +291,7 @@ impl MediaScheduler {
                 "live tick '{volume_id}': {} enriched, {} GC'd across {} of {} touched dir(s)",
                 summary.enriched,
                 summary.gc_count,
-                covered_dirs.len(),
+                walked.len(),
                 touched_dirs.len(),
             );
         } else {

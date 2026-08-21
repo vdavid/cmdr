@@ -10,11 +10,14 @@ Subsystem-wide context (the port rationale, the GC safety argument, the scope mo
 pass bodies (`run_pass_blocking`, `run_network_pass_blocking`, `folder_scores`, `retro_delete_excluded_folder`);
 `coordinator.rs` holds the pure, testable `PassCoordinator` (one pass per volume, coalesced re-run — covered by
 `coalescing_tests`); `lifecycle.rs` holds the scheduling/wiring layer (`start`, `kick_all_ready_passes_with`,
-`kick_network_pass`, `wire_volume`, `spawn_pass`, `local_should_enrich`, `pass_coverage`, `PassKind`); `enrich.rs` holds
-the walk + the shared enrich/GC core; `pool.rs` the parallel workers; `live.rs` the live-follow tick; `reclaim.rs` the
-user-explicit prune. The starting and kicking entry points are
-`MediaScheduler::{start, kick_all_ready_passes, kick_network_pass}` in `mod.rs`, one-liners over `lifecycle.rs`'s
-private halves, so a host holding the scheduler calls methods on it rather than passing it back into a module.
+`kick_network_pass`, `wire_volume`, `spawn_pass`, `local_should_enrich`, `local_dir_may_be_covered`, `pass_coverage`,
+`PassKind`); `enrich.rs` holds the walk + the shared enrich/GC core; `pool.rs` the parallel workers; `live.rs` the
+live-follow tick (with `live_tests.rs` and `live_bench.rs`, the `#[ignore]`d cost harness behind
+`docs/notes/live-tick-cost-2026-08-21.md`); `reclaim.rs` the user-explicit prune. `kick_tests.rs` owns the shared test
+fixtures (`build_index`, the importance/media seeders, `reset_gate`) that `live_tests` and `reclaim_tests` reach for.
+The starting and kicking entry points are `MediaScheduler::{start, kick_all_ready_passes, kick_network_pass}` in
+`mod.rs`, one-liners over `lifecycle.rs`'s private halves, so a host holding the scheduler calls methods on it rather
+than passing it back into a module.
 
 ## The lifecycle bus
 
@@ -170,23 +173,49 @@ ever-present `/`; ancestor re-checks are harmless (staleness makes them no-ops),
 direct-children walk, not a whole-index sweep. `watch` is last-value-wins, so a burst can drop intermediate batches —
 the accumulator plus the next full pass heal it.
 
-A tick (`run_live_tick_blocking`) walks ONLY the touched dirs (`walk_image_entries_in_dirs`: per dir, resolve its entry
-id via `store::resolve_path` from `ROOT_ID`, fetch the COMPLETE file-child set, run the sibling-aware `qualify_dir` —
+A tick (`run_live_tick_blocking`) resolves its coverage gates FIRST, filters the touched dirs down to the ones that
+could enrich, and only then walks. It walks ONLY those dirs (`walk_image_entries_in_dirs`: per dir, resolve its entry id
+via `store::resolve_path` from `ROOT_ID`, fetch the COMPLETE file-child set, run the sibling-aware `qualify_dir` —
 fetching only changed files would mis-qualify RAW+JPEG pairs and Live Photos; a dir gone from the index is skipped and
 its rows fall to the scoped GC). It then runs the SAME per-image enrich loop as the full pass through the shared
 `enrich_and_gc_scoped` core, honoring the coverage gates, the live exclusion veto, and the `(path, mtime, size)` + stamp
 staleness key.
 
+**The coverage filter, and why it is one set.** A walk costs ~20 µs per touched dir (a `resolve_path` per path component
+plus a `list_children_on`) against 0.03 µs for the filter, and on a machine whose churn is build output nearly every dir
+is ineligible; when NOTHING survives the filter the tick returns before opening the index, loading `media_status`, or
+spawning a writer (release build, M1 Max, `live_bench.rs`, 2026-08-21 — `docs/notes/live-tick-cost-2026-08-21.md`). ❗
+The filtered set then goes to ALL THREE consumers or none: the walk, `GcScope::TouchedDirs`, and
+`coverage::patch_touched_dirs`. Filter the walk alone and every stored row under a dropped dir is "in scope, absent from
+the walk, therefore deleted"; hand the patch the unfiltered dirs and every dropped dir's cached count is replaced by
+zero. Both are pinned by tests that were watched failing under exactly those mutations
+(`a_live_tick_keeps_every_row_in_a_dir_its_coverage_filter_dropped`,
+`a_live_tick_leaves_the_cached_counts_of_a_dir_it_filtered_out_alone`).
+
+The filter itself is `lifecycle::local_dir_may_be_covered`, and it is a PROVABLE superset of the per-image
+`local_should_enrich` rather than a documented promise: the score map is keyed by the parent folder (the dir itself),
+and `NetworkEnrichConfig::may_cover_within` additionally keeps any dir an override entry names something at or under —
+the only way `covers` can answer differently for a file than for its parent, since an entry could BE that file's path. A
+proptest in `kick_tests.rs` holds the implication over overrides, scores, and both scopes.
+
+Two consequences, taken deliberately. **A tick's prompt GC and its counts patch reach only the dirs it walked**: a
+vanished file's row in an uncovered dir waits for the next full pass (which still whole-store GCs it), and an uncovered
+dir's cached eligible count goes stale until a full pass refills it. Rows staying is what the forward-only "narrowing
+deletes nothing" rule already asked for. **The privacy exclusion stays per image**, out of the dir filter: folding it in
+would change which rows a tick may GC, and the retro-delete already empties an excluded folder, so a tick's GC has
+nothing to find there.
+
 **The GC data-safety line.** `enrich_and_gc`'s GC is a whole-store set-difference against the walked set — correct for a
 full pass (whole index walked), CATASTROPHIC for a scoped walk (it would delete every stored row OUTSIDE the touched
 dirs). So the GC target set is a parameter: `GcScope::WholeStore` (the full pass / Fresh sweep, via `enrich_and_gc`) vs
-`GcScope::TouchedDirs` (the live tick, via `enrich_and_gc_scoped`), which GCs only rows whose parent dir is one of this
-tick's touched dirs AND absent from the scoped walk. This makes the live tick one of the four deletion paths that
-bypasses the completed-scan edge (`../DETAILS.md` § The GC safety argument). Unlike the user-explicit ones, the live
-tick's deletion is INDEX-CONFIRMED: a removal from the live index is a fact about the tree (like importance's subtree
-clear), not a scan-state inference, so the complete-tree doctrine isn't violated. A disconnect/unmount still never
-deletes: no read pool ⇒ the tick no-ops before any GC. The sibling edge is where the whole-dir fetch earns its keep —
-deleting `DSC.jpg` promotes the lone `DSC.cr2` to enrich WHILE scoped-GCing the `.jpg` row, in one tick.
+`GcScope::TouchedDirs` (the live tick, via `enrich_and_gc_scoped`), which GCs only rows whose parent dir is one the tick
+actually WALKED (its filtered set, never its raw touched set) AND absent from the scoped walk. This makes the live tick
+one of the four deletion paths that bypasses the completed-scan edge (`../DETAILS.md` § The GC safety argument). Unlike
+the user-explicit ones, the live tick's deletion is INDEX-CONFIRMED: a removal from the live index is a fact about the
+tree (like importance's subtree clear), not a scan-state inference, so the complete-tree doctrine isn't violated. A
+disconnect/unmount still never deletes: no read pool ⇒ the tick no-ops before any GC. The sibling edge is where the
+whole-dir fetch earns its keep — deleting `DSC.jpg` promotes the lone `DSC.cr2` to enrich WHILE scoped-GCing the `.jpg`
+row, in one tick.
 
 **Guardrails.** The tick coalesces on a DISTINCT `#live` coordinator key (`live_key`), never the full-pass key — else a
 `ScanCompleted` full pass coalescing into a tick's slot would silently downgrade to a scoped tick. Before running, it

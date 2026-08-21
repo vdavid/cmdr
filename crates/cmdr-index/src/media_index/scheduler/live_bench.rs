@@ -51,11 +51,7 @@ fn live_tick_cost() {
     let mut out = std::io::stderr();
 
     let _ = writeln!(&mut out, "\n── the scoped walk, per touched dir ──");
-    let _ = writeln!(
-        &mut out,
-        "{:>8}  {:>12}  {:>10}",
-        "dirs", "walk", "µs/dir"
-    );
+    let _ = writeln!(&mut out, "{:>8}  {:>12}  {:>10}", "dirs", "walk", "µs/dir");
     for &width in WALK_WIDTHS {
         let elapsed = walk_cost(width);
         let _ = writeln!(
@@ -65,7 +61,10 @@ fn live_tick_cost() {
         );
     }
 
-    let _ = writeln!(&mut out, "\n── the coverage filter that replaces the walk, per touched dir ──");
+    let _ = writeln!(
+        &mut out,
+        "\n── the coverage filter that replaces the walk, per touched dir ──"
+    );
     let _ = writeln!(&mut out, "{:>8}  {:>12}  {:>10}", "dirs", "filter", "µs/dir");
     for &width in WALK_WIDTHS {
         let elapsed = filter_cost(width);
@@ -104,7 +103,7 @@ fn walk_cost(width: usize) -> Duration {
     // cache production's every-60-seconds tick does.
     let _ = walk_image_entries_in_dirs(store.read_conn(), &set).expect("warm walk");
     let start = Instant::now();
-    let entries = walk_image_entries_in_dirs(store.read_conn(), &set).expect("walk");
+    let (_walked, entries) = walk_image_entries_in_dirs(store.read_conn(), &set).expect("walk");
     let elapsed = start.elapsed();
     assert!(entries.is_empty(), "build output holds no qualifying image");
     elapsed
@@ -207,8 +206,10 @@ fn build_dirs(conn: &rusqlite::Connection, dirs: &[String]) {
                 None => {
                     let id = next_id;
                     next_id += 1;
-                    IndexStore::insert_entry_v2_with_id(conn, id, parent_id, component, true, false, None, None, None, None)
-                        .expect("insert dir");
+                    IndexStore::insert_entry_v2_with_id(
+                        conn, id, parent_id, component, true, false, None, None, None, None,
+                    )
+                    .expect("insert dir");
                     ids.insert(prefix.clone(), id);
                     id
                 }

@@ -75,6 +75,13 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   finishing (no: it takes ~200 new folders a second sustained to cost one session's completion marker, and the next
   launch settles the drive in ~2 s). Read it before treating a slow first index on a busy machine as a regression, or
   before proposing a bigger pass budget: it weighs the three ways to close the gap and says why none was taken.
+- `live-tick-cost-2026-08-21.md` — what a media live tick costs, split into the coverage gate (45–46 ms per tick at
+  90,308 scored folders, from reading `above_threshold` directly once a minute per volume; 2.8 µs from the cache that
+  already existed for it) and the scoped walk (~20 µs per touched directory, against 0.03 µs for the filter that now
+  replaces it). Read it before assuming a gate is cheap because it guards something expensive: these two were the same
+  order, so filtering the walk without fixing the gate would have left the floor where it was. It also records why the
+  filtered set has to reach the walk, the GC scope, and the counts patch together, and the two behaviors deliberately
+  given up.
 - `search-arena-row-2026-08-06.md` — what shrinking `SearchEntry` from 56 to 40 bytes actually bought (−92 MiB of arena,
   measured two ways), that it cost no scan latency, and the A/B method for comparing two builds on a machine running
   other work.

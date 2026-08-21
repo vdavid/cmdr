@@ -223,10 +223,10 @@ fn emit_qualifying_group(dir_path: &str, files: &[FileRow], sink: &mut dyn FnMut
 /// A dir absent from the index (removed since the change fired) is skipped — its
 /// stored rows fall to the scoped GC. `dirs` are absolute index paths; a network
 /// volume never reaches here (live-follow is Local-only), so no mount mapping.
-pub(crate) fn walk_image_entries_in_dirs(
+pub(crate) fn walk_image_entries_in_dirs<'a>(
     conn: &rusqlite::Connection,
-    dirs: &HashSet<String>,
-) -> Result<Vec<ImageEntry>, String> {
+    dirs: &'a HashSet<String>,
+) -> Result<(WalkedDirs<'a>, Vec<ImageEntry>), String> {
     let mut out = Vec::new();
     for dir in dirs {
         // A dir gone from the index resolves to `None`: skip it (its rows fall to the
@@ -249,7 +249,48 @@ pub(crate) fn walk_image_entries_in_dirs(
             }
         }
     }
-    Ok(out)
+    Ok((WalkedDirs(dirs), out))
+}
+
+/// The directory set a scoped walk actually covered, as a TOKEN only
+/// [`walk_image_entries_in_dirs`] can mint.
+///
+/// A live tick decides which of its touched dirs are worth walking, and three consumers
+/// then have to agree on that answer: the walk itself, [`GcScope::TouchedDirs`], and
+/// `coverage::patch_touched_dirs`. Hand the GC a set WIDER than the walk and every stored
+/// row in the difference is "in scope, absent from the walk, therefore deleted" — every
+/// OCR text, Vision tag, and CLIP embedding under those dirs. Hand the counts patch a
+/// wider set and each extra dir's cached count is replaced by zero.
+///
+/// So the answer isn't passed alongside the walk, it comes OUT of it: a caller can't
+/// build one of these from a set the walk never saw, which is what makes the widening
+/// unrepresentable rather than merely forbidden.
+#[derive(Clone, Copy)]
+pub(crate) struct WalkedDirs<'a>(&'a HashSet<String>);
+
+impl<'a> WalkedDirs<'a> {
+    /// Whether the walk covered `dir` — the scoped GC's "is this row a candidate" test.
+    pub(crate) fn contains(&self, dir: &str) -> bool {
+        self.0.contains(dir)
+    }
+
+    /// How many dirs the walk covered (for the tick's log line).
+    pub(crate) fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// The dirs, for the counts patch, which replaces each one from the walk's entries.
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &'a String> {
+        self.0.iter()
+    }
+
+    /// Mint a token without walking, so the enrich core and the counts patch stay
+    /// unit-testable over a synthetic set. ❌ Test-only on purpose: production code that
+    /// could reach this could re-open the widening this type exists to close.
+    #[cfg(test)]
+    pub(crate) fn for_test(dirs: &'a HashSet<String>) -> WalkedDirs<'a> {
+        WalkedDirs(dirs)
+    }
 }
 
 /// Join a directory path and a file name into an absolute path, avoiding a double
@@ -276,9 +317,10 @@ fn join_path(dir: &str, name: &str) -> String {
 pub(crate) enum GcScope<'a> {
     /// GC every stored row absent from the (complete) walk. The full pass / Fresh sweep.
     WholeStore,
-    /// GC only stored rows whose parent dir is in this set AND absent from the (scoped)
-    /// walk. The live tick, whose walk covers exactly these dirs — never the whole store.
-    TouchedDirs(&'a HashSet<String>),
+    /// GC only stored rows whose parent dir the scoped walk COVERED (and which are absent
+    /// from it). The live tick. It carries a [`WalkedDirs`] rather than a bare set so the
+    /// scope can't be wider than the walk it's judged against.
+    TouchedDirs(WalkedDirs<'a>),
 }
 
 /// The per-pass POLICY the enrich core applies: which images to enrich, which the privacy

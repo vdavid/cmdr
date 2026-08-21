@@ -1,6 +1,8 @@
 //! The eligible cache: building it, refilling it from a pass's own walk, patching the
 //! dirs a live tick re-walked, and deduplicating concurrent cold builds.
 
+use std::collections::HashSet;
+
 use super::*;
 
 fn img(path: &str) -> ImageEntry {
@@ -14,6 +16,13 @@ fn img(path: &str) -> ImageEntry {
 
 fn touched(dirs: &[&str]) -> HashSet<String> {
     dirs.iter().map(|d| d.to_string()).collect()
+}
+
+/// A `WalkedDirs` over a synthetic set. Production can only get one out of a real scoped
+/// walk (that's the point of the type); a unit test over the pure patch arithmetic mints
+/// one directly.
+fn walked(dirs: &HashSet<String>) -> WalkedDirs<'_> {
+    WalkedDirs::for_test(dirs)
 }
 
 #[test]
@@ -31,7 +40,7 @@ fn patch_updates_only_the_touched_dir_and_moves_total() {
         per_folder: [("/a".to_string(), 3u64), ("/b".to_string(), 5)].into_iter().collect(),
         total: 8,
     };
-    let patched = patch_counts(&existing, &touched(&["/a"]), &[img("/a/x.jpg")]);
+    let patched = patch_counts(&existing, walked(&touched(&["/a"])), &[img("/a/x.jpg")]);
     assert_eq!(patched.per_folder.get("/a").copied(), Some(1), "/a re-counted");
     assert_eq!(patched.per_folder.get("/b").copied(), Some(5), "/b untouched");
     assert_eq!(patched.total, 6, "total moved by the /a delta (3 → 1)");
@@ -45,7 +54,7 @@ fn patch_drops_a_dir_that_fell_to_zero() {
         per_folder: [("/a".to_string(), 3u64), ("/b".to_string(), 5)].into_iter().collect(),
         total: 8,
     };
-    let patched = patch_counts(&existing, &touched(&["/a"]), &[]);
+    let patched = patch_counts(&existing, walked(&touched(&["/a"])), &[]);
     assert!(!patched.per_folder.contains_key("/a"), "/a dropped at zero");
     assert_eq!(patched.per_folder.get("/b").copied(), Some(5));
     assert_eq!(patched.total, 5);
@@ -58,7 +67,11 @@ fn patch_adds_a_newly_qualifying_dir() {
         per_folder: [("/b".to_string(), 5u64)].into_iter().collect(),
         total: 5,
     };
-    let patched = patch_counts(&existing, &touched(&["/a"]), &[img("/a/x.jpg"), img("/a/y.jpg")]);
+    let patched = patch_counts(
+        &existing,
+        walked(&touched(&["/a"])),
+        &[img("/a/x.jpg"), img("/a/y.jpg")],
+    );
     assert_eq!(patched.per_folder.get("/a").copied(), Some(2), "/a added");
     assert_eq!(patched.total, 7);
 }
@@ -73,7 +86,7 @@ fn replace_then_patch_round_trips_through_the_global_cache() {
     assert_eq!(after_replace.per_folder.get("/a").copied(), Some(2));
 
     // A live tick re-walks /a and finds one image now: the cache patches /a in place.
-    patch_touched_dirs(vid, &touched(&["/a"]), &[img("/a/x.jpg")]);
+    patch_touched_dirs(vid, walked(&touched(&["/a"])), &[img("/a/x.jpg")]);
     let after_patch = COUNTS.lock_ignore_poison().get(vid).cloned().expect("cached");
     assert_eq!(after_patch.per_folder.get("/a").copied(), Some(1), "/a patched");
     assert_eq!(after_patch.per_folder.get("/b").copied(), Some(1), "/b untouched");
@@ -87,7 +100,7 @@ fn patch_is_a_noop_without_a_cached_volume() {
     // never inserting a partial (touched-dirs-only) entry that would undercount the volume.
     let vid = "coverage-test-patch-noop";
     invalidate(vid);
-    patch_touched_dirs(vid, &touched(&["/a"]), &[img("/a/x.jpg")]);
+    patch_touched_dirs(vid, walked(&touched(&["/a"])), &[img("/a/x.jpg")]);
     assert!(
         !COUNTS.lock_ignore_poison().contains_key(vid),
         "a patch with nothing cached inserts nothing"

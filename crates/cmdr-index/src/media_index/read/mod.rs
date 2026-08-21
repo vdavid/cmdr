@@ -469,7 +469,9 @@ pub fn qualifying_images_for_paths(volume_id: &str, paths: &[String]) -> HashMap
         return HashMap::new();
     };
     match pool.with_conn(|conn| walk_image_entries_in_dirs(conn, &dirs)) {
-        Ok(Ok(entries)) => entries.into_iter().map(|e| (e.path.clone(), e)).collect(),
+        // The walk also hands back the dirs it covered, which only a pass's GC and counts
+        // patch need; a read like this one drops it.
+        Ok(Ok((_walked, entries))) => entries.into_iter().map(|e| (e.path.clone(), e)).collect(),
         _ => HashMap::new(),
     }
 }

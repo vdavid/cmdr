@@ -176,17 +176,22 @@ inside `media_index` because the writer thread mutates it directly.
 ### The importance score cache
 
 `ImportanceIndex::above_threshold(0.0)` is an ordered read of EVERY scored folder, which SQLite runs as an external
-merge sort (a measured 368,043 scored folders on one root). That's fine once per enrichment pass and ruinous per UI
-query, and the per-file badge asks per visible range, per pane, on every listing swap and enrichment tick. Uncached,
-those queries piled up on the tokio blocking pool until it hit its 512-thread cap, at which point every other
-`spawn_blocking` in the app starved: directory listings never completed and the volume list timed out into an empty
-picker.
+merge sort (a measured 368,043 scored folders on one root), and it then rebuilds a map that size. Ruinous per UI query:
+the per-file badge asks per visible range, per pane, on every listing swap and enrichment tick, and uncached those
+queries piled up on the tokio blocking pool until it hit its 512-thread cap, at which point every other `spawn_blocking`
+in the app starved — directory listings never completed and the volume list timed out into an empty picker. Ruinous on a
+timer too: it was 45.8 ms of every 60-second media live tick at 90,308 folders (release build, M1 Max,
+`scheduler/live_bench.rs`, 2026-08-21 — `docs/notes/live-tick-cost-2026-08-21.md`).
 
 `coverage::importance_scores(data_dir, volume_id, at_least)` therefore serves a per-volume cached `Arc<HashMap>`.
 `at_least: None` is every scored folder, so a slider drag gets one read serving every position; `Some(threshold)`
 memoizes the projection the enrichment gate checks MEMBERSHIP against (`local_should_enrich`), so the gate stops copying
 the whole map per call. ONE function taking the threshold rather than two functions, because the crate's public surface
-is capped (`index-crate-isolation`). ❌ Never call `above_threshold` straight from a UI-driven path.
+is capped (`index-crate-isolation`). ❌ Never call `above_threshold` straight from anywhere else.
+
+**Keyed by data dir AND volume**, because the volume id alone doesn't name a store: `data_dir/importance-<vol>.db` does.
+The app has exactly one data dir, so production sees one entry per volume either way; what it buys is that two tests
+over their own temp dirs can't read each other's scores through a process-global map.
 
 **Freshness rides the recompute subscription, ❌ not the generation stamp.** An INCREMENTAL rescore writes rows at the
 CURRENT generation without bumping it (`importance/writer.rs` § `apply_incremental`), so a generation-keyed cache would
@@ -196,8 +201,9 @@ happened" — see `importance/read/DETAILS.md` § The reload contract). Draining
 task because every read already goes through one function, which is the same freshness without spawning a per-volume
 task from inside a blocking closure.
 
-`MediaScheduler::folder_scores` deliberately keeps its own uncached read: it runs once per enrichment pass, not per UI
-event, and a pass wants the store as of its own start.
+`MediaScheduler::folder_scores` is a thin wrapper over this cache, so every pass and every badge query read the same
+map. A pass still gets a coherent snapshot: it takes the `Arc` once at its start and holds it, and a patch landing
+mid-pass clones behind `Arc::make_mut` rather than mutating the handle the pass is reading.
 
 `media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes (master
 on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold —
@@ -241,10 +247,13 @@ IMMEDIATELY after the walk (not at the pass's end), so readers have the denomina
 cancelled or paused pass still leaves correct counts behind. A live tick calls `coverage::patch_touched_dirs` to replace
 just the counts for the dirs it re-walked (a tick can't rebuild the whole cache — it only walked the touched dirs).
 `patch_touched_dirs` runs on the SAME `enriched > 0 || gc_count > 0` condition the live tick's vector-cache invalidate
-does: both a GC'd deletion and a new/changed image move a touched dir's qualifying count. `coverage::invalidate`
-survives for the rare reclaim / retro-delete prunes: those change no index rows (only stored `media.db` rows), so the
-qualifying set is actually unchanged and invalidate is conservative — a cheap cold rebuild on a rare user action rather
-than a stale count.
+does: both a GC'd deletion and a new/changed image move a touched dir's qualifying count. ❗ The dirs it is handed must
+be exactly the ones the walk covered — the tick's COVERAGE-FILTERED set, never its raw touched set — because the patch
+replaces each dir it is given with a count taken from that walk, so a dir the walk skipped would be replaced by zero.
+The flip side is that an uncovered dir's count goes stale until a full pass refills it (`scheduler/DETAILS.md` § The
+coverage filter). `coverage::invalidate` survives for the rare reclaim / retro-delete prunes: those change no index rows
+(only stored `media.db` rows), so the qualifying set is actually unchanged and invalidate is conservative — a cheap cold
+rebuild on a rare user action rather than a stale count.
 
 An `ext` column + partial index in the drive index to prune this cold walk was measured on copies of the real dev DBs
 and skipped: 6.4x on the root DB but ~nothing on the image-dense NAS, for a schema bump and +58 MB, against a walk that

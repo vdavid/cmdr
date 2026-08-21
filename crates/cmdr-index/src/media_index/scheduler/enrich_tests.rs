@@ -876,7 +876,7 @@ fn walk_in_dirs_touches_only_the_given_dirs() {
         &[("/a", "x.jpg", 1, 10), ("/b", "y.jpg", 2, 20), ("/c", "z.jpg", 3, 30)],
     );
     let store = IndexStore::open(&index_path).expect("reopen");
-    let mut images = walk_image_entries_in_dirs(store.read_conn(), &touched(&["/a", "/b"])).expect("walk");
+    let (_walked, mut images) = walk_image_entries_in_dirs(store.read_conn(), &touched(&["/a", "/b"])).expect("walk");
     images.sort_by(|a, b| a.path.cmp(&b.path));
     let paths: Vec<&str> = images.iter().map(|i| i.path.as_str()).collect();
     assert_eq!(paths, vec!["/a/x.jpg", "/b/y.jpg"], "only /a + /b walked; /c untouched");
@@ -892,7 +892,7 @@ fn walk_in_dirs_skips_a_dir_absent_from_the_index() {
     let index_path = dir.path().join("index-root.db");
     build_index(&index_path, &[("/a", "x.jpg", 1, 10)]);
     let store = IndexStore::open(&index_path).expect("reopen");
-    let images = walk_image_entries_in_dirs(store.read_conn(), &touched(&["/gone"])).expect("walk");
+    let (_walked, images) = walk_image_entries_in_dirs(store.read_conn(), &touched(&["/gone"])).expect("walk");
     assert!(images.is_empty(), "a dir absent from the index yields no images");
 }
 
@@ -908,7 +908,7 @@ fn scoped_gc_spares_rows_in_untouched_dirs() {
     build_index(&index_path, &[("/a", "keep.jpg", 1, 10), ("/b", "survivor.jpg", 2, 20)]);
     let store = IndexStore::open(&index_path).expect("reopen");
     let touched_a = touched(&["/a"]);
-    let images = walk_image_entries_in_dirs(store.read_conn(), &touched_a).expect("walk");
+    let (walked_a, images) = walk_image_entries_in_dirs(store.read_conn(), &touched_a).expect("walk");
 
     let writer = media_writer(dir.path(), "root");
     for path in ["/a/keep.jpg", "/a/gone.jpg", "/b/survivor.jpg"] {
@@ -926,7 +926,7 @@ fn scoped_gc_spares_rows_in_untouched_dirs() {
         &EnrichGates {
             should_enrich: &|_| true,
             is_excluded: &|_| false,
-            gc_scope: GcScope::TouchedDirs(&touched_a),
+            gc_scope: GcScope::TouchedDirs(walked_a),
             clip_stamp: None,
         },
         &no_op_hooks(),
@@ -961,7 +961,7 @@ fn whole_store_gc_over_a_scoped_walk_would_wipe_untouched_dirs() {
     build_index(&index_path, &[("/a", "keep.jpg", 1, 10), ("/b", "survivor.jpg", 2, 20)]);
     let store = IndexStore::open(&index_path).expect("reopen");
     let touched_a = touched(&["/a"]);
-    let images = walk_image_entries_in_dirs(store.read_conn(), &touched_a).expect("walk");
+    let (_walked_a, images) = walk_image_entries_in_dirs(store.read_conn(), &touched_a).expect("walk");
 
     let writer = media_writer(dir.path(), "root");
     for path in ["/a/keep.jpg", "/b/survivor.jpg"] {
@@ -1006,7 +1006,7 @@ fn a_scoped_tick_promotes_a_lone_raw_and_gcs_the_deleted_jpg() {
     build_index(&index_path, &[("/photos", "raw.cr2", 1, 10)]); // raw.jpg gone
     let store = IndexStore::open(&index_path).expect("reopen");
     let touched_photos = touched(&["/photos"]);
-    let images = walk_image_entries_in_dirs(store.read_conn(), &touched_photos).expect("walk");
+    let (walked_photos, images) = walk_image_entries_in_dirs(store.read_conn(), &touched_photos).expect("walk");
     assert_eq!(
         images.iter().map(|i| i.path.as_str()).collect::<Vec<_>>(),
         vec!["/photos/raw.cr2"],
@@ -1027,7 +1027,7 @@ fn a_scoped_tick_promotes_a_lone_raw_and_gcs_the_deleted_jpg() {
         &EnrichGates {
             should_enrich: &|_| true,
             is_excluded: &|_| false,
-            gc_scope: GcScope::TouchedDirs(&touched_photos),
+            gc_scope: GcScope::TouchedDirs(walked_photos),
             clip_stamp: None,
         },
         &no_op_hooks(),

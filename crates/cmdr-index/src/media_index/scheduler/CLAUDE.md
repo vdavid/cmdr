@@ -19,8 +19,14 @@ Subsystem-wide invariants (deletion doctrine, the scope model, `should_stop`) ar
 - **GC scope is a PARAMETER, and getting it wrong wipes the store.** `GcScope::WholeStore` is for the full pass / Fresh
   sweep only; a live tick MUST use `GcScope::TouchedDirs`, which collects only rows under the dirs it re-walked.
   Whole-store `gc_targets` on a scoped walk deletes every row OUTSIDE the touched dirs.
+- **A tick coverage-filters its touched dirs BEFORE walking**, then the walk hands back a `WalkedDirs` token that
+  `GcScope::TouchedDirs` and `coverage::patch_touched_dirs` are the only consumers of — so a GC scope wider than the
+  walk (which deletes every row in the difference) is unrepresentable rather than forbidden. `local_dir_may_be_covered`
+  is a proven superset of `local_should_enrich`; keep it that way (a proptest holds it).
 - **The live tick coalesces on its own `#live` coordinator key**, ❌ never the full-pass key, or a `ScanCompleted` full
   pass would silently downgrade into a scoped tick. It skips entirely while a full pass runs for that volume.
+- **`folder_scores` is a wrapper over `coverage::importance_scores`** (the subsystem-wide "never `above_threshold`
+  direct" rule): a tick asks once a minute per volume, and the direct read was 45.8 ms at 90,308 folders against 2.8 µs.
 - **`folder_scores` `None` ⇒ override-only.** ❌ Never fall back to enrich-all: importance takes seconds to land, the
   slider is forward-only, and an enrich-all pass over-indexes the volume permanently. A pass that deferred marks the
   volume (`mark_deferred_for_importance`); `wire_volume` subscribes to importance SYNCHRONOUSLY, before the first pass,
