@@ -311,3 +311,30 @@ models something a real backend genuinely does:
 A fault the caller wants to arm on a call COUNT rather than on a path belongs one layer up, in the app's `FaultyVolume`
 wrapper (`file_system/write_operations/transfer/volume/faulty_volume_test_support.rs`): it wraps any volume and fails
 the Nth call to a named operation. ❌ Don't grow this list with fault shapes that aren't about what a real backend does.
+
+## `process_memory`: three accountants, and the one reader that spans them
+
+`query_mimalloc_heap` sees only our Rust heap. `query_system_malloc_zones` sees only the registered macOS zones, which
+mimalloc never joins. Neither can say what SHAPE the bytes are in, and that gap is what left a 643 MB block unnamed
+across three memory investigations (`../../docs/notes/idle-memory-profile-2026-07-28.md`).
+
+`query_vm_regions` closes it. It walks the task's own VM map with `mach_vm_region_recurse` and folds the entries by
+`user_tag`, so it produces the same rows `vmmap -summary` prints — in-process, with no `vmmap` to spawn and no
+`MallocStackLogging` relaunch, and covering BOTH allocators because every allocator ultimately takes its pages from the
+kernel.
+
+The per-tag histogram of distinct region sizes is the part that names things. macOS routes any allocation past its
+127 KB large-zone threshold to a VM region of exactly the requested size, so a repeated exact size under `MALLOC_LARGE`
+is a fingerprint of whatever asked for that many bytes. That is how the CLIP Core ML towers were identified from a
+region table alone: 101,187,584 bytes is the text tower's `49,408 × 512` fp32 token embedding and nothing else in the
+process (`../cmdr-index/src/media_index/clip/DETAILS.md` § "What holding the towers costs"). The mechanism is asserted,
+not assumed: `a_big_system_zone_block_becomes_a_malloc_large_region_of_exactly_its_size`.
+
+⚠️ **`<mach/vm_region.h>` lives inside `#pragma pack(push, 4)`, so `VmRegionSubmapInfo64` must be
+`#[repr(C, packed(4))]`.** With plain `#[repr(C)]` the `u64` `offset` field gets 4 bytes of padding the kernel didn't
+write, every field after it reads 4 bytes late, and the walk returns plausible-looking nonsense rather than an error:
+tags above 255 (the tag space only goes to 255), a region count an order of magnitude short, and a freshly allocated
+9 MiB block absent from the map entirely (verified on macOS 26.5, 2026-08-21).
+
+Cost is one syscall per map entry, so it is snapshot-only — never per watchdog tick or per log line, unlike the
+`task_info` readers beside it.
