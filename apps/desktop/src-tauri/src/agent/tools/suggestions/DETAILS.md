@@ -1,8 +1,7 @@
 # Suggested-ops tools — details
 
-Pull-tier docs for `agent/tools/suggestions/`. Must-knows: `CLAUDE.md`. The feature end to end:
-`docs/specs/agent-suggested-ops-plan.md`. The rows and the lifecycle: `../../store/proposals/DETAILS.md`. Selector
-resolution and the metric: `../../suggested_ops/DETAILS.md`.
+Pull-tier docs for `agent/tools/suggestions/`. Must-knows: `CLAUDE.md`. The rows and the lifecycle:
+`../../store/proposals/DETAILS.md`. Selector resolution and the metric: `../../suggested_ops/DETAILS.md`.
 
 ## The three tools, and why the access classes fall where they do
 
@@ -63,7 +62,7 @@ Two ages BAND a range: "older than 30 and newer than 90" means 30–90 days old 
 and is refused as `ImpossibleWindow`, as is an inverted size window. Proposing over an empty window costs the user a
 review that can't contain anything.
 
-**"Last opened" is not expressible**, and it is the plan's flagship example ("installers you've already opened"). The
+**"Last opened" is not expressible**, and it is the feature's flagship example ("installers you've already opened"). The
 drive index carries size, modification time, and inode; there is no access time, and `importance.db`'s visit counts are
 per-FOLDER, not per-file (verified against M1's selector resolver and the importance schema, 2026-08-18). A predicate
 that compiled and matched nothing would be worse than its absence: the agent would propose over it and the user would

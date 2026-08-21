@@ -15,6 +15,31 @@ roots in groups with the visit queue checked between them, drain, take stock. `M
 the drain (a root can expose new ground while it is being walked); past that whatever is left is this session's loss and
 the next launch asks again. ❌ That is a PASS budget, never a completion rule.
 
+## What phases changed: the order of the walk, not its extent
+
+The whole drive is still indexed, by default, with no setting of its own. What phases change is which ground is walked
+FIRST and what a quit costs; `scan_completed_at`, freshness, and the onboarding copy keep their exact meanings.
+
+**Narrowing the default scope to `$HOME` was the alternative, and measurement killed it.** On David's boot volume
+(5,191,189 entries, 768 MB index, 2026-08-14) everything outside `$HOME` is 800,441 entries — **15.4%**, roughly 30 s of
+walking and 115 MB — while `~/Library` ALONE is 1,437,538 (27.7%). A home-only default would therefore have skipped the
+small pile and kept the biggest pile of machine-generated files on the disk, in exchange for a permanently partial index
+that every completion, freshness, rescan, sweep, watch, and upgrade path in this crate would have had to learn about.
+Numbers, method, and the conditions that would change the answer: `docs/notes/index-scope-measurement-2026-08-14.md`.
+
+**The folders the early-value claim is about are free under any design.** Desktop, Documents, Downloads, Pictures,
+Movies, and Music total **4,735 entries** on the same machine, under a second between them. What ordering buys is that
+they are walked before `/System`, which is a different claim from their being cheap.
+
+⚠️ **Covering in phases costs more wall clock to full coverage than the bulk build did, and that was accepted on
+purpose.** Measured over a real `/` (release, three runs each, 2026-08-15 evening): **71.0 s against a same-evening bulk
+baseline of 40.5 s, 1.75×**, with `home_covered_at` landing at 42.5–44.1 s — parity with the bulk build's ENTIRE run.
+Full coverage is background work the `clearance` seam already paces, so the extra half-minute is invisible unless
+somebody is watching the badge, and it buys interrupt-survival plus a minutes-earlier photo search. ⚠️ It reads like a
+regression waiting to be tuned away and it isn't: the two costs it is made of were already found and fixed (ground a
+walk gave up on being re-offered, and a per-root writer flush), and what is left is walking.
+`docs/notes/phased-vs-bulk-index-2026-08-14.md`.
+
 ## The stitch, and why phases would silently degrade without it
 
 A cover walk marks only the directories it READS. Bootstrap creates the ancestor chain at `listed_epoch = 0` and claims
@@ -81,6 +106,17 @@ depth splits it (`docs/notes/phased-vs-bulk-index-2026-08-14.md` § depth 1 agai
 behind one waits out the whole thing: "what you open gets indexed next" meant "in tens of seconds". So the batch drain
 asks, per batch, whether a folder somebody opened is waiting behind this walk, and stops the walk if one is. What that
 buys and what stopping costs: `docs/notes/preemption-2026-08-18.md`.
+
+⚠️ **Stopping a walk has a break-even, and below it the machine loses.** What the user waits for a folder they opened is
+the poll latency (≤500 ms, the reporter's tick, which the seam's contract forbids beating) plus cancel-to-join (~90 ms
+locally) plus that folder's own walk; what they used to wait was the rest of the sibling's walk plus the same walk. **So
+stopping pays exactly when a frontier root takes longer than the poll plus the join** — under a second on this hardware.
+Measured below the line, a 12,000-directory sibling cost the opened folder 16 ms MORE than doing nothing would have
+(194.65 ms against 178.99 ms). That loss is worth taking: it is bounded by the poll tick, it lands only where roots are
+small and so nobody was waiting long anyway, and the alternative — a size threshold before stopping a walk — needs a
+number nothing in the index can answer, since a frontier root is virgin ground by definition. That is the same wall
+`grouping.rs` exists to work around. ⚠️ The above-the-line half is reasoned from two measured terms rather than measured
+end to end; the note says why the fixture couldn't hold it.
 
 Three rules hold it together, each of which fails silently:
 

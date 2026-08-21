@@ -1,7 +1,7 @@
 # Wake pipeline details
 
-Pull-tier docs for `agent/wake/`. Must-knows: `CLAUDE.md`. The feature end to end:
-`docs/specs/agent-suggested-ops-plan.md`.
+Pull-tier docs for `agent/wake/`. Must-knows: `CLAUDE.md`. What a wake produces:
+`../suggested_ops/DETAILS.md`.
 
 ## The tap point (agent-spec 18.14, resolved)
 
@@ -156,14 +156,37 @@ the database, sitting in a list beside threads the user named themselves.
 The sink is a plain `ChatEventSink`, the same unbounded channel the rail uses. Nobody is
 watching a rail during a wake, so the caller supplies one that drives the indicator instead.
 
-## Not built here, and what M4b needs to know
+## The two seams nothing drives yet
 
-The TAP ADAPTER is not built: mapping the crate-side per-batch rollup into `EventBundle` and
-calling `admit_if_permitted` is the remaining seam, and it belongs beside the observer
-described above. The indicator wiring is m4b surface.
+The pipeline is whole and tested from `EventBundle` in to a sweep out, and **nothing in the
+app calls either end**: `Inbox::admit_if_permitted` and `run_wake` have no production caller,
+only tests. Two adapters close that, and each has constraints worth stating before somebody
+builds it.
+
+**The tap adapter** maps the crate-side per-batch rollup into `EventBundle` and calls
+`admit_if_permitted`. It belongs beside the observer described above, and it follows
+`ChurnObserver`'s shape deliberately: that type is passed by `&mut` so a live batch cannot be
+processed without one, and a `churn_monitor/tests.rs` scanner walks every live-batch driver
+and fails when one of them doesn't build a real observer. Inherit both, or the cold-start
+replay path silently taps nothing, which is the failure `live.rs`'s own comment records
+having already happened once. The mapping is the whole adapter: `cmdr-index` may never name
+the agent (`index-crate-isolation`), so the rollup crosses on the existing `IndexEvent` seam
+and the agent-side vocabulary starts here.
+
+**The scheduler** owns a timer that fires at `Inbox::next_deadline` and calls `run_wake`. It
+has to resolve provider, model, and prompt budget the way the command layer does for a user
+send (the budget is read fresh per send, so a wake reading a stale one would think with a
+different window than the rail), and it supplies the `ChatEventSink`: a wake has no rail
+watching it, so the sink drives the indicator instead. `run_wake` already declines cheaply on
+every gate, so the scheduler may call it whenever a deadline passes and needs no gate logic of
+its own.
+
+**Every `WakeReadiness` gap is a state the indicator renders with an action; none of them is
+silence.** A user who declined Full Disk Access and a user with a tidy Downloads folder
+otherwise see the identical nothing, and only one of those is the feature working.
 
 **A wake creates a conversation, so wake threads appear in the rail session list.** Ten wakes
 over a quiet week is ten threads the user never started, interleaved with their own. The
-`origin` column is already `notification` on every one, so filtering needs no schema work, but
-the product call between filtering the default view and a separate affordance belongs to the
-dialog work.
+`origin` column is already `notification` on every one, so filtering needs no schema work; the
+choice between filtering the default view and giving them their own affordance is a product
+call nobody has made.

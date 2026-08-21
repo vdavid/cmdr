@@ -417,6 +417,50 @@ walked nothing in ~2 ms, wrote `volume_path=/` (a local-scanner-only marker), an
 regression-locked by `manager::tests::force_rescan_routes_smb_and_mtp_to_the_trait_scanner_not_the_local_walker`.
 Classify by the typed `kind`, never a volume-id substring.
 
+## Two ownership designs that were considered and rejected
+
+Both come back around every time somebody reads the `❌` count in this crate and concludes that one authority would
+retire it. Neither would, and the reasons are structural rather than a matter of appetite.
+
+**A `GroundBroker`: one module holding a priority queue, tickets, and re-entrant leases that every other mechanism
+migrates onto.** Rejected on three counts, each checked against the code rather than argued:
+
+- **Its headline milestone was impossible.** `IndexPhase::Running(Box<IndexManager>)` and `with_running_manager` hold
+  the registry lock by construction, so `mem::replace` is the only route to an owned `&mut`. A lease is a logical token
+  and gives the borrow checker no permission at all; what looked like arbitration was a custody refactor in disguise.
+- **It proposed a shape this crate refuses by name.** Hanging the follow-on work off `Claim`'s `Drop` is already ruled
+  out in `cover/mod.rs`: a scan spawning out of a destructor is a side effect nobody reading `Claim` would expect.
+- **Its performance case rested on a refuted number.** The 3.0 s / 2,503-root figure is explicitly unattributed in
+  `docs/notes/cover-no-ground-block-2026-08-15.md`, and `docs/notes/branch-set-cost-2026-08-15.md` refutes the
+  attribution. What the claim table's `Vec`→`BTreeMap` fix really named is ~450 ms of it
+  (`docs/notes/claim-table-cost-2026-08-17.md`), and the rest is still open.
+
+The mechanism that survived instead is `cover/live/`: it was already RAII, already partial-grant, already per-volume,
+and its overlap rule already treated an ancestor as covering, so the volume-level question and the subtree-level
+question were one namespace written twice. The wish neither of its two modes expresses, and why reaching for holder
+identity to express it walks straight back into the broker, is `cover/live/DETAILS.md` § "And the one walk a volume is
+waiting for".
+
+**Shareable manager custody (`Arc<Mutex<IndexManager>>` in place of extract-and-reinsert).** Spiked and dropped
+2026-08-18; evidence and numbers in `docs/notes/manager-custody-spike-2026-08-18.md`.
+
+- **There is no exclusion to give up.** `work(&mut IndexManager)` needs the manager for its whole body, and that body is
+  the blocking scan-start prelude. An `Arc<Mutex<_>>` keeps exactly the same exclusion and charges a lock for it,
+  converting a window where NO lock is held into one where a lock every reader of that volume must take is held across
+  blocking I/O — 3–10 ms typical on the boot disk, seconds on the truncating arm, unbounded on a wedged mount. That is
+  the hazard § "Lock discipline" above records two QA incidents for, and `cover_context_for` (50–150 calls a phase) plus
+  `get_writer_and_scanning_for` (per SMB change) would both move onto it.
+- **The two exclusions it was credited with are already carried elsewhere**: `start_pending_phases` is single-flighted
+  by `PendingPhases`' compare-and-set, and `cover_context_for` by the `Exclusive` claim `start_scan` takes before any
+  blocking work.
+- **It retired none of the stranding hazards.** It relocates poison and panic strands into manager-mutex poisoning, a
+  larger surface than the microsecond registry holds it replaces.
+
+What the spike DID find was worth doing and has since landed as `IndexPhase::Detached` (§ "The detached window"): a
+teardown that arrived while the manager was out used to be silently swallowed, `fail_index` included. ⚠️ Blast radius
+was never the argument against custody, and 23 call sites across eight files is mostly mechanical work. The lock
+semantics are the ground to reject it on, and they are the ground somebody proposing it again has to answer.
+
 ## Freshness (`freshness.rs`) — the state machine and the seam
 
 Local disk gets freshness free from FSEvents' journal (replay from `last_event_id` → Fresh on launch). SMB/MTP/external

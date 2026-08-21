@@ -113,7 +113,7 @@ shape it did:
 
 - **The four logging gaps**, answered by an in-flight phase table plus a stall watchdog rather than by more log lines:
   `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "The stall signal". The `smb2` half
-  (outstanding-request accounting for every command) finished as M0 of `docs/specs/smb-transfer-resilience.md`.
+  (outstanding-request accounting for every command) shipped in `smb2` 0.15.0 as `OutstandingRequest::sent_age`.
 - **No byte-incomplete file at its final name**, the guarantee the two phone backups were owed: same file, § "File
   writes are staged", extended to local copies in § "Local copies stage".
 - **Cancel and Rollback reaching a parked driver**: same file, § "Cancel and rollback reach a parked driver".

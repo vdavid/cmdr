@@ -22,16 +22,15 @@ entity, not the surface, so later proactive slices (proposals, notifications) gr
 
 ## Must-knows
 
-- **The agent can propose; only the user can approve.** No write tool, no arbitrary file-content-read tool. The agent
-  view admits `access: Read` and `access: Propose` entries, never `Write`. A `Propose` tool mutates nothing: it stages a
-  proposal and opens a review surface. Approval originates in the frontend as a user action, and there is no tool (and
-  never will be one) that approves a proposal. **Consent is unaffected by `Propose`**: proposals flow agent → user,
-  never to the provider, so egress and `CONSENT_COPY_VERSION` don't change. Names, paths, and metadata reach
-  the provider (spec §2.1); the ONLY derived-content egress is the photo pair, `search_photos` (in-image OCR snippets +
-  Vision tags) and `image_facts` (the FULL stored OCR text + tags for paths the caller names). Image-derived TEXT,
-  never image bytes; see `mcp/executor/photos.rs` and `image_facts.rs`. That egress is named in the consent copy
-  (`askCmdr.consent.*`), so bump `CONSENT_COPY_VERSION` if what it can send changes. This is a structural privacy line;
-  don't add a tool that widens it without revisiting the whole consent + gating story.
+- **The agent can propose; only the user can approve** (invariant 7). No write tool, no arbitrary file-content-read
+  tool: the agent view admits `Read` and `Propose` entries, never `Write`. A `Propose` tool mutates nothing (it stages a
+  proposal and opens a review surface), approval originates in the frontend as a user action, and no tool approves one.
+  **`Propose` doesn't touch consent** (proposals flow agent → user, never to the provider), so don't re-litigate that.
+- **The egress line is structural.** Names, paths, and metadata reach the provider; the ONLY derived-content egress is
+  the photo pair, `search_photos` (OCR snippets + Vision tags) and `image_facts` (full stored OCR text + tags for named
+  paths). Image-derived TEXT, never image bytes (`mcp/executor/photos.rs`, `image_facts.rs`). The consent copy
+  (`askCmdr.consent.*`) names it, so bump `CONSENT_COPY_VERSION` if what it can send changes, and don't add a tool that
+  widens it without revisiting the whole consent + gating story.
 - **The runtime drives the seams; the IPC is wired.** `chat::runtime` consumes the `AgentLlm` seam, store queries, and
   tool dispatch; `agent::start` registers `ChatRuntime`. `../commands/agent/` is the thin frontend surface
   (send/cancel, conversation CRUD + FTS, attachment resolvers, consent + cost commands; full list in DETAILS.md).
@@ -48,5 +47,6 @@ entity, not the surface, so later proactive slices (proposals, notifications) gr
   `CONSENT_COPY_VERSION` whenever the consent copy changes materially** so users re-accept. The record (version +
   timestamp) lives in `main.db`'s `meta` table via `store::{get,set,clear}_consent`.
 
-Module layout, read-only rationale, how the slice relates to the full agent: `DETAILS.md`. Read it before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+Module layout, read-only rationale, how the slice relates to the full agent, and the **invariants register** (where
+code citing a bare `(invariant 6)` resolves): `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

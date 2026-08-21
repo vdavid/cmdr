@@ -1,7 +1,8 @@
 # Suggested ops details
 
 Pull-tier docs for `agent/suggested_ops/`. Must-knows live in `CLAUDE.md`; the persistence layer is
-`../store/proposals/DETAILS.md`; the feature plan is `docs/specs/agent-suggested-ops-plan.md`.
+`../store/proposals/DETAILS.md`; the review surface is `apps/desktop/src/lib/suggested-ops/DETAILS.md`; what wakes the
+agent to propose at all is `../wake/DETAILS.md`.
 
 ## Selectors: proposing 60 000 ops without naming 60 000 paths
 
@@ -86,6 +87,12 @@ Converting the first into the second cannot work: whole seconds turn into a `mod
 
 A source that cannot be read at preflight simply gets no entry, and the binding drops what it does not name, so it is skipped and reported rather than acted on.
 
+**Decision: the operation log records `Initiator::Agent`, even though behaviour is identical either way.**
+**Why**: the guiding principle is about BEHAVIOUR, not about erasing provenance. An approved op runs exactly as a
+clicked one does, and the audit trail is the one place the difference is worth keeping: recording plain `User` would
+make "what did the agent talk me into?" permanently unanswerable, at no benefit. `AgentEdited` marks the mixed case,
+where the user typed the name themselves (invariant 10) and the row would otherwise credit the model for it.
+
 **Rename routes like every other verb.** Its executor is the one that takes per-row destinations and a fingerprint per row, and the live capture supplies exactly that: `rename_rows` rejoins the group's shared parent with each op's stored NAME (the executor refuses a row whose parents differ) and reads the fingerprint out of the binding rather than stat-ing the same files twice.
 
 **Compress is the one verb that runs unbound.** It routes to the archive-changeset driver, which plans from its own walk and has nowhere to apply a per-source binding. The exposure is small and one-directional: compress READS its sources into a new archive rather than moving or deleting them, so a source that changed in the window is copied in its newer form rather than lost.
@@ -96,6 +103,17 @@ A source that cannot be read at preflight simply gets no entry, and the binding 
 - **A compress that updates an EXISTING archive in place** rather than seeding a new one. `GroupIntent::Compress` already carries `overwrites_existing`, and an overwrite is `Reversibility::Irreversible` because the prior bytes are not retained; an unbound one would destroy an archive the user reviewed on the strength of what it contained.
 
 Either change makes the binding load-bearing for this verb, and the cheapest honest fix is the same one the transfer routes took: teach the archive driver a per-source pre-flight, or refuse a bound compress the way `route_cannot_hold_a_binding` refuses the other changeset routes. ❌ Don't add either capability while compress still passes no `ExpectedSources`.
+
+## Two live groups naming the same file: safe, but unexplained
+
+Nothing stops the agent proposing the same path in two pending groups. Approving both is data-SAFE: the second run's
+preflight fingerprint no longer matches what the first run did to the file, so those sources are skipped and reported
+rather than acted on.
+
+What is missing is the explanation. Nothing invalidates the loser at approval time, and the skip surfaces as a bare
+per-op outcome rather than "another group already moved this". David's call, recorded so nobody re-derives the risk:
+**okay for now.** If it gets fixed, the fix belongs at the proposal boundary (invalidate or flag the overlap when the
+winner claims), never as an extra check on the execution path.
 
 ## Saying that the pending set moved
 

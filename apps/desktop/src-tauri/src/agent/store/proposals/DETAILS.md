@@ -1,7 +1,7 @@
 # Proposal spine details
 
-Pull-tier docs for `agent/store/proposals/`. Must-knows live in `CLAUDE.md`. The feature this serves, end to end:
-`docs/specs/agent-suggested-ops-plan.md`.
+Pull-tier docs for `agent/store/proposals/`. Must-knows live in `CLAUDE.md`. The service above:
+`../../suggested_ops/DETAILS.md`. The review surface: `apps/desktop/src/lib/suggested-ops/DETAILS.md`.
 
 ## Why three levels, and why the middle one is the unit
 

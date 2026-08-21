@@ -378,7 +378,8 @@ fn writable(location: Location) -> Result<WritableDestination, GroupProblem> {
     WritableDestination::new(location).ok_or(GroupProblem::DestinationInsideArchive)
 }
 
-/// Pair a verb with the target its executor binds: the plan's verb table, as code.
+/// Pair a verb with the target its executor binds: the per-verb executor table
+/// (`../../store/proposals/DETAILS.md`), as code.
 fn plan_shape(
     verb: ProposalVerb,
     destination: Option<Location>,

@@ -1,8 +1,8 @@
 //! What the real shapes cost, measured against the shipped assets rather than guessed.
 //!
-//! These are the numbers the plan's "measured ground truth" quotes and the budget table's
-//! reasoning rests on, so they are pinned here: a change that quietly doubles what a file
-//! costs fails a test instead of surprising a user mid-rename.
+//! These are the numbers `DETAILS.md` § "What the budgets buy, measured" quotes and the budget
+//! table's reasoning rests on, so they are pinned here: a change that quietly doubles what a
+//! file costs fails a test instead of surprising a user mid-rename.
 
 use serde_json::json;
 
@@ -21,11 +21,11 @@ const OCR_CHARS: usize = 900;
 
 const FILES: usize = 100;
 
-// ── The documented costs, in one place (the plan's "measured ground truth") ────
+// ── The documented costs, in one place (`DETAILS.md` § What the budgets buy) ────
 //
 // Estimated tokens, `chars/4`, measured against the shipped assets. Each is pinned within a
 // tenth below, so a change that doubles what a file costs fails here instead of surprising a
-// user mid-rename. Change one on purpose ⇒ change the plan's section too.
+// user mid-rename. Change one on purpose ⇒ change that DETAILS.md section too.
 //
 // The per-file figures are all PRODUCTION constants (`budget.rs` sizes a rename batch from
 // them, and divides the reply's own ceiling by the plan row), so they're imported rather than
@@ -80,15 +80,15 @@ fn plan_row(index: usize) -> Value {
     })
 }
 
-/// Assert a measured cost sits within a tenth of the figure the plan quotes. A per-item cost
-/// that moves changes which models can do a 100-file rename at all, so it may not drift
-/// quietly: the numbers here and the plan's "measured ground truth" section are one pair.
+/// Assert a measured cost sits within a tenth of the documented figure. A per-item cost that
+/// moves changes which models can do a 100-file rename at all, so it may not drift quietly:
+/// the numbers here and `DETAILS.md` § "What the budgets buy, measured" are one pair.
 fn assert_near(measured: usize, documented: usize, what: &str) {
     let slack = documented / 10;
     assert!(
         measured.abs_diff(documented) <= slack,
         "the measured cost of {what} is {measured}; the documented figure is {documented} (±{slack}). \
-         If the change is intended, update it HERE and in the plan's measured-ground-truth section."
+         If the change is intended, update it HERE and in agent/chat/DETAILS.md's \"what the budgets buy\" section."
     );
 }
 

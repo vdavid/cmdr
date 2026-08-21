@@ -10,7 +10,7 @@
  *
  * ❗ It runs with NO fixture tree, photographing real folders, and therefore on
  * `captureTest` (no leak guard). Read
- * `docs/specs/marketing-screenshot-pipeline-plan.md` before changing how it is wired.
+ * `apps/desktop/test/e2e-playwright/DETAILS.md` § "Key decisions" before changing how it is wired.
  */
 
 import { writeFileSync } from 'node:fs'

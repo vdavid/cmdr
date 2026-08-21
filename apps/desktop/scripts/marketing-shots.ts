@@ -24,7 +24,7 @@
  *   (`src-tauri/src/lib.rs:285-292`), so the socket still works.
  * - **`CMDR_E2E_START_PATH` stays unset**, and the shard skips the fixture machinery.
  *   The suite's post-test guard deletes anything not in the fixture manifest, and this
- *   run photographs REAL folders. See `docs/specs/marketing-screenshot-pipeline-plan.md`
+ *   run photographs REAL folders. See `apps/desktop/test/e2e-playwright/DETAILS.md`
  *   § "Real data comes from the data dir".
  * - **The data dir persists.** Its index stays warm, so the whole-drive reconcile that
  *   makes every size cell an hourglass is a one-time cost rather than a 20-minute tax

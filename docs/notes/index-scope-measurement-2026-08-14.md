@@ -2,7 +2,8 @@
 
 **The question this settled:** should phased indexing also narrow the DEFAULT scope to `$HOME`, leaving the rest of the
 drive behind a setting? Answer: **no.** Phasing changes the walk ORDER; the extent stays the whole drive. The numbers
-below are why, and they are the evidence `docs/specs/phased-indexing-plan.md` decision 3 rests on.
+below are why, and they are the evidence behind the order-not-extent decision recorded in
+`crates/cmdr-index/src/indexing/lifecycle/phases/DETAILS.md`.
 
 ## Method
 

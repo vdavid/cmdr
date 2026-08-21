@@ -37,6 +37,10 @@ cost: 31.1 µs per row in autocommit against 7.0 µs for the same rows inside on
 `pwrite`. End to end through a real `IndexWriter` the same change moves `UpsertEntryV2` from 84.3 µs to 33.4 µs per
 message (`batch/throughput_probe.rs`, debug, 20 K messages, 2026-08-04) — the rest is handler work, not commits.
 
+⚠️ **Both probes are DEBUG builds, so quote the RATIO (4.4x a row, 2.5x a message) rather than the microseconds**: the
+absolute figures don't survive a move to release or to another machine, and the ratio does. The wider record of how this
+effort's numbers were arrived at, including three that were wrong, is `docs/notes/idle-cpu-attribution-2026-08-03.md`.
+
 **The shape: coalesce only what is ALREADY QUEUED.** The first mutation opens `BEGIN IMMEDIATE`, everything behind it
 joins, and the batch closes the moment the queue runs dry. An empty queue therefore commits exactly as eagerly as
 autocommit did, so batching costs NO latency of its own and the crash window covers only work that was uncommitted

@@ -43,4 +43,4 @@ above them that a row can't hold. Depth: `DETAILS.md`.
 - **Symlinks are skipped during resolution.** The index doesn't follow them, so their size and date describe the LINK,
   and a proposal built on those would show facts about something other than the file the user is deciding on.
 
-The feature plan (verbs, milestones, the review dialog): `docs/specs/agent-suggested-ops-plan.md`.
+The review dialog: `apps/desktop/src/lib/suggested-ops/CLAUDE.md`. What wakes the agent to propose: `../wake/CLAUDE.md`.

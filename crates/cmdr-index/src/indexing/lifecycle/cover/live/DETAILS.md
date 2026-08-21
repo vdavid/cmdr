@@ -54,9 +54,13 @@ Two things had to be true for this to work at all, and they are independent:
    `tests::ground_a_yielding_walk_lets_go_of_is_already_the_waiters`, which races a third claim against the release.
 2. **The wait is bounded, because the ask is not a promise.** The walker checks its token between directories, so
    cancel-to-join is a directory's read plus the walker's own drain: 89 ms median over 2,400-directory roots, 151 ms
-   median and 214 ms worst over 40,000-directory ones (`docs/notes/preemption-2026-08-18.md`). `YIELD_WAIT` is the
-   budget, and a holder that doesn't stop inside it costs the waiter that wait and then the answer a plain `take` would
-   have given.
+   median and 214 ms worst over 40,000-directory ones (`docs/notes/preemption-2026-08-18.md`). A 17× bigger root bought
+   a 1.7× longer wait, so the bound grows far slower than the ground does. `YIELD_WAIT` is 750 ms, 3.5× the worst
+   measured, and a holder that doesn't stop inside it costs the waiter that wait and then the answer a plain `take`
+   would have given. ⚠️ **Every one of those numbers is a local `readdir`.** A share's cancel-to-join is a listing round
+   trip and is UNMEASURED; the handover is covered functionally over SMB
+   (`cover::network_tests::a_walk_somebody_waits_on_takes_ground_off_a_background_walk`) and never timed, so they say
+   nothing about a NAS. If preemption ever feels unresponsive on one, that is the first number to take.
 
 **Who may be asked is the whole of the policy**, and it is `WalkFor`, ❌ never holder identity:
 

@@ -1,7 +1,7 @@
 # Suggested ops details
 
-Pull-tier docs for `lib/suggested-ops/`. Must-knows live in `CLAUDE.md`. The feature end to end:
-`docs/specs/agent-suggested-ops-plan.md`.
+Pull-tier docs for `lib/suggested-ops/`. Must-knows live in `CLAUDE.md`. The backend service:
+`apps/desktop/src-tauri/src/agent/suggested_ops/DETAILS.md`.
 
 ## Why the disclosure is shaped this way
 

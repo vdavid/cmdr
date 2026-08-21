@@ -339,6 +339,12 @@ Max at load ~198, a full run produced 13 failures, nine of them cap kills of pur
 (`find_newlines_utf8_matches_memchr`, `walk_memory_tests::*`, `tar_each_codec_round_trips_a_file`). Nothing was wrong
 with those tests; they could not get 8 s of wall-clock while 200 threads fought over 16 cores.
 
+❗ **That result is the opposite of the usual intuition, so measure before restructuring anything.** The natural guess
+is that every offender is a watcher, debounce, or lock test, and under saturation it is false: the dominant failures
+were pure compute (a memchr comparison, allocation-counting walks, codec round-trips), which no test restructuring can
+help — a test needing 0.1 s of CPU cannot finish in 8 s of wall-clock when 200 threads share 16 cores. A deflaking pass
+that starts from a hand-picked list of "obviously timing-shaped" tests fixes tests that were not the problem.
+
 Loosening the cap globally would cost every idle run its hang detector, so `rust-tests` instead re-runs **only** the
 failing tests, alone, and lets the outcome speak:
 
@@ -362,6 +368,11 @@ inside the same container the failing run used, at the same deadlines. It's the 
 cores are a slice of a host that may also be running both E2E lanes and a second container), and the deadlines stay
 identical on purpose: a container-only cap bump would hide the Linux-only slowness the lane exists to catch.
 
+**The E2E suites deliberately get no contention re-run.** Playwright runs `workers: 1` with `fullyParallel: false`, so
+there is no intra-suite parallelism for a serialized probe to remove: the probe stage would be indistinguishable from
+the original run, and every verdict it produced would be noise dressed as a finding. The Rust mechanism works precisely
+because that suite is massively parallel. E2E gets the retry-pass warn below instead.
+
 ### Playwright retry-passes warn too
 
 Both E2E lanes apply the same rule as the Rust suite: a spec rescued by its retry is a flake, not a pass, so the run is
@@ -384,6 +395,13 @@ never "passed". Schema, covered lanes, and ready-made ranking queries: `scripts/
 A per-test `slow-timeout` in `.config/nextest.toml` is a hang backstop, typically 20-50x the real runtime. Don't quote
 one as what a test takes. Measured 2026-07-29 on an idle M3 Max: the SMB test carrying the largest cap (130 s) runs in
 **2.8 s**, and the whole 53-test integration suite finishes in **5.3 s** wall-clock.
+
+❗ The inference doesn't run the other way either, and reading a cap as a comfortable margin is what produced a wrong
+deflaking analysis once. On the same machine, `find_newlines_utf8_matches_memchr` takes **3.3 s alone on an idle
+machine** against the default 8 s cap: a 2.4x margin, not the 10x the cap suggests, which is why it is one of the first
+tests starvation kills. And the headline offender of that analysis, `dropping_a_file_emits_one_event`, was already on a
+20 s cap with `real-notify` serialization, so its 17.75 s burn was against 20 s rather than the assumed 8 s. **Measure
+the test; never derive either direction from the cap.**
 
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 
@@ -471,6 +489,11 @@ entry needs a real "we can't make this faster" justification, not convenience.
   resolved volume id, not mount speed), so the larger budget only delays how long a genuinely-hung mount waits before
   nextest's 30s slow-timeout cap fires. Don't copy the 16s to other tests, and don't apply it to
   `smb_integration_mount_guest_no_dialog`, whose 8s budget IS its assertion.
+- **`smb_integration_concurrent_streaming_writes_no_deadlock`** (~2.8-4.3 s, the integration lane's slowest local test):
+  don't shrink it to buy suite time. Its shape (200 files, 60 × 1 MB writes forced through the streaming fallback at
+  concurrency 8) is deliberately tuned to the production workload that surfaced the deadlock it guards, and no smaller
+  shape can be shown to still catch it without reproducing the original deadlock. It buys ~1 s on a ~5 s suite and
+  trades away repro strength on a data-safety regression test.
 
 ## When you add X, also add Y
 

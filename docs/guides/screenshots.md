@@ -55,7 +55,8 @@ run needs ImageMagick and refuses to start without it. Need a PNG for an uploade
 `apps/desktop/scripts/marketing-shots.ts` launches the Playwright-enabled binary on a persistent data dir of its own
 (`~/Library/Application Support/com.veszelovszki.cmdr-shots`), then runs `marketing-shots.spec.ts` on its own shard. The
 spec stages each shot through the real UI and photographs it with `screencapture -l`, verifying the bytes before it
-keeps them. Design and rationale: `docs/specs/marketing-screenshot-pipeline-plan.md`.
+keeps them. Design and rationale, including the two alternatives that were considered and rejected (a synthesized
+shadow, and a dedicated `shots` app mode): `apps/desktop/test/e2e-playwright/DETAILS.md` § "Key decisions".
 
 Two deliberate choices worth knowing before you change anything:
 

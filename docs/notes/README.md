@@ -10,7 +10,7 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 - `index-extraction-baseline.md` — the `cmdr-index` extraction.
 - `archive-extraction-baseline.md` — the `cmdr-archive` extraction, the measurement gate
-  `docs/specs/backend-crates-plan.md` ends at. **Its numbers are provisional**: the machine was contended and the volume
+  `docs/specs/backend-as-a-crate.md` ends at. **Its numbers are provisional**: the machine was contended and the volume
   near-full throughout, so most readings are withdrawn and the note carries the procedure for re-taking them.
 
 **Load-bearing for a decision that hasn't been made yet:**
@@ -32,6 +32,14 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `index-scope-measurement-2026-08-14.md` — what indexing outside `$HOME` actually costs (15.4% of the entries, ~30 s,
   ~115 MB, against `~/Library`'s 27.7% _inside_ home), and why phased indexing reorders the walk instead of narrowing
   it. Read it before anyone proposes a home-only default again; it names the conditions that would change the answer.
+
+- `idle-cpu-attribution-2026-08-03.md` — where an idle Cmdr's 110 minutes of CPU over 9.1 hours actually went, and the
+  four answers that were wrong on the way (the reconcile drain, the writer, the sync-status probe, and a search arena
+  that was being dropped all along). **Read it before profiling this app again**: three of the four came from one method
+  bias — a `sample` leaf-frame list that counts scheduler waits and so scores `stat` and `pwrite` as busy CPU — and two
+  20-second windows on the same idle process disagreed about which thread dominated. It also carries the two footprint
+  blocks nothing has explained yet (643 MB `MALLOC_LARGE`, 947 MB Rust heap) and the proof the first of them is not
+  SQLite page cache.
 
 **Load-bearing as regression anchors:**
 

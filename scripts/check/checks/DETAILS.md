@@ -737,6 +737,13 @@ deadline.
 
 Gotchas for anyone touching this:
 
+- **❗ Captured nextest output is NOT plain text.** nextest colours whenever `FORCE_COLOR` / `CLICOLOR_FORCE` is set,
+  which the Claude Code harness does, so "we piped it into a buffer, so there's no TTY" is not a reason to skip
+  normalising. Every pattern here is line-anchored, so a colourised buffer matches NOTHING and the lane degrades in
+  total silence: no deadline diagnosis, no contention re-run, no rows in `~/cmdr-test-log.csv`, no retry-pass warn, and
+  a 1.2 MB raw dump because the progress trimmer misses too (verified against a real agent-session capture,
+  2026-08-21). `StripANSI` runs at each lane's capture boundary AND inside every parser; it is idempotent, so the
+  double application is deliberate cheapness rather than an oversight, and a new lane can't forget it.
 - **The parsers are pinned to real nextest 0.9.136 output**, captured from a probe crate rather than written from
   memory. The fixtures in `rust-test-diagnostics_test.go` are verbatim, including the `(2/4)` progress counter and the
   `(───)` placeholder. Keep them verbatim when the pinned nextest version moves.
@@ -756,16 +763,6 @@ Gotchas for anyone touching this:
   contention re-run (verified against a real container run, 2026-08-02). The small-total fixtures can't catch this on
   their own; `TestClassifyRustFailures_PaddedProgressCounter` and `TestTrimRustTestProgress_PaddedProgressCounter` carry
   the padded form.
-- **`TRY n FAIL` lines are not failures.** They're retried attempts; counting them double-reports every flake. The
-  `FAIL` regex is line-anchored so it can't match them.
-- **The summary block repeats every `FAIL`/`TIMEOUT` line**, so classification dedupes by (binary, test) and keeps the
-  first occurrence, which is the one carrying the panic body.
-- **`ClassInTestDeadline` recognition depends on a string Rust owns**: `timed_out()` in `crates/cmdr-fs/src/testing.rs`.
-  Nothing but `TestWaitUntilPanicFormatStillMatchesTheClassifier` ties the two languages together; without it, rewording
-  the panic would silently downgrade every `wait_until` timeout to `ClassOther`. Don't delete that test.
-- **Leaks are a PASS, not a failure.** nextest counts a leaky test in its "N passed (M leaky)" tally, so `RealFailures`
-  drops them before anything re-runs or counts failures. Treating a leak as a failure both overstates a red run and
-  sends the contention re-run chasing a test that passed.
 
 ## The contention re-run (`rust-test-contention.go`)
 
@@ -889,6 +886,64 @@ for reading its output:
   `go run .`, and killing the wrapper orphans the whole tree of Playwright, Docker, and cargo children, which then keep
   competing with whatever you start next. Kill `go-build.*/check` and `go run \. --include-slow`, then confirm with `ps`
   before drawing conclusions from the next run.
+
+## Rust module cycles: read this before trusting a `cargo-modules` number
+
+There is no `rust-module-cycles` check yet. This § is the evidence for whoever writes one, because every trap below was
+found the expensive way and each one makes the raw tool output say something that isn't true.
+
+The measurement is
+`cargo modules dependencies --lib --package <p> --no-fns --no-types --no-traits --no-owns --no-externs --no-sysroot`,
+which emits DOT: nodes are modules, edges are `use` dependencies. It costs ~19 s on the 245k-line app crate, so it
+belongs in the slow group, never in `--fast`. Run Tarjan on the FILTERED graph yourself.
+
+### The five traps
+
+1. **`--acyclic` is unusable**: it runs BEFORE the filters, so it always trips on a type and its own method (`TarCodec`
+   ↔ `TarCodec::fmt`). Detect cycles yourself.
+2. **A top-level `use super::*` fabricates edges with no symbol basis.** `cargo-modules` resolves the glob to every item
+   the parent re-exports, so a submodule gains a fake edge to every sibling. `#[cfg(test)]` modules are excluded from
+   the graph entirely (verified with cargo-modules 0.27.0, 2026-08-21), so the many `use super::*` lines in sibling
+   `*_test.rs` files are harmless; a glob in a PRODUCTION file is not. Two live ones,
+   `indexing/lifecycle/manager/{start.rs,phased.rs}`, are why that component reads larger than its real coupling.
+3. **`--no-traits` does not filter `From` impls.** A `From` in module A for a type in module B prints as a real A → B
+   edge.
+4. **An inherent-impl method is attributed to the module defining its TYPE, not the one holding the `impl` block.** So
+   moving a struct while leaving a method that RETURNS it behind fabricates an edge in the opposite direction from the
+   one you were cutting. **When a cut doesn't produce the number you simulated, suspect where a returned type is defined
+   before you suspect the analysis.**
+5. **A re-export resolves to the DEFINING module.** Importing `crate::file_system::volume::SmbConnectionState` through a
+   facade still draws the edge to `backends::smb::state`, where the enum lives. That single line
+   (`network/smb_upgrade.rs:220`) is the entire back-edge welding `network` to the SMB backend; nothing in `network/`
+   names `backends::smb` textually, so grep will not find it for you.
+
+### Zero is not the target, and a small max SCC is not a design goal by itself
+
+Of the 49 groups across the three crates, roughly a third are parent ↔ direct child: `mod.rs` defines a type, the child
+implements against it, the parent calls the child. That's idiomatic Rust, and "fixing" it means inventing a shim module
+to satisfy a graph. A parent with N children collapses into ONE component of size N+1, so **splitting a long file into
+submodules grows the maximum SCC without adding a single new coupling** — `cmdr-index`'s largest group went from six to
+19 that way, mostly by `lifecycle/state.rs` becoming `lifecycle/state/` with eight children. Any ratchet has to tolerate
+that or it will fire on refactors that improved the code.
+
+Cohesive single features split across files (`file_viewer::*`, `menu::*`, `licensing::*`, `commands::agent::*`) are the
+same story and are equally out of scope.
+
+**What a cycle number IS good for**: a large component that spans SUBSYSTEMS says no module in it can be understood or
+changed alone, and it blocks crate extraction, since a crate cannot import the app crate's facade. That's the reason
+this was ever measured. Prefer cuts that move a thin thing (a type, a three-line helper) to its correct layer over cuts
+that score highest on the graph; the highest-scoring single edge in the index engine is
+`IndexPhase::Running(Box<IndexManager>)`, an honest ownership relation whose removal would trade a clear ownership story
+for acyclicity.
+
+### The numbers, measured 2026-08-21 on `main` (cargo-modules 0.27.0)
+
+Maximum strongly-connected component per crate, and modules trapped in some cycle:
+
+- `cmdr`: max 11 (`write_operations::*`), 126 of 522 modules in a cycle. Next largest: `file_viewer::*` (10), then
+  `backends::smb::*` + `network` (9).
+- `cmdr-index`: max 19 (the `lifecycle::*` + `watch::event_loop::*` hub), 51 of 190.
+- `cmdr-fs`: max 8 (`volume::friendly_error::*` + `volume::types`), 10 of 26.
 
 ## Workspace member coverage
 

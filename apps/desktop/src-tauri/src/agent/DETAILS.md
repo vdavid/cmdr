@@ -71,3 +71,39 @@ what reaches the provider touches consent.
 proposal the user can't actually review is a proposal they can only rubber-stamp, which quietly dissolves the invariant
 above. The cap can't be enforced generically (each tool's payload shape differs), so the first `Propose` tool has to
 honour it explicitly and pin it with a test.
+
+## The invariants register
+
+Twelve numbered invariants span the agent's context core, its proposal path, and the write engine it hands work to.
+**The numbers are load-bearing**: roughly twenty code sites and doc lines cite them bare (`(invariant 6)`,
+`(invariant 10)`), so this list is where those citations resolve. Numbers are permanent: a retired entry keeps its
+number and says it retired, because renumbering silently repoints every one of those citations.
+
+Each line is a pointer, not a restatement: the mechanism lives in the doc named beside it.
+
+1. **The current turn's tool results are never elided.** Handed a stub instead of the facts it was told to name files
+   by, a model invents. `chat/CLAUDE.md`, `chat/DETAILS.md` § Budget enforcement.
+2. **The pure context core stays pure**: no clock, no I/O, no app state, no per-tool knowledge. New inputs arrive as
+   values. `chat/CLAUDE.md`, `chat/context/digest.rs`.
+3. **The prefix is byte-identical across a thread's calls**, which is what buys prompt caching. `chat/CLAUDE.md`.
+4. **The envelope rides the latest user turn only**, snapshot-at-send. `chat/CLAUDE.md`.
+5. **Assistant prose is never modified.** A tool CALL may be collapsed when it is a rename plan the store no longer
+   holds live; prose never. Nothing collapses calls today, so the narrowed form is a contract for whoever builds it.
+6. **A content claim needs a delivery the ledger recorded, in that thread.** Digests, envelopes, patterns, and
+   summaries describe deliveries and are never deliveries. `tools/propose/CLAUDE.md`, `tools/propose/DETAILS.md`
+   § Evidence.
+7. **The agent proposes; only the user approves.** Approval originates in the frontend as a user action, and there is
+   no tool that approves. `CLAUDE.md`, § The agent can propose above.
+8. **No new egress category, and no consent bump** without revisiting the whole consent story. `CLAUDE.md`.
+9. **Every cut, cap, or trim is visible** in the result, the log, and (where the user could be misled) the UI.
+   `chat/CLAUDE.md`, `chat/DETAILS.md` § Reporting what a turn cost.
+10. **A user-edited name needs no evidence, never claims any, and never inherits the model's**, and it invalidates the
+    accepted preflight so no name reaches the filesystem unchecked. `tools/propose/CLAUDE.md`,
+    `tools/propose/DETAILS.md` § Revising one row.
+11. **Every row that reaches the filesystem was preflighted with a fingerprint the writer rechecks.** No path around the
+    proposal may skip it. `store/proposals/CLAUDE.md`, `suggested_ops/DETAILS.md` § The approval bridge. Compress is the
+    documented single exception, and that `DETAILS.md` says what would make it stop being safe.
+12. **Evidence validation proves the model READ something, never that the name is right.** So the review surface must
+    show how thin a match is, and the offline eval targets the genuine-quote-wrong-name case rather than asserting a
+    refusal that is impossible without understanding the image. `tools/propose/DETAILS.md` § Coverage,
+    § The name-quality eval.

@@ -538,6 +538,26 @@ session that already ran a query re-runs it on mount, so results can land betwee
 keypress and flip the meaning mid-test. The failure reads as a timeout waiting for a footer button, on an overlay that
 has already closed. `search-open-in-pane.spec.ts` § `typeAndRunSearch` carries the full note.
 
+**Decision**: the marketing capture keeps a REAL macOS shadow rather than synthesizing one. **Why**: the plugin's
+`native_screenshot` returns the bare window rect (measured on a committed i18n master, 2026-08-11: 2160x1440, alpha bbox
+`2160x1440+0+0`, the leftmost columns averaging alpha 254 — rounded-corner antialiasing, not a shadow ring). Painting a
+shadow in ImageMagick from the window's alpha mask would be deterministic and immune to focus, and it was rejected
+anyway: it is a FAKE macOS shadow, so the website hero's look would drift from what users actually see, and every future
+macOS shadow change would silently diverge. `screencapture -l` photographs the window plus its real shadow on
+transparency, so the pixels stay honest and everything downstream (`marketing-shots-frame.ts`, `regenerate-hero.sh`)
+measures the same thing.
+
+**Decision**: a marketing run drops `CMDR_E2E_MODE` instead of getting a fifth app mode of its own. **Why**: E2E mode is
+what makes the app un-photographable (blue title bar, and `ActivationPolicy::Prohibited` so the window can never become
+key, and only a key window gets the wide shadow). The alternative considered was a `shots` mode beside `capture`, so
+`isE2eRun()` would stay true and every frontend suppression would hold, with only the activation gates refined. It was
+rejected because it puts production code in the app for a marketing tool, and buys nothing the launch environment can't:
+`CMDR_SECRET_STORE=file` forces the plain-file secret store independently of E2E mode, and analytics, the updater,
+whats-new, and the upgrade nudge are all seeded settings. ❗ Revisit if the suppression list grows: the moment this
+needs a THIRD app-code gate, the mode is the cleaner shape. Consequence of the current shape: the run claims the front
+from OUTSIDE, per shot, through System Events (`osascript`), because the harness cannot take the front position from
+inside.
+
 **Decision**: `build.rs` conditionally generates `capabilities/playwright.json`. **Why**: The plugin's IPC permissions
 (`playwright:default`) are only available when the `playwright-e2e` Cargo feature is enabled. Adding it to
 `default.json` breaks non-feature builds. So `build.rs` generates the capability file when the feature is active and

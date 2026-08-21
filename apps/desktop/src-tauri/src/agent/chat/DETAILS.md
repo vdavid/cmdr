@@ -254,7 +254,7 @@ because it moves with the model and the setting and so can't live in the cached 
 
 Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every figure below is pinned within a tenth by
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
-the test and the plan's "measured ground truth" section together.
+the test and this section together.
 
 - **Fixed overhead: 4,972 tokens** on every single call — 1,371 for `SYSTEM_PROMPT` and 3,601 for the 14 tool
   declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
@@ -285,7 +285,7 @@ per-thread single-flight lock (emitting `Queued` if contended), reads `CMDR.md`,
 `AppHandleDispatcher`, and calls `run_turn`. It is registered in managed state by
 `agent::start`, so the IPC command is a pass-through.
 
-### Crash / persistence model (plan §M5 (a)–(d))
+### Crash / persistence model (cases (a)–(d))
 
 A message's `content_blocks` are written only on that `respond` call's `End`, so partial
 state is unambiguous:

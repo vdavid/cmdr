@@ -34,4 +34,4 @@ budgeted digest. Depth: `DETAILS.md`.
 - **A wake reuses `run_turn` and opens a real thread** with `ConversationOrigin::Notification`, so the sweep it produces
   points back at reasoning the user can read. Nothing is drained until the turn is certain to run.
 
-The feature end to end: `docs/specs/agent-suggested-ops-plan.md`. The store beneath: `../store/proposals/CLAUDE.md`.
+What a wake produces: `../suggested_ops/CLAUDE.md`. The store beneath: `../store/proposals/CLAUDE.md`.

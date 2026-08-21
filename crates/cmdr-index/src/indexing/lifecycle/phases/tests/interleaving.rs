@@ -415,7 +415,8 @@ const UNTIL_THE_POLL_LANDS: std::time::Duration = std::time::Duration::from_mill
 /// The gap BETWEEN groups was never fine enough grain — `~/projects-git` is 1.58M
 /// entries on a real machine and 97% of it is a single child, so no stitch depth
 /// splits it and "whatever you open gets indexed next" meant "in forty seconds"
-/// (`docs/specs/phased-indexing-plan.md` § "Interleaving without preemption").
+/// (`crates/cmdr-index/src/indexing/lifecycle/phases/DETAILS.md` § "Why a visited root
+/// doesn't wait for a big sibling").
 /// So the walk itself is stopped, the folder is covered, and the sibling's
 /// leftovers come back as frontier — which is what the last assertion is: ground
 /// under the big sibling being walked AFTER the folder somebody opened.

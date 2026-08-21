@@ -290,8 +290,55 @@ Three things the adapters found that aren't trait shape, and matter to whoever w
   so the adapter is unconditional; only the app's own call sites carry
   `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
 
-Nothing in the app calls a seam yet: the backends still reach `listing::caching`, `network::keychain`, and the rest
-directly, and each one switches over when it moves into its own crate.
+`cmdr-archive` is the only backend on the seams so far. The app-resident ones still reach `listing::caching`,
+`network::keychain`, and the rest directly, and each switches over when it moves into its own crate. Which ones will and
+won't: § "Which backends move" below.
 
-The broader plan this belongs to, including which backend is extracted first and why:
-`docs/specs/backend-crates-plan.md`.
+## What a backend crate buys, and the two things it doesn't
+
+Worth stating plainly, because both non-wins are the ones people expect first and the real win is easy to miss.
+
+**`pnpm check` will NOT get faster, and no amount of extraction changes that.** `scripts/check/checks/inputs.go` defines
+one `rustInputs` set (`apps/desktop/src-tauri/**` + `crates/**` + the manifests) shared by every Rust check, so any Rust
+edit anywhere busts every Rust check's cache; `desktop-rust-clippy` and `desktop-rust-tests` then run `--workspace`, so
+the work doesn't shrink either. Getting a check-runner win takes new per-crate check lanes with narrowed `Inputs`, which
+is deliberate check-runner work and not a side effect of moving code.
+
+**Full app builds get slightly SLOWER after a backend edit**, because the app still relinks:
+`docs/notes/index-extraction-baseline.md` measured +11% for "index edit, then `cargo build`". Expect the same sign for a
+backend.
+
+**The win is the scoped inner loop, and it comes from not compiling the app** — so it transfers whole to a small crate.
+The index extraction measured `cargo check --lib` −83% (4.35 s → 0.75 s) and `cargo test --lib --no-run` −85% (23–30 s →
+3.55 s). `cargo check -p cmdr-archive` compiles ~8k lines where it used to compile 332k. That structural ratio is what
+makes `cargo check -p cmdr-ftp` a complete verification loop for an agent that never opens the app crate, and it's the
+whole reason the seams exist. Release builds may also gain modestly (the index took a clean release build 214 s → 188 s,
+−12%, because more crates give cargo more codegen units), but archive plus SMB are ~7% of the tree against the index's
+28%, so don't expect that figure again.
+
+The archive pilot's own timings are in `docs/notes/archive-extraction-baseline.md`, and most of them are **withdrawn**:
+the machine was running several concurrent workspace builds on a near-full data volume. What survives is the inner-loop
+ratio, as an order-of-magnitude reading.
+
+## Which backends move
+
+`cmdr-archive` shipped. Every backend written from here (FTP, S3, SFTP) is a crate from day one, which costs almost
+nothing extra and gets the full benefit. The retrofits are judged one at a time, because retrofitting is where all the
+cost sits:
+
+- **SMB is the one worth retrofitting**, and only when someone is about to spend sustained time inside it. Its coupling
+  is roughly two dozen sites against archive's three, plus the four structural problems this document enumerates: the
+  `pub(in …)` visibility, the `use super::*` test modules, the `network/` split, and the registry reach-backs. Its test
+  surface is 5,343 lines against archive's 3,376, and the archive move showed the real cost is app-side test re-homing
+  rather than path rewriting — budget for SPLITTING tests that grew to cover both sides of the boundary, not moving
+  them.
+- **`local_posix` and MTP are permanently app-resident.** Both refusals are written out with their reasons in
+  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions", because that's where
+  someone proposing "let's complete the set" will be standing.
+
+**Expect an extraction to surface latent defects**, and treat that as the point rather than a surprise. Archive's move
+found two: seven `.unwrap()`s that were legal only while the file was `cfg(test)` and became clippy `unwrap_used`
+violations as a `testing`-feature lib item, and a rustdoc intra-doc link to a function that no longer existed, which
+`desktop-rust-rustdoc` had never seen while the item was buried in the app. Check every ``[`Type::method`]`` link for an
+app-side target before moving a backend; an intra-doc link to an app symbol is unnameable from a backend crate and has
+to become prose.

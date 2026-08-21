@@ -13,9 +13,16 @@ Prod Cmdr v0.36.2, PID 3062, macOS 26.5.2, launched 12:34, sampled 22:17. `footp
 Physical footprint:        2.5 GB   (peak 3.6 GB)
 IOAccelerator             1386 MB   ← the Rust heap (mimalloc arenas)
 MALLOC_LARGE               730 MB   ┐
-MALLOC_SMALL               405 MB   ┘ the system C heap — for us, ~all SQLite
+MALLOC_SMALL               405 MB   ┘ the system C heap
 everything else            < 50 MB
 ```
+
+⚠️ **Correction (2026-08-03): "for us, ~all SQLite" was wrong about `MALLOC_LARGE`.** SQLite page-cache overflow can
+only ever land in `MALLOC_SMALL`: the bundled build defines `SQLITE_ENABLE_MEMORY_MANAGEMENT`, so
+`pcache1.separateCache = 0`, there is no bulk allocation, and every overflow page is an individual ~4.1 KB
+`sqlite3Malloc` — below macOS's 127 KB large-zone threshold. The shared slab this note led to proved it from the other
+side: `MALLOC_SMALL` fell 405 → 152 MB (−62%) while `MALLOC_LARGE` moved 730 → 643 MB (−12%), in regions of 9 MB and
+2.25 MB. What that 643 MB IS remains unidentified: `idle-cpu-attribution-2026-08-03.md` § "Still open".
 
 WebKit and the compositor were NOT involved: `WebKit malloc` was 4.6 MB, `IOAccelerator (graphics)` 1.3 MB. CPU was 122
 minutes over 10 hours.

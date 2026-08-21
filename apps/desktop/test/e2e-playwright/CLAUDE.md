@@ -40,8 +40,9 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
 - **`emitBackendEvent` drives UI off a synthetic backend event.** The app is SHARED: emit the terminal event that clears
   it (test AND `afterEach`), under an id nothing real claims. DETAILS § "Synthetic backend events".
 - **The marketing capture (`marketing-shots.spec.ts`) photographs real folders, with NO fixture tree.** ❌ Never point
-  it at a fixture root or set `CMDR_E2E_START_PATH`: the guard deletes anything outside the manifest. It shoots only
-  through `shoot()`, and ❗ needs the machine left alone; say both first. Contract: DETAILS.
+  it at a fixture root or set `CMDR_E2E_START_PATH`: the guard deletes anything outside the manifest. It shoots via
+  `screencapture -l`, not the plugin (no shadow), and ❗ needs the machine left alone; say both first. Contract:
+  DETAILS.
 
 Run recipes, architecture, sharding, app modes, the overlay and capture contracts, and decisions: `DETAILS.md`. Read it
-before any non-trivial work here: editing, planning, or advising.
+before any non-trivial work here.

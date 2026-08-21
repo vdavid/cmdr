@@ -397,11 +397,13 @@ heartbeats the UI's stall signal — and acts on nothing.
 **Why gated, and why elapsed time is not allowed to be the evidence.** Telling "slow but alive" from "dead" needs a
 keepalive: an ECHO the server either answers inside a window or does not. A silence deadline ALONE cannot do it,
 because a large write to a loaded spinning-disk NAS is legitimately slow, and killing it trades a rare wedge for
-frequent spurious failures — the worse bargain, and Decision 3 of `docs/specs/smb-transfer-resilience.md`. Inventing a
-verdict out of elapsed time would reintroduce, one layer up, the failure mode the keepalive exists to prevent.
+frequent spurious failures — the worse bargain. Inventing a verdict out of elapsed time would reintroduce, one layer
+up, the failure mode the keepalive exists to prevent.
 
-**Why `smb2` 0.16.0's keepalive still doesn't open this gate** (checked 2026-08-02 against the crate's public API; the
-decision to leave `SmbVolume::connection_liveness()` unimplemented is recorded here so nobody re-derives it):
+**Why `smb2`'s keepalive still doesn't open this gate** (checked against 0.16.0's public API on 2026-08-02, and
+re-checked against the pinned 0.18.1 on 2026-08-21 — `unresponsive_for` is still private to `Inner`, so nothing below
+has changed; the decision to leave `SmbVolume::connection_liveness()` unimplemented is recorded here so nobody
+re-derives it):
 
 - **The keepalive deliberately produces no death verdict.** A missed probe means "no deadline extension" and nothing
   more, because a real NAS drops ECHO probes precisely when it is busy writing. `MetricsSnapshot::keepalive_failures`
