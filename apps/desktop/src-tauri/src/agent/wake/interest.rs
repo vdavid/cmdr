@@ -117,6 +117,45 @@ fn volume_signal(total: u64) -> f64 {
     scaled.clamp(0.0, 1.0)
 }
 
+/// Which tier a bundle falls in. The delay is what the inbox acts on; the tier is what an
+/// observer can COUNT, and the counted log line plus its analytics event are the only feedback
+/// path there is before the two thresholds above get tuned against real use.
+///
+/// Ordered hot-highest, so `max()` over a wake's rows answers "what did this fire for?".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum WakeTier {
+    /// Below [`WARM_THRESHOLD`]: rides along, never causes a wake of its own.
+    Cold,
+    /// At or above [`WARM_THRESHOLD`].
+    Warm,
+    /// At or above [`HOT_THRESHOLD`].
+    Hot,
+}
+
+impl WakeTier {
+    /// A stable token for logs and analytics. ❌ Never derived from the `Debug` shape, which
+    /// nothing pins.
+    pub fn as_token(self) -> &'static str {
+        match self {
+            WakeTier::Hot => "hot",
+            WakeTier::Warm => "warm",
+            WakeTier::Cold => "cold",
+        }
+    }
+}
+
+/// Which tier this interest falls in. Shares the thresholds with [`wake_delay`] rather than
+/// re-deriving them, so a tier can never disagree with the delay it was given.
+pub fn tier_of(interest: Interest) -> WakeTier {
+    if interest.value() >= HOT_THRESHOLD {
+        WakeTier::Hot
+    } else if interest.value() >= WARM_THRESHOLD {
+        WakeTier::Warm
+    } else {
+        WakeTier::Cold
+    }
+}
+
 /// How long a bundle of this interest may wait before the agent is woken for it, or `None` when
 /// it is not worth waking for at all.
 ///

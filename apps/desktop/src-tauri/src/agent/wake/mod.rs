@@ -48,9 +48,13 @@ pub use coalesce::{coalesce, merge_bundles};
 pub use compact::{Digest, DigestLine, Rollup, ScoredBundle, compact};
 pub use inbox::{Inbox, InboxRow, ReconcileReport, SETTLE_AFTER_LAUNCH, STALE_AFTER};
 pub use interest::{
-    DEFAULT_HOT_DELAY, FolderImportance, HOT_THRESHOLD, Interest, MAX_WARM_DELAY, WARM_THRESHOLD, interest, wake_delay,
+    DEFAULT_HOT_DELAY, FolderImportance, HOT_THRESHOLD, Interest, MAX_WARM_DELAY, WARM_THRESHOLD, WakeTier, interest,
+    tier_of, wake_delay,
 };
-pub use job::{WakeOutcome, WakeParams, run_wake, thread_title};
+pub use job::{
+    PrepareOutcome, PrepareParams, PreparedWake, RunWakeParams, WakeOutcome, WakeParams, prepare_wake,
+    run_prepared_wake, run_wake, thread_title,
+};
 pub use persist::{clear, load, save_all, save_row};
 pub use readiness::{AgentGates, WakeReadiness, readiness};
 

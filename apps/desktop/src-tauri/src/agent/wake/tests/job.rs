@@ -7,6 +7,7 @@ use tokio_util::sync::CancellationToken;
 use super::super::*;
 use crate::agent::chat::context::ContextEnvelope;
 use crate::agent::chat::runtime::{ToolDispatchOutcome, ToolDispatcher, TurnResult};
+use crate::agent::llm::AgentLlm;
 use crate::agent::llm::fake::{FakeAgentLlm, ScriptedTurn};
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ProviderTag};
 use crate::agent::store::{MIGRATIONS, run_migrations};
@@ -64,6 +65,27 @@ fn params(readiness: WakeReadiness, now: i64, envelope: &ContextEnvelope) -> Wak
     }
 }
 
+fn run_params<'a>(now: i64, envelope: &'a ContextEnvelope) -> RunWakeParams<'a> {
+    RunWakeParams {
+        now_secs: now,
+        envelope,
+        tools: &[],
+        offset: chrono::FixedOffset::east_opt(0).expect("utc"),
+        provider: ProviderTag::Anthropic,
+        model: "test-model".to_string(),
+        prompt_budget: 16_000,
+    }
+}
+
+/// An LLM factory answering with one fixed line, whatever thread it is built for.
+fn say(text: &'static str) -> impl Fn(i64) -> Box<dyn AgentLlm> {
+    move |_| Box::new(FakeAgentLlm::script(vec![ScriptedTurn::Say(vec![text.to_string()])]))
+}
+
+fn no_tools(_conversation_id: i64) -> Box<dyn ToolDispatcher> {
+    Box::new(NoTools)
+}
+
 fn arrivals(folder: &str, created: u32, window_start: u64) -> EventBundle {
     EventBundle {
         folder: folder.to_string(),
@@ -94,13 +116,12 @@ async fn a_due_inbox_wakes_into_a_thread_marked_as_the_agents_own() {
     );
     let due_at = inbox.next_deadline().expect("something waits");
 
-    let llm = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["Four files arrived.".into()])]);
     let (sink, _events) = tokio::sync::mpsc::unbounded_channel();
     let env = envelope(due_at as i64);
 
     let outcome = run_wake(
-        &llm,
-        &NoTools,
+        &say("Four files arrived."),
+        &no_tools,
         &conn,
         &mut inbox,
         params(WakeReadiness::Ready, due_at as i64, &env),
@@ -112,11 +133,15 @@ async fn a_due_inbox_wakes_into_a_thread_marked_as_the_agents_own() {
     let WakeOutcome::Ran {
         conversation_id,
         result,
+        tier,
+        folders,
     } = outcome
     else {
         panic!("expected a turn, got {outcome:?}");
     };
     assert!(matches!(result, TurnResult::Answered { .. }), "{result:?}");
+    assert_eq!(tier, WakeTier::Hot, "four arrivals in a scored folder is hot");
+    assert_eq!(folders, 1);
 
     let origin: Option<String> = conn
         .query_row(
@@ -143,13 +168,12 @@ async fn a_closed_gate_creates_no_thread_and_keeps_the_backlog() {
         1_000,
     );
 
-    let llm = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["should not run".into()])]);
     let (sink, _events) = tokio::sync::mpsc::unbounded_channel();
     let env = envelope(9_000);
 
     let outcome = run_wake(
-        &llm,
-        &NoTools,
+        &say("should not run"),
+        &no_tools,
         &conn,
         &mut inbox,
         params(WakeReadiness::NeedsApiKey, 9_000, &env),
@@ -179,13 +203,12 @@ async fn nothing_due_costs_no_turn() {
         1_000,
     );
 
-    let llm = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["should not run".into()])]);
     let (sink, _events) = tokio::sync::mpsc::unbounded_channel();
     let env = envelope(1_001);
 
     let outcome = run_wake(
-        &llm,
-        &NoTools,
+        &say("should not run"),
+        &no_tools,
         &conn,
         &mut inbox,
         params(WakeReadiness::Ready, 1_001, &env),
@@ -212,4 +235,218 @@ fn a_wake_thread_is_named_for_the_busiest_place() {
     );
 
     assert_eq!(thread_title(&digest), "Downloads");
+}
+
+// ── The prepare / run split ───────────────────────────────────────────────────
+
+/// The property `run_wake`'s step order exists for, now that the steps sit on two threads:
+/// the rows leave the inbox only once a turn is CERTAIN to run. A digest budget too small to
+/// render anything is an ordinary path, not a crash, and it must cost the backlog nothing.
+#[test]
+fn a_prepare_that_cannot_render_a_digest_keeps_the_backlog() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    let due_at = inbox.next_deadline().expect("something waits");
+    save_all(&conn, &inbox).expect("write");
+
+    let outcome = prepare_wake(
+        &conn,
+        &mut inbox,
+        &PrepareParams {
+            readiness: WakeReadiness::Ready,
+            now_secs: due_at as i64,
+            // Not enough for a single line, so nothing can be said.
+            digest_budget_tokens: 0,
+        },
+    );
+
+    assert!(matches!(outcome, PrepareOutcome::NothingDue), "{outcome:?}");
+    assert_eq!(inbox.len(), 1, "the backlog is exactly as it was");
+    assert_eq!(load(&conn).expect("read").len(), 1, "and so is the table");
+    let threads: i64 = conn
+        .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
+        .expect("count");
+    assert_eq!(threads, 0, "nothing was opened");
+}
+
+/// A closed gate declines before the thread, before the drain, and before the table is
+/// touched.
+#[test]
+fn a_prepare_behind_a_closed_gate_spends_nothing() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    save_all(&conn, &inbox).expect("write");
+
+    let outcome = prepare_wake(
+        &conn,
+        &mut inbox,
+        &PrepareParams {
+            readiness: WakeReadiness::NeedsApiKey,
+            now_secs: 9_000,
+            digest_budget_tokens: 2_000,
+        },
+    );
+
+    assert!(
+        matches!(outcome, PrepareOutcome::NotReady(WakeReadiness::NeedsApiKey)),
+        "{outcome:?}"
+    );
+    assert_eq!(inbox.len(), 1);
+    assert_eq!(load(&conn).expect("read").len(), 1);
+}
+
+/// Once every step that can decline has passed, prepare commits: it opens the thread, takes
+/// the rows, and clears the table in the same breath. A process that dies mid-turn loses that
+/// digest rather than re-delivering it, which is the trade `DETAILS.md` states on purpose.
+#[test]
+fn a_committed_prepare_opens_a_thread_and_empties_the_inbox() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    let due_at = inbox.next_deadline().expect("something waits");
+    save_all(&conn, &inbox).expect("write");
+
+    let outcome = prepare_wake(
+        &conn,
+        &mut inbox,
+        &PrepareParams {
+            readiness: WakeReadiness::Ready,
+            now_secs: due_at as i64,
+            digest_budget_tokens: 2_000,
+        },
+    );
+
+    let PrepareOutcome::Ready(prepared) = outcome else {
+        panic!("expected a prepared wake, got {outcome:?}");
+    };
+    assert!(prepared.digest.contains("Downloads"), "{}", prepared.digest);
+    assert_eq!(prepared.rows.len(), 1);
+    assert_eq!(prepared.tier, WakeTier::Hot);
+    assert!(inbox.is_empty(), "the rows went with the prepared wake");
+    assert!(load(&conn).expect("read").is_empty(), "and left the table");
+
+    let origin: Option<String> = conn
+        .query_row(
+            "SELECT origin FROM conversations WHERE id = ?1",
+            rusqlite::params![prepared.conversation_id],
+            |row| row.get(0),
+        )
+        .expect("the conversation exists");
+    assert_eq!(origin.as_deref(), Some(ConversationOrigin::Notification.as_token()));
+}
+
+/// The run step is the half that reaches a provider, and it runs against the thread prepare
+/// opened rather than opening one of its own. That separation is what lets the writer thread
+/// hand off and go straight back to servicing its channel.
+#[tokio::test]
+async fn a_prepared_wake_runs_its_turn_in_the_thread_prepare_opened() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    let due_at = inbox.next_deadline().expect("something waits");
+
+    let PrepareOutcome::Ready(prepared) = prepare_wake(
+        &conn,
+        &mut inbox,
+        &PrepareParams {
+            readiness: WakeReadiness::Ready,
+            now_secs: due_at as i64,
+            digest_budget_tokens: 2_000,
+        },
+    ) else {
+        panic!("expected a prepared wake");
+    };
+
+    let llm = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["Four files arrived.".into()])]);
+    let (sink, _events) = tokio::sync::mpsc::unbounded_channel();
+    let env = envelope(due_at as i64);
+
+    let result = run_prepared_wake(
+        &llm,
+        &NoTools,
+        &conn,
+        &prepared,
+        &run_params(due_at as i64, &env),
+        &sink,
+        &CancellationToken::new(),
+    )
+    .await;
+
+    assert!(matches!(result, TurnResult::Answered { .. }), "{result:?}");
+    let messages: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM messages WHERE conversation_id = ?1",
+            rusqlite::params![prepared.conversation_id],
+            |row| row.get(0),
+        )
+        .expect("count");
+    assert_eq!(messages, 2, "the digest and the answer landed in prepare's thread");
+}
+
+/// A wake builds its LLM and its dispatcher only once the conversation id exists, because
+/// both are SCOPED to it: evidence is what stops a claim in one thread being backed by facts
+/// delivered to another, and the LLM log is keyed the same way.
+#[tokio::test]
+async fn the_llm_and_the_dispatcher_are_built_for_the_thread_the_wake_creates() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    let due_at = inbox.next_deadline().expect("something waits");
+
+    let seen: std::sync::Mutex<Vec<i64>> = std::sync::Mutex::new(Vec::new());
+    let (sink, _events) = tokio::sync::mpsc::unbounded_channel();
+    let env = envelope(due_at as i64);
+
+    let outcome = run_wake(
+        &|id| {
+            seen.lock().expect("not poisoned").push(id);
+            Box::new(FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["Four files.".into()])]))
+        },
+        &|id| {
+            seen.lock().expect("not poisoned").push(id);
+            Box::new(NoTools)
+        },
+        &conn,
+        &mut inbox,
+        params(WakeReadiness::Ready, due_at as i64, &env),
+        &sink,
+        &CancellationToken::new(),
+    )
+    .await;
+
+    let WakeOutcome::Ran { conversation_id, .. } = outcome else {
+        panic!("expected a turn, got {outcome:?}");
+    };
+    assert_eq!(
+        *seen.lock().expect("not poisoned"),
+        vec![conversation_id, conversation_id],
+        "both factories were handed the thread the wake opened"
+    );
 }
