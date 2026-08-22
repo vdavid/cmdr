@@ -813,10 +813,10 @@ Measured 2026-08-23 with the check's own `countSurface`, the crate complete thro
 
 Three public modules, and each is named by path from outside the crate: `auth` (for `AuthRungUsed`), `transport` (for
 `HostKeyPrompt` and its kind), and `volume` (for `approve_host_key`, `HostKeyApproval`, and the `testing` fixtures).
-`errors`, `extensions`, `known_hosts`, `params`, and `trust` are `pub(crate)`; the four types the app does need from
-them (`SftpConnectError`, `ServerExtensions`, `SftpConnectionParams`, and the `Volume` types) arrive as root
-re-exports. ❗ Keep it that way: a `pub mod` promises everything `pub` inside it, and `trust` and `known_hosts` in
-particular hold the man-in-the-middle decision, which nothing outside this crate has any business reaching into.
+`errors`, `extensions`, `known_hosts`, `params`, and `trust` are `pub(crate)`; the three types the app does need from
+them (`SftpConnectError`, `ServerExtensions`, `SftpConnectionParams`) arrive as root re-exports. ❗ Keep it that way: a
+`pub mod` promises everything `pub` inside it, and `trust` and `known_hosts` in particular hold the man-in-the-middle
+decision, which nothing outside this crate has any business reaching into.
 
 **The recommended ceiling is 10 / 3 / 23**, the measurement itself. That's the shape `cmdr-smb` and `cmdr-archive`
 carry: no slack, so the first widening is a conversation rather than a silent drift.

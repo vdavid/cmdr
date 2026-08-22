@@ -56,7 +56,7 @@ pub fn map_sftp_error(err: &SftpError) -> VolumeError {
         // ⚠️ The engine's read or flush task exited, which it does on a
         // deserialization failure as well as on a dead channel. Either way every
         // later request on this session answers the same thing, so the honest
-        // report is a lost connection. See `volume/query.rs::listing_error` for
+        // report is a lost connection. `volume/query.rs` § the non-UTF-8 note has
         // the filename case that reaches here.
         SftpError::BackgroundTaskFailure(what) => VolumeError::DeviceDisconnected((*what).to_string()),
         other => VolumeError::IoError {
