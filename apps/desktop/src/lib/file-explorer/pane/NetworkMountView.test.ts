@@ -254,6 +254,8 @@ describe('NetworkMountView mount-failure auth loop', () => {
     await vi.waitFor(() => {
       expect(target.querySelector('.share-row')).toBeTruthy()
     })
+
+    await unmount(component)
   })
 
   it('counts no rows while the error pane is up, so a cursor move is refused instead of faked', async () => {
