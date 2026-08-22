@@ -16,9 +16,11 @@
 //! - **A short write is ordinary.** The engine clamps every request to the
 //!   server's negotiated limit, so a chunk takes as many requests as the server
 //!   makes it take.
-//! - ❗ **The close is awaited.** Dropping a `File` fires `SSH_FXP_CLOSE` on a
-//!   detached task and DISCARDS the answer; for a staged write the close is
-//!   where a server reports bytes it accepted but could not commit.
+//! - ❗ **The close is awaited, and only the last clone may await it.** Dropping a
+//!   `File` fires `SSH_FXP_CLOSE` on a detached task and DISCARDS the answer; for a
+//!   staged write the close is where a server reports bytes it accepted but could
+//!   not commit. A surviving clone silently downgrades that close to a no-op; see
+//!   [`RemoteWrite::close`] for what has to stay true.
 //!
 //! `DETAILS.md` § "The write window" carries the measurements and the depth they
 //! set.
@@ -90,6 +92,16 @@ impl RemoteWrite {
     /// `SSH_FXP_CLOSE` on a detached task and throws the answer away, and the
     /// close is the last chance a server has to say it couldn't commit the bytes
     /// it accepted.
+    ///
+    /// ❗ **Only the LAST clone may call this.** The engine's `OwnedHandle::close`
+    /// sends `SSH_FXP_CLOSE` only while `Arc::strong_count(&handle) == 1`, and returns
+    /// `Ok(())` in silence otherwise (verified by reading `openssh-sftp-client` 0.15.7,
+    /// 2026-08-23). A clone still alive here turns the awaited close into a no-op that
+    /// reports success on bytes the server never committed, and neither the compiler
+    /// nor a test says a word. What keeps it true today: [`SftpVolume::pump`] takes its
+    /// `RemoteWrite` BY VALUE and each in-flight write owns its own clone, so all of
+    /// them are gone before `write_from_stream` closes. Anything new that holds a clone
+    /// must drop it before the close.
     pub(super) async fn close(self) -> Result<(), VolumeError> {
         self.file.close().await.map_err(|e| map_sftp_error(&e))
     }
@@ -230,6 +242,10 @@ impl SftpVolume {
 
     /// The window itself: chunks out of the source, `depth` writes in flight,
     /// progress reported as they land.
+    ///
+    /// ❗ Takes `writer` BY VALUE on purpose: it and every in-flight clone die with
+    /// this call, which is the precondition [`RemoteWrite::close`] needs to reach the
+    /// wire at all.
     async fn pump(
         &self,
         stream: &mut Box<dyn VolumeReadStream>,

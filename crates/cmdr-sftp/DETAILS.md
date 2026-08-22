@@ -60,6 +60,16 @@ the user is doing, and a background read that fills the channel window is a fore
 no scan-connection pool like SMB's, because a second connection is a second authentication (§ "The connection model"),
 so `begin_scan_session` / `end_scan_session` keep their no-op defaults.
 
+**Background LISTINGS get no matching throttle, and that asymmetry is the shape of the contention rather than an
+oversight.** `cmdr-sftp` leaves `list_directory_for_scan` at its trait default, so a scan walk lists through the same
+call the pane uses. A read is the only thing on this channel that can hold a window open: `depth × 255 KiB` of
+outstanding data, which is exactly what depth 2 exists to cap. A listing is one `SSH_FXP_OPENDIR` plus a SEQUENTIAL
+`SSH_FXP_READDIR` stream (`query.rs::list_directory_impl` awaits each item before asking for the next), so it keeps one
+request outstanding no matter who asked for it, and there is no window to take. Throttling it would only make a
+background walk slower without giving a foreground pane anything back. ❗ The day a listing walk gains concurrency
+(parallel directories, a readdir pipeline, a scan-side pool), it needs its own background depth in the same change:
+that's the moment this paragraph stops being true.
+
 ### The depth, and the curve that set it
 
 Measured 2026-08-22 against `sftp-fixture-bench` (Alpine + OpenSSH `sftp-server`, `netem delay 50ms`, 128 MiB export,
@@ -140,9 +150,16 @@ tuning.
 - **Progress reports bytes that LANDED**, never bytes issued, or the bar would finish long before the file.
 - ❗ **Cancellation arrives only as `Break` from the progress callback.** There is no token on this path, so a backend
   that never called back would be uncancelable.
-- ❗ **The close is part of the write.** `File::close()` is awaited and its answer propagated; dropping the `File` sends
-  the same `SSH_FXP_CLOSE` on a detached task and throws away the one report a server gives of bytes it accepted but
-  could not commit (hazard 1's `File::close()` note).
+- ❗ **The close is part of the write, and only the last clone may await it.** `File::close()` is awaited and its answer
+  propagated; dropping the `File` sends the same `SSH_FXP_CLOSE` on a detached task and throws away the one report a
+  server gives of bytes it accepted but could not commit (hazard 1's `File::close()` note). The guarantee rests on a
+  precondition nothing enforces: `OwnedHandle::close` puts `SSH_FXP_CLOSE` on the wire only while
+  `Arc::strong_count(&handle) == 1`, and returns `Ok(())` in silence otherwise (verified by reading
+  `openssh-sftp-client` 0.15.7's `OwnedHandle::close`, 2026-08-23). It holds today because `pump` takes its
+  `RemoteWrite` by value and every in-flight write owns its own clone, so all of them are dropped before
+  `write_from_stream` closes. ❌ Don't let a clone outlive `pump` (a cached writer, a spawned task, a retained handle in
+  a struct): the awaited close silently becomes a no-op, the upload reports success on bytes the server never committed,
+  and nothing fails to compile and no test goes red.
 - ❗ **Every error path takes the partial with it**, cancellation included. The staging layer removes the temp too, so
   this is the backend being tidy rather than the safety net — and a failure removing it never replaces the error that
   caused it.
@@ -736,6 +753,17 @@ answers `NotSupported` every time it's pressed.
   server are two volumes, two saved-server entries, and two secret-store entries.
 - ❗ **An attended sign-in on the passphrase rung doesn't save what it was given.** A passphrase-protected volume asks
   again after every drop, and that is correct — the gate is the rung, not the store (§ "The one secret entry").
+- ❗ **`signIn` arrives once, on the connect outcome, and nothing ever refreshes it.** The rung is decided per DIAL, so
+  a mid-life reconnect can land somewhere else than the connect did, and the frontend hears nothing about it: adding an
+  agent identity moves a `password` volume up to `agent`, whose honest `signIn` is `nothing` and whose button should
+  disappear; removing one drops an `agent` volume to `password` or `encrypted_key_file`, where a button should appear
+  that isn't there. `volume-connection-changed` is payload-free by design (§ "Mid-life"), so `needs_credentials` carries
+  no rung, and no command re-reads the current rung for a live volume. A banner built on the connect-time value
+  therefore goes stale in both directions: a stale `nothing` leaves a volume that now wants a password with no way in,
+  and a stale `key_passphrase` asks for a secret the session no longer uses. Reconnecting through `connectSftpVolume` is
+  the only thing that corrects it today. ❗ Settle this before designing the banner: either widen the event (a
+  compile-time refusal across `events/volume_mapping.rs`'s `wire_state`, on purpose) or add a command that answers the
+  current `rung` + `signIn` for a `volumeId`, and have the banner call it whenever the connection state flips.
 
 ### Mid-life: the key that stopped matching
 

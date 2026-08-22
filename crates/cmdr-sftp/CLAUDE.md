@@ -1,49 +1,40 @@
 # `cmdr-sftp`
 
-Everything Cmdr says to an SFTP server: one SSH connection per volume, one SFTP channel on it. No `tauri`, no app. Every
-word a human reads stays app-side.
+Everything Cmdr says to an SFTP server: one SSH connection per volume, one SFTP channel on it. No `tauri`, no
+user-facing words.
 
 ## Module map
 
-- `transport.rs`: the ONLY module that names `russh`. Dial, config, auth, host-key handler, channel.
-- `trust.rs` + `known_hosts.rs`: is this the server we met last time? Pure, so the decision table is unit-tested.
-- `auth.rs`: which rung to offer, and what a dropped session may do. `extensions.rs`: what this server can do beyond
-  bare v3. `errors.rs`: status codes into `VolumeError`, and the catch-all's resolution.
-- `volume/`: `mod` (the volume, `connect_sftp_volume`, `approve_host_key`), `paths`, `query`, `streams` (read window),
-  `writes` (write window), `copy` (server-side copy), `scan` (copy and conflict scans), `mutation` (create, delete,
-  rename, pane patches), `state` + `reconnect`, `mapping`, `volume_impl`, `testing`.
+- `transport.rs` (the ONLY module that names `russh`), `trust.rs` + `known_hosts.rs` (host-key decisions), `auth.rs`
+  (the rung ladder), `extensions.rs`, `errors.rs`.
+- `volume/`: the `Volume` impl by job — `paths`, `query`, `streams`, `writes`, `copy`, `scan`, `mutation`, `state` +
+  `reconnect`, `mapping`, `volume_impl`, `testing`.
 
 ## Must-knows
 
-- **❗ Keep `russh` in `transport.rs`.** Eight breaking minors in eight months; a bump is one file's problem.
-- **❌ Never call `Sftp::close()`**: it hangs forever over a `russh` channel. Dropping the session IS the shutdown. ❗
-  `File::close()` is the opposite; the write path awaits it.
-- **❗ A cancelled connect panics inside the engine**, so every dial goes through `reconnect::guarded_dial`, which
-  awaits a JOIN HANDLE. ❌ Never put `Sftp::new` under a timeout.
-- **Host-key trust is keyed by `(host, port, algorithm)` AND pins negotiation to what's already trusted.** ❌ Never one
-  without the other. ❌ Never record an approved fingerprint without re-asking the server first
-  (`volume::approve_host_key`): that is how one approval becomes trust for another key.
+- **❗ Keep `russh` in `transport.rs`.** Eight breaking minors in eight months; a bump stays one file's problem.
+- **❌ Never call `Sftp::close()`** — it hangs forever over a `russh` channel; dropping the session IS the shutdown.
+- **❗ `File::close()` is the opposite: awaited, and only by its LAST clone.** A surviving clone makes it a silent
+  no-op, and the upload reports success on bytes nobody committed.
+- **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE: a cancelled connect panics
+  inside the engine. ❌ Never time out `Sftp::new`.
+- **Host-key trust keys on `(host, port, algorithm)` AND pins negotiation to it** — ❌ never one without the other. ❌
+  Never record a fingerprint without re-asking the server (`volume::approve_host_key`).
 - **❌ Never anchor an out-of-root path; refuse it.** `root_anchored` turns `/etc/passwd` into `/srv/data/etc/passwd`.
-- **⚠️ A non-UTF-8 filename kills the SESSION**, not just the listing.
-- **❌ No `~/.ssh/config` support**: no `ProxyJump`, `Match`, or aliases. People will expect it; it isn't there.
 - **❌ Never read through `File`'s own offset or `read_all`**: it advances by the length it ASKED for, so one short
-  answer holes the file. Name an offset on every request, on all three byte paths.
-- **❌ Never wire `rename(force = false)` to `Fs::rename`**: it sends `posix-rename@openssh.com`, which REPLACES the
-  destination. Claim the name first; `force = true` does want the extension.
-- **❌ Never stat a path to decide whether to write it**; stat it to explain a write that already failed. As a guard it
-  is a TOCTOU window with an overwritten file in it.
-- **Read and write depth are both 8**, from measured curves rather than the plan's guesses.
-- **❗ Capabilities are read once, at dial, through `SshConnection::extensions()`.** ❌ Never a `Sftp::support_*`
-  predicate at a call site: a fallback nobody can drive is a fallback nobody tested.
-- **❌ A password is offered once unattended; a key passphrase never is** (`auth::reconnect_policy`). Wrong passwords
-  lock accounts. ❗ The gate is the RUNG, not an empty store: the ladder reads ONE secret entry per account, as a
-  password or a passphrase depending on the rung.
-- **❗ Every wire-touching delegator in `volume_impl.rs` wraps itself in `noting`.** With no watcher, operations ARE how
-  a dead session is found; one without it leaves a volume showing as connected.
-- **❗ Report transitions, never states** (`state.rs`), and a retired volume reports nothing at all.
-- **❗ Every `#[ignore]`d test here is a Docker cell**, by construction: the lane runs `--run-ignored only` over the
-  package. A measurement that must not gate CI needs an env gate (`CMDR_SFTP_BENCH=1`) and its own scratch directory.
-- **❌ Never gate behavior on `cfg(test)`**; use `any(test, feature = "testing")`.
+  answer holes the file. Name every offset.
+- **❌ Never wire `rename(force = false)` to `Fs::rename`** — `posix-rename@openssh.com` REPLACES the destination.
+- **❌ Never stat a path to decide whether to write it**: it's a TOCTOU window with an overwritten file in it.
+- **❗ Capabilities are read once, at dial** (`SshConnection::extensions()`). ❌ Never a `Sftp::support_*` predicate at
+  a call site.
+- **❌ A password is offered once unattended; a passphrase never is** (`auth::reconnect_policy`). ❗ The gate is the
+  RUNG, not an empty store.
+- **❗ Every wire-touching delegator in `volume_impl.rs` wraps itself in `noting`.** No watcher here: operations ARE how
+  a dead session is found.
+- **❗ Report transitions, never states** (`state.rs`); a retired volume reports nothing.
+- **⚠️ A non-UTF-8 filename kills the SESSION**, not just the listing.
+- **❗ Every `#[ignore]`d test here is a Docker cell** (the lane runs `--run-ignored only`). ❌ Never gate on
+  `cfg(test)`; use `any(test, feature = "testing")`.
 
-The decisions, the error-policy table, the hazards in full, the fixture map, and what the frontend calls: `DETAILS.md`.
-Read it first.
+The rest (decisions, error policy, hazards, depth curves, fixtures, the frontend's commands, the known gaps):
+`DETAILS.md`. Read it first.
