@@ -9,26 +9,15 @@ import (
 	"time"
 )
 
-// smbIntegrationFilter selects every Docker-backed SMB cell and nothing else.
-//
-// Two halves, because the suites live on two sides of a crate boundary. In the APP
-// crate the name prefix is the only signal, and it has to stay one: `smb_soak_copy_loop`
-// and the NAS bench are `#[ignore]`d there too, and neither belongs in a gating lane.
-// `smb-lane-coverage` enforces that half, so a Docker-gated cell that this filter
-// wouldn't select is a finding rather than a silent no-op.
-// In `cmdr-smb` every `#[ignore]`d test is a Docker cell by construction — there is no
-// other reason to ignore one in a crate with no app around it — so the whole binary
-// qualifies, and a new cell there can be named for what it asserts instead of carrying
-// a prefix whose omission would silently keep it out of CI. `package`, not `binary`:
-// nextest matches a lib test target by binary id, which is not the crate name.
-const smbIntegrationFilter = "test(smb_integration_) + package(cmdr-smb)"
-
-// RunRustIntegrationTests runs the Docker-backed SMB Rust integration tests.
+// RunRustIntegrationTests runs the Docker-backed Rust integration tests for
+// every network fixture. The lane's selection expression is built by
+// `fixtureIntegrationFilter` (see `fixture-lane-coverage.go`), which also holds
+// the fixture table `desktop-fixture-lane-coverage` guards.
 //
 // Container lifecycle: managed by the runner-level SMB orchestrator (see
-// scripts/check/smb_orchestrator.go). This check is marked `NeedsSmb: SmbModeCore`
-// in the registry, so the containers are guaranteed up by the time this
-// function runs and they survive past it (no per-check `defer ./stop.sh`).
+// scripts/check/stack_orchestrator.go). This check declares its fixture stacks in
+// `NeedsContainers` in the registry, so the containers are guaranteed up by the
+// time this function runs and they survive past it (no per-check `defer ./stop.sh`).
 // The old defer broke parallel runs by tearing down containers
 // `desktop-e2e-linux` was still using.
 //
@@ -37,10 +26,9 @@ const smbIntegrationFilter = "test(smb_integration_) + package(cmdr-smb)"
 //     We still wait until the expected services report `running` as a
 //     cheap guard against mid-run zombies; smb2 reconnects if the server
 //     isn't ready on the first write.
-//  2. Invoke `cargo nextest run --workspace --run-ignored only -E
-//     'test(smb_integration_)'` (debug, reusing desktop-rust-tests' build) from the
-//     repo root. The expression filter matches every `smb_integration_*` test and
-//     skips other `#[ignore]` tests.
+//  2. Invoke `cargo nextest run --workspace --run-ignored only -E <fixture filter>`
+//     (debug, reusing desktop-rust-tests' build) from the repo root. The expression
+//     filter matches every fixture cell and skips other `#[ignore]` tests.
 func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// Docker is a hard requirement. Surface a clear message instead of a cryptic error.
 	if !CommandExists("docker") {
@@ -103,7 +91,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// read as "everything passed alone".
 	baseArgs := append([]string{"--locked", "--run-ignored", "only"}, laneArgs...)
 	cmd := exec.Command("cargo", append(append([]string{"nextest", "run"}, baseArgs...),
-		"-E", smbIntegrationFilter)...)
+		"-E", fixtureIntegrationFilter(ctx.RootDir))...)
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	// See `desktop-rust-tests.go`: captured nextest output is not plain text by default.
@@ -116,13 +104,13 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		// here is even likelier to be starvation than in the default lane. Slowest healthy
 		// test measured 2.8s (whole 53-test suite: 5.3s wall-clock), well inside the
 		// contention-retry profile's 40s headroom.
-		return resolveRustFailure("SMB integration tests failed",
+		return resolveRustFailure("fixture integration tests failed",
 			nextestContentionRunner(ctx.RootDir, baseArgs), LoadPerCore, trimRustTestProgress(output))
 	}
 
 	re := regexp.MustCompile(`(\d+) tests? run`)
 	matches := re.FindStringSubmatch(output)
-	message := "All SMB integration tests passed"
+	message := "All fixture integration tests passed"
 	count := -1
 	if len(matches) > 1 {
 		count, _ = strconv.Atoi(matches[1])

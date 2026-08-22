@@ -15,13 +15,13 @@ fi
 # Release the "manual" lease (the one bare start.sh takes). The Go helper downs
 # the shared stack ONLY if no other session still holds a lease — so running
 # stop.sh while a sibling worktree's suite is live leaves that stack UP. See
-# scripts/check/smblease. If `go` is missing or the helper errors, we warn and
+# scripts/check/stacklease. If `go` is missing or the helper errors, we warn and
 # fall back to a direct `down` (the legacy behavior — only safe when nothing
 # else is using the stack).
 echo "Releasing the manual SMB lease (stack downs only at zero holders)..."
 released=false
 if command -v go &> /dev/null; then
-    if (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease release manual); then
+    if (cd "$REPO_ROOT/scripts/check" && go run ./stack-lease release smb manual); then
         released=true
     else
         echo "WARN: SMB lease helper failed; falling back to direct 'compose down'." >&2

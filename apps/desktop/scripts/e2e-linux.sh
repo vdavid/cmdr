@@ -40,7 +40,7 @@ cleanup() {
     # SMB lease: release only if we acquired one (never down a stack we don't
     # hold; the helper itself downs only at zero holders).
     if [[ -n "${SMB_LEASE_HELD:-}" ]]; then
-        (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease release "$$" 2>/dev/null) || true
+        (cd "$REPO_ROOT/scripts/check" && go run ./stack-lease release smb "$$" 2>/dev/null) || true
     fi
     # Cargo config: restore the temporarily-cleared dev override if a backup
     # exists (the VNC branch sets CARGO_CONFIG_BAK).
@@ -389,7 +389,7 @@ start_smb_containers() {
     # logic below (which shells out to start.sh, itself lease-aware) and never
     # set SMB_LEASE_HELD, so cleanup() won't try to release a lease we don't hold.
     if command -v go &> /dev/null; then
-        if (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease acquire "$$" e2e); then
+        if (cd "$REPO_ROOT/scripts/check" && go run ./stack-lease acquire smb "$$" e2e); then
             SMB_LEASE_HELD=1
         else
             log_warn "SMB lease helper failed; proceeding without a cross-worktree lease (legacy path)"
@@ -430,7 +430,7 @@ start_smb_containers() {
             # down, no force-recreate). If other leases are live, the sick stack
             # is the first-comer's to manage; the probe below retries.
             log_warn "SMB containers running but not serving; reconciling (no down)"
-            if command -v go &> /dev/null && (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease reconcile e2e); then
+            if command -v go &> /dev/null && (cd "$REPO_ROOT/scripts/check" && go run ./stack-lease reconcile smb e2e); then
                 : # reconciled under the lock
             else
                 # Fallback (Go missing / helper broken): legacy down + restart.

@@ -1,4 +1,4 @@
-package smblease
+package stacklease
 
 import (
 	"fmt"
@@ -6,27 +6,27 @@ import (
 	"syscall"
 )
 
-// flock holds an exclusive advisory lock on LockPath for the duration of a
-// critical section. We use syscall.Flock(LOCK_EX) rather than flock(1) (absent
-// on stock macOS) or shlock (create-or-fail, wrong shape): LOCK_EX is a
+// flock holds an exclusive advisory lock on a stack's lock path for the duration
+// of a critical section. We use syscall.Flock(LOCK_EX) rather than flock(1)
+// (absent on stock macOS) or shlock (create-or-fail, wrong shape): LOCK_EX is a
 // hold-across-section mutex that works natively on both Darwin and Linux.
 type flock struct {
 	f *os.File
 }
 
-// acquireLock opens (creating if needed) LockPath and blocks until it holds an
+// acquireLock opens (creating if needed) path and blocks until it holds an
 // exclusive lock. The lock is process-associated via the open fd, so closing
 // the fd (release) drops it even if the process later forks.
-func acquireLock() (*flock, error) {
+func acquireLock(path string) (*flock, error) {
 	// 0666 so any of the user's worktree processes can open the shared lock
 	// file; the actual mutual exclusion is the advisory LOCK_EX, not file perms.
-	f, err := os.OpenFile(LockPath(), os.O_CREATE|os.O_RDWR, 0o666)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o666)
 	if err != nil {
-		return nil, fmt.Errorf("open lock file %s: %w", LockPath(), err)
+		return nil, fmt.Errorf("open lock file %s: %w", path, err)
 	}
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
 		_ = f.Close()
-		return nil, fmt.Errorf("flock %s: %w", LockPath(), err)
+		return nil, fmt.Errorf("flock %s: %w", path, err)
 	}
 	return &flock{f: f}, nil
 }

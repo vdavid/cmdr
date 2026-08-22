@@ -195,8 +195,8 @@ jobs:
       - name: Check write-ops-isolation
         run: ./scripts/check/check --check desktop-rust-write-ops-agent-isolation --ci
 
-      - name: Check smb-lane-coverage
-        run: ./scripts/check/check --check desktop-smb-lane-coverage --ci
+      - name: Check fixture-lane-coverage
+        run: ./scripts/check/check --check desktop-fixture-lane-coverage --ci
 
       - name: Check lock-poison
         run: ./scripts/check/check --check desktop-rust-lock-poison --ci

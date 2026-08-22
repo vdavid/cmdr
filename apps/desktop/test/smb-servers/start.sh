@@ -63,7 +63,7 @@ esac
 # lock) — so a sibling worktree's live suite is never recreated or torn down out
 # from under it. This bare `start.sh` registers as the "manual" sentinel holder
 # that the dead-PID sweep never reaps; clear it with `stop.sh`. See
-# scripts/check/smblease for the model.
+# scripts/check/stacklease for the model.
 #
 # On success the helper has already brought the stack up (or confirmed it's
 # serving), so we skip our own `up` and go straight to the probe. If `go` is
@@ -77,7 +77,7 @@ esac
 # reconstruct config from container labels and work unchanged.
 lease_ok=false
 if command -v go &> /dev/null; then
-    if (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease acquire manual "$mode"); then
+    if (cd "$REPO_ROOT/scripts/check" && go run ./stack-lease acquire smb manual "$mode"); then
         lease_ok=true
     else
         echo "WARN: SMB lease helper failed; falling back to direct 'compose up' (no cross-worktree refcounting)." >&2

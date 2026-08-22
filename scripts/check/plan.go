@@ -10,8 +10,8 @@ import (
 
 // The cache plan turns "affected-only selection" and "result caching" into one
 // baseline-free mechanism: a check runs IFF its inputs changed since it last
-// passed. Planning happens BEFORE SMB/Docker bring-up and before the run, so a
-// run where every SMB-touching check is a cache hit never starts a container,
+// passed. Planning happens BEFORE Docker fixture bring-up and before the run, so
+// a run where every container-touching check is a cache hit never starts one,
 // and a fully-cached `pnpm check` is near-instant.
 //
 // Cache-awareness is the default. It's bypassed (everything runs fresh, and this

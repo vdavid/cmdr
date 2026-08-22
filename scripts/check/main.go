@@ -60,12 +60,12 @@ type cliFlags struct {
 }
 
 func main() {
-	// SMB orchestrator: lazily set after we know which checks are selected.
-	// Captured by the signal handler so Ctrl+C also tears down containers.
-	var smb *SmbOrchestrator
+	// Fixture-stack orchestrator: lazily set after we know which checks are
+	// selected. Captured by the signal handler so Ctrl+C also tears down containers.
+	var fixtures *StackOrchestrator
 
 	// Kill all child process groups on Ctrl+C / SIGTERM so no orphans are left
-	// behind, AND tear down SMB containers we started (so a re-run starts
+	// behind, AND tear down fixture containers we started (so a re-run starts
 	// clean and the user doesn't see zombie smb-consumer-* containers in
 	// `docker ps`).
 	sigCh := make(chan os.Signal, 1)
@@ -73,8 +73,8 @@ func main() {
 	go func() {
 		<-sigCh
 		checks.KillAllProcesses()
-		if smb != nil {
-			smb.Stop()
+		if fixtures != nil {
+			fixtures.Stop()
 		}
 		os.Exit(130) // 128 + SIGINT(2)
 	}()
@@ -148,17 +148,17 @@ func main() {
 
 	checksToRun = applyLaneFilters(checksToRun, flags)
 
-	// Plan the input-fingerprint cache BEFORE pnpm install and SMB bring-up, so a
-	// run whose SMB/node checks are all cache hits never starts containers or runs
-	// `pnpm install`. plan.toRun holds the cache misses; plan.cached the hits.
+	// Plan the input-fingerprint cache BEFORE pnpm install and fixture bring-up, so
+	// a run whose container/node checks are all cache hits never starts containers
+	// or runs `pnpm install`. plan.toRun holds the cache misses; plan.cached the hits.
 	plan := planSelectedChecks(ctx, flags, checksToRun)
 	checksToRun = plan.toRun
 
 	ensurePnpmIfNeeded(ctx, checksToRun, flags.quiet)
 
-	smb = setupSmbOrchestratorIfNeeded(rootDir, checksToRun)
-	if smb != nil {
-		defer smb.Stop()
+	fixtures = setupStackOrchestratorIfNeeded(rootDir, checksToRun)
+	if fixtures != nil {
+		defer fixtures.Stop()
 	}
 
 	runChecks(ctx, checksToRun, plan, flags.failFast, flags.noLog, flags.quiet)
@@ -232,24 +232,24 @@ func filterOnlySlow(checksToRun []checks.CheckDefinition, onlySlow bool) []check
 	return slow
 }
 
-// setupSmbOrchestratorIfNeeded inspects the planned check set for any check
-// with a non-empty NeedsSmb. If any are present, it constructs and starts the
-// orchestrator. Returns nil when no SMB-using check was scheduled (in which
-// case main never needs to defer a stop).
+// setupStackOrchestratorIfNeeded inspects the planned check set for any check
+// with a non-empty NeedsContainers. If any are present, it constructs and starts
+// the orchestrator. Returns nil when no container-using check was scheduled (in
+// which case main never needs to defer a stop).
 //
 // Extracted from main() so main stays under the gocyclo threshold; the
 // orchestrator's lifecycle is logically separate from the rest of startup.
-func setupSmbOrchestratorIfNeeded(rootDir string, checksToRun []checks.CheckDefinition) *SmbOrchestrator {
-	modes := collectModes(checksToRun)
-	if len(modes) == 0 {
+func setupStackOrchestratorIfNeeded(rootDir string, checksToRun []checks.CheckDefinition) *StackOrchestrator {
+	wanted := collectStackModes(checksToRun)
+	if len(wanted) == 0 {
 		return nil
 	}
-	smb := NewSmbOrchestrator(rootDir)
-	if err := smb.EnsureStarted(modes); err != nil {
+	fixtures := NewStackOrchestrator(rootDir)
+	if err := fixtures.EnsureStarted(wanted); err != nil {
 		printError("Error: %v", err)
 		os.Exit(1)
 	}
-	return smb
+	return fixtures
 }
 
 // handleFreestyleFlags dispatches --only-freestyle / --prefer-freestyle if set.

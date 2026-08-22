@@ -5,15 +5,6 @@ import (
 	"testing"
 )
 
-// The lane's filter and the name this check enforces are one contract. If the
-// filter is ever re-keyed, this fails rather than letting the check go on
-// enforcing a prefix nothing selects on.
-func TestSmbLaneFilterCarriesTheEnforcedPrefix(t *testing.T) {
-	if !strings.Contains(smbIntegrationFilter, smbLanePrefix) {
-		t.Fatalf("the integration lane filters on %q, which doesn't carry %q", smbIntegrationFilter, smbLanePrefix)
-	}
-}
-
 func TestFindOutOfLaneSmbCells(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -52,7 +43,7 @@ async fn reads_at_the_negotiated_maximum() {}
 			name: "a cell deliberately out of the lane says so and is left alone",
 			files: map[string]string{"transfer/copy_concurrency_bench.rs": `
 #[tokio::test]
-// allowed-out-of-lane-smb-cell: a measurement harness, not an assertion; run on demand
+// allowed-out-of-lane-fixture-cell: a measurement harness, not an assertion; run on demand
 #[ignore = "Measurement harness: needs Docker SMB (./apps/desktop/test/smb-servers/start.sh) or a reachable NAS"]
 async fn concurrency_bench_sweep_window_against_wall_clock() {}
 `},
@@ -91,11 +82,11 @@ async fn reads_a_file_over_the_session() {}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var got []string
-			for _, cell := range scanSmbLaneCoverage(tt.files).stranded {
+			for _, cell := range scanFixtureLaneCoverage(tt.files).stranded {
 				got = append(got, cell.String())
 			}
 			if strings.Join(got, " | ") != strings.Join(tt.want, " | ") {
-				t.Errorf("findOutOfLaneSmbCells = %v, want %v", got, tt.want)
+				t.Errorf("scanFixtureLaneCoverage = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -106,11 +97,11 @@ async fn reads_a_file_over_the_session() {}
 func TestOutOfLaneOptOutNeedsAReason(t *testing.T) {
 	files := map[string]string{"volume/bare.rs": `
 #[tokio::test]
-// allowed-out-of-lane-smb-cell
+// allowed-out-of-lane-fixture-cell
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn reads_a_file_over_the_session() {}
 `}
-	if got := scanSmbLaneCoverage(files).stranded; len(got) != 1 {
+	if got := scanFixtureLaneCoverage(files).stranded; len(got) != 1 {
 		t.Errorf("a reasonless opt-out should not exempt anything; got %v", got)
 	}
 }
@@ -120,11 +111,11 @@ async fn reads_a_file_over_the_session() {}
 func TestOrphanedOutOfLaneOptOutIsReported(t *testing.T) {
 	files := map[string]string{"volume/renamed.rs": `
 #[tokio::test]
-// allowed-out-of-lane-smb-cell: it used to be a bench
+// allowed-out-of-lane-fixture-cell: it used to be a bench
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_reads_a_file_over_the_session() {}
 `}
-	scan := scanSmbLaneCoverage(files)
+	scan := scanFixtureLaneCoverage(files)
 	if len(scan.stranded) != 0 {
 		t.Errorf("the cell is in the lane; got %v", scan.stranded)
 	}
@@ -133,5 +124,86 @@ async fn smb_integration_reads_a_file_over_the_session() {}
 	}
 	if scan.orphans[0].line != 3 {
 		t.Errorf("orphan line = %d, want 3", scan.orphans[0].line)
+	}
+}
+
+// The SFTP half of the lane. A gated SFTP cell is exactly the same failure as a
+// gated SMB one: it needs a fixture, the lane has to select it, and everything
+// stays green while it never runs.
+func TestFindOutOfLaneSftpCells(t *testing.T) {
+	tests := []struct {
+		name  string
+		files map[string]string
+		want  []string
+	}{
+		{
+			name: "a gated SFTP cell carrying its prefix is in the lane",
+			files: map[string]string{"volume/listing.rs": `
+#[tokio::test]
+#[ignore = "Requires the Docker SFTP fixture (./apps/desktop/test/sftp-servers/start.sh)"]
+async fn sftp_integration_lists_a_large_directory() {}
+`},
+		},
+		{
+			name: "a gated SFTP cell without the prefix is a finding",
+			files: map[string]string{"volume/listing.rs": `
+#[tokio::test]
+#[ignore = "Requires the Docker SFTP fixture (./apps/desktop/test/sftp-servers/start.sh)"]
+async fn lists_a_large_directory() {}
+`},
+			want: []string{"volume/listing.rs:4 lists_a_large_directory"},
+		},
+		{
+			name: "the compose project name gates just as well as the start script",
+			files: map[string]string{"volume/rename.rs": `
+#[tokio::test]
+#[ignore = "Requires the sftp-fixture-openssh container"]
+async fn refuses_to_clobber_an_existing_destination() {}
+`},
+			want: []string{"volume/rename.rs:4 refuses_to_clobber_an_existing_destination"},
+		},
+		{
+			// The prefixes aren't interchangeable: an SFTP cell wearing the SMB
+			// prefix would run, but it names the wrong fixture to every reader.
+			name: "an SFTP cell wearing the SMB prefix is a finding",
+			files: map[string]string{"volume/mixed.rs": `
+#[tokio::test]
+#[ignore = "Requires the Docker SFTP fixture (./apps/desktop/test/sftp-servers/start.sh)"]
+async fn smb_integration_lists_a_large_directory() {}
+`},
+			want: []string{"volume/mixed.rs:4 smb_integration_lists_a_large_directory"},
+		},
+		{
+			name: "a deliberately out-of-lane SFTP cell says so and is left alone",
+			files: map[string]string{"volume/bench.rs": `
+#[tokio::test]
+// allowed-out-of-lane-fixture-cell: a throughput harness, not an assertion; run on demand
+#[ignore = "Measurement harness: needs the Docker SFTP fixture (./apps/desktop/test/sftp-servers/start.sh)"]
+async fn windowed_read_against_wall_clock() {}
+`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got []string
+			for _, cell := range scanFixtureLaneCoverage(tt.files).stranded {
+				got = append(got, cell.String())
+			}
+			if strings.Join(got, " | ") != strings.Join(tt.want, " | ") {
+				t.Errorf("scanFixtureLaneCoverage = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// Selection is the whole point: a prefix this check enforces that the lane's
+// filter doesn't select on would guard nothing.
+func TestFixtureLaneFilterCarriesEveryEnforcedPrefix(t *testing.T) {
+	filter := fixtureIntegrationFilter("")
+	for _, fixture := range laneFixtures {
+		if !strings.Contains(filter, fixture.lanePrefix) {
+			t.Errorf("the lane filters on %q, which doesn't carry %q", filter, fixture.lanePrefix)
+		}
 	}
 }

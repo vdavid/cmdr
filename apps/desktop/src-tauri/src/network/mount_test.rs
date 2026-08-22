@@ -364,7 +364,7 @@ async fn smb_integration_volume_id_is_per_mount_not_per_path_shape() {
 /// NULL for the raw UTF-8 string, so `café` and `公開` couldn't be mounted at all
 /// while `public` on the same host mounted fine. The `unicode` fixture host is the
 /// only Samba container with non-ASCII share names, which is why the Rust
-/// integration lane brings it up (`smblease::modeServices`).
+/// integration lane brings it up (`stacklease`, the SMB stack's `core` mode).
 ///
 /// The second assertion is the other half of the same bug: macOS records the
 /// mount source ESCAPED (`//…/caf%C3%A9`), so a raw compare against the name the

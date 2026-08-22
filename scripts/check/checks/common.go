@@ -132,12 +132,13 @@ type CheckDefinition struct {
 	IsFast            bool // true = included in --fast (pre-commit lane). Curated, not derived.
 	CIOnly            bool // true = run only when --ci is set (or when explicitly named via --check)
 	FreestyleIncompat bool // true = can NOT run on freestyle.sh VMs (Rust compilation, Docker, etc.)
-	// NeedsSmb declares that this check requires the smb-consumer Docker stack
-	// to be running. The check runner manages the stack lifecycle for the union
-	// of selected checks with this flag (see scripts/check/smb_orchestrator.go).
-	// Without it, each such check tried to own the lifecycle itself and parallel
-	// runs trampled each other via stop.sh.
-	NeedsSmb SmbMode // "" = no SMB needed; "core" = integration tests; "e2e" = e2e tests
+	// NeedsContainers declares the Docker fixture stacks this check needs
+	// running, and the service set it needs from each. The check runner manages
+	// every named stack's lifecycle for the union of selected checks (see
+	// scripts/check/stack_orchestrator.go). Without it, each such check tried to
+	// own the lifecycle itself and parallel runs trampled each other via stop.sh.
+	// Empty means the check needs no containers.
+	NeedsContainers []StackMode
 	// CpuWeight is the average number of CPU cores this check keeps busy while it
 	// runs (cold/working profile, rounded). The runner admits checks so the sum
 	// of concurrent weights stays within the core budget, so two CPU-heavy checks
@@ -221,14 +222,30 @@ func (c *CheckDefinition) EffectiveCpuWeight(capacity int) int {
 	return w
 }
 
-// SmbMode names the SMB consumer container set a check needs. Mirrors the
-// modes accepted by apps/desktop/test/smb-servers/start.sh.
-type SmbMode string
+// StackMode names one Docker fixture stack and the service set a check needs
+// from it. Both strings are resolved against the `stacklease` registry, which
+// owns the service tables; `TestEveryDeclaredStackModeResolves` is what keeps a
+// typo here from becoming a runtime surprise.
+type StackMode struct {
+	Stack string
+	Mode  string
+}
 
-const (
-	SmbModeNone SmbMode = ""
-	SmbModeCore SmbMode = "core" // guest, auth, both, readonly, flaky, slow, maxreadsize, 50shares, unicode
-	SmbModeE2E  SmbMode = "e2e"  // guest, auth, 50shares, unicode
+func (s StackMode) String() string { return s.Stack + "/" + s.Mode }
+
+// The fixture stack + mode pairs checks ask for. Each mirrors a mode in that
+// stack's `stacklease` service table.
+var (
+	// SmbCore is the SMB integration set: guest, auth, both, readonly, flaky,
+	// slow, maxreadsize, 50shares, unicode.
+	SmbCore = StackMode{Stack: "smb", Mode: "core"}
+	// SmbE2E is what the Linux Docker E2E suite talks to: guest, auth, 50shares,
+	// unicode.
+	SmbE2E = StackMode{Stack: "smb", Mode: "e2e"}
+	// SftpCore is the SFTP integration set. Naming it here is half of what turns
+	// the SFTP lane on; the other half is that stack's service table, which the
+	// fixture fills in.
+	SftpCore = StackMode{Stack: "sftp", Mode: "core"}
 )
 
 // processTracker keeps track of all running child processes so they can be

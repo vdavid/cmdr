@@ -41,7 +41,8 @@ pass=0
 fail=0
 DUMMY_PID=""
 
-lease() { (cd "$CHECK_DIR" && go run ./smb-lease "$@"); }
+# Every verb takes the stack name first; this harness only drives the SMB stack.
+lease() { (cd "$CHECK_DIR" && go run ./stack-lease "$1" smb "${@:2}"); }
 
 container_ids() {
     docker compose -p "$PROJECT_NAME" ps -q 2>/dev/null | sort
@@ -79,7 +80,7 @@ echo ""
 
 # Start from a clean slate so prior leftovers don't skew the assertions.
 docker compose -p "$PROJECT_NAME" down >/dev/null 2>&1 || true
-rm -rf "${CMDR_SMB_LEASE_ROOT:-/tmp/cmdr-smb-leases}" 2>/dev/null || true
+rm -rf "${CMDR_FIXTURE_LEASE_ROOT:-/tmp}/cmdr-smb-leases" 2>/dev/null || true
 
 # ── 1. Dummy holder brings the stack up ──────────────────────────────────────
 echo "[1] Dummy holder acquires + brings the stack up..."

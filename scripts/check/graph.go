@@ -230,7 +230,7 @@ func timeColor(seconds float64) string {
 	}
 }
 
-// annotate renders the colored "(lane, weight[, ~time][, smb][, ci-only])"
+// annotate renders the colored "(lane, weight[, ~time][, fixture stacks][, ci-only])"
 // suffix for a check. Lane, weight, and time carry color — weight and time
 // share the same green→red gradient (by core count / by duration). The name and
 // tech stay plain (coloring names reads as confusing). verboseWeight switches
@@ -255,8 +255,8 @@ func annotate(d *checks.CheckDefinition, verboseWeight, useColor bool, durs map[
 	if secs := durs[d.CLIName()]; secs > 0 {
 		parts = append(parts, paint(timeColor(secs), fmtWallTime(secs)))
 	}
-	if d.NeedsSmb != "" {
-		parts = append(parts, "smb")
+	if stacks := fixtureStackNames(d); stacks != "" {
+		parts = append(parts, stacks)
 	}
 	if d.CIOnly {
 		parts = append(parts, "ci-only")

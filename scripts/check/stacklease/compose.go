@@ -1,4 +1,4 @@
-package smblease
+package stacklease
 
 import (
 	"bytes"
@@ -10,28 +10,29 @@ import (
 	"strings"
 )
 
-// dockerComposer is the real Composer backed by `docker compose`. It mirrors
-// start.sh's invocation: project `smb-consumer`, and for `up` the two layered
-// files (the vendored compose + the cmdr-owned override). The bare ps/down
+// dockerComposer is the real Composer backed by `docker compose`, scoped to one
+// stack. It mirrors the stack's start.sh invocation: the stack's project name,
+// and for `up` the stack's compose files layered in order. The bare ps/down
 // calls reconstruct config from container labels, so they don't need the `-f`
 // flags (matching start.sh / stop.sh).
-type dockerComposer struct{}
+type dockerComposer struct{ stack *Stack }
 
-// composeFileArgs returns the `-f` flags for `up`, resolving the .compose dir.
-// If the dir can't be found we return no `-f` flags; `docker compose` then
-// falls back to its default lookup, which is wrong for our project — but the
-// only caller (Up) is the reconcile path, and a missing compose dir already
-// means a broken checkout where every SMB path fails loudly. We log it.
-func composeFileArgs() []string {
-	cd := composeDir()
+// composeFileArgs returns the `-f` flags for `up`, resolving the stack's compose
+// dir. A stack whose compose dir can't be found has no legal `up`: docker's
+// default file lookup would bring up whatever compose file happens to sit near
+// the cwd, under our project name. So this reports instead of guessing.
+func (d dockerComposer) composeFileArgs() ([]string, error) {
+	cd := d.stack.composeDir()
 	if cd == "" {
-		Logf("WARN: could not resolve the .compose dir; `up` will use docker's default file lookup")
-		return nil
+		return nil, fmt.Errorf(
+			"can't find the %s stack's compose dir (%s); set %s or run from a checkout that has it",
+			d.stack.Name, d.stack.composeDirRel, d.stack.composeDirEnv)
 	}
-	return []string{
-		"-f", filepath.Join(cd, "docker-compose.yml"),
-		"-f", filepath.Join(cd, "docker-compose.override.yml"),
+	args := make([]string, 0, 2*len(d.stack.composeFiles))
+	for _, f := range d.stack.composeFiles {
+		args = append(args, "-f", filepath.Join(cd, f))
 	}
+	return args, nil
 }
 
 func runDocker(args ...string) (string, error) {
@@ -39,9 +40,8 @@ func runDocker(args ...string) (string, error) {
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
-	// Inherit the environment so SMB_CONSUMER_*_PORT (set by the orchestrator's
-	// ApplySmbPortEnv or by the bash caller) flows into compose's `${...}` port
-	// substitution.
+	// Inherit the environment so the stack's port env (set by the orchestrator or
+	// by the bash caller) flows into compose's `${...}` port substitution.
 	cmd.Env = os.Environ()
 	err := cmd.Run()
 	return out.String(), err
@@ -56,8 +56,8 @@ type composePsLine struct {
 }
 
 // Status returns the running and healthy service sets for the project.
-func (dockerComposer) Status() (running map[string]bool, healthy map[string]bool, err error) {
-	out, err := runDocker("compose", "-p", ProjectName, "ps", "--format", "json")
+func (d dockerComposer) Status() (running map[string]bool, healthy map[string]bool, err error) {
+	out, err := runDocker("compose", "-p", d.stack.ProjectName, "ps", "--format", "json")
 	if err != nil {
 		return nil, nil, fmt.Errorf("docker compose ps: %w\n%s", err, out)
 	}
@@ -90,9 +90,10 @@ func (dockerComposer) Status() (running map[string]bool, healthy map[string]bool
 	return running, healthy, nil
 }
 
-// RunningServices lists the project's running services (used for `all` mode).
-func (dockerComposer) RunningServices() ([]string, error) {
-	out, err := runDocker("compose", "-p", ProjectName, "ps", "--services", "--filter", "status=running")
+// RunningServices lists the project's running services (used for the
+// all-services mode).
+func (d dockerComposer) RunningServices() ([]string, error) {
+	out, err := runDocker("compose", "-p", d.stack.ProjectName, "ps", "--services", "--filter", "status=running")
 	if err != nil {
 		return nil, fmt.Errorf("docker compose ps --services: %w\n%s", err, out)
 	}
@@ -105,10 +106,15 @@ func (dockerComposer) RunningServices() ([]string, error) {
 	return svcs, nil
 }
 
-// Up brings the named services up (empty = all defined), layering the override.
-func (dockerComposer) Up(services []string) error {
-	args := []string{"compose", "-p", ProjectName}
-	args = append(args, composeFileArgs()...)
+// Up brings the named services up (empty = all defined), layering the stack's
+// compose files.
+func (d dockerComposer) Up(services []string) error {
+	fileArgs, err := d.composeFileArgs()
+	if err != nil {
+		return err
+	}
+	args := []string{"compose", "-p", d.stack.ProjectName}
+	args = append(args, fileArgs...)
 	args = append(args, "up", "-d")
 	args = append(args, services...)
 	out, err := runDocker(args...)
@@ -119,8 +125,8 @@ func (dockerComposer) Up(services []string) error {
 }
 
 // Down tears the whole project down (matches stop.sh).
-func (dockerComposer) Down() error {
-	out, err := runDocker("compose", "-p", ProjectName, "down")
+func (d dockerComposer) Down() error {
+	out, err := runDocker("compose", "-p", d.stack.ProjectName, "down")
 	if err != nil {
 		return fmt.Errorf("docker compose down: %w\n%s", err, out)
 	}

@@ -181,22 +181,23 @@ func TestPlanNonGitTreeRunsEverything(t *testing.T) {
 	}
 }
 
-// TestPlanSmbSkippedWhenAllCached verifies the planning-level outcome that lets
-// the runner skip SMB bring-up: when every NeedsSmb check is a cache hit, none
-// remain in toRun, so setupSmbOrchestratorIfNeeded sees no SMB modes.
-func TestPlanSmbSkippedWhenAllCached(t *testing.T) {
+// TestPlanFixtureBringUpSkippedWhenAllCached verifies the planning-level outcome
+// that lets the runner skip Docker bring-up: when every container-needing check
+// is a cache hit, none remain in toRun, so setupStackOrchestratorIfNeeded sees
+// no stacks to start.
+func TestPlanFixtureBringUpSkippedWhenAllCached(t *testing.T) {
 	dir := planGitRepo(t, map[string]string{"smb/conf": "x"})
 	ctx := &checks.CheckContext{RootDir: dir}
 	def := noopCheck("smb-check", "smb/**")
-	def.NeedsSmb = checks.SmbModeCore
+	def.NeedsContainers = []checks.StackMode{checks.SmbCore}
 	seedCache(t, ctx, def)
 
 	plan := planCache(ctx, &cliFlags{}, []checks.CheckDefinition{def})
 	if len(plan.toRun) != 0 {
-		t.Fatalf("cached SMB check must not be in toRun, got %v", plan.toRun)
+		t.Fatalf("a cached container-needing check must not be in toRun, got %v", plan.toRun)
 	}
-	if modes := collectModes(plan.toRun); len(modes) != 0 {
-		t.Fatalf("no SMB modes should remain when all SMB checks are cached, got %v", modes)
+	if wanted := collectStackModes(plan.toRun); len(wanted) != 0 {
+		t.Fatalf("no fixture stacks should remain when every such check is cached, got %v", wanted)
 	}
 }
 

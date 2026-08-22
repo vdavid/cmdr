@@ -85,9 +85,9 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 		AppTreeOnly: true,
 		Why:         "scoped to `src/mtp/`, same subsystem as mtp-dropping-timeout",
 	},
-	"desktop-smb-lane-coverage": {
+	"desktop-fixture-lane-coverage": {
 		AppTreeOnly: true,
-		Why:         "the name prefix it enforces is only how the integration lane selects the APP crate's cells; the lane takes `cmdr-smb` by package, so a cell there needs no name and would have no legal fix",
+		Why:         "the name prefixes it enforces are only how the integration lane selects the APP crate's cells; the lane takes each backend crate by package, so a cell there needs no name and would have no legal fix",
 	},
 }
 

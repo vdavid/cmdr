@@ -49,9 +49,10 @@ func TestE2EArtifactIsSweepable(t *testing.T) {
 		"cmdr-mtp-e2e-fixtures",
 		"cmdr-e2e-app.log",
 		"cmdr-e2e-app.pid",
-		// Machine-wide by design: the SMB lease refcount that lets concurrent runs
-		// share one container stack.
+		// Machine-wide by design: the per-fixture lease refcounts that let concurrent
+		// runs share one container stack each.
 		"cmdr-smb-leases",
+		"cmdr-sftp-leases",
 		// Somebody else's.
 		"com.apple.launchd.abc123",
 		"cmdr-xattr-bench",
