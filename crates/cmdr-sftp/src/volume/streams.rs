@@ -314,6 +314,12 @@ async fn produce_stream(
         return;
     }
 
+    // A consumer slower than the link parks this loop inside `chunk_tx.send`,
+    // which stops the window's in-flight reads being polled. That's safe rather
+    // than a stall because the ENGINE has a read task of its own: it keeps
+    // draining the channel and parking each answer in its response arena, so a
+    // slow consumer costs `depth` buffered chunks and never blocks the SSH
+    // connection the other operations share.
     let mut window = ChunkWindow::new(sizing, delivered, size, depth, CHUNK_BYTES);
     loop {
         let next = tokio::select! {
