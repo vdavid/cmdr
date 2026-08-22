@@ -145,6 +145,7 @@ impl SftpVolume {
     /// hangs forever. `transport.rs` has the full note.
     pub async fn disconnect(&self) {
         self.inner.unmounted.store(true, Ordering::Relaxed);
+        self.inner.mark_gone_silently();
         self.inner.session.write().await.take();
     }
 

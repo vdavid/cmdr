@@ -100,6 +100,17 @@ impl SftpVolumeInner {
         ConnectionState::from_u8(self.state.load(Ordering::Relaxed))
     }
 
+    /// Records that the session is gone ❗ without reporting it.
+    ///
+    /// For the two paths where the volume is LEAVING: the frontend learns through
+    /// `volumes-changed`, and a `disconnected` alongside it would race that into a
+    /// banner for a volume that is no longer in the sidebar. It also closes the
+    /// edge, so an in-flight operation failing a moment later finds the state
+    /// already moved and doesn't report one of its own.
+    pub(super) fn mark_gone_silently(&self) {
+        self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+    }
+
     /// Moves to `next` and reports it, ❗ only if that is a change.
     ///
     /// Returns whether anything moved, which is what lets the caller act once on

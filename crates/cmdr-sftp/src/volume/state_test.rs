@@ -91,3 +91,26 @@ fn superseding_retires_the_id_and_leaves_the_session_alone() {
         "a supersede is not an eject: nothing here may tear a live session out from under a holder"
     );
 }
+
+/// A volume that is LEAVING goes quiet, and closes the edge behind it.
+///
+/// The frontend learns through `volumes-changed`, so a `disconnected` alongside
+/// it would race that into a banner for a volume no longer in the sidebar. ❗ And
+/// because the state has already moved, an operation failing a moment later finds
+/// no edge to report either.
+#[tokio::test]
+async fn unmounting_says_nothing_and_leaves_no_edge_behind() {
+    let (events, volume) = watched();
+
+    volume.on_unmount();
+
+    assert_eq!(volume.inner.connection_state(), ConnectionState::Disconnected);
+    assert!(events.transitions().is_empty(), "the sidebar is the only news here");
+
+    // The moment after: an in-flight operation discovers the dead session.
+    volume.note_lost_session(&cmdr_fs::volume::VolumeError::DeviceDisconnected("gone".to_string()));
+    assert!(
+        events.transitions().is_empty(),
+        "and it has nothing to add: the volume is already on its way out"
+    );
+}

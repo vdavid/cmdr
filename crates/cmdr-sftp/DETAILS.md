@@ -272,7 +272,9 @@ at all — its id belongs to a newer instance, and news under it would show a he
 `on_superseded` retires the ID and ❌ leaves the session alone — a running transfer, an open viewer stream, and the
 indexer all hold an `Arc` across a re-registration, and tearing the connection down would kill all of them on a
 connection that is perfectly healthy. `on_unmount` is the opposite: it marks the volume gone and lets the session go,
-and ❌ emits nothing, because the frontend learns through `volumes-changed` and a second event would race it.
+and ❌ emits nothing, because the frontend learns through `volumes-changed` and a second event would race it. ❗ It
+moves the state atomic anyway (`mark_gone_silently`), which closes the EDGE: an in-flight operation failing a moment
+later finds the state already moved and can't report a disconnect for a volume that is leaving.
 
 ### What each rung may do, and what the frontend sees
 

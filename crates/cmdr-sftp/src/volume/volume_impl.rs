@@ -323,6 +323,10 @@ impl Volume for SftpVolume {
     /// that is no longer in the sidebar.
     fn on_unmount(&self) {
         self.inner.unmounted.store(true, Ordering::Relaxed);
+        // ❗ Silently, and that closes the edge as well as skipping the event: an
+        // in-flight operation failing a moment from now finds the state already
+        // moved, so it can't report a disconnect for a volume that is leaving.
+        self.inner.mark_gone_silently();
         // Dropping the transport IS the shutdown, and it needs an async context to
         // take the session out of its lock. ❌ Never `Sftp::close()`: it awaits a
         // read task that a `russh` channel never ends, so it hangs forever.
