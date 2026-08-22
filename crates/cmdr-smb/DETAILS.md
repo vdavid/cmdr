@@ -89,8 +89,11 @@ after one, and a new item should name which of two audiences it serves:
   with its five fields, and `ConnectionState`.
 
 Four public modules is the whole tree a host can name a path into: `connection`, `errors`, `types`, `volume`. Everything
-under `volume` except the four items above is private, `SmbVolumeInner` included, and `volume::testing` is
-`testing`-gated so it counts apart — which is what keeps the app's SMB suites from becoming a reason to widen this.
+under `volume` except the four items above is private, `SmbVolumeInner` included. `volume::testing` and
+`detach_session_for_test` are `testing`-gated, and the counter skips a gated module and a gated item outright, so they
+sit outside all three numbers — which is what keeps the app's SMB suites from becoming a reason to widen this, and also
+means nothing measures the fixture module's own growth. Keep it a fixture module by reading § "Which side a test lives
+on", not by watching a number.
 
 ## Layout
 
