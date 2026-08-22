@@ -16,7 +16,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2110 / 2992 keys have a screenshot (71%):** 1212 direct (41%) and 898 representative (30%). 750 remain
+**Total: 2114 / 3004 keys have a screenshot (70%):** 1212 direct (40%) and 902 representative (30%). 758 remain
 uncoupled, and 132 are native surfaces a webview capture cannot reach.
 
 | Area           | Direct | Representative | Uncoupled | Native | Total | Any % |
@@ -31,7 +31,7 @@ uncoupled, and 132 are native surfaces a webview capture cannot reach.
 | errorReporter  |     10 |              0 |        24 |      0 |    34 |   29% |
 | errors         |     68 |            293 |         0 |      0 |   361 |  100% |
 | feedback       |      7 |              0 |         6 |      0 |    13 |   54% |
-| fileExplorer   |    117 |             89 |       158 |      0 |   364 |   57% |
+| fileExplorer   |    117 |             89 |       164 |      0 |   370 |   56% |
 | fileOperations |    101 |             45 |        37 |      0 |   183 |   80% |
 | goToPath       |      5 |              0 |         5 |      0 |    10 |   50% |
 | indexing       |     33 |              0 |        31 |      0 |    64 |   52% |
@@ -46,8 +46,8 @@ uncoupled, and 132 are native surfaces a webview capture cannot reach.
 | queryUi        |     44 |            123 |         0 |      0 |   167 |  100% |
 | queue          |     25 |              1 |         6 |      0 |    32 |   81% |
 | search         |      9 |             47 |         0 |      0 |    56 |  100% |
-| settings       |    312 |              0 |       231 |      0 |   543 |   57% |
-| shortcuts      |     27 |             28 |         0 |      0 |    55 |  100% |
+| settings       |    312 |              0 |       233 |      0 |   545 |   57% |
+| shortcuts      |     27 |             32 |         0 |      0 |    59 |  100% |
 | suggestedOps   |      0 |              0 |        29 |      0 |    29 |    0% |
 | transfer       |      2 |              0 |        10 |      0 |    12 |   17% |
 | ui             |     13 |              0 |         9 |      0 |    22 |   59% |
