@@ -56,6 +56,62 @@
     "description": "Accessibility label for the small disk-usage bar shown under a pane, indicating how full the current volume is.",
     "screenshot": "main-window.png"
   },
+
+  "fileExplorer.restrictedFolder.tooltip": "Access to this folder is limited. Grant Cmdr {fullDiskAccess} in {systemSettings} → {privacyAndSecurity} → {fullDiskAccess} to remove all such limits. Or grant per-folder access in {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
+  "@fileExplorer.restrictedFolder.tooltip": {
+    "description": "Hover tooltip on a folder macOS won''t let Cmdr read fully (a TCC-protected one like Desktop or Documents), shown on its row in the file list and on its breadcrumb. Says what''s wrong, then offers two ways out: the blanket permission, or a per-folder one. Every placeholder is a macOS pane or permission name that the OS itself hands us already translated, so ❌ don''t translate them and don''t reorder the two breadcrumb paths, which the user is about to follow click by click. \"Cmdr\" is the product name; it appears twice, once as the app being granted access and once as the app''s row inside the Files & Folders pane. The arrows are → (U+2192) and separate the steps of a path.",
+    "placeholders": {
+      "systemSettings": "the localized OS name of the System Settings app (comes from the OS; do not translate)",
+      "privacyAndSecurity": "the localized OS name of the Privacy & Security pane (comes from the OS; do not translate)",
+      "fullDiskAccess": "the localized OS name of the Full Disk Access permission (comes from the OS; do not translate)",
+      "filesAndFolders": "the localized OS name of the Files & Folders permission (comes from the OS; do not translate)"
+    },
+    "screenshot": "main-window.png"
+  },
+
+  "fileExplorer.diskSpace.free": "{freeText} of {totalText} free ({percentText}%)",
+  "@fileExplorer.diskSpace.free": {
+    "description": "How much room is left on the drive the pane is showing. Appears in the status bar under a pane and as the first line of the disk-usage bar's hover tooltip. Reads as a statement of fact, not an instruction: of a 926 GB drive, 91 GB are still free, which is 10% of it. Both sizes arrive already formatted with the user's unit choice (GB/GiB) and the OS's decimal separator, so don't add units. The percent sign is separate from {percentText}: put a space before it, drop it, or move it in front of the number as your language writes percentages.",
+    "placeholders": {
+      "freeText": "the space still free, already formatted, like \"91.02 GB\"",
+      "totalText": "the drive's total size, already formatted, like \"926.35 GB\"",
+      "percentText": "the free space as a whole number of percent, already formatted, like \"10\""
+    },
+    "screenshot": "main-window.png"
+  },
+
+  "fileExplorer.diskSpace.freeShort": "{freeText} free of {totalText}",
+  "@fileExplorer.diskSpace.freeShort": {
+    "description": "The same free-space fact as fileExplorer.diskSpace.free, in the narrow drive picker where each drive gets one short line, so it drops the percentage. Both sizes arrive already formatted; don't add units. Keep it short: it sits beside a small usage bar in a dropdown.",
+    "placeholders": {
+      "freeText": "the space still free, already formatted, like \"91.02 GB\"",
+      "totalText": "the drive's total size, already formatted, like \"926.35 GB\""
+    },
+    "screenshot": "main-window.png"
+  },
+
+  "fileExplorer.diskSpace.lowNote": "This bar is red to indicate that the volume is low on space.",
+  "@fileExplorer.diskSpace.lowNote": {
+    "description": "Second sentence of the disk-usage bar's hover tooltip when the drive is 95% full or more. Explains why the bar the user is pointing at turned red. \"Volume\" is the drive or disk being shown. A full sentence with its own final punctuation.",
+    "screenshot": "main-window.png"
+  },
+
+  "fileExplorer.diskSpace.somewhatLowNote": "This bar is yellow to indicate that the volume is somewhat low on space.",
+  "@fileExplorer.diskSpace.somewhatLowNote": {
+    "description": "The milder twin of fileExplorer.diskSpace.lowNote, shown when the drive is between 80% and 95% full and the bar has turned yellow rather than red. Keep the two sentences parallel in wording, and keep this one's tone the calmer of the pair. A full sentence with its own final punctuation.",
+    "screenshot": "main-window.png"
+  },
+
+  "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}. {notes}} other {{sizes}}}",
+  "@fileExplorer.diskSpace.barTooltip": {
+    "description": "Assembles the disk-usage bar's hover tooltip out of already-translated sentences: the free-space figure first, then any explanatory sentences after it. This key exists so your language decides how one sentence is joined to the next; replace the \". \" between them with whatever your language ends a sentence with (a full stop and a space, an ideographic period, and so on). ⚠️ Translate ONLY that joining punctuation. Don't add words, and keep both branches of the select: the \"other\" branch is the case where there's nothing to append and the figure must stand alone with no trailing punctuation.",
+    "placeholders": {
+      "hasNotes": "\"yes\" when there are sentences to append, \"no\" otherwise",
+      "sizes": "the already-translated free-space figure (fileExplorer.diskSpace.free)",
+      "notes": "one or two already-translated sentences, space-joined: the low-space note, the phone-storage note, or both"
+    },
+    "screenshot": "main-window.png"
+  },
   "fileExplorer.pane.resizePanesAriaLabel": "Resize panes",
   "@fileExplorer.pane.resizePanesAriaLabel": {
     "description": "Accessibility label for the draggable divider between the two file panes. Dragging it changes how the width is split.",

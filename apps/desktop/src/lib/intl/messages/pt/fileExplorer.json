@@ -47,6 +47,31 @@
   "@fileExplorer.pane.diskUsageAriaLabel": {
     "sourceHash": "4fe60c1"
   },
+  "fileExplorer.restrictedFolder.tooltip": "O acesso a esta pasta é limitado. Conceda ao Cmdr {fullDiskAccess} em {systemSettings} → {privacyAndSecurity} → {fullDiskAccess} para remover todos esses limites. Ou conceda acesso por pasta em {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
+  "@fileExplorer.restrictedFolder.tooltip": {
+    "sourceHash": "27b86a9"
+  },
+  "fileExplorer.diskSpace.free": "{freeText} livre de {totalText} ({percentText}%)",
+  "@fileExplorer.diskSpace.free": {
+    "sourceHash": "97781f4"
+  },
+  "fileExplorer.diskSpace.freeShort": "{freeText} livre de {totalText}",
+  "@fileExplorer.diskSpace.freeShort": {
+    "sourceHash": "b8f52a6"
+  },
+  "fileExplorer.diskSpace.lowNote": "Esta barra está vermelha porque este volume está com pouco espaço.",
+  "@fileExplorer.diskSpace.lowNote": {
+    "sourceHash": "4f558cd"
+  },
+  "fileExplorer.diskSpace.somewhatLowNote": "Esta barra está amarela porque este volume está começando a ficar com pouco espaço.",
+  "@fileExplorer.diskSpace.somewhatLowNote": {
+    "sourceHash": "4f24bbf"
+  },
+  "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}. {notes}} other {{sizes}}}",
+  "@fileExplorer.diskSpace.barTooltip": {
+    "sourceHash": "3bc0afc",
+    "sameAsSourceJustification": "Punctuation only, no words: this language ends a sentence with a full stop followed by a space, exactly as English does, so the assembled tooltip is byte-identical. The key exists for languages whose sentence-final punctuation differs (Chinese uses the ideographic period)."
+  },
   "fileExplorer.pane.resizePanesAriaLabel": "Redimensionar painéis",
   "@fileExplorer.pane.resizePanesAriaLabel": {
     "sourceHash": "ff22a46"

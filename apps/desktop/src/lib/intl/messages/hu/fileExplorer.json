@@ -47,6 +47,31 @@
   "@fileExplorer.pane.diskUsageAriaLabel": {
     "sourceHash": "4fe60c1"
   },
+  "fileExplorer.restrictedFolder.tooltip": "Ehhez a mappához korlátozott a hozzáférés. Adj a Cmdrnek {fullDiskAccess} jogot itt: {systemSettings} → {privacyAndSecurity} → {fullDiskAccess}, hogy feloldd az összes ilyen korlátot. Vagy adj mappánkénti hozzáférést itt: {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
+  "@fileExplorer.restrictedFolder.tooltip": {
+    "sourceHash": "27b86a9"
+  },
+  "fileExplorer.diskSpace.free": "Szabad: {freeText} / {totalText} ({percentText}%)",
+  "@fileExplorer.diskSpace.free": {
+    "sourceHash": "97781f4"
+  },
+  "fileExplorer.diskSpace.freeShort": "{freeText} szabad / {totalText}",
+  "@fileExplorer.diskSpace.freeShort": {
+    "sourceHash": "b8f52a6"
+  },
+  "fileExplorer.diskSpace.lowNote": "Ez a sáv azért piros, mert a köteten kevés a szabad hely.",
+  "@fileExplorer.diskSpace.lowNote": {
+    "sourceHash": "4f558cd"
+  },
+  "fileExplorer.diskSpace.somewhatLowNote": "Ez a sáv azért sárga, mert a köteten kezd kevés lenni a szabad hely.",
+  "@fileExplorer.diskSpace.somewhatLowNote": {
+    "sourceHash": "4f24bbf"
+  },
+  "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}. {notes}} other {{sizes}}}",
+  "@fileExplorer.diskSpace.barTooltip": {
+    "sourceHash": "3bc0afc",
+    "sameAsSourceJustification": "Punctuation only, no words: this language ends a sentence with a full stop followed by a space, exactly as English does, so the assembled tooltip is byte-identical. The key exists for languages whose sentence-final punctuation differs (Chinese uses the ideographic period)."
+  },
   "fileExplorer.pane.resizePanesAriaLabel": "Panelek átméretezése",
   "@fileExplorer.pane.resizePanesAriaLabel": {
     "sourceHash": "ff22a46"

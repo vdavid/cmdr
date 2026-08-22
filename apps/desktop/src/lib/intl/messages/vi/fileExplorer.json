@@ -47,6 +47,31 @@
   "@fileExplorer.pane.diskUsageAriaLabel": {
     "sourceHash": "4fe60c1"
   },
+  "fileExplorer.restrictedFolder.tooltip": "Quyền truy cập thư mục này bị hạn chế. Cấp cho Cmdr {fullDiskAccess} trong {systemSettings} → {privacyAndSecurity} → {fullDiskAccess} để gỡ bỏ mọi hạn chế kiểu này. Hoặc cấp quyền truy cập riêng cho từng thư mục trong {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
+  "@fileExplorer.restrictedFolder.tooltip": {
+    "sourceHash": "27b86a9"
+  },
+  "fileExplorer.diskSpace.free": "Còn trống {freeText} trong {totalText} ({percentText}%)",
+  "@fileExplorer.diskSpace.free": {
+    "sourceHash": "97781f4"
+  },
+  "fileExplorer.diskSpace.freeShort": "Còn trống {freeText} trong {totalText}",
+  "@fileExplorer.diskSpace.freeShort": {
+    "sourceHash": "b8f52a6"
+  },
+  "fileExplorer.diskSpace.lowNote": "Thanh này màu đỏ vì ổ đĩa sắp hết dung lượng.",
+  "@fileExplorer.diskSpace.lowNote": {
+    "sourceHash": "4f558cd"
+  },
+  "fileExplorer.diskSpace.somewhatLowNote": "Thanh này màu vàng vì ổ đĩa đang dần hết dung lượng.",
+  "@fileExplorer.diskSpace.somewhatLowNote": {
+    "sourceHash": "4f24bbf"
+  },
+  "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}. {notes}} other {{sizes}}}",
+  "@fileExplorer.diskSpace.barTooltip": {
+    "sourceHash": "3bc0afc",
+    "sameAsSourceJustification": "Punctuation only, no words: this language ends a sentence with a full stop followed by a space, exactly as English does, so the assembled tooltip is byte-identical. The key exists for languages whose sentence-final punctuation differs (Chinese uses the ideographic period)."
+  },
   "fileExplorer.pane.resizePanesAriaLabel": "Đổi kích thước khung",
   "@fileExplorer.pane.resizePanesAriaLabel": {
     "sourceHash": "ff22a46"

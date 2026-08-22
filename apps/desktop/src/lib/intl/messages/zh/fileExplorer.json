@@ -47,6 +47,30 @@
   "@fileExplorer.pane.diskUsageAriaLabel": {
     "sourceHash": "4fe60c1"
   },
+  "fileExplorer.restrictedFolder.tooltip": "对这个文件夹的访问受到限制。在 {systemSettings} → {privacyAndSecurity} → {fullDiskAccess} 里授予 Cmdr {fullDiskAccess}，可以一次性解除所有这类限制。或者在 {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr 里单独为这个文件夹授予访问权限。",
+  "@fileExplorer.restrictedFolder.tooltip": {
+    "sourceHash": "27b86a9"
+  },
+  "fileExplorer.diskSpace.free": "{totalText} 中剩余 {freeText}（{percentText}%）",
+  "@fileExplorer.diskSpace.free": {
+    "sourceHash": "97781f4"
+  },
+  "fileExplorer.diskSpace.freeShort": "{totalText} 中剩余 {freeText}",
+  "@fileExplorer.diskSpace.freeShort": {
+    "sourceHash": "b8f52a6"
+  },
+  "fileExplorer.diskSpace.lowNote": "这个条形显示为红色，表示宗卷的可用空间不足。",
+  "@fileExplorer.diskSpace.lowNote": {
+    "sourceHash": "4f558cd"
+  },
+  "fileExplorer.diskSpace.somewhatLowNote": "这个条形显示为黄色，表示宗卷的可用空间开始变少。",
+  "@fileExplorer.diskSpace.somewhatLowNote": {
+    "sourceHash": "4f24bbf"
+  },
+  "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}。{notes}} other {{sizes}}}",
+  "@fileExplorer.diskSpace.barTooltip": {
+    "sourceHash": "3bc0afc"
+  },
   "fileExplorer.pane.resizePanesAriaLabel": "调整窗格大小",
   "@fileExplorer.pane.resizePanesAriaLabel": {
     "sourceHash": "ff22a46"

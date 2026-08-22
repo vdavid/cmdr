@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import {
   getDiskUsageLevel,
   getUsedPercent,
@@ -14,47 +15,57 @@ function createSpace(totalBytes: number, availableBytes: number): VolumeSpaceInf
   return { totalBytes, availableBytes }
 }
 
+// The sentences resolve through the i18n catalog (`tString`) and the percentage
+// through `formatInteger`; pin the base locale so the asserted en copy and its
+// digits are deterministic.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
+
 describe('getDiskUsageLevel', () => {
   it('returns OK for 0%', () => {
     const result = getDiskUsageLevel(0)
     expect(result.cssVar).toBe('--color-disk-ok')
-    expect(result.label).toBe('OK')
+    expect(result.severity).toBe('ok')
   })
 
   it('returns OK for 50%', () => {
     const result = getDiskUsageLevel(50)
     expect(result.cssVar).toBe('--color-disk-ok')
-    expect(result.label).toBe('OK')
+    expect(result.severity).toBe('ok')
   })
 
   it('returns OK for 79%', () => {
     const result = getDiskUsageLevel(79)
     expect(result.cssVar).toBe('--color-disk-ok')
-    expect(result.label).toBe('OK')
+    expect(result.severity).toBe('ok')
   })
 
   it('returns Warning for 80%', () => {
     const result = getDiskUsageLevel(80)
     expect(result.cssVar).toBe('--color-disk-warning')
-    expect(result.label).toBe('Warning')
+    expect(result.severity).toBe('warning')
   })
 
   it('returns Warning for 94%', () => {
     const result = getDiskUsageLevel(94)
     expect(result.cssVar).toBe('--color-disk-warning')
-    expect(result.label).toBe('Warning')
+    expect(result.severity).toBe('warning')
   })
 
   it('returns Critical for 95%', () => {
     const result = getDiskUsageLevel(95)
     expect(result.cssVar).toBe('--color-disk-danger')
-    expect(result.label).toBe('Critical')
+    expect(result.severity).toBe('critical')
   })
 
   it('returns Critical for 100%', () => {
     const result = getDiskUsageLevel(100)
     expect(result.cssVar).toBe('--color-disk-danger')
-    expect(result.label).toBe('Critical')
+    expect(result.severity).toBe('critical')
   })
 })
 

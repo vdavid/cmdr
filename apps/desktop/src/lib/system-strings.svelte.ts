@@ -30,6 +30,7 @@ import { getLocalizedSystemStrings } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('system-strings')
+import { tString } from '$lib/intl/messages.svelte'
 
 /** English defaults. Mirrors `LocalizedSystemStrings::english_defaults` in Rust. */
 const ENGLISH_DEFAULTS = {
@@ -82,11 +83,10 @@ export async function initSystemStrings(): Promise<void> {
  * automatically.
  */
 export function restrictedFolderTooltip(): string {
-  const s = systemStrings
-  return (
-    `Access to this folder is limited. ` +
-    `Grant Cmdr ${s.fullDiskAccess} in ${s.systemSettings} → ${s.privacyAndSecurity} → ${s.fullDiskAccess} ` +
-    `to remove all such limits. ` +
-    `Or grant per-folder access in ${s.systemSettings} → ${s.privacyAndSecurity} → ${s.filesAndFolders} → Cmdr.`
-  )
+  return tString('fileExplorer.restrictedFolder.tooltip', {
+    systemSettings: systemStrings.systemSettings,
+    privacyAndSecurity: systemStrings.privacyAndSecurity,
+    fullDiskAccess: systemStrings.fullDiskAccess,
+    filesAndFolders: systemStrings.filesAndFolders,
+  })
 }
