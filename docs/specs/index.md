@@ -10,6 +10,17 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-08-22 `sftp-backend-plan.md` - **SFTP is the top planned feature, and the seams are proven enough to build it
+      on.** A `crates/cmdr-sftp` backend plus its IPC surface, no frontend (David builds the sign-in UX after). Six
+      milestones plus a check-runner prerequisite, on `russh` + `openssh-sftp-client`
+      (`docs/notes/sftp-crate-evaluation-2026-08-22.md`). The heart is a request window Cmdr owns: sequential SFTP is
+      4.2 MB/s at 50 ms RTT and a window is worth 5-10×, and no crate ships one. Four reviews found four data-safety
+      traps worth knowing before starting: `posix-rename` clobbers where `Volume::rename` must refuse, SFTP v3 collapses
+      every error into one code that five conformance assertions branch on, `File::read` advances its offset by the
+      REQUESTED length so `read_all` silently holes a file, and `land` deletes the destination on any rename error.
+      **Scoped in beyond SFTP**: the `land` fix (SMB benefits equally), a `HostKeys` seam, and a pane-refresh shortcut,
+      which turns out not to exist today.
+
 - [ ] 2026-08-21 `agent-wake-loop.md` - **Ask Cmdr can suggest things, but never notices anything on its own.** The
       whole proactive half is built (store, executors, dialog, approval bridge, indicator, ten locales, and all of
       `agent/wake/` under 54 tests) and nothing drives it: `run_wake` and `Inbox::admit_if_permitted` have no production
