@@ -104,7 +104,9 @@ pub fn ask_cmdr_fake_active() -> bool {
 /// The wider rule this serves: **a test run must not observe or react to the
 /// developer's real machine.** Anything the app discovers rather than creates is a
 /// candidate — the real-USB half of MTP enumeration is the known remaining one
-/// (`mtp/watcher.rs`, `docs/testing.md` § "The host machine is not a fixture").
+/// (`mtp/watcher.rs`, `docs/testing.md` § "The host machine is not a fixture"). Note
+/// that MTP's `ptpcamerad` suppression is gated on the DEVICE being virtual rather
+/// than on this flag, which covers a `CMDR_VIRTUAL_MTP=1` dev session too.
 pub fn may_adopt_preexisting_network_mounts() -> bool {
     !is_e2e_mode()
 }

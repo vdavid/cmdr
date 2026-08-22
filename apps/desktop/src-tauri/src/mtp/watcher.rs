@@ -119,7 +119,7 @@ fn check_for_device_changes() {
     // Auto-connect newly detected devices
     if !new_devices.is_empty() {
         #[cfg(target_os = "macos")]
-        suppress_ptpcamerad_if_needed();
+        suppress_ptpcamerad_if_needed(new_devices.iter().map(String::as_str));
 
         for device_id in new_devices {
             info!("MTP device detected, auto-connecting: {}", device_id);
@@ -219,7 +219,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
     // Auto-connect any devices already plugged in at startup (skip if MTP is disabled)
     if !initial_devices.is_empty() && enabled {
         #[cfg(target_os = "macos")]
-        suppress_ptpcamerad_if_needed();
+        suppress_ptpcamerad_if_needed(initial_devices.iter().map(String::as_str));
 
         for device_id in &initial_devices {
             auto_connect_device(device_id.clone());
@@ -284,12 +284,45 @@ async fn run_hotplug_watcher(_app: AppHandle) {
     warn!("MTP hotplug watcher stream ended unexpectedly");
 }
 
-/// Suppresses ptpcamerad before connecting to MTP devices.
-/// Emits `mtp-ptpcamerad-suppressed` event on success so the frontend can show a toast.
+/// Whether `device_id` names a virtual (fixture-backed) MTP device. Always false in a
+/// production build, where the virtual device isn't compiled in.
+#[cfg(all(target_os = "macos", feature = "virtual-mtp"))]
+fn is_virtual_device_id(device_id: &str) -> bool {
+    device_id == super::virtual_device::virtual_device_id()
+}
+
+#[cfg(all(target_os = "macos", not(feature = "virtual-mtp")))]
+fn is_virtual_device_id(_device_id: &str) -> bool {
+    false
+}
+
+/// Whether claiming `devices` needs `ptpcamerad` out of the way.
+///
+/// Only real hardware does: a virtual device is backed by local directories and never
+/// touches USB, so suppressing the daemon for one would take a macOS service down on
+/// the developer's machine (and raise the "Cmdr paused the macOS camera daemon" notice)
+/// for a fixture. An E2E run enumerates nothing but virtual devices, which is how a test
+/// run used to `launchctl disable com.apple.ptpcamerad` mid-suite. The rule is about the
+/// DEVICE rather than the run, so a `CMDR_VIRTUAL_MTP=1` dev session is covered too, and
+/// a real phone plugged in during a test run still gets the workaround it needs.
+///
+/// See `docs/testing.md` § "The host machine is not a fixture".
 #[cfg(target_os = "macos")]
-fn suppress_ptpcamerad_if_needed() {
+fn needs_ptpcamerad_suppression<'a>(devices: impl IntoIterator<Item = &'a str>) -> bool {
+    devices.into_iter().any(|id| !is_virtual_device_id(id))
+}
+
+/// Suppresses ptpcamerad before connecting to MTP devices, unless none of `devices`
+/// needs it. Emits `mtp-ptpcamerad-suppressed` on success so the frontend can toast.
+#[cfg(target_os = "macos")]
+fn suppress_ptpcamerad_if_needed<'a>(devices: impl IntoIterator<Item = &'a str>) {
     use super::connection::MtpPtpcameradSuppressed;
     use tauri_specta::Event;
+
+    if !needs_ptpcamerad_suppression(devices) {
+        debug!("Skipping ptpcamerad suppression: no device present needs it");
+        return;
+    }
 
     match super::macos_workaround::suppress_ptpcamerad() {
         Ok(true) => {
@@ -377,6 +410,37 @@ mod tests {
         // diffed to no change and the plugged-in device never connected.
         let discovered = HashSet::from(["mtp-A".to_string()]);
         assert!(initial_known_devices(false, &discovered).is_empty());
+    }
+
+    /// A virtual device is filesystem-backed and claims no USB interface, so it must
+    /// never cost a real macOS daemon. Pre-fix an E2E run's own virtual device made
+    /// `initial_devices` non-empty, and the app `launchctl disable`d
+    /// `com.apple.ptpcamerad` on the developer's machine (and toasted about it)
+    /// mid-suite. `docs/testing.md` § "The host machine is not a fixture".
+    #[cfg(all(target_os = "macos", feature = "virtual-mtp"))]
+    #[test]
+    fn a_device_set_that_is_only_virtual_needs_no_ptpcamerad_suppression() {
+        let virtual_id = crate::mtp::virtual_device::virtual_device_id();
+        assert!(!needs_ptpcamerad_suppression([virtual_id.as_str()]));
+    }
+
+    #[cfg(all(target_os = "macos", feature = "virtual-mtp"))]
+    #[test]
+    fn real_hardware_alongside_a_virtual_device_still_needs_suppression() {
+        let virtual_id = crate::mtp::virtual_device::virtual_device_id();
+        assert!(needs_ptpcamerad_suppression([virtual_id.as_str(), "mtp-real-phone"]));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn real_hardware_needs_suppression() {
+        assert!(needs_ptpcamerad_suppression(["mtp-real-phone"]));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn an_empty_device_set_needs_no_suppression() {
+        assert!(!needs_ptpcamerad_suppression(std::iter::empty::<&str>()));
     }
 
     #[test]

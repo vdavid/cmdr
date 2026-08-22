@@ -235,6 +235,17 @@ fn register_virtual_mtp_device_at(root: &Path, watch_backing_dirs: bool) -> u64 
 /// Serial number of the virtual device, used to look it up for rescan.
 pub const VIRTUAL_DEVICE_SERIAL: &str = "cmdr-e2e-virtual";
 
+/// The Cmdr device id the virtual device enumerates under.
+///
+/// Derived from its fixed serial exactly as `discovery.rs` derives every device id
+/// (a serial always wins over the location id, so the `0` never reaches the result),
+/// which lets a caller pick the fixture out of a plain device-id list without holding
+/// a registration handle. Used to keep host-level workarounds (`macos_workaround`)
+/// off a device that doesn't need them.
+pub fn virtual_device_id() -> String {
+    cmdr_fs::volume::mtp_ids::device_id_for(Some(VIRTUAL_DEVICE_SERIAL), 0)
+}
+
 /// Forces the virtual MTP device to rescan its backing directories, syncing
 /// its in-memory object tree with the actual filesystem state.
 ///

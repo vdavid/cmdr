@@ -37,7 +37,8 @@ MTP for Android devices and PTP cameras over USB. macOS and Linux only; on Linux
   `CancelTransaction` for list/delete.
 - **macOS ptpcamerad suppression** runs before connecting, and is restored when the last device leaves, on exit, or on
   MTP being disabled; `ensure_ptpcamerad_enabled()` at startup covers a crash. A failed one falls back to the
-  `ExclusiveAccess` dialog.
+  `ExclusiveAccess` dialog. ❌ It never runs for a device set that's only VIRTUAL (`needs_ptpcamerad_suppression`):
+  disabling a real macOS daemon for a fixture is how an E2E run took `ptpcamerad` down on the developer's machine.
 - **Error events the frontend depends on**: `mtp-exclusive-access-error` (ptpcamerad still holds the device; carries
   the blocking process name from `ioreg`, `None` on Linux) and `mtp-permission-error` (Linux udev rules missing →
   `MtpPermissionDialog`).

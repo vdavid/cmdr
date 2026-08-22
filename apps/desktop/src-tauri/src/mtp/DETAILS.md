@@ -182,6 +182,16 @@ a device that's merely slow would be the worse failure.
 doesn't wait for a device to leave), and `ensure_ptpcamerad_enabled()` runs at startup so a crash mid-suppression
 can't leave the user's camera unusable in Photos.
 
+**Decision: the suppression is gated on the DEVICE, not on test mode.** `watcher.rs::needs_ptpcamerad_suppression`
+answers true only when at least one device in the triggering set is real hardware; `is_virtual_device_id` compares
+against `virtual_device::virtual_device_id()` (derived from the fixture's fixed serial) and is a `false` stub in a build
+without the `virtual-mtp` feature. **Why:** a virtual device is backed by local directories and claims no USB interface,
+so nothing about it needs the daemon out of the way, and an E2E run enumerates only virtual devices — which is how a
+test run used to `launchctl disable com.apple.ptpcamerad` on the developer's machine and raise the "Cmdr paused the
+macOS camera daemon" notice mid-suite (`docs/testing.md` § "The host machine is not a fixture"). Keying on the device
+rather than `CMDR_E2E_MODE` also covers a `CMDR_VIRTUAL_MTP=1` dev session, and leaves a real phone plugged in during a
+test run with the workaround it genuinely needs.
+
 ## Backends never register themselves
 
 **Decision.** A backend's session layer reports that a storage attached or detached; it does not decide that a `Volume`

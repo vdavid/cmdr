@@ -488,9 +488,16 @@ specs, none of them related. It also means a test run was reaching for a Keychai
 machine on someone's home network. The gate now lives in `test_mode::may_adopt_preexisting_network_mounts`.
 
 **How to spot the next one:** grep a startup path for enumeration of the world — `/Volumes`, USB, mDNS, Bluetooth,
-Keychain — and ask what it finds on a developer's laptop. **Known remaining instance:** MTP device enumeration
-(`mtp/watcher.rs::start_mtp_watcher`) auto-connects every real USB device it finds alongside the virtual one, so a
-camera or phone plugged into the machine raises a `ptpcamerad` exclusive-access toast mid-run.
+Keychain — and ask what it finds on a developer's laptop.
+
+**The second instance, and its variant of the gate:** MTP's startup enumeration used to `launchctl disable
+com.apple.ptpcamerad` (a real macOS daemon) and toast about it because the run's OWN virtual device made the device list
+non-empty. The gate there keys off the DEVICE, not the run
+(`mtp/watcher.rs::needs_ptpcamerad_suppression`): a virtual device is filesystem-backed and claims no USB interface, so
+it never earns a host workaround, while a real phone plugged in during a run still gets one. Prefer that shape when the
+subsystem can tell its own fixtures apart from the real thing — it also covers a `CMDR_VIRTUAL_MTP=1` dev session, which
+an `CMDR_E2E_MODE` check would miss. **Known remaining instance:** that same enumeration still auto-connects a real USB
+device it finds alongside the virtual one.
 
 ## Sanctioned slow-test exceptions
 
