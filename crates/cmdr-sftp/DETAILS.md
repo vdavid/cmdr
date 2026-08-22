@@ -463,6 +463,14 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
 - **`write_is_single_shot` keeps its `false` default**, so every write here stages (§ "The write window").
 - **`notify_mutation` is overridden**, and ❗ it has to be: there is no watcher on this backend, so it is the only thing
   that keeps a destination pane honest after a copy. One call per changed DIRECTORY, never per entry.
+  `create_directory_all` patches exactly the SHALLOWEST level it created: its parent is the only level that existed
+  before, so it is the only listing a pane could be holding, and the levels under it are brand new.
+  ⚠️ **Known cost, not yet paid down**: a `Created` patch stats the new entry, so a staged write spends one extra round
+  trip on the temp and the landing rename spends another on the final name — about 100 ms per file at 50 ms RTT, which
+  roughly triples a small-file copy. `cmdr-smb` has the same shape and it costs ~1 ms on a LAN. The fix is either
+  building the temp's entry locally (nothing shows it — `file_system::staging::is_hidden_from_listings` filters staging
+  temps out of every pane) or skipping the temp's patch entirely, and both need the app's listing-mutation contract read
+  first.
 - **`paths_are_os_visible` → false, `local_path` → `None`.** Answering otherwise would let a drag hand Finder a path
   that resolves to nothing, or worse to a local file of the same name.
 - **`get_space_info` → `NotSupported`, `space_poll_interval` → `None`.** `statvfs@openssh.com` is **not reachable from

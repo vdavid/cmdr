@@ -131,6 +131,10 @@ async fn a_cancelled_write_leaves_nothing_behind() {
         !volume.exists(Path::new(&path)).await,
         "a cancelled write must not leave a partial on the server"
     );
+    // And the session is still the session: a cancel abandons in-flight write
+    // requests, and what must not survive it is a stale response poisoning the
+    // channel for whatever the pane does next.
+    assert!(volume.exists(Path::new("hello.txt")).await);
     clean_scratch(&volume, &dir).await;
 }
 
@@ -350,12 +354,29 @@ async fn a_file_that_is_not_there_reads_as_missing_rather_than_as_a_catch_all() 
 async fn a_deep_destination_is_created_whole_and_reported_as_created() {
     // The override's other half: several missing levels in one pass, and an
     // honest `Created` for a leaf that really was made here.
-    let (volume, dir) = scratch_on("OPENSSH", 12480, "mkdir-p-deep").await;
+    let params = fixture_params("OPENSSH", 12480);
+    let (host, listings) = fixture_host_recording(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+    let dir = scratch_dir("mkdir-p-deep");
+    clean_scratch(&volume, &dir).await;
+    volume.create_directory(Path::new(&dir)).await.expect(FIXTURE);
+    let before = listings.change_count();
     let leaf = format!("{dir}/2026/08/photos");
 
     let made = volume.create_directory_all(Path::new(&leaf)).await.expect(FIXTURE);
 
     assert_eq!(made, DirectoryCreation::Created);
+    assert_eq!(
+        listings
+            .changes()
+            .into_iter()
+            .skip(before)
+            .filter(|(_, parent, _)| parent == Path::new(&format!("{FIXTURE_ROOT}/{dir}")))
+            .count(),
+        1,
+        "the SHALLOWEST new directory is the one a pane could be showing the parent of; \
+         patching only the leaf leaves that pane a level short"
+    );
     assert!(volume.is_directory(Path::new(&leaf)).await.expect(FIXTURE));
     assert!(
         volume

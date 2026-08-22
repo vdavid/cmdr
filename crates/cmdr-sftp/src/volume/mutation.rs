@@ -130,8 +130,9 @@ impl SftpVolume {
         }
 
         // Leaf → root, stopping at the volume root, then created shallowest
-        // first so no child is asked for before its parent.
-        let mut missing = Vec::new();
+        // first so no child is asked for before its parent. Each level keeps both
+        // spellings: the remote one to create, the caller's to patch a pane with.
+        let mut missing: Vec<(&Path, String)> = Vec::new();
         for ancestor in path.ancestors() {
             let Ok(remote_ancestor) = self.to_remote_path(ancestor) else {
                 break;
@@ -139,13 +140,15 @@ impl SftpVolume {
             if remote_ancestor == root {
                 break;
             }
-            missing.push(remote_ancestor);
+            missing.push((ancestor, remote_ancestor));
         }
 
         let mut leaf = DirectoryCreation::AlreadyExisted;
-        for (index, dir) in missing.iter().enumerate().rev() {
+        let mut first_created: Option<&Path> = None;
+        for (index, (as_addressed, dir)) in missing.iter().enumerate().rev() {
             match self.create_one_directory(&session, dir).await {
                 Ok(()) => {
+                    first_created.get_or_insert(as_addressed);
                     if index == 0 {
                         leaf = DirectoryCreation::Created;
                     }
@@ -157,8 +160,14 @@ impl SftpVolume {
                 Err(e) => return Err(e),
             }
         }
-        if leaf == DirectoryCreation::Created {
-            self.notify_created(path).await;
+        // ❗ ONE patch, for the SHALLOWEST directory this created. Its parent is
+        // the only level that was there before, so it is the only listing a pane
+        // could be holding — the levels under it are brand new and nobody has
+        // them cached. Patching the leaf instead leaves that pane a level short,
+        // and patching every level would spend a stat round trip per level on
+        // directories nothing is showing.
+        if let Some(created) = first_created {
+            self.notify_created(created).await;
         }
         Ok(leaf)
     }
