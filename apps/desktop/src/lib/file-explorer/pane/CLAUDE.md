@@ -41,10 +41,8 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   leaves an install that already has pane state untouched; `~/Downloads` is probed only after Full Disk Access is
   confirmed; `loadPersistedState` persists an applied layout itself. DETAILS § "First-run pane layout".
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
-  switches. Resolve bare paths to a `Location` at the edge. Refusal `message` strings are byte-pinned.
-- **The Network volume is a host browser, not a path.** ❌ Never let a path below the `smb://` sentinel navigate (it
-  lands on the host list and reports success); a switch TO `network` must reset the pane's open host, or a re-select
-  from inside a share list is a silent no-op. DETAILS § the `navigate()` transaction.
+  switches. Resolve bare paths to a `Location` at the edge. Refusal `message` strings are byte-pinned. `network`
+  navigates only `smb://`; a switch there clears the pane's open host.
 - **`DualPaneExplorer.svelte` and `FilePane.svelte` are `file-length`-flagged**: don't add to them, and ❌ don't carve
   child components either. Cross-cutting state → a `*.svelte.ts` factory, pure logic → a `*.ts` helper.
 
