@@ -3,9 +3,25 @@
 //! the two ways a share retires.
 
 use super::*;
+use crate::volume::SmbVolume;
 use crate::volume::test_support::*;
+use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection};
 use cmdr_fs::volume::{Volume, WatchCoverage};
 use std::path::Path;
+
+/// The volume id every recorded case reports under.
+const RECORDED_ID: &str = "volumestestshare";
+
+/// A disconnected volume whose event seam remembers what the frontend was told.
+///
+/// The transitions below are the only thing a user ever learns about a session
+/// dropping, so "did it emit, and how many times" is the assertion — the state
+/// the backend kept for itself is the cheap half.
+fn volume_with_recorded_events() -> (SmbVolume, Arc<RecordingVolumeEvents>) {
+    let events = Arc::new(RecordingVolumeEvents::new());
+    let host = VolumeHost::builder().events(events.clone()).build();
+    (make_test_volume_with(RECORDED_ID, host), events)
+}
 
 #[tokio::test]
 async fn attempt_reconnect_noop_when_already_direct() {
@@ -50,28 +66,69 @@ async fn single_flight_concurrent_callers_serialize() {
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
 }
 
+/// Several in-flight ops all meet the same broken session, and each one runs the
+/// transition. The user hears about it ONCE: a second banner for a share that is
+/// already showing as unreachable is noise, and the frontend's backoff cycle
+/// restarts on every event it sees.
 #[tokio::test]
 async fn transition_to_disconnected_idempotent() {
-    // Calling `transition_to_disconnected` twice should only emit once.
-    // We can't verify the emit count without a real `AppHandle`, but we
-    // can verify the underlying `swap` semantics: the second call is a
-    // no-op (returns the same value).
-    let vol = make_test_volume_direct();
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    let (vol, events) = volume_with_recorded_events();
+    vol.inner.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
+
     vol.inner.transition_to_disconnected();
-    assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
     vol.inner.transition_to_disconnected();
+
     assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+    assert_eq!(
+        events.transitions(),
+        vec![(RECORDED_ID.to_string(), VolumeConnection::Disconnected)],
+        "a second op meeting the same dead session must not re-announce it"
+    );
 }
 
+/// The same on the way back up: a reconnect that raced another one and lost
+/// still runs the transition, and a second "connected" would restart the
+/// frontend's recovery for a share that is already serving.
 #[tokio::test]
 async fn transition_to_direct_idempotent() {
-    let vol = make_test_volume();
-    assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+    let (vol, events) = volume_with_recorded_events();
+
     vol.inner.transition_to_direct();
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
     vol.inner.transition_to_direct();
+
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(
+        events.transitions(),
+        vec![(RECORDED_ID.to_string(), VolumeConnection::Connected)],
+        "the losing side of a reconnect race must not re-announce the session"
+    );
+}
+
+/// A retired share still tracks its own state for the holders reading through
+/// it, and says NOTHING under the volume id it no longer owns.
+///
+/// This is the whole point of the flag: the successor is serving that id on its
+/// own healthy session, so a predecessor's dying watcher announcing a disconnect
+/// would drop the frontend into "unreachable" and start a backoff cycle against
+/// a share that never went away.
+#[tokio::test]
+async fn a_retired_share_announces_nothing_under_an_id_it_no_longer_owns() {
+    let (vol, events) = volume_with_recorded_events();
+    vol.inner.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
+    vol.on_superseded();
+
+    vol.inner.transition_to_disconnected();
+
+    assert_eq!(
+        vol.connection_state(),
+        ConnectionState::Disconnected,
+        "the share still tracks its own state for whoever still holds it"
+    );
+    assert!(
+        events.transitions().is_empty(),
+        "the id belongs to the successor, so this share must not speak for it: {:?}",
+        events.transitions()
+    );
 }
 
 #[test]
