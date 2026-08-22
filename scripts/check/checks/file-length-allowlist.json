@@ -14,8 +14,6 @@
     "apps/desktop/src-tauri/src/file_system/listing/caching.rs": 926,
     "apps/desktop/src-tauri/src/file_system/listing/caching_test.rs": 896,
     "apps/desktop/src-tauri/src/file_system/volume/backends/local_posix.rs": 837,
-    "apps/desktop/src-tauri/src/file_system/volume/backends/smb/volume_impl.rs": 963,
-    "apps/desktop/src-tauri/src/file_system/volume/backends/smb_test.rs": 966,
     "apps/desktop/src-tauri/src/file_system/write_operations/delete/walker.rs": 942,
     "apps/desktop/src-tauri/src/file_system/write_operations/journal_capture_tests.rs": 941,
     "apps/desktop/src-tauri/src/file_system/write_operations/manager.rs": 1152,
@@ -94,8 +92,6 @@
     "crates/cmdr-index/src/media_index/scheduler/enrich_tests.rs": 1262,
     "scripts/check/checks/desktop-rust-cfg-gate_test.go": 1228,
     "scripts/check/checks/lock-poison.go": 890,
-    "scripts/check/checks/lock-poison_test.go": 975,
-    "crates/cmdr-index/src/media_index/scheduler/kick_tests.rs": 880,
-    "crates/cmdr-smb/src/volume/volume_impl.rs": 1049
+    "scripts/check/checks/lock-poison_test.go": 975
   }
 }
