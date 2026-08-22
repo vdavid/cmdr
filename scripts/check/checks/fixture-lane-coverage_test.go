@@ -1,6 +1,8 @@
 package checks
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -204,6 +206,39 @@ func TestFixtureLaneFilterCarriesEveryEnforcedPrefix(t *testing.T) {
 	for _, fixture := range laneFixtures {
 		if !strings.Contains(filter, fixture.lanePrefix) {
 			t.Errorf("the lane filters on %q, which doesn't carry %q", filter, fixture.lanePrefix)
+		}
+	}
+}
+
+// A backend crate's clause has to appear on its own the day the crate lands, and
+// must NOT appear before then: `cargo nextest` fails to PARSE a filterset naming
+// an unknown package, so an early clause takes the whole lane down instead of
+// selecting nothing (verified on cargo-nextest 0.9.136, 2026-08-22).
+func TestBackendPackageClauseFollowsTheCrateOntoDisk(t *testing.T) {
+	root := t.TempDir()
+	before := fixtureIntegrationFilter(root)
+	if strings.Contains(before, "package(") {
+		t.Fatalf("no crate is on disk, so no package clause should appear; got %q", before)
+	}
+	for _, fixture := range laneFixtures {
+		if !strings.Contains(before, "test("+fixture.lanePrefix+")") {
+			t.Errorf("the name half must land ahead of its cells; %q lacks %q", before, fixture.lanePrefix)
+		}
+	}
+
+	for _, fixture := range laneFixtures {
+		dir := filepath.Join(root, "crates", fixture.backendPackage)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "Cargo.toml"), []byte("[package]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	after := fixtureIntegrationFilter(root)
+	for _, fixture := range laneFixtures {
+		if !strings.Contains(after, "package("+fixture.backendPackage+")") {
+			t.Errorf("%q lacks package(%s) with the crate on disk", after, fixture.backendPackage)
 		}
 	}
 }
