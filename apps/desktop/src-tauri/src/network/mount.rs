@@ -231,10 +231,12 @@ fn build_smb_mount_url(server: &str, share: &str, port: u16) -> String {
 
 /// Whether two spellings name the same share.
 ///
-/// Compared on NFC, because the two sides reach us through different pipes: `statfs`
-/// reports what the kernel recorded for the mount, while the caller's name comes from
-/// the server's share list or from a `/Volumes` entry macOS wrote decomposed. A byte
-/// compare splits `café` from `café` and reports a mounted share as unmounted.
+/// Compared on NFC, because the two sides reach us through different pipes and can
+/// disagree on normalization for the same visible name: one comes from the server's
+/// share list, the other from `statfs` or a `/Volumes` entry, and macOS APIs hand out
+/// decomposed strings wherever the composed one wasn't what got written. A byte
+/// compare splits the two spellings of `café` and reports a mounted share as
+/// unmounted.
 fn same_share_name(a: &str, b: &str) -> bool {
     use unicode_normalization::UnicodeNormalization;
     a.nfc().eq(b.nfc())
@@ -558,9 +560,10 @@ fn find_mount_path_for_share(server: &str, share: &str, port: u16) -> Option<Str
 
     let entries = std::fs::read_dir("/Volumes").ok()?;
     // The prefix check runs on NFC for the same reason the mount URL does: `readdir`
-    // reports whatever the volume stored (macOS writes NFD), while `share` arrives NFC
-    // from the server's own share list. A raw `starts_with` between the two spellings of
-    // `café` never matches, which would leave every non-ASCII share looking unmounted.
+    // reports whatever the volume stored, while `share` arrives from the server's own
+    // share list, and the two can spell one visible name differently. A raw
+    // `starts_with` between the two spellings of `café` never matches, which would
+    // leave a non-ASCII share looking unmounted.
     let share_nfc: String = share.nfc().collect();
 
     for entry in entries.flatten() {
