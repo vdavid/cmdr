@@ -58,6 +58,11 @@ disk-image = { max-threads = 1 }
 # concurrent I/O (hundreds of MB). Running them at once — or alongside each other
 # — self-contends on the one server. Serialize them.
 smb-stress = { max-threads = 1 }
+# The SFTP window measurements. They share one bench server over one `netem`-shaped
+# link, so two of them at once measure each other rather than the window: running the
+# ratio cell alongside the depth curve read 4.3x where the same cell alone reads 6.2x
+# (measured 2026-08-22). Serializing them is what makes a number reproducible.
+sftp-bench = { max-threads = 1 }
 
 [[profile.default.overrides]]
 # Disk-image fixtures: hdiutil create+attach+detach plus, for the FSEvents
@@ -313,13 +318,15 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2
 
 [[profile.default.overrides]]
-# The SFTP read-window measurements (`crates/cmdr-sftp/src/volume/streams_bench.rs`).
+# The SFTP window measurements, read and write (`crates/cmdr-sftp/src/volume/streams_bench.rs`).
 # ❗ Deliberately NOT `#[ignore]`d — the integration lane runs `--run-ignored only`
 # over that whole package, so an ignored measurement would gate CI on a throughput
 # ratio taken under runner contention. They gate on `CMDR_SFTP_BENCH=1` instead and
 # cost nothing in every other run; with it set, one cell moves hundreds of MiB over
-# a `netem`-delayed link, which is minutes.
+# a `netem`-delayed link, which is minutes. The group above keeps two of them off
+# each other's link.
 filter = 'test(streams_bench::)'
+test-group = 'sftp-bench'
 slow-timeout = { period = "600s", terminate-after = 1 }
 
 [profile.default]

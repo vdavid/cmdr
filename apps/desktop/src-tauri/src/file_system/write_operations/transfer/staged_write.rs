@@ -365,17 +365,7 @@ mod tests {
     /// way; everything else says the destination is none of our business.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn a_rename_that_failed_for_another_reason_leaves_the_destination_alone() {
-        let inner = Arc::new(
-            InMemoryVolume::new("dest").with_rename_failing(VolumeError::DeviceDisconnected("blip".to_string())),
-        );
-        let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
-        inner
-            .create_file(Path::new("/notes.txt"), b"THE USER'S FILE")
-            .await
-            .unwrap();
-        inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
-
-        let outcome = land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await;
+        let (inner, outcome) = land_with_a_rename_that_fails(VolumeError::DeviceDisconnected("blip".to_string())).await;
 
         assert!(
             matches!(outcome, Err(VolumeError::DeviceDisconnected(_))),
@@ -396,7 +386,19 @@ mod tests {
     /// rename must not destroy the destination and then report `NotSupported`.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn a_backend_without_rename_does_not_delete_what_it_cannot_replace() {
-        let inner = Arc::new(InMemoryVolume::new("dest").with_rename_failing(VolumeError::NotSupported));
+        let (inner, outcome) = land_with_a_rename_that_fails(VolumeError::NotSupported).await;
+
+        assert!(matches!(outcome, Err(VolumeError::NotSupported)), "got {outcome:?}");
+        assert!(inner.exists(Path::new("/notes.txt")).await);
+    }
+
+    /// A landing onto a destination the user already has, over a backend whose
+    /// rename fails with `failure`. Answers the volume so a cell can ask what
+    /// survived.
+    async fn land_with_a_rename_that_fails(
+        failure: VolumeError,
+    ) -> (Arc<InMemoryVolume>, Result<(), VolumeError>) {
+        let inner = Arc::new(InMemoryVolume::new("dest").with_rename_failing(failure));
         let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
         inner
             .create_file(Path::new("/notes.txt"), b"THE USER'S FILE")
@@ -405,9 +407,7 @@ mod tests {
         inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
 
         let outcome = land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await;
-
-        assert!(matches!(outcome, Err(VolumeError::NotSupported)), "got {outcome:?}");
-        assert!(inner.exists(Path::new("/notes.txt")).await);
+        (inner, outcome)
     }
 
     /// Abandoning removes the partial and stops tracking it.

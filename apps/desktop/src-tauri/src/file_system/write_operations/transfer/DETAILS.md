@@ -172,10 +172,19 @@ again would just yield a `foo.cmdr-tmp-A.cmdr-tmp-B`. Every other write is `Writ
 it identically via `volume::strategy::staging_for(&replace_after_write)`, so there is one rule, not four. Both write
 sites then run that choice through `resolve_staging`, the single place a `Stage` can become `SingleShot`.
 
-**Landing** (`staged_write::land`) renames FIRST and only clears the final name if that fails. `finalize_safe_replace` is
-the other way round because there the original is known to be in the way; here it usually isn't, and a speculative
-delete would burn one extra round trip per file. The name can still be taken (a `Rename` resolution's `O_EXCL`
-placeholder, a cross-type Overwrite whose dest delete failed, a racing writer), which the second attempt covers.
+**Landing** (`staged_write::land`) renames FIRST and only clears the final name if that rename said something is in the
+way. `finalize_safe_replace` is the other way round because there the original is known to be in the way; here it
+usually isn't, and a speculative delete would burn one extra round trip per file. The name can still be taken (a
+`Rename` resolution's `O_EXCL` placeholder, a cross-type Overwrite whose dest delete failed, a racing writer), which the
+second attempt covers.
+
+❗ **Only `VolumeError::AlreadyExists` earns the delete.** A rename over a network backend fails for plenty of reasons
+that say nothing about the destination: a session that dropped, a server that refused, SFTP v3 folding an errno into its
+one catch-all code. Clearing on every `Err` deleted a file the user still had and reported the blip that "justified" it,
+and it also let a backend that can delete but not rename destroy the destination and then answer `NotSupported`. Pinned
+by `staged_write.rs::{a_rename_that_failed_for_another_reason_leaves_the_destination_alone,
+a_backend_without_rename_does_not_delete_what_it_cannot_replace}`, which inject a failing rename through
+`InMemoryVolume::with_rename_failing`.
 
 **Finding the litter.** A staged temp is listed in `state.in_flight_temps` for exactly as long as it is a PARTIAL:
 `commit` removes it before landing, so a temp that holds committed data after a failed landing is never in the set and

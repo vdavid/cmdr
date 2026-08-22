@@ -118,6 +118,142 @@ Two things about the method that are worth more than they look:
 crate evaluation. Which is why the one assertion in that file compares serial against windowed **in the same run on the
 same server** and asks for 4× where the shape shows 7× (7.2×, 7.1×, 7.0× across three consecutive runs).
 
+## The write window
+
+An upload is the read window's mirror: `writes.rs` keeps `WRITE_WINDOW_DEPTH` positioned writes in flight, each naming
+its own offset so N clones of one handle write different parts of the file at once.
+
+What differs is the ceiling. Raising `russh`'s channel window is what lets read depth pay; it does **nothing** for an
+upload, because the SERVER's window governs and OpenSSH fixes it at 2 MiB. Depth is the whole of the write side's
+tuning.
+
+- **Chunks are 255 KiB**, the read side's number and for the same reason. ⚠️ The engine's own negotiated `max_write_len`
+  is behind its `__ci-tests` feature and can't be read, so a server with stingier limits splits each chunk internally
+  instead: correct, and narrower in practice than the depth says.
+- **A source's chunk size is its own business.** `take_chunk` coalesces whatever arrives (SMB pipelines ~512 KB, a local
+  read hands over less) into pieces the server takes in one request.
+- **Progress reports bytes that LANDED**, never bytes issued, or the bar would finish long before the file.
+- ❗ **Cancellation arrives only as `Break` from the progress callback.** There is no token on this path, so a backend
+  that never called back would be uncancelable.
+- ❗ **The close is part of the write.** `File::close()` is awaited and its answer propagated; dropping the `File` sends
+  the same `SSH_FXP_CLOSE` on a detached task and throws away the one report a server gives of bytes it accepted but
+  could not commit (hazard 1's `File::close()` note).
+- ❗ **Every error path takes the partial with it**, cancellation included. The staging layer removes the temp too, so
+  this is the backend being tidy rather than the safety net — and a failure removing it never replaces the error that
+  caused it.
+- ❗ **`write_is_single_shot` keeps its `false` default**, so the transfer layer stages every write here on a
+  `.cmdr-tmp-*` sibling and a partial never wears a real filename. ❌ Which is also why there is no "the create landed
+  but the write didn't" classifier like `cmdr-smb/src/volume/streams.rs`'s — that one exists because SMB's compound path
+  SKIPS staging.
+
+### The depth, and the curve that set it
+
+Measured 2026-08-22 against `sftp-fixture-bench` (Alpine + OpenSSH `sftp-server`, `netem delay 50ms`, release build, 32
+MiB written per upload), aggregate MB/s over one SSH channel. Three runs, the spread across them in the ranges:
+
+| depth | 1 upload      | 4 uploads     | requests in flight (1 / 4) |
+| ----- | ------------- | ------------- | -------------------------- |
+| 1     | 4.6           | 15.5-18.7     | 1 / 4                      |
+| 2     | 4.1-9.1       | 14.0-31.4     | 2 / 8                      |
+| 4     | 17.0-17.3     | 35.3-35.6     | 4 / 16                     |
+| **8** | **28.9-29.4** | **35.2-35.6** | 8 / 32                     |
+| 16    | 31.2-31.4     | 35.4-35.5     | 16 / 64                    |
+| 32    | 31.1-31.6     | 34.9-35.6     | 32 / 128                   |
+
+**Depth 8 is the knee, and the plan's starting number of 16 buys 7% for twice the memory.** One upload reaches 92% of
+its own ceiling at 8; four uploads are already at the link's ceiling by 4 and stay there. The in-flight buffer is
+`depth × 255 KiB` per upload, so 8 costs 2 MiB per upload against 16's 4 MiB — 64 MiB versus 128 MiB for eight volumes
+each running four concurrent uploads. Principle 5 decides a tie the throughput doesn't.
+
+⚠️ **The write curve does NOT fall off past its peak the way the read curve does**, and that asymmetry is the two
+windows again: reads at depth 32 put ~32 MiB of outstanding data against a 16 MiB channel window and throttle each
+other, while an upload's outstanding data is bounded by the server's own 2 MiB window whatever depth we ask for. So
+deeper is merely useless here rather than harmful — which is exactly why the memory argument gets to decide.
+
+The ratio gate reads 6.2-6.3× where it asks for 4× (three runs), against the read side's 7.0×.
+
+❗ **Run the bench cells one at a time.** They share one server over one shaped link, so two at once measure each other:
+the ratio cell alongside the depth curve read 4.3× where the same cell alone reads 6.2×. `.config/nextest.toml`'s
+`sftp-bench` test group enforces it; ❌ don't remove it to speed a measurement up.
+
+## The error policy
+
+SFTP v3 has no `SSH_FX_FILE_ALREADY_EXISTS` (that arrived in v4), and OpenSSH folds `EEXIST`, `ENOTEMPTY`, `EISDIR`, and
+most of the rest of errno into the one catch-all `SSH_FX_FAILURE`. Five shared conformance assertions and the
+folder-merge walker branch on exact variants, and `error-string-match` forbids recovering one from the message. So the
+variant has to be put back, and `errors::resolve_ambiguity` is where.
+
+**Two inputs, because the code alone can't decide**: what the operation was TRYING to do (`Attempted`) and what the
+server says is at the path afterwards (`WhatIsThere`, from one `symlink_metadata`).
+
+| attempted                 | probe found           | answer                         |
+| ------------------------- | --------------------- | ------------------------------ |
+| any, code isn't `Failure` | not asked             | the code's own mapping         |
+| `TakingAName`             | a file or a directory | `AlreadyExists(path)`          |
+| `TakingAName`             | nothing               | unclassified `IoError`         |
+| `RemovingANode`           | a directory           | `IoError` carrying `ENOTEMPTY` |
+| `RemovingANode`           | nothing, or not a dir | unclassified `IoError`         |
+
+Per operation, the primitive and the cell it lands in:
+
+- **`create_file`** opens with `SSH_FXF_EXCL`, so the SERVER refuses the clobber. `TakingAName`.
+- **`create_directory`** sends `SSH_FXP_MKDIR`, which refuses an occupied name on every server, extension or not.
+  `TakingAName`. This is what lets `create_directory_errors_on_existing_dir` answer `true`.
+- **`create_directory_all`** runs the leaf's mkdir first (one round trip when the parent is already there) and reads
+  `AlreadyExists` back as `AlreadyExisted`. ❗ Only a `NotFound` earns the ancestor walk; anything else fails the same
+  way at every level.
+- **`delete`** sends `SSH_FXP_REMOVE`, then `SSH_FXP_RMDIR` if that refused, so a bulk delete of files spends one round
+  trip each rather than a stat plus a remove. When both refuse it probes once: a directory means the rmdir's refusal
+  describes the path (`RemovingANode`), anything else means the FILE delete's own refusal is the honest answer —
+  otherwise a permission-denied file would be reported as the "not a directory" the rmdir complained about.
+- **`rename`**'s destination claim is `TakingAName`; § "Renaming without clobbering" has the rest.
+
+**Why `ENOTEMPTY` rather than a shrug.** OpenSSH answers `EACCES` and `EPERM` with `SSH_FX_PERMISSION_DENIED`, so a
+permission refusal never arrives as the catch-all; a rmdir that failed on a path that is still a directory is a
+directory that still holds something (`sftp-server.c`'s `errno_to_portable`, OpenSSH 9.8, read 2026-08-22). The NUMBER
+is what the app renders "this folder still has something in it" from, and MTP and LocalPosix both report the host
+platform's, so this one does too.
+
+❗ **The probe classifies, ❌ never guards.** Asked BEFORE an operation, "is anything at this path" is a TOCTOU window,
+and on a server with `posix-rename@openssh.com` what fits in that window is a silently overwritten file. Asked after, it
+decides nothing that hasn't already happened, so it can only make a report more accurate — which is why a code the
+protocol DOES distinguish is never re-read through it.
+
+## Renaming without clobbering
+
+`Volume::rename(from, to, force)` is two different operations, and neither can be written as the other.
+
+**`force = true` uses `Fs::rename` directly**, which reaches for `posix-rename@openssh.com` when the server offers it.
+Here that is exactly right: the extension is defined to replace the destination atomically, which is what gives a remote
+archive edit its atomic swap (`write_operations/archive_remote_edit.rs::swap_into_place` gates that fast path on
+`create_directory_errors_on_existing_dir()` plus a forced rename succeeding, and this backend answers both). A server
+without the extension sends plain `SSH_FXP_RENAME`, which REFUSES an occupied destination, so that one gets the
+destination cleared first — ❗ and only once the probe proves something is in it, because clearing on any failure is the
+shape the app-side landing fix exists to stop.
+
+**`force = false` must never touch `Fs::rename` on a server that has the extension.** `force = false` promises
+`AlreadyExists` and an untouched destination, which is the exact opposite of what `posix-rename` does, and every caller
+that hasn't asked the user yet relies on the promise. ❗ There is no way to send a plain `SSH_FXP_RENAME` through
+`openssh-sftp-client` when the server advertises the extension: `Fs::rename` picks for you, and the lowlevel `WriteEnd`
+is private (`lib.rs`'s `use openssh_sftp_client_lowlevel as lowlevel`, not `pub use`). So:
+
+- **Server without the extension**: `Fs::rename` is already the plain request and refuses by itself. One round trip.
+- **Server with it**: CLAIM the destination name first with a primitive the server refuses atomically, then let the
+  rename land on a placeholder of our own. A file-shaped claim (`SSH_FXF_EXCL`) covers the overwhelming case — a staged
+  write landing — in one extra round trip. A directory source can't be renamed onto a file (`ENOTDIR`), so a failed
+  rename removes the placeholder, probes the SOURCE, and retries with a directory-shaped claim (`SSH_FXP_MKDIR`, which
+  POSIX rename replaces when it's empty).
+
+**Decision: the claim, ❌ not a pre-flight stat.** A stat guard is a TOCTOU window whose failure mode is that the user's
+EXISTING file is destroyed. The claim's failure mode is a zero-byte file at a name that was proven FREE a moment
+earlier, if the process dies between the two requests. It never destroys data the user already has, which is what
+principle 1 is about; and ❗ the claim must never outlive the attempt that made it, or that zero-byte file is left
+wearing the name the user chose — `a_forceless_rename_that_finds_the_name_free_leaves_nothing_extra` is the cell that
+holds it to that.
+
+**Cost**: two requests where a naive rename spends one, on every staged write that lands. ❗ Measured against the
+alternative, that is the price of the promise rather than an oversight.
+
 ## Crate hazards
 
 Read these before writing byte-path code. Each one is a real defect in `openssh-sftp-client` 0.15.7, read from its
@@ -317,6 +453,16 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
   there.
 - **`supports_streaming` → true**, with `open_read_stream`, `open_read_stream_for_scan`, and `read_range` behind it (§
   "The read window"). The other read overrides deliberately keep their defaults, and that section says why.
+- **`is_writable` → true**, because every mutation is implemented. The shared conformance assertion holds the
+  declaration to what the server actually accepts.
+- **`create_directory_all` is overridden** where SMB and MTP leave the default. The default spends one `exists()` round
+  trip per ancestor before creating anything, which over a 50 ms link is the whole cost of a deep destination; the
+  override tries the leaf first and walks only on a `NotFound`.
+- **`create_directory_errors_on_existing_dir` → true**, from `SSH_FXP_MKDIR`'s own refusal. It is half the gate on a
+  remote archive edit's atomic swap; § "Renaming without clobbering" is the other half.
+- **`write_is_single_shot` keeps its `false` default**, so every write here stages (§ "The write window").
+- **`notify_mutation` is overridden**, and ❗ it has to be: there is no watcher on this backend, so it is the only thing
+  that keeps a destination pane honest after a copy. One call per changed DIRECTORY, never per entry.
 - **`paths_are_os_visible` → false, `local_path` → `None`.** Answering otherwise would let a drag hand Finder a path
   that resolves to nothing, or worse to a local file of the same name.
 - **`get_space_info` → `NotSupported`, `space_poll_interval` → `None`.** `statvfs@openssh.com` is **not reachable from
@@ -337,8 +483,15 @@ technical one.
 
 A cell lives with whatever it **asserts**, never with whatever it connects to.
 
-- **Here**: the contract, the trust table, path translation, the auth ladder, the reading surface, and the crate
-  hazards. These are white-box tests — several build a volume with no session behind it.
+- **Here**: the contract, the trust table, path translation, the auth ladder, the reading and writing surfaces, and the
+  crate hazards. These are white-box tests — several build a volume with no session behind it.
+- ❗ **A write cell picks the server that could let its bug through.** `conformance_test.rs` runs on
+  `sftp-fixture-openssh` because it HAS `posix-rename@openssh.com`; the same cells against `sftp-fixture-noposixrename`
+  pass while a clobbering rename ships. The byte-exactness cell that matters runs on `sftp-fixture-smalllimits`, because
+  a stock server never short-writes and so never exposes a mis-advanced write offset (verified 2026-08-22 by breaking
+  the offset on purpose: only the small-limits cell went red).
+- ❗ **Every write cell works inside a `scratch_dir` of its own.** The whole binary shares one export and `nextest` runs
+  its cells in parallel, so a fixed name has two of them deleting each other's files and reporting it as a backend bug.
 - **App-side**: anything driving `write_operations`, the volume registry, or the listing cache. ❌ Don't widen this
   crate's public surface to keep a test on that side; move the test instead.
 

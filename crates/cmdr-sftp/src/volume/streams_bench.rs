@@ -1,4 +1,4 @@
-//! What the read window is actually worth, measured rather than assumed.
+//! What the two windows are actually worth, measured rather than assumed.
 //!
 //! ❗ **These cells are deliberately NOT `#[ignore]`d.** The integration lane runs
 //! `--run-ignored only` over this whole package, so an ignored cell here runs in
@@ -18,8 +18,8 @@
 //! this file compares serial against windowed **in the same run on the same
 //! server** and asks only for 4×, well under the ~10× the shape shows.
 //!
-//! The numbers these produced, and the depth they set: `DETAILS.md` § "The read
-//! window".
+//! The numbers these produced, and the depths they set: `DETAILS.md` § "The read
+//! window" and § "The write window".
 
 #![allow(
     clippy::print_stdout,
@@ -32,6 +32,7 @@ use std::time::{Duration, Instant};
 
 use super::{READ_WINDOW_DEPTH, SftpVolume};
 use crate::volume::testing::*;
+use crate::volume::writes::WRITE_WINDOW_DEPTH;
 
 /// The bench server's export, seeded big enough for a throughput number to mean
 /// something (`LARGE_MB` in the compose file).
@@ -233,4 +234,134 @@ async fn peak_resident_memory_with_the_channel_window_open() {
         "cost per idle volume:        {:.1} MiB",
         (connected - baseline) / VOLUMES as f64
     );
+}
+
+// ── The write window ─────────────────────────────────────────────────
+
+/// A source that makes its bytes as it goes, so a write measurement times the
+/// LINK rather than a 32 MiB allocation and a memcpy of it.
+///
+/// Chunks are deliberately not the window's chunk size: a real source picks its
+/// own, and the window coalesces.
+struct GeneratedSource {
+    left: u64,
+    total: u64,
+}
+
+impl cmdr_fs::volume::VolumeReadStream for GeneratedSource {
+    fn next_chunk(
+        &mut self,
+    ) -> std::pin::Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, cmdr_fs::volume::VolumeError>>> + Send + '_>>
+    {
+        Box::pin(async move {
+            if self.left == 0 {
+                return None;
+            }
+            let take = self.left.min(64 * 1024) as usize;
+            self.left -= take as u64;
+            Some(Ok(vec![0x5a; take]))
+        })
+    }
+
+    fn total_size(&self) -> u64 {
+        self.total
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.total - self.left
+    }
+}
+
+/// Uploads `BENCH_BYTES` at `depth`, returning what landed.
+///
+/// Each call writes to a name of its own, so `width` concurrent uploads don't
+/// take turns truncating one file.
+async fn write_prefix(volume: &SftpVolume, depth: usize, name: &str) -> u64 {
+    let source = Box::new(GeneratedSource {
+        left: BENCH_BYTES,
+        total: BENCH_BYTES,
+    });
+    volume
+        .upload(std::path::Path::new(name), BENCH_BYTES, source, depth, &|_, _| {
+            std::ops::ControlFlow::Continue(())
+        })
+        .await
+        .expect("the bench server's export is writable")
+}
+
+/// `width` uploads at once, as one aggregate rate.
+async fn write_concurrently(volume: &SftpVolume, depth: usize, width: usize) -> (u64, Duration) {
+    let names: Vec<String> = (0..width)
+        .map(|i| format!("{}-{i}.bin", scratch_dir("write-bench")))
+        .collect();
+    let started = Instant::now();
+    let bytes: u64 = futures_util::future::join_all(names.iter().map(|name| write_prefix(volume, depth, name)))
+        .await
+        .iter()
+        .sum();
+    let elapsed = started.elapsed();
+    for name in &names {
+        let _ = cmdr_fs::volume::Volume::delete(volume, std::path::Path::new(name)).await;
+    }
+    (bytes, elapsed)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_windowed_write_beats_a_serial_one_by_at_least_four_times() {
+    if !measuring() {
+        return;
+    }
+    let volume = bench_volume().await;
+
+    // Same server, same run, same bytes: the only thing that differs between the
+    // two numbers is the depth. ⚠️ Which is the whole point — an absolute
+    // through Docker and `netem` carries ±30% run to run.
+    let serial_name = format!("{}.bin", scratch_dir("write-bench-serial"));
+    let started = Instant::now();
+    let serial_bytes = write_prefix(&volume, 1, &serial_name).await;
+    let serial = rate(serial_bytes, started.elapsed());
+
+    let windowed_name = format!("{}.bin", scratch_dir("write-bench-windowed"));
+    let started = Instant::now();
+    let windowed_bytes = write_prefix(&volume, WRITE_WINDOW_DEPTH, &windowed_name).await;
+    let windowed = rate(windowed_bytes, started.elapsed());
+
+    for name in [&serial_name, &windowed_name] {
+        let _ = cmdr_fs::volume::Volume::delete(&volume, std::path::Path::new(name)).await;
+    }
+
+    println!("serial (depth 1):            {serial:.1} MB/s, bytes written: {serial_bytes}");
+    println!("windowed (depth {WRITE_WINDOW_DEPTH}):          {windowed:.1} MB/s, bytes written: {windowed_bytes}");
+    println!("ratio:                       {:.1}x", windowed / serial);
+
+    assert_eq!(serial_bytes, windowed_bytes, "both paths must write the same bytes");
+    assert!(
+        windowed >= serial * 4.0,
+        "the window must be worth at least 4x a serial write; got {windowed:.1} MB/s against {serial:.1} MB/s"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_write_depth_curve_one_stream_wide_and_four() {
+    if !measuring() {
+        return;
+    }
+    let volume = bench_volume().await;
+
+    println!("       aggregate MB/s, one SSH channel");
+    println!("depth   1 upload   4 uploads   requests in flight (1 / 4)");
+    for depth in DEPTHS {
+        let mut rates = Vec::new();
+        for width in WIDTHS {
+            let (bytes, elapsed) = write_concurrently(&volume, depth, width).await;
+            rates.push(rate(bytes, elapsed));
+        }
+        println!(
+            "{depth:>5}  {:>9.1}  {:>10.1}   {:>3} / {:>3}",
+            rates[0],
+            rates[1],
+            depth,
+            depth * 4
+        );
+    }
 }

@@ -168,7 +168,20 @@ impl SftpVolume {
         &self,
         dest: &Path,
         size: u64,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    ) -> Result<u64, VolumeError> {
+        self.upload(dest, size, stream, WRITE_WINDOW_DEPTH, on_progress).await
+    }
+
+    /// The same, at a depth the caller picks. The measurement harness is the
+    /// only thing that picks a different one; production takes the constant.
+    pub(super) async fn upload(
+        &self,
+        dest: &Path,
+        size: u64,
         mut stream: Box<dyn VolumeReadStream>,
+        depth: usize,
         on_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     ) -> Result<u64, VolumeError> {
         let remote = self.to_remote_path(dest)?;
@@ -192,7 +205,10 @@ impl SftpVolume {
             .map_err(|e| map_sftp_error(&e))?;
         let writer = RemoteWrite::new(file);
 
-        match self.pump(&mut stream, writer.clone(), &remote, size, on_progress).await {
+        match self
+            .pump(&mut stream, writer.clone(), &remote, size, depth, on_progress)
+            .await
+        {
             Ok(written) => {
                 // ❗ The close is part of the write, not tidying after it.
                 if let Err(e) = writer.close().await {
@@ -220,6 +236,7 @@ impl SftpVolume {
         writer: RemoteWrite,
         remote: &str,
         size: u64,
+        depth: usize,
         on_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     ) -> Result<u64, VolumeError> {
         #[allow(
@@ -234,7 +251,7 @@ impl SftpVolume {
         let mut source_done = false;
 
         loop {
-            while in_flight.len() < WRITE_WINDOW_DEPTH && !source_done {
+            while in_flight.len() < depth.max(1) && !source_done {
                 match take_chunk(stream, &mut pending, WRITE_CHUNK_BYTES).await? {
                     None => source_done = true,
                     Some(bytes) => {
