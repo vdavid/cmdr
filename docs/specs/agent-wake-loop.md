@@ -7,7 +7,7 @@ gates, under 54 tests. But `run_wake` and `Inbox::admit_if_permitted` have **no 
 tree**, only `wake/tests/` (verified 2026-08-20). Nothing feeds the pipeline and nothing fires it, so "AI file
 organization", which ships as an alpha feature, can never volunteer anything.
 
-**Size**: four milestones, five to seven days. M1 alone makes the agent notice things; M3 is what makes it useful rather
+**Size**: four milestones, six to eight days. M1 alone makes the agent notice things; M3 is what makes it useful rather
 than a nagging renamer.
 
 **Read first**: `apps/desktop/src-tauri/src/agent/wake/DETAILS.md` (the pipeline and the contract for both undriven
@@ -30,6 +30,7 @@ landing on disk and a reviewable proposal.
 - **Wake threads appear in the session list** with their own icon, never filtered out.
 - **Memory lives in the app data dir**, jailed behind a new `Access::Memory`, and its arrival re-prompts consent.
 - **No OS notifications.** A toast and the status-corner indicator only.
+- **Wake turns stream into the rail live**, over one transport shared with rail sends.
 - **Cold bundles ride along** and set no deadline of their own.
 
 ## Needs David's consent before M1 can land
@@ -462,9 +463,10 @@ is asynchronous and is not the gate; the translations are.
    that opens a subscription at mount breaks both.
 
    ⚠️ **Not a `Channel`.** `Channel<AskCmdrStreamEvent>` is a per-invoke reply channel the frontend hands in
-   (`chat.rs:372`); a wake has no invoke. Use a `tauri_specta::Event`, the way `SuggestionsChanged` does
-   (`suggested_ops/changed.rs:45`, registered at `ipc.rs:842`, consumed via `onSuggestionsChanged`). That means: event
-   struct, `collect_events!` line, a `$lib/tauri-commands` wrapper, bindings regen.
+   (`chat.rs:372`); a wake has no invoke. This is the indicator's own phase event, distinct from the turn stream in item
+   7, and both are `tauri_specta::Event`s following `SuggestionsChanged` (`suggested_ops/changed.rs:45`, registered at
+   `ipc.rs:842`, consumed via `onSuggestionsChanged`): event struct, `collect_events!` line, a `$lib/tauri-commands`
+   wrapper, bindings regen.
 
    Clicking opens the rail at that conversation. `switchToThread(id)` already exists (`ask-cmdr-trigger.svelte.ts:141`);
    call it before `openRail()`, which otherwise bootstraps the most recent thread on a closed→open transition and wastes
@@ -502,8 +504,36 @@ is asynchronous and is not the gate; the translations are.
 6. **Icons**: `bot` and `brain-circuit` are not in `icon-map.ts`, which imports each glyph explicitly. Both need an
    import and a map entry (`docs/guides/icons.md`).
 
-**Open question this milestone must answer**: what the rail shows while a wake streams into a thread the user happens to
-have open. The turn's events don't reach it (no channel), so today it would only update on reload.
+### 7. A wake's turn streams into the rail, live
+
+**Without this the indicator's click opens an EMPTY thread.** `run_turn` writes a message's content blocks only on that
+`respond` call's `End`, and the user-role message (for a wake, the digest) lands on the FIRST `End`, so a thread opened
+while the agent is still on its first response holds zero messages. Not a spinner, not partial text. It reads as broken,
+at exactly the moment the affordance exists to serve. After that first `End` the thread is frozen at the last completed
+turn until the user navigates away and back. And nothing tells the session list a wake created a thread at all:
+`SuggestionsChanged` fires on proposals, not on thread creation.
+
+**Unify the transport, ❌ don't add a second one.** All turn events, rail sends and wakes alike, flow over one
+`tauri_specta::Event` keyed by conversation id, and the rail subscribes by CONVERSATION rather than by invoke. This
+retires `Channel<AskCmdrStreamEvent>` rather than growing a parallel path beside it, so the milestone ends with less
+machinery than it started with, and it closes three existing holes on the way:
+
+- **A webview reload currently loses the stream.** `drive_turn`'s forwarder breaks when the channel is gone ("the
+  webview is gone; the turn keeps running to persist its state"), so the turn finishes into the DB while the user
+  watches a dead panel. A conversation-keyed subscription just re-subscribes.
+- **The raw-`invoke` opt-out goes away.** `Channel<T>` isn't specta-friendly, which is why `ask_cmdr_send_message` rides
+  raw `invoke` with a documented eslint exception (`chat.rs`, the streaming note).
+- **The hand-mirrored enum gets guarded.** `AskCmdrStreamEvent` derives only `Clone, Serialize` (`views.rs:22`), so it
+  is absent from `bindings.ts` and nothing mechanically catches drift between it and `ask-cmdr.ts:95`. A specta event
+  puts it in bindings, which M4 would otherwise inherit unguarded.
+
+⚠️ **This touches the rail's shipped send path**, which is the risk plain streaming-for-wakes-only would avoid. Follow
+`SuggestionsChanged` for the shape (`suggested_ops/changed.rs:45`, registered at `ipc.rs:842`, consumed via
+`onSuggestionsChanged`). The event reaches every window, so the subscription needs per-window handling the way the
+failure watch does. **Fallback if the unification fights back**: keep the `Channel` for rail sends and give wakes their
+own event. Same UX, more machinery, and the three holes above stay open.
+
+The session list subscribes to the same stream, so a wake's thread appears as it is created rather than on next load.
 
 **Tests**: component tests for the indicator's states and the thread icon; a colocated `*.a11y.test.ts` per new
 component (`a11y-coverage`); an E2E driving the wake-aware fake through a forced wake to a visible toast and badge.
@@ -746,7 +776,9 @@ carries `nothing_to_suggest`'s two rail-label keys.
    cannot land without it.
 2. **The follow-up turn on rejection** costs a model call per rejected SWEEP (the plan coalesces; per group would be
    eight calls for one "reject all"). Confirm before M4.
-3. **M2's open question**: what the rail shows while a wake streams into a thread the user has open.
+3. **M2 unifies the turn-event transport** (item 7), retiring `Channel<AskCmdrStreamEvent>` so wake threads stream live
+   like rail threads. It ends with less machinery and fixes three existing holes, but it touches the shipped rail send
+   path. The fallback (a second transport for wakes only) is recorded there if that risk isn't wanted.
 
 ## Deliberately deferred
 
