@@ -85,6 +85,10 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 		AppTreeOnly: true,
 		Why:         "scoped to `src/mtp/`, same subsystem as mtp-dropping-timeout",
 	},
+	"desktop-smb-lane-coverage": {
+		AppTreeOnly: true,
+		Why:         "the name prefix it enforces is only how the integration lane selects the APP crate's cells; the lane takes `cmdr-smb` by package, so a cell there needs no name and would have no legal fix",
+	},
 }
 
 // rustCargoLanes are the Rust checks that drive cargo rather than scanning source

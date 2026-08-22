@@ -686,6 +686,8 @@ fn median(sorted: &[Duration]) -> Duration {
 /// It asserts no timing of any kind: the printed table IS the deliverable. It is
 /// `#[ignore]`d and needs a live SMB server, so it never runs in CI.
 #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+// allowed-out-of-lane-smb-cell: a measurement harness, not an assertion. It sweeps
+// a window against wall-clock, so it belongs in a hand-run, not in a gating lane.
 #[ignore = "Measurement harness: needs Docker SMB (./apps/desktop/test/smb-servers/start.sh) or a reachable NAS"]
 #[allow(
     clippy::print_stdout,

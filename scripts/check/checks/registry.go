@@ -611,6 +611,20 @@ var AllChecks = []CheckDefinition{
 		Run:               RunRustIntegrationTests,
 	},
 	{
+		ID:          "desktop-smb-lane-coverage",
+		Nickname:    "smb-lane-coverage",
+		DisplayName: "every Docker SMB cell is one CI runs",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		IsFast:      true,
+		// A source walk of the app crate: no cargo, no Docker, so it can stand in
+		// the fast lane in front of the integration lane it guards.
+		Inputs: inputs(
+			[]string{"apps/desktop/src-tauri/src/**"},
+		),
+		Run: RunSmbLaneCoverage,
+	},
+	{
 		ID:                "desktop-rust-tests-linux",
 		CpuWeight:         6,
 		Nickname:          "rust-tests-linux",

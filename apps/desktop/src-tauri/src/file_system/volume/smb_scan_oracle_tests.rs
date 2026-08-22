@@ -16,7 +16,7 @@
 //! `apps/desktop/test/smb-servers/start.sh`. The `smb_integration_` prefix is
 //! load-bearing on this side of the seam: `desktop-rust-integration-tests`
 //! selects the app crate's Docker cells by name, so a cell without it never
-//! runs in CI.
+//! runs in CI. `smb-lane-coverage` fails on one that lacks it.
 
 use std::path::PathBuf;
 use std::sync::Arc;

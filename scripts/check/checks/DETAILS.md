@@ -1023,6 +1023,34 @@ crates, holding **16 tangles** at 14 homes.
 - `cmdr-archive`: `read` at 4 (`extract, index, sevenz, tar`). `cmdr-fs`: `volume` at 2 (`friendly_error, types`), from
   a raw component of 8. `cmdr-smb`: **none** — its raw five-module component is all parent ↔ child.
 
+## SMB lane coverage
+
+`desktop-smb-lane-coverage` (`IsFast`, error-level) stops a Docker-gated SMB test from sitting in the tree looking like
+coverage while nothing ever runs it.
+
+`desktop-rust-integration-tests` filters with `test(smb_integration_) + package(cmdr-smb)`. The second half needs no
+help: a new cell in the crate is selected whatever it's called, and an `#[ignore]`d test there that ISN'T a Docker cell
+would run in the lane and go red rather than go quiet. The first half is the exposed one. In the app crate the NAME is
+the only signal available, because `smb_soak_copy_loop` and the concurrency bench are `#[ignore]`d there too and neither
+belongs in a gating lane. So a cell named anything else compiles, reviews clean, and executes nowhere but by hand.
+
+`smb_scan_uses_oracle_on_hit_skips_stat_pipeline` did exactly that for its whole life, and it was the sole caller of
+`SmbVolume::detach_session_for_test`, the one public-surface widening the `cmdr-smb` extraction sanctioned. A sanctioned
+widening rested on a test nothing executed, and the only thing guarding the convention was a sentence in a module doc.
+
+What the check reads:
+
+- An `#[ignore = "…"]` reason naming the Docker fixture is what marks a cell as gated. The two markers are
+  INFRASTRUCTURE identifiers, `smb-servers/start.sh` and `smb-consumer`, so rewording a reason can't move a cell out of
+  the check's view.
+- The test under that gate must carry `smb_integration_` in its name, or sit in a module path that does (nextest matches
+  the fragment anywhere in a test's path, so either one is genuinely selected).
+- A cell that belongs OUTSIDE the lane says so in place: `// allowed-out-of-lane-smb-cell: <why>` on or just above the
+  `#[ignore]`. The reason after the colon is required, or the marker would be a way to silence the check without saying
+  anything. One cell uses it today, the copy-concurrency measurement harness.
+- `RunSmbLaneCoverage` also asserts that the lane's own filter still contains the prefix, so re-keying the filter can't
+  leave the check enforcing a name nothing selects on.
+
 ## Workspace member coverage
 
 `workspace-member-coverage` (`IsFast`, error-level, app scope `crates`) is what stops the next crate from re-opening the
@@ -1103,7 +1131,10 @@ Checks by app and tech:
   message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
   unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module components per crate with
   parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a mismatched box skips rather
-  than mis-measures — see § "Rust module cycles"), tests, integration-tests (Docker SMB), tests-linux (slow)
+  than mis-measures — see § "Rust module cycles"), smb-lane-coverage (a Docker-gated SMB cell in the app crate whose
+  name the integration lane's filter won't select never runs anywhere, so it's a finding; one cell lived its whole life
+  that way, and it was the sole caller of the crate extraction's one sanctioned public-surface widening — see § "SMB
+  lane coverage"), tests, integration-tests (Docker SMB), tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and

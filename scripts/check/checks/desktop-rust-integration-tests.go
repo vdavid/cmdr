@@ -14,6 +14,8 @@ import (
 // Two halves, because the suites live on two sides of a crate boundary. In the APP
 // crate the name prefix is the only signal, and it has to stay one: `smb_soak_copy_loop`
 // and the NAS bench are `#[ignore]`d there too, and neither belongs in a gating lane.
+// `smb-lane-coverage` enforces that half, so a Docker-gated cell that this filter
+// wouldn't select is a finding rather than a silent no-op.
 // In `cmdr-smb` every `#[ignore]`d test is a Docker cell by construction — there is no
 // other reason to ignore one in a crate with no app around it — so the whole binary
 // qualifies, and a new cell there can be named for what it asserts instead of carrying
