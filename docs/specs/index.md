@@ -15,9 +15,11 @@ that lives beside the code, and git holds the history.
       approval bridge, indicator, ten locales, and all of `agent/wake/` under 54 tests) and nothing drives it:
       `run_wake` and `Inbox::admit_if_permitted` have no production caller outside `wake/tests/`. Four milestones: the
       loop (tap, scheduler, inbox ownership, `nothing_to_suggest`, three settings), the surfaces (wake indicator, thread
-      icon, toast, readiness states), agent memory under an `Access::Memory` jail with a consent re-prompt, and the
-      approve/reject feedback loop. **Four to six days, design-settled, blocked on nothing.** The highest ratio of
-      user-visible payoff to effort in the folder.
+      icon, toast, readiness states, cancel), agent memory under an `Access::Memory` jail with a consent re-prompt, and
+      the approve/reject feedback loop. **Five to seven days**, hardened over four review rounds. ⚠️ **Blocked on one
+      thing**: four ratcheted budgets move, and `index-crate-isolation` is error-level, so M1 cannot land until David
+      consents to the bumps listed at the top of the plan. The highest ratio of user-visible payoff to effort in the
+      folder.
 - [ ] 2026-08-21 `idle-cost.md` - **Cmdr costs too much while you're not using it.** An idle prod build burned 110
       minutes of CPU over 9.1 hours at a 1.78 GB footprint. Two items left, and both wait on a measurement rather than
       on effort: the CLIP towers (an enrichment pass holds 251.5 MB of text tower it never calls, gated on one
