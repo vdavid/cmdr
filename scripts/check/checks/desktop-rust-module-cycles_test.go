@@ -66,19 +66,20 @@ func TestCollapseHubs(t *testing.T) {
 		name  string
 		nodes []string
 		edges [][2]string
-		want  []string
+		// want is every independent tangle the component holds, largest first.
+		want [][]string
 	}{
 		{
 			name:  "a file split into submodules is one thing, however many children",
 			nodes: splitNodes,
 			edges: splitEdges,
-			want:  []string{"k::state"},
+			want:  nil,
 		},
 		{
 			name:  "two subsystems welded together are two things",
 			nodes: []string{"k::network", "k::backends::smb"},
 			edges: bidirectional("k::network", "k::backends::smb"),
-			want:  []string{"k::backends::smb", "k::network"},
+			want:  [][]string{{"k::backends::smb", "k::network"}},
 		},
 		{
 			name:  "a whole subsystem welded to another collapses to the two subsystems",
@@ -89,7 +90,7 @@ func TestCollapseHubs(t *testing.T) {
 				bidirectional("k::smb", "k::smb::session"),
 				bidirectional("k::network", "k::smb::state"),
 			),
-			want: []string{"k::network", "k::smb"},
+			want: [][]string{{"k::network", "k::smb"}},
 		},
 		{
 			name:  "siblings in a circle with no parent in it stay their full size",
@@ -99,7 +100,7 @@ func TestCollapseHubs(t *testing.T) {
 				{"k::ops::state", "k::ops::manager"},
 				{"k::ops::manager", "k::ops::eta"},
 			},
-			want: []string{"k::ops::eta", "k::ops::manager", "k::ops::state"},
+			want: [][]string{{"k::ops::eta", "k::ops::manager", "k::ops::state"}},
 		},
 		{
 			// The hub-collapsing step must not become a hiding place: adding the
@@ -115,7 +116,33 @@ func TestCollapseHubs(t *testing.T) {
 					{"k::ops::manager", "k::ops::eta"},
 				},
 			),
-			want: []string{"k::ops::eta", "k::ops::manager", "k::ops::state"},
+			want: [][]string{{"k::ops::eta", "k::ops::manager", "k::ops::state"}},
+		},
+		{
+			// The allowlist keys a LIST of sizes per home precisely so a new tangle
+			// can't hide behind a bigger one. That promise has to hold inside a
+			// hub-collapsed component too: reporting only the biggest sub-tangle
+			// would rebuild the hiding place one level down, and the second circle
+			// here would never reach the baseline.
+			name: "two independent circles under one hub are two tangles, not the bigger one",
+			nodes: []string{
+				"k::ops", "k::ops::a1", "k::ops::a2", "k::ops::a3", "k::ops::b1", "k::ops::b2",
+			},
+			edges: concatEdges(
+				bidirectional("k::ops", "k::ops::a1"),
+				bidirectional("k::ops", "k::ops::b1"),
+				[][2]string{
+					{"k::ops::a1", "k::ops::a2"},
+					{"k::ops::a2", "k::ops::a3"},
+					{"k::ops::a3", "k::ops::a1"},
+					{"k::ops::b1", "k::ops::b2"},
+					{"k::ops::b2", "k::ops::b1"},
+				},
+			),
+			want: [][]string{
+				{"k::ops::a1", "k::ops::a2", "k::ops::a3"},
+				{"k::ops::b1", "k::ops::b2"},
+			},
 		},
 		{
 			// Deleting parent-child edges outright would break this cycle and miss
@@ -128,7 +155,7 @@ func TestCollapseHubs(t *testing.T) {
 				{"k::x::y", "k::z"},
 				{"k::z", "k::x"},
 			},
-			want: []string{"k::x", "k::z"},
+			want: [][]string{{"k::x", "k::z"}},
 		},
 	}
 
@@ -140,11 +167,20 @@ func TestCollapseHubs(t *testing.T) {
 				t.Fatalf("fixture has %d components, want exactly 1", len(components))
 			}
 			got := collapseHubs(components[0], graph.edges)
-			if strings.Join(got, ",") != strings.Join(tt.want, ",") {
+			if formatTangles(got) != formatTangles(tt.want) {
 				t.Errorf("collapseHubs = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
+
+// formatTangles renders a tangle list so two of them compare as one string.
+func formatTangles(tangles [][]string) string {
+	parts := make([]string, len(tangles))
+	for i, tangle := range tangles {
+		parts[i] = strings.Join(tangle, ",")
+	}
+	return strings.Join(parts, " | ")
 }
 
 func concatEdges(sets ...[][2]string) [][2]string {

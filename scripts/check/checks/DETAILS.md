@@ -921,9 +921,15 @@ its own that is also in the component, and then:
   recursion, one idiomatic `parent → child` edge added to a sibling tangle would collapse the whole thing to a hub and
   erase the signal permanently.
 
+**Every circle left under a dropped hub is reported, not the biggest one.** One component can hold several independent
+sub-tangles, and answering with the largest would rebuild the hiding place the per-home LIST of sizes exists to close
+(below), one level down where nothing else watches. So one raw component can produce several tangles, each carrying that
+component's raw size.
+
 Folding into an ancestor is deliberately not the same as DELETING parent-child edges. Deleting them would break a cycle
 that genuinely routes through one (`x → x::y → z → x` is `x` welded to `z`), and the check would miss real welding;
-folding keeps it and reports two survivors. `TestCollapseHubs` pins all six shapes, including that one.
+folding keeps it and reports two survivors. `TestCollapseHubs` pins every shape, including that one and the two
+independent circles under one hub.
 
 Each tangle gets a **home**: the longest module path its survivors share, spelled with the cargo package name in front
 (`cmdr::file_system::write_operations`, or bare `cmdr` when they share nothing but the crate). That's the allowlist key,

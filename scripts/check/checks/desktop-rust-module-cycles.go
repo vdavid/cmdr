@@ -158,7 +158,7 @@ func isModuleAncestor(parent, child string) bool {
 }
 
 // collapseHubs answers the question the raw component size gets wrong: how many
-// INDEPENDENT things are stuck together here?
+// INDEPENDENT things are stuck together here, and which ones?
 //
 // A module and its descendants are one thing, however many files it was split
 // into, so every member of the component folds into the topmost ancestor of its
@@ -173,8 +173,15 @@ func isModuleAncestor(parent, child string) bool {
 //     also depend on each other in a circle are still a tangle, and without this
 //     step one idiomatic `parent → child` edge would hide them completely.
 //
-// The returned slice is the collapsed set, sorted; its length is the tangle size.
-func collapseHubs(component []string, edges map[string][]string) []string {
+// EVERY circle left under a dropped hub is reported, not the biggest one. The
+// allowlist keys a LIST of sizes per home exactly so a new tangle can't hide
+// behind a bigger one; answering with a single set here would rebuild that hiding
+// place one level down, where nothing else is watching.
+//
+// Each returned set is sorted and holds at least two modules; the sets come
+// largest first. A component that is nothing but a hub and its children returns
+// none: there is no tangle in it.
+func collapseHubs(component []string, edges map[string][]string) [][]string {
 	inComponent := make(map[string]bool, len(component))
 	for _, module := range component {
 		inComponent[module] = true
@@ -206,7 +213,7 @@ func collapseHubs(component []string, edges map[string][]string) []string {
 		survivors[top] = true
 	}
 	if len(survivors) > 1 {
-		return sortedKeys(survivors)
+		return [][]string{sortedKeys(survivors)}
 	}
 
 	hub := sortedKeys(survivors)[0]
@@ -219,13 +226,23 @@ func collapseHubs(component []string, edges map[string][]string) []string {
 		}
 	}
 
-	largest := []string{hub}
+	var tangles [][]string
 	for _, sub := range stronglyConnectedComponents(rest, edges, remaining) {
-		if collapsed := collapseHubs(sub, edges); len(collapsed) > len(largest) {
-			largest = collapsed
-		}
+		tangles = append(tangles, collapseHubs(sub, edges)...)
 	}
-	return largest
+	sortTanglesLargestFirst(tangles)
+	return tangles
+}
+
+// sortTanglesLargestFirst orders collapsed sets the way the allowlist stores
+// them, so a home's measured sizes line up with its accepted ones.
+func sortTanglesLargestFirst(tangles [][]string) {
+	sort.Slice(tangles, func(i, j int) bool {
+		if len(tangles[i]) != len(tangles[j]) {
+			return len(tangles[i]) > len(tangles[j])
+		}
+		return tangles[i][0] < tangles[j][0]
+	})
 }
 
 // moduleTangle is one collapsed component: two or more modules that depend on
@@ -284,16 +301,17 @@ func measureModuleCycles(pkg, dot string) crateModuleCycles {
 		measurement.rawCount++
 		measurement.inCycle += len(component)
 		measurement.maxRaw = max(measurement.maxRaw, len(component))
-		collapsed := collapseHubs(component, graph.edges)
-		if len(collapsed) < 2 {
-			continue
+		for _, collapsed := range collapseHubs(component, graph.edges) {
+			if len(collapsed) < 2 {
+				continue
+			}
+			measurement.tangles = append(measurement.tangles, moduleTangle{
+				home:    tangleHome(graph, collapsed),
+				members: collapsed,
+				rawSize: len(component),
+			})
+			measurement.maxSize = max(measurement.maxSize, len(collapsed))
 		}
-		measurement.tangles = append(measurement.tangles, moduleTangle{
-			home:    tangleHome(graph, collapsed),
-			members: collapsed,
-			rawSize: len(component),
-		})
-		measurement.maxSize = max(measurement.maxSize, len(collapsed))
 	}
 	sort.Slice(measurement.tangles, func(i, j int) bool {
 		a, b := measurement.tangles[i], measurement.tangles[j]
