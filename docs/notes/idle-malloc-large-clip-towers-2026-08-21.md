@@ -132,8 +132,9 @@ That prints `MALLOC_LARGE` region sizes with their counts, in `vmmap`'s own unit
 - **No `96.5M`** → the towers were never loaded, this attribution is wrong for that run, and whichever exact size
   repeats most IS the next lead. Feed it back into this method.
 
-In a dev build, `get_memory_diagnostics` returns the same histogram as structured data along with both allocators'
-accounting, which is more useful for anything past this one question.
+From the app itself, in any build (the command is macOS-gated, deliberately not debug-gated), `get_memory_diagnostics`
+returns the same histogram as structured data along with both allocators' accounting, which is more useful for anything
+past this one question.
 
 Two cheaper corroborations, in case the app has since restarted: does
 `~/Library/Application Support/com.veszelovszki.cmdr/clip-model` exist, and is semantic search on? If the model was
