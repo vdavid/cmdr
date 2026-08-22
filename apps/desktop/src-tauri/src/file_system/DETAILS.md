@@ -188,6 +188,11 @@ delete would make the pane chase the cursor around. It reads the surviving rows'
 the longest increasing subsequence of them (patience sorting, O(n log n)); those rows held their relative order, and the
 rest are the minimal set that genuinely moved.
 
+**One event's removals are one call**, `listing::remove_entries_by_paths`, not a loop: the batch resolves every doomed
+row against the pre-removal listing in a single pass under one write lock, which is what keeps the indices the
+`directory-diff` carries in one index space and stops a 500-path event walking the listing 1,000 times. Why, and what
+the loop cost: `listing/DETAILS.md` § "Entries by path".
+
 ## Replacing a watch root
 
 The incremental watcher path classifies each event against the cached listing, so it can only learn about entries the OS

@@ -225,7 +225,7 @@ fn a_re_stat_rides_the_map_a_tag_sweep_built() {
     );
     assert!(
         examined <= RIDING_A_MAP,
-        "a re-stat's tag carry-forward examined {examined} entries on a mapped listing"
+        "a re-stat's tag carry-forward examined {examined} against a budget of {RIDING_A_MAP}, so it walked a mapped listing"
     );
 }
 
@@ -241,7 +241,7 @@ fn an_existence_check_rides_the_map_a_tag_sweep_built() {
     assert!(found, "the deep row is cached");
     assert!(
         examined <= RIDING_A_MAP,
-        "an existence check examined {examined} entries on a mapped listing"
+        "an existence check examined {examined} against a budget of {RIDING_A_MAP}, so it walked a mapped listing"
     );
 }
 
@@ -260,7 +260,7 @@ fn a_removal_rides_the_map_a_tag_sweep_built() {
     );
     assert!(
         examined <= RIDING_A_MAP,
-        "a removal examined {examined} entries on a mapped listing"
+        "a removal examined {examined} against a budget of {RIDING_A_MAP}, so it walked a mapped listing"
     );
 }
 
@@ -281,7 +281,7 @@ fn a_modify_rides_the_map_a_tag_sweep_built() {
     );
     assert!(
         examined <= RIDING_A_MAP,
-        "a modify examined {examined} entries on a mapped listing"
+        "a modify examined {examined} against a budget of {RIDING_A_MAP}, so it walked a mapped listing"
     );
 }
 
@@ -297,7 +297,7 @@ fn an_inserts_duplicate_guard_rides_the_map_a_tag_sweep_built() {
     assert_eq!(inserted, None, "a path the listing already held was inserted anyway");
     assert!(
         examined <= RIDING_A_MAP,
-        "an insert's duplicate guard examined {examined} entries on a mapped listing"
+        "an insert's duplicate guard examined {examined} against a budget of {RIDING_A_MAP}, so it walked a mapped listing"
     );
 }
 
