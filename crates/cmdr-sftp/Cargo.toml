@@ -1,0 +1,77 @@
+[package]
+name = "cmdr-sftp"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# "This is a test build." It widens `volume::testing` (the Docker fixture
+# connection and the unique-name helpers) from `#[cfg(test)]`-only to `pub`, so
+# the app's SFTP suites — the ones driving the transfer pipeline and the volume
+# registry, which belong on that side of the seam — share one set of fixtures
+# with this crate's own instead of growing a second, drifting copy.
+#
+# Forwards `cmdr-fs/testing` because the fixtures are built on the doubles that
+# live there: `InMemoryHostKeys` (which remembers an approval, where the detached
+# host deliberately doesn't) and `InMemoryCredentials`.
+#
+# Never enable in a production build.
+testing = ["cmdr-fs/testing"]
+
+[dependencies]
+# The `Volume` trait, every type it exchanges, and the host seams this backend
+# asks the app through. The only crate below this one.
+cmdr-fs = { path = "../cmdr-fs" }
+# The SSH transport. Everything that touches it lives in `transport.rs`: the
+# crate shipped eight breaking minors in eight months, so a bump has to be one
+# file's problem. `aws-lc-rs` is russh's default crypto backend and is already in
+# `Cargo.lock` through `rustls`.
+russh = "0.62.7"
+# The SFTP protocol engine over russh's channel stream. Modeled on
+# openssh-portable's own `sftp-client.c`, and the only candidate that both
+# negotiates `limits@openssh.com` and exposes per-extension predicates.
+openssh-sftp-client = "0.15.7"
+serde = { version = "1", features = ["derive"] }
+# Type export for the Rust↔TS bindings: `SftpHostKey` and the connection outcome
+# cross IPC. Pinned to the EXACT same version the app uses, for the reason
+# `cmdr-fs` gives: two `specta` crates in one graph would make these `Type` impls
+# stop satisfying `tauri-specta`, and the app's command signatures collect them
+# transitively.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+log = "0.4"
+# Reading `~/.ssh/known_hosts` as a trust fallback: `HashKnownHosts yes` (the
+# Debian and Ubuntu default) writes each host as an HMAC-SHA1 over a base64 salt,
+# so matching one takes these three. All three are already in `Cargo.lock` at
+# exactly these versions through `russh`, so nothing new enters the graph.
+hmac = "0.13.0"
+sha1 = "0.11.0"
+data-encoding = "2.11.0"
+# The backend's own async surface: `tokio::sync` for the session lock, `time` for
+# the connect timeout, `rt` for the handle background work spawns onto, and
+# `macros` for `select!`. Deliberately NOT `rt-multi-thread`: the runtime is the
+# app's, handed down through `VolumeHost::runtime`.
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+# `CancellationToken`, on the cancelable listing path. Default features off, the
+# same shape `cmdr-fs` pins, so no second copy enters the graph.
+tokio-util = { version = "0.7.18", default-features = false }
+# `StreamExt`, for the `readdir` stream the engine hands back a batch at a time.
+futures-util = "0.3"
+
+[dev-dependencies]
+# Depending on ourselves turns the `testing` feature on for every DEV target and
+# leaves it off for the lib, so a shipped build carries no fixtures. Same shape
+# as `cmdr-smb`'s and the app's own self dev-dependency.
+cmdr-sftp = { path = ".", features = ["testing"] }
+# `InMemoryVolume` and the recording / scripted host-seam fakes this crate's
+# tests assert against.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# The Docker-backed suites drive real concurrency, so their tests need a
+# multi-threaded runtime the lib deliberately can't build for itself.
+tokio = { version = "1", features = ["rt-multi-thread"] }
