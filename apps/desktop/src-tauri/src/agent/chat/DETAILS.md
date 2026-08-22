@@ -6,8 +6,8 @@ Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
 
 `run_turn` assembles and sends, top to bottom:
 
-1. **System** (`system` arg): `system_prompt::SYSTEM_PROMPT` + `~/.cmdr/CMDR.md` under a
-   header if present. Stable, cached. Five labelled sections (identity, what you can do,
+1. **System** (`system` arg): `system_prompt::SYSTEM_PROMPT` + the user's `CMDR.md` under a
+   header if present (§ Which `CMDR.md`, and how much of it). Stable, cached. Five labelled sections (identity, what you can do,
    coverage, renaming, evidence, style) so a rule can be found and edited without re-reading
    the block; every load-bearing rule is pinned by a prompt-asset test in `system_prompt.rs`.
    **Each rule that forbids something also names the action to take instead** — a prohibition
@@ -272,10 +272,29 @@ the test and this section together.
 
 ## The runtime (`runtime/`)
 
-Four files plus `ChatRuntime` in `mod.rs`: `events.rs` (the `AgentChatEvent` seam and the
+Five files plus `ChatRuntime` in `mod.rs`: `events.rs` (the `AgentChatEvent` seam and the
 typed `AgentErrorKind`), `dispatch.rs` (the `ToolDispatcher` seam and `AppHandleDispatcher`),
 `turn.rs` (`run_turn` and everything it drives), `cost.rs` (metering one completed
-`respond`). `mod.rs` re-exports all of it, so callers keep saying `chat::runtime::X`.
+`respond`), `cmdr_md.rs` (which `CMDR.md`, and how much of it). `mod.rs` re-exports all of
+it, so callers keep saying `chat::runtime::X`.
+
+### Which `CMDR.md`, and how much of it
+
+`cmdr_md.rs` resolves `<CMDR_DATA_DIR>/CMDR.md` when that variable is set and non-empty, else
+`~/.cmdr/CMDR.md`. Production sets no `CMDR_DATA_DIR`, so it is unaffected; only isolated
+instances (an E2E run, a `pnpm dev --worktree` instance) move. Sharing the home dotfile meant one
+developer's standing instructions rode along in every automated run's prompt, which is a
+non-deterministic prefix in exactly the tests that exist to be deterministic. The file stays a
+dotfile in home for real use: it is user-authored config, not app-managed state.
+
+The read is capped at `MAX_CMDR_MD_BYTES` (64 KB). The system string is never elided, so a big
+`CMDR.md` is a permanent, non-elidable tax on every turn, and the file is hand-written with
+nothing else bounding it. Over the cap, the head is fed and a one-line note says so, because a
+prompt that stops mid-sentence otherwise reads as the whole of what the user asked for. The cut is
+a byte cut, so it can land inside a multi-byte character; the read backs up to the last character
+boundary rather than discarding a large non-ASCII file entirely. A file that is not UTF-8 at all
+reads as absent, with a warning: silently believing the user wrote nothing is the failure worth
+being loud about.
 
 `run_turn` is the driver and holds all the testable logic (no Tauri app needed): it takes
 the `AgentLlm`, a `ToolDispatcher`, a write `Connection`, the tools, the `TurnParams`, an

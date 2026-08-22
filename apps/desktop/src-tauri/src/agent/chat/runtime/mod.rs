@@ -50,7 +50,9 @@ use crate::agent::store::{self, AgentStoreError};
 use crate::ignore_poison::IgnorePoison;
 
 use super::context::{self, ContextEnvelope};
+use cmdr_md::read_cmdr_md;
 
+mod cmdr_md;
 mod cost;
 mod dispatch;
 mod events;
@@ -224,13 +226,6 @@ pub(crate) fn derive_title(text: &str) -> String {
     } else {
         truncated
     }
-}
-
-/// Read `~/.cmdr/CMDR.md` if it exists, for the stable prefix. Absent or unreadable →
-/// `None` (the prefix is just the system prompt). Read-only in v1 (spec §3).
-fn read_cmdr_md() -> Option<String> {
-    let path = dirs::home_dir()?.join(".cmdr").join("CMDR.md");
-    std::fs::read_to_string(path).ok().filter(|s| !s.trim().is_empty())
 }
 
 fn now_secs() -> i64 {
