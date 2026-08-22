@@ -36,8 +36,12 @@ depth is the multiplier; the index-event rate is the driver.** Neither alone doe
 Directory: `apps/desktop/.../target/debug/deps`, 74,144 entries. Main-thread CPU isolated as row 1 of `ps -M <pid>`, so
 concurrent index-writer churn on other threads cannot pollute it. Cursor position VERIFIED from the DOM at each window.
 
-- Cursor at TOP, index quiet: **2.63 s user / 20 s = 13% of a core.**
-- Cursor at BOTTOM, index quiet: **10.07 s user / 20 s = 50% of a core.**
+Both windows below ran with the writer queue drained but the importance rescore still ticking about once a second, which
+is the app's ordinary resting state on an indexed volume, ❗ not true silence. That tick IS the event source; a
+genuinely idle index makes both numbers collapse (see the burstiness note below).
+
+- Cursor at TOP: **2.63 s user / 20 s = 13% of a core.**
+- Cursor at BOTTOM: **10.07 s user / 20 s = 50% of a core.**
 - While at the bottom, `webview_execute_js` and keyboard IPC **time out at 7 s**. That is the "wedge": the webview is
   alive, the main thread is just never free long enough to answer.
 
