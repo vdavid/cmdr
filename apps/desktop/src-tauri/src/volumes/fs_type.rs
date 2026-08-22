@@ -4,6 +4,22 @@
 
 use std::path::Path;
 
+/// Reads one NUL-terminated `statfs` char array as the UTF-8 it holds.
+///
+/// ❌ Not `c as u8 as char`, which is a latin-1 read: `f_mntonname` and
+/// `f_mntfromname` carry real paths, so a mount at `/Volumes/公開` came back as
+/// `/Volumes/å¬é`. Nothing downstream can recover from that — the mangled path
+/// fails its own `statfs`, so the share resolves to no SMB volume at all and the
+/// pane shows an unknown volume with a `path-volumes-å-é-…` id.
+///
+/// Lossy rather than strict: a mount name is whatever bytes the volume was
+/// labelled with, and a replacement character in a display path beats losing the
+/// mount.
+pub(crate) fn statfs_string(field: &[libc::c_char]) -> String {
+    let bytes: Vec<u8> = field.iter().take_while(|&&c| c != 0).map(|&c| c as u8).collect();
+    String::from_utf8_lossy(&bytes).into_owned()
+}
+
 /// Determine whether a filesystem type supports trash.
 ///
 /// Local filesystems (APFS, HFS+, ext4, btrfs, xfs, zfs) support trash.
@@ -56,19 +72,8 @@ pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
                 // SAFETY: `statfs` returned 0, so the kernel fully initialized `stat`.
                 let stat = unsafe { stat.assume_init() };
 
-                let mount_point: String = stat
-                    .f_mntonname
-                    .iter()
-                    .take_while(|&&c| c != 0)
-                    .map(|&c| c as u8 as char)
-                    .collect();
-
-                let fs_type: String = stat
-                    .f_fstypename
-                    .iter()
-                    .take_while(|&&c| c != 0)
-                    .map(|&c| c as u8 as char)
-                    .collect();
+                let mount_point = statfs_string(&stat.f_mntonname);
+                let fs_type = statfs_string(&stat.f_fstypename);
 
                 // APFS firmlink normalization: /System/Volumes/Data → /
                 let mount_point = if mount_point == "/System/Volumes/Data" {
@@ -114,14 +119,7 @@ pub(crate) fn get_fs_type(path: &str) -> Option<String> {
 
     // SAFETY: `statfs` returned 0, so the kernel fully initialized `stat`.
     let stat = unsafe { stat.assume_init() };
-    // f_fstypename is [c_char; 16] on macOS. Convert to &str.
-    let name_bytes: Vec<u8> = stat
-        .f_fstypename
-        .iter()
-        .take_while(|&&c| c != 0)
-        .map(|&c| c as u8)
-        .collect();
-    String::from_utf8(name_bytes).ok()
+    Some(statfs_string(&stat.f_fstypename))
 }
 
 /// Whether the volume mounted at `path` is read-only, from the `statfs` `MNT_RDONLY` flag.
@@ -263,6 +261,25 @@ mod tests {
         let home = dirs::home_dir().expect("Should have home dir");
         let fs_type = get_fs_type(home.to_str().unwrap());
         assert!(fs_type.is_some(), "Home dir should have a filesystem type");
+    }
+
+    /// `statfs`'s name fields hold UTF-8 paths, so they have to be read as UTF-8.
+    /// Verified against a live mount: `/Volumes/公開` (`smb-consumer-unicode`)
+    /// came back as `/Volumes/å¬é` under the latin-1 read, and the share then
+    /// resolved to an unknown volume with a `path-volumes-å-é-…` id
+    /// (macOS 15.5, 2026-08-22).
+    #[test]
+    fn statfs_fields_are_read_as_utf8() {
+        fn field(text: &str) -> Vec<libc::c_char> {
+            let mut out: Vec<libc::c_char> = text.bytes().map(|b| b as libc::c_char).collect();
+            out.push(0);
+            out.push(b'x' as libc::c_char); // trailing garbage past the NUL, as the kernel leaves
+            out
+        }
+        assert_eq!(statfs_string(&field("/Volumes/公開")), "/Volumes/公開");
+        assert_eq!(statfs_string(&field("/Volumes/café")), "/Volumes/café");
+        assert_eq!(statfs_string(&field("smbfs")), "smbfs");
+        assert_eq!(statfs_string(&field("")), "");
     }
 
     #[test]

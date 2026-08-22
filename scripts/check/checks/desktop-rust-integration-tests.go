@@ -75,6 +75,10 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		"smb-consumer-flaky",
 		"smb-consumer-slow",
 		"smb-consumer-50shares",
+		// The only fixture with non-ASCII share names, and so the only one that can
+		// catch a regression in the escaping macOS's SMB stack requires of every
+		// mount URL (`network/mount.rs::build_smb_mount_url`).
+		"smb-consumer-unicode",
 	}
 	if err := waitForSmbContainers(expected, 120*time.Second); err != nil {
 		return CheckResult{}, err

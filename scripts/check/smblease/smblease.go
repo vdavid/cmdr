@@ -165,6 +165,7 @@ func modeServices(mode string) []string {
 			"smb-consumer-guest", "smb-consumer-auth", "smb-consumer-both",
 			"smb-consumer-readonly", "smb-consumer-flaky", "smb-consumer-slow",
 			"smb-consumer-maxreadsize", "smb-consumer-50shares",
+			"smb-consumer-unicode",
 		}
 	case "all":
 		return nil
@@ -175,6 +176,7 @@ func modeServices(mode string) []string {
 			"smb-consumer-guest", "smb-consumer-auth", "smb-consumer-both",
 			"smb-consumer-readonly", "smb-consumer-flaky", "smb-consumer-slow",
 			"smb-consumer-maxreadsize", "smb-consumer-50shares",
+			"smb-consumer-unicode",
 		}
 	}
 }

@@ -227,7 +227,7 @@ type SmbMode string
 
 const (
 	SmbModeNone SmbMode = ""
-	SmbModeCore SmbMode = "core" // guest, auth, both, readonly, flaky, slow
+	SmbModeCore SmbMode = "core" // guest, auth, both, readonly, flaky, slow, maxreadsize, 50shares, unicode
 	SmbModeE2E  SmbMode = "e2e"  // guest, auth, 50shares, unicode
 )
 

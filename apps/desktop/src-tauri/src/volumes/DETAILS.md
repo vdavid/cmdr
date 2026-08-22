@@ -234,6 +234,29 @@ pessimistically disabling trash for a filesystem that supports it.
 **Why**: The NSURL key returns a locale-dependent human string ("APFS (Case-sensitive)"). `statfs.f_fstypename` returns
 a stable machine identifier ("apfs", "smbfs", "nfs") that matches against the known network/non-trash list.
 
+**Decision**: Every `statfs` name field is read through `fs_type::statfs_string` (UTF-8, lossy), never
+`c as u8 as char`.
+**Why**: `f_mntonname` and `f_mntfromname` hold real paths, so the latin-1 read turned a mount at `/Volumes/公開` into
+`/Volumes/å¬é`. The mangled path then failed its own `statfs`, `get_smb_mount_info` returned `None`, and the share
+published as an unknown volume under a `path-volumes-å-é-…` id instead of its `smb-…` one (verified against
+`smb-consumer-unicode` on macOS 15.5, 2026-08-22). Lossy rather than strict, because a mount label is whatever bytes
+the volume carries and a replacement character beats losing the mount.
+
+## SMB mount sources are percent-escaped
+
+macOS's SMB stack only speaks URLs: `mount_smbfs //guest@localhost/café` is rejected outright ("URL parsing failed"),
+and a mount of that share records `//guest:@localhost:11484/caf%C3%A9` in `f_mntfromname`. `parse_smb_mount_source`
+percent-DECODES server, share, and username on the way out (`decode_mount_field`), so everything downstream compares
+and hashes the name the server actually advertises.
+
+Left escaped, the mounted `café` never equals the advertised `café`: `mount.rs::find_mount_path_for_share` reports a
+live mount as missing (so the app re-mounts a share it already has), and `smb_volume_id` derives one id from the share
+list and a different one from `statfs` for the same mount — the exact cross-contamination
+`smb_integration_volume_id_is_per_mount_not_per_path_shape` exists to catch. A `%` that isn't a valid escape is a
+character in a name, so a decode failure keeps the source text rather than dropping the mount.
+
+The escaping half lives with the mount: `network/mount.rs::build_smb_mount_url`.
+
 ## Gotchas
 
 **Gotcha**: `VolumeInfo` is a type alias for `LocationInfo`, not a separate type.

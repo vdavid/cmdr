@@ -227,6 +227,29 @@ would treat one NAS as two, force a second mount with `ForceNewSession`, and bre
 `mount_share_sync` returns early with `already_mounted: true` when `find_mount_path_for_share` finds the same
 server+share+port already mounted, skipping NetFS entirely.
 
+## The mount URL is built, escaped, and NFC-normalized
+
+`mount.rs::build_smb_mount_url` assembles `smb://host[:port]/share` from percent-encoded halves.
+`CFURLCreateWithString` PARSES, it never escapes: hand it a string that isn't already a valid RFC 3986 URL and it
+returns NULL, so `café` and `公開` couldn't be mounted at all while `public` on the same host mounted fine. ❌ Escaping
+the finished URL string instead eats the scheme, the `//`, the port colon, and the share separator, so the two data
+halves are escaped separately and the structure assembled around them.
+
+- **The escape set is RFC 3986 `unreserved`** (`urlencoding::encode`: keeps `A-Za-z0-9-._~`). Over-escaping is free
+  (a reader decodes back to the same bytes); under-escaping is not — an unescaped `%` in a share named `100%` reads as
+  a truncated escape and the URL is rejected outright, and `#` or `?` would silently cut the name short.
+- **NFC first, both halves.** macOS hands out decomposed strings while SMB servers store and answer with composed
+  ones, so one visible name is two byte strings and two different escapes, and the server only recognizes the NFC one.
+  Same normalization `cmdr_smb::volume::paths` applies to every path it sends. The fixture host's `smb.conf` spells
+  `café` NFC, matching what a real Samba server stores.
+- **An IPv6 literal is the one host that isn't escaped**: it goes in brackets (`smb://[fe80::1]/public`, zone id as
+  `%25` per RFC 6874) so its colons can't read as the port separator. mDNS hands us one whenever a host advertises no
+  IPv4 address (`mdns_discovery::extract_preferred_ip`).
+
+macOS keeps the ESCAPED form in `statfs`'s `f_mntfromname`, so the round trip closes in
+`volumes/DETAILS.md` § "SMB mount sources are percent-escaped". `smb_integration_mount_non_ascii_share` covers the
+whole path against the `unicode` fixture host, which is why the Rust integration lane brings that container up.
+
 ## Every SMB subprocess runs under a deadline
 
 `smbutil view` (macOS) and `smbclient -L` (Linux) are the last thing tried when smb2 can't list a host's shares, and
@@ -284,6 +307,13 @@ mount used, so one NAS arrives as `192.168.1.111` on one mount and `Naspolya._sm
 why the ledger is a `Vec` rather than a `HashSet`: identity here is an equivalence relation over the live mDNS state,
 not a value to hash. Its one weak spot is the same one `same_server` documents — before discovery warms, an IP and a
 name look like two servers, so the worst case is two notices rather than one, never a missed one.
+
+**An E2E run never gets here at all.** The notice's one trigger is the auto-upgrade of a mount the app didn't make, and
+under E2E every such mount is the developer's own — on this machine, reliably `/Volumes/naspi`. So the startup adopter
+returns early (`test_mode::may_adopt_preexisting_network_mounts`, checked in
+`file_system::upgrade_existing_smb_mounts` BEFORE the scan), and no E2E run waits on mDNS for a real NAS, reaches for
+its Keychain entry, opens a session to it, or raises a toast about it that then fails whichever spec is running. The
+FSEvents mount-time path is deliberately NOT gated: a mount that appears DURING a run is the test's own fixture.
 
 **A landed direct session clears the server's entry** (`clear_os_mount_notice`, called from both the auto and the
 manual install paths). A notice describes a situation, not an event: once the server is off the slow path, the next

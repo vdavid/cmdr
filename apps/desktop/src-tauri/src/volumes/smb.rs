@@ -71,28 +71,36 @@ pub fn get_smb_mount_info(mount_path: &str) -> Option<SmbMountInfo> {
     let stat = unsafe { stat.assume_init() };
 
     // Check filesystem type is SMB
-    let fs_type: String = stat
-        .f_fstypename
-        .iter()
-        .take_while(|&&c| c != 0)
-        .map(|&c| c as u8 as char)
-        .collect();
+    let fs_type = super::fs_type::statfs_string(&stat.f_fstypename);
     if !is_smb_fs_type(Some(&fs_type)) {
         return None;
     }
 
     // Extract mount source (for example, "//david@192.168.1.111/naspi")
-    let mount_from: String = stat
-        .f_mntfromname
-        .iter()
-        .take_while(|&&c| c != 0)
-        .map(|&c| c as u8 as char)
-        .collect();
+    let mount_from = super::fs_type::statfs_string(&stat.f_mntfromname);
 
     parse_smb_mount_source(&mount_from)
 }
 
+/// Percent-decodes one field of a mount source, keeping it verbatim when it isn't
+/// a valid escape sequence.
+///
+/// macOS records the mount source in its ESCAPED form: its SMB stack only speaks
+/// URLs, so the share `café` is stored as `caf%C3%A9`. Callers compare these fields
+/// against names from the server's own share list and feed them to `smb_volume_id`,
+/// so the escaped text has to come back off before anything reads it. A `%` that
+/// isn't an escape is just a character in a name, so decoding failure keeps the
+/// source text rather than dropping the mount.
+fn decode_mount_field(field: &str) -> String {
+    match urlencoding::decode(field) {
+        Ok(decoded) => decoded.into_owned(),
+        Err(_) => field.to_string(),
+    }
+}
+
 /// Parses an SMB mount source string like `//user@host/share` or `//host/share`.
+///
+/// Fields come back percent-decoded; see [`decode_mount_field`].
 pub(crate) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
     // Strip leading "//"
     let rest = source.strip_prefix("//")?;
@@ -117,15 +125,79 @@ pub(crate) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
     };
 
     Some(SmbMountInfo {
-        server,
-        share: share.to_string(),
-        username,
+        server: decode_mount_field(&server),
+        share: decode_mount_field(share),
+        username: username.map(|u| decode_mount_field(&u)),
         port,
     })
 }
 
 // Deriving a volume ID from a mount lives in `ids.rs`, which owns the rule for
 // every mount kind (SMB, other network, local) in one place.
+
+#[cfg(test)]
+mod mount_source_tests {
+    use super::*;
+
+    #[test]
+    fn parses_an_authenticated_source() {
+        let info = parse_smb_mount_source("//david@192.168.1.111/naspi").expect("a well-formed SMB source");
+        assert_eq!(info.server, "192.168.1.111");
+        assert_eq!(info.share, "naspi");
+        assert_eq!(info.username.as_deref(), Some("david"));
+        assert_eq!(info.port, 445);
+    }
+
+    #[test]
+    fn parses_a_guest_source_with_a_port() {
+        let info = parse_smb_mount_source("//localhost:11480/public").expect("a well-formed SMB source");
+        assert_eq!(info.server, "localhost");
+        assert_eq!(info.share, "public");
+        assert_eq!(info.username, None);
+        assert_eq!(info.port, 11480);
+    }
+
+    /// macOS records the mount source in its ESCAPED form, because its whole SMB
+    /// stack speaks URLs: `mount_smbfs //guest@localhost/café` is rejected outright
+    /// ("URL parsing failed"), and the mount we do make records
+    /// `//guest:@localhost:11484/caf%C3%A9` (verified on macOS 15.5 via `mount`
+    /// after a `NetFSMountURLSync` of the `unicode` fixture host, 2026-08-22).
+    ///
+    /// Every caller compares this against a share name from the server's own share
+    /// list, or feeds it to `smb_volume_id`. Left escaped, the mounted `café` never
+    /// matches the advertised `café`: the app re-mounts a share it already has, and
+    /// the watcher and the upgrade path derive two different ids for one mount.
+    #[test]
+    fn percent_decodes_the_escaped_form_macos_records() {
+        let info = parse_smb_mount_source("//guest:@localhost:11484/caf%C3%A9").expect("a well-formed SMB source");
+        assert_eq!(info.share, "café");
+        assert_eq!(info.server, "localhost");
+        assert_eq!(info.port, 11484);
+
+        let info = parse_smb_mount_source("//localhost:11484/%E5%85%AC%E9%96%8B").expect("a well-formed SMB source");
+        assert_eq!(info.share, "公開");
+    }
+
+    /// A share whose real name carries reserved characters round-trips: we escape
+    /// `100%` to `100%25` on the way in, so decoding has to give `100%` back rather
+    /// than a name nothing on the server answers to.
+    #[test]
+    fn decodes_reserved_characters_back_to_the_real_name() {
+        let info = parse_smb_mount_source("//nas/100%25").expect("a well-formed SMB source");
+        assert_eq!(info.share, "100%");
+
+        let info = parse_smb_mount_source("//nas/Q%26A%20%231").expect("a well-formed SMB source");
+        assert_eq!(info.share, "Q&A #1");
+    }
+
+    /// A stray `%` that isn't an escape is a name, not a parse failure: keep the
+    /// source text rather than dropping the mount on the floor.
+    #[test]
+    fn keeps_an_undecodable_source_verbatim() {
+        let info = parse_smb_mount_source("//nas/100%zz").expect("a well-formed SMB source");
+        assert_eq!(info.share, "100%zz");
+    }
+}
 
 #[cfg(test)]
 mod enrichment_tests {

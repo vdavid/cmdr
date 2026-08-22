@@ -6,7 +6,7 @@
 # the requested containers.
 #
 # Usage:
-#   ./start.sh           # Start core containers (guest, auth, both, readonly, flaky, slow)
+#   ./start.sh           # Start core containers (guest, auth, both, readonly, flaky, slow, unicode)
 #   ./start.sh all       # Start all 14 containers
 #   ./start.sh minimal   # Start just guest + auth
 #   ./start.sh e2e       # Start containers needed by E2E tests (guest, auth, 50shares, unicode)
@@ -42,7 +42,8 @@ case "$mode" in
         echo "Starting core SMB servers (auth scenarios + edge cases)..."
         services=(smb-consumer-guest smb-consumer-auth smb-consumer-both \
                   smb-consumer-readonly smb-consumer-flaky smb-consumer-slow \
-                  smb-consumer-maxreadsize smb-consumer-50shares)
+                  smb-consumer-maxreadsize smb-consumer-50shares \
+                  smb-consumer-unicode)
         ;;
     all)
         echo "Starting all SMB servers (15 containers)..."

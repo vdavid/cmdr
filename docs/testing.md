@@ -489,6 +489,11 @@ entry needs a real "we can't make this faster" justification, not convenience.
   resolved volume id, not mount speed), so the larger budget only delays how long a genuinely-hung mount waits before
   nextest's 30s slow-timeout cap fires. Don't copy the 16s to other tests, and don't apply it to
   `smb_integration_mount_guest_no_dialog`, whose 8s budget IS its assertion.
+- **`smb_integration_mount_non_ascii_share`** (`src-tauri/src/network/mount.rs`): the third and last real NetFS kernel
+  mount, on the same **16s** budget and for the same reason. Only NetFS can answer whether it accepts the escaped URL
+  `build_smb_mount_url` produces, which is why a unit test can't replace it. It mounts exactly ONE share (`café`) even
+  though the `unicode` fixture serves four: the others assert the same mechanism, their URLs are already pinned byte
+  for byte by unit tests, and each extra kernel mount is another one of these budgets in the lane.
 - **`smb_integration_concurrent_streaming_writes_no_deadlock`** (~2.8-4.3 s, the integration lane's slowest local test):
   don't shrink it to buy suite time. Its shape (200 files, 60 × 1 MB writes forced through the streaming fallback at
   concurrency 8) is deliberately tuned to the production workload that surfaced the deadlock it guards, and no smaller

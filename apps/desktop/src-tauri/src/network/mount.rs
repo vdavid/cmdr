@@ -191,6 +191,81 @@ fn error_from_code(code: i32, share_name: &str, server_name: &str) -> MountError
     }
 }
 
+/// Builds the `smb://` URL string `CFURLCreateWithString` accepts for a mount.
+///
+/// `CFURLCreateWithString` PARSES, it never escapes: hand it a string that isn't
+/// already a valid RFC 3986 URL and it returns NULL, which is why a share named
+/// `café` or `公開` couldn't be mounted at all. So the two data halves (server and
+/// share) are percent-encoded here and the structure (scheme, `//`, the port colon,
+/// the share separator) is assembled around them. ❌ Escaping the finished URL
+/// string instead would eat the separators.
+///
+/// The escape set is RFC 3986's `unreserved` (`urlencoding::encode` keeps
+/// `A-Za-z0-9-._~` and escapes the rest). Over-escaping is safe here — a reader
+/// decodes back to the same bytes — while under-escaping is not: an unescaped `%`
+/// in a share named `100%` reads as a truncated escape and the whole URL is
+/// rejected, and a `#` or `?` would silently cut the name short.
+///
+/// **NFC first, for both halves.** macOS hands out decomposed (NFD) strings while
+/// SMB servers store and answer with composed (NFC) ones, so one visible name is
+/// two byte strings and two different escapes; the server only recognizes the NFC
+/// one. Same normalization `cmdr_smb::volume::paths` applies to every path it
+/// sends, applied here for the same reason.
+///
+/// An IPv6 literal is the one host that must not be escaped: it goes in brackets so
+/// its colons can't be read as the port separator. mDNS hands us one whenever a host
+/// advertises no IPv4 address (`mdns_discovery::extract_preferred_ip`).
+fn build_smb_mount_url(server: &str, share: &str, port: u16) -> String {
+    use unicode_normalization::UnicodeNormalization;
+
+    let host = encode_url_host(server);
+    let share: String = share.nfc().collect();
+    let share = urlencoding::encode(&share);
+
+    if port != 445 {
+        format!("smb://{}:{}/{}", host, port, share)
+    } else {
+        format!("smb://{}/{}", host, share)
+    }
+}
+
+/// Whether two spellings name the same share.
+///
+/// Compared on NFC, because the two sides reach us through different pipes: `statfs`
+/// reports what the kernel recorded for the mount, while the caller's name comes from
+/// the server's share list or from a `/Volumes` entry macOS wrote decomposed. A byte
+/// compare splits `café` from `café` and reports a mounted share as unmounted.
+fn same_share_name(a: &str, b: &str) -> bool {
+    use unicode_normalization::UnicodeNormalization;
+    a.nfc().eq(b.nfc())
+}
+
+/// Renders `server` as a URL authority host: an IPv6 literal in brackets, anything
+/// else NFC-normalized and percent-encoded. See [`build_smb_mount_url`].
+fn encode_url_host(server: &str) -> String {
+    use unicode_normalization::UnicodeNormalization;
+
+    let bare = server
+        .strip_prefix('[')
+        .and_then(|s| s.strip_suffix(']'))
+        .unwrap_or(server);
+    // A zone id (`fe80::1%en0`) isn't part of the address literal, so parse without it.
+    let (address, zone) = match bare.split_once('%') {
+        Some((address, zone)) => (address, Some(zone)),
+        None => (bare, None),
+    };
+    if address.parse::<std::net::Ipv6Addr>().is_ok() {
+        // RFC 6874: the zone delimiter is written `%25` inside a URL, so the literal
+        // `%` can't be mistaken for the start of an escape.
+        return match zone {
+            Some(zone) => format!("[{}%25{}]", address, urlencoding::encode(zone)),
+            None => format!("[{}]", address),
+        };
+    }
+    let normalized: String = server.nfc().collect();
+    urlencoding::encode(&normalized).into_owned()
+}
+
 /// Mount an SMB share to the local filesystem.
 ///
 /// This is a synchronous function that should be called from a spawn_blocking context.
@@ -225,12 +300,7 @@ pub fn mount_share_sync(
         });
     }
 
-    // Build SMB URL: smb://server/share (with port for non-standard)
-    let url_string = if port != 445 {
-        format!("smb://{}:{}/{}", server, port, share)
-    } else {
-        format!("smb://{}/{}", server, share)
-    };
+    let url_string = build_smb_mount_url(server, share, port);
 
     // Create URL from string using CFURLCreateWithString
     let cf_url_string = CFString::new(&url_string);
@@ -242,8 +312,9 @@ pub fn mount_share_sync(
         let url_ref =
             core_foundation::url::CFURLCreateWithString(ptr::null(), cf_url_string.as_concrete_TypeRef(), ptr::null());
         if url_ref.is_null() {
+            log::warn!("CFURLCreateWithString rejected the mount URL {url_string}");
             return Err(MountError::ProtocolError {
-                message: format!("Failed to create URL: {}", url_string),
+                message: format!("Can't build an address for \"{}\" on \"{}\"", share, server),
             });
         }
         CFURL::wrap_under_create_rule(url_ref)
@@ -444,7 +515,7 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
     // IP), and a string mismatch here would force a second mount of the same share.
     if let Some(info) = get_smb_mount_info(&default_path)
         && crate::network::server_identity::same_server_live(&info.server, server)
-        && info.share == share
+        && same_share_name(&info.share, share)
         && info.port == port
     {
         return None; // Same server: let NetFS handle EEXIST
@@ -464,7 +535,7 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
         // If this suffixed path exists and belongs to this server, reuse it
         if let Some(info) = get_smb_mount_info(&candidate)
             && crate::network::server_identity::same_server_live(&info.server, server)
-            && info.share == share
+            && same_share_name(&info.share, share)
             && info.port == port
         {
             return Some(candidate); // Already mounted here
@@ -483,19 +554,25 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
 /// same-named shares on different ports apart (Docker test containers on `localhost`).
 fn find_mount_path_for_share(server: &str, share: &str, port: u16) -> Option<String> {
     use crate::volumes::get_smb_mount_info;
+    use unicode_normalization::UnicodeNormalization;
 
     let entries = std::fs::read_dir("/Volumes").ok()?;
+    // The prefix check runs on NFC for the same reason the mount URL does: `readdir`
+    // reports whatever the volume stored (macOS writes NFD), while `share` arrives NFC
+    // from the server's own share list. A raw `starts_with` between the two spellings of
+    // `café` never matches, which would leave every non-ASCII share looking unmounted.
+    let share_nfc: String = share.nfc().collect();
 
     for entry in entries.flatten() {
         let path = entry.path().to_string_lossy().to_string();
         // Check paths that start with the share name (for example, "public", "public-1")
-        let file_name = entry.file_name().to_string_lossy().to_string();
-        if !file_name.starts_with(share) {
+        let file_name: String = entry.file_name().to_string_lossy().nfc().collect();
+        if !file_name.starts_with(&share_nfc) {
             continue;
         }
         if let Some(info) = get_smb_mount_info(&path)
             && crate::network::server_identity::same_server_live(&info.server, server)
-            && info.share == share
+            && same_share_name(&info.share, share)
             && info.port == port
         {
             return Some(path);
@@ -561,6 +638,94 @@ pub fn unmount_smb_shares_from_host(server_name: &str, server_ip: Option<&str>) 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `CFURLCreateWithString` parses, it does not escape: it returns NULL for any
+    /// string that isn't already a valid RFC 3986 URL, so a share whose name carries
+    /// a non-ASCII byte used to fail before a single packet went out. Every share on
+    /// the `unicode` fixture host reproduces it.
+    #[test]
+    fn mount_url_percent_encodes_non_ascii_share_names() {
+        assert_eq!(
+            build_smb_mount_url("localhost", "café", 11484),
+            "smb://localhost:11484/caf%C3%A9"
+        );
+        assert_eq!(
+            build_smb_mount_url("localhost", "公開", 11484),
+            "smb://localhost:11484/%E5%85%AC%E9%96%8B"
+        );
+        assert_eq!(
+            build_smb_mount_url("localhost", "文档", 445),
+            "smb://localhost/%E6%96%87%E6%A1%A3"
+        );
+    }
+
+    /// Reserved characters are legal in an SMB share name and must survive the trip
+    /// as data. `%` matters most: unescaped, `100%` reads as a truncated escape and
+    /// the URL is rejected; `#` and `?` would silently cut the share name short.
+    #[test]
+    fn mount_url_percent_encodes_reserved_characters_in_share_names() {
+        assert_eq!(build_smb_mount_url("nas", "100%", 445), "smb://nas/100%25");
+        assert_eq!(build_smb_mount_url("nas", "Q&A #1", 445), "smb://nas/Q%26A%20%231");
+        assert_eq!(build_smb_mount_url("nas", "who?", 445), "smb://nas/who%3F");
+        // A share name can't contain a slash, but if one ever reached us it must not
+        // be able to graft an extra path segment onto the URL.
+        assert_eq!(build_smb_mount_url("nas", "a/b", 445), "smb://nas/a%2Fb");
+    }
+
+    /// The scheme, the `//` authority marker, the port colon, and the share separator
+    /// are structure, not data: a blanket escape of the whole URL string would eat them.
+    #[test]
+    fn mount_url_leaves_scheme_and_separators_intact() {
+        assert_eq!(
+            build_smb_mount_url("192.168.1.111", "naspi", 445),
+            "smb://192.168.1.111/naspi"
+        );
+        assert_eq!(
+            build_smb_mount_url("naspolya.local", "naspi", 1445),
+            "smb://naspolya.local:1445/naspi"
+        );
+    }
+
+    /// macOS hands out NFD (decomposed) strings while SMB servers store and answer
+    /// with NFC, so the same visible name is two different byte strings and two
+    /// different escapes. We normalize to NFC for the same reason
+    /// `cmdr_smb::volume::paths` does on every path it sends.
+    #[test]
+    fn mount_url_normalizes_decomposed_names_to_nfc() {
+        // "café" spelled `e` + U+0301 COMBINING ACUTE ACCENT.
+        let decomposed = "cafe\u{301}";
+        assert_eq!(
+            build_smb_mount_url("localhost", decomposed, 11484),
+            build_smb_mount_url("localhost", "café", 11484),
+            "NFD and NFC spell the same share; both must produce the URL the server answers to"
+        );
+        // Same for the server half: an mDNS name can arrive decomposed too.
+        assert_eq!(
+            build_smb_mount_url("Zu\u{308}rich.local", "public", 445),
+            build_smb_mount_url("Zürich.local", "public", 445)
+        );
+        assert_eq!(
+            build_smb_mount_url("Zürich.local", "public", 445),
+            "smb://Z%C3%BCrich.local/public"
+        );
+    }
+
+    /// An IPv6 literal is the one host shape that must NOT be escaped: it needs
+    /// brackets so its colons can't be read as the port separator. mDNS hands us one
+    /// whenever a host advertises no IPv4 address (`extract_preferred_ip`).
+    #[test]
+    fn mount_url_brackets_ipv6_literals() {
+        assert_eq!(build_smb_mount_url("fe80::1", "public", 445), "smb://[fe80::1]/public");
+        assert_eq!(
+            build_smb_mount_url("fe80::1", "public", 11484),
+            "smb://[fe80::1]:11484/public"
+        );
+        // Already bracketed by the caller: don't double-wrap.
+        assert_eq!(
+            build_smb_mount_url("[fe80::1]", "public", 445),
+            "smb://[fe80::1]/public"
+        );
+    }
 
     #[test]
     fn test_error_from_code() {
@@ -829,6 +994,68 @@ mod tests {
             volume.id,
             crate::file_system::volume::smb_volume_id(&host, port, "public"),
             "expected the ID keyed on (server, port, share)"
+        );
+    }
+
+    /// A share whose name isn't ASCII must mount, and must be found again afterwards.
+    ///
+    /// The unit tests above pin the URL we build; only NetFS can say whether it
+    /// ACCEPTS it, and that half is what regressed: `CFURLCreateWithString` returned
+    /// NULL for the raw UTF-8 string, so `café` and `公開` couldn't be mounted at all
+    /// while `public` on the same host mounted fine. The `unicode` fixture host is the
+    /// only Samba container with non-ASCII share names, which is why the Rust
+    /// integration lane brings it up (`smblease::modeServices`).
+    ///
+    /// The second assertion is the other half of the same bug: macOS records the
+    /// mount source ESCAPED (`//…/caf%C3%A9`), so a raw compare against the name the
+    /// server advertises reports a live mount as missing.
+    ///
+    /// ONE share, deliberately: this is a real NetFS *kernel* mount, and the CJK
+    /// cases add another one of those to the lane while asserting the same mechanism
+    /// (the unit tests already pin their exact URLs byte for byte). `café` is the one
+    /// that also carries a distinct NFD spelling. The 16 s budget is the same
+    /// sanctioned exception as `smb_integration_volume_id_is_per_mount_not_per_path_shape`
+    /// above — see `docs/testing.md` § "Sanctioned slow-test exceptions"; the mount is
+    /// setup here, not the assertion.
+    #[cfg(target_os = "macos")]
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_mount_non_ascii_share() {
+        let port: u16 = std::env::var("SMB_CONSUMER_UNICODE_PORT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10484);
+        let host = "localhost".to_string();
+        let share = "café";
+
+        // Pre-clean so we exercise the cold mount path, not an EEXIST shortcut.
+        let _ = std::process::Command::new("diskutil")
+            .args(["unmount", "force", &format!("/Volumes/{share}")])
+            .output();
+
+        let result = mount_share(host.clone(), share.to_string(), None, None, port, Some(16_000)).await;
+
+        // Unmount on every exit path, assertion failures included.
+        struct UnmountOnDrop(String);
+        impl Drop for UnmountOnDrop {
+            fn drop(&mut self) {
+                let _ = std::process::Command::new("diskutil")
+                    .args(["unmount", "force", &self.0])
+                    .output();
+            }
+        }
+        let mount = result.unwrap_or_else(|e| panic!("mounting {share:?} on {host}:{port} failed: {e:?}"));
+        let _unmount = UnmountOnDrop(mount.mount_path.clone());
+
+        assert!(
+            mount.mount_path.starts_with("/Volumes/"),
+            "expected a /Volumes/* mount path for {share:?}, got {}",
+            mount.mount_path
+        );
+        assert_eq!(
+            find_mount_path_for_share(&host, share, port).as_deref(),
+            Some(mount.mount_path.as_str()),
+            "the live mount for {share:?} must be findable under the name the server advertises"
         );
     }
 }

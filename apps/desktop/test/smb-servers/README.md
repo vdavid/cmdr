@@ -5,7 +5,7 @@ Docker SMB containers for local development and E2E testing, provided by smb2's 
 ## Quick start
 
 ```bash
-./start.sh         # Start core containers (guest, auth, both, readonly, flaky, slow)
+./start.sh         # Start core containers (guest, auth, both, readonly, flaky, slow, maxreadsize, 50shares, unicode)
 ./start.sh minimal # Start just guest + auth
 ./start.sh all     # Start all 14 containers
 ./stop.sh          # Stop everything

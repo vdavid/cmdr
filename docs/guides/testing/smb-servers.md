@@ -23,7 +23,7 @@ Both excludes matter: `VENDORED.md` and `docker-compose.override.yml` are cmdr-o
 ## Quick start
 
 ```bash
-# Start core containers (guest, auth, both, readonly, flaky, slow)
+# Start core containers (guest, auth, both, readonly, flaky, slow, maxreadsize, 50shares, unicode)
 ./test/smb-servers/start.sh
 
 # Start minimal set (just guest + auth)
