@@ -8,6 +8,7 @@ pub(crate) mod fuzzy_jump;
 pub(crate) mod listing_host;
 pub(crate) mod mutation;
 pub(crate) mod operations;
+pub(crate) mod path_index;
 pub(crate) mod reading;
 pub(crate) mod sorting;
 pub(crate) mod streaming;
@@ -63,6 +64,8 @@ mod diff_test;
 mod hidden_files_test;
 #[cfg(test)]
 mod operations_test;
+#[cfg(test)]
+mod path_index_test;
 #[cfg(test)]
 mod row_beside_test;
 #[cfg(test)]

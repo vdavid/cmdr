@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 use cmdr_fs::volume::WatchCoverage;
 
 use crate::file_system::listing::metadata::{FileEntry, TagRef};
+use crate::file_system::listing::path_index::PathIndexCache;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
 use crate::file_system::listing::visible_rows::{VisibleRows, VisibleRowsCache};
 pub use cmdr_fs::volume::DirectoryChange;
@@ -76,6 +77,9 @@ pub(crate) struct CachedListing {
     /// Row numbers over the visible subset of `entries`, per `include_hidden`.
     /// Rebuilt lazily after any mutation; see `visible_rows.rs`.
     visible_rows: VisibleRowsCache,
+    /// Where each entry sits, by path, for the callers that know a path and need
+    /// an index. Rebuilt lazily after any mutation; see `path_index.rs`.
+    path_index: PathIndexCache,
     /// Current sort column
     pub sort_by: SortColumn,
     /// Current sort order
@@ -122,6 +126,7 @@ impl CachedListing {
             path,
             entries,
             visible_rows: VisibleRowsCache::new(),
+            path_index: PathIndexCache::new(),
             sort_by,
             sort_order,
             directory_sort_mode,
@@ -145,11 +150,39 @@ impl CachedListing {
         &self.entries
     }
 
-    /// The entries, to change. Drops the row map on the way out, so no caller can
-    /// leave a stale one behind by forgetting a step.
+    /// The entries, to change. Drops the row map and the path map on the way out,
+    /// so no caller can leave a stale one behind by forgetting a step.
     pub(crate) fn entries_mut(&mut self) -> &mut Vec<FileEntry> {
         self.visible_rows.invalidate();
+        self.path_index.invalidate();
         &mut self.entries
+    }
+
+    /// Replaces the tags on the entries `updates` names, in place, and reports the
+    /// index of every row whose tags actually changed.
+    ///
+    /// **Deliberately not routed through [`Self::entries_mut`].** A tag is not part
+    /// of a name, a sort key, or a path, so neither map can go stale from a tag
+    /// write, and dropping them here would make a whole-listing rebuild the price
+    /// of every enrichment chunk — the frontend sends one per 500 rows. ❗ If a tag
+    /// ever becomes a sort column or a visibility input, this has to go back
+    /// through `entries_mut`.
+    pub(crate) fn set_tags_by_path(&mut self, updates: Vec<(String, Vec<TagRef>)>) -> Vec<usize> {
+        let found = self
+            .path_index
+            .resolve(&self.entries, updates.iter().map(|(path, _)| path.as_str()));
+
+        let mut changed = Vec::new();
+        for (index, (_, tags)) in found.into_iter().zip(updates) {
+            // A path the listing doesn't hold is skipped, not an error: it
+            // scrolled away, or the enrich batch outlived the row.
+            let Some(index) = index else { continue };
+            if self.entries[index].tags != tags {
+                self.entries[index].tags = tags;
+                changed.push(index);
+            }
+        }
+        changed
     }
 
     /// Replaces the entries wholesale (a re-read, a re-sort).
@@ -534,12 +567,15 @@ pub fn carry_forward_tags(listing_id: &str, entry: &mut FileEntry) {
 /// not present in the listing are skipped (scrolled away, or already removed).
 /// Emits a diff only for rows whose tags genuinely changed, so re-enriching an
 /// unchanged visible range is silent (no diff storm on every scroll).
+///
+/// **The whole batch is one pass.** Rows are found through the listing's path map
+/// (`path_index.rs`), so a 500-path enrichment chunk holds the write lock for the
+/// length of the chunk rather than 500 walks of the listing.
 pub fn apply_tags_to_listing(listing_id: &str, updates: Vec<(String, Vec<TagRef>)>) {
     use crate::file_system::listing::diff::DiffChange;
     use crate::file_system::listing::diff_emitter::enqueue_diff;
 
-    let mut changes: Vec<DiffChange> = Vec::new();
-    {
+    let changes: Vec<DiffChange> = {
         let mut cache = match LISTING_CACHE.write() {
             Ok(c) => c,
             Err(_) => return,
@@ -548,16 +584,12 @@ pub fn apply_tags_to_listing(listing_id: &str, updates: Vec<(String, Vec<TagRef>
             return;
         };
         listing.touch();
-        let entries = listing.entries_mut();
-        for (path, tags) in updates {
-            if let Some(idx) = entries.iter().position(|e| e.path == path)
-                && entries[idx].tags != tags
-            {
-                entries[idx].tags = tags;
-                changes.push(DiffChange::modified(entries[idx].clone(), idx));
-            }
-        }
-    }
+        listing
+            .set_tags_by_path(updates)
+            .into_iter()
+            .map(|index| DiffChange::modified(listing.entries()[index].clone(), index))
+            .collect()
+    };
     if !changes.is_empty() {
         enqueue_diff(listing_id, changes);
     }
