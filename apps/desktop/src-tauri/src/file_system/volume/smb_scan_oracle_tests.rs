@@ -12,8 +12,11 @@
 //!
 //! Gated like the other Docker SMB tests with `#[ignore]` so a regular
 //! `cargo nextest run` won't fail when no containers are running. Run via
-//! `cargo nextest run smb_integration_scan_oracle --run-ignored all` after
-//! starting `apps/desktop/test/smb-servers/start.sh`.
+//! `cargo nextest run smb_integration_scan --run-ignored all` after starting
+//! `apps/desktop/test/smb-servers/start.sh`. The `smb_integration_` prefix is
+//! load-bearing on this side of the seam: `desktop-rust-integration-tests`
+//! selects the app crate's Docker cells by name, so a cell without it never
+//! runs in CI.
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -72,7 +75,7 @@ async fn make_docker_volume() -> SmbVolume {
 
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-async fn smb_scan_uses_oracle_on_hit_skips_stat_pipeline() {
+async fn smb_integration_scan_uses_oracle_on_hit_skips_stat_pipeline() {
     let vol = Arc::new(make_docker_volume().await);
     let vid = vol.volume_id().to_string();
 

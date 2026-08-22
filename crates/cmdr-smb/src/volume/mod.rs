@@ -302,7 +302,7 @@ impl SmbVolume {
     /// path that tries to acquire the client mutex sees `None` and returns
     /// [`VolumeError::DeviceDisconnected`](cmdr_fs::volume::VolumeError::DeviceDisconnected).
     /// The app's
-    /// `smb_scan_uses_oracle_on_hit_skips_stat_pipeline` proves the scan
+    /// `smb_integration_scan_uses_oracle_on_hit_skips_stat_pipeline` proves the scan
     /// oracle's short-circuit doesn't touch the SMB session with it: if it did,
     /// the scan would fail with `DeviceDisconnected` after this call.
     #[cfg(any(test, feature = "testing"))]
