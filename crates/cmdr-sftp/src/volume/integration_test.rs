@@ -307,9 +307,9 @@ async fn a_name_that_is_not_utf8_takes_the_whole_session_down() {
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn every_quirk_server_is_reachable_and_serves_its_export() {
     // The three quirk fixtures sit in front of the real `sftp-server` through a
-    // proxy, and the later milestones lean on them entirely. This cell is what
-    // says the proxy itself is sound, so a red byte-path test later reads as a
-    // byte-path bug rather than as a broken fixture.
+    // proxy, and the byte-path and write-path suites lean on them entirely. This
+    // cell is what says the proxy itself is sound, so a red byte-path test later
+    // reads as a byte-path bug rather than as a broken fixture.
     for (service, fallback) in [("NOPOSIXRENAME", 12486), ("SHORTREADS", 12487), ("SMALLLIMITS", 12488)] {
         let params = fixture_params(service, fallback);
         let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
