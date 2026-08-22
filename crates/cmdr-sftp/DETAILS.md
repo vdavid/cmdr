@@ -734,9 +734,8 @@ answers `NotSupported` every time it's pressed.
   `reconnect_with_credentials` refuses a username that isn't this volume's, because the volume id is
   `host:port:username`: signing in as somebody else is opening another volume, not mending this one. Two accounts on one
   server are two volumes, two saved-server entries, and two secret-store entries.
-- ❗ **A key passphrase is never saved**, however convenient that would be: persisting it would turn the rung that
-  deliberately cannot reconnect unattended into one that can, which is the opposite of what encrypting a key asked for.
-  So a passphrase-protected volume asks again after every drop, and that is correct.
+- ❗ **An attended sign-in on the passphrase rung doesn't save what it was given.** A passphrase-protected volume asks
+  again after every drop, and that is correct — the gate is the rung, not the store (§ "The one secret entry").
 
 ### Mid-life: the key that stopped matching
 
