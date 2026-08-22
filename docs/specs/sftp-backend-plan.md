@@ -281,9 +281,9 @@ Landed. What it means for the milestones after it:
   compose dir rather than letting docker guess at a compose file.
 - **The lane's filter is `fixtureIntegrationFilter`** (`scripts/check/checks/fixture-lane-coverage.go`), built from one
   fixture table that `desktop-fixture-lane-coverage` also guards. It already carries `test(sftp_integration_)`.
-- ❗ **`+ package(cmdr-sftp)` could not land ahead of the crate.** `cargo nextest` fails to _parse_ a filterset naming an
-  unknown package (`error: operator didn't match any packages`, verified on `cargo-nextest` 0.9.136, 2026-08-22), so the
-  clause would have taken the whole SMB lane down. The filter therefore adds a backend crate's clause only once
+- ❗ **`+ package(cmdr-sftp)` could not land ahead of the crate.** `cargo nextest` fails to _parse_ a filterset naming
+  an unknown package (`error: operator didn't match any packages`, verified on `cargo-nextest` 0.9.136, 2026-08-22), so
+  the clause would have taken the whole SMB lane down. The filter therefore adds a backend crate's clause only once
   `crates/<name>/Cargo.toml` is on disk — so it appears on its own the moment `crates/cmdr-sftp` exists, with no edit.
 - ❗ **The guard pairs marker with prefix.** An SFTP cell is one whose `#[ignore]` reason names `sftp-servers/start.sh`
   or `sftp-fixture`, and it must carry `sftp_integration_`. Wearing `smb_integration_` is a finding. The out-of-lane
@@ -428,8 +428,8 @@ conformance, window, and retirement cells live in the crate; anything driving `w
 or the listing cache lives app-side. ❌ Don't widen the backend's public surface to keep a test app-side. Prelude in
 `test_support.rs`, ❌ not a `use super::*` glob.
 
-**Lane coverage**: a cell in `crates/cmdr-sftp` is selected by the package clause, which `fixtureIntegrationFilter`
-adds on its own once the crate exists. An app-side cell needs the `sftp_integration_` prefix, which
+**Lane coverage**: a cell in `crates/cmdr-sftp` is selected by the package clause, which `fixtureIntegrationFilter` adds
+on its own once the crate exists. An app-side cell needs the `sftp_integration_` prefix, which
 `desktop-fixture-lane-coverage` enforces against the fixture markers. ❗ Selection is not execution — the SFTP stack
 needs its service table filled and a check pointing at it before those cells get a server.
 

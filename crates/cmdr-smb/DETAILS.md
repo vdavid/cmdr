@@ -560,6 +560,6 @@ by PACKAGE, not by the `smb_integration` name, or a cell named for what it asser
 cell here can be named that way precisely because `desktop-rust-integration-tests` selects this whole package's ignored
 tests: every `#[ignore]` in a crate with no app around it IS a Docker cell. The app's SMB cells have no such luxury and
 still need the `smb_integration_` prefix the same lane filters them by, which `fixture-lane-coverage` enforces rather
-than asks for. The fixture ports come from the environment (`SMB_CONSUMER_GUEST_PORT` and friends, defaulting to smb2's own
-10480 / 10481 / 10488 / 10493); Cmdr's stack publishes 11480+ so both harnesses coexist, and the check runner exports
-the override. The full container list: `apps/desktop/test/smb-servers/README.md`.
+than asks for. The fixture ports come from the environment (`SMB_CONSUMER_GUEST_PORT` and friends, defaulting to smb2's
+own 10480 / 10481 / 10488 / 10493); Cmdr's stack publishes 11480+ so both harnesses coexist, and the check runner
+exports the override. The full container list: `apps/desktop/test/smb-servers/README.md`.

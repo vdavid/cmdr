@@ -521,9 +521,9 @@ the shared `smb-consumer` Docker Compose project. Two layers of contention had t
   (`SmbCore` for integration tests, `SmbE2E` for e2e) once, and tears each down once at runner exit. Checks declaring
   `NeedsContainers` assume the containers are up and call `waitForSmbContainers` as a cheap mid-run zombie-guard. The
   service set behind each mode lives in that stack's `modeServices` table in `stacklease/registry.go` and must stay in
-  lock-step with the fixture's `start.sh`; SMB's `core` carries
-  `smb-consumer-unicode` because it's the only fixture with non-ASCII share names, and without it nothing in CI can
-  catch a regression in the escaping macOS requires of every mount URL (`network/mount.rs::build_smb_mount_url`).
+  lock-step with the fixture's `start.sh`; SMB's `core` carries `smb-consumer-unicode` because it's the only fixture
+  with non-ASCII share names, and without it nothing in CI can catch a regression in the escaping macOS requires of
+  every mount URL (`network/mount.rs::build_smb_mount_url`).
 - _Cross-process / cross-worktree_: two `check.sh` runs (or a `check.sh` plus a manual `start.sh`) in different
   worktrees have independent orchestrators, so the in-process map can't stop them racing the same containers. The
   orchestrator therefore takes a **machine-wide lease per stack** via the `stacklease` library (holder-id = its own
@@ -678,8 +678,8 @@ closes.
 A leaked or lingering stack (a forgotten manual `start.sh`, or a numeric holder whose PID got recycled) is the benign
 direction: it stays up until a human reaps it. Check state with `(cd scripts/check && go run ./stack-lease status)`
 (every stack) or `... status smb` (one); force SMB down with
-`rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`. See
-`apps/desktop/test/smb-servers/README.md` § "Shared stack across worktrees" and `stacklease/stacklease.go`.
+`rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`. See `apps/desktop/test/smb-servers/README.md` §
+"Shared stack across worktrees" and `stacklease/stacklease.go`.
 
 ## Dependencies
 

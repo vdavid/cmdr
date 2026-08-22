@@ -1047,9 +1047,9 @@ widening rested on a test nothing executed, and the only thing guarding the conv
 
 What the check reads:
 
-- An `#[ignore = "…"]` reason naming a fixture is what marks a cell as gated. The markers are INFRASTRUCTURE
-  identifiers (a start script's path, a compose project's service prefix) rather than prose, so rewording a reason can't
-  move a cell out of the check's view.
+- An `#[ignore = "…"]` reason naming a fixture is what marks a cell as gated. The markers are INFRASTRUCTURE identifiers
+  (a start script's path, a compose project's service prefix) rather than prose, so rewording a reason can't move a cell
+  out of the check's view.
 - The test under that gate must carry ITS fixture's prefix in the name, or sit in a module path that does (nextest
   matches the fragment anywhere in a test's path, so either one is genuinely selected). The prefixes aren't
   interchangeable: an SFTP-gated cell named `smb_integration_…` would run, but it names the wrong fixture to every
@@ -1146,10 +1146,10 @@ Checks by app and tech:
   message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
   unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module components per crate with
   parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a mismatched box skips rather
-  than mis-measures — see § "Rust module cycles"), fixture-lane-coverage (a Docker-gated cell in the app crate
-  whose name the integration lane's filter won't select never runs anywhere, so it's a finding; one cell lived its whole
-  life that way, and it was the sole caller of the crate extraction's one sanctioned public-surface widening — see §
-  "Fixture lane coverage"), tests, integration-tests (Docker network fixtures), tests-linux (slow)
+  than mis-measures — see § "Rust module cycles"), fixture-lane-coverage (a Docker-gated cell in the app crate whose
+  name the integration lane's filter won't select never runs anywhere, so it's a finding; one cell lived its whole life
+  that way, and it was the sole caller of the crate extraction's one sanctioned public-surface widening — see § "Fixture
+  lane coverage"), tests, integration-tests (Docker network fixtures), tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and

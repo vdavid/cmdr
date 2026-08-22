@@ -5,7 +5,8 @@ Each check is one Go file here, registered in `registry.go`'s `AllChecks`. Runne
 ## Module map
 
 - `common.go` (core types + shared utils), `registry.go` (`AllChecks`, lookup, lane filters), `inputs.go` (shared
-  `Inputs` blocks), `allowlist.go` / `directives.go` (allowlist shrink-wrap and opt-out tracking).
+  `Inputs` blocks), `fixture-stacks.go` (the `NeedsContainers` vocabulary), `allowlist.go` / `directives.go` (allowlist
+  shrink-wrap and opt-out tracking).
 - One `{app}-{name}.go` per check. `test-log.go` and the parsers beside it hold the per-test record vocabulary;
   `e2e-build.go` produces the Playwright lane's binary.
 - Warn-only scanners with JSON allowlists: `file-length.go`, `claude-md-length.go`, `invariant-density.go`,
