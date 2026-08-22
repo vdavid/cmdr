@@ -86,12 +86,12 @@ async fn test_streaming_list_populates_cache() {
 
     // Verify cache
     listing.with_listing(|cached| {
-        assert_eq!(cached.entries.len(), 3);
+        assert_eq!(cached.entries().len(), 3);
         // Dirs first, then alpha
-        assert_eq!(cached.entries[0].name, "photos");
-        assert!(cached.entries[0].is_directory);
-        assert_eq!(cached.entries[1].name, "apple.txt");
-        assert_eq!(cached.entries[2].name, "zebra.txt");
+        assert_eq!(cached.entries()[0].name, "photos");
+        assert!(cached.entries()[0].is_directory);
+        assert_eq!(cached.entries()[1].name, "apple.txt");
+        assert_eq!(cached.entries()[2].name, "zebra.txt");
     });
 
     // Verify complete event
@@ -252,7 +252,7 @@ async fn test_streaming_list_empty_directory() {
     assert!(result.is_ok());
 
     // Cache should have 0 entries (`with_listing` panics if it wasn't cached at all)
-    listing.with_listing(|cached| assert_eq!(cached.entries.len(), 0));
+    listing.with_listing(|cached| assert_eq!(cached.entries().len(), 0));
 
     // Complete should report 0
     let complete = sink.complete.lock().unwrap();

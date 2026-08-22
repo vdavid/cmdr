@@ -10,6 +10,7 @@ use cmdr_fs::volume::WatchCoverage;
 
 use crate::file_system::listing::metadata::{FileEntry, TagRef};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
+use crate::file_system::listing::visible_rows::{VisibleRows, VisibleRowsCache};
 pub use cmdr_fs::volume::DirectoryChange;
 
 /// Result of updating an entry in-place or moving it to a new sorted position.
@@ -67,8 +68,14 @@ pub(crate) struct CachedListing {
     pub volume_id: String,
     /// Path within the volume (absolute path for now)
     pub path: PathBuf,
-    /// Cached file entries
-    pub entries: Vec<FileEntry>,
+    /// Cached file entries, exactly what's on disk. What the PANE shows is a
+    /// subset of this (`visible_rows`), so ❗ reach for [`Self::rows`] to answer
+    /// anything index-shaped. Private so `entries_mut` is the only way to change
+    /// it, which is what keeps the row map from ever going stale.
+    entries: Vec<FileEntry>,
+    /// Row numbers over the visible subset of `entries`, per `include_hidden`.
+    /// Rebuilt lazily after any mutation; see `visible_rows.rs`.
+    visible_rows: VisibleRowsCache,
     /// Current sort column
     pub sort_by: SortColumn,
     /// Current sort order
@@ -100,11 +107,62 @@ pub(crate) struct CachedListing {
 }
 
 impl CachedListing {
+    /// A listing freshly filled from a volume read: sequence 0, created and
+    /// accessed now.
+    pub(crate) fn new(
+        volume_id: String,
+        path: PathBuf,
+        entries: Vec<FileEntry>,
+        sort_by: SortColumn,
+        sort_order: SortOrder,
+        directory_sort_mode: DirectorySortMode,
+    ) -> Self {
+        Self {
+            volume_id,
+            path,
+            entries,
+            visible_rows: VisibleRowsCache::new(),
+            sort_by,
+            sort_order,
+            directory_sort_mode,
+            sequence: AtomicU64::new(0),
+            created_at: Instant::now(),
+            last_accessed_ms: AtomicU64::new(epoch_millis_now()),
+        }
+    }
+
     /// Refreshes `last_accessed_ms` to now. Cheap, lock-free; safe to call under a shared
     /// `LISTING_CACHE.read()` lock. Every accessor that proves a live pane calls this so
     /// the orphan reaper never evicts a listing in active use.
     pub(crate) fn touch(&self) {
         self.last_accessed_ms.store(epoch_millis_now(), Ordering::Relaxed);
+    }
+
+    /// Everything on disk, in sort order. For an index a PANE gave you, ask
+    /// [`Self::rows`] instead: a pane's row numbers skip the entries it isn't
+    /// showing, so `entries()[7]` and row 7 are different files.
+    pub(crate) fn entries(&self) -> &[FileEntry] {
+        &self.entries
+    }
+
+    /// The entries, to change. Drops the row map on the way out, so no caller can
+    /// leave a stale one behind by forgetting a step.
+    pub(crate) fn entries_mut(&mut self) -> &mut Vec<FileEntry> {
+        self.visible_rows.invalidate();
+        &mut self.entries
+    }
+
+    /// Replaces the entries wholesale (a re-read, a re-sort).
+    pub(crate) fn set_entries(&mut self, entries: Vec<FileEntry>) {
+        *self.entries_mut() = entries;
+    }
+
+    /// The rows a pane with this `include_hidden` is showing, indexed in constant
+    /// time. THE single filter point every read accessor goes through, so counts,
+    /// ranges, stats, selection indices, and type-to-jump can never disagree
+    /// about what the pane is showing.
+    pub(crate) fn rows(&self, include_hidden: bool) -> VisibleRows<'_> {
+        self.visible_rows.rows(&self.entries, include_hidden)
     }
 }
 
@@ -232,7 +290,7 @@ pub fn snapshot_listings() -> Vec<ListingSummary> {
             listing_id: id.clone(),
             volume_id: listing.volume_id.clone(),
             path: listing.path.clone(),
-            entry_count: listing.entries.len(),
+            entry_count: listing.entries().len(),
             age_ms: now.saturating_duration_since(listing.created_at).as_millis(),
         })
         .collect();
@@ -286,7 +344,7 @@ pub(crate) fn get_cached_listing(volume_id: &str, path: &Path) -> Option<Vec<Fil
         .filter(|listing| listing.volume_id == volume_id && listing.path == path)
         .max_by_key(|listing| (listing.sequence.load(Ordering::Relaxed), listing.created_at))?;
     listing.touch();
-    Some(listing.entries.clone())
+    Some(listing.entries().to_vec())
 }
 
 /// Finds all cached listings belonging to a volume, regardless of path.
@@ -328,15 +386,14 @@ pub fn insert_entry_sorted(listing_id: &str, entry: FileEntry) -> Option<usize> 
     listing.touch();
 
     // Don't insert if an entry with this path already exists
-    if listing.entries.iter().any(|e| e.path == entry.path) {
+    if listing.entries().iter().any(|e| e.path == entry.path) {
         return None;
     }
 
     let cmp = entry_comparator(listing.sort_by, listing.sort_order, listing.directory_sort_mode);
-    let pos = listing
-        .entries
-        .partition_point(|existing| cmp(existing, &entry).is_lt());
-    listing.entries.insert(pos, entry);
+    let entries = listing.entries_mut();
+    let pos = entries.partition_point(|existing| cmp(existing, &entry).is_lt());
+    entries.insert(pos, entry);
     Some(pos)
 }
 
@@ -366,8 +423,9 @@ pub fn remove_entry_by_path(listing_id: &str, path: &Path) -> Option<(usize, Fil
     listing.touch();
     let path_str = path.to_string_lossy();
 
-    let idx = listing.entries.iter().position(|e| e.path == *path_str)?;
-    let entry = listing.entries.remove(idx);
+    let entries = listing.entries_mut();
+    let idx = entries.iter().position(|e| e.path == *path_str)?;
+    let entry = entries.remove(idx);
     Some((idx, entry))
 }
 
@@ -387,11 +445,11 @@ pub fn remove_entry_by_name(listing_id: &str, name: &std::ffi::OsStr) -> Option<
     let mut cache = LISTING_CACHE.write().ok()?;
     let listing = cache.get_mut(listing_id)?;
     listing.touch();
-    let idx = listing
-        .entries
+    let entries = listing.entries_mut();
+    let idx = entries
         .iter()
         .position(|e| Path::new(&e.path).file_name() == Some(name))?;
-    let entry = listing.entries.remove(idx);
+    let entry = entries.remove(idx);
     Some((idx, entry))
 }
 
@@ -403,7 +461,7 @@ pub fn has_entry(listing_id: &str, path: &str) -> bool {
     };
     cache
         .get(listing_id)
-        .is_some_and(|listing| listing.entries.iter().any(|e| e.path == path))
+        .is_some_and(|listing| listing.entries().iter().any(|e| e.path == path))
 }
 
 /// Updates an existing entry in the cached listing.
@@ -416,26 +474,25 @@ pub fn update_entry_sorted(listing_id: &str, new_entry: FileEntry) -> Option<Mod
     let listing = cache.get_mut(listing_id)?;
     listing.touch();
 
-    let idx = listing.entries.iter().position(|e| e.path == new_entry.path)?;
-    let old = &listing.entries[idx];
+    let cmp = entry_comparator(listing.sort_by, listing.sort_order, listing.directory_sort_mode);
+    let entries = listing.entries_mut();
+    let idx = entries.iter().position(|e| e.path == new_entry.path)?;
+    let old = &entries[idx];
 
     let sort_relevant_changed = old.size != new_entry.size
         || old.modified_at != new_entry.modified_at
         || old.is_directory != new_entry.is_directory;
 
     if sort_relevant_changed {
-        listing.entries.remove(idx);
-        let cmp = entry_comparator(listing.sort_by, listing.sort_order, listing.directory_sort_mode);
-        let new_pos = listing
-            .entries
-            .partition_point(|existing| cmp(existing, &new_entry).is_lt());
-        listing.entries.insert(new_pos, new_entry);
+        entries.remove(idx);
+        let new_pos = entries.partition_point(|existing| cmp(existing, &new_entry).is_lt());
+        entries.insert(new_pos, new_entry);
         Some(ModifyResult::Moved {
             old_index: idx,
             new_index: new_pos,
         })
     } else {
-        listing.entries[idx] = new_entry;
+        entries[idx] = new_entry;
         Some(ModifyResult::UpdatedInPlace { index: idx })
     }
 }
@@ -459,7 +516,7 @@ pub fn carry_forward_tags(listing_id: &str, entry: &mut FileEntry) {
         Err(_) => return,
     };
     if let Some(listing) = cache.get(listing_id)
-        && let Some(old) = listing.entries.iter().find(|e| e.path == entry.path)
+        && let Some(old) = listing.entries().iter().find(|e| e.path == entry.path)
         && !old.tags.is_empty()
     {
         entry.tags = old.tags.clone();
@@ -491,12 +548,13 @@ pub fn apply_tags_to_listing(listing_id: &str, updates: Vec<(String, Vec<TagRef>
             return;
         };
         listing.touch();
+        let entries = listing.entries_mut();
         for (path, tags) in updates {
-            if let Some(idx) = listing.entries.iter().position(|e| e.path == path)
-                && listing.entries[idx].tags != tags
+            if let Some(idx) = entries.iter().position(|e| e.path == path)
+                && entries[idx].tags != tags
             {
-                listing.entries[idx].tags = tags;
-                changes.push(DiffChange::modified(listing.entries[idx].clone(), idx));
+                entries[idx].tags = tags;
+                changes.push(DiffChange::modified(entries[idx].clone(), idx));
             }
         }
     }
@@ -738,7 +796,7 @@ async fn notify_full_refresh(
                 Err(_) => continue,
             };
             match cache.get(listing_id.as_str()) {
-                Some(listing) => listing.entries.clone(),
+                Some(listing) => listing.entries().to_vec(),
                 None => continue,
             }
         };
@@ -882,7 +940,7 @@ pub fn try_get_authoritative_listing(volume_id: &str, path: &Path) -> Option<Vec
             };
         }
         let (_, listing, ..) = best?;
-        listing.entries.clone()
+        listing.entries().to_vec()
     };
 
     // Step 2: ask the volume what a watch on this listing actually covers.

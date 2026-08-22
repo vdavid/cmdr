@@ -452,7 +452,7 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         if let Some(listing) = cache.get(listing_id) {
             for path in &removes {
                 let path_str = path.to_string_lossy();
-                if let Some(idx) = listing.entries.iter().position(|e| e.path == *path_str) {
+                if let Some(idx) = listing.entries().iter().position(|e| e.path == *path_str) {
                     remove_items.push((idx, path.clone()));
                 }
             }

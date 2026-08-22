@@ -18,10 +18,11 @@
 //!
 //! ## Why a separate module
 //!
-//! `find_first_match` is a pure function over `&[FileEntry]` with no `LISTING_CACHE`
-//! lock, no `tokio`. That makes it trivial to unit-test against in-memory fixtures
-//! and keeps the Tauri command layer (`commands/file_system/listing.rs`) a thin
-//! pass-through that just grabs the read lock and delegates here.
+//! `find_first_match` is a pure function over an iterator of entries with no
+//! `LISTING_CACHE` lock, no `tokio`. That makes it trivial to unit-test against
+//! in-memory fixtures and keeps the Tauri command layer
+//! (`commands/file_system/listing.rs`) a thin pass-through that just grabs the
+//! read lock and delegates here.
 
 use std::time::Instant;
 
@@ -33,11 +34,12 @@ use nucleo_matcher::{
 use crate::file_system::listing::caching::LISTING_CACHE;
 use crate::file_system::listing::metadata::FileEntry;
 
-/// Returns the **visible-space** index of the highest-scoring fuzzy match for `query`,
-/// or `None` if no entry matches.
+/// Returns the row number of the highest-scoring fuzzy match for `query` among the
+/// rows a pane is showing, or `None` if no entry matches.
 ///
 /// Rules:
-/// - When `include_hidden` is `false`, dotfiles (`name.starts_with('.')`) are skipped.
+/// - `rows` is the pane's visible sequence, so what it leaves out (dotfiles, in-flight scratch)
+///   never matches and never shifts the answer.
 /// - The match runs against the whole filename (including extension); fuzzy scoring already rewards
 ///   prefix and word-boundary matches, so we don't split on the dot.
 /// - Smart-case: an all-lowercase query matches case-insensitively; any uppercase character makes
@@ -49,16 +51,14 @@ use crate::file_system::listing::metadata::FileEntry;
 ///
 /// ## Index space
 ///
-/// The returned index counts entries in the **visible** sequence, the same
-/// sequence `operations::get_file_at` / `get_file_range` produce when called
-/// with the same `include_hidden` flag. When `include_hidden` is `false` and
-/// the entries vec contains hidden files before the match, the returned index
-/// will be **smaller** than the absolute vec position. The frontend uses this
-/// directly as a cursor index (plus the `+1` parent-entry offset when
-/// `hasParent`), so the indexing space must line up with `getFileAt` /
-/// `getFileRange`.
-pub fn find_first_match(entries: &[FileEntry], query: &str, include_hidden: bool) -> Option<usize> {
-    if query.is_empty() || entries.is_empty() {
+/// The returned index is a ROW number, the same space `operations::get_file_at` /
+/// `get_file_range` answer in. When the pane is hiding entries the number is
+/// **smaller** than the absolute position in the listing's entries. The frontend
+/// uses it directly as a cursor index (plus the `+1` parent-entry offset when
+/// `hasParent`), so the two spaces must line up: taking the rows from the caller
+/// rather than re-deriving them here is what guarantees they do.
+pub fn find_first_match<'a>(rows: impl Iterator<Item = &'a FileEntry>, query: &str) -> Option<usize> {
+    if query.is_empty() {
         return None;
     }
 
@@ -68,12 +68,7 @@ pub fn find_first_match(entries: &[FileEntry], query: &str, include_hidden: bool
     let mut best: Option<(usize, u32)> = None;
     let mut haystack_buf: Vec<char> = Vec::new();
 
-    // Iterate the visible sequence directly so the returned index matches the
-    // cursor space used by `getFileAt` / `getFileRange` (which iterate via
-    // `visible_entries(...).nth(index)` in `operations.rs`).
-    let visible = entries.iter().filter(|e| include_hidden || !e.name.starts_with('.'));
-
-    for (visible_idx, entry) in visible.enumerate() {
+    for (visible_idx, entry) in rows.enumerate() {
         let haystack = Utf32Str::new(&entry.name, &mut haystack_buf);
         let Some(score) = pattern.score(haystack, &mut matcher) else {
             continue;
@@ -107,7 +102,8 @@ pub fn fuzzy_find_first_match_in_listing(
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
-    let result = find_first_match(&listing.entries, query, include_hidden);
+    let rows = listing.rows(include_hidden);
+    let result = find_first_match(rows.iter(), query);
     let elapsed_us = started.elapsed().as_micros();
     log::debug!(
         target: "type_to_jump",
@@ -124,36 +120,49 @@ pub fn fuzzy_find_first_match_in_listing(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::file_system::listing::caching_test_support::TestListing;
     use crate::file_system::listing::metadata::FileEntry;
+    use crate::file_system::staging::{ShowTempsGuard, StagingTemp};
+    use std::sync::Arc;
 
     fn entry(name: &str) -> FileEntry {
         FileEntry::new(name.to_string(), format!("/{}", name), false, false)
     }
 
+    /// The rows a pane shows for a fixture of ordinary names, matching what
+    /// `CachedListing::rows` produces. The dotfile half only; the scratch half
+    /// needs a real listing, which `the_jump_lands_on_the_row_the_pane_shows`
+    /// covers.
+    fn rows(entries: &[FileEntry], include_hidden: bool) -> impl Iterator<Item = &FileEntry> {
+        entries
+            .iter()
+            .filter(move |e| include_hidden || !e.name.starts_with('.'))
+    }
+
     #[test]
     fn empty_listing_returns_none() {
         let entries: Vec<FileEntry> = Vec::new();
-        assert_eq!(find_first_match(&entries, "abc", true), None);
+        assert_eq!(find_first_match(rows(&entries, true), "abc"), None);
     }
 
     #[test]
     fn empty_query_returns_none() {
         let entries = vec![entry("README.md"), entry("AGENTS.md")];
-        assert_eq!(find_first_match(&entries, "", true), None);
+        assert_eq!(find_first_match(rows(&entries, true), ""), None);
     }
 
     #[test]
     fn no_matches_returns_none() {
         let entries = vec![entry("README.md"), entry("AGENTS.md")];
         // "xyz" shares no characters with either name.
-        assert_eq!(find_first_match(&entries, "xyz", true), None);
+        assert_eq!(find_first_match(rows(&entries, true), "xyz"), None);
     }
 
     #[test]
     fn single_match_returns_its_index() {
         let entries = vec![entry("README.md"), entry("AGENTS.md"), entry("Cargo.toml")];
         // Only "Cargo.toml" contains the subsequence "crg" / "cargo".
-        let idx = find_first_match(&entries, "cargo", true).expect("should match");
+        let idx = find_first_match(rows(&entries, true), "cargo").expect("should match");
         assert_eq!(idx, 2);
     }
 
@@ -162,7 +171,7 @@ mod tests {
         // "tests" fuzzy-matches both, but "tests.js" is the better (prefix) match
         // than "my_tests_helper.rs" so it should win.
         let entries = vec![entry("my_tests_helper.rs"), entry("tests.js"), entry("other.txt")];
-        let idx = find_first_match(&entries, "tests", true).expect("should match");
+        let idx = find_first_match(rows(&entries, true), "tests").expect("should match");
         assert_eq!(idx, 1, "prefix match 'tests.js' should outscore 'my_tests_helper.rs'");
     }
 
@@ -170,7 +179,7 @@ mod tests {
     fn ties_resolve_to_lower_index() {
         // Two identical names → identical scores → lower index wins.
         let entries = vec![entry("hello.txt"), entry("hello.txt")];
-        let idx = find_first_match(&entries, "hello", true).expect("should match");
+        let idx = find_first_match(rows(&entries, true), "hello").expect("should match");
         assert_eq!(idx, 0);
     }
 
@@ -179,7 +188,7 @@ mod tests {
         let entries = vec![entry(".env"), entry("env_setup.sh")];
         // With hidden excluded, only "env_setup.sh" is a candidate. The dotfile
         // is invisible, so "env_setup.sh" sits at visible-index 0.
-        let idx = find_first_match(&entries, "env", false).expect("should match");
+        let idx = find_first_match(rows(&entries, false), "env").expect("should match");
         assert_eq!(idx, 0);
     }
 
@@ -190,7 +199,7 @@ mod tests {
         // query. The match must be found AND must land at the dotfile's visible
         // index (0 when hidden is on, since the dotfile is then visible).
         let entries = vec![entry(".alpha.txt"), entry("zeta.bin")];
-        let idx = find_first_match(&entries, "alpha", true).expect("should match");
+        let idx = find_first_match(rows(&entries, true), "alpha").expect("should match");
         assert_eq!(
             idx, 0,
             "hidden '.alpha.txt' must be considered when include_hidden=true"
@@ -216,7 +225,7 @@ mod tests {
             entry("other.bin"),
         ];
 
-        let idx = find_first_match(&entries, "target", false).expect("should match");
+        let idx = find_first_match(rows(&entries, false), "target").expect("should match");
         // The visible-space index of "target.txt" is 0, not the absolute 2.
         assert_eq!(
             idx, 0,
@@ -225,7 +234,7 @@ mod tests {
 
         // Sanity check: with include_hidden=true, the same match lands at
         // visible-index 2 because the two dotfiles are now visible too.
-        let idx_with_hidden = find_first_match(&entries, "target", true).expect("should match");
+        let idx_with_hidden = find_first_match(rows(&entries, true), "target").expect("should match");
         assert_eq!(idx_with_hidden, 2);
     }
 
@@ -233,7 +242,7 @@ mod tests {
     fn case_insensitive_with_lowercase_query() {
         // Lowercase query → smart case → matches against UPPERCASE filename.
         let entries = vec![entry("README.md"), entry("TESTS.txt"), entry("other.bin")];
-        let idx = find_first_match(&entries, "tes", true).expect("should match");
+        let idx = find_first_match(rows(&entries, true), "tes").expect("should match");
         assert_eq!(idx, 1);
     }
 
@@ -244,7 +253,48 @@ mod tests {
         // here rather than asserting a strict score. What matters is "some match
         // is found and it's the Résumé entry, not the unrelated one".
         let entries = vec![entry("notes.txt"), entry("Résumé.pdf"), entry("photo.jpg")];
-        let idx = find_first_match(&entries, "resume", true).expect("should match");
+        let idx = find_first_match(rows(&entries, true), "resume").expect("should match");
         assert_eq!(idx, 1, "ASCII 'resume' should fold into 'Résumé.pdf'");
+    }
+
+    /// The contract that matters in the app: the number the jump hands back is a
+    /// row number in the pane's own space, so the cursor lands on the file the
+    /// user is looking at.
+    ///
+    /// Both things the pane leaves out sit before the target here. Deriving the
+    /// sequence inside this module skipped only the dotfile, so an in-flight
+    /// scratch file next to a copy in progress moved the cursor one row down.
+    #[test]
+    fn the_jump_lands_on_the_row_the_pane_shows() {
+        let _show = ShowTempsGuard::set(false);
+        let operation = Arc::new(());
+        let temp = StagingTemp::mint(
+            std::path::Path::new("/aaa-copying.bin"),
+            Some(Arc::downgrade(&operation)),
+        );
+        let temp_name = temp
+            .path()
+            .file_name()
+            .expect("a minted temp always has a file name")
+            .to_string_lossy()
+            .into_owned();
+
+        // Rows the pane shows: only "target.txt" and "zzz.bin", at 0 and 1.
+        let listing = TestListing::new()
+            .volume("test")
+            .path("/")
+            .entries(vec![
+                entry(".hidden"),
+                entry(&temp_name),
+                entry("target.txt"),
+                entry("zzz.bin"),
+            ])
+            .insert("fuzzy-visible-rows");
+
+        assert_eq!(
+            fuzzy_find_first_match_in_listing(listing.id(), "target", false).expect("listing is cached"),
+            Some(0),
+            "the target is the pane's first row, whatever sits above it in the listing"
+        );
     }
 }

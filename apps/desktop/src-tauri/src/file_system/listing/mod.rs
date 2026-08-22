@@ -11,6 +11,7 @@ pub(crate) mod operations;
 pub(crate) mod reading;
 pub(crate) mod sorting;
 pub(crate) mod streaming;
+pub(crate) mod visible_rows;
 
 // Re-export types so they're available both externally and locally in this module
 // (call sites import them from `crate::file_system::listing` directly).
@@ -72,3 +73,5 @@ mod staging_temps_test;
 mod stats_test;
 #[cfg(test)]
 mod streaming_test;
+#[cfg(test)]
+mod visible_rows_test;

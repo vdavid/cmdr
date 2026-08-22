@@ -4,7 +4,6 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
-use std::time::Instant;
 
 use super::caching::{CachedListing, LISTING_CACHE, epoch_millis_now};
 use super::metadata::FileEntry;
@@ -64,12 +63,12 @@ impl TestListingGuard {
 
     /// This listing's cached entries.
     pub(crate) fn entries(&self) -> Vec<FileEntry> {
-        self.with_listing(|listing| listing.entries.clone())
+        self.with_listing(|listing| listing.entries().to_vec())
     }
 
     /// This listing's cached entry names, in cache order. The common assertion.
     pub(crate) fn entry_names(&self) -> Vec<String> {
-        self.with_listing(|listing| listing.entries.iter().map(|e| e.name.clone()).collect())
+        self.with_listing(|listing| listing.entries().iter().map(|e| e.name.clone()).collect())
     }
 
     /// Whether the entry is still in the cache. For tests that assert on teardown.
@@ -153,20 +152,17 @@ impl TestListing {
     /// drops immediately and the entry is gone before the test runs.
     pub(crate) fn insert(self, tag: &str) -> TestListingGuard {
         let listing_id = unique_test_id(tag);
-        LISTING_CACHE.write_ignore_poison().insert(
-            listing_id.clone(),
-            CachedListing {
-                volume_id: self.volume_id,
-                path: self.path,
-                entries: self.entries,
-                sort_by: self.sort_by,
-                sort_order: self.sort_order,
-                directory_sort_mode: self.directory_sort_mode,
-                sequence: AtomicU64::new(self.sequence),
-                created_at: Instant::now(),
-                last_accessed_ms: AtomicU64::new(self.last_accessed_ms),
-            },
+        let listing = CachedListing::new(
+            self.volume_id,
+            self.path,
+            self.entries,
+            self.sort_by,
+            self.sort_order,
+            self.directory_sort_mode,
         );
+        listing.sequence.store(self.sequence, Ordering::Relaxed);
+        listing.last_accessed_ms.store(self.last_accessed_ms, Ordering::Relaxed);
+        LISTING_CACHE.write_ignore_poison().insert(listing_id.clone(), listing);
         TestListingGuard { listing_id }
     }
 }

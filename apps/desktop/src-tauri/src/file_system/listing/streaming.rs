@@ -542,12 +542,6 @@ pub(crate) async fn read_directory_with_progress(
     benchmark::log_event("sort END");
 
     // Calculate counts based on include_hidden setting
-    let total_count = if include_hidden {
-        entries.len()
-    } else {
-        entries.iter().filter(|e| !e.name.starts_with('.')).count()
-    };
-
     // Cache the completed listing, with atomic cancellation check.
     // We check cancellation WHILE holding the cache lock to avoid a race condition:
     // without this, a cancel arriving between a check and insert would leave a stale
@@ -555,6 +549,18 @@ pub(crate) async fn read_directory_with_progress(
     // insert would add it permanently).
     let cache_write_start = std::time::Instant::now();
     let entries_count_for_log = entries.len();
+    let listing = CachedListing::new(
+        volume_id.to_string(),
+        path.to_path_buf(),
+        entries,
+        sort_by,
+        sort_order,
+        dir_sort_mode,
+    );
+    // The row count comes off the listing's own map, so the number the frontend
+    // sizes its scroller with is produced by the same filter every later fetch
+    // goes through — including the scratch-file half a plain dotfile count misses.
+    let total_count = listing.rows(include_hidden).len();
     if let Ok(mut cache) = LISTING_CACHE.write() {
         // Check cancellation while holding the lock - makes check+insert atomic
         if state.cancel.is_cancelled() {
@@ -563,22 +569,7 @@ pub(crate) async fn read_directory_with_progress(
             return Ok(());
         }
 
-        cache.insert(
-            listing_id.to_string(),
-            CachedListing {
-                volume_id: volume_id.to_string(),
-                path: path.to_path_buf(),
-                entries,
-                sort_by,
-                sort_order,
-                directory_sort_mode: dir_sort_mode,
-                sequence: std::sync::atomic::AtomicU64::new(0),
-                created_at: std::time::Instant::now(),
-                last_accessed_ms: std::sync::atomic::AtomicU64::new(
-                    crate::file_system::listing::caching::epoch_millis_now(),
-                ),
-            },
-        );
+        cache.insert(listing_id.to_string(), listing);
     }
     let cache_write_ms = cache_write_start.elapsed().as_millis();
 

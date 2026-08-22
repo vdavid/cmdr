@@ -141,11 +141,6 @@ fn take_injected_failure() -> bool {
     false
 }
 
-/// Returns true if the entry is not a hidden dotfile.
-fn is_visible(entry: &FileEntry) -> bool {
-    !entry.name.starts_with('.')
-}
-
 /// Colored tags (color index 1-7) on an entry; color 0 (colourless) is dotless.
 fn colored_tag_count(entry: &FileEntry) -> usize {
     entry.tags.iter().filter(|t| (1..=7).contains(&t.color)).count()
@@ -212,12 +207,10 @@ pub fn compute_brief_column_text_widths(
         .get(listing_id)
         .ok_or_else(|| BriefColumnsError::ListingNotFound(listing_id.to_string()))?;
 
-    // Materialize visible entries into a Vec so we can index by position cheaply.
-    let visible: Vec<&FileEntry> = if include_hidden {
-        listing.entries.iter().collect()
-    } else {
-        listing.entries.iter().filter(|e| is_visible(e)).collect()
-    };
+    // The pane's own rows, so a column's width covers exactly the names the pane
+    // will draw. Asking `entries` directly would size a column around scratch a
+    // running operation owns, which the pane never shows.
+    let visible = listing.rows(include_hidden);
 
     // Total cells (display slots): visible entries + ".." if has_parent.
     let total_cells = visible.len() + usize::from(has_parent);
@@ -264,7 +257,7 @@ pub fn compute_brief_column_text_widths(
             // The ".." literal carries no tags.
             items.push(("..", 0.0));
         }
-        for entry in &visible[start_idx..end_idx] {
+        for entry in (start_idx..end_idx).filter_map(|row| visible.get(row)) {
             items.push((entry.name.as_str(), tag_cluster_width(colored_tag_count(entry))));
         }
 

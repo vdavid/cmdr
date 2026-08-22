@@ -22,7 +22,7 @@ fn tag(name: &str, color: u8) -> TagRef {
 fn cached_tags(listing: &TestListingGuard, path: &str) -> Vec<TagRef> {
     listing.with_listing(|cached| {
         cached
-            .entries
+            .entries()
             .iter()
             .find(|e| e.path == path)
             .expect("entry is cached")

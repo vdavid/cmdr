@@ -12,36 +12,9 @@ use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
+use crate::file_system::listing::visible_rows::VisibleRows;
 use crate::file_system::watcher::{start_watching_detached, stop_watching};
 use crate::index_host::index;
-
-/// Returns true if the entry is not a hidden dotfile.
-fn is_visible(entry: &FileEntry) -> bool {
-    !entry.name.starts_with('.')
-}
-
-/// The single point every read accessor filters through, so counts, ranges,
-/// stats, selection indices, and type-to-jump can never disagree about what the
-/// pane is showing. ❌ Don't filter anywhere else.
-///
-/// Two independent reasons an entry is left out, deliberately NOT one switch:
-///
-/// - A **dotfile**, when the user hasn't asked for hidden files (`include_hidden`).
-/// - A **scratch file a running operation owns** (`file_system::staging`), always,
-///   unless `advanced.showStagingTempFiles` says otherwise. Someone who turned on
-///   dotfiles didn't thereby ask to watch Cmdr's own temporary files appear and
-///   vanish — and a scratch file NOBODY owns is a leftover, so it stays visible
-///   either way.
-fn visible_entries<'a>(entries: &'a [FileEntry], include_hidden: bool) -> Box<dyn Iterator<Item = &'a FileEntry> + 'a> {
-    let entries = entries
-        .iter()
-        .filter(|e| !crate::file_system::staging::is_hidden_from_listings(&e.name));
-    if include_hidden {
-        Box::new(entries)
-    } else {
-        Box::new(entries.filter(|e| is_visible(e)))
-    }
-}
 
 // ============================================================================
 // Listing lifecycle
@@ -97,8 +70,6 @@ pub async fn list_directory_start_with_volume(
     // Generate listing ID
     let listing_id = Uuid::new_v4().to_string();
 
-    let total_count = visible_entries(&all_entries, include_hidden).count();
-
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
     // so that sort-by-size works correctly for directories. Archives have no drive
     // index (inner paths aren't real FS paths), so enrich/verify are skipped.
@@ -111,24 +82,20 @@ pub async fn list_directory_start_with_volume(
     // Sort the entries
     sort_entries(&mut all_entries, sort_by, sort_order, dir_sort_mode);
 
-    // Cache the entries FIRST (watcher will read from here)
+    // Cache the entries FIRST (watcher will read from here), then read the row
+    // count back off the listing's own map so the number the frontend sizes its
+    // scroller with comes from the same filter every later fetch goes through.
+    let listing = CachedListing::new(
+        volume_id.to_string(),
+        path.to_path_buf(),
+        all_entries,
+        sort_by,
+        sort_order,
+        dir_sort_mode,
+    );
+    let total_count = listing.rows(include_hidden).len();
     if let Ok(mut cache) = LISTING_CACHE.write() {
-        cache.insert(
-            listing_id.clone(),
-            CachedListing {
-                volume_id: volume_id.to_string(),
-                path: path.to_path_buf(),
-                entries: all_entries.clone(),
-                sort_by,
-                sort_order,
-                directory_sort_mode: dir_sort_mode,
-                sequence: std::sync::atomic::AtomicU64::new(0),
-                created_at: std::time::Instant::now(),
-                last_accessed_ms: std::sync::atomic::AtomicU64::new(
-                    crate::file_system::listing::caching::epoch_millis_now(),
-                ),
-            },
-        );
+        cache.insert(listing_id.clone(), listing);
     }
 
     // Start watching the directory (only if volume supports it)
@@ -162,6 +129,23 @@ pub fn list_directory_end(listing_id: &str) {
 // On-demand virtual scrolling API (cache accessors)
 // ============================================================================
 
+/// Runs `f` against a cached listing, or reports that it's gone.
+///
+/// Every read accessor below shares this preamble: take the cache read lock, find
+/// the listing, and stamp it so the six-hour orphan reaper knows a live pane is
+/// still behind it.
+fn with_listing<R>(listing_id: &str, f: impl FnOnce(&CachedListing) -> R) -> Result<R, String> {
+    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+
+    let listing = cache
+        .get(listing_id)
+        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    listing.touch();
+
+    Ok(f(listing))
+}
+
 /// Gets a range of entries from a cached listing.
 pub fn get_file_range(
     listing_id: &str,
@@ -169,47 +153,23 @@ pub fn get_file_range(
     count: usize,
     include_hidden: bool,
 ) -> Result<Vec<FileEntry>, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
-
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    listing.touch();
-
-    let entries: Vec<FileEntry> = visible_entries(&listing.entries, include_hidden)
-        .skip(start)
-        .take(count)
-        .cloned()
-        .collect();
-
-    Ok(entries)
+    with_listing(listing_id, |listing| {
+        let rows = listing.rows(include_hidden);
+        let end = start.saturating_add(count).min(rows.len());
+        (start..end)
+            .filter_map(|row| rows.get(row).cloned())
+            .collect::<Vec<FileEntry>>()
+    })
 }
 
 /// Gets total count of entries in a cached listing.
 pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
-
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    listing.touch();
-
-    Ok(visible_entries(&listing.entries, include_hidden).count())
+    with_listing(listing_id, |listing| listing.rows(include_hidden).len())
 }
 
 /// Finds the index of a file by name in a cached listing.
 pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Result<Option<usize>, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
-
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    listing.touch();
-
-    Ok(visible_entries(&listing.entries, include_hidden).position(|e| e.name == name))
+    with_listing(listing_id, |listing| listing.rows(include_hidden).row_of(name))
 }
 
 /// Which side of a named row to read: the one before it or the one after it.
@@ -223,97 +183,74 @@ pub enum RowBeside {
 /// The entry sitting immediately before or after the one named `name`, or `None`
 /// when that name isn't in the listing or the row beside it doesn't exist.
 ///
-/// Resolving the anchor and reading its neighbour happen in one pass under ONE
-/// read lock, which is the whole point: a caller doing it in two calls
-/// (`find_file_index`, then `get_file_at`) hands back a row that a rename landing
-/// between the two has already moved. Callers ask this instead of an index when
-/// they have a row they know and want the one beside it, because a name survives
-/// a re-sort that any index they hold does not.
+/// Resolving the anchor and reading its neighbour happen against ONE snapshot,
+/// which is the whole point: a caller doing it in two calls (`find_file_index`,
+/// then `get_file_at`) hands back a row that a rename landing between the two has
+/// already moved. Callers ask this instead of an index when they have a row they
+/// know and want the one beside it, because a name survives a re-sort that any
+/// index they hold does not.
 pub fn get_file_beside(
     listing_id: &str,
     name: &str,
     side: RowBeside,
     include_hidden: bool,
 ) -> Result<Option<FileEntry>, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
-
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    listing.touch();
-
-    let mut entries = visible_entries(&listing.entries, include_hidden);
-    let mut previous: Option<&FileEntry> = None;
-    while let Some(entry) = entries.next() {
-        if entry.name == name {
-            return Ok(match side {
-                RowBeside::Previous => previous.cloned(),
-                RowBeside::Next => entries.next().cloned(),
-            });
-        }
-        previous = Some(entry);
-    }
-    Ok(None)
+    with_listing(listing_id, |listing| {
+        let rows = listing.rows(include_hidden);
+        let anchor = rows.row_of(name)?;
+        let beside = match side {
+            RowBeside::Previous => anchor.checked_sub(1)?,
+            RowBeside::Next => anchor + 1,
+        };
+        rows.get(beside).cloned()
+    })
 }
 
 /// Finds the indices of multiple files by name in a cached listing (batch version of
 /// `find_file_index`).
 ///
-/// Single pass over cached entries, O(entries + names). Returns only found names as keys.
+/// Single pass over the listing's rows, O(rows + names). Returns only found names as keys.
 pub fn find_file_indices(
     listing_id: &str,
     names: &[String],
     include_hidden: bool,
 ) -> Result<HashMap<String, usize>, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+    with_listing(listing_id, |listing| {
+        let lookup: std::collections::HashSet<&str> = names.iter().map(|n| n.as_str()).collect();
+        let mut result = HashMap::with_capacity(names.len());
 
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    listing.touch();
-
-    let lookup: std::collections::HashSet<&str> = names.iter().map(|n| n.as_str()).collect();
-    let mut result = HashMap::with_capacity(names.len());
-
-    for (idx, entry) in visible_entries(&listing.entries, include_hidden).enumerate() {
-        if lookup.contains(entry.name.as_str()) {
-            result.insert(entry.name.clone(), idx);
+        for (row, entry) in listing.rows(include_hidden).iter().enumerate() {
+            if lookup.contains(entry.name.as_str()) {
+                result.insert(entry.name.clone(), row);
+            }
         }
-    }
 
-    Ok(result)
+        result
+    })
 }
 
 /// Gets a single file at the given index.
 pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
-
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    listing.touch();
-
-    let result = visible_entries(&listing.entries, include_hidden).nth(index).cloned();
-    if result.is_none() {
-        let total = visible_entries(&listing.entries, include_hidden).count();
-        // Out-of-bounds is expected briefly after a mutation: the FE iterates over a
-        // cached `totalCount` that may lag the BE listing during the async refetch
-        // window opened by a `directory-diff` event. The FE handles `None` gracefully
-        // (skips the entry, breaks the loop). Logged at debug so we still have the
-        // breadcrumb when investigating cursor/selection bugs without firing crash
-        // reports for legitimate drift.
-        log::debug!(
-            "get_file_at: index {} out of bounds (listing {} has {} entries at {}): likely FE/BE drift after async listing refresh",
-            index,
-            listing_id,
-            total,
-            listing.path.display()
-        );
-    }
-    Ok(result)
+    with_listing(listing_id, |listing| {
+        let rows = listing.rows(include_hidden);
+        let result = rows.get(index).cloned();
+        if result.is_none() {
+            // Out-of-bounds is expected briefly after a mutation: the FE iterates over a
+            // cached `totalCount` that may lag the BE listing during the async refetch
+            // window opened by a `directory-diff` event. The FE handles `None` gracefully
+            // (skips the entry, breaks the loop). Logged at debug so we still have the
+            // breadcrumb when investigating cursor/selection bugs without firing crash
+            // reports for legitimate drift.
+            log::debug!(
+                "get_file_at: index {} out of bounds (listing {} has {} entries at {}): likely FE/BE drift after async listing refresh",
+                index,
+                listing_id,
+                rows.len(),
+                listing.path.display()
+            );
+        }
+        result
+    })
 }
 
 /// Gets file paths at specific indices from a cached listing.
@@ -325,32 +262,24 @@ pub fn get_paths_at_indices(
     include_hidden: bool,
     has_parent: bool,
 ) -> Result<Vec<PathBuf>, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+    with_listing(listing_id, |listing| {
+        let rows = listing.rows(include_hidden);
+        let mut paths = Vec::with_capacity(selected_indices.len());
+        for &frontend_idx in selected_indices {
+            // Skip ".." entry (frontend index 0 when has_parent is true)
+            if has_parent && frontend_idx == 0 {
+                continue;
+            }
 
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+            // Convert frontend index to backend index
+            let backend_idx = if has_parent { frontend_idx - 1 } else { frontend_idx };
 
-    listing.touch();
-
-    let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
-
-    let mut paths = Vec::with_capacity(selected_indices.len());
-    for &frontend_idx in selected_indices {
-        // Skip ".." entry (frontend index 0 when has_parent is true)
-        if has_parent && frontend_idx == 0 {
-            continue;
+            if let Some(entry) = rows.get(backend_idx) {
+                paths.push(PathBuf::from(&entry.path));
+            }
         }
-
-        // Convert frontend index to backend index
-        let backend_idx = if has_parent { frontend_idx - 1 } else { frontend_idx };
-
-        if let Some(entry) = visible.get(backend_idx) {
-            paths.push(PathBuf::from(&entry.path));
-        }
-    }
-
-    Ok(paths)
+        paths
+    })
 }
 
 /// Gets full FileEntry objects at specific backend indices from a cached listing.
@@ -363,24 +292,13 @@ pub fn get_files_at_indices(
     selected_indices: &[usize],
     include_hidden: bool,
 ) -> Result<Vec<FileEntry>, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
-
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    listing.touch();
-
-    let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
-
-    let mut entries = Vec::with_capacity(selected_indices.len());
-    for &idx in selected_indices {
-        if let Some(entry) = visible.get(idx) {
-            entries.push((*entry).clone());
-        }
-    }
-
-    Ok(entries)
+    with_listing(listing_id, |listing| {
+        let rows = listing.rows(include_hidden);
+        selected_indices
+            .iter()
+            .filter_map(|&idx| rows.get(idx).cloned())
+            .collect::<Vec<FileEntry>>()
+    })
 }
 
 // ============================================================================
@@ -430,38 +348,42 @@ pub fn resort_listing(
         None
     } else {
         selected_indices.map(|indices| {
-            let entries_for_index: Vec<_> = visible_entries(&listing.entries, include_hidden).collect();
+            let rows = listing.rows(include_hidden);
             indices
                 .iter()
-                .filter_map(|&idx| entries_for_index.get(idx).map(|e| e.name.clone()))
+                .filter_map(|&idx| rows.get(idx).map(|e| e.name.clone()))
                 .collect()
         })
     };
 
     // Refresh index data before re-sorting (cache entries may not have fresh sizes)
     let volume_id = listing.volume_id.clone();
-    index().enrich(&volume_id, &mut listing.entries);
+    index().enrich(&volume_id, listing.entries_mut());
 
     // Re-sort the entries
-    sort_entries(&mut listing.entries, sort_by, sort_order, dir_sort_mode);
+    sort_entries(listing.entries_mut(), sort_by, sort_order, dir_sort_mode);
     listing.sort_by = sort_by;
     listing.directory_sort_mode = dir_sort_mode;
     listing.sort_order = sort_order;
 
+    let rows = listing.rows(include_hidden);
+
     // Find the new cursor position
-    let new_cursor_index =
-        cursor_filename.and_then(|name| visible_entries(&listing.entries, include_hidden).position(|e| e.name == name));
+    let new_cursor_index = cursor_filename.and_then(|name| rows.row_of(name));
 
     // Find new indices of selected files
     let new_selected_indices = if all_selected {
-        let count = visible_entries(&listing.entries, include_hidden).count();
-        Some((0..count).collect())
+        Some((0..rows.len()).collect())
     } else {
         selected_filenames.map(|filenames| {
-            let entries_for_lookup: Vec<_> = visible_entries(&listing.entries, include_hidden).collect();
+            let names_to_rows: HashMap<&str, usize> = rows
+                .iter()
+                .enumerate()
+                .map(|(row, entry)| (entry.name.as_str(), row))
+                .collect();
             filenames
                 .iter()
-                .filter_map(|name| entries_for_lookup.iter().position(|e| e.name == *name))
+                .filter_map(|name| names_to_rows.get(name.as_str()).copied())
                 .collect()
         })
     };
@@ -481,7 +403,7 @@ pub fn resort_listing(
 pub(crate) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<FileEntry>)> {
     let cache = LISTING_CACHE.read().ok()?;
     let listing = cache.get(listing_id)?;
-    Some((listing.path.clone(), listing.entries.clone()))
+    Some((listing.path.clone(), listing.entries().to_vec()))
 }
 
 /// Updates the entries in the listing cache (after watcher detects changes).
@@ -499,7 +421,7 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
             listing.sort_order,
             listing.directory_sort_mode,
         );
-        listing.entries = entries;
+        listing.set_entries(entries);
     }
 }
 
@@ -523,7 +445,7 @@ pub(crate) fn get_listings_by_volume_prefix(prefix: &str) -> Vec<(String, String
                 listing_id.clone(),
                 listing.volume_id.clone(),
                 listing.path.clone(),
-                listing.entries.clone(),
+                listing.entries().to_vec(),
             )
         })
         .collect()
@@ -566,23 +488,20 @@ pub fn get_listing_stats(
     include_hidden: bool,
     selected_indices: Option<&[usize]>,
 ) -> Result<ListingStats, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+    with_listing(listing_id, |listing| {
+        listing_stats(listing.rows(include_hidden), selected_indices)
+    })
+}
 
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    listing.touch();
-
-    let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
-
+/// The counting half of `get_listing_stats`, over one snapshot of the pane's rows.
+fn listing_stats(visible: VisibleRows<'_>, selected_indices: Option<&[usize]>) -> ListingStats {
     // Calculate totals
     let mut total_files: usize = 0;
     let mut total_dirs: usize = 0;
     let mut total_size: u64 = 0;
     let mut total_physical_size: u64 = 0;
 
-    for entry in &visible {
+    for entry in visible.iter() {
         if entry.is_directory {
             total_dirs += 1;
             if let Some(size) = entry.recursive_size {
@@ -637,7 +556,7 @@ pub fn get_listing_stats(
         (None, None, None, None)
     };
 
-    Ok(ListingStats {
+    ListingStats {
         total_files,
         total_dirs,
         total_size,
@@ -646,7 +565,7 @@ pub fn get_listing_stats(
         selected_dirs,
         selected_size,
         selected_physical_size,
-    })
+    }
 }
 
 /// Re-enriches directory entries in a cached listing with fresh index data.
@@ -657,7 +576,7 @@ pub fn refresh_listing_index_sizes(listing_id: &str) -> Result<(), String> {
     let mut cache = LISTING_CACHE.write().map_err(|_| "Failed to acquire cache lock")?;
     if let Some(listing) = cache.get_mut(listing_id) {
         let volume_id = listing.volume_id.clone();
-        index().enrich(&volume_id, &mut listing.entries);
+        index().enrich(&volume_id, listing.entries_mut());
     }
     Ok(())
 }

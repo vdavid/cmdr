@@ -101,7 +101,23 @@ pub fn show_safe_save_files() -> bool {
 /// and it stays in the pane pointing at nothing. The `.sb-` filter lived there
 /// until 2026-08-01 and had precisely that bug.
 pub fn is_hidden_from_listings(name: &str) -> bool {
-    (!show_staging_temps() && is_staging_temp_in_flight(name)) || (!show_safe_save_files() && is_safe_save_name(name))
+    could_be_hidden_from_listings(name)
+        && ((!show_staging_temps() && is_staging_temp_in_flight(name))
+            || (!show_safe_save_files() && is_safe_save_name(name)))
+}
+
+/// Whether `name` is scratch by NAME: one of Cmdr's, or another app's safe-save.
+///
+/// Pure and stable, unlike [`is_hidden_from_listings`] — it reads no setting and
+/// no ownership registry, so its answer for a given name never changes. That's
+/// the point: the gate above means a name this rejects is visible now and stays
+/// visible until the listing itself changes, which is what lets the listing layer
+/// cache a row map once and re-ask about only these few names per read
+/// (`listing/visible_rows.rs`). ❗ Keep the gate: without it the implication is
+/// only true by inspection of three other functions, and a row map built on it
+/// would start handing panes the wrong file.
+pub fn could_be_hidden_from_listings(name: &str) -> bool {
+    cmdr_fs::staging::is_staging_temp_name(name) || is_safe_save_name(name)
 }
 
 /// Serializes tests whose expectations depend on either visibility setting, and
