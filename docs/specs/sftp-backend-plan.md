@@ -60,9 +60,11 @@ explicitly before `land` and treats that error as a write failure**. ❌ Don't r
 
 **4. A cancelled connect panics the crate's spawned task.** `tasks.rs:215` does `tx.send(extensions).unwrap()`, which
 panics if the `Sftp::new` future was dropped before the server hello arrives — i.e. on any cancelled or timed-out
-connect, including the approval flow's deliberate abandon. **Structure connect so the future is never dropped
-mid-handshake**: run it to completion under a timeout that is enforced _inside_ the task, and discard the result. Open
-an upstream issue; note it in `DETAILS.md` so nobody removes the workaround as superstition.
+connect. ✅ **Not the approval flow**: host-key rejection happens in russh's `check_server_key` during kex
+(`client/mod.rs:2306`), before `Sftp::new` exists, so an abandoned dial never constructs the task that panics. The two
+that do reach it are a timed-out connect and `disconnect_sftp_volume`. **Structure connect so the future is never
+dropped mid-handshake**: run it to completion under a timeout that is enforced _inside_ the task, and discard the
+result. Open an upstream issue; note it in `DETAILS.md` so nobody removes the workaround as superstition.
 
 ## Numbers, in one place
 
@@ -127,8 +129,10 @@ carried ±30% run-to-run spread.
      one-click approval. With both, a healthy server presents the key we stored and any mismatch is a real change. This
      is what OpenSSH does.
    - ❗ **Every seam must degrade under `VolumeHost::detached()`.** A detached `HostKeys` answers **trust-nothing**
-     (every key unknown), and the fixture harness records its keys explicitly. ❌ Don't make detached mean "trust
-     everything" — a test double that silently accepts any key is how a MITM regression ships green.
+     (every key unknown). ❌ Don't make detached mean "trust everything" — a double that silently accepts any key is how
+     a MITM regression ships green. ❗ But a no-op `record` would leave the fixture harness looping forever on "unknown
+     → approve → still unknown", so the crate also ships an **in-memory `testing` double that actually remembers**,
+     mirroring `credentials.rs`'s `InMemoryCredentials`.
    - `~/.ssh/known_hosts` is **read as a fallback and never written**.
    - Alternative rejected: resolving trust app-side and passing a verdict through `SftpConnectionParams`. Works at
      connect, falls apart at mid-life reconnect where the backend must re-verify without the app in the loop.
@@ -273,7 +277,8 @@ Parameterize rather than fork (`smblease.go:21-36`'s adopt-or-reconcile reasonin
 copies would rot independently): a
 `Stack { project_name, lock_path, lease_dir, compose_dir, mode_services, services_without_healthcheck }` value, and
 `CheckDefinition.NeedsSmb` widened to `NeedsContainers []StackMode`. Touches `main.go`, `graph.go`,
-`smb_orchestrator.go`, two registry rows, `start.sh`, `e2e-linux.sh`, and a 480-line `smblease_test.go`.
+`smb_orchestrator.go`, two registry rows, `start.sh`, `e2e-linux.sh`, and a 480-line `smblease_test.go` — and the
+package it parameterizes, `scripts/check/smblease/{smblease,compose,lock}.go`.
 
 **Also milestone 0's, because they are the same wiring**: the `smbIntegrationFilter` edit, the SFTP stack registration,
 and ❗ **the app-side selection arm**. SMB has 33 app-side `smb_integration_*` cells and a whole `testing` feature built
