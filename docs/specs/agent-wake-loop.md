@@ -30,7 +30,9 @@ landing on disk and a reviewable proposal.
 - **Wake threads appear in the session list** with their own icon, never filtered out.
 - **Memory lives in the app data dir**, jailed behind a new `Access::Memory`, and its arrival re-prompts consent.
 - **No OS notifications.** A toast and the status-corner indicator only.
-- **Wake turns stream into the rail live**, over one transport shared with rail sends.
+- **Wake turns stream into the rail live**, over one transport shared with rail sends. Retiring the `Channel` and
+  reworking the rail's shipped send path is explicitly approved; ❌ don't fall back to a second transport to avoid
+  touching it.
 - **Cold bundles ride along** and set no deadline of their own.
 
 ## Needs David's consent before M1 can land
@@ -527,11 +529,14 @@ machinery than it started with, and it closes three existing holes on the way:
   is absent from `bindings.ts` and nothing mechanically catches drift between it and `ask-cmdr.ts:95`. A specta event
   puts it in bindings, which M4 would otherwise inherit unguarded.
 
-⚠️ **This touches the rail's shipped send path**, which is the risk plain streaming-for-wakes-only would avoid. Follow
-`SuggestionsChanged` for the shape (`suggested_ops/changed.rs:45`, registered at `ipc.rs:842`, consumed via
+⚠️ **This touches the rail's shipped send path, and David has approved that.** ❌ Don't retreat to a wakes-only second
+transport when it gets awkward: that was considered and declined, because it buys the same UX for more machinery and
+leaves all three holes above open. The rail's existing E2E specs are the safety net for the rework; run them before and
+after.
+
+Follow `SuggestionsChanged` for the shape (`suggested_ops/changed.rs:45`, registered at `ipc.rs:842`, consumed via
 `onSuggestionsChanged`). The event reaches every window, so the subscription needs per-window handling the way the
-failure watch does. **Fallback if the unification fights back**: keep the `Channel` for rail sends and give wakes their
-own event. Same UX, more machinery, and the three holes above stay open.
+failure watch does.
 
 The session list subscribes to the same stream, so a wake's thread appears as it is created rather than on next load.
 
@@ -770,15 +775,15 @@ taps nothing.
 Copy can be DRAFTED ahead, but every key lands with its nine translations or not at all. That applies to M1 too, which
 carries `nothing_to_suggest`'s two rail-label keys.
 
-## Open for David
+## Answered by David
 
-1. **The four budget bumps** listed under "Needs David's consent" above, `index-crate-isolation` most urgently, since M1
-   cannot land without it.
-2. **The follow-up turn on rejection** costs a model call per rejected SWEEP (the plan coalesces; per group would be
-   eight calls for one "reject all"). Confirm before M4.
-3. **M2 unifies the turn-event transport** (item 7), retiring `Channel<AskCmdrStreamEvent>` so wake threads stream live
-   like rail threads. It ends with less machinery and fixes three existing holes, but it touches the shipped rail send
-   path. The fallback (a second transport for wakes only) is recorded there if that risk isn't wanted.
+Nothing is waiting on him. Recorded here so the answers aren't re-asked.
+
+1. **The four budget bumps** above are approved, `index-crate-isolation` included. ⚠️ Recount that one against the final
+   API shape before editing the ceiling, so the number is right the first time.
+2. **The follow-up turn on rejection** is one model call per rejected SWEEP, not per group.
+3. **The turn-event transport unifies** (M2 item 7), and reworking the rail's shipped send path to get there is
+   approved.
 
 ## Deliberately deferred
 
