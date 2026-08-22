@@ -50,8 +50,12 @@ Ask once, up front, rather than discovering them at the end of the milestone.
 
 ## M1: the loop
 
-**Intent**: the agent notices, decides, and either proposes or stays quiet. No new surfaces, so this milestone is
-provable by tests alone and can't be blocked on copy review.
+**Intent**: the agent notices, decides, and either proposes or stays quiet.
+
+⚠️ **This milestone is NOT copy-free.** `nothing_to_suggest` is an agent tool, and
+`every_known_tool_has_an_ask_cmdr_rail_label` (`agent/tools/mod.rs:67`) is a Rust test that reads `ask-cmdr-labels.ts`
+as text and fails on a missing entry. So M1 carries two message keys, their nine translations, an `@key.description`, an
+`@key.sourceHash`, and an `intl:keys` regen, under the same error-level `i18n-coverage` gate M2 describes.
 
 ⚠️ **Order matters here and the obvious order is wrong.** The inbox's own signature changes twice (nullable deadlines,
 then tunable delays), and both ripple into the tap's call site. Do the `Inbox` work first, then wire the tap once
@@ -86,23 +90,41 @@ a value like every other input here.
 Hot comes from the setting; warm derives as `min(hot × 60, 6h)`; cold is `None`. ⚠️ The tier ORDER is a pinned contract:
 test it at every slider stop, not just the default.
 
-### 3. Inbox ownership and persistence
+### 3. Inbox ownership: a bounded channel and a writer thread
 
-⚠️ **Not managed Tauri state.** The indexer starts before the agent does (`lib.rs:317`, plus `:709` inside a `spawn`,
-versus `agent::start` at `:766`, so the loss is a nondeterministic race rather than a reliable ordering), so anything
-registered in `agent::start` misses launch replay, which is the busiest window the tap will ever see. Use a
-process-global with lazy init, the way `restricted_paths` does for `PathAccessDenied`.
+⚠️ **Nothing on the live-loop thread may take a lock or touch SQLite.** `TauriEventSink::emit` (the one in
+`events/index_mapping.rs`, ❌ not the unrelated type of the same name in `file_system/write_operations/event_sinks.rs`)
+calls `route` synchronously at `index_mapping.rs:689`, on the caller's thread, and that caller is the live loop, itself
+a tokio TASK (`live.rs:163`). Two things would stall it:
+
+- **A mutex around the inbox.** `run_wake` takes `inbox: &mut Inbox` (`job.rs:59`) and awaits `run_turn` at `:107`, so a
+  guard held across the turn blocks every live batch for an LLM call, and a runtime worker with it.
+- **A write connection per admit.** `open_write_connection` (`agent/store/connection.rs:43`) applies WAL pragmas and
+  runs the FULL MIGRATION LADDER on every open, against `busy_timeout = 5000` (`:32`). With item 5 holding a long-lived
+  writer across the turn, one admit could block the indexer for five seconds. That is worse than the mutex, and it
+  violates principle 2 outright.
+
+**So the tap never owns the inbox.** It hands the rollup to a bounded channel and returns. A dedicated writer thread
+owns the `Inbox`, one long-lived write connection, and the timer:
 
 - Launch: `persist::load` then `Inbox::reconcile(launched_at)`, logging the `ReconcileReport` (it counts what the user
   was not told and why).
-- Admit: `persist::save_row` for the touched row.
+- Admit: fold the rollup in, `persist::save_row` for the touched row.
 - Drain: `persist::clear`.
+- ⚠️ Bounded, so a pathological burst drops rather than growing without limit, and it logs what it dropped. The tap's
+  payload is signal, not correctness (the folder will change again).
 
-⚠️ **The lock must never be held across a model turn.** `TauriEventSink::emit` (the one in `events/index_mapping.rs`, ❌
-not the unrelated type of the same name in `file_system/write_operations/event_sinks.rs`) calls `route` synchronously at
-`index_mapping.rs:689`, on the caller's thread. That caller is the live loop, which is a tokio TASK (`live.rs:163`), so
-a std mutex held across a turn blocks a runtime worker as well as the loop. `run_wake` currently takes
-`inbox: &mut Inbox` (`job.rs:59`) and awaits `run_turn` at `:107`. Item 5 splits it so the guard is dropped first.
+This also gives item 5 somewhere to live: the timer fires on this thread, which already holds the inbox and a writer.
+
+⚠️ **Not managed Tauri state.** The indexer starts before the agent does (`lib.rs:317`, plus `:709` inside a `spawn`,
+versus `agent::start` at `:766`, so it's a race, not a reliable ordering), and anything registered in `agent::start`
+misses launch replay, the busiest window the tap will ever see. Use a process-global with lazy init, the way
+`restricted_paths` does for `PathAccessDenied`.
+
+⚠️ **Readiness is a cached atomic, not a per-batch query.** `admit_if_permitted` takes a `WakeReadiness`
+(`inbox.rs:130`) whose consent bit lives in `main.db` (`consent::has_current_consent`). Reading it per batch is a second
+SQLite round trip on the same hot path. Keep a process-global snapshot refreshed on consent change, settings change, and
+FDA change. M2 item 5 needs exactly the same snapshot for its IPC, so build it once, here.
 
 **Crash semantics, stated on purpose**: `persist::clear` runs with the drain, before the turn. A process that dies
 mid-turn loses that digest rather than re-delivering it on restart. Re-delivery would mean the user hears about the same
@@ -232,7 +254,22 @@ A wake that finds nothing must be able to say so. A typed tool call, ❌ never i
 - ⚠️ **`TurnResult` carries no tool-call information** (`chat/runtime/turn.rs:49`: `Answered | Failed | Cancelled`), and
   `ToolDispatchOutcome.proposal` is rename-specific. Add a `ToolId::NothingToSuggest` variant (`agent/llm/types.rs:145`)
   and have the dispatcher record the call typed, so the outcome is observable without reading message text.
-- One argument: a short reason, for the log and for memory (M3).
+- One argument: a short reason, for memory (M3). ❌ **Never log it verbatim.** `cmdr.log` ships in error reports,
+  including the auto-dispatched ones the user never previews, and its redactor is path-shaped
+  (`redact::redact_line_salted`, `redact/mod.rs:14`) so it does nothing to prose. Log that a wake was quiet, not what it
+  said about which folders.
+- ⚠️ **Adding an agent tool is a six-part checklist** (`agent/tools/CLAUDE.md:41`), and the plan owes all of it: the
+  registry entry, a `ToolId` variant, `ToolId::KNOWN` (`agent/llm/types.rs:190`, a fixed `[ToolId; 14]`),
+  `from_wire_name` / `as_wire_name`, `EXPECTED_AGENT_TOOL_NAMES` (`mcp/tests/tool_registry_tests.rs:728`), and a rail
+  label pair in `ask-cmdr-labels.ts:13`. Miss the `ToolId` half and the tool parses as `Unrecognized`, gets refused by
+  `refuse_unavailable` before dispatch, and `tool_id_known_maps_one_to_one_onto_agent_view` (`agent/tools/mod.rs:51`)
+  fails.
+- ⚠️ **`FIXED_PROMPT_OVERHEAD_TOKENS = 4_972`** (`agent/chat/budget.rs:88`) is pinned by
+  `every_call_pays_about_3_500_tokens_of_fixed_overhead` (`chat/context/cost_tests.rs:97`), which opens by asserting
+  `tools.len() == 14`. A new tool moves both. Update the constant AND `agent/chat/DETAILS.md`'s "what the budgets buy"
+  section, as the test's own failure message instructs.
+- ⚠️ **It is visible to the rail too**, since there is one `agent_tool_view()`. In a user chat it is a dead schema cost,
+  and it must never delete anything there. Guard on the wake path, and test that a rail turn calling it is inert.
 - Needs a store-level `delete_conversation`; only `ask_cmdr_archive_conversation` exists today. Considered and rejected:
   archiving. Archived threads still accumulate, and "we looked and found nothing" fifty times is not a record worth
   keeping.
@@ -302,7 +339,9 @@ computed `tString(...)`; the search index keeps the static registry text. Write 
 
 ### 8. A dev-only force-wake command
 
-So verification doesn't mean waiting out a deadline. Gate it the way `test_mode` gates the scripted fake.
+So verification doesn't mean waiting out a deadline. ⚠️ Behind the `playwright-e2e` Cargo feature, alongside
+`set_test_throttle`, ❌ not an env-var hook: `test_mode.rs:8` draws the line at soft hooks being "strictly additive" and
+never replacing production logic, and forcing a wake replaces the timer.
 
 ### M1 tests
 
@@ -320,14 +359,24 @@ Written after:
 - **Rollup → bundle mapping**: counters, `last_event_at`, and window survive the crossing; `WeightLookup::Unscored` maps
   to `FolderImportance::Unknown` (`interest.rs:59`), ❌ never to zero.
 - **A rename-only batch produces a non-empty bundle** (the regression anchor for the retained-paths change).
-- **Live batch to `WakeOutcome::Ran`** (integration): a synthetic batch through `process_live_batch`, the tap, the
-  inbox, and a wake against the fake LLM.
-- **A noop wake leaves no thread but keeps its cost row** (integration): the fake calls `nothing_to_suggest`.
+- **A noop wake leaves no thread but keeps its cost row**, and a rail turn calling `nothing_to_suggest` deletes nothing.
+  `wake/tests/job.rs` already drives `run_wake` against an in-memory migrated DB, `FakeAgentLlm`, and a dispatcher
+  double, so both fit there directly.
 - **Restart reconciliation**: rows persisted, reloaded, settled, stale ones counted.
 
-⚠️ The fake LLM can call tools (`ScriptedTurn::CallTools`, `agent/llm/fake.rs:24`), but `scripted_fake_llm()`
-(`chat.rs:139`) — the one the E2E harness gets — is a fixed `Say` script that never proposes. It needs a wake-aware
-variant before any test can drive a proposal or a noop through it.
+⚠️ **The end-to-end test has to be two tests.** `process_live_batch` is `pub(in crate::indexing)` (`live.rs:467`), so
+the app crate can't call it, and `cmdr-index` can't name the agent. Split:
+
+- **Crate side**, in `cmdr-index`: a synthetic batch through `process_live_batch` asserts the emitted `FolderActivity`
+  carries the right rollups, `last_event_at`, and flags-priority winner.
+- **App side**: a hand-built `FolderActivity` through `route(event, None)` into the tap adapter, the inbox, and a wake
+  against the fake. `route`'s `Option<&AppHandle>` is what makes this half possible.
+
+⚠️ **The E2E fake is shared and must not simply be swapped.** `scripted_fake_llm()` (`chat.rs:139`) is a fixed `Say`
+script returned unconditionally under `test_mode::ask_cmdr_fake_active()`, and item 5 moves that resolution into
+`agent/chat/session.rs` where the wake shares it. Changing the script would change what the RAIL's existing E2E specs
+see. Give the wake its own scripted variant selected by caller. `ScriptedTurn::CallTools` (`agent/llm/fake.rs:26`)
+already exists, so the variant is cheap.
 
 **Docs**: `agent/wake/DETAILS.md` (the seams are driven; the tap's window policy, the flags mapping, the importance
 cache, the crash semantics), `crates/cmdr-index/src/indexing/watch/DETAILS.md` (the second observer), `agent/DETAILS.md`
@@ -410,109 +459,230 @@ component (`a11y-coverage`); an E2E driving the wake-aware fake through a forced
 **Intent**: without this the agent relearns nothing and re-proposes what was already rejected. It is the difference
 between a colleague and a nag.
 
-1. **Fix `read_cmdr_md()` first** (`chat/runtime/mod.rs:231`). It calls `dirs::home_dir()` directly, so it ignores
-   `CMDR_DATA_DIR`, and the real `~/.cmdr/CMDR.md` bleeds into every E2E run and every worktree today. TDD, and it makes
-   every later memory test deterministic. **This item is independent of everything else and can land before M1.**
+### 1. Fix `read_cmdr_md()` first, and say what the fix means
 
-2. **Location**: `<data-dir>/ai/memory/`, with `AGENTS.md` as the hub. The app data dir, ❌ not `~/.cmdr/`: it is
-   app-managed state rather than user config, `app_data_dir()` is already the canonical per-OS path on all three
-   platforms, and it inherits `CMDR_DATA_DIR` isolation for free, so dev, E2E, and every worktree get their own memory.
-   Shared memory would mean an E2E run writing personal facts into David's real agent memory.
+`chat/runtime/mod.rs:231` calls `dirs::home_dir()` directly, so `~/.cmdr/CMDR.md` bleeds into every E2E run and every
+worktree. ⚠️ The resolution has to be stated, because "honor `CMDR_DATA_DIR`" and "`~/.cmdr/CMDR.md` stays put" sound
+contradictory: **read `<CMDR_DATA_DIR>/CMDR.md` when the env var is set, else `~/.cmdr/CMDR.md`.** Production is
+unchanged; only isolated environments move. While in there, give it the same size cap as memory (item 4): it has none
+today, so a large hand-written `CMDR.md` already taxes every turn.
 
-   `~/.cmdr/CMDR.md` stays put: it is user-authored, and a dotfile in home is where a hand-edited, dotfiles-repo-able
-   config belongs. When a second platform arrives, check the OS config dir first and fall back to `~/.cmdr/`.
+TDD, and it makes every later memory test deterministic. **Independent of everything else; can land before M1.**
 
-3. **Feeding both files.** ⚠️ `TurnParams.cmdr_md` is a single `Option<&str>` and `run_wake` passes `None`
-   (`job.rs:99`). Add a second field rather than concatenating, so the prompt can label them distinctly: **what the user
-   tells the agent**, and **what the agent learned**. `run_wake` must pass both.
+### 2. Location
 
-4. **`Access::Memory`**, a fourth variant beside `Read`, `Propose`, and `Write`, with its own hand-authored allowlist
-   mirroring `EXPECTED_PROPOSE_TOOL_NAMES`. `test_agent_tool_view_never_writes` widens to admit exactly this and nothing
-   else, so the guarantee becomes "the agent writes only into its memory folder", structural rather than a rule in a
-   doc. ⚠️ This is a deliberate widening of the app's central agent-safety invariant; the allowlist is what stops it
-   being acquired as a side effect of editing a registry line.
+`<data-dir>/ai/memory/`, with `AGENTS.md` as the hub. The app data dir, ❌ not `~/.cmdr/`: it is app-managed state
+rather than user config, `app_data_dir()` is already the canonical per-OS path on all three platforms, and it inherits
+`CMDR_DATA_DIR` isolation for free. Shared memory would mean an E2E run writing personal facts into David's real agent
+memory.
 
-5. **Two tools**, path-aware from day one so the second file costs nothing:
-   - `memory_write(path, content)`: create or fully replace.
-   - `memory_edit(path, old_string, new_string)`: exact match, refuses a non-unique match.
+`~/.cmdr/CMDR.md` stays user-authored: a dotfile in home is where a hand-edited, dotfiles-repo-able config belongs.
 
-   ❌ No read or list tool yet: `AGENTS.md` is auto-fed and it is the only file. Add both the moment there is a second
-   one. Every schema rides in the cached prefix of every turn, including the rail's, so two tools cost less than four on
-   calls that never touch memory.
+### 3. Feeding it, and the injection problem
 
-6. **The jail**, one function both tools call, unit-tested: reject absolute paths, reject any `..`, resolve symlinks and
-   re-check containment, allow `.md` only, cap a file at 8 KB and the directory at 64 KB. The cap is not housekeeping:
-   memory rides in every turn's prefix, so an unbounded file quietly eats the context budget of every conversation.
+⚠️ **This is the security-critical item in the whole plan.** `build_system` (`chat/context.rs:251`) appends `CMDR.md`
+raw and unfenced AFTER the entire system prompt, which is the strongest override position there is. Memory added the
+same way would sit after every rule, in the cached prefix of every turn.
 
-7. **The system prompt** encourages capturing what matters, on request or on meeting something worth keeping, and
-   pruning what has gone stale.
+The write path is reachable from untrusted text: `image_facts` returns the full stored OCR of the user's images
+(`mcp/tool_registry/mod.rs:632`, whose own comment calls it the most sensitive thing either photo tool emits), and file
+names come off disk. So a crafted filename, or a picture of a sentence, could get the agent to write instructions into
+`AGENTS.md`, where they would ride every later turn, including ones that call `propose_suggestions`. It survives
+restarts and thread deletion.
 
-8. **Consent copy changes, and everyone re-accepts.** ⚠️ This costs more than a re-prompt. Bumping
-   `CONSENT_COPY_VERSION` (`agent/consent.rs:16`) revokes every beta user, and:
-   - The rail gates on `consentState.accepted`, so a user's whole thread history sits behind the consent screen until
-     they re-accept.
-   - `AskCmdrSection.svelte:133` then renders a plain "Off", indistinguishable from never having opted in. Needs "here's
-     what changed" copy that doesn't exist.
-   - The disclosure list is duplicated in `AskCmdrConsent.svelte:42` AND `AskCmdrSection.svelte:151`. Edit both.
-   - ⚠️ **`askCmdr.consent.noContents` currently ends "Ask Cmdr only looks and speaks; it never changes anything."**
-     `Access::Memory` makes that false. That sentence is what the whole read-only promise rests on, so it needs a
-     rewrite, not a sixth bullet.
-   - These keys carry `@key.screenshot: ask-cmdr-consent.png`, so `pnpm i18n:shots` needs a re-run.
+So:
 
-9. **Two controls** in the Ask Cmdr section: "Open memory folder" and "Forget everything".
-   - ⚠️ **"Open memory folder" has no mechanism today.** The settings window must learn the resolved path (Rust-only,
-     `CMDR_DATA_DIR`-dependent) and tell the main window to navigate. `ExecuteCommand` (`window_events.rs:30`) carries a
-     bare `command_id` and nothing else, and it's the only settings→main dispatch. Needs a command returning the path
-     plus a payload-carrying event.
-   - ⚠️ **"Forget everything" is a soft dialog**, so it needs an id in `lib/ui/dialog-registry.ts` AND a row in
-     `lib/dialog-gallery/gallery-registry.ts`, or `dialog-gallery-coverage` fails. `DeleteAiModelDialog.svelte` is the
-     precedent. Plus its colocated `*.a11y.test.ts`.
+- **Memory goes BEFORE the rules, not after**, in a delimited block, introduced by a line saying it is data the agent
+  wrote about the user and never overrides the rules that follow.
+- **`TurnParams.cmdr_md` becomes two fields**, ❌ not one concatenation, so each is labelled in its own voice: **what
+  the user tells the agent**, and **what the agent learned**. `run_wake` passes both (it passes `None` today,
+  `job.rs:99`).
+- **The write instruction (item 8) says memory records facts about the user and their preferences, never instructions to
+  itself.**
 
-10. **Verify** crash and error report bundles don't sweep up the data dir. Memory must never ride out in a report.
+### 4. Budget, and why a flat 8 KB was the wrong shape
 
-**Tests**: TDD the jail (every escape attempt) and the `CMDR_DATA_DIR` fix. After: tool round-trips, the size caps,
-prompt assembly carrying both files labelled, and a consent test proving the new copy re-prompts.
+⚠️ **The system string is never elided.** `assemble_prompt` (`context.rs:265`) tightens tool-result elision only, so
+memory is a permanent, non-elidable tax. Run the numbers a byte cap doesn't: `MIN_LOCAL_CONTEXT_TOKENS = 16_384` at
+`PROMPT_BUDGET_WINDOW_PERCENT = 60` is a 9,830-token budget (`budget.rs:56,66`); fixed overhead after M1 and M3 is
+roughly 5,300; 8 KB of memory at `CHARS_PER_TOKEN_ESTIMATE = 4` is another 2,048. That leaves under 2,500 tokens for the
+digest, the envelope, the history, and every tool result, on a configuration the app supports. And the agent writes this
+file itself, so it can permanently degrade its own chat.
+
+**Feed a slice sized as a PERCENTAGE of the resolved prompt budget**, not a byte count, and when memory exceeds it, feed
+the head and say in the prompt that it was truncated. Keep a byte cap too, as a disk guard.
+
+⚠️ Two caps, two reasons, ❌ don't conflate them: the per-file cap protects the prompt; the 64 KB directory cap protects
+disk. When the directory cap is full a write returns a TYPED refusal telling the model to prune, ❌ never a silent
+failure.
+
+⚠️ **`FIXED_PROMPT_OVERHEAD_TOKENS = 4_972`** (`budget.rs:88`) moves again here: `cost_tests.rs:97` asserts
+`tools.len() == 14` and then the measured overhead. Two more tools, so update the constant and `agent/chat/DETAILS.md`'s
+"what the budgets buy".
+
+### 5. `Access::Memory`
+
+A fourth variant beside `Read`, `Propose`, and `Write`, with its own hand-authored allowlist mirroring
+`EXPECTED_PROPOSE_TOOL_NAMES`. `test_agent_tool_view_never_writes` widens to admit exactly this and nothing else, so the
+guarantee becomes "the agent writes only into its memory folder", structural rather than a rule in a doc. ⚠️ A
+deliberate widening of the app's central agent-safety invariant; the allowlist is what stops it being acquired as a side
+effect of editing a registry line.
+
+Also needs a `Memory` arm in `access_is_dispatchable` (`agent/tools/view.rs:27`) plus a fourth assertion in its
+per-variant test (`:117`), and a rewrite of the refusal copy at `view.rs:50`, which still says the agent can't change
+anything.
+
+### 6. Two tools
+
+Path-aware from day one so the second file costs nothing:
+
+- `memory_write(path, content)`: create or fully replace.
+- `memory_edit(path, old_string, new_string)`: exact match, refuses a non-unique match.
+
+❌ No read or list tool yet: `AGENTS.md` is auto-fed and it is the only file. Add both the moment there is a second one.
+Every schema rides in the cached prefix of every turn, including the rail's.
+
+⚠️ Both go through the same six-part tool checklist as `nothing_to_suggest` (M1 item 6), including two rail-label
+message keys each, so four keys and thirty-six translations.
+
+⚠️ **They are callable from the rail, not just from wakes.** That is intended ("remember this for me"), and it is also
+the mechanism behind item 3's injection risk. State it rather than implying it.
+
+### 7. The jail
+
+One function both tools call, unit-tested: reject absolute paths, reject any `..`, resolve symlinks and re-check
+containment, allow `.md` only, enforce both caps.
+
+⚠️ Three things that will bite:
+
+- **`canonicalize` fails on a file that doesn't exist yet**, so `memory_write` creating a file must canonicalize the
+  PARENT and join a validated file name, then re-check containment.
+- **Non-UTF8 or unreadable memory reads as absent** under the `read_to_string(...).ok()` shape, so the agent silently
+  believes it has no memory and starts over. Log it.
+- **Write durably.** `config::durable_write_json` (`config.rs:76`) is the existing temp-plus-fsync-plus-rename helper.
+  Item 10 invites the user into the folder while the agent may be writing, so a torn file is reachable.
+
+### 8. The system prompt
+
+Encourages capturing what matters, on request or on meeting something worth keeping, and pruning what has gone stale.
+
+⚠️ **`SYSTEM_PROMPT` currently says "You never act: you have no tool that changes, moves, deletes, or renames
+anything"** (`system_prompt.rs:47`), and `prompt_states_the_read_only_self_description` (`:142`) pins the phrase "never
+act". `Access::Memory` makes it false. A second rewrite of the same promise, in a different file, with its own guard.
+
+### 9. Consent
+
+Bumping `CONSENT_COPY_VERSION` (`agent/consent.rs:16`) revokes every beta user. ⚠️ What the bump carries:
+
+- The rail gates on `consentState.accepted`, so a user's whole thread history sits behind the consent screen until they
+  re-accept, and `AskCmdrSection.svelte:133` then renders a plain "Off", indistinguishable from never having opted in.
+  Needs "here's what changed" copy that doesn't exist.
+- The disclosure list is duplicated in `AskCmdrConsent.svelte:42` AND `AskCmdrSection.svelte:151`. Edit both.
+- ⚠️ **`askCmdr.consent.noContents` ends "Ask Cmdr only looks and speaks; it never changes anything."** That sentence is
+  what the read-only promise rests on, so it needs a rewrite, not a sixth bullet.
+- ⚠️ **The bigger disclosure is not that the agent writes files.** It is that everything the agent remembers is sent to
+  the user's provider on every message, indefinitely, including facts derived from OCR of their photos. Say that, or the
+  re-prompt collects a signature on the wrong thing.
+- ⚠️ **Purge the inbox on a consent miss.** `readiness.rs:44` is explicit that admitting rows means keeping a record of
+  what the user has been doing for a purpose they haven't agreed to. After the bump every user is un-consented while
+  their `agent_inbox` rows (folder paths, counts, timestamps) sit on disk. Clear them, and test it.
+- These keys carry `@key.screenshot: ask-cmdr-consent.png`, so `pnpm i18n:shots` needs a re-run.
+
+### 10. Two controls
+
+"Open memory folder" and "Forget everything", in the Ask Cmdr section.
+
+- ⚠️ **"Open memory folder" has no mechanism today.** The settings window must learn the resolved path (Rust-only,
+  `CMDR_DATA_DIR`-dependent) and tell the main window to navigate. `ExecuteCommand` (`window_events.rs:30`) carries a
+  bare `command_id` and nothing else, and it's the only settings-to-main dispatch. Needs a command returning the path
+  plus a payload-carrying event.
+- ⚠️ **"Forget everything" is a soft dialog**, so it needs an id in `lib/ui/dialog-registry.ts` AND a row in
+  `lib/dialog-gallery/gallery-registry.ts`, or `dialog-gallery-coverage` fails. `DeleteAiModelDialog.svelte` is the
+  precedent. Plus its colocated `*.a11y.test.ts`.
+
+### 11. What does NOT need doing
+
+Verified, so nobody re-audits it: crash and error report bundles don't touch the data dir beyond `index-*.db` sizes
+(`diagnostics_snapshot.rs:86`), and the log bundle takes only `cmdr.log*` (`logging/mod.rs:117`), never `llm-logs/`.
+**The residual hole is `cmdr.log` itself**: ❌ never log memory content, and never log a wake reason verbatim (M1 item
+6).
+
+### M3 tests
+
+⚠️ **There is no Tauri mock runtime in the tree** (`chat/runtime/tests.rs:5` says so outright), and every registry
+handler takes an `AppHandle`. So the design must split or these tests can't exist: **a pure `MemoryStore` parameterized
+on a root `Path`**, holding the jail, the caps, the write, the edit's uniqueness refusal, and the directory-full
+refusal, unit-tested against a `tempdir`; plus a thin handler that resolves the root from the `AppHandle`.
+
+TDD: the jail (every escape attempt), the caps, and the `CMDR_DATA_DIR` fix. After: prompt assembly carrying both files
+labelled and fenced, memory truncating rather than blowing the budget at `MIN_LOCAL_CONTEXT_TOKENS`, the consent
+re-prompt, and the inbox purge on a consent miss.
 
 ## M4: the feedback loop
 
 **Intent**: an approval or a rejection the agent never hears about is a lesson it can't learn.
 
-`NewSweep.conversation_id` already exists (its doc comment claims a background wake has none, which M1 makes obsolete),
-so an outcome knows which thread to report to.
+⚠️ **A `ConversationEvent` cannot carry the lesson.** `store/query.rs:44` is explicit: conversation events "NEVER enter
+the LLM transcript (they exist for the user's eyes and the history view only)". So an outcome recorded only that way
+teaches the agent nothing, and approvals, which get no follow-up turn, would produce zero learning while rejections
+produce all of it. That asymmetry would make the agent over-correct.
 
-- **Always**: append a typed outcome event to the originating thread. No model call, no cost.
-- **On rejection only**: one follow-up turn, so the agent can record why in memory and, if it wants, ask. Gated by
-  `askCmdr.proactive`, at most once per group.
+**Two channels, both needed:**
 
-⚠️ **The surface is wider than one enum.** `ModelChanged` is the shape to copy, and it lives in three Rust places:
-`ConversationEvent` (`store/query.rs:47`), `MessageBlock` (`views.rs:279`), and `AskCmdrStreamEvent` — plus
-`to_message_view`, the reducer arm (`ask-cmdr-stream.svelte.ts:114`), `ask-cmdr-messages.ts`, `AskCmdrMessage.svelte`,
-and a message key.
+- **The user's timeline**: a typed `ConversationEvent`, for their eyes.
+- **The agent's lesson**: the always-path writes the outcome into memory (M3) directly, with no model call. Cheap, and
+  it covers approvals too. The follow-up turn, when it runs, gets the outcome as its input text the way `run_wake` hands
+  over the digest (`job.rs:98`).
 
-⚠️ **Nothing mechanically guards the hand-mirrored enum.** `AskCmdrStreamEvent` derives only `Clone, Serialize`
-(`views.rs:22`), so it is absent from `bindings.ts` and out of `ipc-enum-camelcase`'s scope, and `check-type-drift.ts`
-covers six unrelated files. The mirror between `views.rs:24` and `ask-cmdr.ts:95` is maintained by hand and by tests
-only.
+**Where the hook goes.** `reject_group` (`store/proposals/claim.rs:169`) is a conditional
+`UPDATE … WHERE id = ?1 AND status = 'pending'` and returns `Rejected` only when a row actually moved, so putting the
+hook inside the `if let (RejectOutcome::Rejected, Some(group))` arm of `suggested_ops::reject`
+(`suggested_ops/mod.rs:134`) makes it once-per-group by construction, across restarts, with no new column.
 
-**Tests**: TDD the once-per-group guard (it's the cost-control invariant). After: the outcome event round-trips, and a
-rejection with `askCmdr.proactive` off runs no turn.
+⚠️ **Escape on a rename dialog is recorded as a rejection.** `cancel_bulk_rename_proposal`
+(`commands/agent/bulk_rename.rs:253`) calls `suggested_ops::reject`. With the hook in that arm and `askCmdr.proactive`
+defaulting on, dismissing a dialog would spend a model call and drop a "why did you say no?" turn into the user's ACTIVE
+RAIL THREAD, since that sweep's `conversation_id` is the rail conversation. **The most likely bug in M4 to ship
+unnoticed.** Either distinguish a dismissal from a rejection, or give `cancel_bulk_rename_proposal` its own outcome.
+
+⚠️ **Coalesce per SWEEP, not per group.** "Reject all" over an eight-group sweep is eight `Rejected` outcomes, so eight
+model calls, all serialized on one thread by `ConversationLocks`. One turn per sweep.
+
+⚠️ **Approval's real outcome is not at `approve`.** `suggested_ops::approve` (`mod.rs:118`) is only the claim; what
+actually happened lands later through `ProposalReportingSink` into `mark_group_completed` (`bridge/decorator.rs:29`). An
+outcome recorded at claim time says "approved" for a group that then skipped every file. That seam holds only a
+`Connection` on the write engine's thread, with `write-ops-isolation` watching.
+
+⚠️ **Not `AskCmdrStreamEvent`.** A rejection arrives through `suggested_ops_reject`
+(`commands/agent/suggested_ops.rs:187`) with no open chat channel, so mirroring `ModelChanged` there buys nothing.
+`SuggestionsChanged` already fires on every approve and reject (`suggested_ops/mod.rs:121,135`) and the rail can refetch
+on it, which removes one of the three Rust surfaces this milestone looked like it needed.
+
+The conversation link survives to the hook: `get_group` gives `set_id` (`read.rs:63`), `get_sweep` gives
+`conversation_id` (`:78`). It is nullable and NULLed when a thread is deleted, and M1 adds `delete_conversation` — a
+quiet wake proposes nothing so it can't orphan a sweep today, but keep the two in view.
+
+**Tests**: TDD the dialog-dismissal case (the one that would otherwise ship) and the per-sweep coalescing guard. After:
+the outcome reaches memory on both approve and reject, and a rejection with `askCmdr.proactive` off runs no turn.
 
 ## Execution order
 
 Sequential: M3.1 (the `CMDR_DATA_DIR` bug, independent) → M1 → M2 → M3 → M4. Inside M1 the order is the numbered one,
 and it is deliberate: the inbox's signature settles before the tap is wired against it.
 
-❌ Don't parallelize M1's steps across agents. The tap, the inbox owner, and the runner meet at one lock and one event
-variant, and three agents converging on `process_live_batch`'s signature is how you get a merge that compiles and taps
-nothing.
+❌ Don't parallelize M1's steps across agents. The tap, the writer thread, and the runner meet at one channel and one
+event variant, and three agents converging on `process_live_batch`'s signature is how you get a merge that compiles and
+taps nothing.
 
-M2's copy can be DRAFTED during M1, but it lands with its nine translations or not at all.
+Copy can be DRAFTED ahead, but every key lands with its nine translations or not at all. That applies to M1 too, which
+carries `nothing_to_suggest`'s two rail-label keys.
 
 ## Open for David
 
 1. **The four budget bumps** listed under "Needs David's consent" above, `index-crate-isolation` most urgently, since M1
    cannot land without it.
-2. **The follow-up turn on rejection** costs a model call per rejected group. Confirm before M4.
+2. **The follow-up turn on rejection** costs a model call per rejected SWEEP (the plan coalesces; per group would be
+   eight calls for one "reject all"). Confirm before M4.
 3. **M2's open question**: what the rail shows while a wake streams into a thread the user has open.
 
 ## Deliberately deferred
