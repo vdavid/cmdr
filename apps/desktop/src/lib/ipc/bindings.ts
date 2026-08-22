@@ -1656,8 +1656,9 @@ export const commands = {
    */
   getSystemMemoryInfo: () => __TAURI_INVOKE<SystemMemoryInfo>('get_system_memory_info'),
   /**
-   *  Tauri command: returns the localized system strings. The frontend caches
-   *  the result for the session and substitutes the placeholders itself.
+   *  Tauri command: returns the localized system strings. The frontend holds them
+   *  in a reactive snapshot and substitutes the placeholders itself, re-reading
+   *  this command whenever the OS locale changes.
    */
   getLocalizedSystemStrings: () => __TAURI_INVOKE<LocalizedSystemStrings>('get_localized_system_strings'),
   /**
