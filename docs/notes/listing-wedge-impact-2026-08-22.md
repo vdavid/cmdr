@@ -10,8 +10,9 @@ error-report channel is opt-in and essentially unused, the crash reporter cannot
 analytics heartbeat keeps beating from a background thread while the main thread is saturated. Every "no reports" fact
 below is weak evidence, and this note labels it as such rather than reading it as an all-clear.
 
-Every claim here is tagged **measured**, **derived**, or **guess**. Nothing was benchmarked for this note; the
-performance numbers are the ones the investigation and the fix took, quoted with their own caveats intact.
+Every claim here is tagged **measured**, **derived**, or **guess**. § 2 carries a **release-build** benchmark taken for
+this note (2026-08-22, both builds, six directory sizes); everything else quotes the investigation's and the fix's own
+debug numbers with their caveats intact.
 
 ## The short answer
 
@@ -23,6 +24,11 @@ performance numbers are the ones the investigation and the fix took, quoted with
 - **It does not deadlock, and it does not leak.** It saturates. In principle it clears when the driver stops; in
   practice the user's way out (a keystroke, a navigation, a settings toggle) runs through the wedged main thread, so
   force quit was the reliable remedy.
+- ❗ **In a RELEASE build, at the sizes people open, it was "big folders feel slow" rather than a wedge.** Measured
+  2026-08-22 (§ 2): with the drive index off, a keystroke at the bottom of the listing costs 52 ms at 20,000 rows, 432
+  ms at 75,000, 941 ms at 150,000, and 2,821 ms at 300,000, and the app answered every one. Never answering needs
+  roughly 500,000 rows, or roughly 150,000 with the drive index on. The debug builds every other number in these two
+  notes came from overstate the user's experience by about two orders of magnitude.
 - **Nothing in the wild reports it, and nothing would have.** Five in-app feedback messages exist in total, none about a
   freeze. Of 282 production error bundles, 141 of the 144 that carry an install id come from one install (David's, by
   the worktree paths in their notes). Since 2026-08-03, **one install out of 765 has auto error reporting switched on**.
@@ -87,64 +93,148 @@ scanning roughly `cursor row` entries. Two independent multipliers:
 
 - **The fan-out** is capped at 100 and is set by how many rows the view reports as visible. **Brief mode saturates the
   cap**: its range is `columns × itemsPerColumn`, easily past 100. Full mode reports the rows on screen plus the
-  virtualization buffer, so roughly 40 to 80. So the same directory costs materially more in Brief than in Full.
+  virtualization buffer. Measured at the default 1,080 × 720 window: Full 68, Brief 121 (so 100 after the cap). ❗ The
+  cost does NOT follow that ratio; see "The fan-out: Brief is not the expensive mode" below.
 - **The scan depth** is the cursor's row number, from v0.9.0 onward. At the top it is near zero; at the bottom of an
   N-row directory it is N.
 
 So bottom-versus-top for one sync is roughly N / 100: about 200× in a 20,000-row directory, about 740× in a 74,000-row
 one. The index driver caps the sync rate at one per pane per 2,000 ms, and two panes can each hold one.
 
-### What is actually measured
+### What is actually measured: the release curve
 
-⚠️ **Every performance number that exists for this defect came from a debug build.** There is **no release-build
-measurement at all**, and Rust debug builds are typically an order of magnitude or worse on a tight predicate loop like
-this one. Treat the absolutes as debug-only and the ratios as the transferable part, exactly as
-`listing-row-fetch-quadratic-2026-08-22.md` instructs.
+**Both builds are RELEASE builds** (`pnpm build --bundles app`, universal, arm64 slice running), on `Davids-M1-MBP`
+(Apple M1 Max, 10 cores, 64 GB), macOS 26.6.2 / Darwin 25.6.0, 2026-08-22. Pre-fix is `7fcaf9c5c`, the commit before
+`e39f05aa8`; post-fix is `main` at `e57ef0094`. Protocol and its traps: § "Method, and what to redo".
 
-From that note and the fix's before/after (dev/debug builds, macOS 26.5.2 / Darwin 25.6.0, 2026-08-22):
+Median of the moves the app ANSWERED, from `scripts/cursor-move-latency.py` (15 timed `move_cursor` calls per depth, in
+alternating blocks). **Every cell below answered 15 of 15** inside the probe's 5 s ceiling, on both builds, at every
+size. Nothing here ever stopped responding.
 
-- **19,513 rows, index off on every volume, cursor at row 19,100**: 0 of 15 `move_cursor` probes answered within the 5 s
-  ceiling. Fully wedged.
-- **19,513 rows, index off, cursor at row 10**: 1 of 15 answered, at 3,394 ms. Also unusable, at the **top** of the
-  listing.
-- **74,144 rows, index at its ordinary resting tick, cursor at bottom**: main thread 81% to 98% of samples inside the
-  IPC handler; `webview_execute_js` and keyboard IPC time out at 7 s.
-- **74,144 rows, cursor at top**: 13% of a core on the branch build, 6% on `main`. Usable.
-- After the fix, both depths answer 15 of 15, at a 6 ms and 23 ms median.
+"Just opened" starts probing about 8 seconds after the navigation, so the post-navigation tag-enrichment pass is still
+running at the larger sizes. "Settled" waits 90 to 240 seconds first, which is the steady state.
 
-### The row-10 result is the important one (derived)
+**Cursor at the bottom row**, which is the case the defect is about:
 
-At row 10 the scans are trivial: about 100 fetches over rows 0 to 100 is roughly 5,000 predicate evaluations, which
-cannot cost 3.4 seconds on any build. So at shallow depth **the fan-out itself is the cost**, not the scan: 100
-sequential IPC round trips, each hopping through wry's URL-scheme handler onto the main thread, each with its own serde
-round trip. That matches the fix's own decomposition, where the shallow case dropped to 6 ms once one `getFileRange`
-replaced 100 `getFileAt` calls.
+| rows    | pre, just opened | pre, settled | post, just opened | post, settled |
+| ------- | ---------------- | ------------ | ----------------- | ------------- |
+| 5,000   | 27 ms            | not taken    | 9 ms              | not taken     |
+| 20,000  | 52 ms            | 54 ms        | 9 ms              | not taken     |
+| 40,000  | 112 ms           | not taken    | 8 ms              | not taken     |
+| 75,000  | 604 ms           | 432 ms       | 137 ms            | not taken     |
+| 150,000 | 1,198 ms         | 941 ms       | 121 ms            | not taken     |
+| 300,000 | 3,056 ms         | 2,821 ms     | 233 ms            | 14 ms         |
 
-This changes the mental model in a way worth carrying forward: **cursor depth is the multiplier, but it is not the entry
-price.** A big directory in Brief mode was expensive at any cursor position.
+**Cursor at row 10**, same runs:
 
-⚠️ One alternative the data cannot exclude: the probe ran with two panes, and the other pane's cursor position was not
-recorded, so some of the row-10 cost may have been the sibling pane's deep sync. Nobody measured it either way.
+- **Pre-fix, settled**: 15 to 16 ms at every size from 20,000 to 300,000 rows.
+- **Pre-fix, just opened**: 12 ms up to 40,000 rows, then 191 ms at 75,000, 162 ms at 150,000, and 176 ms at 300,000.
+  That step is the post-navigation tag-enrichment pass, not the row lookup (see below), and it is transient.
+- **Post-fix**: 3 ms in every cell, opened or settled, 5,000 rows or 300,000.
 
-### The rule of thumb (derived, and soft)
+Main thread under back-to-back `move_cursor` at the bottom of the 75,000-row directory, 12 s `sample`
+(`scripts/main-thread-ipc-share.py`): **pre 98.5%** of main-thread samples inside the IPC handler against **post 3.9%**;
+samples with a leaf in the visibility scan (`scripts/listing-scan-leaves.py`) **3,651 against 47**; moves completed in
+40 s **112 against 12,350**. So the release build saturates the main thread exactly as the debug build did. What differs
+is the size of one command: at 75,000 rows it is about half a second, not five, so the queue drains between keystrokes
+and the window keeps answering.
 
-Stated in work per sync, which is the part that transfers across builds:
+⚠️ **Quote the table, not the `sample` runs, for what a keystroke costs.** The `sample` load sends moves as fast as the
+app takes them, and the mirror's 300 ms debounce coalesces them: at row 10 of the same directory that load reports 23%
+to 27% main-thread share and about 20 ms per move, while the latency probe (one move, wait for the acknowledgement, next
+move, which is what a person typing does) reports 191 ms. Both are real; only the second one is a keystroke.
 
-- **Under ~10⁴ predicate evaluations per sync** (a few thousand rows, cursor anywhere, or any directory with the cursor
-  near the top in Full mode): the scan is not the cost. Whatever remains is the 40 to 100 IPC round trips.
-- **Around 10⁶** (roughly 10,000 rows with the cursor at the bottom, or 100,000 rows a tenth of the way down): the
-  measured debug builds were already wedged.
-- **Around 10⁷** (the 74,144-row bottom-of-listing case): the main thread spent 81% to 98% of its time in the IPC
-  handler and IPC timed out at 7 s.
+### The release-build thresholds (measured)
 
-❌ **Do not quote a release-build row count from this note.** The one datum that would pin it does not exist. A guess,
-labelled as one: a release build probably buys somewhere between 10× and 30× on this loop, which would move the wedge
-threshold from the measured ~19,500 rows into the low hundreds of thousands, while leaving the shallow-depth fan-out
-cost roughly where it is because that is dominated by IPC transport rather than by Rust code. **Nobody measured this.**
+Read down the "settled, bottom" column. Full view, default 1,080 × 720 window, drive index off, one pane in the big
+directory and the other in a one-file directory.
 
-**What would settle it in about 20 minutes**: build the pre-fix commit (`290a23a58~1`) in release, park a pane at the
-bottom of directories of 5k, 20k, and 75k rows with the index off, and run `scripts/cursor-move-latency.py` at each.
-That gives the release-build thresholds directly and against the same probe the fix used.
+- **Up to 40,000 rows: imperceptible.** 12 to 112 ms at the bottom, 12 ms at the top. Nobody would report this.
+- **75,000 rows: noticeable.** About 0.4 s per arrow key at the bottom, and about 0.2 s anywhere in the listing for the
+  first minute or two after opening it. This is the size where the pane starts feeling heavy.
+- **150,000 rows: sluggish.** About 1 s per arrow key at the bottom. Navigating is unpleasant; the app still answers
+  every key.
+- **300,000 rows: unusable.** About 3 s per arrow key at the bottom, still answered.
+- **Wedged (a keystroke that never lands) needs roughly 500,000 rows.** Derived by extrapolating the bottom-of-listing
+  trend, which costs about 9.4 ms per 1,000 rows at 300,000 and is climbing (5.6 ms at 75,000, 6.2 ms at 150,000, the
+  rise being cache pressure as the entry vector passes 60 MB). ❗ Not measured; nothing was built that large.
+
+**The top of a listing is free once the directory has settled**: 12 to 16 ms at every size from 5,000 to 300,000 rows,
+which is what the shape predicts, since the fan-out is fixed and the scan short-circuits.
+
+### The measured debug-to-release factor, against the guessed one
+
+This note previously guessed 10× to 30×. The comparable pair is the fix's own debug before/after at 19,513 rows against
+the release run at 20,000 rows, same probe, same index-off configuration:
+
+- **Bottom of the listing**: debug answered 0 of 15 inside 5,000 ms; release answers 52 ms. So **at least 96×**, and the
+  debug side is a floor rather than a measurement.
+- **Row 10**: debug 3,394 ms; release 12 ms. **About 280×.**
+
+Two corrections fall out of that:
+
+- The factor is **far larger than the guess**, so every debug absolute in `listing-row-fetch-quadratic-2026-08-22.md`
+  overstates what a user experienced by roughly two orders of magnitude.
+- The guess that a release build would leave the **shallow-depth fan-out roughly where it was**, "because that is
+  dominated by IPC transport rather than by Rust code", is **refuted**: the shallow case improved more (280×) than the
+  deep one (≥96×). The 68 to 100 IPC round trips per sync cost about 12 ms in release, so the transport was never the
+  expensive part; the debug build's serde and command-dispatch overhead was.
+
+### The fan-out: Brief is not the expensive mode (measured)
+
+§ "The shape" says Brief costs materially more than Full because it saturates the 100-fetch cap while Full reports 40 to
+80 rows. The fan-out part is right, and was confirmed from `cmdr://state`: Full reports a 68-row visible range at the
+default window, Brief reports 121 (so 100 after the cap). The cost conclusion is wrong.
+
+At 75,000 rows, pre-fix, just opened: **Brief 21 ms at row 10 and 683 ms at the bottom; Full 191 ms and 604 ms.** At the
+bottom Brief is 13% worse, not the 47% the fan-out ratio implies. At the top Brief is **nine times better**, because the
+row 10 cost at that size is the post-navigation enrichment pass rather than the fetches, and Brief does not wait on it.
+
+### The row-10 cost is enrichment, not fan-out (measured)
+
+The old § "The row-10 result is the important one" reasoned from a 3,394 ms debug row-10 reading that the fan-out itself
+was the entry price. In release, row 10 costs 12 ms at every size **once the directory has settled**, and the 162 to 191
+ms readings at 75,000 rows and up are transient: they disappear after 90 seconds of sitting still (191 → 16 ms at
+75,000, 162 → 15 ms at 150,000, 176 → 16 ms at 300,000), and they show up on the post-fix build too (137 ms at the
+bottom of 75,000 rows fresh against 14 ms settled at 300,000 rows).
+
+A `sample` during that window names it: `commands::file_system::listing::enrich_tags`, on a blocking-pool thread, inside
+`listing::caching::apply_tags_to_listing`, whose leaf is `_platform_memcmp`. That function looks each updated path up
+with a linear `entries.iter().position(...)`, under the listing cache's WRITE lock, once per update, so filling Finder
+tags for an N-row directory is O(N²) path comparisons. On the pre-fix build the main thread then blocked on the matching
+read lock inside the **synchronous** `get_file_range` command (3,235 of 6,250 main-thread samples parked at one
+instruction). On `main` the same enrichment still runs and still holds the write lock, but the listing reads are
+`async`, so it costs the pane latency instead of the window. ⚠️ **That is a separate, still-open defect**, and the row
+map did not touch it; it is the clearest evidence that fix (3) is what turns a wedge into slow rows.
+
+### The rule of thumb, recalibrated to release
+
+Stated in work per sync, `min(visible rows, 100) × cursor row` predicate evaluations:
+
+- **~10⁶ evaluations** (20,000 rows with the cursor at the bottom): about 50 ms. Barely perceptible.
+- **~5 × 10⁶** (75,000 rows at the bottom): about 0.4 s. Noticeable.
+- **~10⁷** (150,000 rows at the bottom): about 1 s. Sluggish.
+- **~2 × 10⁷** (300,000 rows at the bottom): about 3 s. Unusable, still answered.
+- **~3 × 10⁷** and up: extrapolated past the 5 s acknowledgement ceiling.
+
+The same scale on the debug builds put the wedge at ~10⁶, which is where release sits at 50 ms.
+
+### What the drive index adds (derived, not measured)
+
+Every number above has the index **off** on every volume, which is the minority configuration: 761 of 765 installs run
+with it on (§ 4). The index does not change what one sync costs; it adds syncs with no user input, at most one per pane
+per 2,000 ms cooldown. So it multiplies the measured per-sync cost by a duty cycle:
+
+- **75,000 rows**: 0.43 s of main thread every 2 s per pane, so about 22% per pane and 43% for two panes parked deep.
+  The app is busy but keeps up.
+- **150,000 rows**: about 47% per pane, 94% for two. That is the edge.
+- **300,000 rows**: over 100% for a single pane. It never gets ahead, with nobody touching the app.
+
+This is a **lower bound**: an index-driven sync also runs `refresh_listing_index_sizes`, which the cursor-driven one
+does not. Read against the "wedged needs ~500,000 rows" figure above, the index roughly **triples the reach of the
+defect**, moving the no-user-input wedge down to around 150,000 rows. ❗ Nobody measured this. Doing so means enabling
+the drive index on a whole volume, which was not something to start on an unattended shared machine; on a machine that
+can afford the scan it is one run.
 
 ## 3. Does it recover on its own?
 
@@ -164,9 +254,12 @@ But the drivers do not stop on their own while a pane sits in a big directory on
 And the three ways a person would escape all run through the wedged main thread: pressing a key to navigate out,
 clicking a breadcrumb, and opening Settings to switch off the index. That is why the practical answer was force quit.
 
-**What the evidence proves**: that it stayed wedged for a long time under a live index. The investigation saw IPC time
-out at 7 s and found the app still wedged 15 minutes after the last user action, and the fix's probe got 0 of 15 cursor
-moves answered inside a 5 s ceiling.
+**What the evidence proves**: that a DEBUG build stayed wedged for a long time under a live index. The investigation saw
+IPC time out at 7 s and found the app still wedged 15 minutes after the last user action, and the fix's probe got 0 of
+15 cursor moves answered inside a 5 s ceiling. ❗ **No release build in § 2 ever reached that state**, at any size up to
+300,000 rows with the index off; the escape routes below stayed open because the main thread kept draining between
+keystrokes. Treat "force quit was the remedy" as a debug-build observation unless someone measures it in release with
+the index on.
 
 **What it does not prove**: that the wedge is permanent. Nobody parked a pane in a large, quiet directory on a fully
 settled index and waited. The 15-minute observation was taken in `target/debug/deps`, a directory that was itself
@@ -257,8 +350,12 @@ was answered with `CLOUDFLARE_API_TOKEN`, which this machine has.
 
 ## 5. What to tell testers
 
-**Recommendation: a release-note line, and nothing more.** Reasons, in order of weight:
+**Recommendation: a release-note line, and nothing more.** The release measurement in § 2 **strengthens** this rather
+than changing it, and it changes the WORDING: a release build never stopped answering at any size a person opens, so a
+note promising to fix a freeze would describe something testers did not experience. Reasons, in order of weight:
 
+- **Nobody on a release build was wedged.** At 20,000 rows a keystroke cost 52 ms and at 75,000 rows 0.43 s. That is
+  "this folder feels heavy", which is worth fixing and is not worth an apology.
 - We have no evidence any specific person hit it, and no way to identify one if they did. A direct heads-up would have
   no addressee.
 - The trigger needs a large directory plus time parked in it, which is not a common beta session.
@@ -271,21 +368,24 @@ was answered with `CLOUDFLARE_API_TOKEN`, which this machine has.
 gone. Nothing recovers them, which is another argument for spending the effort on the release note rather than on
 outreach.
 
-### Draft release-note line (David's review required, not published)
+### Draft release-note line (David's review required, ❌ nothing published)
 
-> **Big folders stay responsive.** Sitting deep in a folder with tens of thousands of files could make Cmdr stop
-> answering the keyboard while the drive index worked in the background. Row lookups now go straight to the row instead
-> of counting up to it, and the listing reads have moved off the main thread, so the window keeps responding however
-> large the folder is.
+Revised against the release measurement. ❗ The earlier drafts said the app "could stop answering the keyboard" and
+"could tie up the app until you quit it"; § 2 shows a release build kept answering at every size tested, so those lines
+overstate what shipped. **Preferred:**
 
-Second option, if David would rather name the severity plainly:
+> **Big folders got much faster.** Moving the cursor near the bottom of a folder with tens of thousands of files used to
+> slow down the further down you were, because finding a row meant counting up to it. Rows are now looked up directly,
+> and the listing reads have moved off the main thread, so a 100,000-file folder feels like a small one.
 
-> **Fixed: Cmdr could stop responding in very large folders.** With the cursor deep in a folder holding tens of
-> thousands of files, background indexing could tie up the app until you quit it. That is fixed, and the listing reads
-> that caused it can no longer hold up the window.
+Second option, if David would rather put a number on it:
 
-Both follow `docs/style-guide.md`. The second is the more honest one and the one to prefer if David is comfortable
-naming a force quit in a release note.
+> **Big folders got much faster.** Arrow keys near the bottom of a huge folder used to lag: about half a second per
+> keypress in a 75,000-file folder, and worse the bigger it got. Rows are now looked up directly instead of counted up
+> to, so the same folder answers in a few milliseconds.
+
+Both follow `docs/style-guide.md`. The second is the one to prefer if David is happy quoting a benchmark; both are
+honest about severity in a way the previous drafts were not.
 
 ## Method, and what to redo
 
@@ -296,5 +396,46 @@ naming a force quit in a release note.
   manifests and logs read. Read-only throughout.
 - **The config-snapshot counts depend on the persist-only-non-default rule.** If that rule ever changes, an absent key
   stops meaning "default" and every percentage in § 4 has to be recomputed.
-- **The one measurement worth taking**: the release-build thresholds in § 2, which would replace this note's softest
-  section with numbers.
+
+### The § 2 release benchmark, and how to re-run it
+
+- **The builds.** `CMDR_INSTANCE_ID=<id> APPLE_SIGNING_IDENTITY=- pnpm build --bundles app`, once per side, run to
+  completion **before** any measurement. The instance id gives each build its own bundle identifier and data dir, so the
+  two never collide and neither touches a real install. Expect roughly 45 minutes for the pair: `pnpm build` produces a
+  UNIVERSAL binary, so cargo compiles the workspace twice (arm64, then x86_64). Signing needs `-` for ad-hoc; the real
+  Developer ID is not on this machine, and the updater key is not either, so the run ends on a
+  `TAURI_SIGNING_PRIVATE_KEY` error **after** the `.app` is written. That error is not a build failure for this purpose.
+- **The pre-fix commit is `7fcaf9c5c`**, the commit before `e39f05aa8`. ❗ This note previously named `290a23a58~1`,
+  which resolves to `e39f05aa8` and therefore already carries the row map. Building that would have measured a
+  half-fixed app.
+- **Fixtures**: 5,000 / 20,000 / 40,000 / 75,000 / 150,000 / 300,000 empty files under `/private/tmp` (outside
+  Spotlight, and off the repo so no build can touch them), named from eight realistic patterns
+  (`IMG_20240612_000123.jpg`, `invoice-2025-06-…pdf`, `libcmdr_index-<16 hex>.rlib`, and so on) for a **mean name length
+  of 39 characters**. Name length is load-bearing: the predicate is two `str::contains` calls over the name, so
+  one-character names would understate the per-entry cost several-fold.
+- **Per run**: delete the instance's data dir, write a `settings.json` seeding `indexing.enabled: false`,
+  `indexing.indexSize: false`, `onboarding.completed: true`, `developer.mcpEnabled: true`, `analytics.enabled: false`,
+  and `_schemaVersion: 4`; launch the `.app` binary with `CMDR_INSTANCE_ID`, `CMDR_DATA_DIR`, and `CMDR_MCP_ENABLED=1`;
+  park the **right** pane in a one-file directory (so no sibling-pane sync lands in the number, which is the ambiguity
+  the debug run could not exclude); park the left pane in the fixture; then run
+  `scripts/cursor-move-latency.py <shallow> <deep> 3`.
+- ⚠️ **Disable App Nap, or you will measure macOS instead of Cmdr.**
+  `defaults write com.veszelovszki.cmdr-<id> NSAppSleepDisabled -bool YES`, plus a `caffeinate -dimsu` for the session.
+  Without it, a run that let the app sit idle for 90 seconds before probing read **1,158 ms** at the bottom of a
+  20,000-row directory; with it, the same protocol read **54 ms**. The artifact is 20×, it is build-independent (the
+  post-fix build showed 70 ms against 9 ms), and it invented a complete false finding: a "pre-fix release builds wedge
+  with no user input at 150,000 rows, 0 of 15 moves answered" that evaporated entirely once App Nap was off (15 ms).
+  This box runs lid-shut and headless, which is the worst case for it.
+- ⚠️ **`scripts/main-thread-ipc-share.py` reported 0.0% on the first release sample.** A debug build carries an IPC
+  command through wry's custom URL scheme; a release build carries it through the WebKit script-message handler, so the
+  script's single entry-frame marker never matched and a 98.5%-busy main thread read as free. Fixed in `0ff4890a6`: both
+  markers are matched, and a sample with neither is now an error rather than a 0%.
+- ⚠️ **`scripts/listing-scan-leaves.py` counts leaves process-wide, not on the main thread.** Its top-of-stack numbers
+  are a good before/after signal and are NOT evidence about which thread paid; read the tree for that. Following its
+  histogram named `apply_tags_to_listing` as a main-thread cost here when the function actually runs on the blocking
+  pool.
+- ⚠️ **Two drive patterns give two different answers, and only one is a keystroke.** Sending `move_cursor` back to back
+  as fast as the app takes them lets the mirror's 300 ms debounce coalesce the syncs, so it reports about 20 ms per move
+  at row 10 of a 75,000-row directory where the latency probe reports 191 ms. Use the latency probe for anything
+  described as "what a keystroke costs".
+- **Still not measured**: the drive index ON at a large size (§ 2 derives it), and any size past 300,000 rows.

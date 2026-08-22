@@ -9,13 +9,18 @@ ratio.
 investigation is kept because the measurement traps in it are the ones anybody re-opening this question will hit first.
 
 **Who it could have hurt, which releases carried it, and whether it recovers on its own**:
-`listing-wedge-impact-2026-08-22.md`. It also settles that the row-10 result below is the fan-out rather than the scan,
-which changes the mental model this note leaves you with.
+`listing-wedge-impact-2026-08-22.md`. It also carries the release-build measurement, which changes the mental model this
+note leaves you with twice over: the row-10 cost is neither the scan nor the fan-out but the post-navigation tag
+enrichment, and a release build is roughly two orders of magnitude faster than everything measured here.
 
-⚠️ **Both sides are DEBUG builds.** Quote the RATIOS, never the absolute milliseconds or percentages, off this note. ⚠️
-Read `idle-cpu-attribution-2026-08-03.md` first. Its rules were applied here: userspace and file-IO are split explicitly
-below, no ordering rests on one `sample` window, and the mechanism was confirmed by reading the code before any
-percentage was trusted.
+⚠️ **Both sides are DEBUG builds.** Quote the RATIOS, never the absolute milliseconds or percentages, off this note. ❗
+**Release numbers exist now** and they are not close: `listing-wedge-impact-2026-08-22.md` § 2 measured the same probe
+on release builds of both sides at six directory sizes, and a release build is **about 96× faster at the bottom of a
+20,000-row listing and about 280× faster at row 10**. So the wedge this note describes is a debug-build phenomenon; the
+release build at the same size answers a keystroke in 52 ms. Take the mechanism from here and the severity from there.
+⚠️ Read `idle-cpu-attribution-2026-08-03.md` first. Its rules were applied here: userspace and file-IO are split
+explicitly below, no ordering rests on one `sample` window, and the mechanism was confirmed by reading the code before
+any percentage was trusted.
 
 ## The mechanism
 
@@ -29,7 +34,10 @@ percentage was trusted.
    range, one IPC round trip each.
 5. `get_file_at` is a **synchronous** `#[tauri::command]` (`commands/file_system/listing.rs`), so Tauri 2 runs it on the
    **main thread**. On macOS it arrives through wry's `url_scheme_handler::start_task`, which is Tauri's IPC transport,
-   ❗ **not** `file_viewer/media_protocol.rs`. A sample naming a "URL-scheme handler" here is naming the IPC path.
+   ❗ **not** `file_viewer/media_protocol.rs`. A sample naming a "URL-scheme handler" here is naming the IPC path. ⚠️
+   That frame is the DEBUG transport; a release build carries the same command through the WebKit script-message handler
+   (`wry::…did_receive` → `tauri_runtime_wry::create_ipc_handler`), so a probe matching only the first one reads a busy
+   main thread as free.
 6. `operations::get_file_at` runs `visible_entries(&listing.entries, include_hidden).nth(index)`: a linear scan from 0
    to `index` through a **boxed `dyn Iterator`** (so one vtable dispatch per entry), calling `is_hidden_from_listings`
    on every entry on the way. When the result is `None` it then runs a **second** full `.count()` scan.
@@ -142,6 +150,11 @@ the window.
   top-of-listing reading and briefly refuted a correct hypothesis.
 - **Creating a worktree while the app runs is a measurement hazard.** An APFS `target/` clone lands thousands of files
   on an indexed volume; it drove the writer queue to 12,291 and added ~80 s of writer CPU here.
+- **Measuring a RELEASE build brings three more traps**, all of which produced a wrong answer first:
+  `main-thread-ipc-share.py` matched only the debug IPC transport (fixed in `0ff4890a6`), App Nap on a lid-shut machine
+  inflated a latency by 20×, and hammering `move_cursor` back to back lets the 300 ms debounce coalesce the syncs the
+  probe is trying to time. Full protocol and the numbers behind each: `listing-wedge-impact-2026-08-22.md` § "The § 2
+  release benchmark, and how to re-run it".
 
 ## What shipped (2026-08-22)
 
