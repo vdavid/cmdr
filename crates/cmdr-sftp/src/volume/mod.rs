@@ -25,6 +25,7 @@ use crate::transport::{self, DialOutcome, HostKeyPrompt, SshConnection};
 mod mapping;
 mod paths;
 mod query;
+mod streams;
 mod volume_impl;
 
 #[cfg(any(test, feature = "testing"))]

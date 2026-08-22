@@ -10,9 +10,10 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::{LaneKey, ListingProgress, SpaceInfo, Volume, VolumeError, WatchCoverage};
+use cmdr_fs::volume::{LaneKey, ListingProgress, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage};
 use tokio_util::sync::CancellationToken;
 
+use super::streams::{READ_WINDOW_DEPTH, SCAN_WINDOW_DEPTH};
 use super::{BACKEND, SftpVolume};
 
 impl Volume for SftpVolume {
@@ -80,6 +81,62 @@ impl Volume for SftpVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
         Box::pin(self.is_directory_impl(path))
+    }
+
+    // ── The byte path ────────────────────────────────────────────────
+
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+
+    /// The primitive the copy path reads through.
+    ///
+    /// Behind it is a window of positioned reads, ❗ never the engine's own file
+    /// offset: `streams.rs` says what that would cost.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let stream = self.open_read_stream_impl(path, READ_WINDOW_DEPTH).await?;
+            Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
+        })
+    }
+
+    /// The background scan's reads, ❗ deliberately narrower than the foreground
+    /// window: both share one SSH channel, and a prefetch that fills the channel
+    /// window is a pane that waits for it.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn open_read_stream_for_scan<'a>(
+        &'a self,
+        path: &'a Path,
+        _size_hint: Option<u64>,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let stream = self.open_read_stream_impl(path, SCAN_WINDOW_DEPTH).await?;
+            Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
+        })
+    }
+
+    /// The positioned read remote-archive browsing runs on.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn read_range<'a>(
+        &'a self,
+        path: &'a Path,
+        offset: u64,
+        len: usize,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
+        Box::pin(self.read_range_impl(path, offset, len))
     }
 
     // ── What this backend is, in capability terms ────────────────────

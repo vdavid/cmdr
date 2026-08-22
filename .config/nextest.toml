@@ -312,6 +312,16 @@ test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2
 
+[[profile.default.overrides]]
+# The SFTP read-window measurements (`crates/cmdr-sftp/src/volume/streams_bench.rs`).
+# ❗ Deliberately NOT `#[ignore]`d — the integration lane runs `--run-ignored only`
+# over that whole package, so an ignored measurement would gate CI on a throughput
+# ratio taken under runner contention. They gate on `CMDR_SFTP_BENCH=1` instead and
+# cost nothing in every other run; with it set, one cell moves hundreds of MiB over
+# a `netem`-delayed link, which is minutes.
+filter = 'test(streams_bench::)'
+slow-timeout = { period = "600s", terminate-after = 1 }
+
 [profile.default]
 # Show test output for failing tests only
 failure-output = "immediate"

@@ -8,8 +8,7 @@ it.
 
 ## The connection model
 
-**One SSH connection per volume, one SFTP channel on it. Concurrency is per volume; the read window (when it lands) is
-per stream.**
+**One SSH connection per volume, one SFTP channel on it. Concurrency is per volume; the read window is per stream.**
 
 - Concurrency 4 means four Cmdr _operations_ sharing one channel, not four TCP connections. A second connection means a
   second authentication, and with keyboard-interactive that means a second 2FA prompt.
@@ -22,8 +21,102 @@ per stream.**
 
 `transport.rs` raises `russh`'s channel window from its 2 MiB default to 16 MiB. That number is load-bearing rather than
 cosmetic: at 2 MiB, eight 255 KiB reads already fill the channel, so a request window of depth 8 and one of depth 32
-measure the same 14–18 MB/s at 50 ms RTT. Raising it is what let depth pay at all — 42 MB/s at depth 32. It does
+measure the same 14–18 MB/s at 50 ms RTT. Raising it is what lets depth pay at all (§ "The read window"). It does
 **nothing** for uploads, where the server's window governs and OpenSSH fixes it at 2 MiB.
+
+## The read window
+
+A sequential SFTP read is one request, one round trip, one chunk: 255 KiB over a 50 ms link is about 5 MB/s whatever the
+server and its disks can do. `streams.rs` keeps `READ_WINDOW_DEPTH` positioned reads in flight and reassembles them in
+file order, which measures 7× that on the same link.
+
+**The shape**, following `cmdr-smb/src/volume/streams.rs`:
+
+- A producer task on `host.runtime()` (❌ never `tokio::spawn` — a backend inherits whatever runtime it is called on),
+  feeding a bounded channel two chunks deep. Peak memory per stream is `(depth + 2) × 255 KiB` whatever the file's size.
+- `total_size` crosses a oneshot **before the constructor returns**, so a caller's first progress tick is honest.
+- Dropping the stream cancels the producer. Both signals work on their own: the cancel oneshot fires from `Drop`, and
+  the closed channel stops the next `send`.
+- `ChunkWindow` is generic over a `PositionedRead` seam, so reassembly is unit-tested against a double that short-reads
+  and answers backwards on purpose. `RemoteFile` is the only production implementation, and `FuturesOrdered` is what
+  turns out-of-order completions into an in-order stream with no reassembly buffer to keep.
+
+**The open costs two round trips, not three.** The `fstat` and the FIRST chunk read go out together, so a small file —
+the folder-copy case, and the one that multiplies by ten thousand — is open plus one round trip. Reading past the end of
+a file is an empty answer rather than an error, which is what makes the speculative first read safe.
+
+**The length is what the `fstat` at open says.** A file that GREW under a running read isn't chased (SMB fixes its
+length at the CREATE response for the same reason); a file that SHRANK reports what exists, because a read answering
+empty ends the stream wherever it lands. ❗ So the hint on `open_read_stream_with_hint` buys nothing here and the trait
+default is the answer: SFTP has no compound open to spend it on, and the `fstat` rides along with a read we were going
+to issue anyway. `open_read_stream_at_offset` stays `NotSupported` — nothing calls it with a non-zero offset, and
+`CheckpointStream` parks a paused copy in place rather than reopening.
+
+**`read_range` runs the same window** over exactly `[offset, offset + len)`, and returns short only at end of file, so a
+caller never loops for a network short read. It is the natural place to reach for `read_all`, which is hazard 3.
+
+**Background scan reads run at `SCAN_WINDOW_DEPTH` = 2.** The index scan's prefetch shares the one channel with whatever
+the user is doing, and a background read that fills the channel window is a foreground read waiting for it. ❗ There is
+no scan-connection pool like SMB's, because a second connection is a second authentication (§ "The connection model"),
+so `begin_scan_session` / `end_scan_session` keep their no-op defaults.
+
+### The depth, and the curve that set it
+
+Measured 2026-08-22 against `sftp-fixture-bench` (Alpine + OpenSSH `sftp-server`, `netem delay 50ms`, 128 MiB export,
+release build, 32 MiB read per stream), aggregate MB/s over one SSH channel:
+
+| depth | 1 stream | 4 streams | requests in flight (1 / 4) |
+| ----- | -------- | --------- | -------------------------- |
+| 1     | 4.8      | 18.9      | 1 / 4                      |
+| 2     | 9.4      | 37.0      | 2 / 8                      |
+| 4     | 17.7     | 38.7      | 4 / 16                     |
+| **8** | **32.5** | **38.7**  | 8 / 32                     |
+| 16    | 28.8     | 37.1      | 16 / 64                    |
+| 32    | 23.5     | 35.3      | 32 / 128                   |
+
+**Depth 8 is the joint optimum, and 32 is worse than useless.** One stream peaks there and loses a quarter of its
+throughput by depth 32; four streams are within noise of their own peak at 8 and decline past it. The plan's starting
+number of 32 was the single-stream loopback shape, and the SMB precedent held: useful width is 4–8, not the number a
+one-stream benchmark suggests.
+
+Why deeper hurts is the two windows interacting, exactly as the plan predicted: four streams at depth 32 is ~32 MiB of
+outstanding read data against a 16 MiB channel window, so the streams spend the difference throttling each other. What
+the aggregate column shows is that the ceiling is **total** requests in flight, not per-stream depth: 8 outstanding
+requests (four streams at depth 2) already reach 37 MB/s, and nothing above that buys anything.
+
+- **`max_pending_requests` moves nothing**, as the plan said it wouldn't. Raising it from the default 100 to 400
+  reproduced the curve within noise (1 stream: 4.8 / 9.4 / 18.4 / 32.6 / 28.4 / 24.3). It is a flush TRIGGER, not a
+  ceiling — nothing in the crate blocks a sender — so it stays at the default.
+- **Peak resident memory is 30.6 MiB** with eight volumes connected and all thirty-two streams running at once; eight
+  idle volumes cost 14.9 MiB over a 3.1 MiB baseline, so a mounted server is ~1.5 MiB. The 16 MiB channel window is an
+  advertised credit rather than an allocation, so principle 5 is comfortable and the window stays where it is.
+- **The 50 ms ceiling is the link, not the fixture.** The same curve without `netem` runs 180–280 MB/s at every depth,
+  matching the crate evaluation's loopback column, so the ~38 MB/s is not the container's half-CPU cap.
+
+### Measuring it again
+
+`streams_bench.rs`, and ❗ **not** as `#[ignore]`d cells: the integration lane runs `--run-ignored only` over this whole
+package, so an ignored measurement would gate CI on a throughput ratio taken under runner contention. They read
+`CMDR_SFTP_BENCH=1` and cost nothing in every other run. `.config/nextest.toml` grants them a 600 s slow-timeout, since
+the default 8 s cap kills a measurement mid-curve.
+
+```sh
+./apps/desktop/test/sftp-servers/start.sh bench
+docker exec sftp-fixture-sftp-fixture-bench-1 tc qdisc replace dev eth0 root netem delay 50ms limit 50000
+CMDR_SFTP_BENCH=1 cargo nextest run -p cmdr-sftp --release --no-capture streams_bench
+```
+
+Two things about the method that are worth more than they look:
+
+- **Warm the connection first, or measure TCP's ramp instead of the window.** `bench_volume` reads and discards 32 MiB
+  before anything is timed. Without it, identical runs spread two to one (14.8 to 30.8 MB/s) because a 50 ms link takes
+  a few megabytes to open its congestion window.
+- **Raise `netem`'s queue limit.** Its default `limit 1000` packets is about one bandwidth-delay product at 30 MB/s, so
+  the measurement rides on the edge of packet loss.
+
+⚠️ The absolute numbers are the shape of a curve, not truth: Docker plus `netem` carried ±30% run-to-run spread in the
+crate evaluation. Which is why the one assertion in that file compares serial against windowed **in the same run on the
+same server** and asks for 4× where the shape shows 7× (7.2×, 7.1×, 7.0× across three consecutive runs).
 
 ## Crate hazards
 
@@ -66,16 +159,20 @@ which reads as an unrelated test binary crash rather than as a failing assertion
 
 ### 3. `File::read`'s offset bookkeeping holes a file
 
-Not yet reachable (there is no byte path in this crate yet), but the trap is here for whoever writes it. The engine's
-own `File::read` clamps `n`, may return **fewer** bytes than asked, and then advances the file offset by **`n`, the
-requested length**. `read_all` loops doing `n -= bytes.len()`, so a short read re-reads from an offset that already
-skipped the gap: a silent hole plus duplicated bytes.
+The engine's own `File::read` clamps `n`, may return **fewer** bytes than asked, and then advances the file offset by
+**`n`, the requested length**. `read_all` loops doing `n -= bytes.len()`, so a short read re-reads from an offset that
+already skipped the gap: a silent hole plus duplicated bytes.
 
 ❌ Never use `read_all` or `File`'s own offset for a byte path. Issue positioned reads and track offsets yourself.
-`File: Clone` shares the remote handle through an `Arc`, so N clones each seeked to their own offset give depth N with
-no extra `SSH_FXP_OPEN`. ✅ `TokioCompatFile` is **not** affected: it advances by bytes consumed.
+`RemoteFile::read_at` seeks before every request for exactly this reason, and `File: Clone` shares the remote handle
+through an `Arc`, so N clones each seeked to their own offset give depth N with no extra `SSH_FXP_OPEN`. ✅
+`TokioCompatFile` is **not** affected: it advances by bytes consumed.
 
-`sftp-fixture-shortreads` is the server that catches it.
+`sftp-fixture-shortreads` is the server that catches it, and
+`a_short_reading_server_still_hands_the_file_back_byte_for_byte` is the cell. Measured against the naive shape
+(2026-08-22): a `read_all` over that server's 4 KiB answers runs its offset off the end of a 4 MiB file within a 200 KiB
+range read and fails with `UnexpectedEof`; on a file big enough to absorb the runaway it returns bytes from the wrong
+places instead.
 
 ### 4. A filename that isn't UTF-8 costs the SESSION
 
@@ -218,6 +315,8 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
 - **`listing_watch_coverage` → `None`** and there is no watcher, so ❌ nothing here may call `authoritative_listing`.
   Claiming freshness we can't keep is how a pre-flight scan reuses a stale cache and overwrites a file it thought wasn't
   there.
+- **`supports_streaming` → true**, with `open_read_stream`, `open_read_stream_for_scan`, and `read_range` behind it (§
+  "The read window"). The other read overrides deliberately keep their defaults, and that section says why.
 - **`paths_are_os_visible` → false, `local_path` → `None`.** Answering otherwise would let a drag hand Finder a path
   that resolves to nothing, or worse to a local file of the same name.
 - **`get_space_info` → `NotSupported`, `space_poll_interval` → `None`.** `statvfs@openssh.com` is **not reachable from

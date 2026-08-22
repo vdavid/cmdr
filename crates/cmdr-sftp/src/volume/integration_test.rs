@@ -17,7 +17,7 @@ use cmdr_fs::volume::host::host_keys::InMemoryHostKeys;
 use cmdr_fs::volume::{Volume, VolumeError};
 
 use super::testing::*;
-use super::{SftpConnectOutcome, connect_sftp_volume};
+use super::{SftpConnectOutcome, SftpVolume, connect_sftp_volume};
 use crate::transport::HostKeyPromptKind;
 
 const FIXTURE: &str = "sftp-servers/start.sh (sftp-fixture)";
@@ -402,7 +402,198 @@ async fn abandoning_a_connect_does_not_panic_the_engines_task() {
     assert!(volume.exists(Path::new("hello.txt")).await);
 }
 
+// ── The byte path ────────────────────────────────────────────────────
+
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_short_reading_server_still_hands_the_file_back_byte_for_byte() {
+    // ❗ THE cell for the engine's offset hazard. `sftp-fixture-shortreads`
+    // truncates every `SSH_FXP_DATA` to 4 KiB, which SFTP explicitly allows, so a
+    // reader that advances by the length it ASKED for skips 251 KiB and then reads
+    // the following chunk twice. The file says where each of its own bytes
+    // belongs, so the damage is an assertion rather than a mystery.
+    let params = fixture_params("SHORTREADS", 12487);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let read = read_whole(&volume, FIXTURE_LARGE_FILE).await;
+
+    assert!(
+        read.len() >= 1024 * 1024,
+        "the fixture's large file must be worth windowing"
+    );
+    assert_same_bytes(&read, &fixture_large_bytes(read.len()), "a short-read stream");
+}
+
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_stream_knows_its_size_before_it_yields_a_byte() {
+    // The transfer layer draws its progress bar from `total_size()` before the
+    // first chunk lands, so an honest answer there is what keeps an ETA honest.
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let mut stream = volume
+        .open_read_stream(Path::new(FIXTURE_LARGE_FILE))
+        .await
+        .expect(FIXTURE);
+    let size = stream.total_size();
+    assert!(size >= 1024 * 1024);
+
+    let mut read = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        read.extend_from_slice(&chunk.expect(FIXTURE));
+    }
+    assert_eq!(read.len() as u64, size, "the size promised up front is what arrived");
+    assert_eq!(stream.bytes_read(), size);
+    assert_same_bytes(&read, &fixture_large_bytes(read.len()), "a whole-file stream");
+}
+
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_server_with_stingy_limits_still_reads_byte_exact() {
+    // `limits@openssh.com` at 8 KiB a read against a 255 KiB chunk: the engine
+    // clamps every request down, so each chunk takes 32 answers instead of one.
+    // Correctness, not speed, is what this one is about.
+    let params = fixture_params("SMALLLIMITS", 12488);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let read = read_whole(&volume, FIXTURE_LARGE_FILE).await;
+
+    assert_same_bytes(&read, &fixture_large_bytes(read.len()), "a stingy-limits stream");
+}
+
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn four_streams_on_one_volume_each_get_their_own_bytes() {
+    // Concurrency 4 means four operations sharing ONE channel and one open file
+    // handle per stream. Cloned handles that shared an offset would cross-talk
+    // here, and every stream would come back a mixture of the others' chunks.
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let reads = futures_util::future::join_all((0..4).map(|_| read_whole(&volume, FIXTURE_LARGE_FILE))).await;
+
+    for (index, read) in reads.iter().enumerate() {
+        assert_same_bytes(
+            read,
+            &fixture_large_bytes(read.len()),
+            &format!("concurrent stream {index}"),
+        );
+    }
+}
+
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn dropping_a_read_stream_early_leaves_the_session_usable() {
+    // Cancellation is a drop, and a cancelled copy is the ordinary case rather
+    // than the exceptional one. What must not survive it is a half-read response
+    // poisoning the channel for whatever the pane does next.
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let mut stream = volume
+        .open_read_stream(Path::new(FIXTURE_LARGE_FILE))
+        .await
+        .expect(FIXTURE);
+    let first = stream.next_chunk().await.expect(FIXTURE).expect(FIXTURE);
+    assert!(!first.is_empty());
+    assert!(
+        stream.bytes_read() < stream.total_size(),
+        "the cell is only meaningful if the file is still mid-read"
+    );
+    drop(stream);
+
+    // The session answers, and it answers correctly: a full re-read afterwards
+    // rules out a response arena left holding the abandoned window's chunks.
+    let read = read_whole(&volume, FIXTURE_LARGE_FILE).await;
+    assert_same_bytes(&read, &fixture_large_bytes(read.len()), "a read after a cancelled one");
+    assert!(volume.exists(Path::new("hello.txt")).await);
+}
+
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_bounded_range_comes_back_exactly() {
+    // What remote-archive browsing asks for: a `.zip`'s central directory is a
+    // window at the tail, and one byte either side is a wrong answer.
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let expected = fixture_large_bytes(2 * 1024 * 1024);
+    let range = volume
+        .read_range(Path::new(FIXTURE_LARGE_FILE), 1_000_000, 300_000)
+        .await
+        .expect(FIXTURE);
+    assert_same_bytes(&range, &expected[1_000_000..1_300_000], "a bounded range");
+
+    // Wholly past the end is an empty answer, never an error: an archive reader
+    // probing for a tail it hasn't sized yet does exactly this.
+    let past_end = volume
+        .read_range(Path::new(FIXTURE_LARGE_FILE), 1 << 40, 4096)
+        .await
+        .expect(FIXTURE);
+    assert!(past_end.is_empty());
+}
+
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_range_read_from_a_short_reading_server_is_byte_exact_too() {
+    // ❗ `read_range` is the natural place to reach for the engine's `read_all`,
+    // which is exactly what holes a file on this server.
+    let params = fixture_params("SHORTREADS", 12487);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let range = volume
+        .read_range(Path::new(FIXTURE_LARGE_FILE), 100_000, 200_000)
+        .await
+        .expect(FIXTURE);
+
+    let expected = fixture_large_bytes(300_000);
+    assert_same_bytes(&range, &expected[100_000..300_000], "a short-read bounded range");
+}
+
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_cancelled_listing_stops_instead_of_finishing_the_walk() {
+    // 5 000 entries over a link with latency in it is many round trips, and a pane
+    // the user navigated away from must stop paying for them.
+    let params = fixture_params("BIGDIR", 12489);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let cancel = tokio_util::sync::CancellationToken::new();
+    cancel.cancel();
+    let listing = volume
+        .list_directory_with_cancel(Path::new("many"), None, Some(&cancel))
+        .await;
+
+    assert!(
+        matches!(listing, Err(VolumeError::Cancelled(_))),
+        "a cancelled listing answers typed, never with a partial result"
+    );
+    // And the session is still the session: the token stopped a walk, not a
+    // connection.
+    let entries = volume.list_directory(Path::new("."), None).await.expect(FIXTURE);
+    assert!(entries.iter().any(|e| e.name == "hello.txt"));
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────
+
+/// Streams a whole file the way the copy path does.
+async fn read_whole(volume: &SftpVolume, path: &str) -> Vec<u8> {
+    let mut stream = volume.open_read_stream(Path::new(path)).await.expect(FIXTURE);
+    let mut out = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        out.extend_from_slice(&chunk.expect(FIXTURE));
+    }
+    out
+}
 
 /// The private key the entrypoint generated for a key-auth fixture.
 ///

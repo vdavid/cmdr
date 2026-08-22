@@ -22,6 +22,52 @@ use crate::transport::HostKeyPromptKind;
 /// The remote directory every fixture server exports.
 pub const FIXTURE_ROOT: &str = "/srv/data";
 
+/// The file every export carries for the byte path to read.
+///
+/// Self-describing by construction: each 16-byte line holds its own line number,
+/// so every position in it says where it belongs. A reader that holes or
+/// duplicates a span lands bytes at offsets whose contents no longer match, which
+/// is what lets a cell assert byte-exactness without shipping a copy of the file.
+/// `LARGE_MB` in the compose file sets its size; 4 MiB everywhere but the bench
+/// server.
+pub const FIXTURE_LARGE_FILE: &str = "large.bin";
+
+/// What `large.bin` holds, for its first `len` bytes.
+pub fn fixture_large_bytes(len: usize) -> Vec<u8> {
+    let mut out = Vec::with_capacity(len);
+    let mut line = 0u64;
+    while out.len() < len {
+        out.extend_from_slice(format!("{line:015}\n").as_bytes());
+        line += 1;
+    }
+    out.truncate(len);
+    out
+}
+
+/// Fails with the first offset where two byte runs differ, and what sits around
+/// it.
+///
+/// ❗ Not `assert_eq!` on the two buffers: a 4 MiB mismatch would print 8 MiB of
+/// escaped bytes and bury the one number that says what went wrong. A hole from a
+/// misadvanced offset shows here as "the line at this offset says it belongs
+/// somewhere else".
+pub fn assert_same_bytes(read: &[u8], expected: &[u8], what: &str) {
+    assert_eq!(
+        read.len(),
+        expected.len(),
+        "{what}: the wrong number of bytes came back"
+    );
+    let Some(at) = read.iter().zip(expected).position(|(left, right)| left != right) else {
+        return;
+    };
+    let from = at.saturating_sub(16);
+    panic!(
+        "{what}: the bytes differ from offset {at}\n  read:     {:?}\n  expected: {:?}",
+        String::from_utf8_lossy(&read[from..(from + 48).min(read.len())]),
+        String::from_utf8_lossy(&expected[from..(from + 48).min(expected.len())]),
+    );
+}
+
 /// The account every fixture server runs as.
 pub const FIXTURE_USER: &str = "ada";
 /// Its password, for the rungs that use one.
