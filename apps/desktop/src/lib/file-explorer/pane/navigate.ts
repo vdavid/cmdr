@@ -171,7 +171,7 @@ export interface NavigateIntent {
 
 /** Why a synchronous navigation refused. `message` is the exact current string — contract (L12). */
 export interface NavigateRefusal {
-  kind: 'on-network-volume' | 'mtp-unconnected' | 'pane-unavailable' | 'no-volume-resolved'
+  kind: 'on-network-volume' | 'smb-path-unsupported' | 'mtp-unconnected' | 'pane-unavailable' | 'no-volume-resolved'
   /** EXACT current refusal string, forwarded verbatim as the `mcp-response` error. Pinned byte-for-byte. */
   message: string
 }
@@ -287,6 +287,21 @@ function onNetworkRefusal(volumeLabel: string): NavigateRefusal {
 }
 
 const PANE_UNAVAILABLE_REFUSAL: NavigateRefusal = { kind: 'pane-unavailable', message: 'Pane not available' }
+
+/** The one navigable path on the virtual `network` volume: its host list. */
+const NETWORK_VOLUME_PATH = 'smb://'
+
+/**
+ * `resolve_location` maps EVERY `smb://` path to the virtual `network` volume, whose
+ * state is a host and a share list rather than a path, so only the `smb://` sentinel
+ * above is navigable. Anything longer used to commit the switch and report success
+ * while the pane sat on the host list, which is a worse answer than saying so.
+ */
+const SMB_PATH_REFUSAL: NavigateRefusal = {
+  kind: 'smb-path-unsupported',
+  message:
+    "nav_to_path doesn't take smb:// paths. A mounted share is its own volume, so use select_volume with the name from cmdr://state volumes; for a share that isn't mounted, use select_volume Network and open the host.",
+}
 
 /**
  * MTP capability check. Returns a refusal or `null`. Note the em dash in the
@@ -560,6 +575,10 @@ export function navigate(intent: NavigateIntent, deps: NavigateDeps): NavigateRe
  */
 function navigateToLocation(deps: NavigateDeps, intent: NavigateIntent, location: Location): NavigateResult {
   const { pane } = intent
+  // A share inside the Network volume has no path to navigate to (see the refusal).
+  if (location.path.startsWith(NETWORK_VOLUME_PATH) && location.path !== NETWORK_VOLUME_PATH) {
+    return { status: 'refused', reason: SMB_PATH_REFUSAL }
+  }
   if (location.volumeId === deps.getPaneVolumeId(pane)) {
     return navigateInPlace(deps, intent, location.path)
   }

@@ -221,7 +221,7 @@ mcp_tools! {
         run: nav_params nav::execute_nav_command_with_params
     },
     "nav_to_path" => {
-        desc: "Navigate a pane to a path: absolute, ~-relative, or virtual (mtp://, smb://). Prefer this over stepping with nav_to_parent when you know the target. Archive paths are transparent, so a path through foo.zip/inner navigates inside the archive.",
+        desc: "Navigate a pane to a path: absolute, ~-relative, or mtp:// (smb:// is not navigable; reach a share with select_volume). Prefer this over nav_to_parent when you know the target. Archive paths are transparent, so foo.zip/inner navigates inside the archive.",
         schema: schemas::nav_to_path_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient],

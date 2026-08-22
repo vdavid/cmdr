@@ -31,7 +31,7 @@ pub fn nav_to_path_schema() -> Value {
             },
             "path": {
                 "type": "string",
-                "description": "Path to navigate to: absolute, ~-relative, or virtual (mtp://, smb://)"
+                "description": "Path to navigate to: absolute, ~-relative, or mtp://. An smb:// path is refused: a mounted share is its own volume (select_volume by the name in cmdr://state volumes), and an unmounted one opens from the Network volume's host list."
             }
         },
         "required": ["pane", "path"]

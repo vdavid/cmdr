@@ -26,7 +26,7 @@
       "name": "select_volume"
     },
     {
-      "description": "Navigate a pane to a path: absolute, ~-relative, or virtual (mtp://, smb://). Prefer this over stepping with nav_to_parent when you know the target. Archive paths are transparent, so a path through foo.zip/inner navigates inside the archive.",
+      "description": "Navigate a pane to a path: absolute, ~-relative, or mtp:// (smb:// is not navigable; reach a share with select_volume). Prefer this over nav_to_parent when you know the target. Archive paths are transparent, so foo.zip/inner navigates inside the archive.",
       "inputSchema": {
         "properties": {
           "pane": {
@@ -38,7 +38,7 @@
             "type": "string"
           },
           "path": {
-            "description": "Path to navigate to: absolute, ~-relative, or virtual (mtp://, smb://)",
+            "description": "Path to navigate to: absolute, ~-relative, or mtp://. An smb:// path is refused: a mounted share is its own volume (select_volume by the name in cmdr://state volumes), and an unmounted one opens from the Network volume's host list.",
             "type": "string"
           }
         },

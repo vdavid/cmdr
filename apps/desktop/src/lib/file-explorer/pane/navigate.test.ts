@@ -710,6 +710,44 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
     })
   })
 
+  it('an smb:// destination is refused with the same string from a LOCAL pane', () => {
+    // Pre-fix this landed on the switch arm and reported success while the pane
+    // showed the host list: `resolve_location` maps every `smb://` path to the
+    // virtual network volume, whose only navigable path is the `smb://` sentinel.
+    const result = navigate(
+      { pane: 'left', to: { goTo: { volumeId: 'network', path: 'smb://naspolya/media' } }, source: 'mcp' },
+      h.deps,
+    )
+    expect(result).toEqual({
+      status: 'refused',
+      reason: {
+        kind: 'smb-path-unsupported',
+        message:
+          "nav_to_path doesn't take smb:// paths. A mounted share is its own volume, so use select_volume with the name from cmdr://state volumes; for a share that isn't mounted, use select_volume Network and open the host.",
+      },
+    })
+    expect(h.tab('left').volumeId).toBe('root')
+  })
+
+  it('an smb:// destination is refused the same way from a NETWORK pane', () => {
+    h = makeHarness({ left: { path: 'smb://', volumeId: 'network' } })
+    const result = navigate(
+      { pane: 'left', to: { goTo: { volumeId: 'network', path: 'smb://naspolya/media' } }, source: 'mcp' },
+      h.deps,
+    )
+    expect(result.status).toBe('refused')
+    if (result.status === 'refused') expect(result.reason.kind).toBe('smb-path-unsupported')
+  })
+
+  it('the smb:// sentinel itself still navigates (the Network volume root)', () => {
+    const result = navigate(
+      { pane: 'left', to: { goTo: { volumeId: 'network', path: 'smb://' } }, source: 'mcp' },
+      h.deps,
+    )
+    expect(result.status).toBe('started')
+    expect(h.tab('left').volumeId).toBe('network')
+  })
+
   it('MTP path mismatch returns the exact "not on this MTP volume" string (note the em dash)', () => {
     const result = navigate(
       { pane: 'left', to: { goTo: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } }, source: 'mcp' },

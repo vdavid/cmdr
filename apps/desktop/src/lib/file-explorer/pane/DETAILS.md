@@ -664,8 +664,14 @@ entry — they're not pane-destination changes).
   cursor after (`navigate-and-select`, `revealSearchResultInPane`) bridge the gap via `moveCursor`'s internal
   `whenLoadSettles`. History / edge flows: match the primitive they drive.
 - **`NavigateResult` (L12).** `{ status: 'started', settled }` or `{ status: 'refused', reason }`. The refusal `message`
-  strings (on-network, MTP-mismatch, on-MTP-volume, pane-unavailable) are EXACT contract — the MCP adapter forwards them
-  verbatim as the `mcp-response` error; `navigate.test.ts` + the handler suite pin them byte-for-byte.
+  strings (on-network, smb-path-unsupported, MTP-mismatch, on-MTP-volume, pane-unavailable) are EXACT contract — the MCP
+  adapter forwards them verbatim as the `mcp-response` error; `navigate.test.ts` + the handler suite pin them
+  byte-for-byte.
+- **An `smb://` path below the host-list sentinel is refused (`smb-path-unsupported`).** `resolve_location` maps EVERY
+  `smb://` path onto the virtual `network` volume, whose state is a host plus a share list rather than a path, so
+  `smb://` itself is the only navigable one. A longer path used to take the switch arm and report success from the host
+  list, which is why `nav_to_path` advertised `smb://` support it never had. A mounted share is its own volume
+  (`select_volume` by name); an unmounted one opens from the Network host list.
 - **A switch TO the `network` volume resets the pane's open host** (`commitVolumeSwitch` calls
   `paneRef.setNetworkHost(options.networkHost ?? null)`, mirroring what `commitHistoryWalk` does for a history entry).
   The pane's own effect only clears the host when it LEAVES the network volume, so without this a re-select from inside

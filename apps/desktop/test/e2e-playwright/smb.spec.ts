@@ -39,6 +39,7 @@ import {
 import {
   initMcpClient,
   mcpCall,
+  mcpCallRaw,
   mcpReadResource,
   mcpSelectVolume,
   mcpNavToPath,
@@ -249,6 +250,23 @@ describeSmb('SMB share browsing', () => {
     expect(await shareExistsInPane(tauriPage, SMB_GUEST_SHARE)).toBe(false)
   })
 
+  test('nav_to_path says so instead of reporting success from the host list', async ({ tauriPage }) => {
+    // `resolve_location` maps every `smb://` path onto the virtual Network volume,
+    // whose only navigable path is the `smb://` host-list sentinel. Pre-fix a longer
+    // one committed the switch and acked OK while the pane sat on the host list.
+    await ensureAppReady(tauriPage)
+
+    await mcpSelectVolume('left', 'Network')
+    await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
+
+    const answer = await mcpCallRaw('nav_to_path', {
+      pane: 'left',
+      path: `smb://SMB Test (Guest)/${SMB_GUEST_SHARE}`,
+    })
+    expect(answer.error, 'an smb:// path must be refused, not acked').toBeDefined()
+    // Still the host list, and no share list opened behind the refusal.
+    expect(await hostExistsInPane(tauriPage, 'SMB Test (Guest)')).toBe(true)
+  })
 })
 
 describeSmb('SMB mounting and file browsing', () => {
