@@ -43,8 +43,9 @@ satisfies the live-apply rule below.
 `load_restricted_window_settings` + `RestrictedWindowSettings` back the `get_restricted_window_settings` command (in
 `commands/settings.rs`): the typed read allowlist for windows without store capability (the viewer AND the Transfers
 queue). Reads `settings.json` fresh per call. A setting missing from the struct reads as its registry default in those
-windows, silently — which is how the queue rendered binary sizes while the copy dialog rendered SI. Adding one is a
-four-place change; the frontend half is `apps/desktop/src/lib/settings/CLAUDE.md`.
+windows, silently — which is how the queue rendered binary sizes while the copy dialog rendered SI, and how a pinned
+`appearance.language` reached every window except those two. Adding one is a four-place change; the frontend half is
+`apps/desktop/src/lib/settings/CLAUDE.md`.
 
 ## Early-load helpers
 
