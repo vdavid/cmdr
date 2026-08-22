@@ -23,6 +23,8 @@
 //!   The real answer to "which disk is this": it survives a remount at a
 //!   different mount point, a rename, and a reboot.
 //! - `smb-`: an SMB mount keyed by (server, port, share) ([`smb_volume_id`]).
+//! - `sftp-`: an SFTP server keyed by (host, port, username)
+//!   ([`sftp_volume_id`]).
 //! - `mtp-`: an MTP device keyed by its serial (`super::mtp_ids`).
 //! - `path-`: the fallback when nothing better exists ([`path_volume_id`]),
 //!   keyed by the mount path. Stable only as long as the mount path is.
@@ -173,6 +175,35 @@ pub fn smb_volume_id(server: &str, port: u16, share: &str) -> String {
     derived_id("smb", &format!("{server}-{port}-{share}"), &[&server, &port, &share])
 }
 
+/// Build the ID for an SFTP volume, keyed by the ACCOUNT on the server rather
+/// than by the directory it's rooted at.
+///
+/// Two accounts on one host see different files under the same absolute paths,
+/// and this ID keys durable state — `index-{id}.db`, `lastUsedPaths`, tab
+/// `volumeId` fields — so folding them together would hand one account's index
+/// to the other and send its saved paths somewhere they don't resolve. Getting
+/// this wrong is a migration later rather than a bug fix, which is why the
+/// username is in the tuple from the start.
+///
+/// The remote root is deliberately NOT in the tuple: re-rooting the same account
+/// deeper into the same server is the same storage, and keying on it would strand
+/// the index every time someone browses in from a different starting directory.
+///
+/// # Case folding
+///
+/// The host is lowercased, because DNS hostnames are case-insensitive. The
+/// username is NOT: POSIX accounts are case-sensitive, so `Ada` and `ada` can be
+/// two people. The port is literal.
+pub fn sftp_volume_id(host: &str, port: u16, username: &str) -> String {
+    let host = host.to_lowercase();
+    let port = port.to_string();
+    derived_id(
+        "sftp",
+        &format!("{host}-{port}-{username}"),
+        &[&host, &port, username],
+    )
+}
+
 /// Build the ID for an MTP device from its (opaque, verbatim) serial.
 ///
 /// Called by [`super::mtp_ids::device_id_for`], which owns the serial-vs-topology
@@ -231,6 +262,51 @@ mod id_tests {
         // is many-to-one, so `My Disk` and `My_Disk` would key the same index DB,
         // the same `lastUsedPaths` entry, and the same registry slot.
         assert_ne!(path_volume_id("/Volumes/My Disk"), path_volume_id("/Volumes/My_Disk"));
+    }
+
+    #[test]
+    fn two_accounts_on_one_sftp_server_never_share_an_id() {
+        // The whole reason the username is in the tuple: these two see different
+        // files under the same paths, so one ID would hand one account's index,
+        // saved paths, and tab state to the other.
+        assert_ne!(
+            sftp_volume_id("naspolya", 22, "ada"),
+            sftp_volume_id("naspolya", 22, "grace")
+        );
+    }
+
+    #[test]
+    fn an_sftp_volume_keeps_its_id_across_remote_roots() {
+        // The root is addressing, not identity: browsing in from `/srv` rather
+        // than from `/` must not strand the index and the saved paths.
+        assert_eq!(
+            sftp_volume_id("naspolya", 22, "ada"),
+            sftp_volume_id("naspolya", 22, "ada")
+        );
+    }
+
+    #[test]
+    fn sftp_volume_id_folds_the_host_but_not_the_account() {
+        // DNS is case-insensitive; POSIX accounts are not, so `Ada` and `ada`
+        // may be two people and must not collapse.
+        assert_eq!(
+            sftp_volume_id("Naspolya", 22, "ada"),
+            sftp_volume_id("naspolya", 22, "ada")
+        );
+        assert_ne!(
+            sftp_volume_id("naspolya", 22, "Ada"),
+            sftp_volume_id("naspolya", 22, "ada")
+        );
+    }
+
+    #[test]
+    fn sftp_volume_id_distinguishes_ports() {
+        // Same host, different port is a different server in practice: a jump
+        // box, a container, a dev fixture on localhost.
+        assert_ne!(
+            sftp_volume_id("localhost", 12480, "ada"),
+            sftp_volume_id("localhost", 12481, "ada")
+        );
     }
 
     #[test]
@@ -375,6 +451,7 @@ mod id_tests {
             path_volume_id("/Volumes/A Disk/With: Punctuation?/And/Slashes"),
             path_volume_id(&format!("/Volumes/{}", "x".repeat(500))),
             smb_volume_id("nas.local", 445, "Some Share/With Slash"),
+            sftp_volume_id("nas.local", 22, "ada/with:punct"),
             mtp_device_id("SERIAL/WITH:PUNCT.uation"),
             local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"),
         ];
@@ -416,8 +493,13 @@ mod id_tests {
         // The scheme prefix is the contract every consumer's classification relies
         // on (`is_mtp_volume_id`, the index's root check, the legacy sweep).
         let smb = smb_volume_id("localhost", 10494, "public");
+        let sftp = sftp_volume_id("localhost", 12480, "ada");
         let local = path_volume_id("/Volumes/Smb");
         let mtp = mtp_device_id("SERIAL");
+        assert!(sftp.starts_with("sftp-"), "got: {sftp}");
+        assert_ne!(sftp, smb);
+        assert_ne!(sftp, local);
+        assert_ne!(sftp, mtp);
         assert!(smb.starts_with("smb-"), "got: {smb}");
         assert!(local.starts_with("path-"), "got: {local}");
         assert!(mtp.starts_with("mtp-"), "got: {mtp}");
@@ -486,6 +568,7 @@ mod id_tests {
             path_volume_id("/Volumes/X"),
             path_volume_id("/…/·"),
             smb_volume_id("naspolya", 445, "naspi"),
+            sftp_volume_id("naspolya", 22, "ada"),
             local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"),
             mtp_device_id("SERIAL"),
             mtp_volume_id(&device_id_for(Some("SERIAL"), 0), 65537),

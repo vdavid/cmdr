@@ -52,6 +52,7 @@
 //! - [`listings`]: what the open panes are showing, and telling them it changed.
 //! - [`events`]: typed events the frontend renders (a connection came or went).
 //! - [`credentials`]: the OS secret store, for a backend that authenticates.
+//! - [`host_keys`]: the SSH host keys this machine already trusts.
 //! - [`indexing`]: telling the file index that live watching lost continuity.
 //! - [`settings`]: the live, user-tunable knobs a backend reads per dispatch.
 //! - [`activity`]: whether the user is busy on a volume, so bulk work stands aside.
@@ -64,6 +65,7 @@ pub mod activity;
 pub mod analytics;
 pub mod credentials;
 pub mod events;
+pub mod host_keys;
 pub mod indexing;
 pub mod listings;
 pub mod runtime;
@@ -77,6 +79,7 @@ use activity::UserActivity;
 use analytics::AnalyticsSink;
 use credentials::CredentialStore;
 use events::VolumeEventSink;
+use host_keys::HostKeys;
 use indexing::IndexNotifier;
 use listings::ListingHost;
 use settings::BackendSettings;
@@ -84,7 +87,7 @@ use settings::BackendSettings;
 /// Everything a storage backend asks its host, in one cheaply-cloned value.
 ///
 /// Build one per process with [`VolumeHost::builder`] and hand a clone to each
-/// backend. Cloning is seven `Arc` bumps and a `Handle` clone, so a backend can
+/// backend. Cloning is eight `Arc` bumps and a `Handle` clone, so a backend can
 /// hold one per volume instance without thinking about it.
 #[derive(Clone)]
 pub struct VolumeHost {
@@ -92,6 +95,7 @@ pub struct VolumeHost {
     listings: Arc<dyn ListingHost>,
     events: Arc<dyn VolumeEventSink>,
     credentials: Arc<dyn CredentialStore>,
+    host_keys: Arc<dyn HostKeys>,
     indexing: Arc<dyn IndexNotifier>,
     activity: Arc<dyn UserActivity>,
     analytics: Arc<dyn AnalyticsSink>,
@@ -106,8 +110,9 @@ impl VolumeHost {
     }
 
     /// A host that answers nothing: pane updates and events go nowhere, no
-    /// credentials are stored, the index hears nothing, every volume reads as
-    /// idle, and background work spawns onto the fallback runtime.
+    /// credentials are stored, no SSH host key is trusted, the index hears
+    /// nothing, every volume reads as idle, and background work spawns onto the
+    /// fallback runtime.
     ///
     /// This is what a bench, a CLI tool, or a test that only exercises protocol
     /// code reaches for. It's a complete host, not a stub: nothing a backend
@@ -118,6 +123,7 @@ impl VolumeHost {
             listings: Arc::new(listings::NoListings),
             events: Arc::new(events::NoVolumeEvents),
             credentials: Arc::new(credentials::NoCredentials),
+            host_keys: Arc::new(host_keys::NoHostKeys),
             indexing: Arc::new(indexing::NoIndexNotifier),
             activity: Arc::new(activity::AlwaysIdle),
             analytics: Arc::new(analytics::NoAnalytics),
@@ -145,6 +151,11 @@ impl VolumeHost {
     /// The OS secret store.
     pub fn credentials(&self) -> &dyn CredentialStore {
         self.credentials.as_ref()
+    }
+
+    /// The SSH host keys this machine already trusts.
+    pub fn host_keys(&self) -> &dyn HostKeys {
+        self.host_keys.as_ref()
     }
 
     /// How the file index hears that live watching lost continuity.
@@ -203,6 +214,13 @@ impl VolumeHostBuilder {
     #[must_use]
     pub fn credentials(mut self, credentials: Arc<dyn CredentialStore>) -> Self {
         self.host.credentials = credentials;
+        self
+    }
+
+    /// The SSH host keys this machine already trusts.
+    #[must_use]
+    pub fn host_keys(mut self, host_keys: Arc<dyn HostKeys>) -> Self {
+        self.host.host_keys = host_keys;
         self
     }
 
