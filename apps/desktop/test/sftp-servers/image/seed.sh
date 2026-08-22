@@ -18,6 +18,28 @@ printf '01234' > "$root/five-bytes.txt"
 mkdir -p "$root/empty-dir"
 mkdir -p "$root/full-dir" && printf 'x' > "$root/full-dir/child.txt"
 
+# ── The file the byte path reads ─────────────────────────────────────
+#
+# Self-describing by construction: every 16-byte line holds its own line number,
+# zero-padded, so each position in the file says where it belongs. A reader that
+# holes or duplicates a chunk lands bytes at offsets that no longer match their
+# own contents, which is what lets a cell assert byte-exactness without shipping
+# a copy of the file next to the test.
+#
+# `LARGE_MB` is 4 by default — enough that a 255 KiB window has real work and a
+# short-reading server has to loop — and the bench server raises it to something
+# a throughput number can be measured over.
+large_mb="${LARGE_MB:-4}"
+python3 - "$root/large.bin" "$large_mb" <<'GENERATE'
+import sys
+
+path, mib = sys.argv[1], int(sys.argv[2])
+LINES_PER_MIB = 1024 * 1024 // 16
+with open(path, "wb") as out:
+    for base in range(0, mib * LINES_PER_MIB, LINES_PER_MIB):
+        out.write(b"".join(b"%015d\n" % line for line in range(base, base + LINES_PER_MIB)))
+GENERATE
+
 case "$profile" in
     small) ;;
     big)

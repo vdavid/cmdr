@@ -16,7 +16,11 @@ FROM alpine:3.21
 # BOTH sshd variants. Alpine ships the PAM build as a separate `sshd.pam`
 # binary, and keyboard-interactive needs PAM on Linux — that rung is one of the
 # four the auth ladder has to cover, so the fixture can't skip it.
-RUN apk add --no-cache openssh-server openssh-server-pam openssh-sftp-server openssh-keygen python3 shadow
+# `iproute2` is only for the bench server, which puts `tc qdisc … netem delay`
+# on its own interface to measure the read window against a WAN-shaped link. One
+# image for twelve servers means every container carries it; it's ~2 MB and the
+# alternative is a second Dockerfile to keep in sync.
+RUN apk add --no-cache openssh-server openssh-server-pam openssh-sftp-server openssh-keygen python3 shadow iproute2
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY sftp-quirk.py /usr/local/bin/sftp-quirk.py

@@ -8,6 +8,7 @@
 # Usage:
 #   ./start.sh           # core: every server the integration lane talks to
 #   ./start.sh minimal   # just the stock server and the key-only one
+#   ./start.sh bench     # the local-only measurement server
 #   ./start.sh all       # everything the compose file defines
 
 set -e
@@ -36,6 +37,13 @@ case "$mode" in
                   sftp-fixture-noposixrename sftp-fixture-shortreads \
                   sftp-fixture-smalllimits sftp-fixture-bigdir sftp-fixture-oddnames)
         ;;
+    bench)
+        echo "Starting the SFTP bench server (big export, NET_ADMIN for netem)..."
+        # ❗ Local only. CI never brings this one up, and nothing that gates a
+        # check may talk to it: `crates/cmdr-sftp/DETAILS.md` § "Measuring the
+        # read window" has the recipe and the reason.
+        services=(sftp-fixture-bench)
+        ;;
     all)
         echo "Starting every SFTP server the compose file defines..."
         # Empty means "all" to both `up` and the probe loop below, which resolves
@@ -43,7 +51,7 @@ case "$mode" in
         ;;
     *)
         echo "Unknown mode: $mode"
-        echo "Usage: $0 [minimal|core|all]"
+        echo "Usage: $0 [minimal|core|bench|all]"
         exit 1
         ;;
 esac

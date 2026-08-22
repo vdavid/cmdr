@@ -17,6 +17,10 @@ const (
 	ModeCore = "core"
 	// ModeAll is every service the compose project defines.
 	ModeAll = "all"
+	// ModeBench is the SFTP stack's local-only measurement server. ❗ No check
+	// declares it and CI never brings it up: a throughput number measured under
+	// runner contention is a flake, not a gate.
+	ModeBench = "bench"
 )
 
 // SMB is the SMB fixture stack: smb2's consumer harness, vendored into
@@ -79,7 +83,8 @@ var SFTP = &Stack{
 			"sftp-fixture-noposixrename", "sftp-fixture-shortreads",
 			"sftp-fixture-smalllimits", "sftp-fixture-bigdir", "sftp-fixture-oddnames",
 		},
-		ModeAll: nil,
+		ModeBench: {"sftp-fixture-bench"},
+		ModeAll:   nil,
 	},
 	// Empty, and it stays that way: the one image bakes a HEALTHCHECK that reads
 	// the listening socket out of `netstat`, so every service reports health.

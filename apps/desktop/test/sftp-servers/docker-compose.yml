@@ -119,3 +119,21 @@ services:
     environment:
       SEED: oddnames
     ports: ['${SFTP_FIXTURE_ODDNAMES_PORT:-12490}:22']
+
+  # The bench server, and the only one nothing in CI talks to.
+  #
+  # ❗ Deliberately outside `start.sh`'s `core` list and outside
+  # `sftpServiceHostPorts`: the integration lane waits on every service in that
+  # table, and a throughput measurement must never be something CI gates on
+  # (`crates/cmdr-sftp/DETAILS.md` § "Measuring the read window"). Bring it up on
+  # its own with `./start.sh bench`.
+  #
+  # What it has that the others don't: a `large.bin` big enough to measure over,
+  # and `NET_ADMIN`, so a run can put `tc qdisc … netem delay 50ms` on its
+  # interface and see the shape of the curve a WAN link produces.
+  sftp-fixture-bench:
+    <<: *fixture
+    environment:
+      LARGE_MB: '${SFTP_FIXTURE_BENCH_LARGE_MB:-128}'
+    cap_add: ['NET_ADMIN']
+    ports: ['${SFTP_FIXTURE_BENCH_PORT:-12491}:22']

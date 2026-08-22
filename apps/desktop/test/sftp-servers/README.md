@@ -1,11 +1,12 @@
 # The SFTP fixture stack
 
-Eleven real OpenSSH servers in Docker, one per thing that breaks an SFTP client. `crates/cmdr-sftp`'s Docker cells and
-the app's SFTP suites both talk to these.
+Eleven real OpenSSH servers in Docker, one per thing that breaks an SFTP client, plus a twelfth nothing in CI touches.
+`crates/cmdr-sftp`'s Docker cells and the app's SFTP suites both talk to these.
 
 ```bash
 ./start.sh          # core: every server the integration lane uses
 ./start.sh minimal  # the stock server and the key-only one
+./start.sh bench    # the local-only measurement server
 ./stop.sh           # releases this shell's lease; downs only at zero holders
 ```
 
@@ -37,10 +38,26 @@ for iterating by hand.
 | `sftp-fixture-smalllimits`   | 12488 | `limits@openssh.com` far stingier than OpenSSH's own                 |
 | `sftp-fixture-bigdir`        | 12489 | 5 000 entries in one directory, and a 40-level nest                  |
 | `sftp-fixture-oddnames`      | 12490 | Filenames that aren't valid UTF-8, plus awkward ones that are        |
+| `sftp-fixture-bench`         | 12491 | 128 MiB export and `NET_ADMIN`, for measuring. ❗ Not in `core`      |
 
 Every server runs as `ada` / `openthedoor` and exports `/srv/data`. Every export carries the same landmarks
-(`hello.txt`, `photos/`, `ten-bytes.txt`, `five-bytes.txt`, `empty-dir/`, `full-dir/child.txt`), so a cell can assert on
-them whichever server it's pointed at.
+(`hello.txt`, `photos/`, `ten-bytes.txt`, `five-bytes.txt`, `empty-dir/`, `full-dir/child.txt`, `large.bin`), so a cell
+can assert on them whichever server it's pointed at.
+
+`large.bin` is the byte path's file: 4 MiB by default (`LARGE_MB`), and every 16-byte line in it holds its own line
+number, so each position says where it belongs. That's what lets a cell assert byte-exactness without shipping a copy of
+the file — a reader that holes or duplicates a span lands bytes whose contents no longer match their offsets.
+`cmdr_sftp::volume::testing::fixture_large_bytes` regenerates the expectation.
+
+**The bench server is local only.** It is deliberately outside `core` and outside `sftpServiceHostPorts`: the
+integration lane waits on every service in that table, and a throughput number measured under runner contention is a
+flake rather than a gate. It carries a 128 MiB `large.bin` and `NET_ADMIN`, so a run can shape its link:
+
+```bash
+docker exec sftp-fixture-sftp-fixture-bench-1 tc qdisc replace dev eth0 root netem delay 50ms limit 50000
+```
+
+The measurements, the method, and what they set: `crates/cmdr-sftp/DETAILS.md` § "The read window".
 
 ## One image, env-driven
 
