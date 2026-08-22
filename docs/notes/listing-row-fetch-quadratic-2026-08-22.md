@@ -174,6 +174,13 @@ It also fixed three accessors that had grown their own filter and disagreed with
 means — type-to-jump could put the cursor a row off while a copy ran in the directory. The compile errors from making
 `entries` private are what found them.
 
+**A second index space got the same treatment right after**, and it is a SEPARATE defect this note's measurements do not
+cover: the callers that arrive with a PATH rather than a row number (Finder-tag enrichment, and the watcher classifying
+its events) each found their entry by walking the listing too. A listing now materializes a path map beside its row map
+(`listing/path_index.rs`), and at large sizes that was the bigger cost of the two: opening a 300,000-row folder spent
+224.8 s of CPU on tags and now spends 10.0 s. Numbers and the blast radius: `listing-wedge-impact-2026-08-22.md` § "What
+the tag fix moved" and § "The rest of the by-path lookups"; design: `listing/DETAILS.md` § "Entries by path".
+
 ### Before and after, on the running app (dev/debug builds, macOS 26.5.2 / Darwin 25.6.0, 2026-08-22)
 
 Directory: `.../target/debug/deps`, 19,251 rows before and 19,513 after (the rebuild between the two runs added files).

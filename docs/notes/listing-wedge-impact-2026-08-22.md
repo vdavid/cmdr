@@ -24,6 +24,9 @@ debug numbers with their caveats intact.
 - **The tag-enrichment defect this note surfaced along the way is fixed too** (2026-08-22, after the build § 2
   measured), and it was the bigger cost at large sizes: opening a 300,000-row folder spent 225 s of CPU filling Finder
   tags and now spends 10 s. See § "What the tag fix moved".
+- **So is a third one nobody had measured**: one coalesced watcher event carrying 500 removals (a directory emptied, a
+  `git checkout` across a big tree) walked the listing twice per file. Every by-path lookup in the listing cache now
+  goes through the same path map. See § "The rest of the by-path lookups".
 - **It does not deadlock, and it does not leak.** It saturates. In principle it clears when the driver stops; in
   practice the user's way out (a keystroke, a navigation, a settings toggle) runs through the wedged main thread, so
   force quit was the reliable remedy.
@@ -198,11 +201,11 @@ row 10 cost at that size is the post-navigation enrichment pass rather than the 
 
 ### The row-10 cost is enrichment, not fan-out (measured)
 
-The old § "The row-10 result is the important one" reasoned from a 3,394 ms debug row-10 reading that the fan-out itself
-was the entry price. In release, row 10 costs 12 ms at every size **once the directory has settled**, and the 162 to 191
-ms readings at 75,000 rows and up are transient: they disappear after 90 seconds of sitting still (191 → 16 ms at
-75,000, 162 → 15 ms at 150,000, 176 → 16 ms at 300,000), and they show up on the post-fix build too (137 ms at the
-bottom of 75,000 rows fresh against 14 ms settled at 300,000 rows).
+❗ A 3,394 ms debug row-10 reading makes the fan-out itself look like the entry price. It isn't. In release, row 10
+costs 12 ms at every size **once the directory has settled**, and the 162 to 191 ms readings at 75,000 rows and up are
+transient: they disappear after 90 seconds of sitting still (191 → 16 ms at 75,000, 162 → 15 ms at 150,000, 176 → 16 ms
+at 300,000), and they show up on the post-fix build too (137 ms at the bottom of 75,000 rows fresh against 14 ms settled
+at 300,000 rows).
 
 A `sample` during that window names it: `commands::file_system::listing::enrich_tags`, on a blocking-pool thread, inside
 `listing::caching::apply_tags_to_listing`, whose leaf is `_platform_memcmp`. That function looked each updated path up
@@ -216,7 +219,8 @@ slow rows.
 **It is fixed as of 2026-08-22**, on a commit after the one this note's post-fix build came from, by giving a listing a
 path map beside its row map (`apps/desktop/src-tauri/src/file_system/listing/path_index.rs`, and § "Entries by path" of
 that module's `DETAILS.md`). ❗ So every "post" cell in § 2 above measures a build that still carried it, which is
-exactly why the just-opened column there is worse than the settled one.
+exactly why the just-opened column there is worse than the settled one. The rest of the cache's by-path lookups went
+through the same map in the commit after; see § "The rest of the by-path lookups".
 
 ### What the tag fix moved (measured)
 
@@ -252,6 +256,32 @@ its +120 s cell is a genuinely settled listing. Row 10 was 2 to 4 ms in every ce
 `FileEntry`'s size, 63-character mean path): one 500-path enrichment chunk scanned for 20 ms at 20,000 entries, 64 ms at
 75,000, and 418 ms at 300,000, against a path map that builds once in 1.3 / 4.9 / 33 ms and then answers the same chunk
 in 43 / 48 / 97 **µs**.
+
+### The rest of the by-path lookups (measured as a scan count, not as latency)
+
+The tag fix left four callers still finding a row by walking the listing: `carry_forward_tags`, `has_entry`, the removal
+by path, and the position lookup inside `update_entry_sorted`. They all now go through the same map (2026-08-22,
+`apps/desktop/src-tauri/src/file_system/listing/DETAILS.md` § "Entries by path").
+
+⚠️ **Three of the four are a latent win, and this note should not pretend otherwise.** Each is one lookup per watcher
+event, so no realistic call rate turns them into a visible cost, and none of them BUILDS a map (a single path is far
+under the map's build-versus-scan threshold of 32). What they buy is the sweep's map: while tag enrichment is walking a
+big directory, a watcher event landing in that directory is a hash rather than a walk. The reason to do it anyway is
+structural: a future caller that loops any of them over a path list re-creates the quadratic two efforts just removed.
+
+**The fourth was not latent.** `handle_directory_change_incremental` already looped one of them. It resolved each
+removal's pre-removal index with its own full walk (the `directory-diff` payload needs an index in the old listing's
+space) and then walked again inside the removal itself, and one coalesced watcher event carries up to 500 paths: a
+directory emptied, a `git checkout` across a big tree, an unpack over a folder. **Measured** by the counting probe in
+`path_index_test.rs` (2026-08-22, `cargo nextest`, 20,000-entry synthetic listing): a 500-path removal examined
+**9,981,000 entries** before the fix and **20,500** after, which is one whole walk to build the map plus one lookup per
+path. Scaled to the fixtures § 2 uses, the old shape is 500 walks of a 300,000-entry listing under the cache's write
+lock.
+
+❗ **No latency number is quoted for this, deliberately.** The measurement is a scan COUNT from a unit-test probe, not a
+release-build timing on a running app, and manufacturing a benchmark that made a bulk delete look dramatic would
+overstate what anybody experienced. The batch also still memmoves a row per removal (`Vec::remove`), which the lookup
+fix doesn't touch, so a bulk delete in a huge folder is faster than it was but is not free.
 
 ### The rule of thumb, recalibrated to release
 
@@ -416,22 +446,36 @@ outreach.
 
 ### Draft release-note line (David's review required, ❌ nothing published)
 
-Revised against the release measurement. ❗ The earlier drafts said the app "could stop answering the keyboard" and
-"could tie up the app until you quit it"; § 2 shows a release build kept answering at every size tested, so those lines
-overstate what shipped. **Preferred:**
+❗ **Severity guardrail for any rewrite of these**: a release build kept answering at every size tested (§ 2), so a line
+promising to fix a freeze, a hang, or an app you had to quit describes something testers did not experience. "Slow" is
+the honest register.
 
-> **Big folders got much faster.** Moving the cursor near the bottom of a folder with tens of thousands of files used to
-> slow down the further down you were, because finding a row meant counting up to it. Rows are now looked up directly,
-> and the listing reads have moved off the main thread, so a 100,000-file folder feels like a small one.
+❗ **And "big folders got much faster" now carries three fixes, not one.** The row map is the least vivid of them; the
+tag sweep at 300,000 rows going from 224.8 s to 10.0 s of CPU is the number a reader will feel. **Preferred:**
 
-Second option, if David would rather put a number on it:
+> **Big folders got much faster.** Three things used to get slower the bigger a folder was, because each of them
+> re-scanned the whole listing, and all three now look up what they need directly:
+>
+> - Opening a folder used to spend a long time filling in Finder tag dots. A folder with 300,000 files spent nearly four
+>   minutes on it, and now spends 10 seconds.
+> - Moving the cursor near the bottom of a folder with tens of thousands of files got slower the further down you were,
+>   because finding a row meant counting up to it.
+> - Changing a lot of files at once in a big folder, so the app has to catch up with what moved, used to re-scan the
+>   folder once per file. It's now one pass for the whole batch.
+>
+> Reading a listing has also moved off the main thread, so a 100,000-file folder feels like a small one.
 
-> **Big folders got much faster.** Arrow keys near the bottom of a huge folder used to lag: about half a second per
-> keypress in a 75,000-file folder, and worse the bigger it got. Rows are now looked up directly instead of counted up
-> to, so the same folder answers in a few milliseconds.
+Second option, a single line, if the release note has no room for three bullets:
 
-Both follow `docs/style-guide.md`. The second is the one to prefer if David is happy quoting a benchmark; both are
-honest about severity in a way the previous drafts were not.
+> **Big folders got much faster.** Opening one, arrowing to the bottom of one, and changing a batch of files inside one
+> all used to re-scan the whole folder, over and over. They now look up what they need directly: a folder with 300,000
+> files settles in 10 seconds instead of nearly four minutes, and arrow keys answer in a few milliseconds however deep
+> you are.
+
+Both follow `docs/style-guide.md`. Numbers to keep straight if David edits them: 224.8 s → 10.0 s of CPU at 300,000 rows
+(§ "What the tag fix moved", measured on release builds), and a keystroke at the bottom of a 75,000-row folder at 0.43 s
+before the row map (§ 2, measured on release builds). ❌ The batch-change bullet has **no** release timing behind it,
+only a scan count from a unit-test probe (§ "The rest of the by-path lookups"), so don't put a number on that one.
 
 ## Method, and what to redo
 

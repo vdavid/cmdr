@@ -469,19 +469,13 @@ pub fn get_listing_volume_id_and_path(listing_id: &str) -> Option<(String, PathB
 /// the ones the listing held, HIGHEST INDEX FIRST.
 ///
 /// **The batch form is the only by-path removal**, because its caller is always a
-/// batch: one coalesced watcher event carries up to 500 paths (a directory
-/// emptied, a `git checkout` across a big tree). Resolving them one at a time
-/// walked the listing twice per path — once for the pre-removal index the diff
-/// needs, once inside the removal — which is § "Entries by path"'s quadratic with
-/// a different caller in front of it. Here it is one lookup pass for the whole
-/// batch, under one write lock.
+/// batch: one coalesced watcher event carries up to 500 paths. Why that matters,
+/// and what removing them one at a time cost: `DETAILS.md` § "Entries by path".
 ///
-/// **Indices are the PRE-removal listing's**, which is the space a
-/// `directory-diff` payload speaks, and highest-first is the order that keeps each
-/// removal from shifting a row a later one still points at. Resolving and removing
-/// under ONE lock is also what makes those indices true: the two-lock shape they
-/// replace let another writer move a row between the lookup and the removal, and
-/// the diff would name a row that had shifted.
+/// ❗ Indices are the PRE-removal listing's, which is the space a `directory-diff`
+/// payload speaks, and resolving plus removing under ONE write lock is what keeps
+/// them true — no other writer can move a row in between. Highest-first is the
+/// order that stops each removal shifting a row a later one still points at.
 pub fn remove_entries_by_paths(listing_id: &str, paths: &[PathBuf]) -> Vec<(usize, FileEntry)> {
     let Ok(mut cache) = LISTING_CACHE.write() else {
         return Vec::new();

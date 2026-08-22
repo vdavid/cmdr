@@ -18,19 +18,17 @@ non-blocking I/O and progress events.
 ## Invariants and gotchas
 
 - **Neither a row number nor a path indexes `entries`.** Rows drop dotfiles and in-flight scratch
-  (`file_system::staging`), so `CachedListing::rows` is the ONLY filter point, on READ, never on cache fill; paths
-  resolve a BATCH at a time through `PathIndexCache::resolve` (tags: `set_tags_by_path`). `entries` is private and
-  `entries_mut` drops both maps, so no accessor can grow its own filter or leave a stale one — three had, each a row
-  off. Re-deriving either per item wedged a 74k directory, and cost 418 ms of write-locked scanning per 500-path tag
-  chunk at 300k rows. A tag write skips `entries_mut` deliberately: a tag is no name, sort key, or path.
+  (`file_system::staging`), so `CachedListing::rows` is the ONLY filter point, on READ, never on cache fill. Every path
+  goes through the path map: `indices_of_paths` for a batch, `index_of_path` for one (rides a map, never builds one).
+  ❗ A MUTATING caller resolves BEFORE `entries_mut`, which drops both maps. `entries` is private, so no accessor can
+  grow its own filter or leave a stale one — three had, each a row off. Re-deriving per item wedged a 74k directory,
+  cost 418 ms per 500-path tag chunk at 300k rows, and made a 500-path watcher removal 1,000 walks. A tag write skips `entries_mut` deliberately: a tag is no name, sort key, or path.
   `visible_rows_test.rs` and `path_index_test.rs` pin the counts. `DETAILS.md` § "Row numbers" and § "Entries by path".
 - **Listing read commands are `async`.** A sync `#[tauri::command]` runs on the main thread in Tauri 2, so one slow
   accessor stops the app answering IPC at all.
-- **Watcher diffs must update the cache AND emit an event**, else stale data or no UI update.
+- **Watcher diffs must update the cache AND emit an event**, else stale data or no update.
 - **The full re-read watcher path re-sorts `new_entries` before `compute_diff`** (looks like a double-sort, isn't):
   `list_directory_core` always returns Name/Asc, so without it add/remove indices come out wrong.
-- **A row that jumped its sorted position is one `move` change, not a remove plus an add**, so the pane can ride its
-  cursor and selection along. `../DETAILS.md` § "Reordered rows".
 - **All `directory-diff` emits go through `diff_emitter::enqueue_diff`, never `app.emit`.** Direct emits bypass the
   50 ms coalescing and re-introduce per-file flicker. Cache mutations stay synchronous; only the emit is deferred.
 - **The orphan reaper keys on `last_accessed_ms`, not `created_at`**: every read accessor and cache patch must bump it,
@@ -45,9 +43,9 @@ non-blocking I/O and progress events.
 - **A sort change invalidates the frontend's cached range.** Bump `cacheGeneration` to re-fetch.
 - **New listing state hangs off a struct, not a `static`.** Fixtures go through `caching_test_support::TestListing`.
   `DETAILS.md` § "Test isolation".
-- **Finder tags are deferred and must survive re-stats.** `list_directory_core` never reads tags (a test pins it);
-  `enrich_tags` fills them visible-range-first, and every modify path calls `carry_forward_tags` BEFORE storing, else an
-  mtime touch blanks a file's dots. ❌ Never route the enrich path through it: that blocks real removals.
+- **Finder tags are deferred and must survive re-stats.** `list_directory_core` never reads them (a test pins it), and
+  every modify path calls `carry_forward_tags` BEFORE storing, else an mtime touch blanks a file's dots. ❌ Never route
+  the enrich path through it: that blocks real removals.
 
 Data flow, the caching lifecycle, the orphan reaper, decisions, the helper catalogs, diff coalescing, metadata tiers,
 and the full tags story: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or

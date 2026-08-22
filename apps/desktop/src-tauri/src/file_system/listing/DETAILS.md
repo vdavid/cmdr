@@ -59,9 +59,11 @@ SMB and MTP wire `on_progress` through their own listing loops directly, having 
 ## Caching
 
 - **`LISTING_CACHE`**: global `RwLock<HashMap<String, CachedListing>>`, keyed by `listing_id` (UUID per navigation).
-- **`CachedListing`**: `{ volume_id, path, entries, visible_rows, sort_by, sort_order, directory_sort_mode, sequence,
-  created_at, last_accessed_ms }`. `entries` is private: `entries()` reads, `entries_mut()` / `set_entries()` change it
-  and drop `visible_rows` on the way, and `rows(include_hidden)` is what every read accessor asks. See § "Row numbers".
+- **`CachedListing`**: `{ volume_id, path, entries, visible_rows, path_index, sort_by, sort_order,
+  directory_sort_mode, sequence, created_at, last_accessed_ms }`. `entries` is private: `entries()` reads,
+  `entries_mut()` / `set_entries()` change it and drop BOTH maps on the way, `rows(include_hidden)` is what every read
+  accessor asks, and `index_of_path` / `indices_of_paths` are what every by-path caller asks. See § "Row numbers" and
+  § "Entries by path".
 - **Focused-pane reads**: `get_cached_listing(volume_id, path)` clones the newest matching cached listing without
   requiring watcher coverage. Agent reads use it for the already-open pane, including SMB and MTP, and never start a
   new filesystem listing.
@@ -91,8 +93,8 @@ It keys on `last_accessed_ms`, NOT `created_at`. `created_at` is stamped once an
 keyed on it would evict a pane open all session. `last_accessed_ms` (an `AtomicU64` of ms-since-a-process-epoch) is
 bumped by every operation that proves the listing still backs a live pane: the read accessors (`get_file_range`,
 `get_total_count`, `get_file_at`, `get_file_beside`, `get_listing_stats`, the index/path/batch lookups), `resort_listing`, and every
-watcher/notify cache patch (`insert_entry_sorted` / `remove_entry_by_path` / `update_entry_sorted` /
-`update_listing_entries`). `AtomicU64` so read accessors stamp it lock-free under a shared `LISTING_CACHE.read()`. The
+watcher/notify cache patch (`insert_entry_sorted` / `remove_entries_by_paths` / `remove_entry_by_name` /
+`update_entry_sorted` / `update_listing_entries`). `AtomicU64` so read accessors stamp it lock-free under a shared `LISTING_CACHE.read()`. The
 6 h window is deliberately generous: we'd rather never evict a live listing than aggressively reclaim.
 `refresh_listing_index_sizes` intentionally does NOT touch it: it's driven by background indexing, not user/FS activity,
 so touching there could keep a truly-orphaned listing alive indefinitely.
@@ -216,10 +218,37 @@ every enrichment chunk and make the next pane read rebuild all of it, which is a
 buy a torn window: entries can move between dropping a read lock and taking the write lock, and every index would need
 re-verifying against its path before it could be trusted. Not worth it at these numbers.
 
-**What is still O(entries), by path**: `carry_forward_tags`, `has_entry`, `remove_entry_by_path`, and the position
-lookup in `update_entry_sorted`. Each is a single lookup per watcher event, not a batch, and the last two mutate anyway
-(so they would drop the map they built). A future caller that loops any of them over a path list should take the batch
-through `PathIndexCache::resolve` instead.
+**Every by-path lookup goes through the map**, in one of two forms. `CachedListing::indices_of_paths` takes a BATCH and
+makes one build decision for it: tag enrichment and the watcher's removals. `CachedListing::index_of_path`
+(`PathIndexCache::resolve_one`) takes ONE path, for `carry_forward_tags`, `has_entry`, `update_entry_sorted`, and
+`insert_entry_sorted`'s duplicate guard. ❗ The single-path form rides a map that already exists and **never builds
+one**: one lookup is far under `BUILD_FROM_BATCH_SIZE`, so a modify on an untouched 300,000-entry listing must not pay
+~20 ms for a map it uses once and (mutating) drops on the way out. What it buys is the sweep's map, so while enrichment
+is walking a big directory every watcher event landing in it is a hash rather than a walk.
+
+❗ **A mutating caller resolves BEFORE it takes `entries_mut`.** That is the whole reason `update_entry_sorted` and the
+removals can reach a map at all: `entries_mut` drops both maps as it hands the vector out, so a lookup after it can only
+walk. The `LISTING_CACHE` write lock is held across both, so the index is still true when the mutation lands, and the
+invariant is untouched — `path_index_test::a_mutation_still_drops_the_map_it_rode` pins that they still drop it. One
+side effect worth having: a modify or removal that finds nothing now leaves both maps standing rather than dropping them
+for a row it never touched.
+
+**The watcher's removals were the second quadratic**, and the only one of these callers with a measured win rather than
+a latent one. `handle_directory_change_incremental` resolved each removal's index with its own full walk (the diff needs
+the PRE-removal index) and then walked again inside the removal itself, and one coalesced watcher event carries up to
+500 paths — a directory emptied, a `git checkout` across a big tree, an unpack over a folder. Measured by the counting
+probe: a 500-path removal from a 20,000-entry listing examined **9,981,000 entries**, and now examines **20,500** (one
+walk to build the map, plus one lookup per path). `remove_entries_by_paths` is now the only by-path removal, since its caller is always a batch. Resolving and
+removing under ONE write lock also makes the emitted indices true: the two-lock shape it replaced let another writer move
+a row between the lookup and the removal, and the `directory-diff` would have named a row that had shifted.
+
+**What is still linear per removal**: `Vec::remove` per doomed row, so dropping `k` rows from an `n`-entry listing
+memmoves about `k × n / 2` entries. The lookup fix doesn't touch it, and the incremental path's 500-event cap bounds it.
+The one-pass rebuild that would fix it needs a transient second copy of `entries` (~65 MB at 300,000 rows), which is not
+a trade to take without measuring first.
+
+**What is still O(entries), by path**: nothing. The four single-path callers are O(entries) only on a listing with no
+map, which is what the threshold deliberately buys.
 
 ## Decisions
 
@@ -259,7 +288,7 @@ through `PathIndexCache::resolve` instead.
   populated would miss initial state.
 - **Incremental watcher path with fallback to full re-read**: most FS changes touch a few files. The incremental path
   stats each changed path, classifies add/remove/modify against the cache, and patches in-place via
-  `insert_entry_sorted` / `remove_entry_by_path` / `update_entry_sorted`. Falls back to full `handle_directory_change`
+  `insert_entry_sorted` / `remove_entries_by_paths` / `update_entry_sorted`. Falls back to full `handle_directory_change`
   when events exceed 500 or contain unknown kinds (`Any` / `Other`), which can't be reliably classified.
 - **Synthetic diff for entry creation (`emit_synthetic_entry_diff`)**: `create_directory` / `create_file` return before
   the watcher fires; without it the new entry wouldn't appear until the next debounce (~200 ms). The command handler
@@ -283,8 +312,10 @@ Used by the watcher's incremental path and synthetic mkdir to patch listings wit
   cache lock across an await and blocks pane navigation). See the freshness-contract section in `volume/CLAUDE.md` for
   per-backend debounce windows callers must tolerate.
 - `insert_entry_sorted(listing_id, entry)`: inserts in sorted position, returns the insertion index.
-- `remove_entry_by_path(listing_id, path)`: removes by exact file-path match, returns the removed index and entry. Used
-  by the local FSEvents incremental path, where the event path shares the entries' path space.
+- `remove_entries_by_paths(listing_id, paths)`: removes by exact file-path match, returning `(pre-removal index,
+  entry)` highest-index-first. Used by the local FSEvents incremental path, where the event path shares the entries'
+  path space. ❗ There is no single-path form: that caller is always a batch, and looping one was a quadratic. See
+  § "Entries by path".
 - `remove_entry_by_name(listing_id, name)`: removes by file NAME within the listing (its directory, so names are
   unique). This is what the `Removed` change patch uses, so it works even when the listing's stored entry paths use a
   different path space than the notifier's resolved parent. That's the case for MTP: `MtpVolume` stores each entry's
