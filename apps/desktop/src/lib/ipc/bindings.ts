@@ -989,7 +989,15 @@ export const commands = {
     typedError<ListingStats, string>(
       __TAURI_INVOKE('get_listing_stats', { listingId, includeHidden, selectedIndices }),
     ),
-  // Re-enriches cached listing entries with fresh drive index data.
+  /**
+   *  Re-enriches cached listing entries with fresh drive index data.
+   *
+   *  On the blocking pool rather than inline: this one runs two indexed SQLite
+   *  queries, and an index storm fires it once per `index-dir-updated` event per
+   *  pane. An async worker held for the length of a database query starves every
+   *  other future scheduled on it, which is the same shape of problem as the main
+   *  thread, one layer down.
+   */
   refreshListingIndexSizes: (listingId: string) =>
     typedError<null, string>(__TAURI_INVOKE('refresh_listing_index_sizes', { listingId })),
   // Initiates native drag from Rust directly, looking up paths from `LISTING_CACHE` (macOS only).

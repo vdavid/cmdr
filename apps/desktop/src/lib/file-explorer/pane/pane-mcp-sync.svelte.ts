@@ -1,5 +1,5 @@
 import {
-  getFileAt,
+  getFileRange,
   updateLeftPaneState,
   updateRightPaneState,
   type PaneFileEntry,
@@ -51,6 +51,13 @@ export interface PaneMcpSyncDeps {
  * push for the network view (FilePane's sync would clobber its host list), and
  * a search-results snapshot is local dialog state, not a directory agents query.
  */
+/**
+ * How many rows of the visible range `cmdr://state` carries. A cap rather than
+ * the whole listing: an agent reads what the user is looking at, and a pane
+ * showing 74,000 files would otherwise serialize all of them on every sync.
+ */
+const MAX_MIRRORED_ROWS = 100
+
 export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
   // Map sort column names to MCP format (constant, no need to recreate)
   const sortFieldMap: Record<string, string> = {
@@ -79,7 +86,7 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
    * `PaneFileEntry` uses `null` for absent fields (post-Group-A wire format)
    * while `FileEntry` uses `undefined`, so `?? null` coerces across both.
    */
-  function toMcpFileEntry(entry: Awaited<ReturnType<typeof getFileAt>> & {}): PaneFileEntry {
+  function toMcpFileEntry(entry: Awaited<ReturnType<typeof getFileRange>>[number]): PaneFileEntry {
     return {
       name: entry.name,
       path: entry.path,
@@ -135,18 +142,18 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
       })
     }
 
-    // Limit to 100 files max for performance
-    const maxToFetch = Math.min(backendEnd - backendStart, 100)
-    for (let i = 0; i < maxToFetch; i++) {
-      const backendIndex = backendStart + i
-      if (backendIndex >= totalCount) break
-      const entry = await getFileAt(listingId, backendIndex, includeHidden)
-      // Null means the listing on the BE has fewer entries than our cached
-      // `totalCount` (a directory-diff is mid-flight). Stop here: keeps the
-      // partial MCP state consistent and avoids trailing out-of-bounds calls
-      // for the rest of the visible range.
-      if (!entry) break
-      files.push(toMcpFileEntry(entry))
+    // ONE call for the whole range, capped at `MAX_MIRRORED_ROWS`. A row at a
+    // time was one IPC round trip each, and that is what wedged the app on a big
+    // directory (`docs/notes/listing-row-fetch-quadratic-2026-08-22.md`).
+    //
+    // The count is also clamped to the cached `totalCount`, and a range that
+    // comes back SHORT of it is the expected answer while a `directory-diff` is
+    // mid-flight: the listing shrank under the count the frontend is iterating.
+    // A short list is the right MCP state for that moment.
+    const maxToFetch = Math.max(0, Math.min(backendEnd - backendStart, MAX_MIRRORED_ROWS, totalCount - backendStart))
+    if (maxToFetch > 0) {
+      const range = await getFileRange(listingId, backendStart, maxToFetch, includeHidden)
+      for (const entry of range) files.push(toMcpFileEntry(entry))
     }
     return files
   }

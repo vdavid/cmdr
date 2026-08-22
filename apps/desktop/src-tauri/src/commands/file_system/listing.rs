@@ -249,14 +249,14 @@ pub async fn list_directory_start_streaming(
 
 #[tauri::command]
 #[specta::specta]
-pub fn cancel_listing(listing_id: String) {
+pub async fn cancel_listing(listing_id: String) {
     ops_cancel_listing(&listing_id);
 }
 
 #[allow(clippy::too_many_arguments, reason = "Tauri commands require top-level arguments")]
 #[tauri::command]
 #[specta::specta]
-pub fn resort_listing(
+pub async fn resort_listing(
     listing_id: String,
     sort_by: SortColumn,
     sort_order: SortOrder,
@@ -280,7 +280,7 @@ pub fn resort_listing(
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_file_range(
+pub async fn get_file_range(
     listing_id: String,
     start: usize,
     count: usize,
@@ -291,7 +291,7 @@ pub fn get_file_range(
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize, String> {
+pub async fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize, String> {
     ops_get_total_count(&listing_id, include_hidden)
 }
 
@@ -328,13 +328,13 @@ pub async fn get_brief_column_text_widths(
 
 #[tauri::command]
 #[specta::specta]
-pub fn find_file_index(listing_id: String, name: String, include_hidden: bool) -> Result<Option<usize>, String> {
+pub async fn find_file_index(listing_id: String, name: String, include_hidden: bool) -> Result<Option<usize>, String> {
     ops_find_file_index(&listing_id, &name, include_hidden)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn find_file_indices(
+pub async fn find_file_indices(
     listing_id: String,
     names: Vec<String>,
     include_hidden: bool,
@@ -359,7 +359,7 @@ pub async fn find_first_fuzzy_match(
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
+pub async fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
     ops_get_file_at(&listing_id, index, include_hidden)
 }
 
@@ -370,7 +370,7 @@ pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Re
 /// re-sort moves every index it could have kept while the name stays the name.
 #[tauri::command]
 #[specta::specta]
-pub fn get_file_beside(
+pub async fn get_file_beside(
     listing_id: String,
     name: String,
     side: RowBeside,
@@ -383,7 +383,7 @@ pub fn get_file_beside(
 /// extraction). Handles the parent ".." offset internally; callers pass frontend indices.
 #[tauri::command]
 #[specta::specta]
-pub fn get_paths_at_indices(
+pub async fn get_paths_at_indices(
     listing_id: String,
     selected_indices: Vec<usize>,
     include_hidden: bool,
@@ -397,7 +397,7 @@ pub fn get_paths_at_indices(
 /// Callers are responsible for any parent offset adjustment before passing indices.
 #[tauri::command]
 #[specta::specta]
-pub fn get_files_at_indices(
+pub async fn get_files_at_indices(
     listing_id: String,
     selected_indices: Vec<usize>,
     include_hidden: bool,
@@ -407,7 +407,7 @@ pub fn get_files_at_indices(
 
 #[tauri::command]
 #[specta::specta]
-pub fn list_directory_end(listing_id: String) {
+pub async fn list_directory_end(listing_id: String) {
     ops_list_directory_end(&listing_id);
 }
 
@@ -471,7 +471,7 @@ pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
 /// Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
 #[tauri::command]
 #[specta::specta]
-pub fn get_listing_stats(
+pub async fn get_listing_stats(
     listing_id: String,
     include_hidden: bool,
     selected_indices: Option<Vec<usize>>,
@@ -480,10 +480,20 @@ pub fn get_listing_stats(
 }
 
 /// Re-enriches cached listing entries with fresh drive index data.
+///
+/// On the blocking pool rather than inline: this one runs two indexed SQLite
+/// queries, and an index storm fires it once per `index-dir-updated` event per
+/// pane. An async worker held for the length of a database query starves every
+/// other future scheduled on it, which is the same shape of problem as the main
+/// thread, one layer down.
 #[tauri::command]
 #[specta::specta]
-pub fn refresh_listing_index_sizes(listing_id: String) -> Result<(), String> {
-    ops_refresh_listing_index_sizes(&listing_id)
+pub async fn refresh_listing_index_sizes(listing_id: String) -> Result<(), String> {
+    match tokio::task::spawn_blocking(move || ops_refresh_listing_index_sizes(&listing_id)).await {
+        Ok(result) => result,
+        // A `JoinError` means the blocking task panicked, so no answer is coming.
+        Err(join_error) => Err(join_error.to_string()),
+    }
 }
 
 // ============================================================================
