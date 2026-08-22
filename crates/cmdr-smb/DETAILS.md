@@ -106,10 +106,10 @@ on", not by watching a number.
   volume-relative paths and the share-relative ones smb2 speaks; `query` reads the share without changing it (listings,
   metadata, existence, space); `mutation` changes it and patches the listings that showed it; then `session`,
   `reconnect`, `state`, `streams`, `scan`, `scan_pool`, `watcher`, `foreground_yield`, and the stateless `mapping`.
-  Splitting further needs a responsibility you can name the same way; a line count is not one. `e5ea10d02` reverted
-  four splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct from its
-  trait impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching into
-  another's internals.
+  Splitting further needs a responsibility you can name the same way; a line count is not one. `e5ea10d02` reverted four
+  splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct from its trait
+  impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching into another's
+  internals.
 - **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" WITHOUT a per-device gate.** MTP
   has an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so the signal
   here is time-based instead: the share counts as busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last
@@ -533,11 +533,15 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
 - **Server-free, colocated with the module each covers**: `mapping_test.rs` (`DirectoryEntry`→`FileEntry`,
   `FsInfo`→`SpaceInfo`, `smb2::Error`→`VolumeError`), `state_test.rs` (the binary state machine and how it widens),
   `paths_test.rs` (path translation both ways), `volume_impl_test.rs` (re-rooting and every capability flag),
-  `reconnect_test.rs` (the
-  reconnect early-exits, the transitions and the events they suppress, the watch-coverage gate, both retirement paths),
-  `streams_test.rs` (the channel-backed `SmbReadStream` consumer and the single-shot write promise), `scan_test.rs` (the
-  progress ticker), `retirement_test.rs`, `watcher/archive_refresh_test.rs`, and the inline `mod tests` in
-  `foreground_yield.rs` and `scan_pool.rs`. These run by default.
+  `reconnect_test.rs` (the reconnect early-exits, the transitions and the events they suppress, the watch-coverage gate,
+  both retirement paths), `streams_test.rs` (the channel-backed `SmbReadStream` consumer and the single-shot write
+  promise), `scan_test.rs` (the progress ticker), `retirement_test.rs`, `watcher/archive_refresh_test.rs`, and the
+  inline `mod tests` in `foreground_yield.rs` and `scan_pool.rs`. These run by default.
+- `host_seam_test.rs` — the PACE of what this backend tells the listing seam, which no type can hold: one call per
+  mutation, none per directory entry. Its server-free cells pin the addressing and that an un-stattable creation patches
+  nothing; its Docker cell seeds a directory, walks it with a listing and a copy scan, and asserts
+  `RecordingListings::change_count` doesn't move, which is what would catch a `notify_mutation` drifting into an entry
+  loop. The rule and the instrument: `crates/cmdr-fs/src/volume/host/DETAILS.md`.
 - `integration_test.rs` — what a share does with FILES against a real server: core CRUD, single-chunk streaming smoke,
   the copy and conflict scans, space info.
 - `session_integration_test.rs` — what the SESSION does: the connection gate the fresh-listing oracle reads, the
@@ -556,7 +560,6 @@ by PACKAGE, not by the `smb_integration` name, or a cell named for what it asser
 cell here can be named that way precisely because `desktop-rust-integration-tests` selects this whole package's ignored
 tests: every `#[ignore]` in a crate with no app around it IS a Docker cell. The app's SMB cells have no such luxury and
 still need the `smb_integration_` prefix the same lane filters them by, which `smb-lane-coverage` enforces rather than
-asks for. The fixture ports come from the environment
-(`SMB_CONSUMER_GUEST_PORT` and friends, defaulting to smb2's own 10480 / 10481 / 10488 / 10493); Cmdr's stack publishes
-11480+ so both harnesses coexist, and the check runner exports the override. The full container list:
-`apps/desktop/test/smb-servers/README.md`.
+asks for. The fixture ports come from the environment (`SMB_CONSUMER_GUEST_PORT` and friends, defaulting to smb2's own
+10480 / 10481 / 10488 / 10493); Cmdr's stack publishes 11480+ so both harnesses coexist, and the check runner exports
+the override. The full container list: `apps/desktop/test/smb-servers/README.md`.
