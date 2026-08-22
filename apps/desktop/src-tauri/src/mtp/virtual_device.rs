@@ -242,6 +242,11 @@ pub const VIRTUAL_DEVICE_SERIAL: &str = "cmdr-e2e-virtual";
 /// which lets a caller pick the fixture out of a plain device-id list without holding
 /// a registration handle. Used to keep host-level workarounds (`macos_workaround`)
 /// off a device that doesn't need them.
+///
+/// macOS-only because that is the only place those workarounds exist: on Linux every
+/// caller is `cfg`-ed out, and an ungated definition is dead code the E2E build (the one
+/// configuration that is both Linux and `virtual-mtp`) compiles with `-D unused`.
+#[cfg(target_os = "macos")]
 pub fn virtual_device_id() -> String {
     cmdr_fs::volume::mtp_ids::device_id_for(Some(VIRTUAL_DEVICE_SERIAL), 0)
 }
