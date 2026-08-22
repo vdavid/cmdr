@@ -474,6 +474,24 @@ as a broken mock, and the component's data path swallows its own throws.
 **How to spot the next one:** if the spec's subject is a row, a column, a cell, or an item, assert the count first. Zero
 rendered items and a passing test is the signature.
 
+### ❌ The host machine is not a fixture
+
+**The rule:** an automated run must never observe or react to the developer's real hardware, mounts, or network. When a
+subsystem's startup path DISCOVERS things rather than being handed them, gate that discovery under `CMDR_E2E_MODE` so
+the run only ever sees what it created itself.
+
+**Why:** whatever the machine happens to have becomes a hidden input, and the failure lands on a random innocent spec.
+The startup SMB adopter (`file_system::upgrade_existing_smb_mounts`) found David's real NAS at `/Volumes/naspi` in
+every shard, tried a direct connection over the real LAN, and raised a genuine "this share is on the slow path" toast —
+which the global `afterEach` UI-artifact guard then charged to whichever spec was running. Five runs, five different
+red specs, none of them related. It also means a test run was reaching for a Keychain entry and opening a session to a
+machine on someone's home network. The gate now lives in `test_mode::may_adopt_preexisting_network_mounts`.
+
+**How to spot the next one:** grep a startup path for enumeration of the world — `/Volumes`, USB, mDNS, Bluetooth,
+Keychain — and ask what it finds on a developer's laptop. **Known remaining instance:** MTP device enumeration
+(`mtp/watcher.rs::start_mtp_watcher`) auto-connects every real USB device it finds alongside the virtual one, so a
+camera or phone plugged into the machine raises a `ptpcamerad` exclusive-access toast mid-run.
+
 ## Sanctioned slow-test exceptions
 
 Most "raise the timeout" instincts are wrong (see the `retries: 1` and `sleep(N)` anti-patterns above): a flaky timeout

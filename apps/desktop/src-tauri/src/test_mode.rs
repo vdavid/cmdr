@@ -90,6 +90,25 @@ pub fn ask_cmdr_fake_active() -> bool {
     std::env::var("CMDR_E2E_ASK_CMDR_FAKE").is_ok()
 }
 
+/// Whether the app may adopt network mounts that were already on the machine when
+/// it launched.
+///
+/// False under E2E, because those mounts can only be the developer's own. Every
+/// fixture share an E2E run uses is mounted AFTER the app is up (`setupSmb` runs
+/// when a spec file loads, and the suite connects to a running app), so the
+/// startup adopter has nothing of the test's to find and everything of the
+/// developer's: on this machine it reliably finds `/Volumes/naspi`, waits on mDNS
+/// for it, reaches for its Keychain entry, opens an smb2 session to a NAS on the
+/// real LAN, and raises a toast about it that then fails whichever spec is running.
+///
+/// The wider rule this serves: **a test run must not observe or react to the
+/// developer's real machine.** Anything the app discovers rather than creates is a
+/// candidate — the real-USB half of MTP enumeration is the known remaining one
+/// (`mtp/watcher.rs`, `docs/testing.md` § "The host machine is not a fixture").
+pub fn may_adopt_preexisting_network_mounts() -> bool {
+    !is_e2e_mode()
+}
+
 /// Pure core of [`guard_e2e_requires_data_dir`]: true when E2E mode is on but no usable
 /// `CMDR_DATA_DIR` is set. Empty is treated as unset, matching `config::data_dir_from_env`.
 fn e2e_data_dir_missing(is_e2e: bool, data_dir: Option<&str>) -> bool {
@@ -197,6 +216,16 @@ mod tests {
         // Reference call to keep the helper from being dead-coded out of
         // test builds; the result is environment-dependent so we don't assert.
         let _ = is_e2e_mode();
+    }
+
+    /// Adopting the machine's pre-existing network mounts is exactly "not under E2E".
+    /// Pinned as its own assertion because the gate reads as a niche startup
+    /// optimization at its call site, while what it actually protects is that a test
+    /// run can't reach the developer's NAS. Someone tidying the call site needs the
+    /// failing test to tell them that.
+    #[test]
+    fn preexisting_network_mounts_are_adopted_outside_e2e_only() {
+        assert_eq!(may_adopt_preexisting_network_mounts(), !is_e2e_mode());
     }
 
     /// The data-dir guard fires only when E2E mode is on AND no usable `CMDR_DATA_DIR`

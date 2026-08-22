@@ -224,11 +224,21 @@ fn register_discovered_volumes() {
 /// and an existing mount.
 ///
 /// Returns silently when:
+/// - the run may not adopt pre-existing network mounts (an E2E run: the only
+///   mounts here are the developer's own — see
+///   `test_mode::may_adopt_preexisting_network_mounts`),
 /// - direct-SMB is disabled (`network.directSmbConnection`),
 /// - or no SMB mounts are registered (no scan cost, no prompt).
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub fn upgrade_existing_smb_mounts(app_handle: tauri::AppHandle) {
     use crate::network::smb_upgrade::UpgradePass;
+
+    // Before the scan, not after: an E2E run must not so much as look at what the
+    // developer has mounted, let alone connect to it or speak about it.
+    if !crate::test_mode::may_adopt_preexisting_network_mounts() {
+        log::debug!("Under an E2E run; not adopting the machine's pre-existing SMB mounts");
+        return;
+    }
 
     if !is_direct_smb_enabled() {
         log::debug!("Direct SMB connections disabled, skipping startup upgrade");
