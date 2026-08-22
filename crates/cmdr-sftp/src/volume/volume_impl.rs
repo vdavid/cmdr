@@ -6,11 +6,15 @@
 //! and `max_concurrent_ops`) are the difference between a stale pane and a
 //! serialized transfer.
 
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::{LaneKey, ListingProgress, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage};
+use cmdr_fs::volume::{
+    DirectoryCreation, LaneKey, ListingProgress, MutationEvent, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    WatchCoverage,
+};
 use tokio_util::sync::CancellationToken;
 
 use super::streams::{READ_WINDOW_DEPTH, SCAN_WINDOW_DEPTH};
@@ -137,6 +141,90 @@ impl Volume for SftpVolume {
         len: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
         Box::pin(self.read_range_impl(path, offset, len))
+    }
+
+    // ── The write path ───────────────────────────────────────────────
+
+    /// Every mutation below is implemented, so the panes' New folder, New file,
+    /// Rename, and Paste are honestly enabled.
+    fn is_writable(&self) -> bool {
+        true
+    }
+
+    /// ❗ The refusal is `SSH_FXF_EXCL`'s, not a check of ours: `mutation.rs`
+    /// says what a stat-then-write would cost.
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.create_file_impl(path, content))
+    }
+
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.create_directory_impl(path))
+    }
+
+    /// ❗ Overridden. The trait default spends one `exists()` round trip per
+    /// ancestor before creating anything, which over a 50 ms link is the whole
+    /// cost of a deep destination.
+    fn create_directory_all<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
+        Box::pin(self.create_directory_all_impl(path))
+    }
+
+    /// `SSH_FXP_MKDIR` refuses an occupied name on every server, so the
+    /// folder-merge walker can read `AlreadyExists` as "merge into this one" —
+    /// and a remote archive edit takes its ATOMIC swap instead of the
+    /// delete-then-rename window, because this answer plus
+    /// `posix-rename@openssh.com` on a forced rename is what that fast path is
+    /// gated on.
+    fn create_directory_errors_on_existing_dir(&self) -> bool {
+        true
+    }
+
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.delete_impl(path))
+    }
+
+    /// ❗ `force = false` never reaches for `posix-rename@openssh.com`, which is
+    /// DEFINED to replace the destination. `mutation.rs` § the two renames.
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.rename_impl(from, to, force))
+    }
+
+    /// The window an upload runs through. ❗ `write_is_single_shot` keeps its
+    /// `false` default, so every write here is staged on a `.cmdr-tmp-*` sibling
+    /// and a partial never wears the user's filename.
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        size: u64,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(self.write_from_stream_impl(dest, size, stream, on_progress))
+    }
+
+    /// ❗ There is no watcher here, so this patch is the ONLY thing that keeps a
+    /// destination pane honest after a copy.
+    fn notify_mutation<'a>(
+        &'a self,
+        _volume_id: &'a str,
+        parent_path: &'a Path,
+        mutation: MutationEvent,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(self.notify_mutation_impl(parent_path, mutation))
     }
 
     // ── What this backend is, in capability terms ────────────────────

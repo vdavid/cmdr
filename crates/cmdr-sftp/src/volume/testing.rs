@@ -123,6 +123,33 @@ pub fn fixture_host(params: &SftpConnectionParams, secret: Option<&str>) -> Volu
         .build()
 }
 
+/// The same host, plus the listing recorder the mutation cells assert on.
+///
+/// There is no watcher on this backend, so `notify_mutation` is the ONLY thing
+/// that keeps a destination pane honest after a copy — which makes what it
+/// reports worth pinning.
+pub fn fixture_host_recording(
+    params: &SftpConnectionParams,
+    secret: Option<&str>,
+) -> (VolumeHost, Arc<cmdr_fs::volume::host::listings::RecordingListings>) {
+    let listings = Arc::new(cmdr_fs::volume::host::listings::RecordingListings::new());
+    let credentials = match secret {
+        Some(secret) => InMemoryCredentials::new().with_entry(
+            &params.credential_service(),
+            Some(&params.username),
+            &params.username,
+            secret,
+        ),
+        None => InMemoryCredentials::new(),
+    };
+    let host = VolumeHost::builder()
+        .host_keys(Arc::new(InMemoryHostKeys::new()))
+        .credentials(Arc::new(credentials))
+        .listings(Arc::clone(&listings) as Arc<dyn cmdr_fs::volume::host::listings::ListingHost>)
+        .build();
+    (host, listings)
+}
+
 /// Dials a fixture, approving its host key on first contact the way a user
 /// would, and returns the live volume.
 ///
@@ -162,4 +189,39 @@ pub async fn approve_and_connect(host: &VolumeHost, params: SftpConnectionParams
         }
         Err(e) => Err(format!("the fixture refused a connection after approval: {e:?}")),
     }
+}
+
+/// A scratch directory name nothing else in this run will pick.
+///
+/// ❗ The write cells share one export with every other cell in the binary, and
+/// `nextest` runs them in parallel: a fixed name would have two cells creating,
+/// renaming, and deleting each other's files. The process id keeps two `cargo`
+/// runs apart, the counter keeps two cells apart, and `what` says which cell to
+/// look at when one leaves a mess behind.
+pub fn scratch_dir(what: &str) -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    format!(
+        "cmdr-test-{}-{}-{what}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    )
+}
+
+/// Empties `dir` and takes it away, so a cell starts and ends on a clean export.
+///
+/// One level deep, which is all the write cells build. `Volume::delete` refuses
+/// a directory that still holds something, so a cell that left a child behind
+/// fails here loudly rather than leaving the next run a surprise.
+pub async fn clean_scratch(volume: &SftpVolume, dir: &str) {
+    use cmdr_fs::volume::Volume;
+    use std::path::Path;
+
+    let root = Path::new(dir);
+    if let Ok(entries) = volume.list_directory(root, None).await {
+        for entry in entries {
+            let _ = volume.delete(&root.join(&entry.name)).await;
+        }
+    }
+    let _ = volume.delete(root).await;
 }

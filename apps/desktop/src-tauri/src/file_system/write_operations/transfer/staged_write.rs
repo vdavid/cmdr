@@ -369,7 +369,10 @@ mod tests {
             InMemoryVolume::new("dest").with_rename_failing(VolumeError::DeviceDisconnected("blip".to_string())),
         );
         let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
-        inner.create_file(Path::new("/notes.txt"), b"THE USER'S FILE").await.unwrap();
+        inner
+            .create_file(Path::new("/notes.txt"), b"THE USER'S FILE")
+            .await
+            .unwrap();
         inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
 
         let outcome = land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await;
@@ -395,7 +398,10 @@ mod tests {
     async fn a_backend_without_rename_does_not_delete_what_it_cannot_replace() {
         let inner = Arc::new(InMemoryVolume::new("dest").with_rename_failing(VolumeError::NotSupported));
         let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
-        inner.create_file(Path::new("/notes.txt"), b"THE USER'S FILE").await.unwrap();
+        inner
+            .create_file(Path::new("/notes.txt"), b"THE USER'S FILE")
+            .await
+            .unwrap();
         inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
 
         let outcome = land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await;

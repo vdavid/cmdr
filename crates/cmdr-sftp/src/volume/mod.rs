@@ -23,10 +23,12 @@ use crate::params::SftpConnectionParams;
 use crate::transport::{self, DialOutcome, HostKeyPrompt, SshConnection};
 
 mod mapping;
+mod mutation;
 mod paths;
 mod query;
 mod streams;
 mod volume_impl;
+mod writes;
 
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
@@ -173,6 +175,10 @@ pub fn approve_host_key(host: &VolumeHost, server: &str, port: u16, algorithm: &
 // build a volume with no session behind it and drive the path translation and the
 // query surface directly.
 #[cfg(test)]
+mod conformance_test;
+#[cfg(test)]
 mod integration_test;
 #[cfg(test)]
 mod test_support;
+#[cfg(test)]
+mod write_path_test;

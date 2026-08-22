@@ -43,3 +43,91 @@ fn a_dead_channel_reads_as_a_disconnect_rather_than_an_io_hiccup() {
     )));
     assert!(matches!(mapped, VolumeError::DeviceDisconnected(_)), "got {mapped:?}");
 }
+
+// ── Resolving the catch-all, after the fact ──────────────────────────
+
+#[test]
+fn a_name_that_something_already_holds_reads_as_already_exists() {
+    // The whole reason the write path probes at all. `create_file`'s exclusive
+    // open, `create_directory`, and a no-clobber rename's destination claim all
+    // owe `AlreadyExists`, and five conformance assertions plus the folder-merge
+    // walker branch on getting it.
+    for found in [WhatIsThere::NotADirectory, WhatIsThere::Directory] {
+        let resolved = resolve(
+            SftpErrorKind::Failure,
+            "failure",
+            "/srv/data/notes.txt",
+            Attempted::TakingAName,
+            found,
+        );
+        assert!(
+            matches!(resolved, VolumeError::AlreadyExists(_)),
+            "{found:?} resolved to {resolved:?}"
+        );
+    }
+}
+
+#[test]
+fn a_name_with_nothing_at_it_stays_unclassified() {
+    // ❗ The probe may only make a report MORE accurate. A `Failure` on a path
+    // that holds nothing is out of space, a read-only export, a quota: guessing
+    // `AlreadyExists` there would make the merge walker merge into a directory
+    // that isn't there.
+    let resolved = resolve(
+        SftpErrorKind::Failure,
+        "failure",
+        "/srv/data/notes.txt",
+        Attempted::TakingAName,
+        WhatIsThere::Nothing,
+    );
+    assert!(matches!(resolved, VolumeError::IoError { .. }), "got {resolved:?}");
+}
+
+#[test]
+fn a_directory_that_refused_to_go_carries_the_errno_every_backend_reports() {
+    // `Volume::delete` must refuse a directory that still holds something, and
+    // the app renders that from the errno rather than from wording. MTP and
+    // LocalPosix both answer this way, so SFTP has to as well or the same
+    // refusal reads differently per backend.
+    let resolved = resolve(
+        SftpErrorKind::Failure,
+        "failure",
+        "/srv/data/full-dir",
+        Attempted::RemovingANode,
+        WhatIsThere::Directory,
+    );
+    assert!(
+        matches!(resolved, VolumeError::IoError { raw_os_error: Some(errno), .. } if errno == ENOTEMPTY),
+        "got {resolved:?}"
+    );
+}
+
+#[test]
+fn a_probe_that_found_nothing_leaves_a_failed_delete_unclassified() {
+    for found in [WhatIsThere::Nothing, WhatIsThere::NotADirectory] {
+        let resolved = resolve(
+            SftpErrorKind::Failure,
+            "failure",
+            "/srv/data/notes.txt",
+            Attempted::RemovingANode,
+            found,
+        );
+        assert!(matches!(resolved, VolumeError::IoError { .. }), "got {resolved:?}");
+    }
+}
+
+#[test]
+fn a_code_the_protocol_does_distinguish_is_never_second_guessed() {
+    // ❗ The probe resolves ONE code. A server that said `SSH_FX_NO_SUCH_FILE`
+    // was precise, and turning that into `AlreadyExists` because a racing writer
+    // happened to create the path a millisecond later would be a lie built out
+    // of a stale answer.
+    let resolved = resolve(
+        SftpErrorKind::NoSuchFile,
+        "no such file",
+        "/srv/data/notes.txt",
+        Attempted::TakingAName,
+        WhatIsThere::NotADirectory,
+    );
+    assert!(matches!(resolved, VolumeError::NotFound(_)), "got {resolved:?}");
+}

@@ -55,6 +55,17 @@ impl SftpVolume {
         }
         Ok(joined.to_string_lossy().into_owned())
     }
+
+    /// The path the APP addresses `path` by, which for this backend is the same
+    /// string the server does.
+    ///
+    /// There is no mount and no second spelling of the tree, so this is
+    /// [`SftpVolume::to_remote_path`] with the refusal turned into "no patch to
+    /// make": a listing-cache patch is a courtesy, and ❌ must never fail a
+    /// mutation that already landed.
+    pub(super) fn display_path_for(&self, path: &Path) -> Option<PathBuf> {
+        self.to_remote_path(path).ok().map(PathBuf::from)
+    }
 }
 
 /// Resolves `.` and `..` lexically, with no round trip and no symlink following.
