@@ -42,6 +42,7 @@ import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { tString, setLocale } from '$lib/intl/messages.svelte'
 import { loadSystemLocales, pickUiLocale, watchSystemLocales } from '$lib/intl/os-locales'
 import { trackLanguageResolved } from '$lib/intl/language-analytics'
+import { refreshSystemStrings } from '$lib/system-strings.svelte'
 import { pushConfigToBackend } from './ai-config'
 import { noteModelSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
@@ -363,6 +364,11 @@ export async function initSettingsApplier(): Promise<void> {
     // change is minutes away, not milliseconds.
     void watchSystemLocales(() => {
       applyLanguage(getSetting('appearance.language'))
+      // The macOS pane names we quote follow the SYSTEM language, so they move
+      // here too, and independently of the setting above. Hooked onto this
+      // subscriber rather than a second one: `watchSystemLocales` adopts the new
+      // answers before calling back, so a later subscriber would see no change.
+      void refreshSystemStrings()
     }).then((unlisten) => {
       unlistenOsLocale = unlisten
     })

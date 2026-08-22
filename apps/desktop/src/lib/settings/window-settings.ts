@@ -18,6 +18,7 @@
 import { setLocale } from '$lib/intl/messages.svelte'
 import { loadSystemLocales, pickUiLocale, watchSystemLocales } from '$lib/intl/os-locales'
 import { noteStartupLanguage } from '$lib/intl/language-analytics'
+import { refreshSystemStrings } from '$lib/system-strings.svelte'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { initReactiveSettings } from './reactive-settings.svelte'
 import { getSetting, onSpecificSettingChange } from './settings-store'
@@ -83,12 +84,12 @@ export async function initWindowSettings(pathname?: string): Promise<void> {
  * the user's own pick in the Settings picker, which round-trips through the
  * store) so the whole window re-localizes live.
  *
- * Applies twice on purpose. The persisted value is available synchronously, so
  * ❌ A window that gates on `initWindowSettings()` and skips this call sits on
  * the WEBVIEW's own tag forever: English copy under a Hungarian UI, and
  * `58.03 KB` where the main pane writes `58,03 KB`. Nothing throws, so
  * `routes/window-route-coverage.test.ts` reads the sources and fails the pair.
  *
+ * Applies twice on purpose. The persisted value is available synchronously, so
  * an explicit language is right from the first paint; the OS answers come from
  * Rust over IPC, so they land a tick later and the second apply is what picks
  * them up. ❌ Don't await them before the first apply: that would gate the
@@ -124,6 +125,11 @@ export function initWindowLanguageSync(): () => void {
   let stopped = false
   void watchSystemLocales(() => {
     apply(getSetting('appearance.language'))
+    // The macOS pane names this window may quote follow the SYSTEM language, so
+    // they move here too, and independently of the setting above. Hooked onto
+    // this subscriber rather than a second one: `watchSystemLocales` adopts the
+    // new answers before calling back, so a later subscriber would see no change.
+    void refreshSystemStrings()
   }).then((unlisten) => {
     if (stopped) unlisten()
     else unlistenOsLocale = unlisten

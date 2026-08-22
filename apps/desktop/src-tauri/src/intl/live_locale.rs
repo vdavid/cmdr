@@ -160,6 +160,12 @@ pub fn observe_os_locale_changes<R: Runtime>(app_handle: AppHandle<R>) {
         // webview does, so it's rebuilt here. Only when the catalog the native
         // side reads actually moved: a region change (or a language change under
         // a pinned `appearance.language`) leaves every label as it was.
+        // The macOS pane labels we quote ("Full Disk Access", "Privacy &
+        // Security") follow the SYSTEM language, not our UI language, so they
+        // move on any language change regardless of `appearance.language`.
+        // Dropped here, before the emit below, so the frontend's re-read on that
+        // event can't beat the invalidation and re-cache the old answer.
+        crate::system_strings::invalidate();
         if super::native_strings::refresh_active_locale() {
             let for_rebuild = app_handle.clone();
             if let Err(e) = app_handle.run_on_main_thread(move || {

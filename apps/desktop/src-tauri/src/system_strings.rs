@@ -37,13 +37,17 @@
 //!
 //! ## When to refresh
 //!
-//! The snapshot is built once at first access and cached. macOS rarely changes
-//! the user's preferred language during a session, and even when it does the
-//! cost of being one session behind is zero (relaunch picks up the change).
+//! The snapshot is built once at first access and cached, then dropped whenever
+//! the OS's locale answers move ([`invalidate`], called by the locale watcher in
+//! `intl/live_locale.rs`). Without that, a user who switches the macOS language
+//! mid-session keeps reading the OLD pane names, which is worse than showing
+//! English: the copy would point at a "System Settings" label that is no longer
+//! on their screen. Rebuilding costs two `.loctable` parses and happens at most
+//! once per language change.
 
 #[cfg(target_os = "macos")]
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::RwLock;
 
 use serde::Serialize;
 
@@ -78,26 +82,40 @@ impl LocalizedSystemStrings {
     }
 }
 
-/// Cached snapshot. Built on first access; never refreshed during the session.
-static SNAPSHOT: LazyLock<LocalizedSystemStrings> = LazyLock::new(build_snapshot);
+/// Cached snapshot, built on first access and dropped by [`invalidate`] when the
+/// OS's language moves. `None` means "not built yet", never "no answer": a
+/// rebuild always produces a full struct, falling back to the English defaults
+/// field by field.
+static SNAPSHOT: RwLock<Option<LocalizedSystemStrings>> = RwLock::new(None);
 
-/// Returns a `'static` reference to the cached snapshot. Fast (no lock,
-/// pointer-copy after first call). Placeholder expansion now lives on the
-/// frontend (`src/lib/error-messages/compose.ts::expandSystemStrings`), which reads the
-/// snapshot via `get_localized_system_strings`; this accessor is test-only.
-/// macOS-only: its sole caller is the macOS-gated snapshot test, so on Linux
-/// `#[cfg(test)]` alone would leave it unused and trip `deny(unused)`.
-#[cfg(all(test, target_os = "macos"))]
-pub fn snapshot() -> &'static LocalizedSystemStrings {
-    &SNAPSHOT
+/// The cached snapshot, building it if this is the first read since a launch or
+/// an [`invalidate`]. A read-lock hit on the common path.
+///
+/// Two threads racing the first read both build; they'd build the same answer,
+/// and paying that once beats holding the write lock across two `.loctable`
+/// parses.
+pub fn snapshot() -> LocalizedSystemStrings {
+    if let Some(cached) = SNAPSHOT.read().unwrap_or_else(|e| e.into_inner()).clone() {
+        return cached;
+    }
+    let built = build_snapshot();
+    *SNAPSHOT.write().unwrap_or_else(|e| e.into_inner()) = Some(built.clone());
+    built
 }
 
-/// Tauri command: returns the localized system strings. The frontend caches
-/// the result for the session and substitutes the placeholders itself.
+/// Drops the cached snapshot so the next read resolves against the language the
+/// user reads NOW. Called from the locale watcher when the OS's answers move.
+pub fn invalidate() {
+    *SNAPSHOT.write().unwrap_or_else(|e| e.into_inner()) = None;
+}
+
+/// Tauri command: returns the localized system strings. The frontend holds them
+/// in a reactive snapshot and substitutes the placeholders itself, re-reading
+/// this command whenever the OS locale changes.
 #[tauri::command]
 #[specta::specta]
 pub fn get_localized_system_strings() -> LocalizedSystemStrings {
-    SNAPSHOT.clone()
+    snapshot()
 }
 
 // =================================================================================
@@ -304,7 +322,7 @@ pub(crate) fn apple_languages() -> Vec<String> {
 
 // Every test here is macOS-only (they assert macOS system-string resolution), so
 // gate the whole module to macOS: on Linux `#[cfg(test)]` alone leaves `use
-// super::*` (and `snapshot()`) unused and trips `deny(unused)`.
+// super::*` unused and trips `deny(unused)`.
 #[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;

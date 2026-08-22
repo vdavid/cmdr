@@ -24,13 +24,15 @@
  *
  * Call `initSystemStrings()` once at startup. Until then, `systemStrings`
  * holds the English defaults so SSR / first-render still produce correct copy.
+ * `refreshSystemStrings()` keeps them current when the macOS language moves
+ * mid-session.
  */
 
 import { getLocalizedSystemStrings } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { tString } from '$lib/intl/messages.svelte'
 
 const log = getAppLogger('system-strings')
-import { tString } from '$lib/intl/messages.svelte'
 
 /** English defaults. Mirrors `LocalizedSystemStrings::english_defaults` in Rust. */
 const ENGLISH_DEFAULTS = {
@@ -51,12 +53,8 @@ export const systemStrings = $state({ ...ENGLISH_DEFAULTS })
 
 let initialized = false
 
-/**
- * Loads the localized snapshot from Rust and writes it into `systemStrings`.
- * Idempotent. Safe to call multiple times; the second call is a no-op.
- */
-export async function initSystemStrings(): Promise<void> {
-  if (initialized) return
+/** Fetches the snapshot from Rust and writes it into `systemStrings`. */
+async function hydrate(): Promise<void> {
   try {
     const resolved = await getLocalizedSystemStrings()
     systemStrings.systemSettings = resolved.systemSettings
@@ -73,6 +71,37 @@ export async function initSystemStrings(): Promise<void> {
   } catch (error) {
     log.warn('Failed to load localized system strings, falling back to English: {error}', { error })
   }
+}
+
+/**
+ * Loads the localized snapshot from Rust and writes it into `systemStrings`.
+ * Idempotent. Safe to call multiple times; the second call is a no-op.
+ */
+export async function initSystemStrings(): Promise<void> {
+  if (initialized) return
+  await hydrate()
+}
+
+/**
+ * Re-reads the snapshot after the macOS language moved, so the pane names we
+ * quote keep matching what's actually on the user's screen. A no-op in a window
+ * that never hydrated: it has no copy quoting these labels, so there's nothing
+ * to bring up to date and no reason to spend the round-trip.
+ *
+ * ❌ Re-READ them; never re-resolve against our own catalog. These follow the
+ * SYSTEM language, not `appearance.language` (see the module header), so a user
+ * running Cmdr in Spanish on a Hungarian Mac must still be told to open
+ * `Rendszerbeállítások`. Rust drops its cache on the same signal
+ * (`system_strings.rs::invalidate`), so this really does get the new answer.
+ *
+ * Callers: the one `watchSystemLocales()` subscriber each window already has
+ * (`settings-applier.ts` in the main window, `initWindowLanguageSync()` in the
+ * others). ❌ Don't add a second subscriber to call it: the first to run adopts
+ * the new locales, so every later subscriber sees no change and never fires.
+ */
+export async function refreshSystemStrings(): Promise<void> {
+  if (!initialized) return
+  await hydrate()
 }
 
 /**
