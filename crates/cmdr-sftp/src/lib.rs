@@ -18,4 +18,4 @@ pub mod volume;
 pub use errors::SftpConnectError;
 pub use extensions::ServerExtensions;
 pub use params::SftpConnectionParams;
-pub use volume::{SftpConnectOutcome, SftpVolume, connect_sftp_volume};
+pub use volume::{HostKeyApproval, SftpConnectOutcome, SftpVolume, connect_sftp_volume};

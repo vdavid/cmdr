@@ -233,12 +233,55 @@ fn prompt(params: &SftpConnectionParams, key: PresentedHostKey, kind: HostKeyPro
     }
 }
 
+/// Asks `(server, port)` which host key it presents, and stops there.
+///
+/// ❗ The key exchange runs and the connection is then refused, so this never
+/// authenticates: no password leaves the machine, no attempt is spent, and a
+/// server that would lock an account after three tries sees nothing at all. It
+/// is also why the engine's cancellation hazard doesn't reach here — `Sftp::new`
+/// is never constructed, so there is no spawned task to panic.
+///
+/// The negotiation is pinned exactly as [`dial`] pins it, so the algorithm a
+/// probe sees is the algorithm a dial would see. Without that, a two-key server
+/// could answer one probe with ed25519 and the next dial with rsa.
+pub async fn presented_host_key(
+    server: &str,
+    port: u16,
+    host: &VolumeHost,
+) -> Result<PresentedHostKey, SftpConnectError> {
+    let known_hosts = KnownHostsFile::read_default();
+    let pinned = trust::algorithms_to_pin(host.host_keys(), &known_hosts, server, port);
+    let config = Arc::new(build_config(&pinned));
+
+    let seen = Arc::new(Mutex::new(None));
+    let handler = ProbeHandler {
+        seen: Arc::clone(&seen),
+    };
+
+    let dialed = tokio::time::timeout(HANDSHAKE_TIMEOUT, client::connect(config, (server, port), handler)).await;
+    // The refusal is the expected ending, so what the handler left behind
+    // outranks whatever error russh reported for it.
+    if let Some(key) = seen.lock_ignore_poison().take() {
+        return Ok(key);
+    }
+    match dialed {
+        Err(_elapsed) => Err(SftpConnectError::TimedOut),
+        // The handler always refuses, so a session here would mean russh reached
+        // authentication without ever calling `check_server_key`.
+        Ok(Ok(_session)) => Err(SftpConnectError::Transport(
+            "the server's key exchange completed without presenting a host key".to_string(),
+        )),
+        Ok(Err(e)) => Err(SftpConnectError::Unreachable(e.to_string())),
+    }
+}
+
 /// Records `key` as trusted for `(host, port)`, so the next dial is silent.
 ///
 /// The approval flow's second half. ❗ The caller re-verifies that this is still
 /// the key the server presents before calling; recording a fingerprint a user
 /// approved minutes ago against whatever answers now is how an approval gets
-/// replayed onto a different key.
+/// replayed onto a different key. [`crate::volume::approve_host_key`] is that
+/// caller, and the only one production has.
 pub fn approve(host: &VolumeHost, server: &str, port: u16, algorithm: &str, fingerprint: &str) {
     trust::record_approval(host.host_keys(), server, port, algorithm, fingerprint);
 }
@@ -534,6 +577,24 @@ impl Handler for TrustHandler {
         log::debug!(target: "volume", "sftp host key for {}:{} is {decision:?}", self.host, self.port);
         *self.seen.lock_ignore_poison() = Some((key, decision));
         Ok(decision == HostKeyDecision::Trusted)
+    }
+}
+
+/// The handler for a probe: read the key, refuse the connection, go no further.
+///
+/// ❌ It never consults the trust store. Answering `true` for a key that happens
+/// to be trusted would carry the probe into authentication, which is the one
+/// thing a "what key does this server hold?" question must not cost.
+struct ProbeHandler {
+    seen: Arc<Mutex<Option<PresentedHostKey>>>,
+}
+
+impl Handler for ProbeHandler {
+    type Error = russh::Error;
+
+    async fn check_server_key(&mut self, server_public_key: &PublicKey) -> Result<bool, Self::Error> {
+        *self.seen.lock_ignore_poison() = Some(presented(server_public_key));
+        Ok(false)
     }
 }
 

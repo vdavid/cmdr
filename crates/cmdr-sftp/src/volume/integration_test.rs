@@ -13,11 +13,11 @@
 use std::path::Path;
 
 use cmdr_fs::volume::host::VolumeHost;
-use cmdr_fs::volume::host::host_keys::InMemoryHostKeys;
+use cmdr_fs::volume::host::host_keys::{HostKeyVerdict, HostKeys, InMemoryHostKeys};
 use cmdr_fs::volume::{Volume, VolumeError};
 
 use super::testing::*;
-use super::{SftpConnectOutcome, SftpVolume, connect_sftp_volume};
+use super::{HostKeyApproval, SftpConnectOutcome, SftpVolume, connect_sftp_volume};
 use crate::transport::HostKeyPromptKind;
 
 const FIXTURE: &str = "sftp-servers/start.sh (sftp-fixture)";
@@ -113,7 +113,9 @@ async fn a_server_that_refuses_every_rung_says_so_typed() {
     let SftpConnectOutcome::NeedsHostKeyApproval(prompt) = first else {
         panic!("a fresh store must ask about the host key first");
     };
-    super::approve_host_key(&host, &prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint);
+    super::approve_host_key(&host, &prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint)
+        .await
+        .expect(FIXTURE);
 
     let refused = connect_sftp_volume("fixture", volume_id, params, host).await;
     assert!(
@@ -141,7 +143,9 @@ async fn a_ladder_with_nothing_behind_any_rung_asks_for_a_sign_in() {
     let SftpConnectOutcome::NeedsHostKeyApproval(prompt) = first else {
         panic!("a fresh store must ask about the host key first");
     };
-    super::approve_host_key(&host, &prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint);
+    super::approve_host_key(&host, &prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint)
+        .await
+        .expect(FIXTURE);
 
     let refused = connect_sftp_volume("fixture", volume_id, params, host).await;
     assert!(
@@ -668,4 +672,89 @@ async fn a_volume_with_no_session_reports_no_extensions() {
         volume.server_extensions().await,
         Err(VolumeError::DeviceDisconnected(_))
     ));
+}
+
+// ── The second half of the approval flow ─────────────────────────────
+
+/// An approval names one exact key, and it stops being an approval the moment
+/// the server presents another one.
+///
+/// ❗ The whole point of the two-phase flow. The prompt shows a fingerprint, the
+/// user reads it, and some time passes before they click: recording whatever
+/// they clicked without re-asking the server lets an approval be replayed
+/// against a key they never saw. So the fingerprint on its way in has to be the
+/// fingerprint on the wire, or nothing is written at all.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn an_approval_for_one_key_is_never_recorded_against_another() {
+    // Two real servers with two real identities, so the fingerprint being
+    // approved is a genuine one that simply belongs somewhere else.
+    let stock = fixture_params("OPENSSH", 12480);
+    let stock_host = fixture_host(&stock, Some(FIXTURE_PASSWORD));
+    let stock_key = first_contact_prompt(&stock_host, stock).await;
+
+    let impostor = fixture_params("CHANGEDKEY", 12485);
+    let store = std::sync::Arc::new(InMemoryHostKeys::new());
+    let host = VolumeHost::builder()
+        .host_keys(std::sync::Arc::clone(&store) as std::sync::Arc<dyn HostKeys>)
+        .build();
+
+    let outcome = super::approve_host_key(
+        &host,
+        &impostor.host,
+        impostor.port,
+        &stock_key.algorithm,
+        &stock_key.fingerprint,
+    )
+    .await;
+
+    assert!(
+        matches!(outcome, Ok(HostKeyApproval::Superseded(_))),
+        "approving a key the server doesn't present must refuse, got {outcome:?}"
+    );
+    assert_eq!(
+        store.verdict(
+            &impostor.host,
+            impostor.port,
+            &stock_key.algorithm,
+            &stock_key.fingerprint
+        ),
+        HostKeyVerdict::Unknown,
+        "nothing may be written when the fingerprint on the wire isn't the one approved"
+    );
+}
+
+/// The ordinary half: the key the server really presents gets recorded, and the
+/// next dial walks straight past the prompt.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn approving_the_key_the_server_presents_records_it() {
+    let params = fixture_params("OPENSSH", 12480);
+    let store = std::sync::Arc::new(InMemoryHostKeys::new());
+    let host = VolumeHost::builder()
+        .host_keys(std::sync::Arc::clone(&store) as std::sync::Arc<dyn HostKeys>)
+        .credentials(std::sync::Arc::new(
+            cmdr_fs::volume::host::credentials::InMemoryCredentials::new().with_entry(
+                &params.credential_service(),
+                Some(&params.username),
+                &params.username,
+                FIXTURE_PASSWORD,
+            ),
+        ))
+        .build();
+
+    let prompt = first_contact_prompt(&host, params.clone()).await;
+    let outcome = super::approve_host_key(&host, &prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint)
+        .await
+        .expect(FIXTURE);
+    assert!(matches!(outcome, HostKeyApproval::Recorded));
+
+    let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
+    let second = connect_sftp_volume("fixture", &volume_id, params, host.clone())
+        .await
+        .expect(FIXTURE);
+    assert!(
+        matches!(second, SftpConnectOutcome::Connected(_)),
+        "a recorded key means the next dial never asks again"
+    );
 }

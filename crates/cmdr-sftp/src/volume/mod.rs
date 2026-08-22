@@ -21,7 +21,7 @@ use cmdr_fs::volume::{Retirement, VolumeError};
 use crate::auth::AuthRungUsed;
 use crate::errors::SftpConnectError;
 use crate::params::SftpConnectionParams;
-use crate::transport::{self, DialOutcome, HostKeyPrompt, SshConnection};
+use crate::transport::{self, DialOutcome, HostKeyPrompt, HostKeyPromptKind, SshConnection};
 
 mod copy;
 mod mapping;
@@ -214,14 +214,57 @@ pub async fn connect_sftp_volume(
     }
 }
 
-/// Records a host key the user approved, so the next dial is silent.
+/// What an approval attempt produced.
+#[derive(Debug)]
+pub enum HostKeyApproval {
+    /// The fingerprint is now the trusted key for this server, and the next dial
+    /// walks past the prompt.
+    Recorded,
+    /// ❗ Nothing was written. The server presents a different key than the one
+    /// approved, so this carries what it presents NOW and the caller starts the
+    /// approval over on that.
+    Superseded(HostKeyPrompt),
+}
+
+/// Records a host key a human approved, ❗ only if the server still presents it.
 ///
-/// ❗ The caller re-dials afterwards rather than resuming a held session, and it
-/// re-verifies that the fingerprint is still what the server presents before
-/// getting here: that is what stops an approval being replayed against a key the
-/// user never saw.
-pub fn approve_host_key(host: &VolumeHost, server: &str, port: u16, algorithm: &str, fingerprint: &str) {
+/// The second half of the two-phase flow, and the half that carries its
+/// security. Time passes between a prompt being shown and a person clicking it,
+/// and the approval names ONE key: writing whatever was clicked without asking
+/// the server again lets an approval be replayed against a key the user never
+/// read. So the fingerprint on its way in has to be the fingerprint on the wire,
+/// or nothing is written at all.
+///
+/// ❗ The re-check is a key exchange and nothing more
+/// ([`transport::presented_host_key`]): no credential is offered, so an approval
+/// can never spend an authentication attempt. Afterwards the caller dials
+/// afresh — ❌ no session is held across the prompt.
+pub async fn approve_host_key(
+    host: &VolumeHost,
+    server: &str,
+    port: u16,
+    algorithm: &str,
+    fingerprint: &str,
+) -> Result<HostKeyApproval, SftpConnectError> {
+    let presented = transport::presented_host_key(server, port, host).await?;
+    if presented.algorithm != algorithm || presented.fingerprint != fingerprint {
+        log::warn!(
+            target: "volume",
+            "an sftp host-key approval named a key {server}:{port} no longer presents; recording nothing"
+        );
+        return Ok(HostKeyApproval::Superseded(HostKeyPrompt {
+            host: server.to_string(),
+            port,
+            algorithm: presented.algorithm,
+            fingerprint: presented.fingerprint,
+            // Something IS stored for this server if the approval was for a key
+            // we already held; either way the user is looking at a second,
+            // different key, which is the alarm rather than the routine path.
+            kind: HostKeyPromptKind::Changed,
+        }));
+    }
     transport::approve(host, server, port, algorithm, fingerprint);
+    Ok(HostKeyApproval::Recorded)
 }
 
 // The suites asserting on this backend's own behavior. White-box by nature: they

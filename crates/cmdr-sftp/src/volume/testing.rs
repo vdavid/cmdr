@@ -195,7 +195,9 @@ pub async fn approve_and_connect(host: &VolumeHost, params: SftpConnectionParams
             prompt.kind
         ));
     }
-    super::approve_host_key(host, &prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint);
+    super::approve_host_key(host, &prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint)
+        .await
+        .map_err(|e| format!("re-checking the fixture's host key failed: {e:?}"))?;
 
     match connect_sftp_volume("fixture", &volume_id, params, host.clone()).await {
         Ok(SftpConnectOutcome::Connected(volume)) => Ok(volume),
