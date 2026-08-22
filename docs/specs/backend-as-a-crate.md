@@ -6,8 +6,8 @@ would fix this already exist and already have a working client.
 
 **Where it stands**: the extraction is DONE. `crates/cmdr-smb/` holds the protocol layer and the backend, and
 `cargo check -p cmdr-smb --all-targets` is a complete verification loop with none of the app in it. What remains under
-this heading is FTP, which is its own effort and is blocked on one product decision, plus the module-cycle ratchet,
-which was never SMB-specific.
+this heading is FTP, which is its own effort and is blocked on one product decision. The module-cycle ratchet that used
+to sit under here has shipped.
 
 **Read first**: `crates/cmdr-fs/src/volume/host/DETAILS.md`, which carries the seam set, the nine-step recipe for
 writing a new backend, and the two costs this does NOT buy. Then `crates/cmdr-smb/DETAILS.md`, which is what a finished
@@ -97,40 +97,28 @@ Kept as the record of how a backend gets extracted, because FTP and S3 will foll
 5. ~~**Decide the test-visibility question.**~~ **Done**, settled as above and written down in
    `crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
 
-**What's left of this effort**: FTP (below), and the module-cycle ratchet (next section), which is independent.
+**What's left of this effort**: FTP (below). The module-cycle ratchet (next section) has shipped.
 
-## Guard it: the module-cycle ratchet
+## Guard it: the module-cycle ratchet — shipped
 
-Nothing stops a subsystem re-welding, and it has already happened twice unobserved. Re-measured on 2026-08-21 with
-`cargo-modules` 0.27.0: `cmdr-index`'s largest component is **19** (an older plan claims six) and `cmdr` is **11**
-(claims ten). Modules in some cycle total 187, against a claimed post-work 132.
+`module-cycles` is live: warn-only, in the slow group, one `cargo modules` graph per first-party library crate. It
+ratchets on **strongly-connected components after parent-child hubs collapse**, which was option (b) of the three this
+section used to weigh. Option (a) would have fired the first time somebody split a long file into submodules, and a
+ratchet that fires on a good change gets silenced.
 
-⚠️ **The tool version moves the absolute numbers**, so measure before AND after a cut on whatever version is installed
-rather than diffing against a figure written down here. Step 1 was measured on 0.26.0, which reports `cmdr` at 128 of
-528 modules in a cycle where 0.27.0 reports 126 of 522.
+Seeded 2026-08-22 on `cargo-modules` 0.27.0 (pinned; a box on another version skips rather than compares numbers that
+don't compare): 762 modules across five crates, 16 tangles at 14 homes. The two production `use super::*` globs in
+`cmdr-index`'s manager are gone with it, which took that crate's largest raw component from 19 to 15 and dropped
+`watch::event_loop` out of the `lifecycle` tangle.
 
-⚠️ **The obvious check has a bad failure mode, and this needs deciding before it is built.** Most of that regrowth is
-not coupling: `lifecycle/state.rs` became `lifecycle/state/` with eight children, which improved the code and would have
-tripped a max-SCC ratchet. Three options:
+Everything about the metric, the version pin, why it carries a `NotInCI` reason, and the six traps that make raw
+`cargo-modules` output lie: `scripts/check/checks/DETAILS.md` § "Rust module cycles". Read it before trusting any number
+this tool prints.
 
-- **(a)** Build it as originally specced and accept that it fires on file splits, re-baselining by hand each time.
-- **(b)** Ratchet on max SCC **after collapsing parent-child hubs**, which measures cross-subsystem welding and ignores
-  subdivision. More code, better signal.
-- **(c)** Drop the check, keep only the traps documentation, and treat cycle measurement as an on-demand tool.
-
-**Recommendation: (b).** It is the metric the analysis actually reasons with, and (a) will get silenced the first time
-it fires on a good change. About a day either way.
-
-❗ Before trusting any `cargo-modules` number, read `scripts/check/checks/DETAILS.md` § "Rust module cycles". There are
-five traps that make raw output wrong, including that a re-export resolves to its defining module and that splitting a
-file into submodules grows max SCC with zero new coupling.
-
-Two smaller findings from the same measurement, neither owned by this effort: `write_operations::*` now has an 11-module
-sibling tangle
-(`analytics, conflict_slot, error_classification, eta, event_sinks, manager, state, status_cache, types, unique_name, validation`)
-with no parent node in it, making it the app crate's largest genuine design tangle; and two production `use super::*`
-globs at `lifecycle/manager/start.rs:9` and `manager/phased.rs:22` inflate `cmdr-index`'s component for free, about 30
-minutes to de-glob.
+**One finding this effort did NOT fix, and somebody should**: `write_operations::*` is an 11-module sibling tangle
+(`analytics, conflict_slot, error_classification, eta, event_sinks, manager, state, status_cache, types, unique_name,
+validation`) with no parent node in it, which makes it the app crate's largest genuine design tangle and the app crate's
+whole `max` number on its own. It's recorded as the baseline, not repaired. It is its own effort.
 
 ## Then: FTP as the proof
 

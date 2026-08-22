@@ -890,17 +890,72 @@ for reading its output:
   competing with whatever you start next. Kill `go-build.*/check` and `go run \. --include-slow`, then confirm with `ps`
   before drawing conclusions from the next run.
 
-## Rust module cycles: read this before trusting a `cargo-modules` number
+## Rust module cycles
 
-There is no `rust-module-cycles` check yet. This § is the evidence for whoever writes one, because every trap below was
-found the expensive way and each one makes the raw tool output say something that isn't true.
+`module-cycles` (`IsSlow`, warn-only, app scope `desktop`, `Tech: Rust`) is what stops a subsystem re-welding itself to
+another one unobserved, which had already happened twice before anything measured it. A component that spans SUBSYSTEMS
+says no module in it can be understood or changed alone, and it blocks a crate extraction outright, since a crate cannot
+import the app crate's facade. That is the whole reason this was ever measured.
 
 The measurement is
-`cargo modules dependencies --lib --package <p> --no-fns --no-types --no-traits --no-owns --no-externs --no-sysroot`,
-which emits DOT: nodes are modules, edges are `use` dependencies. It costs ~19 s on the 245k-line app crate, so it
-belongs in the slow group, never in `--fast`. Run Tarjan on the FILTERED graph yourself.
+`cargo modules dependencies --lib --package <p> --no-fns --no-types --no-traits --no-owns --no-externs --no-sysroot`
+per first-party library member, which emits DOT: nodes are modules, edges are `use` dependencies. It costs ~30 s across
+the five crates, most of it the app crate, so it lives in the slow group and never in `--fast`. Tarjan runs on the
+FILTERED graph, in the check, because `--acyclic` can't (trap 1).
 
-### The five traps
+### The metric: strongly-connected components with parent-child hubs collapsed
+
+The obvious version of this check counts the largest strongly-connected component, and it is unusable. Splitting a long
+file into submodules grows that number without adding one line of coupling: `mod.rs` defines a type, the children
+implement against it, the parent calls them, and a parent with N children is one component of size N+1.
+`lifecycle/state.rs` becoming `lifecycle/state/` with eight children took `cmdr-index`'s largest component from six to
+19, and that change improved the code. A ratchet that fires on it gets silenced, and then it guards nothing.
+
+So each component is collapsed before it is counted (`collapseHubs`). Every member folds into the topmost ancestor of
+its own that is also in the component, and then:
+
+- **More than one survivor**: those are separate modules depending on each other in a circle. That's welding, and the
+  number of survivors is the **tangle size** this ratchet tracks.
+- **Exactly one survivor**: the component hangs under a single module, so the cycle is the idiomatic parent ↔ child
+  relation and the parent is a hub, not a coupling. The hub is dropped and what remains is examined again. Without that
+  recursion, one idiomatic `parent → child` edge added to a sibling tangle would collapse the whole thing to a hub and
+  erase the signal permanently.
+
+Folding into an ancestor is deliberately not the same as DELETING parent-child edges. Deleting them would break a cycle
+that genuinely routes through one (`x → x::y → z → x` is `x` welded to `z`), and the check would miss real welding;
+folding keeps it and reports two survivors. `TestCollapseHubs` pins all six shapes, including that one.
+
+Each tangle gets a **home**: the longest module path its survivors share, spelled with the cargo package name in front
+(`cmdr::file_system::write_operations`, or bare `cmdr` when they share nothing but the crate). That's the allowlist key,
+and the value is the list of tangle sizes living there, largest first. A list rather than one number because two
+independent tangles genuinely share a home (`write_operations::transfer::volume` has two), and a maximum would let a new
+one hide behind a bigger one.
+
+A home over its allowance, or a home not in the allowlist at all, warns. Local runs shrink-wrap the list down; raising a
+number needs David's OK (`.claude/rules/file-length-allowlist.md`), and the fix is to cut an edge.
+
+### The tool version is pinned, and a mismatch skips
+
+The absolute numbers move between cargo-modules releases (0.26.0 reports `cmdr` at 128 of 528 modules in a cycle where
+0.27.0 reports 126 of 522), so an unpinned tool would drift the ratchet silently and fire on somebody else's machine for
+no reason at all. `cargoModulesVersion` pins it, the allowlist records the same version in `toolVersion`, and
+`TestModuleCyclesAllowlistMatchesPinnedVersion` keeps the two together. A disagreement between them warns and asks for a
+deliberate re-seed rather than comparing numbers that don't compare.
+
+The check never installs anything: building cargo-modules pulls in rust-analyzer and costs minutes. A missing tool
+skips, naming the install command; a different version skips, naming both versions. Bumping the pin means editing the
+constant, installing it, running `pnpm check module-cycles`, and re-seeding the allowlist from what the new version
+reports.
+
+It carries a `NotInCI` reason instead of a workflow step. The baseline is a **macOS** module graph and every runner is
+ubuntu, which analyzes a different set of cfg-gated modules — `drag_image_detection` and `drag_image_swap`, one of the
+seeded tangles, are macOS-only and simply don't exist there. Its numbers would disagree with the baseline for reasons
+that have nothing to do with coupling, and it's warn-only besides, so a CI step could only print into a log nobody reads
+at the cost of a multi-minute `cargo install`.
+
+### The six traps
+
+Every one was found the expensive way, and each makes the raw tool output say something that isn't true.
 
 1. **`--acyclic` is unusable**: it runs BEFORE the filters, so it always trips on a type and its own method (`TarCodec`
    ↔ `TarCodec::fmt`). Detect cycles yourself.
@@ -922,49 +977,45 @@ belongs in the slow group, never in `--fast`. Run Tarjan on the FILTERED graph y
    `crates/cmdr-smb/src/volume/state.rs` printed as `network::VolumeConnection::from → backends::smb::state`, so it read
    as `network/` reaching into the backend when the code does the reverse. **Nothing under `network/` named
    `backends::smb` textually, so grep never finds an edge of this shape.** Locate it by re-running WITHOUT `--no-fns`
-   and grepping for the `-> "<target module>"` line: the source node names the function, which names the impl.
+   and grepping for the `-> "<target module>"` line: the source node names the function, which names the impl. This is
+   also the one shape that can make `module-cycles` warn about a cycle the code doesn't have — the mutual dependency it
+   reports is real (the impl genuinely names both types), only the DIRECTION is reversed. The check's warn body says so.
 5. **A re-export resolves to the DEFINING module.** Importing a facade path draws the edge to wherever the item is
    really declared, not the facade. For an item that a workspace crate defines, `--no-externs` then drops the edge
    entirely, so a facade import can be invisible rather than misattributed. Either way the printed source is not where
    you'd look.
+6. **Only `use` statements make edges.** A fully-qualified call, `crate::errors::is_auth_error(err)` written inline with
+   no import, produces NO edge at all; replacing it with `use crate::errors::is_auth_error;` produces one immediately
+   (verified on cargo-modules 0.27.0 by adding each form in turn to `cmdr-smb/src/types.rs`, 2026-08-22). So the graph
+   UNDERCOUNTS: a subsystem coupled entirely through inline paths reads as uncoupled. Don't take a zero as proof.
 
-### Zero is not the target, and a small max SCC is not a design goal by itself
+### Zero is not the target, and a small tangle is not a design goal by itself
 
-Of the 49 groups across the three crates, roughly a third are parent ↔ direct child: `mod.rs` defines a type, the child
-implements against it, the parent calls the child. That's idiomatic Rust, and "fixing" it means inventing a shim module
-to satisfy a graph. A parent with N children collapses into ONE component of size N+1, so **splitting a long file into
-submodules grows the maximum SCC without adding a single new coupling** — `cmdr-index`'s largest group went from six to
-19 that way, mostly by `lifecycle/state.rs` becoming `lifecycle/state/` with eight children. Any ratchet has to tolerate
-that or it will fire on refactors that improved the code.
+Roughly a third of the raw components are parent ↔ child, which is idiomatic Rust; "fixing" one means inventing a shim
+module to satisfy a graph. That's exactly what the collapsing step exists to ignore, and it works: `cmdr-smb`'s
+five-module component and the app crate's eight-module `menu::*` component both collapse to nothing at all. Cohesive
+single features split across files (`file_viewer::*`, `licensing::*`, `commands::agent::*`) are the same story.
 
-Cohesive single features split across files (`file_viewer::*`, `menu::*`, `licensing::*`, `commands::agent::*`) are the
-same story and are equally out of scope.
+Prefer cuts that move a thin thing (a type, a three-line helper) to its correct layer over cuts that score highest on
+the graph. The highest-scoring single edge in the index engine is `IndexPhase::Running(Box<IndexManager>)`, an honest
+ownership relation whose removal would trade a clear ownership story for acyclicity.
 
-**What a cycle number IS good for**: a large component that spans SUBSYSTEMS says no module in it can be understood or
-changed alone, and it blocks crate extraction, since a crate cannot import the app crate's facade. That's the reason
-this was ever measured. Prefer cuts that move a thin thing (a type, a three-line helper) to its correct layer over cuts
-that score highest on the graph; the highest-scoring single edge in the index engine is
-`IndexPhase::Running(Box<IndexManager>)`, an honest ownership relation whose removal would trade a clear ownership story
-for acyclicity.
+### The baseline
 
-### The numbers
+Seeded 2026-08-22 with cargo-modules 0.27.0, after the SMB protocol layer moved into `cmdr-smb`, the
+`From<ConnectionState>` edge was cut, and the two manager globs were removed: 762 modules across the five library
+crates, holding **16 tangles** at 14 homes.
 
-Maximum strongly-connected component per crate, and modules trapped in some cycle. ⚠️ **The tool version changes the
-absolute numbers**, so measure before AND after a cut on whatever version you have rather than comparing against a
-figure recorded here.
+- `cmdr`: 514 modules, 121 in some raw cycle, largest raw component 11, 10 tangles. The largest is
+  `file_system::write_operations` at **11** (`analytics, conflict_slot, error_classification, eta, event_sinks, manager,
+  state, status_cache, types, unique_name, validation`), a sibling tangle with no parent node in it and the app crate's
+  largest genuine design tangle. Everything else there is 3 or 2.
+- `cmdr-index`: 189 modules, 50 in a raw cycle, largest raw component 15, 4 tangles. The largest is
+  `indexing::lifecycle` at **5** (`cover, manager, network_scan, phases, state`) — the same component a raw reading
+  calls 15, because eight `lifecycle::state::*` children and two more hubs fold away.
+- `cmdr-archive`: `read` at 4 (`extract, index, sevenz, tar`). `cmdr-fs`: `volume` at 2 (`friendly_error, types`), from
+  a raw component of 8. `cmdr-smb`: **none** — its raw five-module component is all parent ↔ child.
 
-Measured 2026-08-21 with cargo-modules 0.26.0, after the SMB protocol layer moved into `cmdr-smb` and the
-`From<ConnectionState>` edge above was cut — `cmdr`: max 11 (`write_operations::*`), 127 of 525 modules in a cycle. Next
-largest: `file_viewer::*` (10), then `menu::*` (8), then `backends::smb::*` (6, all parent ↔ child). `network` is in no
-cycle but its own `network` ↔ `network::mdns_discovery` pair. Before the cut, on the same version: max 11, 128 of 528,
-and `backends::smb::*` + `network` + `network::mdns_discovery` was a single nine-module component.
-
-Measured 2026-08-21 with cargo-modules 0.27.0, before the cut:
-
-- `cmdr`: max 11 (`write_operations::*`), 126 of 522 modules in a cycle. Next largest: `file_viewer::*` (10), then
-  `backends::smb::*` + `network` (9).
-- `cmdr-index`: max 19 (the `lifecycle::*` + `watch::event_loop::*` hub), 51 of 190.
-- `cmdr-fs`: max 8 (`volume::friendly_error::*` + `volume::types`), 10 of 26.
 
 ## Workspace member coverage
 
@@ -1044,7 +1095,9 @@ Checks by app and tech:
   `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout, mtp-no-transport-reset,
   bindings-fresh, ipc-enum-camelcase, shipped-locales-fresh (regenerate-and-diff `intl/shipped_locales.gen.rs` from the
   message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
-  unreachable and unguarded), tests, integration-tests (Docker SMB), tests-linux (slow)
+  unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module components per crate with
+  parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a mismatched box skips
+  rather than mis-measures — see § "Rust module cycles"), tests, integration-tests (Docker SMB), tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and

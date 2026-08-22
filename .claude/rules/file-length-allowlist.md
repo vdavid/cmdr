@@ -1,10 +1,11 @@
 # Allowlist consent
 
 The warn-only scanners keep JSON allowlists of current sizes: `file-length` (file line counts), `claude-md-length`
-(CLAUDE.md word counts), `invariant-density` (`❌` rules per subsystem), and `jscpd-rust` / `jscpd-frontend` (duplicated
-lines per file pair), plus the error-level `docs-reachable` (intentionally-unreachable docs). They shrink-wrap
-themselves on local runs (drop gone/satisfied entries, ratchet slack down), so don't hand-edit the `files` /
-`subsystems` / `pairs` sections: run `pnpm check file-length` (or the relevant check) and commit the rewrite.
+(CLAUDE.md word counts), `invariant-density` (`❌` rules per subsystem), `module-cycles` (module tangle sizes per home),
+and `jscpd-rust` / `jscpd-frontend` (duplicated lines per file pair), plus the error-level `docs-reachable`
+(intentionally-unreachable docs). They shrink-wrap themselves on local runs (drop gone/satisfied entries, ratchet slack
+down), so don't hand-edit the `files` / `subsystems` / `pairs` / `tangles` sections: run `pnpm check file-length` (or
+the relevant check) and commit the rewrite.
 
 ❌ Never add a new entry, raise an existing number, or otherwise loosen a contract without explicit user consent. The
 allowlist tracks current sizes; bumping it as a side effect of a change hides growth that should be fixed by trimming or

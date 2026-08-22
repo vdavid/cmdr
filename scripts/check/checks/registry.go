@@ -107,6 +107,33 @@ var AllChecks = []CheckDefinition{
 		Run:               RunCargoUdeps,
 	},
 	{
+		ID:        "desktop-rust-module-cycles",
+		CpuWeight: 4,
+		// cargo-modules loads the workspace the way rust-analyzer does, which runs
+		// build scripts through cargo. Metadata-only commands skip the build-dir
+		// lock; this one can take it, so it declares the resource rather than
+		// discovering the contention on a cold `target/`.
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "module-cycles",
+		DisplayName: "Rust module cycles",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		// The baseline is a macOS module graph, and every CI runner is ubuntu. A
+		// Linux analysis drops the macOS-gated modules (`drag_image_detection` and
+		// `drag_image_swap` ARE one of the seeded tangles), so its numbers would
+		// disagree with the baseline for reasons that have nothing to do with
+		// coupling. Warn-only besides, so a CI step could only ever print into a log
+		// nobody reads, at the cost of a multi-minute `cargo install`.
+		NotInCI: "warn-only metric measured against a macOS module graph; every runner is ubuntu, which analyzes a different set of cfg-gated modules",
+		// ~30 s across the five library crates, most of it the app crate, and the
+		// thing it measures moves on the scale of a refactor rather than a commit.
+		IsSlow:            true,
+		FreestyleIncompat: true,
+		DependsOn:         nil,
+		Inputs:            rustInputs,
+		Run:               RunRustModuleCycles,
+	},
+	{
 		ID:          "desktop-rust-jscpd",
 		CpuWeight:   2,
 		Nickname:    "jscpd-rust",

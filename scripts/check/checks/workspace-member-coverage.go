@@ -98,6 +98,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-cargo-audit":       "reads the workspace `Cargo.lock`",
 	"desktop-rust-cargo-machete":     "handed each member's directory (it walks dirs, not the cargo graph)",
 	"desktop-rust-cargo-udeps":       "`--workspace` via CargoSelectionArgs",
+	"desktop-rust-module-cycles":     "every first-party library member (`kind = app` with a `src/lib.rs`), one `--lib` graph each; a bin-only tool has no library graph and the vendored fork's module layout isn't ours to ratchet",
 	"desktop-rust-tests":             "`--workspace` via HostCargoLaneArgs",
 	"desktop-rust-integration-tests": "`--workspace` via HostCargoLaneArgs, narrowed by a filter expression",
 	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
