@@ -276,10 +276,10 @@ Landed. What it means for the milestones after it:
 - **A check declares `NeedsContainers []StackMode`**, so `desktop-rust-integration-tests` can ask for the SMB and SFTP
   stacks together. `TestEveryDeclaredStackModeResolves` resolves every declared pair against the registry.
 - **The SFTP stack is registered** as project `sftp-fixture`, compose dir `apps/desktop/test/sftp-servers` (the compose
-  file sits there directly; `.compose/` is SMB's marker for a vendored tree),
-  port env prefix `SFTP_FIXTURE_`, lock `/tmp/cmdr-sftp.lock`, leases `/tmp/cmdr-sftp-leases` — with an **empty service
-  table**. Registration is inert: nothing asks for the stack, `Acquire` refuses every mode, and `Up` reports the missing
-  compose dir rather than letting docker guess at a compose file.
+  file sits there directly; `.compose/` is SMB's marker for a vendored tree), port env prefix `SFTP_FIXTURE_`, lock
+  `/tmp/cmdr-sftp.lock`, leases `/tmp/cmdr-sftp-leases` — with an **empty service table**. Registration is inert:
+  nothing asks for the stack, `Acquire` refuses every mode, and `Up` reports the missing compose dir rather than letting
+  docker guess at a compose file.
 - **The lane's filter is `fixtureIntegrationFilter`** (`scripts/check/checks/fixture-lane-coverage.go`), built from one
   fixture table that `desktop-fixture-lane-coverage` also guards. It already carries `test(sftp_integration_)`.
 - ❗ **`+ package(cmdr-sftp)` could not land ahead of the crate.** `cargo nextest` fails to _parse_ a filterset naming

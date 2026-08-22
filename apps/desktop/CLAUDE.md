@@ -45,4 +45,5 @@ in `DETAILS.md`. Feature must-knows in the colocated `CLAUDE.md`s.
 - `src/`: Svelte frontend (SvelteKit static adapter, TypeScript strict).
 - `src-tauri/`: Rust backend (Tauri 2, serde, notify, tokio).
 - `scripts/`: dev/build scripts, mainly `tauri-wrapper.ts`; see its `scripts/CLAUDE.md`.
-- `test/`: Vitest unit tests, plus `test/e2e-playwright/`, `test/e2e-linux/`, and `test/smb-servers/` fixtures.
+- `test/`: Vitest unit tests, plus `test/e2e-playwright/`, `test/e2e-linux/`, and the two Docker fixture stacks,
+  `test/smb-servers/` and `test/sftp-servers/`.

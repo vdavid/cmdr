@@ -124,4 +124,3 @@ fn file_entry(entry: &DirEntry, parent: &str) -> Option<FileEntry> {
     };
     Some(metadata_to_file_entry(&name, &remote_path, &entry.metadata()))
 }
-

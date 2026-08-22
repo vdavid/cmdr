@@ -310,11 +310,7 @@ async fn every_quirk_server_is_reachable_and_serves_its_export() {
     // proxy, and the later milestones lean on them entirely. This cell is what
     // says the proxy itself is sound, so a red byte-path test later reads as a
     // byte-path bug rather than as a broken fixture.
-    for (service, fallback) in [
-        ("NOPOSIXRENAME", 12486),
-        ("SHORTREADS", 12487),
-        ("SMALLLIMITS", 12488),
-    ] {
+    for (service, fallback) in [("NOPOSIXRENAME", 12486), ("SHORTREADS", 12487), ("SMALLLIMITS", 12488)] {
         let params = fixture_params(service, fallback);
         let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
         let volume = connect_fixture(&host, params).await;
@@ -369,8 +365,10 @@ async fn abandoning_a_connect_does_not_panic_the_engines_task() {
         let _ = tokio::time::timeout(std::time::Duration::from_millis(2), dial).await;
     }
 
-    // Give the abandoned dials time to reach the point that used to panic, then
-    // prove the runtime is still healthy.
+    // The wait IS the subject: the panic fires when an abandoned dial reaches the
+    // server's hello, so there is nothing to poll for — a condition that never
+    // becomes true is exactly what passing looks like.
+    // allowed-test-sleep: waiting out the window in which an abandoned dial would panic
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     let volume = connect_fixture(&host, params).await;
     assert!(volume.exists(Path::new("hello.txt")).await);
@@ -400,6 +398,9 @@ async fn first_contact_prompt(
 ) -> crate::transport::HostKeyPrompt {
     match connect_sftp_volume("fixture", "sftp-first-contact", params, host.clone()).await {
         Ok(SftpConnectOutcome::NeedsHostKeyApproval(prompt)) => prompt,
-        other => panic!("expected an approval prompt from a fresh store, got {:?}", other.is_ok()),
+        other => panic!(
+            "expected an approval prompt from a fresh store, got {:?}",
+            other.is_ok()
+        ),
     }
 }

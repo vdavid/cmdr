@@ -55,7 +55,6 @@ impl SftpVolume {
         }
         Ok(joined.to_string_lossy().into_owned())
     }
-
 }
 
 /// Resolves `.` and `..` lexically, with no round trip and no symlink following.

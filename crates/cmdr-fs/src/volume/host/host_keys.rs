@@ -152,10 +152,9 @@ mod in_memory {
         }
 
         fn record(&self, host: &str, port: u16, algorithm: &str, fingerprint: &str) {
-            self.entries.lock_ignore_poison().insert(
-                (host.to_string(), port, algorithm.to_string()),
-                fingerprint.to_string(),
-            );
+            self.entries
+                .lock_ignore_poison()
+                .insert((host.to_string(), port, algorithm.to_string()), fingerprint.to_string());
         }
     }
 }

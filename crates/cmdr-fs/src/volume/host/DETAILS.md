@@ -130,6 +130,29 @@ UI copy edit change what a backend means.
 `(service, scope)` generalizes that pair: `(hostname, share)` for SMB, `(endpoint, bucket)` for S3, `(hostname, None)`
 for FTP. `secret` rather than `password` because S3's is an access key.
 
+### `HostKeys`
+
+⇐ nothing that existed before: SFTP is the first backend whose security depends on recognizing a server across sessions,
+and SMB had no equivalent. The app answers it from a durably-written `known-sftp-hosts.json`
+(`network::sftp_host_keys::AppHostKeys`), mirroring `CredentialStore`'s shape for the same reason —
+`config::durable_write_json` is app-side, and `index-crate-isolation` forbids naming `cmdr` from a guarded crate.
+
+**Why the lookup is keyed by `(host, port, algorithm)`, and why that alone would be a hole.** A healthy server may hold
+several host keys and present whichever the negotiation lands on, so a store keyed by host alone reports a CHANGED key
+on a working server — training people to click through the one alarm that matters. Keying by the triple fixes that and
+opens a worse hole: an attacker offering a type we hold no entry for lands on the UNKNOWN path and collects a one-click
+approval. So the seam also answers `trusted_algorithms(host, port)`, which the backend pins its key-exchange preferences
+to. Both halves, or neither. This is what OpenSSH does.
+
+**Fingerprints rather than keys.** The seam speaks the OpenSSH `SHA256:…` string, so no SSH crate reaches into `cmdr-fs`
+and the value the store holds is the one a human compares against `ssh-keygen -lf`.
+
+**Detached means trust-nothing**, and that asymmetry is deliberate: every other seam degrades to a no-op, but a
+credential-shaped seam that degraded to "yes" would make a security regression invisible in exactly the tests meant to
+catch it. The cost is that a no-op `record` leaves an approve-then-reconnect harness looping forever on "unknown →
+approve → still unknown", which is why `InMemoryHostKeys` exists alongside and actually remembers. A fixture uses that
+one; a bench uses the detached default.
+
 ### `IndexNotifier`
 
 ⇐ `index_host::index().on_watch_gap` (three sites in `crates/cmdr-smb/src/volume/watcher.rs`: both setup failures, the

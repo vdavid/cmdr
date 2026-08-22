@@ -25,8 +25,8 @@ var (
 	// SmbE2E is what the Linux Docker E2E suite talks to: guest, auth, 50shares,
 	// unicode.
 	SmbE2E = StackMode{Stack: "smb", Mode: "e2e"}
-	// SftpCore is the SFTP integration set. Naming it here is half of what turns
-	// the SFTP lane on; the other half is that stack's service table, which the
-	// fixture fills in.
+	// SftpCore is the SFTP integration set: every one of the eleven fixture
+	// servers, because the lane runs the whole `cmdr-sftp` package and each
+	// server exists for a cell in it.
 	SftpCore = StackMode{Stack: "sftp", Mode: "core"}
 )

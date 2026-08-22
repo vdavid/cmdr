@@ -107,12 +107,7 @@ pub fn record_approval(trusted: &dyn HostKeys, host: &str, port: u16, key: &Pres
 /// approval. Pinning to what's already trusted means a healthy server presents
 /// the key we stored, and anything else is a real change. This is what OpenSSH
 /// does. Both halves, or neither.
-pub fn algorithms_to_pin(
-    trusted: &dyn HostKeys,
-    known_hosts: &KnownHostsFile,
-    host: &str,
-    port: u16,
-) -> Vec<String> {
+pub fn algorithms_to_pin(trusted: &dyn HostKeys, known_hosts: &KnownHostsFile, host: &str, port: u16) -> Vec<String> {
     let mut algorithms = trusted.trusted_algorithms(host, port);
     algorithms.extend(known_hosts.algorithms_for(host, port));
     algorithms.sort();

@@ -114,7 +114,9 @@ impl KnownHostsFile {
     /// Reads a `known_hosts` file at `path`, or an empty one when it can't be
     /// read.
     pub fn read_path(path: &Path) -> Self {
-        std::fs::read_to_string(path).map(|text| Self::parse(&text)).unwrap_or_default()
+        std::fs::read_to_string(path)
+            .map(|text| Self::parse(&text))
+            .unwrap_or_default()
     }
 
     /// What this file says about `blob` presented for `(host, port)` under

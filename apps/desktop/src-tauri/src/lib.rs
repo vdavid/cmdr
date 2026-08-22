@@ -543,6 +543,11 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::known_shares::load_known_shares(app.handle());
 
+            // And the SSH host keys the user has approved. Before any volume is
+            // built, so the first SFTP dial of a session recognizes a server the
+            // user already trusted instead of asking again.
+            network::sftp_host_keys::load_trusted_host_keys(app.handle());
+
             // Load persisted recent search history into the in-memory cache.
             search::history::RECENT_SEARCHES.load(app.handle());
 

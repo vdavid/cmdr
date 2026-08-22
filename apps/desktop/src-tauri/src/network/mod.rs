@@ -15,6 +15,11 @@ pub mod known_shares;
 pub mod manual_servers;
 pub mod mdns_discovery;
 
+// The durable trusted-SSH-host-key store, which answers the `HostKeys` seam.
+// Not SMB's business, but it lives here for the same reason `credential_store`
+// does: this module is where the app keeps what it knows about servers.
+pub mod sftp_host_keys;
+
 #[cfg(target_os = "macos")]
 #[path = "mount.rs"]
 pub mod mount;

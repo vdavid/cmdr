@@ -29,7 +29,7 @@ func TestEveryDeclaredStackModeResolves(t *testing.T) {
 // The pairs a check can name must each resolve too, so one is ready to be
 // declared rather than debugged.
 func TestDeclarableStackModesResolve(t *testing.T) {
-	for _, want := range []checks.StackMode{checks.SmbCore, checks.SmbE2E} {
+	for _, want := range []checks.StackMode{checks.SmbCore, checks.SmbE2E, checks.SftpCore} {
 		stack, err := stacklease.Lookup(want.Stack)
 		if err != nil {
 			t.Errorf("%s: %v", want, err)
@@ -38,12 +38,6 @@ func TestDeclarableStackModesResolve(t *testing.T) {
 		if !contains(stack.Modes(), want.Mode) {
 			t.Errorf("%s names a mode the %s stack doesn't serve (%v)", want, stack.Name, stack.Modes())
 		}
-	}
-	// `checks.SftpCore` is deliberately absent: the SFTP stack's service table
-	// stays empty until its fixture lands, and this is the test that goes red the
-	// day someone points a check at it without filling the table in.
-	if _, err := stacklease.Lookup(checks.SftpCore.Stack); err != nil {
-		t.Errorf("the SFTP stack must be registered even before its fixture lands: %v", err)
 	}
 }
 

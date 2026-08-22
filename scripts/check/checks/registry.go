@@ -605,7 +605,7 @@ var AllChecks = []CheckDefinition{
 		App:               AppDesktop,
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true, // Needs Docker, which isn't available on freestyle.sh VMs
-		NeedsContainers:   []StackMode{SmbCore},
+		NeedsContainers:   []StackMode{SmbCore, SftpCore},
 		DependsOn:         []string{"desktop-rust-clippy"},
 		Inputs:            rustInputs,
 		Run:               RunRustIntegrationTests,

@@ -8,6 +8,7 @@
 //! - listings — `file_system::listing::listing_host::AppListings`
 //! - events — `events::volume_mapping::TauriVolumeEvents`
 //! - credentials — `network::credential_store::KeychainCredentials`
+//! - host keys — `network::sftp_host_keys::AppHostKeys`
 //! - indexing — `index_host::VolumeIndexNotifier`
 //! - activity — `priority::host_policy::AppUserActivity`
 //! - analytics — `analytics::volume_sink::PostHogVolumeAnalytics`
@@ -16,7 +17,7 @@
 //!
 //! ## The host is a value
 //!
-//! `VolumeHost` is cheaply cloned (eight `Arc` bumps), and a backend takes one in
+//! `VolumeHost` is cheaply cloned (nine `Arc` bumps), and a backend takes one in
 //! its constructor and keeps it. The `OnceLock` here is just where the app parks
 //! the one it built, so a connect path reached from an IPC command can pick it
 //! up; ❌ it is NOT how a backend finds its host. A test that wants FAKES builds
@@ -27,9 +28,9 @@
 //! ## Only the frontend channel needs the app to be running
 //!
 //! Every adapter but the event sink answers from something a test binary has too:
-//! the listing cache, the secret store, the index handle, the priority tracker,
-//! the analytics client, and the settings module are all process-global and work
-//! before `setup()` ever runs. So [`host`] hands out the REAL wiring even without
+//! the listing cache, the secret store, the trusted-host-key store, the index
+//! handle, the priority tracker, the analytics client, and the settings module
+//! are all process-global and work before `setup()` ever runs. So [`host`] hands out the REAL wiring even without
 //! an `AppHandle` and leaves only the frontend event channel silent, which is
 //! what lets an app-side backend test assert on the real listing cache without
 //! standing a Tauri app up.
@@ -51,6 +52,7 @@ fn wire(events: Option<Arc<dyn VolumeEventSink>>) -> VolumeHost {
     let builder = VolumeHost::builder()
         .listings(Arc::new(crate::file_system::listing::listing_host::AppListings))
         .credentials(Arc::new(crate::network::credential_store::KeychainCredentials))
+        .host_keys(Arc::new(crate::network::sftp_host_keys::AppHostKeys))
         // Mapped rather than passed through: a backend crate must not depend on
         // the index, or `cargo check` on it would compile a quarter of the app.
         .indexing(Arc::new(crate::index_host::VolumeIndexNotifier))
@@ -73,7 +75,8 @@ fn wire(events: Option<Arc<dyn VolumeEventSink>>) -> VolumeHost {
 }
 
 /// Wire every seam a backend can ask about to this app: runtime, listings,
-/// events, credentials, index notifications, activity, analytics, and settings.
+/// events, credentials, trusted host keys, index notifications, activity,
+/// analytics, and settings.
 ///
 /// Call once, in `setup()`, before anything constructs a volume. Nothing here can
 /// fail: a seam that isn't installed answers with a no-op rather than an error,

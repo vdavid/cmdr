@@ -35,7 +35,7 @@ import (
 // `file-length` allowlist entry. Shrinking is always fine and never fails.
 
 // guardedIndexCrates are the crates whose dependency trees must stay app-free.
-var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb"}
+var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp"}
 
 // forbiddenForIndexCrates are the packages that must not appear in a guarded
 // crate's tree. `cmdr` is the app; `tauri` and `tauri-specta` are what would let
@@ -64,7 +64,7 @@ type surfaceCeilings struct {
 // surfaceGuardedCrates are the guarded crates whose public surface is ALSO capped.
 // Not every guarded crate is: `cmdr-fs` is deliberately absent, because it's shared
 // vocabulary whose whole job is to be named from everywhere, so a count of its `pub`
-// items would measure the wrong thing.
+// items would measure the wrong thing, and `cmdr-sftp`'s is still growing.
 //
 // HandleType names the one type whose methods get their own bucket, or is empty when
 // the crate has no such type. A backend crate doesn't: its API is the `Volume` trait

@@ -47,8 +47,13 @@ pub fn fixture_port(service: &str, fallback: u16) -> u16 {
 /// cell is trying to exercise, and the suite would pass without ever testing the
 /// rung it names.
 pub fn fixture_params(service: &str, fallback_port: u16) -> SftpConnectionParams {
-    SftpConnectionParams::new("127.0.0.1", fixture_port(service, fallback_port), FIXTURE_USER, FIXTURE_ROOT)
-        .without_agent()
+    SftpConnectionParams::new(
+        "127.0.0.1",
+        fixture_port(service, fallback_port),
+        FIXTURE_USER,
+        FIXTURE_ROOT,
+    )
+    .without_agent()
 }
 
 /// A host that remembers approvals and can answer for a secret.

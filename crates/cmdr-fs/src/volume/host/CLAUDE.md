@@ -21,6 +21,9 @@ where credentials live, which runtime to spawn on, who to tell when a watch brea
   not truncated. The `&[(&str, &str)]` shape exists so a struct can't slip in.
 - **Connection parameters are constructor arguments, not settings.** `settings` is only for what the user changes while
   a volume is mounted, which is why it's read per dispatch.
+- **A trust seam degrades to trusting NOTHING.** `HostKeys` under `VolumeHost::detached()` answers every key unknown; ❌
+  never "trust everything", which is how a man-in-the-middle regression ships green. Its `testing` double REMEMBERS, so
+  an approve-then-reconnect harness terminates. `DETAILS.md` § "Seam by seam".
 - **Background work that outlives a call reaches its own state through a `SelfHandle`, never a volume id it looks up.**
   An id answers with the SUCCESSOR after a replace, and "still here" forever after a removal an in-flight holder keeps
   allocated. Publish a `Retirement` from `Volume::retirement` so the registry can write "you left". `DETAILS.md` § "The
@@ -31,9 +34,9 @@ where credentials live, which runtime to spawn on, who to tell when a watch brea
 - `mod.rs`: `VolumeHost` (the bundle), its builder, and `detached()`.
 - `listings.rs`: `ListingHost`, the busiest seam. Report a change, ask the fresh-listing oracle, refresh archive panes.
 - One seam per file: `runtime.rs` (the injected `tokio::runtime::Handle`, not a trait), `events.rs` (`VolumeEventSink` +
-  `VolumeConnection`), `credentials.rs` (`CredentialStore`), `indexing.rs` (`IndexNotifier` + `WatchGap`), `settings.rs`
-  (`BackendSettings`), `activity.rs` (`UserActivity`), `analytics.rs` (`AnalyticsSink`). What each one replaces:
-  `DETAILS.md` § "Seam by seam".
+  `VolumeConnection`), `credentials.rs` (`CredentialStore`), `host_keys.rs` (`HostKeys`), `indexing.rs`
+  (`IndexNotifier` + `WatchGap`), `settings.rs` (`BackendSettings`), `activity.rs` (`UserActivity`), `analytics.rs`
+  (`AnalyticsSink`). What each one replaces: `DETAILS.md` § "Seam by seam".
 - Each carries a recording or scripted fake under the `testing` feature, for tests that assert on what a backend told
   its host.
 

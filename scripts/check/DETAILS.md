@@ -581,11 +581,16 @@ adopt-or-reconcile policy, the dead-PID sweep, and the down-at-zero teardown are
   brought up the wrong containers and then waited for services nobody asked for.
 - **An unresolvable compose dir is an error too**, rather than a warning plus docker's default file lookup — which would
   bring up whatever compose file sat near the cwd under our project name.
-- **The SFTP stack is registered with an empty service table** until its fixture lands under
-  `apps/desktop/test/sftp-servers/` (its compose file sits there directly: it's first-party, so there's no vendored base
-  to keep under a `.compose/` marker dir the way SMB does). Registration is inert data: no check asks for it, `Acquire` refuses every mode, and
-  `Up` reports the missing compose dir. Turning the lane on is two lines: that stack's service table, and
-  `NeedsContainers` on `desktop-rust-integration-tests`.
+- **The SFTP stack's compose file sits directly in `apps/desktop/test/sftp-servers/`**, not under a `.compose/` marker
+  dir. That dir is SMB's marker for a tree vendored out of the `smb2` crate, with a cmdr-owned override layered on top;
+  SFTP's fixture is first-party, so there is one compose file and no `-f` layering.
+- **Its `modeServices` table and `start.sh`'s own case table have to agree.** Two lists, one truth: a server in one and
+  not the other shows up as a cell with no server, which reads as a backend bug rather than as a fixture one. Adding a
+  server means editing both, plus `sftpServiceHostPorts` (`checks/sftp_ports.go`), which the lane's readiness guard
+  derives its expected-service list from.
+- **`servicesWithoutHealthcheck` is empty for SFTP** because its one image bakes a healthcheck that reads the listening
+  socket out of `netstat`. ❗ Not `nc -z`, which SMB's vendored images use and busybox does not implement: it answers 1
+  unconditionally, which reads as a container that never comes up.
 
 ### How the integration lane selects fixture cells
 

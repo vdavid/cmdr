@@ -21,5 +21,9 @@ pub(super) fn metadata_to_file_entry(name: &str, remote_path: &str, meta: &MetaD
 
 /// Seconds since the epoch, matching `FileEntry`'s own unit.
 fn unix_secs(stamp: openssh_sftp_client::UnixTimeStamp) -> Option<u64> {
-    stamp.as_system_time().duration_since(std::time::UNIX_EPOCH).ok().map(|d| d.as_secs())
+    stamp
+        .as_system_time()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .map(|d| d.as_secs())
 }

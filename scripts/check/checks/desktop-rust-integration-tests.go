@@ -10,7 +10,7 @@ import (
 )
 
 // RunRustIntegrationTests runs the Docker-backed Rust integration tests for
-// every network fixture. The lane's selection expression is built by
+// every network fixture (SMB and SFTP today). The lane's selection expression is built by
 // `fixtureIntegrationFilter` (see `fixture-lane-coverage.go`), which also holds
 // the fixture table `desktop-fixture-lane-coverage` guards.
 //
@@ -33,7 +33,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// Docker is a hard requirement. Surface a clear message instead of a cryptic error.
 	if !CommandExists("docker") {
 		return CheckResult{}, fmt.Errorf(
-			"docker is required for SMB integration tests; install Docker or run without this check",
+			"docker is required for the fixture integration tests; install Docker or run without this check",
 		)
 	}
 	if _, err := RunCommand(exec.Command("docker", "info"), true); err != nil {
@@ -68,7 +68,12 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		// mount URL (`network/mount.rs::build_smb_mount_url`).
 		"smb-consumer-unicode",
 	}
-	if err := waitForSmbContainers(expected, 120*time.Second); err != nil {
+	if err := waitForContainers("smb-consumer", expected, 120*time.Second); err != nil {
+		return CheckResult{}, err
+	}
+	// The SFTP stack's guard is derived from its port table rather than written
+	// out, so adding a server is one edit instead of three that can disagree.
+	if err := waitForContainers("sftp-fixture", SftpFixtureServices(), 120*time.Second); err != nil {
 		return CheckResult{}, err
 	}
 
@@ -132,15 +137,15 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	return result, nil
 }
 
-// waitForSmbContainers polls `docker compose -p smb-consumer ps` until every
-// expected service appears in the running set, or the timeout expires.
-func waitForSmbContainers(expected []string, timeout time.Duration) error {
+// waitForContainers polls `docker compose -p <project> ps` until every expected
+// service appears in the running set, or the timeout expires.
+func waitForContainers(project string, expected []string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	interval := 1 * time.Second
 
 	for {
 		psCmd := exec.Command(
-			"docker", "compose", "-p", "smb-consumer",
+			"docker", "compose", "-p", project,
 			"ps", "--services", "--filter", "status=running",
 		)
 		output, _ := RunCommand(psCmd, true)
@@ -164,8 +169,8 @@ func waitForSmbContainers(expected []string, timeout time.Duration) error {
 
 		if time.Now().After(deadline) {
 			return fmt.Errorf(
-				"SMB containers didn't reach running state within %s: still waiting for %s",
-				timeout, strings.Join(missing, ", "),
+				"the %s containers didn't reach running state within %s: still waiting for %s",
+				project, timeout, strings.Join(missing, ", "),
 			)
 		}
 		time.Sleep(interval)

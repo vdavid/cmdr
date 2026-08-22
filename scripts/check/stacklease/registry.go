@@ -57,12 +57,9 @@ var SMB = &Stack{
 // directly in the fixture dir rather than a vendored base plus an override under
 // `.compose/`.
 //
-// Its service table is empty until the fixture lands under
-// `apps/desktop/test/sftp-servers/`. Registration is inert data, so an empty
-// table costs nothing: no check asks for this stack yet, `Acquire` refuses every
-// mode with the list of modes it serves, and `Up` reports the unresolvable
-// compose dir rather than letting docker guess at a compose file. Filling the
-// table and pointing a check at it are the two lines that turn the lane on.
+// ❗ `modeServices` has to stay in lock-step with the fixture's own case table
+// (`apps/desktop/test/sftp-servers/start.sh`). A drift between them shows up as a
+// cell with no server, which reads as a backend bug rather than as a fixture one.
 var SFTP = &Stack{
 	Name:          "sftp",
 	ProjectName:   "sftp-fixture",
@@ -73,8 +70,21 @@ var SFTP = &Stack{
 	composeFiles:  []string{"docker-compose.yml"},
 	// Host ports live in their own pinned range, clear of SMB's 11480+ and
 	// smb2's 10480+.
-	portEnvPrefix:              "SFTP_FIXTURE_",
-	modeServices:               map[string][]string{},
+	portEnvPrefix: "SFTP_FIXTURE_",
+	modeServices: map[string][]string{
+		ModeMinimal: {"sftp-fixture-openssh", "sftp-fixture-keyonly"},
+		ModeCore: {
+			"sftp-fixture-openssh", "sftp-fixture-keyonly", "sftp-fixture-passphrase",
+			"sftp-fixture-kbdint", "sftp-fixture-twokeys", "sftp-fixture-changedkey",
+			"sftp-fixture-noposixrename", "sftp-fixture-shortreads",
+			"sftp-fixture-smalllimits", "sftp-fixture-bigdir", "sftp-fixture-oddnames",
+		},
+		ModeAll: nil,
+	},
+	// Empty, and it stays that way: the one image bakes a HEALTHCHECK that reads
+	// the listening socket out of `netstat`, so every service reports health.
+	// (`nc -z`, which SMB's images use, is not implemented by busybox — it
+	// answers 1 unconditionally, which reads as a container that never comes up.)
 	servicesWithoutHealthcheck: map[string]bool{},
 }
 

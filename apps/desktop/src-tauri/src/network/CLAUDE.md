@@ -1,7 +1,7 @@
-# Network SMB support
+# Network support
 
-SMB's app-side half: mDNS discovery, `smb2` share listing behind an `smbutil`/`smbclient` CLI fallback, and mounting
-via `NetFSMountURLSync` (macOS) / `gio mount` (Linux). The protocol layer under it is `crates/cmdr-smb/`, whose
+Mostly SMB's app-side half: mDNS discovery, `smb2` share listing behind an `smbutil`/`smbclient` CLI fallback, and
+mounting via `NetFSMountURLSync` (macOS) / `gio mount` (Linux). The protocol layer under it is `crates/cmdr-smb/`, whose
 `DETAILS.md` runs the boundary: what the protocol and its own types can answer belongs there.
 
 Frontend: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`. Auth-flow background:
@@ -16,9 +16,13 @@ Frontend: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`. Auth-flow back
   `mod.rs::mount_within`), `keychain.rs`, `known_shares.rs`, `server_identity.rs`,
   `credential_store.rs` (`KeychainCredentials`, the `CredentialStore` seam), `os_mount_notice.rs` (the fallback
   notice: its once-per-server ledger AND the `AppHandle` it emits through).
+- SSH trust: `sftp_host_keys.rs` (`AppHostKeys`, the `HostKeys` seam, over a durable `known-sftp-hosts.json`).
 
 ## Must-knows
 
+- **A trusted host key is keyed by `(host, port, algorithm)`, and re-recording REPLACES.** Two entries for one triple
+  make the verdict depend on iteration order. ❌ Never write `~/.ssh/known_hosts`: that file belongs to `ssh`.
+  `crates/cmdr-sftp/DETAILS.md` § "Host-key trust".
 - **Credentials never go into argv** (never `ps aux` / `/proc/<pid>/cmdline`): `smbclient` via a 0o600 `-A` file, `gio
   mount` via child stdin, `build_smbutil_url` only passwordless `//host` URLs. Never a URL-embedded or argv password.
 - **Compare servers by identity, never string** (`server_identity::same_server*` / `credential_key`): `statfs` may say

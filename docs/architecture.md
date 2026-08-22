@@ -237,10 +237,10 @@ All under `apps/desktop/src-tauri/src/`.
 
 ## Workspace crates
 
-All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, and `cmdr-smb` carry no `tauri`
-dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps
-the public surface of `cmdr-index`, `cmdr-archive`, and `cmdr-smb` at the numbers their audits landed on. The two dev
-CLIs and the vendored fork are ordinary members.
+All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` carry
+no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata`
+graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, and `cmdr-smb` at the numbers their audits landed
+on. The two dev CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -256,6 +256,12 @@ CLIs and the vendored fork are ordinary members.
   core (central-directory parse, synthetic tree, streaming decompress, Zip Slip defense) and the shared boundary
   detector its host routes with. The first backend in its own crate, so it's the worked example for the next one. See
   `crates/cmdr-archive/CLAUDE.md`
+- `crates/cmdr-sftp/`: everything Cmdr says to an SFTP server. `SftpVolume` over one SSH connection with one SFTP
+  channel, on `russh` + `openssh-sftp-client`, plus host-key trust-on-first-use and the four-rung auth ladder. The
+  app-side halves are the trusted-host-key store (`apps/desktop/src-tauri/src/network/sftp_host_keys.rs`) and, later,
+  the connect commands; the crate itself asks the app nothing directly. Its guardrails, the two crate hazards it is
+  shaped around, and which side a test lives on: `crates/cmdr-sftp/CLAUDE.md`. Which crate it is built on and why:
+  `docs/notes/sftp-crate-evaluation-2026-08-22.md`. Its Docker servers: `apps/desktop/test/sftp-servers/README.md`.
 - `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
   watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address
   building, `smb2::Error` classification, the share-listing vocabulary). The second backend in its own crate; what

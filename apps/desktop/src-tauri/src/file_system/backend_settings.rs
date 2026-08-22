@@ -24,17 +24,38 @@ type ConcurrencySource = (BackendName, fn() -> usize);
 
 /// Where each backend's concurrency setting comes from, keyed by its namespace.
 ///
-/// SMB is the only row today: `network.smbConcurrency` (Settings > Advanced,
-/// default 10, clamped to `1..=32` by `set_smb_concurrency`), whose label and
-/// help text both say SMB. That setting is SMB's alone, and ❌ no other backend
-/// may be pointed at it: the right number is a property of the server, and an
-/// FTP server that allows four connections answers the fifth with a refusal or
-/// a temporary ban, so a NAS tuned to 32 would break it.
+/// ❗ **A row is where a backend's number comes from, not a promise that a user
+/// can change it.** Two rows today, and only one of them is a slider:
 ///
-/// Adding a backend with a user-facing knob means adding its row here, next to
-/// its own accessor. Until then it reads
-/// [`UNREGISTERED_MAX_CONCURRENT_OPERATIONS`].
-const MAX_CONCURRENT_OPERATIONS_SOURCES: &[ConcurrencySource] = &[("smb", super::smb_concurrency)];
+/// - `"smb"` reads `network.smbConcurrency` (Settings > Advanced, default 10,
+///   clamped to `1..=32` by `set_smb_concurrency`), whose label and help text
+///   both say SMB. ❌ No other backend may be pointed at it: the right number is
+///   a property of the server, and an FTP server that allows four connections
+///   answers the fifth with a refusal or a temporary ban, so a NAS tuned to 32
+///   would break it.
+/// - `"sftp"` reads a constant. Four Cmdr operations share ONE SSH connection
+///   there — a second connection means a second authentication, and with
+///   keyboard-interactive a second 2FA prompt — so the number is a property of
+///   the design rather than something to tune. It still needs a row, because a
+///   namespace without one silently gets
+///   [`UNREGISTERED_MAX_CONCURRENT_OPERATIONS`].
+///
+/// Adding a backend means adding its row here next to its own accessor, whether
+/// or not the number is ever exposed.
+const MAX_CONCURRENT_OPERATIONS_SOURCES: &[ConcurrencySource] =
+    &[("smb", super::smb_concurrency), ("sftp", sftp_concurrency)];
+
+/// How many operations an SFTP volume runs at once.
+///
+/// David's call, 2026-08-22, and not a user-facing knob. Four operations share
+/// one SSH connection and one SFTP channel, which keeps us clear of a server's
+/// `MaxSessions` and `MaxStartups` and avoids a second authentication. The
+/// per-stream request window is a separate lever and lives in the backend.
+const SFTP_MAX_CONCURRENT_OPERATIONS: usize = 4;
+
+fn sftp_concurrency() -> usize {
+    SFTP_MAX_CONCURRENT_OPERATIONS
+}
 
 /// What a backend with no row above gets.
 ///
@@ -96,6 +117,28 @@ mod tests {
             AppBackendSettings.max_concurrent_operations("smb"),
             32,
             "a misconfigured settings file can't overwhelm a server through the seam either"
+        );
+
+        set_smb_concurrency(previous);
+    }
+
+    /// SFTP's row is a constant rather than a setting, and it still has to be a
+    /// row: a namespace without one silently gets the cautious 2, which would
+    /// halve every SFTP transfer for no reason anyone could see.
+    #[test]
+    fn sftp_reads_its_own_constant_and_not_the_smb_slider() {
+        let _turn = one_writer_at_a_time();
+        let previous = smb_concurrency();
+
+        set_smb_concurrency(32);
+        assert_eq!(
+            AppBackendSettings.max_concurrent_operations("sftp"),
+            SFTP_MAX_CONCURRENT_OPERATIONS
+        );
+        assert_ne!(
+            AppBackendSettings.max_concurrent_operations("sftp"),
+            UNREGISTERED_MAX_CONCURRENT_OPERATIONS,
+            "a missing row is invisible at runtime, so this is what says the row is there"
         );
 
         set_smb_concurrency(previous);

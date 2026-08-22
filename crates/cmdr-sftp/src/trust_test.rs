@@ -21,7 +21,11 @@ const HOST: &str = "naspolya";
 const PORT: u16 = 12480;
 
 fn ed25519() -> PresentedHostKey {
-    PresentedHostKey::new("ssh-ed25519", ED25519_BLOB, "SHA256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    PresentedHostKey::new(
+        "ssh-ed25519",
+        ED25519_BLOB,
+        "SHA256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    )
 }
 
 fn other_ed25519() -> PresentedHostKey {
@@ -33,7 +37,11 @@ fn other_ed25519() -> PresentedHostKey {
 }
 
 fn rsa() -> PresentedHostKey {
-    PresentedHostKey::new("ssh-rsa", RSA_BLOB, "SHA256:ccccccccccccccccccccccccccccccccccccccccccc")
+    PresentedHostKey::new(
+        "ssh-rsa",
+        RSA_BLOB,
+        "SHA256:ccccccccccccccccccccccccccccccccccccccccccc",
+    )
 }
 
 fn no_known_hosts() -> KnownHostsFile {
@@ -76,11 +84,17 @@ fn recording_an_approval_turns_unknown_into_trusted() {
     // fixture harness would spin on "unknown → approve → still unknown".
     let store = InMemoryHostKeys::new();
     let key = ed25519();
-    assert_eq!(decide(&store, &no_known_hosts(), HOST, PORT, &key), HostKeyDecision::Unknown);
+    assert_eq!(
+        decide(&store, &no_known_hosts(), HOST, PORT, &key),
+        HostKeyDecision::Unknown
+    );
 
     record_approval(&store, HOST, PORT, &key);
 
-    assert_eq!(decide(&store, &no_known_hosts(), HOST, PORT, &key), HostKeyDecision::Trusted);
+    assert_eq!(
+        decide(&store, &no_known_hosts(), HOST, PORT, &key),
+        HostKeyDecision::Trusted
+    );
 }
 
 // ── The second-algorithm cell, which the pin is what makes safe ──────
@@ -207,7 +221,10 @@ fn a_hashed_known_hosts_entry_still_matches() {
         "AAAAC3NzaC1lZDI1NTE5AAAAILIG2T/B0l0gaqj3puu510tu9N1OkQ4znY3LYuEm5zCF",
         "SHA256:dddddddddddddddddddddddddddddddddddddddddd",
     );
-    assert_eq!(decide(&store, &known, "example.com", 22, &key), HostKeyDecision::Trusted);
+    assert_eq!(
+        decide(&store, &known, "example.com", 22, &key),
+        HostKeyDecision::Trusted
+    );
 }
 
 #[test]

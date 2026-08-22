@@ -29,7 +29,7 @@ services:
   # quirk.
   sftp-fixture-openssh:
     <<: *fixture
-    ports: ["${SFTP_FIXTURE_OPENSSH_PORT:-12480}:22"]
+    ports: ['${SFTP_FIXTURE_OPENSSH_PORT:-12480}:22']
 
   # Key-only: `PasswordAuthentication no`, so the ladder has to reach its second
   # rung. The private half lands in the shared `keys` volume at start.
@@ -37,8 +37,8 @@ services:
     <<: *fixture
     environment:
       AUTH: key
-    volumes: ["./.keys/keyonly:/keys"]
-    ports: ["${SFTP_FIXTURE_KEYONLY_PORT:-12481}:22"]
+    volumes: ['./.keys/keyonly:/keys']
+    ports: ['${SFTP_FIXTURE_KEYONLY_PORT:-12481}:22']
 
   # A key file with a passphrase on it: the rung that CANNOT reconnect
   # unattended, because the passphrase isn't held past the session it unlocked.
@@ -47,8 +47,8 @@ services:
     environment:
       AUTH: passphrase
       KEY_PASSPHRASE: letmein
-    volumes: ["./.keys/passphrase:/keys"]
-    ports: ["${SFTP_FIXTURE_PASSPHRASE_PORT:-12482}:22"]
+    volumes: ['./.keys/passphrase:/keys']
+    ports: ['${SFTP_FIXTURE_PASSPHRASE_PORT:-12482}:22']
 
   # `PasswordAuthentication no` + `KbdInteractiveAuthentication yes`: the
   # hardened-without-2FA shape, where PAM asks one hidden question.
@@ -56,7 +56,7 @@ services:
     <<: *fixture
     environment:
       AUTH: keyboard-interactive
-    ports: ["${SFTP_FIXTURE_KBDINT_PORT:-12483}:22"]
+    ports: ['${SFTP_FIXTURE_KBDINT_PORT:-12483}:22']
 
   # Two host key types on one server, which is a perfectly healthy thing to be.
   # ❗ The cell that matters here asserts this does NOT read as a changed key:
@@ -65,7 +65,7 @@ services:
     <<: *fixture
     environment:
       HOST_KEYS: ed25519,rsa
-    ports: ["${SFTP_FIXTURE_TWOKEYS_PORT:-12484}:22"]
+    ports: ['${SFTP_FIXTURE_TWOKEYS_PORT:-12484}:22']
 
   # A DIFFERENT identity from `sftp-fixture-openssh`, deliberately. A cell seeds
   # the trust store with this server's real fingerprint against the stock
@@ -73,7 +73,7 @@ services:
   # rather than a first-seen one.
   sftp-fixture-changedkey:
     <<: *fixture
-    ports: ["${SFTP_FIXTURE_CHANGEDKEY_PORT:-12485}:22"]
+    ports: ['${SFTP_FIXTURE_CHANGEDKEY_PORT:-12485}:22']
 
   # No `posix-rename@openssh.com` and no `copy-data@openssh.com`: proprietary NAS
   # firmware is full of servers like this, and every extension needs an honest
@@ -82,7 +82,7 @@ services:
     <<: *fixture
     environment:
       QUIRK_DROP_EXTENSIONS: posix-rename@openssh.com,copy-data@openssh.com
-    ports: ["${SFTP_FIXTURE_NOPOSIXRENAME_PORT:-12486}:22"]
+    ports: ['${SFTP_FIXTURE_NOPOSIXRENAME_PORT:-12486}:22']
 
   # Truncates every SSH_FXP_DATA to 4 KiB, which SFTP explicitly allows. A reader
   # that advances its offset by the REQUESTED length rather than the returned one
@@ -91,8 +91,8 @@ services:
   sftp-fixture-shortreads:
     <<: *fixture
     environment:
-      QUIRK_SHORT_READ_BYTES: "4096"
-    ports: ["${SFTP_FIXTURE_SHORTREADS_PORT:-12487}:22"]
+      QUIRK_SHORT_READ_BYTES: '4096'
+    ports: ['${SFTP_FIXTURE_SHORTREADS_PORT:-12487}:22']
 
   # A server far stingier than OpenSSH's defaults, for the paths that have to
   # respect a negotiated limit instead of assuming 255 KiB.
@@ -100,7 +100,7 @@ services:
     <<: *fixture
     environment:
       QUIRK_LIMITS: max-packet:16384,max-read:8192,max-write:8192,max-handles:16
-    ports: ["${SFTP_FIXTURE_SMALLLIMITS_PORT:-12488}:22"]
+    ports: ['${SFTP_FIXTURE_SMALLLIMITS_PORT:-12488}:22']
 
   # 5 000 entries in one directory and a 40-level nest: a listing that is many
   # round trips, and a depth where a per-level `exists()` walk is visibly the
@@ -109,7 +109,7 @@ services:
     <<: *fixture
     environment:
       SEED: big
-    ports: ["${SFTP_FIXTURE_BIGDIR_PORT:-12489}:22"]
+    ports: ['${SFTP_FIXTURE_BIGDIR_PORT:-12489}:22']
 
   # Names that aren't valid UTF-8, which SFTP v3 permits and SMB never could.
   # `openssh-sftp-client` fails the WHOLE readdir on one, loudly, which is the
@@ -118,4 +118,4 @@ services:
     <<: *fixture
     environment:
       SEED: oddnames
-    ports: ["${SFTP_FIXTURE_ODDNAMES_PORT:-12490}:22"]
+    ports: ['${SFTP_FIXTURE_ODDNAMES_PORT:-12490}:22']

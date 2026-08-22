@@ -197,11 +197,7 @@ pub fn smb_volume_id(server: &str, port: u16, share: &str) -> String {
 pub fn sftp_volume_id(host: &str, port: u16, username: &str) -> String {
     let host = host.to_lowercase();
     let port = port.to_string();
-    derived_id(
-        "sftp",
-        &format!("{host}-{port}-{username}"),
-        &[&host, &port, username],
-    )
+    derived_id("sftp", &format!("{host}-{port}-{username}"), &[&host, &port, username])
 }
 
 /// Build the ID for an MTP device from its (opaque, verbatim) serial.
