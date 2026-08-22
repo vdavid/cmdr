@@ -70,8 +70,10 @@ uuid = { version = "1.19.0", features = ["v4"] }
 # inherit and `tokio::spawn` panics there. `rt-multi-thread` builds the fallback that
 # keeps benches, tools, and tests working with a detached host. `time` is
 # `wait_until_async`'s: it polls on tokio's clock, so a `start_paused` runtime
-# auto-advances through the wait instead of burning wall-clock.
-tokio = { version = "1", features = ["rt", "rt-multi-thread", "time"] }
+# auto-advances through the wait instead of burning wall-clock. `sync` is
+# `ChannelReadStream`'s: the bounded chunk channel every network backend's read
+# path is built on.
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time"] }
 # `testing` only: `TestDir` wraps a `tempfile::TempDir` and hands it back to its
 # caller. ❌ Don't "clean this up" into a dev-dependency: a dev-dependency isn't
 # linkable when ANOTHER crate compiles this one as a library, so `TestDir` would

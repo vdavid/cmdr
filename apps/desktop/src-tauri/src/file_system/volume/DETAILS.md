@@ -265,7 +265,7 @@ struct MtpReadStream {
 
 ### Pattern B: channel-backed stream (use when the SDK's download type borrows `&mut Connection`)
 
-If the SDK's download handle holds a borrow against the session (like `smb2::FileDownload<'a>` borrowing `&'a mut Connection`), you can't stuff it into a `'static` struct. Use a background producer task that holds an `OwnedMutexGuard` over the session, drives the download, and feeds chunks through a bounded mpsc channel. **Example: `SmbReadStream`** (`crates/cmdr-smb/src/volume/streams.rs` → `open_smb_download_stream`).
+If the SDK's download handle holds a borrow against the session (like `smb2::FileDownload<'a>` borrowing `&'a mut Connection`), you can't stuff it into a `'static` struct. Use a background producer task that holds an `OwnedMutexGuard` over the session, drives the download, and feeds chunks through a bounded mpsc channel. The consumer half is shared: `cmdr_fs::volume::ChannelReadStream` (the channel, the drop-cancellation, the progress counters), so a backend writes only its producer. **Examples**: `crates/cmdr-smb/src/volume/streams.rs` → `open_smb_download_stream`, and `crates/cmdr-sftp/src/volume/streams.rs` → `open_read_stream_impl`.
 
 Key building blocks:
 - `Arc<tokio::sync::Mutex<Session>>` so the task can call `lock_owned()` and own the guard until done.

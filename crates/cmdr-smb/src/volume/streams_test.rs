@@ -1,22 +1,21 @@
-//! The consumer side of the channel-backed `SmbReadStream`, driven off a
-//! pre-seeded channel rather than a real producer task, plus the single-shot
-//! write promise. End-to-end streaming is `streaming_integration_test.rs`.
+//! The consumer side of the channel-backed read stream, driven off a pre-seeded
+//! channel rather than a real producer task, plus the single-shot write promise.
+//! End-to-end streaming is `streaming_integration_test.rs`.
 
 use super::*;
 use crate::volume::test_support::*;
 
-// These test the consumer side of the channel-backed SmbReadStream in
-// isolation. End-to-end SMB streaming is covered by the Docker
-// integration tests below (smb_integration_open_read_stream,
-// smb_integration_export_streams).
+// These test the consumer side of the channel-backed read stream in isolation.
+// End-to-end SMB streaming is covered by the Docker integration tests below
+// (smb_integration_open_read_stream, smb_integration_export_streams).
 
-/// Builds an SmbReadStream backed by a pre-seeded channel, bypassing the
-/// real SMB producer task. Returns the stream plus the cancel receiver
-/// side so tests can assert that drop sends a cancel signal.
+/// Builds a `ChannelReadStream` off a pre-seeded channel, bypassing the real SMB
+/// producer task. Returns the stream plus the cancel receiver side so tests can
+/// assert that drop sends a cancel signal.
 fn make_stream_from_chunks(
     chunks: Vec<Result<Vec<u8>, VolumeError>>,
     total_size: u64,
-) -> (SmbReadStream, tokio::sync::oneshot::Receiver<()>) {
+) -> (ChannelReadStream, tokio::sync::oneshot::Receiver<()>) {
     let (chunk_tx, chunk_rx) =
         tokio::sync::mpsc::channel::<Result<Vec<u8>, VolumeError>>(SMB_STREAM_CHANNEL_CAPACITY.max(chunks.len()));
     let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
@@ -28,13 +27,7 @@ fn make_stream_from_chunks(
     // Drop chunk_tx so recv returns None after draining.
     drop(chunk_tx);
 
-    let stream = SmbReadStream {
-        rx: chunk_rx,
-        cancel: Some(cancel_tx),
-        total_size,
-        bytes_read: 0,
-    };
-    (stream, cancel_rx)
+    (ChannelReadStream::new(chunk_rx, cancel_tx, total_size), cancel_rx)
 }
 
 #[tokio::test]

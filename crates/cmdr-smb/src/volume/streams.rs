@@ -1,4 +1,4 @@
-//! Streaming read support for SMB: the channel-backed `SmbReadStream`, the
+//! Streaming read support for SMB: the producer behind a `ChannelReadStream`, the
 //! single-chunk `InlineReadStream`, and the `open_smb_download_stream`
 //! primitive that the streaming `Volume` methods (in `volume_impl`) build on.
 //! Also the inherent `write_from_stream_impl` body that the `write_from_stream`
@@ -7,7 +7,7 @@
 use super::SmbVolume;
 use super::mapping::map_smb_error;
 use super::session::update_state_on_smb_error;
-use cmdr_fs::volume::{MutationEvent, Volume, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{ChannelReadStream, MutationEvent, Volume, VolumeError, VolumeReadStream};
 use log::{debug, warn};
 use std::path::Path;
 use std::pin::Pin;
@@ -46,54 +46,6 @@ pub(super) fn fits_one_compound_write(max_write: u64, size: u64) -> bool {
 /// ours to clean up".
 fn create_succeeded_but_write_failed<T>(result: &Result<T, smb2::Error>) -> bool {
     matches!(result, Err(smb2::Error::Protocol { command, .. }) if *command != smb2::types::Command::Create)
-}
-
-/// Streaming reader for SMB files, backed by a background producer task.
-///
-/// The producer task owns an `OwnedMutexGuard` over the smb2 session and drives
-/// an `smb2::FileDownload`, sending each chunk down an mpsc channel. The
-/// consumer (this struct) just reads from the channel. This avoids buffering
-/// the whole file in memory; peak is bounded by the channel capacity.
-///
-/// Dropping the stream before it's fully consumed sends a cancel signal so
-/// the producer can stop early and release the SMB session lock.
-pub(super) struct SmbReadStream {
-    // Fields are `pub(super)` (not private) because the `smb_test` sibling module
-    // builds an `SmbReadStream` directly to test the consumer side in isolation.
-    pub(super) rx: tokio::sync::mpsc::Receiver<Result<Vec<u8>, VolumeError>>,
-    pub(super) cancel: Option<tokio::sync::oneshot::Sender<()>>,
-    pub(super) total_size: u64,
-    pub(super) bytes_read: u64,
-}
-
-impl Drop for SmbReadStream {
-    fn drop(&mut self) {
-        if let Some(tx) = self.cancel.take() {
-            // Best-effort: if the producer already finished, recv side is dropped
-            // and the send is a no-op.
-            let _ = tx.send(());
-        }
-    }
-}
-
-impl VolumeReadStream for SmbReadStream {
-    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
-        Box::pin(async move {
-            let chunk = self.rx.recv().await?;
-            if let Ok(ref bytes) = chunk {
-                self.bytes_read += bytes.len() as u64;
-            }
-            Some(chunk)
-        })
-    }
-
-    fn total_size(&self) -> u64 {
-        self.total_size
-    }
-
-    fn bytes_read(&self) -> u64 {
-        self.bytes_read
-    }
 }
 
 /// Wraps a pre-read `Vec<u8>` as a `VolumeReadStream` that yields the whole
@@ -145,12 +97,12 @@ impl SmbVolume {
     /// cloned `Connection` (all multiplexing frames over the same SMB
     /// session), so N downloads run pipelined instead of serializing on the
     /// session mutex. Chunks flow through a bounded mpsc channel to the
-    /// caller-facing `SmbReadStream`.
+    /// caller-facing [`ChannelReadStream`].
     ///
     /// This is the single streaming-read primitive for `SmbVolume`. The
     /// cross-volume streaming path (`open_read_stream`) goes through here, so
     /// no path has to buffer whole files in memory.
-    pub(super) async fn open_smb_download_stream(&self, smb_path: &str) -> Result<SmbReadStream, VolumeError> {
+    pub(super) async fn open_smb_download_stream(&self, smb_path: &str) -> Result<ChannelReadStream, VolumeError> {
         let (tree, conn) = self.clone_session().await?;
 
         let (size_tx, size_rx) = tokio::sync::oneshot::channel::<Result<u64, VolumeError>>();
@@ -240,12 +192,7 @@ impl SmbVolume {
             }
         };
 
-        Ok(SmbReadStream {
-            rx: chunk_rx,
-            cancel: Some(cancel_tx),
-            total_size,
-            bytes_read: 0,
-        })
+        Ok(ChannelReadStream::new(chunk_rx, cancel_tx, total_size))
     }
 
     /// The negotiated `max_write_size` for the live session, or `None` when

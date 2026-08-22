@@ -1277,6 +1277,7 @@ pub fn root_anchored(root: &Path, path: &Path) -> PathBuf {
 // …) lives in `ids`. Both are re-exported below so callers import
 // `volume::VolumeError`, `volume::smb_volume_id`, etc.
 mod capabilities;
+mod channel_stream;
 mod ids;
 mod in_memory;
 pub mod mtp_ids;
@@ -1301,6 +1302,7 @@ pub mod conformance;
 pub mod host;
 
 pub use capabilities::VolumeCapabilities;
+pub use channel_stream::ChannelReadStream;
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
 pub use retirement::{Retirement, Retires, SelfHandle};

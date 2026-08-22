@@ -534,9 +534,9 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   `FsInfo`→`SpaceInfo`, `smb2::Error`→`VolumeError`), `state_test.rs` (the binary state machine and how it widens),
   `paths_test.rs` (path translation both ways), `volume_impl_test.rs` (re-rooting and every capability flag),
   `reconnect_test.rs` (the reconnect early-exits, the transitions and the events they suppress, the watch-coverage gate,
-  both retirement paths), `streams_test.rs` (the channel-backed `SmbReadStream` consumer and the single-shot write
-  promise), `scan_test.rs` (the progress ticker), `retirement_test.rs`, `watcher/archive_refresh_test.rs`, and the
-  inline `mod tests` in `foreground_yield.rs` and `scan_pool.rs`. These run by default.
+  both retirement paths), `streams_test.rs` (the channel-backed read-stream consumer and the single-shot write promise),
+  `scan_test.rs` (the progress ticker), `retirement_test.rs`, `watcher/archive_refresh_test.rs`, and the inline
+  `mod tests` in `foreground_yield.rs` and `scan_pool.rs`. These run by default.
 - `host_seam_test.rs` — the PACE of what this backend tells the listing seam, which no type can hold: one call per
   mutation, none per directory entry. Its server-free cells pin the addressing and that an un-stattable creation patches
   nothing; its Docker cell seeds a directory, walks it with a listing and a copy scan, and asserts
