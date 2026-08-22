@@ -23,6 +23,17 @@ pub enum VolumeConnection {
     /// The server rejected our credentials. Retrying with the same ones won't
     /// help and risks locking the account: only the user can move this forward.
     NeedsCredentials,
+    /// The server's identity key isn't the one we trust for it. ❗ Deliberately
+    /// separate from [`NeedsCredentials`](Self::NeedsCredentials): a changed key
+    /// is the shape a man-in-the-middle takes, and a password box in front of one
+    /// is how a password gets typed into it. Only a fresh look at the key moves
+    /// this forward.
+    ///
+    /// ❗ Payload-free, and it stays that way. The value is `Copy` on both sides
+    /// of the app's `wire_state` and crosses IPC as a `specta::Type`; the key
+    /// itself reaches the user through the connect command's typed outcome
+    /// instead.
+    NeedsHostKeyApproval,
 }
 
 /// Where a backend's typed events go.

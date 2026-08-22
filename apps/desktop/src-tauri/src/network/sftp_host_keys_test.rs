@@ -107,3 +107,52 @@ fn the_pin_lists_every_algorithm_trusted_for_a_server() {
         "first contact pins nothing, so every algorithm stays on the table"
     );
 }
+
+#[test]
+fn forgetting_a_key_makes_the_server_first_contact_again() {
+    // The way out of a changed key: the user checks the new fingerprint against
+    // the server, forgets what we hold, and approves the real one.
+    let host = host_for("forget");
+    AppHostKeys.record(&host, 22, "ssh-ed25519", "SHA256:aaa");
+
+    assert!(forget_trusted_host_key(&host, 22, "ssh-ed25519"));
+    assert_eq!(
+        AppHostKeys.verdict(&host, 22, "ssh-ed25519", "SHA256:aaa"),
+        HostKeyVerdict::Unknown
+    );
+    assert!(
+        !forget_trusted_host_key(&host, 22, "ssh-ed25519"),
+        "a second forget has nothing to do"
+    );
+}
+
+#[test]
+fn forgetting_one_algorithm_leaves_the_others_trusted() {
+    // ❗ A server may hold several key types. Forgetting the one the user just
+    // looked at must not quietly un-trust the rest, or the next connection reads
+    // as first contact on a server nothing changed about.
+    let host = host_for("forget-one-algorithm");
+    AppHostKeys.record(&host, 22, "ssh-ed25519", "SHA256:aaa");
+    AppHostKeys.record(&host, 22, "rsa-sha2-512", "SHA256:bbb");
+
+    assert!(forget_trusted_host_key(&host, 22, "ssh-ed25519"));
+    assert_eq!(
+        AppHostKeys.verdict(&host, 22, "rsa-sha2-512", "SHA256:bbb"),
+        HostKeyVerdict::Matches
+    );
+    assert_eq!(AppHostKeys.trusted_algorithms(&host, 22), vec!["rsa-sha2-512".to_string()]);
+}
+
+#[test]
+fn the_listing_shows_what_a_settings_screen_would_offer_to_forget() {
+    let host = host_for("listing");
+    AppHostKeys.record(&host, 22, "ssh-ed25519", "SHA256:aaa");
+
+    let mine: Vec<_> = list_trusted_host_keys()
+        .into_iter()
+        .filter(|entry| entry.host == host)
+        .collect();
+    assert_eq!(mine.len(), 1);
+    assert_eq!(mine[0].fingerprint, "SHA256:aaa");
+    assert!(!mine[0].approved_at.is_empty(), "a settings row shows when it was approved");
+}

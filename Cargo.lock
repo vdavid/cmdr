@@ -1375,6 +1375,7 @@ dependencies = [
  "cmdr-archive",
  "cmdr-fs",
  "cmdr-index",
+ "cmdr-sftp",
  "cmdr-smb",
  "cocoon",
  "core-foundation 0.10.1",

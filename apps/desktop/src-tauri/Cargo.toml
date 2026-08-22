@@ -37,7 +37,16 @@ smb-e2e = ["cmdr-smb/testing"]
 # Docker fixtures the app's SMB suites connect through). It also turns
 # `smb2/testing` on for every dev target, which is harmless: `smb-e2e` already
 # does that, and nothing here reads `smb2::testing`.
-testing = ["cmdr-archive/testing", "cmdr-fs/testing", "cmdr-index/testing", "cmdr-smb/testing"]
+# `cmdr-sftp/testing` is in the list for `cmdr_sftp::volume::testing` (the shared
+# Docker fixtures the app's SFTP suites connect through), the same reason
+# `cmdr-smb/testing` is.
+testing = [
+  "cmdr-archive/testing",
+  "cmdr-fs/testing",
+  "cmdr-index/testing",
+  "cmdr-smb/testing",
+  "cmdr-sftp/testing",
+]
 
 [[bin]]
 name = "Cmdr"
@@ -69,6 +78,11 @@ cmdr-archive = { path = "../../../crates/cmdr-archive" }
 # `cargo check -p cmdr-smb` verifies it without building the app. Discovery,
 # mounts, the keychain, and every event stay here in `network/`.
 cmdr-smb = { path = "../../../crates/cmdr-smb" }
+# The SFTP backend: the `Volume` over one SSH connection, the auth ladder, the
+# host-key trust decision, and the byte path. No `tauri` in its tree, so
+# `cargo check -p cmdr-sftp` verifies it without building the app. The trusted-key
+# store, the secret store, the server list, and every command stay here.
+cmdr-sftp = { path = "../../../crates/cmdr-sftp" }
 # The index: the file index, the media index, and folder importance, behind one
 # `Index` handle. Tauri-free by design and enforced — the app is its host, which
 # is why every seam it needs is answered in `src/index_host.rs` and nowhere else.

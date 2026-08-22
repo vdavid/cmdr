@@ -585,6 +585,26 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // SFTP servers: connecting, host-key trust, secrets, and the server list.
+            // ❌ Deliberately no `stubs::` counterpart — that file exists because SMB
+            // browsing is macOS-only, and stubbing SFTP would turn it off on Linux, where
+            // the Docker E2E lane runs.
+            cfg(any(target_os = "macos", target_os = "linux")) {
+                typed: [
+                    crate::commands::sftp::connect_sftp_volume,
+                    crate::commands::sftp::disconnect_sftp_volume,
+                    crate::commands::sftp::approve_sftp_host_key,
+                    crate::commands::sftp::forget_sftp_host_key,
+                    crate::commands::sftp::list_trusted_sftp_host_keys,
+                    crate::commands::sftp::save_sftp_credentials,
+                    crate::commands::sftp::has_sftp_credentials,
+                    crate::commands::sftp::delete_sftp_credentials,
+                    crate::commands::sftp::get_known_sftp_servers,
+                    crate::commands::sftp::update_known_sftp_server,
+                    crate::commands::sftp::forget_known_sftp_server,
+                ]
+                dispatch_only: []
+            }
             cfg(not(any(target_os = "macos", target_os = "linux"))) {
                 typed: [
                     crate::stubs::network::ensure_network_discovery_started,

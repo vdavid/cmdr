@@ -547,6 +547,7 @@ pub fn run() {
             // built, so the first SFTP dial of a session recognizes a server the
             // user already trusted instead of asking again.
             network::sftp_host_keys::load_trusted_host_keys(app.handle());
+            network::sftp_known_servers::load_known_sftp_servers(app.handle());
 
             // Load persisted recent search history into the in-memory cache.
             search::history::RECENT_SEARCHES.load(app.handle());

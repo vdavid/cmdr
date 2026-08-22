@@ -38,6 +38,11 @@ pub mod restricted_paths;
 pub mod search;
 pub mod selection;
 pub mod settings;
+// SFTP works wherever the app does; the gate matches `network`, whose stores and
+// wiring it reaches through. ❌ No stub counterpart: stubbing it would turn SFTP
+// off on Linux, where the Docker E2E lane runs.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod sftp;
 pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 mod util;

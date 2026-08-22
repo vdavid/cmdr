@@ -19,6 +19,8 @@ pub mod mdns_discovery;
 // Not SMB's business, but it lives here for the same reason `credential_store`
 // does: this module is where the app keeps what it knows about servers.
 pub mod sftp_host_keys;
+pub mod sftp_known_servers;
+pub mod sftp_volume_wiring;
 
 #[cfg(target_os = "macos")]
 #[path = "mount.rs"]
@@ -244,6 +246,16 @@ pub enum VolumeConnection {
     /// instead of the generic "unreachable" banner. Transient: it accompanies a failed
     /// attempt rather than describing a state the volume settles in.
     NeedsCredentials,
+    /// The server's SSH host key isn't the one this machine trusts for it, so the
+    /// backend stopped rather than reconnecting. ❗ Never collapsed into
+    /// [`NeedsCredentials`](Self::NeedsCredentials): a changed key is the shape a
+    /// man-in-the-middle takes, and a sign-in prompt in front of one is how a password
+    /// gets typed into it. Recovery is the user opening the server again, where
+    /// `connect_sftp_volume`'s typed outcome carries the fingerprint to look at.
+    ///
+    /// ❗ Payload-free, and it stays that way: this enum is `Copy` on both sides of
+    /// `events::volume_mapping::wire_state`.
+    NeedsHostKeyApproval,
 }
 
 /// Typed `volume-connection-changed` Tauri event. The frontend reconnect manager

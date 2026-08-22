@@ -111,6 +111,38 @@ fn save() {
     }
 }
 
+/// Every key the user has approved, newest write last.
+///
+/// For a settings screen listing what this machine trusts, which is the only way
+/// [`forget_trusted_host_key`] is reachable for a server the user isn't looking
+/// at right now.
+pub fn list_trusted_host_keys() -> Vec<TrustedHostKey> {
+    trusted().lock_ignore_poison().trusted_host_keys.clone()
+}
+
+/// Drops the approval for `(host, port, algorithm)`, so the next connection to
+/// that server is first contact again.
+///
+/// Answers whether anything was there. ❗ App-side only, and deliberately not on
+/// the `HostKeys` seam: a backend never forgets a key, it only asks and records.
+///
+/// ❌ Nothing here touches `~/.ssh/known_hosts`, so a server trusted through that
+/// file keeps being trusted; `ssh-keygen -R` is what forgets one of those.
+pub fn forget_trusted_host_key(host: &str, port: u16, algorithm: &str) -> bool {
+    let removed = {
+        let mut store = trusted().lock_ignore_poison();
+        let before = store.trusted_host_keys.len();
+        store
+            .trusted_host_keys
+            .retain(|entry| !(entry.host == host && entry.port == port && entry.algorithm == algorithm));
+        store.trusted_host_keys.len() != before
+    };
+    if removed {
+        save();
+    }
+    removed
+}
+
 /// Answers a backend's host-key questions from the durable store.
 pub struct AppHostKeys;
 

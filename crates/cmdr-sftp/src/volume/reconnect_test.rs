@@ -289,6 +289,44 @@ fn watched_host(
     (events, credentials, host)
 }
 
+/// ❗ **A host key that no longer matches never reaches a sign-in prompt.**
+///
+/// A changed key is the shape a man-in-the-middle takes, and a password box in
+/// front of one is how a password gets typed into it. So the volume reports its
+/// own state, the backoff stops, and recovery is the user opening the server
+/// again through the full approval flow.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_a_changed_host_key_stops_the_loop_without_asking_for_a_password() {
+    let params = fixture_params("OPENSSH", 12480);
+    let (events, credentials, host) = watched_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params.clone()).await;
+
+    // The server's identity changes under a live volume: the store now holds a
+    // fingerprint this server will never present.
+    host.host_keys()
+        .record(&params.host, params.port, "ssh-ed25519", "SHA256:notthekeythisserverholds");
+    volume.simulate_session_loss().await;
+    let reads_before = credentials.reads();
+
+    let refusal = volume.attempt_reconnect().await;
+
+    assert!(
+        matches!(refusal, Err(cmdr_fs::volume::VolumeError::PermissionDenied(_))),
+        "only a person moves this forward, got {refusal:?}"
+    );
+    assert_eq!(
+        reported(&events),
+        vec![VolumeConnection::NeedsHostKeyApproval],
+        "❌ never NeedsCredentials: that is the state that puts a password box in front of a possible impostor"
+    );
+    assert_eq!(
+        credentials.reads(),
+        reads_before,
+        "❌ the key exchange refused before authentication, so no secret was offered"
+    );
+}
+
 /// ❗ **A password is tried once, and then never again unattended.**
 ///
 /// The frontend's reconnect manager calls `attempt_reconnect` on every backoff

@@ -265,11 +265,12 @@ impl SftpVolumeInner {
                 VolumeError::PermissionDenied(self.volume_id.clone())
             }
             Stalled::HostKeyNeedsApproval => {
-                // The volume goes quiet rather than asking for a password: see
-                // `Stalled::HostKeyNeedsApproval`. The frontend learns there is a
-                // key to look at when the user opens the server again, which runs
-                // the full approval flow.
-                self.emit_if_changed(ConnectionState::Disconnected);
+                // ❗ Its own state rather than `NeedsCredentials`: the frontend
+                // must send the user to look at the key, never to a sign-in box.
+                // The key itself doesn't ride this event (the wire enum is
+                // payload-free); the user opens the server again and the connect
+                // command's typed outcome carries the fingerprint.
+                self.emit_if_changed(ConnectionState::NeedsHostKeyApproval);
                 warn!(
                     target: "volume",
                     "sftp volume '{}' presented a host key that isn't the trusted one; not reconnecting",

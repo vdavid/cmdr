@@ -22,10 +22,10 @@ use crate::auth::AuthRungUsed;
 
 /// How this volume's session stands.
 ///
-/// Stored as an `AtomicU8` for lock-free reads from any thread. Three values
-/// rather than SMB's two, because [`NeedsCredentials`](Self::NeedsCredentials) is
-/// a state this backend RESTS in: a passphrase-protected key can't come back on
-/// its own, so it waits there until a human signs in.
+/// Stored as an `AtomicU8` for lock-free reads from any thread. Four values
+/// rather than SMB's two, because the last two are states this backend RESTS in:
+/// a passphrase-protected key can't come back on its own, and a key that no
+/// longer matches must not come back at all until a human has looked at it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum ConnectionState {
@@ -36,6 +36,10 @@ pub enum ConnectionState {
     /// Only the user can move this forward: retrying costs an authentication
     /// attempt and buys nothing.
     NeedsCredentials = 2,
+    /// The server's key isn't the one trusted for it. ❌ Never reported as
+    /// `NeedsCredentials`: putting a password box in front of a possible
+    /// man-in-the-middle is how a password gets typed into one.
+    NeedsHostKeyApproval = 3,
 }
 
 impl ConnectionState {
@@ -43,6 +47,7 @@ impl ConnectionState {
         match value {
             0 => Self::Connected,
             2 => Self::NeedsCredentials,
+            3 => Self::NeedsHostKeyApproval,
             _ => Self::Disconnected,
         }
     }
@@ -60,6 +65,7 @@ impl From<ConnectionState> for VolumeConnection {
             ConnectionState::Connected => Self::Connected,
             ConnectionState::Disconnected => Self::Disconnected,
             ConnectionState::NeedsCredentials => Self::NeedsCredentials,
+            ConnectionState::NeedsHostKeyApproval => Self::NeedsHostKeyApproval,
         }
     }
 }
