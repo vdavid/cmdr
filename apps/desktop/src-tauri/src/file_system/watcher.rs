@@ -24,8 +24,8 @@ use tauri_specta::Event as _;
 
 use crate::file_system::listing::{
     DiffChange, FileEntry, ModifyResult, compute_diff, get_listing_entries, get_listing_volume_id_and_path,
-    get_single_entry, has_entry, insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted,
-    update_listing_entries,
+    get_single_entry, has_entry, insert_entry_sorted, list_directory_core, remove_entries_by_paths,
+    update_entry_sorted, update_listing_entries,
 };
 use crate::index_host::index;
 use cmdr_fs::firmlinks;
@@ -435,38 +435,14 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         index().enrich(&volume_id, std::slice::from_mut(entry));
     }
 
-    // Apply changes: removes first (indices refer to OLD listing), then adds, then modifies.
-    // Look up original indices BEFORE mutating the cache, so all remove indices are in the
-    // same (original) listing space. Then apply removes in reverse index order so earlier
-    // removals don't shift later ones' positions.
+    // Apply changes: removes first (their indices are the OLD listing's), then adds, then
+    // modifies. `remove_entries_by_paths` resolves every index against the pre-removal
+    // listing and drops the rows highest-index-first, so no removal shifts the next one's
+    // row, and the whole batch costs one lookup pass.
     let mut changes: Vec<DiffChange> = Vec::new();
 
-    // Collect original indices for removes before any mutations
-    let mut remove_items: Vec<(usize, PathBuf)> = Vec::new();
-    {
-        use crate::file_system::listing::caching::LISTING_CACHE;
-        let cache = match LISTING_CACHE.read() {
-            Ok(c) => c,
-            Err(_) => return,
-        };
-        if let Some(listing) = cache.get(listing_id) {
-            for path in &removes {
-                let path_str = path.to_string_lossy();
-                if let Some(idx) = listing.entries().iter().position(|e| e.path == *path_str) {
-                    remove_items.push((idx, path.clone()));
-                }
-            }
-        }
-    }
-
-    // Sort removes by index descending so we remove from the end first (preserves indices)
-    remove_items.sort_by_key(|item| std::cmp::Reverse(item.0));
-
-    for (original_index, path) in &remove_items {
-        if let Some((_mutated_index, removed_entry)) = remove_entry_by_path(listing_id, path) {
-            // Emit the original (pre-mutation) index, not the mutated one
-            changes.push(DiffChange::removed(removed_entry, *original_index));
-        }
+    for (original_index, removed_entry) in remove_entries_by_paths(listing_id, &removes) {
+        changes.push(DiffChange::removed(removed_entry, original_index));
     }
 
     for entry in adds {

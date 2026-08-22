@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use super::caching::{
     ModifyResult, apply_tags_to_listing, carry_forward_tags, find_listings_for_path, find_listings_for_path_on_volume,
-    has_entry, insert_entry_sorted, notify_added, notify_removed, remove_entry_by_name, remove_entry_by_path,
+    has_entry, insert_entry_sorted, notify_added, notify_removed, remove_entries_by_paths, remove_entry_by_name,
     update_entry_sorted,
 };
 use super::caching_test_support::{TestListing, TestListingGuard, unique_test_id};
@@ -250,11 +250,11 @@ fn notify_added_upserts_when_entry_already_present() {
 }
 
 // ============================================================================
-// remove_entry_by_path tests
+// remove_entries_by_paths tests
 // ============================================================================
 
 #[test]
-fn test_remove_entry_by_path_returns_correct_index_and_entry() {
+fn test_remove_entries_by_paths_returns_correct_index_and_entry() {
     let listing = insert_test_listing(
         "remove_ok",
         "/test",
@@ -268,17 +268,17 @@ fn test_remove_entry_by_path_returns_correct_index_and_entry() {
         ],
     );
 
-    let result = remove_entry_by_path(listing.id(), &PathBuf::from("/test/beta.txt"));
-    assert!(result.is_some());
-    let (idx, entry) = result.unwrap();
-    assert_eq!(idx, 1);
+    let removed = remove_entries_by_paths(listing.id(), &[PathBuf::from("/test/beta.txt")]);
+    assert_eq!(removed.len(), 1);
+    let (idx, entry) = &removed[0];
+    assert_eq!(*idx, 1);
     assert_eq!(entry.name, "beta.txt");
 
     assert_eq!(listing.entry_names(), ["alpha.txt", "gamma.txt"]);
 }
 
 #[test]
-fn test_remove_entry_by_path_returns_none_for_missing_entry() {
+fn test_remove_entries_by_paths_skips_a_missing_entry() {
     let listing = insert_test_listing(
         "remove_miss",
         "/test",
@@ -288,14 +288,14 @@ fn test_remove_entry_by_path_returns_none_for_missing_entry() {
         vec![make_entry("alpha.txt", false, Some(100))],
     );
 
-    let result = remove_entry_by_path(listing.id(), &PathBuf::from("/test/nonexistent.txt"));
-    assert!(result.is_none());
+    let removed = remove_entries_by_paths(listing.id(), &[PathBuf::from("/test/nonexistent.txt")]);
+    assert!(removed.is_empty());
 }
 
 #[test]
-fn test_remove_entry_by_path_returns_none_for_missing_listing() {
-    let result = remove_entry_by_path("nonexistent_listing", &PathBuf::from("/test/foo.txt"));
-    assert!(result.is_none());
+fn test_remove_entries_by_paths_returns_nothing_for_missing_listing() {
+    let removed = remove_entries_by_paths("nonexistent_listing", &[PathBuf::from("/test/foo.txt")]);
+    assert!(removed.is_empty());
 }
 
 // ============================================================================
@@ -337,7 +337,7 @@ fn full_path_match_misses_inner_mtp_entry_from_url_notifier() {
     let listing = insert_mtp_style_listing("mtp_fullpath_miss");
     let url = PathBuf::from("mtp://mtp-dev/65537/Documents/notes.txt");
     assert!(
-        remove_entry_by_path(listing.id(), &url).is_none(),
+        remove_entries_by_paths(listing.id(), &[url]).is_empty(),
         "URL full-path can't match an inner-path entry — the silent no-op this fix removes"
     );
 }

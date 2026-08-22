@@ -15,6 +15,7 @@ use crate::file_system::listing::visible_rows::{VisibleRows, VisibleRowsCache};
 pub use cmdr_fs::volume::DirectoryChange;
 
 /// Result of updating an entry in-place or moving it to a new sorted position.
+#[derive(Debug)]
 pub enum ModifyResult {
     /// Entry was updated without changing its sorted position.
     UpdatedInPlace { index: usize },
@@ -158,6 +159,24 @@ impl CachedListing {
         &mut self.entries
     }
 
+    /// Where `path` sits in `entries`, or `None` when the listing doesn't hold it.
+    ///
+    /// ❗ A caller that then MUTATES must ask before it takes
+    /// [`Self::entries_mut`]: that drops the path map, so a lookup after it can
+    /// only walk. A single path never builds a map; see
+    /// `PathIndexCache::resolve_one`.
+    pub(crate) fn index_of_path(&self, path: &str) -> Option<usize> {
+        self.path_index.resolve_one(&self.entries, path)
+    }
+
+    /// Where each of `paths` sits in `entries`, in the order given, `None` for the
+    /// ones it doesn't hold. ONE build decision for the whole batch, so a caller
+    /// with a path list reaches for this rather than looping
+    /// [`Self::index_of_path`]. See `path_index.rs`.
+    pub(crate) fn indices_of_paths<'a>(&self, paths: impl ExactSizeIterator<Item = &'a str>) -> Vec<Option<usize>> {
+        self.path_index.resolve(&self.entries, paths)
+    }
+
     /// Replaces the tags on the entries `updates` names, in place, and reports the
     /// index of every row whose tags actually changed.
     ///
@@ -168,9 +187,7 @@ impl CachedListing {
     /// ever becomes a sort column or a visibility input, this has to go back
     /// through `entries_mut`.
     pub(crate) fn set_tags_by_path(&mut self, updates: Vec<(String, Vec<TagRef>)>) -> Vec<usize> {
-        let found = self
-            .path_index
-            .resolve(&self.entries, updates.iter().map(|(path, _)| path.as_str()));
+        let found = self.indices_of_paths(updates.iter().map(|(path, _)| path.as_str()));
 
         let mut changed = Vec::new();
         for (index, (_, tags)) in found.into_iter().zip(updates) {
@@ -418,8 +435,9 @@ pub fn insert_entry_sorted(listing_id: &str, entry: FileEntry) -> Option<usize> 
     let listing = cache.get_mut(listing_id)?;
     listing.touch();
 
-    // Don't insert if an entry with this path already exists
-    if listing.entries().iter().any(|e| e.path == entry.path) {
+    // Don't insert if an entry with this path already exists. Asked BEFORE
+    // `entries_mut` drops the path map, so the guard rides one when it's there.
+    if listing.index_of_path(&entry.path).is_some() {
         return None;
     }
 
@@ -447,19 +465,45 @@ pub fn get_listing_volume_id_and_path(listing_id: &str) -> Option<(String, PathB
         .map(|listing| (listing.volume_id.clone(), listing.path.clone()))
 }
 
-/// Removes an entry by its path from the cached listing.
+/// Removes every entry `paths` names, returning `(pre-removal index, entry)` for
+/// the ones the listing held, HIGHEST INDEX FIRST.
 ///
-/// Returns `(old_index, removed_entry)` or `None` if the listing or entry wasn't found.
-pub fn remove_entry_by_path(listing_id: &str, path: &Path) -> Option<(usize, FileEntry)> {
-    let mut cache = LISTING_CACHE.write().ok()?;
-    let listing = cache.get_mut(listing_id)?;
+/// **The batch form is the only by-path removal**, because its caller is always a
+/// batch: one coalesced watcher event carries up to 500 paths (a directory
+/// emptied, a `git checkout` across a big tree). Resolving them one at a time
+/// walked the listing twice per path — once for the pre-removal index the diff
+/// needs, once inside the removal — which is § "Entries by path"'s quadratic with
+/// a different caller in front of it. Here it is one lookup pass for the whole
+/// batch, under one write lock.
+///
+/// **Indices are the PRE-removal listing's**, which is the space a
+/// `directory-diff` payload speaks, and highest-first is the order that keeps each
+/// removal from shifting a row a later one still points at. Resolving and removing
+/// under ONE lock is also what makes those indices true: the two-lock shape they
+/// replace let another writer move a row between the lookup and the removal, and
+/// the diff would name a row that had shifted.
+pub fn remove_entries_by_paths(listing_id: &str, paths: &[PathBuf]) -> Vec<(usize, FileEntry)> {
+    let Ok(mut cache) = LISTING_CACHE.write() else {
+        return Vec::new();
+    };
+    let Some(listing) = cache.get_mut(listing_id) else {
+        return Vec::new();
+    };
     listing.touch();
-    let path_str = path.to_string_lossy();
+
+    let path_strings: Vec<String> = paths.iter().map(|path| path.to_string_lossy().into_owned()).collect();
+    let mut doomed: Vec<usize> = listing
+        .indices_of_paths(path_strings.iter().map(String::as_str))
+        .into_iter()
+        .flatten()
+        .collect();
+    // Highest first, and each row at most once: a repeated path in `paths` must
+    // not take a second, innocent row down with it.
+    doomed.sort_unstable_by(|a, b| b.cmp(a));
+    doomed.dedup();
 
     let entries = listing.entries_mut();
-    let idx = entries.iter().position(|e| e.path == *path_str)?;
-    let entry = entries.remove(idx);
-    Some((idx, entry))
+    doomed.into_iter().map(|index| (index, entries.remove(index))).collect()
 }
 
 /// Removes the entry whose file name equals `name` from a listing, returning its
@@ -494,7 +538,7 @@ pub fn has_entry(listing_id: &str, path: &str) -> bool {
     };
     cache
         .get(listing_id)
-        .is_some_and(|listing| listing.entries().iter().any(|e| e.path == path))
+        .is_some_and(|listing| listing.index_of_path(path).is_some())
 }
 
 /// Updates an existing entry in the cached listing.
@@ -508,8 +552,12 @@ pub fn update_entry_sorted(listing_id: &str, new_entry: FileEntry) -> Option<Mod
     listing.touch();
 
     let cmp = entry_comparator(listing.sort_by, listing.sort_order, listing.directory_sort_mode);
+    // ❗ Before `entries_mut`, which drops the path map: after it, this could only
+    // walk. Still true when the mutation lands, because the `LISTING_CACHE` write
+    // lock is held across both, and a modify that finds nothing now leaves both
+    // maps standing rather than dropping them for a listing it never touched.
+    let idx = listing.index_of_path(&new_entry.path)?;
     let entries = listing.entries_mut();
-    let idx = entries.iter().position(|e| e.path == new_entry.path)?;
     let old = &entries[idx];
 
     let sort_relevant_changed = old.size != new_entry.size
@@ -549,10 +597,10 @@ pub fn carry_forward_tags(listing_id: &str, entry: &mut FileEntry) {
         Err(_) => return,
     };
     if let Some(listing) = cache.get(listing_id)
-        && let Some(old) = listing.entries().iter().find(|e| e.path == entry.path)
-        && !old.tags.is_empty()
+        && let Some(index) = listing.index_of_path(&entry.path)
+        && !listing.entries()[index].tags.is_empty()
     {
-        entry.tags = old.tags.clone();
+        entry.tags = listing.entries()[index].tags.clone();
     }
 }
 

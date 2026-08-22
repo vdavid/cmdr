@@ -69,6 +69,27 @@ impl PathIndexCache {
         }
         paths.map(|path| scan_for_path(entries, path)).collect()
     }
+
+    /// The index of one path, riding a map that already exists and otherwise
+    /// scanning.
+    ///
+    /// **A single path never builds a map.** One lookup is far under
+    /// [`BUILD_FROM_BATCH_SIZE`], and the watcher's callers arrive one path per
+    /// event: making each of them build would have a modify on an untouched
+    /// 300,000-entry listing pay ~20 ms for a map it uses once, and (for the
+    /// mutating ones) drops on the way out. What it does buy is the sweep's map:
+    /// while tag enrichment is walking a big directory, every watcher event
+    /// landing in it is a hash rather than a walk.
+    ///
+    /// ⚠️ Same lock contract as [`Self::resolve`]: the caller holds the
+    /// `LISTING_CACHE` lock covering `entries`. ❗ And a MUTATING caller must ask
+    /// BEFORE it takes `entries_mut`, which drops the map.
+    pub(crate) fn resolve_one(&self, entries: &[FileEntry], path: &str) -> Option<usize> {
+        if let Some(map) = self.map.read_ignore_poison().as_ref() {
+            return map.index_of(entries, path);
+        }
+        scan_for_path(entries, path)
+    }
 }
 
 impl Default for PathIndexCache {
