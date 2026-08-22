@@ -65,3 +65,44 @@ func contains(haystack []string, needle string) bool {
 	}
 	return false
 }
+
+// The orchestrator starts the union of what the planned checks need, once each.
+// Two checks on one stack must not acquire twice, and a check needing two stacks
+// must get both.
+func TestCollectStackModesTakesTheUnionOnce(t *testing.T) {
+	smbA := checks.CheckDefinition{ID: "a", NeedsContainers: []checks.StackMode{checks.SmbCore}}
+	smbB := checks.CheckDefinition{ID: "b", NeedsContainers: []checks.StackMode{checks.SmbCore}}
+	e2e := checks.CheckDefinition{ID: "c", NeedsContainers: []checks.StackMode{checks.SmbE2E}}
+	both := checks.CheckDefinition{ID: "d", NeedsContainers: []checks.StackMode{checks.SmbCore, checks.SftpCore}}
+	none := checks.CheckDefinition{ID: "e"}
+
+	got := collectStackModes([]checks.CheckDefinition{smbB, none, smbA, both, e2e})
+	want := []string{"sftp/core", "smb/core", "smb/e2e"}
+	if len(got) != len(want) {
+		t.Fatalf("collectStackModes = %v, want %v", got, want)
+	}
+	for i, pair := range got {
+		if pair.String() != want[i] {
+			t.Fatalf("collectStackModes = %v, want %v (order is what makes the logs reproducible)", got, want)
+		}
+	}
+}
+
+// A check needing two stacks annotates as both, so `--graph` says what a run
+// will bring up.
+func TestFixtureStackNamesListsEveryDistinctStack(t *testing.T) {
+	cases := []struct {
+		def  checks.CheckDefinition
+		want string
+	}{
+		{checks.CheckDefinition{}, ""},
+		{checks.CheckDefinition{NeedsContainers: []checks.StackMode{checks.SmbCore}}, "smb"},
+		{checks.CheckDefinition{NeedsContainers: []checks.StackMode{checks.SmbCore, checks.SmbE2E}}, "smb"},
+		{checks.CheckDefinition{NeedsContainers: []checks.StackMode{checks.SmbCore, checks.SftpCore}}, "smb+sftp"},
+	}
+	for _, c := range cases {
+		if got := fixtureStackNames(&c.def); got != c.want {
+			t.Errorf("fixtureStackNames(%v) = %q, want %q", c.def.NeedsContainers, got, c.want)
+		}
+	}
+}
