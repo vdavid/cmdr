@@ -1,11 +1,14 @@
-//! Path translation helpers and the `impl Volume for SmbVolume` block
-//! (identity, capabilities, query, mutation, scan, streaming, space, and
-//! reconnect trait methods). A trait impl can't be split across files, so all
-//! `Volume` methods live here; they lean on inherent helpers in the sibling
-//! concern modules (`session::clone_session`, `streams::open_smb_download_stream`,
-//! `scan::scan_recursive`, `reconnect::do_attempt_reconnect`, etc.).
+//! The `impl Volume for SmbVolume` block: identity, capabilities, and the
+//! dispatch surface for everything the app asks this backend.
+//!
+//! A trait impl can't be split across files, so every `Volume` method lives
+//! here. What each one DOES lives next door, in the concern module that owns it:
+//! `paths` (path translation), `query` (listings, metadata, space), `mutation`
+//! (create / delete / rename and their listing-cache patches), `scan`,
+//! `scan_pool`, `streams`, `reconnect`. A method that needs more than a few
+//! lines of its own belongs there, not here; what stays here is the capability
+//! answers, whose whole content is the reasoning in their doc comments.
 
-use super::mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info};
 use super::state::ConnectionState;
 use super::streams::InlineReadStream;
 use super::{SmbVolume, foreground_yield};
@@ -16,111 +19,11 @@ use cmdr_fs::volume::{
     VolumeError, VolumeReadStream, WatchCoverage,
 };
 use cmdr_fs::volume::{ListingProgress, Retirement};
-use log::{debug, trace, warn};
+use log::debug;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
-
-/// Rate limit for the per-poll `get_space_info` debug line, keyed by share so a
-/// busy share can't swallow another's first line. The POLLS are untouched; only
-/// the logging is.
-static SPACE_INFO_LOG: cmdr_fs::log_rollup::LogRollup = cmdr_fs::log_rollup::LogRollup::new(Duration::from_secs(60));
-
-impl SmbVolume {
-    /// Converts a volume-relative path to the SMB relative path string.
-    ///
-    /// The frontend sends paths relative to the volume root (which is the mount path).
-    /// smb2 expects paths relative to the share root with `/` separators.
-    /// NFC-normalizes the result because macOS sends NFD (decomposed) paths
-    /// but SMB servers expect NFC (composed). Without this, paths with accented
-    /// characters (like "ä") fail with STATUS_OBJECT_PATH_NOT_FOUND.
-    ///
-    /// An absolute path outside the mount root is `NotFound`, and the root is
-    /// matched by whole COMPONENTS: every way of guessing an answer here put a
-    /// real request at a real, wrong place. Both, and what each caller does with
-    /// the error: `backends/DETAILS.md` § "Per-backend decisions".
-    pub(super) fn to_smb_path(&self, path: &Path) -> Result<String, VolumeError> {
-        use unicode_normalization::UnicodeNormalization;
-
-        let path_str = path.to_string_lossy();
-
-        // Empty, `.`, and `/` all mean the volume root.
-        if path_str.is_empty() || path_str == "/" || path_str == "." {
-            return Ok(String::new());
-        }
-
-        // Relative paths are what the trait contract asks for: use them as-is.
-        if !path.is_absolute() {
-            return Ok(path_str.nfc().collect());
-        }
-
-        // Absolute (the frontend does send these): must be inside the mount.
-        match path.strip_prefix(&self.mount_path) {
-            Ok(relative) => Ok(relative.to_string_lossy().nfc().collect()),
-            Err(_) => Err(VolumeError::NotFound(path_str.into_owned())),
-        }
-    }
-
-    /// The absolute display path for `path`'s own location on this share, or
-    /// `None` when `path` isn't on this share at all.
-    ///
-    /// For the post-mutation listing-cache patches: the mutation has already
-    /// succeeded by the time they run, so a path that doesn't convert must skip
-    /// the notification rather than turn a done write into a reported failure.
-    pub(super) fn display_path_for(&self, path: &Path) -> Option<PathBuf> {
-        self.to_smb_path(path)
-            .ok()
-            .map(|smb_path| PathBuf::from(self.to_display_path(&smb_path)))
-    }
-
-    /// Returns the full absolute path for a relative SMB path (under mount point).
-    pub(super) fn to_display_path(&self, smb_path: &str) -> String {
-        if smb_path.is_empty() {
-            self.mount_path.to_string_lossy().to_string()
-        } else {
-            format!("{}/{}", self.mount_path.display(), smb_path)
-        }
-    }
-
-    /// Shared async implementation of list_directory used by both the trait method
-    /// and internal helpers (which need to call it without going through the trait).
-    pub(super) async fn list_directory_impl(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
-        let smb_path = self.to_smb_path(path)?;
-        let display_path = self.to_display_path(&smb_path);
-
-        // TRACE, not DEBUG: this fires per listing for both the live pane and the index
-        // scan, and was ~9% of normal file-log volume. The scan's own progress signal is
-        // the throttled `network_scanner: scanning…` DEBUG heartbeat. Bump back with
-        // `RUST_LOG=cmdr_lib::file_system::volume::backends::smb=trace` when chasing a listing bug.
-        trace!(
-            "SmbVolume::list_directory: share={}, input={:?}, smb_path={:?}",
-            self.inner.share_name, path, smb_path
-        );
-
-        let start = std::time::Instant::now();
-
-        let result = {
-            let (tree, mut conn) = self.clone_session().await?;
-            let r = tree.list_directory(&mut conn, &smb_path).await;
-            self.handle_smb_result("list_directory", r)?
-        };
-
-        let entries: Vec<FileEntry> = result
-            .iter()
-            .filter(|e| e.name != "." && e.name != "..")
-            .map(|e| directory_entry_to_file_entry(e, &display_path))
-            .collect();
-
-        trace!(
-            "SmbVolume::list_directory: completed in {:?}, {} entries",
-            start.elapsed(),
-            entries.len()
-        );
-
-        Ok(entries)
-    }
-}
 
 impl Volume for SmbVolume {
     fn name(&self) -> &str {
@@ -165,26 +68,7 @@ impl Volume for SmbVolume {
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let entries = self.list_directory_impl(path).await?;
-            // smb2's list_directory returns all entries at once, so report
-            // progress as a single batch after the call completes. Tally files
-            // / dirs / bytes from the returned entries so the FE scan dialog
-            // doesn't see "0 bytes, 0 dirs" climbing on Direct SMB scans.
-            if let Some(on_progress) = on_progress {
-                let mut tally = ListingProgress::default();
-                for e in &entries {
-                    if e.is_directory {
-                        tally.dirs += 1;
-                    } else {
-                        tally.files += 1;
-                        tally.bytes += e.size.unwrap_or(0);
-                    }
-                }
-                on_progress(tally);
-            }
-            Ok(entries)
-        })
+        Box::pin(self.list_directory_with_progress_impl(path, on_progress))
     }
 
     fn list_directory_for_scan<'a>(
@@ -230,82 +114,18 @@ impl Volume for SmbVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let smb_path = self.to_smb_path(path)?;
-
-            debug!(
-                "SmbVolume::get_metadata: share={}, input={:?}, smb_path={:?}",
-                self.inner.share_name, path, smb_path
-            );
-
-            // For root, synthesize a directory entry
-            if smb_path.is_empty() {
-                return Ok(FileEntry::new(
-                    self.name.clone(),
-                    self.mount_path.to_string_lossy().to_string(),
-                    true,
-                    false,
-                ));
-            }
-
-            let info = {
-                let (tree, mut conn) = self.clone_session().await?;
-                let r = tree.stat(&mut conn, &smb_path).await;
-                self.handle_smb_result("get_metadata", r)?
-            };
-
-            let name = Path::new(&smb_path)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_else(|| smb_path.clone());
-            let display_path = self.to_display_path(&smb_path);
-
-            let mut fe = FileEntry::new(name, display_path, info.is_directory, false);
-            fe.size = if info.is_directory { None } else { Some(info.size) };
-            fe.modified_at = filetime_to_unix_secs(info.modified);
-            fe.created_at = filetime_to_unix_secs(info.created);
-            Ok(fe)
-        })
+        Box::pin(self.get_metadata_impl(path))
     }
 
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move {
-            // A path outside this share doesn't exist ON THIS VOLUME, which is
-            // exactly the question asked.
-            let Ok(smb_path) = self.to_smb_path(path) else {
-                return false;
-            };
-            if smb_path.is_empty() {
-                return true; // Root always exists if we're connected
-            }
-
-            {
-                match self.clone_session().await {
-                    Ok((tree, mut conn)) => tree.stat(&mut conn, &smb_path).await.is_ok(),
-                    Err(_) => false,
-                }
-            }
-        })
+        Box::pin(self.exists_impl(path))
     }
 
     fn is_directory<'a>(
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let smb_path = self.to_smb_path(path)?;
-            if smb_path.is_empty() {
-                return Ok(true); // Root is always a directory
-            }
-
-            let info = {
-                let (tree, mut conn) = self.clone_session().await?;
-                let r = tree.stat(&mut conn, &smb_path).await;
-                self.handle_smb_result("is_directory", r)?
-            };
-
-            Ok(info.is_directory)
-        })
+        Box::pin(self.is_directory_impl(path))
     }
 
     fn can_watch_listings(&self) -> bool {
@@ -419,92 +239,11 @@ impl Volume for SmbVolume {
         parent_path: &'a Path,
         mutation: MutationEvent,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move {
-            use cmdr_fs::volume::DirectoryChange;
-
-            // One call per MUTATION, never per entry: the host walks every cached
-            // listing on the volume, so a per-entry caller turns one directory into
-            // a quadratic sweep.
-            let listings = self.inner.host().listings();
-
-            match mutation {
-                MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
-                    let entry_path = parent_path.join(name);
-                    match self.get_metadata(&entry_path).await {
-                        Ok(entry) => {
-                            let change = if matches!(mutation, MutationEvent::Created(_)) {
-                                DirectoryChange::Added(entry)
-                            } else {
-                                DirectoryChange::Modified(entry)
-                            };
-                            listings.directory_changed(&self.inner.volume_id, parent_path, change);
-                        }
-                        Err(e) => {
-                            warn!(
-                                "SmbVolume::notify_mutation: couldn't stat {}: {}",
-                                entry_path.display(),
-                                e
-                            );
-                        }
-                    }
-                }
-                MutationEvent::Deleted(name) => {
-                    listings.directory_changed(&self.inner.volume_id, parent_path, DirectoryChange::Removed(name));
-                }
-                MutationEvent::Renamed { from, to } => {
-                    let new_path = parent_path.join(&to);
-                    match self.get_metadata(&new_path).await {
-                        Ok(entry) => {
-                            listings.directory_changed(
-                                &self.inner.volume_id,
-                                parent_path,
-                                DirectoryChange::Renamed {
-                                    old_name: from,
-                                    new_entry: entry,
-                                },
-                            );
-                        }
-                        Err(e) => {
-                            warn!(
-                                "SmbVolume::notify_mutation: couldn't stat renamed entry {}: {}",
-                                new_path.display(),
-                                e
-                            );
-                        }
-                    }
-                }
-            }
-        })
+        Box::pin(self.notify_mutation_impl(parent_path, mutation))
     }
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            // Polled every 5 s per share for as long as a pane shows it (~480 lines
-            // an hour), and each one says only "we asked again". Rolled up per share
-            // so the bundle still shows the polls flowing, and at what rate, without
-            // one line per round trip. A failure is never rolled up: it goes through
-            // `handle_smb_result` below.
-            if let Some(batch) = SPACE_INFO_LOG.record(&self.inner.share_name) {
-                if batch.is_rolled_up() {
-                    debug!(
-                        "SmbVolume::get_space_info: share={} ×{} in {}s",
-                        self.inner.share_name,
-                        batch.count,
-                        batch.elapsed.as_secs()
-                    );
-                } else {
-                    debug!("SmbVolume::get_space_info: share={}", self.inner.share_name);
-                }
-            }
-
-            let info = {
-                let (tree, mut conn) = self.clone_session().await?;
-                let r = tree.fs_info(&mut conn).await;
-                self.handle_smb_result("get_space_info", r)?
-            };
-
-            Ok(fs_info_to_space_info(&info))
-        })
+        Box::pin(self.get_space_info_impl())
     }
 
     fn space_poll_interval(&self) -> Option<Duration> {
@@ -516,120 +255,18 @@ impl Volume for SmbVolume {
         path: &'a Path,
         content: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let smb_path = self.to_smb_path(path)?;
-            let data = content.to_vec();
-
-            debug!(
-                "SmbVolume::create_file: share={}, path={:?}",
-                self.inner.share_name, smb_path
-            );
-
-            {
-                let (tree, conn) = self.clone_session().await?;
-                // No-clobber contract via the exclusive-create writer
-                // (`FileCreate` disposition): if the file already exists the
-                // server returns `STATUS_OBJECT_NAME_COLLISION`, which the
-                // smb2 crate maps to `ErrorKind::AlreadyExists`. The earlier
-                // stat-then-write workaround left a microsecond TOCTOU
-                // window; this closes it atomically at the protocol layer.
-                let writer_result = tree.create_file_writer_exclusive(conn, &smb_path).await;
-                let mut writer = self.handle_smb_result("create_file(open)", writer_result)?;
-                if !data.is_empty() {
-                    let write_result = writer.write_chunk(&data).await;
-                    self.handle_smb_result("create_file(write_chunk)", write_result)?;
-                }
-                let finish_result = writer.finish().await;
-                self.handle_smb_result("create_file(finish)", finish_result)?;
-            }
-
-            if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
-                && let Some(parent_display) = self.display_path_for(parent)
-            {
-                self.notify_mutation(
-                    &self.inner.volume_id,
-                    &parent_display,
-                    MutationEvent::Created(name.to_string_lossy().to_string()),
-                )
-                .await;
-            }
-            Ok(())
-        })
+        Box::pin(self.create_file_impl(path, content))
     }
 
     fn create_directory<'a>(
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let smb_path = self.to_smb_path(path)?;
-
-            debug!(
-                "SmbVolume::create_directory: share={}, path={:?}",
-                self.inner.share_name, smb_path
-            );
-
-            {
-                let (tree, mut conn) = self.clone_session().await?;
-                let result = tree.create_directory(&mut conn, &smb_path).await;
-                self.handle_smb_result("create_directory", result)?;
-            }
-
-            if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
-                && let Some(parent_display) = self.display_path_for(parent)
-            {
-                self.notify_mutation(
-                    &self.inner.volume_id,
-                    &parent_display,
-                    MutationEvent::Created(name.to_string_lossy().to_string()),
-                )
-                .await;
-            }
-            Ok(())
-        })
+        Box::pin(self.create_directory_impl(path))
     }
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let smb_path = self.to_smb_path(path)?;
-
-            debug!(
-                "SmbVolume::delete: share={}, path={:?}",
-                self.inner.share_name, smb_path
-            );
-
-            // Try delete_file first (one round-trip). If the path is a directory,
-            // the server returns STATUS_FILE_IS_A_DIRECTORY; then try delete_directory.
-            // This avoids a stat round-trip for every file in bulk deletes.
-            let file_result = {
-                let (tree, mut conn) = self.clone_session().await?;
-                let r = tree.delete_file(&mut conn, &smb_path).await;
-                self.handle_smb_result("delete_file", r)
-            };
-
-            match file_result {
-                Ok(()) => {} // File deleted successfully
-                Err(VolumeError::IsADirectory(_)) => {
-                    // Expected fall-through: path is a directory, retry with delete_directory.
-                    let (tree, mut conn) = self.clone_session().await?;
-                    let r = tree.delete_directory(&mut conn, &smb_path).await;
-                    self.handle_smb_result("delete_directory", r)?;
-                }
-                Err(e) => return Err(e),
-            }
-
-            if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
-                && let Some(parent_display) = self.display_path_for(parent)
-            {
-                self.notify_mutation(
-                    &self.inner.volume_id,
-                    &parent_display,
-                    MutationEvent::Deleted(name.to_string_lossy().to_string()),
-                )
-                .await;
-            }
-            Ok(())
-        })
+        Box::pin(self.delete_impl(path))
     }
 
     fn rename<'a>(
@@ -638,108 +275,20 @@ impl Volume for SmbVolume {
         to: &'a Path,
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let smb_from = self.to_smb_path(from)?;
-            let smb_to = self.to_smb_path(to)?;
-
-            debug!(
-                "SmbVolume::rename: share={}, from={:?}, to={:?}, force={}",
-                self.inner.share_name, smb_from, smb_to, force
-            );
-
-            if force {
-                // Check if dest exists and delete it first
-                let dest_exists = {
-                    let (tree, mut conn) = self.clone_session().await?;
-                    tree.stat(&mut conn, &smb_to).await.is_ok()
-                };
-
-                if dest_exists {
-                    // Try file delete first; if it fails specifically because the path is a
-                    // directory, try directory delete. Any other error (PermissionDenied,
-                    // SharingViolation, …) propagates immediately instead of being masked
-                    // by a second futile delete.
-                    let file_result = {
-                        let (tree, mut conn) = self.clone_session().await?;
-                        let r = tree.delete_file(&mut conn, &smb_to).await;
-                        self.handle_smb_result("rename(delete_dest_file)", r)
-                    };
-                    match file_result {
-                        Ok(()) => {}
-                        Err(VolumeError::IsADirectory(_)) => {
-                            // Expected fall-through: dest is a directory, retry with delete_directory.
-                            // Any other error (PermissionDenied, SharingViolation, …) propagates immediately
-                            // instead of being masked by a second futile delete.
-                            let (tree, mut conn) = self.clone_session().await?;
-                            let r = tree.delete_directory(&mut conn, &smb_to).await;
-                            self.handle_smb_result("rename(delete_dest_dir)", r)?;
-                        }
-                        Err(e) => return Err(e),
-                    }
-                }
-            } else {
-                // Check if dest exists and return AlreadyExists if so
-                let dest_exists = {
-                    let (tree, mut conn) = self.clone_session().await?;
-                    tree.stat(&mut conn, &smb_to).await.is_ok()
-                };
-                if dest_exists {
-                    return Err(VolumeError::AlreadyExists(to.display().to_string()));
-                }
-            }
-
-            {
-                let (tree, mut conn) = self.clone_session().await?;
-                let r = tree.rename(&mut conn, &smb_from, &smb_to).await;
-                self.handle_smb_result("rename", r)?;
-            }
-
-            // Notify listing cache about the rename
-            if let (Some(from_parent), Some(from_name)) = (from.parent(), from.file_name())
-                && let Some(from_parent_display) = self.display_path_for(from_parent)
-            {
-                let to_name = to
-                    .file_name()
-                    .map(|n| n.to_string_lossy().to_string())
-                    .unwrap_or_default();
-
-                if from.parent() == to.parent() {
-                    // Same-directory rename
-                    self.notify_mutation(
-                        &self.inner.volume_id,
-                        &from_parent_display,
-                        MutationEvent::Renamed {
-                            from: from_name.to_string_lossy().to_string(),
-                            to: to_name,
-                        },
-                    )
-                    .await;
-                } else {
-                    // Cross-directory move: remove from source, add in dest
-                    self.notify_mutation(
-                        &self.inner.volume_id,
-                        &from_parent_display,
-                        MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
-                    )
-                    .await;
-                    if let Some(to_parent_display) = to.parent().and_then(|p| self.display_path_for(p)) {
-                        self.notify_mutation(
-                            &self.inner.volume_id,
-                            &to_parent_display,
-                            MutationEvent::Created(to_name),
-                        )
-                        .await;
-                    }
-                }
-            }
-            Ok(())
-        })
+        Box::pin(self.rename_impl(from, to, force))
     }
 
+    /// A share is writable as a BACKEND: every mutation method above is really
+    /// implemented, so `assert_writability_matches_the_mutations_offered` holds.
+    /// A share the server hands us read-only is a per-VOLUME fact that travels as
+    /// the location's `mountIsReadOnly`, and shows up here as a per-operation
+    /// `PermissionDenied` rather than a blanket `false`.
     fn is_writable(&self) -> bool {
         true
     }
 
+    /// Bytes stream out over smb2 (`open_read_stream`), so a share can be the
+    /// source of a cross-volume copy.
     fn supports_export(&self) -> bool {
         true
     }
@@ -749,13 +298,6 @@ impl Volume for SmbVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         self.scan_for_copy_impl(path)
-    }
-
-    fn scan_for_copy_batch<'a>(
-        &'a self,
-        paths: &'a [PathBuf],
-    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.scan_for_copy_batch_impl(paths, None)
     }
 
     /// The scan preview's entry point. Reporting as the walk goes is what keeps

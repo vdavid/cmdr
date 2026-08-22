@@ -8,7 +8,8 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
 - `local_posix.rs` and `mtp/` are implemented here; `archive.rs` and `smb.rs` are one-line re-exports of
   `crates/cmdr-archive` and `crates/cmdr-smb`, each carrying the app-side half of its suites. `InMemoryVolume` rides
   with the trait in `cmdr-fs`. MTP splits by concern the way both remote backends do: `volume_impl` is the whole
-  `impl Volume`, with `streams`, `mapping`, and `scan` beside it.
+  `impl Volume`, with `streams`, `mapping`, and `scan` beside it (SMB carries the pattern further; see
+  `crates/cmdr-smb/CLAUDE.md`).
 
 ## SMB is a crate now
 

@@ -98,11 +98,18 @@ on", not by watching a number.
 ## Layout
 
 - **`volume/volume_impl.rs` holds the ENTIRE `impl Volume for SmbVolume`** because a trait impl can't be split across
-  files. The heavy bodies live as inherent `*_impl` methods in `scan.rs` / `streams.rs`, with `volume_impl.rs` reduced
-  to one-line delegators. A new trait method goes here and delegates; don't try to move a trait method out. It sits on
-  the `file-length` allowlist at its full size on purpose: the trait is wide, so the file is long, and the seams worth
-  having (`session`, `reconnect`, `streams`, `scan_pool`) are already taken. See `e5ea10d02`, which reverted four splits
-  invented to satisfy the line counter and named this module's split as the model of a real one.
+  files, and NOTHING else. Every method body that runs to more than a few lines lives as an inherent `*_impl` method in
+  the concern module that owns it, with `volume_impl.rs` left holding one-line delegators plus the capability flags,
+  whose whole content is the reasoning in their doc comments. A new trait method goes here and delegates; don't try to
+  move a trait method out.
+- **The concerns are named modules, and each one answers a single sentence.** `paths` translates between the app's
+  volume-relative paths and the share-relative ones smb2 speaks; `query` reads the share without changing it (listings,
+  metadata, existence, space); `mutation` changes it and patches the listings that showed it; then `session`,
+  `reconnect`, `state`, `streams`, `scan`, `scan_pool`, `watcher`, `foreground_yield`, and the stateless `mapping`.
+  Splitting further needs a responsibility you can name the same way; a line count is not one. `e5ea10d02` reverted
+  four splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct from its
+  trait impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching into
+  another's internals.
 - **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" WITHOUT a per-device gate.** MTP
   has an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so the signal
   here is time-based instead: the share counts as busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last
@@ -525,7 +532,8 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
 
 - **Server-free, colocated with the module each covers**: `mapping_test.rs` (`DirectoryEntry`→`FileEntry`,
   `FsInfo`→`SpaceInfo`, `smb2::Error`→`VolumeError`), `state_test.rs` (the binary state machine and how it widens),
-  `volume_impl_test.rs` (path translation both ways, re-rooting, every capability flag), `reconnect_test.rs` (the
+  `paths_test.rs` (path translation both ways), `volume_impl_test.rs` (re-rooting and every capability flag),
+  `reconnect_test.rs` (the
   reconnect early-exits, the transitions and the events they suppress, the watch-coverage gate, both retirement paths),
   `streams_test.rs` (the channel-backed `SmbReadStream` consumer and the single-shot write promise), `scan_test.rs` (the
   progress ticker), `retirement_test.rs`, `watcher/archive_refresh_test.rs`, and the inline `mod tests` in

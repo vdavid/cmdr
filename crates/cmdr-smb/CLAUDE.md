@@ -6,8 +6,9 @@ Discovery, the keychain, mounts, the upgrade passes, and every word a human read
 ## Module map
 
 - `src/volume/`: the backend. `mod.rs` (the two structs and the shared prelude), `volume_impl.rs` (the whole
-  `impl Volume`, delegating to `scan` / `streams`), `session` + `reconnect` + `state` (the share-scoped session and its
-  health), `scan_pool`, `mapping`, `foreground_yield`, `watcher/`, `testing` (the Docker fixtures).
+  `impl Volume`: capability flags, one-line delegators for the rest), then one module per concern: `paths`, `query`,
+  `mutation`, `session` + `reconnect` + `state`, `scan` + `scan_pool`, `streams`, `mapping`, `foreground_yield`,
+  `watcher/`, `testing` (the Docker fixtures).
 - `src/{types,errors,connection}.rs`: the share-listing vocabulary, `smb2::Error` classification, the address builder.
   Re-exported at the root, so callers write `cmdr_smb::`.
 
@@ -19,8 +20,8 @@ Discovery, the keychain, mounts, the upgrade passes, and every word a human read
   itself**: on death it kicks the ONE reconnect path (`spawn_watcher_death_reconnect`), which respawns it AND resumes
   the index. ❌ No second reconnect loop, and never cancel it on a pane close.
 - **`SmbVolume` is a per-mount-root instance over a shared `Arc<SmbVolumeInner>`**; `rerooted` moves a share to another
-  mount for one allocation, and share-scoped background work reads `SmbVolumeInner::self_handle()` rather than the
-  volume id, which answers with the SUCCESSOR after a swap.
+  mount for one allocation, and share-scoped background work reads `SmbVolumeInner::self_handle()`, never the volume id
+  (which answers with the SUCCESSOR after a swap).
 - **A replaced volume is SUPERSEDED, never unmounted**: `on_superseded` retires the id-scoped parts and leaves `state` /
   `tree` / `client` alone for the transfers still holding an `Arc` (tearing it down once killed a live NAS copy). ❌ A
   promotion must never call either hook on the instance it replaces: both act on the SHARED session.
@@ -28,7 +29,7 @@ Discovery, the keychain, mounts, the upgrade passes, and every word a human read
   hardcode it `true`: smb2 keeps browsing a share whose mount is gone, so the drag it breaks fails silently.
 - **`write_from_stream` drives an OWNED `FileWriter` on a cloned `Connection`**, ❌ never one borrowed while the client
   mutex is held across the upload (the QNAP deadlock). Error paths `abort()` then delete the partial, or corrupt bytes
-  linger at the destination.
+  linger.
 - **Bulk work draws on the refcounted pool of extra sessions** (`scan_pool.rs`); a dead member retries on a sibling and
   ❌ never moves the MAIN volume's connection state.
 - **smb2 bounds every wait itself**: ❌ no timeout layer of ours, and never read a missed keepalive as death.
@@ -44,7 +45,7 @@ Discovery, the keychain, mounts, the upgrade passes, and every word a human read
 - **`specta` is pinned to the app's exact version.** Two `specta` crates in one graph make these `Type` impls stop
   satisfying `tauri-specta`, and the app's command signatures collect them transitively.
 - **A test that reads `.inner` belongs HERE**, and `volume::testing` ❌ never hands `.inner` out. Which side a cell
-  lives on: `DETAILS.md` § "Which side a test lives on".
+  lives on: `DETAILS.md`.
 - **`#![deny(missing_docs)]` holds**, and ❌ no user-facing prose: a `message: String` on `ShareListError` is a log
   diagnostic, and the host renders every word a human reads.
 - ❌ Never gate behavior on `cfg(test)`; use `any(test, feature = "testing")`, or it flips silently the moment a

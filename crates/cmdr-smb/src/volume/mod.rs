@@ -24,6 +24,9 @@ use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize};
 
 mod foreground_yield;
 mod mapping;
+mod mutation;
+mod paths;
+mod query;
 mod reconnect;
 mod scan;
 mod scan_pool;

@@ -487,13 +487,6 @@ impl Volume for MtpVolume {
         self.scan_for_copy_impl(path)
     }
 
-    fn scan_for_copy_batch<'a>(
-        &'a self,
-        paths: &'a [PathBuf],
-    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.scan_for_copy_batch_with_progress(paths, None)
-    }
-
     fn scan_for_copy_batch_with_progress<'a>(
         &'a self,
         paths: &'a [PathBuf],

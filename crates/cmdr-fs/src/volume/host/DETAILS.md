@@ -81,7 +81,7 @@ most entangled one, with archive, MTP, and local POSIX checked for anything SMB 
 ### `ListingHost`
 
 - `directory_changed` ⇐ `listing::caching::notify_directory_changed`. SMB calls it from three arms of
-  `volume_impl.rs::notify_mutation` and from ten of the watcher's (nine in the event batch, one for an overflow
+  `mutation.rs::notify_mutation_impl` and from ten of the watcher's (nine in the event batch, one for an overflow
   `FullRefresh`); MTP calls it from four. One call covers three host concerns — the panes, the file index, the
   cloud-badge cache — so a backend never learns which of them exist.
 - `authoritative_listing` ⇐ `listing::caching::try_get_authoritative_listing`. The fresh-listing oracle, consulted per
