@@ -87,9 +87,9 @@ requests (four streams at depth 2) already reach 37 MB/s, and nothing above that
 - **`max_pending_requests` moves nothing**, as the plan said it wouldn't. Raising it from the default 100 to 400
   reproduced the curve within noise (1 stream: 4.8 / 9.4 / 18.4 / 32.6 / 28.4 / 24.3). It is a flush TRIGGER, not a
   ceiling — nothing in the crate blocks a sender — so it stays at the default.
-- **Peak resident memory is 30.6 MiB** with eight volumes connected and all thirty-two streams running at once; eight
-  idle volumes cost 14.9 MiB over a 3.1 MiB baseline, so a mounted server is ~1.5 MiB. The 16 MiB channel window is an
-  advertised credit rather than an allocation, so principle 5 is comfortable and the window stays where it is.
+- **Peak resident memory is 25–31 MiB** with eight volumes connected and all thirty-two streams running at once; eight
+  idle volumes cost ~14.7 MiB over a 3.1 MiB baseline, so a mounted server is about 1.5 MiB. The 16 MiB channel window
+  is an advertised credit rather than an allocation, so principle 5 is comfortable and the window stays where it is.
 - **The 50 ms ceiling is the link, not the fixture.** The same curve without `netem` runs 180–280 MB/s at every depth,
   matching the crate evaluation's loopback column, so the ~38 MB/s is not the container's half-CPU cap.
 
