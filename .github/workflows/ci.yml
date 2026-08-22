@@ -32,7 +32,7 @@ jobs:
 
       # Filter design rules (the `ci-coverage` check validates the non-glob paths exist):
       # - A filter must cover every path its job's checks read, not just the obvious app dir.
-      #   Example: `rust` includes `test/smb-servers/` because the SMB integration tests run
+      #   Example: `rust` includes both fixture-server dirs because the integration lane runs
       #   against those container configs; `svelte` includes `eslint-plugins/` and
       #   `test/e2e-shared/` because Vitest and ESLint cover them (see vitest.config.ts).
       # - `.mise.toml` (toolchain versions) and this workflow file are in every filter:
@@ -46,6 +46,7 @@ jobs:
           filters: |
             rust:
               - 'apps/desktop/src-tauri/**'
+              - 'apps/desktop/test/sftp-servers/**'
               - 'apps/desktop/test/smb-servers/**'
               - 'crates/**'
               - 'Cargo.toml'
@@ -253,7 +254,7 @@ jobs:
       - name: Run Rust tests
         run: ./scripts/check/check --check desktop-rust-tests --ci
 
-      - name: Run SMB integration tests
+      - name: Run the Docker fixture integration tests (SMB and SFTP)
         run: ./scripts/check/check --check desktop-rust-integration-tests --ci
 
   # ===========================================

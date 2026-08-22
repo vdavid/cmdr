@@ -41,10 +41,12 @@ var agentDocExclusions = []string{
 }
 
 // rustInputs mirrors ci.yml's `rust` filter: everything the desktop Rust checks
-// compile or read. The smb-servers dir is in here because the SMB integration
-// tests run against those container configs.
+// compile or read. Both fixture-server dirs are in here because the integration
+// lane runs against those container configs, and a change to one is a change to
+// what the lane tests.
 var rustInputs = inputs([]string{
 	"apps/desktop/src-tauri/**",
+	"apps/desktop/test/sftp-servers/**",
 	"apps/desktop/test/smb-servers/**",
 	"crates/**",
 	"tools/**",

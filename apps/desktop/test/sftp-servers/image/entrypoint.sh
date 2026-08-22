@@ -70,7 +70,13 @@ if [ "${AUTH#*key}" != "$AUTH" ] || [ "$AUTH" = "passphrase" ]; then
         ssh-keygen -q -t ed25519 -N '' -f /keys/id_ed25519
     fi
     cp /keys/id_ed25519.pub /home/"$USER_NAME"/.ssh/authorized_keys
-    chmod 600 /keys/id_ed25519 /home/"$USER_NAME"/.ssh/authorized_keys
+    chmod 600 /home/"$USER_NAME"/.ssh/authorized_keys
+    # ❗ World-readable, deliberately. `/keys` is a bind mount, the container runs
+    # as root, and the integration lane runs on Linux — where a 600 root-owned
+    # file is unreadable to the test process that has to load it. It's a
+    # throwaway key generated at container start for a server reachable only on
+    # localhost, and nothing here checks file modes the way `ssh` does.
+    chmod 644 /keys/id_ed25519 /keys/id_ed25519.pub
     chown -R "$USER_NAME":"$USER_NAME" /home/"$USER_NAME"/.ssh
 fi
 
