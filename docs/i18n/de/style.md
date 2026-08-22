@@ -135,6 +135,12 @@ Dateien".
 
 - Case agreement interacts with counts and with surrounding prepositions. A counted noun often sits in a case the
   English doesn't mark ("in 3 Ordnern", dative plural `-n`). Get the case right inside each branch.
+- **The dative `-n` needs a preposition to earn it.** A bare count phrase is NOMINATIVE: "12 Ordner", "12 Bilder", never
+  "12 Ordnern". The `-n` only appears where something governs it ("in 3 Ordnern", "von 12 Bildern", "mit Dateien und
+  Ordnern"). This is easy to get wrong when a fragment is written on its own and only later lands in a sentence, which
+  is how `selectionInfo.noSelectionDirs` shipped as "und 12 Ordnern". Read the assembled sentence, not the fragment. In
+  the reference pile, every `Ordnern` follows a preposition and every counted one reads `%d Ordner` (KDE Dolphin, GNOME
+  Nautilus, Xfce Thunar) · high.
 - German has grammatical gender (der/die/das); article and adjective must agree with the counted noun in every branch.
 - **Text AFTER a plural block has to work with both branches' verbs.** English often puts the verb inside the branches
   ("# file is still open" / "# files are still open") and shares the rest outside. German keeps that split, so check the

@@ -1070,7 +1070,7 @@
   "@fileExplorer.selectionInfo.noSelectionFiles": {
     "sourceHash": "3c08428"
   },
-  "fileExplorer.selectionInfo.noSelectionDirs": " und {count, plural, one {{countText} Ordner} other {{countText} Ordnern}}",
+  "fileExplorer.selectionInfo.noSelectionDirs": " und {count, plural, one {{countText} Ordner} other {{countText} Ordner}}",
   "@fileExplorer.selectionInfo.noSelectionDirs": {
     "sourceHash": "e1259ef"
   },
