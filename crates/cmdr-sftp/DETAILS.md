@@ -803,17 +803,25 @@ The servers themselves: `apps/desktop/test/sftp-servers/README.md`.
 **not** in `surfaceGuardedCrates` yet: every entry there records David's say-so for its numbers, so the number is
 measured here and the entry waits for him rather than being invented.
 
-Measured 2026-08-22 with the check's own `countSurface`, the crate complete through the IPC surface:
+Measured 2026-08-23 with the check's own `countSurface`, the crate complete through the IPC surface:
 
 | bucket         | `cmdr-sftp` | `cmdr-smb` | `cmdr-archive` |
 | -------------- | ----------- | ---------- | -------------- |
-| root promises  | 15          | 15         | 35             |
-| public modules | 8           | 4          | 4              |
-| items in them  | 45          | 18         | 36             |
+| root promises  | 10          | 15         | 35             |
+| public modules | 3           | 4          | 4              |
+| items in them  | 23          | 18         | 36             |
 
-The eight public modules are `auth`, `errors`, `extensions`, `known_hosts`, `params`, `transport`, `trust`, and
-`volume`. ❗ Only three of them are named by path from outside the crate: `auth` (for `AuthRungUsed`), `transport` (for
+Three public modules, and each is named by path from outside the crate: `auth` (for `AuthRungUsed`), `transport` (for
 `HostKeyPrompt` and its kind), and `volume` (for `approve_host_key`, `HostKeyApproval`, and the `testing` fixtures).
-Everything else reaches the app through a root re-export, so narrowing `errors`, `extensions`, `known_hosts`, `params`,
-and `trust` to `pub(crate)` would cost nothing today and set a much tighter ceiling. That's a visibility decision worth
-making deliberately, alongside the ceiling itself, rather than as a side effect.
+`errors`, `extensions`, `known_hosts`, `params`, and `trust` are `pub(crate)`; the four types the app does need from
+them (`SftpConnectError`, `ServerExtensions`, `SftpConnectionParams`, and the `Volume` types) arrive as root
+re-exports. ❗ Keep it that way: a `pub mod` promises everything `pub` inside it, and `trust` and `known_hosts` in
+particular hold the man-in-the-middle decision, which nothing outside this crate has any business reaching into.
+
+**The recommended ceiling is 10 / 3 / 23**, the measurement itself. That's the shape `cmdr-smb` and `cmdr-archive`
+carry: no slack, so the first widening is a conversation rather than a silent drift.
+
+⚠️ One `pub` item in `transport` is unreachable from outside even so: `presented_host_key` returns
+`trust::PresentedHostKey`, whose module is now `pub(crate)`. It has exactly one caller, `volume::approve_host_key`, so
+`pub(crate)` fits it. Narrowing it is worth doing when the ceiling lands rather than before, so the number the entry
+records is the number the code has today.

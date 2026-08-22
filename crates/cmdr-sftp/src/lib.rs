@@ -7,12 +7,12 @@
 use cmdr_sftp as _;
 
 pub mod auth;
-pub mod errors;
-pub mod extensions;
-pub mod known_hosts;
-pub mod params;
+pub(crate) mod errors;
+pub(crate) mod extensions;
+pub(crate) mod known_hosts;
+pub(crate) mod params;
 pub mod transport;
-pub mod trust;
+pub(crate) mod trust;
 pub mod volume;
 
 pub use errors::SftpConnectError;
