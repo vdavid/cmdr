@@ -99,9 +99,12 @@ and the diff proves it.
 - **A field that classifies state carries a `specta`-typed enum, never a `String`.** The generated union is what lets a
   consumer branch exhaustively instead of string-matching. The enum may be WIDER than any single producer's internal
   state machine: `volume-connection-changed` ships
-  `VolumeConnection = 'connected' | 'disconnected' | 'needs_credentials'` while SMB's own `ConnectionState` is binary,
-  because `needs_credentials` is a transient signal that accompanies a failed reconnect rather than a state a backend
-  rests in. A consumer that only handles part of the union narrows explicitly (`volume-store.svelte.ts`'s
+  `VolumeConnection = 'connected' | 'disconnected' | 'needs_credentials' | 'needs_host_key_approval'` while SMB's own
+  `ConnectionState` is binary, because `needs_credentials` is a transient signal that accompanies a failed reconnect
+  rather than a state a backend rests in, and `needs_host_key_approval` is SFTP's alone. ❗ That fourth value is
+  payload-free on purpose — the enum is `Copy` on both sides of `wire_state` — so the host key it is ABOUT reaches the
+  frontend through `connectSftpVolume`'s typed outcome instead (`crates/cmdr-sftp/DETAILS.md` § "Connecting from the
+  frontend"). A consumer that only handles part of the union narrows explicitly (`volume-store.svelte.ts`'s
   `toSmbConnectionState` returns `null` for the variant its picker can't render), so the gap is a typed decision instead
   of a silent `else`.
 - **A struct event that's ALSO emitted bare delivers `null` at runtime, which the generated `{ field }` type doesn't

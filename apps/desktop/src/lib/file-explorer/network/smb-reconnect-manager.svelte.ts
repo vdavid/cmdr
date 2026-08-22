@@ -86,6 +86,15 @@ class SmbReconnectManager {
         case 'connected':
           this.handleConnected(volumeId)
           break
+        case 'needs_host_key_approval':
+          // Deliberately ignored for now, and the gap is the point: an SFTP
+          // server whose host key stopped matching must never take the
+          // sign-in path, because a password box in front of a possible
+          // man-in-the-middle is how a password gets typed into one. The
+          // banner that sends the user to look at the key instead is part of
+          // the SFTP sign-in UI, which isn't built yet. Until it is, the
+          // volume simply stops retrying, which is the safe half.
+          break
       }
     })
   }

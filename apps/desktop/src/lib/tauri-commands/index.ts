@@ -790,3 +790,29 @@ export type { UpdateCheckResult } from './updates'
 
 // Dev/benchmark IPC
 export { benchmarkLog } from './debug'
+
+// SFTP servers: connecting, host-key trust, secrets, and the saved-server list
+export {
+  connectSftpVolume,
+  disconnectSftpVolume,
+  approveSftpHostKey,
+  forgetSftpHostKey,
+  listTrustedSftpHostKeys,
+  saveSftpCredentials,
+  hasSftpCredentials,
+  deleteSftpCredentials,
+  getKnownSftpServers,
+  updateKnownSftpServer,
+  forgetKnownSftpServer,
+} from './sftp'
+export type {
+  ConnectedSftpVolume,
+  HostKeyPrompt,
+  KnownSftpServer,
+  SftpAuthRung,
+  SftpConnectResult,
+  SftpHostKeyApprovalResult,
+  SftpHostKeyIdentity,
+  SftpSignInPrompt,
+  SftpTarget,
+} from './sftp'

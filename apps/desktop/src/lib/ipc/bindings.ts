@@ -3419,6 +3419,129 @@ export const commands = {
    */
   setNetworkEnabled: (enabled: boolean) => __TAURI_INVOKE<void>('set_network_enabled', { enabled }),
   /**
+   *  Opens an SFTP volume, or says what stands in the way.
+   *
+   *  On success the volume is registered under its id and the server is added to
+   *  the known-servers list, so a picker sees it next launch.
+   *
+   *  ❗ Secrets are ❌ NOT arguments. A password and a key passphrase come from the
+   *  secret store (`save_sftp_credentials`) at the moment the session is built and
+   *  die with it; what travels here is the key file's PATH, which is a connection
+   *  parameter.
+   */
+  connectSftpVolume: (
+    displayName: string,
+    host: string,
+    port: number,
+    username: string,
+    remoteRoot: string,
+    keyFile: string | null,
+    useAgent: boolean,
+  ) =>
+    __TAURI_INVOKE<SftpConnectResult>('connect_sftp_volume', {
+      displayName,
+      host,
+      port,
+      username,
+      remoteRoot,
+      keyFile,
+      useAgent,
+    }),
+  /**
+   *  Drops an SFTP volume's session and takes it out of the volume registry.
+   *
+   *  Answers whether there was an SFTP volume under that id. ❗ Dropping the
+   *  session IS the shutdown; there is no `close()` to call, and the one the
+   *  protocol crate offers hangs forever over an SSH channel.
+   */
+  disconnectSftpVolume: (volumeId: string) => __TAURI_INVOKE<boolean>('disconnect_sftp_volume', { volumeId }),
+  /**
+   *  Records a host key the user approved, ❗ only if the server still presents it.
+   *
+   *  The second half of the two-phase flow. Time passes between the prompt and the
+   *  click, so the fingerprint is re-checked against a fresh key exchange before
+   *  anything is written: that is what stops an approval being replayed against a
+   *  key the user never read. The re-check offers no credential, so it can never
+   *  spend an authentication attempt.
+   *
+   *  After a `Recorded`, call `connect_sftp_volume` again for a fresh dial.
+   */
+  approveSftpHostKey: (host: string, port: number, algorithm: string, fingerprint: string) =>
+    __TAURI_INVOKE<SftpHostKeyApprovalResult>('approve_sftp_host_key', { host, port, algorithm, fingerprint }),
+  /**
+   *  Drops the approval for `(host, port, algorithm)`, so the next connection to
+   *  that server is first contact again.
+   *
+   *  Answers whether anything was there. ❌ Doesn't touch `~/.ssh/known_hosts`: a
+   *  server trusted through that file stays trusted, and `ssh-keygen -R` is what
+   *  forgets one of those.
+   */
+  forgetSftpHostKey: (host: string, port: number, algorithm: string) =>
+    __TAURI_INVOKE<boolean>('forget_sftp_host_key', { host, port, algorithm }),
+  // Every SSH host key this machine has approved, for a settings screen.
+  listTrustedSftpHostKeys: () => __TAURI_INVOKE<TrustedHostKey[]>('list_trusted_sftp_host_keys'),
+  /**
+   *  Saves the secret for one account on one server.
+   *
+   *  A password for the password and keyboard-interactive rungs. ❌ Never a key
+   *  passphrase: persisting one would turn the rung that deliberately cannot
+   *  reconnect unattended into one that can, which is the opposite of what
+   *  encrypting a key asked for.
+   *
+   *  ❗ On a blocking task: the store can put a Keychain prompt in front of this,
+   *  and a modal dialog on the async runtime stalls every other volume.
+   */
+  saveSftpCredentials: (host: string, port: number, username: string, secret: string) =>
+    typedError<null, KeychainError>(__TAURI_INVOKE('save_sftp_credentials', { host, port, username, secret })),
+  /**
+   *  Whether a secret is stored for one account on one server.
+   *
+   *  ❗ There is deliberately no command that HANDS the secret to the frontend: the
+   *  backend reads the store itself at the moment it builds a session, and a
+   *  secret that crosses IPC is a secret in a renderer process.
+   */
+  hasSftpCredentials: (host: string, port: number, username: string) =>
+    __TAURI_INVOKE<boolean>('has_sftp_credentials', { host, port, username }),
+  // Forgets the stored secret for one account on one server.
+  deleteSftpCredentials: (host: string, port: number, username: string) =>
+    typedError<null, KeychainError>(__TAURI_INVOKE('delete_sftp_credentials', { host, port, username })),
+  // Every SFTP server the user has connected to.
+  getKnownSftpServers: () => __TAURI_INVOKE<KnownSftpServer[]>('get_known_sftp_servers'),
+  /**
+   *  Adds a server, or replaces the entry for the same `(host, port, username)`.
+   *
+   *  `connect_sftp_volume` already does this on every successful connection; this
+   *  is for editing one without connecting (renaming it, changing its root or its
+   *  key file).
+   */
+  updateKnownSftpServer: (
+    host: string,
+    port: number,
+    username: string,
+    displayName: string,
+    remoteRoot: string,
+    keyFile: string | null,
+    useAgent: boolean,
+  ) =>
+    __TAURI_INVOKE<void>('update_known_sftp_server', {
+      host,
+      port,
+      username,
+      displayName,
+      remoteRoot,
+      keyFile,
+      useAgent,
+    }),
+  /**
+   *  Drops a server from the list, answering whether one was there.
+   *
+   *  ❌ Leaves the stored secret and the trusted host key alone: forgetting a
+   *  server from a list isn't the same request as revoking its credential or its
+   *  identity. `delete_sftp_credentials` and `forget_sftp_host_key` are those.
+   */
+  forgetKnownSftpServer: (host: string, port: number, username: string) =>
+    __TAURI_INVOKE<boolean>('forget_known_sftp_server', { host, port, username }),
+  /**
    *  Tauri command: returns the current macOS accent color as a hex string.
    *
    *  `NSColor` is main-thread-only, so we hop to the AppKit main thread via
@@ -4280,6 +4403,20 @@ export type ConnectedDeviceInfo = {
   device: MtpDeviceInfo
   // Available storages on the device.
   storages: MtpStorageInfo[]
+}
+
+// A live SFTP volume, and what the reconnect banner needs to know about it.
+export type ConnectedSftpVolume = {
+  /**
+   *  The id every listing, tab, saved path, and index entry is filed under.
+   *  Derived from `host:port:username`, so two accounts on one server are two
+   *  volumes.
+   */
+  volumeId: string
+  // Which credential proved this session.
+  rung: SftpAuthRung
+  // What a "Sign in" affordance may ask for if this session later drops.
+  signIn: SftpSignInPrompt
 }
 
 export type ConnectionDiagnosticsDto = {
@@ -5467,6 +5604,40 @@ export type HistoryFilters = {
 // Search modes recorded in history. Mirrors the frontend `SearchMode` union.
 export type HistoryMode = 'ai' | 'filename' | 'regex'
 
+/**
+ *  A server whose key nobody has approved yet, and what to say about it.
+ *
+ *  Carries serde and `specta::Type` because this is the value the approval flow
+ *  hands the frontend and gets back: `approve_sftp_host_key` re-verifies the
+ *  fingerprint against what the server presents now, which is what stops an
+ *  approval being replayed against a different key.
+ */
+export type HostKeyPrompt = {
+  // The server, as addressed.
+  host: string
+  // Its port.
+  port: number
+  // The SSH key-type name it presented.
+  algorithm: string
+  // The OpenSSH `SHA256:…` fingerprint a human compares.
+  fingerprint: string
+  // Whether this is first contact or a key that CHANGED.
+  kind: HostKeyPromptKind
+}
+
+/**
+ *  Which of the two host-key moments a prompt is for.
+ *
+ *  ❗ Two variants rather than one flag because they must never share a path: a
+ *  first-seen key is routine, and a changed one is the shape a
+ *  man-in-the-middle takes.
+ */
+export type HostKeyPromptKind =
+  // Nothing is stored for this host under this algorithm.
+  | 'unknown'
+  // Something IS stored, and the server presented a different key.
+  | 'changed'
+
 // Whether a host was discovered via mDNS or added manually by the user.
 export type HostSource = 'discovered' | 'manual'
 
@@ -5980,6 +6151,39 @@ export type KnownNetworkShare = {
   lastKnownAuthOptions: AuthOptions
   // None for guest.
   username: string | null
+}
+
+// One SFTP server the user has connected to, and how to reach it again.
+export type KnownSftpServer = {
+  // The server, as the user typed it.
+  host: string
+  // Its port. 22 everywhere but a jump box or a container.
+  port: number
+  /**
+   *  The account to sign in as. ❗ Part of the identity: two accounts on one
+   *  server see different files under the same paths.
+   */
+  username: string
+  /**
+   *  What to call it in the UI. The user's own label, falling back to the host
+   *  when they never gave one.
+   */
+  displayName: string
+  // The remote directory to open at. Absolute, server-side.
+  remoteRoot: string
+  /**
+   *  A private key file to offer. ❗ A path, not a secret: its passphrase (if
+   *  it has one) lives in the secret store and dies with the session it
+   *  unlocked.
+   */
+  keyFile: string | null
+  // Whether the running ssh-agent may be asked.
+  useAgent: boolean
+  /**
+   *  When this server was last connected to, ISO 8601, so a picker can sort by
+   *  recency.
+   */
+  lastConnectedAt: string
 }
 
 /**
@@ -9114,6 +9318,115 @@ export type SettingsChanged = {
   showHiddenFiles: boolean
 }
 
+/**
+ *  Which credential proved a live session.
+ *
+ *  Flat where the backend's own enum nests, because the frontend's five banners
+ *  are exactly these five rows. What each may do when the session drops:
+ *  `crates/cmdr-sftp/DETAILS.md` § "What each rung may do, and what the frontend
+ *  sees".
+ */
+export type SftpAuthRung =
+  // The ssh-agent signed. Comes back on its own until the identity goes away.
+  | 'agent'
+  // An unencrypted key file. Comes back on its own.
+  | 'key_file'
+  /**
+   *  A passphrase-protected key file. ❗ Cannot come back unattended: the
+   *  passphrase isn't held past the session it unlocked.
+   */
+  | 'encrypted_key_file'
+  // A password from the secret store. One unattended retry, then a person.
+  | 'password'
+  // The server drove the prompts. Never unattended.
+  | 'keyboard_interactive'
+
+/**
+ *  What connecting produced.
+ *
+ *  ❗ Every outcome is a variant, including the ones that read as failures: the
+ *  sign-in UI branches on all of them, and ❌ none may be recovered from a
+ *  message.
+ */
+export type SftpConnectResult =
+  // A live volume, already registered and already in the server list.
+  | ({ outcome: 'connected' } & ConnectedSftpVolume)
+  /**
+   *  The server's host key needs a human. ❗ No session is held across the
+   *  prompt: the dial has been dropped, and approving is followed by calling
+   *  `connect_sftp_volume` again.
+   */
+  | ({ outcome: 'needs_host_key_approval' } & HostKeyPrompt)
+  /**
+   *  The key is explicitly revoked in `~/.ssh/known_hosts`. ❌ Not approvable
+   *  at all: a revocation says this exact key is known to be compromised.
+   */
+  | ({ outcome: 'host_key_revoked' } & SftpHostKeyIdentity)
+  /**
+   *  Every rung was refused. ❗ Retrying with the same secret can lock the
+   *  account; only a freshly typed one moves this forward.
+   */
+  | { outcome: 'authentication_rejected' }
+  /**
+   *  Nothing was ever offered: no agent, no readable key file, no stored
+   *  secret. ❗ Not a rejection, and saying "wrong password" to someone who has
+   *  never entered one is what collapsing the two does.
+   */
+  | { outcome: 'needs_credentials' }
+  // The handshake didn't finish inside the connect budget.
+  | { outcome: 'timed_out' }
+  // No route, refused, DNS, or a server with no SFTP subsystem.
+  | { outcome: 'unreachable' }
+
+// What approving a host key produced.
+export type SftpHostKeyApprovalResult =
+  // Recorded. Call `connect_sftp_volume` again and it walks past the prompt.
+  | { outcome: 'recorded' }
+  /**
+   *  ❗ Nothing was recorded: the server presents a different key now than the
+   *  one that was approved. Carries what it presents, so the flow starts over
+   *  on the real key rather than silently trusting it.
+   */
+  | ({ outcome: 'superseded' } & HostKeyPrompt)
+  /**
+   *  The server couldn't be re-asked, so nothing was recorded. Approving is a
+   *  live question, and an unanswered one is not a yes.
+   */
+  | { outcome: 'unreachable' }
+
+// One host key, named the way a human checks it against `ssh-keygen -lf`.
+export type SftpHostKeyIdentity = {
+  // The SSH key-type name the server presented.
+  algorithm: string
+  // Its OpenSSH `SHA256:…` fingerprint.
+  fingerprint: string
+}
+
+/**
+ *  What a "Sign in" affordance may ask for on a volume built on a given rung.
+ *
+ *  ❗ The backend answers this rather than the frontend deriving it from the
+ *  rung, because getting it wrong ships a button that answers `NotSupported`
+ *  every time it's pressed.
+ */
+export type SftpSignInPrompt =
+  /**
+   *  ❌ Nothing to ask, so ❌ no sign-in button. An agent session and an
+   *  unencrypted key file come back on their own; there is no secret a person
+   *  could type that would help.
+   */
+  | 'nothing'
+  /**
+   *  The account's password. Saved to the secret store on a successful sign-in,
+   *  so the next reconnect is silent.
+   */
+  | 'password'
+  /**
+   *  The passphrase on the key file. ❗ Used for that session and ❌ never
+   *  saved: persisting it would undo what encrypting the key asked for.
+   */
+  | 'key_passphrase'
+
 // Information about a discovered share.
 export type ShareInfo = {
   // The share name as the server spells it (`archive`, never `//nas/archive`).
@@ -9816,6 +10129,30 @@ export type TranslatedQuery = {
   excludeSystemDirs: boolean | null
 }
 
+// One approved host key.
+export type TrustedHostKey = {
+  // The server, as the user addressed it.
+  host: string
+  /**
+   *  Its port. Part of the identity: a jump box and a container on one machine
+   *  are different servers.
+   */
+  port: number
+  /**
+   *  The SSH key-type name (`ssh-ed25519`, `rsa-sha2-512`). ❗ Part of the key
+   *  too: a server may hold several types and present any of them, so a store
+   *  keyed by host alone reports a changed key on a healthy server.
+   */
+  algorithm: string
+  /**
+   *  The OpenSSH `SHA256:…` fingerprint, which is what a human compares
+   *  against `ssh-keygen -lf`.
+   */
+  fingerprint: string
+  // When it was approved, ISO 8601, so the settings screen can show it.
+  approvedAt: string
+}
+
 /**
  *  Snapshot of a pane's type-to-jump state for MCP exposure.
  *
@@ -10111,6 +10448,18 @@ export type VolumeConnection =
    *  attempt rather than describing a state the volume settles in.
    */
   | 'needs_credentials'
+  /**
+   *  The server's SSH host key isn't the one this machine trusts for it, so the
+   *  backend stopped rather than reconnecting. ❗ Never collapsed into
+   *  [`NeedsCredentials`](Self::NeedsCredentials): a changed key is the shape a
+   *  man-in-the-middle takes, and a sign-in prompt in front of one is how a password
+   *  gets typed into it. Recovery is the user opening the server again, where
+   *  `connect_sftp_volume`'s typed outcome carries the fingerprint to look at.
+   *
+   *  ❗ Payload-free, and it stays that way: this enum is `Copy` on both sides of
+   *  `events::volume_mapping::wire_state`.
+   */
+  | 'needs_host_key_approval'
 
 /**
  *  Typed `volume-connection-changed` Tauri event. The frontend reconnect manager

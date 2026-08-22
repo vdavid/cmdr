@@ -304,8 +304,12 @@ async fn sftp_integration_a_changed_host_key_stops_the_loop_without_asking_for_a
 
     // The server's identity changes under a live volume: the store now holds a
     // fingerprint this server will never present.
-    host.host_keys()
-        .record(&params.host, params.port, "ssh-ed25519", "SHA256:notthekeythisserverholds");
+    host.host_keys().record(
+        &params.host,
+        params.port,
+        "ssh-ed25519",
+        "SHA256:notthekeythisserverholds",
+    );
     volume.simulate_session_loss().await;
     let reads_before = credentials.reads();
 

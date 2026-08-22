@@ -39,7 +39,8 @@ all live on this side of the boundary.
   `index_mapping/walk_announcer.rs` — the one-second hold on the coverage-branch pair (below).
 - `volume_mapping.rs` — `TauriVolumeEvents`, which turns a storage backend's typed connection transitions into
   `VolumeConnectionChanged`, mapping `cmdr-fs`'s `VolumeConnection` onto `network`'s wire enum in the one match where
-  the two meet.
+  the two meet. ❗ Both enums are `Copy`, so a state that must CARRY something (a host key to look at) hands it
+  over through a command's typed outcome instead.
 
 There are TWO `TauriEventSink` types in the crate: this one (for `IndexEvent`) and
 `file_system::write_operations::TauriEventSink` (for `OperationEventSink`). Deliberate — each is its area's Tauri

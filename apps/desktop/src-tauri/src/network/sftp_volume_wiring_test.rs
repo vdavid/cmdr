@@ -25,8 +25,7 @@ const FIXTURE: &str = "sftp-servers/start.sh (sftp-fixture)";
 /// ❗ Agent off on purpose: a developer's own agent would answer for the password
 /// rung these cells are exercising, and they would pass without testing it.
 fn stock_params() -> SftpConnectionParams {
-    SftpConnectionParams::new("127.0.0.1", fixture_port("OPENSSH", 12480), FIXTURE_USER, FIXTURE_ROOT)
-        .without_agent()
+    SftpConnectionParams::new("127.0.0.1", fixture_port("OPENSSH", 12480), FIXTURE_USER, FIXTURE_ROOT).without_agent()
 }
 
 /// Seeds the real secret store and the real trust store, the way a user who had
@@ -97,8 +96,7 @@ async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_serv
 async fn sftp_integration_disconnecting_drops_the_session_and_unregisters_the_volume() {
     let params = stock_params();
     signed_in_already(&params).await;
-    let SftpConnection::Connected { volume_id, .. } =
-        sftp_volume_wiring::connect_and_register("fixture", params).await
+    let SftpConnection::Connected { volume_id, .. } = sftp_volume_wiring::connect_and_register("fixture", params).await
     else {
         panic!("a fixture with its key approved and its password stored must connect");
     };

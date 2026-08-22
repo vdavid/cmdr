@@ -320,6 +320,29 @@ manual install paths). A notice describes a situation, not an event: once the se
 genuine regression is worth saying out loud again. Without the clear, one bad startup would mute the notice for the
 rest of the run.
 
+## The two SFTP stores, and why neither is a widened SMB one
+
+`sftp_host_keys.rs` holds what this machine TRUSTS (`known-sftp-hosts.json`), `sftp_known_servers.rs` holds what the
+user has CONNECTED TO (`known-sftp-servers.json`), and the secret store holds the passwords. Three files because they
+answer three different questions and have three different lifetimes: forgetting a server from a list is not revoking its
+password, and neither is deciding its identity changed. The commands keep that split (`forget_known_sftp_server`,
+`delete_sftp_credentials`, `forget_sftp_host_key`), so the UI can ask exactly what it means.
+
+❗ **A server entry is keyed `(host, port, username)`** — the same triple `cmdr_fs::volume::sftp_volume_id` derives from,
+with the same case rules (the host folds, the account doesn't). A drift there files one volume under two entries. A host
+key is keyed `(host, port, algorithm)` instead, because a server may hold several key types and present any of them;
+that is `crates/cmdr-sftp/DETAILS.md` § "Host-key trust".
+
+❌ **Not a widened `KnownNetworkShare`.** That type carries a `share_name` an SFTP server has no equivalent of, and an
+`AuthOptions` that can only say guest-or-credentials — which expresses neither a key file nor an ssh-agent. Bending it
+would leave two backends sharing fields that mean different things in each.
+
+`sftp_volume_wiring.rs` is the only path a volume gets registered on, and it does three things in one order: dial
+through `cmdr_sftp::connect_sftp_volume` (which runs the dial in a task, because a connect cancelled mid-handshake
+panics inside the SFTP engine), register while retiring any predecessor with `on_superseded`, and remember the server.
+`disconnect` downcasts through `Volume::as_any` rather than guessing at the id's shape, then DROPS the session — ❌
+never `Sftp::close()`, which hangs forever over an SSH channel.
+
 ## The one edge that must not come back
 
 `network/` and the SMB backend (`crates/cmdr-smb/src/volume/`) sat in a single nine-module dependency cycle for a

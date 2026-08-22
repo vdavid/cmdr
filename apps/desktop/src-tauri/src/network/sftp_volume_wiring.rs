@@ -63,7 +63,8 @@ pub enum SftpConnection {
 /// inside the SFTP engine (`crates/cmdr-sftp/DETAILS.md` § "Crate hazards").
 pub async fn connect_and_register(display_name: &str, params: SftpConnectionParams) -> SftpConnection {
     let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
-    let outcome = cmdr_sftp::connect_sftp_volume(display_name, &volume_id, params.clone(), crate::volume_host::host()).await;
+    let outcome =
+        cmdr_sftp::connect_sftp_volume(display_name, &volume_id, params.clone(), crate::volume_host::host()).await;
 
     let volume = match outcome {
         Ok(SftpConnectOutcome::Connected(volume)) => volume,

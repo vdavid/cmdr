@@ -621,6 +621,117 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
   the same escape hatch the filename problem uses. The two answers have to agree, or a pane polls something that always
   refuses.
 
+## Connecting from the frontend
+
+Everything the sign-in UI needs, so building it takes no second file. The commands are `commands.*` in
+`apps/desktop/src/lib/ipc/bindings.ts` and typed wrappers in `apps/desktop/src/lib/tauri-commands/sftp.ts`; the Rust
+side is `apps/desktop/src-tauri/src/commands/sftp.rs`, whose types carry the same doc comments the bindings do.
+
+❌ **Nothing here is a string to parse.** Every command answers a typed value, and the reason the outcome enum is wide
+is that a sign-in UI genuinely branches on all of it.
+
+### The commands
+
+- `connectSftpVolume({ displayName, host, port, username, remoteRoot, keyFile, useAgent })` → `SftpConnectResult`. On
+  `connected` the volume is already registered and the server is already in the saved list.
+- `disconnectSftpVolume(volumeId)` → `boolean` (whether there was an SFTP volume under that id). Drops the session and
+  unregisters the volume.
+- `approveSftpHostKey({ host, port, algorithm, fingerprint })` → `SftpHostKeyApprovalResult`.
+- `forgetSftpHostKey(host, port, algorithm)` → `boolean`. The next connection to that server is first contact again.
+- `listTrustedSftpHostKeys()` → `TrustedHostKey[]` (`host`, `port`, `algorithm`, `fingerprint`, `approvedAt`), for a
+  settings screen.
+- `saveSftpCredentials(host, port, username, secret)` / `hasSftpCredentials(...)` → `boolean` /
+  `deleteSftpCredentials(...)`. The two writing ones throw a `KeychainError`. ❗ There is deliberately **no** command
+  that hands a secret back: the backend reads the store itself when it builds a session.
+- `getKnownSftpServers()` → `KnownSftpServer[]` / `updateKnownSftpServer(target)` /
+  `forgetKnownSftpServer(host, port, username)` → `boolean`. A successful connect already calls the middle one, so the
+  update command is for editing a server without connecting (renaming it, changing its root or key file).
+
+**Reconnecting is the backend-neutral pair that is unfortunately named `smb`**: `reconnectSmbVolume(volumeId)` and
+`reconnectSmbVolumeWithCredentials(volumeId, username, password)` call `Volume::attempt_reconnect` and
+`Volume::reconnect_with_credentials` on whatever is registered, so they work on an SFTP volume as they stand. For the
+passphrase rung, `password` carries the key passphrase.
+
+`SftpConnectResult` is tagged on `outcome`:
+
+- `connected` → `{ volumeId, rung, signIn }`. `volumeId` is what to navigate to; the other two are below.
+- `needs_host_key_approval` → `{ host, port, algorithm, fingerprint, kind }`, `kind` being `unknown` or `changed`.
+- `host_key_revoked` → `{ algorithm, fingerprint }`. ❌ Not approvable at all: `@revoked` in `~/.ssh/known_hosts` says
+  this exact key is known to be compromised, so there is no button, only an explanation.
+- `authentication_rejected` → something was offered and the server said no. A sign-in form is the right answer.
+- `needs_credentials` → nothing was ever offered (no agent, no readable key file, no stored secret). ❗ Also a sign-in
+  form, but ❌ never worded as "wrong password": the user may never have entered one.
+- `timed_out`, `unreachable` → the network or the address. Retrying is the only move.
+
+### The two-phase approval, in order
+
+1. `connectSftpVolume(...)` answers `needs_host_key_approval` and **the dial is already gone**. ❗ No session is held
+   across the prompt, so a user who walks away costs nothing and there is no handle to expire.
+2. Show the fingerprint. ❗ `kind: 'unknown'` is first contact and may be one click; `kind: 'changed'` is the shape a
+   man-in-the-middle takes and ❌ must never share that path — different copy, different weight, and the honest way out
+   is checking the key against the server by another route.
+3. `approveSftpHostKey({ host, port, algorithm, fingerprint })`. It re-asks the server before writing anything:
+   - `recorded` → go to step 4.
+   - `superseded` → ❗ **nothing was written**, because the server now presents a different key than the one shown. It
+     carries what the server presents now; start over at step 2 with that.
+   - `unreachable` → the server couldn't be re-asked, so nothing was recorded. Approving is a live question and an
+     unanswered one is not a yes.
+4. `connectSftpVolume(...)` again, for a fresh dial.
+
+❗ **Step 3's re-check is what makes the approval safe.** Time passes between the fingerprint being shown and the click,
+and recording whatever came back through IPC without re-asking is exactly how one approval becomes trust for a key
+nobody read. The re-check runs a key exchange and refuses the connection, so it offers no credential and can never spend
+an authentication attempt against a server that locks accounts.
+
+### What the banner shows, per rung
+
+`connected` carries `rung` (which credential proved the session) and `signIn` (what a later "Sign in" may ask for). ❗
+`signIn` is the backend's answer rather than something to derive from `rung`: getting it wrong ships a button that
+answers `NotSupported` every time it's pressed.
+
+| `rung`                 | unattended reconnect                       | `signIn`         | attended reconnect                 |
+| ---------------------- | ------------------------------------------ | ---------------- | ---------------------------------- |
+| `agent`                | dials freely; a removed identity refuses   | `nothing`        | `NotSupported`                     |
+| `key_file`             | dials freely                               | `nothing`        | `NotSupported`                     |
+| `encrypted_key_file`   | `NeedsCredentials` without dialing         | `key_passphrase` | uses the secret, ❌ never saves it |
+| `password`             | ONE dial, then `NeedsCredentials` for good | `password`       | saves the secret, then dials       |
+| `keyboard_interactive` | `NeedsCredentials` without dialing         | `password`       | saves the secret, then dials       |
+
+- ❗ **The username field in a sign-in form is read-only, and it is the volume's own account.**
+  `reconnect_with_credentials` refuses a username that isn't this volume's, because the volume id is
+  `host:port:username`: signing in as somebody else is opening another volume, not mending this one. Two accounts on one
+  server are two volumes, two saved-server entries, and two secret-store entries.
+- ❗ **A key passphrase is never saved**, however convenient that would be: persisting it would turn the rung that
+  deliberately cannot reconnect unattended into one that can, which is the opposite of what encrypting a key asked for.
+  So a passphrase-protected volume asks again after every drop, and that is correct.
+
+### Mid-life: the key that stopped matching
+
+The connection state rides `volume-connection-changed` as `VolumeConnection`, which now has a fourth value,
+`needs_host_key_approval`, alongside `connected` / `disconnected` / `needs_credentials`.
+
+- ❗ **A host key that no longer matches never produces a sign-in prompt.** A password box in front of a possible
+  man-in-the-middle is how a password gets typed into one. The volume reports `needs_host_key_approval`, the backoff
+  loop stops, and recovery is the user opening the server again, where `connectSftpVolume` answers
+  `needs_host_key_approval` with the fingerprint to look at.
+- ❗ **The event is payload-free**, so it carries no fingerprint: `VolumeConnection` is `Copy` on both sides of
+  `events/volume_mapping.rs`'s `wire_state` and crosses IPC as a `specta::Type`, and widening either end is a compile
+  error there by design. The key reaches the user through the connect command instead. That is the whole reason approval
+  has two carriers.
+- The frontend's reconnect manager currently **ignores this state on purpose**, with a comment saying so, until the
+  banner that sends the user to look at the key exists. Ignoring it is the safe half: the volume has already stopped
+  retrying.
+
+### What is NOT wired yet
+
+- **An SFTP volume doesn't appear in the sidebar.** `connectSftpVolume` registers it in the volume registry, so
+  navigating by `volumeId` works and every write path can reach it, but `volume_listing::complete` (which builds what
+  `listVolumes` returns) has no SFTP arm. Adding one is the sidebar's own design question — which section, what icon,
+  what an eject means — and it belongs with the sign-in UI rather than ahead of it.
+- **`resolve_path_volume` / `resolve_location` don't answer for a remote path.** SFTP paths are plain server-side
+  absolute paths with no `sftp://` scheme in front, so `/srv/data/x` on a server is spelled exactly like a local path.
+  Whatever the sidebar does about identity, path resolution has to agree with it.
+
 ## Not supported, and say so out loud
 
 **`~/.ssh/config` is not read.** No `ProxyJump`, no `Match`, no per-host aliases, no `IdentityFile` resolution. Someone

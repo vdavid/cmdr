@@ -77,7 +77,7 @@ fn the_credential_service_carries_the_port_and_the_scope_carries_the_account() {
 #[test]
 fn the_connect_outcome_names_itself_on_the_wire() {
     let refused = serde_json::to_value(SftpConnectResult::AuthenticationRejected).expect("serializes");
-    assert_eq!(refused["outcome"], "authenticationRejected");
+    assert_eq!(refused["outcome"], "authentication_rejected");
 
     let needs = serde_json::to_value(SftpConnectResult::NeedsHostKeyApproval(HostKeyPrompt {
         host: "naspolya".to_string(),
@@ -87,7 +87,7 @@ fn the_connect_outcome_names_itself_on_the_wire() {
         kind: cmdr_sftp::transport::HostKeyPromptKind::Changed,
     }))
     .expect("serializes");
-    assert_eq!(needs["outcome"], "needsHostKeyApproval");
+    assert_eq!(needs["outcome"], "needs_host_key_approval");
     assert_eq!(
         needs["kind"], "changed",
         "❗ a changed key must be distinguishable from a first-seen one without reading prose"

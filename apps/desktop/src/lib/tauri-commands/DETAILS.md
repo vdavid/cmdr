@@ -40,6 +40,11 @@ commands, and notable non-obvious placements.
 - **`networking.ts`**: SMB host discovery, share listing, Keychain credential ops, mounting, direct-connection upgrade,
   in-place `reconnectSmbVolume` and per-volume `disconnectSmbVolume`.
 - **`mtp.ts`**: Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy.
+- **`sftp.ts`**: SFTP servers: connect (a tagged `SftpConnectResult`, never a message to parse), disconnect, the
+  two-phase host-key approval, the saved-server list, and the password store. The whole frontend contract, including the
+  approval sequence and the per-rung banner table: `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend". ❗
+  Reconnecting an SFTP volume uses `networking.ts`'s `reconnectSmbVolume` / `reconnectSmbVolumeWithCredentials`, which
+  are backend-neutral despite the name.
 - **`licensing.ts`**: license status, activation, expiry, server validation.
 - **`settings.ts`**: port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands.
 - **`tab.ts`**: tab context menu: `showTabContextMenu`, `onTabContextAction`.
@@ -97,6 +102,7 @@ commands, and notable non-obvious placements.
 - Volumes/disk access → `storage.ts`.
 - Network/SMB → `networking.ts`.
 - MTP/Android → `mtp.ts`.
+- SFTP servers → `sftp.ts`.
 - Licensing → `licensing.ts`.
 - Settings/AI → `settings.ts`.
 - Clipboard file operations (copy/cut/paste files via system clipboard) → `clipboard-files.ts`.

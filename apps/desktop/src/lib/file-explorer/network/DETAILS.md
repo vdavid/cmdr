@@ -201,6 +201,12 @@ thin wrapper over `NetworkLoginForm`). Submitting calls `reconnectSmbVolumeWithC
 the new password and reconnects; success arrives as a `connected` event that clears the state and reloads. Pinned by
 `smb-reconnect-manager.svelte.test.ts`.
 
+❗ `needs_host_key_approval` is the fourth `volume-connection-changed` state, and the manager **ignores it on purpose**,
+with a comment saying so. It only ever describes an SFTP volume whose host key stopped matching, and that must never
+take the sign-in path: a password box in front of a possible man-in-the-middle is how a password gets typed into one.
+Ignoring it is the safe half — the backend has already stopped retrying — and the banner that sends the user to look at
+the key belongs with the SFTP sign-in UI. `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
+
 Lazy-nav path: opening a share that's already `Disconnected` (no fresh event in flight), the FilePane `$effect` notices
 `currentVolumeInfo?.smbConnectionState === 'disconnected'` and calls `manager.startCycle(volumeId)` directly.
 

@@ -63,6 +63,7 @@
     "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.test.ts": 1160,
     "apps/desktop/src/lib/query-ui/QueryDialog.svelte": 823,
     "apps/desktop/src/lib/query-ui/QueryResults.svelte": 945,
+    "apps/desktop/src/lib/tauri-commands/index.ts": 819,
     "apps/desktop/src/lib/ui/ModalDialog.svelte": 823,
     "apps/desktop/src/routes/(main)/+page.svelte": 854,
     "apps/desktop/src/routes/(main)/command-dispatch.characterization.test.ts": 871,

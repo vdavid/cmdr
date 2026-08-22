@@ -97,11 +97,12 @@ function dedupeById(list: VolumeInfo[]): VolumeInfo[] {
  * Narrows a `volume-connection-changed` state to the `smbConnectionState` the volume
  * picker renders, or `null` when the picker has nothing to show for it.
  *
- * The two unions overlap only partly, in both directions. `needs_credentials` is a
- * reconnect-manager-only signal (an attempt gave up on a stale password, the session's
- * health didn't change), so the picker keeps showing whatever it had. `os_mount` runs the
- * other way: only the backend's `enrich_smb_connection_state` decides it, so it never
- * arrives on this event.
+ * The two unions overlap only partly, in both directions. `needs_credentials` and
+ * `needs_host_key_approval` are reconnect-manager-only signals (an attempt gave up on a
+ * stale password, or on a host key that no longer matches; the session's health didn't
+ * change), so the picker keeps showing whatever it had. `os_mount` runs the other way:
+ * only the backend's `enrich_smb_connection_state` decides it, so it never arrives on
+ * this event.
  */
 function toSmbConnectionState(state: VolumeConnection): SmbConnectionState | null {
   switch (state) {
@@ -110,6 +111,8 @@ function toSmbConnectionState(state: VolumeConnection): SmbConnectionState | nul
     case 'disconnected':
       return 'disconnected'
     case 'needs_credentials':
+      return null
+    case 'needs_host_key_approval':
       return null
   }
 }

@@ -259,9 +259,11 @@ on. The two dev CLIs and the vendored fork are ordinary members.
 - `crates/cmdr-sftp/`: everything Cmdr says to an SFTP server. `SftpVolume` over one SSH connection with one SFTP
   channel, on `russh` + `openssh-sftp-client`, plus host-key trust-on-first-use, the four-rung auth ladder, windowed
   read and write paths, and an error policy that puts back the variants SFTP v3 collapses into one catch-all code. The
-  app-side halves are the trusted-host-key store (`apps/desktop/src-tauri/src/network/sftp_host_keys.rs`) and, later,
-  the connect commands; the crate itself asks the app nothing directly. Its guardrails, the two crate hazards it is
-  shaped around, and which side a test lives on: `crates/cmdr-sftp/CLAUDE.md`. Which crate it is built on and why:
+  app-side halves are the trusted-host-key store, the saved-server list, and the connect wiring
+  (`apps/desktop/src-tauri/src/network/sftp_*.rs`) plus the IPC surface (`apps/desktop/src-tauri/src/commands/sftp.rs`);
+  the crate itself asks the app nothing directly. What the frontend calls and what each answer means:
+  `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend". Its guardrails, the two crate hazards it is shaped
+  around, and which side a test lives on: `crates/cmdr-sftp/CLAUDE.md`. Which crate it is built on and why:
   `docs/notes/sftp-crate-evaluation-2026-08-22.md`. Its Docker servers: `apps/desktop/test/sftp-servers/README.md`.
 - `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
   watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address

@@ -123,7 +123,10 @@ pub struct ConnectedSftpVolume {
 /// sign-in UI branches on all of them, and ❌ none may be recovered from a
 /// message.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase", tag = "outcome")]
+// Snake-case variant names, the house style for a wire enum (`VolumeConnection`,
+// `ConnectionMode`, `KeychainError`). Field names inside stay camelCase, from
+// each payload struct's own attribute.
+#[serde(rename_all = "snake_case", tag = "outcome")]
 pub enum SftpConnectResult {
     /// A live volume, already registered and already in the server list.
     Connected(ConnectedSftpVolume),
@@ -159,7 +162,7 @@ pub struct SftpHostKeyIdentity {
 
 /// What approving a host key produced.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase", tag = "outcome")]
+#[serde(rename_all = "snake_case", tag = "outcome")]
 pub enum SftpHostKeyApprovalResult {
     /// Recorded. Call `connect_sftp_volume` again and it walks past the prompt.
     Recorded,
@@ -312,9 +315,11 @@ pub async fn save_sftp_credentials(
     secret: String,
 ) -> Result<(), KeychainError> {
     let service = credential_key(&host, port);
-    crate::commands::util::blocking_with_timeout(std::time::Duration::from_secs(15), Err(keychain_timed_out()), move || {
-        keychain::save_credentials(&service, Some(&username), &username, &secret)
-    })
+    crate::commands::util::blocking_with_timeout(
+        std::time::Duration::from_secs(15),
+        Err(keychain_timed_out()),
+        move || keychain::save_credentials(&service, Some(&username), &username, &secret),
+    )
     .await
 }
 
@@ -338,9 +343,11 @@ pub async fn has_sftp_credentials(host: String, port: u16, username: String) -> 
 #[specta::specta]
 pub async fn delete_sftp_credentials(host: String, port: u16, username: String) -> Result<(), KeychainError> {
     let service = credential_key(&host, port);
-    crate::commands::util::blocking_with_timeout(std::time::Duration::from_secs(15), Err(keychain_timed_out()), move || {
-        keychain::delete_credentials(&service, Some(&username))
-    })
+    crate::commands::util::blocking_with_timeout(
+        std::time::Duration::from_secs(15),
+        Err(keychain_timed_out()),
+        move || keychain::delete_credentials(&service, Some(&username)),
+    )
     .await
 }
 
@@ -371,7 +378,12 @@ pub fn get_known_sftp_servers() -> Vec<KnownSftpServer> {
 /// key file).
 #[tauri::command]
 #[specta::specta]
-#[allow(clippy::too_many_arguments)]
+// Seven flat parameters rather than a struct, so the generated TS call site names
+// each one; the shape mirrors `connect_sftp_volume`.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one argument per saved-server field, mirroring the connect command"
+)]
 pub fn update_known_sftp_server(
     host: String,
     port: u16,

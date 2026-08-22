@@ -140,7 +140,10 @@ fn forgetting_one_algorithm_leaves_the_others_trusted() {
         AppHostKeys.verdict(&host, 22, "rsa-sha2-512", "SHA256:bbb"),
         HostKeyVerdict::Matches
     );
-    assert_eq!(AppHostKeys.trusted_algorithms(&host, 22), vec!["rsa-sha2-512".to_string()]);
+    assert_eq!(
+        AppHostKeys.trusted_algorithms(&host, 22),
+        vec!["rsa-sha2-512".to_string()]
+    );
 }
 
 #[test]
@@ -154,5 +157,8 @@ fn the_listing_shows_what_a_settings_screen_would_offer_to_forget() {
         .collect();
     assert_eq!(mine.len(), 1);
     assert_eq!(mine[0].fingerprint, "SHA256:aaa");
-    assert!(!mine[0].approved_at.is_empty(), "a settings row shows when it was approved");
+    assert!(
+        !mine[0].approved_at.is_empty(),
+        "a settings row shows when it was approved"
+    );
 }

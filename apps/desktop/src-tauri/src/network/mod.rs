@@ -22,6 +22,17 @@ pub mod sftp_host_keys;
 pub mod sftp_known_servers;
 pub mod sftp_volume_wiring;
 
+/// Reads both SFTP stores off disk: the host keys the user has approved and the
+/// servers they've connected to.
+///
+/// One call at startup, ❗ before any volume is built: a dial that runs before
+/// the trust store is loaded reads every server as first contact and asks about
+/// a key the user already approved.
+pub fn load_sftp_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
+    sftp_host_keys::load_trusted_host_keys(app);
+    sftp_known_servers::load_known_sftp_servers(app);
+}
+
 #[cfg(target_os = "macos")]
 #[path = "mount.rs"]
 pub mod mount;

@@ -51,6 +51,16 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`volumes_linux.rs`** (Linux): same interface as `volumes.rs` (including `resolve_location`), delegates to the
   `volumes_linux` module.
 - **`mtp.rs`**: full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan).
+- **`sftp.rs`**: the SFTP surface and the wire vocabulary it speaks — `connect_sftp_volume` (a tagged
+  `SftpConnectResult`, never a string), `disconnect_sftp_volume`, `approve_sftp_host_key` / `forget_sftp_host_key` /
+  `list_trusted_sftp_host_keys`, the credential trio (`save` / `has` / `delete`, keyed `host:port` + username, each on a
+  blocking task because the Keychain can prompt), and the known-servers trio (`get` / `update` / `forget`). ❗ There is
+  deliberately no command that returns a stored secret. The flow behind the commands is
+  `network::sftp_volume_wiring`; the frontend contract is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the
+  frontend".
+  - ❗ **Reconnecting an SFTP volume uses `network.rs`'s two `reconnect_smb_*` commands**, which are backend-neutral
+    despite the name: both delegate to a `Volume` trait method on whatever is registered. Renaming them is a
+    cross-backend follow-up rather than something SFTP does on its own.
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   in-place reconnect (`reconnect_smb_volume`: backend single-flighted via `Volume::attempt_reconnect`;
   `reconnect_smb_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via

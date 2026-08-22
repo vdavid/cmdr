@@ -5,10 +5,12 @@ Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` function
 
 ## Module map
 
-One file per domain (`network.rs`, `mtp.rs`, `clipboard.rs`, etc.), plus `mod.rs` (re-exports + platform gates),
+One file per domain (`network.rs`, `sftp.rs`, `mtp.rs`, `clipboard.rs`, etc.), plus `mod.rs` (re-exports + platform
+gates),
 `util.rs` (timeout and budget helpers), `file_system/`, `media_index/`, and `importance.rs`. AI and space-poller
 commands register from their own modules instead, so there's intentionally no `ai` or `space_poller` here; the index
-subsystems are the reverse, since they can't carry `tauri::`. Inventory and rationale: `DETAILS.md`.
+subsystems are the reverse, since they can't carry `tauri::`. Inventory and rationale: `DETAILS.md`; `sftp.rs`'s
+frontend contract is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
 
 ## Must-knows
 
@@ -27,10 +29,10 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
     writes down and a spinner can't be sized against (`scan_volume_for_conflicts`).
   - ❌ Don't wrap `sync_status`: it applies its own deadline. `../file_system/sync_status/DETAILS.md`.
 - **A command the FRONTEND can re-issue faster than it completes needs a `BlockingBudget` (`util.rs`)**, one `static`
-  per family, SHARED across the commands contending for the same resource (`media_index/mod.rs`). The pool caps at 512
-  threads; one unbounded command took all of it and froze the panes and volume picker until restart.
-- **`expand_tilde` is conditional**: for listing it's gated on `volume_id == "root"`, for writes always applied. ❌
-  Never tilde-expand an MTP or network path.
+  per family, SHARED across the commands contending for one resource (`media_index/mod.rs`). The pool caps at 512
+  threads; one unbounded command took all of it and froze the app until restart.
+- **`expand_tilde` is conditional**: gated on `volume_id == "root"` for listing, always applied for writes. ❌ Never
+  tilde-expand an MTP or network path.
 - **A path from the transfer dialog is VOLUME-RELATIVE and must be anchored at the boundary that still knows its
   volume**: `write_operations::resolve_dest_path` (every copy / move / compress / scan dest) and `path_exists`. Handing
   `/photos` to a share unanchored fails the write before any I/O. `../file_system/volume/CLAUDE.md`.
