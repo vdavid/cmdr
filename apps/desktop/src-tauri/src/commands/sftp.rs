@@ -328,6 +328,10 @@ pub async fn save_sftp_credentials(
 /// ❗ There is deliberately no command that HANDS the secret to the frontend: the
 /// backend reads the store itself at the moment it builds a session, and a
 /// secret that crosses IPC is a secret in a renderer process.
+///
+/// A store that didn't answer in time reads as `false`, which is the one place
+/// collapsing a timeout into its fallback is harmless: both answers send the
+/// frontend to the same place, which is to ask.
 #[tauri::command]
 #[specta::specta]
 pub async fn has_sftp_credentials(host: String, port: u16, username: String) -> bool {
@@ -353,11 +357,10 @@ pub async fn delete_sftp_credentials(host: String, port: u16, username: String) 
 
 /// The answer when the secret store didn't come back in time.
 ///
-/// A Keychain prompt the user never dismissed looks exactly like this, and it's
-/// `AccessDenied` for the same reason a dismissed prompt is: nothing was stored,
-/// and only the user can change that.
+/// ❗ `Other`, ❌ not `AccessDenied`: a store that never answered is not the same
+/// event as a user saying no, and the frontend words those differently.
 fn keychain_timed_out() -> KeychainError {
-    KeychainError::AccessDenied("the secret store didn't answer".to_string())
+    KeychainError::Other("the secret store didn't answer".to_string())
 }
 
 // ============================================================================

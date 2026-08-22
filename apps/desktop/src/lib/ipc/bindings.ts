@@ -3499,6 +3499,10 @@ export const commands = {
    *  ❗ There is deliberately no command that HANDS the secret to the frontend: the
    *  backend reads the store itself at the moment it builds a session, and a
    *  secret that crosses IPC is a secret in a renderer process.
+   *
+   *  A store that didn't answer in time reads as `false`, which is the one place
+   *  collapsing a timeout into its fallback is harmless: both answers send the
+   *  frontend to the same place, which is to ask.
    */
   hasSftpCredentials: (host: string, port: number, username: string) =>
     __TAURI_INVOKE<boolean>('has_sftp_credentials', { host, port, username }),

@@ -765,9 +765,23 @@ would put it in the gating lane under runner contention.
 
 The servers themselves: `apps/desktop/test/sftp-servers/README.md`.
 
-## The public surface is not capped yet
+## The public surface, measured and waiting for its ceiling
 
 `cmdr-sftp` is in `guardedIndexCrates`, so nothing here may name `cmdr`, `tauri`, or `tauri-specta`. It is deliberately
-**not** in `surfaceGuardedCrates` yet: every entry there records David's say-so for its numbers, and the surface is
-still growing (the byte path and the IPC surface both add to it). Measure it once the crate is complete and ask him for
-the ceiling rather than inventing one.
+**not** in `surfaceGuardedCrates` yet: every entry there records David's say-so for its numbers, so the number is
+measured here and the entry waits for him rather than being invented.
+
+Measured 2026-08-22 with the check's own `countSurface`, the crate complete through the IPC surface:
+
+| bucket         | `cmdr-sftp` | `cmdr-smb` | `cmdr-archive` |
+| -------------- | ----------- | ---------- | -------------- |
+| root promises  | 15          | 15         | 35             |
+| public modules | 8           | 4          | 4              |
+| items in them  | 45          | 18         | 36             |
+
+The eight public modules are `auth`, `errors`, `extensions`, `known_hosts`, `params`, `transport`, `trust`, and
+`volume`. ❗ Only three of them are named by path from outside the crate: `auth` (for `AuthRungUsed`), `transport` (for
+`HostKeyPrompt` and its kind), and `volume` (for `approve_host_key`, `HostKeyApproval`, and the `testing` fixtures).
+Everything else reaches the app through a root re-export, so narrowing `errors`, `extensions`, `known_hosts`, `params`,
+and `trust` to `pub(crate)` would cost nothing today and set a much tighter ceiling. That's a visibility decision worth
+making deliberately, alongside the ceiling itself, rather than as a side effect.
