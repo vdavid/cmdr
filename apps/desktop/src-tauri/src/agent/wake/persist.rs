@@ -82,7 +82,7 @@ fn clamp_to_u64(value: i64) -> u64 {
 mod tests {
     use super::*;
     use crate::agent::store::{MIGRATIONS, run_migrations};
-    use crate::agent::wake::{ChangeCounters, EventBundle, FolderImportance};
+    use crate::agent::wake::{ChangeCounters, DEFAULT_HOT_DELAY, EventBundle, FolderImportance};
 
     fn migrated_conn() -> Connection {
         let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
@@ -112,9 +112,15 @@ mod tests {
         inbox.admit(
             bundle("/Users/someone/Downloads", 4, 100),
             FolderImportance::Scored(0.9),
+            DEFAULT_HOT_DELAY,
             1_000,
         );
-        inbox.admit(bundle("/tmp/log", 2, 100), FolderImportance::Unknown, 1_000);
+        inbox.admit(
+            bundle("/tmp/log", 2, 100),
+            FolderImportance::Unknown,
+            DEFAULT_HOT_DELAY,
+            1_000,
+        );
 
         save_all(&conn, &inbox).expect("write");
         let loaded = load(&conn).expect("read");
@@ -128,7 +134,12 @@ mod tests {
     fn a_cold_row_reloads_without_a_deadline() {
         let conn = migrated_conn();
         let mut inbox = Inbox::default();
-        inbox.admit(bundle("/tmp/junk", 2, 100), FolderImportance::Floored, 1_000);
+        inbox.admit(
+            bundle("/tmp/junk", 2, 100),
+            FolderImportance::Floored,
+            DEFAULT_HOT_DELAY,
+            1_000,
+        );
         save_all(&conn, &inbox).expect("write");
 
         let loaded = load(&conn).expect("read");
@@ -146,6 +157,7 @@ mod tests {
         inbox.admit(
             bundle("/Users/someone/Downloads", 4, 100),
             FolderImportance::Scored(0.9),
+            DEFAULT_HOT_DELAY,
             1_000,
         );
         for row in inbox.rows() {
@@ -164,12 +176,14 @@ mod tests {
         inbox.admit(
             bundle("/Users/someone/Downloads", 4, 100),
             FolderImportance::Scored(0.9),
+            DEFAULT_HOT_DELAY,
             1_000,
         );
         save_all(&conn, &inbox).expect("write");
         inbox.admit(
             bundle("/Users/someone/Downloads", 3, 100),
             FolderImportance::Scored(0.9),
+            DEFAULT_HOT_DELAY,
             1_100,
         );
         save_all(&conn, &inbox).expect("write again");
@@ -183,7 +197,12 @@ mod tests {
     fn clearing_leaves_nothing_to_load() {
         let conn = migrated_conn();
         let mut inbox = Inbox::default();
-        inbox.admit(bundle("/x", 1, 100), FolderImportance::Unknown, 1_000);
+        inbox.admit(
+            bundle("/x", 1, 100),
+            FolderImportance::Unknown,
+            DEFAULT_HOT_DELAY,
+            1_000,
+        );
         save_all(&conn, &inbox).expect("write");
 
         clear(&conn).expect("clear");

@@ -7,7 +7,8 @@ budgeted digest. Depth: `DETAILS.md`.
 ## Module map
 
 - `coalesce.rs`: events or per-batch rollups into per-folder counters, both through one `Merger` fold.
-- `interest.rs`: how much a bundle is worth waking for (`interest`), and how soon (`wake_delay`).
+- `interest.rs`: how much a bundle is worth waking for (`interest`), and how soon (`wake_delay`, taking the user's hot
+  delay as a value; warm derives from it, cold gets none).
 - `compact.rs`: the digest, fitted to a hard token budget, with whatever missed a line rolled up and counted.
 - `inbox.rs`: what is waiting, when it comes due, and what a restart does to it.
 - `readiness.rs`: whether the agent may watch, and whether it may think.

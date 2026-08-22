@@ -94,7 +94,11 @@ impl Inbox {
     /// have its deadline pushed back by every new arrival and never come due at all, which is
     /// the one failure that would make the agent look asleep rather than patient. For the same
     /// reason a later, duller contribution cannot demote what an earlier burst established.
-    pub fn admit(&mut self, bundle: EventBundle, importance: FolderImportance, now: u64) {
+    ///
+    /// `hot_delay` is the user's cadence setting, arriving as a value like every other input
+    /// here: the core stays pure, and a caller that re-prices the inbox after a settings change
+    /// does it by admitting against the new number rather than by reaching into a stored one.
+    pub fn admit(&mut self, bundle: EventBundle, importance: FolderImportance, hot_delay: Duration, now: u64) {
         let existing = self
             .rows
             .iter_mut()
@@ -106,7 +110,7 @@ impl Inbox {
                 row.bundle.last_event_at = row.bundle.last_event_at.max(bundle.last_event_at);
                 // Re-scored against the MERGED counters, so more change can earn a sooner wake.
                 let scored = interest(&row.bundle, importance);
-                row.deliver_by = soonest(row.deliver_by, deadline_for(scored, now));
+                row.deliver_by = soonest(row.deliver_by, deadline_for(scored, hot_delay, now));
                 if scored.value() > row.interest.value() {
                     row.interest = scored;
                 }
@@ -116,7 +120,7 @@ impl Inbox {
                 self.rows.push(InboxRow {
                     bundle,
                     interest: scored,
-                    deliver_by: deadline_for(scored, now),
+                    deliver_by: deadline_for(scored, hot_delay, now),
                 });
             }
         }
@@ -132,12 +136,13 @@ impl Inbox {
         readiness: WakeReadiness,
         bundle: EventBundle,
         importance: FolderImportance,
+        hot_delay: Duration,
         now: u64,
     ) -> bool {
         if !readiness.admits_to_inbox() {
             return false;
         }
-        self.admit(bundle, importance, now);
+        self.admit(bundle, importance, hot_delay, now);
         true
     }
 
@@ -206,8 +211,8 @@ impl Inbox {
 
 /// When a bundle of this interest is due, from `now`, or `None` when it is not worth a wake of
 /// its own.
-fn deadline_for(scored: Interest, now: u64) -> Option<u64> {
-    Some(now.saturating_add(wake_delay(scored)?.as_secs()))
+fn deadline_for(scored: Interest, hot_delay: Duration, now: u64) -> Option<u64> {
+    Some(now.saturating_add(wake_delay(scored, hot_delay)?.as_secs()))
 }
 
 /// Merge two deadlines for one row: the sooner of them, and a real deadline always beats none.

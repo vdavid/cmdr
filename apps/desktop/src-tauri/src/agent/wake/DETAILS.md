@@ -60,9 +60,25 @@ one pathological folder cannot out-shout every other bundle in the inbox.
 which reports `Floored` and `Unscored` as the same `0.0`. `UNKNOWN_IMPORTANCE_WEIGHT` is 0.35: above zero so a folder
 the scorer has not reached stays visible, below any folder actually scored as mattering.
 
-**Both numbers are tuning knobs, not settled design** (agent-spec 18.5). Hot is 5s and warm is 5min; cold has no delay
-at all, because it never wakes the agent on its own. What is pinned as a contract is the ORDER, walked by a test, so
-tuning cannot silently invert the relationship.
+**Both numbers are tuning knobs, not settled design** (agent-spec 18.5). The importance weight and the hot/warm
+thresholds stay guesses; what the user gets to move is the CADENCE.
+
+## The three tiers, and the one number the user moves
+
+`wake_delay(interest, hot_delay) -> Option<Duration>` takes the user's cadence as a value, so the core stays pure and
+the setting is an input like every other one here. It threads on through `deadline_for` → `Inbox::admit` →
+`Inbox::admit_if_permitted`; nothing under `wake/` reads a setting, and `DEFAULT_HOT_DELAY` (5 s) is what a caller with
+no user answer yet passes.
+
+- **Hot IS the setting**, whatever stop the slider is on (5 s through 2 h).
+- **Warm derives**: `min(hot × 60, MAX_WARM_DELAY)`, a minute of patience for every second of attentiveness. One number
+  moves both tiers, so "calmer, please" means calmer everywhere rather than in the one place the user happened to look.
+  The six-hour cap stops the quiet end from turning warm into five days.
+- **Cold is `None`**: no deadline, so it rides along and never wakes the agent on its own.
+
+⚠️ **The ORDER is a pinned contract** and a derived tier is exactly the arithmetic that inverts at one end, so a test
+walks every slider stop, not just the default. (The cap can only invert the order for a hot setting above six hours,
+which the slider cannot reach.)
 
 ## The digest budget
 

@@ -24,11 +24,19 @@ const IMPORTANT: FolderImportance = FolderImportance::Scored(0.9);
 #[test]
 fn an_admitted_bundle_comes_due_after_its_interests_delay() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_000);
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
 
-    assert_eq!(inbox.next_deadline(), Some(1_000 + HOT_DELAY.as_secs()));
+    assert_eq!(inbox.next_deadline(), Some(1_000 + DEFAULT_HOT_DELAY.as_secs()));
     assert!(!inbox.due_at(1_000), "not due the instant it arrives");
-    assert!(inbox.due_at(1_000 + HOT_DELAY.as_secs()), "due when its deadline lands");
+    assert!(
+        inbox.due_at(1_000 + DEFAULT_HOT_DELAY.as_secs()),
+        "due when its deadline lands"
+    );
 }
 
 /// More change for a folder already waiting MERGES into its row and can only pull the deadline
@@ -41,11 +49,16 @@ fn an_admitted_bundle_comes_due_after_its_interests_delay() {
 fn more_change_can_only_pull_a_deadline_earlier() {
     let mut inbox = Inbox::default();
     // A middling folder first: a warm delay.
-    inbox.admit(arrivals("/tmp/quiet", 1, 100), FolderImportance::Scored(0.4), 1_000);
+    inbox.admit(
+        arrivals("/tmp/quiet", 1, 100),
+        FolderImportance::Scored(0.4),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
     let warm_deadline = inbox.next_deadline().expect("something is waiting");
 
     // The same folder and window, now with enough change to matter.
-    inbox.admit(arrivals("/tmp/quiet", 40, 100), IMPORTANT, 1_100);
+    inbox.admit(arrivals("/tmp/quiet", 40, 100), IMPORTANT, DEFAULT_HOT_DELAY, 1_100);
 
     assert_eq!(inbox.len(), 1, "same folder and window, so one row");
     let hotter = inbox.next_deadline().expect("still waiting");
@@ -55,7 +68,12 @@ fn more_change_can_only_pull_a_deadline_earlier() {
     );
 
     // And a later trickle of nothing-much must not push it back out.
-    inbox.admit(arrivals("/tmp/quiet", 1, 100), FolderImportance::Scored(0.4), 1_200);
+    inbox.admit(
+        arrivals("/tmp/quiet", 1, 100),
+        FolderImportance::Scored(0.4),
+        DEFAULT_HOT_DELAY,
+        1_200,
+    );
     assert_eq!(
         inbox.next_deadline(),
         Some(hotter),
@@ -71,7 +89,12 @@ fn more_change_can_only_pull_a_deadline_earlier() {
 #[test]
 fn a_cold_bundle_sets_no_deadline_of_its_own() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/tmp/junk", 5, 100), FolderImportance::Floored, 1_000);
+    inbox.admit(
+        arrivals("/tmp/junk", 5, 100),
+        FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
 
     assert_eq!(inbox.len(), 1, "it still waits, ready to ride along");
     assert_eq!(inbox.next_deadline(), None, "but nothing is due because of it");
@@ -88,13 +111,19 @@ fn a_cold_bundle_sets_no_deadline_of_its_own() {
 #[test]
 fn a_cold_contribution_cannot_erase_a_waiting_deadline() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_000);
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
     let due = inbox.next_deadline().expect("the hot row waits for something");
 
     // The same folder-window, arriving again as junk: no deadline of its own.
     inbox.admit(
         arrivals("/Users/someone/Downloads", 1, 100),
         FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
         1_050,
     );
 
@@ -113,13 +142,19 @@ fn a_real_deadline_lands_on_a_row_that_had_none() {
     inbox.admit(
         arrivals("/Users/someone/Downloads", 1, 100),
         FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
         1_000,
     );
     assert_eq!(inbox.next_deadline(), None, "cold, so nothing is due");
 
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_050);
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_050,
+    );
 
-    assert_eq!(inbox.next_deadline(), Some(1_050 + HOT_DELAY.as_secs()));
+    assert_eq!(inbox.next_deadline(), Some(1_050 + DEFAULT_HOT_DELAY.as_secs()));
 }
 
 /// A row with no deadline is not a row due at the beginning of time. Taking the plain minimum
@@ -127,10 +162,20 @@ fn a_real_deadline_lands_on_a_row_that_had_none() {
 #[test]
 fn the_next_deadline_ignores_the_rows_that_have_none() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/tmp/junk", 5, 100), FolderImportance::Floored, 1_000);
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_000);
+    inbox.admit(
+        arrivals("/tmp/junk", 5, 100),
+        FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
 
-    assert_eq!(inbox.next_deadline(), Some(1_000 + HOT_DELAY.as_secs()));
+    assert_eq!(inbox.next_deadline(), Some(1_000 + DEFAULT_HOT_DELAY.as_secs()));
 }
 
 /// A restart defers what was already overdue, and a row with no deadline was never overdue.
@@ -139,7 +184,12 @@ fn the_next_deadline_ignores_the_rows_that_have_none() {
 #[test]
 fn reconciling_leaves_a_row_with_no_deadline_alone() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/tmp/junk", 5, 100), FolderImportance::Floored, 1_000);
+    inbox.admit(
+        arrivals("/tmp/junk", 5, 100),
+        FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
 
     let report = inbox.reconcile(2_000);
 
@@ -153,8 +203,18 @@ fn reconciling_leaves_a_row_with_no_deadline_alone() {
 #[test]
 fn merging_a_row_sums_what_happened() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_000);
-    inbox.admit(arrivals("/Users/someone/Downloads", 4, 100), IMPORTANT, 1_010);
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_010,
+    );
 
     let drained = inbox.drain();
     assert_eq!(drained.len(), 1);
@@ -166,8 +226,18 @@ fn merging_a_row_sums_what_happened() {
 #[test]
 fn the_same_folder_in_two_windows_waits_as_two_rows() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_000);
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, 40_000), IMPORTANT, 1_000);
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 40_000),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
 
     assert_eq!(inbox.len(), 2);
 }
@@ -178,11 +248,22 @@ fn the_same_folder_in_two_windows_waits_as_two_rows() {
 #[test]
 fn a_wake_drains_everything_including_the_cold_rows() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/Users/someone/Downloads", 5, 100), IMPORTANT, 1_000);
-    inbox.admit(arrivals("/tmp/junk", 5, 100), FolderImportance::Floored, 1_000);
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 5, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit(
+        arrivals("/tmp/junk", 5, 100),
+        FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
     inbox.admit(
         arrivals("/Users/someone/code/thing", 2, 100),
         FolderImportance::Unknown,
+        DEFAULT_HOT_DELAY,
         1_000,
     );
 
@@ -198,7 +279,12 @@ fn a_wake_drains_everything_including_the_cold_rows() {
 #[test]
 fn drained_rows_carry_the_score_they_were_admitted_with() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/Users/someone/Downloads", 5, 100), IMPORTANT, 1_000);
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 5, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
 
     let drained = inbox.drain();
     assert!(drained[0].interest.value() > 0.0, "scored, not re-scored later");
@@ -212,7 +298,12 @@ fn drained_rows_carry_the_score_they_were_admitted_with() {
 #[test]
 fn a_deadline_missed_while_closed_waits_out_the_settle_window() {
     let mut inbox = Inbox::default();
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_000);
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
     let launched_at = 50_000; // Long after that deadline passed.
 
     inbox.reconcile(launched_at);
@@ -236,8 +327,18 @@ fn rows_older_than_the_staleness_horizon_are_dropped_and_counted() {
     let mut inbox = Inbox::default();
     let ancient = 1_000;
     let recent = 1_000_000;
-    inbox.admit(arrivals("/Users/someone/old-thing", 3, ancient), IMPORTANT, ancient);
-    inbox.admit(arrivals("/Users/someone/Downloads", 3, recent), IMPORTANT, recent);
+    inbox.admit(
+        arrivals("/Users/someone/old-thing", 3, ancient),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        ancient,
+    );
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, recent),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        recent,
+    );
 
     let report = inbox.reconcile(recent + 10);
 
@@ -268,6 +369,7 @@ fn an_unconsented_agent_stores_nothing() {
         WakeReadiness::NeedsConsent,
         arrivals("/Users/someone/Downloads", 3, 100),
         IMPORTANT,
+        DEFAULT_HOT_DELAY,
         1_000,
     );
 
@@ -285,6 +387,7 @@ fn a_missing_key_still_lets_signal_accumulate() {
         WakeReadiness::NeedsApiKey,
         arrivals("/Users/someone/Downloads", 3, 100),
         IMPORTANT,
+        DEFAULT_HOT_DELAY,
         1_000,
     );
 

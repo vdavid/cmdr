@@ -12,9 +12,17 @@ use super::EventBundle;
 ///
 /// The three tier values are coarse on purpose and want tuning against real use (agent-spec
 /// §18); what has to hold is the ORDER, which `wake_delay` is tested for.
-pub const HOT_DELAY: Duration = Duration::from_secs(5);
-/// Wake within minutes.
-pub const WARM_DELAY: Duration = Duration::from_secs(5 * 60);
+pub const DEFAULT_HOT_DELAY: Duration = Duration::from_secs(5);
+
+/// How much more patience a warm bundle gets than a hot one: a minute for every second.
+///
+/// One number the user moves, both tiers following it, so "calmer, please" means calmer
+/// everywhere rather than calmer in the one place they happened to see.
+const WARM_MULTIPLE: u32 = 60;
+
+/// However patient the user asks the agent to be, a warm folder is looked at within the working
+/// day rather than eventually. At the slider's quiet end the multiple alone would say five days.
+pub const MAX_WARM_DELAY: Duration = Duration::from_secs(6 * 60 * 60);
 
 /// At or above this, a bundle is worth waking for within seconds.
 pub const HOT_THRESHOLD: f64 = 0.7;
@@ -119,12 +127,18 @@ fn volume_signal(total: u64) -> f64 {
 /// **A cold bundle gets no deadline**, which is what makes it ride along rather than cause a
 /// wake. Given one, a trickle in a barely-scored folder comes due on its own and spends a whole
 /// model turn reporting that a cache directory changed.
-pub fn wake_delay(interest: Interest) -> Option<Duration> {
+pub fn wake_delay(interest: Interest, hot_delay: Duration) -> Option<Duration> {
     if interest.value() >= HOT_THRESHOLD {
-        Some(HOT_DELAY)
+        Some(hot_delay)
     } else if interest.value() >= WARM_THRESHOLD {
-        Some(WARM_DELAY)
+        Some(warm_delay(hot_delay))
     } else {
         None
     }
+}
+
+/// The warm tier for a given hot setting: [`WARM_MULTIPLE`] times it, held to
+/// [`MAX_WARM_DELAY`]. Saturating, so an absurd setting cannot overflow into a short wait.
+fn warm_delay(hot_delay: Duration) -> Duration {
+    hot_delay.saturating_mul(WARM_MULTIPLE).min(MAX_WARM_DELAY)
 }

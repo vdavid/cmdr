@@ -89,6 +89,7 @@ async fn a_due_inbox_wakes_into_a_thread_marked_as_the_agents_own() {
     inbox.admit(
         arrivals("/Users/someone/Downloads", 4, 100),
         FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
         1_000,
     );
     let due_at = inbox.next_deadline().expect("something waits");
@@ -138,6 +139,7 @@ async fn a_closed_gate_creates_no_thread_and_keeps_the_backlog() {
     inbox.admit(
         arrivals("/Users/someone/Downloads", 4, 100),
         FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
         1_000,
     );
 
@@ -173,6 +175,7 @@ async fn nothing_due_costs_no_turn() {
     inbox.admit(
         arrivals("/Users/someone/Downloads", 4, 100),
         FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
         1_000,
     );
 

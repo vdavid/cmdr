@@ -67,7 +67,7 @@ fn a_floored_folder_scores_zero_however_much_happens_in_it() {
     assert_eq!(quiet.value(), 0.0);
     assert_eq!(storm.value(), 0.0, "a build storm in junk is still junk");
     assert_eq!(
-        wake_delay(storm),
+        wake_delay(storm, DEFAULT_HOT_DELAY),
         None,
         "it rides along on the next wake rather than causing one"
     );
@@ -96,7 +96,7 @@ fn one_arrival_in_an_important_folder_is_hot() {
     let downloads = interest(&arrivals("/Users/someone/Downloads", 1), FolderImportance::Scored(0.9));
 
     assert!(downloads.value() >= HOT_THRESHOLD, "scored {}", downloads.value());
-    assert_eq!(wake_delay(downloads), Some(HOT_DELAY));
+    assert_eq!(wake_delay(downloads, DEFAULT_HOT_DELAY), Some(DEFAULT_HOT_DELAY));
 }
 
 /// Volume saturates rather than running away: the difference between 50 and 5,000,000 changes
@@ -136,6 +136,52 @@ fn the_same_inputs_always_score_the_same() {
     assert_eq!(first.value(), second.value());
 }
 
+/// Every stop on the cadence slider, in seconds: the user's whole range of answers to "how
+/// twitchy should this be?".
+const SLIDER_STOPS: [u64; 10] = [5, 15, 30, 60, 2 * 60, 5 * 60, 15 * 60, 30 * 60, 60 * 60, 2 * 60 * 60];
+
+/// ⚠️ The tier ORDER is a pinned contract, and the hot tier is now a user setting, so it has to
+/// hold at every stop rather than at the default. Tested across the whole slider because a
+/// derived warm tier is exactly the kind of arithmetic that inverts at one end.
+#[test]
+fn the_tier_order_holds_at_every_slider_stop() {
+    for seconds in SLIDER_STOPS {
+        let hot_delay = Duration::from_secs(seconds);
+        let hot = wake_delay(Interest::of(0.9), hot_delay).expect("a hot bundle wakes the agent");
+        let warm = wake_delay(Interest::of(0.5), hot_delay).expect("a warm bundle wakes the agent");
+
+        assert_eq!(hot, hot_delay, "the hot tier IS the user's setting");
+        assert!(
+            warm > hot,
+            "at a {seconds}s setting, warm ({warm:?}) must wait longer than hot"
+        );
+        assert_eq!(
+            wake_delay(Interest::of(0.1), hot_delay),
+            None,
+            "and cold never wakes on its own, whatever the setting"
+        );
+    }
+}
+
+/// Warm is a minute of patience for every second of attentiveness, up to six hours. One setting
+/// moves both tiers, so somebody who wants a calm agent gets a calm agent everywhere, and the cap
+/// stops the quiet end from turning warm into "next week".
+#[test]
+fn warm_is_sixty_times_hot_up_to_a_six_hour_cap() {
+    let warm_at = |seconds| wake_delay(Interest::of(0.5), Duration::from_secs(seconds));
+
+    assert_eq!(warm_at(5), Some(Duration::from_secs(5 * 60)));
+    assert_eq!(warm_at(30), Some(Duration::from_secs(30 * 60)));
+    assert_eq!(warm_at(60), Some(Duration::from_secs(60 * 60)));
+    assert_eq!(
+        warm_at(6 * 60),
+        Some(MAX_WARM_DELAY),
+        "six minutes hot is six hours warm"
+    );
+    assert_eq!(warm_at(15 * 60), Some(MAX_WARM_DELAY), "and the cap holds past that");
+    assert_eq!(warm_at(2 * 60 * 60), Some(MAX_WARM_DELAY), "even at the quietest stop");
+}
+
 /// More interest never means a longer wait. The tiers are coarse (§6.2's hot / warm / cold)
 /// but they have to be monotonic, or a hotter bundle could sit behind a colder one.
 ///
@@ -143,7 +189,10 @@ fn the_same_inputs_always_score_the_same() {
 #[test]
 fn a_hotter_bundle_never_waits_longer_than_a_colder_one() {
     let scores = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0];
-    let delays: Vec<Option<Duration>> = scores.iter().map(|s| wake_delay(Interest::of(*s))).collect();
+    let delays: Vec<Option<Duration>> = scores
+        .iter()
+        .map(|s| wake_delay(Interest::of(*s), DEFAULT_HOT_DELAY))
+        .collect();
 
     for pair in delays.windows(2) {
         assert!(
@@ -154,7 +203,7 @@ fn a_hotter_bundle_never_waits_longer_than_a_colder_one() {
         );
     }
     assert_eq!(delays[0], None, "the coldest never wakes on its own");
-    assert_eq!(delays[delays.len() - 1], Some(HOT_DELAY));
+    assert_eq!(delays[delays.len() - 1], Some(DEFAULT_HOT_DELAY));
 }
 
 /// How long a tier actually waits, with "never on its own" as forever, so the tiers can be
