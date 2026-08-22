@@ -395,9 +395,7 @@ mod tests {
     /// A landing onto a destination the user already has, over a backend whose
     /// rename fails with `failure`. Answers the volume so a cell can ask what
     /// survived.
-    async fn land_with_a_rename_that_fails(
-        failure: VolumeError,
-    ) -> (Arc<InMemoryVolume>, Result<(), VolumeError>) {
+    async fn land_with_a_rename_that_fails(failure: VolumeError) -> (Arc<InMemoryVolume>, Result<(), VolumeError>) {
         let inner = Arc::new(InMemoryVolume::new("dest").with_rename_failing(failure));
         let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
         inner
