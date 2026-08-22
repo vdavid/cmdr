@@ -60,8 +60,9 @@ one pathological folder cannot out-shout every other bundle in the inbox.
 which reports `Floored` and `Unscored` as the same `0.0`. `UNKNOWN_IMPORTANCE_WEIGHT` is 0.35: above zero so a folder
 the scorer has not reached stays visible, below any folder actually scored as mattering.
 
-**Both numbers are tuning knobs, not settled design** (agent-spec 18.5). The hot/warm/cold tiers are 5s / 5min / 1h.
-What is pinned as a contract is the ORDER, walked by a test, so tuning cannot silently invert the relationship.
+**Both numbers are tuning knobs, not settled design** (agent-spec 18.5). Hot is 5s and warm is 5min; cold has no delay
+at all, because it never wakes the agent on its own. What is pinned as a contract is the ORDER, walked by a test, so
+tuning cannot silently invert the relationship.
 
 ## The digest budget
 
@@ -80,6 +81,19 @@ window, which is the failure that once cost a rename turn the evidence it was re
 
 A merge can only pull a deadline earlier and can only raise the stored interest. The asymmetry is a starvation guard,
 and it also stops a later, duller contribution from demoting what an earlier burst established.
+
+**A cold row has NO deadline** (`deliver_by: Option<u64>`, nullable in the table since migration v7). That is what
+"rides along" means mechanically: the row waits, any wake drains it, and nothing about it can cause a wake. Given a
+real time like every other row, a trickle in a barely-scored folder comes due on its own and spends a model turn
+reporting that a cache directory changed.
+
+⚠️ **`Option::min` is exactly backwards for this and compiles silently.** Rust's derived `Ord` puts `None` below every
+`Some`, so a naive `existing.min(incoming)` merge lets a cold contribution ERASE the deadline a hot one established,
+and that folder then never wakes. Having no deadline is the LONGEST wait there is. Three places have to say so
+explicitly, and each has a test: the merge (`soonest`), `next_deadline` (a `filter_map`, since the plain minimum
+answers "nothing waiting" for a full inbox holding one cold row), and `reconcile` (only a row that HAS a deadline can
+be overdue; deferring a null one would hand every cold row a deadline at each launch and inflate
+`ReconcileReport.deferred`).
 
 **A deadline missed while the app was closed waits out `SETTLE_AFTER_LAUNCH` (60s).** Launch replays the index journal,
 and that roll-forward is itself a burst of corrected events; waking mid-burst would have the agent report the app own
@@ -109,7 +123,8 @@ is one the user can close and the backlog is theirs, bounded by the staleness ho
 
 ## Persistence
 
-`agent_inbox` (migration v6). `(folder, window_start)` is the PRIMARY KEY **because it is the merge key**, so the table
+`agent_inbox` (migration v6, `deliver_by` made nullable by v7's table rebuild — SQLite cannot drop a `NOT NULL` in
+place). `(folder, window_start)` is the PRIMARY KEY **because it is the merge key**, so the table
 cannot hold two rows the in-memory inbox would have merged. No conversation link and no foreign key: the inbox is
 pre-proposal signal and nobody has been asked anything yet. Counters are four columns rather than a blob, so `main.db`
 stays inspectable in any stock `sqlite3` browser.

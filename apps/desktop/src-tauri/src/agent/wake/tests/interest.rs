@@ -68,7 +68,7 @@ fn a_floored_folder_scores_zero_however_much_happens_in_it() {
     assert_eq!(storm.value(), 0.0, "a build storm in junk is still junk");
     assert_eq!(
         wake_delay(storm),
-        COLD_DELAY,
+        None,
         "it rides along on the next wake rather than causing one"
     );
 }
@@ -96,7 +96,7 @@ fn one_arrival_in_an_important_folder_is_hot() {
     let downloads = interest(&arrivals("/Users/someone/Downloads", 1), FolderImportance::Scored(0.9));
 
     assert!(downloads.value() >= HOT_THRESHOLD, "scored {}", downloads.value());
-    assert_eq!(wake_delay(downloads), HOT_DELAY);
+    assert_eq!(wake_delay(downloads), Some(HOT_DELAY));
 }
 
 /// Volume saturates rather than running away: the difference between 50 and 5,000,000 changes
@@ -138,19 +138,27 @@ fn the_same_inputs_always_score_the_same() {
 
 /// More interest never means a longer wait. The tiers are coarse (§6.2's hot / warm / cold)
 /// but they have to be monotonic, or a hotter bundle could sit behind a colder one.
+///
+/// "No deadline" is the longest wait of all, so it sorts above every real one here.
 #[test]
 fn a_hotter_bundle_never_waits_longer_than_a_colder_one() {
     let scores = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0];
-    let delays: Vec<Duration> = scores.iter().map(|s| wake_delay(Interest::of(*s))).collect();
+    let delays: Vec<Option<Duration>> = scores.iter().map(|s| wake_delay(Interest::of(*s))).collect();
 
     for pair in delays.windows(2) {
         assert!(
-            pair[0] >= pair[1],
+            waiting_time(pair[0]) >= waiting_time(pair[1]),
             "delays must fall as interest rises, got {:?} then {:?}",
             pair[0],
             pair[1]
         );
     }
-    assert_eq!(delays[0], COLD_DELAY);
-    assert_eq!(delays[delays.len() - 1], HOT_DELAY);
+    assert_eq!(delays[0], None, "the coldest never wakes on its own");
+    assert_eq!(delays[delays.len() - 1], Some(HOT_DELAY));
+}
+
+/// How long a tier actually waits, with "never on its own" as forever, so the tiers can be
+/// compared in one order.
+fn waiting_time(delay: Option<Duration>) -> Duration {
+    delay.unwrap_or(Duration::MAX)
 }

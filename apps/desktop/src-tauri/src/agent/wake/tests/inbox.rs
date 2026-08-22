@@ -40,27 +40,112 @@ fn an_admitted_bundle_comes_due_after_its_interests_delay() {
 #[test]
 fn more_change_can_only_pull_a_deadline_earlier() {
     let mut inbox = Inbox::default();
-    // A cold folder first: a long delay.
-    inbox.admit(arrivals("/tmp/quiet", 1, 100), FolderImportance::Floored, 1_000);
-    let cold_deadline = inbox.next_deadline().expect("something is waiting");
+    // A middling folder first: a warm delay.
+    inbox.admit(arrivals("/tmp/quiet", 1, 100), FolderImportance::Scored(0.4), 1_000);
+    let warm_deadline = inbox.next_deadline().expect("something is waiting");
 
     // The same folder and window, now with enough change to matter.
     inbox.admit(arrivals("/tmp/quiet", 40, 100), IMPORTANT, 1_100);
 
     assert_eq!(inbox.len(), 1, "same folder and window, so one row");
-    let warmer = inbox.next_deadline().expect("still waiting");
+    let hotter = inbox.next_deadline().expect("still waiting");
     assert!(
-        warmer < cold_deadline,
-        "the deadline must move in ({warmer} vs {cold_deadline})"
+        hotter < warm_deadline,
+        "the deadline must move in ({hotter} vs {warm_deadline})"
     );
 
     // And a later trickle of nothing-much must not push it back out.
-    inbox.admit(arrivals("/tmp/quiet", 1, 100), FolderImportance::Floored, 1_200);
+    inbox.admit(arrivals("/tmp/quiet", 1, 100), FolderImportance::Scored(0.4), 1_200);
     assert_eq!(
         inbox.next_deadline(),
-        Some(warmer),
+        Some(hotter),
         "a trickle cannot postpone a deadline"
     );
+}
+
+/// A cold bundle rides along on the next wake and never causes one of its own, so it waits with
+/// NO deadline at all.
+///
+/// Given a deadline like every other row, a trickle in a barely-scored folder comes due on its
+/// own and spends a whole model turn reporting that something happened in a cache directory.
+#[test]
+fn a_cold_bundle_sets_no_deadline_of_its_own() {
+    let mut inbox = Inbox::default();
+    inbox.admit(arrivals("/tmp/junk", 5, 100), FolderImportance::Floored, 1_000);
+
+    assert_eq!(inbox.len(), 1, "it still waits, ready to ride along");
+    assert_eq!(inbox.next_deadline(), None, "but nothing is due because of it");
+    assert!(
+        !inbox.due_at(1_000 + 100 * 24 * 60 * 60),
+        "not tomorrow, not next month either"
+    );
+}
+
+/// ⚠️ **The trap this whole change turns on.** `Option`'s derived `Ord` puts `None` below every
+/// `Some`, so writing the merge as `row.deliver_by.min(incoming)` compiles, reads right, and does
+/// the opposite: a junk contribution ERASES the deadline a real one established, and that folder
+/// never wakes again.
+#[test]
+fn a_cold_contribution_cannot_erase_a_waiting_deadline() {
+    let mut inbox = Inbox::default();
+    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_000);
+    let due = inbox.next_deadline().expect("the hot row waits for something");
+
+    // The same folder-window, arriving again as junk: no deadline of its own.
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 1, 100),
+        FolderImportance::Floored,
+        1_050,
+    );
+
+    assert_eq!(
+        inbox.next_deadline(),
+        Some(due),
+        "no-deadline loses to a real deadline, in both merge directions"
+    );
+}
+
+/// The other direction of the same merge: a row that never had a deadline takes the first real
+/// one offered, or the folder that finally got interesting keeps waiting forever.
+#[test]
+fn a_real_deadline_lands_on_a_row_that_had_none() {
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 1, 100),
+        FolderImportance::Floored,
+        1_000,
+    );
+    assert_eq!(inbox.next_deadline(), None, "cold, so nothing is due");
+
+    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_050);
+
+    assert_eq!(inbox.next_deadline(), Some(1_050 + HOT_DELAY.as_secs()));
+}
+
+/// A row with no deadline is not a row due at the beginning of time. Taking the plain minimum
+/// over the deadlines would answer `None` for a whole inbox because one junk row is in it.
+#[test]
+fn the_next_deadline_ignores_the_rows_that_have_none() {
+    let mut inbox = Inbox::default();
+    inbox.admit(arrivals("/tmp/junk", 5, 100), FolderImportance::Floored, 1_000);
+    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, 1_000);
+
+    assert_eq!(inbox.next_deadline(), Some(1_000 + HOT_DELAY.as_secs()));
+}
+
+/// A restart defers what was already overdue, and a row with no deadline was never overdue.
+/// Handing it `settled` would give every cold row a deadline on every launch, undoing the
+/// ride-along entirely and inflating what the reconcile report claims it deferred.
+#[test]
+fn reconciling_leaves_a_row_with_no_deadline_alone() {
+    let mut inbox = Inbox::default();
+    inbox.admit(arrivals("/tmp/junk", 5, 100), FolderImportance::Floored, 1_000);
+
+    let report = inbox.reconcile(2_000);
+
+    assert_eq!(report.deferred, 0, "a row that was never due cannot be overdue");
+    assert_eq!(inbox.next_deadline(), None, "and it must not acquire one at launch");
+    assert_eq!(inbox.len(), 1, "it stays, to ride along on the next wake");
 }
 
 /// Merging keeps the counts: the row is what the folder did in that window, whatever order the

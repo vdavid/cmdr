@@ -15,9 +15,6 @@ use super::EventBundle;
 pub const HOT_DELAY: Duration = Duration::from_secs(5);
 /// Wake within minutes.
 pub const WARM_DELAY: Duration = Duration::from_secs(5 * 60);
-/// Wake within the hour. A cold bundle never causes a wake of its own; it rides along on the
-/// next one, whatever triggers that.
-pub const COLD_DELAY: Duration = Duration::from_secs(60 * 60);
 
 /// At or above this, a bundle is worth waking for within seconds.
 pub const HOT_THRESHOLD: f64 = 0.7;
@@ -112,17 +109,22 @@ fn volume_signal(total: u64) -> f64 {
     scaled.clamp(0.0, 1.0)
 }
 
-/// How long a bundle of this interest may wait before the agent is woken for it.
+/// How long a bundle of this interest may wait before the agent is woken for it, or `None` when
+/// it is not worth waking for at all.
 ///
 /// Coarse tiers, not a continuous curve: the exact seconds are untuned (§18) but the ordering
 /// is a contract, and three named tiers are something a person can reason about when deciding
 /// whether the agent feels attentive or twitchy.
-pub fn wake_delay(interest: Interest) -> Duration {
+///
+/// **A cold bundle gets no deadline**, which is what makes it ride along rather than cause a
+/// wake. Given one, a trickle in a barely-scored folder comes due on its own and spends a whole
+/// model turn reporting that a cache directory changed.
+pub fn wake_delay(interest: Interest) -> Option<Duration> {
     if interest.value() >= HOT_THRESHOLD {
-        HOT_DELAY
+        Some(HOT_DELAY)
     } else if interest.value() >= WARM_THRESHOLD {
-        WARM_DELAY
+        Some(WARM_DELAY)
     } else {
-        COLD_DELAY
+        None
     }
 }

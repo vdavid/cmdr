@@ -48,7 +48,7 @@ fn to_stored(row: &InboxRow) -> StoredInboxRow {
         renamed: row.bundle.counters.renamed,
         last_event_at: clamp_to_i64(row.bundle.last_event_at),
         interest: row.interest.value(),
-        deliver_by: clamp_to_i64(row.deliver_by),
+        deliver_by: row.deliver_by.map(clamp_to_i64),
     }
 }
 
@@ -66,7 +66,7 @@ fn to_row(stored: &StoredInboxRow) -> InboxRow {
             last_event_at: clamp_to_u64(stored.last_event_at),
         },
         interest: Interest::of(stored.interest),
-        deliver_by: clamp_to_u64(stored.deliver_by),
+        deliver_by: stored.deliver_by.map(clamp_to_u64),
     }
 }
 
@@ -120,6 +120,21 @@ mod tests {
         let loaded = load(&conn).expect("read");
 
         assert_eq!(loaded, inbox);
+    }
+
+    /// A cold row waits with NO deadline, and it has to come back that way. Reloaded with one, it
+    /// would come due on its own after the next launch, which is exactly what the null prevents.
+    #[test]
+    fn a_cold_row_reloads_without_a_deadline() {
+        let conn = migrated_conn();
+        let mut inbox = Inbox::default();
+        inbox.admit(bundle("/tmp/junk", 2, 100), FolderImportance::Floored, 1_000);
+        save_all(&conn, &inbox).expect("write");
+
+        let loaded = load(&conn).expect("read");
+
+        assert_eq!(loaded, inbox);
+        assert_eq!(loaded.next_deadline(), None, "and it still causes no wake of its own");
     }
 
     /// Saving one row at a time is what admit does on the live path, and it has to land the

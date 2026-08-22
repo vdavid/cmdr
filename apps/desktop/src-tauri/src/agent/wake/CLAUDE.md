@@ -26,6 +26,10 @@ budgeted digest. Depth: `DETAILS.md`.
   the pipeline stores NOTHING; with consent but no key, signal accumulates and waits. None of the three is silence.
 - **A merge can only pull a deadline earlier.** Otherwise a folder on a steady trickle has its deadline postponed by
   every new arrival and never comes due, which looks like an agent that is asleep rather than patient.
+- **Gotcha: a cold row's deadline is `None`, and no-deadline LOSES every merge.** Merging two `deliver_by`s with
+  `Option::min` compiles, reads right, and does the opposite (`None < Some(_)`), so a junk contribution erases a hot
+  row's deadline and that folder never wakes. `soonest` is the merge; `next_deadline` and `reconcile` hit the same trap
+  from the other side. All three are tested, and `DETAILS.md` says why.
 - **Any wake drains the WHOLE inbox.** The expensive part is the model turn, not the row, so cold bundles ride along
   free and a MAX-interest wake policy falls out rather than being written.
 - **The tap is a second observer inside `process_live_batch`, placed AFTER rename detection and storm coalescing**, and

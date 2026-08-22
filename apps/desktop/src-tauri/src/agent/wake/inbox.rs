@@ -33,8 +33,8 @@ pub struct InboxRow {
     pub bundle: EventBundle,
     /// The strongest claim any contribution to this row made.
     pub interest: Interest,
-    /// When this row is due, unix seconds.
-    pub deliver_by: u64,
+    /// When this row is due, unix seconds. `None` for a cold row.
+    pub deliver_by: Option<u64>,
 }
 
 /// What a restart did to the inbox. Counted rather than silently applied, so a log line can
@@ -106,7 +106,7 @@ impl Inbox {
                 row.bundle.last_event_at = row.bundle.last_event_at.max(bundle.last_event_at);
                 // Re-scored against the MERGED counters, so more change can earn a sooner wake.
                 let scored = interest(&row.bundle, importance);
-                row.deliver_by = row.deliver_by.min(deadline_for(scored, now));
+                row.deliver_by = soonest(row.deliver_by, deadline_for(scored, now));
                 if scored.value() > row.interest.value() {
                     row.interest = scored;
                 }
@@ -143,12 +143,14 @@ impl Inbox {
 
     /// The soonest deadline waiting, if anything is.
     pub fn next_deadline(&self) -> Option<u64> {
-        self.rows.iter().map(|row| row.deliver_by).min()
+        // ⚠️ `filter_map`, not `map(…).min()`: `None` sorts BELOW every `Some`, so the plain
+        // minimum would answer "nothing is waiting" for a full inbox holding one cold row.
+        self.rows.iter().filter_map(|row| row.deliver_by).min()
     }
 
     /// Whether anything is due at `now`.
     pub fn due_at(&self, now: u64) -> bool {
-        self.rows.iter().any(|row| row.deliver_by <= now)
+        self.rows.iter().any(|row| row.deliver_by.is_some_and(|due| due <= now))
     }
 
     /// Hand over everything and empty the inbox.
@@ -188,10 +190,13 @@ impl Inbox {
             fresh
         });
 
+        // ⚠️ Only rows that HAVE a deadline can be overdue. Comparing the `Option` directly would
+        // hand every cold row a real deadline on every launch, undoing the ride-along and
+        // inflating what the report claims it deferred.
         let settled = launched_at.saturating_add(SETTLE_AFTER_LAUNCH.as_secs());
         for row in &mut self.rows {
-            if row.deliver_by < settled {
-                row.deliver_by = settled;
+            if row.deliver_by.is_some_and(|due| due < settled) {
+                row.deliver_by = Some(settled);
                 report.deferred += 1;
             }
         }
@@ -199,7 +204,22 @@ impl Inbox {
     }
 }
 
-/// When a bundle of this interest is due, from `now`.
-fn deadline_for(scored: Interest, now: u64) -> u64 {
-    now.saturating_add(wake_delay(scored).as_secs())
+/// When a bundle of this interest is due, from `now`, or `None` when it is not worth a wake of
+/// its own.
+fn deadline_for(scored: Interest, now: u64) -> Option<u64> {
+    Some(now.saturating_add(wake_delay(scored)?.as_secs()))
+}
+
+/// Merge two deadlines for one row: the sooner of them, and a real deadline always beats none.
+///
+/// ⚠️ **Written out rather than `existing.min(incoming)`**, which compiles, reads right, and is
+/// exactly backwards: `Option`'s derived `Ord` puts `None` below every `Some`, so a cold
+/// contribution would ERASE the deadline a hot one established, and that folder would never wake
+/// again. Having no deadline is the LONGEST wait there is, not the shortest.
+fn soonest(existing: Option<u64>, incoming: Option<u64>) -> Option<u64> {
+    match (existing, incoming) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (Some(only), None) | (None, Some(only)) => Some(only),
+        (None, None) => None,
+    }
 }

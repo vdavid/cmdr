@@ -72,6 +72,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "agent_inbox: folder-window bundles waiting with deliver-by deadlines",
         up: migrate_v6_agent_inbox,
     },
+    Migration {
+        version: 7,
+        description: "agent_inbox.deliver_by is nullable, so a cold row rides along without a deadline",
+        up: migrate_v7_nullable_deliver_by,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
@@ -398,6 +403,41 @@ fn migrate_v6_agent_inbox(tx: &Transaction<'_>) -> rusqlite::Result<()> {
             deliver_by    INTEGER NOT NULL,   -- unix secs
             PRIMARY KEY (folder, window_start)
         );
+        CREATE INDEX agent_inbox_deliver_by ON agent_inbox (deliver_by);
+        ",
+    )
+}
+
+/// Make `deliver_by` nullable, because a COLD row has no deadline.
+///
+/// A cold bundle rides along on the next wake and never causes one of its own. With a `NOT NULL`
+/// column it had to be given a real time like any other row, so a trickle in a barely-scored
+/// folder came due on its own and spent a model turn saying that a cache directory changed.
+///
+/// SQLite cannot drop a `NOT NULL` constraint in place, so this is the standard
+/// create-insert-drop-rename rebuild. The index goes with the dropped table and is recreated
+/// here; the primary key is re-declared identically, because it is the merge key the in-memory
+/// inbox relies on (see [`migrate_v6_agent_inbox`]).
+fn migrate_v7_nullable_deliver_by(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "
+        CREATE TABLE agent_inbox_v7 (
+            folder        TEXT    NOT NULL,
+            window_start  INTEGER NOT NULL,   -- unix secs, epoch-anchored
+            created       INTEGER NOT NULL,   -- per-kind counters; never file names
+            modified      INTEGER NOT NULL,
+            removed       INTEGER NOT NULL,
+            renamed       INTEGER NOT NULL,
+            last_event_at INTEGER NOT NULL,   -- newest change; the staleness horizon reads this
+            interest      REAL    NOT NULL,   -- strongest claim any contribution made, 0..=1
+            deliver_by    INTEGER,            -- unix secs; NULL ⇒ rides along, never wakes alone
+            PRIMARY KEY (folder, window_start)
+        );
+        INSERT INTO agent_inbox_v7
+            SELECT folder, window_start, created, modified, removed, renamed, last_event_at, interest, deliver_by
+            FROM agent_inbox;
+        DROP TABLE agent_inbox;
+        ALTER TABLE agent_inbox_v7 RENAME TO agent_inbox;
         CREATE INDEX agent_inbox_deliver_by ON agent_inbox (deliver_by);
         ",
     )

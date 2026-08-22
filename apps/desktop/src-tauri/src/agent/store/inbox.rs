@@ -21,7 +21,9 @@ pub struct StoredInboxRow {
     pub renamed: u32,
     pub last_event_at: i64,
     pub interest: f64,
-    pub deliver_by: i64,
+    /// When this row is due, or `None` for a cold row: one that rides along on the next wake and
+    /// never causes one of its own. Nullable since migration v7.
+    pub deliver_by: Option<i64>,
 }
 
 const COLUMNS: &str = "folder, window_start, created, modified, removed, renamed, last_event_at, interest, deliver_by";
@@ -118,8 +120,23 @@ mod tests {
             renamed: 0,
             last_event_at: window_start + 5,
             interest: 0.75,
-            deliver_by: window_start + 60,
+            deliver_by: Some(window_start + 60),
         }
+    }
+
+    /// A cold row has no deadline, and the column has been nullable since v7 so it can say so.
+    /// Stored as a real time it would come due on its own, which is the whole thing the null is
+    /// there to prevent.
+    #[test]
+    fn a_row_with_no_deadline_survives_a_round_trip() {
+        let conn = migrated_conn();
+        let written = StoredInboxRow {
+            deliver_by: None,
+            ..row("/tmp/junk", 100, 4)
+        };
+        upsert_inbox_row(&conn, &written).expect("write");
+
+        assert_eq!(load_inbox(&conn).expect("read"), vec![written]);
     }
 
     #[test]
