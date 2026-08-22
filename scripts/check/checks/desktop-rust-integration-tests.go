@@ -88,10 +88,10 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 
 	// Run in debug (the default profile) so this reuses the warm test build from
 	// `desktop-rust-tests` instead of paying a separate full release compile.
-	// Measured: the same 35 tests are ~4s in debug vs ~1m52s in release, where
-	// ~all the release time was the disjoint compile, not the SMB execution. The
-	// tests are correctness checks (pass/fail), not benchmarks, so `-O` doesn't
-	// change their outcome — verified all 35 pass in debug.
+	// Measured on the 35 cells the lane held in 2026-08: ~4s in debug vs ~1m52s in
+	// release, where ~all the release time was the disjoint compile, not the SMB
+	// execution. The tests are correctness checks (pass/fail), not benchmarks, so
+	// `-O` doesn't change their outcome — every one of them passed in debug.
 	// `--run-ignored only` rides in baseArgs so the contention re-run inherits it: these
 	// tests are all `#[ignore]`-gated, so a re-run without it would select nothing and
 	// read as "everything passed alone".

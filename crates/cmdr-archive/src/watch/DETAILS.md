@@ -81,9 +81,9 @@ close:
   (`crates/cmdr-smb/src/volume/watcher.rs`) already receives a `CHANGE_NOTIFY` for any changed `.zip` on the share, so
   its Modified/Renamed handlers ALSO call `caching::refresh_archive_listings` for a supported-archive path, pushing an
   out-of-band edit to any open inner listing. That refresh is a SEPARATE, visible-listing-only consumer from this
-  `listing_watch_coverage` oracle: the flag stays `false` for a remote parent regardless (the SMB watcher is lossy under
-  load, so the write-op oracle must keep re-reading pre-flight scans honestly — see `crates/cmdr-smb/DETAILS.md` § "SMB
-  archive push-refresh" for the mechanism and `src/volume_test.rs`'s
+  `listing_watch_coverage` oracle: it stays `WatchCoverage::None` for a remote parent regardless (the SMB watcher is
+  lossy under load, so the write-op oracle must keep re-reading pre-flight scans honestly — see
+  `crates/cmdr-smb/DETAILS.md` § "SMB archive push-refresh" for the mechanism and `src/volume_test.rs`'s
   `remote_backed_archive_never_reports_watch_coverage` pinning it). MTP: nothing forwards an out-of-band change to an
   open inner listing (MTP's `ObjectInfoChanged` is absent on many devices and hooking it isn't a clean few-liner), so an
   MTP-backed archive pane shows the zip as of its last read until the user re-navigates or refreshes (F5). For both, the
