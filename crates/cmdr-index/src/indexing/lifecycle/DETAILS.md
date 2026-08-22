@@ -52,6 +52,13 @@ concurrently without corrupting each other. Every invariant below holds independ
   the FE states) and picks the calibration bucket this run reads its ETA seed from and writes its timing back into
   (`../store/DETAILS.md` § "Scan calibration is stored PER WALK KIND"). The stashed `ScanCalibration` also surfaces the
   kind on `get_status`, so a mid-scan window reload recovers it.
+- **`manager/`'s submodules import what they use, and a top-level `use super::*` here is not free.** `cargo-modules`
+  resolves such a glob to every item the parent re-exports, so each child gains a phantom edge to every sibling: while
+  `start.rs` and `phased.rs` carried one, `manager.rs`'s seven child-only imports all printed as `manager` edges and
+  `watch::event_loop` read as part of the `lifecycle` tangle it has nothing to do with. De-globbing took this crate's
+  largest raw component from 19 modules to 15 with no behavior change. `module-cycles` measures the result but is
+  warn-only and doesn't run in CI, so nothing stops the glob coming back. The trap and its five siblings:
+  `scripts/check/checks/DETAILS.md` § "Rust module cycles".
 - **network_scan.rs** — the SMB/MTP `Volume`-trait scan path, split out as a sibling `impl IndexManager` block. Holds
   `resume_or_scan_network` (a completed prior scan loads Stale and does NOT auto-rescan; a never-completed one scans)
   and `start_volume_scan` (the scan/rescan entry plus its bespoke completion handler). Mirrors `start_scan` but walks
