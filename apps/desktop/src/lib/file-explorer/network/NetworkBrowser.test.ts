@@ -91,7 +91,9 @@ function mountBehindBothHandlers() {
   })
   const api = component as unknown as NetworkBrowserApi
 
-  const paneHandler = (e: KeyboardEvent) => { api.handleKeyDown(e); }
+  const paneHandler = (e: KeyboardEvent) => {
+    api.handleKeyDown(e)
+  }
   const documentDispatcher = (e: KeyboardEvent) => {
     const action = resolveGlobalKeyAction(e, false)
     if (action.kind === 'dispatch' && action.commandId === 'pane.refresh') api.refresh()
