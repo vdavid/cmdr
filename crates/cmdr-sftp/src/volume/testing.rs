@@ -10,7 +10,6 @@
 //! shipped build. The stack itself: `apps/desktop/test/sftp-servers/README.md`.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::InMemoryCredentials;
@@ -117,27 +116,4 @@ pub async fn approve_and_connect(host: &VolumeHost, params: SftpConnectionParams
         }
         Err(e) => Err(format!("the fixture refused a connection after approval: {e:?}")),
     }
-}
-
-/// An absolute fixture path, the way production builds one.
-pub fn fixture_path(relative: &str) -> String {
-    format!("{FIXTURE_ROOT}/{}", relative.trim_start_matches('/'))
-}
-
-/// A directory name no other test run can collide with.
-///
-/// The PID, a nanosecond clock, and a process-wide counter together, because
-/// nextest forks a process per test: the counter resets in each one, and the
-/// clock alone isn't fine-grained enough to separate two of them.
-pub fn test_dir_name() -> String {
-    static COUNTER: AtomicU64 = AtomicU64::new(0);
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("the system clock is after 1970")
-        .as_nanos();
-    format!(
-        "cmdr-test-{}-{nanos}-{}",
-        std::process::id(),
-        COUNTER.fetch_add(1, Ordering::Relaxed)
-    )
 }

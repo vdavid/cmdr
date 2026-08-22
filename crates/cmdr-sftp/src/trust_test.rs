@@ -89,7 +89,7 @@ fn recording_an_approval_turns_unknown_into_trusted() {
         HostKeyDecision::Unknown
     );
 
-    record_approval(&store, HOST, PORT, &key);
+    record_approval(&store, HOST, PORT, &key.algorithm, &key.fingerprint);
 
     assert_eq!(
         decide(&store, &no_known_hosts(), HOST, PORT, &key),
@@ -249,7 +249,8 @@ fn a_detached_host_trusts_nothing() {
 
     // And recording against it changes nothing, which is exactly why a fixture
     // that has to complete an approval uses `InMemoryHostKeys` instead.
-    record_approval(host.host_keys(), HOST, PORT, &ed25519());
+    let key = ed25519();
+    record_approval(host.host_keys(), HOST, PORT, &key.algorithm, &key.fingerprint);
     assert_eq!(
         decide(host.host_keys(), &no_known_hosts(), HOST, PORT, &ed25519()),
         HostKeyDecision::Unknown

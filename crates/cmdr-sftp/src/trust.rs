@@ -90,12 +90,12 @@ pub fn decide(
     }
 }
 
-/// Remembers `key` as the trusted key for `(host, port)`.
+/// Remembers `fingerprint` as the trusted key for `(host, port, algorithm)`.
 ///
 /// Called only once a human approved it. ❌ Writes to Cmdr's own store and never
 /// to `~/.ssh/known_hosts`: that file belongs to `ssh`.
-pub fn record_approval(trusted: &dyn HostKeys, host: &str, port: u16, key: &PresentedHostKey) {
-    trusted.record(host, port, &key.algorithm, &key.fingerprint);
+pub fn record_approval(trusted: &dyn HostKeys, host: &str, port: u16, algorithm: &str, fingerprint: &str) {
+    trusted.record(host, port, algorithm, fingerprint);
 }
 
 /// The host-key algorithms the transport must pin its negotiation to, or empty

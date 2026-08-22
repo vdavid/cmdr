@@ -211,8 +211,7 @@ fn prompt(params: &SftpConnectionParams, key: PresentedHostKey, kind: HostKeyPro
 /// approved minutes ago against whatever answers now is how an approval gets
 /// replayed onto a different key.
 pub fn approve(host: &VolumeHost, server: &str, port: u16, algorithm: &str, fingerprint: &str) {
-    let key = PresentedHostKey::new(algorithm, String::new(), fingerprint);
-    trust::record_approval(host.host_keys(), server, port, &key);
+    trust::record_approval(host.host_keys(), server, port, algorithm, fingerprint);
 }
 
 /// The client config, with the channel window raised and key negotiation pinned.
@@ -239,6 +238,23 @@ fn build_config(pinned: &[String]) -> client::Config {
     config
 }
 
+/// What one rung of the ladder came to.
+///
+/// ❗ Three outcomes rather than a `bool`, because the difference between the
+/// first two is what the user is shown: a rung with nothing behind it means
+/// "sign in", and a rung the server turned down means "that credential is
+/// wrong". Collapsing them tells someone who has never entered a password that
+/// their password is wrong.
+enum Attempt {
+    /// Nothing to offer: no agent running, no readable key file, no stored
+    /// secret. The server was never asked.
+    NotOffered,
+    /// Offered and turned down.
+    Refused,
+    /// Offered and accepted.
+    Accepted(AuthRungUsed),
+}
+
 /// Walks the ladder, stopping at the first rung the server accepts.
 async fn authenticate(
     session: &mut client::Handle<TrustHandler>,
@@ -249,7 +265,7 @@ async fn authenticate(
     let mut anything_offered = false;
 
     for rung in ladder(params) {
-        let attempted = match rung {
+        let attempt = match rung {
             AuthRung::Agent => try_agent(session, params).await?,
             AuthRung::KeyFile(path) => {
                 let passphrase = stored_secret(&mut secret, params, host).await;
@@ -257,21 +273,22 @@ async fn authenticate(
             }
             AuthRung::Password => match stored_secret(&mut secret, params, host).await {
                 Some(password) => try_password(session, params, &password).await?,
-                None => None,
+                None => Attempt::NotOffered,
             },
             AuthRung::KeyboardInteractive => match stored_secret(&mut secret, params, host).await {
                 Some(password) => try_keyboard_interactive(session, params, &password).await?,
-                None => None,
+                None => Attempt::NotOffered,
             },
         };
-        if let Some(used) = attempted {
-            return Ok(used);
+        match attempt {
+            Attempt::Accepted(used) => return Ok(used),
+            Attempt::Refused => anything_offered = true,
+            Attempt::NotOffered => {}
         }
-        anything_offered = true;
     }
 
-    // Nothing was even offered: every rung that needs a secret had none, so this
-    // is a sign-in problem rather than a rejection.
+    // Nothing was ever offered: every rung had no credential behind it, so this
+    // is a sign-in the user hasn't done rather than one the server turned down.
     if anything_offered {
         Err(SftpConnectError::AuthenticationRejected)
     } else {
@@ -304,14 +321,15 @@ async fn stored_secret(
 async fn try_agent(
     session: &mut client::Handle<TrustHandler>,
     params: &SftpConnectionParams,
-) -> Result<Option<AuthRungUsed>, SftpConnectError> {
+) -> Result<Attempt, SftpConnectError> {
     let Ok(mut agent) = russh::keys::agent::client::AgentClient::connect_env().await else {
         // No agent running is not a failure; it's a rung that isn't there.
-        return Ok(None);
+        return Ok(Attempt::NotOffered);
     };
     let Ok(identities) = agent.request_identities().await else {
-        return Ok(None);
+        return Ok(Attempt::NotOffered);
     };
+    let mut offered = false;
     for identity in identities {
         // ❌ Certificates aren't offered: validating one needs the CA half of
         // host trust, which this backend deliberately doesn't do.
@@ -319,14 +337,17 @@ async fn try_agent(
             continue;
         };
         let hash_alg = rsa_hash_alg(key.algorithm());
+        offered = true;
         let result = session
             .authenticate_publickey_with(params.username.clone(), key, hash_alg, &mut agent)
             .await;
         if matches!(result, Ok(AuthResult::Success)) {
-            return Ok(Some(AuthRungUsed::Agent));
+            return Ok(Attempt::Accepted(AuthRungUsed::Agent));
         }
     }
-    Ok(None)
+    // An agent holding no identities is the same as no agent: a vanished socket
+    // and a removed key both look like this, and neither is a rejection.
+    Ok(if offered { Attempt::Refused } else { Attempt::NotOffered })
 }
 
 async fn try_key_file(
@@ -334,14 +355,16 @@ async fn try_key_file(
     params: &SftpConnectionParams,
     path: &std::path::Path,
     passphrase: Option<&str>,
-) -> Result<Option<AuthRungUsed>, SftpConnectError> {
+) -> Result<Attempt, SftpConnectError> {
     // Tried unlocked first so an unencrypted key never reaches for a secret it
     // doesn't need, which keeps its reconnect policy honest.
     let (key, passphrase_protected) = match russh::keys::load_secret_key(path, None) {
         Ok(key) => (key, false),
+        // An unreadable or wrongly-unlocked key file is a rung with nothing
+        // behind it, not a server saying no.
         Err(_) => match passphrase.and_then(|p| russh::keys::load_secret_key(path, Some(p)).ok()) {
             Some(key) => (key, true),
-            None => return Ok(None),
+            None => return Ok(Attempt::NotOffered),
         },
     };
     let hash_alg = rsa_hash_alg(key.algorithm());
@@ -352,19 +375,25 @@ async fn try_key_file(
         )
         .await
         .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
-    Ok(matches!(result, AuthResult::Success).then_some(AuthRungUsed::KeyFile { passphrase_protected }))
+    Ok(match result {
+        AuthResult::Success => Attempt::Accepted(AuthRungUsed::KeyFile { passphrase_protected }),
+        AuthResult::Failure { .. } => Attempt::Refused,
+    })
 }
 
 async fn try_password(
     session: &mut client::Handle<TrustHandler>,
     params: &SftpConnectionParams,
     password: &str,
-) -> Result<Option<AuthRungUsed>, SftpConnectError> {
+) -> Result<Attempt, SftpConnectError> {
     let result = session
         .authenticate_password(params.username.clone(), password)
         .await
         .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
-    Ok(matches!(result, AuthResult::Success).then_some(AuthRungUsed::Password))
+    Ok(match result {
+        AuthResult::Success => Attempt::Accepted(AuthRungUsed::Password),
+        AuthResult::Failure { .. } => Attempt::Refused,
+    })
 }
 
 /// The non-interactive half of keyboard-interactive: a server that asks exactly
@@ -377,7 +406,7 @@ async fn try_keyboard_interactive(
     session: &mut client::Handle<TrustHandler>,
     params: &SftpConnectionParams,
     password: &str,
-) -> Result<Option<AuthRungUsed>, SftpConnectError> {
+) -> Result<Attempt, SftpConnectError> {
     let mut response = session
         .authenticate_keyboard_interactive_start(params.username.clone(), None)
         .await
@@ -385,14 +414,16 @@ async fn try_keyboard_interactive(
     loop {
         match response {
             KeyboardInteractiveAuthResponse::Success => {
-                return Ok(Some(AuthRungUsed::KeyboardInteractive));
+                return Ok(Attempt::Accepted(AuthRungUsed::KeyboardInteractive));
             }
-            KeyboardInteractiveAuthResponse::Failure { .. } => return Ok(None),
+            KeyboardInteractiveAuthResponse::Failure { .. } => return Ok(Attempt::Refused),
             KeyboardInteractiveAuthResponse::InfoRequest { ref prompts, .. } => {
                 let answers = match prompts.len() {
                     0 => Vec::new(),
                     1 => vec![password.to_string()],
-                    _ => return Ok(None),
+                    // Real 2FA. Guessing burns an attempt and can lock an
+                    // account, so this stops and waits for a human.
+                    _ => return Ok(Attempt::NotOffered),
                 };
                 response = session
                     .authenticate_keyboard_interactive_respond(answers)

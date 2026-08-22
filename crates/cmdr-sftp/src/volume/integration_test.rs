@@ -123,6 +123,34 @@ async fn a_server_that_refuses_every_rung_says_so_typed() {
     );
 }
 
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_ladder_with_nothing_behind_any_rung_asks_for_a_sign_in() {
+    // ❗ Not the same answer as a rejection, and the difference is what the user
+    // is shown: nothing was ever offered here, so telling them their password is
+    // wrong would be telling someone who has never entered one. The key-only
+    // server is the honest setting for it — password auth is off there, and this
+    // volume has no key file, no agent, and no stored secret.
+    let params = fixture_params("KEYONLY", 12481);
+    let host = fixture_host(&params, None);
+    let volume_id = "sftp-no-credentials";
+
+    let first = connect_sftp_volume("fixture", volume_id, params.clone(), host.clone())
+        .await
+        .expect(FIXTURE);
+    let SftpConnectOutcome::NeedsHostKeyApproval(prompt) = first else {
+        panic!("a fresh store must ask about the host key first");
+    };
+    super::approve_host_key(&host, &prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint);
+
+    let refused = connect_sftp_volume("fixture", volume_id, params, host).await;
+    assert!(
+        matches!(refused, Err(crate::SftpConnectError::NeedsCredentials)),
+        "got {refused:?}",
+        refused = refused.map(|_| "a session")
+    );
+}
+
 // ── Host-key trust, against real keys ────────────────────────────────
 
 #[tokio::test]
