@@ -190,13 +190,6 @@ fn test_open_options_always_suppress_system_ui() {
     }
 }
 
-#[test]
-fn test_timeout_constant() {
-    // Verify default timeout is reasonable (10-60 seconds)
-    const { assert!(DEFAULT_MOUNT_TIMEOUT_MS >= 10_000) };
-    const { assert!(DEFAULT_MOUNT_TIMEOUT_MS <= 60_000) };
-}
-
 /// Regression test for the macOS NetFS guest-mount credential dialog.
 ///
 /// Asserts a guest mount completes within a tight wall-clock budget. A

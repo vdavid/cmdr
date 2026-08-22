@@ -437,10 +437,9 @@ pub fn mount_share_sync(
     })
 }
 
-/// Default mount timeout in milliseconds
-const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
-
-/// Async wrapper for mount_share_sync that runs in a blocking task with timeout.
+/// Async wrapper for `mount_share_sync` that runs in a blocking task with timeout.
+/// The timeout and its typed failures live in `crate::network::mount_within`, shared
+/// with the Linux backend.
 pub async fn mount_share(
     server: String,
     share: String,
@@ -450,26 +449,10 @@ pub async fn mount_share(
     timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
     let server_clone = server.clone();
-    let timeout_duration = std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_MOUNT_TIMEOUT_MS));
-
-    // Use timeout to prevent hanging indefinitely
-    let mount_future = tokio::task::spawn_blocking(move || {
+    crate::network::mount_within(server_clone, timeout_ms, move || {
         mount_share_sync(&server, &share, username.as_deref(), password.as_deref(), port)
-    });
-
-    match tokio::time::timeout(timeout_duration, mount_future).await {
-        Ok(Ok(result)) => result,
-        Ok(Err(join_error)) => Err(MountError::ProtocolError {
-            message: format!("Mount task failed: {}", join_error),
-        }),
-        Err(_timeout) => Err(MountError::Timeout {
-            message: format!(
-                "Connection to \"{}\" timed out after {} seconds",
-                server_clone,
-                timeout_duration.as_secs()
-            ),
-        }),
-    }
+    })
+    .await
 }
 
 /// Extracts the mount path from a `NetFSMountURLSync` mountpoints CFArray.

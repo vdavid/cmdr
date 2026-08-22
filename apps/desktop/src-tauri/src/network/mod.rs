@@ -90,6 +90,44 @@ pub fn ensure_mdns_started(app_handle: AppHandle) {
     start_discovery(app_handle);
 }
 
+/// How long a mount attempt may run before we give up on it, in milliseconds.
+/// Shared by both platform backends, so a share on a slow server gets the same
+/// patience on macOS and on Linux.
+pub(crate) const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
+
+/// Runs a platform backend's blocking `mount_share_sync` on the blocking pool under
+/// the mount timeout, mapping a panicked task and an expired budget onto the typed
+/// `MountError` the caller renders.
+///
+/// Both `mount::mount_share` wrappers are this function plus their own sync body —
+/// the timeout, the join-failure wording, and the timeout wording are one
+/// implementation so the two platforms can't drift apart.
+pub(crate) async fn mount_within<F>(
+    server: String,
+    timeout_ms: Option<u64>,
+    mount_sync: F,
+) -> Result<mount::MountResult, mount::MountError>
+where
+    F: FnOnce() -> Result<mount::MountResult, mount::MountError> + Send + 'static,
+{
+    let timeout_duration = std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_MOUNT_TIMEOUT_MS));
+    let mount_future = tokio::task::spawn_blocking(mount_sync);
+
+    match tokio::time::timeout(timeout_duration, mount_future).await {
+        Ok(Ok(result)) => result,
+        Ok(Err(join_error)) => Err(mount::MountError::ProtocolError {
+            message: format!("Mount task failed: {}", join_error),
+        }),
+        Err(_timeout) => Err(mount::MountError::Timeout {
+            message: format!(
+                "Connection to \"{}\" timed out after {} seconds",
+                server,
+                timeout_duration.as_secs()
+            ),
+        }),
+    }
+}
+
 /// Whether a host was discovered via mDNS or added manually by the user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
@@ -506,6 +544,13 @@ pub fn update_host_resolution(host_id: &str, hostname: String, ip_address: Optio
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_timeout_constant() {
+        // Verify default timeout is reasonable (10-60 seconds)
+        const { assert!(DEFAULT_MOUNT_TIMEOUT_MS >= 10_000) };
+        const { assert!(DEFAULT_MOUNT_TIMEOUT_MS <= 60_000) };
+    }
 
     #[test]
     fn test_service_name_to_id() {

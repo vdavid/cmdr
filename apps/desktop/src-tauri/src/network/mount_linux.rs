@@ -32,9 +32,6 @@ pub enum MountError {
     MountPathConflict { message: String },
 }
 
-/// Default mount timeout in milliseconds.
-const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
-
 /// Checks if `gio` is available on the system.
 fn is_gio_available() -> bool {
     Command::new("gio").arg("version").output().is_ok()
@@ -289,7 +286,9 @@ fn classify_mount_error(stderr: &str, server: &str, share: &str) -> MountError {
     }
 }
 
-/// Async wrapper for mount_share_sync that runs in a blocking task with timeout.
+/// Async wrapper for `mount_share_sync` that runs in a blocking task with timeout.
+/// The timeout and its typed failures live in `crate::network::mount_within`, shared
+/// with the macOS backend.
 pub async fn mount_share(
     server: String,
     share: String,
@@ -299,25 +298,10 @@ pub async fn mount_share(
     timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
     let server_clone = server.clone();
-    let timeout_duration = std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_MOUNT_TIMEOUT_MS));
-
-    let mount_future = tokio::task::spawn_blocking(move || {
+    crate::network::mount_within(server_clone, timeout_ms, move || {
         mount_share_sync(&server, &share, username.as_deref(), password.as_deref(), port)
-    });
-
-    match tokio::time::timeout(timeout_duration, mount_future).await {
-        Ok(Ok(result)) => result,
-        Ok(Err(join_error)) => Err(MountError::ProtocolError {
-            message: format!("Mount task failed: {}", join_error),
-        }),
-        Err(_timeout) => Err(MountError::Timeout {
-            message: format!(
-                "Connection to \"{}\" timed out after {} seconds",
-                server_clone,
-                timeout_duration.as_secs()
-            ),
-        }),
-    }
+    })
+    .await
 }
 
 /// Unmounts all SMB shares from a given host.
@@ -434,12 +418,6 @@ mod tests {
             MountError::ProtocolError { .. } => (),
             _ => panic!("Expected ProtocolError, got {:?}", err),
         }
-    }
-
-    #[test]
-    fn test_timeout_constant() {
-        const { assert!(DEFAULT_MOUNT_TIMEOUT_MS >= 10_000) };
-        const { assert!(DEFAULT_MOUNT_TIMEOUT_MS <= 60_000) };
     }
 
     // ── `gio mount` stderr snapshots ────────────────────────────────────────

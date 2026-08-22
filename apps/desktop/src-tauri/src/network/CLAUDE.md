@@ -12,7 +12,8 @@ Frontend: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`. Auth-flow back
 - Discovery + servers: `mdns_discovery.rs`, `manual_servers.rs`, `virtual_smb_hosts.rs` (`smb-e2e` only).
 - Share listing: `smb_client.rs` (guest→keychain→prompt), `smb_cache.rs`, `smb_smbutil.rs` / `smb_smbclient.rs` (CLI
   fallback), `smb_upgrade.rs`.
-- Mount/auth/state: `mount.rs` / `mount_linux.rs`, `keychain.rs`, `known_shares.rs`, `server_identity.rs`,
+- Mount/auth/state: `mount.rs` / `mount_linux.rs` (their `mount_share` wrappers share one timeout via
+  `mod.rs::mount_within`), `keychain.rs`, `known_shares.rs`, `server_identity.rs`,
   `credential_store.rs` (`KeychainCredentials`, the `CredentialStore` seam), `os_mount_notice.rs` (the fallback
   notice: its once-per-server ledger AND the `AppHandle` it emits through).
 
