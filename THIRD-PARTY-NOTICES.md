@@ -6,7 +6,7 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 655
+- Rust crates: 653
 - npm packages: 125
 - Distinct license texts: 291
 
@@ -182,7 +182,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **flate2** 1.1.9, MIT OR Apache-2.0, <https://github.com/rust-lang/flate2-rs>
 - **flume** 0.12.0, Apache-2.0 OR MIT, <https://github.com/zesterer/flume>
 - **fnv** 1.0.7, Apache-2.0  OR  MIT, <https://github.com/servo/rust-fnv>
-- **foldhash** 0.1.5, Zlib, <https://github.com/orlp/foldhash>
 - **foldhash** 0.2.0, Zlib, <https://github.com/orlp/foldhash>
 - **foreign-types** 0.5.0, MIT OR Apache-2.0, <https://github.com/sfackler/foreign-types>
 - **foreign-types-macros** 0.2.3, MIT OR Apache-2.0, <https://github.com/sfackler/foreign-types>
@@ -271,7 +270,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **hash32** 0.3.1, MIT OR Apache-2.0, <https://github.com/japaric/hash32>
 - **hashbrown** 0.12.3, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.14.5, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
-- **hashbrown** 0.15.5, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.16.1, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.17.1, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashlink** 0.12.1, MIT OR Apache-2.0, <https://github.com/djc/hashlink>
@@ -6736,7 +6734,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.15.5, hashbrown 0.16.1, hashbrown 0.17.1
+Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.16.1, hashbrown 0.17.1
 
 Text from: `LICENSE-MIT`
 
@@ -12813,7 +12811,7 @@ authorization of the copyright holder.
 
 ### Zlib
 
-Covers: foldhash 0.1.5, foldhash 0.2.0
+Covers: foldhash 0.2.0
 
 Text from: `LICENSE`
 
