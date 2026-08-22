@@ -222,6 +222,15 @@ normally to component-level handlers in DualPaneExplorer and FilePane.
 descendant — runs FIRST. That ordering is deliberate (a local handler that `stopPropagation`s deliberately outranks
 central dispatch), but it means a sloppy local match silently shadows or doubles a real shortcut.
 
+❗ **A local branch that ACTS on a Tier 1 command must call `stopPropagation()`, not only `preventDefault()`.**
+`resolveGlobalKeyAction` has no `defaultPrevented` guard — it looks the combo up and dispatches — so a local handler
+that only prevents the default still lets central dispatch run the very same command a moment later. When both ends land
+in the same place, the work happens TWICE and nothing looks wrong: `NetworkBrowser`'s ⌘R ran `clearShareState` +
+`fetchShares` for every host, then `pane.refresh` dispatched into `refreshPane` → `refreshNetworkHosts()` →
+`NetworkBrowser.refresh()`, which is that same handler's body again. ❌ Don't reach for a "did you handle it?" return
+value instead: `pane-key-router` hands the network and search views every key and returns either way, so a boolean has
+nobody to tell. `preventDefault` + `stopPropagation` IS the claim.
+
 So local handlers don't test raw key flags; they ask the registry:
 
 - `eventMatchesCommand(event, commandId, { allowShift? })` — does this keypress match THIS command exactly? Right for a

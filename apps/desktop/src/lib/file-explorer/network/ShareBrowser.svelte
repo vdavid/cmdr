@@ -467,20 +467,24 @@
         return false
     }
 
-    export function handleKeyDown(e: KeyboardEvent): boolean {
+    /**
+     * Handle keyboard navigation. Runs before the document-level dispatcher in
+     * `+page.svelte` (bubble-phase on `document`, this pane is a descendant), so a
+     * branch acting on a centrally dispatched combo must `stopPropagation()` or the
+     * command runs twice. Nothing reads a return value: `preventDefault` +
+     * `stopPropagation` is how a branch says it claimed the key.
+     */
+    export function handleKeyDown(e: KeyboardEvent): void {
         if (showLoginForm) {
             // Login form handles its own keyboard events
-            if (e.key === 'Escape') {
-                handleCancel()
-                return true
-            }
-            return false
+            if (e.key === 'Escape') handleCancel()
+            return
         }
 
-        if (sortedShares.length === 0) return false
+        if (sortedShares.length === 0) return
 
         // Escape / Backspace / ⌘↑ → back to the host list (before the arrow handler).
-        if (handleBackToHostKey(e)) return true
+        if (handleBackToHostKey(e)) return
 
         // Try centralized navigation shortcuts first (PageUp, PageDown, Home, End, Option+arrows)
         const visibleItems = Math.max(1, Math.floor(containerHeight / SHARE_ROW_HEIGHT))
@@ -493,16 +497,17 @@
             e.preventDefault()
             cursorIndex = navResult.newIndex
             scrollToIndex(cursorIndex)
-            return true
+            return
         }
 
         // Everything below is an unmodified key: `⌘←` / `⌘→` (copy path between
         // panes) and other modifier supersets belong to the document dispatcher.
-        if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return false
+        if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
 
         if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
             e.preventDefault()
-            return handleArrowKey(e.key)
+            handleArrowKey(e.key)
+            return
         }
 
         // Handle action keys
@@ -511,10 +516,7 @@
             if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
                 void activateShare(sortedShares[cursorIndex])
             }
-            return true
         }
-
-        return false
     }
 
     async function handleForgetPassword() {

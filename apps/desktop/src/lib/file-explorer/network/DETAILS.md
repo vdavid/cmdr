@@ -46,7 +46,9 @@ connect row. Right-click shows a native OS context menu (`show_network_host_cont
 server (manual), Forget saved password (hosts with stored creds); credential status is Keychain-checked before showing
 if unknown; actions arrive via the `network-host-context-action` event. Cursor auto-clamps when a host is removed.
 
-Exports for parent: `setCursorIndex(index)`, `findItemIndex(name)`, `handleKeyDown(e)`.
+Exports for parent: `setCursorIndex(index)`, `findItemIndex(name)`, `handleKeyDown(e)`, `refresh()`,
+`getHostUnderCursor()`, `getItemCount()`. `refresh()` is `pane.refresh`'s entry point from the command layer and is the
+same body ⌘R runs locally, which is why the local branch stops propagation (see § Gotchas).
 
 ## `ShareBrowser.svelte`
 
@@ -250,6 +252,15 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
 - **Credential status keyed by lowercase `host.name`**: the same physical host can change IP (DHCP) and hostname (mDNS
   vs DNS); the Bonjour service name is the stable identifier. Lowercasing avoids case mismatches.
 - **Tab in `NetworkLoginForm` calls `stopPropagation()`**: the parent reads Tab as pane-switch otherwise.
+- **⌘R in `NetworkBrowser` calls `stopPropagation()` too, and one round of shares depends on it.** The document-level
+  dispatcher runs after this handler and has no `defaultPrevented` guard, so `pane.refresh` would ALSO dispatch into
+  `refreshPane` → `refreshNetworkHosts()` → `NetworkBrowser.refresh()` — the same `handleRefreshClick()` the local
+  branch just ran, giving every host two `clearShareState` + `fetchShares` rounds per keypress. Pinned by
+  `NetworkBrowser.test.ts`; the general rule is in `$lib/shortcuts/DETAILS.md` § "Local handlers resolve through the
+  registry too".
+- **Neither browser's `handleKeyDown` returns a "handled" boolean** (`BrowserAPI` in `../pane/types.ts`). Nothing above
+  them branches on one: `NetworkMountView` and `pane-key-router` hand the network view every key and return either way,
+  so the claim is `preventDefault()` + `stopPropagation()` on the event.
 - **Host list MCP sync encodes metadata into the `name` field** as a flat string because MCP `PaneFileEntry` has only
   `name` / `path` / `isDirectory`; the encoding lets agents read what the UI shows without a schema change.
 

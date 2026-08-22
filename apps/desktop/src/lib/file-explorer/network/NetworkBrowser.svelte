@@ -283,20 +283,30 @@
         }
     }
 
-    // Handle keyboard navigation
+    /**
+     * Handle keyboard navigation. This runs BEFORE the document-level dispatcher in
+     * `+page.svelte`, which is registered bubble-phase on `document` and this pane is
+     * a descendant. So a branch that acts on a Tier 1 combo must `stopPropagation()`,
+     * or the dispatcher runs the same command again (it has no `defaultPrevented`
+     * guard). Nothing reads a return value: `preventDefault` + `stopPropagation` is
+     * how a branch says it claimed the key.
+     */
     // noinspection JSUnusedGlobalSymbols -- used dynamically
-    export function handleKeyDown(e: KeyboardEvent): boolean {
-        // The refresh key (⌘R by default) works regardless of host count. Read
-        // through the registry so a rebind follows; the document-level dispatcher
-        // usually gets here first, and this is the in-view backstop.
+    export function handleKeyDown(e: KeyboardEvent): void {
+        // The refresh key (⌘R by default) works regardless of host count. Read through
+        // the registry so a rebind follows. `stopPropagation` keeps it to ONE refresh:
+        // `pane.refresh` is centrally dispatched too, and `refreshPane` routes it back
+        // into this component through `refreshNetworkHosts()` → `refresh()`, which is
+        // this same `handleRefreshClick()`. Without it, every host got re-read twice.
         if (eventMatchesCommand(e, 'pane.refresh')) {
             e.preventDefault()
+            e.stopPropagation()
             handleRefreshClick()
-            return true
+            return
         }
 
         // The connect row is always present, so totalNavigableItems >= 1
-        if (totalNavigableItems === 0) return false
+        if (totalNavigableItems === 0) return
 
         // Try centralized navigation shortcuts first (PageUp, PageDown, Home, End, Option+arrows)
         const visibleItems = Math.max(1, Math.floor(containerHeight / HOST_ROW_HEIGHT))
@@ -309,28 +319,26 @@
             e.preventDefault()
             cursorIndex = navResult.newIndex
             scrollToIndex(cursorIndex)
-            return true
+            return
         }
 
         // Everything below is an unmodified key. Matching the whole combo (rather
         // than just `e.key`) keeps ⇧F8 (delete permanently), ⌘↑/⌘↓ (parent/open), and
         // ⌘←/⌘→ (copy path between panes) reaching the document dispatcher instead of
         // also moving this cursor.
-        if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return false
+        if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
 
         // F8: remove manual host
         if (e.key === 'F8' && !isCursorOnConnectRow && cursorIndex < hosts.length) {
             e.preventDefault()
             const host = hosts[cursorIndex]
             void handleRemoveHost(host)
-            return true
+            return
         }
 
         if (handleArrowAndEnter(e.key)) {
             e.preventDefault()
-            return true
         }
-        return false
     }
 
     // Handle host clicks

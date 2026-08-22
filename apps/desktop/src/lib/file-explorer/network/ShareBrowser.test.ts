@@ -64,7 +64,7 @@ const naspi: ShareInfo = { name: 'naspi', isDisk: true, comment: null }
 /** The exported ShareBrowser API surface the tests drive. */
 interface ShareBrowserApi {
   openCursorItem: () => void
-  handleKeyDown: (e: KeyboardEvent) => boolean
+  handleKeyDown: (e: KeyboardEvent) => void
 }
 
 function mountBrowser(
@@ -171,9 +171,8 @@ describe('ShareBrowser back-navigation', () => {
     const { target, component, api } = mountBrowser(onShareSelect, onBack)
     await waitForShareList(target)
 
-    const handled = api.handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowUp', metaKey: true }))
+    api.handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowUp', metaKey: true }))
 
-    expect(handled).toBe(true)
     expect(onBack).toHaveBeenCalledOnce()
     // The cursor-move path must NOT have fired (no share got activated).
     expect(onShareSelect).not.toHaveBeenCalled()

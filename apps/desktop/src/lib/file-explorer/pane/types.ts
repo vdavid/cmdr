@@ -179,7 +179,12 @@ export interface VolumeBreadcrumbAPI {
 
 /** Typed interface for NetworkBrowser/ShareBrowser shared methods. */
 export interface BrowserAPI {
-  handleKeyDown(e: KeyboardEvent): boolean
+  /**
+   * No "handled" return: both browsers sit below the document-level dispatcher, so a
+   * claimed key is one that got `preventDefault()` + `stopPropagation()`. `NetworkMountView`
+   * and `pane-key-router` hand the network view every key and return either way.
+   */
+  handleKeyDown(e: KeyboardEvent): void
   setCursorIndex(index: number): void
   findItemIndex(name: string): number
   openCursorItem(): void
