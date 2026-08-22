@@ -114,8 +114,21 @@ See `test/e2e-playwright/smb.spec.ts` for the E2E test suite.
 Start all containers and run the app with `smb-e2e` enabled:
 
 ```bash
-./test/smb-servers/start.sh all
+./apps/desktop/test/smb-servers/start.sh all
 cd apps/desktop && node scripts/tauri-wrapper.ts dev -- --features smb-e2e
+```
+
+**Pin the ports first if the stack is already up.** `virtual_smb_hosts.rs` reads `SMB_E2E_*_PORT` and falls back to
+smb2's 10480+ defaults, while a stack the check orchestrator brought up sits on cmdr's 11480+ range
+(`scripts/check/checks/smb_ports.go`, the authority for the mapping). Mismatched, every virtual host lists zero shares
+and nothing says why. Export both families in the same order as that file before the dev launch:
+
+```bash
+i=11480
+for svc in GUEST AUTH BOTH 50SHARES UNICODE LONGNAMES DEEPNEST MANYFILES READONLY WINDOWS SYNOLOGY LINUX FLAKY SLOW MAXREADSIZE; do
+    export "SMB_E2E_${svc}_PORT=$i" "SMB_CONSUMER_${svc}_PORT=$i"
+    i=$((i + 1))
+done
 ```
 
 All 14 virtual SMB hosts appear in the Network sidebar. Click them to test share listing, mounting, file browsing, and
