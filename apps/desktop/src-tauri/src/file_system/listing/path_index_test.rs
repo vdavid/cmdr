@@ -390,6 +390,26 @@ fn a_batch_of_removals_reports_pre_removal_indices_highest_first() {
     assert_eq!(listing.entries().len(), ENTRY_COUNT - 3);
 }
 
+/// ❗ A removal batch that takes no row must leave both maps standing. An add-only
+/// watcher event calls straight through here with nothing to remove, and paying a
+/// rebuild of the sweep's map for that is the second quadratic all over again.
+#[test]
+fn a_removal_batch_that_takes_nothing_keeps_the_maps() {
+    let listing = mapped_listing("path-index-remove-batch-noop");
+
+    remove_entries_by_paths(listing.id(), &[]);
+    remove_entries_by_paths(listing.id(), &[PathBuf::from("/big/never-existed.bin")]);
+
+    let before = lookup_probe::builds();
+    apply_tags_to_listing(listing.id(), chunk_of_updates(CHUNK));
+
+    assert_eq!(
+        lookup_probe::builds() - before,
+        0,
+        "a removal batch that took no row dropped the path map anyway"
+    );
+}
+
 /// A path the listing doesn't hold is skipped rather than reported: the watcher
 /// stats paths another event may already have removed.
 #[test]

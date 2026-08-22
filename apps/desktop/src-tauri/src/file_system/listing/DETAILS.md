@@ -230,8 +230,8 @@ is walking a big directory every watcher event landing in it is a hash rather th
 removals can reach a map at all: `entries_mut` drops both maps as it hands the vector out, so a lookup after it can only
 walk. The `LISTING_CACHE` write lock is held across both, so the index is still true when the mutation lands, and the
 invariant is untouched — `path_index_test::a_mutation_still_drops_the_map_it_rode` pins that they still drop it. One
-side effect worth having: a modify or removal that finds nothing now leaves both maps standing rather than dropping them
-for a row it never touched.
+side effect worth having: a modify or removal that takes no row leaves both maps standing rather than dropping them for a
+row it never touched, which matters because an add-only watcher event calls the removal batch with an empty path list.
 
 **The watcher's removals were the second quadratic**, and the only one of these callers with a measured win rather than
 a latent one. `handle_directory_change_incremental` resolved each removal's index with its own full walk (the diff needs

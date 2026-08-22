@@ -495,6 +495,12 @@ pub fn remove_entries_by_paths(listing_id: &str, paths: &[PathBuf]) -> Vec<(usiz
     // not take a second, innocent row down with it.
     doomed.sort_unstable_by(|a, b| b.cmp(a));
     doomed.dedup();
+    // ❗ Return before `entries_mut`, which drops both maps. A watcher event whose
+    // removals all landed in another listing must not cost this one its maps, and
+    // an add-only event calls straight through here with an empty `paths`.
+    if doomed.is_empty() {
+        return Vec::new();
+    }
 
     let entries = listing.entries_mut();
     doomed.into_iter().map(|index| (index, entries.remove(index))).collect()
