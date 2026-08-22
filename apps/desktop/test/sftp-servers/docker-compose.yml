@@ -1,0 +1,121 @@
+# The SFTP fixture stack: eleven real OpenSSH servers, one per thing that breaks
+# an SFTP client.
+#
+# ❗ The project is `sftp-fixture` and every service name carries that prefix.
+# `desktop-fixture-lane-coverage` identifies an SFTP cell by an `#[ignore]`
+# reason naming `sftp-servers/start.sh` or `sftp-fixture`, so renaming a service
+# out of the prefix quietly drops it from the guard's view.
+#
+# Host ports are pinned to 12480+, a range of this stack's own: SMB's vendored
+# consumer stack owns 11480+ and smb2's own harness defaults to 10480+, and two
+# stacks sharing a range made them mutually exclusive on one machine. The check
+# runner exports every `SFTP_FIXTURE_*_PORT` before bring-up (`ApplySftpPortEnv`).
+#
+# One image, `image/`. What differs between services is env, so a quirk is a
+# line here rather than a Dockerfile to keep in sync.
+
+x-fixture: &fixture
+  build: ./image
+  image: cmdr-sftp-fixture:latest
+  restart: unless-stopped
+  # Principle 5 applies to CI too: eleven idle sshd containers should cost about
+  # what one does.
+  mem_limit: 256m
+  cpus: 0.5
+
+services:
+  # The stock server: everything an OpenSSH server normally has, including
+  # `posix-rename@openssh.com`. The default target for anything not testing a
+  # quirk.
+  sftp-fixture-openssh:
+    <<: *fixture
+    ports: ["${SFTP_FIXTURE_OPENSSH_PORT:-12480}:22"]
+
+  # Key-only: `PasswordAuthentication no`, so the ladder has to reach its second
+  # rung. The private half lands in the shared `keys` volume at start.
+  sftp-fixture-keyonly:
+    <<: *fixture
+    environment:
+      AUTH: key
+    volumes: ["./.keys/keyonly:/keys"]
+    ports: ["${SFTP_FIXTURE_KEYONLY_PORT:-12481}:22"]
+
+  # A key file with a passphrase on it: the rung that CANNOT reconnect
+  # unattended, because the passphrase isn't held past the session it unlocked.
+  sftp-fixture-passphrase:
+    <<: *fixture
+    environment:
+      AUTH: passphrase
+      KEY_PASSPHRASE: letmein
+    volumes: ["./.keys/passphrase:/keys"]
+    ports: ["${SFTP_FIXTURE_PASSPHRASE_PORT:-12482}:22"]
+
+  # `PasswordAuthentication no` + `KbdInteractiveAuthentication yes`: the
+  # hardened-without-2FA shape, where PAM asks one hidden question.
+  sftp-fixture-kbdint:
+    <<: *fixture
+    environment:
+      AUTH: keyboard-interactive
+    ports: ["${SFTP_FIXTURE_KBDINT_PORT:-12483}:22"]
+
+  # Two host key types on one server, which is a perfectly healthy thing to be.
+  # ❗ The cell that matters here asserts this does NOT read as a changed key:
+  # a store keyed by host alone would cry man-in-the-middle on it.
+  sftp-fixture-twokeys:
+    <<: *fixture
+    environment:
+      HOST_KEYS: ed25519,rsa
+    ports: ["${SFTP_FIXTURE_TWOKEYS_PORT:-12484}:22"]
+
+  # A DIFFERENT identity from `sftp-fixture-openssh`, deliberately. A cell seeds
+  # the trust store with this server's real fingerprint against the stock
+  # server's address (or the reverse) and asserts the dial reports a CHANGED key
+  # rather than a first-seen one.
+  sftp-fixture-changedkey:
+    <<: *fixture
+    ports: ["${SFTP_FIXTURE_CHANGEDKEY_PORT:-12485}:22"]
+
+  # No `posix-rename@openssh.com` and no `copy-data@openssh.com`: proprietary NAS
+  # firmware is full of servers like this, and every extension needs an honest
+  # fallback.
+  sftp-fixture-noposixrename:
+    <<: *fixture
+    environment:
+      QUIRK_DROP_EXTENSIONS: posix-rename@openssh.com,copy-data@openssh.com
+    ports: ["${SFTP_FIXTURE_NOPOSIXRENAME_PORT:-12486}:22"]
+
+  # Truncates every SSH_FXP_DATA to 4 KiB, which SFTP explicitly allows. A reader
+  # that advances its offset by the REQUESTED length rather than the returned one
+  # silently holes the file and duplicates bytes, and this is the only fixture
+  # that catches it.
+  sftp-fixture-shortreads:
+    <<: *fixture
+    environment:
+      QUIRK_SHORT_READ_BYTES: "4096"
+    ports: ["${SFTP_FIXTURE_SHORTREADS_PORT:-12487}:22"]
+
+  # A server far stingier than OpenSSH's defaults, for the paths that have to
+  # respect a negotiated limit instead of assuming 255 KiB.
+  sftp-fixture-smalllimits:
+    <<: *fixture
+    environment:
+      QUIRK_LIMITS: max-packet:16384,max-read:8192,max-write:8192,max-handles:16
+    ports: ["${SFTP_FIXTURE_SMALLLIMITS_PORT:-12488}:22"]
+
+  # 5 000 entries in one directory and a 40-level nest: a listing that is many
+  # round trips, and a depth where a per-level `exists()` walk is visibly the
+  # wrong shape.
+  sftp-fixture-bigdir:
+    <<: *fixture
+    environment:
+      SEED: big
+    ports: ["${SFTP_FIXTURE_BIGDIR_PORT:-12489}:22"]
+
+  # Names that aren't valid UTF-8, which SFTP v3 permits and SMB never could.
+  # `openssh-sftp-client` fails the WHOLE readdir on one, loudly, which is the
+  # failure this fixture pins.
+  sftp-fixture-oddnames:
+    <<: *fixture
+    environment:
+      SEED: oddnames
+    ports: ["${SFTP_FIXTURE_ODDNAMES_PORT:-12490}:22"]

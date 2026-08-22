@@ -1,0 +1,4 @@
+# The key-auth fixtures write their generated private keys here at start.
+# Never checked in: a private key in a repo is a private key on the internet.
+*
+!.gitignore
