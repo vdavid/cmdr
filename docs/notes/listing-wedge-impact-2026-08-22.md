@@ -21,6 +21,9 @@ debug numbers with their caveats intact.
   v0.37.0** (2026-08-03), when every row lookup got a more expensive predicate.
 - **Fixed on 2026-08-22**, which is after v0.39.0 (2026-08-19). So **every released build carries it**, and the fix
   ships in the next release.
+- **The tag-enrichment defect this note surfaced along the way is fixed too** (2026-08-22, after the build § 2
+  measured), and it was the bigger cost at large sizes: opening a 300,000-row folder spent 225 s of CPU filling Finder
+  tags and now spends 10 s. See § "What the tag fix moved".
 - **It does not deadlock, and it does not leak.** It saturates. In principle it clears when the driver stops; in
   practice the user's way out (a keystroke, a navigation, a settings toggle) runs through the wedged main thread, so
   force quit was the reliable remedy.
@@ -202,13 +205,53 @@ ms readings at 75,000 rows and up are transient: they disappear after 90 seconds
 bottom of 75,000 rows fresh against 14 ms settled at 300,000 rows).
 
 A `sample` during that window names it: `commands::file_system::listing::enrich_tags`, on a blocking-pool thread, inside
-`listing::caching::apply_tags_to_listing`, whose leaf is `_platform_memcmp`. That function looks each updated path up
+`listing::caching::apply_tags_to_listing`, whose leaf is `_platform_memcmp`. That function looked each updated path up
 with a linear `entries.iter().position(...)`, under the listing cache's WRITE lock, once per update, so filling Finder
-tags for an N-row directory is O(N²) path comparisons. On the pre-fix build the main thread then blocked on the matching
-read lock inside the **synchronous** `get_file_range` command (3,235 of 6,250 main-thread samples parked at one
-instruction). On `main` the same enrichment still runs and still holds the write lock, but the listing reads are
-`async`, so it costs the pane latency instead of the window. ⚠️ **That is a separate, still-open defect**, and the row
-map did not touch it; it is the clearest evidence that fix (3) is what turns a wedge into slow rows.
+tags for an N-row directory cost O(N²) path comparisons. On the pre-fix build the main thread then blocked on the
+matching read lock inside the **synchronous** `get_file_range` command (3,235 of 6,250 main-thread samples parked at one
+instruction); with the listing reads `async` it costs the pane latency instead of the window. It was a **separate**
+defect from the row map, which did not touch it, and it is the clearest evidence that fix (3) is what turns a wedge into
+slow rows.
+
+**It is fixed as of 2026-08-22**, on a commit after the one this note's post-fix build came from, by giving a listing a
+path map beside its row map (`apps/desktop/src-tauri/src/file_system/listing/path_index.rs`, and § "Entries by path" of
+that module's `DETAILS.md`). ❗ So every "post" cell in § 2 above measures a build that still carried it, which is
+exactly why the just-opened column there is worse than the settled one.
+
+### What the tag fix moved (measured)
+
+Same machine and protocol as § 2 (App Nap off, `caffeinate`, drive index off, one pane in the fixture and one in a
+single-file directory), **arm64 release builds** of `cdc050085` against `af1b56a22`, 2026-08-22. The fixtures are fresh
+(75,000 and 300,000 empty files, mean name length 33), so ❌ don't compare these absolutes against § 2's table; compare
+the two columns with each other.
+
+**Opening the directory and letting it settle**, CPU seconds the process spends between the navigation and going quiet.
+With the index off this is the listing read plus the tag sweep, and nothing else touches the app during the window:
+
+| rows    | before                         | after                        |
+| ------- | ------------------------------ | ---------------------------- |
+| 75,000  | 7.9 s CPU, quiet after 8 s     | 1.9 s CPU, quiet after 2 s   |
+| 300,000 | 224.8 s CPU, quiet after 226 s | 10.0 s CPU, quiet after 11 s |
+
+So opening a 300,000-row folder burned nearly four minutes of a core on tags nobody was waiting for, and now costs ten
+seconds — which is roughly the 300,000 `getxattr` calls themselves (~15 µs each), the floor for reading the tags at all.
+
+**Median cursor-move latency at the bottom row**, 15 timed moves per cell, every one answered on both builds:
+
+| rows    | before, just opened | before, at +120 s | after, just opened | after, at +120 s |
+| ------- | ------------------- | ----------------- | ------------------ | ---------------- |
+| 75,000  | 66 ms               | 7 ms              | 8 ms               | 7 ms             |
+| 300,000 | 42 ms               | 351 ms            | 9 ms               | 7 ms             |
+
+⚠️ **Read the 300,000-row row carefully, and never as "just opened is the bad case".** The sweep on that build runs for
+226 s, so the probe that starts 6 s after the navigation catches it before it gets going, and the one at +120 s catches
+it mid-sweep. The +120 s column is the honest in-sweep number there; on the fixed build the sweep is over by then, so
+its +120 s cell is a genuinely settled listing. Row 10 was 2 to 4 ms in every cell on both builds.
+
+**Where the cost went, on a release microbenchmark of the lookup alone** (M1 Max, entries padded to the real
+`FileEntry`'s size, 63-character mean path): one 500-path enrichment chunk scanned for 20 ms at 20,000 entries, 64 ms at
+75,000, and 418 ms at 300,000, against a path map that builds once in 1.3 / 4.9 / 33 ms and then answers the same chunk
+in 43 / 48 / 97 **µs**.
 
 ### The rule of thumb, recalibrated to release
 

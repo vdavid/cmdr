@@ -174,6 +174,53 @@ caller that reads a single shallow row per mutation and nothing else is the shap
 accident. `find_file_indices` is the batch form of the first, and `get_file_beside` exists so a caller wanting a
 neighbour doesn't compose two calls; reach for those instead of a loop.
 
+## Entries by path (path_index.rs)
+
+The other index space a caller arrives with. A row number comes from the pane; a PATH comes from anything that read the
+listing earlier and now wants to change one row — Finder-tag enrichment above all, which sends 500 paths per call and
+sweeps a whole directory that way.
+
+**The same defect as § "Row numbers", one caller further on.** Each path was found by walking `entries`, under the
+cache's WRITE lock, once per path. Measured on a release build (M1 Max, 2026-08-22, synthetic entries with a 63-character
+mean path): one 500-path chunk costs 20 ms at 20,000 entries, 64 ms at 75,000, and 418 ms at 300,000 — times
+`entries / 500` chunks to cover the directory, so a 300,000-entry listing spent over four minutes of write-locked
+walking on tags nobody asked to wait for. It is the "just opened" step in the release curve
+(`docs/notes/listing-wedge-impact-2026-08-22.md` § 2).
+
+**Decision: materialize `(path hash, entry index)` pairs, sorted by hash.** A lookup hashes once, binary-searches, and
+compares the real path of the entries whose hash matches. Same build-once-and-index shape as the row map, and the same
+validity argument: `entries_mut()` drops it, and every accessor holds the `LISTING_CACHE` lock, so no version counter is
+needed.
+
+**Why hashes and not a `HashMap<String, usize>`.** Twelve bytes per entry against 100+ for a map that owns a second copy
+of every path: 3.6 MB against a 300,000-entry listing whose entries are themselves ~65 MB, where the map would add
+~30 MB. It also builds in one sequential pass plus an integer sort, so its cost doesn't depend on the pane's sort order,
+where an index sorted BY PATH degrades 6× on anything but a name sort (measured: 9.4 ms name-sorted against 58.5 ms
+shuffled, 300,000 entries). Colliding hashes land adjacent and the lookup compares the real path, so a collision costs
+one extra comparison and nothing else — it is resolved, not assumed away.
+
+**Decision: one build decision per BATCH, at `BUILD_FROM_BATCH_SIZE` (32).** Both halves are linear in the listing —
+building costs ~65 ns per entry, one scan ~3.4 ns per entry examined — so `k` scans reach the build's price at
+`k ≈ 2 × 65 / 3.4 ≈ 38`, a constant, because the listing size cancels. Under that, a batch is cheaper scanning; over it,
+the map wins on the batch alone before any reuse. A context-menu tag toggle on one right-clicked file must not walk
+300,000 entries into a map it uses once. An existing map is always used, whatever the batch size.
+
+**A tag write deliberately bypasses `entries_mut`** (`CachedListing::set_tags_by_path`). A tag is not part of a name, a
+sort key, or a path, so neither map can go stale from one; routing it through `entries_mut` would drop the row map on
+every enrichment chunk and make the next pane read rebuild all of it, which is a second quadratic riding on the first.
+❗ If a tag ever becomes a sort column or a visibility input, this has to go back through `entries_mut`.
+`path_index_test::a_tag_update_leaves_the_row_map_standing` pins it.
+
+**The write lock was left alone, deliberately.** The hold is now the batch plus one build per listing (~0.05 ms per
+500-path chunk at 75,000 entries, after a ~4.9 ms build), so moving the resolve to a read lock would save one build and
+buy a torn window: entries can move between dropping a read lock and taking the write lock, and every index would need
+re-verifying against its path before it could be trusted. Not worth it at these numbers.
+
+**What is still O(entries), by path**: `carry_forward_tags`, `has_entry`, `remove_entry_by_path`, and the position
+lookup in `update_entry_sorted`. Each is a single lookup per watcher event, not a batch, and the last two mutate anyway
+(so they would drop the map they built). A future caller that loops any of them over a path list should take the batch
+through `PathIndexCache::resolve` instead.
+
 ## Decisions
 
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.
@@ -323,7 +370,8 @@ range (mirroring the custom-folder-icon prefetch), and a background sweep backfi
 **Flow.** `enrich_tags` reads tags for the batch and calls `caching::apply_tags_to_listing`, which mutates entries in
 place (tags are sort-irrelevant — no reorder), replaces **unconditionally** (clearing to empty so an external removal
 propagates), and emits one coalesced `modify` diff for the rows that actually changed (so re-enriching an unchanged
-visible range is silent). It's timeout-guarded and degrades to empty on non-local/hung paths.
+visible range is silent). It's timeout-guarded and degrades to empty on non-local/hung paths. The whole batch resolves
+against the listing's path map in one pass, and the write it does leaves both maps standing: § "Entries by path".
 
 **Carry-forward.** A watcher re-stat builds entries via `get_single_entry`, which reads no xattr (empty tags). Every
 modify path (`notify_modified`, the incremental watcher loop) calls `caching::carry_forward_tags` BEFORE storing and
