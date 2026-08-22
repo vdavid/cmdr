@@ -368,6 +368,41 @@ report `max_concurrent_ops() == 1`, so this always runs on the serial copy path.
 `strategy_sequential_tests.rs` (nested-subtree correctness, the random-vs-sequential routing gate, empty
 dirs + symlinks + out-of-order entries, and cancel-between-members).
 
+## Letting the server do a same-volume copy
+
+Duplicating a file inside one remote volume used to pull every byte down the link and push it straight back up. A
+protocol that can copy for itself (SFTP's `copy-data`) skips both halves, so `stream_pipe_file` asks
+`Volume::copy_within` before it opens a stream. MOVE has had a same-volume fast path since forever
+(`move.rs` → `move_within_same_volume`, a server-side rename); this is COPY's.
+
+**Eligibility is `Arc::ptr_eq` on the two volumes**, which is exact rather than approximate: `routing.rs` resolves both
+sides through the volume registry, so one volume id yields one `Arc`. ❗ Asking a DIFFERENT volume to copy `from`
+inside itself is not a failure — on a server that happens to hold a same-named file it is the wrong file, copied
+silently.
+
+**`Ok(None)` means "do it the ordinary way"**, and that is the answer for everything except a clean success and a
+cancel:
+
+- Two different volumes.
+- `NotSupported`, from a backend with no server-side copy or from one whose SERVER lacks the extension.
+- ⚠️ **Any other failure.** The streaming loop below carries the retry policy, the stall watchdog, and the pause
+  checkpoints, so a fast path that failed for a real reason fails there too with better handling and a better report.
+  The cost is one doomed extra attempt on a genuinely broken destination, which is the cheaper side of the trade.
+- ❌ **A cancel is never one of them.** The intent is consulted as well as the error variant, so a backend that labels
+  its own stop something other than `Cancelled` can't turn a Cancel click into a second, full-speed attempt.
+
+**It stages exactly like a streamed write**, with the REQUESTED staging rather than `resolve_staging`'s: the destination
+genuinely holds a byte-incomplete file while a server-side copy runs, so the single-shot exemption can't apply however
+small the file is. The quit deadline (`state.backend_abort`) rides the same `select!` it rides for a streamed write, and
+cleans up nothing for the same reason.
+
+⚠️ **A pause doesn't land mid-file here**, only at the next file boundary. There is no stream to park between chunks,
+and pausing frees nothing anyway — no bytes are crossing the link. Same limitation, and the same reasoning, as the
+local-FS chunk loop's.
+
+Cells: `strategy_server_side_copy_tests.rs` (eligibility, the fallback, staging, cancel) with a counting double;
+`crates/cmdr-sftp/src/volume/copy_test.rs` for what a real server does, including a fixture that lacks the extension.
+
 ## The single-shot exemption
 
 **Decision**: a write the DESTINATION performs as one indivisible operation skips the staging and goes straight to the

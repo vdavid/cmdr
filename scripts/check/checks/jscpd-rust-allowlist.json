@@ -46,7 +46,6 @@
     "crates/cmdr-index/src/indexing/transports/mtp/index.rs ↔ crates/cmdr-index/src/indexing/transports/smb/index.rs": 11,
     "crates/cmdr-index/src/indexing/writer/deferred_repair.rs ↔ crates/cmdr-index/src/indexing/writer/repair.rs": 29,
     "crates/cmdr-index/src/indexing/writer/delta.rs": 35,
-    "crates/cmdr-index/src/media_index/network/enrich.rs": 14,
-    "crates/cmdr-sftp/src/volume/volume_impl.rs ↔ crates/cmdr-smb/src/volume/volume_impl.rs": 22
+    "crates/cmdr-index/src/media_index/network/enrich.rs": 14
   }
 }

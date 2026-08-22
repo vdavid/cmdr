@@ -553,6 +553,23 @@ pub(super) async fn stream_pipe_file(
     // that position (Local, SMB, and MTP all rename), but a minimal `Volume`
     // impl must stay usable as a copy destination, so a `NotSupported` landing
     // re-runs the file unstaged — the pre-staging behavior — instead of failing.
+    // The server can copy for itself: the bytes never leave it. A pure
+    // optimization, so anything short of a clean success falls through to the
+    // streaming loop below rather than failing the file.
+    if let Some(bytes) = try_server_side_copy(
+        source_volume,
+        source_path,
+        dest_volume,
+        dest_path,
+        state,
+        on_file_progress,
+        staging,
+    )
+    .await?
+    {
+        return Ok(bytes);
+    }
+
     let mut staging = staging;
     // Which attempt at THIS file we're on, 1-based. A transport blip
     // (`retry::is_retryable`) runs the file again from its first byte on a fresh
@@ -781,6 +798,95 @@ enum WriteAttemptOutcome {
     HardAborted,
 }
 
+/// Asks the destination to copy the file inside itself, if both sides are the
+/// same volume and it can.
+///
+/// `Ok(None)` means "do it the ordinary way", and that is the answer for
+/// everything except a clean success and a genuine cancel:
+///
+/// - **Two different volumes.** ❗ Compared by `Arc::ptr_eq`, which is exact
+///   here: the command layer resolves both sides through the volume registry, so
+///   one volume id yields one `Arc`. A `copy_within` on a volume the SOURCE path
+///   doesn't belong to would copy whatever happens to sit at that path on the
+///   other server, which is not a failure — it is the wrong file, silently.
+/// - **`NotSupported`**, from a backend that has no server-side copy at all or
+///   from one whose server simply lacks the extension.
+/// - **Any other failure.** The streaming path below has the retry policy, the
+///   stall watchdog, and the pause checkpoints; a fast path that failed for a
+///   real reason will fail there too, with better handling and a better report.
+///
+/// ❌ A cancel is NOT a fall-through. The user asked for it to stop, and running
+/// the file again the slow way is the opposite of stopping.
+///
+/// ⚠️ **A pause doesn't land mid-file here**, only at the next file boundary.
+/// There is no stream to park between chunks, and pausing frees nothing anyway:
+/// no bytes are crossing the link. Same limitation, and the same reasoning, as
+/// the local-FS chunk loop's.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "One file's whole copy context, the same set `stream_pipe_file` carries"
+)]
+async fn try_server_side_copy(
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+    state: &Arc<WriteOperationState>,
+    on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    staging: WriteStaging,
+) -> Result<Option<u64>, VolumeError> {
+    if !Arc::ptr_eq(source_volume, dest_volume) {
+        return Ok(None);
+    }
+
+    // ❗ The requested staging, ❌ never `resolve_staging`: the destination
+    // genuinely holds a byte-incomplete file while a server-side copy runs, so
+    // the single-shot exemption can't apply however small the file is
+    // (`Volume::copy_within`'s contract).
+    let staged = StagedWrite::begin(state, dest_path, staging);
+    note_pending_for_local_dest(dest_volume, staged.target());
+    set_task_phase(TaskPhase::Streaming);
+    set_task_bytes(0, 0);
+
+    // The quit deadline rides the same `select!` it rides for a streamed write.
+    // Nothing is cleaned up on that arm: the delete would go back through a
+    // connection that is already not answering, and the temp is registered for
+    // the startup sweep.
+    let outcome = tokio::select! {
+        biased;
+        () = state.backend_abort.cancelled() => return Err(hard_abort_error(dest_path)),
+        result = dest_volume.copy_within(source_path, staged.target(), on_file_progress) => result,
+    };
+
+    match outcome {
+        Ok(bytes) => {
+            staged.commit(dest_volume).await?;
+            Ok(Some(bytes))
+        }
+        // ❌ A cancel is never retried more slowly. The intent is consulted as
+        // well as the variant, so a backend that labels its own stop something
+        // else can't turn a Cancel click into a second, full-speed attempt.
+        Err(e) if matches!(e, VolumeError::Cancelled(_)) || super::super::super::state::is_cancelled(&state.intent) => {
+            staged.abandon(dest_volume).await;
+            Err(e)
+        }
+        Err(VolumeError::NotSupported) => {
+            staged.abandon_attempt(dest_volume).await;
+            Ok(None)
+        }
+        Err(e) => {
+            log::debug!(
+                target: "copy",
+                "try_server_side_copy: {} couldn't copy {} inside itself ({e}); streaming it instead",
+                dest_volume.name(),
+                dest_path.display(),
+            );
+            staged.abandon_attempt(dest_volume).await;
+            Ok(None)
+        }
+    }
+}
+
 /// Resolve `dest_path` against `dest_volume.local_path()` and register it
 /// with the downloads watcher's ignore set. Skips silently when
 /// `dest_volume` isn't local-FS-backed (MTP, SMB, in-memory): those paths
@@ -814,6 +920,9 @@ mod retry_tests;
 #[cfg(test)]
 #[path = "strategy_sequential_tests.rs"]
 mod sequential_tests;
+#[cfg(test)]
+#[path = "strategy_server_side_copy_tests.rs"]
+mod server_side_copy_tests;
 #[cfg(test)]
 #[path = "strategy_single_shot_tests.rs"]
 mod single_shot_tests;
