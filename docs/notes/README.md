@@ -47,6 +47,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   weight matrices and they sum exactly, which is what turned a size into a name. Carries the method (a per-tag
   region-size histogram is a fingerprint), the 35× compute-unit lever, the clean negative on Vision, the ranked fix
   options none of which were taken, and the one `vmmap` line that confirms or refutes it on a live prod build.
+- `listing-row-fetch-quadratic-2026-08-22.md` — why a pane parked at the BOTTOM of a large directory saturates the main
+  thread and stops answering IPC, and the proof it is **pre-existing** (`main` reproduces it at the same 3.8× ratio, and
+  the whole call path is byte-identical). The MCP pane mirror fetches its visible range one row at a time, each row a
+  synchronous `#[tauri::command]` on the main thread doing a linear scan to its index, so one index event costs ~7.4M
+  predicate evaluations at the bottom of a 74k listing and nothing at the top. Read it before reading a "URL-scheme
+  handler" sample as the asset protocol; on macOS that IS Tauri's IPC transport. Carries the ranked fixes, none taken.
 
 **Load-bearing as regression anchors:**
 
