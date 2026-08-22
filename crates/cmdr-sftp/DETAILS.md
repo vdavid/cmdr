@@ -294,9 +294,11 @@ typed a secret, which is the whole difference the policy is about.
   set only on a real `AuthenticationRejected` (a refused connection is not a burnt attempt) and cleared only by a human,
   through `reconnect_with_credentials`.
 - **The store is re-read on every dial**, so the ONE unattended try already carries whatever the user changed.
-- ❗ **A key passphrase is never persisted.** Writing it to the secret store would turn the rung that deliberately
-  cannot reconnect unattended into one that can, which is the opposite of what encrypting the key asked for. It is
-  passed to `transport::dial` as `offered_secret`, used for that dial, and dropped.
+- ❗ **An attended reconnect never persists a key passphrase.** It is passed to `transport::dial` as `offered_secret`,
+  used for that dial, and dropped, where a password is also written to the store. ❗ That is a "don't collect what you
+  don't need" rule rather than the thing that stops unattended reconnects: the policy gates on the RUNG, so an encrypted
+  key file refuses however full the store is. A passphrase saved through `save_sftp_credentials` for a first connect (§
+  "The one secret entry") doesn't change that.
 - ❗ **Another account is another volume.** The id is `host:port:username`, so `reconnect_with_credentials` refuses a
   username that isn't this volume's rather than quietly authenticating as somebody else under this volume's name and
   index.
@@ -542,8 +544,8 @@ deliberately doesn't do.
 
 - **agent** → reconnect freely. A vanished socket or a removed identity surfaces as a refusal on the retry.
 - **unencrypted key file** → freely.
-- **passphrase-protected key file** → `NeedsCredentials`. The passphrase is a secret and isn't held past the session it
-  unlocked, so this genuinely cannot reconnect unattended, however convenient that would be.
+- **passphrase-protected key file** → `NeedsCredentials`, without dialing. ❗ The gate is the RUNG, not an empty store:
+  a passphrase saved for the first connect still doesn't buy an unattended reconnect.
 - **password** → re-read the store (it may have changed) and try **once**, then `NeedsCredentials`. ❌ Never a loop:
   repeated wrong passwords lock accounts.
 - **keyboard-interactive** → never unattended. The server asks the questions and there is nobody to answer them.
@@ -642,7 +644,8 @@ is that a sign-in UI genuinely branches on all of it.
   settings screen.
 - `saveSftpCredentials(host, port, username, secret)` / `hasSftpCredentials(...)` → `boolean` /
   `deleteSftpCredentials(...)`. The two writing ones throw a `KeychainError`. ❗ There is deliberately **no** command
-  that hands a secret back: the backend reads the store itself when it builds a session.
+  that hands a secret back: the backend reads the store itself when it builds a session. ❗ **One entry per account,
+  whatever the rung uses it for** — see § "The one secret entry" below.
 - `getKnownSftpServers()` → `KnownSftpServer[]` / `updateKnownSftpServer(target)` /
   `forgetKnownSftpServer(host, port, username)` → `boolean`. A successful connect already calls the middle one, so the
   update command is for editing a server without connecting (renaming it, changing its root or key file).
@@ -662,6 +665,36 @@ passphrase rung, `password` carries the key passphrase.
 - `needs_credentials` → nothing was ever offered (no agent, no readable key file, no stored secret). ❗ Also a sign-in
   form, but ❌ never worded as "wrong password": the user may never have entered one.
 - `timed_out`, `unreachable` → the network or the address. Retrying is the only move.
+
+### The first connection, end to end
+
+`connectSftpVolume` is called again after every step, and the order is fixed by the protocol: the key exchange happens
+before authentication, so the host key is always settled first. A brand-new server takes up to three rounds.
+
+1. `connectSftpVolume(target)` → `needs_host_key_approval`. Show the key, approve it (§ below), call again.
+2. `connectSftpVolume(target)` → `needs_credentials`, if the ladder found nothing to offer: no agent identity, no
+   readable key file, and nothing in the secret store. ❗ **The connect command takes no secret.** Show a password form,
+   call `saveSftpCredentials(host, port, username, secret)`, then call `connectSftpVolume` again — the backend reads the
+   store when it builds the session, which is also what makes every later connection silent.
+3. `connectSftpVolume(target)` → `connected`.
+
+A server the user has connected to before skips straight to step 3, and one where only the password changed answers
+`authentication_rejected` at step 2 instead. ❗ A key file needs no round of its own: its PATH is part of the target,
+and its passphrase (if it has one) comes from the secret store the same way a password does.
+
+### The one secret entry
+
+There is exactly ONE secret per account (`service = "host:port"`, `scope = Some(username)`), and the auth ladder uses it
+for whichever rung it reaches: the password on the password and keyboard-interactive rungs, the key file's passphrase on
+the key-file rung. ❗ So a passphrase-protected key needs its passphrase saved to connect the FIRST time; there is no
+other way in, because the connect command deliberately takes no secret argument.
+
+❗ **Saving a passphrase does not make that rung reconnect unattended.** `auth::reconnect_policy` gates on the RUNG, not
+on whether a secret exists, so an encrypted key file still answers `NeedsCredentials` without dialing however full the
+store is. What saving it costs is having the passphrase in the secret store at all, which weakens what encrypting the
+key bought — a question worth putting to the user ("remember this passphrase?") rather than one the backend answers. An
+attended reconnect never saves it: `reconnect_with_credentials` passes a typed passphrase straight to the dial and drops
+it, and saves only on the password and keyboard-interactive rungs.
 
 ### The two-phase approval, in order
 

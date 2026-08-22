@@ -95,10 +95,14 @@ export async function listTrustedSftpHostKeys(): Promise<TrustedHostKey[]> {
 }
 
 /**
- * Saves the password for one account on one server, so the next connection is silent.
+ * Saves the secret for one account on one server, so the next connection is silent.
  *
- * A password only. A key passphrase is deliberately never stored: it's passed to
- * one reconnect and dropped. Throws a `KeychainError` if the store refused.
+ * One entry per account, whatever the rung uses it for: the backend offers it as the
+ * password on the password and keyboard-interactive rungs, and as the key file's
+ * passphrase on the key-file rung. Saving a passphrase doesn't make that rung reconnect
+ * unattended — the policy gates on the rung, not on whether a secret exists.
+ *
+ * Throws a `KeychainError` if the store refused.
  */
 export async function saveSftpCredentials(host: string, port: number, username: string, secret: string): Promise<void> {
   const res = await commands.saveSftpCredentials(host, port, username, secret)

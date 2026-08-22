@@ -3483,10 +3483,19 @@ export const commands = {
   /**
    *  Saves the secret for one account on one server.
    *
-   *  A password for the password and keyboard-interactive rungs. ❌ Never a key
-   *  passphrase: persisting one would turn the rung that deliberately cannot
-   *  reconnect unattended into one that can, which is the opposite of what
-   *  encrypting a key asked for.
+   *  ❗ **One entry per account, whatever the rung uses it for.** The auth ladder
+   *  reads this same entry and offers it as the password on the password and
+   *  keyboard-interactive rungs, and as the key file's passphrase on the key-file
+   *  rung. So a passphrase-protected key needs its passphrase here to connect the
+   *  FIRST time; after that, an attended sign-in passes a typed one straight
+   *  through without saving.
+   *
+   *  ❗ Saving a passphrase does NOT make that rung reconnect unattended:
+   *  `cmdr_sftp::auth::reconnect_policy` gates on the rung, not on whether a
+   *  secret exists, so a passphrase-protected key still stops and asks. What it
+   *  costs is having the passphrase in the secret store at all, which is a
+   *  question for the sign-in UI to put to the user rather than one this command
+   *  answers.
    *
    *  ❗ On a blocking task: the store can put a Keychain prompt in front of this,
    *  and a modal dialog on the async runtime stalls every other volume.

@@ -24,7 +24,7 @@ word a human reads stays app-side.
   without the other. ❌ Never record an approved fingerprint without re-asking the server first
   (`volume::approve_host_key`): that is how one approval becomes trust for another key.
 - **❌ Never anchor an out-of-root path; refuse it.** `root_anchored` turns `/etc/passwd` into `/srv/data/etc/passwd`.
-- **⚠️ A filename that isn't UTF-8 kills the SESSION**, not just the listing.
+- **⚠️ A non-UTF-8 filename kills the SESSION**, not just the listing.
 - **❌ No `~/.ssh/config` support**: no `ProxyJump`, `Match`, or aliases. People will expect it; it isn't there.
 - **❌ Never read through `File`'s own offset or `read_all`**: it advances by the length it ASKED for, so one short
   answer holes the file. Name an offset on every request, on all three byte paths.
@@ -36,7 +36,8 @@ word a human reads stays app-side.
 - **❗ Capabilities are read once, at dial, through `SshConnection::extensions()`.** ❌ Never a `Sftp::support_*`
   predicate at a call site: a fallback nobody can drive is a fallback nobody tested.
 - **❌ A password is offered once unattended; a key passphrase never is** (`auth::reconnect_policy`). Wrong passwords
-  lock accounts, and storing a passphrase would undo encrypting the key.
+  lock accounts. ❗ The gate is the RUNG, not an empty store: the ladder reads ONE secret entry per account, as a
+  password or a passphrase depending on the rung.
 - **❗ Every wire-touching delegator in `volume_impl.rs` wraps itself in `noting`.** With no watcher, operations ARE how
   a dead session is found; one without it leaves a volume showing as connected.
 - **❗ Report transitions, never states** (`state.rs`), and a retired volume reports nothing at all.
