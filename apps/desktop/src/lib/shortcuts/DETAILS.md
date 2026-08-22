@@ -259,9 +259,9 @@ That last clause is what makes "superset" precise instead of a guess, and it's w
 isn't a bug:
 
 - A test naming all four flags spells out ONE exact combo and is a superset of nothing, so it passes. That's how the
-  dialogs' `(e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === 'Enter'`, `NetworkBrowser`'s ⌘R, the
-  settings sidebar's ⌘A, and `+page.svelte`'s ⌘⇧D / suppression tests all stay legal. They aren't rebindable, which is a
-  separate (accepted) tradeoff, but they can't fire on the wrong keypress.
+  dialogs' `(e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === 'Enter'`, the settings sidebar's ⌘A, and
+  `+page.svelte`'s ⌘⇧D / suppression tests all stay legal. They aren't rebindable, which is a separate (accepted)
+  tradeoff, but they can't fire on the wrong keypress.
 - Rejecting modifiers is the safe direction, so negated reads never count as "required".
 - A bail-out guard (`if (e.metaKey || e.ctrlKey || e.altKey) return null` ahead of the key tests) leaves no key test in
   the guarded body, which is what keeps `type-to-jump-keys.ts` and `selection-dialog-keys.ts` clean without an opt-out.
@@ -436,6 +436,12 @@ At runtime the dispatch map keeps one winner per combo: the most specific scope 
 with registry declaration order as the stable tiebreaker for equal specificity. Pinned by the scope-winner tests in
 `shortcut-dispatch.test.ts`; without the scope rule, an unrelated registry reorder could silently flip a kept conflict's
 winner.
+
+**Sibling scopes don't conflict, but they still share one winner.** `Main window/File list` and `Main window/Network`
+are siblings, so `scopesOverlap` says no clash and `registry-conflicts.test.ts` stays quiet — yet the dispatch map is
+global and keyless of context, so the same combo in both scopes leaves ONE of them dead at runtime. That's why ⌘R is a
+single `Main window` command (`pane.refresh`) that routes on what the focused pane shows, rather than one binding per
+view. Give a combo to two sibling scopes only when the losing side handles the key locally (`eventMatchesCommand`).
 
 ### Modifier-only combos are rejected
 

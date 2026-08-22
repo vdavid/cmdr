@@ -250,6 +250,17 @@ export const mainWindowCommands: CommandSource[] = [
     shortcuts: ['⌘←'],
     descriptionKey: 'commands.paneCopyPathRightToLeft.description',
   },
+  {
+    // The only key that re-reads a directory. Scoped to the whole main window, not
+    // the file list: a pane shows either the file list or the network browser, and
+    // ⌘R refreshes whichever is up (`refreshPane` in `pane-commands.ts` routes it).
+    // That's also why `network.refresh` no longer carries ⌘R: one combo, one winner.
+    id: 'pane.refresh',
+    nameKey: 'commands.paneRefresh.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘R'],
+  },
 
   // ============================================================================
   // Main window - Tab commands

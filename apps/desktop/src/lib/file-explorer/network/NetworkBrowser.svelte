@@ -47,6 +47,7 @@
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import { addToast } from '$lib/ui/toast'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import { eventMatchesCommand } from '$lib/shortcuts'
     import { triggerNetworkDiscovery } from './lazy-trigger'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
@@ -248,11 +249,6 @@
         }
     }
 
-    /** Check for ⌘R refresh shortcut */
-    function isRefreshShortcut(e: KeyboardEvent): boolean {
-        return e.key === 'r' && e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey
-    }
-
     /** Whether the cursor is on the "Connect to server..." pseudo-row. */
     const isCursorOnConnectRow = $derived(cursorIndex === hosts.length)
 
@@ -290,8 +286,10 @@
     // Handle keyboard navigation
     // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function handleKeyDown(e: KeyboardEvent): boolean {
-        // ⌘R to refresh, works regardless of host count
-        if (isRefreshShortcut(e)) {
+        // The refresh key (⌘R by default) works regardless of host count. Read
+        // through the registry so a rebind follows; the document-level dispatcher
+        // usually gets here first, and this is the in-view backstop.
+        if (eventMatchesCommand(e, 'pane.refresh')) {
             e.preventDefault()
             handleRefreshClick()
             return true
@@ -477,12 +475,18 @@
     }
 
     // The keyboard-shortcut chip rendered inline in the refresh hint (`<key>` tag).
-    // The chip key is a fixed combo, not translatable, so the snippet ignores the
-    // (empty) inner content and renders the chip itself.
+    // It reads the live `pane.refresh` binding, so a rebind moves the hint with it.
+    // Non-clickable: the whole status bar is already a refresh button, and a nested
+    // click target would double-activate. The snippet ignores the (empty) inner
+    // content and renders the chip itself.
     const snippets = { key: refreshKeyChip }
 </script>
 
-{#snippet refreshKeyChip(_children: import('svelte').Snippet)}<ShortcutChip key="⌘R" size="sm" />{/snippet}
+{#snippet refreshKeyChip(_children: import('svelte').Snippet)}<ShortcutChip
+        commandId="pane.refresh"
+        clickable={false}
+        size="sm"
+    />{/snippet}
 
 <div class="network-browser" class:is-focused={isFocused}>
     <div class="header-row">

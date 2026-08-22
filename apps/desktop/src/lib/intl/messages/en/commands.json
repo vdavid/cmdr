@@ -297,7 +297,7 @@
   },
   "commands.paneRefresh.label": "Refresh pane",
   "@commands.paneRefresh.label": {
-    "description": "Internal command name for re-reading the focused pane's folder, shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two side-by-side file lists.",
+    "description": "Command name for re-reading the focused pane, so the file list shows what is on disk right now. In the network browser it re-scans for hosts instead. Appears in the command palette and the keyboard-shortcuts list. \"Pane\" is one of the two side-by-side file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.tabNew.label": "New tab",

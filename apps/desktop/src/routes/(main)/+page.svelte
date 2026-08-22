@@ -103,6 +103,7 @@
         handleCommandExecute as dispatchCommand,
         type CommandDispatchContext,
     } from './command-dispatch'
+    import { getAppLogger } from '$lib/logging/logger'
     import { type CommandId, type CommandDispatchArgs } from '$lib/commands'
     import { setupMcpListeners } from './mcp-listeners'
     import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
@@ -233,7 +234,7 @@
                 // Tag the source so the dispatch core can swallow the spurious
                 // second half of a macOS keyboard+menu double-fire (dispatch-dedup.ts).
                 markDispatchSource('keyboard')
-                void handleCommandExecute(action.commandId)
+                void dispatchFromUi(action.commandId)
                 break
             case 'openDebugWindow':
                 e.preventDefault()
@@ -287,7 +288,7 @@
         if (!commandId) return
         e.preventDefault()
         e.stopPropagation()
-        void handleCommandExecute(commandId)
+        void dispatchFromUi(commandId)
     }
 
     /**
@@ -691,11 +692,32 @@
         },
     }
 
+    const dispatchLog = getAppLogger('user-action')
+
     async function handleCommandExecute<K extends CommandId>(
         commandId: K,
         ...args: CommandDispatchArgs<K>
     ): Promise<void> {
         await dispatchCommand(commandId, commandDispatchCtx, ...args)
+    }
+
+    /**
+     * Fire a command from a user gesture (key, palette row, F-key, menu item) and
+     * absorb the rejection. A few handlers reject on purpose so the MCP adapter can
+     * report the real outcome — `pane.refresh` does when a re-read outlives its wait
+     * — and the MCP path keeps `handleCommandExecute` for exactly that. On a user
+     * gesture there's nobody to hand the rejection to: the handler has already said
+     * its piece in a toast, so the alternative is an unhandled rejection.
+     */
+    async function dispatchFromUi<K extends CommandId>(commandId: K, ...args: CommandDispatchArgs<K>): Promise<void> {
+        try {
+            await handleCommandExecute(commandId, ...args)
+        } catch (e) {
+            dispatchLog.debug('Command {commandId} rejected on a user gesture: {reason}', {
+                commandId,
+                reason: e instanceof Error ? e.message : String(e),
+            })
+        }
     }
 
     /**
@@ -706,7 +728,8 @@
      */
     const listenerSetupCtx: ListenerSetupContext = {
         getExplorer: () => explorerRef,
-        dispatch: handleCommandExecute,
+        // Menu items are a user gesture, so they absorb a rejection like the keyboard does.
+        dispatch: dispatchFromUi,
         unlistenFns: tauriUnlistenFns,
         dialogs: {
             setAboutWindow: (show: boolean) => {
@@ -750,7 +773,7 @@
         {/if}
 
         {#if showCommandPalette}
-            <CommandPalette onExecute={handleCommandExecute} onClose={handleCommandPaletteClose} />
+            <CommandPalette onExecute={dispatchFromUi} onClose={handleCommandPaletteClose} />
         {/if}
 
         {#if showSearchDialog}
@@ -818,7 +841,7 @@
 
         {#if showApp}
             <div class="explorer-rail-row">
-                <DualPaneExplorer bind:this={explorerRef} onCommand={handleCommandExecute} />
+                <DualPaneExplorer bind:this={explorerRef} onCommand={dispatchFromUi} />
                 {#if askCmdrState.open}
                     <AskCmdrRail />
                 {/if}
@@ -832,10 +855,7 @@
         {/if}
 
         {#if showApp}
-            <FunctionKeyBar
-                visible={showFunctionKeyBar}
-                onCommand={handleCommandExecute}
-            />
+            <FunctionKeyBar visible={showFunctionKeyBar} onCommand={dispatchFromUi} />
         {/if}
     </main>
 </div>

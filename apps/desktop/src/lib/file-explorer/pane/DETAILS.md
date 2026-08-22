@@ -323,6 +323,15 @@ synchronous refusal gate for the in-place path arm); its refusal strings are byt
 `moveCursorByName*` moved into `pane-commands` even though it's called from component-resident writers (`moveCursor`,
 `restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
 
+**`refreshPane` is the one refresh, and it forces.** ⌘R (`pane.refresh`) and the MCP `refresh` tool both land in
+`pane-commands.ts::refreshPane()`. It routes on the view: the network browser has no listing, so there it re-scans hosts
+(`paneRef.refreshNetworkHosts()`); everywhere else it calls `refreshListing(listingId, true)` and then `refreshView()`.
+The `true` matters — unforced, the backend answers a watcher-backed listing straight out of the cache, which is honest
+on MTP and a lie on SMB (another machine's writes never reached the watcher). The post-write top-ups
+(`transfer-pane-effects.ts`, the rename flows, `NewFolderDialog`) stay unforced on purpose: they fire after every
+transfer, and a forced re-read of a 1k-entry MTP folder costs ~17 s. Rationale lives with `refresh_listing` in
+`src-tauri/src/commands/file_system/listing.rs`.
+
 **Explorer store (`explorer-state.svelte.ts`).** Module store owning the dual-pane navigation + UI-chrome state that
 `DualPaneExplorer` used to trap in component closures: `focusedPane`, `leftPaneWidthPercent`, `railFocused`, and the two
 tab-manager holders. State is module-private (A1): `createExplorerState()` closes over `$state` locals and exposes only

@@ -140,9 +140,10 @@ malformed value collapses to `undefined` and the listener skips the dispatch. No
 `ctx.dispatch` is `+page.svelte`'s `handleCommandExecute` (bound with its context).
 
 Per-pane MCP commands (`sort.set`, `selection.mcpSelect`, `cursor.moveTo`, `cursor.scrollTo`, `volume.selectByName`,
-`tab.mcpAction`, `pane.refresh`, `dialog.confirm`, `nav.openUnderCursor`, and the optional-arg
-`file.copy`/`file.move`/`file.delete`) exist because the focused-pane registry commands can't target a specific pane /
-tab / option. They're all `showInPalette: false`. `view.setMode` is shared with the native-menu `view-mode-changed`
+`tab.mcpAction`, `dialog.confirm`, `nav.openUnderCursor`, and the optional-arg `file.copy`/`file.move`/`file.delete`)
+exist because the focused-pane registry commands can't target a specific pane / tab / option. They're all
+`showInPalette: false`. `pane.refresh` is dispatched the same way but is NOT one of them: it's the user's ⌘R, palette-
+visible, and the MCP `refresh` tool rides along on it. `view.setMode` is shared with the native-menu `view-mode-changed`
 path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`) vs `setViewMode` (push it).
 
 ### Two exceptions stay adapter-local (off the bus)

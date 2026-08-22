@@ -18,11 +18,14 @@ export const browsersCommands: CommandSource[] = [
     fixedKey: true,
   },
   {
+    // No combo of its own: ⌘R is `pane.refresh`, which re-scans hosts when the
+    // focused pane shows the network browser. This entry stays for the palette,
+    // where "Refresh network hosts" says what it does.
     id: 'network.refresh',
     nameKey: 'commands.networkRefresh.label',
     scope: 'Main window/Network',
     showInPalette: true,
-    shortcuts: ['⌘R'],
+    shortcuts: [],
   },
 
   // ============================================================================

@@ -48,13 +48,6 @@ export const mcpCommands: CommandSource[] = [
     shortcuts: [],
   },
   {
-    id: 'pane.refresh',
-    nameKey: 'commands.paneRefresh.label',
-    scope: 'Main window',
-    showInPalette: false,
-    shortcuts: [],
-  },
-  {
     id: 'nav.openUnderCursor',
     nameKey: 'commands.navOpenUnderCursor.label',
     scope: 'Main window',

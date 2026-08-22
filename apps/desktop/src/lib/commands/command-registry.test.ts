@@ -60,6 +60,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'pane.rightVolumeChooser',
   'pane.copyPathLeftToRight',
   'pane.copyPathRightToLeft',
+  'pane.refresh',
   'tab.new',
   'tab.close',
   'tab.reopen',
@@ -124,7 +125,6 @@ const MCP_ONLY_HIDDEN_IDS: readonly CommandId[] = [
   'volume.selectByName',
   'tab.mcpAction',
   'dialog.confirm',
-  'pane.refresh',
   'nav.openUnderCursor',
 ]
 

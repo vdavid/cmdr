@@ -53,6 +53,12 @@ describe('resolveGlobalKeyAction', () => {
       expect(resolveGlobalKeyAction(cmd('v'), false)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
     })
 
+    it('dispatches the pane refresh on ⌘R, so a manual re-read has a key at all', () => {
+      // The one refresh key: it re-reads the focused pane's directory, and in the
+      // network browser it re-scans hosts (`pane-commands.ts` routes on the view).
+      expect(resolveGlobalKeyAction(cmd('r'), false)).toEqual({ kind: 'dispatch', commandId: 'pane.refresh' })
+    })
+
     it('hands ⌘← / ⌘→ to a focused text input instead of dispatching', () => {
       cleanupFocus = focus('input')
       expect(resolveGlobalKeyAction(cmd('ArrowLeft'), false)).toEqual({ kind: 'ignore' })
