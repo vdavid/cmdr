@@ -626,6 +626,14 @@ registration.
 `PaneState.typeToJump` whenever the buffer or indicator is live, so MCP-driven E2E can assert without DOM poking. See
 `src-tauri/src/mcp/DETAILS.md` § State stores.
 
+`NetworkMountView` mirrors a mount that didn't go through the same way, as `PaneState.mountError` (`{ share, message }`)
+— the "Couldn't mount share" pane and the login form an auth-class failure routes to alike. Without it a failed mount is
+invisible from `cmdr://state`: the pane's `path` and `files` still describe the share list either view replaced, so a
+reader sees a pane that simply didn't move. The clear is an explicit push of its own rather than something the next view
+is trusted to do: `ShareBrowser` only pushes once it has a share list, so a host that went quiet between the failure and
+Back pushes nothing at all, and a `mountError` outliving its pane misleads a reader worse than the silence the mirror
+replaced. `NetworkMountView.test.ts` holds that line.
+
 **The `navigate()` transaction (`navigate.ts`).** Every coordinator-level pane navigation goes through one
 `navigate(intent, deps)` entry. `DualPaneExplorer` builds the `NavigateDeps` (store getters/mutators + the FilePane
 handle + the persistence trigger + the side-keyed token map) and wraps `navigate()` as its `navigate` export; the bus,

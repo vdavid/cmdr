@@ -481,10 +481,10 @@ subsystem's startup path DISCOVERS things rather than being handed them, gate th
 the run only ever sees what it created itself.
 
 **Why:** whatever the machine happens to have becomes a hidden input, and the failure lands on a random innocent spec.
-The startup SMB adopter (`file_system::upgrade_existing_smb_mounts`) found David's real NAS at `/Volumes/naspi` in
-every shard, tried a direct connection over the real LAN, and raised a genuine "this share is on the slow path" toast —
-which the global `afterEach` UI-artifact guard then charged to whichever spec was running. Five runs, five different
-red specs, none of them related. It also means a test run was reaching for a Keychain entry and opening a session to a
+The startup SMB adopter (`file_system::upgrade_existing_smb_mounts`) found David's real NAS at `/Volumes/naspi` in every
+shard, tried a direct connection over the real LAN, and raised a genuine "this share is on the slow path" toast — which
+the global `afterEach` UI-artifact guard then charged to whichever spec was running. Five runs, five different red
+specs, none of them related. It also means a test run was reaching for a Keychain entry and opening a session to a
 machine on someone's home network. The gate now lives in `test_mode::may_adopt_preexisting_network_mounts`.
 
 **How to spot the next one:** grep a startup path for enumeration of the world — `/Volumes`, USB, mDNS, Bluetooth,
@@ -510,8 +510,8 @@ entry needs a real "we can't make this faster" justification, not convenience.
 - **`smb_integration_mount_non_ascii_share`** (`src-tauri/src/network/mount.rs`): the third and last real NetFS kernel
   mount, on the same **16s** budget and for the same reason. Only NetFS can answer whether it accepts the escaped URL
   `build_smb_mount_url` produces, which is why a unit test can't replace it. It mounts exactly ONE share (`café`) even
-  though the `unicode` fixture serves four: the others assert the same mechanism, their URLs are already pinned byte
-  for byte by unit tests, and each extra kernel mount is another one of these budgets in the lane.
+  though the `unicode` fixture serves four: the others assert the same mechanism, their URLs are already pinned byte for
+  byte by unit tests, and each extra kernel mount is another one of these budgets in the lane.
 - **`smb_integration_concurrent_streaming_writes_no_deadlock`** (~2.8-4.3 s, the integration lane's slowest local test):
   don't shrink it to buy suite time. Its shape (200 files, 60 × 1 MB writes forced through the streaming fallback at
   concurrency 8) is deliberately tuned to the production workload that surfaced the deadlock it guards, and no smaller

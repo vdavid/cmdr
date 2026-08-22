@@ -48,7 +48,6 @@
     "apps/desktop/src-tauri/src/mtp/connection/directory_ops.rs": 983,
     "apps/desktop/src-tauri/src/mtp/connection/mod.rs": 1204,
     "apps/desktop/src-tauri/src/network/manual_servers.rs": 1056,
-    "apps/desktop/src-tauri/src/network/mount.rs": 808,
     "apps/desktop/src-tauri/src/operation_log/rollback.rs": 860,
     "apps/desktop/src-tauri/src/operation_log/rollback/tests.rs": 1180,
     "apps/desktop/src-tauri/src/search/live/tests.rs": 815,

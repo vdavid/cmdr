@@ -7724,11 +7724,12 @@ export type PaneState = {
    */
   typeToJump?: TypeToJumpInfo | null
   /**
-   *  Set while the pane is showing the "Couldn't mount share" pane instead of
-   *  a listing. Without it a failed mount is invisible from here: the pane's
-   *  `path` and `files` still describe the share list behind the error, so a
-   *  reader sees a pane that simply didn't move and no reason anywhere in the
-   *  resource. Cleared by the next push from any other view.
+   *  Set while a mount the pane tried didn't go through, whichever way the pane
+   *  is showing it (the "Couldn't mount share" pane, or the login form an
+   *  auth-class failure routes to). Without it a failed mount is invisible from
+   *  here: the pane's `path` and `files` still describe the share list behind
+   *  it, so a reader sees a pane that simply didn't move and no reason anywhere
+   *  in the resource. Cleared by the next push from any other view.
    */
   mountError?: MountErrorInfo | null
 }

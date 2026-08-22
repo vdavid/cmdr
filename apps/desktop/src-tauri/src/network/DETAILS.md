@@ -231,9 +231,9 @@ server+share+port already mounted, skipping NetFS entirely.
 
 `mount.rs::build_smb_mount_url` assembles `smb://host[:port]/share` from percent-encoded halves.
 `CFURLCreateWithString` PARSES, it never escapes: hand it a string that isn't already a valid RFC 3986 URL and it
-returns NULL, so `café` and `公開` couldn't be mounted at all while `public` on the same host mounted fine. ❌ Escaping
-the finished URL string instead eats the scheme, the `//`, the port colon, and the share separator, so the two data
-halves are escaped separately and the structure assembled around them.
+returns NULL, so `café` and `公開` couldn't be mounted at all while `public` on the same host mounted fine. Escaping the
+finished URL string instead would eat the scheme, the `//`, the port colon, and the share separator, which is why the
+two data halves are escaped separately and the structure assembled around them.
 
 - **The escape set is RFC 3986 `unreserved`** (`urlencoding::encode`: keeps `A-Za-z0-9-._~`). Over-escaping is free
   (a reader decodes back to the same bytes); under-escaping is not — an unescaped `%` in a share named `100%` reads as

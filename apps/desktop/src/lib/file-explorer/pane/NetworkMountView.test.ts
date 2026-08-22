@@ -213,12 +213,12 @@ describe('NetworkMountView mount-failure auth loop', () => {
 
     await vi.waitFor(() => {
       expect(h.updateLeftPaneState).toHaveBeenCalledWith(
-        expect.objectContaining({ mountError: expect.objectContaining({ share: 'naspi' }) }),
+        expect.objectContaining({ mountError: { share: 'naspi', message: 'Can\'t connect to "Naspolya"' } }),
       )
     })
 
     must(target.querySelector<HTMLElement>('.mount-error-state'), 'the error pane')
-    const backButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.includes('Back'))
+    const backButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.includes('Back'))
     must(backButton, 'the Back button').click()
 
     await vi.waitFor(() => {

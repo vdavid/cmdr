@@ -519,7 +519,10 @@ the shared `smb-consumer` Docker Compose project. Two layers of contention had t
   raced each other. `SmbOrchestrator` (`scripts/check/smb_orchestrator.go`) lifts lifecycle one level up — at runner
   init, after `selectChecks()` resolves the planned set, it brings up the union of `NeedsSmb` modes (`SmbModeCore` for
   integration tests, `SmbModeE2E` for e2e) once, and tears down once at runner exit. Checks marked `NeedsSmb` assume the
-  containers are up and call `waitForSmbContainers` as a cheap mid-run zombie-guard.
+  containers are up and call `waitForSmbContainers` as a cheap mid-run zombie-guard. The service set behind each mode
+  lives in `smblease.modeServices` and must stay in lock-step with `test/smb-servers/start.sh`; `core` carries
+  `smb-consumer-unicode` because it's the only fixture with non-ASCII share names, and without it nothing in CI can
+  catch a regression in the escaping macOS requires of every mount URL (`network/mount.rs::build_smb_mount_url`).
 - _Cross-process / cross-worktree_: two `check.sh` runs (or a `check.sh` plus a manual `start.sh`) in different
   worktrees have independent orchestrators, so the in-process map can't stop them racing the same containers. The
   orchestrator therefore takes a **machine-wide lease** via the `smblease` library (holder-id = its own `check.sh` PID).

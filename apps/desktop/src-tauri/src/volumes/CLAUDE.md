@@ -34,11 +34,6 @@ Everything re-exports from `mod.rs` (`LocationInfo` / `LocationCategory`, consts
   `get_icon_for_path()` returns `None` and `get_cloud_drives()` is empty; both re-emit after the decision.
   `lib/onboarding/CLAUDE.md` § "FDA gate".
 - **Detect SMB with `is_smb_fs_type()`**, never raw `"smbfs"` / `"cifs"` comparisons: one place covers both platforms.
-- **Read every `statfs` name field with `fs_type::statfs_string`**, ❌ never `c as u8 as char`: that's latin-1, and
-  `f_mntonname` / `f_mntfromname` hold real paths, so `/Volumes/公開` came back mojibake and the share published as an
-  unknown `path-…` volume. And an SMB mount source is **percent-escaped** (`//…/caf%C3%A9`), so
-  `parse_smb_mount_source` decodes it — a raw compare splits one share in two. DETAILS § "SMB mount sources are
-  percent-escaped".
 - **`mount_is_read_only` (`MNT_RDONLY`) and `is_disk_image` (DiskArbitration) are set in BOTH
   `get_attached_volumes` and `resolve_path_volume_fast`, or they drift.** Gate the disk-image probe to local mounts (it resolves the path, so a
   hung mount stalls it), and don't read read-only as a disk-image proxy: a writable `.dmg` is read-write.
