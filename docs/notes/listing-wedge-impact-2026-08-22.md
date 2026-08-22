@@ -135,9 +135,10 @@ running at the larger sizes. "Settled" waits 90 to 240 seconds first, which is t
 Main thread under back-to-back `move_cursor` at the bottom of the 75,000-row directory, 12 s `sample`
 (`scripts/main-thread-ipc-share.py`): **pre 98.5%** of main-thread samples inside the IPC handler against **post 3.9%**;
 samples with a leaf in the visibility scan (`scripts/listing-scan-leaves.py`) **3,651 against 47**; moves completed in
-40 s **112 against 12,350**. So the release build saturates the main thread exactly as the debug build did. What differs
-is the size of one command: at 75,000 rows it is about half a second, not five, so the queue drains between keystrokes
-and the window keeps answering.
+40 s **112 against 12,350**. So the release build saturates the main thread exactly as the debug build did, under a load
+that never stops. What differs is the size of ONE command: about half a second at 75,000 rows, against a debug build
+that could not finish one inside 5 s at 19,513 rows. At half a second the queue drains between keystrokes and the window
+keeps answering; at five it does not.
 
 ⚠️ **Quote the table, not the `sample` runs, for what a keystroke costs.** The `sample` load sends moves as fast as the
 app takes them, and the mirror's 300 ms debounce coalesces them: at row 10 of the same directory that load reports 23%
@@ -147,7 +148,8 @@ move, which is what a person typing does) reports 191 ms. Both are real; only th
 ### The release-build thresholds (measured)
 
 Read down the "settled, bottom" column. Full view, default 1,080 × 720 window, drive index off, one pane in the big
-directory and the other in a one-file directory.
+directory and the other in a one-file directory. Below 75,000 rows the two pre-fix columns agree (52 ms against 54 ms at
+20,000), so the just-opened figure stands in where no settled run was taken.
 
 - **Up to 40,000 rows: imperceptible.** 12 to 112 ms at the bottom, 12 ms at the top. Nobody would report this.
 - **75,000 rows: noticeable.** About 0.4 s per arrow key at the bottom, and about 0.2 s anywhere in the listing for the
@@ -156,8 +158,9 @@ directory and the other in a one-file directory.
   every key.
 - **300,000 rows: unusable.** About 3 s per arrow key at the bottom, still answered.
 - **Wedged (a keystroke that never lands) needs roughly 500,000 rows.** Derived by extrapolating the bottom-of-listing
-  trend, which costs about 9.4 ms per 1,000 rows at 300,000 and is climbing (5.6 ms at 75,000, 6.2 ms at 150,000, the
-  rise being cache pressure as the entry vector passes 60 MB). ❗ Not measured; nothing was built that large.
+  trend, which costs about 9.4 ms per 1,000 rows at 300,000 and is climbing (5.6 ms at 75,000, 6.2 ms at 150,000). The
+  rise is **guessed** to be cache pressure: `listing/DETAILS.md` puts a 74,000-entry listing's entries at about 15 MB,
+  so 300,000 rows is roughly 60 MB to walk. ❗ The threshold itself is not measured; nothing was built that large.
 
 **The top of a listing is free once the directory has settled**: 12 to 16 ms at every size from 5,000 to 300,000 rows,
 which is what the shape predicts, since the fan-out is fixed and the scan short-circuits.
