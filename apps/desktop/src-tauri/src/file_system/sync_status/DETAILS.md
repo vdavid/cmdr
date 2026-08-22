@@ -150,11 +150,19 @@ any live domain at all.
 ## Decision: pass `isDirectory:` when building the `NSURL`
 
 **Why:** `NSURL(fileURLWithPath:)` stats the path to decide directory-ness, and the probe has just stat'ed it. Measured
-on macOS 26.6 (2026-08-21, 200,000 iterations per variant, `target/scratch/urlbench.swift` shape): building the URL
-costs 4.08 µs without `isDirectory:` and 0.53 µs with it, against 3.16 µs for a bare `stat()` on the same path; the
-gap survives all the way through `getResourceValue` (35.4 µs → 30.4 µs), so the syscall is **removed, not deferred** to
-the first resource-value read. ⚠️ The value must come from that same `metadata()` call, never a guess: `isDirectory:`
-decides whether the URL keeps a trailing slash, which changes the path the File Provider machinery matches on.
+on macOS 26.6 (2026-08-21, 200,000 iterations per variant): building the URL costs 4.08 µs without `isDirectory:` and
+0.53 µs with it, against 3.16 µs for a bare `stat()` on the same path; the gap survives all the way through
+`getResourceValue` (35.4 µs → 30.4 µs), so the syscall is **removed, not deferred** to the first resource-value read.
+⚠️ The value must come from that same `metadata()` call, never a guess: `isDirectory:` decides whether the URL keeps a
+trailing slash, which changes the path the File Provider machinery matches on.
+
+**How to re-derive those numbers.** They came from a scratch Swift script that was never checked in, so the method
+rather than the file: build with `swiftc -O`, and over one ordinary file path time 200,000 iterations of each of five
+loops — `NSURL(fileURLWithPath:)`, `NSURL(fileURLWithPath:isDirectory:)`, a bare `stat()`, and then each of the two URL
+builds followed by the `getResourceValue(_:forKey: .ubiquitousItemIsUploadingKey)` read `probe.rs` makes. Give each
+loop its own `autoreleasepool` and discard a warm-up round, or whichever variant runs first absorbs Foundation's
+initialization. The sibling `bench.rs::bench_outside_a_domain` does NOT cover this: it measures the full probe against
+the structural shortcut, one layer above the URL build.
 
 ## Decision: the cache is keyed by directory, not by full path
 

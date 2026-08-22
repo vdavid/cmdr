@@ -523,11 +523,19 @@ static LIVE_READ_CONNECTIONS: AtomicUsize = AtomicUsize::new(0);
 /// warning is one line rather than one per open from then on.
 static READ_BUDGET_EXCEEDED: AtomicBool = AtomicBool::new(false);
 
-/// How many read connections are open across every thread right now.
+/// How many read connections the process's [`ThreadConnCache`]s hold right now,
+/// across every thread.
 ///
-/// The page-cache sizing budgets for [`READ_CONNECTION_BUDGET`] of them; this is
-/// what the process actually has. Multiply by [`READ_PAGE_CACHE_KIB`] for their
-/// share of SQLite's global ceiling on retained pages.
+/// That is the DURABLE read population and the term the sizing is about: those
+/// connections live as long as their thread, so their count tracks tokio's
+/// blocking pool. Multiply by [`READ_PAGE_CACHE_KIB`] for their share of SQLite's
+/// global ceiling on retained pages, and read it against
+/// [`READ_CONNECTION_BUDGET`], which is what the page cache is sized for.
+///
+/// ⚠️ NOT every read connection in the process. The media, agent, and
+/// operation-log stores open a read connection per call and drop it, so they
+/// never enter this count; they add [`READ_PAGE_CACHE_KIB`] apiece to
+/// `pGroup->nMaxPage` only for the life of the call.
 pub fn live_read_connections() -> usize {
     LIVE_READ_CONNECTIONS.load(Ordering::Relaxed)
 }

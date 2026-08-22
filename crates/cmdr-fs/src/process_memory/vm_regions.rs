@@ -59,9 +59,9 @@ pub struct VmRegionMap {
     pub total_dirty_bytes: u64,
     /// How many map entries the walk saw.
     pub total_region_count: u32,
-    /// Set when the walk hit [`MAX_REGIONS`] and stopped early, so the totals are
-    /// a floor rather than a total. A runaway is exactly when a diagnostic must
-    /// not quietly under-report.
+    /// Set when the walk hit [`MAX_REGIONS`] or [`MAX_STEPS`] and stopped early,
+    /// so the totals are a floor rather than a total. A runaway is exactly when a
+    /// diagnostic must not quietly under-report.
     pub truncated: bool,
 }
 
@@ -136,6 +136,17 @@ const TAG_NAMES: &[(u32, &str)] = &[
 /// only trips on something pathological, and then it sets
 /// [`VmRegionMap::truncated`] rather than spinning.
 const MAX_REGIONS: u32 = 200_000;
+
+/// Turns the walk will take at most, submap descents included.
+///
+/// [`MAX_REGIONS`] alone doesn't bound the loop: a descent advances `depth` but
+/// deliberately NOT `address` or the region count, and `nesting_depth` is an
+/// in/out parameter the kernel writes back, so a climbing `depth` is not proof
+/// of progress. This counter is: every turn increments it, so the walk provably
+/// terminates whatever the map does, and hitting it sets
+/// [`VmRegionMap::truncated`] like the region ceiling does. Twice `MAX_REGIONS`
+/// leaves room for far more descents than the shared region's two levels.
+const MAX_STEPS: u32 = MAX_REGIONS * 2;
 
 /// `vm_region_submap_info_64` from `<mach/vm_region.h>`, through its v2 fields.
 ///
@@ -215,16 +226,19 @@ pub fn query_vm_regions(sizes_per_tag: usize) -> Option<VmRegionMap> {
     let mut address: u64 = 0;
     let mut depth: u32 = 0;
     let mut seen: u32 = 0;
+    let mut steps: u32 = 0;
 
-    while seen < MAX_REGIONS {
+    while seen < MAX_REGIONS && steps < MAX_STEPS {
+        steps += 1;
         let mut size: u64 = 0;
         let mut count = (size_of::<VmRegionSubmapInfo64>() / size_of::<u32>()) as u32;
         #[allow(deprecated, reason = "mach_task_self is deprecated in libc but works fine")]
-        // SAFETY: every pointer is to an initialized local. `info` is a `#[repr(C)]` match of
-        // `vm_region_submap_info_64` and `count` is its size in `natural_t` words, so the kernel
-        // writes only within it (it fills the newest version that count covers). `address`,
-        // `size`, and `depth` are the in/out cursor the recurse ABI defines. We read `info` only
-        // after the call returned `KERN_SUCCESS`.
+        // SAFETY: every pointer is to an initialized local. `info` is a `#[repr(C, packed(4))]`
+        // match of `vm_region_submap_info_64` — the packing is what makes the layout match, since
+        // the header sits inside `#pragma pack(push, 4)` (see the struct's docs) — and `count` is
+        // its size in `natural_t` words, so the kernel writes only within it (it fills the newest
+        // version that count covers). `address`, `size`, and `depth` are the in/out cursor the
+        // recurse ABI defines. We read `info` only after the call returned `KERN_SUCCESS`.
         let (kr, info) = unsafe {
             let mut info: VmRegionSubmapInfo64 = std::mem::zeroed();
             let kr = mach_vm_region_recurse(
@@ -243,7 +257,8 @@ pub fn query_vm_regions(sizes_per_tag: usize) -> Option<VmRegionMap> {
         }
         if info.is_submap != 0 {
             // A submap (the shared region): descend into it rather than past it,
-            // WITHOUT advancing the address.
+            // WITHOUT advancing the address or the region count. `steps` is what
+            // keeps this branch from looping forever (see [`MAX_STEPS`]).
             depth += 1;
             continue;
         }
@@ -303,7 +318,7 @@ pub fn query_vm_regions(sizes_per_tag: usize) -> Option<VmRegionMap> {
     Some(VmRegionMap {
         total_dirty_bytes: tags.iter().map(|t| t.dirty_bytes).sum(),
         total_region_count: seen,
-        truncated: seen >= MAX_REGIONS,
+        truncated: seen >= MAX_REGIONS || steps >= MAX_STEPS,
         tags,
     })
 }
