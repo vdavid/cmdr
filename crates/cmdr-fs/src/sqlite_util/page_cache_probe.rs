@@ -31,7 +31,7 @@
 //! ❌ Not regression gates, and deliberately not part of any lane. They assert nothing
 //! about the numbers they print — the arithmetic is pinned by
 //! `tests::the_read_connection_budget_fits_inside_the_shared_slab` — and between them
-//! they open 141 connections and write ~160 MB, which no lane should pay for.
+//! they open over 140 connections and write ~200 MB, which no lane should pay for.
 
 use super::*;
 
