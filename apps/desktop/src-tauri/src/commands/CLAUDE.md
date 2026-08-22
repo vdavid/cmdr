@@ -12,9 +12,11 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
 
 ## Must-knows
 
-- **Every filesystem-touching command is `async` + timeout-wrapped.** `statfs`/`readdir`/`metadata`/NSURL/`realpath`
-  block 30-120 s on hung mounts, and a hung sync command stalls the whole IPC thread. Tiers: 2 s reads, 5 s writes,
-  15 s trash, 30 s recursive scans. Helpers in `util.rs`:
+- **Every filesystem-touching command is `async` + timeout-wrapped**, as is any whose cost grows with the data: a sync
+  `#[tauri::command]` runs on the MAIN thread, so an in-memory scan of a 74k listing stopped the app answering IPC
+  (`file_system/listing/DETAILS.md` § "Row numbers"). Sync is for constants and flag flips.
+  `statfs`/`readdir`/`metadata`/NSURL/`realpath` block 30-120 s on hung mounts. Tiers: 2 s reads, 5 s writes, 15 s
+  trash, 30 s recursive scans. Helpers in `util.rs`:
   - `blocking_with_timeout_flag` → `TimedOut<T>` (**prefer it**: the bare `blocking_with_timeout`'s timeout is
     indistinguishable from its fallback); `blocking_result_with_timeout` → `Result<T, IpcError>`.
   - `timeout_detached` → **required when the future can reach a device backend** (rename, conflict/copy scans): it

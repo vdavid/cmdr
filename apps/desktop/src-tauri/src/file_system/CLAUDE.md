@@ -15,9 +15,10 @@ Directory listing, file writing, sync status, volume management, and file watchi
 
 - **Reach the volume-manager singleton at `volume::manager::get_volume_manager()`; ❌ never re-export it from here**: a
   facade that also hands out the accessor welds the subtree into one cycle. `volume/DETAILS.md` § "Key decisions".
-- **Transient scratch hides on the listing READ path, nowhere but `listing/operations.rs::visible_entries`**: a
-  watcher-side skip strands an entry in the pane forever. Cmdr's own (`.cmdr-tmp-*`) hides by OWNERSHIP, other apps'
-  (`.sb-`) by NAME. § "Hiding transient scratch".
+- **Transient scratch hides on the listing READ path, nowhere but `CachedListing::rows`**: a watcher-side skip strands
+  an entry in the pane forever. Cmdr's own (`.cmdr-tmp-*`) hides by OWNERSHIP, other apps' (`.sb-`) by NAME.
+  `is_hidden_from_listings` is GATED on the pure `could_be_hidden_from_listings`, which is what lets the listing layer
+  cache row numbers and re-ask about only the scratch-named few. § "Hiding transient scratch".
 - **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`** (that blob carries
   `kHasCustomIcon`, so zeroing it destroys custom folder icons), and encode a **binary** plist (`plist` defaults to
   XML).

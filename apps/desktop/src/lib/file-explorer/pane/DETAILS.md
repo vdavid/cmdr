@@ -40,6 +40,11 @@ carry live here:
   state and deliberately skips network + search-results panes (`NetworkBrowser` owns the MCP push for the network view
   and would get clobbered; a snapshot is local dialog state, not a directory agents query), while
   `tab-mcp-sync.svelte.ts` debounce-mirrors each pane's tab structure via `updatePaneTabs`.
+- **The pane mirror fetches its visible range in ONE `getFileRange`**, capped at `MAX_MIRRORED_ROWS`. A row at a time
+  was ~100 IPC round trips per sync, and the app stopped answering IPC on a big directory
+  (`docs/notes/listing-row-fetch-quadratic-2026-08-22.md`). ⚠️ The gate is `syncsToMcp`, a pane-KIND capability, so this
+  runs for every local pane whether or not MCP is enabled or an agent is attached — nothing here may assume an idle
+  path.
 - **`debug-emitters.svelte.ts` is dev-only**: its `$effect`s no-op outside DEV and in tests.
 - **`pane-background-dblclick.ts` is scoped to list views by construction.** `isFileListBackgroundClick` requires a
   `[role="listbox"]` ancestor and a non-`.file-entry` target, so error / network / search panes (no listbox) can never

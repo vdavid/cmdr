@@ -62,7 +62,7 @@ fn fetching_a_hundred_rows_near_the_end_walks_the_listing_at_most_once() {
 
     assert!(
         examined <= ENTRY_COUNT as u64,
-        "100 row fetches examined {examined} entries; one walk of {ENTRY_COUNT} is the budget"
+        "100 row fetches examined {examined} of {ENTRY_COUNT}; one whole walk is the budget"
     );
 }
 
@@ -85,7 +85,7 @@ fn a_row_near_the_end_costs_what_a_row_near_the_start_costs() {
 
     assert!(
         at_bottom <= at_top + VISIBLE_ROWS as u64,
-        "rows near the end examined {at_bottom} entries against {at_top} near the start"
+        "rows near the end examined {at_bottom} against {at_top} near the start"
     );
 }
 
@@ -106,7 +106,7 @@ fn an_out_of_bounds_row_walks_the_listing_at_most_once() {
 
     assert!(
         examined <= ENTRY_COUNT as u64,
-        "one out-of-bounds fetch examined {examined} entries; one walk of {ENTRY_COUNT} is the budget"
+        "one out-of-bounds fetch examined {examined} of {ENTRY_COUNT}; one whole walk is the budget"
     );
 }
 

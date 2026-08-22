@@ -59,8 +59,9 @@ SMB and MTP wire `on_progress` through their own listing loops directly, having 
 ## Caching
 
 - **`LISTING_CACHE`**: global `RwLock<HashMap<String, CachedListing>>`, keyed by `listing_id` (UUID per navigation).
-- **`CachedListing`**: `{ volume_id, path, entries, sort_by, sort_order, directory_sort_mode, sequence, created_at,
-  last_accessed_ms }`.
+- **`CachedListing`**: `{ volume_id, path, entries, visible_rows, sort_by, sort_order, directory_sort_mode, sequence,
+  created_at, last_accessed_ms }`. `entries` is private: `entries()` reads, `entries_mut()` / `set_entries()` change it
+  and drop `visible_rows` on the way, and `rows(include_hidden)` is what every read accessor asks. See § "Row numbers".
 - **Focused-pane reads**: `get_cached_listing(volume_id, path)` clones the newest matching cached listing without
   requiring watcher coverage. Agent reads use it for the already-open pane, including SMB and MTP, and never start a
   new filesystem listing.
@@ -124,6 +125,45 @@ four.
 handle threaded through its callers needs none of it.
 
 
+## Row numbers (visible_rows.rs)
+
+A pane numbers its rows over what it is SHOWING, so row 7 is the seventh visible entry and not `entries[7]`. Two things
+leave an entry out: the dotfile filter (when `include_hidden` is off) and scratch a running operation owns
+(`file_system::staging`).
+
+**Answering "which entry is row N" by walking and counting is what wedged the app.** The MCP pane mirror fetches ~100
+rows per sync, each fetch was one full walk, and at the bottom of a 74,144-entry directory that came to ~7.4 M predicate
+evaluations per index event on the main thread — IPC stopped being answered at all. Evidence and the before/after:
+`docs/notes/listing-row-fetch-quadratic-2026-08-22.md`.
+
+**Decision: materialize the row map once per `(listing, include_hidden)`, and split it in two.** `settled` is a
+`Vec<u32>` of entry indices nothing can hide any more; `candidates` holds the scratch-NAMED entries with the count of
+settled rows ahead of each. A read re-asks `is_hidden_from_listings` about the candidates only — a handful, usually
+none — and merges them back by row number, so a lookup is an array index plus a binary search over a list that is
+almost always empty.
+
+**Why the split rather than an invalidation hook.** The dotfile half is stable, but the scratch half is not: an
+operation settling un-hides its leftover with no change to the listing and nothing to notify anyone, because the
+ownership signal is a `Weak` that simply stops upgrading (`cmdr_fs::staging`). Hunting for every event that could flip
+it is exactly the kind of invariant that rots; re-asking about the few names it could apply to cannot. What makes it
+sound is that `staging::is_hidden_from_listings` is GATED on the pure `could_be_hidden_from_listings`, so a name outside
+that set is settled by construction.
+
+**Two slots, one per `include_hidden`**, so a pane toggling hidden files — or two readers disagreeing about the flag
+mid-toggle — can never be handed the map built for the other answer.
+
+**Validity needs no version counter.** Every accessor holds the `LISTING_CACHE` READ lock, and every mutation needs the
+WRITE lock, so `entries` cannot move under a reader. `entries_mut()` drops both maps as it hands the vector out, which
+is why no mutation path has to remember anything.
+
+**What it fixed beyond the wedge**, all three found by making `entries` private and following the compile errors:
+type-to-jump filtered dotfiles but not scratch, so its index space and `getFileAt`'s disagreed and the cursor landed a
+row off during a copy; Brief-mode column widths were sized around names the pane never draws; and the streaming
+listing's `totalCount` counted dotfiles only.
+
+**Cost.** One `Vec<u32>` per listing per `include_hidden` actually used: ~300 KB against a 74k listing whose entries are
+themselves ~15 MB.
+
 ## Decisions
 
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.
@@ -140,7 +180,11 @@ handle threaded through its callers needs none of it.
   `refresh_listing_index_sizes` (write-locks the cache, re-enriches entries). This keeps `get_listing_stats` read-only
   while it sees up-to-date `recursive_size`. The frontend calls `refreshListingIndexSizes` before `fetchListingStats`.
 - **Hidden-file filtering in Rust, not the frontend**: visible count is unknown until all files are read. APIs accept
-  `include_hidden: bool` and filter during `get_file_range()` iteration.
+  `include_hidden: bool` and read through the listing's row map (§ "Row numbers").
+- **The listing read commands are `async`**: a sync `#[tauri::command]` runs on the MAIN thread in Tauri 2, so one slow
+  accessor stops the app answering IPC at all, which is principle 2's "never block the main thread" broken at the IPC
+  layer. `refresh_listing_index_sizes` goes one further onto the blocking pool, because it runs two indexed SQLite
+  queries and an index storm fires it once per event per pane.
 - **Font metrics in a Rust binary cache, not frontend canvas measurement**: measuring 50k filenames in JS is slow. The
   frontend measures each code point's width once via Canvas and ships the table to Rust; later text-width queries are
   hash lookups in the cached `.bin` table. `calculate_max_width_with_suffixes()` is the entry point, used by

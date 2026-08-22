@@ -10,16 +10,21 @@ non-blocking I/O and progress events.
 - **caching.rs**: `LISTING_CACHE`, `CachedListing`, incremental patch helpers, `notify_directory_changed`.
   **mutation.rs**: what `Volume::notify_mutation` means for a local-FS backend. **diff.rs**: the `DiffChange`
   vocabulary plus `compute_diff` for the full re-read path. **diff_emitter.rs**: coalesces `directory-diff` emits into
-  one event per 50 ms trailing window.
+  one event per 50 ms trailing window. **visible_rows.rs**: what a pane's row number means, materialized once per
+  listing so every accessor indexes instead of walking.
 - **listing_host.rs**: `AppListings`, what a storage backend in its own crate asks instead of reaching `caching`.
 - **sorting.rs**, **brief_columns.rs** (Brief-mode column widths), **fuzzy_jump.rs** (type-to-jump). `FileEntry` lives
   in `crates/cmdr-fs/src/entry.rs`, aliased here as `listing::metadata`.
 
 ## Invariants and gotchas
 
-- **`get_file_range()` indices are over VISIBLE items only**, so backend index N ≠ absolute entry N. `visible_entries`
-  is the ONLY filter point and runs on READ, never on cache fill; an accessor iterating `listing.entries` directly
-  breaks that (`staging_temps_test.rs` pins it). Two axes: dotfiles and in-flight scratch (`file_system::staging`).
+- **A pane's row number is not an index into `entries`** (dotfiles and in-flight scratch drop out, `file_system::staging`).
+  `CachedListing::rows` materializes the mapping once and is the ONLY filter point, on READ, never on cache fill
+  (`staging_temps_test.rs` pins it). `entries` is private and `entries_mut` drops the map, so an accessor can't grow its
+  own filter or leave a stale one — three had, each a row off. Re-deriving the sequence per row is what wedged a 74k
+  directory; `visible_rows_test.rs` pins the scan count. `DETAILS.md` § "Row numbers".
+- **Listing read commands are `async`.** A sync `#[tauri::command]` runs on the main thread in Tauri 2, so one slow
+  accessor stops the app answering IPC at all.
 - **Watcher diffs must update the cache AND emit an event.** Miss either and you get stale data or no UI update.
 - **The full re-read watcher path re-sorts `new_entries` before `compute_diff`** (looks like a double-sort, isn't):
   `list_directory_core` always returns Name/Asc, so without it add/remove indices come out wrong.

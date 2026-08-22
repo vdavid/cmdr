@@ -2,8 +2,11 @@
 
 **What this settles:** why a pane parked at the BOTTOM of a large directory burns the main thread and stops answering
 IPC, what the real call path is (it is not "the frontend calls `getFileAt` in a loop" for the reason it looks like), and
-that **none of it is new**: `main` reproduces it with the same call chain and the same ratio. ❌ Nothing here was fixed;
-the fix involves a design choice, so it is written up and left.
+that it was **never new**: the branch it was found on and `main` reproduced it with the same call chain and the same
+ratio.
+
+✅ **It is fixed** (2026-08-22). What shipped, and the before/after on a running app, are at the bottom; the
+investigation is kept because the measurement traps in it are the ones anybody re-opening this question will hit first.
 
 ⚠️ **Both sides are DEBUG builds.** Quote the RATIOS, never the absolute milliseconds or percentages, off this note. ⚠️
 Read `idle-cpu-attribution-2026-08-03.md` first. Its rules were applied here: userspace and file-IO are split explicitly
@@ -33,8 +36,11 @@ depth is the multiplier; the index-event rate is the driver.** Neither alone doe
 
 ## What it costs (verified on `worktree-idle-cost` @ `e473e9f62` against `main` @ `6f8499867`, dev builds, macOS 26.5.2 / Darwin 25.6.0, 2026-08-22)
 
-Directory: `apps/desktop/.../target/debug/deps`, 74,144 entries. Main-thread CPU isolated as row 1 of `ps -M <pid>`, so
-concurrent index-writer churn on other threads cannot pollute it. Cursor position VERIFIED from the DOM at each window.
+Directory: `apps/desktop/.../target/debug/deps`, 74,144 entries. Cursor position VERIFIED from the DOM at each window.
+
+⚠️ The two CPU percentages just below were read off `ps -M <pid>` row 1, which is NOT the main thread — see §
+"Measurement notes". Take them as process-level readings that happen to move with the effect; the `sample` figures
+underneath them are the ones that attribute it.
 
 Both windows below ran with the writer queue drained but the importance rescore still ticking about once a second, which
 is the app's ordinary resting state on an indexed volume, ❗ not true silence. That tick IS the event source; a
@@ -95,7 +101,7 @@ was still doing its first index scan, which moves the process baseline without t
 have behaved differently: no sync-status frame appears anywhere in the main-thread hot path on either build, and the
 probe runs on its own `cmdr-sync-status` threads.
 
-## Recommended fixes, ranked (❌ none applied)
+## Recommended fixes, as they were ranked before any were applied
 
 1. **Give the listing a cached visible-index map.** A `Vec<u32>` of visible positions per `(listing, include_hidden)`,
    invalidated when the entries or the two staging-visibility settings change, turns `nth(index)` into an array lookup.
@@ -121,10 +127,60 @@ the window.
 
 ## Measurement notes for whoever re-runs this
 
-- **Isolate the main thread.** `ps -M <pid>` row 1 is it. Process-wide CPU is useless here: a window measured 0% on the
-  main thread while the process sat at 126%, all of it index-writer churn on other threads.
+- **Isolate the main thread.** Process-wide CPU is useless here: a window measured 0% on the main thread while the
+  process sat at 126%, all of it index-writer churn on other threads. ❌ But **`ps -M <pid>` cannot do the isolating**:
+  it prints no thread names and its rows are not ordered, so the first one is not the main thread. Reading it that way
+  reported 0% while a `sample` of the same process, in the same seconds, found the main thread 98% inside the IPC
+  handler. `sample` names the main thread (`DispatchQueue_1: com.apple.main-thread`) and is the only one of the two that
+  can answer this. `scripts/main-thread-ipc-share.py` does the counting.
 - **Verify the cursor position from the DOM at the measurement window**, not from the keystroke you sent. A listing
   refresh resets the scroll to the top, which silently turned one "at the bottom" reading in this investigation into a
   top-of-listing reading and briefly refuted a correct hypothesis.
 - **Creating a worktree while the app runs is a measurement hazard.** An APFS `target/` clone lands thousands of files
   on an indexed volume; it drove the writer queue to 12,291 and added ~80 s of writer CPU here.
+
+## What shipped (2026-08-22)
+
+(1), (2), (3), and (4) all did. (5) is still open and still a product call.
+
+- **A materialized row map per listing** (`listing/visible_rows.rs`), so every accessor indexes instead of walking, and
+  `entries` is private with `entries_mut()` dropping the map on the way out. Design and the reason the map splits
+  settled rows from scratch-named candidates: `apps/desktop/src-tauri/src/file_system/listing/DETAILS.md` § "Row
+  numbers".
+- **One `getFileRange` for the mirror's visible range** instead of up to 100 `getFileAt` calls
+  (`pane/pane-mcp-sync.svelte.ts`).
+- **Every listing read command is `async`**, so none of them runs on the main thread; `refresh_listing_index_sizes` goes
+  onto the blocking pool because it runs indexed SQLite queries.
+- **The second `.count()` scan is gone** from the out-of-bounds path.
+
+It also fixed three accessors that had grown their own filter and disagreed with `getFileAt` about what a row number
+means — type-to-jump could put the cursor a row off while a copy ran in the directory. The compile errors from making
+`entries` private are what found them.
+
+### Before and after, on the running app (dev/debug builds, macOS 26.5.2 / Darwin 25.6.0, 2026-08-22)
+
+Directory: `.../target/debug/deps`, 19,251 rows before and 19,513 after (the rebuild between the two runs added files).
+⚠️ Smaller than the 74,144-entry directory the investigation used, so these numbers are NOT comparable to the ones above
+— read them only against each other. **The index was OFF for every volume in both runs**, which makes the result
+stronger than expected: no index storm is needed to wedge the app, because a cursor move drives the mirror by itself.
+
+`move_cursor` over Cmdr's own MCP is the probe: it is what the user's arrow key does, and the tool answers anyway after
+5 s if the frontend never acknowledges, so a timing at that ceiling means the app never answered. 15 moves per depth, in
+alternating blocks (`scripts/cursor-move-latency.py`).
+
+|                                     | before             | after                      |
+| ----------------------------------- | ------------------ | -------------------------- |
+| cursor moves answered at row 10     | 1 of 15 (3,394 ms) | **15 of 15, median 6 ms**  |
+| cursor moves answered at row 19,100 | **0 of 15**        | **15 of 15, median 23 ms** |
+
+Main thread under a matched deep cursor-move load, 10 s `sample` (`scripts/main-thread-ipc-share.py`): **98.7% → 7.2%**
+of main-thread samples inside `url_scheme_handler::start_task`. Samples with a leaf inside the visibility scan
+(`scripts/listing-scan-leaves.py`): **1,203 → 150** — and the "after" window carried roughly 200× more cursor moves,
+because each takes ~20 ms rather than never finishing.
+
+Under a deliberately unfair sustained hammering (1,500 back-to-back moves, no pause, overlapping the `sample`'s own
+suspensions) the fixed build still answered 295 of 300 within 5 s at a median of ~500 ms. Nothing a person does
+approaches that rate.
+
+**Correctness in the app, not just in tests**: with the cursor on row 19,513 of 19,513, `cmdr://state` shows
+`zune_jpeg-…-cgu.3.rcgu.o` under it, which is the last name `ls | sort` gives for that directory.
