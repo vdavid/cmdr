@@ -16,7 +16,8 @@ use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::InMemoryCredentials;
 use cmdr_fs::volume::host::host_keys::InMemoryHostKeys;
 
-use super::{SftpConnectOutcome, SftpConnectionParams, SftpVolume, connect_sftp_volume};
+use super::{SftpConnectOutcome, SftpVolume, connect_sftp_volume};
+use crate::params::SftpConnectionParams;
 use crate::transport::HostKeyPromptKind;
 
 /// The remote directory every fixture server exports.

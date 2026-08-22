@@ -39,8 +39,8 @@ use russh::keys::{Algorithm, HashAlg, PrivateKeyWithHashAlg, PublicKey};
 use crate::auth::{AuthRung, AuthRungUsed, ladder};
 use crate::errors::SftpConnectError;
 use crate::known_hosts::KnownHostsFile;
+use crate::params::SftpConnectionParams;
 use crate::trust::{self, HostKeyDecision, PresentedHostKey};
-use crate::volume::SftpConnectionParams;
 
 /// How long the TCP connect, key exchange, and authentication get together.
 /// Generous enough for a satellite link, short enough that a black-holed address

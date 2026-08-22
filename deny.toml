@@ -22,6 +22,34 @@ ignore = [
   # own tests (`crates/fsevent-stream/src/tests.rs`). Test-only, never in a shipped
   # binary. Drop this entry if the fork moves those tests to tokio.
   "RUSTSEC-2025-0052",
+  # The Marvin attack: `rsa`'s private-key operations aren't constant-time, so an
+  # observer who can time them may eventually recover the key. No patched version
+  # exists — RustCrypto's constant-time rewrite is still open — so the only lever
+  # is whether we compile RSA at all.
+  #
+  # It reaches us through `russh` -> `ssh-key`, both of which gate RSA behind
+  # russh's default-on `rsa` feature. Turning that feature off drops the crate
+  # entirely, at the cost of two things users will notice: Cmdr could no longer
+  # verify a server that presents an `ssh-rsa` host key (old NAS firmware still
+  # does), and it could no longer sign in with an `id_rsa` key file, which is
+  # still the most common key people have.
+  #
+  # What is actually exposed, which is narrower than the advisory's headline:
+  #
+  #   - Verifying a server's host key is a PUBLIC-key operation, and this
+  #     advisory is about private-key timing. Unaffected.
+  #   - An agent-held RSA key is signed by ssh-agent, not by this crate.
+  #     Unaffected.
+  #   - The exposed case is a user with an RSA private key FILE, connecting to a
+  #     server that is both hostile and able to time our signatures precisely
+  #     enough. One signature per connection, over a network, against a key the
+  #     user could rotate to ed25519.
+  #
+  # ⚠️ This is a judgment call rather than a settled one: it trades a narrow
+  # timing exposure against silently refusing servers and keys that work
+  # everywhere else. Revisit when RustCrypto ships the constant-time `rsa`, and
+  # drop this entry the day a patched version exists.
+  "RUSTSEC-2023-0071",
 ]
 
 [licenses]

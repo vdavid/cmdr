@@ -394,7 +394,7 @@ fn fixture_key_path(service: &str) -> std::path::PathBuf {
 /// Dials once against an empty store and returns the approval prompt.
 async fn first_contact_prompt(
     host: &VolumeHost,
-    params: super::SftpConnectionParams,
+    params: crate::params::SftpConnectionParams,
 ) -> crate::transport::HostKeyPrompt {
     match connect_sftp_volume("fixture", "sftp-first-contact", params, host.clone()).await {
         Ok(SftpConnectOutcome::NeedsHostKeyApproval(prompt)) => prompt,

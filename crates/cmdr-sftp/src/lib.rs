@@ -9,9 +9,11 @@ use cmdr_sftp as _;
 pub mod auth;
 pub mod errors;
 pub mod known_hosts;
+pub mod params;
 pub mod transport;
 pub mod trust;
 pub mod volume;
 
 pub use errors::SftpConnectError;
-pub use volume::{SftpConnectOutcome, SftpConnectionParams, SftpVolume, connect_sftp_volume};
+pub use params::SftpConnectionParams;
+pub use volume::{SftpConnectOutcome, SftpVolume, connect_sftp_volume};
