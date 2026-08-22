@@ -9,14 +9,6 @@ pub fn get_license_status(app: tauri::AppHandle) -> licensing::AppStatus {
     licensing::get_app_status(&app)
 }
 
-/// Get the window title based on current license status.
-#[tauri::command]
-#[specta::specta]
-pub fn get_window_title(app: tauri::AppHandle) -> String {
-    let status = licensing::get_app_status(&app);
-    licensing::get_window_title(&status)
-}
-
 /// Activate a license key or short code (verify + commit in one call).
 /// If the input is a short code (CMDR-XXXX-XXXX-XXXX), it first exchanges it for the full key.
 /// Kept for backward compatibility; new code should use verify_license + commit_license.

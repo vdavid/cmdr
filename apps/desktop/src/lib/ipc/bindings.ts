@@ -1584,8 +1584,6 @@ export const commands = {
     __TAURI_INVOKE<SendFeedbackResult>('send_feedback', { feedbackText, email }),
   // Get the current app status (personal, commercial, or expired).
   getLicenseStatus: () => __TAURI_INVOKE<AppStatus>('get_license_status'),
-  // Get the window title based on current license status.
-  getWindowTitle: () => __TAURI_INVOKE<string>('get_window_title'),
   /**
    *  Activate a license key or short code (verify + commit in one call).
    *  If the input is a short code (CMDR-XXXX-XXXX-XXXX), it first exchanges it for the full key.

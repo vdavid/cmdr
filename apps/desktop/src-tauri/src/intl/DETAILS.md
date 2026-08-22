@@ -201,7 +201,10 @@ re-read it.
 Three surfaces never pass through the webview, so they can't use `t()`:
 
 - the **native menu bar** and every native context menu, built during `setup` and redrawn by AppKit whenever it likes;
-- the **main window's title** (`licensing::get_window_title`), set before the frontend has loaded;
+- the **main window's OS-level title** (`licensing::get_window_title`), set before the frontend has loaded. The in-app
+  title bar is NOT one of these: it reads the same key through the webview's `getMessage()`, derived from the licence
+  status, which is what makes it follow a live language switch. Both sides read `licensing.windowTitle.personalUse`, so
+  they can't drift in wording; only the OS-level one is pinned to the launch language;
 - the **already-running alert** (`instance_lock.rs`), which fires before a webview exists at all. That one is the
   strongest argument for the whole arrangement: no IPC hand-off could ever reach it.
 

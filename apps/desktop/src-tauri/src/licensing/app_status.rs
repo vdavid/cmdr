@@ -444,7 +444,10 @@ pub fn update_cached_status(
     }
 }
 
-/// The main window's title, from the licence status.
+/// The main window's OS-level title, from the licence status. This is the one
+/// Mission Control and the Window menu read; the in-app title bar draws its own
+/// from the same catalog key (`routes/(main)/+page.svelte`), so a language
+/// switch moves it live without a round-trip here.
 ///
 /// Reads the catalog through [`crate::intl::menu_t`] rather than the webview's
 /// `t()`: `lib.rs` sets this title during `setup`, before any frontend code

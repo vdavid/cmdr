@@ -70,7 +70,8 @@
     import { resolveGlobalKeyAction } from './global-keydown'
     import { resolveGlobalContextMenuAction } from './global-contextmenu'
     import { isMacOS } from '$lib/shortcuts/key-capture'
-    import { type UnlistenFn, getWindowTitle, registerKnownDialogs } from '$lib/tauri-commands'
+    import { type UnlistenFn, registerKnownDialogs } from '$lib/tauri-commands'
+    import { getMessage } from '$lib/intl/messages.svelte'
     import { showMainOnMount } from './show-main-on-mount'
     import { startMenuOperationGate } from './menu-operation-gate.svelte'
     import {
@@ -107,6 +108,7 @@
     import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { initAppMode, getAppMode, decorateMainWindowTitle, type AppMode } from '$lib/app-mode'
     import {
+        getCachedStatus,
         hideExpirationModal,
         loadLicenseStatus,
         triggerValidationIfNeeded,
@@ -143,7 +145,19 @@
         isSnapshotPane: boolean
     } | null>(null)
     let explorerRef: ExplorerAPI | undefined = $state()
-    let windowTitle = $state('Cmdr')
+    /**
+     * Whether the title bar says "Personal use only". Mirrors Rust's
+     * `licensing::get_window_title` (a personal or an expired licence both count
+     * as personal use; a commercial one gets the bare brand name). Starts false,
+     * so the title reads "Cmdr" for the beat before the licence status loads.
+     *
+     * A boolean rather than the finished string: the title is a catalog key, so
+     * deriving it from this makes it re-render on a language switch by
+     * construction. Fetching the finished string from Rust left it in the
+     * launch language until the next relaunch.
+     */
+    let licenseIsPersonalUse = $state(false)
+    const windowTitle = $derived(licenseIsPersonalUse ? getMessage('licensing.windowTitle.personalUse') : 'Cmdr')
     let appMode = $state<AppMode>(getAppMode())
     const showFunctionKeyBar = $derived(getShowFunctionKeyBar())
 
@@ -350,8 +364,8 @@
             // Update command palette label to match native menu
             updateLicenseCommandName(licenseStatus.type !== 'personal')
 
-            // Load window title based on license status
-            windowTitle = await getWindowTitle()
+            // Window title: personal and expired both read as "personal use".
+            licenseIsPersonalUse = licenseStatus.type !== 'commercial'
         } catch {
             // License check failed (expected in E2E tests without Tauri backend)
             // App continues without license features
@@ -549,16 +563,18 @@
         showAboutWindow = false
     }
 
-    async function handleLicenseKeyDialogClose() {
+    function handleLicenseKeyDialogClose() {
         showLicenseKeyDialog = false
-        windowTitle = await getWindowTitle()
+        // The dialog writes the activated licence into the store before closing,
+        // so the cached status is already the fresh one here.
+        licenseIsPersonalUse = getCachedStatus()?.type !== 'commercial'
     }
 
-    async function handleLicenseKeySuccess() {
+    function handleLicenseKeySuccess() {
         showLicenseKeyDialog = false
         // Refresh the window title and command palette label to reflect new license status
         updateLicenseCommandName(true)
-        windowTitle = await getWindowTitle()
+        licenseIsPersonalUse = getCachedStatus()?.type !== 'commercial'
         // Show the About window so user can see their license status
         showAboutWindow = true
     }

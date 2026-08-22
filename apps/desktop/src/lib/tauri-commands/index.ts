@@ -493,7 +493,6 @@ export {
 // Licensing
 export {
   getLicenseStatus,
-  getWindowTitle,
   activateLicense,
   verifyLicense,
   commitLicense,

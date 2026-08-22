@@ -274,7 +274,6 @@ macro_rules! ipc_command_manifest {
                     crate::commands::error_reporter::record_settings_defaults,
                     crate::commands::feedback::send_feedback,
                     crate::commands::licensing::get_license_status,
-                    crate::commands::licensing::get_window_title,
                     crate::commands::licensing::activate_license,
                     crate::commands::licensing::verify_license,
                     crate::commands::licensing::commit_license,

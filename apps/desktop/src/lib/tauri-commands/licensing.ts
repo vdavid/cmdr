@@ -97,14 +97,6 @@ export async function getLicenseStatus(): Promise<LicenseStatus> {
 }
 
 /**
- * Gets the window title based on current license status.
- * @returns Window title string (like "Cmdr – Personal use only")
- */
-export async function getWindowTitle(): Promise<string> {
-  return commands.getWindowTitle()
-}
-
-/**
  * Activates a license key (verify + commit in one call).
  * Kept for backward compatibility. New code should use verifyLicense + commitLicense.
  */
