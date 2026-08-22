@@ -75,13 +75,17 @@ services:
     <<: *fixture
     ports: ['${SFTP_FIXTURE_CHANGEDKEY_PORT:-12485}:22']
 
-  # No `posix-rename@openssh.com` and no `copy-data@openssh.com`: proprietary NAS
-  # firmware is full of servers like this, and every extension needs an honest
-  # fallback.
+  # No `posix-rename@openssh.com` and no `copy-data`: proprietary NAS firmware is
+  # full of servers like this, and every extension needs an honest fallback.
+  #
+  # ❗ `copy-data` carries NO `@openssh.com` suffix, unlike every other extension
+  # in this stack. OpenSSH advertises it under the bare name (`sftp-server.c`,
+  # 9.9p2), so a suffixed entry here silently matches nothing and the fixture
+  # keeps the extension it is named for dropping.
   sftp-fixture-noposixrename:
     <<: *fixture
     environment:
-      QUIRK_DROP_EXTENSIONS: posix-rename@openssh.com,copy-data@openssh.com
+      QUIRK_DROP_EXTENSIONS: posix-rename@openssh.com,copy-data
     ports: ['${SFTP_FIXTURE_NOPOSIXRENAME_PORT:-12486}:22']
 
   # Truncates every SSH_FXP_DATA to 4 KiB, which SFTP explicitly allows. A reader

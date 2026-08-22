@@ -10,9 +10,11 @@ every other byte identical to stock OpenSSH.
 
 Quirks come from `/etc/sftp-quirks` (sshd scrubs the subsystem's environment):
 
-  QUIRK_DROP_EXTENSIONS=posix-rename@openssh.com,copy-data@openssh.com
+  QUIRK_DROP_EXTENSIONS=posix-rename@openssh.com,copy-data
       Removed from the SSH_FXP_VERSION hello, so a client's `support_*`
-      predicate answers false and its fallback path runs.
+      predicate answers false and its fallback path runs. Names must match what
+      the server actually sends: `copy-data` has no `@openssh.com` suffix, and a
+      name that matches nothing drops nothing, silently.
 
   QUIRK_SHORT_READ_BYTES=4096
       Every SSH_FXP_DATA is truncated to at most this many bytes. Legal SFTP: a
