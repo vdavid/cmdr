@@ -238,17 +238,18 @@ a latent one. `handle_directory_change_incremental` resolved each removal's inde
 the PRE-removal index) and then walked again inside the removal itself, and one coalesced watcher event carries up to
 500 paths — a directory emptied, a `git checkout` across a big tree, an unpack over a folder. Measured by the counting
 probe: a 500-path removal from a 20,000-entry listing examined **9,981,000 entries**, and now examines **20,500** (one
-walk to build the map, plus one lookup per path). `remove_entries_by_paths` is now the only by-path removal, since its caller is always a batch. Resolving and
-removing under ONE write lock also makes the emitted indices true: the two-lock shape it replaced let another writer move
-a row between the lookup and the removal, and the `directory-diff` would have named a row that had shifted.
+walk to build the map, plus one lookup per path). `remove_entries_by_paths` is now the only by-path removal, since its
+caller is always a batch. Resolving and removing under ONE write lock also makes the emitted indices true: the two-lock
+shape it replaced let another writer move a row between the lookup and the removal, and the `directory-diff` would have
+named a row that had shifted.
 
 **What is still linear per removal**: `Vec::remove` per doomed row, so dropping `k` rows from an `n`-entry listing
 memmoves about `k × n / 2` entries. The lookup fix doesn't touch it, and the incremental path's 500-event cap bounds it.
 The one-pass rebuild that would fix it needs a transient second copy of `entries` (~65 MB at 300,000 rows), which is not
 a trade to take without measuring first.
 
-**What is still O(entries), by path**: nothing. The four single-path callers are O(entries) only on a listing with no
-map, which is what the threshold deliberately buys.
+**What is still O(entries), by path**: nothing. The single-path callers walk only on a listing that has no map yet,
+which is what the threshold deliberately buys.
 
 ## Decisions
 
