@@ -1,14 +1,18 @@
 //! The copy-scan progress ticker's counting contract.
+//!
+//! It lives here rather than beside a backend because every remote backend
+//! shares the one ticker: a per-backend copy would let the cumulative-counts
+//! promise drift between them.
 
-use super::*;
+use super::ScanTicker;
 
 /// The counts a scan reports must be CUMULATIVE for the call: the caller shifts
 /// them by its own baseline across several calls, so a per-entry (or per-path)
 /// reset would make the dialog's counters jump backwards.
 #[test]
 fn scan_ticker_reports_running_totals() {
-    use cmdr_fs::ignore_poison::IgnorePoison;
-    use cmdr_fs::volume::ListingProgress;
+    use crate::ignore_poison::IgnorePoison;
+    use crate::volume::ListingProgress;
     use std::sync::Mutex;
 
     let seen: Mutex<Vec<ListingProgress>> = Mutex::new(Vec::new());

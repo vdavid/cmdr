@@ -6,72 +6,13 @@
 use super::SmbVolume;
 use super::mapping::map_smb_error;
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::ListingProgress;
-use cmdr_fs::volume::{BatchScanResult, CopyScanResult, ScanConflict, SourceItemInfo, VolumeError};
+use cmdr_fs::volume::{
+    BatchScanResult, CopyScanResult, ListingProgress, ScanConflict, ScanTicker, SourceItemInfo, VolumeError,
+};
 use log::{debug, warn};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-
-/// Running counts for ONE `scan_for_copy*` call, reported as the walk finds
-/// them.
-///
-/// ⚠️ Without this the recursive SMB scan reports nothing until it returns, so
-/// the transfer dialog sits on `0 bytes / 0 files / 0 dirs` for the whole scan
-/// of a folder, however long that takes. It also leaves the scan watchdog
-/// (`write_operations/scan_watchdog.rs`) blind: it bounds a preview by
-/// INACTIVITY, and a backend that never reports activity is indistinguishable
-/// from a share that has stopped answering.
-///
-/// Counts are cumulative for the call, which is what
-/// `Volume::scan_for_copy_batch_with_progress` promises its callers (they shift
-/// by their own baseline across several calls).
-pub(super) struct ScanTicker<'a> {
-    on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
-    files: AtomicUsize,
-    dirs: AtomicUsize,
-    bytes: AtomicU64,
-}
-
-impl<'a> ScanTicker<'a> {
-    pub(super) fn new(on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>) -> Self {
-        Self {
-            on_progress,
-            files: AtomicUsize::new(0),
-            dirs: AtomicUsize::new(0),
-            bytes: AtomicU64::new(0),
-        }
-    }
-
-    /// One more directory entered.
-    pub(super) fn dir(&self) {
-        self.dirs.fetch_add(1, Ordering::Relaxed);
-        self.report();
-    }
-
-    /// One more file counted, at `size` bytes.
-    pub(super) fn file(&self, size: u64) {
-        self.files.fetch_add(1, Ordering::Relaxed);
-        self.bytes.fetch_add(size, Ordering::Relaxed);
-        self.report();
-    }
-
-    /// The running totals so far.
-    pub(super) fn counts(&self) -> ListingProgress {
-        ListingProgress {
-            files: self.files.load(Ordering::Relaxed),
-            dirs: self.dirs.load(Ordering::Relaxed),
-            bytes: self.bytes.load(Ordering::Relaxed),
-        }
-    }
-
-    fn report(&self) {
-        if let Some(cb) = self.on_progress {
-            cb(self.counts());
-        }
-    }
-}
 
 impl SmbVolume {
     /// Recursively scans an SMB path, returning file/dir counts and total bytes.
@@ -475,7 +416,3 @@ impl SmbVolume {
         })
     }
 }
-
-#[cfg(test)]
-#[path = "scan_test.rs"]
-mod scan_test;

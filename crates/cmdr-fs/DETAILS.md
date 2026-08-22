@@ -227,6 +227,35 @@ The API contract says this crate emits no user-facing strings. Two things look l
 
 Anyone grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.
 
+## `ScanTicker`: one ticker, so the promise can't drift
+
+`Volume::scan_for_copy_batch_with_progress` promises counts that are **cumulative for the call** — callers shift by
+their own baseline across several calls, so a per-path reset makes the scan dialog's counters jump backwards. Every
+remote backend needs exactly that, and two hand-rolled copies would drift on precisely the part that matters. So the
+ticker lives here and both `cmdr-smb` and `cmdr-sftp` count through it.
+
+⚠️ It exists at all because a recursive scan over a network backend reports nothing until it returns: the transfer
+dialog sits on "0 files" for the length of the walk, and `write_operations/scan_watchdog.rs` — which bounds a preview by
+INACTIVITY — can't tell a slow tree from a server that stopped answering.
+
+## `Volume::copy_within`: letting a server copy for itself
+
+Some protocols can copy a file from one path to another without the bytes travelling through Cmdr (SFTP's
+`copy-data@openssh.com`; SMB has `FSCTL_SRV_COPYCHUNK`, unimplemented today). Duplicating a large file inside one server
+otherwise sends it down the link and straight back up.
+
+The default is `NotSupported`, and ❗ a caller must read that as "do it the ordinary way" rather than as a failure: it
+is the answer both for a backend with no such operation and for one whose SERVER simply lacks the extension, which is
+only knowable at runtime. `write_operations/transfer/volume/strategy.rs::try_server_side_copy` is the one caller, and it
+asks only when `Arc::ptr_eq` says both sides of the copy are the same volume.
+
+Two contract points are load-bearing:
+
+- ❗ **Never single-shot.** The destination genuinely holds a byte-incomplete file while this runs, so the caller stages
+  it exactly as it stages a streamed write. A backend answering otherwise would be asking for a partial at the user's
+  chosen filename.
+- **`to` is created or TRUNCATED**, matching `write_from_stream`, so a caller-minted safe-replace temp works unchanged.
+
 ## `root_anchored`: the one rule for turning a caller's path into a backend's
 
 Cmdr's UI speaks two path dialects — a pane sends the absolute path it displays, the transfer dialog's destination box

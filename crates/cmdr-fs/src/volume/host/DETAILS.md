@@ -303,9 +303,11 @@ surfaces at the end of a move: check every `[\`Type::method\`]` link for an app-
    registry has nowhere to write "you left", and your background work keeps running against a volume the app has
    forgotten. § "The two registry reach-backs" has the full rationale.
 10. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
-    from drifting into a per-entry loop. Both extracted backends carry a `host_seam_test.rs` to copy from —
-    `crates/cmdr-smb/src/volume/host_seam_test.rs` walks a real directory and asserts the counter stays put, and
-    `crates/cmdr-archive/src/watch/host_seam_test.rs` does the archive-refresh half.
+    from drifting into a per-entry loop. Three backends carry a `host_seam_test.rs` to copy from —
+    `crates/cmdr-smb/src/volume/host_seam_test.rs` and `crates/cmdr-sftp/src/volume/host_seam_test.rs` both seed a real
+    directory, walk it every way the backend can (listing, copy scan, conflict scan), and assert the counter stays put,
+    and `crates/cmdr-archive/src/watch/host_seam_test.rs` does the archive-refresh half. The SFTP one is the sharpest
+    instrument of the three: that backend has no watcher, so `notify_mutation` is the counter's ONLY producer.
 
 ## Where the app answers each seam
 

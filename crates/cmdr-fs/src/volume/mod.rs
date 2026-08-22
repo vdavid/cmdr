@@ -1231,6 +1231,43 @@ pub trait Volume: Send + Sync {
         let _ = (dest, size, stream, on_progress);
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
+
+    /// Copies one FILE from `from` to `to` inside THIS volume, without the bytes
+    /// travelling through Cmdr.
+    ///
+    /// A pure optimization over `open_read_stream` + `write_from_stream`, for the
+    /// backends whose server can copy for itself (SFTP's
+    /// `copy-data@openssh.com`). Duplicating a large file inside one server
+    /// otherwise sends it down the link and straight back up.
+    ///
+    /// Contract, all four parts load-bearing:
+    ///
+    /// - **Files only.** A directory source is the caller's to walk; this answers
+    ///   for one file at a time so the walk keeps its conflict handling.
+    /// - **`to` is created, or TRUNCATED if it exists**, exactly like
+    ///   `write_from_stream`'s destination, so the caller's staging and
+    ///   conflict-resolution temps work unchanged.
+    /// - ❗ **Never single-shot.** The destination genuinely holds a
+    ///   byte-incomplete file while this runs, so the caller must stage it the way
+    ///   it stages a streamed write. ❌ A backend may not answer here in a way
+    ///   that contradicts [`write_is_single_shot`](Self::write_is_single_shot).
+    /// - **Cancellation arrives as `ControlFlow::Break` from `on_progress`**, and
+    ///   the implementation removes its partial before returning
+    ///   [`VolumeError::Cancelled`].
+    ///
+    /// Returns bytes copied. Default `NotSupported`, and ❗ a caller MUST treat
+    /// that as "do it the ordinary way" rather than as a failure: every backend
+    /// answers it today, and a server that simply lacks the extension answers it
+    /// at runtime.
+    fn copy_within<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        let _ = (from, to, on_progress);
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
 }
 
 /// Anchors a caller-supplied path at `root`, giving the absolute, root-anchored
@@ -1282,6 +1319,7 @@ mod ids;
 mod in_memory;
 pub mod mtp_ids;
 mod retirement;
+mod scan_ticker;
 mod types;
 
 // Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
@@ -1306,6 +1344,7 @@ pub use channel_stream::ChannelReadStream;
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
 pub use retirement::{Retirement, Retires, SelfHandle};
+pub use scan_ticker::ScanTicker;
 pub use types::*;
 
 #[cfg(test)]
