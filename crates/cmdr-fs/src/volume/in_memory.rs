@@ -71,6 +71,13 @@ pub struct InMemoryVolume {
     /// failure never fails the surrounding edit (the edit commits via a
     /// rename-overwrite swap, which doesn't call `delete`). Default `false`.
     delete_fails: bool,
+    /// When set, [`Volume::rename`] returns this error instead of moving the entry,
+    /// and the store is left exactly as it was. The variant matters: a caller that
+    /// clears the destination on ANY rename failure deletes the user's file over a
+    /// transient blip, so the tests that pin "clear the way only on
+    /// `AlreadyExists`" need a rename that fails some OTHER way. Default `None`.
+    /// Set via [`Self::with_rename_failing`].
+    rename_failure: Option<VolumeError>,
     /// When `true`, [`Volume::create_directory`] returns `NotFound` for the path it
     /// was handed instead of creating it. Models a backend that can't ADDRESS the
     /// destination at all (a share answering `NotFound` for a path outside its
@@ -109,6 +116,7 @@ impl InMemoryVolume {
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
             delete_fails: false,
+            rename_failure: None,
             create_directory_not_found: false,
             stat_failing: RwLock::new(HashSet::new()),
             smb_connection_state: None,
@@ -146,6 +154,19 @@ impl InMemoryVolume {
     /// delete failure never fails or blocks the edit.
     pub fn with_delete_failing(mut self) -> Self {
         self.delete_fails = true;
+        self
+    }
+
+    /// Makes [`Volume::rename`] fail with `error` and change nothing, modeling a
+    /// rename that couldn't complete for a reason OTHER than a live destination:
+    /// a dropped session, a server that refused, a backend with no rename at all.
+    ///
+    /// That distinction is the whole point. `AlreadyExists` means "something is
+    /// in the way", and a caller may clear it; every other failure means the
+    /// destination is none of our business, and clearing it destroys a file that
+    /// was never ours to touch.
+    pub fn with_rename_failing(mut self, error: VolumeError) -> Self {
+        self.rename_failure = Some(error);
         self
     }
 
@@ -648,6 +669,10 @@ impl Volume for InMemoryVolume {
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            if let Some(failure) = &self.rename_failure {
+                return Err(failure.clone());
+            }
+
             let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
                 message: "Lock poisoned".into(),
                 raw_os_error: None,

@@ -218,14 +218,23 @@ impl StagedWrite {
 
 /// Moves a completed temp onto `final_path`.
 ///
-/// Renames FIRST, and only clears `final_path` if that fails. The conflict
-/// layer's `volume::conflict::finalize_safe_replace` is the other way round
-/// because there the original is known to be in the way; here it usually isn't (a fresh
-/// copy, or a conflict the resolver already cleared), and a speculative delete
-/// would spend one extra round trip per file on SMB and MTP for nothing. The
-/// name can still be taken — a `Rename` resolution's `O_EXCL` placeholder, a
-/// cross-type Overwrite whose dest delete failed, a racing writer — so the
-/// second attempt covers it.
+/// Renames FIRST, and only clears `final_path` if that rename said something is
+/// in the way. The conflict layer's `volume::conflict::finalize_safe_replace` is
+/// the other way round because there the original is known to be in the way;
+/// here it usually isn't (a fresh copy, or a conflict the resolver already
+/// cleared), and a speculative delete would spend one extra round trip per file
+/// on SMB and MTP for nothing. The name can still be taken — a `Rename`
+/// resolution's `O_EXCL` placeholder, a cross-type Overwrite whose dest delete
+/// failed, a racing writer — so the second attempt covers it.
+///
+/// ❗ **Only `AlreadyExists` earns the delete**, and this is the difference
+/// between a transient blip and a destroyed file. A rename over a network
+/// backend fails for plenty of reasons that say nothing about the destination:
+/// the session blinked, the server refused, SFTP v3 collapsed an errno into its
+/// one catch-all code. Clearing the way on every `Err` would delete a file the
+/// user still has and then report the blip that "justified" it. It also covers a
+/// backend that can delete but not rename, which would otherwise destroy the
+/// destination and answer `NotSupported`.
 ///
 /// On failure `temp` is left alone: past this point it holds the file's only
 /// complete copy.
@@ -233,6 +242,9 @@ async fn land(dest_volume: &Arc<dyn Volume>, temp: &Path, final_path: &Path) -> 
     let Err(first) = dest_volume.rename(temp, final_path, false).await else {
         return Ok(());
     };
+    if !matches!(first, VolumeError::AlreadyExists(_)) {
+        return Err(first);
+    }
     match dest_volume.delete(final_path).await {
         Ok(()) | Err(VolumeError::NotFound(_)) => dest_volume.rename(temp, final_path, false).await,
         // Couldn't clear the way either; the rename error is the one to report.
@@ -246,6 +258,12 @@ mod tests {
     use crate::file_system::volume::InMemoryVolume;
     use crate::ignore_poison::IgnorePoison;
     use std::time::Duration;
+
+    /// What `path` reports right now, which is how these cells tell "the
+    /// destination is untouched" from "we replaced it".
+    async fn size_of(volume: &InMemoryVolume, path: &str) -> Option<u64> {
+        volume.get_metadata(Path::new(path)).await.ok().and_then(|e| e.size)
+    }
 
     fn state() -> Arc<WriteOperationState> {
         Arc::new(WriteOperationState::new(Duration::from_millis(50)))
@@ -319,6 +337,71 @@ mod tests {
         assert!(inner.exists(Path::new("/notes.txt")).await);
         assert!(!inner.exists(&temp).await);
         assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
+    }
+
+    /// Landing onto a name something else already holds is the case the second
+    /// attempt exists for: clear the way, then rename again.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn landing_clears_a_destination_that_is_genuinely_in_the_way() {
+        let inner = Arc::new(InMemoryVolume::new("dest"));
+        let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
+        inner.create_file(Path::new("/notes.txt"), b"OLD").await.unwrap();
+        inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
+
+        land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await.unwrap();
+
+        assert!(!inner.exists(Path::new("/temp")).await);
+        assert_eq!(size_of(&inner, "/notes.txt").await, Some(3), "the new bytes landed");
+    }
+
+    /// A rename that failed for ANY OTHER reason must leave the destination
+    /// alone.
+    ///
+    /// The transient case is the one that costs a file. Over SFTP or SMB a
+    /// rename can fail because the session blinked, and SFTP v3 collapses most
+    /// of errno into one catch-all code, so a landing that cleared the way on
+    /// every `Err` would delete the user's existing file and then report the
+    /// blip. `AlreadyExists` is the only answer that says something is in the
+    /// way; everything else says the destination is none of our business.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_rename_that_failed_for_another_reason_leaves_the_destination_alone() {
+        let inner = Arc::new(
+            InMemoryVolume::new("dest").with_rename_failing(VolumeError::DeviceDisconnected("blip".to_string())),
+        );
+        let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
+        inner.create_file(Path::new("/notes.txt"), b"THE USER'S FILE").await.unwrap();
+        inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
+
+        let outcome = land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await;
+
+        assert!(
+            matches!(outcome, Err(VolumeError::DeviceDisconnected(_))),
+            "the rename's own failure is what the caller has to see; got {outcome:?}"
+        );
+        assert_eq!(
+            size_of(&inner, "/notes.txt").await,
+            Some(15),
+            "a rename that never said the destination was in the way must not have cost the user their file"
+        );
+        assert!(
+            inner.exists(Path::new("/temp")).await,
+            "and the only complete copy of the new bytes must still be under the temp name"
+        );
+    }
+
+    /// The same shape, one flavor further: a backend that can delete but can't
+    /// rename must not destroy the destination and then report `NotSupported`.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_backend_without_rename_does_not_delete_what_it_cannot_replace() {
+        let inner = Arc::new(InMemoryVolume::new("dest").with_rename_failing(VolumeError::NotSupported));
+        let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
+        inner.create_file(Path::new("/notes.txt"), b"THE USER'S FILE").await.unwrap();
+        inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
+
+        let outcome = land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await;
+
+        assert!(matches!(outcome, Err(VolumeError::NotSupported)), "got {outcome:?}");
+        assert!(inner.exists(Path::new("/notes.txt")).await);
     }
 
     /// Abandoning removes the partial and stops tracking it.
