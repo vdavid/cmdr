@@ -1,10 +1,10 @@
 //! Small SQLite helpers shared by every store: the process-wide page-cache slab
 //! and the connection factories that install it, the per-connection page-cache
-//! budgets that have to ADD UP to that slab, the runtime reading of what the slab
-//! actually holds (which the app's `get_memory_diagnostics` folds in, since the
-//! slab is otherwise an anonymous 64 MiB of the Rust heap), the per-thread
-//! connection cache the read paths keep (and the live count that watches it
-//! against its budget), and freelist reclamation for the writer threads.
+//! budgets sized against that slab, the runtime reading of what the slab actually
+//! holds (which the app's `get_memory_diagnostics` folds in, since the slab is
+//! otherwise an anonymous 64 MiB of the Rust heap), the per-thread connection
+//! cache the read paths keep (and the live count that watches it against its
+//! budget), and freelist reclamation for the writer threads.
 //!
 //! It lives here rather than in the app because the slab is exactly ONE per
 //! process and five stores share it — the three index DBs plus the agent's and the
@@ -34,18 +34,24 @@ use rusqlite::{Connection, OpenFlags, ffi};
 /// pool rather than anything semantic (156 were open in a profiled prod session:
 /// v0.36.2, ~10 h uptime, macOS 26.5.2, `lsof` + `footprint -s`, 2026-07-28).
 ///
-/// 64 MiB is the sum of the two things that can fill it: a whole
-/// `wal_autocheckpoint` window each for the
-/// [`CONCURRENTLY_SCANNING_WRITERS`] it's sized for, plus the entire
-/// [`READ_CONNECTION_BUDGET`] at [`READ_PAGE_CACHE_KIB`] apiece. The const
-/// assertion beside those keeps the arithmetic honest.
+/// 64 MiB is the sum of the two things it is SIZED for: a whole
+/// `wal_autocheckpoint` window each for the [`CONCURRENTLY_SCANNING_WRITERS`],
+/// plus the entire [`READ_CONNECTION_BUDGET`] at [`READ_PAGE_CACHE_KIB`] apiece.
+/// The const assertion beside those keeps that arithmetic honest.
 ///
-/// ⚠️ A slab SMALLER than what the budgets add up to isn't a cap, it's a
-/// treadmill: it runs permanently full, `pcache1`'s under-pressure flag latches
-/// on, and every fetch recycles from the global LRU under the `PGroup` mutex
-/// (measured: 132 read connections scanning continuously held 63 of the 64 MiB
-/// at the old 8 MiB read budget, 17 MiB at the current one —
-/// `sqlite_util/page_cache_probe.rs`, release build, 2026-08-21).
+/// ⚠️ **The read half of that addition is a bound; the write half is a design
+/// TARGET the running app does not meet.** `pGroup->nMaxPage` sums `cache_size`
+/// over EVERY open connection, and production holds far more than two write
+/// connections — see [`CONCURRENTLY_SCANNING_WRITERS`] for the real population
+/// and the measurement. So `Σ nMax` genuinely exceeds this number in the app.
+///
+/// ⚠️ A slab smaller than `Σ nMax` isn't a cap, it's a treadmill: it runs
+/// permanently full, `pcache1`'s under-pressure flag latches on, and every fetch
+/// recycles from the global LRU under the `PGroup` mutex. Measured with
+/// `sqlite_util/page_cache_probe.rs` (release build): 132 read connections
+/// scanning continuously held 63 of the 64 MiB at the old 8 MiB read budget and
+/// 17 MiB at the current one (2026-08-21), while nine IDLE write connections held
+/// 63 MiB on their own (2026-08-22).
 ///
 /// Rationale, the fixed-cost tradeoff, and the alternatives weighed:
 /// `indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".
@@ -192,9 +198,11 @@ fn report(outcome: SharedPageCache) -> SharedPageCache {
 /// it, and say how much of it is real — the slab is handed out zeroed and only
 /// the slots SQLite actually takes become dirty pages.
 ///
-/// Read alongside [`live_read_connections`]: `used_bytes` pegged at
-/// `slab_bytes` with the connection count past [`READ_CONNECTION_BUDGET`] is
-/// the treadmill [`SHARED_PAGE_CACHE_BYTES`] describes, not a healthy cache.
+/// `used_bytes` pegged at `slab_bytes` is the treadmill
+/// [`SHARED_PAGE_CACHE_BYTES`] describes, not a healthy cache. Read
+/// [`live_read_connections`] alongside it to see whether the READ term explains
+/// it; ⚠️ if it doesn't, the writers do, and nothing counts those
+/// ([`CONCURRENTLY_SCANNING_WRITERS`]).
 // DEFAULT-OK: all zeros is the truthful reading for a process whose SQLite never
 // initialized — no slab, no connections, so no pages held anywhere. It's the one
 // failure path [`query_page_cache_usage`] has.
@@ -340,9 +348,13 @@ fn record_open(db_path: &Path) {
 /// whole autocheckpoint window dirties, so a big write batch commits without
 /// evicting pages it's about to touch again. Change one, reconsider the other.
 ///
-/// There is at most ONE write connection per DB (a single writer thread), so
-/// this budget is claimed a handful of times process-wide, and it fits inside
-/// [`SHARED_PAGE_CACHE_BYTES`] several times over.
+/// ⚠️ This is the DOMINANT term in `pGroup->nMaxPage`, not a rounding error.
+/// There is one writer THREAD per DB, but not one write connection: a store
+/// handle held beside its writer is a second one on the same file, and every open
+/// write connection adds its whole 16 MiB whether or not it is writing. Nine of
+/// them is an ordinary two-volume session, which is 144 MiB against a 64 MiB
+/// slab. [`CONCURRENTLY_SCANNING_WRITERS`] carries the population and the
+/// measurement.
 pub const WRITE_PAGE_CACHE_KIB: i64 = 16_384;
 
 /// Page cache for a READ-ONLY connection, in KiB, applied as the negative
@@ -359,8 +371,10 @@ pub const WRITE_PAGE_CACHE_KIB: i64 = 16_384;
 /// past it an unpinned page is freed outright rather than kept. Read connections
 /// therefore contribute `count × this number`, with `count` tracking tokio's
 /// blocking-thread pool. So this is sized so that [`READ_CONNECTION_BUDGET`] of
-/// them fit inside [`SHARED_PAGE_CACHE_BYTES`] beside the writers, which is
-/// asserted below — not sized for what one connection would enjoy.
+/// them fit inside [`SHARED_PAGE_CACHE_BYTES`] beside the writers the slab is
+/// sized for, which is asserted below — not sized for what one connection would
+/// enjoy. (The read term is the one the app really does hold to; the writer term
+/// beside it is a target it doesn't. See [`CONCURRENTLY_SCANNING_WRITERS`].)
 ///
 /// ⚠️ Safe to be this small ONLY for a read-only connection: `pcache.c` keeps
 /// `eCreate == 2` while a cache has no dirty pages, so `pcache1FetchStage2`'s
@@ -391,12 +405,30 @@ pub const READ_PAGE_CACHE_KIB: i64 = 128;
 /// crossing logs a `warn!` naming the ceiling it implies.
 pub const READ_CONNECTION_BUDGET: usize = 256;
 
-/// How many write connections can be filling their page cache at once: the two
-/// concurrently scanning volumes [`SHARED_PAGE_CACHE_BYTES`] is sized for.
+/// The write connections [`SHARED_PAGE_CACHE_BYTES`] is SIZED for: two volumes
+/// scanning at once, the busiest shape the app's write paths produce.
 ///
-/// More write connections than this exist (one per open database), but a writer
-/// that isn't scanning holds nothing, and two volumes scanning at once is the
-/// busiest shape the app produces.
+/// ❗ **A design target, not the population.** SQLite's ceiling is
+/// `pGroup->nMaxPage` = `Σ cache_size` over every OPEN connection, and an open
+/// write connection contributes its full [`WRITE_PAGE_CACHE_KIB`] whether or not
+/// it is scanning. A two-volume session durably holds NINE of them: `IndexStore`
+/// plus `IndexWriter` on each volume's `index.db` (the store handle and the
+/// writer thread each keep their own), `ImportanceWriter` on each
+/// `importance.db`, `MediaWriter` on each `media.db`, and the process-wide
+/// operation-log writer. That is 144 MiB of `nMaxPage` before a single reader
+/// opens, and the two registries never drain, so the media and importance writers
+/// only ratchet up as volumes are mounted.
+///
+/// ⚠️ "A writer that isn't scanning holds nothing" is false once it HAS scanned:
+/// `pcache1Unpin` frees an unpinned page outright only while
+/// `nPurgeable > nMaxPage`, so a high `nMaxPage` is exactly what lets idle writers
+/// keep their pages. Measured (`sqlite_util/page_cache_probe.rs`'s
+/// `writer_page_cache_probe`, release build, 2026-08-22): two idle post-burst
+/// writers hold 33 MiB of the slab, nine hold 63 of 64 with zero heap overflow.
+///
+/// Closing this for real means shrinking the write budget at rest or draining
+/// idle writers, both behavior changes: `indexing/store/DETAILS.md` § "SQLite page
+/// memory is one process-wide slab".
 const CONCURRENTLY_SCANNING_WRITERS: usize = 2;
 
 const _: () = assert!(
@@ -404,14 +436,26 @@ const _: () = assert!(
     "read connections must stay cheaper than the single write connection"
 );
 
-/// The whole design in one line: SQLite's own ceiling on retained pages
-/// (`pGroup->nMaxPage` = `Σ cache_size`) never exceeds the memory we handed it.
+/// The sizing target in one line: the writers the slab is SIZED for, plus the
+/// whole read-connection budget, fit inside the memory we handed SQLite.
 ///
-/// Break it and the 64 MiB stops describing anything: the slab runs permanently
-/// full, `pcache1`'s under-pressure flag latches on, and every page fetch recycles
-/// from the global LRU under the `PGroup` mutex instead of the cheap path — with
-/// nothing ever shrinking back at idle, because the "free this page outright"
-/// branch in `pcache1Unpin` only fires above `nMaxPage`.
+/// **What it proves.** That the three constants stay mutually consistent. Nobody
+/// can raise [`READ_PAGE_CACHE_KIB`] or [`READ_CONNECTION_BUDGET`] past what the
+/// slab can hold without this failing to compile, which is the regression that
+/// created the treadmill in the first place.
+///
+/// **What it does NOT prove.** That the running process satisfies
+/// `Σ cache_size ≤ SHARED_PAGE_CACHE_BYTES`. It doesn't: the writer term is a
+/// design target ([`CONCURRENTLY_SCANNING_WRITERS`]) and the real population is
+/// several times larger. ❌ Don't read this assertion as an invariant and "fix"
+/// the code to match it.
+///
+/// The cost of exceeding the slab, however many terms do it: the 64 MiB stops
+/// describing anything. It runs permanently full, `pcache1`'s under-pressure flag
+/// latches on, and every page fetch recycles from the global LRU under the
+/// `PGroup` mutex instead of the cheap path — with nothing ever shrinking back at
+/// idle, because the "free this page outright" branch in `pcache1Unpin` only fires
+/// above `nMaxPage`.
 const _: () = assert!(
     CONCURRENTLY_SCANNING_WRITERS * (WRITE_PAGE_CACHE_KIB as usize)
         + READ_CONNECTION_BUDGET * (READ_PAGE_CACHE_KIB as usize)

@@ -47,10 +47,12 @@ blocking-thread pool (69 threads at sample time), not anything semantic.
 2. Made total page memory ONE number: a 64 MiB process-wide slab handed to SQLite via
    `sqlite3_config(SQLITE_CONFIG_PAGECACHE, …)` before the first connection opens. Page memory is now independent of
    connection count and shared dynamically.
-3. Made the per-connection numbers add up to the slab rather than to 32x it. SQLite's one ceiling on retained pages is
-   `Σ cache_size`, so a generous read budget multiplied straight back into the number nothing controls; the read budget
-   is 128 KiB now, and 256 of them plus the two writers the slab is sized for come to exactly 64 MiB. Measured at the
-   132 connections profiled here: the slab went from holding 63 of its 64 MiB to 17.
+3. Cut the READ term from 32x the slab to a fraction of it. SQLite's one ceiling on retained pages is `Σ cache_size`, so
+   a generous read budget multiplied straight back into the number nothing controls; the read budget is 128 KiB now, and
+   256 of them plus the two writers the slab is sized for come to exactly 64 MiB. Measured at the 132 connections
+   profiled here: the slab went from holding 63 of its 64 MiB to 17. ⚠️ That addition is a sizing TARGET, not a bound
+   the process meets — the app holds around nine write connections, not two, and they alone can peg the slab again. See
+   `crates/cmdr-index/src/indexing/store/DETAILS.md` § "The writer term is a design target, not an invariant".
 
 Rationale, the sizing, the ordering guarantee, and the alternative weighed:
 `crates/cmdr-index/src/indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".

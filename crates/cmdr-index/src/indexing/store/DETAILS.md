@@ -246,12 +246,13 @@ sharing dynamic instead of first-come-first-served. Slot size is `4096 + sqlite3
 rounded to 8, queried rather than guessed: a slot one byte too small is never used and every allocation silently falls
 through to the heap (verified against the bundled amalgamation's `pcache1Alloc`, libsqlite3-sys 0.38.1, 2026-07-29).
 
-**Why 64 MiB.** It's the sum of the two things that can fill it, and that addition closes exactly: a whole
-`wal_autocheckpoint` window (16 MiB) for each of the two concurrently scanning volumes, plus the entire read-connection
-budget (see "the per-connection budgets" below). The tradeoff is honest: the slab is address space we hand SQLite up
-front, so a session that opens one small DB reserves the whole 64 MiB even though it dirties only what it uses. We take
-that trade because the failure the profile found was steady-state growth, not a peak, and a predictable number beats an
-unpredictable one.
+**Why 64 MiB.** It's the sum of the two things the sizing targets: a whole `wal_autocheckpoint` window (16 MiB) for each
+of the two concurrently scanning volumes, plus the entire read-connection budget (see "the per-connection budgets"
+below). ⚠️ Only the read half of that is a bound the running app holds to; the writer half is a design target it does
+not meet, and "the writer term is a target, not an invariant" below is the part to read before touching any of these
+numbers. The tradeoff is honest: the slab is address space we hand SQLite up front, so a session that opens one small DB
+reserves the whole 64 MiB even though it dirties only what it uses. We take that trade because the failure the profile
+found was steady-state growth, not a peak, and a predictable number beats an unpredictable one.
 
 **Ordering is the whole game.** `sqlite3_config` only works before SQLite initializes itself, and the first connection
 opened ANYWHERE in the process initializes it. So every connection opens through
@@ -283,17 +284,66 @@ libsqlite3-sys 0.38.1, 2026-08-21). Two mechanisms, and only the second is a cap
   than keeping it once `nPurgeable > nMaxPage`. So SQLite enforces exactly ONE ceiling on retained pages, and it is
   `Σ cache_size` over every open connection.
 
-**So the sizing is an addition, and it has to close.** `SHARED_PAGE_CACHE_BYTES` (64 MiB) =
-`CONCURRENTLY_SCANNING_WRITERS` (2) × `WRITE_PAGE_CACHE_KIB` (16 MiB) + `READ_CONNECTION_BUDGET` (256) ×
-`READ_PAGE_CACHE_KIB` (128 KiB), exactly. A const assertion in `sqlite_util.rs` holds the arithmetic, and
-`the_read_connection_budget_fits_inside_the_shared_slab` re-derives it from the KiB real connections report, so a pragma
-that silently doesn't land fails the test rather than the invariant.
+**So the sizing is an addition.** `SHARED_PAGE_CACHE_BYTES` (64 MiB) = `CONCURRENTLY_SCANNING_WRITERS` (2) ×
+`WRITE_PAGE_CACHE_KIB` (16 MiB) + `READ_CONNECTION_BUDGET` (256) × `READ_PAGE_CACHE_KIB` (128 KiB), exactly. A const
+assertion in `sqlite_util.rs` holds that arithmetic, and `the_read_connection_budget_fits_inside_the_shared_slab`
+re-derives it from the KiB real connections report, so a pragma that silently doesn't land fails the test rather than
+the constant. ❗ Neither of them proves the running process satisfies it: see the next section.
 
 **Why the write budget is 16 MiB.** It's coupled to `wal_autocheckpoint = 4000` (~16 MiB of 4 KiB pages, set in the same
 function): the cache is sized to hold what a whole autocheckpoint window dirties, so a big write batch commits without
-evicting pages it's about to touch again. Change one and reconsider the other. There is at most ONE write connection per
-DB (the single writer thread), and one that isn't scanning holds nothing, which is why the slab budgets for two rather
-than for every open database.
+evicting pages it's about to touch again. Change one and reconsider the other.
+
+### The writer term is a design target, not an invariant
+
+❗ **The addition above closes on paper; the running app does not satisfy it, and the gap is the WRITE term.**
+`pGroup->nMaxPage` sums `cache_size` over every OPEN connection, and an open write connection contributes its full 16
+MiB whether or not it is scanning. So the number that matters is how many write connections exist, not how many are
+busy.
+
+**The durable write-connection population**, for a plain two-volume session:
+
+- 2 per volume on `index.db`: `IndexStore`'s own read-write connection (`store/connection.rs::try_open`) plus
+  `IndexWriter`'s. The `IndexManager` holds both for the volume's life.
+- 1 per volume on `importance.db` (`ImportanceWriter`) and 1 per volume on `media.db` (`MediaWriter`), handed out by the
+  two writer registries. ⚠️ Those registries never drain — `shutdown_all` exists and nothing calls it — so these outlive
+  an unmount and only ratchet up as volumes are mounted.
+- 1 process-wide for the operation log (`OperationLogWriter`).
+
+That is **nine connections = 144 MiB of `nMaxPage` before a single reader opens**, against a 64 MiB slab. The agent
+store adds more transiently: it opens a write connection per call rather than keeping a writer thread.
+
+**And an idle writer does not release what it took.** `pcache1Unpin` frees an unpinned page outright only while
+`nPurgeable > nMaxPage`, so a high `nMaxPage` is precisely what lets every idle writer keep its pages. The effect is
+self-reinforcing: more writers raise the ceiling, and the raised ceiling is what stops the existing ones from shrinking.
+
+**Measured** (`crates/cmdr-fs/src/sqlite_util/page_cache_probe.rs`'s `writer_page_cache_probe`, release build, M1 Max,
+2026-08-22), each writer given one burst and then left idle:
+
+- 2 writers (the design target): ceiling 32 MiB, slab held **33 MiB (51%)**. The target behaves as documented.
+- 9 writers (the real population): ceiling 144 MiB, slab held **63 MiB (99%)**, heap overflow 0.
+
+That 99% is the same treadmill the read budget removed, re-created by the writer term alone. The 63 → 17 MiB read-side
+win is real and unaffected (readers were the dominant term by ~33× before the change); what is not true is that the
+budgets bound the slab.
+
+⚠️ The earlier probe could not have caught this: it opens read connections only, so the writer term was invisible to it
+by construction. Any future measurement of this bound has to open writers.
+
+**What would actually close it**, neither of which is a budget change:
+
+1. **Shrink the write budget at rest.** A writer would hold a small `cache_size` and raise it to 16 MiB only while
+   scanning. `PRAGMA cache_size` is per connection and settable at any time, so this is reachable, but it means the scan
+   paths acquiring and releasing a budget, and it interacts with the `wal_autocheckpoint` coupling above.
+2. **Drain idle writers.** Wire the registries' `shutdown_all`, or retire a writer after an idle timeout. That is a
+   shutdown-ordering change with the usual "a late write arrives after teardown" hazards.
+
+**Alternative weighed and rejected: deriving the read budget from the live writer count.** It doesn't work, for three
+reasons. The slab is installed once before the first connection and can never grow, so a derived budget could only
+shrink reads. `PRAGMA cache_size` is applied at open and read connections are thread-local, so a new number would reach
+only future opens and leave a mixed population. And the writers dominate: at nine of them the read term is 16 MiB
+against their 144 MiB, so even a read budget of zero leaves `Σ nMax` over the slab. The lever has to be on the writer
+side.
 
 **Why reads get only 128 KiB (~30 pages).** Their count is the term that scales with nothing: read connections are
 thread-local and live as long as their thread, so it tracks tokio's blocking pool. Anything generous here multiplies by
@@ -310,7 +360,7 @@ over every scored folder, and that one is already cached behind `../../media_ind
 per volume rather than once per UI query. Any read budget at or below 1 MiB gives the identical sorter budget, so this
 is the price of a per-connection number small enough to bound at all, not of 128 KiB specifically.
 
-**Measured** (`crates/cmdr-fs/src/sqlite_util/page_cache_probe.rs`, the `#[ignore]`d harness, release build, M1 Max,
+**Measured** (`crates/cmdr-fs/src/sqlite_util/page_cache_probe.rs`'s `page_cache_probe`, release build, M1 Max,
 2026-08-21), 132 read connections — the profiled prod count — scanning a 16 MB database continuously:
 
 - Global ceiling (`Σ nMax`): **1,056 MiB → 16 MiB**.
@@ -332,13 +382,17 @@ the count stays free and the per-connection number carries the bound.
 **The budget is watched, not enforced.** Nothing bounds the connection count structurally, so
 `sqlite_util::live_read_connections` counts what the `ThreadConnCache`s hold and the first crossing of
 `READ_CONNECTION_BUDGET` logs a `warn!` naming the ceiling it implies. If that line ever appears in a log, the number to
-change is the budget or the per-connection KiB, together.
+change is the budget or the per-connection KiB, together. ⚠️ Two limits on that watch: it counts the DURABLE population
+only (the media, agent, and operation-log stores open a read connection per call and drop it, so they never enter it),
+and nothing at all counts write connections, which is where the slab's real pressure comes from.
 
 **Test coverage**: `sqlite_util::tests` pins the slab (installed before any connection opens, budget numbers, and
-`SQLITE_STATUS_PAGECACHE_USED > 0` proving pages really come from it), the summed bound, and the live-connection
+`SQLITE_STATUS_PAGECACHE_USED > 0` proving pages really come from it), the summed sizing target, and the live-connection
 counter; and `read_connections_get_a_smaller_page_cache_than_write_connections`, one per store
 (`tests/open_and_recover.rs` here and in `importance/store`, `media_index/store`, `agent/store`, `operation_log/store`),
-asserts the exact KiB each role opens with.
+asserts the exact KiB each role opens with. The two `#[ignore]`d probes in `sqlite_util/page_cache_probe.rs` measure the
+read and write terms respectively; ❗ they must stay separate tests, because the page-cache counters are process-wide
+and nextest gives each test its own process.
 
 ## Prepared statements on the hot write path
 
