@@ -68,12 +68,12 @@ other and `due_at` fires on it, so a trickle in a barely-scored folder spends a 
   makes a cold contribution ERASE a warm row's deadline. That folder then never wakes. Write the merge as an explicit
   match: no-deadline loses to any real deadline.
 - `next_deadline` (`inbox.rs:145`) needs a `filter_map`, not a bare `.min()`.
-- ⚠️ `reconcile` (`inbox.rs:191`) does `if row.deliver_by < settled { row.deliver_by = settled }`. A `None` row would be
+- ⚠️ `reconcile` (`inbox.rs:193`) does `if row.deliver_by < settled { row.deliver_by = settled }`. A `None` row would be
   handed a real deadline on every restart, undoing this whole item and inflating `ReconcileReport.deferred`.
 - `drain` still takes everything. That IS the riding-along.
 - A cold row with no other traffic ages out at `STALE_AFTER`.
 
-**Migration v7 is a table rebuild.** `agent_inbox.deliver_by INTEGER NOT NULL` (`agent/store/migrations.rs:399`) and
+**Migration v7 is a table rebuild.** `agent_inbox.deliver_by INTEGER NOT NULL` (`agent/store/migrations.rs:398`) and
 SQLite cannot drop NOT NULL, so v7 is CREATE-INSERT-DROP-RENAME, recreating the `agent_inbox_deliver_by` index (`:401`).
 `StoredInboxRow.deliver_by` becomes `Option<i64>`, with the four mappings in `wake/persist.rs:41-71`.
 
@@ -88,20 +88,21 @@ test it at every slider stop, not just the default.
 
 ### 3. Inbox ownership and persistence
 
-⚠️ **Not managed Tauri state.** The indexer starts before the agent does (`lib.rs:317` and `:709` versus `agent::start`
-at `:766`), so anything registered in `agent::start` misses launch replay, which is the busiest window the tap will ever
-see. Use a process-global with lazy init, the way `restricted_paths` does for `PathAccessDenied`.
+⚠️ **Not managed Tauri state.** The indexer starts before the agent does (`lib.rs:317`, plus `:709` inside a `spawn`,
+versus `agent::start` at `:766`, so the loss is a nondeterministic race rather than a reliable ordering), so anything
+registered in `agent::start` misses launch replay, which is the busiest window the tap will ever see. Use a
+process-global with lazy init, the way `restricted_paths` does for `PathAccessDenied`.
 
 - Launch: `persist::load` then `Inbox::reconcile(launched_at)`, logging the `ReconcileReport` (it counts what the user
   was not told and why).
 - Admit: `persist::save_row` for the touched row.
 - Drain: `persist::clear`.
 
-⚠️ **The lock must never be held across a model turn.** `TauriEventSink::emit` calls `route` synchronously on the
-caller's thread (`index_mapping.rs:660`), and that caller is the indexer's live-loop thread. `run_wake` currently takes
-`inbox: &mut Inbox` (`job.rs:59`) and awaits `run_turn` at `:107`, so a naive mutex would block every live batch for the
-length of an LLM call, stalling the event loop and journal replay. **Change `run_wake` to take the already-drained rows
-plus a way to report back**, so the guard is dropped before the turn starts. See item 5.
+⚠️ **The lock must never be held across a model turn.** `TauriEventSink::emit` (the one in `events/index_mapping.rs`, ❌
+not the unrelated type of the same name in `file_system/write_operations/event_sinks.rs`) calls `route` synchronously at
+`index_mapping.rs:689`, on the caller's thread. That caller is the live loop, which is a tokio TASK (`live.rs:163`), so
+a std mutex held across a turn blocks a runtime worker as well as the loop. `run_wake` currently takes
+`inbox: &mut Inbox` (`job.rs:59`) and awaits `run_turn` at `:107`. Item 5 splits it so the guard is dropped first.
 
 **Crash semantics, stated on purpose**: `persist::clear` runs with the drain, before the turn. A process that dies
 mid-turn loses that digest rather than re-delivering it on restart. Re-delivery would mean the user hears about the same
@@ -117,12 +118,14 @@ exactly the path the counters exist to survive.
 ⚠️ **The corrected stream is not sitting there waiting.** At the placement point, three of the four counters are
 unreachable, and taking the placement literally ships a tap that counts almost nothing:
 
-- **Renames are gone.** `detect_renames_by_inode` (`live.rs:636`) returns a bare `usize` and `retain`s matched events
-  out of `other_events`. `ChangeCounters.renamed` would be permanently zero, and `intent_share()` loses half its intent
-  signal. A user who only renames produces a bundle that never wakes. **Change it to return the matched paths.**
-- **Storm-coalesced removals are gone.** The storm path (`live.rs:561`) queues anchors as rescans and `continue`s the
-  strict-descendant removals out of `kept`, so a 60,000-file delete contributes neither the removals nor the anchor.
-  **Surface the anchors to the tap** and count one removal event at the anchor folder.
+- **Successful renames are gone.** `detect_renames_by_inode` (`live.rs:636`) returns a bare `usize` and `retain`s
+  matched events out of `other_events`. Only the FAILED matches survive (a failed stat, an inode with no moved row), so
+  `renamed` counts the noise and drops the signal. `intent_share()` is `(created + renamed) / total`, and a rename-only
+  batch yields `total == 0` → `Interest(0.0)` → never wakes. **Change it to return the matched paths.**
+- **Storm-coalesced removals are gone.** The storm path (`live.rs:562`) queues anchors as rescans and `continue`s the
+  strict-descendant removals out of `kept`, so a 60,000-file delete inside a surviving folder contributes nothing.
+  (`storm::scope_to_requeue` does keep the anchor's OWN removal, so a deleted anchor still shows up as one event.)
+  **Surface the anchors to the tap** and count one removal at the anchor folder.
 - **Directory creations are in a separate Vec.** `pending_events.drain()` at `live.rs:496` empties the input map and
   Pass 1 consumes `dir_creations` (`:497`). **Fold that Vec in explicitly.**
 
@@ -134,17 +137,22 @@ happened IN.
 
 **The crate boundary shapes the rest.** `cmdr-index` may never name the agent (`index-crate-isolation`), so:
 
-- A new observer type in `crates/cmdr-index/src/indexing/watch/`, shaped like `ChurnObserver`, folding a batch into
-  per-folder counters and emitting one `IndexEvent` per batch through the sink it holds.
+- A new observer type in `crates/cmdr-index/src/indexing/watch/`, following `ChurnObserver`'s LIFECYCLE (per volume,
+  `&mut`, one fold per batch) but ❌ not its output: `ChurnObserver` writes to `log::info!` and holds no sink. This one
+  needs the `Arc<dyn EventSink>` threaded in from the loop level (`live.rs:173`, `replay.rs:76`).
 - ⚠️ **Bundle it with `ChurnObserver` into one struct rather than adding a parameter.** `process_live_batch` is at
   exactly seven arguments (`live.rs:467`) and `clippy::too_many_arguments` defaults to seven, which `clippy.toml`
-  doesn't raise.
+  doesn't raise. ⚠️ **That bundling breaks the existing churn scanner**, which asserts each driver file literally
+  contains `ChurnObserver::from_env(` (`churn_monitor/tests.rs:218`). Either keep that literal at the driver site or
+  update the scanner in the same commit.
 - A new `IndexEvent::FolderActivity { volume_id, window_start, folders: Vec<FolderChangeRollup> }`, where the rollup
   carries the folder path, the four counts, and **`last_event_at`** (`EventBundle` needs it, and it's what `reconcile`'s
   staleness horizon reads).
-- ⚠️ **Adding an `IndexEvent` variant is six more compiler- or test-enforced edits**: the `IndexEventKind` variant,
-  `ALL: [Self; 21]` → 22, a `slot_of` arm (`sink.rs:355-471`), `IndexEvent::kind()` (`:493`), `volume_id()` (`:520`),
-  `testing::events::one_of_every_kind()` (`:591`), and the non-frontend-destination list in
+- ⚠️ **Adding an `IndexEvent` variant is nine more compiler- or test-enforced edits**: the `IndexEventKind` variant
+  (`sink.rs:355`), `ALL: [Self; 21]` → 22 (`:407`), a `slot_of` arm (`:438`), `IndexEvent::kind()` (`:493`),
+  `volume_id()` (`:525`), `testing::events::one_of_every_kind()` (`:591`), the exhaustive `route()` match
+  (`index_mapping.rs:406`), a new `Destination` variant (`:363` — ❌ don't reuse `AnalyticsOnly`, which would lie in the
+  one enum whose job is saying where an event went), and the non-frontend-destination list in
   `events/index_mapping/tests.rs:44`.
 - ⚠️ **The app side must NOT route through managed state.** `route()` takes `app: Option<&AppHandle>`
   (`index_mapping.rs:406`) and the completeness test calls `route(event, None)`, so a handler reaching for `app.state()`
@@ -152,8 +160,8 @@ happened IN.
   `PathAccessDenied` → `restricted_paths::record_denial` does.
 
 ⚠️ **Inherit both of `ChurnObserver`'s guarantees.** It is passed `&mut` so a live batch cannot be processed without
-one, and `every_live_loop_owns_a_real_churn_observer` (`churn_monitor/tests.rs:216`, the `process_live_batch(` scan at
-`:249`) fails when a driver doesn't build a real one. Note it asserts an EXACT driver list, not a subset. Write the
+one, and `every_live_loop_owns_a_real_churn_observer` (`churn_monitor/tests.rs:218`, the `process_live_batch(` scan at
+`:248`) fails when a driver doesn't build a real one. Note it asserts an EXACT driver list, not a subset. Write the
 sibling scanner for the tap FIRST, red, before the observer exists. Skip this and the cold-start replay path silently
 taps nothing, a failure `live.rs`'s own comment records having happened once already. `process_live_batch` has eight
 call sites: production at `live.rs:285`, `live.rs:368`, `replay.rs:499`, `replay.rs:563`; tests at
@@ -186,9 +194,15 @@ concurrently on one thread. Give `ChatRuntime` a `wake()` method that owns the c
 `run_wake` inside them. That also answers where the wake's `Connection` comes from, and keeps `main.db` to one
 long-lived writer discipline against its 5 s busy timeout.
 
-**Reshape `run_wake`** while its only callers are tests:
+**Split `run_wake` in two** while its only callers are tests. ⚠️ **Naively "taking the drained rows" would throw away
+the guarantee `job.rs:50-54` spells out**: the inbox is drained only once a turn is CERTAIN to run, so a budget too
+small to say anything, or a store that won't take a new thread, leaves the backlog exactly as it was. Rows handed over
+up front are lost on `NothingDue` and `Unavailable`, which are ordinary paths, not crashes. So:
 
-- Take the drained rows rather than `&mut Inbox`, so the inbox lock is released before the turn (item 3).
+- **A prepare step, under the lock**: gates, `due_at`, `compact(&inbox.scored(), …)` WITHOUT draining, the empty-render
+  bail, and `create_conversation`. Only if all of those pass does it `drain()` and `persist::clear`. Every step that can
+  decline still does so before anything is spent, which is the property the original order exists for.
+- **A run step, lock released**: takes the digest, the conversation id, and the drained rows, and runs the turn.
 - Take a dispatcher FACTORY (`&dyn Fn(i64) -> Box<dyn ToolDispatcher>`) rather than a built dispatcher.
   `AppHandleDispatcher::new(app, conversation_id)` scopes evidence to a thread and `LlmLogContext::agent_chat(id)` keys
   the LLM log the same way, but `run_wake` creates the conversation itself. Same for the LLM, built once the id is
@@ -222,16 +236,22 @@ A wake that finds nothing must be able to say so. A typed tool call, ❌ never i
 - Needs a store-level `delete_conversation`; only `ask_cmdr_archive_conversation` exists today. Considered and rejected:
   archiving. Archived threads still accumulate, and "we looked and found nothing" fifty times is not a record worth
   keeping.
-- ⚠️ **Preserve the cost record.** `cost_meter.conversation_id` is `ON DELETE CASCADE` (`migrations.rs:210`), so
+- ⚠️ **Preserve the cost record.** `cost_meter.conversation_id` is `ON DELETE CASCADE` (`migrations.rs:209`), so
   deleting the thread erases what that wake spent from the one place the user can see what the proactive agent costs. ❌
   **`ON DELETE SET NULL` is not available here**: the column is `NOT NULL` on purpose, and `migrations.rs:203` spells
   out why (SQLite treats NULLs as distinct in a PK, so a nullable column inside it breaks `ON CONFLICT DO UPDATE` and
   every write inserts a duplicate instead of upserting).
 
   **Do this instead**: create one reserved "quiet wakes" conversation row at migration time, hidden from the session
-  list by its origin. Before deleting a noop wake's thread, fold its `cost_meter` rows into the reserved id with an
-  upsert that SUMS tokens and micros, since `(day, conversation_id, provider, model)` may already exist there. Then
-  delete the thread. A quiet wake still cost money and the daily total must say so.
+  list. Before deleting a noop wake's thread, fold its `cost_meter` rows into the reserved id with the same
+  `ON CONFLICT (day, conversation_id, provider, model) DO UPDATE` shape `record_cost` already uses
+  (`store/query.rs:549`), summing tokens and micros. ⚠️ Carry `priced` as `priced AND excluded.priced`, or the reserved
+  row claims a complete price it doesn't have. Then delete the thread.
+
+  ⚠️ Two edits this needs that don't exist yet: **`ConversationOrigin` has exactly one token** (`Notification`,
+  `agent/types.rs:54`), so the reserved row needs its own rather than masquerading as a wake thread; and
+  **`list_conversations` has no origin filter** (`query.rs:190` filters on `archived` only), so "hidden from the session
+  list" is a new WHERE clause. Both land in M1, not M2, because M2's thread icon reads the same token set.
 
 ### 7. Three settings
 
@@ -258,14 +278,17 @@ on change.
   `stopsAreDiscrete` flag to `SettingConstraints` (`settings/types.ts:71`; it flows into `SettingConstraintsSource` for
   free) and map index↔value in `SettingSlider.svelte` at four points: the `$state` seed (`:49`), the
   `onSpecificSettingChange` arm (`:52`), `commit` (`:62`), and `onThumbDoubleClick` (`:81`). `ui/Slider.svelte` needs no
-  change: `positionOf` is linear over min/max, which is correct in index space. Two traps: `ariaValueText` is handed the
-  raw Ark value (`ui/Slider.svelte:94`), so map back before formatting or screen readers announce "3"; and a stored
-  value not in the table must resolve to the nearest stop, ❌ never `indexOf → -1`.
+  change: `positionOf` is linear over min/max, which is correct in index space, and ticks and snap targets are consumed
+  in the same space. Three traps: `ariaValueText` is handed the raw Ark value (`ui/Slider.svelte:94`), so map back
+  before formatting or screen readers announce "3"; `SettingSlider.svelte:76` gates `ariaValueText` on `unit` being set,
+  and this row has no unit, so that line needs changing too or there's no spoken text at all; and a stored value not in
+  the table must resolve to the nearest stop, ❌ never `indexOf → -1`.
 
   Costs about 40 lines plus a `SettingSlider.svelte.test.ts` (none exists today) and two doc edits in
   `settings/components/DETAILS.md:44`. **The `select` fallback is NOT cheaper**: `type` flips to `'enum'` so the value
   becomes a string, and ten options mean ten new keys, which is a hundred translated strings. The slider needs zero new
-  keys if the readout uses `formatDuration` from `$lib/units`.
+  keys if the readout uses `formatDuration` from `$lib/units` — noting that it emits hardcoded English and renders `5s`
+  / `30m` / `1h`, which is the same untranslated compact form every ETA in the app already uses.
 
   ❌ Don't persist the stop INDEX: reordering the table would silently change every user's setting.
 
@@ -294,8 +317,8 @@ TDD, red first (`tdd-red-green.md`):
 
 Written after:
 
-- **Rollup → bundle mapping**: counters, `last_event_at`, and window survive the crossing; `Unscored` does not become
-  zero.
+- **Rollup → bundle mapping**: counters, `last_event_at`, and window survive the crossing; `WeightLookup::Unscored` maps
+  to `FolderImportance::Unknown` (`interest.rs:59`), ❌ never to zero.
 - **A rename-only batch produces a non-empty bundle** (the regression anchor for the retained-paths change).
 - **Live batch to `WakeOutcome::Ran`** (integration): a synthetic batch through `process_live_batch`, the tap, the
   inbox, and a wake against the fake LLM.
