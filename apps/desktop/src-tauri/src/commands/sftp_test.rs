@@ -93,3 +93,65 @@ fn the_connect_outcome_names_itself_on_the_wire() {
         "❗ a changed key must be distinguishable from a first-seen one without reading prose"
     );
 }
+
+/// The three credential commands have to agree on the key, or a saved password
+/// is invisible to the check that decides whether to show a sign-in form.
+///
+/// Round-tripped through the real store (the test backend), because the risk
+/// isn't in any one of them: it's the three passing the service and scope
+/// differently.
+#[tokio::test]
+async fn the_credential_trio_agrees_on_where_a_secret_lives() {
+    let host = "credential-trio.sftp.test";
+
+    assert!(
+        !has_sftp_credentials(host.to_string(), 22, "ada".to_string()).await,
+        "nothing is stored before anything is saved"
+    );
+
+    save_sftp_credentials(host.to_string(), 22, "ada".to_string(), "pa55".to_string())
+        .await
+        .expect("the test store always accepts");
+    assert!(has_sftp_credentials(host.to_string(), 22, "ada".to_string()).await);
+
+    // ❗ Another account on the same server is a different entry, not a shared
+    // one: a reconnect that retried the wrong account's secret is how an account
+    // gets locked.
+    assert!(!has_sftp_credentials(host.to_string(), 22, "grace".to_string()).await);
+    // And so is the same account on another port.
+    assert!(!has_sftp_credentials(host.to_string(), 2222, "ada".to_string()).await);
+
+    delete_sftp_credentials(host.to_string(), 22, "ada".to_string())
+        .await
+        .expect("the test store always accepts");
+    assert!(!has_sftp_credentials(host.to_string(), 22, "ada".to_string()).await);
+}
+
+/// The known-servers commands round-trip through the same store the connect path
+/// writes.
+#[tokio::test]
+async fn the_known_servers_trio_round_trips() {
+    let host = "known-servers-trio.sftp.test";
+    update_known_sftp_server(
+        host.to_string(),
+        22,
+        "ada".to_string(),
+        "Trio".to_string(),
+        "/srv/data".to_string(),
+        None,
+        true,
+    );
+
+    let mine: Vec<_> = get_known_sftp_servers()
+        .into_iter()
+        .filter(|entry| entry.host == host)
+        .collect();
+    assert_eq!(mine.len(), 1);
+    assert_eq!(mine[0].display_name, "Trio");
+
+    assert!(forget_known_sftp_server(host.to_string(), 22, "ada".to_string()));
+    assert!(
+        !get_known_sftp_servers().iter().any(|entry| entry.host == host),
+        "a forgotten server is gone from the list"
+    );
+}
