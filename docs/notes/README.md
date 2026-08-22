@@ -15,6 +15,14 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing for a decision that hasn't been made yet:**
 
+- `ftp-crate-evaluation-2026-08-22.md` — whether an FTP backend is worth building after SFTP, and what it would rest on.
+  **The crate question is settled**: `suppaftp` 10.0.2 is the only living Rust FTP client (everything else died between
+  2018 and 2022, or is sync-only), it's good enough on all eight axes, and the note carries the signatures and line
+  numbers rather than adjectives. **The protocol question is the open one**, and the note argues no: the recommendation
+  is SFTP, then WebDAV or S3, with FTP parked behind a request counter. Read it before anyone writes an FTP spec, and
+  read the four gotchas regardless (ASCII is the wire default and corrupts files, a dropped data stream wedges the
+  connection unless it goes through `abort()`, FTPS session reuse works on rustls and fails on native-tls, and non-UTF-8
+  filenames are unaddressable without patching the crate).
 - `importance-treadmill-2026-08-04.md` — what the 60-second rescore treadmill really was, why raising
   `SCOPED_WALK_MAX_DIRS` is refuted, and the measurement (99.88% against 0.03%) behind the signals-not-score equality
   key. Keep it until the open batch-width question in it is settled.
