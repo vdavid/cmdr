@@ -242,6 +242,7 @@ fn test_build_pane_yaml() {
             },
         ],
         type_to_jump: None,
+        mount_error: None,
     };
 
     let yaml = build_pane_yaml_with_options(&state, "  ", false);
@@ -305,6 +306,7 @@ fn test_brief_cursor_detail_respects_loaded_window() {
         show_hidden: false,
         tabs: vec![],
         type_to_jump: None,
+        mount_error: None,
     };
 
     let yaml = build_pane_yaml_with_options(&state, "  ", false);
@@ -530,4 +532,46 @@ fn on_disk_size_shows_only_when_it_diverges_enough_to_matter() {
 
     // Details off ⇒ no sizes at all, on-disk included.
     assert_eq!(format_file_compact(&sparse, 5, false, false, false), "i:5 d sparse");
+}
+
+/// A pane whose mount didn't go through must say so here.
+///
+/// The error pane replaces the share list, but the pane's `path` and `files`
+/// still describe that list, so without `mountError` a failed mount reads from
+/// this resource as a pane that simply didn't move — which is exactly how a
+/// mount that couldn't build its URL for a non-ASCII share got mistaken for
+/// silence. The message is the same sentence the pane shows.
+#[test]
+fn a_pane_showing_a_mount_failure_reports_it() {
+    let state = PaneState {
+        path: "smb://localhost/".to_string(),
+        volume_id: Some("network".to_string()),
+        volume_name: Some("Network > SMB Test (Unicode)".to_string()),
+        view_mode: "full".to_string(),
+        mount_error: Some(crate::mcp::pane_state::MountErrorInfo {
+            share: "caf\u{e9}".to_string(),
+            message: "Connection to \"localhost\" timed out".to_string(),
+        }),
+        ..Default::default()
+    };
+
+    let yaml = build_pane_yaml_with_options(&state, "  ", false);
+
+    assert!(yaml.contains("mountError:"), "expected a mountError section:\n{yaml}");
+    assert!(
+        yaml.contains("share: \"caf\u{e9}\""),
+        "expected the share name:\n{yaml}"
+    );
+    assert!(
+        yaml.contains("message: \"Connection to \\\"localhost\\\" timed out\""),
+        "expected the pane's own sentence:\n{yaml}"
+    );
+
+    // And it stays out of the way when the pane is showing a directory.
+    let ok = PaneState {
+        path: "/Users/test".to_string(),
+        view_mode: "full".to_string(),
+        ..Default::default()
+    };
+    assert!(!build_pane_yaml_with_options(&ok, "  ", false).contains("mountError"));
 }

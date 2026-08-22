@@ -20,6 +20,7 @@ const h = vi.hoisted(() => ({
   saveSmbCredentials: vi.fn(),
   getSmbCredentials: vi.fn(),
   resolvePathVolume: vi.fn(),
+  updateLeftPaneState: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -32,7 +33,7 @@ vi.mock('$lib/tauri-commands', () => ({
   updateKnownShare: vi.fn(() => Promise.resolve()),
   getUsernameHints: vi.fn(() => Promise.resolve({})),
   getKnownShareByName: vi.fn(() => Promise.resolve(null)),
-  updateLeftPaneState: vi.fn(() => Promise.resolve()),
+  updateLeftPaneState: h.updateLeftPaneState,
   updateRightPaneState: vi.fn(() => Promise.resolve()),
   removeManualServer: vi.fn(() => Promise.resolve()),
   showNetworkHostContextMenu: vi.fn(() => Promise.resolve()),
@@ -174,6 +175,29 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // "Remember in Keychain" defaults to on → credentials saved after the successful mount.
     await vi.waitFor(() => {
       expect(h.saveSmbCredentials).toHaveBeenCalledWith('Naspolya', null, 'david', 'hunter2')
+    })
+
+    await unmount(component)
+  })
+
+  it('mirrors the mount failure into the pane state MCP reads', async () => {
+    // The error pane replaces the share list, but the pane's own `path` and
+    // `files` still describe that list. Without this mirror, a failed mount
+    // reads from `cmdr://state` as a pane that simply didn't move, with the
+    // reason nowhere in the resource.
+    h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
+    const { target, component } = await mountViewAndActivateShare()
+
+    await vi.waitFor(() => {
+      expect(target.querySelector('.mount-error-state')).toBeTruthy()
+    })
+
+    await vi.waitFor(() => {
+      expect(h.updateLeftPaneState).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mountError: { share: 'naspi', message: 'Can\'t connect to "Naspolya"' },
+        }),
+      )
     })
 
     await unmount(component)

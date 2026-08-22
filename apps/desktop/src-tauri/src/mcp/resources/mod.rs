@@ -393,6 +393,15 @@ pub(crate) fn build_pane_yaml_with_options(state: &PaneState, indent: &str, comp
         }
     }
 
+    // A mount the pane couldn't open. Emitted right after the summary fields so
+    // it can't be mistaken for a note about the listing below it: while this is
+    // set, `path` and `files` describe the share list the error pane replaced.
+    if let Some(ref err) = state.mount_error {
+        lines.push(format!("{}mountError:", indent));
+        lines.push(format!("{}  share: {:?}", indent, err.share));
+        lines.push(format!("{}  message: {:?}", indent, err.message));
+    }
+
     // Files list
     if compact {
         // `compact` callers care about path / volumeId / cursor / totalFiles, not

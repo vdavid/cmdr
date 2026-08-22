@@ -99,6 +99,24 @@ pub struct PaneState {
     /// resource layer suppresses the section when it's `None`.
     #[serde(default)]
     pub type_to_jump: Option<TypeToJumpInfo>,
+    /// Set while a mount the pane tried didn't go through, whichever way the pane
+    /// is showing it (the "Couldn't mount share" pane, or the login form an
+    /// auth-class failure routes to). Without it a failed mount is invisible from
+    /// here: the pane's `path` and `files` still describe the share list behind
+    /// it, so a reader sees a pane that simply didn't move and no reason anywhere
+    /// in the resource. Cleared by the next push from any other view.
+    #[serde(default)]
+    pub mount_error: Option<MountErrorInfo>,
+}
+
+/// Why a pane is showing a mount failure rather than a directory.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MountErrorInfo {
+    /// The share the person tried to open.
+    pub share: String,
+    /// The sentence the pane shows under the title.
+    pub message: String,
 }
 
 /// Snapshot of a pane's type-to-jump state for MCP exposure.
@@ -286,6 +304,7 @@ mod tests {
             show_hidden: false,
             tabs: vec![],
             type_to_jump: None,
+            mount_error: None,
         };
 
         store.set_left(state.clone());

@@ -7055,6 +7055,14 @@ export type MountError =
   // Path already exists but isn't a mountpoint.
   | { type: 'mount_path_conflict'; message: string }
 
+// Why a pane is showing a mount failure rather than a directory.
+export type MountErrorInfo = {
+  // The share the person tried to open.
+  share: string
+  // The sentence the pane shows under the title.
+  message: string
+}
+
 // Result of a successful mount operation.
 export type MountResult = {
   // For example, "/Volumes/Documents".
@@ -7715,6 +7723,14 @@ export type PaneState = {
    *  resource layer suppresses the section when it's `None`.
    */
   typeToJump?: TypeToJumpInfo | null
+  /**
+   *  Set while the pane is showing the "Couldn't mount share" pane instead of
+   *  a listing. Without it a failed mount is invisible from here: the pane's
+   *  `path` and `files` still describe the share list behind the error, so a
+   *  reader sees a pane that simply didn't move and no reason anywhere in the
+   *  resource. Cleared by the next push from any other view.
+   */
+  mountError?: MountErrorInfo | null
 }
 
 // Parsed search scope: which subtrees to include and which directory names/paths to exclude.

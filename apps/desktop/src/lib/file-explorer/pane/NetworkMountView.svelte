@@ -1,7 +1,13 @@
 <script lang="ts">
     import { tick } from 'svelte'
     import type { MountError, NetworkHost, ShareInfo } from '../types'
-    import { mountNetworkShare, resolvePathVolume, saveSmbCredentials } from '$lib/tauri-commands'
+    import {
+        mountNetworkShare,
+        resolvePathVolume,
+        saveSmbCredentials,
+        updateLeftPaneState,
+        updateRightPaneState,
+    } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
     import { getAppLogger } from '$lib/logging/logger'
     import type { NetworkBrowserAPI, ShareBrowserAPI, NetworkCursorEntry } from './types'
@@ -69,6 +75,31 @@
     // Component refs for keyboard navigation
     let networkBrowserRef: NetworkBrowserAPI | undefined = $state()
     let shareBrowserRef: ShareBrowserAPI | undefined = $state()
+
+    // Mirror a mount that didn't go through into `cmdr://state` — the error pane and
+    // the login form an auth failure routes to alike. The pane's own `path` and
+    // `files` still describe the share list either replaced, so without the mirror a
+    // failed mount reads there as a pane that simply didn't move, with the reason
+    // nowhere in the resource. `ShareBrowser` and `NetworkBrowser` omit the field on
+    // their own pushes, so going Back or retrying clears it.
+    $effect(() => {
+        if (!paneId) return
+        const error = mountError
+        const share = lastMountAttempt?.share.name
+        if (!error || share === undefined) return
+        const update = paneId === 'left' ? updateLeftPaneState : updateRightPaneState
+        void update({
+            path: currentNetworkHost ? `smb://${currentNetworkHost.ipAddress ?? currentNetworkHost.name}/` : 'smb://',
+            volumeId: 'network',
+            volumeName: currentNetworkHost ? `Network > ${currentNetworkHost.name}` : 'Network',
+            files: [],
+            cursorIndex: 0,
+            viewMode: 'full',
+            mountError: { share, message: error.message },
+        }).catch(() => {
+            // MCP mirroring is optional; a failed push must not touch the UI.
+        })
+    })
 
     // Sync when parent changes the prop (for example, history navigation)
     $effect(() => {
@@ -174,7 +205,15 @@
             }
         } catch (e) {
             mountError = e as MountError
-            log.error('Mount failed: {error}', { error: mountError })
+            // WARN, not ERROR: the pane below renders this failure with a retry, so
+            // it's an outcome the person is looking at, not a defect to report. At
+            // error level every unreachable NAS captured a backtrace and a state
+            // snapshot into the error-report bundle.
+            log.warn('Mount of {share} on {host} did not go through: {error}', {
+                share: share.name,
+                host: currentNetworkHost?.name ?? 'unknown host',
+                error: mountError,
+            })
         } finally {
             isMounting = false
         }
