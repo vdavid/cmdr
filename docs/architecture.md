@@ -135,8 +135,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics
 - `file_system/volume/`: `VolumeManager` plus the `backends/` umbrella, re-exporting the `Volume` trait and its types
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
-- `file_system/volume/backends/`: Per-backend `Volume` impls: `LocalPosixVolume`, `MtpVolume`, `SmbVolume` (+
-  `SmbWatcher`), `InMemoryVolume`
+- `file_system/volume/backends/`: the umbrella every backend is reached through, holding the two `Volume` impls that are
+  still app-resident, `LocalPosixVolume` and `MtpVolume`
 - `file_system/volume/backends/`'s `archive.rs` and `smb.rs`: re-exports of the `cmdr-archive` and `cmdr-smb` crates
   under their original paths, plus the app-side half of each one's suites. What stays app-side is what needs the app:
   archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving for both
@@ -239,8 +239,8 @@ All under `apps/desktop/src-tauri/src/`.
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, and `cmdr-smb` carry no `tauri`
 dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps
-the public surface of `cmdr-index` and `cmdr-archive` at the numbers their audits landed on. The two dev CLIs and the
-vendored fork are ordinary members.
+the public surface of `cmdr-index`, `cmdr-archive`, and `cmdr-smb` at the numbers their audits landed on. The two dev
+CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →

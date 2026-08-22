@@ -307,7 +307,7 @@ need a timer thread for nearly no gain.
 poll loop
 **Why**: The rest of the codebase already depends on `notify` and
 `notify-debouncer-full` for filesystem watching (see `file_system/listing/`
-and `volume::smb_watcher`). Reusing it gives us 200 ms debounce, OS-level
+and the SMB share watcher). Reusing it gives us 200 ms debounce, OS-level
 event coalescing, and a battle-tested teardown path.
 
 ## Gotchas

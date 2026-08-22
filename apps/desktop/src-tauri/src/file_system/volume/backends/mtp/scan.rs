@@ -2,7 +2,7 @@
 //! `scan_for_copy_batch_with_progress_impl`, `scan_for_conflicts_impl`), which
 //! the trait methods in `mod.rs` delegate to.
 //!
-//! Split out for the same reason `smb/scan.rs` is: the oracle-aware batch scan is
+//! Split out for the same reason `crates/cmdr-smb/src/volume/scan.rs` is: the oracle-aware batch scan is
 //! the single biggest concern in this backend, and it reads as its own subject
 //! rather than as one more `Volume` method. A trait impl can't span files, so the
 //! trait side stays in `mod.rs` and the work lives here.

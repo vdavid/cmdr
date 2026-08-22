@@ -290,7 +290,7 @@ prefix here: Cmdr's own I/O rides the smb2 session.
 
 **Shape**: `SmbVolume` is a thin instance over an `Arc<SmbVolumeInner>`. The instance holds what belongs to ONE mount
 root (`name`, `mount_path`, `mount_root_gone`); the inner holds the session and everything scoped to the SHARE (client,
-tree, params, connection state, watcher handle, scan pool, `instance_id`, refcounts). `rerooted` is therefore one
+tree, params, connection state, watcher handle, scan pool, the retirement flag, refcounts). `rerooted` is therefore one
 allocation over the same inner: no re-auth, no transport rebuild, no session churn.
 
 **Why the instance's root is immutable**: `Volume::root()` hands out a `&Path`, with ~115 call sites. Making the root
@@ -390,8 +390,8 @@ against `smb-consumer-maxreadsize` (64 KB max read/write, 8 concurrent writers, 
 keeps the watcher's traffic out of the writers' way at the cost of a separate TCP+auth. What we _do_ keep from the new
 API: the watcher is `'static` (no borrow on the watcher task's `client`), and the pipelining (one CHANGE_NOTIFY
 pre-issued so events during consumer processing don't fall in a re-arm gap). Stat calls for new/modified files still go
-through `VolumeManager::get(volume_id).get_metadata(...)` (the main session), so the cmdr-side `notify_mutation` cache
-patch from our own writes lands first regardless.
+through the share's own `get_metadata` at its active root, reached by a `SelfHandle` (the main session, never the
+watcher's), so the cmdr-side `notify_mutation` cache patch from our own writes lands first regardless.
 
 **Decision**: Watcher task is not stored on `SmbVolume`, only the cancel sender is **Why**: The spawned task owns its
 own `Watcher` and `SmbClient`. Storing them on the struct alongside the cancel sender would just duplicate ownership
@@ -540,10 +540,11 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   vocabulary every suite globs, and a re-export of `volume::testing` so one `use` covers all three.
 
 Every Docker cell is `#[ignore]`d, so a default run skips it. Start the containers with
-`apps/desktop/test/smb-servers/start.sh` and run `cargo nextest run smb_integration --run-ignored all`. A new Docker
-cell here can be named for what it asserts: `desktop-rust-integration-tests` selects this whole binary's ignored tests,
-precisely because every `#[ignore]` in a crate with no app around it IS a Docker cell. The app's SMB cells have no such
-luxury and still need the `smb_integration_` prefix the same lane filters them by. The fixture ports come from the
-environment (`SMB_CONSUMER_GUEST_PORT` and friends, defaulting to smb2's own 10480 / 10481 / 10488 / 10493); Cmdr's
-stack publishes 11480+ so both harnesses coexist, and the check runner exports the override. The full container list:
+`apps/desktop/test/smb-servers/start.sh` and run `cargo nextest run -E 'package(cmdr-smb)' --run-ignored only` — select
+by PACKAGE, not by the `smb_integration` name, or a cell named for what it asserts drops out of your run. A new Docker
+cell here can be named that way precisely because `desktop-rust-integration-tests` selects this whole package's ignored
+tests: every `#[ignore]` in a crate with no app around it IS a Docker cell. The app's SMB cells have no such luxury and
+still need the `smb_integration_` prefix the same lane filters them by. The fixture ports come from the environment
+(`SMB_CONSUMER_GUEST_PORT` and friends, defaulting to smb2's own 10480 / 10481 / 10488 / 10493); Cmdr's stack publishes
+11480+ so both harnesses coexist, and the check runner exports the override. The full container list:
 `apps/desktop/test/smb-servers/README.md`.

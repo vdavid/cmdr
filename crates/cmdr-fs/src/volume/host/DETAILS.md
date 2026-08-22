@@ -233,18 +233,25 @@ cached and re-registered the same `Arc` would hand the registry a volume that is
 
 ### Visibility that has no cross-crate equivalent
 
-`smb/mod.rs::detach_session_for_test` is `#[cfg(test)] pub(in crate::file_system::volume)`, and MTP's `test_hooks`
-module is the same. There is no cross-crate spelling of "visible to this module subtree", so each becomes
-`#[cfg(any(test, feature = "testing"))] pub` — a real widening of the public surface — or the test that uses it moves
-into the backend crate with it. The `cfg` half is not optional: `cfg(test)` is set only for a crate's own test target,
-so leaving it would make the item vanish from a consumer's test build. This project has been bitten by that three times.
+`pub(in crate::file_system::volume)` has no cross-crate spelling, so an item wearing it faces one of two answers when
+its backend moves: it becomes `#[cfg(any(test, feature = "testing"))] pub`, a real widening of the public surface, or
+the test that uses it moves into the crate with it. MTP's `mtp/mod.rs::test_hooks` still wears it.
+
+**Moving the test is the default, and widening is the exception that has to be argued.** SMB granted exactly one:
+`detach_session_for_test`, because the app's scan-oracle cell that calls it asserts on the app's fresh-listing oracle
+and belongs on that side. Everything else went the other way, `SmbVolumeInner` included, which is now private.
+
+The `cfg` half is not optional: `cfg(test)` is set only for a crate's own test target, so leaving it would make the item
+vanish from a consumer's test build. This project has been bitten by that three times.
 
 ### Test modules reached through `use super::*`
 
-SMB's `#[cfg(test)] mod smb_*` children close over `crates/cmdr-smb/src/volume/mod.rs`'s prelude glob, which re-exports
-submodule internals specifically so they resolve. What that glob actually pulls in wasn't determinable without building.
-It's the biggest unknown in moving SMB, and it's test-only, which is why the pilot backend is one with no `cfg(test)`
-behavior at all.
+A backend whose `mod.rs` doubles as its suites' prelude glob makes the move hard to plan: what the glob pulls in isn't
+determinable without building, so the split can't be sized in advance. It's the biggest unknown MTP still carries.
+
+SMB's answer, and the one to copy: the prelude moves to a `test_support.rs` beside the suites, and `mod.rs` goes back to
+importing what it uses. Deleting the `#![allow(unused_imports)]` the glob needed is what makes a dead import in the
+backend a finding again.
 
 ### The archive rustdoc link
 
@@ -352,12 +359,13 @@ ratio, as an order-of-magnitude reading.
 nothing extra and gets the full benefit. The retrofits are judged one at a time, because retrofitting is where all the
 cost sits:
 
-- **SMB is the one worth retrofitting**, and it's underway in `crates/cmdr-smb/` (the protocol layer landed; the
-  `Volume` impl hasn't). Its coupling is roughly two dozen sites against archive's three, plus the four structural
-  problems this document enumerates: the `pub(in …)` visibility, the `use super::*` test modules, the `network/` split
-  (done), and the registry reach-backs. Its test surface is 5,343 lines against archive's 3,376, and the archive move
-  showed the real cost is app-side test re-homing rather than path rewriting — budget for SPLITTING tests that grew to
-  cover both sides of the boundary, not moving them.
+- **SMB shipped too**, in `crates/cmdr-smb/`, and it's the worked example for a RETROFIT the way archive is for a
+  greenfield crate. All four structural problems this document enumerates came up and all four are answered: the
+  `pub(in …)` visibility, the `use super::*` test modules, the `network/` split, and the registry reach-backs. It cost
+  what the archive move predicted: the coupling was roughly two dozen sites against archive's three, and the real work
+  was SPLITTING the ~5,300 lines of suites that had grown to cover both sides of the boundary, not rewriting paths.
+  Which side each cell landed on, and the rule that decided it: `crates/cmdr-smb/DETAILS.md` § "Which side a test lives
+  on".
 - **`local_posix` and MTP are permanently app-resident.** Both refusals are written out with their reasons in
   `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions", because that's where
   someone proposing "let's complete the set" will be standing.
