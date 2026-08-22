@@ -244,10 +244,13 @@ is private (`lib.rs`'s `use openssh_sftp_client_lowlevel as lowlevel`, not `pub 
 
 - **Server without the extension**: `Fs::rename` is already the plain request and refuses by itself. One round trip.
 - **Server with it**: CLAIM the destination name first with a primitive the server refuses atomically, then let the
-  rename land on a placeholder of our own. A file-shaped claim (`SSH_FXF_EXCL`) covers the overwhelming case — a staged
-  write landing — in one extra round trip. A directory source can't be renamed onto a file (`ENOTDIR`), so a failed
-  rename removes the placeholder, probes the SOURCE, and retries with a directory-shaped claim (`SSH_FXP_MKDIR`, which
-  POSIX rename replaces when it's empty).
+  rename land on a placeholder of our own. ❗ The claim's handle is DROPPED rather than closed, and that is not a
+  shortcut: `OwnedHandle::drop` writes `SSH_FXP_CLOSE` into the send buffer synchronously and spawns only the wait for
+  its answer (`openssh-sftp-client` 0.15.7 `handle.rs`, read 2026-08-22), so the server sees the close before the rename
+  on the same ordered stream. Awaiting it would buy nothing but a third round trip per landed file. A file-shaped claim
+  (`SSH_FXF_EXCL`) covers the overwhelming case — a staged write landing — in one extra round trip. A directory source
+  can't be renamed onto a file (`ENOTDIR`), so a failed rename removes the placeholder, probes the SOURCE, and retries
+  with a directory-shaped claim (`SSH_FXP_MKDIR`, which POSIX rename replaces when it's empty).
 
 **Decision: the claim, ❌ not a pre-flight stat.** A stat guard is a TOCTOU window whose failure mode is that the user's
 EXISTING file is destroyed. The claim's failure mode is a zero-byte file at a name that was proven FREE a moment

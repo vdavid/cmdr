@@ -310,9 +310,14 @@ impl SftpVolume {
             .open(remote_to)
             .await
         {
-            // Dropped rather than closed: the close rides a detached task, and a
-            // zero-byte placeholder we are about to replace has nothing to
-            // report that would change what happens next.
+            // Dropped rather than closed, and the ORDER still holds: `Drop`
+            // writes `SSH_FXP_CLOSE` into the send buffer synchronously and only
+            // spawns the wait for its answer (`handle.rs`), so the server sees
+            // the close before the rename that follows on the same ordered
+            // stream. ❗ That is what makes this safe on a server where renaming
+            // over an open handle would fail. A zero-byte placeholder we are
+            // about to replace has nothing to report, so the ANSWER is the only
+            // thing worth skipping here.
             Ok(file) => drop(file),
             Err(e) => return Err(self.name_taken(session, remote_to, &e).await),
         }
