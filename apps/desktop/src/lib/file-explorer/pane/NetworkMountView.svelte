@@ -76,17 +76,34 @@
     let networkBrowserRef: NetworkBrowserAPI | undefined = $state()
     let shareBrowserRef: ShareBrowserAPI | undefined = $state()
 
-    // Mirror a mount that didn't go through into `cmdr://state` — the error pane and
-    // the login form an auth failure routes to alike. The pane's own `path` and
-    // `files` still describe the share list either replaced, so without the mirror a
-    // failed mount reads there as a pane that simply didn't move, with the reason
-    // nowhere in the resource. `ShareBrowser` and `NetworkBrowser` omit the field on
-    // their own pushes, so going Back or retrying clears it.
+    // Whether the last state we pushed carried a `mountError`, so the clear below
+    // fires exactly once. Deliberately not `$state`: writing it inside the effect
+    // that reads it would re-run the effect forever.
+    let mirroredMountError = false
+
+    /**
+     * Mirrors a mount that didn't go through into `cmdr://state` — the error pane and
+     * the login form an auth failure routes to alike.
+     *
+     * Without it a failed mount is invisible there: the pane's `path` and `files`
+     * still describe the share list either view replaced, so a reader sees a pane
+     * that simply didn't move and no reason anywhere in the resource.
+     *
+     * The clear is explicit, ❌ not left to whichever view comes next. `ShareBrowser`
+     * only pushes once it has a share list, so a host that has since gone quiet
+     * pushes nothing at all — and a `mountError` outliving its pane misleads a reader
+     * worse than the silence it replaced.
+     */
     $effect(() => {
         if (!paneId) return
         const error = mountError
         const share = lastMountAttempt?.share.name
-        if (!error || share === undefined) return
+        if (!error || share === undefined) {
+            if (!mirroredMountError) return
+            mirroredMountError = false
+        } else {
+            mirroredMountError = true
+        }
         const update = paneId === 'left' ? updateLeftPaneState : updateRightPaneState
         void update({
             path: currentNetworkHost ? `smb://${currentNetworkHost.ipAddress ?? currentNetworkHost.name}/` : 'smb://',
@@ -95,7 +112,7 @@
             files: [],
             cursorIndex: 0,
             viewMode: 'full',
-            mountError: { share, message: error.message },
+            mountError: error && share !== undefined ? { share, message: error.message } : null,
         }).catch(() => {
             // MCP mirroring is optional; a failed push must not touch the UI.
         })
