@@ -89,6 +89,18 @@ fn restricted_window_settings_carry_the_size_format() {
 }
 
 #[test]
+fn restricted_window_settings_carry_the_pinned_ui_language() {
+    // The viewer and queue windows are restricted (no `store:default`) but each
+    // resolves its own UI language through `initWindowLanguageSync`. Without the
+    // pinned setting in the snapshot they read the registry default `'system'`,
+    // so a user who chose Hungarian on an English Mac would get an English
+    // viewer while every other window spoke Hungarian.
+    let json = r#"{ "appearance.language": "hu" }"#;
+    let parsed = parse_restricted_window_settings(json);
+    assert_eq!(parsed.appearance_language.as_deref(), Some("hu"));
+}
+
+#[test]
 fn operation_log_retention_defaults_forever_and_3gb() {
     // Absent keys ⇒ forever age, 3 GB size.
     let limits = parse_operation_log_retention_limits("{}");
@@ -155,6 +167,8 @@ fn restricted_window_settings_missing_keys_are_none() {
     assert_eq!(parsed.appearance_text_size, None);
     assert_eq!(parsed.appearance_app_color, None);
     assert_eq!(parsed.appearance_file_size_format, None);
+    // `None` here means `'system'`: follow the OS, which is the registry default.
+    assert_eq!(parsed.appearance_language, None);
 }
 
 #[test]

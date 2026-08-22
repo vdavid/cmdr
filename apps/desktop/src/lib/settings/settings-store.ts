@@ -244,6 +244,10 @@ async function initializeSettingsRestricted(): Promise<void> {
       // The operation queue window is restricted but renders `<Size>`; without this it
       // would show a different number than the copy dialog for the same bytes.
       'appearance.fileSizeFormat': snapshot.appearanceFileSizeFormat,
+      // Every window resolves its own UI language (`initWindowLanguageSync`), reading
+      // this setting. Without it a restricted window sees the `'system'` default, so a
+      // user who pinned Hungarian on an English Mac would get an English viewer.
+      'appearance.language': snapshot.appearanceLanguage,
     }
     for (const [id, value] of Object.entries(mapped)) {
       if (value == null) continue // not persisted: registry default applies

@@ -34,6 +34,7 @@ const snapshot: RestrictedWindowSettings = {
   appearanceTextSize: 125,
   appearanceAppColor: 'cmdr-gold',
   appearanceFileSizeFormat: 'si',
+  appearanceLanguage: 'hu',
 }
 
 beforeEach(() => {
@@ -68,6 +69,10 @@ describe('initializeSettings({ restrictedWindow: true })', () => {
     // choice has to reach it; falling back to the default here is what made one
     // byte count read as 83.65 MB in the copy dialog and 79.78 "MB" in the queue.
     expect(store.getSetting('appearance.fileSizeFormat')).toBe('si')
+    // Each window resolves its own UI language from this setting, so a pinned one has
+    // to reach a restricted window too; the registry default `'system'` would give a
+    // Hungarian user an English viewer on an English Mac.
+    expect(store.getSetting('appearance.language')).toBe('hu')
     // null snapshot fields fall back to the registry default
     expect(store.getSetting('fileViewer.suppressBinaryWarning')).toBe(false)
     // The whole point: no store-plugin call ever leaves this window.

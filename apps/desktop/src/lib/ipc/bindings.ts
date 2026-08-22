@@ -8310,6 +8310,13 @@ export type RestrictedWindowSettings = {
    *  different number than the copy dialog for the same byte count.
    */
   appearanceFileSizeFormat: string | null
+  /**
+   *  The UI language the user pinned, or `None` for `'system'` (follow the OS).
+   *  Every window resolves its own language (`initWindowLanguageSync`), and
+   *  without this a restricted one reads the registry default: a user who
+   *  pinned Hungarian on an English Mac would get an English viewer.
+   */
+  appearanceLanguage: string | null
 }
 
 /**

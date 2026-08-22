@@ -386,6 +386,11 @@ pub struct RestrictedWindowSettings {
     /// window is restricted but renders `<Size>`, so it needs this or it shows a
     /// different number than the copy dialog for the same byte count.
     pub appearance_file_size_format: Option<String>,
+    /// The UI language the user pinned, or `None` for `'system'` (follow the OS).
+    /// Every window resolves its own language (`initWindowLanguageSync`), and
+    /// without this a restricted one reads the registry default: a user who
+    /// pinned Hungarian on an English Mac would get an English viewer.
+    pub appearance_language: Option<String>,
 }
 
 /// Reads the [`RestrictedWindowSettings`] allowlist from `settings.json`.
@@ -421,6 +426,10 @@ fn parse_restricted_window_settings(contents: &str) -> RestrictedWindowSettings 
             .map(String::from),
         appearance_file_size_format: json
             .get("appearance.fileSizeFormat")
+            .and_then(|v| v.as_str())
+            .map(String::from),
+        appearance_language: json
+            .get("appearance.language")
             .and_then(|v| v.as_str())
             .map(String::from),
     }

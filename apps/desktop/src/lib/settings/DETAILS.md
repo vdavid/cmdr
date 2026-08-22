@@ -232,9 +232,11 @@ wraps every route — so a new window gets settings for free and can't forget.
   allowlist is the second half of the fix.** Initializing the reactive layer in a restricted window only helps for
   settings the snapshot actually carries: it's a fixed typed struct, not the whole registry. The operation queue window
   renders `<Size>`, so `appearance.fileSizeFormat` had to join it (`settings/loader.rs::RestrictedWindowSettings` →
-  `bindings.ts` → the `mapped` table in `initializeSettingsRestricted`). When a restricted window starts rendering
-  something new that depends on a setting, extend all three; a value missing from the snapshot silently reads as its
-  registry default.
+  `bindings.ts` → the `mapped` table in `initializeSettingsRestricted`). `appearance.language` is in there for the same
+  reason: every window resolves its own UI language through `initWindowLanguageSync()`, and reading the registry default
+  there means a user who PINNED a language gets an English viewer while the rest of the app speaks their language. When
+  a restricted window starts rendering something new that depends on a setting, extend all three; a value missing from
+  the snapshot silently reads as its registry default.
 
 - Three guards: `apps/desktop/src/routes/window-route-coverage.test.ts` walks each route's import graph and fails if a
   window that reaches `reactive-settings.svelte` isn't initialized, and fails a page that calls `initWindowSettings()`
