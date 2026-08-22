@@ -15,6 +15,13 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing for a decision that hasn't been made yet:**
 
+- `sftp-crate-evaluation-2026-08-22.md`: which Rust crate the SFTP backend gets built on, with each candidate's source
+  read rather than its README. **The recommendation is `russh` + `openssh-sftp-client`**, and the reasoning is written
+  out so it can be argued with. Read it before anyone proposes `russh-sftp` (the popular default) or a libssh2 binding:
+  it carries the two disqualifiers nothing else records (`russh-sftp` mangles non-UTF-8 filenames through
+  `from_utf8_lossy`; `libssh-rs` vendors LGPL C that `cargo deny` cannot see), and the measurement that shapes the whole
+  backend: **sequential SFTP reads are 4.2 MB/s at 50 ms RTT, a request window is worth 10×, and the window buys nothing
+  until `russh`'s 2 MiB channel window is raised too**.
 - `ftp-crate-evaluation-2026-08-22.md` — whether an FTP backend is worth building after SFTP, and what it would rest on.
   **The crate question is settled**: `suppaftp` 10.0.2 is the only living Rust FTP client (everything else died between
   2018 and 2022, or is sync-only), it's good enough on all eight axes, and the note carries the signatures and line
