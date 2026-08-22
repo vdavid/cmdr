@@ -15,11 +15,9 @@
 //!
 //! ## LLM resolution
 //!
-//! [`resolve_agent_llm`] resolves the Ask Cmdr interactive slot: a dedicated model choice
-//! (`askCmdr.interactiveModel`, read fresh) layered over the shared `ai/` provider config
-//! (provider on/off, keys, and base URLs stay single-sourced in `ai/`; only the model is
-//! slot-specific), producing a [`GenaiAgentLlm`] at send time. A provider that is off or
-//! unconfigured yields a typed `NotConfigured` event.
+//! The slot, the budget, and the envelope all resolve in `agent::chat::session`, which a wake
+//! shares: `agent/` sits BELOW this layer, so a wake could not import them from here. This
+//! command only calls down and maps the typed refusal onto a `Failed` event.
 //!
 //! ## Cancellation
 //!
@@ -33,7 +31,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 
-use chrono::{FixedOffset, Local};
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
@@ -46,19 +43,15 @@ use super::{
 };
 use crate::agent::AgentDb;
 use crate::agent::chat::budget;
-use crate::agent::chat::context::{ContextEnvelope, EnvelopeConnectivity, EnvelopeFreshness, EnvelopeVolume};
-use crate::agent::chat::runtime::{AgentChatEvent, AgentErrorKind, ChatRuntime};
+use crate::agent::chat::runtime::{AgentChatEvent, ChatRuntime};
+use crate::agent::chat::session::{
+    capture_envelope, local_offset, provider_and_model, resolve_agent_llm, resolve_prompt_budget,
+};
 use crate::agent::consent::has_current_consent;
 use crate::agent::llm::AgentLlm;
-use crate::agent::llm::fake::FakeAgentLlm;
-use crate::agent::llm::genai_impl::GenaiAgentLlm;
 use crate::agent::llm::types::ProviderTag;
 use crate::agent::store;
-use crate::ai::client::AiBackend;
-use crate::ai::llm_log::LlmLogContext;
 use crate::ignore_poison::IgnorePoison;
-use crate::mcp::PaneStateStore;
-use crate::mcp::resources::volumes::{VolumeSummary, snapshot_volumes};
 
 // ── Cancellation registry (keyed by conversation id) ───────────────────────────
 
@@ -75,75 +68,7 @@ fn unregister_cancel(conversation_id: i64) {
     CANCELS.lock_ignore_poison().remove(&conversation_id);
 }
 
-// ── Interim LLM + envelope + clock helpers ─────────────────────────────────────
-
-/// A resolved-but-not-yet-built agent LLM. Resolution happens up front (to fail fast before
-/// creating a thread), but the concrete `AgentLlm` is built only once the conversation id is
-/// known, so the real backend can carry an [`LlmLogContext`] keyed on that conversation.
-enum ResolvedAgentLlm {
-    /// The real genai-backed LLM over the resolved `ai/` backend.
-    Genai(AiBackend),
-    /// The deterministic E2E fake (zero network; never logs — the tap is at the genai seam).
-    Fake(FakeAgentLlm),
-}
-
-impl ResolvedAgentLlm {
-    /// Builds the boxed `AgentLlm`, attaching a per-conversation logging context to the real
-    /// backend so its requests/responses land under `llm-logs/thread-{id}/` (subject to the
-    /// `logLlmCalls` setting). The fake bypasses the genai seam, so it logs nothing.
-    fn into_llm(self, conversation_id: i64) -> Box<dyn AgentLlm> {
-        match self {
-            ResolvedAgentLlm::Genai(backend) => Box::new(GenaiAgentLlm::new(
-                backend.with_log_context(LlmLogContext::agent_chat(conversation_id)),
-            )),
-            ResolvedAgentLlm::Fake(fake) => Box::new(fake),
-        }
-    }
-}
-
-/// Resolve the Ask Cmdr interactive slot into a ready LLM. The slot layers a dedicated
-/// model choice (`askCmdr.interactiveModel`, read fresh) OVER the shared `ai/` provider
-/// config (agent-spec D43): provider on/off, keys, and base URLs stay single-sourced in
-/// `ai/`; only the model is slot-specific, so the bulk slot slots in later with no
-/// migration (D49). An empty override uses the model the `ai/` provider is configured with.
-/// Returns the backend plus the provider/model the cost meter records, or a typed error
-/// when AI is off/unconfigured.
-fn resolve_agent_llm(app: &AppHandle) -> Result<(ResolvedAgentLlm, ProviderTag, String), AgentErrorKind> {
-    // E2E harness path: drive a deterministic scripted assistant with zero network, so the
-    // rail's send-and-render can be tested without a provider. Guarded by an explicit env
-    // flag so it never activates in a normal run.
-    if crate::test_mode::ask_cmdr_fake_active() {
-        return Ok((
-            ResolvedAgentLlm::Fake(scripted_fake_llm()),
-            ProviderTag::Local,
-            "fake".to_string(),
-        ));
-    }
-    let model_override = crate::settings::load_ask_cmdr_interactive_model(app);
-    use crate::ai::manager::BackendResolution;
-    match crate::ai::manager::resolve_backend_with_model(model_override.as_deref()) {
-        BackendResolution::Ready(backend) => {
-            let (provider, model) = provider_and_model(model_override.as_deref());
-            Ok((ResolvedAgentLlm::Genai(backend), provider, model))
-        }
-        // "AI off", a blank cloud key, or a stopped local server all read the same to the
-        // rail: nothing is configured to talk to. The settings surface disambiguates.
-        BackendResolution::Off | BackendResolution::NotConfigured(_) | BackendResolution::UnknownProvider(_) => {
-            Err(AgentErrorKind::NotConfigured)
-        }
-    }
-}
-
-/// The scripted turn the E2E fake streams: a short multi-chunk reply, so the test sees
-/// streamed text land and a `Done`. Kept trivially deterministic.
-fn scripted_fake_llm() -> FakeAgentLlm {
-    use crate::agent::llm::fake::ScriptedTurn;
-    FakeAgentLlm::script(vec![ScriptedTurn::Say(vec![
-        "Hi! ".to_string(),
-        "I'm the ".to_string(),
-        "test assistant.".to_string(),
-    ])])
-}
+// ── The model a thread would use right now ─────────────────────────────────────
 
 /// The model an Ask Cmdr turn would use right now, for the model-change event: the
 /// interactive override when set, else the shared `ai/` model — the same resolution a
@@ -212,139 +137,6 @@ pub async fn ask_cmdr_record_model_change(app: AppHandle, conversation_id: i64) 
             Err(e.to_string())
         }
     }
-}
-
-/// The provider tag + effective model label for cost metering. The model is the
-/// interactive slot's override when set, else the live `ai/` cloud model; a cloud model is
-/// tagged by its name prefix, matching `ai::client`'s adapter routing. Local uses its fixed
-/// model name.
-fn provider_and_model(model_override: Option<&str>) -> (ProviderTag, String) {
-    if crate::ai::state::get_provider() == "local" {
-        return (
-            ProviderTag::Local,
-            crate::ai::manager::get_ai_runtime_status().model_name,
-        );
-    }
-    let model = match model_override {
-        Some(m) if !m.is_empty() => m.to_string(),
-        _ => {
-            let (_key, _base, ai_model) = crate::ai::state::get_cloud_config();
-            ai_model
-        }
-    };
-    let provider = if model.starts_with("claude-") {
-        ProviderTag::Anthropic
-    } else if model.starts_with("gemini-") {
-        ProviderTag::Gemini
-    } else {
-        ProviderTag::OpenAi
-    };
-    (provider, model)
-}
-
-/// The assembled-prompt token budget for the resolved slot, gathered here and decided in the
-/// pure [`budget`] module. This layer supplies the two values the core may not read itself:
-/// the user's `askCmdr.chatMemorySize` choice (read fresh per send, so a change applies to the
-/// NEXT message and never to a turn already in flight) and the local server's configured
-/// window.
-///
-/// The resolution's source is logged, so a budget that came from a stale family table is
-/// visible in the log rather than silently authoritative.
-fn resolve_prompt_budget(app: &AppHandle, provider: ProviderTag, model: &str) -> Result<usize, budget::BudgetRefusal> {
-    // The E2E fake answers as a LOCAL provider with no local server behind it, so the real
-    // resolution would size its budget from `ai.localContextSize` — a setting the harness has no
-    // reason to touch, and whose value would then decide what the usage gauge shows in every E2E
-    // run. Give the fake its own realistic budget instead: the harness keeps mirroring a real
-    // user's settings, and the gauge under test shows what a normal user's would.
-    if crate::test_mode::ask_cmdr_fake_active() {
-        return Ok(budget::DEFAULT_PROMPT_TOKEN_BUDGET);
-    }
-    let resolved = budget::resolve_prompt_budget(budget::BudgetInputs {
-        provider,
-        model,
-        user_choice: crate::settings::load_ask_cmdr_chat_memory_size(app),
-        local_context_tokens: crate::ai::state::get_local_context_size(),
-    })?;
-    log::debug!(
-        target: LOG_TARGET,
-        "prompt budget for {model}: a {}-token ceiling, from {}",
-        resolved.prompt_tokens,
-        resolved.source.label()
-    );
-    if resolved.over_known_window {
-        log::info!(
-            target: LOG_TARGET,
-            "the chat memory size ({} tokens) is above the {}-token window we believe {model} has; \
-             using it anyway, the provider decides",
-            resolved.prompt_tokens,
-            resolved.known_window_tokens.unwrap_or(0)
-        );
-    }
-    Ok(resolved.prompt_tokens)
-}
-
-/// Capture the context envelope from live app state (snapshot-at-send). Focused pane path
-/// resolves from the focused SIDE's directory; volumes come from `snapshot_volumes`;
-/// `attachments` are the references the user attached for this turn (path + kind only).
-async fn capture_envelope<R: tauri::Runtime>(
-    app: &AppHandle<R>,
-    attachments: &[AttachmentRef],
-    denied_names: Vec<String>,
-    rename_batch_files: usize,
-) -> ContextEnvelope {
-    let (focused_pane_path, cursor_item, selection_count) = match app.try_state::<PaneStateStore>() {
-        Some(store) => {
-            let side = store.get_focused_pane();
-            let pane = if side == "right" {
-                store.get_right()
-            } else {
-                store.get_left()
-            };
-            let path = (!pane.path.is_empty()).then(|| pane.path.clone());
-            let cursor = pane.files.get(pane.cursor_index).map(|f| f.name.clone());
-            (path, cursor, pane.selected_indices.len() as u32)
-        }
-        None => (None, None, 0),
-    };
-    let volumes = snapshot_volumes().await.iter().map(to_envelope_volume).collect();
-    ContextEnvelope {
-        captured_at: now_secs(),
-        focused_pane_path,
-        cursor_item,
-        selection_count,
-        volumes,
-        attachments: attachments.iter().map(AttachmentRef::to_envelope).collect(),
-        denied_names,
-        rename_batch_files,
-    }
-}
-
-/// Map a live volume summary to the envelope's pure mirror. The freshness/connectivity
-/// values are OUR OWN stable tokens (the same ones `list_volumes` emits), parsed by exact
-/// match like a `from_token` — not error/state-string classification.
-fn to_envelope_volume(summary: &VolumeSummary) -> EnvelopeVolume {
-    let freshness = match summary.index_status {
-        Some("fresh") => EnvelopeFreshness::Fresh,
-        Some("scanning") => EnvelopeFreshness::Scanning,
-        Some("stale") => EnvelopeFreshness::Stale,
-        _ => EnvelopeFreshness::Off,
-    };
-    let connectivity = match summary.smb_connection_state {
-        Some("direct") => Some(EnvelopeConnectivity::Direct),
-        Some("os_mount") => Some(EnvelopeConnectivity::OsMount),
-        Some("disconnected") => Some(EnvelopeConnectivity::Disconnected),
-        _ => None,
-    };
-    EnvelopeVolume {
-        name: summary.name.clone(),
-        freshness,
-        connectivity,
-    }
-}
-
-/// The local UTC offset now, for rendering timestamps in the user's timezone.
-fn local_offset() -> FixedOffset {
-    *Local::now().offset()
 }
 
 // ── Commands ───────────────────────────────────────────────────────────────────
@@ -518,7 +310,13 @@ async fn drive_turn(
     }
     let _guard = CancelGuard(conversation_id);
 
-    let envelope = capture_envelope(&app, &attachments, denied_names, budget::files_per_batch(prompt_budget)).await;
+    let envelope = capture_envelope(
+        &app,
+        attachments.iter().map(AttachmentRef::to_envelope).collect(),
+        denied_names,
+        budget::files_per_batch(prompt_budget),
+    )
+    .await;
     let offset = local_offset();
 
     let Some(runtime) = app.try_state::<ChatRuntime>() else {

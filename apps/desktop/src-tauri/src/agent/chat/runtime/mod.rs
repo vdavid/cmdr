@@ -228,7 +228,7 @@ pub(crate) fn derive_title(text: &str) -> String {
     }
 }
 
-fn now_secs() -> i64 {
+pub(crate) fn now_secs() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

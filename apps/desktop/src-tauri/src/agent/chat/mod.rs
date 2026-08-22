@@ -8,6 +8,8 @@
 //!   no tokio runtime.
 //! - [`system_prompt`]: the stable identity + rules the model reads (part of the
 //!   cached prefix).
+//! - [`session`]: what a turn needs resolved from live app state before it can run (the LLM
+//!   slot, the prompt budget, the context envelope). Shared by the rail and by a wake.
 //! - [`runtime`]: the chat runtime that drives one user message to an answer —
 //!   single-flight per thread, per-message budgets, cancellation, typed errors, and the
 //!   crash-safe persistence model. It emits typed progress events through a channel seam
@@ -20,4 +22,5 @@
 pub mod budget;
 pub mod context;
 pub mod runtime;
+pub mod session;
 pub mod system_prompt;
