@@ -102,6 +102,21 @@ pub fn fixture_params(service: &str, fallback_port: u16) -> SftpConnectionParams
     .without_agent()
 }
 
+/// The private key the entrypoint generated for a key-auth fixture.
+///
+/// Written to the bind mount at container start rather than checked in: a
+/// private key in a repo is a private key on the internet.
+pub fn fixture_key_path(service: &str) -> std::path::PathBuf {
+    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(std::path::Path::parent)
+        .expect("this crate sits two levels under the repo root");
+    repo_root
+        .join("apps/desktop/test/sftp-servers/.keys")
+        .join(service)
+        .join("id_ed25519")
+}
+
 /// A host that remembers approvals and can answer for a secret.
 ///
 /// ❗ `VolumeHost::detached()` trusts nothing AND remembers nothing, which is
@@ -224,4 +239,29 @@ pub async fn clean_scratch(volume: &SftpVolume, dir: &str) {
         }
     }
     let _ = volume.delete(root).await;
+}
+
+/// The same, for a cell that builds a tree on purpose.
+///
+/// ❗ Separate from [`clean_scratch`] rather than replacing it: that one's
+/// refusal to remove a directory with something still in it is what makes a write
+/// cell that left a child behind fail loudly instead of quietly tidying up after
+/// itself. A scan cell genuinely does build levels, so it gets a recursive
+/// cleaner and no such signal.
+pub async fn clean_scratch_deep(volume: &SftpVolume, dir: &str) {
+    use cmdr_fs::volume::Volume;
+    use std::path::Path;
+
+    fn remove<'a>(volume: &'a SftpVolume, path: &'a Path) -> std::pin::Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move {
+            if let Ok(entries) = volume.list_directory(path, None).await {
+                for entry in entries {
+                    remove(volume, &path.join(&entry.name)).await;
+                }
+            }
+            let _ = volume.delete(path).await;
+        })
+    }
+
+    remove(volume, Path::new(dir)).await;
 }

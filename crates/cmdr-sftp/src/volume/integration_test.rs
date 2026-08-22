@@ -595,21 +595,6 @@ async fn read_whole(volume: &SftpVolume, path: &str) -> Vec<u8> {
     out
 }
 
-/// The private key the entrypoint generated for a key-auth fixture.
-///
-/// Written to the bind mount at container start rather than checked in: a
-/// private key in a repo is a private key on the internet.
-fn fixture_key_path(service: &str) -> std::path::PathBuf {
-    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(Path::parent)
-        .expect("this crate sits two levels under the repo root");
-    repo_root
-        .join("apps/desktop/test/sftp-servers/.keys")
-        .join(service)
-        .join("id_ed25519")
-}
-
 /// Dials once against an empty store and returns the approval prompt.
 async fn first_contact_prompt(
     host: &VolumeHost,
@@ -622,4 +607,65 @@ async fn first_contact_prompt(
             other.is_ok()
         ),
     }
+}
+
+// ── What the server said it can do ───────────────────────────────────
+
+/// A stock OpenSSH server advertises the four extensions this crate asks about,
+/// and the probe reads all four off one hello.
+///
+/// ❗ Read ONCE, at dial. The set arrives in `SSH_FXP_VERSION` and cannot change
+/// while the session lives, so a path that branches on it branches on a plain
+/// value — which is what lets the fallback for a server WITHOUT one be driven
+/// without standing up such a server.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_stock_server_advertises_the_extensions_this_crate_asks_about() {
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let extensions = volume.server_extensions().await.expect(FIXTURE);
+
+    assert!(extensions.posix_rename, "OpenSSH has had it since 4.7");
+    assert!(extensions.copy_data, "and this one since 9.0");
+    assert!(extensions.fsync);
+    assert!(extensions.hardlink);
+}
+
+/// ⚠️ A server that advertises neither says so, and every path that branches on
+/// one takes its fallback.
+///
+/// ❗ `copy-data` carries NO `@openssh.com` suffix where every other extension
+/// here does (`sftp-server.c`, OpenSSH 9.9p2, read 2026-08-22). The fixture's
+/// drop list names what the server actually sends, and a suffixed entry there
+/// silently dropped nothing — which is what this cell caught.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_server_with_the_extensions_dropped_advertises_neither() {
+    let params = fixture_params("NOPOSIXRENAME", 12486);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let extensions = volume.server_extensions().await.expect(FIXTURE);
+
+    assert!(
+        !extensions.posix_rename,
+        "the rename fallback is what this fixture is for"
+    );
+    assert!(!extensions.copy_data, "and so is the copy one");
+    assert!(
+        extensions.fsync,
+        "only the two named are dropped: the fixture is stock OpenSSH otherwise"
+    );
+}
+
+/// A volume with no session behind it has no answer, rather than a wrong one.
+#[tokio::test]
+async fn a_volume_with_no_session_reports_no_extensions() {
+    let volume = super::test_support::make_test_volume();
+    assert!(matches!(
+        volume.server_extensions().await,
+        Err(VolumeError::DeviceDisconnected(_))
+    ));
 }

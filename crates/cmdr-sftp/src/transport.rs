@@ -38,6 +38,7 @@ use russh::keys::{Algorithm, HashAlg, PrivateKeyWithHashAlg, PublicKey};
 
 use crate::auth::{AuthRung, AuthRungUsed, ladder};
 use crate::errors::SftpConnectError;
+use crate::extensions::ServerExtensions;
 use crate::known_hosts::KnownHostsFile;
 use crate::params::SftpConnectionParams;
 use crate::trust::{self, HostKeyDecision, PresentedHostKey};
@@ -68,6 +69,9 @@ const CHANNEL_WINDOW_BYTES: u32 = 16 * 1024 * 1024;
 /// so it stops writing, then the session closes the transport under it.
 pub struct SshConnection {
     sftp: Sftp,
+    /// What the server advertised in its hello, read once because it can't
+    /// change while the session lives.
+    extensions: ServerExtensions,
     /// Held only to keep the session alive. Dropping it closes the connection,
     /// which is exactly how this crate disconnects.
     _ssh: client::Handle<TrustHandler>,
@@ -78,6 +82,15 @@ impl SshConnection {
     /// own `Fs` and no operation serializes another.
     pub fn sftp(&self) -> &Sftp {
         &self.sftp
+    }
+
+    /// What this server can do beyond bare v3.
+    ///
+    /// ❗ The one place a capability is read from. ❌ Never reach for a
+    /// `Sftp::support_*` predicate at a call site: a fallback nobody can drive
+    /// without a server that lacks the extension is a fallback nobody tests.
+    pub fn extensions(&self) -> ServerExtensions {
+        self.extensions
     }
 }
 
@@ -136,7 +149,11 @@ pub enum DialOutcome {
 /// ❗ Run this to completion rather than dropping it mid-flight: see the hazards
 /// at the top of this module. `crate::volume::connect_sftp_volume` is what
 /// enforces that, by running it inside a task.
-pub async fn dial(params: SftpConnectionParams, host: VolumeHost) -> Result<DialOutcome, SftpConnectError> {
+pub async fn dial(
+    params: SftpConnectionParams,
+    host: VolumeHost,
+    offered_secret: Option<String>,
+) -> Result<DialOutcome, SftpConnectError> {
     let known_hosts = KnownHostsFile::read_default();
     let pinned = trust::algorithms_to_pin(host.host_keys(), &known_hosts, &params.host, params.port);
     let config = Arc::new(build_config(&pinned));
@@ -183,13 +200,25 @@ pub async fn dial(params: SftpConnectionParams, host: VolumeHost) -> Result<Dial
         }
     };
 
-    let rung = tokio::time::timeout(HANDSHAKE_TIMEOUT, authenticate(&mut session, &params, &host))
-        .await
-        .map_err(|_elapsed| SftpConnectError::TimedOut)??;
+    let rung = tokio::time::timeout(
+        HANDSHAKE_TIMEOUT,
+        authenticate(&mut session, &params, &host, offered_secret),
+    )
+    .await
+    .map_err(|_elapsed| SftpConnectError::TimedOut)??;
 
     let sftp = open_sftp_subsystem(&session, &host).await?;
+    let extensions = ServerExtensions::probe(&sftp);
+    // PII-free: protocol constants only. What a server can do decides which path
+    // a copy and a rename take, so it's the first thing worth knowing when one of
+    // them behaves differently than it does against a stock OpenSSH.
+    log::debug!(target: "volume", "sftp server extensions: {:?}", extensions.advertised());
     Ok(DialOutcome::Connected {
-        connection: SshConnection { sftp, _ssh: session },
+        connection: SshConnection {
+            sftp,
+            extensions,
+            _ssh: session,
+        },
         rung,
     })
 }
@@ -256,12 +285,20 @@ enum Attempt {
 }
 
 /// Walks the ladder, stopping at the first rung the server accepts.
+/// `offered` is a secret the USER just typed, for an attended reconnect. It
+/// stands in for the store's answer for this dial and dies with it, which is what
+/// lets a passphrase-protected key come back without the passphrase ever being
+/// written anywhere (`crate::volume::reconnect`).
 async fn authenticate(
     session: &mut client::Handle<TrustHandler>,
     params: &SftpConnectionParams,
     host: &VolumeHost,
+    offered: Option<String>,
 ) -> Result<AuthRungUsed, SftpConnectError> {
-    let mut secret: Option<StoredCredentials> = None;
+    let mut secret: Option<StoredCredentials> = offered.map(|secret| StoredCredentials {
+        username: params.username.clone(),
+        secret,
+    });
     let mut anything_offered = false;
 
     for rung in ladder(params) {

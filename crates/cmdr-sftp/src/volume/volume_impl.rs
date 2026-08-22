@@ -9,16 +9,37 @@
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{
-    DirectoryCreation, LaneKey, ListingProgress, MutationEvent, SpaceInfo, Volume, VolumeError, VolumeReadStream,
-    WatchCoverage,
+    BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
+    ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
 use tokio_util::sync::CancellationToken;
 
 use super::streams::{READ_WINDOW_DEPTH, SCAN_WINDOW_DEPTH};
 use super::{BACKEND, SftpVolume};
+
+impl SftpVolume {
+    /// Runs `work`, noticing on the way out if the answer says the session is
+    /// gone.
+    ///
+    /// ❗ Every delegator below that can reach the wire wraps itself in this, and
+    /// that is deliberate rather than incidental: with no watcher on this backend,
+    /// a dead session is invisible until an operation asks it for something, so
+    /// the operations ARE the detector. A delegator added without it leaves a
+    /// volume showing as connected until somebody else's call notices
+    /// (`reconnect.rs`).
+    async fn noting<T>(&self, work: impl Future<Output = Result<T, VolumeError>> + Send) -> Result<T, VolumeError> {
+        let outcome = work.await;
+        if let Err(error) = &outcome {
+            self.note_lost_session(error);
+        }
+        outcome
+    }
+}
 
 impl Volume for SftpVolume {
     fn name(&self) -> &str {
@@ -57,7 +78,7 @@ impl Volume for SftpVolume {
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        Box::pin(self.list_directory_impl(path, on_progress, None))
+        Box::pin(self.noting(self.list_directory_impl(path, on_progress, None)))
     }
 
     fn list_directory_with_cancel<'a>(
@@ -66,14 +87,14 @@ impl Volume for SftpVolume {
         on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
         cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        Box::pin(self.list_directory_impl(path, on_progress, cancel))
+        Box::pin(self.noting(self.list_directory_impl(path, on_progress, cancel)))
     }
 
     fn get_metadata<'a>(
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        Box::pin(self.get_metadata_impl(path))
+        Box::pin(self.noting(self.get_metadata_impl(path)))
     }
 
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
@@ -84,7 +105,7 @@ impl Volume for SftpVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        Box::pin(self.is_directory_impl(path))
+        Box::pin(self.noting(self.is_directory_impl(path)))
     }
 
     // ── The byte path ────────────────────────────────────────────────
@@ -105,10 +126,10 @@ impl Volume for SftpVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
+        Box::pin(self.noting(async move {
             let stream = self.open_read_stream_impl(path, READ_WINDOW_DEPTH).await?;
             Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
-        })
+        }))
     }
 
     /// The background scan's reads, ❗ deliberately narrower than the foreground
@@ -123,10 +144,10 @@ impl Volume for SftpVolume {
         path: &'a Path,
         _size_hint: Option<u64>,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
+        Box::pin(self.noting(async move {
             let stream = self.open_read_stream_impl(path, SCAN_WINDOW_DEPTH).await?;
             Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
-        })
+        }))
     }
 
     /// The positioned read remote-archive browsing runs on.
@@ -140,7 +161,7 @@ impl Volume for SftpVolume {
         offset: u64,
         len: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
-        Box::pin(self.read_range_impl(path, offset, len))
+        Box::pin(self.noting(self.read_range_impl(path, offset, len)))
     }
 
     // ── The write path ───────────────────────────────────────────────
@@ -158,14 +179,14 @@ impl Volume for SftpVolume {
         path: &'a Path,
         content: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(self.create_file_impl(path, content))
+        Box::pin(self.noting(self.create_file_impl(path, content)))
     }
 
     fn create_directory<'a>(
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(self.create_directory_impl(path))
+        Box::pin(self.noting(self.create_directory_impl(path)))
     }
 
     /// ❗ Overridden. The trait default spends one `exists()` round trip per
@@ -175,7 +196,7 @@ impl Volume for SftpVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
-        Box::pin(self.create_directory_all_impl(path))
+        Box::pin(self.noting(self.create_directory_all_impl(path)))
     }
 
     /// `SSH_FXP_MKDIR` refuses an occupied name on every server, so the
@@ -189,7 +210,7 @@ impl Volume for SftpVolume {
     }
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(self.delete_impl(path))
+        Box::pin(self.noting(self.delete_impl(path)))
     }
 
     /// ❗ `force = false` never reaches for `posix-rename@openssh.com`, which is
@@ -200,7 +221,7 @@ impl Volume for SftpVolume {
         to: &'a Path,
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(self.rename_impl(from, to, force))
+        Box::pin(self.noting(self.rename_impl(from, to, force)))
     }
 
     /// The window an upload runs through. ❗ `write_is_single_shot` keeps its
@@ -213,7 +234,7 @@ impl Volume for SftpVolume {
         stream: Box<dyn VolumeReadStream>,
         on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(self.write_from_stream_impl(dest, size, stream, on_progress))
+        Box::pin(self.noting(self.write_from_stream_impl(dest, size, stream, on_progress)))
     }
 
     /// ❗ There is no watcher here, so this patch is the ONLY thing that keeps a
@@ -225,6 +246,108 @@ impl Volume for SftpVolume {
         mutation: MutationEvent,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         Box::pin(self.notify_mutation_impl(parent_path, mutation))
+    }
+
+    // ── Scanning, before a copy runs ─────────────────────────────────
+
+    /// ❗ One listing per DIRECTORY, never a stat per child: over a 50 ms link
+    /// that difference is the whole cost of a scan. `scan.rs` says why the
+    /// listing cache is off limits here.
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(self.noting(self.scan_for_copy_impl(path)))
+    }
+
+    /// ❗ Overridden for the progress alone. The trait default reports only
+    /// between paths, so a single deep source leaves the scan dialog frozen and
+    /// the scan watchdog unable to tell a slow walk from a stopped server.
+    fn scan_for_copy_batch_with_progress<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(self.noting(self.scan_for_copy_batch_impl(paths, on_progress)))
+    }
+
+    /// One listing of the destination, ❗ never one `exists()` per source item.
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        source_items: &'a [SourceItemInfo],
+        dest_path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
+        Box::pin(self.noting(self.scan_for_conflicts_impl(source_items, dest_path)))
+    }
+
+    /// The server copies for itself where it can, so duplicating a file inside
+    /// one server sends no bytes over the link.
+    ///
+    /// ❗ Answers `NotSupported` on a server without `copy-data@openssh.com`,
+    /// which is the caller's signal to stream it the ordinary way.
+    fn copy_within<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(self.noting(self.copy_within_impl(from, to, on_progress)))
+    }
+
+    // ── Lifecycle ────────────────────────────────────────────────────
+
+    /// ❗ Published because the reconnect loop outlives the call that started it,
+    /// and the registry needs somewhere to write "you left".
+    fn retirement(&self) -> Option<&Retirement> {
+        Some(&self.inner.retirement)
+    }
+
+    /// Retires this instance ❗ without touching the live session.
+    ///
+    /// A newer instance has taken this volume's id. The server is still there and
+    /// everything holding an `Arc` to this one — a running transfer, an open
+    /// viewer stream, the indexer — is still using it; tearing the session down
+    /// would kill all of them on a connection that is perfectly healthy. What
+    /// retires is what belongs to the ID: the connection events and the reconnect
+    /// loop, which the successor now owns. The session goes when the last `Arc`
+    /// does.
+    fn on_superseded(&self) {
+        self.inner.retirement.retire();
+    }
+
+    /// The volume is leaving the registry: stop reconnecting and let the session
+    /// go.
+    ///
+    /// ❌ No connection event. The frontend learns through `volumes-changed`, and
+    /// a `disconnected` alongside it would race that into a banner for a volume
+    /// that is no longer in the sidebar.
+    fn on_unmount(&self) {
+        self.inner.unmounted.store(true, Ordering::Relaxed);
+        // Dropping the transport IS the shutdown, and it needs an async context to
+        // take the session out of its lock. ❌ Never `Sftp::close()`: it awaits a
+        // read task that a `russh` channel never ends, so it hangs forever.
+        let inner = Arc::clone(&self.inner);
+        inner.host.runtime().clone().spawn(async move {
+            inner.session.write().await.take();
+        });
+    }
+
+    /// Rebuilds the session in place, on the terms the auth rung allows
+    /// (`reconnect.rs`).
+    fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.inner.do_attempt_reconnect())
+    }
+
+    /// The attended sign-in, ❗ answered only for the rungs a typed secret can
+    /// actually mend: a password, keyboard-interactive, and a passphrase-protected
+    /// key file. An agent or an unencrypted key answers `NotSupported`, and the
+    /// frontend must not offer the button there. `DETAILS.md` § "Coming back".
+    fn reconnect_with_credentials<'a>(
+        &'a self,
+        username: String,
+        password: String,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.inner.do_reconnect_with_credentials(username, password))
     }
 
     // ── What this backend is, in capability terms ────────────────────

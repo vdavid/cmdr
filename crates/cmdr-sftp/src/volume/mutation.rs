@@ -289,7 +289,7 @@ impl SftpVolume {
         remote_from: &str,
         remote_to: &str,
     ) -> Result<(), VolumeError> {
-        if !session.sftp().support_posix_rename() {
+        if !session.extensions().posix_rename {
             // Plain `SSH_FXP_RENAME`, which is what `Fs::rename` sends on a
             // server without the extension, refuses an occupied destination by
             // itself (`link` + `EEXIST` for regular files, a stat guard on the

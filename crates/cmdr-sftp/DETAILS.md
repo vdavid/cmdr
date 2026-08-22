@@ -181,6 +181,129 @@ The ratio gate reads 6.2-6.3× where it asks for 4× (three runs), against the r
 the ratio cell alongside the depth curve read 4.3× where the same cell alone reads 6.2×. `.config/nextest.toml`'s
 `sftp-bench` test group enforces it; ❌ don't remove it to speed a measurement up.
 
+## What the server said it can do
+
+`ServerExtensions` is the SFTP hello's extension list as a plain value, read once by `transport::dial` and carried on
+`SshConnection`. ❗ One read, one place: the set is fixed for the life of a session, and a plain value is what lets a
+fallback be driven from a unit cell rather than only from a server that lacks the extension.
+
+⚠️ **Only the `support_*` predicates are readable.** `max_read_len` and `max_write_len` sit behind the engine's
+`__ci-tests` feature, and `statvfs@openssh.com` has neither a predicate nor a request to send it (§ "The `Volume`
+answers"). So the value carries exactly five fields, and ❌ nothing should be added for an extension the engine cannot
+answer for.
+
+⚠️ **`copy-data` carries NO `@openssh.com` suffix**, where `posix-rename`, `fsync`, `hardlink`, `expand-path`, and
+`statvfs` all do (`openssh-sftp-protocol` 0.24.2 `constants.rs`; OpenSSH `sftp-server.c` 9.9p2, read 2026-08-22). The
+fixture's `QUIRK_DROP_EXTENSIONS` list matches on the wire name, so a suffixed entry there dropped nothing and the
+"server without the extension" fixture quietly had it — `a_server_with_the_extensions_dropped_advertises_neither` is
+what caught that and is what keeps it caught.
+
+What each one is spent on:
+
+- **`posix-rename`** gates the forced rename's atomic replace, and its ABSENCE gates the forceless rename's shortcut (§
+  "Renaming without clobbering").
+- **`copy_data`** gates `Volume::copy_within` (§ "Copying inside one server").
+- **`fsync`, `hardlink`, `expand_path` are recorded and logged, and deliberately unspent.** They are worth carrying
+  because one `debug!` line at connect answers "why did this server behave differently" before anything else does, and
+  the names are protocol constants so the line is PII-free. What each would buy, and why not yet:
+  - `fsync` would flush a staged upload to stable storage before the landing rename. The staged write already guarantees
+    a partial never wears the user's filename; what `fsync` adds is surviving the SERVER losing power between the write
+    and the rename, at the price of a round trip plus a server-side flush per file, which on a loaded NAS is seconds.
+    OpenSSH's own client makes it opt-in (`put -f`), and so does this one: ❗ not until somebody asks.
+  - `expand_path` would resolve a `~`-relative remote root at connect. The app supplies an absolute root today, so there
+    is nothing to expand; this is where that would be spent.
+  - `hardlink` has no consumer at all: the `Volume` surface has no operation that creates a link.
+
+## Copying inside one server
+
+`copy-data` asks the server to copy a byte range from one open handle to another. Duplicating a 4 GB file inside one
+server otherwise pulls it down the link and pushes it back up: twice the file, four minutes at 30 MB/s against roughly
+nothing.
+
+`copy.rs` answers `Volume::copy_within`, which the app asks BEFORE reaching for a stream whenever both sides of a copy
+are the same volume instance (`write_operations/transfer/volume/strategy.rs::try_server_side_copy`).
+
+- ❗ **Chunked, ❌ never one request for the whole file.** One `copy-data` for 4 GB is a single unanswered request for
+  as long as the server's disks take, with no progress and nowhere to cancel. `COPY_CHUNK_BYTES` is 8 MiB, and each
+  boundary is a place to report and to stop. The bytes never cross the wire whatever the number is, so a bigger one buys
+  nothing.
+- ❗ **Both offsets are named on every request.** The engine advances a handle's own offset by the length it was ASKED
+  for, and this is the one path where two handles' offsets have to stay in step.
+- **The destination is created or truncated**, matching `write_from_stream`, so the caller's staging and its
+  conflict-resolution temps work unchanged. ❗ Which also means the destination genuinely holds a byte-incomplete file
+  while this runs — the trait documents `copy_within` as never single-shot, and the caller stages it.
+- **Cancellation is the progress callback returning `Break`**, and every error path removes the partial.
+- **A server without the extension answers `NotSupported`**, which the caller reads as "stream it". ❌ Not a failure,
+  and ❌ not a fallback the backend does for itself: the caller owns retry, staging, and progress, and a backend quietly
+  streaming would take the file outside all three.
+
+## Scanning, before a copy runs
+
+`scan.rs` answers `scan_for_copy`, `scan_for_copy_batch_with_progress`, and `scan_for_conflicts`.
+
+- **One listing per DIRECTORY, ❌ never a stat per child.** A listing already carries every child's size and type, so a
+  1 000-file folder is one round trip rather than a thousand. Over a 50 ms link that is a second against a minute.
+- ❗ **The batch method is overridden for its PROGRESS.** The trait default reports only between paths, so one deep
+  source leaves the scan dialog frozen and leaves the scan watchdog — which bounds a preview by INACTIVITY — unable to
+  tell a slow tree from a server that stopped answering. The ticker is `cmdr_fs::volume::ScanTicker`, shared with SMB so
+  the cumulative-for-the-call promise can't drift between the two.
+- ❌ **Nothing here calls `authoritative_listing`.** There is no watcher, so `listing_watch_coverage` is `None` and a
+  cached listing is only as fresh as the last look. SMB's scan may consult the cache because its watcher backs the
+  claim; borrowing that here is how a pre-flight conflict scan misses a file and a copy overwrites it.
+- **A conflict scan of a destination that isn't there yet finds nothing**, rather than reporting the missing directory:
+  otherwise "paste into a folder I'm about to create" is a failure.
+- **`dedup_bytes` always equals `total_bytes`.** SFTP v3's stat carries no link count, so the source footprint is taken
+  as the write footprint.
+
+## Coming back
+
+There is no watcher here, so nothing notices a dead session until something uses it. Every wire-touching delegator in
+`volume_impl.rs` runs through `noting`, which hands the error to `note_lost_session`; that flips the state ONCE on the
+`Connected` → `Disconnected` edge, drops the transport, and starts the backoff loop in `reconnect.rs`. ❗ A delegator
+added without `noting` leaves a volume showing as connected until somebody else's call notices.
+
+**The state is three-valued** (`state.rs`), where SMB's is two: `NeedsCredentials` is a state this backend RESTS in,
+because a passphrase-protected key genuinely cannot come back on its own. Every report goes through `emit_if_changed`,
+so a server that is down produces one event rather than one per failing operation, and a RETIRED volume reports nothing
+at all — its id belongs to a newer instance, and news under it would show a healthy volume as dropped.
+
+**Retirement and the self-handle.** The loop outlives the call that started it, so it reaches its own state through a
+`SelfHandle<SftpVolumeInner>` and re-asks every iteration: a volume that was ejected or superseded stops answering.
+`on_superseded` retires the ID and ❌ leaves the session alone — a running transfer, an open viewer stream, and the
+indexer all hold an `Arc` across a re-registration, and tearing the connection down would kill all of them on a
+connection that is perfectly healthy. `on_unmount` is the opposite: it marks the volume gone and lets the session go,
+and ❌ emits nothing, because the frontend learns through `volumes-changed` and a second event would race it.
+
+### What each rung may do, and what the frontend sees
+
+`auth::reconnect_policy` is the table; `rebuild` obeys it for an UNATTENDED attempt and skips it when the user has just
+typed a secret, which is the whole difference the policy is about.
+
+| rung                  | `attempt_reconnect`                        | `reconnect_with_credentials`       |
+| --------------------- | ------------------------------------------ | ---------------------------------- |
+| agent                 | dials freely; a removed identity refuses   | `NotSupported`                     |
+| key file, unencrypted | dials freely                               | `NotSupported`                     |
+| key file, passphrase  | `NeedsCredentials` without dialing         | uses the secret, ❌ never saves it |
+| password              | ONE dial, then `NeedsCredentials` for good | saves the secret, then dials       |
+| keyboard-interactive  | `NeedsCredentials` without dialing         | saves the secret, then dials       |
+
+- ❌ **The password latch is the point.** The frontend's reconnect manager calls `attempt_reconnect` on every backoff
+  tick, so without `password_attempt_spent` a wrong password is offered every few seconds until the account locks. It is
+  set only on a real `AuthenticationRejected` (a refused connection is not a burnt attempt) and cleared only by a human,
+  through `reconnect_with_credentials`.
+- **The store is re-read on every dial**, so the ONE unattended try already carries whatever the user changed.
+- ❗ **A key passphrase is never persisted.** Writing it to the secret store would turn the rung that deliberately
+  cannot reconnect unattended into one that can, which is the opposite of what encrypting the key asked for. It is
+  passed to `transport::dial` as `offered_secret`, used for that dial, and dropped.
+- ❗ **Another account is another volume.** The id is `host:port:username`, so `reconnect_with_credentials` refuses a
+  username that isn't this volume's rather than quietly authenticating as somebody else under this volume's name and
+  index.
+- ❗ **A host key that no longer matches never reaches a sign-in prompt.** A changed key is the shape a
+  man-in-the-middle takes, and a password box in front of one is how a password gets typed into it. The volume reports
+  `Disconnected`, the loop stops, and recovery is the user opening the server again through the full approval flow.
+  (`VolumeConnection` grows a variant for this with the IPC surface; `Stalled::HostKeyNeedsApproval` is the arm that
+  will carry it.)
+
 ## The error policy
 
 SFTP v3 has no `SSH_FX_FILE_ALREADY_EXISTS` (that arrived in v4), and OpenSSH folds `EEXIST`, `ENOTEMPTY`, `EISDIR`, and
@@ -480,6 +603,15 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
   pane) or skipping the temp's patch entirely, and both need the app's listing-mutation contract read first.
 - **`paths_are_os_visible` → false, `local_path` → `None`.** Answering otherwise would let a drag hand Finder a path
   that resolves to nothing, or worse to a local file of the same name.
+- **`scan_for_copy`, `scan_for_copy_batch_with_progress`, and `scan_for_conflicts` are all answered** (§ "Scanning,
+  before a copy runs"). ❗ `begin_scan_session` / `end_scan_session` keep their no-op defaults and are a DIFFERENT
+  thing: they bracket the index scan's background walk, ❌ never `scan_for_copy`. There is no scan-connection pool to
+  set up or tear down, because a second connection is a second authentication.
+- **`copy_within` is answered where the server can do it** (§ "Copying inside one server"), and `NotSupported`
+  otherwise.
+- **`retirement` is published, `on_superseded` retires the id, `attempt_reconnect` and `reconnect_with_credentials` are
+  answered** (§ "Coming back"). ❗ `connection_liveness` stays `None`: this stack has no keepalive, and elapsed silence
+  is not an answer.
 - **`get_space_info` → `NotSupported`, `space_poll_interval` → `None`.** `statvfs@openssh.com` is **not reachable from
   this crate stack**: `openssh-sftp-client-lowlevel` has no `send_statvfs_request`, and `openssh-sftp-protocol` carries
   only the extension _name_ so the hello parses. There is no `support_statvfs` predicate either — the predicates are

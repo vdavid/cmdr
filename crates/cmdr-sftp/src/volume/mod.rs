@@ -11,24 +11,31 @@
 //! `CLAUDE.md` has the must-knows, `DETAILS.md` the decisions.
 
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::{Arc, Weak};
 
-use cmdr_fs::volume::VolumeError;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
+use cmdr_fs::volume::{Retirement, VolumeError};
 
 use crate::auth::AuthRungUsed;
 use crate::errors::SftpConnectError;
 use crate::params::SftpConnectionParams;
 use crate::transport::{self, DialOutcome, HostKeyPrompt, SshConnection};
 
+mod copy;
 mod mapping;
 mod mutation;
 mod paths;
 mod query;
+mod reconnect;
+mod scan;
+mod state;
 mod streams;
 mod volume_impl;
 mod writes;
+
+pub use state::ConnectionState;
 
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
@@ -69,9 +76,12 @@ struct SftpVolumeInner {
     volume_id: String,
     /// How to reach the server, and how to reach it again.
     params: SftpConnectionParams,
-    /// Which rung built the live session, which is what decides whether a
+    /// Which rung built the LIVE session, which is what decides whether a
     /// dropped one may rebuild itself (`crate::auth::reconnect_policy`).
-    rung: AuthRungUsed,
+    ///
+    /// Behind a lock because a reconnect may land on a different rung than the
+    /// first dial did: an agent identity can be added or removed between them.
+    rung: std::sync::Mutex<AuthRungUsed>,
     /// The live session. `None` once disconnected, at which point every
     /// operation fails fast rather than hanging.
     ///
@@ -79,6 +89,25 @@ struct SftpVolumeInner {
     /// read guard and drives its operation without holding the lock: the SFTP
     /// engine multiplexes on one channel, so N operations genuinely overlap.
     session: tokio::sync::RwLock<Option<Arc<SshConnection>>>,
+    /// The state the host was last told about, so a server that is down doesn't
+    /// produce one event per failing operation (`state.rs`).
+    state: AtomicU8,
+    /// Whether the registry still serves this volume under its id. Read back by
+    /// the reconnect loop through a `SelfHandle`.
+    retirement: Retirement,
+    /// This state's own weak reference, for the background work that outlives the
+    /// call that started it. Set by `Arc::new_cyclic`.
+    me: Weak<SftpVolumeInner>,
+    /// Single-flight around a session rebuild: concurrent callers (the frontend's
+    /// backoff tick and the backend's own loop) wait here and the second one
+    /// finds a live session.
+    reconnect_lock: tokio::sync::Mutex<()>,
+    /// Set by `on_unmount`. A reconnect in flight bails rather than installing a
+    /// session into a volume the app has forgotten.
+    unmounted: AtomicBool,
+    /// Whether the one unattended password attempt has been spent
+    /// (`reconnect.rs`). ❌ Never a loop: repeated wrong passwords lock accounts.
+    password_attempt_spent: AtomicBool,
     /// Everything this backend asks the app around it.
     host: VolumeHost,
 }
@@ -91,7 +120,7 @@ impl SftpVolume {
 
     /// Which credential built the live session.
     pub fn auth_rung(&self) -> AuthRungUsed {
-        self.inner.rung
+        self.inner.auth_rung()
     }
 
     /// The live transport, cloned out from under a short read guard.
@@ -115,6 +144,26 @@ impl SftpVolume {
     /// only ends at reader EOF, which a `russh` channel never reaches, so it
     /// hangs forever. `transport.rs` has the full note.
     pub async fn disconnect(&self) {
+        self.inner.unmounted.store(true, Ordering::Relaxed);
+        self.inner.session.write().await.take();
+    }
+
+    /// What the server said it can do, for the cells that assert on the probe
+    /// itself rather than on a path that branches on it.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn server_extensions(&self) -> Result<crate::extensions::ServerExtensions, VolumeError> {
+        Ok(self.clone_session().await?.extensions())
+    }
+
+    /// Drops the live session the way a server going away would, ❗ WITHOUT
+    /// starting the backoff loop, so a cell drives the recovery itself and its
+    /// timing is its own.
+    ///
+    /// The state stays `Connected` because that is what it is until something
+    /// notices: this reproduces the moment before an operation fails, which is
+    /// exactly where a reconnect cell wants to begin.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn simulate_session_loss(&self) {
         self.inner.session.write().await.take();
     }
 }
@@ -135,10 +184,7 @@ pub async fn connect_sftp_volume(
     host: VolumeHost,
 ) -> Result<SftpConnectOutcome, SftpConnectError> {
     let root = params.remote_root.clone();
-    let dialing = host.runtime().spawn(transport::dial(params.clone(), host.clone()));
-    let outcome = dialing
-        .await
-        .map_err(|join| SftpConnectError::Transport(join.to_string()))??;
+    let outcome = reconnect::guarded_dial(&host, params.clone(), None).await?;
 
     match outcome {
         DialOutcome::NeedsHostKeyApproval(prompt) => Ok(SftpConnectOutcome::NeedsHostKeyApproval(prompt)),
@@ -149,11 +195,17 @@ pub async fn connect_sftp_volume(
             Ok(SftpConnectOutcome::Connected(SftpVolume {
                 name: name.to_string(),
                 root,
-                inner: Arc::new(SftpVolumeInner {
+                inner: Arc::new_cyclic(|me| SftpVolumeInner {
                     volume_id: volume_id.to_string(),
                     params,
-                    rung,
+                    rung: std::sync::Mutex::new(rung),
                     session: tokio::sync::RwLock::new(Some(Arc::new(connection))),
+                    state: AtomicU8::new(ConnectionState::Connected as u8),
+                    retirement: Retirement::new(),
+                    me: me.clone(),
+                    reconnect_lock: tokio::sync::Mutex::new(()),
+                    unmounted: AtomicBool::new(false),
+                    password_attempt_spent: AtomicBool::new(false),
                     host,
                 }),
             }))
@@ -177,7 +229,11 @@ pub fn approve_host_key(host: &VolumeHost, server: &str, port: u16, algorithm: &
 #[cfg(test)]
 mod conformance_test;
 #[cfg(test)]
+mod host_seam_test;
+#[cfg(test)]
 mod integration_test;
+#[cfg(test)]
+mod scan_test;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]
