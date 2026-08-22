@@ -7,6 +7,7 @@
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { forceSave as forceSettingsSave } from '$lib/settings'
     import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
+    import { tString } from '$lib/intl/messages.svelte'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
@@ -450,7 +451,7 @@
 
 <!-- Prevent body from being a tab stop by keeping focus within the settings window -->
 <main class="settings-window" tabindex="-1">
-    <h1 class="sr-only">Settings</h1>
+    <h1 class="sr-only">{tString('settings.window.title')}</h1>
     <!-- Drag region for moving the window. Spans the top strip of the window
          (40 px) so the user can grab anywhere up there — including over the
          traffic-light row's free space — to drag. The traffic-light buttons
@@ -481,7 +482,7 @@
             </div>
         </div>
     {:else}
-        <div class="settings-loading">Loading settings...</div>
+        <div class="settings-loading">{tString('settings.window.loading')}</div>
     {/if}
 </main>
 

@@ -23,10 +23,11 @@
  *
  * The full ~1,000-string migration lands by area. Enforcing the rule
  * everywhere at once would flood every un-migrated component. So the rule fires
- * only for files whose path matches an enforced fragment, MINUS an explicit
- * exclusion list of files in an enforced area that aren't migrated yet. Each area
- * tranche adds an area fragment AND removes that area's files from the exclusion
- * list as it migrates them.
+ * only for files whose path matches an enforced fragment, MINUS two explicit
+ * exclusion lists: files in an enforced area that aren't migrated yet, and the
+ * developer-only surfaces that stay English on purpose. Each area tranche adds
+ * an area fragment AND removes that area's files from the first list as it
+ * migrates them.
  *
  * Opt out per-line for a genuinely non-copy literal in an enforced area:
  *
@@ -47,7 +48,6 @@ const enforcedAreaPathFragments = [
   '/lib/query-ui/',
   '/lib/search/',
   '/lib/file-viewer/',
-  '/routes/viewer/',
   '/lib/licensing/',
   '/lib/crash-reporter/',
   '/lib/error-reporter/',
@@ -63,8 +63,12 @@ const enforcedAreaPathFragments = [
   '/lib/whats-new/',
   '/lib/error-messages/',
   '/lib/status-corner/',
-  '/routes/(main)/', // top-level app chrome
   '/lib/file-explorer/',
+  // Every window entry point. A window's own chrome (its heading, its title
+  // row, its links) lives here and nowhere else, so a per-window fragment
+  // would have to be added by hand each time a window is born — which is how
+  // the Keyboard shortcuts window shipped with four English literals in it.
+  '/routes/',
 ]
 
 // Files inside an enforced area that aren't migrated yet, so the rule skips them
@@ -72,6 +76,14 @@ const enforcedAreaPathFragments = [
 // deletes its entries here as it migrates the file's copy. When this list is
 // empty for an area, that area is fully enforced.
 const excludedUnmigratedFiles = []
+
+// Surfaces that are DEVELOPER-facing, not user-facing: the Debug window and the
+// `/dev/*` component and graphics catalogs. Their copy is deliberately English —
+// they're tools for us, they never ship enabled to users, and translating them
+// would cost nine locales' work for surfaces no user opens. Unlike
+// `excludedUnmigratedFiles` above, nothing here is ever expected to migrate, so
+// these two lists are kept apart rather than merged.
+const developerOnlyPathFragments = ['/routes/debug/', '/routes/dev/']
 
 // Element/component attributes that carry user-facing copy.
 const userFacingAttributes = new Set(['title', 'label', 'placeholder', 'aria-label'])
@@ -126,7 +138,9 @@ export default {
   create(context) {
     const filename = context.filename || context.getFilename() || ''
     const inEnforcedArea = enforcedAreaPathFragments.some((fragment) => filename.includes(fragment))
-    const isExcluded = excludedUnmigratedFiles.some((fragment) => filename.includes(fragment))
+    const isExcluded =
+      excludedUnmigratedFiles.some((fragment) => filename.includes(fragment)) ||
+      developerOnlyPathFragments.some((fragment) => filename.includes(fragment))
     if (!inEnforcedArea || isExcluded) {
       return {}
     }

@@ -2196,5 +2196,13 @@
   "settings.mediaIndex.chosenFolders.removeAria": "Ta bort {folder} från indexeringen",
   "@settings.mediaIndex.chosenFolders.removeAria": {
     "sourceHash": "338e30a"
+  },
+  "settings.window.title": "Inställningar",
+  "@settings.window.title": {
+    "sourceHash": "74a883a"
+  },
+  "settings.window.loading": "Läser in inställningar…",
+  "@settings.window.loading": {
+    "sourceHash": "e71a134"
   }
 }

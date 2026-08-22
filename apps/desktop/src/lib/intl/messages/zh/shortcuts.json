@@ -219,5 +219,21 @@
   "shortcuts.section.resetAll": "全部重置为默认",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.window.title": "键盘快捷键",
+  "@shortcuts.window.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.window.edit": "编辑快捷键",
+  "@shortcuts.window.edit": {
+    "sourceHash": "7d9889d"
+  },
+  "shortcuts.window.hideEmpty": "隐藏没有快捷键的功能",
+  "@shortcuts.window.hideEmpty": {
+    "sourceHash": "d3cb18e"
+  },
+  "shortcuts.window.editInSettings": "在设置中编辑快捷键",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "847b526"
   }
 }

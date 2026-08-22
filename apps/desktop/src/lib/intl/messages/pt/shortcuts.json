@@ -223,5 +223,21 @@
   "shortcuts.section.resetAll": "Redefinir tudo para os padrões",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.window.title": "Atalhos de teclado",
+  "@shortcuts.window.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.window.edit": "Editar atalhos",
+  "@shortcuts.window.edit": {
+    "sourceHash": "7d9889d"
+  },
+  "shortcuts.window.hideEmpty": "Ocultar funções sem atalho",
+  "@shortcuts.window.hideEmpty": {
+    "sourceHash": "d3cb18e"
+  },
+  "shortcuts.window.editInSettings": "Editar atalhos nos Ajustes",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "847b526"
   }
 }

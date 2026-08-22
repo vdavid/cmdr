@@ -371,5 +371,25 @@
   "@shortcuts.section.resetAll": {
     "description": "Button at the bottom of the Keyboard shortcuts section that restores every command's shortcuts to the shipped defaults.",
     "screenshot": "settings-keyboard-shortcuts.png"
+  },
+
+  "shortcuts.window.title": "Keyboard shortcuts",
+  "@shortcuts.window.title": {
+    "description": "Name of the standalone, read-only Keyboard shortcuts help window, which lists every command and its keys. Rendered twice in that window: as the visible heading in the header, and as a screen-reader-only page heading. A NOUN phrase naming the window's content, never an instruction. The same words as the Keyboard shortcuts section inside Settings (shortcuts.section.title); keep the two identical, since a user moves between them."
+  },
+
+  "shortcuts.window.edit": "Edit shortcuts",
+  "@shortcuts.window.edit": {
+    "description": "Link beside the title in the header of the read-only Keyboard shortcuts window. Opens Settings at the editable shortcut list, because this window only shows shortcuts and can't change them. An imperative VERB phrase (\"edit the shortcuts\"), not a noun. Keep it short: it shares one line with the window title."
+  },
+
+  "shortcuts.window.hideEmpty": "Hide features with no shortcut",
+  "@shortcuts.window.hideEmpty": {
+    "description": "Checkbox label in the header of the Keyboard shortcuts window. Ticking it hides every row whose command currently has no keys assigned, so only the commands with shortcuts remain. An imperative VERB phrase saying what ticking it does. \"Features\" here means the app's commands and actions, the things listed in the rows."
+  },
+
+  "shortcuts.window.editInSettings": "Edit shortcuts in Settings",
+  "@shortcuts.window.editInSettings": {
+    "description": "Link at the very bottom of the Keyboard shortcuts window, under the end of the list. Does the same as the header link (shortcuts.window.edit), spelled out with its destination for someone who scrolled all the way down. An imperative VERB phrase. \"Settings\" is Cmdr's own Settings window, so use the word the rest of the app uses for it (settings.window.title), not the macOS System Settings term."
   }
 }

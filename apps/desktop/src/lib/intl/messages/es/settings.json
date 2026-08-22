@@ -2192,5 +2192,13 @@
   "settings.mediaIndex.chosenFolders.removeAria": "Quitar {folder} de la indexación",
   "@settings.mediaIndex.chosenFolders.removeAria": {
     "sourceHash": "338e30a"
+  },
+  "settings.window.title": "Ajustes",
+  "@settings.window.title": {
+    "sourceHash": "74a883a"
+  },
+  "settings.window.loading": "Cargando ajustes…",
+  "@settings.window.loading": {
+    "sourceHash": "e71a134"
   }
 }

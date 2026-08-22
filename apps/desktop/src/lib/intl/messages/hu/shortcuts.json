@@ -223,5 +223,21 @@
   "shortcuts.section.resetAll": "Összes visszaállítása alapértékre",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.window.title": "Billentyűparancsok",
+  "@shortcuts.window.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.window.edit": "Billentyűparancsok szerkesztése",
+  "@shortcuts.window.edit": {
+    "sourceHash": "7d9889d"
+  },
+  "shortcuts.window.hideEmpty": "Billentyűparancs nélküli funkciók elrejtése",
+  "@shortcuts.window.hideEmpty": {
+    "sourceHash": "d3cb18e"
+  },
+  "shortcuts.window.editInSettings": "Billentyűparancsok szerkesztése a Beállításokban",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "847b526"
   }
 }

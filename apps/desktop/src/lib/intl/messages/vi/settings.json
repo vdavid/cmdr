@@ -2188,5 +2188,13 @@
   "settings.mediaIndex.chosenFolders.removeAria": "Gỡ {folder} khỏi việc lập chỉ mục",
   "@settings.mediaIndex.chosenFolders.removeAria": {
     "sourceHash": "338e30a"
+  },
+  "settings.window.title": "Cài đặt",
+  "@settings.window.title": {
+    "sourceHash": "74a883a"
+  },
+  "settings.window.loading": "Đang tải cài đặt…",
+  "@settings.window.loading": {
+    "sourceHash": "e71a134"
   }
 }

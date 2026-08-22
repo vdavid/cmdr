@@ -223,5 +223,21 @@
   "shortcuts.section.resetAll": "Restablecer todo a los valores por omisión",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.window.title": "Atajos de teclado",
+  "@shortcuts.window.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.window.edit": "Editar atajos",
+  "@shortcuts.window.edit": {
+    "sourceHash": "7d9889d"
+  },
+  "shortcuts.window.hideEmpty": "Ocultar funciones sin atajo",
+  "@shortcuts.window.hideEmpty": {
+    "sourceHash": "d3cb18e"
+  },
+  "shortcuts.window.editInSettings": "Editar atajos en Ajustes",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "847b526"
   }
 }

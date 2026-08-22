@@ -222,5 +222,21 @@
   "shortcuts.section.resetAll": "Đặt lại tất cả về mặc định",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.window.title": "Phím tắt",
+  "@shortcuts.window.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.window.edit": "Sửa phím tắt",
+  "@shortcuts.window.edit": {
+    "sourceHash": "7d9889d"
+  },
+  "shortcuts.window.hideEmpty": "Ẩn các chức năng không có phím tắt",
+  "@shortcuts.window.hideEmpty": {
+    "sourceHash": "d3cb18e"
+  },
+  "shortcuts.window.editInSettings": "Sửa phím tắt trong Cài đặt",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "847b526"
   }
 }

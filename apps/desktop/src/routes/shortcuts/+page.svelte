@@ -10,6 +10,7 @@
     import { requestOpenSettings } from '$lib/tauri-commands'
     import { trackOwnRect } from '$lib/window-positioning'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tString } from '$lib/intl/messages.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutsList from '$lib/shortcuts/ShortcutsList.svelte'
@@ -20,8 +21,8 @@
     let hideEmpty = $state(false)
     let unlistenFocusSelf: UnlistenFn | undefined
     let unlistenRectTracking: (() => void) | undefined
-
     let unsubscribeLanguage: (() => void) | undefined
+
     function editShortcuts() {
         // Deep-link to the editable list. This window stays read-only and lacks
         // window-creation capability, so it asks the main window to open Settings
@@ -49,10 +50,10 @@
         try {
             // Settings must load before text-size/theme reads; shortcuts before the list.
             await Promise.all([initWindowSettings(), initializeShortcuts()])
-            await initAccentColor()
             // Own webview, own i18n runtime: without this the window renders its
             // chrome in English under a Hungarian UI and never follows a switch.
             unsubscribeLanguage = initWindowLanguageSync()
+            await initAccentColor()
             await initReduceTransparency()
             await initTextSize()
             initialized = true
@@ -73,8 +74,8 @@
     })
 
     onDestroy(() => {
-        unlistenFocusSelf?.()
         unsubscribeLanguage?.()
+        unlistenFocusSelf?.()
         unlistenRectTracking?.()
         cleanupAccentColor()
         cleanupReduceTransparency()
@@ -85,17 +86,17 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <main class="shortcuts-window" tabindex="-1">
-    <h1 class="sr-only">Keyboard shortcuts</h1>
+    <h1 class="sr-only">{tString('shortcuts.window.title')}</h1>
     <!-- Drag strip under the overlay traffic lights, like Settings/Viewer. -->
     <div class="window-drag-region" data-tauri-drag-region aria-hidden="true"></div>
 
     <header class="shortcuts-header">
         <div class="title-row">
-            <span class="title">Keyboard shortcuts</span>
-            <LinkButton onclick={editShortcuts}>Edit shortcuts</LinkButton>
+            <span class="title">{tString('shortcuts.window.title')}</span>
+            <LinkButton onclick={editShortcuts}>{tString('shortcuts.window.edit')}</LinkButton>
         </div>
         <div class="hide-empty">
-            <Checkbox bind:checked={hideEmpty}>Hide features with no shortcut</Checkbox>
+            <Checkbox bind:checked={hideEmpty}>{tString('shortcuts.window.hideEmpty')}</Checkbox>
         </div>
     </header>
 
@@ -103,7 +104,7 @@
         <div class="shortcuts-scroll" tabindex="-1">
             <ShortcutsList {hideEmpty} />
             <footer class="shortcuts-footer">
-                <LinkButton onclick={editShortcuts}>Edit shortcuts in Settings</LinkButton>
+                <LinkButton onclick={editShortcuts}>{tString('shortcuts.window.editInSettings')}</LinkButton>
             </footer>
         </div>
     {/if}

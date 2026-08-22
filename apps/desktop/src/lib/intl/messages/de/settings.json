@@ -2199,5 +2199,13 @@
   "settings.mediaIndex.chosenFolders.removeAria": "{folder} aus der Indizierung entfernen",
   "@settings.mediaIndex.chosenFolders.removeAria": {
     "sourceHash": "338e30a"
+  },
+  "settings.window.title": "Einstellungen",
+  "@settings.window.title": {
+    "sourceHash": "74a883a"
+  },
+  "settings.window.loading": "Einstellungen werden geladen …",
+  "@settings.window.loading": {
+    "sourceHash": "e71a134"
   }
 }

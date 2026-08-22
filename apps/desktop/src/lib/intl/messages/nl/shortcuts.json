@@ -224,5 +224,21 @@
   "shortcuts.section.resetAll": "Herstel alles naar standaard",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.window.title": "Sneltoetsen",
+  "@shortcuts.window.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.window.edit": "Bewerk sneltoetsen",
+  "@shortcuts.window.edit": {
+    "sourceHash": "7d9889d"
+  },
+  "shortcuts.window.hideEmpty": "Verberg functies zonder sneltoets",
+  "@shortcuts.window.hideEmpty": {
+    "sourceHash": "d3cb18e"
+  },
+  "shortcuts.window.editInSettings": "Bewerk sneltoetsen in Instellingen",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "847b526"
   }
 }

@@ -2741,5 +2741,15 @@
     "placeholders": {
       "folder": "the folder's absolute path, like /Users/dave/Photos"
     }
+  },
+
+  "settings.window.title": "Settings",
+  "@settings.window.title": {
+    "description": "Name of Cmdr's own Settings window, rendered as its screen-reader-only page heading. A NOUN, the name of the window. This is the word the rest of the app uses whenever it points the user at Cmdr's preferences (\"Edit shortcuts in Settings\"), so match whatever a Mac app's own preferences window is called in your language. It is NOT macOS's System Settings app, which has its own localized name Cmdr reads from the OS."
+  },
+
+  "settings.window.loading": "Loading settings…",
+  "@settings.window.loading": {
+    "description": "Placeholder text filling the Settings window for the moment between it opening and its stored settings arriving. Usually invisible; on a slow disk it shows for a beat. A progress statement, not an instruction. The trailing character is a real ellipsis (…, U+2026), not three periods; keep it."
   }
 }

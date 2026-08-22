@@ -223,5 +223,21 @@
   "shortcuts.section.resetAll": "Alle auf Standard zurücksetzen",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.window.title": "Tastaturkurzbefehle",
+  "@shortcuts.window.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.window.edit": "Kurzbefehle bearbeiten",
+  "@shortcuts.window.edit": {
+    "sourceHash": "7d9889d"
+  },
+  "shortcuts.window.hideEmpty": "Funktionen ohne Kurzbefehl ausblenden",
+  "@shortcuts.window.hideEmpty": {
+    "sourceHash": "d3cb18e"
+  },
+  "shortcuts.window.editInSettings": "Kurzbefehle in den Einstellungen bearbeiten",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "847b526"
   }
 }

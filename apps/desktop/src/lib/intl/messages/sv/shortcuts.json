@@ -223,5 +223,21 @@
   "shortcuts.section.resetAll": "Återställ alla till förval",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.window.title": "Tangentbordsgenvägar",
+  "@shortcuts.window.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.window.edit": "Redigera genvägar",
+  "@shortcuts.window.edit": {
+    "sourceHash": "7d9889d"
+  },
+  "shortcuts.window.hideEmpty": "Dölj funktioner utan genväg",
+  "@shortcuts.window.hideEmpty": {
+    "sourceHash": "d3cb18e"
+  },
+  "shortcuts.window.editInSettings": "Redigera genvägar i Inställningar",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "847b526"
   }
 }

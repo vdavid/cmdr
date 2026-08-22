@@ -2190,5 +2190,13 @@
   "settings.mediaIndex.chosenFolders.removeAria": "将 {folder} 移出索引",
   "@settings.mediaIndex.chosenFolders.removeAria": {
     "sourceHash": "338e30a"
+  },
+  "settings.window.title": "设置",
+  "@settings.window.title": {
+    "sourceHash": "74a883a"
+  },
+  "settings.window.loading": "正在加载设置…",
+  "@settings.window.loading": {
+    "sourceHash": "e71a134"
   }
 }
