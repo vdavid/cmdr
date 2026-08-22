@@ -397,12 +397,21 @@ mod tests {
     /// → "Operation not permitted", while a `com.example.*` name succeeds). The
     /// read path is exercised against a name we ARE allowed to write; the constant
     /// itself is covered by `the_domain_id_xattr_name_is_the_one_macos_uses`.
+    ///
+    /// ⚠️ The stand-in name is per platform, and this module compiles everywhere.
+    /// Linux's VFS only accepts the `user.`, `trusted.`, `security.`, and `system.`
+    /// namespaces, so any other prefix comes back `EOPNOTSUPP` and the fixture, not
+    /// the reader, is what fails (same reason `cmdr-archive`'s `mutator_test` picks
+    /// its tag name per platform).
     #[test]
     fn a_directory_carrying_the_xattr_reports_its_value_verbatim() {
         let dir = tempfile::tempdir().expect("temp dir");
         let path = dir.path().to_string_lossy().into_owned();
         let value = "com.example.provider/2f3c1a90-0000-4000-8000-000000000001";
+        #[cfg(target_os = "macos")]
         let writable_name = "com.example.file-provider-domain-id";
+        #[cfg(not(target_os = "macos"))]
+        let writable_name = "user.cmdr-file-provider-domain-id";
         xattr::set(&path, writable_name, value.as_bytes()).expect("set the stand-in xattr");
 
         assert_eq!(
