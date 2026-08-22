@@ -8,6 +8,10 @@ ratio.
 ✅ **It is fixed** (2026-08-22). What shipped, and the before/after on a running app, are at the bottom; the
 investigation is kept because the measurement traps in it are the ones anybody re-opening this question will hit first.
 
+**Who it could have hurt, which releases carried it, and whether it recovers on its own**:
+`listing-wedge-impact-2026-08-22.md`. It also settles that the row-10 result below is the fan-out rather than the scan,
+which changes the mental model this note leaves you with.
+
 ⚠️ **Both sides are DEBUG builds.** Quote the RATIOS, never the absolute milliseconds or percentages, off this note. ⚠️
 Read `idle-cpu-attribution-2026-08-03.md` first. Its rules were applied here: userspace and file-IO are split explicitly
 below, no ordering rests on one `sample` window, and the mechanism was confirmed by reading the code before any

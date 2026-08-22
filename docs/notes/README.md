@@ -52,7 +52,15 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   the whole call path is byte-identical). The MCP pane mirror fetches its visible range one row at a time, each row a
   synchronous `#[tauri::command]` on the main thread doing a linear scan to its index, so one index event costs ~7.4M
   predicate evaluations at the bottom of a 74k listing and nothing at the top. Read it before reading a "URL-scheme
-  handler" sample as the asset protocol; on macOS that IS Tauri's IPC transport. Carries the ranked fixes, none taken.
+  handler" sample as the asset protocol; on macOS that IS Tauri's IPC transport. Carries the ranked fixes and, at the
+  bottom, what shipped on 2026-08-22 with the before/after on a running app.
+- `listing-wedge-impact-2026-08-22.md` — the blast-radius companion to the note above: which releases carried each
+  escalation (reachable since v0.5.0, driven with no user input since v0.23.0, worst since v0.37.0, still in every
+  released build), whether it recovers on its own (it saturates rather than deadlocks, but the user's way out runs
+  through the wedged main thread), and what the live feedback loops say. **The answer to "did testers hit it" is that we
+  cannot tell and could not have**: a hang is neither an error nor a crash, there is no hang detector, the heartbeat
+  keeps beating from a background thread, and one install out of 765 has auto error reporting on. Read it before
+  treating a quiet `#error-reports` channel as evidence that a defect did not bite.
 
 **Load-bearing as regression anchors:**
 
