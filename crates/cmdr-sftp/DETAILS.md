@@ -155,12 +155,10 @@ connection parameter. The store is keyed `service = "host:port"`, `scope = Some(
 two accounts on one server would share an entry and a reconnect could retry the wrong account's secret straight into a
 lockout. ❗ `credentials()` may block on a Keychain prompt, so it goes to a blocking task.
 
-**A rung with nothing behind it is not a rung the server refused**, and the two
-carry different typed answers: `NeedsCredentials` when nothing was ever offered
-(no agent, no readable key file, no stored secret), `AuthenticationRejected` when
-something was offered and turned down. Collapsing them tells someone who has
-never entered a password that their password is wrong, and hides the one case a
-sign-in prompt actually fixes.
+**A rung with nothing behind it is not a rung the server refused**, and the two carry different typed answers:
+`NeedsCredentials` when nothing was ever offered (no agent, no readable key file, no stored secret),
+`AuthenticationRejected` when something was offered and turned down. Collapsing them tells someone who has never entered
+a password that their password is wrong, and hides the one case a sign-in prompt actually fixes.
 
 **Keyboard-interactive answers a single hidden prompt and no more.** That's the `PasswordAuthentication no` +
 `KbdInteractiveAuthentication yes` shape a hardened server without 2FA takes. Anything longer is real 2FA and needs a
