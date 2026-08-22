@@ -37,9 +37,10 @@ landing on disk and a reviewable proposal.
 Four ratcheted budgets move, and `.claude/rules/file-length-allowlist.md` forbids raising any of them as a side effect.
 Ask once, up front, rather than discovering them at the end of the milestone.
 
-1. **`index-crate-isolation` root promises, 51 → 52.** `scripts/check/checks/index-crate-isolation.go:152` pins the
-   count, and its own comment says a new payload enum always spends one. This is an ERROR-level check; the tap's rollup
-   payload cannot land without it.
+1. **`index-crate-isolation` root promises, 51 → 52 or 53.** `scripts/check/checks/index-crate-isolation.go:152` pins
+   the count, and its own comment says a new payload type always spends one. `FolderChangeRollup` spends one, and a
+   public change-kind enum would spend a second. ⚠️ **Recount against the final API shape before asking**, so the ask
+   isn't reopened mid-milestone. This is an ERROR-level check; the tap's payload cannot land without it.
 2. **`invariant-density`** for `crates/cmdr-index` (372) and `apps/desktop/src-tauri` (326). M1 adds ❌ rules. Where an
    invariant can be encoded in a type instead, do that first; what remains needs the bump.
 3. **`claude-md-length`.** `crates/cmdr-index/src/indexing/watch/CLAUDE.md` is at 598 words and
@@ -111,8 +112,15 @@ owns the `Inbox`, one long-lived write connection, and the timer:
   was not told and why).
 - Admit: fold the rollup in, `persist::save_row` for the touched row.
 - Drain: `persist::clear`.
-- ⚠️ Bounded, so a pathological burst drops rather than growing without limit, and it logs what it dropped. The tap's
-  payload is signal, not correctness (the folder will change again).
+- ⚠️ Bounded for ROLLUPS only, so a pathological burst drops rather than growing without limit, and it logs what it
+  dropped. The tap's payload is signal, not correctness (the folder will change again).
+- ⚠️ **Control messages must never drop.** A settings change re-arms the timer and re-prices queued rows (item 7), and
+  the force-wake command (item 8) is a message too. Dropping one is a bug, not degraded signal. Either make the channel
+  an enum whose non-rollup variants bypass the bound, or run a second unbounded control channel.
+- **The sender is a process-global from the first rollup; the consumer starts in `agent::start`.** Rollups arriving
+  before then sit in the buffer and are consumed once the thread comes up, so some of launch replay survives. ❌ Don't
+  size the buffer to catch all of it: readiness can't even be evaluated before the store is open, since consent lives in
+  `main.db`, so anything older than that would be refused admission anyway.
 
 This also gives item 5 somewhere to live: the timer fires on this thread, which already holds the inbox and a writer.
 
@@ -167,9 +175,10 @@ happened IN.
   doesn't raise. ⚠️ **That bundling breaks the existing churn scanner**, which asserts each driver file literally
   contains `ChurnObserver::from_env(` (`churn_monitor/tests.rs:218`). Either keep that literal at the driver site or
   update the scanner in the same commit.
-- A new `IndexEvent::FolderActivity { volume_id, window_start, folders: Vec<FolderChangeRollup> }`, where the rollup
-  carries the folder path, the four counts, and **`last_event_at`** (`EventBundle` needs it, and it's what `reconcile`'s
-  staleness horizon reads).
+- A new `IndexEvent::FolderActivity { volume_id, observed_at, folders: Vec<FolderChangeRollup> }`, where the rollup
+  carries the folder path, the four counts, and **`last_event_at`**. ⚠️ `observed_at` is the batch's own instant, ❌ not
+  a window start: the app quantizes (see below), so a field named `window_start` here would lie about who decided the
+  policy (`EventBundle` needs it, and it's what `reconcile`'s staleness horizon reads).
 - ⚠️ **Adding an `IndexEvent` variant is nine more compiler- or test-enforced edits**: the `IndexEventKind` variant
   (`sink.rs:355`), `ALL: [Self; 21]` → 22 (`:407`), a `slot_of` arm (`:438`), `IndexEvent::kind()` (`:493`),
   `volume_id()` (`:525`), `testing::events::one_of_every_kind()` (`:591`), the exhaustive `route()` match
@@ -190,13 +199,15 @@ call sites: production at `live.rs:285`, `live.rs:368`, `replay.rs:499`, `replay
 `indexing/tests/stress_tests_concurrency.rs:864`, `event_loop/tests/rename.rs:112` and `:708`,
 `watch/branches/tests.rs:122`.
 
-**Importance lookup.** `admit_if_permitted` needs a `FolderImportance` per bundle. `ImportanceIndex::open` is already
-cheap (`importance/read/mod.rs:167`: the connection is lazy and thread-local), so the cost to avoid is the per-folder
-`lookup`, not the open. Cache lookups behind a small bounded map with a short TTL (60 s; folders repeat heavily across
-batches and a stale weight only misprices one wake). Open per volume with `available_for(&volume_id)`, ❌ not
-`SignalSet::all()` — a network volume degrades its signal set, and `mcp/resources/importance.rs:120` is the precedent.
-Map `WeightLookup` to `FolderImportance` variant for variant, ❌ never through `score()`, which collapses `Floored` and
-`Unscored` into the same `0.0`.
+**Importance lookup, on the WRITER thread, after the channel.** ⚠️ Never in `route()`: item 3's rule is absolute, and
+`lookup` is SQLite behind a shared cache, which is both of the things the live-loop thread may not do.
+`admit_if_permitted` needs a `FolderImportance` per bundle. `ImportanceIndex::open` is already cheap
+(`importance/read/mod.rs:167`: the connection is lazy and thread-local), so the cost to avoid is the per-folder
+`lookup`, not the open. Cache lookups behind a small bounded map with a short TTL (60 s, a guess in the same class as
+the interest thresholds; folders repeat heavily across batches and a stale weight only misprices one wake). Open per
+volume with `available_for(&volume_id)`, ❌ not `SignalSet::all()` — a network volume degrades its signal set, and
+`mcp/resources/importance.rs:120` is the precedent. Map `WeightLookup` to `FolderImportance` variant for variant, ❌
+never through `score()`, which collapses `Floored` and `Unscored` into the same `0.0`.
 
 **Windowing.** The app side quantizes, ❌ not the crate: a 60 s agent policy must not leak into `cmdr-index`, and
 `Inbox::admit` merges on exact `(folder, window_start)` equality (`inbox.rs:101`). So the event's field is the batch's
@@ -209,22 +220,47 @@ but say so at the variant rather than leaving the contract silently violated.
 
 ### 5. The wake runner
 
+**Three threads, and which lock each holds.** ⚠️ Say this once, explicitly, because "the lock" means two different
+things in this milestone and conflating them produces either a stalled indexer or a raced thread:
+
+| Thread        | Owns                                         | Holds across the turn                             |
+| ------------- | -------------------------------------------- | ------------------------------------------------- |
+| Live loop     | nothing of ours                              | nothing; it sends to a channel and returns        |
+| Writer thread | the `Inbox`, its write connection, the timer | ❌ never blocks on a turn                         |
+| Wake thread   | the turn                                     | ✅ the per-conversation `ConversationLocks` guard |
+
+- **The INBOX is released before the turn.** The writer thread prepares, hands off, and goes straight back to servicing
+  the channel. If it blocked on the turn instead, the bounded channel would go unserviced for minutes and drop rollups
+  wholesale, which is a different thing entirely from the pathological-burst drop item 3 sanctions.
+- **The CONVERSATION lock is held across the turn**, taken on the wake thread. A wake thread is a real conversation the
+  user can reply to, so skipping `ConversationLocks` would let a reply and the wake's own turn run concurrently on one
+  thread.
+- **At most one wake in flight.** The writer thread keeps a flag and doesn't prepare a second one while the first runs.
+
 ⚠️ **A wake must not bypass `ChatRuntime`.** The rail never calls `run_turn` directly: `ChatRuntime::send_message`
-(`chat/runtime/mod.rs:147`) opens its own write connection and takes the per-thread single-flight lock. A wake thread is
-a real conversation the user can reply to, so skipping `ConversationLocks` lets a user reply and the wake's own turn run
-concurrently on one thread. Give `ChatRuntime` a `wake()` method that owns the connection and the lock and calls
-`run_wake` inside them. That also answers where the wake's `Connection` comes from, and keeps `main.db` to one
-long-lived writer discipline against its 5 s busy timeout.
+(`chat/runtime/mod.rs:147`) opens its own write connection and takes the single-flight lock. Give `ChatRuntime` a
+`wake()` method that does the same on the wake thread. ⚠️ **That means two write connections to `main.db`**, the writer
+thread's and the turn's, ❌ not the "one writer" discipline an earlier draft claimed. WAL makes it fine, and the writer
+thread's writes are single-row and never held across an await, so the worst case is a brief wait on the 5 s busy timeout
+rather than the multi-second stall a per-admit `open_write_connection` would have caused.
 
 **Split `run_wake` in two** while its only callers are tests. ⚠️ **Naively "taking the drained rows" would throw away
 the guarantee `job.rs:50-54` spells out**: the inbox is drained only once a turn is CERTAIN to run, so a budget too
 small to say anything, or a store that won't take a new thread, leaves the backlog exactly as it was. Rows handed over
 up front are lost on `NothingDue` and `Unavailable`, which are ordinary paths, not crashes. So:
 
-- **A prepare step, under the lock**: gates, `due_at`, `compact(&inbox.scored(), …)` WITHOUT draining, the empty-render
-  bail, and `create_conversation`. Only if all of those pass does it `drain()` and `persist::clear`. Every step that can
-  decline still does so before anything is spent, which is the property the original order exists for.
-- **A run step, lock released**: takes the digest, the conversation id, and the drained rows, and runs the turn.
+- **A prepare step, on the writer thread**: gates, `due_at`, `compact(&inbox.scored(), …)` WITHOUT draining, the
+  empty-render bail, and `create_conversation` (on the writer thread's connection). Only if all of those pass does it
+  `drain()` and `persist::clear`. Every step that can decline still does so before anything is spent, which is the
+  property the original order exists for.
+- **A run step, on the wake thread**: takes the digest, the conversation id, and the drained rows, and runs the turn
+  under `ChatRuntime::wake`.
+- **The sink**: a wake owns a plain `UnboundedSender<AgentChatEvent>` and drains it. In M1 the drain discards; M2 item 1
+  replaces the drain with the `tauri_specta::Event` bridge. `run_wake` requires a `&ChatEventSink`, so this is not
+  optional.
+- **The envelope**: captured the same way the rail does. With no main window (routine on macOS)
+  `try_state::<PaneStateStore>()` is `None` and the pane fields come back empty, which is the honest answer, ❌ not a
+  reason to skip the capture.
 - Take a dispatcher FACTORY (`&dyn Fn(i64) -> Box<dyn ToolDispatcher>`) rather than a built dispatcher.
   `AppHandleDispatcher::new(app, conversation_id)` scopes evidence to a thread and `LlmLogContext::agent_chat(id)` keys
   the LLM log the same way, but `run_wake` creates the conversation itself. Same for the LLM, built once the id is
@@ -232,10 +268,16 @@ up front are lost on `NothingDue` and `Unavailable`, which are ordinary paths, n
   thread being backed by facts delivered to another; the wrong scope makes `ImageFactsLedger` refuse every
   content-citing proposal.
 
-**The scheduler** is a timer that fires at `Inbox::next_deadline` and calls `ChatRuntime::wake`, re-arming when an admit
-pulls a deadline earlier or a setting changes. ⚠️ **Not a plain tokio task**: `run_turn` holds a rusqlite `Connection`
-across awaits, which is why `ask_cmdr_send_message` spawns a dedicated `std::thread` with a current-thread runtime. Copy
-that shape.
+**The scheduler** is the writer thread's timer, firing at `Inbox::next_deadline` and re-arming when an admit pulls a
+deadline earlier or a setting changes. ⚠️ **The wake thread is not a tokio task**: `run_turn` holds a rusqlite
+`Connection` across awaits, which is why `ask_cmdr_send_message` spawns a dedicated `std::thread` with a current-thread
+runtime. Copy that shape.
+
+**Observability, because nothing else reports it.** One counted log line per wake outcome (`Ran` with its proposal
+count, `NothingDue`, `NotReady`, `Unavailable`) plus the tier that triggered it, and the matching anonymous analytics
+event. Without it, the two deferred tuning knobs can never be ranked by anything but a support message, and "the agent
+is twitchy" arrives as a complaint rather than a number. Cheap here, and it's the only feedback path David gets before
+the thresholds are tuned.
 
 **Share the resolution with the rail.** `resolve_agent_llm` (`chat.rs:111`), `resolve_prompt_budget` (`:253`), and
 `capture_envelope` (`:289`) are private in `commands/agent/chat.rs`, which sits ABOVE `agent/`. ❌ Don't import upward:
@@ -244,6 +286,13 @@ over `R: Runtime`, and depends on `PaneStateStore`. The budget is read fresh per
 think with a different window than the rail, silently.
 
 ### 6. `nothing_to_suggest`
+
+⚠️ **Do this LAST in the milestone**, after items 1-5, 7, and 8 are green. It is the most expensive item here and it is
+not on the path to observable behavior: items 1-5 plus 7-8 already give a demonstrable loop (force a wake, watch a
+thread appear with a real digest). This one makes the loop polite, which only starts mattering once M2 makes wakes
+visible. It also drags in most of M1's non-tap surface: the tool checklist, two message keys and their translations, the
+overhead constant, a `ToolId` variant, `delete_conversation`, a reserved conversation row, a new `ConversationOrigin`
+token, and a WHERE clause on `list_conversations`.
 
 A wake that finds nothing must be able to say so. A typed tool call, ❌ never inferred from the model's wording
 (`error-string-match` forbids classifying control flow by text, and this is exactly that).
@@ -266,8 +315,8 @@ A wake that finds nothing must be able to say so. A typed tool call, ❌ never i
   fails.
 - ⚠️ **`FIXED_PROMPT_OVERHEAD_TOKENS = 4_972`** (`agent/chat/budget.rs:88`) is pinned by
   `every_call_pays_about_3_500_tokens_of_fixed_overhead` (`chat/context/cost_tests.rs:97`), which opens by asserting
-  `tools.len() == 14`. A new tool moves both. Update the constant AND `agent/chat/DETAILS.md`'s "what the budgets buy"
-  section, as the test's own failure message instructs.
+  `tools.len() == 14`. This tool takes it to 15 and moves the overhead with it. Update the constant AND
+  `agent/chat/DETAILS.md`'s "what the budgets buy" section, as the test's own failure message instructs.
 - ⚠️ **It is visible to the rail too**, since there is one `agent_tool_view()`. In a user chat it is a dead schema cost,
   and it must never delete anything there. Guard on the wake path, and test that a rail turn calling it is inert.
 - Needs a store-level `delete_conversation`; only `ask_cmdr_archive_conversation` exists today. Considered and rejected:
@@ -304,10 +353,13 @@ delay must re-arm the timer AND re-price the rows already waiting. ⚠️ Re-pri
 min-only, so a LENGTHENED delay would otherwise never apply to anything queued. Recompute `deliver_by` across the inbox
 on change.
 
-- **`askCmdr.proactive`** (boolean, default true). The middle tier between "no AI" and "AI that starts conversations",
-  and the fourth gate the scheduler checks. ⚠️ `settings.json` is sparse, so the Rust loader needs an explicit
-  `.unwrap_or(true)`; `unwrap_or_default()` silently ships default-off and nothing compares the Rust fallback to the TS
-  registry default. Pin it with a Rust unit test.
+- **`askCmdr.proactive`** (boolean). The middle tier between "no AI" and "AI that starts conversations", and the fourth
+  gate the scheduler checks. ⚠️ **Ships default FALSE in M1 and flips to true in M2.** M1 alone would create threads
+  with an English digest frozen in `main.db` and no indicator, no toast, and no readiness surface, so a release landing
+  between the two milestones would hand beta users invisible threads. The end state is David's decision (on whenever
+  consent and a provider both exist); this only stages it. ⚠️ `settings.json` is sparse, so the Rust loader needs an
+  explicit `.unwrap_or(...)` matching the registry default; `unwrap_or_default()` silently ships false forever. Pin it
+  with a Rust unit test.
 - **`askCmdr.wakeDelay`** (number, seconds, default 5). A slider over the HOT tier with stops at 5 s, 15 s, 30 s, 1 min,
   2 min, 5 min, 15 min, 30 min, 1 h, 2 h.
 
@@ -388,7 +440,13 @@ case: both relevant `CLAUDE.md`s are within 15 words of the 600 warn.
 
 ## M2: the surfaces
 
-**Intent**: make the agent's noticing visible and interruptible. Everything here meets human eyes.
+**Intent**: make the agent's noticing visible and interruptible, and flip `askCmdr.proactive` on. Everything here meets
+human eyes.
+
+⚠️ **"Interruptible" needs a cancel, and nothing owns one today.** `run_wake` takes a `CancellationToken` and no caller
+trips it. A wake is a multi-second background action spending the user's money, which `docs/design-principles.md`
+requires be cancelable, "not just the UI but any background processes as well". The status-corner indicator is its home:
+the click that opens the thread also needs a way to stop the turn.
 
 ⚠️ **`i18n-coverage` is an ERROR, so "English first, translate later" is not a landable sequence.** A key missing from
 any of the nine non-en locales, or byte-identical to English without a justification, fails the build. Every commit
@@ -516,9 +574,9 @@ the head and say in the prompt that it was truncated. Keep a byte cap too, as a 
 disk. When the directory cap is full a write returns a TYPED refusal telling the model to prune, ❌ never a silent
 failure.
 
-⚠️ **`FIXED_PROMPT_OVERHEAD_TOKENS = 4_972`** (`budget.rs:88`) moves again here: `cost_tests.rs:97` asserts
-`tools.len() == 14` and then the measured overhead. Two more tools, so update the constant and `agent/chat/DETAILS.md`'s
-"what the budgets buy".
+⚠️ **`FIXED_PROMPT_OVERHEAD_TOKENS`** (`budget.rs:88`) moves again here: `cost_tests.rs:97` asserts the tool count and
+then the measured overhead. M1 took it from 14 to 15; these two take it to 17. Update the constant and
+`agent/chat/DETAILS.md`'s "what the budgets buy".
 
 ### 5. `Access::Memory`
 
@@ -667,8 +725,13 @@ the outcome reaches memory on both approve and reject, and a rejection with `ask
 
 ## Execution order
 
-Sequential: M3.1 (the `CMDR_DATA_DIR` bug, independent) → M1 → M2 → M3 → M4. Inside M1 the order is the numbered one,
-and it is deliberate: the inbox's signature settles before the tap is wired against it.
+Sequential: M3.1 (the `CMDR_DATA_DIR` bug, independent) → M1 → M2 → M3 → M4. Inside M1: items 1-5, then 7-8, then 6.
+That order is deliberate twice over. The inbox's signature settles before the tap is wired against it, and
+`nothing_to_suggest` (item 6) lands last because it carries most of M1's non-tap surface while adding nothing to the
+milestone's observable behavior.
+
+⚠️ **`askCmdr.proactive` ships false in M1 and flips in M2**, so a release landing between them can't hand beta users
+threads they can't see.
 
 ❌ Don't parallelize M1's steps across agents. The tap, the writer thread, and the runner meet at one channel and one
 event variant, and three agents converging on `process_live_batch`'s signature is how you get a merge that compiles and
