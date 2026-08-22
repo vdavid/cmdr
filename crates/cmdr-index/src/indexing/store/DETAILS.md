@@ -303,8 +303,11 @@ busy.
 
 **The durable write-connection population**, for a plain two-volume session:
 
-- 2 per volume on `index.db`: `IndexStore`'s own read-write connection (`store/connection.rs::try_open`) plus
-  `IndexWriter`'s. The `IndexManager` holds both for the volume's life.
+- 2 per volume on `index.db`: `IndexStore`'s own connection (`store/connection.rs::try_open`) plus `IndexWriter`'s. The
+  `IndexManager` holds both for the volume's life. ⚠️ The store's field is called `read_conn`, but it is opened
+  read-WRITE and takes `apply_pragmas(conn, false)`, so it carries the full 16 MiB budget. It has to be writable (it
+  creates the file and schema, and `set_drive_index_intent` stamps `meta` rows through it), so this is a real
+  connection, not a mislabelled one — but it means each volume's `index.db` costs 32 MiB of ceiling, not 16.
 - 1 per volume on `importance.db` (`ImportanceWriter`) and 1 per volume on `media.db` (`MediaWriter`), handed out by the
   two writer registries. ⚠️ Those registries never drain — `shutdown_all` exists and nothing calls it — so these outlive
   an unmount and only ratchet up as volumes are mounted.
