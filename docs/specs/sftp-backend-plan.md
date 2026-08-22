@@ -275,7 +275,8 @@ Landed. What it means for the milestones after it:
   `StackOrchestrator`, holding one lease per stack under its own PID.
 - **A check declares `NeedsContainers []StackMode`**, so `desktop-rust-integration-tests` can ask for the SMB and SFTP
   stacks together. `TestEveryDeclaredStackModeResolves` resolves every declared pair against the registry.
-- **The SFTP stack is registered** as project `sftp-fixture`, compose dir `apps/desktop/test/sftp-servers/.compose`,
+- **The SFTP stack is registered** as project `sftp-fixture`, compose dir `apps/desktop/test/sftp-servers` (the compose
+  file sits there directly; `.compose/` is SMB's marker for a vendored tree),
   port env prefix `SFTP_FIXTURE_`, lock `/tmp/cmdr-sftp.lock`, leases `/tmp/cmdr-sftp-leases` — with an **empty service
   table**. Registration is inert: nothing asks for the stack, `Acquire` refuses every mode, and `Up` reports the missing
   compose dir rather than letting docker guess at a compose file.

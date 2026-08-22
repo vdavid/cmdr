@@ -582,7 +582,8 @@ adopt-or-reconcile policy, the dead-PID sweep, and the down-at-zero teardown are
 - **An unresolvable compose dir is an error too**, rather than a warning plus docker's default file lookup — which would
   bring up whatever compose file sat near the cwd under our project name.
 - **The SFTP stack is registered with an empty service table** until its fixture lands under
-  `apps/desktop/test/sftp-servers/`. Registration is inert data: no check asks for it, `Acquire` refuses every mode, and
+  `apps/desktop/test/sftp-servers/` (its compose file sits there directly: it's first-party, so there's no vendored base
+  to keep under a `.compose/` marker dir the way SMB does). Registration is inert data: no check asks for it, `Acquire` refuses every mode, and
   `Up` reports the missing compose dir. Turning the lane on is two lines: that stack's service table, and
   `NeedsContainers` on `desktop-rust-integration-tests`.
 

@@ -53,8 +53,9 @@ var SMB = &Stack{
 	servicesWithoutHealthcheck: map[string]bool{"smb-consumer-flaky": true},
 }
 
-// SFTP is the SFTP fixture stack: first-party, so one compose file rather than a
-// vendored base plus an override.
+// SFTP is the SFTP fixture stack: first-party, so one compose file sitting
+// directly in the fixture dir rather than a vendored base plus an override under
+// `.compose/`.
 //
 // Its service table is empty until the fixture lands under
 // `apps/desktop/test/sftp-servers/`. Registration is inert data, so an empty
@@ -67,7 +68,7 @@ var SFTP = &Stack{
 	ProjectName:   "sftp-fixture",
 	lockFile:      "cmdr-sftp.lock",
 	leaseDirName:  "cmdr-sftp-leases",
-	composeDirRel: "apps/desktop/test/sftp-servers/.compose",
+	composeDirRel: "apps/desktop/test/sftp-servers",
 	composeDirEnv: "CMDR_SFTP_COMPOSE_DIR",
 	composeFiles:  []string{"docker-compose.yml"},
 	// Host ports live in their own pinned range, clear of SMB's 11480+ and
