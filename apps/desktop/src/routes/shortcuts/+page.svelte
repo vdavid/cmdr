@@ -2,7 +2,7 @@
     import { onMount, onDestroy } from 'svelte'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-    import { initWindowSettings } from '$lib/settings/window-settings'
+    import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initializeShortcuts } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
@@ -21,6 +21,7 @@
     let unlistenFocusSelf: UnlistenFn | undefined
     let unlistenRectTracking: (() => void) | undefined
 
+    let unsubscribeLanguage: (() => void) | undefined
     function editShortcuts() {
         // Deep-link to the editable list. This window stays read-only and lacks
         // window-creation capability, so it asks the main window to open Settings
@@ -49,6 +50,9 @@
             // Settings must load before text-size/theme reads; shortcuts before the list.
             await Promise.all([initWindowSettings(), initializeShortcuts()])
             await initAccentColor()
+            // Own webview, own i18n runtime: without this the window renders its
+            // chrome in English under a Hungarian UI and never follows a switch.
+            unsubscribeLanguage = initWindowLanguageSync()
             await initReduceTransparency()
             await initTextSize()
             initialized = true
@@ -70,6 +74,7 @@
 
     onDestroy(() => {
         unlistenFocusSelf?.()
+        unsubscribeLanguage?.()
         unlistenRectTracking?.()
         cleanupAccentColor()
         cleanupReduceTransparency()

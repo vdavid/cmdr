@@ -12,7 +12,7 @@
  * That's not a second initialization: the call is promise-memoized, so the
  * page's await and the root layout's await resolve off the same run.
  *
- * Coverage guard: `routes/reactive-settings-coverage.test.ts`.
+ * Coverage guard: `routes/window-route-coverage.test.ts`.
  */
 
 import { setLocale } from '$lib/intl/messages.svelte'
@@ -84,6 +84,11 @@ export async function initWindowSettings(pathname?: string): Promise<void> {
  * store) so the whole window re-localizes live.
  *
  * Applies twice on purpose. The persisted value is available synchronously, so
+ * ❌ A window that gates on `initWindowSettings()` and skips this call sits on
+ * the WEBVIEW's own tag forever: English copy under a Hungarian UI, and
+ * `58.03 KB` where the main pane writes `58,03 KB`. Nothing throws, so
+ * `routes/window-route-coverage.test.ts` reads the sources and fails the pair.
+ *
  * an explicit language is right from the first paint; the OS answers come from
  * Rust over IPC, so they land a tick later and the second apply is what picks
  * them up. ❌ Don't await them before the first apply: that would gate the

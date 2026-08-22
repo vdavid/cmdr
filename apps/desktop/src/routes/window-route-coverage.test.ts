@@ -1,17 +1,14 @@
 /**
- * Every window route that renders settings-dependent UI must initialize the
- * reactive-settings layer.
+ * Structural guards over the window route entry points: a new window can't
+ * silently come up missing a piece of per-window wiring.
  *
- * `reactive-settings.svelte.ts` holds module-level `$state` seeded once by
- * `initReactiveSettings()`. A window that never calls it renders every reactive
- * setting at its registry default forever: sizes in binary when the user picked
- * SI, dates in ISO when they picked a custom format, and so on. Nothing throws,
- * nothing logs, so the only way to catch it is structurally.
+ * Each Cmdr window is its own webview with its own module graph, so every
+ * cross-cutting layer starts empty in every one of them and has to be seeded
+ * per window. Nothing throws when a window forgets — it just renders wrong
+ * forever — so the only way to catch it is by reading the sources.
  *
- * The check walks each route's static import graph. If any reachable module
- * imports from `reactive-settings.svelte`, the route must be covered by an
- * initialization call in itself or in one of its ancestor layouts. The root
- * layout covers every window, which is the point: a new window can't forget.
+ * Three guards live here: the reactive-settings layer, the language and
+ * formatting sync, and the store-access classification.
  *
  * Sibling guard: `window-settings.test.ts` pins the route → settings-access
  * classification the root layout's init reads.
@@ -32,6 +29,18 @@ const REACTIVE_SETTINGS_MODULE = 'reactive-settings.svelte'
 
 /** Either name counts as "this window seeds the reactive layer". */
 const INIT_CALLS = ['initWindowSettings(', 'initReactiveSettings(']
+
+/**
+ * The call that gates a window's body on settings being loaded. A page making
+ * it is a secondary window with its own webview, its own i18n runtime, and so
+ * its own language and formatting to sync. (The root layout makes the same call
+ * for every window; the pages that ALSO make it are the ones that are windows in
+ * their own right.)
+ */
+const WINDOW_GATE_CALL = 'initWindowSettings('
+
+/** What such a window must call to follow the UI language and the OS's formats. */
+const LANGUAGE_SYNC_CALL = 'initWindowLanguageSync('
 
 /** Static `import`/`export … from '…'` plus dynamic `import('…')`. */
 const IMPORT_RE = /(?:import|export)\s+(?:[\s\S]*?)\s*from\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)/g
@@ -128,7 +137,7 @@ function routePathFor(pageRelPath: string): string {
   return `/${segments.join('/')}`
 }
 
-describe('reactive-settings coverage', () => {
+describe('window route coverage', () => {
   const pages = windowRoutePages()
 
   it('finds the window route pages', () => {
@@ -157,6 +166,27 @@ describe('reactive-settings coverage', () => {
       'These window routes render settings-dependent UI but never seed the reactive layer, ' +
         'so every reactive setting silently falls back to its registry default. ' +
         'Initialize it in the route or in an ancestor layout.',
+    ).toEqual([])
+  })
+
+  it('syncs the language and the OS formats in every secondary window', () => {
+    // Each webview resolves its own locale. A window that seeds settings but
+    // never calls `initWindowLanguageSync()` sits on the webview's own tag for
+    // the rest of its life: it renders English under a Hungarian UI language,
+    // formats `58.03 KB` where the main window writes `58,03 KB`, and never
+    // reacts to a live language change. Nothing throws — the copy is simply in
+    // the wrong language — so this reads the sources instead.
+    const missing = pages.filter((page) => {
+      const source = readFileSync(path.join(routesRoot, page), 'utf8')
+      return source.includes(WINDOW_GATE_CALL) && !source.includes(LANGUAGE_SYNC_CALL)
+    })
+
+    expect(
+      missing,
+      `These windows gate on settings but never sync their language, so they stay on the webview's ` +
+        `own locale forever. Call \`${LANGUAGE_SYNC_CALL})\` right after \`${WINDOW_GATE_CALL})\` in ` +
+        `\`onMount\`, keep the returned teardown, and call it from \`onDestroy\`. See ` +
+        `\`$lib/settings/window-settings.ts\`.`,
     ).toEqual([])
   })
 

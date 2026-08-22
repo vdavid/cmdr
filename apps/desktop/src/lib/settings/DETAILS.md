@@ -236,9 +236,10 @@ wraps every route — so a new window gets settings for free and can't forget.
   something new that depends on a setting, extend all three; a value missing from the snapshot silently reads as its
   registry default.
 
-- Two guards: `apps/desktop/src/routes/reactive-settings-coverage.test.ts` walks each route's import graph and fails if
-  a window that reaches `reactive-settings.svelte` isn't initialized; `window-settings.test.ts` pins the access map
-  against the capability files and fails if a new route has no entry.
+- Three guards: `apps/desktop/src/routes/window-route-coverage.test.ts` walks each route's import graph and fails if a
+  window that reaches `reactive-settings.svelte` isn't initialized, and fails a page that calls `initWindowSettings()`
+  without `initWindowLanguageSync()` (the shape of the viewer's wrong-locale formatting bug);
+  `window-settings.test.ts` pins the access map against the capability files and fails if a new route has no entry.
 
 Before this, only `(main)/+layout.svelte` initialized the reactive layer, so every OTHER window rendered every reactive
 setting at its registry default: sizes in binary when the user had picked SI, dates in ISO when they had picked a custom

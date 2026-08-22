@@ -3,7 +3,7 @@
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { trackOwnRect } from '$lib/window-positioning'
     import { deferWindowClose } from '$lib/window-close-defer'
-    import { initWindowSettings } from '$lib/settings/window-settings'
+    import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import { getAppLogger } from '$lib/logging/logger'
@@ -136,6 +136,7 @@
     let pageElement: HTMLElement | undefined = $state()
     let selected: SectionId = $state('appearance')
     let unlistenRectTracking: (() => void) | undefined
+    let unsubscribeLanguage: (() => void) | undefined
 
     /** Sub-anchor for the catalog page (the bit after `components-`), or null for top of catalog. */
     const catalogAnchor = $derived.by((): string | null => {
@@ -180,6 +181,9 @@
             // it live, instead of resting on the Cmdr-gold CSS fallback. Light/dark/system
             // mode already applies app-wide via Tauri's `setTheme`, so it needs no work here.
             await initWindowSettings()
+            // Own webview, own i18n runtime: without this the window sits on the
+            // webview's own tag and formats sizes and dates unlike the main pane.
+            unsubscribeLanguage = initWindowLanguageSync()
             await initAccentColor()
             await initReduceTransparency()
         } catch (error) {
@@ -192,6 +196,7 @@
     })
 
     onDestroy(() => {
+        unsubscribeLanguage?.()
         unlistenRectTracking?.()
         cleanupAccentColor()
         cleanupReduceTransparency()

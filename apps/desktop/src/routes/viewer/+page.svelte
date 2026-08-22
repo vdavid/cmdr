@@ -20,7 +20,7 @@
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { getSetting, setSetting } from '$lib/settings'
-    import { initWindowSettings } from '$lib/settings/window-settings'
+    import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
@@ -162,6 +162,8 @@
             tailMode = !next
         }
     }
+
+    let unsubscribeLanguage: (() => void) | undefined
 
     // Window lifecycle state: prevents closing before WebKit is fully initialized
     let windowReady = $state(false)
@@ -800,6 +802,10 @@
         // path: the backend snapshot plus cross-window change events. Non-throwing;
         // falls back to registry defaults.
         await initWindowSettings()
+        // This webview has its own i18n runtime, so it needs its own language and
+        // formatting sync: without it the viewer sits on the webview's tag and
+        // formats sizes and dates differently from the main pane.
+        unsubscribeLanguage = initWindowLanguageSync()
         scroll.wordWrap = getSetting('viewer.wordWrap')
         warningSuppressed = getSetting('fileViewer.suppressBinaryWarning')
 
@@ -852,6 +858,7 @@
     })
 
     onDestroy(() => {
+        unsubscribeLanguage?.()
         cleanupAccentColor()
         cleanupReduceTransparency()
         cleanupTextSize()

@@ -9,7 +9,7 @@
  * checked here against `src-tauri/capabilities/*.json`, the actual grant.
  *
  * The companion guard that every window initializes at all is
- * `routes/reactive-settings-coverage.test.ts`.
+ * `routes/window-route-coverage.test.ts`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
