@@ -127,6 +127,11 @@ What differs is the ceiling. Raising `russh`'s channel window is what lets read 
 upload, because the SERVER's window governs and OpenSSH fixes it at 2 MiB. Depth is the whole of the write side's
 tuning.
 
+- ❗ **The transport clone is taken up front and no lock is held across the upload.** `write_from_stream` clones the
+  `Arc<SshConnection>` out from under a short read guard before a byte moves, then works on the clone; `File: Clone`
+  shares the one remote handle through an `Arc`, so the window's depth costs no extra `SSH_FXP_OPEN` and no other
+  operation on the channel waits behind the copy. (SMB's "never hold the session mutex across the upload" is the same
+  rule in its own shape.)
 - **Chunks are 255 KiB**, the read side's number and for the same reason. ⚠️ The engine's own negotiated `max_write_len`
   is behind its `__ci-tests` feature and can't be read, so a server with stingier limits splits each chunk internally
   instead: correct, and narrower in practice than the depth says.
@@ -464,13 +469,12 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
 - **`notify_mutation` is overridden**, and ❗ it has to be: there is no watcher on this backend, so it is the only thing
   that keeps a destination pane honest after a copy. One call per changed DIRECTORY, never per entry.
   `create_directory_all` patches exactly the SHALLOWEST level it created: its parent is the only level that existed
-  before, so it is the only listing a pane could be holding, and the levels under it are brand new.
-  ⚠️ **Known cost, not yet paid down**: a `Created` patch stats the new entry, so a staged write spends one extra round
-  trip on the temp and the landing rename spends another on the final name — about 100 ms per file at 50 ms RTT, which
-  roughly triples a small-file copy. `cmdr-smb` has the same shape and it costs ~1 ms on a LAN. The fix is either
-  building the temp's entry locally (nothing shows it — `file_system::staging::is_hidden_from_listings` filters staging
-  temps out of every pane) or skipping the temp's patch entirely, and both need the app's listing-mutation contract read
-  first.
+  before, so it is the only listing a pane could be holding, and the levels under it are brand new. ⚠️ **Known cost, not
+  yet paid down**: a `Created` patch stats the new entry, so a staged write spends one extra round trip on the temp and
+  the landing rename spends another on the final name — about 100 ms per file at 50 ms RTT, which roughly triples a
+  small-file copy. `cmdr-smb` has the same shape and it costs ~1 ms on a LAN. The fix is either building the temp's
+  entry locally (nothing shows it — `file_system::staging::is_hidden_from_listings` filters staging temps out of every
+  pane) or skipping the temp's patch entirely, and both need the app's listing-mutation contract read first.
 - **`paths_are_os_visible` → false, `local_path` → `None`.** Answering otherwise would let a drag hand Finder a path
   that resolves to nothing, or worse to a local file of the same name.
 - **`get_space_info` → `NotSupported`, `space_poll_interval` → `None`.** `statvfs@openssh.com` is **not reachable from
