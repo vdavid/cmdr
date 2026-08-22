@@ -38,7 +38,7 @@
 //! ## When to refresh
 //!
 //! The snapshot is built once at first access and cached, then dropped whenever
-//! the OS's locale answers move ([`invalidate`], called by the locale watcher in
+//! the OS's locale answers move (`invalidate`, called by the locale watcher in
 //! `intl/live_locale.rs`). Without that, a user who switches the macOS language
 //! mid-session keeps reading the OLD pane names, which is worse than showing
 //! English: the copy would point at a "System Settings" label that is no longer
@@ -82,14 +82,14 @@ impl LocalizedSystemStrings {
     }
 }
 
-/// Cached snapshot, built on first access and dropped by [`invalidate`] when the
+/// Cached snapshot, built on first access and dropped by `invalidate` when the
 /// OS's language moves. `None` means "not built yet", never "no answer": a
 /// rebuild always produces a full struct, falling back to the English defaults
 /// field by field.
 static SNAPSHOT: RwLock<Option<LocalizedSystemStrings>> = RwLock::new(None);
 
 /// The cached snapshot, building it if this is the first read since a launch or
-/// an [`invalidate`]. A read-lock hit on the common path.
+/// an `invalidate`. A read-lock hit on the common path.
 ///
 /// Two threads racing the first read both build; they'd build the same answer,
 /// and paying that once beats holding the write lock across two `.loctable`
@@ -105,6 +105,13 @@ pub fn snapshot() -> LocalizedSystemStrings {
 
 /// Drops the cached snapshot so the next read resolves against the language the
 /// user reads NOW. Called from the locale watcher when the OS's answers move.
+///
+/// macOS-only, and deliberately not stubbed for Linux: its one caller is the
+/// macOS locale observer (`intl/live_locale.rs`), Linux has no equivalent OS
+/// signal to hang it off, and `build_snapshot` there returns the English
+/// defaults unconditionally, so there'd be nothing to rebuild anyway. A Linux
+/// stub would just be dead code that `deny(unused)` is right to reject.
+#[cfg(target_os = "macos")]
 pub fn invalidate() {
     *SNAPSHOT.write().unwrap_or_else(|e| e.into_inner()) = None;
 }
