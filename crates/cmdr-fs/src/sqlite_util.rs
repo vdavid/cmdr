@@ -427,13 +427,13 @@ pub const READ_CONNECTION_BUDGET: usize = 256;
 /// writers hold 33 MiB of the slab, nine hold 63 of 64 with zero heap overflow.
 ///
 /// Closing this for real means shrinking the write budget at rest or draining
-/// idle writers, both behavior changes: `indexing/store/DETAILS.md` § "SQLite page
-/// memory is one process-wide slab".
+/// idle writers, both behavior changes: `indexing/store/DETAILS.md` § "The writer
+/// term is a design target, not an invariant".
 const CONCURRENTLY_SCANNING_WRITERS: usize = 2;
 
 const _: () = assert!(
     READ_PAGE_CACHE_KIB < WRITE_PAGE_CACHE_KIB,
-    "read connections must stay cheaper than the single write connection"
+    "read connections must stay cheaper than a write connection"
 );
 
 /// The sizing target in one line: the writers the slab is SIZED for, plus the
@@ -441,8 +441,8 @@ const _: () = assert!(
 ///
 /// **What it proves.** That the three constants stay mutually consistent. Nobody
 /// can raise [`READ_PAGE_CACHE_KIB`] or [`READ_CONNECTION_BUDGET`] past what the
-/// slab can hold without this failing to compile, which is the regression that
-/// created the treadmill in the first place.
+/// slab can hold without this failing to compile, and an unchecked read budget is
+/// what puts the slab on the treadmill below.
 ///
 /// **What it does NOT prove.** That the running process satisfies
 /// `Σ cache_size ≤ SHARED_PAGE_CACHE_BYTES`. It doesn't: the writer term is a

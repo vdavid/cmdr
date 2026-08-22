@@ -327,11 +327,12 @@ self-reinforcing: more writers raise the ceiling, and the raised ceiling is what
 - 9 writers (the real population): ceiling 144 MiB, slab held **63 MiB (99%)**, heap overflow 0.
 
 That 99% is the same treadmill the read budget removed, re-created by the writer term alone. The 63 → 17 MiB read-side
-win is real and unaffected (readers were the dominant term by ~33× before the change); what is not true is that the
-budgets bound the slab.
+win is real and unaffected — at 132 connections the readers contributed 1,056 MiB against these writers' 144, so they
+were the right term to cut first. What is not true is that the budgets bound the slab.
 
-⚠️ The earlier probe could not have caught this: it opens read connections only, so the writer term was invisible to it
-by construction. Any future measurement of this bound has to open writers.
+⚠️ `page_cache_probe`, the read-term harness, cannot see any of this: it opens read connections only, so the writer term
+is invisible to it by construction. That is why `writer_page_cache_probe` exists, and why a measurement of this bound
+has to open writers.
 
 **What would actually close it**, neither of which is a budget change:
 
