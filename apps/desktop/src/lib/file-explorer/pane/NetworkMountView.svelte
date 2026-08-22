@@ -18,6 +18,7 @@
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { eventMatchesCommand } from '$lib/shortcuts'
 
     const log = getAppLogger('fileExplorer')
 
@@ -278,6 +279,23 @@
             }
             return
         }
+        if (mountError) {
+            // The error pane replaced the share list, so neither browser is mounted and
+            // the delegation below would land on nothing: without this branch the whole
+            // keyboard went dead and the two buttons were the only way out.
+            // `share.back` (Escape / Backspace / ⌘↑) does what "Back" does.
+            //
+            // `stopPropagation` keeps it to ONE step: `⌘↑` is also `nav.parent` in the
+            // document dispatch map, which would step out of the host as well and skip
+            // the share list entirely (the same hazard `pane-key-router.ts`'s
+            // `handleOpenOrParentKey` stops for).
+            if (eventMatchesCommand(e, 'share.back')) {
+                e.preventDefault()
+                e.stopPropagation()
+                handleMountErrorBack()
+            }
+            return
+        }
         if (currentNetworkHost) {
             shareBrowserRef?.handleKeyDown(e)
         } else {
@@ -292,6 +310,17 @@
         } else {
             networkBrowserRef?.setCursorIndex(index)
         }
+    }
+
+    /**
+     * Rows the cursor can sit on right now. `0` while a mount runs or its failure is
+     * on screen: neither browser is mounted then, so a cursor move would land nowhere
+     * and the MCP tool would report a move that never happened.
+     */
+    export function getItemCount(): number {
+        if (isMounting || mountError) return 0
+        if (currentNetworkHost) return shareBrowserRef?.getItemCount() ?? 0
+        return networkBrowserRef?.getItemCount() ?? 0
     }
 
     /** Find an item by name, returns its index or -1. */

@@ -495,6 +495,16 @@ function commitVolumeSwitch(
     deps.persist({ kind: 'last-used-path', record: { volumeId: activeTab.volumeId, path: activeTab.path } })
   }
 
+  // Landing on Network means the host list unless the caller names a host, the same
+  // rule `commitHistoryWalk` applies on a history entry. The pane's own effect only
+  // clears the host when the pane LEAVES the network volume, so without this a
+  // re-select from inside a host (the picker, the breadcrumb, MCP `select_volume`)
+  // left the share list — or a mount-error pane — up, with no way out but a detour
+  // through another volume.
+  if (volumeId === 'network') {
+    deps.getPaneRef(pane)?.setNetworkHost(options.networkHost ?? null)
+  }
+
   if (!options.terminal && tryPinnedVolumeFork(deps, pane, { volumeId, path: targetPath })) {
     if (options.shiftFocus) deps.setFocusedPane(pane)
     deps.persist({ kind: 'pane-state', pane })

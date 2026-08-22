@@ -209,6 +209,12 @@
         scrollToIndex(cursorIndex)
     }
 
+    /** Every host plus the "Connect to server…" row. */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor's range check
+    export function getItemCount(): number {
+        return totalNavigableItems
+    }
+
     /** Refresh all shares (used by ⌘R shortcut). */
     export function refresh() {
         handleRefreshClick()

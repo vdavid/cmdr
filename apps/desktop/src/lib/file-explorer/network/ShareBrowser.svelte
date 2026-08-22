@@ -382,6 +382,12 @@
         return sortedShares.findIndex((s) => s.name.toLowerCase() === name.toLowerCase())
     }
 
+    /** The shares on offer; `0` while the login form is up or the host listed nothing. */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor's range check
+    export function getItemCount(): number {
+        return showLoginForm ? 0 : sortedShares.length
+    }
+
     /**
      * Returns the share under the cursor, or `null` when nothing valid is highlighted
      * (login form, empty list, out-of-range index). Consumed by the

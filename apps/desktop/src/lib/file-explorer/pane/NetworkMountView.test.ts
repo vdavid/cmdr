@@ -90,6 +90,8 @@ const naspi: ShareInfo = { name: 'naspi', isDisk: true, comment: null }
 /** The exported NetworkMountView API surface the tests drive. */
 interface NetworkMountViewApi {
   openCursorItem: () => void
+  handleKeyDown: (e: KeyboardEvent) => void
+  getItemCount: () => number
 }
 
 /** Narrows a queried element, failing the test with a readable message when absent. */
@@ -112,7 +114,7 @@ async function mountViewAndActivateShare() {
   })
   api.openCursorItem()
   await tick()
-  return { target, component }
+  return { target, component, api }
 }
 
 describe('NetworkMountView mount-failure auth loop', () => {
@@ -226,6 +228,59 @@ describe('NetworkMountView mount-failure auth loop', () => {
       // omits the key entirely, so this can't pass on its remount alone.
       expect(h.updateLeftPaneState).toHaveBeenCalledWith(expect.objectContaining({ mountError: null }))
     })
+
+    await unmount(component)
+  })
+
+  it('answers the keyboard in the error pane, one step back to the share list', async () => {
+    // The error pane mounts neither browser, so the delegation below it landed on
+    // nothing: every key went dead and the two buttons were the only way out. That
+    // also left the MCP `nav_to_parent` tool (a synthetic Backspace) acking `OK`
+    // while the pane sat still, with no way for an agent to leave a failed mount.
+    h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
+    const { target, component, api } = await mountViewAndActivateShare()
+
+    await vi.waitFor(() => {
+      expect(target.querySelector('.mount-error-state')).toBeTruthy()
+    })
+
+    const event = new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true })
+    api.handleKeyDown(event)
+    await tick()
+
+    expect(event.defaultPrevented, 'the key must be consumed here').toBe(true)
+    expect(target.querySelector('.mount-error-state'), 'the error pane must be gone').toBeNull()
+    // ONE step: back to this host's share list, not out to the host list.
+    await vi.waitFor(() => {
+      expect(target.querySelector('.share-row')).toBeTruthy()
+    })
+  })
+
+  it('counts no rows while the error pane is up, so a cursor move is refused instead of faked', async () => {
+    h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
+    const { target, component, api } = await mountViewAndActivateShare()
+
+    await vi.waitFor(() => {
+      expect(target.querySelector('.mount-error-state')).toBeTruthy()
+    })
+    expect(api.getItemCount()).toBe(0)
+
+    await unmount(component)
+  })
+
+  it('counts the shares on offer while the share list is up', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(NetworkMountView, {
+      target,
+      props: { paneId: 'left', isFocused: true, initialNetworkHost: host },
+    })
+    const api = component as unknown as NetworkMountViewApi
+
+    await vi.waitFor(() => {
+      expect(target.querySelector('.share-row')).toBeTruthy()
+    })
+    expect(api.getItemCount()).toBe(1)
 
     await unmount(component)
   })

@@ -87,6 +87,8 @@ export interface FilePaneAPI {
   adoptListing(state: SwapState): void
 
   findNetworkItemIndex(name: string): number
+  /** Cursor-addressable rows in the network view (hosts or shares), `0` outside it. */
+  getNetworkItemCount(): number
   refreshNetworkHosts(): void
   setNetworkHost(host: NetworkHost | null): void
   /** Queue a share name to auto-mount once the share browser is ready. */
@@ -181,6 +183,8 @@ export interface BrowserAPI {
   setCursorIndex(index: number): void
   findItemIndex(name: string): number
   openCursorItem(): void
+  /** How many rows the cursor can sit on, so a caller can range-check an index. */
+  getItemCount(): number
 }
 
 /** Typed interface for NetworkBrowser's exported methods (extends BrowserAPI with refresh). */
@@ -213,6 +217,11 @@ export interface NetworkMountViewAPI {
   setCursorIndex(index: number): void
   findItemIndex(name: string): number
   openCursorItem(): void
+  /**
+   * Rows the cursor can sit on in whichever browser is up, and `0` while a
+   * mount is running or its failure is on screen (neither browser is mounted then).
+   */
+  getItemCount(): number
   refreshNetworkHosts(): void
   setNetworkHost(host: NetworkHost | null): void
   /**

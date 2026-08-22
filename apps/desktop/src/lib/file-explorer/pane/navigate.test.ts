@@ -671,6 +671,25 @@ describe('{ volumeId, path } volume-(re)select — ALWAYS the switch arm (guards
     // Switch arm, not in-place: the FilePane primitive was not driven.
     expect(h.paneState.left.paneRef?.navigateToPath).not.toHaveBeenCalled()
   })
+
+  it('re-selecting Network from inside a host clears the host, so the pane lands on the host list', () => {
+    h = makeHarness({ left: { path: 'smb://', volumeId: 'network' } })
+
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'network', path: 'smb://' } }, source: 'user' }, h.deps)
+
+    // Pre-fix the pane kept its open host, so `select_volume Network` was a silent
+    // no-op: the share list (or a mount-error pane) stayed up and the MCP tool
+    // timed out waiting for the volume name to drop back to plain "Network".
+    expect(h.paneState.left.paneRef?.setNetworkHost).toHaveBeenCalledWith(null)
+  })
+
+  it('switching to a non-network volume leaves the network host alone (the pane clears it itself)', () => {
+    h = makeHarness({ left: { path: 'smb://', volumeId: 'network' } })
+
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
+
+    expect(h.paneState.left.paneRef?.setNetworkHost).not.toHaveBeenCalled()
+  })
 })
 
 describe('refusal strings (L12) — byte-for-byte contract', () => {

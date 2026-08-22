@@ -666,6 +666,11 @@ entry — they're not pane-destination changes).
 - **`NavigateResult` (L12).** `{ status: 'started', settled }` or `{ status: 'refused', reason }`. The refusal `message`
   strings (on-network, MTP-mismatch, on-MTP-volume, pane-unavailable) are EXACT contract — the MCP adapter forwards them
   verbatim as the `mcp-response` error; `navigate.test.ts` + the handler suite pin them byte-for-byte.
+- **A switch TO the `network` volume resets the pane's open host** (`commitVolumeSwitch` calls
+  `paneRef.setNetworkHost(options.networkHost ?? null)`, mirroring what `commitHistoryWalk` does for a history entry).
+  The pane's own effect only clears the host when it LEAVES the network volume, so without this a re-select from inside
+  a host (picker, breadcrumb, MCP `select_volume`) left the share list — or a mount-error pane — on screen, and the MCP
+  tool timed out waiting for the volume name to fall back to plain `Network`.
 - **Token model (the staleness mechanism).** A per-pane `txToken` (caller-owned `Map`) governs the same-token
   self-re-entry rule: a parent-nav / walk-up completion re-entering via `onPathChange` carries the SAME token and so
   commits (not dropped); only a fresh `navigate()` advances the token. A single GLOBAL `correctionGen` (the old

@@ -228,6 +228,27 @@ describeSmb('SMB share browsing', () => {
     const hasPublic = await shareExistsInPane(tauriPage, SMB_GUEST_SHARE)
     expect(hasPublic).toBe(true)
   })
+
+  test('re-selecting Network from a share list returns the pane to the host list', async ({ tauriPage }) => {
+    // Pre-fix the pane kept its open host on a volume re-select, so `select_volume
+    // Network` from inside a host was a silent no-op and the tool timed out waiting
+    // for the volume name to fall back from "Network > SMB Test (Guest)". With a
+    // failed mount on screen that left an agent with no way out at all.
+    await ensureAppReady(tauriPage)
+
+    await mcpSelectVolume('left', 'Network')
+    await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
+    await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Guest)' })
+    await mcpCall('open_under_cursor', {})
+    await expect.poll(async () => shareExistsInPane(tauriPage, SMB_GUEST_SHARE), { timeout: 30000 }).toBeTruthy()
+
+    // The tool itself polls for the volume name, so a no-op surfaces as a timeout here.
+    await mcpSelectVolume('left', 'Network')
+
+    await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
+    expect(await shareExistsInPane(tauriPage, SMB_GUEST_SHARE)).toBe(false)
+  })
+
 })
 
 describeSmb('SMB mounting and file browsing', () => {

@@ -753,6 +753,13 @@
         return networkMountViewRef?.findItemIndex(name) ?? -1
     }
 
+    /** Cursor-addressable rows in the network view (hosts or shares), `0` outside it. */
+    // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.moveCursor's range check
+    export function getNetworkItemCount(): number {
+        if (!isNetworkView) return 0
+        return networkMountViewRef?.getItemCount() ?? 0
+    }
+
     export function isInNetworkView(): boolean {
         return isNetworkView
     }
@@ -1026,8 +1033,25 @@
         networkHost.setAutoMountShare(shareName)
     }
 
-    /** Navigates up and selects the folder we came from. Returns false if already at root. */
+    /**
+     * Navigates up and selects the folder we came from. Returns false if already at root.
+     *
+     * On the Network volume "up" walks the browser stack, not a directory tree: a
+     * host's share list (and the mount-error pane it turns into on a mount that
+     * didn't go through) steps back to the host list, exactly like the Escape /
+     * Backspace / ⌘↑ the share list binds. Without this the file-list primitive had
+     * nothing to walk, so ⌘↑ and the MCP `nav_to_parent` tool were silent no-ops
+     * there and an agent had no way out of a failed mount.
+     */
     export function navigateToParent(): Promise<boolean> {
+        if (isNetworkView) {
+            if (networkHost.host === null) return Promise.resolve(false)
+            // Clear the view first (it also drops the mount error), then the pane
+            // state, which bubbles the change out for history tracking.
+            networkMountViewRef?.setNetworkHost(null)
+            networkHost.handleHostChange(null)
+            return Promise.resolve(true)
+        }
         return loader.navigateToParent()
     }
 
