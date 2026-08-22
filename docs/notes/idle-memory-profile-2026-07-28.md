@@ -22,8 +22,9 @@ only ever land in `MALLOC_SMALL`: the bundled build defines `SQLITE_ENABLE_MEMOR
 `pcache1.separateCache = 0`, there is no bulk allocation, and every overflow page is an individual ~4.1 KB
 `sqlite3Malloc` — below macOS's 127 KB large-zone threshold. The shared slab this note led to proved it from the other
 side: `MALLOC_SMALL` fell 405 → 152 MB (−62%) while `MALLOC_LARGE` moved 730 → 643 MB (−12%), in regions of 9 MB and
-2.25 MB. That 643 MB has since been named, and it is Core ML holding the two CLIP towers, nothing to do with SQLite:
-`idle-malloc-large-clip-towers-2026-08-21.md`.
+2.25 MB. Most of that 643 MB now has a strong, measured candidate — Core ML holding the two CLIP towers, nothing to do
+with SQLite — but ⚠️ nobody has yet shown the towers were loaded in THIS run, and 230–340 MB of it stays unattributed
+either way: `idle-malloc-large-clip-towers-2026-08-21.md`, which carries the one command that settles it.
 
 WebKit and the compositor were NOT involved: `WebKit malloc` was 4.6 MB, `IOAccelerator (graphics)` 1.3 MB. CPU was 122
 minutes over 10 hours.

@@ -69,10 +69,14 @@ const MEMO_CAPACITY: usize = 2048;
 /// `com.getdropbox.dropbox.fileprovider/c840514d-…`). Callers that only need the
 /// yes/no answer can `.is_some()` it.
 ///
-/// Follows symlinks, so a link INTO a domain reports that domain: callers ask
-/// about a place, not about a directory entry. A read failure, a missing
-/// attribute, and a non-UTF-8 value all collapse to `None`: this is a hint, so an
-/// unreadable path is simply "not recognized".
+/// Doesn't follow symlinks (`xattr::get` is `XATTR_NOFOLLOW`), so a link pointing
+/// INTO a domain isn't itself mistaken for that domain's root.
+/// [`FileProviderDomains`] gets its place-rather-than-entry semantics from the
+/// `canonicalize` it runs before the ancestor walk, never from here — which is why
+/// its leaf read (an unresolved file path) reads a symlink as ordinary, the
+/// accepted edge in `sync_status/DETAILS.md`. A read failure, a missing attribute,
+/// and a non-UTF-8 value all collapse to `None`: this is a hint, so an unreadable
+/// path is simply "not recognized".
 #[must_use]
 pub fn domain_id_for_dir(path: &str) -> Option<String> {
     read_domain_id_xattr(path, DOMAIN_ID_XATTR)

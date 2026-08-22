@@ -60,12 +60,13 @@ Known fingerprints so far:
   life. Expect `4096K`, `3072K`, and `2304K` in the dozens beside it.
   `docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`.
 
-In a dev build, `get_memory_diagnostics(sizesPerTag)` returns the same histogram as structured data plus the footprint
-and BOTH allocators' own accounting in one payload — the only reading that spans mimalloc and the system zones at once.
-It also carries `sqlitePageCache`, the 64 MiB page slab every store's cached pages come from: that slab is a leaked Rust
-allocation, so it hides inside the mimalloc total, and without this field you'd have to know to go ask SQLite about it.
-It's an ordinary IPC command (`apps/desktop/src-tauri/src/commands/memory_diagnostics.rs`), macOS only, and its module
-docs say how to read the payload.
+From the app itself — any build, a shipped release included, which is deliberate because that's the only condition the
+interesting numbers appear under — `get_memory_diagnostics(sizesPerTag)` returns the same histogram as structured data
+plus the footprint and BOTH allocators' own accounting in one payload — the only reading that spans mimalloc and the
+system zones at once. It also carries `sqlitePageCache`, the 64 MiB page slab every store's cached pages come from: that
+slab is a leaked Rust allocation, so it hides inside the mimalloc total, and without this field you'd have to know to go
+ask SQLite about it. It's an ordinary IPC command (`apps/desktop/src-tauri/src/commands/memory_diagnostics.rs`), macOS
+only, and its module docs say how to read the payload.
 
 ## How to attribute (which code allocates)
 
