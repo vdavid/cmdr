@@ -116,9 +116,9 @@ Everything about the metric, the version pin, why it carries a `NotInCI` reason,
 this tool prints.
 
 **One finding this effort did NOT fix, and somebody should**: `write_operations::*` is an 11-module sibling tangle
-(`analytics, conflict_slot, error_classification, eta, event_sinks, manager, state, status_cache, types, unique_name,
-validation`) with no parent node in it, which makes it the app crate's largest genuine design tangle and the app crate's
-whole `max` number on its own. It's recorded as the baseline, not repaired. It is its own effort.
+(`analytics, conflict_slot, error_classification, eta, event_sinks, manager, state, status_cache, types, unique_name, validation`)
+with no parent node in it, which makes it the app crate's largest genuine design tangle and the app crate's whole `max`
+number on its own. It's recorded as the baseline, not repaired. It is its own effort.
 
 ## Then: FTP as the proof
 

@@ -898,10 +898,10 @@ says no module in it can be understood or changed alone, and it blocks a crate e
 import the app crate's facade. That is the whole reason this was ever measured.
 
 The measurement is
-`cargo modules dependencies --lib --package <p> --no-fns --no-types --no-traits --no-owns --no-externs --no-sysroot`
-per first-party library member, which emits DOT: nodes are modules, edges are `use` dependencies. It costs ~30 s across
-the five crates, most of it the app crate, so it lives in the slow group and never in `--fast`. Tarjan runs on the
-FILTERED graph, in the check, because `--acyclic` can't (trap 1).
+`cargo modules dependencies --lib --package <p> --no-fns --no-types --no-traits --no-owns --no-externs --no-sysroot` per
+first-party library member, which emits DOT: nodes are modules, edges are `use` dependencies. It costs ~30 s across the
+five crates, most of it the app crate, so it lives in the slow group and never in `--fast`. Tarjan runs on the FILTERED
+graph, in the check, because `--acyclic` can't (trap 1).
 
 ### The metric: strongly-connected components with parent-child hubs collapsed
 
@@ -965,8 +965,8 @@ Every one was found the expensive way, and each makes the raw tool output say so
    `*_test.rs` files are harmless; a glob in a PRODUCTION file is not. De-globbing the two that were live in
    `indexing/lifecycle/manager/{start.rs,phased.rs}` took `cmdr-index`'s largest raw component from 19 modules to 15 and
    dropped `watch::event_loop` out of the `lifecycle` tangle entirely, with no behavior change: the glob had let
-   `manager.rs` carry seven imports that only its children used, and every one of them printed as a `manager` edge.
-   The remaining globs all sit in `#[cfg(test)] mod bench;` files, which are gated out the same way test modules are.
+   `manager.rs` carry seven imports that only its children used, and every one of them printed as a `manager` edge. The
+   remaining globs all sit in `#[cfg(test)] mod bench;` files, which are gated out the same way test modules are.
 3. **`--no-traits` does not filter `From` impls.** A `From` in module A for a type in module B prints as a real A → B
    edge.
 4. **An impl's methods are attributed to the module defining the TYPE, not the one holding the `impl` block.** So moving
@@ -1007,15 +1007,15 @@ Seeded 2026-08-22 with cargo-modules 0.27.0, after the SMB protocol layer moved 
 crates, holding **16 tangles** at 14 homes.
 
 - `cmdr`: 514 modules, 121 in some raw cycle, largest raw component 11, 10 tangles. The largest is
-  `file_system::write_operations` at **11** (`analytics, conflict_slot, error_classification, eta, event_sinks, manager,
-  state, status_cache, types, unique_name, validation`), a sibling tangle with no parent node in it and the app crate's
-  largest genuine design tangle. Everything else there is 3 or 2.
+  `file_system::write_operations` at **11**
+  (`analytics, conflict_slot, error_classification, eta, event_sinks, manager, state, status_cache, types, unique_name, validation`),
+  a sibling tangle with no parent node in it and the app crate's largest genuine design tangle. Everything else there is
+  3 or 2.
 - `cmdr-index`: 189 modules, 50 in a raw cycle, largest raw component 15, 4 tangles. The largest is
   `indexing::lifecycle` at **5** (`cover, manager, network_scan, phases, state`) — the same component a raw reading
   calls 15, because eight `lifecycle::state::*` children and two more hubs fold away.
 - `cmdr-archive`: `read` at 4 (`extract, index, sevenz, tar`). `cmdr-fs`: `volume` at 2 (`friendly_error, types`), from
   a raw component of 8. `cmdr-smb`: **none** — its raw five-module component is all parent ↔ child.
-
 
 ## Workspace member coverage
 
@@ -1096,8 +1096,8 @@ Checks by app and tech:
   bindings-fresh, ipc-enum-camelcase, shipped-locales-fresh (regenerate-and-diff `intl/shipped_locales.gen.rs` from the
   message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
   unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module components per crate with
-  parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a mismatched box skips
-  rather than mis-measures — see § "Rust module cycles"), tests, integration-tests (Docker SMB), tests-linux (slow)
+  parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a mismatched box skips rather
+  than mis-measures — see § "Rust module cycles"), tests, integration-tests (Docker SMB), tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and
