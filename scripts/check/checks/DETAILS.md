@@ -617,7 +617,7 @@ The JSON report and the MTP backing dir came last, and they were the expensive t
 
 Still shared, and deliberately: the fixture hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`) is content-addressed and
 built by tmp-dir + atomic rename, so sharing is the point and a torn read is structurally impossible; per-worktree
-copies would cost 170 MB each and buy nothing. The `smblease` lease dir is machine-wide for the same kind of reason.
+copies would cost 170 MB each and buy nothing. Each `stacklease` lease dir is machine-wide for the same kind of reason.
 
 Reports, logs, and recordings deliberately OUTLIVE their run (they're what a post-mortem reads), so age collects them
 instead: `sweepStaleE2EArtifacts` runs at the start of both E2E lanes and removes run-scoped leftovers older than a
@@ -1023,16 +1023,23 @@ crates, holding **16 tangles** at 14 homes.
 - `cmdr-archive`: `read` at 4 (`extract, index, sevenz, tar`). `cmdr-fs`: `volume` at 2 (`friendly_error, types`), from
   a raw component of 8. `cmdr-smb`: **none** — its raw five-module component is all parent ↔ child.
 
-## SMB lane coverage
+## Fixture lane coverage
 
-`desktop-smb-lane-coverage` (`IsFast`, error-level) stops a Docker-gated SMB test from sitting in the tree looking like
+`desktop-fixture-lane-coverage` (`IsFast`, error-level) stops a Docker-gated test from sitting in the tree looking like
 coverage while nothing ever runs it.
 
-`desktop-rust-integration-tests` filters with `test(smb_integration_) + package(cmdr-smb)`. The second half needs no
-help: a new cell in the crate is selected whatever it's called, and an `#[ignore]`d test there that ISN'T a Docker cell
-would run in the lane and go red rather than go quiet. The first half is the exposed one. In the app crate the NAME is
-the only signal available, because `smb_soak_copy_loop` and the concurrency bench are `#[ignore]`d there too and neither
-belongs in a gating lane. So a cell named anything else compiles, reviews clean, and executes nowhere but by hand.
+One table, `laneFixtures` (`fixture-lane-coverage.go`), drives both the lane's selection expression
+(`fixtureIntegrationFilter`, which `desktop-rust-integration-tests` calls) and this guard. Each entry names the
+infrastructure identifiers an `#[ignore]` reason uses, the test-name prefix the lane selects that fixture's app-crate
+cells by, and the backend crate whose whole ignored surface is Docker cells. SMB is `smb_integration_` +
+{`smb-servers/start.sh`, `smb-consumer`} + `cmdr-smb`; SFTP is `sftp_integration_` + {`sftp-servers/start.sh`,
+`sftp-fixture`} + `cmdr-sftp`.
+
+The package half needs no guard: a new cell in the crate is selected whatever it's called, and an `#[ignore]`d test
+there that ISN'T a Docker cell would run in the lane and go red rather than go quiet. The name half is the exposed one.
+In the app crate the NAME is the only signal available, because `smb_soak_copy_loop` and the concurrency bench are
+`#[ignore]`d there too and neither belongs in a gating lane. So a cell named anything else compiles, reviews clean, and
+executes nowhere but by hand.
 
 `smb_scan_uses_oracle_on_hit_skips_stat_pipeline` did exactly that for its whole life, and it was the sole caller of
 `SmbVolume::detach_session_for_test`, the one public-surface widening the `cmdr-smb` extraction sanctioned. A sanctioned
@@ -1040,16 +1047,24 @@ widening rested on a test nothing executed, and the only thing guarding the conv
 
 What the check reads:
 
-- An `#[ignore = "…"]` reason naming the Docker fixture is what marks a cell as gated. The two markers are
-  INFRASTRUCTURE identifiers, `smb-servers/start.sh` and `smb-consumer`, so rewording a reason can't move a cell out of
-  the check's view.
-- The test under that gate must carry `smb_integration_` in its name, or sit in a module path that does (nextest matches
-  the fragment anywhere in a test's path, so either one is genuinely selected).
-- A cell that belongs OUTSIDE the lane says so in place: `// allowed-out-of-lane-smb-cell: <why>` on or just above the
-  `#[ignore]`. The reason after the colon is required, or the marker would be a way to silence the check without saying
-  anything. One cell uses it today, the copy-concurrency measurement harness.
-- `RunSmbLaneCoverage` also asserts that the lane's own filter still contains the prefix, so re-keying the filter can't
-  leave the check enforcing a name nothing selects on.
+- An `#[ignore = "…"]` reason naming a fixture is what marks a cell as gated. The markers are INFRASTRUCTURE
+  identifiers (a start script's path, a compose project's service prefix) rather than prose, so rewording a reason can't
+  move a cell out of the check's view.
+- The test under that gate must carry ITS fixture's prefix in the name, or sit in a module path that does (nextest
+  matches the fragment anywhere in a test's path, so either one is genuinely selected). The prefixes aren't
+  interchangeable: an SFTP-gated cell named `smb_integration_…` would run, but it names the wrong fixture to every
+  reader, so it's a finding.
+- A cell that belongs OUTSIDE the lane says so in place: `// allowed-out-of-lane-fixture-cell: <why>` on or just above
+  the `#[ignore]`. The reason after the colon is required, or the marker would be a way to silence the check without
+  saying anything. One cell uses it today, the copy-concurrency measurement harness.
+- `RunFixtureLaneCoverage` also asserts that the lane's own filter still contains every enforced prefix, so re-keying
+  the filter can't leave the check enforcing a name nothing selects on.
+
+❗ **A `package(x)` clause for a crate that isn't on disk kills the lane**: `cargo nextest` fails to _parse_ the
+filterset rather than matching nothing (`error: operator didn't match any packages`, verified on `cargo-nextest`
+0.9.136, 2026-08-22). So `fixtureIntegrationFilter` includes a backend crate's clause only once
+`crates/<name>/Cargo.toml` exists, and a fixture's `test(prefix)` clause — harmless when it matches nothing — can land
+ahead of its cells.
 
 ## Workspace member coverage
 
@@ -1131,10 +1146,10 @@ Checks by app and tech:
   message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
   unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module components per crate with
   parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a mismatched box skips rather
-  than mis-measures — see § "Rust module cycles"), smb-lane-coverage (a Docker-gated SMB cell in the app crate whose
-  name the integration lane's filter won't select never runs anywhere, so it's a finding; one cell lived its whole life
-  that way, and it was the sole caller of the crate extraction's one sanctioned public-surface widening — see § "SMB
-  lane coverage"), tests, integration-tests (Docker SMB), tests-linux (slow)
+  than mis-measures — see § "Rust module cycles"), fixture-lane-coverage (a Docker-gated cell in the app crate
+  whose name the integration lane's filter won't select never runs anywhere, so it's a finding; one cell lived its whole
+  life that way, and it was the sole caller of the crate extraction's one sanctioned public-surface widening — see §
+  "Fixture lane coverage"), tests, integration-tests (Docker network fixtures), tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and

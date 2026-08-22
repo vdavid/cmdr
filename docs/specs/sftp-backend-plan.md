@@ -265,32 +265,45 @@ for `cmdr_fs::volume::root_anchored` (`volume/mod.rs:1265-1281`): it _anchors_ r
 
 ## Milestones
 
-### 0. `smblease` parameterization (prerequisite for CI, safe to run in parallel with milestone 1)
+### 0. The check runner stands up two Docker stacks — **done**
 
-❗ **This is a day-one blocker for the fixture, not an optional tidy.** Appending `+ package(cmdr-sftp)` to
-`smbIntegrationFilter` makes the lane _select_ SFTP cells but gives them no server: `RunRustIntegrationTests` is
-registered `NeedsSmb: SmbModeCore` and waits on a hardcoded list of eight `smb-consumer-*` services. Without this
-milestone, SFTP Docker cells cannot run in CI at all — which is precisely the failure `desktop-smb-lane-coverage` was
-written to prevent.
+Landed. What it means for the milestones after it:
 
-Parameterize rather than fork (`smblease.go:21-36`'s adopt-or-reconcile reasoning is protocol-agnostic; two 676-line
-copies would rot independently): a
-`Stack { project_name, lock_path, lease_dir, compose_dir, mode_services, services_without_healthcheck }` value, and
-`CheckDefinition.NeedsSmb` widened to `NeedsContainers []StackMode`. Touches `main.go`, `graph.go`,
-`smb_orchestrator.go`, two registry rows, `start.sh`, `e2e-linux.sh`, and a 480-line `smblease_test.go` — and the
-package it parameterizes, `scripts/check/smblease/{smblease,compose,lock}.go`.
+- **The lease library is `scripts/check/stacklease`**, parameterized over a `Stack` value (compose project, `/tmp` lock
+  file, `/tmp` lease dir, compose dir + files, mode → service table, no-healthcheck set, port-env prefix). The CLI is
+  `scripts/check/stack-lease`, every verb taking the stack name first. The runner-level orchestrator is
+  `StackOrchestrator`, holding one lease per stack under its own PID.
+- **A check declares `NeedsContainers []StackMode`**, so `desktop-rust-integration-tests` can ask for the SMB and SFTP
+  stacks together. `TestEveryDeclaredStackModeResolves` resolves every declared pair against the registry.
+- **The SFTP stack is registered** as project `sftp-fixture`, compose dir `apps/desktop/test/sftp-servers/.compose`,
+  port env prefix `SFTP_FIXTURE_`, lock `/tmp/cmdr-sftp.lock`, leases `/tmp/cmdr-sftp-leases` — with an **empty service
+  table**. Registration is inert: nothing asks for the stack, `Acquire` refuses every mode, and `Up` reports the missing
+  compose dir rather than letting docker guess at a compose file.
+- **The lane's filter is `fixtureIntegrationFilter`** (`scripts/check/checks/fixture-lane-coverage.go`), built from one
+  fixture table that `desktop-fixture-lane-coverage` also guards. It already carries `test(sftp_integration_)`.
+- ❗ **`+ package(cmdr-sftp)` could not land ahead of the crate.** `cargo nextest` fails to _parse_ a filterset naming an
+  unknown package (`error: operator didn't match any packages`, verified on `cargo-nextest` 0.9.136, 2026-08-22), so the
+  clause would have taken the whole SMB lane down. The filter therefore adds a backend crate's clause only once
+  `crates/<name>/Cargo.toml` is on disk — so it appears on its own the moment `crates/cmdr-sftp` exists, with no edit.
+- ❗ **The guard pairs marker with prefix.** An SFTP cell is one whose `#[ignore]` reason names `sftp-servers/start.sh`
+  or `sftp-fixture`, and it must carry `sftp_integration_`. Wearing `smb_integration_` is a finding. The out-of-lane
+  opt-out is `// allowed-out-of-lane-fixture-cell: <why>`.
 
-**Also milestone 0's, because they are the same wiring**: the `smbIntegrationFilter` edit, the SFTP stack registration,
-and ❗ **the app-side selection arm**. SMB has 33 app-side `smb_integration_*` cells and a whole `testing` feature built
-to serve them, so app-side SFTP cells are the expected case, not a hypothetical — and an app-side cell named
-`sftp_integration_*` is selected by nothing (the filter's app half is `test(smb_integration_)`) and flagged by nothing
-(`smb-lane-coverage.go:46` matches only the SMB fixture markers). That is exactly the "sits in the tree looking like
-coverage and never executes" failure the coverage check exists to prevent. So milestone 0 adds the `sftp_integration_`
-prefix, the SFTP fixture markers, and the second filter clause together.
+**What milestone 1 owes this wiring**, beyond the fixture itself:
 
-**Parallel-safe with milestone 1**, but only on a stated boundary: milestone 1 delivers the compose file and a manual
-start script and stops there; **milestone 0 owns every check-runner and lane edit**. Without that line the two agents
-edit the same rows. ❗ Milestones 2 through 5 are strictly sequential; milestone 6 is independent of all of them.
+1. Fill the SFTP stack's `modeServices` table in `scripts/check/stacklease/registry.go`, in lock-step with
+   `apps/desktop/test/sftp-servers/start.sh`, plus its `servicesWithoutHealthcheck` set.
+2. Add `checks.SftpCore` to `desktop-rust-integration-tests`' `NeedsContainers` (the constant already exists), and add
+   the SFTP services to the lane's `waitForSmbContainers` guard.
+3. Add an `ApplySftpPortEnv` and its `portEnvAppliers` row if the fixture publishes host ports (a new pinned range clear
+   of 11480+ and 10480+).
+4. Name the compose project `sftp-fixture` and prefix every service `sftp-fixture-`, or the coverage guard's markers
+   stop matching.
+
+The model, the asymmetries, and why SMB's `/tmp` paths are frozen: `scripts/check/DETAILS.md` § "Two fixture stacks, two
+lease namespaces" and § "How the integration lane selects fixture cells".
+
+❗ **Milestones 2 through 5 are strictly sequential; milestone 6 is independent of all of them.**
 
 ### 1. The crate connects
 
@@ -415,10 +428,10 @@ conformance, window, and retirement cells live in the crate; anything driving `w
 or the listing cache lives app-side. ❌ Don't widen the backend's public surface to keep a test app-side. Prelude in
 `test_support.rs`, ❌ not a `use super::*` glob.
 
-**Lane coverage**: with every SFTP Docker cell in `crates/cmdr-sftp`, a `+ package(cmdr-sftp)` clause in
-`smbIntegrationFilter` covers selection, and `desktop-smb-lane-coverage` needs no SFTP arm (its guard only asserts the
-filter still _contains_ `smbLanePrefix`, which appending preserves). ❗ Selection is not execution — milestone 0 is what
-gives those cells a server.
+**Lane coverage**: a cell in `crates/cmdr-sftp` is selected by the package clause, which `fixtureIntegrationFilter`
+adds on its own once the crate exists. An app-side cell needs the `sftp_integration_` prefix, which
+`desktop-fixture-lane-coverage` enforces against the fixture markers. ❗ Selection is not execution — the SFTP stack
+needs its service table filled and a check pointing at it before those cells get a server.
 
 ## Filenames are bytes, and this is new
 

@@ -146,7 +146,7 @@ pnpm check [flags]
         per check: FingerprintFor()  #   hash its Inputs ∪ GlobalInputs from that pass
         split selected -> toRun / cached  # cache hit = entry fingerprint matches
     -> ensurePnpmDependencies()      # pnpm install once at root (skipped if all node checks cached)
-    -> setupSmbOrchestratorIfNeeded()# Docker/SMB up only if a NON-cached check NeedsSmb
+    -> setupStackOrchestratorIfNeeded() # fixture Docker up only if a NON-cached check NeedsContainers
     -> Runner.Run():
         reportCached()               # print + log the cache hits as "OK (cached)" first
         goroutine pool (NumCPU semaphore)
@@ -181,12 +181,12 @@ pnpm check [flags]
   auto-fixer rewrote (§ "The auto-fix notice")
 - **`colors.go`**: ANSI color constants
 - **`utils.go`**: `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)
-- **`smb_orchestrator.go`**: Runner-level SMB Docker lifecycle: acquires a machine-wide lease (via `smblease`) at init,
-  releases at exit
-- **`smblease/`**: Library: the machine-wide flock + holder-id refcount that makes the shared `smb-consumer` stack safe
-  across worktrees
-- **`smb-lease/`**: Thin `package main` CLI onto `smblease` (`acquire`/`release`/`reconcile`/`status`) that the bash
-  scripts shell out to
+- **`stack_orchestrator.go`**: Runner-level Docker fixture lifecycle: acquires a machine-wide lease per stack (via
+  `stacklease`) at init, releases each at exit
+- **`stacklease/`**: Library: the machine-wide flock + holder-id refcount that makes a shared fixture stack safe across
+  worktrees. `registry.go` holds the registered stacks (`smb`, `sftp`); everything else is per-`Stack` methods
+- **`stack-lease/`**: Thin `package main` CLI onto `stacklease` (`acquire`/`release`/`reconcile`/`status`, each taking
+  the stack name first) that the bash scripts shell out to
 - **`freestyle.go`**: All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`
 - **`checks/`**: One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)
 
@@ -516,25 +516,27 @@ not per-check and not per-process. **Why**: Multiple checks (`desktop-rust-integ
 the shared `smb-consumer` Docker Compose project. Two layers of contention had to be solved:
 
 - _Intra-process_: each check used to own the lifecycle (start in entry, `defer ./stop.sh` in cleanup); two in one run
-  raced each other. `SmbOrchestrator` (`scripts/check/smb_orchestrator.go`) lifts lifecycle one level up — at runner
-  init, after `selectChecks()` resolves the planned set, it brings up the union of `NeedsSmb` modes (`SmbModeCore` for
-  integration tests, `SmbModeE2E` for e2e) once, and tears down once at runner exit. Checks marked `NeedsSmb` assume the
-  containers are up and call `waitForSmbContainers` as a cheap mid-run zombie-guard. The service set behind each mode
-  lives in `smblease.modeServices` and must stay in lock-step with `test/smb-servers/start.sh`; `core` carries
+  raced each other. `StackOrchestrator` (`scripts/check/stack_orchestrator.go`) lifts lifecycle one level up — at runner
+  init, after `selectChecks()` resolves the planned set, it brings up the union of every check's `NeedsContainers` pairs
+  (`SmbCore` for integration tests, `SmbE2E` for e2e) once, and tears each down once at runner exit. Checks declaring
+  `NeedsContainers` assume the containers are up and call `waitForSmbContainers` as a cheap mid-run zombie-guard. The
+  service set behind each mode lives in that stack's `modeServices` table in `stacklease/registry.go` and must stay in
+  lock-step with the fixture's `start.sh`; SMB's `core` carries
   `smb-consumer-unicode` because it's the only fixture with non-ASCII share names, and without it nothing in CI can
   catch a regression in the escaping macOS requires of every mount URL (`network/mount.rs::build_smb_mount_url`).
 - _Cross-process / cross-worktree_: two `check.sh` runs (or a `check.sh` plus a manual `start.sh`) in different
   worktrees have independent orchestrators, so the in-process map can't stop them racing the same containers. The
-  orchestrator therefore takes a **machine-wide lease** via the `smblease` library (holder-id = its own `check.sh` PID).
-  `EnsureStarted` calls `smblease.Acquire` (adopt-or-reconcile under a flock); `Stop` calls `smblease.Release` (down
-  only at zero holders, lock held across the down). The orchestrator imports the lib in-process — no subprocess —
-  because it's already Go in the same module.
+  orchestrator therefore takes a **machine-wide lease per stack** via the `stacklease` library (holder-id = its own
+  `check.sh` PID). `EnsureStarted` calls `Stack.Acquire` (adopt-or-reconcile under that stack's flock); `Stop` calls
+  `Stack.Release` on each held stack (down only at zero holders, lock held across the down). The orchestrator imports
+  the lib in-process — no subprocess — because it's already Go in the same module.
 
 The standalone scripts (`start.sh`, `e2e-linux.sh::start_smb_containers`) take their **own** leases (`manual` for
 `start.sh`, `$$` for `e2e-linux.sh`), so a manual run alongside a `check.sh` run just registers as a second holder and
 neither tears the other's stack down. The SIGINT handler in `main.go` captures the orchestrator via shared variable so a
-Ctrl+C also releases the lease (with a banner) before exiting 130. See [`smblease/smblease.go`](smblease/smblease.go)
-for the lock/lease/policy model.
+Ctrl+C also releases every held lease (with a banner) before exiting 130. See
+[`stacklease/stacklease.go`](stacklease/stacklease.go) for the lock/lease/policy model, and § "Two fixture stacks, two
+lease namespaces" for how a second protocol plugs in.
 
 **Decision**: cmdr's SMB stack binds a dedicated host-port range (11480+), not smb2's default (10480+). **Why**: cmdr
 runs a _vendored copy_ of smb2's `consumer` compose under its own project name (`smb-consumer`), while smb2's own test
@@ -558,6 +560,52 @@ outside the Docker host needs in. No check lost anything: the Rust integration t
 `:445` by container name). Don't add a `ports:` block to `.compose/docker-compose.override.yml` to change this: Compose
 concatenates `ports` across files rather than replacing them, so the override collides on the host port instead of
 rebinding it.
+
+### Two fixture stacks, two lease namespaces
+
+`stacklease` leases any Docker Compose fixture stack, not just SMB. Every protocol-shaped thing is a field on `Stack`
+(`stacklease/registry.go`): compose project, `/tmp` lock file, `/tmp` lease dir, compose dir + files, mode → service
+table, the services that ship no `HEALTHCHECK`, and the port-env prefix that folds into the config hash. The
+adopt-or-reconcile policy, the dead-PID sweep, and the down-at-zero teardown are one implementation over that value.
+
+- **Separate namespaces are the point.** Each stack has its own flock target and its own lease dir, so one stack's
+  holders are invisible to the other and downing one at zero can never touch the other's containers. The runner uses the
+  same holder-id (its `check.sh` PID) in each, which counts once per stack.
+- **SMB's `/tmp` paths are frozen** at `cmdr-smb.lock` and `cmdr-smb-leases`, pinned by a test. A sibling worktree on
+  older code holds its lease at those exact paths; moving them would make a live holder invisible and re-open the
+  teardown race the library exists to close.
+- **A check declares `NeedsContainers []StackMode`**, so it can ask for several stacks. Both strings resolve against the
+  registry, and `TestEveryDeclaredStackModeResolves` (`stack_orchestrator_test.go`) turns a typo into a millisecond
+  failure rather than one minutes into a run, after planning and `pnpm install`.
+- **An unknown mode is an error.** The table used to fall back to SMB's `core` set for anything unrecognized, so a typo
+  brought up the wrong containers and then waited for services nobody asked for.
+- **An unresolvable compose dir is an error too**, rather than a warning plus docker's default file lookup — which would
+  bring up whatever compose file sat near the cwd under our project name.
+- **The SFTP stack is registered with an empty service table** until its fixture lands under
+  `apps/desktop/test/sftp-servers/`. Registration is inert data: no check asks for it, `Acquire` refuses every mode, and
+  `Up` reports the missing compose dir. Turning the lane on is two lines: that stack's service table, and
+  `NeedsContainers` on `desktop-rust-integration-tests`.
+
+### How the integration lane selects fixture cells
+
+`fixtureIntegrationFilter` (`checks/fixture-lane-coverage.go`) builds the nextest expression from one fixture table, and
+`desktop-fixture-lane-coverage` guards the same table. Each `laneFixture` names three things: the infrastructure
+identifiers an `#[ignore]` reason uses (a start script's path, a compose project's service prefix), the test-name prefix
+the lane selects that fixture's APP-crate cells by, and the backend crate whose whole ignored surface is Docker cells.
+
+- **The two halves exist because the suites sit on two sides of a crate boundary.** In the app crate the name prefix is
+  the only signal, and it has to stay one (`smb_soak_copy_loop` and the concurrency bench are `#[ignore]`d there too and
+  belong in no gating lane). In a backend crate there is no other reason to ignore a test, so the whole package
+  qualifies.
+- ❗ **A `package(x)` clause for a crate that doesn't exist takes the lane down**, because `cargo nextest` fails to
+  _parse_ the filterset rather than matching nothing (verified against `cargo-nextest` 0.9.136, 2026-08-22:
+  `error: operator didn't match any packages`). So a backend crate's clause joins the filter only once
+  `crates/<name>/Cargo.toml` is on disk. A `test(prefix)` clause matching nothing is harmless, so the name half lands
+  ahead of its cells.
+- **The guard pairs marker with prefix.** A cell gated on the SFTP fixture has to carry `sftp_integration_`; wearing the
+  SMB prefix is a finding even though the lane would run it, because it names the wrong fixture to every reader. A cell
+  that belongs outside the lane says so with `// allowed-out-of-lane-fixture-cell: <why>`, and an orphaned opt-out
+  fails.
 
 **Decision**: `IsFast` field on `CheckDefinition` and a curated `--fast` pre-commit lane. **Why**: A pre-commit run
 should finish in ~10s so it actually gets used. The list is editorially curated, not derived from CSV timings: warm
@@ -621,16 +669,17 @@ via `[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
 default checks. When running `--only-slow` via an agent or CI, set the timeout to at least 20 minutes (1,200,000 ms).
 
 **Concurrent SMB-touching runs across worktrees now coexist.** Two `pnpm check` invocations in different worktrees (or a
-`check.sh` alongside a manual `start.sh` / `pnpm test:e2e:linux`) each take a machine-wide `smblease` lease and share
+`check.sh` alongside a manual `start.sh` / `pnpm test:e2e:linux`) each take a machine-wide `stacklease` lease and share
 the same `smb-consumer` stack. Whichever finishes first releases its lease but sees a non-zero refcount, so it does
 **not** down the stack — the other run keeps serving. The stack downs only when the last holder leaves. The old
 `Cannot reach smb-consumer-X` cascade (one run's teardown killing another's mid-test) is the exact failure the lease
 closes.
 
 A leaked or lingering stack (a forgotten manual `start.sh`, or a numeric holder whose PID got recycled) is the benign
-direction: it stays up until a human reaps it. Check state with `(cd scripts/check && go run ./smb-lease status)`; force
-it down with `rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`. See
-`apps/desktop/test/smb-servers/README.md` § "Shared stack across worktrees" and `smblease/smblease.go`.
+direction: it stays up until a human reaps it. Check state with `(cd scripts/check && go run ./stack-lease status)`
+(every stack) or `... status smb` (one); force SMB down with
+`rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`. See
+`apps/desktop/test/smb-servers/README.md` § "Shared stack across worktrees" and `stacklease/stacklease.go`.
 
 ## Dependencies
 

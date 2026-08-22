@@ -23,9 +23,11 @@ See [docs/guides/testing/smb-servers.md](../../../../docs/guides/testing/smb-ser
 ## Shared stack across worktrees (the lease)
 
 The `smb-consumer` stack is a **machine-wide shared resource**. Every bring-up (this `start.sh`, the check-runner's
-orchestrator, `e2e-linux.sh`) and every teardown routes through a Go lease helper (`scripts/check/smblease`) so
-concurrent sessions in different git worktrees stop tearing each other's containers down. You don't normally interact
-with the lease directly — `start.sh` / `stop.sh` handle it — but here's the model:
+orchestrator, `e2e-linux.sh`) and every teardown routes through a Go lease helper (`scripts/check/stacklease`) so
+concurrent sessions in different git worktrees stop tearing each other's containers down. The helper leases any Docker
+fixture stack, each with its own lock file, lease dir, and compose project, so a second protocol's stack can never
+affect this one. You don't normally interact with the lease directly — `start.sh` / `stop.sh` handle it — but here's the
+model:
 
 - **Holder-id leases.** Each live user writes one file under `/tmp/cmdr-smb-leases/<holder-id>`, guarded by a flock on
   `/tmp/cmdr-smb.lock`. Bring-up **adopts** an already-serving stack (no compose call) or **reconciles** it via `up -d`;
@@ -45,7 +47,7 @@ it:
 ```bash
 rm -rf /tmp/cmdr-smb-leases && ./stop.sh   # clear all leases, then down
 # or just confirm the state first:
-(cd ../../../../scripts/check && go run ./smb-lease status)
+(cd ../../../../scripts/check && go run ./stack-lease status smb)
 ```
 
 `contention-check.sh` in this directory is the repeatable acceptance test for the whole mechanism: a dummy holder must
@@ -73,4 +75,5 @@ a live session. The non-numeric `manual` holder-id is never swept, so a forgotte
 **benign** direction (a human reaps it with `stop.sh`), never a teardown under a live run. The whole design degrades to
 "leave it UP" on any doubt, never to "tear it down."
 
-See [`scripts/check/smblease`](../../../../scripts/check/smblease/smblease.go) for the full lock/lease/policy model.
+See [`scripts/check/stacklease`](../../../../scripts/check/stacklease/stacklease.go) for the full lock/lease/policy
+model, and `scripts/check/DETAILS.md` § "Two fixture stacks, two lease namespaces" for how a second protocol plugs in.
