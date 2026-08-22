@@ -164,6 +164,16 @@ listing's `totalCount` counted dotfiles only.
 **Cost.** One `Vec<u32>` per listing per `include_hidden` actually used: ~300 KB against a 74k listing whose entries are
 themselves ~15 MB.
 
+**The one case that got slower**, said plainly: reading row 0 right after a mutation used to short-circuit after one
+entry and now rebuilds the whole map. It doesn't matter in practice, because the reads that accompany it
+(`get_total_count`, `get_listing_stats`) were already walking the listing and now share that one pass — but a future
+caller that reads a single shallow row per mutation and nothing else is the shape to watch.
+
+**What is still O(rows), and can still be re-multiplied by a caller that loops it**: `find_file_index`,
+`get_file_beside`, and `get_listing_stats`. They are a name search and a full sum, so linear is their floor, not an
+accident. `find_file_indices` is the batch form of the first, and `get_file_beside` exists so a caller wanting a
+neighbour doesn't compose two calls; reach for those instead of a loop.
+
 ## Decisions
 
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.
