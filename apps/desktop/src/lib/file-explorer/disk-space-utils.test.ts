@@ -202,4 +202,13 @@ describe('formatBarTooltip', () => {
     const space = createSpace(1000, 400)
     expect(formatBarTooltip(space, mockFormatSize, undefined)).toBe('400 B of 1000 B free (40%)')
   })
+
+  it('reports the same percentage the status bar does, even where the two roundings diverge', () => {
+    // 60.5% used / 39.5% free. Rounding the USED half and subtracting gives 39;
+    // rounding the free half gives 40. The tooltip used to do the former and the
+    // status bar the latter, so the same volume read two ways at once.
+    const space = createSpace(1000, 395)
+    expect(formatBarTooltip(space, mockFormatSize)).toBe(formatDiskSpaceStatus(space, mockFormatSize))
+    expect(formatBarTooltip(space, mockFormatSize)).toBe('395 B of 1000 B free (40%)')
+  })
 })

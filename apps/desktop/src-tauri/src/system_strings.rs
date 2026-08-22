@@ -392,6 +392,33 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
+    fn invalidating_the_cache_rebuilds_a_complete_snapshot() {
+        // The REFRESH path, not just the first-build one: after the locale
+        // watcher drops the cache, the next read has to build a full struct
+        // rather than surface the `None`. Otherwise a user who switches the
+        // macOS language mid-session gets empty pane names in the very copy
+        // that tells them where to click.
+        //
+        // Asserts the observable answer rather than the private `None` state:
+        // tests share the process, so another one's `snapshot()` could refill
+        // the cache between the two lines here.
+        let before = snapshot();
+        invalidate();
+        let after = snapshot();
+        assert!(!after.system_settings.is_empty());
+        assert!(!after.privacy_and_security.is_empty());
+        assert!(!after.full_disk_access.is_empty());
+        assert!(!after.files_and_folders.is_empty());
+        assert!(!after.local_network.is_empty());
+        assert!(!after.appearance.is_empty());
+        // Nothing moved the OS language between the two reads, so the rebuild
+        // has to land on the same answer.
+        assert_eq!(before.system_settings, after.system_settings);
+        assert_eq!(before.full_disk_access, after.full_disk_access);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
     fn snapshot_resolves_to_non_empty_strings_on_macos() {
         // Either fully localized or all English defaults. Either way, every
         // field must be non-empty so callers can blindly substitute.

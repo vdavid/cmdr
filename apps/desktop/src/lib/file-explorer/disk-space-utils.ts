@@ -5,10 +5,10 @@ import type { VolumeSpaceInfo } from '$lib/tauri-commands'
 type FormatSize = (bytes: number) => string
 
 /**
- * How full a volume is, as a typed band rather than a label. The colour is the
- * only thing the bar itself needs; the two low-space bands additionally get a
- * sentence in the tooltip. ❌ Never branch on the copy — that's what the
- * `severity` discriminant is for.
+ * How full a volume is. The band carries no copy at all, which is the point:
+ * `severity` is what the tooltip branches on, so there's nothing here a
+ * user-facing string could be matched against. The bar itself needs only the
+ * colour; the two low-space bands additionally earn a sentence in the tooltip.
  */
 export interface DiskUsageLevel {
   severity: 'ok' | 'warning' | 'critical'
