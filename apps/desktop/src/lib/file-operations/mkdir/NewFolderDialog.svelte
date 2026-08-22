@@ -204,7 +204,9 @@
     }
 
     function handleRefreshListing() {
-        void refreshListing(listingId)
+        // Unforced: a top-up after mkdir, not a user asking for a re-read. On a
+        // watcher-backed volume the mutation already patched the cache.
+        void refreshListing(listingId, false)
         onCancel()
     }
 

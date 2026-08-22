@@ -295,7 +295,7 @@ describe('a chained save the volume never answers', () => {
       // Six refreshes at a volume already too slow to answer is the storm this
       // feature must not cause.
       expect(refreshListing).toHaveBeenCalledTimes(1)
-      expect(refreshListing).toHaveBeenCalledWith('lst-1')
+      expect(refreshListing).toHaveBeenCalledWith('lst-1', false)
     } finally {
       vi.useRealTimers()
     }

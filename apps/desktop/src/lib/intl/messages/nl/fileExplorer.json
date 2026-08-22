@@ -108,6 +108,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
+  "fileExplorer.pane.refreshStillRunningToast": "We lezen deze map nog. De lijst wordt bijgewerkt zodra hij binnen is.",
+  "@fileExplorer.pane.refreshStillRunningToast": {
+    "sourceHash": "0636af4"
+  },
   "fileExplorer.pane.dialogRenderFailedToast": "Dit dialoogvenster kon niet worden geopend. We hebben het gesloten en je krijgt het toetsenbord terug. Probeer het opnieuw.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "sourceHash": "059dfbd"

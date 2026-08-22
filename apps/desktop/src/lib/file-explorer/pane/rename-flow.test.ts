@@ -489,7 +489,7 @@ describe('a superseded rename session may speak, never steer', () => {
 
       expect(addToastSpy).toHaveBeenCalled()
       await vi.advanceTimersByTimeAsync(2000)
-      expect(refreshListing).toHaveBeenCalledWith('lst-1')
+      expect(refreshListing).toHaveBeenCalledWith('lst-1', false)
       expect(rename.active).toBe(true)
     } finally {
       vi.useRealTimers()

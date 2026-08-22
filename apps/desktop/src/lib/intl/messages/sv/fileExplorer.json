@@ -108,6 +108,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
+  "fileExplorer.pane.refreshStillRunningToast": "Mappen läses fortfarande in. Listan uppdateras så snart den kommer.",
+  "@fileExplorer.pane.refreshStillRunningToast": {
+    "sourceHash": "0636af4"
+  },
   "fileExplorer.pane.dialogRenderFailedToast": "Den här dialogrutan kunde inte öppnas, så vi stängde den och gav tillbaka tangentbordet. Försök igen.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "sourceHash": "059dfbd"

@@ -156,6 +156,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can''t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."
   },
+  "fileExplorer.pane.refreshStillRunningToast": "Still reading this folder. The list updates the moment it lands.",
+  "@fileExplorer.pane.refreshStillRunningToast": {
+    "description": "Info toast shown when the user refreshes a pane (⌘R) and the folder takes more than two seconds to read, which happens on a slow network share or a phone. Reassures them the read is still going and the list will catch up on its own."
+  },
   "fileExplorer.pane.dialogRenderFailedToast": "That dialog couldn''t open, so we closed it and gave the keyboard back. Please try again.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "description": "Error toast shown when a dialog threw while rendering. The dialog is dismissed and focus returns to the file pane, so the user can retry."
@@ -519,9 +523,9 @@
   },
   "fileExplorer.network.browser.refreshHint": "Press <key></key> or click here to refresh",
   "@fileExplorer.network.browser.refreshHint": {
-    "description": "Hint in the network status bar telling the user how to refresh the host list. The empty <key></key> marks where a keyboard-shortcut chip (showing ⌘R) is rendered inline; keep the tag in the sentence and reorder the surrounding words for natural grammar.",
+    "description": "Hint in the network status bar telling the user how to refresh the host list. The empty <key></key> marks where a keyboard-shortcut chip (showing the refresh key, ⌘R unless the user rebinds it) is rendered inline; keep the tag in the sentence and reorder the surrounding words for natural grammar.",
     "placeholders": {
-      "key": "marks where the keyboard-shortcut chip is inserted inline (the chip shows the ⌘R key combo); keep the tag, it carries no translatable text"
+      "key": "marks where the keyboard-shortcut chip is inserted inline (the chip shows the refresh key combo, ⌘R by default); keep the tag, it carries no translatable text"
     },
     "screenshot": "connect-to-server.png"
   },

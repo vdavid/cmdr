@@ -108,6 +108,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
+  "fileExplorer.pane.refreshStillRunningToast": "Vẫn đang đọc thư mục này. Danh sách sẽ cập nhật ngay khi xong.",
+  "@fileExplorer.pane.refreshStillRunningToast": {
+    "sourceHash": "0636af4"
+  },
   "fileExplorer.pane.dialogRenderFailedToast": "Không thể mở hộp thoại đó, nên chúng tôi đã đóng nó và trả lại bàn phím cho bạn. Vui lòng thử lại.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "sourceHash": "059dfbd"

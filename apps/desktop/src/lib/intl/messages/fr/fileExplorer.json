@@ -108,6 +108,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
+  "fileExplorer.pane.refreshStillRunningToast": "Ce dossier est encore en cours de lecture. La liste se met à jour dès qu''il arrive.",
+  "@fileExplorer.pane.refreshStillRunningToast": {
+    "sourceHash": "0636af4"
+  },
   "fileExplorer.pane.dialogRenderFailedToast": "Cette boîte de dialogue n''a pas pu s''ouvrir. Nous l''avons fermée et vous avez récupéré le clavier. Veuillez réessayer.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "sourceHash": "059dfbd"

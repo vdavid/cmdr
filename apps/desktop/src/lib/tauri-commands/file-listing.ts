@@ -268,9 +268,20 @@ export async function listDirectoryEnd(listingId: string): Promise<void> {
   await commands.listDirectoryEnd(listingId)
 }
 
-/** Force a re-read of a watched listing, emitting any diff. */
-export async function refreshListing(listingId: string): Promise<TimedOut<null>> {
-  return commands.refreshListing(listingId)
+/**
+ * Re-reads a listing, emitting any diff.
+ *
+ * `force` is required rather than defaulted, because the two callers mean
+ * different things and the difference is expensive. Pass `true` only for an
+ * explicit "re-read this now" from the user (⌘R) or an agent (the MCP `refresh`
+ * tool): it bypasses the backend short-circuit that answers out of the cache on
+ * a volume whose watcher claims to see every writer, which is a lie on SMB.
+ * Pass `false` for a top-up after a write op, where the short-circuit is what
+ * keeps a 1k-entry MTP folder from costing ~17 s. Rationale lives with
+ * `refresh_listing` in `commands/file_system/listing.rs`.
+ */
+export async function refreshListing(listingId: string, force: boolean): Promise<TimedOut<null>> {
+  return commands.refreshListing(listingId, force)
 }
 
 /**

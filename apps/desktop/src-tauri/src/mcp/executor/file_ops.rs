@@ -490,10 +490,10 @@ async fn execute_create<R: Runtime>(
 /// Execute refresh command.
 ///
 /// A round-trip: the FE forces a backend re-read of the focused pane's listing
-/// (the `refresh_listing` IPC — local volumes always re-read; watcher-backed
-/// MTP/SMB listings short-circuit, their caches are kept fresh by `notify_mutation`)
-/// and replies once it completes. `OK` means "the directory was actually re-read",
-/// not "an event was dispatched".
+/// (the `refresh_listing` IPC with `force: true`, so even a watcher-backed MTP or
+/// SMB listing is re-read rather than answered out of the cache) and replies once
+/// it completes. `OK` means "the directory was actually re-read", not "an event
+/// was dispatched".
 pub async fn execute_refresh<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     mcp_round_trip(app, "mcp-refresh", json!({}), "OK: Pane re-read from disk".to_string()).await
 }

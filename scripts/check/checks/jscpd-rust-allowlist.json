@@ -4,7 +4,6 @@
     "apps/desktop/src-tauri/src/agent/store/migrations.rs ↔ apps/desktop/src-tauri/src/operation_log/store/migrations.rs": 11,
     "apps/desktop/src-tauri/src/agent/tools/propose/rename/preflight.rs ↔ apps/desktop/src-tauri/src/file_system/write_operations/rename/bulk.rs": 14,
     "apps/desktop/src-tauri/src/commands/clipboard.rs": 48,
-    "apps/desktop/src-tauri/src/commands/file_system/listing.rs ↔ apps/desktop/src-tauri/src/native_drag/fulfillment.rs": 14,
     "apps/desktop/src-tauri/src/commands/file_system/write_ops.rs": 12,
     "apps/desktop/src-tauri/src/commands/quick_look.rs": 15,
     "apps/desktop/src-tauri/src/file_system/listing/reading.rs": 26,

@@ -14,9 +14,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
   `listing.rs`: streaming + virtual-scroll listing, path queries, `find_first_fuzzy_match` (type-to-jump),
   benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). `refresh_listing`
-  short-circuits on fully-covered listings (`Volume::listing_watch_coverage(path) == WatchCoverage::EveryWriter`): the cache is kept fresh by
-  `notify_mutation`, so a redundant full re-read after every transfer (the FE's `refreshPanesAfterTransfer`) used to
-  wedge slow volumes (MTP 17 s + USB session collision). Logs at debug `target: "refresh_listing"` on short-circuit.
+  takes a `force` flag. Unforced (the post-write top-ups: transfer, rename, mkdir) it short-circuits on fully-covered
+  listings (`Volume::listing_watch_coverage(path) == WatchCoverage::EveryWriter`), because the cache is kept fresh by
+  `notify_mutation` and a redundant full re-read after every transfer (the FE's `refreshPanesAfterTransfer`) wedges slow
+  volumes (MTP 17 s + USB session collision). Forced (⌘R and the MCP `refresh` tool) it always re-reads: `EveryWriter`
+  is a claim about the volume's own writes, so on SMB a cached answer to "re-read this" would be a lie. Logs at debug
+  `target: "refresh_listing"` on short-circuit.
   `write_ops.rs`: create, copy, move, delete, trash, scan preview, conflict resolution, synthetic diff helpers.
   `volume_copy.rs`: cross-volume copy/move/compress/scan, `SourceItemInput`. The three transfer commands are
   pass-throughs that build the `TauriEventSink` and hand everything to `write_operations::start_volume_{copy, move,

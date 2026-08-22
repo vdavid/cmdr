@@ -52,7 +52,8 @@ export function createChainReports(deps: ChainReportsDeps) {
       unconfirmedRefreshTimer = null
       // Read at fire time: the pane may have moved on, and the listing worth
       // refreshing is the one it is showing now.
-      void refreshListing(deps.getListingId())
+      // Unforced: a top-up after an unconfirmed rename chain.
+      void refreshListing(deps.getListingId(), false)
     }, UNCONFIRMED_REFRESH_QUIET_MS)
   }
 

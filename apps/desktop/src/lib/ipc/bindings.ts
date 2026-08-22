@@ -60,33 +60,44 @@ export const commands = {
   cancelListing: (listingId: string) => __TAURI_INVOKE<void>('cancel_listing', { listingId }),
   listDirectoryEnd: (listingId: string) => __TAURI_INVOKE<void>('list_directory_end', { listingId }),
   /**
-   *  Force a re-read of a watched directory listing, emitting any diff.
-   *  Used after write operations (move) when the file watcher may not fire promptly.
+   *  Re-reads a directory listing, emitting any diff.
    *
-   *  Short-circuits when the listing lives on a **non-local** volume that reports
-   *  [`WatchCoverage::EveryWriter`]. There the cache is being kept fresh by the
-   *  volume's `notify_mutation` pipeline (per-file `Added` / `Removed` / `Modified`
-   *  events patched into `LISTING_CACHE` after every successful mutation), so a full
-   *  `list_directory` re-read is pure redundancy and costs a lot on slow backends:
-   *  a 1k-entry MTP folder takes ~17 s and holds the USB session, colliding with
-   *  the user's next op.
+   *  `force` says whose idea the refresh was. `true` is an explicit "re-read this
+   *  now" from the user (⌘R) or an agent (the MCP `refresh` tool), and always
+   *  re-reads. `false` is a background top-up after a write op (mkdir, rename,
+   *  move), where a re-read is only worth paying for when nothing else keeps the
+   *  cache fresh.
    *
-   *  Local volumes always re-read. FSEvents on macOS races with `/tmp` ↔ `/private/tmp`
-   *  symlink resolution and with the fixture-recreate beforeEach loops we run in E2E,
-   *  so the cache is not reliably fresh at the moment `refresh_listing` lands — and
-   *  a local `list_directory` is sub-millisecond, so paying for a re-read is the
-   *  right trade. The whole point of the user/FE calling `refresh` is "I think the
-   *  cache might be stale, please update it"; on local FS that's exactly what we do.
+   *  So `force: false` short-circuits when the listing lives on a **non-local**
+   *  volume that reports [`WatchCoverage::EveryWriter`]. There the cache is being
+   *  kept fresh by the volume's `notify_mutation` pipeline (per-file `Added` /
+   *  `Removed` / `Modified` events patched into `LISTING_CACHE` after every
+   *  successful mutation), so a full `list_directory` re-read is pure redundancy
+   *  and costs a lot on slow backends: a 1k-entry MTP folder takes ~17 s and holds
+   *  the USB session, colliding with the user's next op.
+   *
+   *  `force: true` skips that check, because `EveryWriter` is a claim about the
+   *  volume's OWN writes, not about everyone's: SMB's watcher misses writes made
+   *  from another machine, so answering a user's refresh out of the cache would be
+   *  a lie. The cost is bounded by how rarely a person presses ⌘R, which is the
+   *  whole reason the write-op callers stay unforced.
+   *
+   *  Local volumes always re-read either way. FSEvents on macOS races with
+   *  `/tmp` ↔ `/private/tmp` symlink resolution and with the fixture-recreate
+   *  beforeEach loops we run in E2E, so the cache is not reliably fresh at the
+   *  moment `refresh_listing` lands — and a local `list_directory` is
+   *  sub-millisecond, so paying for a re-read is the right trade.
    *
    *  Returns `TimedOut { data: (), timed_out: false }` immediately when the
    *  short-circuit fires, matching the `timed_out: false` shape the FE already
    *  handles on the fast-path.
    *
-   *  Note: only this user-triggered command is gated. The FSEvents/SMB/MTP watcher
-   *  callbacks call `handle_directory_change` directly and are intentionally left
-   *  alone — they're how the cache stays in sync in the first place.
+   *  Note: only this command is gated. The FSEvents/SMB/MTP watcher callbacks call
+   *  `handle_directory_change` directly and are intentionally left alone — they're
+   *  how the cache stays in sync in the first place.
    */
-  refreshListing: (listingId: string) => __TAURI_INVOKE<TimedOut<null>>('refresh_listing', { listingId }),
+  refreshListing: (listingId: string, force: boolean) =>
+    __TAURI_INVOKE<TimedOut<null>>('refresh_listing', { listingId, force }),
   getFileRange: (listingId: string, start: number, count: number, includeHidden: boolean) =>
     typedError<FileEntry[], string>(__TAURI_INVOKE('get_file_range', { listingId, start, count, includeHidden })),
   getFileAt: (listingId: string, index: number, includeHidden: boolean) =>

@@ -4,9 +4,10 @@ import type { FilePaneAPI } from './types'
 import type { FileEntry } from '../types'
 import type { SelectionAction } from '../../../routes/(main)/explorer-api'
 
-const { findFileIndexSpy, findFileIndicesSpy, refreshListingSpy } = vi.hoisted(() => ({
+const { findFileIndexSpy, findFileIndicesSpy, refreshListingSpy, addToastSpy } = vi.hoisted(() => ({
   findFileIndexSpy: vi.fn<() => Promise<number | null>>(),
   findFileIndicesSpy: vi.fn<() => Promise<Record<string, number>>>(),
+  addToastSpy: vi.fn(),
   refreshListingSpy: vi.fn<() => Promise<{ data: null; timedOut: boolean }>>(() =>
     Promise.resolve({ data: null, timedOut: false }),
   ),
@@ -23,6 +24,8 @@ vi.mock('$lib/tauri-commands', () => ({
 // Empty store ⇒ a real id ('root', 'mtp-…') falls to the listable `local`/`mtp`
 // rows (hasBackendListing: true ⇒ not a snapshot pane).
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
+
+vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
@@ -514,18 +517,33 @@ describe('delegating commands', () => {
 
   it('refreshPane forces a backend re-read, then re-renders', async () => {
     // Pre-fix this only bumped the render counter — a stale cache stayed stale.
+    // The `true` is the honesty half: on a volume whose watcher claims to see
+    // every writer (SMB), an unforced refresh answers out of the cache.
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
     await cmds.refreshPane()
-    expect(refreshListingSpy).toHaveBeenCalledExactlyOnceWith('listing-1')
+    expect(refreshListingSpy).toHaveBeenCalledExactlyOnceWith('listing-1', true)
     expect(ref.refreshView).toHaveBeenCalledOnce()
   })
 
-  it('refreshPane throws when the backend re-read times out', async () => {
+  it('refreshPane re-scans hosts when the pane shows the network browser', async () => {
+    // ⌘R means "refresh what I'm looking at", and the network browser has no
+    // listing to re-read.
+    const ref = buildPaneRef({ isInNetworkView: true })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await cmds.refreshPane()
+    expect(ref.refreshNetworkHosts).toHaveBeenCalledOnce()
+    expect(refreshListingSpy).not.toHaveBeenCalled()
+  })
+
+  it('tells the user and the agent when the re-read outlives its wait', async () => {
+    // The read is still running, so the agent must not get an OK — and the person
+    // who pressed ⌘R must not be left wondering whether anything happened.
     refreshListingSpy.mockResolvedValueOnce({ data: null, timedOut: true })
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    await expect(cmds.refreshPane()).rejects.toThrow('Refresh timed out')
+    await expect(cmds.refreshPane()).rejects.toThrow('still running')
+    expect(addToastSpy).toHaveBeenCalledOnce()
     expect(ref.refreshView).not.toHaveBeenCalled()
   })
 

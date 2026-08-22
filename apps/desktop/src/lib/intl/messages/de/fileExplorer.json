@@ -108,6 +108,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
+  "fileExplorer.pane.refreshStillRunningToast": "Der Ordner wird noch gelesen. Die Liste aktualisiert sich, sobald er da ist.",
+  "@fileExplorer.pane.refreshStillRunningToast": {
+    "sourceHash": "0636af4"
+  },
   "fileExplorer.pane.dialogRenderFailedToast": "Dieser Dialog konnte nicht geöffnet werden, deshalb haben wir ihn geschlossen und die Tastatur wieder freigegeben. Bitte versuche es erneut.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "sourceHash": "059dfbd"

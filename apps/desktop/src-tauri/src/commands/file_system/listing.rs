@@ -411,43 +411,69 @@ pub async fn list_directory_end(listing_id: String) {
     ops_list_directory_end(&listing_id);
 }
 
-/// Force a re-read of a watched directory listing, emitting any diff.
-/// Used after write operations (move) when the file watcher may not fire promptly.
+/// The listing's path when a non-local volume's own watcher claims to see every
+/// writer of it, so an unforced [`refresh_listing`] can skip the re-read. `None`
+/// whenever the re-read has to happen: local volume, unregistered volume, no
+/// cache entry, or a watcher that admits it misses writes.
+async fn watcher_backed_listing_path(listing_id: &str) -> Option<PathBuf> {
+    let (volume_id, path) = crate::file_system::listing::get_listing_volume_id_and_path(listing_id)?;
+    let volume = get_volume_manager().resolve(&volume_id, &path).await.volume?;
+    let watcher_sees_every_writer =
+        volume.local_path().is_none() && volume.listing_watch_coverage(&path) == WatchCoverage::EveryWriter;
+    watcher_sees_every_writer.then_some(path)
+}
+
+/// Re-reads a directory listing, emitting any diff.
 ///
-/// Short-circuits when the listing lives on a **non-local** volume that reports
-/// [`WatchCoverage::EveryWriter`]. There the cache is being kept fresh by the
-/// volume's `notify_mutation` pipeline (per-file `Added` / `Removed` / `Modified`
-/// events patched into `LISTING_CACHE` after every successful mutation), so a full
-/// `list_directory` re-read is pure redundancy and costs a lot on slow backends:
-/// a 1k-entry MTP folder takes ~17 s and holds the USB session, colliding with
-/// the user's next op.
+/// `force` says whose idea the refresh was. `true` is an explicit "re-read this
+/// now" from the user (⌘R) or an agent (the MCP `refresh` tool), and always
+/// re-reads. `false` is a background top-up after a write op (mkdir, rename,
+/// move), where a re-read is only worth paying for when nothing else keeps the
+/// cache fresh.
 ///
-/// Local volumes always re-read. FSEvents on macOS races with `/tmp` ↔ `/private/tmp`
-/// symlink resolution and with the fixture-recreate beforeEach loops we run in E2E,
-/// so the cache is not reliably fresh at the moment `refresh_listing` lands — and
-/// a local `list_directory` is sub-millisecond, so paying for a re-read is the
-/// right trade. The whole point of the user/FE calling `refresh` is "I think the
-/// cache might be stale, please update it"; on local FS that's exactly what we do.
+/// So `force: false` short-circuits when the listing lives on a **non-local**
+/// volume that reports [`WatchCoverage::EveryWriter`]. There the cache is being
+/// kept fresh by the volume's `notify_mutation` pipeline (per-file `Added` /
+/// `Removed` / `Modified` events patched into `LISTING_CACHE` after every
+/// successful mutation), so a full `list_directory` re-read is pure redundancy
+/// and costs a lot on slow backends: a 1k-entry MTP folder takes ~17 s and holds
+/// the USB session, colliding with the user's next op.
+///
+/// `force: true` skips that check, because `EveryWriter` is a claim about the
+/// volume's OWN writes, not about everyone's: SMB's watcher misses writes made
+/// from another machine, so answering a user's refresh out of the cache would be
+/// a lie. The cost is bounded by how rarely a person presses ⌘R, which is the
+/// whole reason the write-op callers stay unforced.
+///
+/// Local volumes always re-read either way. FSEvents on macOS races with
+/// `/tmp` ↔ `/private/tmp` symlink resolution and with the fixture-recreate
+/// beforeEach loops we run in E2E, so the cache is not reliably fresh at the
+/// moment `refresh_listing` lands — and a local `list_directory` is
+/// sub-millisecond, so paying for a re-read is the right trade.
 ///
 /// Returns `TimedOut { data: (), timed_out: false }` immediately when the
 /// short-circuit fires, matching the `timed_out: false` shape the FE already
 /// handles on the fast-path.
 ///
-/// Note: only this user-triggered command is gated. The FSEvents/SMB/MTP watcher
-/// callbacks call `handle_directory_change` directly and are intentionally left
-/// alone — they're how the cache stays in sync in the first place.
+/// Note: only this command is gated. The FSEvents/SMB/MTP watcher callbacks call
+/// `handle_directory_change` directly and are intentionally left alone — they're
+/// how the cache stays in sync in the first place.
 #[tauri::command]
 #[specta::specta]
-pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
-    let resolved = match crate::file_system::listing::get_listing_volume_id_and_path(&listing_id) {
-        Some((volume_id, path)) => Some((get_volume_manager().resolve(&volume_id, &path).await, path)),
-        None => None,
-    };
-    if let Some((resolved, path)) = resolved
-        && let Some(volume) = resolved.volume
-        && volume.local_path().is_none()
-        && volume.listing_watch_coverage(&path) == WatchCoverage::EveryWriter
-    {
+pub async fn refresh_listing(listing_id: String, force: bool) -> TimedOut<()> {
+    refresh_listing_within(listing_id, force, REFRESH_WAIT).await
+}
+
+/// How long [`refresh_listing`] waits for the re-read before answering
+/// `timed_out: true`. The re-read runs on regardless; this is only how long the
+/// caller blocks.
+const REFRESH_WAIT: Duration = Duration::from_secs(2);
+
+/// [`refresh_listing`] with the wait spelled out, so tests don't spend it.
+async fn refresh_listing_within(listing_id: String, force: bool, wait: Duration) -> TimedOut<()> {
+    // Forcing skips the volume lookup as well as the short-circuit: the answer
+    // can't change the outcome, and resolving reaches out to the volume manager.
+    if !force && let Some(path) = watcher_backed_listing_path(&listing_id).await {
         log::debug!(
             target: "refresh_listing",
             "refresh_listing: short-circuit, watcher-backed non-local listing (listing_id={}, path={})",
@@ -460,11 +486,16 @@ pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
         };
     }
 
-    let timed_out = tokio::time::timeout(Duration::from_secs(2), async {
+    // Spawned, not awaited in place: the wait must never DROP the re-read. A
+    // dropped `list_directory` abandons an MTP read mid-PTP-transaction (which
+    // wedges the phone until it's replugged) and throws away the very re-read the
+    // caller asked for. Dropping a `JoinHandle` only detaches the task, so a slow
+    // read runs to completion and emits its diff whenever it lands. The wait
+    // decides how long the CALLER blocks, nothing else.
+    let reread = tokio::spawn(async move {
         crate::file_system::watcher::handle_directory_change(&listing_id).await;
-    })
-    .await
-    .is_err();
+    });
+    let timed_out = tokio::time::timeout(wait, reread).await.is_err();
     TimedOut { data: (), timed_out }
 }
 
@@ -515,178 +546,5 @@ pub fn benchmark_log(message: String) {
 }
 
 #[cfg(test)]
-mod refresh_listing_tests {
-    //! Tests for the `refresh_listing` short-circuit on watcher-backed listings (M1
-    //! of the cancel-settled plan). Pattern adapted from
-    //! `write_operations::delete_volume_reuse_tests` — a counter-wrapping
-    //! `InMemoryVolume` whose `listing_watch_coverage` is flipped per test, seeded into
-    //! `LISTING_CACHE` and `VolumeManager`, then we call `refresh_listing` and
-    //! assert `list_directory` was or wasn't invoked.
-    use super::*;
-    use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard, unique_test_id};
-    use crate::file_system::listing::metadata::FileEntry;
-    use crate::file_system::volume::manager::get_volume_manager;
-    use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError, WatchCoverage};
-    use std::future::Future;
-    use std::path::Path;
-    use std::pin::Pin;
-    use std::sync::Arc;
-    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-
-    /// Wraps an `InMemoryVolume` and counts `list_directory` calls. `watched` is
-    /// flipped per test to pin both short-circuit and fall-through behaviour.
-    struct CountingVolume {
-        inner: InMemoryVolume,
-        watched: AtomicBool,
-        list_dir_calls: AtomicUsize,
-    }
-
-    impl CountingVolume {
-        fn new(name: &str, watched: bool) -> Self {
-            Self {
-                inner: InMemoryVolume::new(name),
-                watched: AtomicBool::new(watched),
-                list_dir_calls: AtomicUsize::new(0),
-            }
-        }
-
-        fn list_dir_count(&self) -> usize {
-            self.list_dir_calls.load(Ordering::Relaxed)
-        }
-    }
-
-    impl Volume for CountingVolume {
-        fn name(&self) -> &str {
-            self.inner.name()
-        }
-        fn root(&self) -> &Path {
-            self.inner.root()
-        }
-        fn as_any(&self) -> &dyn std::any::Any {
-            self
-        }
-
-        fn list_directory<'a>(
-            &'a self,
-            path: &'a Path,
-            on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-        ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-            self.list_dir_calls.fetch_add(1, Ordering::Relaxed);
-            self.inner.list_directory(path, on_progress)
-        }
-
-        fn get_metadata<'a>(
-            &'a self,
-            path: &'a Path,
-        ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-            self.inner.get_metadata(path)
-        }
-
-        fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-            self.inner.exists(path)
-        }
-
-        fn is_directory<'a>(
-            &'a self,
-            path: &'a Path,
-        ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-            self.inner.is_directory(path)
-        }
-
-        fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
-            if self.watched.load(Ordering::Relaxed) {
-                WatchCoverage::EveryWriter
-            } else {
-                WatchCoverage::None
-            }
-        }
-    }
-
-    fn insert_listing(tag: &str, volume_id: &str, path: &str) -> TestListingGuard {
-        TestListing::new().volume(volume_id).path(path).sequence(1).insert(tag)
-    }
-
-    /// Watched volume: short-circuit fires, `list_directory` never called.
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn refresh_listing_short_circuits_on_watched_volume() {
-        let vid = unique_test_id("refresh-listing-short-circuit-vid");
-        let path = "/dcim";
-
-        let vol = Arc::new(CountingVolume::new("watched-vol", true));
-        get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
-        let listing = insert_listing("refresh-listing-short-circuit", &vid, path);
-
-        let result = refresh_listing(listing.id().to_string()).await;
-
-        assert!(!result.timed_out, "short-circuit returns timed_out=false");
-        assert_eq!(
-            vol.list_dir_count(),
-            0,
-            "watched-backed refresh_listing must skip list_directory",
-        );
-
-        get_volume_manager().unregister(&vid);
-    }
-
-    /// Unwatched volume: fall-through path runs (`handle_directory_change` calls
-    /// `list_directory`). The InMemoryVolume's directory exists so we get a real
-    /// listing rather than NotFound.
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn refresh_listing_falls_through_on_unwatched() {
-        let vid = unique_test_id("refresh-listing-fallthrough-vid");
-        let path = "/dcim";
-
-        let vol = Arc::new(CountingVolume::new("unwatched-vol", false));
-        // Populate one file so `list_directory` succeeds.
-        vol.inner.create_file(Path::new("/dcim/a.jpg"), b"alpha").await.unwrap();
-        get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
-        let listing = insert_listing("refresh-listing-fallthrough", &vid, path);
-
-        let result = refresh_listing(listing.id().to_string()).await;
-
-        assert!(!result.timed_out, "fast InMemory list_directory shouldn't time out");
-        assert!(
-            vol.list_dir_count() >= 1,
-            "unwatched volume must fall through to list_directory (count was {})",
-            vol.list_dir_count(),
-        );
-
-        get_volume_manager().unregister(&vid);
-    }
-
-    /// No cache entry for the listing_id: today's behaviour is a clean no-op
-    /// (`handle_directory_change` early-returns). The short-circuit must NOT
-    /// suppress that path or panic; we just assert the call completes cleanly.
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn refresh_listing_falls_through_on_missing_listing() {
-        let lid = unique_test_id("refresh-listing-missing");
-        // No insert_listing call; no register call.
-        let result = refresh_listing(lid).await;
-        assert!(
-            !result.timed_out,
-            "missing listing should resolve quickly without timeout"
-        );
-    }
-
-    /// Cache has the listing but the volume isn't registered: short-circuit
-    /// can't ask `listing_watch_coverage`, so we fall through to today's behaviour
-    /// (`handle_directory_change` finds no volume, falls back to local std::fs
-    /// for the path which doesn't exist, and returns cleanly without panic).
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn refresh_listing_falls_through_when_volume_not_registered() {
-        let vid = unique_test_id("refresh-listing-unregistered-vid");
-        // Use a path that doesn't exist on disk so the std::fs fallback returns
-        // NotFound and the function exits cleanly.
-        let path = "/tmp/cmdr-refresh-listing-test-nonexistent-path-xyz123";
-
-        // Note: NO get_volume_manager().register() call.
-        let listing = insert_listing("refresh-listing-unregistered", &vid, path);
-
-        let result = refresh_listing(listing.id().to_string()).await;
-
-        assert!(
-            !result.timed_out,
-            "unregistered-volume fallthrough should resolve quickly"
-        );
-    }
-}
+#[path = "refresh_listing_test.rs"]
+mod refresh_listing_test;

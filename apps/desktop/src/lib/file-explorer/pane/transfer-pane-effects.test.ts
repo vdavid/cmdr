@@ -112,8 +112,8 @@ describe('refreshing panes after a transfer', () => {
 
     effects.refreshPanesAfterTransfer()
 
-    expect(refreshListing).toHaveBeenCalledWith('listing-left')
-    expect(refreshListing).toHaveBeenCalledWith('listing-right')
+    expect(refreshListing).toHaveBeenCalledWith('listing-left', false)
+    expect(refreshListing).toHaveBeenCalledWith('listing-right', false)
   })
 
   it('is inert once the operation has settled and the slot is empty', () => {

@@ -1,4 +1,6 @@
 import { findFileIndex, findFileIndices, getPathsAtIndices, refreshListing, toggleTags } from '$lib/tauri-commands'
+import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
 import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import { capabilitiesFor } from './volume-capabilities'
@@ -331,22 +333,35 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
   }
 
   /**
-   * Refresh the focused pane: force a backend re-read of the listing, then
-   * re-render. Used by the MCP refresh tool (a round-trip — throws on failure so
-   * the adapter reports the real outcome). The re-read is the point: the whole
-   * reason a caller refreshes is "I think the cache is stale", and a bare
-   * `refreshView()` only re-renders the same stale cache. Local volumes always
-   * re-read; watcher-backed MTP/SMB listings short-circuit in the backend (their
-   * caches are kept fresh by `notify_mutation`, and a redundant MTP re-read costs
-   * ~17 s) — see `refresh_listing` in `commands/file_system/listing.rs`.
+   * Refresh the focused pane: re-read whatever it is showing, then re-render.
+   * Behind ⌘R (`pane.refresh`) and the MCP refresh tool (a round-trip — throws on
+   * failure so the adapter reports the real outcome).
+   *
+   * The network browser has no listing to re-read, so there the refresh is a host
+   * re-scan instead. Everywhere else the re-read is the point: the whole reason a
+   * caller refreshes is "I think the cache is stale", and a bare `refreshView()`
+   * only re-renders the same stale cache. Hence `force: true`, which also bypasses
+   * the backend's watcher short-circuit — see `refresh_listing` in
+   * `commands/file_system/listing.rs` for what that costs and why the write-op
+   * callers don't do it.
    */
   async function refreshPane(): Promise<void> {
     const paneRef = access.getPaneRef(access.getFocusedPane())
     if (!paneRef) throw new Error('The focused pane is unavailable')
+    if (paneRef.isInNetworkView()) {
+      paneRef.refreshNetworkHosts()
+      return
+    }
     const listingId = paneRef.getListingId()
     if (listingId) {
-      const result = await refreshListing(listingId)
-      if (result.timedOut) throw new Error('Refresh timed out — the volume may be unresponsive')
+      const result = await refreshListing(listingId, true)
+      if (result.timedOut) {
+        // The re-read outlived the backend's wait but is still running (it emits its
+        // diff whenever it lands), so tell the user and let the agent's round-trip
+        // report the honest "not done yet" instead of a premature OK.
+        addToast(tString('fileExplorer.pane.refreshStillRunningToast'), { level: 'info' })
+        throw new Error('The re-read is still running past its wait; the pane updates when it lands')
+      }
     }
     paneRef.refreshView()
   }

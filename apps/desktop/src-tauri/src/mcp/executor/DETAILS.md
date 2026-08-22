@@ -90,8 +90,9 @@ lives in the pure, unit-tested `parse_mcp_response` in `mod.rs`. Per-tool:
 - `select` (5 s, all modes): the FE applies the selection (names mode maps names → indices via the `findFileIndices`
   batch IPC first), then flushes the state push before replying, so a follow-up `copy` reads fresh selection state.
   Missing names come back as the round-trip error.
-- `refresh` (5 s): the FE forces a backend re-read via `refreshListing` (local volumes always re-read; watcher-backed
-  MTP/SMB short-circuit) and replies once it completes. `OK` means the directory was actually re-read.
+- `refresh` (5 s): the FE forces a backend re-read via `refreshListing(listingId, true)`, which bypasses the
+  watcher-backed short-circuit, so `OK` means the directory was actually re-read on every volume. In the network
+  browser the same command re-scans hosts instead.
 - `nav_to_path`: 30 s via `mcp_round_trip_with_timeout`; the FE delays the response until `handleListingComplete` fires.
 - `open_under_cursor`: 5 s via `mcp_round_trip_with_timeout`; opening a file delegates to the OS default app, so neither
   `GenerationAdvanced` nor `WindowAppeared` would fire.

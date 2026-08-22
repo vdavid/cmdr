@@ -1190,6 +1190,7 @@ export type MessageKey =
   | 'fileExplorer.pane.ejectFailedToast'
   | 'fileExplorer.pane.fileExplorerAriaLabel'
   | 'fileExplorer.pane.filePaneAriaLabel'
+  | 'fileExplorer.pane.refreshStillRunningToast'
   | 'fileExplorer.pane.resizePanesAriaLabel'
   | 'fileExplorer.pane.trashUnconfirmedToast'
   | 'fileExplorer.quickLookHint.configurable'

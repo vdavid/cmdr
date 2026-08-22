@@ -21,10 +21,12 @@ export interface TransferPaneEffectsDeps {
   getRightPaneRef: () => FilePaneAPI | undefined
 }
 
-/** Force a backend re-read on a pane's listing so file diffs are emitted promptly. */
+/** Tops a pane's listing up from the backend so file diffs are emitted promptly. */
 function refreshPaneListing(paneRef: FilePaneAPI | undefined): void {
   const listingId = paneRef?.getListingId()
-  if (listingId) void refreshListing(listingId)
+  // Unforced: a top-up after a transfer. A watcher-backed volume has already
+  // patched the cache per file, and re-reading an MTP folder here costs ~17 s.
+  if (listingId) void refreshListing(listingId, false)
 }
 
 /**

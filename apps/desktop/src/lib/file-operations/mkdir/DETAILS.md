@@ -30,3 +30,8 @@ A slow `createDirectory` returns a timeout-shaped error after the backend's dead
 the dialog shows a yellow "still working" banner (`--color-warning` / `--color-warning-bg`) with "Refresh listing" and
 "Dismiss" actions, so the user can refresh and verify outside the dialog. The folder may still land via the directory
 watcher.
+
+The banner's refresh calls `refreshListing(listingId, false)`: UNFORCED, unlike ⌘R. This runs right after a write on a
+volume whose `notify_mutation` pipeline has already patched the cache, and forcing here would make a 1k-entry MTP folder
+cost ~17 s on top of the timeout the user just waited out. Pinned by `NewFolderDialog.timeout.test.ts`; the forced-vs-
+unforced split lives with `refresh_listing` in `src-tauri/src/commands/file_system/listing.rs`.

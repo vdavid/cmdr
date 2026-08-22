@@ -610,7 +610,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
                   level: 'warn',
                   dismissal: 'persistent',
                 })
-                void refreshListing(deps.getListingId())
+                // Unforced: a top-up after an unconfirmed rename.
+                void refreshListing(deps.getListingId(), false)
               } else {
                 addToast(getIpcErrorMessage(e), { level: 'error' })
               }
