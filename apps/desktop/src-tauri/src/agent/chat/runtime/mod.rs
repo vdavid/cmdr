@@ -174,6 +174,35 @@ impl ChatRuntime {
         Ok(conversation_id)
     }
 
+    /// Run a WAKE's turn: the agent noticed something and is speaking in a thread it opened
+    /// for itself.
+    ///
+    /// ⚠️ **A wake must not bypass `ChatRuntime`.** The rail never calls `run_turn` directly,
+    /// and neither may the agent: the write connection and the per-thread single-flight guard
+    /// are what stop a user's reply and the wake's own turn running concurrently in one
+    /// thread. A wake thread is a real conversation the user can reply to.
+    ///
+    /// ⚠️ **This is a SECOND write connection to `main.db`**, beside the one the thread that
+    /// prepared the wake holds. WAL makes that fine, and the preparing thread's writes are
+    /// single-row and never held across an await, so the worst case is a brief wait on the
+    /// busy timeout.
+    ///
+    /// The conversation already exists (the prepare step created it), so nothing is created
+    /// here; `params.user_text` is the digest.
+    pub async fn wake(
+        &self,
+        llm: &dyn AgentLlm,
+        dispatcher: &dyn ToolDispatcher,
+        tools: &[crate::agent::llm::types::ToolDeclaration],
+        params: &TurnParams<'_>,
+        sink: &ChatEventSink,
+        cancel: &CancellationToken,
+    ) -> Result<TurnResult, AgentStoreError> {
+        let conn = store::open_write_connection(&self.db_path)?;
+        let _guard = self.locks.acquire(params.conversation_id, sink).await;
+        Ok(run_turn(llm, dispatcher, &conn, tools, params, sink, cancel).await)
+    }
+
     /// Record that a settings change switched an open thread's effective model, honoring
     /// the single-flight lock so the event lands only AFTER any in-flight turn finishes
     /// (that turn keeps its already-resolved model; the event marks the boundary). Returns

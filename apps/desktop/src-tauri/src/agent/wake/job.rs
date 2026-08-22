@@ -186,7 +186,19 @@ pub async fn run_prepared_wake(
     sink: &ChatEventSink,
     cancel: &CancellationToken,
 ) -> TurnResult {
-    let turn = TurnParams {
+    let turn = wake_turn_params(prepared, params);
+    run_turn(llm, dispatcher, conn, params.tools, &turn, sink, cancel).await
+}
+
+/// What a wake's turn looks like: the digest as the user-role message, in the thread prepare
+/// opened.
+///
+/// Written once and shared, because the scheduler does NOT go through
+/// [`run_prepared_wake`] — it hands this to `ChatRuntime::wake`, which owns the write
+/// connection and the single-flight guard. Two places composing a wake's turn independently
+/// is how the two would drift.
+pub fn wake_turn_params<'a>(prepared: &'a PreparedWake, params: &'a RunWakeParams<'a>) -> TurnParams<'a> {
+    TurnParams {
         conversation_id: prepared.conversation_id,
         user_text: Some(&prepared.digest),
         cmdr_md: None,
@@ -196,8 +208,7 @@ pub async fn run_prepared_wake(
         provider: params.provider,
         model: params.model.clone(),
         prompt_budget: params.prompt_budget,
-    };
-    run_turn(llm, dispatcher, conn, params.tools, &turn, sink, cancel).await
+    }
 }
 
 /// Drive one wake to completion on a single thread: [`prepare_wake`] then
