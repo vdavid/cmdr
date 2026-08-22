@@ -373,6 +373,13 @@ volume at its own cadence (`Volume::space_poll_interval()`: 2 s local, 5 s netwo
 exceeds a configurable threshold (Settings > Advanced). The volume dropdown (`volume-space-manager.svelte.ts`) uses a
 separate on-demand fetch and is unaffected.
 
+The wording lives in `disk-space-utils.ts`, three catalog-backed functions over one `VolumeSpaceInfo` plus an injected
+size formatter (the caller picks binary vs decimal). Two things are in the catalog that look like they belong in code,
+both because they vary by language: the `%` sign is a separate literal from `{percentText}` (German, French, and Swedish
+write `10 %`), and `fileExplorer.diskSpace.barTooltip` is a select whose only translatable content is the punctuation
+joining the size line to the notes after it (Chinese ends a sentence with `。`). `getDiskUsageLevel` returns a typed
+`severity` band, not an English label: the tooltip branches on the band, and the copy is only ever rendered.
+
 ## Error display
 
 When a directory listing fails, the user sees a full-pane `ErrorPane` instead of the file list. This replaces the old

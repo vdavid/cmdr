@@ -120,6 +120,13 @@ export function pickUiLocale(setting: string): string | null {
  * backend already drops those, and this second guard is what keeps a stray or
  * replayed event from re-rendering every open `t()` in the window for nothing.
  *
+ * ❌ **One subscriber per window.** That same guard means the first callback to
+ * run adopts the new answers, so a SECOND subscriber compares the event against
+ * them, finds no change, and silently never fires. Anything that needs to react
+ * to a live OS-locale change hangs off the window's existing `onMoved`
+ * (`settings-applier.ts` in the main window, `initWindowLanguageSync()` in the
+ * others), never off a subscription of its own.
+ *
  * @param onMoved run once per real change
  * @returns an unlisten for the subscription
  */

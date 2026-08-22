@@ -134,6 +134,10 @@ formatters themselves are memoized (keyed on the returned locale), so the hot pa
 
 ## Memoization shape
 
+Constructing an `Intl` formatter costs roughly 10× a format call, and these run per-visible-entry both in render and in
+the column-measurement fold, so a per-call construction is what regresses scroll and measure on big directories. Hence
+the caches below.
+
 `getNumberFormatter(options)` caches by `${locale} ${JSON.stringify(options)}` and rebuilds only when
 `getFormatLocale()` changes. `getGroupSeparator()` caches the group character per locale (derived from
 `Intl.NumberFormat(locale).formatToParts(11111)`). Both mirror the lazy-singleton `getSystemLocaleFormatter()` in
