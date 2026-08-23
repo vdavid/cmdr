@@ -644,5 +644,33 @@
   "askCmdr.wake.needsApiKey": "Ask Cmdr bevakar, men behöver en API-nyckel för att tänka. Öppna inställningarna.",
   "@askCmdr.wake.needsApiKey": {
     "sourceHash": "e9b96e6"
+  },
+  "askCmdr.wakeDigest.summary": "Det här har ändrats i {foldersText} {folders, plural, one {mapp} other {mappar}}",
+  "@askCmdr.wakeDigest.summary": {
+    "sourceHash": "07a2ce7"
+  },
+  "askCmdr.wakeDigest.created": "{countText} {count, plural, one {nytt objekt} other {nya objekt}}",
+  "@askCmdr.wakeDigest.created": {
+    "sourceHash": "2d0353f"
+  },
+  "askCmdr.wakeDigest.modified": "{countText} {count, plural, one {ändrat objekt} other {ändrade objekt}}",
+  "@askCmdr.wakeDigest.modified": {
+    "sourceHash": "6aa21c5"
+  },
+  "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {borttaget objekt} other {borttagna objekt}}",
+  "@askCmdr.wakeDigest.removed": {
+    "sourceHash": "9711102"
+  },
+  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {omdöpt objekt} other {omdöpta objekt}}",
+  "@askCmdr.wakeDigest.renamed": {
+    "sourceHash": "2cf9f0f"
+  },
+  "askCmdr.wakeDigest.noChanges": "Inget ändrades",
+  "@askCmdr.wakeDigest.noChanges": {
+    "sourceHash": "0ba2a57"
+  },
+  "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, one {mapp till} other {mappar till}} i {ancestor}: {changesText} {changes, plural, one {ändring} other {ändringar}}",
+  "@askCmdr.wakeDigest.rollup": {
+    "sourceHash": "3b8f0dd"
   }
 }

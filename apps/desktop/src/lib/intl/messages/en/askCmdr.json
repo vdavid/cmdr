@@ -896,5 +896,72 @@
   "askCmdr.wake.needsApiKey": "Ask Cmdr is watching, but it needs an API key to think. Open settings.",
   "@askCmdr.wake.needsApiKey": {
     "description": "Tooltip and spoken label on the status-corner indicator shown when the user let Ask Cmdr watch their folders but no AI provider is configured, so nothing can be sent anywhere. Pressing it opens Cmdr's AI settings. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case."
+  },
+  "askCmdr.wakeDigest.summary": "What changed in {foldersText} {folders, plural, one {folder} other {folders}}",
+  "@askCmdr.wakeDigest.summary": {
+    "description": "The always-visible label on the collapsed block that opens a chat Ask Cmdr started by itself: it says how many folders the agent looked at before it spoke. Pressing the label expands the per-folder breakdown. A folder counted here may be named outright inside or only be part of a rollup line, so the number covers both. Sentence case, no full stop: it is a label on a disclosure control, not a sentence.",
+    "placeholders": {
+      "foldersText": {
+        "content": "How many folders the agent looked at, already formatted with thousands separators, like 1,234."
+      },
+      "folders": { "content": "The same folder count as a raw integer, used only to pick the singular or plural word." }
+    }
+  },
+  "askCmdr.wakeDigest.created": "{countText} {count, plural, one {new item} other {new items}}",
+  "@askCmdr.wakeDigest.created": {
+    "description": "One fragment in the comma-separated tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself. Counts things that appeared in that folder. \"Item\" is the app's word for a file or a folder, because the tally covers both. Lowercase and no full stop: several of these fragments are joined with commas on one line.",
+    "placeholders": {
+      "countText": { "content": "How many things appeared, already formatted with thousands separators, like 1,234." },
+      "count": { "content": "The same count as a raw integer, used only to pick the singular or plural word." }
+    }
+  },
+  "askCmdr.wakeDigest.modified": "{countText} {count, plural, one {changed item} other {changed items}}",
+  "@askCmdr.wakeDigest.modified": {
+    "description": "One fragment in the comma-separated tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself. Counts things whose contents changed in that folder, as opposed to things that appeared, went away, or were renamed. \"Item\" is the app's word for a file or a folder. Lowercase and no full stop: several of these fragments are joined with commas on one line.",
+    "placeholders": {
+      "countText": { "content": "How many things changed, already formatted with thousands separators, like 1,234." },
+      "count": { "content": "The same count as a raw integer, used only to pick the singular or plural word." }
+    }
+  },
+  "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {removed item} other {removed items}}",
+  "@askCmdr.wakeDigest.removed": {
+    "description": "One fragment in the comma-separated tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself. Counts things that are no longer in that folder, whichever way they went (trashed, deleted, or moved out). \"Item\" is the app's word for a file or a folder. Lowercase and no full stop: several of these fragments are joined with commas on one line.",
+    "placeholders": {
+      "countText": { "content": "How many things went away, already formatted with thousands separators, like 1,234." },
+      "count": { "content": "The same count as a raw integer, used only to pick the singular or plural word." }
+    }
+  },
+  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {renamed item} other {renamed items}}",
+  "@askCmdr.wakeDigest.renamed": {
+    "description": "One fragment in the comma-separated tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself. Counts things that kept their contents but got a new name. \"Item\" is the app's word for a file or a folder. Lowercase and no full stop: several of these fragments are joined with commas on one line.",
+    "placeholders": {
+      "countText": {
+        "content": "How many things were renamed, already formatted with thousands separators, like 1,234."
+      },
+      "count": { "content": "The same count as a raw integer, used only to pick the singular or plural word." }
+    }
+  },
+  "askCmdr.wakeDigest.noChanges": "Nothing changed",
+  "@askCmdr.wakeDigest.noChanges": {
+    "description": "Stands in for the tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself, when every one of that folder's four counts came out at zero. Rare, and it exists so the line never renders blank. Sentence case, no full stop."
+  },
+  "askCmdr.wakeDigest.rollup": "{foldersText} more {folders, plural, one {folder} other {folders}} in {ancestor}: {changesText} {changes, plural, one {change} other {changes}}",
+  "@askCmdr.wakeDigest.rollup": {
+    "description": "The last line inside the expanded block that opens a chat Ask Cmdr started by itself, admitting how much the block is NOT showing: the agent had room to name only the busiest folders, and these are the rest, counted together under the deepest folder they all sit in. Being honest about the size of what is hidden is the whole point of the line, so keep both numbers. Sentence case, no full stop.",
+    "placeholders": {
+      "foldersText": {
+        "content": "How many folders are being summarized rather than named, already formatted with thousands separators, like 1,234."
+      },
+      "folders": {
+        "content": "The same folder count as a raw integer, used only to pick the singular or plural word."
+      },
+      "ancestor": {
+        "content": "The absolute path of the deepest folder all of them sit under, like /Users/dana/Projects. Never translate a path."
+      },
+      "changesText": {
+        "content": "How many changes happened across those folders in total, already formatted with thousands separators, like 1,234."
+      },
+      "changes": { "content": "The same change count as a raw integer, used only to pick the singular or plural word." }
+    }
   }
 }

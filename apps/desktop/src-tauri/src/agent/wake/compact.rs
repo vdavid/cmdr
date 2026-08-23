@@ -19,6 +19,7 @@ use std::collections::BTreeMap;
 
 use super::{ChangeCounters, EventBundle, Interest};
 use crate::agent::chat::budget::estimate_tokens_str;
+use crate::agent::llm::types::{WakeDigest, WakeDigestFolder, WakeDigestRollup};
 
 /// Past this many distinct parents, per-parent rollups stop being a summary and become their
 /// own wall of text, so the leftovers collapse into ONE line at their common ancestor instead.
@@ -58,14 +59,38 @@ impl Digest {
     /// The digest as the model reads it. An empty digest renders an empty string, never a
     /// header saying there is nothing to report: that would spend budget to say nothing.
     pub fn render(&self) -> String {
-        let mut out = String::new();
-        for line in &self.lines {
-            out.push_str(&render_line(line));
+        self.to_wire().render()
+    }
+
+    /// The digest as it is PERSISTED and as the rail reads it: the same folders and counts
+    /// with the interest scores dropped.
+    ///
+    /// ⚠️ The scores are a scheduling detail, not a record of what happened, and the wire
+    /// form outlives every wake that produced one. Widening this to carry them would put a
+    /// tuning knob's output in the user's thread forever.
+    pub fn to_wire(&self) -> WakeDigest {
+        WakeDigest {
+            folders: self
+                .lines
+                .iter()
+                .map(|line| WakeDigestFolder {
+                    folder: line.folder.clone(),
+                    created: line.counters.created,
+                    modified: line.counters.modified,
+                    removed: line.counters.removed,
+                    renamed: line.counters.renamed,
+                })
+                .collect(),
+            rollups: self
+                .rollups
+                .iter()
+                .map(|rollup| WakeDigestRollup {
+                    ancestor: rollup.ancestor.clone(),
+                    folders: rollup.folders,
+                    changes: rollup.counters.total(),
+                })
+                .collect(),
         }
-        for rollup in &self.rollups {
-            out.push_str(&render_rollup(rollup));
-        }
-        out
     }
 }
 
@@ -192,39 +217,16 @@ fn common_ancestor<'a>(paths: impl Iterator<Item = &'a str>) -> String {
     if joined.is_empty() { "/".to_string() } else { joined }
 }
 
-/// One folder line: where, and what happened there.
+/// What one folder's line costs the budget. The rendering itself lives on the wire type
+/// (`agent/llm/types.rs`), so the string the budget is measured against is byte-for-byte the
+/// string the provider ends up reading.
 fn render_line(line: &DigestLine) -> String {
-    format!("{}: {}\n", line.folder, counts_text(&line.counters))
-}
-
-/// One rollup line. The count is the point: it is how the agent knows the size of what it is
-/// not being shown.
-fn render_rollup(rollup: &Rollup) -> String {
-    format!(
-        "+ {} more folders under {}: {} changes\n",
-        rollup.folders,
-        rollup.ancestor,
-        rollup.counters.total()
-    )
-}
-
-/// Only the kinds that actually happened: a line of zeroes is budget spent on nothing.
-fn counts_text(counters: &ChangeCounters) -> String {
-    let parts = [
-        (counters.created, "new"),
-        (counters.modified, "changed"),
-        (counters.removed, "removed"),
-        (counters.renamed, "renamed"),
-    ];
-    let text = parts
-        .iter()
-        .filter(|(count, _)| *count > 0)
-        .map(|(count, label)| format!("{count} {label}"))
-        .collect::<Vec<_>>()
-        .join(", ");
-    if text.is_empty() {
-        "no changes".to_string()
-    } else {
-        text
+    WakeDigestFolder {
+        folder: line.folder.clone(),
+        created: line.counters.created,
+        modified: line.counters.modified,
+        removed: line.counters.removed,
+        renamed: line.counters.renamed,
     }
+    .render()
 }

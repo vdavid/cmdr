@@ -302,9 +302,114 @@ pub struct AgentToolResult {
     pub elided: bool,
 }
 
+/// What a wake noticed, as DATA: one entry per folder that earned its own line, plus
+/// the rolled-up remainder.
+///
+/// ⚠️ **A wake's first message is structured, never prose.** It is persisted as the
+/// thread's user-role message and lives in `main.db` for as long as the thread does, so
+/// a rendered English sentence there would be untranslated UI copy frozen where no later
+/// locale pass can reach it. The rail localizes these numbers itself; [`render`] exists
+/// for the provider, which reads English either way.
+///
+/// [`render`]: WakeDigest::render
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WakeDigest {
+    pub folders: Vec<WakeDigestFolder>,
+    pub rollups: Vec<WakeDigestRollup>,
+}
+
+/// One folder the digest names outright, with what happened in it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WakeDigestFolder {
+    pub folder: String,
+    pub created: u32,
+    pub modified: u32,
+    pub removed: u32,
+    pub renamed: u32,
+}
+
+/// Folders that did not earn a line, summarized under a shared ancestor. The COUNT is the
+/// point: it is how the reader knows the size of what it is not being shown.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WakeDigestRollup {
+    pub ancestor: String,
+    pub folders: u32,
+    /// Every change across those folders. `u64` because it is a SUM of four `u32` counters
+    /// over an unbounded number of folders, and the one number here that can overflow.
+    pub changes: u64,
+}
+
+impl WakeDigest {
+    /// The digest as the MODEL reads it. An empty digest renders an empty string, never a
+    /// header saying there is nothing to report: that would spend budget to say nothing.
+    ///
+    /// ❌ Never render this into the UI. It is deliberately English, deliberately terse,
+    /// and deliberately shaped for a prompt.
+    pub fn render(&self) -> String {
+        let mut out = String::new();
+        for folder in &self.folders {
+            out.push_str(&folder.render());
+        }
+        for rollup in &self.rollups {
+            out.push_str(&rollup.render());
+        }
+        out
+    }
+
+    /// Every path the digest mentions, in the order it mentions them. The message's FTS
+    /// text: paths are the user's own data rather than authored copy, so they are the one
+    /// part of a wake's first message that belongs in a search index.
+    pub fn paths(&self) -> Vec<&str> {
+        self.folders
+            .iter()
+            .map(|folder| folder.folder.as_str())
+            .chain(self.rollups.iter().map(|rollup| rollup.ancestor.as_str()))
+            .collect()
+    }
+}
+
+impl WakeDigestFolder {
+    /// One folder line for the prompt: where, and what happened there.
+    pub fn render(&self) -> String {
+        format!("{}: {}\n", self.folder, self.counts_text())
+    }
+
+    /// Only the kinds that actually happened: a line of zeroes is budget spent on nothing.
+    fn counts_text(&self) -> String {
+        let parts = [
+            (self.created, "new"),
+            (self.modified, "changed"),
+            (self.removed, "removed"),
+            (self.renamed, "renamed"),
+        ];
+        let text = parts
+            .iter()
+            .filter(|(count, _)| *count > 0)
+            .map(|(count, label)| format!("{count} {label}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        if text.is_empty() {
+            "no changes".to_string()
+        } else {
+            text
+        }
+    }
+}
+
+impl WakeDigestRollup {
+    /// One rollup line for the prompt. The folder count is what tells the model the size of
+    /// what it is not being shown.
+    pub fn render(&self) -> String {
+        format!(
+            "+ {} more folders under {}: {} changes\n",
+            self.folders, self.ancestor, self.changes
+        )
+    }
+}
+
 /// One ordered content part of a message. The variant keys serialize snake_case
-/// (`text`, `tool_call`, `tool_result`, `reasoning`) for a plainly-inspectable DB
-/// `content_blocks` JSON.
+/// (`text`, `tool_call`, `tool_result`, `reasoning`, `wake_digest`) for a
+/// plainly-inspectable DB `content_blocks` JSON.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentPart {
@@ -313,6 +418,9 @@ pub enum AgentPart {
     ToolResult(AgentToolResult),
     /// Opaque reasoning state; persisted and replayed untouched, never shown.
     Reasoning(ReasoningState),
+    /// What a wake noticed, structured. The provider reads [`WakeDigest::render`]; the rail
+    /// reads the numbers and says them in the user's own language.
+    WakeDigest(WakeDigest),
 }
 
 /// A full message: a role, its ordered typed parts, and its timestamp. Every

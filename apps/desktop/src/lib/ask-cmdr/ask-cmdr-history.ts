@@ -21,7 +21,15 @@ export function buildRailMessages(detail: ConversationDetailView): RailMessage[]
   const out: RailMessage[] = []
   for (const message of detail.messages) {
     if (message.role === 'user') {
-      out.push({ kind: 'user', id: message.id, text: joinText(message), attachments: [] })
+      // A wake opens its thread with a structured digest rather than typed prose, so the
+      // user-role row can carry either. The digest wins when it's there: a wake never also
+      // types something.
+      const digest = message.blocks.find((b) => b.type === 'wakeDigest')
+      if (digest) {
+        out.push({ kind: 'wakeDigest', id: message.id, folders: digest.folders, rollups: digest.rollups })
+      } else {
+        out.push({ kind: 'user', id: message.id, text: joinText(message), attachments: [] })
+      }
     } else if (message.role === 'assistant') {
       out.push({
         kind: 'assistant',

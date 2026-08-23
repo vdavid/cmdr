@@ -94,6 +94,24 @@ are ignored rather than re-adopted as a live turn.
 History loads through `getAskCmdrConversation` on rail open (bootstrapping the most recent thread) and folds `tool`-role
 result rows into their assistant tool line by `callId`, so the thread shows one line per call.
 
+## What a wake's thread opens with
+
+A thread the agent started for itself begins with a `wakeDigest` block in the user-role row rather than text, so
+`buildRailMessages` folds it into its own `RailMessage` and `AskCmdrWakeDigest.svelte` renders it collapsed.
+
+**Everything in that block is ours to word.** The backend sends folders, four counts each, and the rollups — numbers and
+paths, no sentence (`agent/wake/DETAILS.md` § The rendered digest is prompt-only). The English digest the model reads
+never crosses IPC, so nothing here can leak untranslated backend copy into ten locales. ❌ Don't "simplify" this by
+having the backend send a ready line.
+
+Two things the block owes the reader: the collapsed summary counts the rolled-up folders too (otherwise it disagrees
+with what expanding shows), and the rollup line stays, because admitting how many folders the digest had no room for is
+the point of having one.
+
+**Live, the digest arrives on the next load, not mid-turn.** `userPersisted` carries an id and no content, so a rail
+opened onto a wake already in flight shows the answer streaming above an empty spot until the thread is re-read.
+Widening that event to carry the block is the fix if it ever matters.
+
 ## The wake indicator
 
 The status corner's word on the proactive half: `wake-indicator.svelte.ts` holds the state and the subscription,
@@ -444,8 +462,8 @@ fake path — which never sets a real provider — needs the gate to treat the f
 ## i18n
 
 Copy lives in `intl/messages/en/askCmdr.json` (`askCmdr.*`, including the `askCmdr.sessions.*`,
-`askCmdr.composer.attach`/`dropHint`, `askCmdr.attachment.*`, `askCmdr.loadEarlier`, and the `askCmdr.consent.*` +
-`askCmdr.cost.*` keys), the settings copy in `settings.json` (`settings.askCmdr.*`, `settings.section.askCmdr`), and the
+`askCmdr.composer.attach`/`dropHint`, `askCmdr.attachment.*`, `askCmdr.loadEarlier`, `askCmdr.wake.*`,
+`askCmdr.wakeDigest.*`, and the `askCmdr.consent.*` + `askCmdr.cost.*` keys), the settings copy in `settings.json` (`settings.askCmdr.*`, `settings.section.askCmdr`), and the
 command label in `commands.json` (`commands.askCmdrToggle.*`), each with an `@key` translator description. Translated
 across all 10 locales, so `desktop-i18n-coverage` is green. The name and the consent copy are the re-translation surface
 if David adjusts the product calls. Tool + error labels are literal-keyed records in `ask-cmdr-labels.ts` (a computed

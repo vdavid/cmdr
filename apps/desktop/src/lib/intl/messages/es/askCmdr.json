@@ -645,5 +645,33 @@
   "askCmdr.wake.needsApiKey": "Ask Cmdr está vigilando, pero necesita una clave de API para pensar. Abre los ajustes.",
   "@askCmdr.wake.needsApiKey": {
     "sourceHash": "e9b96e6"
+  },
+  "askCmdr.wakeDigest.summary": "Qué cambió en {foldersText} {folders, plural, one {carpeta} many {carpetas} other {carpetas}}",
+  "@askCmdr.wakeDigest.summary": {
+    "sourceHash": "07a2ce7"
+  },
+  "askCmdr.wakeDigest.created": "{countText} {count, plural, one {elemento nuevo} many {elementos nuevos} other {elementos nuevos}}",
+  "@askCmdr.wakeDigest.created": {
+    "sourceHash": "2d0353f"
+  },
+  "askCmdr.wakeDigest.modified": "{countText} {count, plural, one {elemento modificado} many {elementos modificados} other {elementos modificados}}",
+  "@askCmdr.wakeDigest.modified": {
+    "sourceHash": "6aa21c5"
+  },
+  "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {elemento eliminado} many {elementos eliminados} other {elementos eliminados}}",
+  "@askCmdr.wakeDigest.removed": {
+    "sourceHash": "9711102"
+  },
+  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {elemento renombrado} many {elementos renombrados} other {elementos renombrados}}",
+  "@askCmdr.wakeDigest.renamed": {
+    "sourceHash": "2cf9f0f"
+  },
+  "askCmdr.wakeDigest.noChanges": "Sin cambios",
+  "@askCmdr.wakeDigest.noChanges": {
+    "sourceHash": "0ba2a57"
+  },
+  "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, one {carpeta más} many {carpetas más} other {carpetas más}} en {ancestor}: {changesText} {changes, plural, one {cambio} many {cambios} other {cambios}}",
+  "@askCmdr.wakeDigest.rollup": {
+    "sourceHash": "3b8f0dd"
   }
 }

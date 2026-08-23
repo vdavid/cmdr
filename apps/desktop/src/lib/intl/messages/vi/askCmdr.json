@@ -643,5 +643,33 @@
   "askCmdr.wake.needsApiKey": "Ask Cmdr đang theo dõi, nhưng cần khóa API để suy nghĩ. Mở cài đặt.",
   "@askCmdr.wake.needsApiKey": {
     "sourceHash": "e9b96e6"
+  },
+  "askCmdr.wakeDigest.summary": "Những thay đổi trong {foldersText} {folders, plural, other {thư mục}}",
+  "@askCmdr.wakeDigest.summary": {
+    "sourceHash": "07a2ce7"
+  },
+  "askCmdr.wakeDigest.created": "{countText} {count, plural, other {mục mới}}",
+  "@askCmdr.wakeDigest.created": {
+    "sourceHash": "2d0353f"
+  },
+  "askCmdr.wakeDigest.modified": "{countText} {count, plural, other {mục đã thay đổi}}",
+  "@askCmdr.wakeDigest.modified": {
+    "sourceHash": "6aa21c5"
+  },
+  "askCmdr.wakeDigest.removed": "{countText} {count, plural, other {mục đã xoá}}",
+  "@askCmdr.wakeDigest.removed": {
+    "sourceHash": "9711102"
+  },
+  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, other {mục đã đổi tên}}",
+  "@askCmdr.wakeDigest.renamed": {
+    "sourceHash": "2cf9f0f"
+  },
+  "askCmdr.wakeDigest.noChanges": "Không có thay đổi",
+  "@askCmdr.wakeDigest.noChanges": {
+    "sourceHash": "0ba2a57"
+  },
+  "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, other {thư mục khác}} trong {ancestor}: {changesText} {changes, plural, other {thay đổi}}",
+  "@askCmdr.wakeDigest.rollup": {
+    "sourceHash": "3b8f0dd"
   }
 }

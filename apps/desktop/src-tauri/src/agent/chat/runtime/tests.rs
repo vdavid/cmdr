@@ -63,7 +63,7 @@ fn envelope() -> ContextEnvelope {
 pub(super) fn params<'a>(conversation_id: i64, user_text: Option<&'a str>) -> TurnParams<'a> {
     TurnParams {
         conversation_id,
-        user_text,
+        user: user_text.map(UserTurn::Text),
         cmdr_md: None,
         envelope: LEAK_ENVELOPE.get_or_init(envelope),
         offset: offset(),
@@ -1301,7 +1301,7 @@ async fn attachments_reach_the_llm_in_the_envelope_and_nothing_more() {
     };
     let params = TurnParams {
         conversation_id: id,
-        user_text: Some("summarize this"),
+        user: Some(UserTurn::Text("summarize this")),
         cmdr_md: None,
         envelope: &env,
         offset: offset(),

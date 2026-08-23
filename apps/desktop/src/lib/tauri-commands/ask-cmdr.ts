@@ -31,6 +31,8 @@ import {
   type RenameProposalRowSnapshot,
   type StopReasonView,
   type UsageView,
+  type WakeDigestFolderView,
+  type WakeDigestRollupView,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
@@ -50,6 +52,11 @@ export type {
   CostSummary,
   ModelWindowView,
   RenameEvidence,
+  /** One folder a wake's digest named outright, with its four counts. Numbers and a path
+   * only: every word around them is the rail's, so ten locales can say it their own way. */
+  WakeDigestFolderView,
+  /** The folders a wake's digest had no room to name, summarized under a shared ancestor. */
+  WakeDigestRollupView,
 }
 
 /** Why an assistant turn ended, on the wire (the generated `StopReasonView`). */

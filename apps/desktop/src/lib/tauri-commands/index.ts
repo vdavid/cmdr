@@ -384,6 +384,8 @@ export type {
   RenameEvidenceCoverage,
   RenameEvidenceSource,
   RenameProposalRow,
+  WakeDigestFolderView,
+  WakeDigestRollupView,
 } from './ask-cmdr'
 
 // Suggested ops (the review dialog's reads, and the rejection it records)

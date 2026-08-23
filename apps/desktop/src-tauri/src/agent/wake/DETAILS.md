@@ -151,6 +151,21 @@ a rollup, and a test sums both sides to prove nothing goes uncounted.
 At an impossible budget the digest is EMPTY rather than over: an overrun would push the rest of the turn out of the
 window, which is the failure that once cost a rename turn the evidence it was reasoning from.
 
+### The rendered digest is prompt-only
+
+`Digest::render()` is English, and deliberately so: it is a prompt. What gets PERSISTED as the thread's first message is
+`Digest::to_wire()`, a `WakeDigest` (`agent/llm/types.rs`) carrying folders, four counts each, and the rollups.
+`AgentPart::WakeDigest` is the transcript part it rides in, and `UserTurn::Wake` is how `run_turn` is handed one.
+
+**Decision**: the wake persists structure and renders English only at the provider boundary (`genai_impl.rs` maps the
+part to a `ContentPart::Text`). **Why**: the rail shows that first message in ten locales, and a `main.db` row outlives
+every locale pass we will ever run, so an English sentence stored there could never be translated. It also keeps the
+prompt's wording free to change without rewriting anybody's history. The rail's own copy is
+`askCmdr.wakeDigest.*`; the block renders collapsed (`AskCmdrWakeDigest.svelte`).
+
+The row's `text_for_search` is the digest's PATHS, joined. Paths are the user's own data rather than authored copy, and
+they are what somebody searching their threads would actually type.
+
 ## The inbox, and what a restart does
 
 A merge can only pull a deadline earlier and can only raise the stored interest. The asymmetry is a starvation guard,

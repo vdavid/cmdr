@@ -88,4 +88,39 @@ describe('buildRailMessages', () => {
 
     expect(items).toEqual([{ kind: 'modelChange', model: 'claude-opus-5' }])
   })
+
+  /** A wake opens its thread with a structured digest sitting in the user-role row. It has
+   *  to fold into its own item, not into a text bubble: the digest carries no text at all,
+   *  so treating it as one would render an empty bubble where the whole reason for the
+   *  thread should be. */
+  it('renders a wake digest as its own item rather than an empty user bubble', () => {
+    const items = buildRailMessages(
+      detail([
+        {
+          id: 7,
+          seq: 0,
+          role: 'user',
+          createdAt: 0,
+          promptTokens: null,
+          completionTokens: null,
+          blocks: [
+            {
+              type: 'wakeDigest',
+              folders: [{ folder: '/Users/dana/Downloads', created: 4, modified: 0, removed: 0, renamed: 0 }],
+              rollups: [{ ancestor: '/Users/dana/Projects', folders: 7, changes: 40 }],
+            },
+          ],
+        },
+      ]),
+    )
+
+    expect(items).toEqual([
+      {
+        kind: 'wakeDigest',
+        id: 7,
+        folders: [{ folder: '/Users/dana/Downloads', created: 4, modified: 0, removed: 0, renamed: 0 }],
+        rollups: [{ ancestor: '/Users/dana/Projects', folders: 7, changes: 40 }],
+      },
+    ])
+  })
 })

@@ -647,5 +647,33 @@
   "askCmdr.wake.needsApiKey": "Ask Cmdr kijkt mee, maar heeft een API-sleutel nodig om te denken. Open de instellingen.",
   "@askCmdr.wake.needsApiKey": {
     "sourceHash": "e9b96e6"
+  },
+  "askCmdr.wakeDigest.summary": "Wat er is veranderd in {foldersText} {folders, plural, one {map} other {mappen}}",
+  "@askCmdr.wakeDigest.summary": {
+    "sourceHash": "07a2ce7"
+  },
+  "askCmdr.wakeDigest.created": "{countText} {count, plural, one {nieuw item} other {nieuwe items}}",
+  "@askCmdr.wakeDigest.created": {
+    "sourceHash": "2d0353f"
+  },
+  "askCmdr.wakeDigest.modified": "{countText} {count, plural, one {gewijzigd item} other {gewijzigde items}}",
+  "@askCmdr.wakeDigest.modified": {
+    "sourceHash": "6aa21c5"
+  },
+  "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {verwijderd item} other {verwijderde items}}",
+  "@askCmdr.wakeDigest.removed": {
+    "sourceHash": "9711102"
+  },
+  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {hernoemd item} other {hernoemde items}}",
+  "@askCmdr.wakeDigest.renamed": {
+    "sourceHash": "2cf9f0f"
+  },
+  "askCmdr.wakeDigest.noChanges": "Niets veranderd",
+  "@askCmdr.wakeDigest.noChanges": {
+    "sourceHash": "0ba2a57"
+  },
+  "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, one {andere map} other {andere mappen}} in {ancestor}: {changesText} {changes, plural, one {wijziging} other {wijzigingen}}",
+  "@askCmdr.wakeDigest.rollup": {
+    "sourceHash": "3b8f0dd"
   }
 }

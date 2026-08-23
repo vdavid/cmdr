@@ -186,6 +186,9 @@ fn tool_names_by_call_id(messages: &[AgentMessage]) -> ToolNames<'_> {
 fn agent_part_to_genai(part: &AgentPart, tool_names: &ToolNames<'_>) -> Vec<ContentPart> {
     match part {
         AgentPart::Text(text) => vec![ContentPart::Text(text.clone())],
+        // The provider reads prose, so the structured digest renders on its way out. This is
+        // the ONLY place it becomes English, which is what keeps the persisted row localizable.
+        AgentPart::WakeDigest(digest) => vec![ContentPart::Text(digest.render())],
         AgentPart::ToolCall(call) => vec![ContentPart::ToolCall(GenaiToolCall {
             call_id: call.call_id.clone(),
             fn_name: call.tool.as_wire_name().to_string(),

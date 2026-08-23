@@ -60,7 +60,7 @@ mod turn;
 
 pub use dispatch::{AppHandleDispatcher, ToolDispatchOutcome, ToolDispatcher};
 pub use events::{AgentChatEvent, AgentErrorKind, ChatEventSink};
-pub use turn::{TurnParams, TurnResult, run_turn};
+pub use turn::{TurnParams, TurnResult, UserTurn, run_turn};
 
 const LOG_TARGET: &str = "agent::chat";
 
@@ -161,7 +161,7 @@ impl ChatRuntime {
         let dispatcher = AppHandleDispatcher::new(app.clone(), conversation_id);
         let params = TurnParams {
             conversation_id,
-            user_text: Some(&text),
+            user: Some(UserTurn::Text(&text)),
             cmdr_md: cmdr_md.as_deref(),
             envelope: &envelope,
             offset,
@@ -188,7 +188,7 @@ impl ChatRuntime {
     /// busy timeout.
     ///
     /// The conversation already exists (the prepare step created it), so nothing is created
-    /// here; `params.user_text` is the digest.
+    /// here; `params.user` is the digest.
     pub async fn wake(
         &self,
         llm: &dyn AgentLlm,

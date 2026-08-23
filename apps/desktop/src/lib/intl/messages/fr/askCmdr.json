@@ -645,5 +645,33 @@
   "askCmdr.wake.needsApiKey": "Ask Cmdr surveille, mais il lui faut une clé d''API pour réfléchir. Ouvrir les réglages.",
   "@askCmdr.wake.needsApiKey": {
     "sourceHash": "e9b96e6"
+  },
+  "askCmdr.wakeDigest.summary": "Ce qui a changé dans {foldersText} {folders, plural, one {dossier} many {dossiers} other {dossiers}}",
+  "@askCmdr.wakeDigest.summary": {
+    "sourceHash": "07a2ce7"
+  },
+  "askCmdr.wakeDigest.created": "{countText} {count, plural, one {nouvel élément} many {nouveaux éléments} other {nouveaux éléments}}",
+  "@askCmdr.wakeDigest.created": {
+    "sourceHash": "2d0353f"
+  },
+  "askCmdr.wakeDigest.modified": "{countText} {count, plural, one {élément modifié} many {éléments modifiés} other {éléments modifiés}}",
+  "@askCmdr.wakeDigest.modified": {
+    "sourceHash": "6aa21c5"
+  },
+  "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {élément supprimé} many {éléments supprimés} other {éléments supprimés}}",
+  "@askCmdr.wakeDigest.removed": {
+    "sourceHash": "9711102"
+  },
+  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {élément renommé} many {éléments renommés} other {éléments renommés}}",
+  "@askCmdr.wakeDigest.renamed": {
+    "sourceHash": "2cf9f0f"
+  },
+  "askCmdr.wakeDigest.noChanges": "Aucun changement",
+  "@askCmdr.wakeDigest.noChanges": {
+    "sourceHash": "0ba2a57"
+  },
+  "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, one {autre dossier} many {autres dossiers} other {autres dossiers}} dans {ancestor} : {changesText} {changes, plural, one {modification} many {modifications} other {modifications}}",
+  "@askCmdr.wakeDigest.rollup": {
+    "sourceHash": "3b8f0dd"
   }
 }

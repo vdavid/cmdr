@@ -6,7 +6,13 @@
  * re-exports them, so `./ask-cmdr-trigger.svelte` stays the import path components use.
  */
 
-import type { AskCmdrErrorKind, AttachmentRef, SkipBreakdown } from '$lib/tauri-commands'
+import type {
+  AskCmdrErrorKind,
+  AttachmentRef,
+  SkipBreakdown,
+  WakeDigestFolderView,
+  WakeDigestRollupView,
+} from '$lib/tauri-commands'
 
 /** One tool call the assistant made, as the collapsible "looked at X" line shows it. */
 export interface RailToolCall {
@@ -39,6 +45,19 @@ export type RailMessage =
       /** The provider's own wording, shown as escaped plain text under the friendly
        * headline so the user sees what to fix. Display only; never branched on. */
       detail?: string
+    }
+  /** What a wake noticed, which opens every thread the agent started for itself. It sits
+   * where a user bubble would, because that is the role it plays in the transcript.
+   *
+   * ⚠️ **Counts and paths, never a sentence.** The backend persists this as data precisely
+   * so the words around it can be ours and can be translated; the English digest the model
+   * reads never crosses IPC. */
+  | {
+      kind: 'wakeDigest'
+      id: number | null
+      folders: WakeDigestFolderView[]
+      /** The folders the digest had no room to name, so the block can admit its own gaps. */
+      rollups: WakeDigestRollupView[]
     }
   /** A timeline line marking that the thread's effective model changed between turns. */
   | { kind: 'modelChange'; model: string }

@@ -9,7 +9,7 @@ use crate::agent::chat::context::ContextEnvelope;
 use crate::agent::chat::runtime::{ToolDispatchOutcome, ToolDispatcher, TurnResult};
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::fake::{FakeAgentLlm, ScriptedTurn};
-use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ProviderTag, ToolId};
+use crate::agent::llm::types::{AgentPart, AgentToolCall, AgentToolResult, ProviderTag, ToolId};
 use crate::agent::store::{MIGRATIONS, run_migrations};
 use crate::agent::types::ConversationOrigin;
 
@@ -162,6 +162,67 @@ async fn a_due_inbox_wakes_into_a_thread_marked_as_the_agents_own() {
     assert_eq!(origin.as_deref(), Some(ConversationOrigin::Notification.as_token()));
 
     assert_eq!(inbox.len(), 0, "a wake drains what it reported on");
+}
+
+/// ⚠️ **The thread's first message is stored as DATA, never as the rendered English.** The
+/// digest the model reads says "4 new" in one language; the row it is stored in outlives every
+/// locale pass we will ever run, so the rail has to be able to say the same thing in the user's
+/// own. Persist prose here and ten locales inherit an English bubble nothing can reach.
+#[tokio::test]
+async fn a_wakes_first_message_is_persisted_as_structure_not_as_english() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    let due_at = inbox.next_deadline().expect("something waits");
+    let (sink, _events) = tokio::sync::mpsc::unbounded_channel();
+    let env = envelope(due_at as i64);
+
+    let outcome = run_wake(
+        &say("Four files arrived."),
+        &no_tools,
+        &conn,
+        &mut inbox,
+        params(WakeReadiness::Ready, due_at as i64, &env),
+        &sink,
+        &CancellationToken::new(),
+    )
+    .await;
+    let WakeOutcome::Ran { conversation_id, .. } = outcome else {
+        panic!("expected a turn, got {outcome:?}");
+    };
+
+    let (blocks, search): (String, String) = conn
+        .query_row(
+            "SELECT content_blocks, text_for_search FROM messages \
+             WHERE conversation_id = ?1 AND role = 'user' ORDER BY seq LIMIT 1",
+            rusqlite::params![conversation_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .expect("the wake persisted a user-role row");
+
+    let parts: Vec<AgentPart> = serde_json::from_str(&blocks).expect("the row decodes");
+    let [AgentPart::WakeDigest(digest)] = parts.as_slice() else {
+        panic!("expected one structured digest part, got {parts:?}");
+    };
+    assert_eq!(digest.folders.len(), 1);
+    assert_eq!(digest.folders[0].folder, "/Users/someone/Downloads");
+    assert_eq!(digest.folders[0].created, 4);
+    assert!(
+        !blocks.contains("new") && !blocks.contains("no changes"),
+        "the stored row carries no rendered English: {blocks}"
+    );
+    assert_eq!(
+        search, "/Users/someone/Downloads",
+        "the paths are the user's own data, so they are what the row is searchable by"
+    );
+
+    // And the model still reads the sentence, because the rendering happens on the way out.
+    assert_eq!(digest.render(), "/Users/someone/Downloads: 4 new\n");
 }
 
 /// A closed gate stops the turn before anything is created. No conversation, no provider
@@ -430,7 +491,11 @@ fn a_committed_prepare_opens_a_thread_and_empties_the_inbox() {
     let PrepareOutcome::Ready(prepared) = outcome else {
         panic!("expected a prepared wake, got {outcome:?}");
     };
-    assert!(prepared.digest.contains("Downloads"), "{}", prepared.digest);
+    assert!(
+        prepared.digest.folders.iter().any(|f| f.folder.contains("Downloads")),
+        "{:?}",
+        prepared.digest
+    );
     assert_eq!(prepared.rows.len(), 1);
     assert_eq!(prepared.tier, WakeTier::Hot);
     assert!(inbox.is_empty(), "the rows went with the prepared wake");
@@ -631,7 +696,7 @@ async fn a_noop_wake_leaves_no_thread_but_keeps_what_it_spent() {
 /// in the watch that acts on the call.
 #[tokio::test]
 async fn a_rail_turn_calling_nothing_to_suggest_deletes_nothing() {
-    use crate::agent::chat::runtime::{TurnParams, run_turn};
+    use crate::agent::chat::runtime::{TurnParams, UserTurn, run_turn};
 
     let conn = migrated_conn();
     let id = crate::agent::store::create_conversation(&conn, "the user's own thread", 1_000, None).expect("create");
@@ -655,7 +720,7 @@ async fn a_rail_turn_calling_nothing_to_suggest_deletes_nothing() {
         &[],
         &TurnParams {
             conversation_id: id,
-            user_text: Some("are we good?"),
+            user: Some(UserTurn::Text("are we good?")),
             cmdr_md: None,
             envelope: &env,
             offset: chrono::FixedOffset::east_opt(0).expect("utc"),

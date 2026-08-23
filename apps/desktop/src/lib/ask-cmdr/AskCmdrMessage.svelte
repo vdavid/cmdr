@@ -14,6 +14,7 @@
     import { renderAssistantMarkdown } from './ask-cmdr-markdown'
     import AskCmdrToolLine from './AskCmdrToolLine.svelte'
     import AskCmdrAttachmentChip from './AskCmdrAttachmentChip.svelte'
+    import AskCmdrWakeDigest from './AskCmdrWakeDigest.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { undoRename, type RailMessage } from './ask-cmdr-trigger.svelte'
 
@@ -78,6 +79,12 @@
                 </div>
             {/if}
         </div>
+    </div>
+{:else if message.kind === 'wakeDigest'}
+    <!-- The opener of a thread the agent started for itself. Full width rather than a
+         right-aligned bubble: nobody typed it, so it doesn't belong on the user's side. -->
+    <div class="msg">
+        <AskCmdrWakeDigest folders={message.folders} rollups={message.rollups} />
     </div>
 {:else if message.kind === 'assistant'}
     <div class="msg">

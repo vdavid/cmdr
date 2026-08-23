@@ -19,16 +19,49 @@ use crate::agent::chat::system_prompt::SYSTEM_PROMPT;
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::{
     AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentUsage, ProviderTag,
-    ToolDeclaration,
+    ToolDeclaration, WakeDigest,
 };
 use crate::agent::store::{self, AgentStoreError};
 
-/// Everything one turn needs beyond the seams. `user_text` is `Some` for a new user
+/// What opens a turn: what the person typed, or what a wake noticed.
+///
+/// ⚠️ **A wake's opener is DATA, not prose.** It is persisted as the thread's user-role
+/// message, so a rendered English sentence would freeze one locale's copy in `main.db`
+/// where no later locale pass can reach it. The rail localizes the numbers instead, and
+/// the provider gets [`WakeDigest::render`] on its way out.
+#[derive(Debug, Clone, Copy)]
+pub enum UserTurn<'a> {
+    /// What the person typed into the composer.
+    Text(&'a str),
+    /// What a wake found waiting for it.
+    Wake(&'a WakeDigest),
+}
+
+impl UserTurn<'_> {
+    /// The part this opener is persisted and replayed as.
+    fn part(&self) -> AgentPart {
+        match self {
+            UserTurn::Text(text) => AgentPart::Text((*text).to_string()),
+            UserTurn::Wake(digest) => AgentPart::WakeDigest((*digest).clone()),
+        }
+    }
+
+    /// The FTS text for the row. A wake indexes the PATHS it named: they are the user's own
+    /// data, and they are what somebody searching their threads would type.
+    fn search_text(&self) -> String {
+        match self {
+            UserTurn::Text(text) => (*text).to_string(),
+            UserTurn::Wake(digest) => digest.paths().join(" "),
+        }
+    }
+}
+
+/// Everything one turn needs beyond the seams. `user` is `Some` for a new user
 /// message (appended + persisted on the first `End`) and `None` to RESUME a persisted
 /// thread after a crash (fresh `respond` from the persisted transcript — crash case c).
 pub struct TurnParams<'a> {
     pub conversation_id: i64,
-    pub user_text: Option<&'a str>,
+    pub user: Option<UserTurn<'a>>,
     pub cmdr_md: Option<&'a str>,
     pub envelope: &'a ContextEnvelope,
     pub offset: FixedOffset,
@@ -86,10 +119,10 @@ pub async fn run_turn(
         }
     };
     let mut user_needs_persist = false;
-    if let Some(text) = params.user_text {
+    if let Some(user) = params.user {
         transcript.push(AgentMessage {
             role: AgentRole::User,
-            parts: vec![AgentPart::Text(text.to_string())],
+            parts: vec![user.part()],
             at: params.now_secs,
         });
         user_needs_persist = true;
@@ -185,13 +218,13 @@ pub async fn run_turn(
             model_recorded = true;
             record_model_transition(conn, params, sink);
         }
-        if user_needs_persist && let Some(text) = params.user_text {
+        if user_needs_persist && let Some(user) = params.user {
             match store::append_message(
                 conn,
                 params.conversation_id,
                 AgentRole::User,
-                &[AgentPart::Text(text.to_string())],
-                text,
+                &[user.part()],
+                &user.search_text(),
                 None,
                 None,
                 params.now_secs,

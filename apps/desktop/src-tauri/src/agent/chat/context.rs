@@ -573,6 +573,9 @@ fn estimate_tokens_of_message(message: &AgentMessage) -> usize {
         .iter()
         .map(|part| match part {
             AgentPart::Text(text) => estimate_tokens_str(text),
+            // What the provider will actually be handed, so the budget measures the same
+            // string the prompt carries.
+            AgentPart::WakeDigest(digest) => estimate_tokens_str(&digest.render()),
             AgentPart::ToolCall(call) => {
                 estimate_tokens_str(call.tool.as_wire_name()) + estimate_tokens_of_value(&call.arguments)
             }

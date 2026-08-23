@@ -99,6 +99,42 @@ pub enum MessageBlock {
     /// The conversation's effective model changed between turns; `model` is the new name.
     /// Rendered as a small centered timeline line, escaped plain text (never `{@html}`).
     ModelChanged { model: String },
+    /// What a wake noticed, which is the first message of every thread the agent opened for
+    /// itself.
+    ///
+    /// ⚠️ **Numbers and paths, never a sentence.** The digest the model reads is rendered
+    /// English (`agent/wake/compact.rs`) and it is persisted for as long as the thread lives,
+    /// so shipping it as prose would freeze one locale's copy in `main.db` where no later
+    /// locale pass could reach it. The rail says these counts in the user's own language and
+    /// renders them collapsed.
+    WakeDigest {
+        folders: Vec<WakeDigestFolderView>,
+        rollups: Vec<WakeDigestRollupView>,
+    },
+}
+
+/// One folder a wake's digest named outright, and what happened in it. Every count is a
+/// number: the rail owns every word around them.
+#[derive(Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct WakeDigestFolderView {
+    /// An absolute path, rendered as escaped plain text (never `{@html}`).
+    pub folder: String,
+    pub created: u32,
+    pub modified: u32,
+    pub removed: u32,
+    pub renamed: u32,
+}
+
+/// The folders a wake's digest did not have room to name, summarized under a shared
+/// ancestor. Present so the collapsed block can admit how much it is not showing.
+#[derive(Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct WakeDigestRollupView {
+    /// An absolute path, rendered as escaped plain text (never `{@html}`).
+    pub ancestor: String,
+    pub folders: u32,
+    pub changes: u64,
 }
 
 /// A message as the rail displays it: id/seq/role, its display blocks, and token counts.
@@ -198,6 +234,28 @@ pub(super) fn to_message_view(message: StoredMessage) -> MessageView {
                         elided: result.elided,
                     }),
                     AgentPart::Reasoning(_) => None,
+                    AgentPart::WakeDigest(digest) => Some(MessageBlock::WakeDigest {
+                        folders: digest
+                            .folders
+                            .into_iter()
+                            .map(|folder| WakeDigestFolderView {
+                                folder: folder.folder,
+                                created: folder.created,
+                                modified: folder.modified,
+                                removed: folder.removed,
+                                renamed: folder.renamed,
+                            })
+                            .collect(),
+                        rollups: digest
+                            .rollups
+                            .into_iter()
+                            .map(|rollup| WakeDigestRollupView {
+                                ancestor: rollup.ancestor,
+                                folders: rollup.folders,
+                                changes: rollup.changes,
+                            })
+                            .collect(),
+                    }),
                 })
                 .collect();
             (role.into(), blocks)

@@ -22,9 +22,9 @@ use tokio_util::sync::CancellationToken;
 use super::quiet::{QuietWatch, discard_quiet_thread};
 use super::{Digest, Inbox, ScoredBundle, WakeReadiness, WakeTier, compact, persist, tier_of};
 use crate::agent::chat::context::ContextEnvelope;
-use crate::agent::chat::runtime::{ChatEventSink, ToolDispatcher, TurnParams, TurnResult, run_turn};
+use crate::agent::chat::runtime::{ChatEventSink, ToolDispatcher, TurnParams, TurnResult, UserTurn, run_turn};
 use crate::agent::llm::AgentLlm;
-use crate::agent::llm::types::ToolDeclaration;
+use crate::agent::llm::types::{ToolDeclaration, WakeDigest};
 use crate::agent::store::create_conversation;
 use crate::agent::types::ConversationOrigin;
 
@@ -50,8 +50,10 @@ pub struct PrepareParams {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PreparedWake {
     pub conversation_id: i64,
-    /// The rendered digest, which becomes the thread's user-role message.
-    pub digest: String,
+    /// What the wake found, structured. It becomes the thread's user-role message as DATA:
+    /// the English rendering is produced on the way to the provider and never persisted, so
+    /// the rail can say the same thing in the user's own language.
+    pub digest: WakeDigest,
     /// What was drained, so the run step can report how much this wake covered.
     pub rows: Vec<ScoredBundle>,
     /// The strongest tier among those rows: what triggered the wake, for the log line.
@@ -154,8 +156,8 @@ pub fn prepare_wake(conn: &Connection, inbox: &mut Inbox, params: &PrepareParams
 
     let scored = inbox.scored();
     let digest = compact(&scored, params.digest_budget_tokens);
-    let rendered = digest.render();
-    if rendered.is_empty() {
+    let wire = digest.to_wire();
+    if wire.render().is_empty() {
         // Nothing fits, so there is nothing to say. Better to wait than to open a thread
         // that reports silence.
         return PrepareOutcome::NothingDue;
@@ -185,7 +187,7 @@ pub fn prepare_wake(conn: &Connection, inbox: &mut Inbox, params: &PrepareParams
 
     PrepareOutcome::Ready(PreparedWake {
         conversation_id,
-        digest: rendered,
+        digest: wire,
         rows,
         tier,
     })
@@ -219,7 +221,7 @@ pub async fn run_prepared_wake(
 pub fn wake_turn_params<'a>(prepared: &'a PreparedWake, params: &'a RunWakeParams<'a>) -> TurnParams<'a> {
     TurnParams {
         conversation_id: prepared.conversation_id,
-        user_text: Some(&prepared.digest),
+        user: Some(UserTurn::Wake(&prepared.digest)),
         cmdr_md: None,
         envelope: params.envelope,
         offset: params.offset,

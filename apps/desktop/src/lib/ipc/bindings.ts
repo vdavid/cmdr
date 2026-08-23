@@ -7344,6 +7344,17 @@ export type MessageBlock =
    *  Rendered as a small centered timeline line, escaped plain text (never `{@html}`).
    */
   | { type: 'modelChanged'; model: string }
+  /**
+   *  What a wake noticed, which is the first message of every thread the agent opened for
+   *  itself.
+   *
+   *  ⚠️ **Numbers and paths, never a sentence.** The digest the model reads is rendered
+   *  English (`agent/wake/compact.rs`) and it is persisted for as long as the thread lives,
+   *  so shipping it as prose would freeze one locale's copy in `main.db` where no later
+   *  locale pass could reach it. The rail says these counts in the user's own language and
+   *  renders them collapsed.
+   */
+  | { type: 'wakeDigest'; folders: WakeDigestFolderView[]; rollups: WakeDigestRollupView[] }
 
 // A message's role, on the wire.
 export type MessageRoleView =
@@ -10924,6 +10935,30 @@ export type VolumesChanged = {
   data: LocationInfo[]
   // Whether the local volume listing timed out (some volumes may be missing).
   timedOut: boolean
+}
+
+/**
+ *  One folder a wake's digest named outright, and what happened in it. Every count is a
+ *  number: the rail owns every word around them.
+ */
+export type WakeDigestFolderView = {
+  // An absolute path, rendered as escaped plain text (never `{@html}`).
+  folder: string
+  created: number
+  modified: number
+  removed: number
+  renamed: number
+}
+
+/**
+ *  The folders a wake's digest did not have room to name, summarized under a shared
+ *  ancestor. Present so the collapsed block can admit how much it is not showing.
+ */
+export type WakeDigestRollupView = {
+  // An absolute path, rendered as escaped plain text (never `{@html}`).
+  ancestor: string
+  folders: number
+  changes: number
 }
 
 /**
