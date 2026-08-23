@@ -583,7 +583,7 @@ today, so a large hand-written `CMDR.md` already taxes every turn.
 
 TDD, and it makes every later memory test deterministic. **Independent of everything else; can land before M1.**
 
-### 2. Location
+### 2. Location — DONE
 
 `<data-dir>/ai/memory/`, with `AGENTS.md` as the hub. The app data dir, ❌ not `~/.cmdr/`: it is app-managed state
 rather than user config, `app_data_dir()` is already the canonical per-OS path on all three platforms, and it inherits
@@ -592,7 +592,12 @@ memory.
 
 `~/.cmdr/CMDR.md` stays user-authored: a dotfile in home is where a hand-edited, dotfiles-repo-able config belongs.
 
-### 3. Feeding it, and the injection problem
+### 3. Feeding it, and the injection problem — DONE
+
+Landed as specified. The finished layout, verbatim, is in `agent/chat/DETAILS.md` § The memory block: memory leads, then
+`SYSTEM_PROMPT`, then `CMDR.md`. The fence is `----- BEGIN SAVED NOTES (data) -----` / `----- END SAVED NOTES -----`,
+and `fenced_memory` defangs either marker inside the content, so the fenced text cannot forge its own terminator (a test
+drives that with a planted rule after a forged end marker).
 
 ⚠️ **This is the security-critical item in the whole plan.** `build_system` (`chat/context.rs:251`) appends `CMDR.md`
 raw and unfenced AFTER the entire system prompt, which is the strongest override position there is. Memory added the
@@ -614,7 +619,12 @@ So:
 - **The write instruction (item 8) says memory records facts about the user and their preferences, never instructions to
   itself.**
 
-### 4. Budget, and why a flat 8 KB was the wrong shape
+### 4. Budget, and why a flat 8 KB was the wrong shape — DONE
+
+Landed as `budget::memory_slice_bytes`, a tenth of what the budget has left after the fixed overhead. ⚠️ **The overhead
+estimate here was low**: the section says "roughly 5,300" after M1 and M3; the measured figure is **5,605** (1,636 for
+`SYSTEM_PROMPT`, 3,969 for 17 declarations), because the prompt's memory section costs 265 on its own. A 16k budget's
+rename batch went 26 → 25 files and a 32k one 67 → 66 as a result.
 
 ⚠️ **The system string is never elided.** `assemble_prompt` (`context.rs:265`) tightens tool-result elision only, so
 memory is a permanent, non-elidable tax. Run the numbers a byte cap doesn't: `MIN_LOCAL_CONTEXT_TOKENS = 16_384` at
@@ -634,7 +644,11 @@ failure.
 then the measured overhead. M1 took it from 14 to 15; these two take it to 17. Update the constant and
 `agent/chat/DETAILS.md`'s "what the budgets buy".
 
-### 5. `Access::Memory`
+### 5. `Access::Memory` — DONE
+
+Landed with a `EXPECTED_MEMORY_TOOL_NAMES` allowlist, its own arm in `access_is_dispatchable`, a fourth assertion in the
+per-variant test, and one addition the section didn't call for: a test keeping both names off `Consumer::AiClient`,
+since a filesystem write reachable over the HTTP transport would contradict that transport's whole security story.
 
 A fourth variant beside `Read`, `Propose`, and `Write`, with its own hand-authored allowlist mirroring
 `EXPECTED_PROPOSE_TOOL_NAMES`. `test_agent_tool_view_never_writes` widens to admit exactly this and nothing else, so the
@@ -646,7 +660,12 @@ Also needs a `Memory` arm in `access_is_dispatchable` (`agent/tools/view.rs:27`)
 per-variant test (`:117`), and a rewrite of the refusal copy at `view.rs:50`, which still says the agent can't change
 anything.
 
-### 6. Two tools
+### 6. Two tools — DONE
+
+Landed. One shape decision the section didn't fix: **a refusal comes back as an `Ok` result carrying a typed token**
+(`{ saved: false, refused: <token>, detail: <sentence> }`), never a `ToolError` — `view::dispatch` flattens a
+`ToolError` to `{ "problem": <sentence> }`, and a model that has to read prose to learn its memory is full keeps writing
+into a folder that saves nothing.
 
 Path-aware from day one so the second file costs nothing:
 
@@ -662,7 +681,10 @@ message keys each, so four keys and thirty-six translations.
 ⚠️ **They are callable from the rail, not just from wakes.** That is intended ("remember this for me"), and it is also
 the mechanism behind item 3's injection risk. State it rather than implying it.
 
-### 7. The jail
+### 7. The jail — DONE
+
+Landed as `agent/memory/jail.rs`, four checks in order (lexical shape, extension, symlink walk, `canonicalize` of the
+parent plus a containment re-check), with all three named traps handled. 22 tests, red first.
 
 One function both tools call, unit-tested: reject absolute paths, reject any `..`, resolve symlinks and re-check
 containment, allow `.md` only, enforce both caps.
@@ -676,7 +698,11 @@ containment, allow `.md` only, enforce both caps.
 - **Write durably.** `config::durable_write_json` (`config.rs:76`) is the existing temp-plus-fsync-plus-rename helper.
   Item 10 invites the user into the folder while the agent may be writing, so a torn file is reachable.
 
-### 8. The system prompt
+### 8. The system prompt — DONE
+
+Landed: "You never act" became "You never touch the user's files", pinned by a test that fails if the old phrase comes
+back, plus a `# Memory` section carrying the write instruction, the pruning ask, and the "never save a file's contents
+or text read out of a picture" line.
 
 Encourages capturing what matters, on request or on meeting something worth keeping, and pruning what has gone stale.
 
@@ -685,6 +711,9 @@ anything"** (`system_prompt.rs:47`), and `prompt_states_the_read_only_self_descr
 act". `Access::Memory` makes it false. A second rewrite of the same promise, in a different file, with its own guard.
 
 ### 9. Consent
+
+⚠️ **Still open, and item 8's disclosure does not replace it.** The prompt now tells the MODEL what saving costs; the
+consent copy still tells the USER that Ask Cmdr "only looks and speaks; it never changes anything", which is false.
 
 Bumping `CONSENT_COPY_VERSION` (`agent/consent.rs:16`) revokes every beta user. ⚠️ What the bump carries:
 

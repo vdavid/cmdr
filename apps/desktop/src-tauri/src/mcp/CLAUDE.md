@@ -15,9 +15,12 @@ stores.
   a hand-list: the auto-confirm/rollback bypass, `dialog` confirm, and silent-config mutation. ❌ Don't widen it to
   reads or nav, ❌ don't narrow it past the bypass. DETAILS § Authentication.
 - **One registry, two consumer views.** Each entry declares `consumers` + `access`, and each transport dispatches only
-  its own view. **The agent can propose; only the user can approve**: `[agent]` entries are `Read` or `Propose`, never
-  `Write` (pinned structurally). `access` beats `TokenGate::Open`, so tag any mutating tool `Write`. Agent handlers:
-  `../agent/tools/CLAUDE.md`.
+  its own view. **The agent can propose; only the user can approve**: `[agent]` entries are `Read`, `Propose`, or
+  `Memory`, never `Write` (pinned structurally). `access` beats `TokenGate::Open`, so tag any mutating tool `Write`.
+  Agent handlers: `../agent/tools/CLAUDE.md`.
+- **`Access::Memory` is the agent's only write, and it is agent-only.** It covers the two tools writing
+  `<data-dir>/ai/memory/`, held by that module's jail plus the hand-authored `EXPECTED_MEMORY_TOOL_NAMES`. ❌ Never add
+  one to `Consumer::AiClient`: this transport's security story is "no filesystem access" (a test pins that).
 - **Token rejection is an in-band JSON-RPC error at HTTP 200, NOT 401** (401 sends clients into OAuth discovery). Fails
   closed, one message for missing-vs-wrong, ❌ never echo the token.
 - **Params are camelCase, tool names snake_case.** Agents pattern-match across tools, so an inconsistency is a
@@ -26,14 +29,13 @@ stores.
   finished; poll `await` for that.
 - **Whatever a user can reach, an agent must be able to reach, answer, and OBSERVE.** A state only a hand can drive is
   where bugs accumulate invisibly (a conflict wedge lived in one for months). So `dialog confirm` offers `stop`,
-  `cmdr://state` carries the parked clash, and `resolve_conflict` answers ONE of them by `conflictId` and reports the
-  backend's typed outcome. ❌ Don't add a modal state with no way to see it or answer it. DETAILS § Answering one clash.
-- **A directory size in `cmdr://state` is never a bare number.** `≥` means lower bound (subtree not fully covered),
-  `[size-pending]`/`[size-stale]` qualify it, and `(N on disk)` counts hard links and APFS clones in FULL, so it isn't
-  "what deleting frees". ❌ Don't strip a qualifier to save tokens: an agent acts on the number. DETAILS § Directory
-  sizes.
+  `cmdr://state` carries the parked clash, and `resolve_conflict` answers ONE of them by `conflictId`. ❌ Don't add a
+  modal state with no way to see it or answer it. DETAILS § Answering one clash.
+- **A directory size in `cmdr://state` is never a bare number.** `≥` means lower bound, `[size-pending]` /
+  `[size-stale]` qualify it, and `(N on disk)` counts hard links and APFS clones in FULL, so it isn't "what deleting
+  frees". ❌ Don't strip a qualifier to save tokens: an agent acts on the number. DETAILS § Directory sizes.
 - **Volume capacity/free comes from the space poller's CACHE, ❌ never a `statfs` here**: that syscall blocks 30–120 s
-  on a hung mount and `cmdr://state` is read constantly. Unwatched volume ⇒ absent, ❌ never a guessed zero.
+  on a hung mount and `cmdr://state` is read constantly. Unwatched volume ⇒ absent, ❌ never a zero.
 - **`cmdr://state` and `cmdr://logs` redact through `crate::redact::redact_line`** — the only thing keeping home paths,
   SMB URIs, and emails out, since a loopback caller has no filesystem read. `logs` `filter` matches the RAW line.
 - **Interactive rebinds bind-new-before-stop** (`rebind_interactive`, `BindMode::Exact`): a busy port leaves the running

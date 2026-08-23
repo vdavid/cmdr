@@ -37,6 +37,9 @@ The backend modules:
   needs resolved from live app state (the LLM slot, the prompt budget, the envelope), shared by the rail's command and
   by a wake — it sits here rather than in `commands/agent/`, which is ABOVE `agent/` and so unreachable from a wake.
   Depth: `chat/DETAILS.md`.
+- `memory/`: the Markdown folder the agent writes about the user (`<data-dir>/ai/memory/`, `AGENTS.md` the hub) —
+  a pure `MemoryStore` holding the jail, the two caps, the write, and the edit, plus eight lines of `AppHandle` path
+  resolution. Depth: `memory/DETAILS.md`.
 - `wake/`: the proactive half — the pure noticing pipeline (coalesce → interest → compact → inbox) plus the loop that
   drives it. `agent::start` brings up one thread owning the `Inbox`, a long-lived write connection, and the timer; the
   indexer's tap reaches it through a process-global channel and a prepared wake runs on its own thread, so neither the
@@ -51,13 +54,26 @@ no agent path can approve or apply it.
 action. There is no tool, and never will be a tool, that approves a proposal. Without that, `Propose` is `Write` with
 extra steps.
 
-The agent can look, speak, and ask (spec §2.1): no write tool exists in its dispatch view, and there is no content-read
-tool, so only names, paths, and metadata ever reach the provider — never file contents. This is the privacy line and it
-is structural, not a runtime guard. The registry's `consumers` + `access` dimensions pin the agent's view to exactly its
-authored `[agent]` entries, every one `Access::Read` or `Access::Propose`, never `Access::Write`; the runtime's `ToolId`
-parse step is the runtime choke point (an unrecognized name resolves to `ToolId::Unrecognized`, which is never in the
-agent view, so dispatch refuses it). Revisit the whole consent + gating story before adding the first write or
-content-read tool.
+The agent can look, speak, ask, and write its own notes (spec §2.1): no tool in its dispatch view touches the user's
+files, and there is no content-read tool, so only names, paths, and metadata ever reach the provider — never file
+contents. This is the privacy line and it is structural, not a runtime guard. The registry's `consumers` + `access`
+dimensions pin the agent's view to exactly its authored `[agent]` entries, every one `Access::Read`,
+`Access::Propose`, or `Access::Memory`, never `Access::Write`; the runtime's `ToolId` parse step is the runtime choke
+point (an unrecognized name resolves to `ToolId::Unrecognized`, which is never in the agent view, so dispatch refuses
+it). Revisit the whole consent + gating story before adding the first content-read tool.
+
+**`Access::Memory`: what the widening cost, and what holds it.** The agent's promise used to be "it never changes
+anything". `memory_write` and `memory_edit` made that false, so the promise narrowed to "it writes only into its own
+memory folder" — still structural, and held by three things rather than one. First, `memory/`'s jail: relative `.md`
+paths only, no `..`, no symlink anywhere along the chain, containment re-checked against a canonicalized parent.
+Second, a hand-authored allowlist (`EXPECTED_MEMORY_TOOL_NAMES`), for the same reason `Propose` has one: no
+structural check can prove a handler stays in the jail, so a human puts each name there having read it. Third, the
+folder is unreachable from the external MCP transport, whose own security story is "no filesystem access".
+
+⚠️ The widening also opened an injection surface, because the write path is reachable from text the agent read
+(`image_facts` OCR, file names off disk) and what it writes rides the prefix of every later turn. The defences are in
+`memory/DETAILS.md` § The injection surface; don't weaken the fence in `chat/context.rs` or the placement of memory
+before the rules without reading it.
 
 **Where a proposal LIVES.** `store/proposals/`, the durable spine in `main.db`, for every verb including rename. Its
 claim transaction binds an approval to a server-owned acceptance record rather than to the client's word. Proposals have
@@ -68,7 +84,7 @@ fresh one (`tools/propose/DETAILS.md`).
 write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,
 `Propose` tools are an explicit hand-authored allowlist (`EXPECTED_PROPOSE_TOOL_NAMES` in
 `mcp/tests/tool_registry_tests.rs`) rather than something inferred — adding one is a deliberate act a human signs off,
-having read the handler. It holds exactly one name today, `propose_rename_plan`.
+having read the handler. It holds two names: `propose_rename_plan` and `propose_suggestions`.
 
 **Consent is unaffected.** Proposals flow agent → user, never to the provider. `Propose` adds no egress, so the
 provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier. Don't re-litigate it: only a change to
@@ -100,7 +116,8 @@ Each line is a pointer, not a restatement: the mechanism lives in the doc named 
    summaries describe deliveries and are never deliveries. `tools/propose/CLAUDE.md`, `tools/propose/DETAILS.md`
    § Evidence.
 7. **The agent proposes; only the user approves.** Approval originates in the frontend as a user action, and there is
-   no tool that approves. `CLAUDE.md`, § The agent can propose above.
+   no tool that approves. The agent's one write is its own memory folder, jailed and hand-allowlisted. `CLAUDE.md`,
+   § The agent can propose above, `memory/DETAILS.md`.
 8. **No new egress category, and no consent bump** without revisiting the whole consent story. `CLAUDE.md`.
 9. **Every cut, cap, or trim is visible** in the result, the log, and (where the user could be misled) the UI.
    `chat/CLAUDE.md`, `chat/DETAILS.md` § Reporting what a turn cost.

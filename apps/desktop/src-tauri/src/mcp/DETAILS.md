@@ -67,10 +67,19 @@ agent-only table**). Two per-entry dimensions express the split:
   `list_pane_files`, `important_folders`, `folder_importance`, `list_volumes`) plus `list_dir`, `operations_list` /
   `operations_get`, `search_photos`, and `image_facts`, shared into `[AiClient, Agent]` because their read schemas fit
   both readers unchanged. Agent handlers/schemas live under `../agent/tools/CLAUDE.md`, named by path from the entry.
-- **`access`** (`Read` / `Propose` / `Write`): whether the tool reads, asks, or mutates. `Write` covers any mutation of
-  the filesystem OR app state — nav, cursor, selection, tabs, dialogs, settings, connect/eject, file ops,
-  rollback-cancel; when in doubt, `Write`. Only genuine read surfaces (`search`, `ai_search`, `await`,
-  `operations_list`, `operations_get`) are `Read`. `Propose` is the third tier, described below.
+- **`access`** (`Read` / `Propose` / `Memory` / `Write`): whether the tool reads, asks, remembers, or mutates. `Write`
+  covers any mutation of the filesystem OR app state — nav, cursor, selection, tabs, dialogs, settings, connect/eject,
+  file ops, rollback-cancel; when in doubt, `Write`. Only genuine read surfaces (`search`, `ai_search`, `await`,
+  `operations_list`, `operations_get`) are `Read`. `Propose` is the third tier, described below; `Memory` is the
+  fourth, and the only one that writes anything at all.
+
+⚠️ **`Access::Memory` was a deliberate widening of the app's central agent-safety invariant.** "The agent never changes
+anything" became "the agent writes only into `<data-dir>/ai/memory/`". Three things hold the narrowed promise: the jail
+in `../agent/memory/` (relative `.md` paths only, no `..`, no symlink along the chain, containment re-checked against a
+canonicalized parent); the hand-authored `EXPECTED_MEMORY_TOOL_NAMES` allowlist, which exists for the same reason the
+`Propose` one does (no structural check can prove a handler stays in a jail, so a human puts each name there having
+read it); and `consumers: [Agent]` on both entries, pinned by a test — a `Memory` tool must never reach the HTTP
+transport, whose security story is "no filesystem access". Depth: `../agent/memory/DETAILS.md`.
 
 **Consumer-gated dispatch.** `execute_tool` takes a `Consumer` and refuses a name outside that consumer's view before
 dispatch (via `tool_available_to`, a typed `Consumer`-set check — not a string). So the HTTP server (constructed as

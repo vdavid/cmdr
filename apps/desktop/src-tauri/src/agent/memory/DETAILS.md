@@ -1,0 +1,94 @@
+# Agent memory — details
+
+What the agent writes about the user, where it lives, and what stops it from being an instruction channel.
+Must-knows: `CLAUDE.md`.
+
+## Where it lives, and why not `~/.cmdr/`
+
+`<data-dir>/ai/memory/`, resolved through `config::resolved_app_data_dir`. Three reasons, and the third is the one that
+bites if it is ignored:
+
+- It is app-managed state, not user config. The user may open the folder and read it, but they don't author it.
+- `app_data_dir()` is already the canonical per-OS path on all three platforms, so nothing here does per-platform work.
+- It inherits `CMDR_DATA_DIR` isolation for free. Sharing a home dotfile would mean an E2E run writing personal facts
+  into the developer's real agent memory, and every worktree's dev instance sharing one file.
+
+`~/.cmdr/CMDR.md` stays a dotfile in home for exactly the opposite reasons: hand-edited, dotfiles-repo-able, the user's
+own voice. See `../chat/DETAILS.md` § Which `CMDR.md`, and how much of it.
+
+`AGENTS.md` is the hub, and today the only file. The tools are path-aware anyway, so the second file costs nothing when
+it arrives — but there is deliberately **no read or list tool yet**: `AGENTS.md` is auto-fed, and every schema rides in
+the cached prefix of every turn, the rail's included. Add both the moment a second file exists.
+
+## The jail (`jail.rs`)
+
+One function, `resolve(root, requested)`, called by both tools before either touches the disk. Four checks in an order
+that matters:
+
+1. **Lexical shape.** Trim, reject empty, then walk `Path::components()`: `Normal` accumulates, `CurDir` is skipped, and
+   `ParentDir` / `RootDir` / `Prefix` refuse outright. This catches an absolute path, and one climbing out with `..`,
+   before any syscall runs. A path that names nothing once the `.` segments come out is `NoPath`, not an empty join.
+2. **Extension.** `.md` only, case-insensitive. A folder that can hold a `.sh` or a `.json` is a folder the agent can
+   drop something executable or config-shaped into.
+3. **The symlink walk.** Every component from the root down is `symlink_metadata`'d, the file included. A planted
+   `link.md` is a lexically perfect relative path, so nothing above this catches it.
+4. **`canonicalize` of the PARENT, then a containment re-check.** ⚠️ The parent, never the file: `canonicalize` fails on
+   a path that doesn't exist yet, so canonicalizing the target would refuse every first write. The parent is created
+   (only after step 3 clears it), canonicalized, and checked to sit under the canonicalized root; the file name is a
+   single validated `Normal` component joined onto the result.
+
+Every escape attempt has a test in `tests.rs`, and each asserts both the typed refusal AND that nothing landed outside.
+Asserting only the `Err` would pass for a refusal that wrote first.
+
+## The two caps
+
+**`MEMORY_DIR_MAX_BYTES` = 64 KB, across every `.md` under the root.** A disk guard. `used_bytes()` walks the folder and
+counts `.md` files only, so a stale temp or something the user dropped in can't jam the agent out of its own memory. A
+write is priced as `used − replaced + new`, so rewriting the hub reclaims what the old copy held; without that, memory
+would jam at half the cap and never recover.
+
+Over the cap, `MemoryRefusal::DirectoryFull { used, cap, wanted }` comes back and the tool turns it into a sentence
+telling the model to prune with `memory_edit`. ⚠️ Never a silent failure: a model that believes it saved something it
+didn't will keep answering as if it had.
+
+**The prompt slice** is `chat::budget::memory_slice_bytes(prompt_budget)`, a tenth of what the budget has left after the
+fixed overhead. It is a SHARE rather than a constant for two reasons that a byte cap can't cover:
+
+- The system string is never elided (`context::assemble_prompt` tightens tool results only), so every byte of memory is
+  a permanent tax on every turn of every thread. At `MIN_LOCAL_CONTEXT_TOKENS` the resolved budget is 9,830 tokens and
+  the prefix takes ~5,605 of it; a flat 8 KB of memory would take 2,048 more and leave under 2,500 for the digest, the
+  envelope, the history, and every tool result.
+- **The agent writes this file itself.** A flat cap lets it permanently degrade its own chat, and nothing in the loop
+  would tell anybody why the replies got worse.
+
+`read_for_prompt` cuts at the nearest character boundary below the limit and appends a note saying it was cut and to
+prune with `memory_edit`. A silent cut leaves the model reading a sentence that stops mid-thought and treating it as the
+whole of what it once knew.
+
+## The injection surface
+
+The write path is reachable from text the agent read. `image_facts` returns the full stored OCR of the user's images
+(the widest derived-content egress the agent has), and file names come off disk. So a crafted filename or a picture of a
+sentence can get the agent to write a line into `AGENTS.md`, and that line then rides the cached prefix of every later
+turn, including ones that call `propose_suggestions`. It survives restarts and thread deletion.
+
+Three defences, and all three are load-bearing:
+
+1. **The jail** keeps the writing inside one folder of Markdown.
+2. **Placement and fencing** (`../chat/context.rs`): memory goes BEFORE the rules, not after them, inside a fence whose
+   closing marker the fenced content cannot produce, under a line saying the block is data that never overrides what
+   follows. Appending it the way `CMDR.md` is appended would put agent-written text in the strongest override position
+   the prompt has.
+3. **The write instruction** (`../chat/system_prompt.rs`): notes record facts about the user and their preferences,
+   never instructions to itself, and a note that reads as an order is to be reported and removed.
+
+⚠️ The tools are callable **from the rail, not only from a wake**. That is intended ("remember this for me") and it is
+also what makes 1–3 necessary rather than theoretical.
+
+## Testing shape
+
+⚠️ **This module's split exists because of a testing constraint, not an aesthetic one.** There is no Tauri mock runtime
+in the tree (`chat/runtime/tests.rs` says so outright) and every registry handler takes an `AppHandle`. So everything
+that decides anything is in `MemoryStore`, parameterized on a root `Path` and unit-tested against a `tempdir`, and the
+`AppHandle` half is `store_for` — eight lines of path resolution with no rules in them. Putting a rule in the resolver
+puts it somewhere no test can reach.

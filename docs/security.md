@@ -155,14 +155,24 @@ with their own API key. Privacy posture:
   resolves the LLM; an absent or stale acceptance refuses the send (not just a UI affordance). The consent copy
   (`askCmdr.consent.*`) enumerates exactly what egresses; bump `CONSENT_COPY_VERSION` when that set changes so users
   re-accept.
-- **The agent can propose; only the user can approve.** The agent has no write tool and no tool that reads a file's
-  bytes. Its dispatch view admits `Access::Read` and `Access::Propose` entries and never `Access::Write` (pinned
-  structurally in `mcp/tests/tool_registry_tests.rs`, and again at runtime in `agent/tools/view.rs`). A `Propose` tool
-  mutates nothing: it stages a proposal and opens a review surface. Approval originates in the frontend as a user
-  action, and there is no tool — and never will be one — that approves a proposal. No agent-visible tool can reach the
-  `autoConfirm` confirmation bypass. `Propose` adds no egress: proposals flow agent → user, never to the provider, so
-  consent is unchanged by it. What reaches the provider is file/folder names, paths, sizes, dates, and the app-state
-  envelope (spec §2.1). Depth: `apps/desktop/src-tauri/src/mcp/DETAILS.md` § The `Propose` tier.
+- **The agent can propose; only the user can approve.** The agent has no tool that touches the user's files and no tool
+  that reads a file's bytes. Its dispatch view admits `Access::Read`, `Access::Propose`, and `Access::Memory` entries
+  and never `Access::Write` (pinned structurally in `mcp/tests/tool_registry_tests.rs`, and again at runtime in
+  `agent/tools/view.rs`). A `Propose` tool mutates nothing: it stages a proposal and opens a review surface. Approval
+  originates in the frontend as a user action, and there is no tool — and never will be one — that approves a proposal.
+  No agent-visible tool can reach the `autoConfirm` confirmation bypass. `Propose` adds no egress: proposals flow agent
+  → user, never to the provider, so consent is unchanged by it. What reaches the provider is file/folder names, paths,
+  sizes, dates, and the app-state envelope (spec §2.1). Depth: `apps/desktop/src-tauri/src/mcp/DETAILS.md` § The
+  `Propose` tier.
+- **The agent writes one folder, and what it writes egresses forever after.** `Access::Memory` covers `memory_write` and
+  `memory_edit`, jailed to `<data-dir>/ai/memory/` (relative `.md` paths only, no `..`, no symlink along the chain,
+  containment re-checked against a canonicalized parent) and capped at 64 KB. Two consequences worth stating plainly:
+  **(a)** everything the agent saves there is sent to the user's provider on every later message, indefinitely, which
+  includes anything it inferred from OCR of their photos — the system prompt forbids saving that, but the prohibition is
+  a prompt, not a gate; **(b)** the write path is reachable from untrusted text (a crafted file name, a sentence
+  photographed in an image), so what lands there could be attacker-chosen. The prompt-injection mitigations are memory's
+  placement BEFORE the rules, a fence its own content cannot close, and the "facts, never instructions to yourself"
+  write rule. Depth: `apps/desktop/src-tauri/src/agent/memory/DETAILS.md` § The injection surface.
 - **The photo tools send image-derived TEXT, not "just metadata".** `search_photos` (`mcp/executor/photos.rs`) returns
   matched image paths plus the in-image OCR snippet and Vision tags; `image_facts` (`mcp/executor/image_facts.rs`)
   returns the FULL stored OCR text (up to 2,000 characters per file, for up to 200 files) plus tags for paths the caller

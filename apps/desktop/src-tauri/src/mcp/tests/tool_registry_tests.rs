@@ -759,7 +759,7 @@ fn test_agent_tool_view_is_exactly_expected_set() {
 /// The agent's `Propose` tools, authored by hand. A `Propose` tool stages a proposal and opens a
 /// review surface; it mutates nothing. No structural check can PROVE a handler doesn't mutate, so
 /// this allowlist is the deliberate act: adding a `Propose` tool means a human puts its name here
-/// on purpose, having read the handler. Empty is the correct state until the first one ships.
+/// on purpose, having read the handler.
 ///
 /// A `Propose` tool must also cap its payload the way `image_facts` caps at 200 paths — a proposal
 /// the user can't review is a proposal they can only rubber-stamp. That contract can't be enforced

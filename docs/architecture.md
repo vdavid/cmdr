@@ -169,12 +169,13 @@ All under `apps/desktop/src-tauri/src/`.
   forward-migration ladder (not delete-and-recreate) and retention discipline, interned dir prefixes + per-item rows,
   app-side case folding with no collation (stays `sqlite3`-inspectable). See its
   `apps/desktop/src-tauri/src/operation_log/CLAUDE.md`
-- `agent/`: The in-app AI agent, whose first user-facing slice is "Ask Cmdr" (a read-only chat rail). Its `agent/llm/`
-  holds the provider-agnostic `AgentLlm` seam over the shipped `genai` client, its deterministic fake, and the typed
-  message-part model that keeps opaque provider reasoning state lossless. Its `agent/store/proposals/` holds the durable
-  proposal spine (sweeps, reviewable groups, ops, and the claim transaction that binds an approval to what the user
-  saw), with `agent/suggested_ops/` as the service over it. Its `agent/wake/` is the proactive half: the pure noticing
-  pipeline plus the thread that owns the inbox, the timer, and the wakes it hands off. See its
+- `agent/`: The in-app AI agent, whose first user-facing slice is "Ask Cmdr" (a chat rail). Its `agent/llm/` holds the
+  provider-agnostic `AgentLlm` seam over the shipped `genai` client, its deterministic fake, and the typed message-part
+  model that keeps opaque provider reasoning state lossless. Its `agent/store/proposals/` holds the durable proposal
+  spine (sweeps, reviewable groups, ops, and the claim transaction that binds an approval to what the user saw), with
+  `agent/suggested_ops/` as the service over it. Its `agent/wake/` is the proactive half: the pure noticing pipeline
+  plus the thread that owns the inbox, the timer, and the wakes it hands off. Its `agent/memory/` is the one place the
+  agent writes: a jailed, capped Markdown folder under the app data dir, fed back into every turn's prefix. See its
   `apps/desktop/src-tauri/src/agent/CLAUDE.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)

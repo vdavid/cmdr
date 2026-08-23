@@ -120,11 +120,11 @@ mod tests {
 
     #[test]
     fn the_access_gate_admits_read_propose_and_memory_and_refuses_everything_else() {
-        // The gate's access axis, exercised directly against every `Access` variant.
-        // The name-based tests below can only reach the variants some tool is actually
-        // authored with, so with no `Propose` tool authored yet they'd cover `Propose`
-        // vacuously. This one doesn't: it pins the widened rule itself — the agent may
-        // read, may ask, and may write its own notes, and may never write anything else.
+        // The gate's access axis, exercised directly against every `Access` variant. The
+        // name-based tests below can only reach the variants some tool is actually authored
+        // with, so a variant nothing carries yet would be covered vacuously. This one pins
+        // the rule itself — the agent may read, may ask, and may write its own notes, and may
+        // never write anything else.
         assert!(access_is_dispatchable(Some(Access::Read)), "a read tool must dispatch");
         assert!(
             access_is_dispatchable(Some(Access::Propose)),

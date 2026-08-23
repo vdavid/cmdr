@@ -31,7 +31,7 @@ const FILES: usize = 100;
 // them, and divides the reply's own ceiling by the plan row), so they're imported rather than
 // restated: this file is what keeps them honest against the real shapes.
 
-/// Every call: the system prompt plus the 15 tool declarations, before the user has said a word.
+/// Every call: the system prompt plus the 17 tool declarations, before the user has said a word.
 const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
 const SYSTEM_PROMPT_TOKENS: usize = 1_636;
 const TOOL_DECLARATION_TOKENS: usize = 3_969;

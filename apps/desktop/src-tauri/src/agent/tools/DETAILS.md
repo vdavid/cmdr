@@ -1,13 +1,14 @@
 # Agent tools — details
 
-The toolset the Ask Cmdr chat agent dispatches in-process: the read families, and the `Propose` tier over them.
-Must-knows: `CLAUDE.md`.
+The toolset the Ask Cmdr chat agent dispatches in-process: the read families, the `Propose` tier over them, and the
+two `Memory` tools. Must-knows: `CLAUDE.md`.
 
 ## The two-view registry model
 
 There is ONE authored tool table (`mcp/tool_registry/mod.rs`, `mcp_tools!`). Each entry declares `consumers`
-(`AiClient` / `Agent`) and `access` (`Read` / `Write`). The agent's tools are `consumers: [Agent], access: Read`
-entries; `operations_list` / `operations_get` / `search_photos` / `image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
+(`AiClient` / `Agent`) and `access` (`Read` / `Propose` / `Memory` / `Write`). The agent's tools are
+`consumers: [Agent]` entries, never `access: Write`; `operations_list` / `operations_get` / `search_photos` /
+`image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
 `get_all_tools()` is the ai-client slice (agent-only entries filtered out, so the ai-client wire snapshot is unchanged).
 `execute_tool(app, Consumer::Agent, name, params)` dispatches only the agent view. See
 [`mcp/tool_registry` + `mcp/DETAILS.md`](../../mcp/DETAILS.md) § Consumer and access views for the mechanism.
@@ -72,6 +73,7 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   resolve-check-write order, the selector schema, and the last-opened gap: `suggestions/DETAILS.md`.
 - **`nothing_to_suggest`** (`quiet.rs`) — one argument, a short `reason`, and no effect at all. See § A tool that is
   only a signal.
+- **`memory_write` / `memory_edit`** (`memory.rs`) — the two `Access::Memory` tools. See § The two tools that write.
 
 ## A tool that is only a signal (`nothing_to_suggest`)
 
@@ -94,9 +96,29 @@ delete lives on the wake path, after the turn (`agent/wake/`), and a rail turn c
 auto-dispatched ones the user never previews, and `redact::redact_line_salted` is path-shaped, so it does nothing to a
 sentence about which of the user's folders were boring. Log that a wake was quiet, never what it said.
 
-**What it costs everyone else.** The schema is prefix, so all 15 declarations are paid on every rail turn: this one is
-105 tokens of the 5,077 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
+**What it costs everyone else.** The schema is prefix, so all 17 declarations are paid on every rail turn: this one is
+105 tokens of the 5,605 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
 being able to stay silent, and it's why the description is two sentences.
+
+## The two tools that write (`memory_write`, `memory_edit`)
+
+Everything either tool DECIDES lives in `../memory/` — the jail, the two caps, the edit's uniqueness rule — so this
+file holds only root resolution (`memory::store_for`, which reads the app data dir) and result shaping. That split is
+not tidiness: there is no Tauri mock runtime in the tree and every registry handler takes an `AppHandle`, so a rule
+placed here is a rule no test can reach. `../memory/DETAILS.md` § Testing shape.
+
+**A refusal is an `Ok` carrying a typed token, ❌ never a `ToolError`.** `view::dispatch` flattens a `ToolError` to
+`{ "problem": <sentence> }`, and a model that has to read prose to learn its memory is full will keep writing into a
+folder that is saving nothing. So the result is `{ saved: false, refused: <token>, detail: <sentence> }`, where
+`refused` is `MemoryRefusal::token()` and the sentence names a next move — a refusal with no next move gets retried
+verbatim. Same rule as `error-string-match`, pointed at the model instead of at our own code.
+
+A landed write answers `{ saved: true, path, bytes, remainingBytes }`. `remainingBytes` is what the folder has left
+against its 64 KB disk cap, so the model can see pruning coming rather than discovering it at a refusal.
+
+⚠️ **Both are callable from the RAIL, not only from a wake.** "Remember that I keep invoices by year" is what the
+folder is for. It is also the mechanism behind the injection risk the prompt fences against
+(`../memory/DETAILS.md` § The injection surface), so it is stated rather than implied.
 
 ## One tool, both questions (`list_dir`)
 
@@ -206,16 +228,18 @@ and the system prompt requires the model to disclose "returned of total" wheneve
 - Otherwise `None` ⇒ `dispatch` calls `execute_tool(app, Consumer::Agent, …)`, which itself refuses any name outside the
   agent view (a second, structural backstop).
 
-The access half lives in the pure `access_is_dispatchable(Option<Access>) -> bool`: `Read` and `Propose` dispatch,
-`Write` and an unclassified name don't. It's separate so the rule is unit-testable against EVERY `Access` variant
+The access half lives in the pure `access_is_dispatchable(Option<Access>) -> bool`: `Read`, `Propose`, and `Memory`
+dispatch, `Write` and an unclassified name don't. It's separate so the rule is unit-testable against EVERY `Access` variant
 without authoring a tool per variant — with zero `Propose` tools in the registry, a name-driven test would cover the
 `Propose` arm vacuously, and the widened gate would go unexercised until some future commit.
 
 The negative test (`view.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete", …)` and asserts the refusal end to
 end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
 
-The refusal copy says Ask Cmdr can prepare a rename plan or suggest file operations for the user to review but
-can't change anything, approve a proposal, or read file contents: the agent can ask, not act. Keep it accurate as the `Propose` tier grows.
+The refusal copy says Ask Cmdr can prepare a rename plan, suggest file operations for the user to review, and save
+notes in its own memory folder, but can't touch the user's files, approve a proposal, or read file contents. ⚠️ Keep it
+accurate as the tiers grow: it used to promise the agent couldn't change anything at all, which `Access::Memory` made
+false.
 
 `dispatch` routes two tools specially rather than through the generic `execute_tool` call: `propose_rename_plan`,
 which needs the evidence scope, and `propose_suggestions`, which needs the conversation id so a sweep records the
