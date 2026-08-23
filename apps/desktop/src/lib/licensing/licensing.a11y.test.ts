@@ -181,7 +181,13 @@ describe('AcknowledgementsDialog a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it('has no a11y violations once the package lists are rendered', async () => {
+  // 20s rather than vitest's 5s default: this is the only a11y case that runs axe
+  // over the FULL acknowledgements tree (hundreds of package links), and the
+  // check lane runs the suite under v8 coverage, which costs it about 5x. Plain
+  // `vitest run` finishes it in ~1.6s; instrumented it lands around 8s, so the
+  // default budget fails deterministically in the lane and passes everywhere
+  // else. ❗ The budget is the only thing raised — the assertion is unchanged.
+  it('has no a11y violations once the package lists are rendered', { timeout: 20_000 }, async () => {
     const target = mountDialog()
     await waitForPackages(target)
     await expectNoA11yViolations(target)
