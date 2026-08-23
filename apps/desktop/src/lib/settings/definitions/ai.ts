@@ -157,6 +157,65 @@ export const aiSettings: SettingDefinitionSource[] = [
   },
 
   // ========================================================================
+  // AI › Ask Cmdr › On its own
+  //
+  // The three rows behind the proactive loop (`agent::wake`). ⚠️ Unlike the two above,
+  // these are NOT read fresh at send time: they drive a sleeping timer on the wake
+  // loop's own thread, so each one needs a `settings-applier` case pushing
+  // `askCmdrWakeSettingsChanged()`. Flipping `proactive` has to wake a parked
+  // scheduler, and a change to `wakeDelay` has to re-arm the timer AND re-price the
+  // rows already queued (the inbox merge is min-only, so a LENGTHENED delay would
+  // otherwise never reach anything waiting).
+  // ========================================================================
+  {
+    id: 'askCmdr.proactive',
+    section: ['AI', 'Ask Cmdr'],
+    labelKey: 'settings.askCmdr.proactive.label',
+    descriptionKey: 'settings.askCmdr.proactive.description',
+    keywords: ['ask cmdr', 'proactive', 'suggestions', 'automatic', 'notice', 'watch', 'wake', 'ai'],
+    type: 'boolean',
+    // The middle tier between "no AI" and "AI that starts conversations", and the
+    // fourth gate the scheduler checks beside consent, disk access, and a provider.
+    // The Rust loader mirrors this default explicitly (`WakeSettings::from_parts`):
+    // the store is sparse, so an untouched row reaches the backend as an absent key.
+    default: false,
+    component: 'switch',
+  },
+  {
+    id: 'askCmdr.wakeDelay',
+    section: ['AI', 'Ask Cmdr'],
+    labelKey: 'settings.askCmdr.wakeDelay.label',
+    descriptionKey: 'settings.askCmdr.wakeDelay.description',
+    keywords: ['ask cmdr', 'delay', 'cadence', 'wait', 'often', 'frequency', 'calm', 'quiet', 'proactive'],
+    type: 'number',
+    // Seconds. Mirrors `agent::wake::DEFAULT_HOT_DELAY`, and `WAKE_DELAY_STOPS` in the
+    // same Rust module mirrors `sliderStops` below; nothing enforces the pair
+    // mechanically, so change both together.
+    default: 5,
+    component: 'slider',
+    constraints: {
+      // ⚠️ `stopsAreDiscrete`: the track runs over the stops' INDICES. A linear 5-to-7200
+      // range would put the first three stops inside a single pixel. The stored value is
+      // still the number of seconds, never the index.
+      min: 5,
+      max: 7200,
+      step: 1,
+      sliderStops: [5, 15, 30, 60, 120, 300, 900, 1800, 3600, 7200],
+      stopsAreDiscrete: true,
+    },
+  },
+  {
+    id: 'askCmdr.wakeToast',
+    section: ['AI', 'Ask Cmdr'],
+    labelKey: 'settings.askCmdr.wakeToast.label',
+    descriptionKey: 'settings.askCmdr.wakeToast.description',
+    keywords: ['ask cmdr', 'toast', 'notice', 'notification', 'suggestion', 'proactive', 'alert'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+
+  // ========================================================================
   // AI › MCP server
   //
   // The Model Context Protocol server that lets external AI clients drive Cmdr.

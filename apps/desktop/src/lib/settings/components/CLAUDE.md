@@ -34,6 +34,10 @@ in the section or registry, not here. Parent: `../CLAUDE.md` (registry, store, s
   a11y test plus a manual keyboard run.
 - **`SettingColorSwatchPicker` keyboard nav stays in `swatch-keyboard.ts`**, the pure key-index resolver, so the
   traversal table is testable without a DOM. The component owns open/close, focus, and outside-click.
+- **`constraints.stopsAreDiscrete` runs `SettingSlider`'s track over stop INDICES**, so the track and the store speak
+  different numbers. ❌ Never store the index, and ❌ never place a stored value with `indexOf` (`-1` reads as the first
+  stop). Both crossings go through `slider-stops.ts`; `ariaValueText` is mandatory in this mode. DETAILS § Index-mapped
+  stops.
 - **`SettingsSection`'s borderless title is intentional** (System Settings style). Don't add a `border-bottom`.
 - **`SettingPasswordInput`'s controlled mode skips the store subscription** so secret-store updates aren't clobbered by
   stale store reads. DETAILS § Password-input modes.

@@ -1566,6 +1566,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "Magától",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "Az Ask Cmdr kezdeményezhet beszélgetést",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "Az Ask Cmdr figyeli azokat a mappákat, amikben dolgozol, és elkezd egy beszélgetést, ha van mit javasolnia. Semmi nem indul el, amíg jóvá nem hagyod.",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Milyen hamar néz rá az Ask Cmdr",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Milyen hamar nézi meg az Ask Cmdr az imént megváltozott mappát. A hosszabb idő nyugodtabb segítőt jelent.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "A mozgalmas mappákra {hot} időn belül néz rá, a csendesebbekre {warm} időn belül.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "Jelezze, ha új javaslat érkezik",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "Egy apró üzenet a sarokban, amikor az Ask Cmdr előkészít valamit átnézésre.",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "Kiadás",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

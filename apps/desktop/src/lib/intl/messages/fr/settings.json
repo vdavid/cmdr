@@ -1576,6 +1576,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "De sa propre initiative",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "Autoriser Ask Cmdr à lancer des conversations",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "Ask Cmdr surveille les dossiers dans lesquels vous travaillez et lance une discussion quand il a quelque chose à suggérer. Rien ne s''exécute tant que vous ne l''avez pas approuvé.",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Délai de réaction d''Ask Cmdr",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Le délai avant qu''Ask Cmdr regarde un dossier qui vient de changer. Plus long, c''est un assistant plus calme.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "Les dossiers actifs sont regardés sous {hot}, les plus calmes sous {warm}.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "Afficher un avis quand une suggestion arrive",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "Un petit message dans le coin quand Ask Cmdr prépare quelque chose à examiner.",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "Dépenses",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

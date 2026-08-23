@@ -1572,6 +1572,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "På eget initiativ",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "Låt Ask Cmdr starta samtal",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "Ask Cmdr håller koll på mapparna du arbetar i och startar ett samtal när den har något att föreslå. Inget körs förrän du godkänner det.",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Hur snabbt Ask Cmdr tittar",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Hur snabbt Ask Cmdr tittar på en mapp som just har ändrats. Längre betyder en lugnare assistent.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "Aktiva mappar tittas på inom {hot}, lugnare inom {warm}.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "Visa en avisering när ett förslag dyker upp",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "Ett litet meddelande i hörnet när Ask Cmdr lägger fram något att granska.",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "Utgifter",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

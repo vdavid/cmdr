@@ -37,6 +37,7 @@ import {
   syncMenuShowHidden,
   applyRecentSearchesMaxCount,
   applyRecentSelectionsMaxCount,
+  askCmdrWakeSettingsChanged,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { tString, setLocale } from '$lib/intl/messages.svelte'
@@ -251,6 +252,16 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'askCmdr.interactiveModel': () => {
     noteModelSettingChanged()
   },
+  // The proactive loop's three rows. ⚠️ Unlike the two `askCmdr.*` settings above, these
+  // can't be read fresh at send time, because there is no send: they drive a timer parked
+  // on the wake loop's own thread. The push is what makes turning the gate on wake a
+  // parked scheduler, and what makes a LENGTHENED cadence reach the folders already
+  // queued (the inbox merge is min-only, so nothing waiting would otherwise feel it).
+  // No value travels — the loop re-reads `settings.json` when it services the message, so
+  // two changes racing can't leave it on the older one.
+  'askCmdr.proactive': () => void askCmdrWakeSettingsChanged(),
+  'askCmdr.wakeDelay': () => void askCmdrWakeSettingsChanged(),
+  'askCmdr.wakeToast': () => void askCmdrWakeSettingsChanged(),
   // `updates.autoCheck` flips the background poll loop on or off live. `applyAutoCheckEnabled`
   // also fires an immediate check on `true` so the user gets a fresh state right after
   // re-enabling. Without this entry the wizard's step 3 toggle would only take effect after

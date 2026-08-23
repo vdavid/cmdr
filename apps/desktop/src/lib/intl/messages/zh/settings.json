@@ -1565,6 +1565,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "主动提醒",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "允许 Ask Cmdr 主动发起对话",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "Ask Cmdr 会关注你正在使用的文件夹，有建议时主动开启对话。在你批准之前，什么都不会执行。",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Ask Cmdr 多快去查看",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Ask Cmdr 多快去查看刚刚发生变化的文件夹。时间越长，助手越安静。",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "活跃的文件夹会在 {hot} 内查看，安静的文件夹在 {warm} 内查看。",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "有新建议时显示提示",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "当 Ask Cmdr 准备好待你查看的内容时，在角落显示一条小提示。",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "花费",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

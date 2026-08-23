@@ -1571,6 +1571,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "Uit zichzelf",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "Ask Cmdr mag gesprekken beginnen",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "Ask Cmdr houdt de mappen in de gaten waarin je werkt en begint een chat zodra het iets voor te stellen heeft. Er gebeurt niets tot je het goedkeurt.",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Hoe snel Ask Cmdr kijkt",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Hoe snel Ask Cmdr kijkt naar een map die net is veranderd. Langer betekent een rustigere assistent.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "Drukke mappen worden binnen {hot} bekeken, rustigere binnen {warm}.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "Een melding tonen als er een suggestie is",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "Een klein bericht in de hoek wanneer Ask Cmdr iets klaarzet om te bekijken.",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "Uitgaven",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

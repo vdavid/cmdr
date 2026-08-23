@@ -1563,6 +1563,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "Tự chủ động",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "Cho phép Ask Cmdr bắt đầu cuộc trò chuyện",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "Ask Cmdr theo dõi các thư mục bạn đang làm việc và bắt đầu một cuộc trò chuyện khi có điều gì đó để đề xuất. Không có gì chạy cho đến khi bạn phê duyệt.",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Ask Cmdr xem xét sớm đến mức nào",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Ask Cmdr xem xét một thư mục vừa thay đổi sớm đến mức nào. Càng lâu thì trợ lý càng điềm tĩnh.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "Thư mục bận rộn được xem trong vòng {hot}, thư mục yên ắng hơn trong vòng {warm}.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "Hiện thông báo khi có đề xuất mới",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "Một thông báo nhỏ ở góc màn hình khi Ask Cmdr chuẩn bị sẵn điều gì đó để bạn xem lại.",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "Chi tiêu",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

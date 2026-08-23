@@ -356,6 +356,7 @@ export {
   askCmdrConversationCost,
   askCmdrCostSummary,
   askCmdrModelWindow,
+  askCmdrWakeSettingsChanged,
 } from './ask-cmdr'
 export type {
   AskCmdrStreamEvent,

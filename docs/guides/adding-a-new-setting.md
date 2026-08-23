@@ -49,7 +49,13 @@ const fooDef = getSettingDefinition('group.foo') ?? { label: '', description: ''
 
 The control components live in `settings/components/` (`SettingSwitch`, `SettingNumberInput`, `SettingSelect`,
 `SettingSlider`, `SettingRadioGroup`, `SettingToggleGroup`, `SettingCheckbox`, `SettingColorSwatchPicker`); pick the one
-matching your `component`.
+matching your `component`. A slider whose stops span orders of magnitude (5 seconds to 2 hours) adds
+`constraints.stopsAreDiscrete` so the track runs over the stops' indices; see `lib/settings/components/DETAILS.md` §
+Index-mapped stops.
+
+A row whose description has to name a live value (the Ask Cmdr cadence names both waits its setting produces) can't get
+it from `descriptionKey`, which resolves to a static string. Pass a computed `tString(...)` to `SettingRow`'s
+`description` prop instead, and keep the static registry text for the search index.
 
 **The one exception:** `AdvancedSection` auto-renders every `section: ['Advanced']` setting from the registry. To make a
 setting obscure, give it `section: ['Advanced']` plus a `cardKey` (its Advanced card group) and skip step 2 entirely —

@@ -308,3 +308,16 @@ export async function askCmdrCostSummary(): Promise<CostSummary> {
 export async function askCmdrModelWindow(): Promise<ModelWindowView> {
   return commands.askCmdrModelWindow()
 }
+
+/**
+ * Tell the proactive loop its settings moved, so it re-reads them and re-arms its timer.
+ *
+ * ⚠️ The live-apply push behind `askCmdr.proactive`, `askCmdr.wakeDelay`, and
+ * `askCmdr.wakeToast`. Unlike the other two `askCmdr.*` settings, which the backend reads
+ * fresh on each send, these drive a SLEEPING timer: without this the loop keeps running on
+ * whatever it read at launch until the app restarts. No value crosses; the loop re-reads
+ * `settings.json` itself.
+ */
+export async function askCmdrWakeSettingsChanged(): Promise<void> {
+  await commands.askCmdrWakeSettingsChanged()
+}

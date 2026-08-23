@@ -74,6 +74,17 @@ export interface SettingConstraints {
   max?: number
   step?: number
   sliderStops?: number[] // Specific values the slider snaps to
+  /**
+   * The stops are the ONLY values the slider may produce, and the track runs over their
+   * INDICES rather than over `min`..`max`. For a range whose ends are orders of magnitude
+   * apart (5 seconds to 2 hours), a linear track puts the first stops inside one pixel;
+   * index space gives every stop equal travel.
+   *
+   * `SettingSlider` maps index↔value at the four edges (seed, external change, commit,
+   * double-click reset); the stored value is always the STOP, ❌ never its index, so
+   * reordering the table can't silently change what a user chose.
+   */
+  stopsAreDiscrete?: boolean
 
   // For 'enum' type
   options?: EnumOption[]
@@ -452,6 +463,17 @@ export interface SettingsValues {
   // The prompt budget one message may claim; `'auto'` follows the model's window. Read fresh
   // backend-side each send (`load_ask_cmdr_chat_memory_size`), like the model override above.
   'askCmdr.chatMemorySize': AskCmdrChatMemorySize
+  // Whether Ask Cmdr may start conversations on its own. The three rows below drive a SLEEPING
+  // timer in Rust (`agent::wake`), so unlike the two above they each need a `settings-applier`
+  // case: the backend can't read them fresh at send time, because there is no send.
+  'askCmdr.proactive': boolean
+  // How long Ask Cmdr waits before looking at a folder that just changed, in seconds. The HOT
+  // tier's delay; the calmer tier derives from it (a minute of patience per second, capped at
+  // six hours). One of `WAKE_DELAY_STOPS` — the slider is index-mapped over that table, and the
+  // stored value is the number of seconds, ❌ never the stop's index.
+  'askCmdr.wakeDelay': number
+  // Whether a proposal Ask Cmdr staged on its own raises a toast.
+  'askCmdr.wakeToast': boolean
 
   // Developer
   'developer.mcpEnabled': boolean

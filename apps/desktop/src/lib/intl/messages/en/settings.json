@@ -1977,6 +1977,54 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "description": "Warning under the chat memory size picker, shown when the chosen size is larger than the context window Cmdr believes the model has. Cmdr does not overrule the choice: what Cmdr knows about a model can be out of date, and the user may be right. So name the consequence and confirm the value stands. Never says error or failed. Sentence case."
   },
+  "settings.askCmdr.proactive.title": "On its own",
+  "@settings.askCmdr.proactive.title": {
+    "description": "Heading of the group in Ask Cmdr settings that controls whether Ask Cmdr may notice changes and open a chat by itself, without being asked. Sentence case, no period.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.proactive.label": "Let Ask Cmdr start conversations",
+  "@settings.askCmdr.proactive.label": {
+    "description": "Label for the switch that lets Ask Cmdr open a chat on its own when it notices something worth suggesting. Starts with a verb. \"Ask Cmdr\" is the product name; keep it as-is. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.proactive.description": "Ask Cmdr watches the folders you work in and starts a chat when it has something to suggest. Nothing runs until you approve it.",
+  "@settings.askCmdr.proactive.description": {
+    "description": "Help text under the switch that lets Ask Cmdr start conversations. Says what it watches and reassures the reader that a suggestion is only ever a proposal. The second sentence matches the Suggested ops dialog's wording, so keep the two consistent.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.wakeDelay.label": "How soon Ask Cmdr looks",
+  "@settings.askCmdr.wakeDelay.label": {
+    "description": "Label for the slider that sets how long Ask Cmdr waits after a folder changes before it looks at it. \"Ask Cmdr\" is the product name; keep it as-is. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.wakeDelay.description": "How soon Ask Cmdr looks at a folder that just changed. Longer means a calmer assistant.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "description": "Help text for the cadence slider, used by settings search and wherever the live readout is unavailable. The rendered row shows settings.askCmdr.wakeDelay.summary instead, which names the two actual waits.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.wakeDelay.summary": "Busy folders get a look within {hot}, quieter ones within {warm}.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "description": "Help text under the cadence slider, naming both waits the current setting produces: the one for folders with a lot going on, and the longer one for quieter folders. Both values arrive already formatted (\"30s\", \"5m\", \"2h\"); don't add units or reformat them.",
+    "placeholders": {
+      "hot": {
+        "content": "How long a busy folder waits, already formatted, for example \"30s\"."
+      },
+      "warm": {
+        "content": "How long a quieter folder waits, already formatted, for example \"30m\"."
+      }
+    },
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.wakeToast.label": "Show a notice when a suggestion appears",
+  "@settings.askCmdr.wakeToast.label": {
+    "description": "Label for the switch that controls whether a small corner message appears when Ask Cmdr has staged a suggestion. Starts with a verb. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.wakeToast.description": "A small message in the corner when Ask Cmdr stages something for you to review.",
+  "@settings.askCmdr.wakeToast.description": {
+    "description": "Help text under the suggestion-notice switch, describing the corner message (a toast).",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
   "settings.askCmdr.spend.title": "Spending",
   "@settings.askCmdr.spend.title": {
     "description": "Heading of the spend/usage group in Ask Cmdr settings (per-day token use and estimated cost). Sentence case.",

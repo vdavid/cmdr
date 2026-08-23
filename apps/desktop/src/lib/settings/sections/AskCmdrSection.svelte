@@ -17,6 +17,9 @@
     import { formatInteger } from '$lib/intl/number-format'
     import { getAppLogger } from '$lib/logging/logger'
     import SettingSelect from '../components/SettingSelect.svelte'
+    import SettingSwitch from '../components/SettingSwitch.svelte'
+    import SettingSlider from '../components/SettingSlider.svelte'
+    import { formatDuration, seconds } from '$lib/units'
     import { askCmdrCostSummary, askCmdrModelWindow, type CostSummary } from '$lib/tauri-commands'
     import { consentState, refreshConsent, acceptConsent, revokeConsent } from '$lib/ask-cmdr/ask-cmdr-consent.svelte'
     import { formatUsdMicros } from '$lib/ask-cmdr/ask-cmdr-cost'
@@ -92,6 +95,38 @@
     // unknown window (a model Cmdr has no row for) stays quiet rather than guessing.
     const overKnownWindow = $derived(
         chatMemorySize !== 'auto' && knownWindowTokens !== null && Number(chatMemorySize) > knownWindowTokens,
+    )
+
+    // The "On its own" group: whether Ask Cmdr may start conversations, how soon it looks, and
+    // whether a staged suggestion raises a notice. All three drive a SLEEPING timer in Rust, so
+    // each change is pushed to the backend by `settings-applier.ts`; this section only reads.
+    const proactiveDef = getSettingDefinition('askCmdr.proactive') ?? { label: '', description: '' }
+    const wakeDelayDef = getSettingDefinition('askCmdr.wakeDelay') ?? { label: '', description: '' }
+    const wakeToastDef = getSettingDefinition('askCmdr.wakeToast') ?? { label: '', description: '' }
+    let proactive = $state(getSetting('askCmdr.proactive'))
+    $effect(() => onSpecificSettingChange('askCmdr.proactive', (_id, v) => { proactive = v }))
+    let wakeDelaySeconds = $state(getSetting('askCmdr.wakeDelay'))
+    $effect(() => onSpecificSettingChange('askCmdr.wakeDelay', (_id, v) => { wakeDelaySeconds = v }))
+
+    // How long a quieter folder waits: a minute of patience for every second of attentiveness,
+    // held to six hours. ⚠️ Mirrors `agent::wake::interest`'s `WARM_MULTIPLE` / `MAX_WARM_DELAY`,
+    // which is what actually schedules the wake; change the two together or the row lies.
+    const WARM_MULTIPLE = 60
+    const MAX_WARM_DELAY_SECONDS = 6 * 60 * 60
+
+    /** The cadence readout, in the same compact form every ETA in the app uses. */
+    function wakeDuration(secs: number): string {
+        return formatDuration(seconds(secs))
+    }
+
+    // The description names BOTH waits, so it can't come from `descriptionKey` (a static
+    // string). The registry keeps that static text for the search index; the rendered row gets
+    // this, with the two durations already formatted.
+    const wakeDelaySummary = $derived(
+        tString('settings.askCmdr.wakeDelay.summary', {
+            hot: wakeDuration(wakeDelaySeconds),
+            warm: wakeDuration(Math.min(wakeDelaySeconds * WARM_MULTIPLE, MAX_WARM_DELAY_SECONDS)),
+        }),
     )
 
     // The per-day spend rollup (loaded on mount; refreshed when the section re-enables).
@@ -200,6 +235,44 @@
         {#if overKnownWindow}
             <p class="memory-warning" role="status">{tString('settings.askCmdr.chatMemorySize.overWindow')}</p>
         {/if}
+    {/if}
+
+    <!-- On its own: the proactive loop's three knobs -->
+    <h3 class="group-title">{tString('settings.askCmdr.proactive.title')}</h3>
+    {#if shouldShow('askCmdr.proactive')}
+        <SettingRow
+            id="askCmdr.proactive"
+            label={proactiveDef.label}
+            description={proactiveDef.description}
+            split
+            {searchQuery}
+        >
+            <SettingSwitch id="askCmdr.proactive" />
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('askCmdr.wakeDelay')}
+        <SettingRow
+            id="askCmdr.wakeDelay"
+            label={wakeDelayDef.label}
+            description={wakeDelaySummary}
+            split
+            {searchQuery}
+        >
+            <SettingSlider id="askCmdr.wakeDelay" disabled={!proactive} formatValue={wakeDuration} />
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('askCmdr.wakeToast')}
+        <SettingRow
+            id="askCmdr.wakeToast"
+            label={wakeToastDef.label}
+            description={wakeToastDef.description}
+            split
+            {searchQuery}
+        >
+            <SettingSwitch id="askCmdr.wakeToast" disabled={!proactive} />
+        </SettingRow>
     {/if}
 
     <!-- Spend -->

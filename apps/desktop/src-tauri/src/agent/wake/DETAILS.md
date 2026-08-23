@@ -80,6 +80,34 @@ no user answer yet passes.
 walks every slider stop, not just the default. (The cap can only invert the order for a hot setting above six hours,
 which the slider cannot reach.)
 
+## The three settings, and where each one is read
+
+`settings.rs` is the ONE place the loop reads user settings: `askCmdr.proactive` (the fourth gate, beside the three in
+`readiness.rs`) and `askCmdr.wakeDelay` (the hot tier's delay). The third row, `askCmdr.wakeToast`, is a frontend
+choice about whether a staged proposal raises a toast; it reaches the backend only as a reason to re-read, so nothing
+here holds it.
+
+⚠️ **`settings.json` is SPARSE**, so both reads are `Option` and both defaults are spelled out in `from_parts`.
+`unwrap_or_default()` would ship `false` forever for the boolean and a ZERO-second cadence for the delay, which is a
+wake per live batch. A value off the slider's track (a hand-edited file) is clamped to `MIN_HOT_DELAY..=MAX_HOT_DELAY`:
+below the shortest stop the agent wakes on its own noise, and above the longest the warm tier is pinned to its cap
+anyway.
+
+⚠️ **`WAKE_DELAY_STOPS` is mirrored by `constraints.sliderStops`** on the registry entry
+(`apps/desktop/src/lib/settings/definitions/ai.ts`), and the warm derivation is mirrored by the section's readout copy
+(`AskCmdrSection.svelte`). Nothing enforces either pair mechanically, so a stop or a multiple changes on both sides at
+once or the settings row describes a cadence the loop does not run.
+
+**A change arrives as a control message, never as a poll.** `settings-applier.ts` calls `ask_cmdr_wake_settings_changed`
+for all three rows, which sends `WakeControl::SettingsChanged`; the writer thread re-reads and the loop recomputes its
+park, so a shortened cadence re-arms the timer immediately.
+
+⚠️ **Re-pricing is the half that is easy to miss.** `Inbox::admit` merges min-only on purpose (the starvation guard), so
+a LENGTHENED cadence would reach only bundles arriving AFTER the change: somebody asking for a calmer agent would keep
+being woken on the old schedule by everything already queued. `Inbox::reprice` shifts each waiting deadline by its
+tier's delta, so the row keeps the moment it arrived and moving the slider there and back is a no-op. A cold row stays
+without a deadline at every cadence.
+
 ## The digest budget
 
 Enforced against the REAL rendered string, not a sum of per-line estimates: `div_ceil` per line does not add up to the

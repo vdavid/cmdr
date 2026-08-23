@@ -20,8 +20,9 @@ shape:
 - `SettingToggleGroup`: segmented control for a short enum list.
 - `SettingRadioGroup`: vertical radio for a longer list, an option needing a `customContent` snippet, or an option
   carrying a control on its own line (`itemTrailing`, as Brief mode's "Limit to" does).
-- `SettingSlider` vs `SettingNumberInput`: see the next section. A `duration` setting on the number input edits in
-  `constraints.unit` while the store stays in ms (`durationValueToMs` / `msToDurationValue`).
+- `SettingSlider` vs `SettingNumberInput`: see the next section, and § Index-mapped stops for the discrete mode. A
+  `duration` setting on the number input edits in `constraints.unit` while the store stays in ms (`durationValueToMs` /
+  `msToDurationValue`).
 - `SettingPasswordInput`: masked input with a reveal toggle; two modes, below.
 - `SettingColorSwatchPicker`: circle trigger plus a 4×4 swatch popover for pane tints. `swatch-keyboard.ts` is its pure
   key-index resolver, unit-testable without a DOM.
@@ -49,7 +50,30 @@ Practical fallout worth knowing:
 - `maxOverride` exists for a ceiling that isn't known until runtime (image-index parallelism, capped at this machine's
   CPU count). The registry keeps a static fallback so search and off-runtime rendering still work.
 - A slider's readout joins the value and `unit` with NO space (`125%`), and `ariaValueText` carries the same string so
-  screen readers hear the unit too.
+  screen readers hear the unit too. A row whose number isn't a plain count passes `formatValue` instead (the Ask Cmdr
+  wake cadence renders `30s` / `5m` / `2h` through `$lib/units`), and that also turns the spoken value on.
+
+## Index-mapped stops
+
+`constraints.stopsAreDiscrete` makes the stop table the ONLY reachable set of values, and runs the track over the stops'
+INDICES instead of over `min`..`max`. The Ask Cmdr wake cadence is the reference row: its stops run 5 seconds to 2
+hours, and on a linear track the first three would share a single pixel. In index space every stop gets equal travel,
+and `ui/Slider` needs no change for it — `positionOf` is linear over min/max, which is correct in index space, and ticks
+and snap targets are consumed in the same space.
+
+- **Two number spaces, four crossings.** The track carries an index, the store carries the stop's value, and
+  `slider-stops.ts` (`nearestStopIndex` / `stopAt`) is the only conversion. The four call sites are the `$state` seed,
+  the `onSpecificSettingChange` arm, `commit`, and the double-click reset (which starts from the registry default, a
+  stored value).
+- **The index is never stored.** Reordering the table or inserting a stop would then silently change what every user
+  chose. `CLAUDE.md` carries the two guardrails.
+- **Placing a stored value goes through `nearestStopIndex`, not `indexOf`.** A value that isn't in the table — a
+  hand-edited settings file, or a stop a later build retired — answers `-1` from `indexOf`, which reads as the first
+  stop while the store still holds the old number. `SettingSlider.svelte.test.ts` pins both directions.
+- **`ariaValueText` is mandatory here, not optional.** Ark hands the raw track value to `getAriaValueText`, so without
+  the mapping back a screen reader announces "5" for a five-minute cadence. `SettingSlider` turns the spoken value on
+  whenever `unit`, `formatValue`, or discrete mode is in play, rather than on `unit` alone.
+- **`maxOverride` is ignored** in this mode: the stop table decides both ends.
 
 ## Password-input modes
 

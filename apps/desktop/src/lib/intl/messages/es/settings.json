@@ -1566,6 +1566,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "Por su cuenta",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "Permitir que Ask Cmdr inicie conversaciones",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "Ask Cmdr observa las carpetas en las que trabajas y abre un chat cuando tiene algo que sugerir. No se ejecuta nada hasta que lo apruebes.",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Con qué rapidez mira Ask Cmdr",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Con qué rapidez Ask Cmdr revisa una carpeta que acaba de cambiar. Más tiempo significa un asistente más tranquilo.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "Las carpetas con actividad se revisan en {hot}; las más tranquilas, en {warm}.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "Mostrar un aviso cuando aparezca una sugerencia",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "Un mensaje pequeño en la esquina cuando Ask Cmdr deja algo listo para que lo revises.",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "Gasto",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

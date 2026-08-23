@@ -1572,6 +1572,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "Von selbst",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "Ask Cmdr darf Unterhaltungen beginnen",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "Ask Cmdr behält die Ordner im Blick, in denen du arbeitest, und beginnt einen Chat, wenn es etwas vorzuschlagen hat. Nichts läuft, bevor du zustimmst.",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Wie schnell Ask Cmdr nachschaut",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Wie schnell Ask Cmdr sich einen gerade geänderten Ordner ansieht. Länger heißt ruhigerer Assistent.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "Aktive Ordner werden innerhalb von {hot} angesehen, ruhigere innerhalb von {warm}.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "Hinweis anzeigen, wenn ein Vorschlag da ist",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "Eine kleine Meldung in der Ecke, wenn Ask Cmdr etwas zum Prüfen bereitlegt.",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "Ausgaben",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

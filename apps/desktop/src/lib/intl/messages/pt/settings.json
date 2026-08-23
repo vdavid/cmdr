@@ -1566,6 +1566,38 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.proactive.title": "Por conta própria",
+  "@settings.askCmdr.proactive.title": {
+    "sourceHash": "42e696a"
+  },
+  "settings.askCmdr.proactive.label": "Permitir que o Ask Cmdr inicie conversas",
+  "@settings.askCmdr.proactive.label": {
+    "sourceHash": "1db4497"
+  },
+  "settings.askCmdr.proactive.description": "O Ask Cmdr acompanha as pastas em que você trabalha e abre um chat quando tem algo a sugerir. Nada é executado até você aprovar.",
+  "@settings.askCmdr.proactive.description": {
+    "sourceHash": "9bf4e15"
+  },
+  "settings.askCmdr.wakeDelay.label": "Com que rapidez o Ask Cmdr olha",
+  "@settings.askCmdr.wakeDelay.label": {
+    "sourceHash": "f80bb5a"
+  },
+  "settings.askCmdr.wakeDelay.description": "Com que rapidez o Ask Cmdr olha para uma pasta que acabou de mudar. Mais tempo significa um assistente mais calmo.",
+  "@settings.askCmdr.wakeDelay.description": {
+    "sourceHash": "b53dd9b"
+  },
+  "settings.askCmdr.wakeDelay.summary": "Pastas movimentadas são vistas em até {hot}; as mais calmas, em até {warm}.",
+  "@settings.askCmdr.wakeDelay.summary": {
+    "sourceHash": "ad03c00"
+  },
+  "settings.askCmdr.wakeToast.label": "Mostrar um aviso quando surgir uma sugestão",
+  "@settings.askCmdr.wakeToast.label": {
+    "sourceHash": "58b4167"
+  },
+  "settings.askCmdr.wakeToast.description": "Uma mensagem pequena no canto quando o Ask Cmdr deixa algo pronto para você revisar.",
+  "@settings.askCmdr.wakeToast.description": {
+    "sourceHash": "f07a46e"
+  },
   "settings.askCmdr.spend.title": "Gastos",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"
