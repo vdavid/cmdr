@@ -24,7 +24,7 @@
 //! `COPY_THROTTLE_OVERRIDE` static below is the canonical shape, set via the
 //! `set_test_throttle` IPC command from a test, read on every copy loop tick.
 
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU8, Ordering};
 
 /// Runtime override for the per-file copy throttle, settable via the
 /// `set_test_throttle` IPC command (feature-gated to `playwright-e2e`).
@@ -91,24 +91,48 @@ pub fn ask_cmdr_fake_active() -> bool {
 }
 
 /// Which script the WAKE slot's fake assistant plays, set by the `playwright-e2e`
-/// `force_agent_wake` command. `false` (the default) is the ordinary "I had a look at what
-/// changed" reply; `true` makes it call `nothing_to_suggest` instead, so a spec can drive the
-/// quiet path where the wake deletes its own thread.
+/// `force_agent_wake` command.
 ///
-/// **Strictly additive**: it only picks between two scripts of a fake that exists solely under
-/// `CMDR_E2E_ASK_CMDR_FAKE`. With the flag untouched, the wake path is exactly what it was.
-static WAKE_FAKE_STAYS_QUIET: AtomicBool = AtomicBool::new(false);
-
-/// Make the next wake's scripted fake say it has nothing to suggest (or stop doing so).
-pub fn set_wake_fake_stays_quiet(quiet: bool) {
-    WAKE_FAKE_STAYS_QUIET.store(quiet, Ordering::Relaxed);
+/// A wake can end three materially different ways, and each has a surface a spec has to be
+/// able to reach: an ordinary reply (a thread appears), nothing to suggest (the thread goes
+/// away again), and a staged proposal (the toast). None of them is reachable from a scripted
+/// reply alone, because two of the three are decided by a TOOL CALL.
+///
+/// **Strictly additive**: it only picks between scripts of a fake that exists solely under
+/// `CMDR_E2E_ASK_CMDR_FAKE`. Left at its default, the wake path is exactly what it was.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WakeFakeScript {
+    /// "I had a look at what changed." A thread, and nothing staged.
+    Reply,
+    /// Calls `nothing_to_suggest`, so the wake deletes its own thread.
+    Quiet,
+    /// Calls `propose_suggestions`, so the wake leaves something to review.
+    Propose,
 }
 
-/// Whether the wake slot's fake should call `nothing_to_suggest`. Always false in production:
-/// only the feature-gated force-wake command ever sets it, and the fake itself is unreachable
-/// without `CMDR_E2E_ASK_CMDR_FAKE`.
-pub fn wake_fake_stays_quiet() -> bool {
-    WAKE_FAKE_STAYS_QUIET.load(Ordering::Relaxed)
+/// The selected script, as its discriminant. An atomic rather than a lock: it is written by
+/// an IPC command and read on the wake thread, and neither may wait on the other.
+static WAKE_FAKE_SCRIPT: AtomicU8 = AtomicU8::new(0);
+
+/// Point the next wake's scripted fake at one of the three scripts.
+pub fn set_wake_fake_script(script: WakeFakeScript) {
+    let value = match script {
+        WakeFakeScript::Reply => 0,
+        WakeFakeScript::Quiet => 1,
+        WakeFakeScript::Propose => 2,
+    };
+    WAKE_FAKE_SCRIPT.store(value, Ordering::Relaxed);
+}
+
+/// Which script the wake slot's fake should play. Always [`WakeFakeScript::Reply`] in
+/// production: only the feature-gated force-wake command ever sets it, and the fake itself is
+/// unreachable without `CMDR_E2E_ASK_CMDR_FAKE`.
+pub fn wake_fake_script() -> WakeFakeScript {
+    match WAKE_FAKE_SCRIPT.load(Ordering::Relaxed) {
+        1 => WakeFakeScript::Quiet,
+        2 => WakeFakeScript::Propose,
+        _ => WakeFakeScript::Reply,
+    }
 }
 
 /// Whether the app may adopt network mounts that were already on the machine when

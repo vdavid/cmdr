@@ -114,10 +114,10 @@ Widening that event to carry the block is the fix if it ever matters.
 
 ## The staged-proposal toast
 
-The one time the proactive agent interrupts. `agent-wake-staged` (`src-tauri/src/agent/wake/staged.rs`) fires when a wake's turn ends
-having staged at least one proposal; `wake-toast.svelte.ts` turns it into a toast and `WakeStagedToastContent.svelte`
-renders it, started from `routes/(main)/window-services.ts` in the main window only (the event reaches every window, and
-the settings window would otherwise raise its own copy).
+The one time the proactive agent interrupts. `agent-wake-staged` (`src-tauri/src/agent/wake/staged.rs`) fires when a
+wake's turn ends having staged at least one proposal; `wake-toast.svelte.ts` turns it into a toast and
+`WakeStagedToastContent.svelte` renders it, started from `routes/(main)/window-services.ts` in the main window only (the
+event reaches every window, and the settings window would otherwise raise its own copy).
 
 - **`askCmdr.wakeToast` is read at ANNOUNCE time**, never at subscribe time, so turning it off silences the wake already
   in flight. That is the only reading of the switch that does what somebody flipping it mid-wake meant.

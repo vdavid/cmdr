@@ -109,20 +109,30 @@ pub fn resolve_agent_llm(
 /// nothing to do with the wake loop. A wake gets its own sentence instead, which is also what
 /// lets a wake spec tell a thread the agent opened apart from one the user did.
 ///
-/// The wake slot has a SECOND script, selected by `test_mode::wake_fake_stays_quiet` (which only
-/// the `playwright-e2e` force-wake command sets): it calls `nothing_to_suggest` and signs off,
-/// so a spec can drive the path where a wake deletes its own thread. Nothing else can reach it,
-/// and the ordinary wake reply is unchanged with the flag untouched.
+/// The wake slot has THREE scripts, selected by `test_mode::wake_fake_script` (which only the
+/// `playwright-e2e` force-wake command sets), because a wake ends three materially different
+/// ways and two of them are decided by a TOOL CALL rather than by what it says: it can reply,
+/// it can call `nothing_to_suggest` (and delete its own thread), or it can call
+/// `propose_suggestions` (and leave something for the user to review, which is what raises the
+/// toast). Nothing else can reach them, and the ordinary wake reply is what an untouched
+/// selector plays.
 fn scripted_fake_llm(slot: AgentSlot) -> FakeAgentLlm {
     use crate::agent::llm::fake::ScriptedTurn;
-    if slot == AgentSlot::Wake && crate::test_mode::wake_fake_stays_quiet() {
-        return FakeAgentLlm::script(vec![
-            ScriptedTurn::CallTools(vec![(
-                crate::agent::llm::types::ToolId::NothingToSuggest,
-                serde_json::json!({ "reason": "it was all scripted test churn" }),
-            )]),
-            ScriptedTurn::Say(vec!["Nothing worth raising.".to_string()]),
-        ]);
+    use crate::test_mode::WakeFakeScript;
+    if slot == AgentSlot::Wake {
+        match crate::test_mode::wake_fake_script() {
+            WakeFakeScript::Quiet => {
+                return FakeAgentLlm::script(vec![
+                    ScriptedTurn::CallTools(vec![(
+                        crate::agent::llm::types::ToolId::NothingToSuggest,
+                        serde_json::json!({ "reason": "it was all scripted test churn" }),
+                    )]),
+                    ScriptedTurn::Say(vec!["Nothing worth raising.".to_string()]),
+                ]);
+            }
+            WakeFakeScript::Propose => return proposing_wake_fake(),
+            WakeFakeScript::Reply => {}
+        }
     }
     let chunks = match slot {
         AgentSlot::Rail => ["Hi! ", "I'm the ", "test assistant."],
@@ -131,6 +141,33 @@ fn scripted_fake_llm(slot: AgentSlot) -> FakeAgentLlm {
     FakeAgentLlm::script(vec![ScriptedTurn::Say(
         chunks.iter().map(|chunk| (*chunk).to_string()).collect(),
     )])
+}
+
+/// A wake that stages one group and signs off, so a spec can drive the path where the user is
+/// told something is waiting.
+///
+/// ⚠️ **An explicit `paths` group, ❌ never a selector.** A selector resolves against the drive
+/// index at creation, which makes what the fake stages depend on whether the E2E fixture tree
+/// happens to be indexed yet. Explicit paths stage exactly one op, deterministically. Nothing
+/// runs from a staged group — approval is the user's, and no test approves this one — so the
+/// paths do not need to exist.
+fn proposing_wake_fake() -> FakeAgentLlm {
+    use crate::agent::llm::fake::ScriptedTurn;
+    FakeAgentLlm::script(vec![
+        ScriptedTurn::CallTools(vec![(
+            crate::agent::llm::types::ToolId::ProposeSuggestions,
+            serde_json::json!({
+                "rationale": "scripted test churn",
+                "groups": [{
+                    "verb": "trash",
+                    "sourceVolumeId": "root",
+                    "displayName": "Scripted wake suggestion",
+                    "paths": ["/Users/e2e/wake-staged/scripted.txt"],
+                }],
+            }),
+        )]),
+        ScriptedTurn::Say(vec!["I staged something for you.".to_string()]),
+    ])
 }
 
 /// The provider tag + effective model label for cost metering. The model is the

@@ -137,12 +137,23 @@ than dropped, and lands on the pass after `WakeFinished`.
 The rail's E2E specs count replies by matching their exact sentence, so one shared script would both break them on any
 change here and make a wake's thread indistinguishable from a chat the user started.
 
-The wake slot has a THIRD script, for the quiet path: `force_agent_wake(folder, quiet: true)` flips
-`test_mode::wake_fake_stays_quiet`, and the fake then calls `nothing_to_suggest` instead of answering. The flag STICKS,
-so a spec wanting an ordinary wake afterwards passes `quiet: false`. ⚠️ A spec asserting that nothing was left behind
-can only do so AFTER the wake finished: the thread is opened before the turn and deleted after it, so a mid-flight poll
-legitimately sees the row. `ask-cmdr-wake.spec.ts` waits, then uses a second (loud) wake as the control that proves the
-lane ran at all — without one, "no thread appeared" passes just as well with the whole loop dead.
+**The wake slot has THREE scripts**, because a wake ends three materially different ways and two of them are decided
+by a TOOL CALL rather than by what it says. `force_agent_wake(folder, script)` picks one through
+`test_mode::WakeFakeScript`:
+
+- `"reply"` — the ordinary answer. A thread appears and nothing is staged.
+- `"quiet"` — calls `nothing_to_suggest`, so the wake deletes its own thread.
+- `"propose"` — calls `propose_suggestions`, so a group is staged and the toast fires.
+
+⚠️ **The choice STICKS**, so every spec says which one it wants, and a spec using `"propose"` puts the selector back
+before it finishes or the next forced wake anywhere in the run stages another group. ⚠️ The proposing script uses an
+explicit `paths` group, ❌ never a selector: a selector resolves against the drive index at creation, which would make
+what it stages depend on whether the fixture tree happens to be indexed yet.
+
+⚠️ A spec asserting that nothing was left behind can only do so AFTER the wake finished: the thread is opened before
+the turn and deleted after it, so a mid-flight poll legitimately sees the row. `ask-cmdr-wake.spec.ts` waits, then uses
+a second (loud) wake as the control that proves the lane ran at all — without one, "no thread appeared" passes just as
+well with the whole loop dead.
 
 ## The digest budget
 

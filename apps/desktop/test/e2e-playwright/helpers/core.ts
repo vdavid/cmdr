@@ -431,12 +431,18 @@ export async function flushFileWatcher(tauriPage: PageLike): Promise<void> {
  *
  * @param folder absolute path of the folder the changes happened in; the wake thread is named
  *   after its last segment
- * @param quiet make the wake's fake assistant call `nothing_to_suggest`, the path where it
- *   deletes its own thread again. Sticky in the app, so this always sends the value explicitly.
+ * @param script which of the three endings the wake's fake assistant plays. `'reply'` just
+ *   answers; `'quiet'` calls `nothing_to_suggest`, the path where the wake deletes its own
+ *   thread again; `'propose'` stages a group, which is what raises the toast. Sticky in the
+ *   app, so this always sends the value explicitly.
  */
-export async function forceAgentWake(tauriPage: PageLike, folder: string, quiet = false): Promise<void> {
+export async function forceAgentWake(
+  tauriPage: PageLike,
+  folder: string,
+  script: 'reply' | 'quiet' | 'propose' = 'reply',
+): Promise<void> {
   await tauriPage.evaluate(
-    `window.__TAURI_INTERNALS__.invoke('force_agent_wake', { folder: ${JSON.stringify(folder)}, quiet: ${String(quiet)} })`,
+    `window.__TAURI_INTERNALS__.invoke('force_agent_wake', { folder: ${JSON.stringify(folder)}, script: ${JSON.stringify(script)} })`,
   )
 }
 

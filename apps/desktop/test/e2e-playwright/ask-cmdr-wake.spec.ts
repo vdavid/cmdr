@@ -18,7 +18,7 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { dispatchMenuCommand, ensureAppReady, forceAgentWake } from './helpers.js'
+import { dismissAllToasts, dispatchMenuCommand, ensureAppReady, forceAgentWake } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /** What the wake's scripted fake says, distinct from the rail's reply on purpose. */
@@ -78,6 +78,31 @@ async function watchForWake(page: TauriPage): Promise<void> {
     check()
     new MutationObserver(check).observe(document.body, { subtree: true, childList: true })
   })()`)
+}
+
+/**
+ * Arms a DOM watch for the staged-proposal toast, then remembers what it said.
+ *
+ * ⚠️ A `MutationObserver` rather than a poll, for a second reason on top of `watchForWake`'s:
+ * this toast AUTO-DISMISSES after four seconds, on purpose (the proposals wait in the
+ * suggestions badge either way). A poll could sample after it had come and gone and report a
+ * missing toast that was in fact perfectly raised.
+ */
+async function watchForStagedToast(page: TauriPage): Promise<void> {
+  await page.evaluate(`(() => {
+    window.__wakeToast = null
+    const check = () => {
+      const body = document.querySelector('.toast-container .toast-body')
+      if (body !== null && window.__wakeToast === null) window.__wakeToast = body.textContent || ''
+    }
+    check()
+    new MutationObserver(check).observe(document.body, { subtree: true, childList: true })
+  })()`)
+}
+
+/** What the staged-proposal toast said, once it has appeared. */
+function stagedToastText(page: TauriPage): Promise<string> {
+  return page.evaluate<string>(`window.__wakeToast || ''`)
 }
 
 /** Waits for the wake armed by `watchForWake` to have run and finished. */
@@ -160,16 +185,26 @@ test.describe('Ask Cmdr wakes on its own', () => {
       )
       .toContain(folderName)
 
-    // Open it: the first message is the digest naming the folder, and the reply is the wake
-    // fake's own sentence.
+    // Open it: the first message is what the agent noticed, and the reply is the wake fake's
+    // own sentence.
     await page.evaluate(
       `[...document.querySelectorAll('.ask-cmdr-rail .sessions .row')]
         .find(r => (r.textContent || '').includes(${JSON.stringify(folderName)}))?.click()`,
     )
     await expect.poll(() => railText(page), { timeout: 15000 }).toContain(WAKE_REPLY)
 
+    // ⚠️ The digest opens COLLAPSED and says nothing about which folder until it is expanded:
+    // a thread opens on what the agent SAID, not on the tally that prompted it. And every word
+    // of it is the catalog's — the backend sends counts and paths, never a sentence — which is
+    // what this assertion is really pinning.
+    const collapsed = await railText(page)
+    expect(collapsed).toContain('What changed in 1 folder')
+    expect(collapsed).not.toContain(folderName)
+
+    await page.evaluate(`document.querySelector('.ask-cmdr-rail .wake-digest .digest-toggle')?.click()`)
+    await expect.poll(() => railText(page), { timeout: 5000 }).toContain(folderName)
     const text = await railText(page)
-    expect(text).toContain(folderName)
+    expect(text).toContain('5 new items')
     // ⚠️ The rail's own scripted reply must not appear: one shared script would make a wake
     // thread indistinguishable from a chat the user started, and would tie the two suites
     // together so that changing either one's copy broke the other.
@@ -188,7 +223,7 @@ test.describe('Ask Cmdr wakes on its own', () => {
     await ensureConsented(page)
 
     await watchForWake(page)
-    await forceAgentWake(page, `/Users/e2e/${quietFolder}`, true)
+    await forceAgentWake(page, `/Users/e2e/${quietFolder}`, 'quiet')
 
     // ⚠️ Absence can only be asserted at the END. A wake opens its thread BEFORE the turn runs
     // and deletes it after, so a poll mid-flight would legitimately see the row. Waiting for the
@@ -196,7 +231,7 @@ test.describe('Ask Cmdr wakes on its own', () => {
     // whole inbox, so a rollup landing before the first prepare would merge into the same one.
     await awaitWakeFinished(page)
 
-    await forceAgentWake(page, `/Users/e2e/${loudFolder}`, false)
+    await forceAgentWake(page, `/Users/e2e/${loudFolder}`, 'reply')
     await expect
       .poll(
         async () => {
@@ -210,5 +245,53 @@ test.describe('Ask Cmdr wakes on its own', () => {
     // The control landed, so the loop is alive and has been through both wakes. The quiet one
     // still left nothing.
     expect(await sessionTitles(page)).not.toContain(quietFolder)
+  })
+
+  test('says so when it stages something, and marks the thread it reasoned in', async ({ tauriPage }) => {
+    const page = tauriPage as TauriPage
+    const folderName = `wake-staged-${String(Date.now())}`
+
+    await openRail(page)
+    await ensureConsented(page)
+
+    // Both watches armed BEFORE the wake: the toast dismisses itself after four seconds and
+    // the whole turn takes milliseconds against the fake.
+    await watchForStagedToast(page)
+    await watchForWake(page)
+    await forceAgentWake(page, `/Users/e2e/${folderName}`, 'propose')
+    await awaitWakeFinished(page)
+
+    // The one time the proactive agent interrupts: it proposed something nobody asked for, so
+    // it says so, and it offers both ways in.
+    await expect.poll(() => stagedToastText(page), { timeout: 20000 }).toContain('suggestion')
+    const toast = await stagedToastText(page)
+    expect(toast).toContain('Review')
+    expect(toast).toContain('See why')
+
+    // ⚠️ Put the fake back before asserting anything else: the script sticks, and a later spec
+    // forcing a wake would otherwise stage another group.
+    await forceAgentWake(page, `/Users/e2e/${folderName}-done`, 'reply')
+
+    // And the thread it reasoned in wears the glyph, so it is not mistaken for one the user
+    // started and forgot.
+    await expect
+      .poll(
+        async () => {
+          await reloadSessions(page)
+          return sessionTitles(page)
+        },
+        { timeout: 20000 },
+      )
+      .toContain(folderName)
+    const marked = await page.evaluate<boolean>(
+      `[...document.querySelectorAll('.ask-cmdr-rail .sessions .conversation')]
+        .filter(row => (row.textContent || '').includes(${JSON.stringify(folderName)}))
+        .every(row => row.querySelector('.started-by-agent') !== null)`,
+    )
+    expect(marked).toBe(true)
+
+    // The toast never auto-dismissed inside the test's own timing, so clear it: a toast left
+    // standing is a UI artifact the fixture fails the run over, and rightly.
+    await dismissAllToasts(page)
   })
 })

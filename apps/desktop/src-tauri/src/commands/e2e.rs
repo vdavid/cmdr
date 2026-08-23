@@ -92,18 +92,24 @@ pub fn set_test_scan_preview_delay(ms: Option<u64>) -> Result<(), String> {
 /// `folder` names the directory the changes happened IN, absolute; `None` forces a wake
 /// against whatever is already waiting.
 ///
-/// `quiet` picks which script the wake's fake assistant plays: `Some(true)` makes it call
-/// `nothing_to_suggest`, which is the path where the wake deletes its own thread and the
-/// session list must end up untouched. It STICKS until changed, so a spec that wants an
-/// ordinary wake afterwards passes `Some(false)`.
+/// `script` picks which of the three scripts the wake's fake assistant plays: `"reply"` (the
+/// ordinary answer), `"quiet"` (it calls `nothing_to_suggest`, deletes its own thread, and the
+/// session list must end up untouched), or `"propose"` (it stages a group, so the toast fires).
+/// It STICKS until changed, so a spec always says which one it wants. An unknown value reads as
+/// `"reply"`, which is the harmless script.
 #[cfg(feature = "playwright-e2e")]
 #[tauri::command]
 #[specta::specta]
-pub fn force_agent_wake(folder: Option<String>, quiet: Option<bool>) -> Result<(), String> {
+pub fn force_agent_wake(folder: Option<String>, script: Option<String>) -> Result<(), String> {
     use crate::agent::wake::{ChangeCounters, FolderActivity, WakeControl, send_control, send_rollup};
+    use crate::test_mode::WakeFakeScript;
 
-    if let Some(quiet) = quiet {
-        crate::test_mode::set_wake_fake_stays_quiet(quiet);
+    if let Some(script) = script {
+        crate::test_mode::set_wake_fake_script(match script.as_str() {
+            "quiet" => WakeFakeScript::Quiet,
+            "propose" => WakeFakeScript::Propose,
+            _ => WakeFakeScript::Reply,
+        });
     }
     if let Some(folder) = folder {
         let now = std::time::SystemTime::now()
