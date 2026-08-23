@@ -517,11 +517,49 @@ reports, including the auto-dispatched ones the user never previews, and `redact
 path-shaped, so a sentence naming which of the user's folders were boring travels intact. The
 outcome line says THAT a wake was quiet; `WakeOutcome::Quiet` carries the reason for M3's memory.
 
+## The turn a rejection earns
+
+A wake is one of TWO background turns this module drives. The other is the follow-up a rejected sweep
+earns: the memory ring already recorded what happened, with no model call, and this is where the agent
+gets to turn a raw log line into something it will act on. An approval earns no turn: it is the agent
+being right, and there is nothing to ask about.
+
+**Decision: one turn per SWEEP, coalesced behind a TRAILING window.**
+**Why**: "reject all" over an eight-group sweep produces eight `Rejected` outcomes, and a turn each
+would be eight model calls, every one of them queued behind the same `ConversationLocks` guard, for
+one decision the user experienced as one click. `FollowUpQueue` keys on the sweep, and each further
+rejection pushes the window out again; a LEADING window would fire on the first group and ask about
+a fraction of what was turned down. The burst is reported from where it STARTED (`decided_at >=
+since`), so a rejection weeks later reports only itself rather than re-teaching the whole sweep.
+
+**Decision: a closed gate DROPS the ask rather than parking it.**
+**Why**: "why did you say no?" is only worth asking while the answer is still in the user's head. A
+question that surfaces the week they finally set an API key reads as the app having sat on it. Both
+ends of the window check `followup::may_ask` (`askCmdr.proactive` plus the three readiness gates),
+because a gate can shut inside those five seconds.
+
+**Decision: one code path in `runner.rs`, branching on `BackgroundTurn`.**
+**Why**: the machinery around the turn is identical (the same envelope, memory, transport, cancel
+registration, and corner spinner), and only the opener, the thread's provenance, and what a quiet
+answer means differ. Three things a follow-up does NOT do:
+
+- ❌ **Never discard its thread** on `nothing_to_suggest`. A wake thinks in a thread it opened for
+  itself; a follow-up speaks in the user's, and a confused model reaching for that tool must not take
+  it with them.
+- ❌ **Never emit `Started`.** The thread has been in the session list all along, and claiming it was
+  just created would put a duplicate row there.
+- It shares `wake_in_flight`, so at most one background turn runs at a time whichever kind it is, and
+  it reports through the same `WakeControl::WakeFinished` message.
+
+Its opener is a `ProposalOutcomes` part, structured for exactly the reason a digest is: the row is
+persisted, and rendered English would freeze one locale's copy in `main.db`.
+
 ## What the wake loop reports
 
 Nothing else reports on it at all, so `runner::record_outcome` writes one counted log line per
-outcome (`ran`, `quiet`, `nothing_due`, `not_ready`, `unavailable`, `cancelled`, `failed`) with the tier
-that triggered it, plus the matching anonymous `agent_wake` analytics event. Without it the two
+outcome (`ran`, `quiet`, `nothing_due`, `not_ready`, `unavailable`, `cancelled`, `failed`, and the
+`followup_*` twins for the other kind of turn) with the tier that triggered it, plus the matching
+anonymous `agent_wake` analytics event. Without it the two
 deferred tuning knobs can only be ranked by a support message, and "the agent is twitchy" arrives
 as a complaint rather than a number. ❌ Every property is categorical: an outcome token, a tier
 token, and coarse count buckets. Never a path, never a folder name, never what the digest said.

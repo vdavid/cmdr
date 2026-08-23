@@ -8,7 +8,7 @@
 //!   agent nothing.
 //! - **The agent's lesson** is a line in the memory ring (`../memory/outcomes.rs`), written on
 //!   the ALWAYS-path with no model call. That is what covers approvals, which get no follow-up
-//!   turn at all — without it, rejections would produce every lesson and approvals none, and
+//!   turn at all. Without it, rejections would produce every lesson and approvals none, and
 //!   the agent would over-correct toward proposing nothing.
 //!
 //! A rejection additionally asks for a follow-up turn, coalesced per SWEEP by the wake loop
@@ -135,7 +135,7 @@ fn record(
         memory.record_outcome(&format!("{} {}", day_of(now), decision.render()));
     }
     // Nullable, and NULLed when a thread is deleted, so a sweep whose thread is gone still
-    // teaches the agent — it just has no timeline to say so on.
+    // teaches the agent; it just has no timeline to say so on.
     match get_sweep(conn, set_id) {
         Ok(Some(sweep)) => {
             if let Some(conversation_id) = sweep.conversation_id

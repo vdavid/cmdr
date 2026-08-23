@@ -110,7 +110,26 @@ the point of having one.
 
 **Live, the digest arrives on the next load, not mid-turn.** `userPersisted` carries an id and no content, so a rail
 opened onto a wake already in flight shows the answer streaming above an empty spot until the thread is re-read.
-Widening that event to carry the block is the fix if it ever matters.
+
+## What the user answered about a suggestion
+
+`AskCmdrProposalDecisions.svelte`, under the same "numbers and paths, never a sentence" contract as the digest above.
+
+**Decision: two different transcript rows render through one block.** An `event`-role row carries a single decision,
+written the moment somebody answered; a `user`-role row carries a whole sweep's worth, because it is the opener of the
+follow-up turn a rejected sweep earns (`agent/wake/DETAILS.md` § The turn a rejection earns). Both fold to
+`kind: 'proposalDecisions'`. **Why**: they say the same thing, in the same words, about the same kind of object. Two
+shapes would be two renderers and two sets of strings drifting apart, and the only thing that actually differs is how
+many decisions are in the list.
+
+**An approved run always shows its result line, zeros included.** A group can be approved and then skip every file
+behind a fingerprint mismatch, and the outcome the store records is what SETTLED, not what was claimed. Hiding a partial
+run would leave the user believing their files moved.
+
+The seven verb names are a spelled-out `Record`, ❌ not a key built from the verb token at runtime:
+`desktop-message-keys-unused` reads a runtime-built key as dead translation work unless it is on that check's closed
+dynamic-prefix allowlist, and seven literals are cheaper than an allowlist entry. Widening that event to carry the block
+is the fix if it ever matters.
 
 ## The staged-proposal toast
 

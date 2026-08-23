@@ -16,9 +16,39 @@ bites if it is ignored:
 `~/.cmdr/CMDR.md` stays a dotfile in home for exactly the opposite reasons: hand-edited, dotfiles-repo-able, the user's
 own voice. See `../chat/DETAILS.md` § Which `CMDR.md`, and how much of it.
 
-`AGENTS.md` is the hub, and today the only file. The tools are path-aware anyway, so the second file costs nothing when
-it arrives — but there is deliberately **no read or list tool yet**: `AGENTS.md` is auto-fed, and every schema rides in
-the cached prefix of every turn, the rail's included. Add both the moment a second file exists.
+`AGENTS.md` is the hub. `outcomes.md` sits beside it and is the one file here the MODEL does not author (below). Both
+are auto-fed, which is what keeps the "**no read or list tool**" decision true with two files: nothing here has to be
+discovered to be read, and every tool schema would ride in the cached prefix of every turn, the rail's included. Add
+both the moment a file arrives that isn't auto-fed.
+
+## The decision ring (`outcomes.rs`)
+
+Every other write here happens because a model chose to make it. `outcomes.md` is written MECHANICALLY, once per
+decided proposal, by `../outcomes.rs`, with no model call in the loop. That one difference sets its whole shape.
+
+**Decision: a fixed-size ring, rewritten whole, with a RESERVED slice of the folder cap.**
+**Why**: a `DirectoryFull` refusal on this path has nobody to relay it to. The tool refusals work because a model reads
+them and prunes; a mechanical writer has no turn to answer in, so the write must be one that cannot be refused. Two
+halves make that true:
+
+- The ring is bounded at `OUTCOMES_MAX_BYTES` (4 KB) and `OUTCOMES_MAX_ENTRIES` (40), oldest evicted first, and a write
+  replaces the whole file. `used − replaced + new` therefore nets to roughly zero however many decisions land.
+- `MemoryStore::write` and `edit` price against `MEMORY_MODEL_MAX_BYTES`, the folder cap MINUS that reserve. Without
+  that, a model that filled its own notes would silence the channel that teaches it what the user wants: silently, and
+  worst for the person who uses the agent most.
+
+**Decision: its own file rather than a section of the hub.**
+**Why**: the prompt slice takes the hub's HEAD, so a section appended to `AGENTS.md` would either be cut off first or
+push the model's own notes out of the window, depending which end it sat at. Two files let each have its own share:
+`read_for_prompt` gives the ring a bounded quarter of the slice and the hub the rest.
+
+**Decision: the ring is cut from the OLD end for the prompt; the hub is cut from the tail.**
+**Why**: opposite reasons, and getting it backwards is silent. The hub's head is the model's own summary of the person
+and its tail is detail. The ring's tail is the freshest lesson and its head is the one already superseded.
+
+Non-entry lines (a heading, a note the model added with `memory_edit`) are dropped on the next rewrite: the file is the
+ring's, and keeping stray prose would grow it without bound. Everything else here applies unchanged: the jail, the
+durable write, and "Forget everything", which takes the ring with the rest because it is about the user too.
 
 ## The jail (`jail.rs`)
 
@@ -47,9 +77,11 @@ counts `.md` files only, so a stale temp or something the user dropped in can't 
 write is priced as `used − replaced + new`, so rewriting the hub reclaims what the old copy held; without that, memory
 would jam at half the cap and never recover.
 
-Over the cap, `MemoryRefusal::DirectoryFull { used, cap, wanted }` comes back and the tool turns it into a sentence
-telling the model to prune with `memory_edit`. ⚠️ Never a silent failure: a model that believes it saved something it
-didn't will keep answering as if it had.
+The TOOLS price against `MEMORY_MODEL_MAX_BYTES`, which is that cap minus the decision ring's reserve (below). Over it,
+`MemoryRefusal::DirectoryFull { used, cap, wanted }` comes back and the tool turns it into a sentence telling the model
+to prune with `memory_edit`, quoting the refusal's own `cap`. ⚠️ Never the folder constant, or the model prunes toward
+a ceiling it cannot reach. ⚠️ Never a silent failure either: a model that believes it saved something it didn't will
+keep answering as if it had.
 
 **The prompt slice** is `chat::budget::memory_slice_bytes(prompt_budget)`, a tenth of what the budget has left after the
 fixed overhead. It is a SHARE rather than a constant for two reasons that a byte cap can't cover:

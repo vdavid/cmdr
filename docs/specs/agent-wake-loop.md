@@ -786,9 +786,33 @@ All of it landed: `memory/tests.rs` (25, jail and caps and `forget_all`), `chat/
 NOT purge), and `AskCmdrConsent.a11y.test.ts` (a returning user is told what changed, a first-timer is not, the memory
 and proactive disclosures are always there, and the old "never changes anything" promise cannot come back).
 
-## M4: the feedback loop
+## M4: the feedback loop — DONE
 
 **Intent**: an approval or a rejection the agent never hears about is a lesson it can't learn.
+
+Landed, both channels and the follow-up turn. What this section did not decide, and the two places it guessed wrong:
+
+- **The pruning story was the real work, and it is a RESERVE.** M4 is the first thing in the codebase that can fill
+  memory mechanically, so the outcome line goes into `outcomes.md`, a fixed-size ring (`OUTCOMES_MAX_BYTES` = 4 KB,
+  `OUTCOMES_MAX_ENTRIES` = 40, oldest evicted, rewritten whole), and the TOOLS now price against
+  `MEMORY_MODEL_MAX_BYTES` = the folder cap minus that reserve. A `DirectoryFull` on the always-path can therefore not
+  happen, rather than being handled. Its own file rather than a section of the hub, because the prompt slice takes the
+  hub's HEAD: a section would either be cut first or crowd the model's own notes out. Both files are auto-fed, which is
+  what keeps `memory/DETAILS.md`'s "no read or list tool" decision true with two of them.
+- **The follow-up turn needed its own `AgentPart`**, for the same reason M2's digest did: it opens a persisted user-role
+  message, so `UserTurn::Outcomes` / `AgentPart::ProposalOutcomes` carry structure and `genai_impl.rs` is the one place
+  it becomes English. The rail localizes it through one `MessageBlock::ProposalDecisions` shared by the event row and
+  the turn's opener.
+- **A dismissal records NOTHING on either channel**, rather than recording a weaker outcome. Closing a window is not an
+  opinion about the proposal's content, and there is no honest lesson in it.
+- **The follow-up runs as a second kind of BACKGROUND TURN inside `wake/runner.rs`**, sharing the wake's thread shape,
+  in-flight flag, cancel registration, and corner spinner. Coalescing lives in `wake/followup.rs`'s `FollowUpQueue`, a
+  trailing 5 s window keyed by sweep.
+- **`ConversationEvent` and the shared row insert moved out of `query.rs`** (`store/events.rs`, `store/rows.rs`): the
+  new variant would have pushed `query.rs` past its length ceiling, and the two writers would have formed a module
+  cycle.
+
+Everything below is what the milestone was planned against, kept for the reasoning.
 
 ⚠️ **A `ConversationEvent` cannot carry the lesson.** `store/query.rs:44` is explicit: conversation events "NEVER enter
 the LLM transcript (they exist for the user's eyes and the history view only)". So an outcome recorded only that way

@@ -104,6 +104,41 @@ where the user typed the name themselves (invariant 10) and the row would otherw
 
 Either change makes the binding load-bearing for this verb, and the cheapest honest fix is the same one the transfer routes took: teach the archive driver a per-source pre-flight, or refuse a bound compress the way `route_cannot_hold_a_binding` refuses the other changeset routes. ❌ Don't add either capability while compress still passes no `ExpectedSources`.
 
+## What the user's answer teaches the agent
+
+An approval or a rejection the agent never hears about is a lesson it cannot learn, so every answered group is recorded
+by `../outcomes.rs` on two channels. Why two, and why here:
+
+**Decision: a `ConversationEvent` alone is not enough.**
+**Why**: `store/events.rs` is explicit that events never enter the LLM transcript. An outcome recorded only there
+teaches nothing, and since only rejections earn a follow-up turn, approvals would produce zero learning while
+rejections produced all of it. The agent would over-correct toward proposing nothing. So the lesson goes into the
+memory ring (`../memory/outcomes.rs`) on the ALWAYS-path, with no model call, and the event is for the user's eyes.
+
+**Decision: the rejection hook lives inside `reject`'s `if let (RejectOutcome::Rejected, Some(group))` arm.**
+**Why**: `reject_group` is a conditional `UPDATE … WHERE status = 'pending'` and answers `Rejected` only when a row
+actually moved. That makes the hook once-per-group by construction, across restarts, with no "already reported" column
+to keep in step. A double click teaches nothing extra, and a test pins it.
+
+**Decision: the approval hook is at SETTLE, in `bridge/decorator.rs`, not at the claim.**
+**Why**: `approve` records a CLAIM. What actually happened lands later, per source, through the sink, and a group can
+be approved and then skip every file behind a fingerprint mismatch. An outcome written at claim time would tell the
+agent the user got something they never got, and the agent would keep proposing it. The tallies the decorator reads are
+the ones it just wrote.
+
+⚠️ **That seam holds a `Connection` and no `AppHandle`**, and `write-ops-isolation` means it never can. The
+`MemoryStore` is resolved by the command layer and MOVED in beside the reporting connection, for the same reason that
+one is: the operation outlives the call that started it. This is the concrete payoff of `MemoryStore` being pure.
+
+**Decision: `RejectSource` separates a dismissal from a rejection.**
+**Why**: `cancel_bulk_rename_proposal` calls `reject` when somebody closes the rename review, and the group does need
+an answer. But nobody expressed an opinion about the proposal by pressing Escape. Learning from it teaches the agent
+something the user never said, and the follow-up turn it would earn lands in whatever thread they had open, because
+that sweep's `conversation_id` is the RAIL conversation.
+
+What the follow-up turn itself does, and why it is coalesced per sweep: `../wake/DETAILS.md` § The turn a rejection
+earns.
+
 ## Two live groups naming the same file: safe, but unexplained
 
 Nothing stops the agent proposing the same path in two pending groups. Approving both is data-SAFE: the second run's

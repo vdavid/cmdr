@@ -11,7 +11,9 @@ the surface, so later proactive slices grow here too.
   spine). `start(app)` opens the DB + registers `AgentDb`. See `store/CLAUDE.md`.
 - `suggested_ops/`: the service over that spine — selector resolution against the drive index, plus the
   acceptance-rate metric. See `suggested_ops/CLAUDE.md`.
-- `types.rs`: store-only token enums (`ConversationOrigin`, the proposal vocabulary) + `token_enum!` macro.
+- `types.rs`: store-only token enums + `token_enum!`, and `ProposalDecision`.
+- `outcomes.rs`: what the user did with a proposal, on the two channels that need it. See
+  `suggested_ops/DETAILS.md`.
 - `tools/`: the in-process toolset plus gated dispatch (the choke point). See `tools/CLAUDE.md`.
 - `memory/`: the jailed, capped Markdown folder the agent writes about the user, fed back into every prefix. See
   `memory/CLAUDE.md`.
@@ -38,17 +40,16 @@ the surface, so later proactive slices grow here too.
   (`mcp/executor/photos.rs`, `image_facts.rs`). The consent copy (`askCmdr.consent.*`) names it, so don't widen it
   with a new tool without revisiting the whole consent story.
 - **The runtime drives the seams; the IPC is wired.** `agent::start` registers `ChatRuntime`; `../commands/agent/` is
-  the thin frontend surface (full list in `DETAILS.md`). `ask_cmdr_send_message` runs its turn on a worker thread
-  (`run_turn` holds a non-`Send` connection across awaits) and streams over `chat::stream`, one conversation-keyed
-  event a wake shares. Register a new command in the `ipc.rs` manifest. Frontend:
-  `apps/desktop/src/lib/ask-cmdr/CLAUDE.md`.
+  the thin frontend surface. `ask_cmdr_send_message` runs its turn on a worker thread (`run_turn` holds a non-`Send`
+  connection across awaits) and streams over `chat::stream`, one conversation-keyed event a wake shares. Register a new
+  command in the `ipc.rs` manifest. Frontend: `apps/desktop/src/lib/ask-cmdr/CLAUDE.md`.
 - **The interactive slot layers a dedicated model over shared `ai/` config.** `resolve_agent_llm` reads
   `askCmdr.interactiveModel` fresh and hands it to `ai::manager::resolve_backend_with_model`: provider on/off, keys,
   and base URLs stay single-sourced in `ai/` (D49). An empty override means the `ai/` model.
-- **Consent is enforced in the BACKEND send path, not just the rail UI.** `ask_cmdr_send_message` calls
-  `consent::has_current_consent` BEFORE creating a thread or resolving the LLM and answers a typed `NoConsent` refusal
-  otherwise, so nothing reaches a provider unconsented even if the UI is bypassed. **Bump `CONSENT_COPY_VERSION`
-  whenever the consent copy changes materially** so users re-accept; the record lives in `main.db`'s `meta` table.
+- **Consent is enforced in the BACKEND send path, not just the rail UI.** `ask_cmdr_send_message` checks
+  `consent::has_current_consent` before creating a thread or resolving the LLM, and answers a typed `NoConsent`
+  refusal, so a bypassed UI still reaches no provider. **Bump `CONSENT_COPY_VERSION` whenever the copy changes
+  materially**; the record lives in `main.db`'s `meta` table.
 
 Module layout, read-only rationale, how the slice relates to the full agent, and the **invariants register** (where
 code citing a bare `(invariant 6)` resolves): `DETAILS.md`. Read it before any non-trivial work here.

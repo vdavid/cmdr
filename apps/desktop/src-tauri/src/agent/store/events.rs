@@ -5,7 +5,7 @@
 //! transcript loader can't feed one to a provider because the token lives outside `AgentRole`.
 //!
 //! That is also their limit, and it is the reason M4 needs a second channel. An outcome
-//! recorded only here teaches the agent nothing — what it learns from is the memory ring
+//! recorded only here teaches the agent nothing: what it learns from is the memory ring
 //! (`../memory/outcomes.rs`) and, for a rejection, the follow-up turn. This half is for the
 //! user's eyes.
 

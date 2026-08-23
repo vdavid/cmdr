@@ -3,14 +3,14 @@
 //! The memory ring already recorded WHAT happened, with no model call (`../outcomes.rs`). This
 //! is the other half: one turn, in the thread that produced the sweep, so the agent can turn a
 //! raw log line into something it will actually act on next time. An approval gets no turn at
-//! all — it is the agent being right, and there is nothing to ask about.
+//! all: it is the agent being right, and there is nothing to ask about.
 //!
 //! ⚠️ **One turn per SWEEP, ❌ never per group.** "Reject all" over an eight-group sweep is
 //! eight `Rejected` outcomes, and a turn each would be eight model calls all serialized behind
 //! the same `ConversationLocks` guard. [`FollowUpQueue`] is what collapses them.
 //!
 //! ⚠️ **The gates are the wake loop's, not this module's.** `askCmdr.proactive` off, or any of
-//! the three readiness gates closed, means no turn — and the ask is DROPPED rather than parked,
+//! the three readiness gates closed, means no turn, and the ask is DROPPED rather than parked,
 //! because a "why did you say no?" that arrives a week later, when the user finally sets an API
 //! key, is worse than none.
 
@@ -90,8 +90,8 @@ impl FollowUpQueue {
 
 /// Whether the agent may ask about a rejection at all.
 ///
-/// Pure and shared by both ends of the window — the moment a rejection arrives and the moment
-/// its window closes — because a gate can shut in between and a turn that slipped through would
+/// Pure and shared by both ends of the window (the moment a rejection arrives, and the moment
+/// its window closes), because a gate can shut in between and a turn that slipped through would
 /// message the provider for somebody who has said no to exactly that.
 pub(super) fn may_ask(settings: &WakeSettings, readiness: WakeReadiness) -> bool {
     settings.proactive && readiness.may_wake()
@@ -200,7 +200,7 @@ mod tests {
     }
 
     /// ⚠️ **A rejection with `askCmdr.proactive` off runs no turn.** The setting is the user's
-    /// "no thanks" to an agent that starts conversations, and a follow-up is exactly that — it
+    /// "no thanks" to an agent that starts conversations, and a follow-up is exactly that: it
     /// happens to be prompted by their own click, which is not the same as being invited.
     #[test]
     fn a_rejection_asks_nothing_when_the_agent_may_not_speak() {

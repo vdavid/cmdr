@@ -14,8 +14,8 @@ The frontend of Ask Cmdr: a right-side panel for chatting with a BYO-key LLM abo
 - `wake-indicator.svelte.ts` + `WakeIndicator.svelte`: the status corner's word on the PROACTIVE half, on its own event
   rather than the turn stream.
 - `AskCmdrRail.svelte`: the panel, mounted beside `DualPaneExplorer` by `routes/(main)/+page.svelte`, overlaid by
-  `AskCmdrSessions.svelte`, with its `AskCmdrMessage` / `ToolLine` / `Composer` / `AttachmentChip` / `WakeDigest` parts.
-  `BulkRenameReviewDialog.svelte` is the rename review and its three display judgments.
+  `AskCmdrSessions.svelte`, with its `AskCmdrMessage` / `ToolLine` / `Composer` / `AttachmentChip` / `WakeDigest` /
+  `ProposalDecisions` parts. `BulkRenameReviewDialog.svelte` is the rename review and its display judgments.
 - The rest are named for what they do; `ask-cmdr-markdown.ts` is the XSS boundary.
 
 ## Must-knows
