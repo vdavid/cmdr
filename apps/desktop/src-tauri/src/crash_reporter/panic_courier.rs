@@ -55,6 +55,11 @@ const UNNAMED_THREAD: &str = "<unnamed>";
 /// BY the courier re-enters the hook on the courier's own thread, where this is set.
 static COURIER_RUNNING: AtomicBool = AtomicBool::new(false);
 
+/// Couriers started this process, so the subprocess test in `tests.rs` can prove a real
+/// panic on a real thread actually reached this module through the installed hook.
+#[cfg(test)]
+static COURIERS_STARTED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 /// What the hook hands over. Every field is already in its final, sendable form: the hook
 /// builds the crash report first and clones out of it, so the courier does no redaction of
 /// its own and can't disagree with what went to disk.
@@ -109,6 +114,8 @@ fn spawn_courier(work: impl FnOnce() + Send + 'static) -> Option<JoinHandle<()>>
     let spawned = std::thread::Builder::new()
         .name(COURIER_THREAD_NAME.to_string())
         .spawn(move || {
+            #[cfg(test)]
+            COURIERS_STARTED.fetch_add(1, Ordering::SeqCst);
             let _unwound = std::panic::catch_unwind(AssertUnwindSafe(work));
             COURIER_RUNNING.store(false, Ordering::SeqCst);
         });
@@ -135,6 +142,11 @@ fn deliver(notice: &PanicNotice) {
         &notice.headline(),
         &notice.backtrace_frames.join("\n"),
     );
+}
+
+#[cfg(test)]
+pub(super) fn couriers_started_for_test() -> usize {
+    COURIERS_STARTED.load(Ordering::SeqCst)
 }
 
 #[cfg(test)]

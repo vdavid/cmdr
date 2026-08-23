@@ -336,19 +336,84 @@ mod signal_tests {
     }
 }
 
+/// Set on the child process this test re-launches, holding the dir its crash file goes in.
+const PANIC_CHILD_DIR_ENV: &str = "CMDR_TEST_PANIC_HOOK_CHILD_DIR";
+
+/// The end-to-end proof, and the one test that installs the REAL global hook. It has to run
+/// in its own process: `set_hook` is process-wide, so doing it in-tree would hand every
+/// other test's deliberate panic a crash-file write and a courier.
+///
+/// What the child proves, all at once: the hook installed by `install_panic_hook` is
+/// reached by a panic on a background thread, the crash file lands, a courier is dispatched
+/// for in-session delivery, and **the process is still alive afterwards** — the whole point
+/// of the lock-poison policy this delivery path exists to serve.
 #[test]
-fn integration_panic_child_creates_crash_file() {
-    let dir = tempfile::tempdir().unwrap();
-    let crash_path = dir.path().join(CRASH_FILE_NAME);
+fn a_background_panic_writes_its_report_dispatches_a_courier_and_leaves_the_app_running() {
+    const TEST_PATH: &str = concat!(
+        "crash_reporter::tests::",
+        "a_background_panic_writes_its_report_dispatches_a_courier_and_leaves_the_app_running"
+    );
 
-    // We can't easily test the full panic hook (it requires a Tauri app handle),
-    // but we can test the core write path: build a report and write it.
-    let report = make_test_report();
-    write_crash_report(&crash_path, &report).unwrap();
+    if let Ok(dir) = std::env::var(PANIC_CHILD_DIR_ENV) {
+        panic_hook_child(Path::new(&dir));
+        return;
+    }
 
-    assert!(crash_path.exists());
-    let loaded = read_crash_report(&crash_path).unwrap();
-    assert_eq!(loaded.app_version, env!("CARGO_PKG_VERSION"));
+    let dir = tempfile::tempdir().expect("tempdir");
+    let exe = std::env::current_exe().expect("current test binary");
+    let output = std::process::Command::new(exe)
+        .args(["--exact", TEST_PATH, "--nocapture", "--test-threads=1"])
+        .env(PANIC_CHILD_DIR_ENV, dir.path())
+        .output()
+        .expect("re-launch the test binary");
+    assert!(
+        output.status.success(),
+        "the child must survive the background panic and pass its own assertions.\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr),
+    );
+
+    let report = read_crash_report(&dir.path().join(CRASH_FILE_NAME)).expect("the child wrote a crash report");
+    assert_eq!(report.signal.as_deref(), Some("panic"));
+    assert_eq!(report.thread_name.as_deref(), Some("test-background"));
+    assert!(
+        report
+            .panic_message
+            .as_deref()
+            .is_some_and(|m| m.contains("a deliberate background panic")),
+        "the report carries the panic message: {:?}",
+        report.panic_message
+    );
+    assert!(!report.backtrace_frames.is_empty(), "the report carries a backtrace");
+}
+
+/// The child half of the test above. Runs in a process of its own.
+fn panic_hook_child(dir: &Path) {
+    CRASH_PATH
+        .set(dir.join(CRASH_FILE_NAME))
+        .expect("the child sets the crash path exactly once");
+    install_panic_hook();
+
+    let before = panic_courier::couriers_started_for_test();
+    let panicked = std::thread::Builder::new()
+        .name("test-background".to_string())
+        .spawn(|| panic!("a deliberate background panic"))
+        .expect("spawn the background thread")
+        .join();
+    assert!(
+        panicked.is_err(),
+        "the background thread died, as a panicking thread does"
+    );
+
+    // Still executing, which is the property: a background panic no longer takes the app
+    // with it, and the reporting path we hung off the hook didn't turn it into an abort.
+    // Two seconds is a backstop, not a guess: the hook spawns the courier inline, so this
+    // is true within microseconds or never, and the parent's own nextest cap is 8 s.
+    crate::test_support::wait_until(
+        std::time::Duration::from_secs(2),
+        "the hook to dispatch a courier for in-session delivery",
+        || panic_courier::couriers_started_for_test() > before,
+    );
 }
 
 #[test]
