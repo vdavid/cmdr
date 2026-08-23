@@ -8,7 +8,7 @@
 //!
 //! ## Two hazards this module is shaped around
 //!
-//! **A cancelled connect panics inside `openssh-sftp-client`.** `tasks.rs:215`
+//! **An abandoned `Sftp::new` panics inside `openssh-sftp-client`.** `tasks.rs:215`
 //! does `tx.send(extensions).unwrap()`, which panics in a spawned task if the
 //! `Sftp::new` future was dropped before the server's hello arrived — that is,
 //! on any timed-out or abandoned connect (`openssh-sftp-client` 0.15.7, read
@@ -26,8 +26,8 @@
 //!
 //! ## Cancelling a connect
 //!
-//! [`dial`] takes a [`CancellationToken`] and honours it in three places, and
-//! the third one is unlike the other two:
+//! [`dial`] takes a [`CancellationToken`] and honours it at every await that can
+//! wait on a server. Everything but the last one works the same way:
 //!
 //! - The key exchange, the auth ladder, and the two channel requests all run
 //!   through [`within`], which races the work against the token and DROPS it on
