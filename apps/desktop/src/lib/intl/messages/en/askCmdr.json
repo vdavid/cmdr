@@ -963,5 +963,9 @@
       },
       "changes": { "content": "The same change count as a raw integer, used only to pick the singular or plural word." }
     }
+  },
+  "askCmdr.sessions.wakeThread": "Ask Cmdr started this chat",
+  "@askCmdr.sessions.wakeThread": {
+    "description": "Tooltip and spoken label on the small robot glyph beside a chat title in the chat list and in chat search results. It marks the chats nobody typed the first message in: Ask Cmdr noticed something and opened one by itself. The whole job of the label is telling those apart from chats the user started and forgot, so keep the emphasis on WHO started it. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case, no full stop."
   }
 }

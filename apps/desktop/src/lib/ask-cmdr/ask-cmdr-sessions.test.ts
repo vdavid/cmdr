@@ -47,7 +47,7 @@ function row(id: number, archived = false): ConversationRow {
 }
 
 function hit(id: number): ConversationSearchHit {
-  return { conversationId: id, title: `Chat ${String(id)}`, updatedAt: id, snippet: 's' }
+  return { conversationId: id, title: `Chat ${String(id)}`, updatedAt: id, snippet: 's', origin: null }
 }
 
 function fullPage(): ConversationRow[] {

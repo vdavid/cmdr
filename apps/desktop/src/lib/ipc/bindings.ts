@@ -4735,6 +4735,12 @@ export type ConversationSearchHit = {
    *  Plain text with `…` ellipses; no markup (rendered as escaped text).
    */
   snippet: string
+  /**
+   *  `None` = user-started; a token says the agent opened it. Carried so a search result
+   *  wears the same glyph the thread list gives it — a hit that lost the mark would read
+   *  as a thread the user started and forgot.
+   */
+  origin: ConversationOrigin | null
 }
 
 /**

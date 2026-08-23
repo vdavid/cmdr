@@ -340,6 +340,26 @@ fn search_returns_each_matching_thread_once() {
     );
 }
 
+/// A search result has to wear the same mark the thread list gives it. Without the origin on
+/// the hit, a thread the agent opened for itself looks in search exactly like one the user
+/// started and forgot — which is the single thing the glyph exists to tell them apart.
+#[test]
+fn search_hit_says_who_started_the_thread() {
+    let conn = migrated_conn();
+    let mine = create_conversation(&conn, "Mine", 1, None).expect("create mine");
+    let theirs =
+        create_conversation(&conn, "Theirs", 1, Some(ConversationOrigin::Notification)).expect("create theirs");
+    append_user_text(&conn, mine, "kumquat harvest", 100);
+    append_user_text(&conn, theirs, "kumquat harvest", 200);
+
+    let hits = search_conversations(&conn, "kumquat", 50, 0).expect("search");
+    let origins: Vec<_> = hits.iter().map(|hit| (hit.conversation_id, hit.origin)).collect();
+    assert_eq!(
+        origins,
+        vec![(theirs, Some(ConversationOrigin::Notification)), (mine, None)]
+    );
+}
+
 #[test]
 fn search_hit_carries_a_snippet_of_the_match() {
     let conn = migrated_conn();

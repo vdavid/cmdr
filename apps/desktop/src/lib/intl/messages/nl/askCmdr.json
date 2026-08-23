@@ -675,5 +675,9 @@
   "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, one {andere map} other {andere mappen}} in {ancestor}: {changesText} {changes, plural, one {wijziging} other {wijzigingen}}",
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
+  },
+  "askCmdr.sessions.wakeThread": "Ask Cmdr is dit gesprek begonnen",
+  "@askCmdr.sessions.wakeThread": {
+    "sourceHash": "ba3d8fa"
   }
 }

@@ -98,6 +98,10 @@ pub struct ConversationSearchHit {
     /// An FTS5 excerpt around the match, or the message start if the term is early.
     /// Plain text with `…` ellipses; no markup (rendered as escaped text).
     pub snippet: String,
+    /// `None` = user-started; a token says the agent opened it. Carried so a search result
+    /// wears the same glyph the thread list gives it — a hit that lost the mark would read
+    /// as a thread the user started and forgot.
+    pub origin: Option<ConversationOrigin>,
 }
 
 /// One metering event to fold into the cost meter (per completed `respond` call).
@@ -575,7 +579,7 @@ pub fn search_conversations(
     // `snippet(messages_fts, 0, '', '', '…', 10)`: column 0 (`text_for_search`), no
     // highlight markers (the frontend escapes + styles), `…` ellipsis, ~10 tokens.
     let mut stmt = conn.prepare_cached(
-        "SELECT c.id, c.title, c.updated_at, hit.snippet
+        "SELECT c.id, c.title, c.updated_at, hit.snippet, c.origin
          FROM conversations c
          JOIN (
              SELECT m.conversation_id AS cid,
@@ -596,11 +600,22 @@ pub fn search_conversations(
     let mut rows = stmt.query(rusqlite::params![match_query, limit, offset])?;
     let mut out = Vec::new();
     while let Some(row) = rows.next()? {
+        let origin_token: Option<String> = row.get(4)?;
+        let origin = match origin_token {
+            Some(token) => Some(
+                ConversationOrigin::from_token(&token).ok_or_else(|| AgentStoreError::Decode {
+                    column: "origin",
+                    value: token,
+                })?,
+            ),
+            None => None,
+        };
         out.push(ConversationSearchHit {
             conversation_id: row.get(0)?,
             title: row.get(1)?,
             updated_at: row.get(2)?,
             snippet: row.get(3)?,
+            origin,
         });
     }
     Ok(out)

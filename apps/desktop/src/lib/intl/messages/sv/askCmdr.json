@@ -672,5 +672,9 @@
   "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, one {mapp till} other {mappar till}} i {ancestor}: {changesText} {changes, plural, one {ändring} other {ändringar}}",
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
+  },
+  "askCmdr.sessions.wakeThread": "Ask Cmdr startade den här chatten",
+  "@askCmdr.sessions.wakeThread": {
+    "sourceHash": "ba3d8fa"
   }
 }

@@ -225,6 +225,7 @@ export type MessageKey =
   | 'askCmdr.sessions.showArchived'
   | 'askCmdr.sessions.title'
   | 'askCmdr.sessions.unarchive'
+  | 'askCmdr.sessions.wakeThread'
   | 'askCmdr.softCap.action'
   | 'askCmdr.softCap.message'
   | 'askCmdr.stalled'

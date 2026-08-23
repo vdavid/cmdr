@@ -671,5 +671,9 @@
   "askCmdr.wakeDigest.rollup": "további {foldersText} {folders, plural, one {mappa} other {mappa}} itt: {ancestor} – {changesText} {changes, plural, one {változás} other {változás}}",
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
+  },
+  "askCmdr.sessions.wakeThread": "Ezt a beszélgetést az Ask Cmdr kezdte",
+  "@askCmdr.sessions.wakeThread": {
+    "sourceHash": "ba3d8fa"
   }
 }

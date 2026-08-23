@@ -673,5 +673,9 @@
   "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, one {outra pasta} many {outras pastas} other {outras pastas}} em {ancestor}: {changesText} {changes, plural, one {alteração} many {alterações} other {alterações}}",
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
+  },
+  "askCmdr.sessions.wakeThread": "Foi o Ask Cmdr que começou esta conversa",
+  "@askCmdr.sessions.wakeThread": {
+    "sourceHash": "ba3d8fa"
   }
 }

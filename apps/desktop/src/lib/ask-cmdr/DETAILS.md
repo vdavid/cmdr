@@ -166,6 +166,10 @@ registry lives below `commands/` rather than inside the chat command.
 - **Search** is debounced (`SEARCH_DEBOUNCE_MS`) and guarded by a monotonic `searchSeq` so a slow earlier response can't
   overwrite a newer one. A non-empty query replaces the list with FTS hits (`searchAskCmdrConversations`); clearing it
   restores the list. Each hit's `snippet` is backend FTS text rendered as plain `{text}` (never `{@html}`).
+- **A thread the agent opened wears a `bot` glyph**, the same one the status corner shows while a wake thinks, in the
+  list AND in search results (`ConversationSearchHit.origin` exists for that second half: a hit that lost the mark reads
+  as a thread the user started and forgot). ❌ The test is `origin === 'notification'`, never "origin is not null": the
+  reserved `quietWakes` ledger row carries an origin too, and so will whatever token comes next.
 - **Message paging is tail-first** (a chat shows newest at the bottom). `loadConversation` probes page 0 to learn
   `totalMessages`, then refetches the newest page when the thread exceeds `MESSAGE_PAGE`; `historyCount` tracks how many
   rows are loaded from the tail. "Load earlier" (`loadOlderMessages`) prepends the previous page, its offset derived

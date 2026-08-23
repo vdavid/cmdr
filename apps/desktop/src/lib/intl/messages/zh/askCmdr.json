@@ -671,5 +671,9 @@
   "askCmdr.wakeDigest.rollup": "{ancestor} 中另有 {foldersText} {folders, plural, other {个文件夹}}：{changesText} {changes, plural, other {处改动}}",
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
+  },
+  "askCmdr.sessions.wakeThread": "这个对话是 Ask Cmdr 发起的",
+  "@askCmdr.sessions.wakeThread": {
+    "sourceHash": "ba3d8fa"
   }
 }

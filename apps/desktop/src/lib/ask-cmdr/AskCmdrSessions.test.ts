@@ -135,6 +135,44 @@ describe('AskCmdrSessions interactions', () => {
     expect(target.querySelector('input[type="text"]')).toBeNull()
   })
 
+  /** A thread nobody typed the first message in wears a glyph, and one the user started does
+   *  not. Without the mark the two are indistinguishable in the list, which is the whole
+   *  reason a wake's thread is allowed to appear there at all. */
+  it('marks only the threads the agent opened for itself', async () => {
+    sessionsState.state.conversations = [row(1), { ...row(2), origin: 'notification' }]
+    const target = mountPanel()
+    await tick()
+    const marks = target.querySelectorAll('.conversation .started-by-agent')
+    expect(marks).toHaveLength(1)
+    const marked = target.querySelectorAll('.conversation')[1]
+    expect(marked.querySelector('.started-by-agent')).not.toBeNull()
+    expect(marked.querySelector('[aria-label="Ask Cmdr started this chat"]')).not.toBeNull()
+  })
+
+  /** The same mark in search results. A hit that lost it would read as a thread the user
+   *  started and forgot, which is exactly the confusion the glyph exists to prevent. */
+  it('marks an agent-opened thread in search results too', async () => {
+    sessionsState.state.query = 'kumquat'
+    sessionsState.state.hits = [
+      { conversationId: 1, title: 'Mine', updatedAt: 0, snippet: 'kumquat', origin: null },
+      { conversationId: 2, title: 'Theirs', updatedAt: 0, snippet: 'kumquat', origin: 'notification' },
+    ]
+    const target = mountPanel()
+    await tick()
+    const rows = target.querySelectorAll('.row')
+    expect(rows[0].querySelector('.started-by-agent')).toBeNull()
+    expect(rows[1].querySelector('.started-by-agent')).not.toBeNull()
+  })
+
+  /** ❌ Not "origin is not null": the reserved quiet-wakes ledger row carries an origin too,
+   *  and so will whatever token comes next. The mark belongs to the wake thread alone. */
+  it('leaves a non-wake origin unmarked', async () => {
+    sessionsState.state.conversations = [{ ...row(1), origin: 'quietWakes' }]
+    const target = mountPanel()
+    await tick()
+    expect(target.querySelector('.started-by-agent')).toBeNull()
+  })
+
   it('the back button closes the panel', async () => {
     const target = mountPanel()
     await tick()

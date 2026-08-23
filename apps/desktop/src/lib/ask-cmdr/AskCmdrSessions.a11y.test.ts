@@ -31,7 +31,7 @@ function row(id: number, archived = false): ConversationRow {
 }
 
 function hit(id: number): ConversationSearchHit {
-  return { conversationId: id, title: `Chat ${String(id)}`, updatedAt: id, snippet: 'a matching snippet' }
+  return { conversationId: id, title: `Chat ${String(id)}`, updatedAt: id, snippet: 'a matching snippet', origin: null }
 }
 
 function mountPanel(): HTMLElement {
@@ -76,5 +76,18 @@ describe('AskCmdrSessions a11y', () => {
     const target = mountPanel()
     await tick()
     await expectNoA11yViolations(target)
+  })
+
+  /** The glyph marking a thread the agent opened is the one thing in a row that is not text,
+   *  so it is the one thing a screen reader can only get from its label. */
+  it('an agent-opened thread, in both lists, has no a11y violations', async () => {
+    sessionsState.conversations = [{ ...row(1), origin: 'notification' }]
+    await expectNoA11yViolations(mountPanel())
+    document.body.innerHTML = ''
+    sessionsState.query = 'budget'
+    sessionsState.hits = [{ ...hit(2), origin: 'notification' }]
+    const searching = mountPanel()
+    await tick()
+    await expectNoA11yViolations(searching)
   })
 })

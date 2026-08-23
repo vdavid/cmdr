@@ -671,5 +671,9 @@
   "askCmdr.wakeDigest.rollup": "{foldersText} {folders, plural, other {thư mục khác}} trong {ancestor}: {changesText} {changes, plural, other {thay đổi}}",
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
+  },
+  "askCmdr.sessions.wakeThread": "Ask Cmdr đã bắt đầu cuộc trò chuyện này",
+  "@askCmdr.sessions.wakeThread": {
+    "sourceHash": "ba3d8fa"
   }
 }

@@ -24,6 +24,13 @@
         startNewChat,
         toggleShowArchived,
     } from './ask-cmdr-sessions.svelte'
+    import type { ConversationOrigin } from '$lib/ipc/bindings'
+
+    /** True for a thread the agent opened for itself, which earns the row a glyph. The
+     *  reserved quiet-wakes ledger row never reaches either list, so `notification` is the
+     *  only token that can get here — but branch on the token, never on "not null", so a
+     *  later origin doesn't silently inherit the wake's mark. */
+    const startedByTheAgent = (origin: ConversationOrigin | null): boolean => origin === 'notification'
 
     let editingId = $state<number | null>(null)
     let editTitle = $state('')
@@ -122,9 +129,23 @@
                     {#each sessionsState.hits as hit (hit.conversationId)}
                         <li>
                             <button type="button" class="row" onclick={() => void chooseThread(hit.conversationId)}>
-                                <span class="row-title" use:tooltip={{ text: hit.title, overflowOnly: true }}
-                                    >{hit.title}</span
-                                >
+                                <span class="row-heading">
+                                    {#if startedByTheAgent(hit.origin)}
+                                        <span
+                                            class="started-by-agent"
+                                            use:tooltip={tString('askCmdr.sessions.wakeThread')}
+                                        >
+                                            <Icon
+                                                name="bot"
+                                                size={12}
+                                                aria-label={tString('askCmdr.sessions.wakeThread')}
+                                            />
+                                        </span>
+                                    {/if}
+                                    <span class="row-title" use:tooltip={{ text: hit.title, overflowOnly: true }}
+                                        >{hit.title}</span
+                                    >
+                                </span>
                                 {#if hit.snippet}
                                     <span class="row-snippet" use:tooltip={{ text: hit.snippet, overflowOnly: true }}
                                         >{hit.snippet}</span
@@ -159,9 +180,28 @@
                             />
                         {:else}
                             <button type="button" class="row" onclick={() => void chooseThread(conversation.id)}>
-                                <span class="row-title" use:tooltip={{ text: conversation.title, overflowOnly: true }}
-                                    >{conversation.title}</span
-                                >
+                                <span class="row-heading">
+                                    {#if startedByTheAgent(conversation.origin)}
+                                        <!-- Nobody typed the first message in this one. The
+                                             same glyph the status corner wears while a wake
+                                             thinks, so the two read as one feature. -->
+                                        <span
+                                            class="started-by-agent"
+                                            use:tooltip={tString('askCmdr.sessions.wakeThread')}
+                                        >
+                                            <Icon
+                                                name="bot"
+                                                size={12}
+                                                aria-label={tString('askCmdr.sessions.wakeThread')}
+                                            />
+                                        </span>
+                                    {/if}
+                                    <span
+                                        class="row-title"
+                                        use:tooltip={{ text: conversation.title, overflowOnly: true }}
+                                        >{conversation.title}</span
+                                    >
+                                </span>
                                 {#if conversation.archived}
                                     <span class="archived-badge">{tString('askCmdr.sessions.archivedBadge')}</span>
                                 {/if}
@@ -330,6 +370,21 @@
         background: none;
         border: none;
         border-radius: var(--radius-sm);
+    }
+
+    .row-heading {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
+        min-width: 0;
+    }
+
+    /* The glyph keeps its size while the title takes the squeeze: the title ellipsizes, and a
+       shrinking mark would be the first thing to become unreadable in a narrow rail. */
+    .started-by-agent {
+        display: flex;
+        flex: none;
+        color: var(--color-text-tertiary);
     }
 
     .row-title {
