@@ -97,9 +97,11 @@ mutants.out.*/
 # present (CI has none). See docs/guides/importance-evals.md.
 apps/desktop/src-tauri/tests/importance-corpus/
 
-# Temp trees the cover-walk tests build (`cmdr-cover-test-*`, `cmdr-cold-cover-*`).
-# They live in the CWD rather than `/tmp` on purpose (`lifecycle/cover/tests.rs`),
-# and a panicking test leaks one, so a stray `git add -A` can commit a tree of
-# `found.txt` fixtures. It has.
+# Temp trees the cover-walk and phase tests build (`cmdr-cover-test-*`,
+# `cmdr-cold-cover-*`, `cmdr-phased-drive-*`). They live in the CWD rather than
+# `/tmp` on purpose (`lifecycle/cover/tests.rs`, `lifecycle/phases/tests.rs`), and
+# a test that panics or gets killed under load leaks one, so a stray `git add -A`
+# can commit a tree of fixtures. It has, twice.
 crates/cmdr-index/cmdr-cover-test-*/
 crates/cmdr-index/cmdr-cold-cover-*/
+crates/cmdr-index/cmdr-phased-drive-*/
