@@ -726,6 +726,11 @@ pub async fn trash_files_start(
 
 #[cfg(test)]
 mod approved_op_parity_tests;
+// A real copy in BOTH directions against a live SFTP server, through
+// `copy_between_volumes`. Gated on the Docker fixture, and named for the
+// `sftp_integration_` lane the check runner selects on.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod sftp_transfer_integration_test;
 #[cfg(test)]
 mod journal_capture_tests;
 #[cfg(test)]
