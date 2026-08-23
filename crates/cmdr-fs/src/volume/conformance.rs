@@ -231,3 +231,148 @@ pub async fn assert_writability_matches_the_mutations_offered(volume: &dyn Volum
         );
     }
 }
+
+/// [`Volume::supports_export`] answers for the bytes the backend actually hands
+/// out, in whichever direction it claims — and
+/// [`Volume::supports_streaming`] agrees with it.
+///
+/// `path` must already exist on `volume` and hold exactly `content`, so a
+/// backend that claims export but streams the wrong bytes can't pass.
+///
+/// **Why this one is worth a shared assertion.** `supports_export` is the second
+/// capability predicate (with `is_writable`) whose answer leaves the backend and
+/// reaches the user as UI state, and the ONLY thing standing between a copy and
+/// the bytes it would move: `copy_between_volumes` rejects a source that answers
+/// `false` before it reads anything, and the same `false` greys out copy-from in
+/// the pane. Nothing else in the trait notices, because every method the copy
+/// engine would call is implemented and works — the declaration is simply
+/// missing. That is exactly how a backend ships fully able to stream its bytes
+/// and completely unable to be copied from, with no failing method, no
+/// classification error, and no log line anywhere to find it by.
+///
+/// The trait default is `false`, so the failure mode is silence: a new backend
+/// that implements `open_read_stream` and forgets this one predicate is refused
+/// at the guard with a message about export that names nothing it did wrong.
+pub async fn assert_export_matches_the_bytes_offered(volume: &dyn Volume, path: &Path, content: &[u8]) {
+    let size_before = size_of(volume, path, "fixture precondition").await;
+    assert_eq!(
+        size_before,
+        Some(content.len() as u64),
+        "fixture precondition: {} must hold exactly the {} bytes the assertion compares against",
+        path.display(),
+        content.len(),
+    );
+
+    let opened = volume.open_read_stream(path).await;
+    match opened {
+        Ok(mut stream) => {
+            let mut read = Vec::with_capacity(content.len());
+            while let Some(chunk) = stream.next_chunk().await {
+                let chunk = chunk.unwrap_or_else(|e| {
+                    panic!(
+                        "{} streams {}, so every chunk must arrive; got {e:?}",
+                        volume.name(),
+                        path.display(),
+                    )
+                });
+                read.extend_from_slice(&chunk);
+            }
+            assert_eq!(
+                read.len(),
+                content.len(),
+                "{} streamed {} bytes out of {}, but it holds {}",
+                volume.name(),
+                read.len(),
+                path.display(),
+                content.len(),
+            );
+            assert!(
+                read == content,
+                "{} streamed the wrong bytes out of {}",
+                volume.name(),
+                path.display(),
+            );
+
+            assert!(
+                volume.supports_export(),
+                "{} streams {} back byte for byte, so it MUST answer supports_export() == true. \
+                 A false here is refused at `copy_between_volumes`' guard before a byte moves, \
+                 and greys out copy-from in the pane — with every method involved working fine.",
+                volume.name(),
+                path.display(),
+            );
+            assert!(
+                volume.supports_streaming(),
+                "{} streams {} back byte for byte, so it MUST answer supports_streaming() == true",
+                volume.name(),
+                path.display(),
+            );
+            assert!(
+                volume.capabilities().can_export,
+                "{} answers supports_export() == true, so the published VolumeCapabilities the \
+                 frontend reads must agree; capabilities() is a pure fold and must not be overridden",
+                volume.name(),
+            );
+        }
+        Err(VolumeError::NotSupported) => {
+            assert!(
+                !volume.supports_export(),
+                "{} answers supports_export() == true, so open_read_stream({}) must work rather \
+                 than refuse with NotSupported",
+                volume.name(),
+                path.display(),
+            );
+        }
+        Err(other) => panic!(
+            "open_read_stream({}) on {} must either stream or answer NotSupported; got {other:?}",
+            path.display(),
+            volume.name(),
+        ),
+    }
+}
+
+/// [`VolumeError::NotFound`] carries the PATH that was missing, not the
+/// backend's own wording for "missing".
+///
+/// `missing` must NOT exist on `volume`; the assertion checks that first.
+///
+/// **Why this one is worth a shared assertion.** The variant's doc says "carries
+/// the path", and the transfer layer takes it literally: `map_volume_error`
+/// forwards the string straight into `SourceNotFound { path }` /
+/// `DestinationNotFound { path }`, which the frontend renders as the name of the
+/// file the user just lost. A backend that puts its protocol's diagnostic there
+/// instead doesn't fail anything — it just renders the server's sentence where a
+/// filename belongs, and the user goes hunting for a file by a name that was
+/// never on their disk.
+///
+/// Matching on the payload's TEXT here is not error classification (nothing
+/// branches on it); it's the only way to check what a variant carries, the same
+/// way the rename and create_file assertions check what a refusal left behind.
+pub async fn assert_not_found_carries_the_path(volume: &dyn Volume, missing: &Path) {
+    assert!(
+        !volume.exists(missing).await,
+        "fixture precondition: {} must not exist",
+        missing.display()
+    );
+    let name = missing
+        .file_name()
+        .expect("fixture precondition: the missing path must have a final component")
+        .to_string_lossy()
+        .into_owned();
+
+    let outcome = volume.get_metadata(missing).await;
+    let Err(VolumeError::NotFound(carried)) = outcome else {
+        panic!(
+            "get_metadata({}) on {} must answer NotFound; got {outcome:?}",
+            missing.display(),
+            volume.name(),
+        );
+    };
+    assert!(
+        carried.contains(&name),
+        "NotFound must carry the path, and {} carried {carried:?}, which doesn't name {name}. \
+         That string is what `map_volume_error` hands the frontend as SourceNotFound.path, \
+         so the user reads it as the name of their missing file.",
+        volume.name(),
+    );
+}
