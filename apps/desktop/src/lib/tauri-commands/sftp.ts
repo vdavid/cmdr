@@ -54,8 +54,14 @@ export interface SftpTarget {
  * the same one-click path. Nothing here is a message to parse.
  *
  * A successful connect registers the volume and adds the server to the saved list.
+ *
+ * `attemptId` is this call's own name, and `cancelSftpConnect` takes the same one.
+ * Make a fresh one per attempt with `newSftpAttemptId()` and hold it: a dial can run
+ * for up to 30 s, and this promise doesn't settle until it's over, so the id has to
+ * exist before the call for a cancel button to have anything to aim at. A cancelled
+ * connect answers `cancelled` and leaves nothing behind.
  */
-export async function connectSftpVolume(target: SftpTarget): Promise<SftpConnectResult> {
+export async function connectSftpVolume(target: SftpTarget, attemptId: string): Promise<SftpConnectResult> {
   return await commands.connectSftpVolume(
     target.displayName,
     target.host,
@@ -65,7 +71,29 @@ export async function connectSftpVolume(target: SftpTarget): Promise<SftpConnect
     target.keyFile ?? null,
     target.useAgent,
     target.autoReconnect,
+    attemptId,
   )
+}
+
+/** A name for one connect attempt, for the pair of `connectSftpVolume` and `cancelSftpConnect`. */
+export function newSftpAttemptId(): string {
+  return `sftp-connect-${crypto.randomUUID()}`
+}
+
+/**
+ * Calls off the connect running under `attemptId`, and returns whether one was.
+ *
+ * This is what a dialog's cancel button calls. The key exchange and the auth ladder
+ * stop where they stand; a cancel landing in the SFTP hello ends the wait just the
+ * same and lets the protocol engine finish quietly on its own. Either way the
+ * `connectSftpVolume` promise settles with `cancelled`, and no volume, saved server,
+ * or secret is left behind.
+ *
+ * `false` means nobody was connecting under that id, which is what a click landing
+ * a moment after the connect finished looks like. Nothing is wrong with it.
+ */
+export async function cancelSftpConnect(attemptId: string): Promise<boolean> {
+  return await commands.cancelSftpConnect(attemptId)
 }
 
 /**

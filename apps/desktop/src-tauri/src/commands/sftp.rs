@@ -118,6 +118,10 @@ pub enum SftpConnectResult {
     TimedOut,
     /// No route, refused, DNS, or a server with no SFTP subsystem.
     Unreachable,
+    /// `cancel_sftp_connect` was called for this attempt. ❗ Nothing was
+    /// registered, remembered, or stored, so there is nothing to say about it
+    /// beyond closing the dialog.
+    Cancelled,
 }
 
 /// Whether an SFTP volume can actually come back on its own as it stands.
@@ -197,6 +201,12 @@ pub enum SftpHostKeyApprovalResult {
 /// secret store (`save_sftp_credentials`) at the moment the session is built and
 /// die with it; what travels here is the key file's PATH, which is a connection
 /// parameter.
+///
+/// ❗ `attempt_id` is the CALLER's own name for this attempt, and `cancel_sftp_connect`
+/// takes the same one. A fresh value per call (`crypto.randomUUID()`) is what a
+/// dialog wants, and it has to be made BEFORE the call: this command doesn't
+/// answer until the connect is over, which is far too late to arm a cancel
+/// button.
 #[tauri::command]
 #[specta::specta]
 #[allow(
@@ -212,13 +222,14 @@ pub async fn connect_sftp_volume(
     key_file: Option<String>,
     use_agent: bool,
     auto_reconnect: bool,
+    attempt_id: String,
 ) -> SftpConnectResult {
     let mut params = SftpConnectionParams::new(&host, port, &username, remote_root);
     params.key_file = key_file.map(std::path::PathBuf::from);
     params.use_agent = use_agent;
     params.auto_reconnect = auto_reconnect;
 
-    match sftp_volume_wiring::connect_and_register(&display_name, params).await {
+    match sftp_volume_wiring::connect_and_register(&display_name, params, &attempt_id).await {
         SftpConnection::Connected { volume_id, rung } => SftpConnectResult::Connected(ConnectedSftpVolume {
             volume_id,
             rung: SftpAuthRung::from(rung),
@@ -231,7 +242,27 @@ pub async fn connect_sftp_volume(
         SftpConnection::NeedsCredentials => SftpConnectResult::NeedsCredentials,
         SftpConnection::TimedOut => SftpConnectResult::TimedOut,
         SftpConnection::Unreachable => SftpConnectResult::Unreachable,
+        SftpConnection::Cancelled => SftpConnectResult::Cancelled,
     }
+}
+
+/// Calls off the connect running under `attempt_id`, answering whether one was.
+///
+/// ❗ The way out of a connect that is going nowhere. A dial can hold for up to
+/// 30 s across its three phases, and this ends the user's wait at once: the key
+/// exchange and the auth ladder stop where they stand, and a cancel landing in
+/// the SFTP hello lets the engine finish quietly on its own and throws away what
+/// it built (`crates/cmdr-sftp/DETAILS.md` § "Cancelling a connect").
+///
+/// ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
+/// and ❌ no secret written. `connect_sftp_volume` answers `cancelled`.
+///
+/// An id nobody is connecting under answers `false`: a cancel racing a connect
+/// that just finished is ordinary, and there is nothing wrong to report.
+#[tauri::command]
+#[specta::specta]
+pub async fn cancel_sftp_connect(attempt_id: String) -> bool {
+    sftp_volume_wiring::cancel_connect(&attempt_id)
 }
 
 /// Drops an SFTP volume's session and takes it out of the volume registry.

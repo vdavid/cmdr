@@ -3518,6 +3518,12 @@ export const commands = {
    *  secret store (`save_sftp_credentials`) at the moment the session is built and
    *  die with it; what travels here is the key file's PATH, which is a connection
    *  parameter.
+   *
+   *  ❗ `attempt_id` is the CALLER's own name for this attempt, and `cancel_sftp_connect`
+   *  takes the same one. A fresh value per call (`crypto.randomUUID()`) is what a
+   *  dialog wants, and it has to be made BEFORE the call: this command doesn't
+   *  answer until the connect is over, which is far too late to arm a cancel
+   *  button.
    */
   connectSftpVolume: (
     displayName: string,
@@ -3528,6 +3534,7 @@ export const commands = {
     keyFile: string | null,
     useAgent: boolean,
     autoReconnect: boolean,
+    attemptId: string,
   ) =>
     __TAURI_INVOKE<SftpConnectResult>('connect_sftp_volume', {
       displayName,
@@ -3538,6 +3545,7 @@ export const commands = {
       keyFile,
       useAgent,
       autoReconnect,
+      attemptId,
     }),
   /**
    *  Drops an SFTP volume's session and takes it out of the volume registry.
@@ -3689,6 +3697,22 @@ export const commands = {
       | 'rung_cannot'
       | null
     >('get_sftp_unattended_reconnect', { volumeId }),
+  /**
+   *  Calls off the connect running under `attempt_id`, answering whether one was.
+   *
+   *  ❗ The way out of a connect that is going nowhere. A dial can hold for up to
+   *  30 s across its three phases, and this ends the user's wait at once: the key
+   *  exchange and the auth ladder stop where they stand, and a cancel landing in
+   *  the SFTP hello lets the engine finish quietly on its own and throws away what
+   *  it built (`crates/cmdr-sftp/DETAILS.md` § "Cancelling a connect").
+   *
+   *  ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
+   *  and ❌ no secret written. `connect_sftp_volume` answers `cancelled`.
+   *
+   *  An id nobody is connecting under answers `false`: a cancel racing a connect
+   *  that just finished is ordinary, and there is nothing wrong to report.
+   */
+  cancelSftpConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_sftp_connect', { attemptId }),
   /**
    *  Tauri command: returns the current macOS accent color as a hex string.
    *
@@ -9795,6 +9819,12 @@ export type SftpConnectResult =
   | { outcome: 'timed_out' }
   // No route, refused, DNS, or a server with no SFTP subsystem.
   | { outcome: 'unreachable' }
+  /**
+   *  `cancel_sftp_connect` was called for this attempt. ❗ Nothing was
+   *  registered, remembered, or stored, so there is nothing to say about it
+   *  beyond closing the dialog.
+   */
+  | { outcome: 'cancelled' }
 
 // What approving a host key produced.
 export type SftpHostKeyApprovalResult =

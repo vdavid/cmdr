@@ -609,6 +609,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::sftp::update_known_sftp_server,
                     crate::commands::sftp::forget_known_sftp_server,
                     crate::commands::sftp::get_sftp_unattended_reconnect,
+                    crate::commands::sftp::cancel_sftp_connect,
                 ]
                 dispatch_only: []
             }

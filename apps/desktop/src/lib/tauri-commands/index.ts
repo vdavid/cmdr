@@ -808,6 +808,8 @@ export { benchmarkLog } from './debug'
 // SFTP servers: connecting, host-key trust, secrets, and the saved-server list
 export {
   connectSftpVolume,
+  cancelSftpConnect,
+  newSftpAttemptId,
   disconnectSftpVolume,
   approveSftpHostKey,
   forgetSftpHostKey,

@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
     connectSftpVolume: vi.fn(),
+    cancelSftpConnect: vi.fn(),
     disconnectSftpVolume: vi.fn(),
     approveSftpHostKey: vi.fn(),
     forgetSftpHostKey: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock('$lib/ipc/bindings', () => ({
 import { commands } from '$lib/ipc/bindings'
 import {
   approveSftpHostKey,
+  cancelSftpConnect,
   connectSftpVolume,
   deleteSftpCredentials,
   disconnectSftpVolume,
@@ -35,6 +37,7 @@ import {
   getSftpUnattendedReconnect,
   hasSftpCredentials,
   listTrustedSftpHostKeys,
+  newSftpAttemptId,
   saveSftpCredentials,
   updateKnownSftpServer,
   type SftpTarget,
@@ -61,7 +64,7 @@ beforeEach(() => {
 describe('connecting', () => {
   it('hands every field to the command in the order it expects', async () => {
     vi.mocked(commands.connectSftpVolume).mockResolvedValueOnce({ outcome: 'unreachable' })
-    await connectSftpVolume(target)
+    await connectSftpVolume(target, 'attempt-1')
     expect(commands.connectSftpVolume).toHaveBeenCalledWith(
       'Naspolya',
       'naspolya.local',
@@ -71,6 +74,7 @@ describe('connecting', () => {
       '/Users/ada/.ssh/id_ed25519',
       true,
       true,
+      'attempt-1',
     )
   })
 
@@ -78,7 +82,7 @@ describe('connecting', () => {
     // `undefined` drops out of the JSON payload entirely, and the Rust side would
     // then see a missing argument instead of "no key file".
     vi.mocked(commands.connectSftpVolume).mockResolvedValueOnce({ outcome: 'unreachable' })
-    await connectSftpVolume({ ...target, keyFile: undefined })
+    await connectSftpVolume({ ...target, keyFile: undefined }, 'attempt-2')
     expect(vi.mocked(commands.connectSftpVolume).mock.calls[0]?.[5]).toBeNull()
   })
 
@@ -92,7 +96,17 @@ describe('connecting', () => {
       kind: 'changed' as const,
     }
     vi.mocked(commands.connectSftpVolume).mockResolvedValueOnce(prompt)
-    expect(await connectSftpVolume(target)).toEqual(prompt)
+    expect(await connectSftpVolume(target, 'attempt-3')).toEqual(prompt)
+  })
+
+  it('cancelSftpConnect forwards the attempt id, so a dialog can call its own dial off', async () => {
+    vi.mocked(commands.cancelSftpConnect).mockResolvedValueOnce(true)
+    expect(await cancelSftpConnect('attempt-1')).toBe(true)
+    expect(commands.cancelSftpConnect).toHaveBeenCalledWith('attempt-1')
+  })
+
+  it('newSftpAttemptId makes a fresh id every time, so two dialogs never cancel each other', () => {
+    expect(newSftpAttemptId()).not.toBe(newSftpAttemptId())
   })
 
   it('disconnectSftpVolume forwards the volume id', async () => {

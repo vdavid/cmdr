@@ -10,11 +10,15 @@
 //! here, because a connect is three things happening in one order: dial, register
 //! (retiring any predecessor), and remember the server for next time.
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, LazyLock, Mutex};
 
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_sftp::auth::UnattendedReconnect;
 use cmdr_sftp::volume::HostKeyApproval;
 use cmdr_sftp::{SftpConnectError, SftpConnectOutcome, SftpConnectionParams, SftpVolume};
+use tokio_util::sync::CancellationToken;
 
 use super::sftp_known_servers::{self, KnownSftpServer};
 
@@ -55,17 +59,107 @@ pub enum SftpConnection {
     TimedOut,
     /// No route, refused, DNS, or the SFTP subsystem itself declining.
     Unreachable,
+    /// The user called it off. ❗ Nothing was registered, remembered, or stored,
+    /// so there is nothing to report and nothing to retry.
+    Cancelled,
+}
+
+// ============================================================================
+// Calling a connect off
+// ============================================================================
+
+/// The connect attempts a user could still call off, by the id their caller made
+/// up for one, each with the serial that says WHICH attempt holds the entry.
+///
+/// ❗ The id is the CALLER's, and that is the whole point: a connect can hold for
+/// half a minute, so a sign-in dialog has to arm its cancel button before the
+/// command answers — and an id the backend handed back would only arrive once
+/// the connect was already over. The serial is what keeps a repeated id honest:
+/// a finishing attempt only ever takes its OWN entry out.
+static ATTEMPTS: LazyLock<Mutex<HashMap<String, (u64, CancellationToken)>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// The next attempt's serial.
+static NEXT_ATTEMPT: AtomicU64 = AtomicU64::new(0);
+
+/// Takes one attempt's entry out of the table when its connect ends, however it
+/// ends.
+///
+/// ❗ A guard rather than a call at each exit: a connect leaves through eight
+/// arms, and the one that forgets is a token nobody ever collects.
+struct AttemptGuard {
+    id: String,
+    serial: u64,
+}
+
+impl Drop for AttemptGuard {
+    fn drop(&mut self) {
+        let mut attempts = ATTEMPTS.lock_ignore_poison();
+        // Only if it's still ours: a second connect under the same id has
+        // replaced the entry, and taking that one out would leave it uncancelable.
+        if attempts.get(&self.id).is_some_and(|(serial, _)| *serial == self.serial) {
+            attempts.remove(&self.id);
+        }
+    }
+}
+
+/// Files `attempt_id` as cancelable and hands back the token the dial runs under.
+fn register_attempt(attempt_id: &str) -> (CancellationToken, AttemptGuard) {
+    let cancel = CancellationToken::new();
+    let serial = NEXT_ATTEMPT.fetch_add(1, Ordering::Relaxed);
+    ATTEMPTS
+        .lock_ignore_poison()
+        .insert(attempt_id.to_string(), (serial, cancel.clone()));
+    (
+        cancel,
+        AttemptGuard {
+            id: attempt_id.to_string(),
+            serial,
+        },
+    )
+}
+
+/// Calls off the connect filed under `attempt_id`, answering whether one was
+/// running.
+///
+/// ❗ An id nobody is holding is a plain `false`: a cancel racing a connect that
+/// just finished is ordinary, and there is nothing wrong to report about it. The
+/// entry stays until the dial itself notices, so ❌ this never reports on what the
+/// attempt then did.
+pub fn cancel_connect(attempt_id: &str) -> bool {
+    let Some((_, cancel)) = ATTEMPTS.lock_ignore_poison().get(attempt_id).cloned() else {
+        return false;
+    };
+    cancel.cancel();
+    log::info!(target: "volume", "an sftp connect was called off");
+    true
 }
 
 /// Dials `params`, and on success registers the volume and remembers the server.
 ///
+/// `attempt_id` is the caller's own name for this attempt, and what
+/// [`cancel_connect`] needs to call it off. ❗ A cancelled connect leaves
+/// nothing behind: no volume, no saved server, no secret.
+///
 /// ❗ Every dial goes through `cmdr_sftp::connect_sftp_volume`, which runs it in
-/// a task and awaits the join handle: a connect cancelled mid-handshake panics
-/// inside the SFTP engine (`crates/cmdr-sftp/DETAILS.md` § "Crate hazards").
-pub async fn connect_and_register(display_name: &str, params: SftpConnectionParams) -> SftpConnection {
+/// a task and awaits the join handle: a connect DROPPED mid-handshake panics
+/// inside the SFTP engine (`crates/cmdr-sftp/DETAILS.md` § "Crate hazards"),
+/// which is why calling one off goes through the token instead.
+pub async fn connect_and_register(
+    display_name: &str,
+    params: SftpConnectionParams,
+    attempt_id: &str,
+) -> SftpConnection {
     let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
-    let outcome =
-        cmdr_sftp::connect_sftp_volume(display_name, &volume_id, params.clone(), crate::volume_host::host()).await;
+    let (cancel, _attempt) = register_attempt(attempt_id);
+    let outcome = cmdr_sftp::connect_sftp_volume(
+        display_name,
+        &volume_id,
+        params.clone(),
+        crate::volume_host::host(),
+        cancel,
+    )
+    .await;
 
     let volume = match outcome {
         Ok(SftpConnectOutcome::Connected(volume)) => volume,
@@ -102,6 +196,7 @@ fn failed(error: SftpConnectError) -> SftpConnection {
         SftpConnectError::AuthenticationRejected => SftpConnection::AuthenticationRejected,
         SftpConnectError::NeedsCredentials => SftpConnection::NeedsCredentials,
         SftpConnectError::TimedOut => SftpConnection::TimedOut,
+        SftpConnectError::Cancelled => SftpConnection::Cancelled,
         SftpConnectError::Unreachable(what) | SftpConnectError::Transport(what) => {
             log::info!(target: "volume", "an sftp connection didn't come up: {what}");
             SftpConnection::Unreachable

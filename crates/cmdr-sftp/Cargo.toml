@@ -73,5 +73,7 @@ cmdr-sftp = { path = ".", features = ["testing"] }
 # tests assert against.
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # The Docker-backed suites drive real concurrency, so their tests need a
-# multi-threaded runtime the lib deliberately can't build for itself.
-tokio = { version = "1", features = ["rt-multi-thread"] }
+# multi-threaded runtime the lib deliberately can't build for itself, and
+# `test-util` gives the cancellation cells a `start_paused` clock so asserting on
+# a 10 s budget costs no wall time.
+tokio = { version = "1", features = ["rt-multi-thread", "test-util"] }

@@ -13,16 +13,29 @@
 //! `Sftp::new` future was dropped before the server's hello arrived — that is,
 //! on any timed-out or abandoned connect (`openssh-sftp-client` 0.15.7, read
 //! 2026-08-22; upstream issue #153 covers the same `unwrap`). So `Sftp::new`
-//! runs in a task of its OWN and the timeout is applied to the join handle:
-//! timing out drops the HANDLE, the future still runs to completion, and its
-//! result is discarded. ❌ Never wrap `Sftp::new` in `tokio::time::timeout`
-//! directly.
+//! runs in a task of its OWN and only its JOIN HANDLE is ever raced: giving up
+//! drops the handle, the future still runs to completion, and its result is
+//! discarded. ❌ Never wrap `Sftp::new` in `tokio::time::timeout` directly, and
+//! ❌ never `abort()` its task.
 //!
 //! **`Sftp::close()` never returns over a `russh` channel.** It awaits a read
 //! task that only ends at reader EOF, which a channel doesn't give until it's
 //! closed. Dropping [`SshConnection`] is the clean shutdown: the engine's own
 //! drop orders it and both tasks exit. ❌ There is no `close()` call in this
 //! crate, and adding one hangs `disconnect_sftp_volume` forever.
+//!
+//! ## Cancelling a connect
+//!
+//! [`dial`] takes a [`CancellationToken`] and honours it in three places, and
+//! the third one is unlike the other two:
+//!
+//! - The key exchange and the auth ladder each run through [`phase`], which
+//!   races the work against the token and DROPS it on a cancel. `russh` unwinds
+//!   a dropped future cleanly, so those two phases stop on the spot.
+//! - The SFTP hello can't be dropped, per hazard 1. A cancel there ends the
+//!   USER's connect immediately and hands the still-running engine to
+//!   [`finish_detached`], which waits it out on a task of its own and throws
+//!   away both the engine and the session. ❗ Deliberate, ❌ not a leak.
 
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -35,6 +48,8 @@ use openssh_sftp_client::{Sftp, SftpOptions};
 use russh::client::{self, AuthResult, Handler, KeyboardInteractiveAuthResponse};
 use russh::keys::agent::AgentIdentity;
 use russh::keys::{Algorithm, HashAlg, PrivateKeyWithHashAlg, PublicKey};
+use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 
 use crate::auth::{AuthRung, AuthRungUsed, ladder};
 use crate::errors::SftpConnectError;
@@ -43,14 +58,18 @@ use crate::known_hosts::KnownHostsFile;
 use crate::params::SftpConnectionParams;
 use crate::trust::{self, HostKeyDecision, PresentedHostKey};
 
-/// How long the TCP connect, key exchange, and authentication get together.
-/// Generous enough for a satellite link, short enough that a black-holed address
-/// doesn't hold a pane hostage.
-const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(20);
+/// How long the TCP connect and key exchange get, and then the auth ladder
+/// again on its own. Generous enough for a satellite link, short enough that a
+/// black-holed address doesn't hold a sign-in dialog for most of a minute.
+///
+/// ❗ Two of these plus [`SUBSYSTEM_TIMEOUT`] is the 30 s a user could sit
+/// through touching nothing. Cancelling ends it sooner at any point, which is
+/// what makes the budget a backstop rather than the way out.
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// How long the SFTP subsystem gets to answer its hello once the SSH session is
 /// up. A server with no `sftp-server` installed simply never answers.
-const SUBSYSTEM_TIMEOUT: Duration = Duration::from_secs(15);
+const SUBSYSTEM_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// The channel window Cmdr advertises for data it RECEIVES, in bytes.
 ///
@@ -146,14 +165,68 @@ pub enum DialOutcome {
 
 /// Opens an SSH session to `params`' server and an SFTP channel on it.
 ///
-/// ❗ Run this to completion rather than dropping it mid-flight: see the hazards
-/// at the top of this module. `crate::volume::connect_sftp_volume` is what
-/// enforces that, by running it inside a task.
+/// Cancelling `cancel` ends the attempt promptly at any point; see § "Cancelling
+/// a connect" at the top of this module for what "promptly" means in each of the
+/// three phases. ❗ A cancelled dial leaves nothing behind: no session, no
+/// approval, no stored secret.
+///
+/// ❗ Dropping this future rather than cancelling the token still has to be safe,
+/// because a cancel can lose a race with one. `crate::volume::connect_sftp_volume`
+/// is what makes it safe, by running the whole thing inside a task.
 pub async fn dial(
     params: SftpConnectionParams,
     host: VolumeHost,
     offered_secret: Option<String>,
+    cancel: CancellationToken,
 ) -> Result<DialOutcome, SftpConnectError> {
+    let mut session = match open_session(&params, &host, &cancel).await? {
+        Opened::NeedsApproval(prompt) => return Ok(DialOutcome::NeedsHostKeyApproval(prompt)),
+        Opened::Session(session) => session,
+    };
+
+    let rung = phase(&cancel, authenticate(&mut session, &params, &host, offered_secret)).await??;
+
+    match hello(session, &host, &cancel).await? {
+        HelloEnded::Arrived(connection) => Ok(DialOutcome::Connected { connection, rung }),
+        // Detached on purpose: the user's connect is over, so what the engine is
+        // still finishing gets thrown away rather than waited on.
+        HelloEnded::Cancelled(finishing) => {
+            drop(finishing);
+            Err(SftpConnectError::Cancelled)
+        }
+    }
+}
+
+/// Runs one connect phase under both the handshake budget and the user's cancel.
+///
+/// ❗ Either ending DROPS `work`, which is exactly why the key exchange and the
+/// auth ladder are cancelable at all: `russh` unwinds a dropped future cleanly.
+/// ❌ Never run the SFTP hello through this — dropping THAT future panics the
+/// engine's task (§ hazard 1), which is why [`hello`] has a shape of its own.
+async fn phase<T>(cancel: &CancellationToken, work: impl Future<Output = T>) -> Result<T, SftpConnectError> {
+    tokio::select! {
+        // Biased so an already-cancelled token wins without polling `work` at
+        // all: a cancel that lands before a phase starts must cost no packet.
+        biased;
+        () = cancel.cancelled() => Err(SftpConnectError::Cancelled),
+        done = tokio::time::timeout(HANDSHAKE_TIMEOUT, work) => done.map_err(|_elapsed| SftpConnectError::TimedOut),
+    }
+}
+
+/// What the key exchange came to.
+enum Opened {
+    /// A session, past the host-key check and ready to authenticate.
+    Session(client::Handle<TrustHandler>),
+    /// The server's key needs a human, so there is no session to hold at all.
+    NeedsApproval(HostKeyPrompt),
+}
+
+/// The TCP connect and the key exchange, including the host-key decision.
+async fn open_session(
+    params: &SftpConnectionParams,
+    host: &VolumeHost,
+    cancel: &CancellationToken,
+) -> Result<Opened, SftpConnectError> {
     let known_hosts = KnownHostsFile::read_default();
     let pinned = trust::algorithms_to_pin(host.host_keys(), &known_hosts, &params.host, params.port);
     let config = Arc::new(build_config(&pinned));
@@ -167,60 +240,174 @@ pub async fn dial(
         seen: Arc::clone(&seen),
     };
 
-    let dialed = tokio::time::timeout(
-        HANDSHAKE_TIMEOUT,
+    match phase(
+        cancel,
         client::connect(config, (params.host.as_str(), params.port), handler),
     )
-    .await;
+    .await?
+    {
+        Ok(session) => Ok(Opened::Session(session)),
+        // A refused key is the likeliest reason a connect fails once the TCP
+        // socket is up, and it's the one with a typed answer. `seen` is what
+        // the handler left behind; anything else is a transport problem.
+        Err(e) => match seen.lock_ignore_poison().take() {
+            Some((key, HostKeyDecision::Revoked)) => Err(SftpConnectError::HostKeyRevoked {
+                algorithm: key.algorithm,
+                fingerprint: key.fingerprint,
+            }),
+            Some((key, HostKeyDecision::Unknown)) => {
+                Ok(Opened::NeedsApproval(prompt(params, key, HostKeyPromptKind::Unknown)))
+            }
+            Some((key, HostKeyDecision::Changed)) => {
+                Ok(Opened::NeedsApproval(prompt(params, key, HostKeyPromptKind::Changed)))
+            }
+            _ => Err(SftpConnectError::Unreachable(e.to_string())),
+        },
+    }
+}
 
-    let mut session = match dialed {
-        Err(_elapsed) => return Err(SftpConnectError::TimedOut),
-        Ok(Ok(session)) => session,
-        Ok(Err(e)) => {
-            // A refused key is the likeliest reason a connect fails once the TCP
-            // socket is up, and it's the one with a typed answer. `seen` is what
-            // the handler left behind; anything else is a transport problem.
-            return match seen.lock_ignore_poison().take() {
-                Some((key, HostKeyDecision::Revoked)) => Err(SftpConnectError::HostKeyRevoked {
-                    algorithm: key.algorithm,
-                    fingerprint: key.fingerprint,
-                }),
-                Some((key, HostKeyDecision::Unknown)) => Ok(DialOutcome::NeedsHostKeyApproval(prompt(
-                    &params,
-                    key,
-                    HostKeyPromptKind::Unknown,
-                ))),
-                Some((key, HostKeyDecision::Changed)) => Ok(DialOutcome::NeedsHostKeyApproval(prompt(
-                    &params,
-                    key,
-                    HostKeyPromptKind::Changed,
-                ))),
-                _ => Err(SftpConnectError::Unreachable(e.to_string())),
-            };
-        }
+/// How the SFTP hello ended.
+enum HelloEnded {
+    /// The engine answered, and the session is live.
+    Arrived(SshConnection),
+    /// The user cancelled while waiting. ❗ The engine's `Sftp::new` future is
+    /// STILL RUNNING in a task of its own and must stay that way; this handle is
+    /// the task that waits it out and then throws away everything it built.
+    /// Production drops the handle; a cell awaits it to prove nothing stayed
+    /// alive and nothing died.
+    Cancelled(Finishing),
+}
+
+/// Opens the channel, asks for the `sftp` subsystem, and waits out the server's
+/// hello.
+///
+/// ❗ The one phase a cancel can't shorten by dropping a future. `Sftp::new` runs
+/// in a task of its own and only its JOIN HANDLE is ever raced, so a cancel here
+/// ends the user's wait at once and leaves the engine to
+/// [`finish_detached`].
+async fn hello(
+    session: client::Handle<TrustHandler>,
+    host: &VolumeHost,
+    cancel: &CancellationToken,
+) -> Result<HelloEnded, SftpConnectError> {
+    let channel = session
+        .channel_open_session()
+        .await
+        .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
+    channel
+        .request_subsystem(true, "sftp")
+        .await
+        .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
+
+    let (reader, writer) = tokio::io::split(channel.into_stream());
+    let mut starting = host.runtime().spawn(Sftp::new(writer, reader, SftpOptions::new()));
+    let waited = tokio::select! {
+        biased;
+        () = cancel.cancelled() => None,
+        // ❗ `&mut`, so the handle survives a cancel and can be handed on. Timing
+        // out drops it, which DETACHES the task rather than aborting it: the
+        // `Sftp::new` future stays alive and its `unwrap` keeps a receiver.
+        joined = tokio::time::timeout(SUBSYSTEM_TIMEOUT, &mut starting) => Some(joined),
+    };
+    let Some(joined) = waited else {
+        return Ok(HelloEnded::Cancelled(finish_detached(host, session, starting)));
     };
 
-    let rung = tokio::time::timeout(
-        HANDSHAKE_TIMEOUT,
-        authenticate(&mut session, &params, &host, offered_secret),
-    )
-    .await
-    .map_err(|_elapsed| SftpConnectError::TimedOut)??;
+    match joined {
+        // ❗ Not handed to `finish_detached`, unlike a cancel: the window already
+        // elapsed without a hello, so the server is broken rather than slow and
+        // holding its socket open for another one buys nothing. Dropping the
+        // session errors the engine's read task out before its `unwrap`.
+        Err(_elapsed) => Err(SftpConnectError::TimedOut),
+        Ok(Err(join)) => Err(SftpConnectError::Transport(join.to_string())),
+        Ok(Ok(Err(e))) => Err(SftpConnectError::Transport(e.to_string())),
+        Ok(Ok(Ok(sftp))) => {
+            let extensions = ServerExtensions::probe(&sftp);
+            // PII-free: protocol constants only. What a server can do decides
+            // which path a copy and a rename take, so it's the first thing worth
+            // knowing when one of them behaves differently than it does against a
+            // stock OpenSSH.
+            log::debug!(target: "volume", "sftp server extensions: {:?}", extensions.advertised());
+            Ok(HelloEnded::Arrived(SshConnection {
+                sftp,
+                extensions,
+                _ssh: session,
+            }))
+        }
+    }
+}
 
-    let sftp = open_sftp_subsystem(&session, &host).await?;
-    let extensions = ServerExtensions::probe(&sftp);
-    // PII-free: protocol constants only. What a server can do decides which path
-    // a copy and a rename take, so it's the first thing worth knowing when one of
-    // them behaves differently than it does against a stock OpenSSH.
-    log::debug!(target: "volume", "sftp server extensions: {:?}", extensions.advertised());
-    Ok(DialOutcome::Connected {
-        connection: SshConnection {
-            sftp,
-            extensions,
-            _ssh: session,
-        },
-        rung,
+/// The task finishing an abandoned hello, and whether the engine's own task
+/// ENDED rather than died.
+///
+/// ❗ That answer is the hazard's tell: a `Sftp::new` future somebody dropped or
+/// aborted kills its task instead of finishing it, and a `JoinError` here is the
+/// `tasks.rs` `unwrap` going off. Production drops the handle; the cell driving
+/// the hello window asserts on it, because a panic in a spawned task doesn't fail
+/// the test that spawned it.
+type Finishing = JoinHandle<Result<(), tokio::task::JoinError>>;
+
+/// Lets an abandoned SFTP hello finish on its own, then throws away what it
+/// built.
+///
+/// ❗ Deliberate, and ❌ not a leak. The engine's `Sftp::new` future has to run to
+/// completion or its task panics on an `unwrap` (§ hazard 1), so the only safe
+/// way to walk away from a hello is to stop WAITING for it. The session rides
+/// along and goes with it, so the server sees the connection close as soon as the
+/// engine is done — bounded by the same window a live connect gets.
+fn finish_detached(
+    host: &VolumeHost,
+    session: client::Handle<TrustHandler>,
+    starting: JoinHandle<Result<Sftp, openssh_sftp_client::Error>>,
+) -> Finishing {
+    host.runtime().spawn(async move {
+        let ended = match tokio::time::timeout(SUBSYSTEM_TIMEOUT, starting).await {
+            // Whatever it built is dropped on the spot: an engine nobody can
+            // reach is a socket nobody closes. A protocol error is a fine
+            // ending — what the answer reports is whether the TASK lived.
+            Ok(joined) => joined.map(drop),
+            // Still going when the window ran out. Not a death, and not
+            // something to keep waiting for: dropping the handle detaches it.
+            Err(_elapsed) => Ok(()),
+        };
+        // Then the transport, in the order `SshConnection` drops in: engine
+        // first, session second.
+        drop(session);
+        ended
     })
+}
+
+/// Dials as far as the SFTP hello and cancels INSIDE that window, handing back
+/// the task that finishes it.
+///
+/// ❗ The one phase a cell can't reach by timing: against a local server it is
+/// about a millisecond wide, and it is also the only one where a wrong shape
+/// panics rather than fails. Everything from the cancel on is [`hello`]'s own
+/// code, so a cell driving this drives production.
+///
+/// `cfg(test)` rather than the crate's `testing` feature because this is
+/// `pub(crate)`: nothing outside the crate could call it whatever the gate said.
+#[cfg(test)]
+pub(crate) async fn dial_cancelling_inside_the_hello(
+    params: SftpConnectionParams,
+    host: VolumeHost,
+) -> Result<Finishing, SftpConnectError> {
+    let live = CancellationToken::new();
+    let Opened::Session(mut session) = open_session(&params, &host, &live).await? else {
+        return Err(SftpConnectError::Transport(
+            "this helper needs a server whose key is already approved".to_string(),
+        ));
+    };
+    phase(&live, authenticate(&mut session, &params, &host, None)).await??;
+
+    let cancelled = CancellationToken::new();
+    cancelled.cancel();
+    match hello(session, &host, &cancelled).await? {
+        HelloEnded::Cancelled(finishing) => Ok(finishing),
+        HelloEnded::Arrived(_) => Err(SftpConnectError::Transport(
+            "an already-cancelled token still let the hello through".to_string(),
+        )),
+    }
 }
 
 fn prompt(params: &SftpConnectionParams, key: PresentedHostKey, kind: HostKeyPromptKind) -> HostKeyPrompt {
@@ -511,34 +698,6 @@ async fn try_keyboard_interactive(
                     .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
             }
         }
-    }
-}
-
-/// Opens the channel, asks for the `sftp` subsystem, and starts the engine.
-async fn open_sftp_subsystem(
-    session: &client::Handle<TrustHandler>,
-    host: &VolumeHost,
-) -> Result<Sftp, SftpConnectError> {
-    let channel = session
-        .channel_open_session()
-        .await
-        .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
-    channel
-        .request_subsystem(true, "sftp")
-        .await
-        .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
-
-    let (reader, writer) = tokio::io::split(channel.into_stream());
-    // ❗ The engine's hello wait runs in a task of its own, and the timeout is on
-    // the JOIN HANDLE. Timing out drops the handle, never the future, so the
-    // `unwrap` at `openssh-sftp-client`'s `tasks.rs:215` has a receiver to send
-    // to whatever we do out here.
-    let starting = host.runtime().spawn(Sftp::new(writer, reader, SftpOptions::new()));
-    match tokio::time::timeout(SUBSYSTEM_TIMEOUT, starting).await {
-        Err(_elapsed) => Err(SftpConnectError::TimedOut),
-        Ok(Err(join)) => Err(SftpConnectError::Transport(join.to_string())),
-        Ok(Ok(Err(e))) => Err(SftpConnectError::Transport(e.to_string())),
-        Ok(Ok(Ok(sftp))) => Ok(sftp),
     }
 }
 

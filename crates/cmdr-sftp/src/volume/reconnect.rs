@@ -30,8 +30,10 @@
 //!   what the user typed straight to [`guarded_dial`]; the store is only ever
 //!   REFRESHED, never seeded.
 //! - ❗ **A dial is never dropped mid-handshake.** [`guarded_dial`] runs it in a
-//!   task and awaits the join handle, because a cancelled connect panics inside
-//!   the engine (`transport.rs`).
+//!   task and awaits the join handle, because abandoning a connect at the wrong
+//!   moment panics inside the engine (`transport.rs`). Calling one OFF is a
+//!   different thing and goes through the token instead — and no reconnect on
+//!   this path has one, because nobody is watching an unattended redial.
 
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -41,6 +43,7 @@ use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::StoredCredentials;
 use cmdr_fs::volume::{SelfHandle, VolumeError};
 use log::{debug, info, warn};
+use tokio_util::sync::CancellationToken;
 
 use super::state::ConnectionState;
 use super::{SftpVolume, SftpVolumeInner};
@@ -69,16 +72,22 @@ const RECONNECT_BACKOFF: [Duration; 6] = [
 /// Dials without ever dropping the dial.
 ///
 /// ❗ The future is handed to a task and the JOIN HANDLE is what gets awaited, so
-/// a caller who goes away detaches the task instead of cancelling it. Cancelling
-/// a connect mid-handshake panics a task inside `openssh-sftp-client`
-/// (`transport.rs` § hazard 2). ❌ Never call [`transport::dial`] directly.
+/// a caller who goes away detaches the task instead of dropping the dial
+/// mid-handshake, which panics a task inside `openssh-sftp-client`
+/// (`transport.rs` § hazard 1). ❌ Never call [`transport::dial`] directly.
+///
+/// ❗ That spawn costs no cancellation, because calling a connect OFF goes
+/// through `cancel` rather than through dropping this future: the token reaches
+/// into the task, the dial answers `Cancelled`, and the join handle comes back
+/// at once. A caller with nobody to cancel for it passes a token nothing holds.
 pub(super) async fn guarded_dial(
     host: &VolumeHost,
     params: SftpConnectionParams,
     offered_secret: Option<String>,
+    cancel: CancellationToken,
 ) -> Result<DialOutcome, SftpConnectError> {
     host.runtime()
-        .spawn(transport::dial(params, host.clone(), offered_secret))
+        .spawn(transport::dial(params, host.clone(), offered_secret, cancel))
         .await
         .map_err(|join| SftpConnectError::Transport(join.to_string()))?
 }
@@ -220,7 +229,10 @@ impl SftpVolumeInner {
             self.check_unattended_policy()?;
         }
 
-        match guarded_dial(&self.host, self.params.clone(), offered).await {
+        // ❗ A token nobody else holds, so nothing can call this off: a reconnect
+        // has no user watching it, and the backoff loop's own gates
+        // (`check_unattended_policy`, `unmounted`) are what stop it.
+        match guarded_dial(&self.host, self.params.clone(), offered, CancellationToken::new()).await {
             Ok(DialOutcome::Connected { connection, rung }) => {
                 // Between the dial starting and the session landing, the user may
                 // have ejected the volume. Installing here would leave a live SSH
@@ -247,6 +259,10 @@ impl SftpVolumeInner {
                 Err(Stalled::NeedsUser)
             }
             Err(SftpConnectError::NeedsCredentials) => Err(Stalled::NeedsUser),
+            // Unreachable as this stands, since the token above is nobody's.
+            // Reported as a transient loss rather than `unreachable!()` so a
+            // future caller that DOES hand one in gets a retry, not a panic.
+            Err(SftpConnectError::Cancelled) => Err(Stalled::Transient(VolumeError::Cancelled(self.volume_id.clone()))),
             Err(SftpConnectError::TimedOut) => Err(Stalled::Transient(VolumeError::ConnectionTimeout(
                 self.volume_id.clone(),
             ))),

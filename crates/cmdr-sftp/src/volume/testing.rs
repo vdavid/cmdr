@@ -14,6 +14,7 @@ use std::sync::Arc;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::InMemoryCredentials;
 use cmdr_fs::volume::host::host_keys::InMemoryHostKeys;
+use tokio_util::sync::CancellationToken;
 
 use super::{SftpConnectOutcome, SftpVolume, connect_sftp_volume};
 use crate::params::SftpConnectionParams;
@@ -181,9 +182,15 @@ pub async fn connect_fixture(host: &VolumeHost, params: SftpConnectionParams) ->
 /// The same flow, as a `Result`, for a cell asserting on the refusal.
 pub async fn approve_and_connect(host: &VolumeHost, params: SftpConnectionParams) -> Result<SftpVolume, String> {
     let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
-    let first = connect_sftp_volume("fixture", &volume_id, params.clone(), host.clone())
-        .await
-        .map_err(|e| format!("dialing {}:{} failed: {e:?}", params.host, params.port))?;
+    let first = connect_sftp_volume(
+        "fixture",
+        &volume_id,
+        params.clone(),
+        host.clone(),
+        CancellationToken::new(),
+    )
+    .await
+    .map_err(|e| format!("dialing {}:{} failed: {e:?}", params.host, params.port))?;
 
     let prompt = match first {
         SftpConnectOutcome::Connected(volume) => return Ok(volume),
@@ -199,7 +206,7 @@ pub async fn approve_and_connect(host: &VolumeHost, params: SftpConnectionParams
         .await
         .map_err(|e| format!("re-checking the fixture's host key failed: {e:?}"))?;
 
-    match connect_sftp_volume("fixture", &volume_id, params, host.clone()).await {
+    match connect_sftp_volume("fixture", &volume_id, params, host.clone(), CancellationToken::new()).await {
         Ok(SftpConnectOutcome::Connected(volume)) => Ok(volume),
         Ok(SftpConnectOutcome::NeedsHostKeyApproval(_)) => {
             Err("the fixture asked for approval again after its key was recorded".to_string())

@@ -43,7 +43,7 @@ async fn signed_in_already(params: &SftpConnectionParams) {
     .expect("the test secret store always accepts");
 
     // First contact, then the approval, which is exactly what the frontend does.
-    let first = sftp_volume_wiring::connect_and_register("fixture", params.clone()).await;
+    let first = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-attempt").await;
     let SftpConnection::NeedsHostKeyApproval(prompt) = first else {
         // Another cell in this binary may have approved the same fixture already;
         // that is a connected volume, not a failure.
@@ -62,7 +62,7 @@ async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_serv
     let params = stock_params();
     signed_in_already(&params).await;
 
-    let outcome = sftp_volume_wiring::connect_and_register("Fixture server", params.clone()).await;
+    let outcome = sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt").await;
     let SftpConnection::Connected { volume_id, rung } = outcome else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
@@ -96,7 +96,8 @@ async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_serv
 async fn sftp_integration_disconnecting_drops_the_session_and_unregisters_the_volume() {
     let params = stock_params();
     signed_in_already(&params).await;
-    let SftpConnection::Connected { volume_id, .. } = sftp_volume_wiring::connect_and_register("fixture", params).await
+    let SftpConnection::Connected { volume_id, .. } =
+        sftp_volume_wiring::connect_and_register("fixture", params, "fixture-attempt").await
     else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
@@ -148,7 +149,7 @@ async fn sftp_integration_an_unapproved_server_asks_before_it_connects() {
         sftp_host_keys::forget_trusted_host_key(&params.host, params.port, &algorithm);
     }
 
-    let outcome = sftp_volume_wiring::connect_and_register("fixture", params.clone()).await;
+    let outcome = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-attempt").await;
     let SftpConnection::NeedsHostKeyApproval(prompt) = outcome else {
         panic!("a server with no approved key must ask about it before anything else");
     };
@@ -162,4 +163,71 @@ async fn sftp_integration_an_unapproved_server_asks_before_it_connects() {
             .is_none(),
         "❗ nothing is registered while a key is waiting to be approved"
     );
+}
+
+// ── Calling a connect off ────────────────────────────────────────────
+
+/// Cancelling an attempt nobody is running is a plain no.
+///
+/// ❗ Not an error: a click that lands just after a connect finished is ordinary,
+/// and there is nothing wrong to report about it.
+#[tokio::test]
+async fn cancelling_an_attempt_nobody_is_running_is_a_plain_no() {
+    assert!(!sftp_volume_wiring::cancel_connect(
+        "sftp-no-such-attempt-was-ever-started"
+    ));
+}
+
+/// A connect the user calls off ends at once and ❗ leaves nothing behind: no
+/// volume in the registry, no server in the saved list.
+///
+/// `192.0.2.1` is reserved for documentation (RFC 5737) and routed nowhere, so
+/// this dial hangs exactly the way a typo'd hostname does. ❗ That hang IS the
+/// subject: without the cancel it holds for the whole handshake budget, and a
+/// sign-in dialog with it.
+#[tokio::test]
+async fn cancelling_a_hanging_connect_ends_it_and_registers_nothing() {
+    const ATTEMPT: &str = "sftp-cancel-a-hanging-connect";
+    let params = SftpConnectionParams::new("192.0.2.1", 22, "nobody", "/nowhere").without_agent();
+    let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
+
+    let dialing = params.clone();
+    let connecting =
+        tokio::spawn(async move { sftp_volume_wiring::connect_and_register("Nowhere", dialing, ATTEMPT).await });
+
+    // The attempt is cancelable from the moment the dial is in the air, which is
+    // the whole reason the id is the caller's.
+    cmdr_fs::testing::wait_until_async(Duration::from_secs(5), "the connect attempt to be cancelable", || {
+        sftp_volume_wiring::cancel_connect(ATTEMPT)
+    })
+    .await;
+
+    let outcome = tokio::time::timeout(Duration::from_secs(5), connecting)
+        .await
+        .expect("a cancelled connect answers long before the handshake budget runs out")
+        .expect("the connect task must not panic");
+    assert!(
+        matches!(outcome, SftpConnection::Cancelled),
+        "a cancelled connect says so, rather than reporting the address as unreachable"
+    );
+
+    assert!(
+        crate::file_system::volume::manager::get_volume_manager()
+            .get(&volume_id)
+            .is_none(),
+        "❗ a cancelled connect registers nothing"
+    );
+    assert!(
+        !sftp_known_servers::all()
+            .into_iter()
+            .any(|entry| entry.host == params.host && entry.port == params.port),
+        "❗ a cancelled connect remembers no server either"
+    );
+    assert!(
+        !keychain::has_credentials(&params.credential_service(), Some(&params.username)),
+        "❗ and it writes no secret: only `save_sftp_credentials` ever does"
+    );
+
+    // The entry is gone with the attempt, so a second cancel finds nothing.
+    assert!(!sftp_volume_wiring::cancel_connect(ATTEMPT));
 }

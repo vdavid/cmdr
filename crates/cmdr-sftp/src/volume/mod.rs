@@ -17,6 +17,7 @@ use std::sync::{Arc, Weak};
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
 use cmdr_fs::volume::{Retirement, VolumeError};
+use tokio_util::sync::CancellationToken;
 
 use crate::auth::{AuthRungUsed, UnattendedReconnect};
 use crate::errors::SftpConnectError;
@@ -207,19 +208,34 @@ impl SftpVolume {
 /// `volume_id` must be the one the caller registers the volume under; production
 /// callers derive it from `sftp_volume_id(host, port, username)`.
 ///
+/// Cancelling `cancel` ends the attempt promptly and leaves ❗ nothing behind: no
+/// volume to register, no approval recorded, no secret written. What "promptly"
+/// means per phase, and why the SFTP hello is unlike the other two:
+/// `transport.rs` § "Cancelling a connect".
+///
 /// ❗ The dial runs inside a task on `host.runtime()` and this function awaits
 /// the join handle, so dropping THIS future abandons the handle and never the
-/// dial. Cancelling a dial mid-handshake panics a task inside
-/// `openssh-sftp-client`; `transport.rs` has the detail.
+/// dial — a dial dropped mid-handshake panics a task inside
+/// `openssh-sftp-client`, and a cancel that loses a race with a drop must still
+/// be safe. `transport.rs` has the detail.
 pub async fn connect_sftp_volume(
     name: &str,
     volume_id: &str,
     params: SftpConnectionParams,
     host: VolumeHost,
+    cancel: CancellationToken,
 ) -> Result<SftpConnectOutcome, SftpConnectError> {
     let root = params.remote_root.clone();
     let auto_reconnect = params.auto_reconnect;
-    let outcome = reconnect::guarded_dial(&host, params.clone(), None).await?;
+    let outcome = reconnect::guarded_dial(&host, params.clone(), None, cancel.clone()).await?;
+
+    // ❗ A cancel that lands as the session does still ends the user's connect.
+    // Answering here is what makes "cancelled" and "registered" mutually
+    // exclusive: the caller never gets a volume it has to clean up, and the
+    // session inside `outcome` goes away with it.
+    if cancel.is_cancelled() {
+        return Err(SftpConnectError::Cancelled);
+    }
 
     match outcome {
         DialOutcome::NeedsHostKeyApproval(prompt) => Ok(SftpConnectOutcome::NeedsHostKeyApproval(prompt)),
@@ -305,6 +321,8 @@ pub async fn approve_host_key(
 // The suites asserting on this backend's own behavior. White-box by nature: they
 // build a volume with no session behind it and drive the path translation and the
 // query surface directly.
+#[cfg(test)]
+mod cancel_test;
 #[cfg(test)]
 mod conformance_test;
 #[cfg(test)]

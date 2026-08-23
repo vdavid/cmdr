@@ -15,6 +15,7 @@ use std::path::Path;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::host_keys::{HostKeyVerdict, HostKeys, InMemoryHostKeys};
 use cmdr_fs::volume::{Volume, VolumeError};
+use tokio_util::sync::CancellationToken;
 
 use super::testing::*;
 use super::{HostKeyApproval, SftpConnectOutcome, SftpVolume, connect_sftp_volume};
@@ -107,9 +108,15 @@ async fn a_server_that_refuses_every_rung_says_so_typed() {
     let volume_id = "sftp-wrong-password";
 
     // First contact needs approving before auth is even reached.
-    let first = connect_sftp_volume("fixture", volume_id, params.clone(), host.clone())
-        .await
-        .expect(FIXTURE);
+    let first = connect_sftp_volume(
+        "fixture",
+        volume_id,
+        params.clone(),
+        host.clone(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect(FIXTURE);
     let SftpConnectOutcome::NeedsHostKeyApproval(prompt) = first else {
         panic!("a fresh store must ask about the host key first");
     };
@@ -117,7 +124,7 @@ async fn a_server_that_refuses_every_rung_says_so_typed() {
         .await
         .expect(FIXTURE);
 
-    let refused = connect_sftp_volume("fixture", volume_id, params, host).await;
+    let refused = connect_sftp_volume("fixture", volume_id, params, host, CancellationToken::new()).await;
     assert!(
         matches!(refused, Err(crate::SftpConnectError::AuthenticationRejected)),
         "got {refused:?}",
@@ -137,9 +144,15 @@ async fn a_ladder_with_nothing_behind_any_rung_asks_for_a_sign_in() {
     let host = fixture_host(&params, None);
     let volume_id = "sftp-no-credentials";
 
-    let first = connect_sftp_volume("fixture", volume_id, params.clone(), host.clone())
-        .await
-        .expect(FIXTURE);
+    let first = connect_sftp_volume(
+        "fixture",
+        volume_id,
+        params.clone(),
+        host.clone(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect(FIXTURE);
     let SftpConnectOutcome::NeedsHostKeyApproval(prompt) = first else {
         panic!("a fresh store must ask about the host key first");
     };
@@ -147,7 +160,7 @@ async fn a_ladder_with_nothing_behind_any_rung_asks_for_a_sign_in() {
         .await
         .expect(FIXTURE);
 
-    let refused = connect_sftp_volume("fixture", volume_id, params, host).await;
+    let refused = connect_sftp_volume("fixture", volume_id, params, host, CancellationToken::new()).await;
     assert!(
         matches!(refused, Err(crate::SftpConnectError::NeedsCredentials)),
         "got {refused:?}",
@@ -172,9 +185,15 @@ async fn a_server_offering_two_key_types_is_not_a_changed_key() {
     drop(volume);
 
     for attempt in 0..3 {
-        let again = connect_sftp_volume("fixture", "sftp-twokeys", params.clone(), host.clone())
-            .await
-            .expect(FIXTURE);
+        let again = connect_sftp_volume(
+            "fixture",
+            "sftp-twokeys",
+            params.clone(),
+            host.clone(),
+            CancellationToken::new(),
+        )
+        .await
+        .expect(FIXTURE);
         assert!(
             matches!(again, SftpConnectOutcome::Connected(_)),
             "reconnect {attempt} to a two-key server asked again instead of recognizing the pinned key"
@@ -392,7 +411,13 @@ async fn abandoning_a_connect_does_not_panic_the_engines_task() {
     let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
 
     for _ in 0..10 {
-        let dial = connect_sftp_volume("fixture", "sftp-abandoned", params.clone(), host.clone());
+        let dial = connect_sftp_volume(
+            "fixture",
+            "sftp-abandoned",
+            params.clone(),
+            host.clone(),
+            CancellationToken::new(),
+        );
         // Long enough to be mid-handshake, short enough to be nowhere near done.
         let _ = tokio::time::timeout(std::time::Duration::from_millis(2), dial).await;
     }
@@ -571,7 +596,7 @@ async fn a_cancelled_listing_stops_instead_of_finishing_the_walk() {
     let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
     let volume = connect_fixture(&host, params).await;
 
-    let cancel = tokio_util::sync::CancellationToken::new();
+    let cancel = CancellationToken::new();
     cancel.cancel();
     let listing = volume
         .list_directory_with_cancel(Path::new("many"), None, Some(&cancel))
@@ -604,7 +629,15 @@ async fn first_contact_prompt(
     host: &VolumeHost,
     params: crate::params::SftpConnectionParams,
 ) -> crate::transport::HostKeyPrompt {
-    match connect_sftp_volume("fixture", "sftp-first-contact", params, host.clone()).await {
+    match connect_sftp_volume(
+        "fixture",
+        "sftp-first-contact",
+        params,
+        host.clone(),
+        CancellationToken::new(),
+    )
+    .await
+    {
         Ok(SftpConnectOutcome::NeedsHostKeyApproval(prompt)) => prompt,
         other => panic!(
             "expected an approval prompt from a fresh store, got {:?}",
@@ -750,7 +783,7 @@ async fn approving_the_key_the_server_presents_records_it() {
     assert!(matches!(outcome, HostKeyApproval::Recorded));
 
     let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
-    let second = connect_sftp_volume("fixture", &volume_id, params, host.clone())
+    let second = connect_sftp_volume("fixture", &volume_id, params, host.clone(), CancellationToken::new())
         .await
         .expect(FIXTURE);
     assert!(

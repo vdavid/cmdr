@@ -72,3 +72,113 @@ fn rsa_signs_with_a_hash_openssh_still_accepts() {
     assert_eq!(rsa_hash_alg(Algorithm::Rsa { hash: None }), Some(HashAlg::Sha512));
     assert_eq!(rsa_hash_alg(Algorithm::Ed25519), None);
 }
+
+// ── Calling a connect off ────────────────────────────────────────────
+
+/// The address every dial below aims at: reserved for documentation (RFC 5737),
+/// routed nowhere, so a TCP connect to it hangs until something stops it.
+///
+/// ❗ That hang IS the subject. It's what a typo'd hostname does to a sign-in
+/// dialog, and before the token it held the dialog for the whole budget.
+const BLACK_HOLE: &str = "192.0.2.1";
+
+/// Cancelling a phase ends it long before its budget does.
+#[tokio::test(start_paused = true)]
+async fn a_cancel_ends_a_phase_before_its_budget_does() {
+    let cancel = CancellationToken::new();
+    let token = cancel.clone();
+    tokio::spawn(async move {
+        // allowed-test-sleep: the canceller's head start; virtual under `start_paused`
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        token.cancel();
+    });
+
+    let started = tokio::time::Instant::now();
+    let outcome = phase(&cancel, std::future::pending::<()>()).await;
+
+    assert!(matches!(outcome, Err(SftpConnectError::Cancelled)));
+    assert!(
+        started.elapsed() < HANDSHAKE_TIMEOUT,
+        "the whole point is that a cancel doesn't wait out the budget"
+    );
+}
+
+/// A phase nobody calls off still gives up when its budget runs out. ❗ The
+/// backstop the token doesn't replace: nobody is watching a reconnect.
+#[tokio::test(start_paused = true)]
+async fn a_phase_nobody_cancels_still_ends_at_its_budget() {
+    let outcome = phase(&CancellationToken::new(), std::future::pending::<()>()).await;
+    assert!(matches!(outcome, Err(SftpConnectError::TimedOut)));
+}
+
+/// A phase that finishes hands its value straight back.
+#[tokio::test]
+async fn a_phase_that_finishes_hands_its_value_back() {
+    assert!(matches!(
+        phase(&CancellationToken::new(), std::future::ready(7)).await,
+        Ok(7)
+    ));
+}
+
+/// A cancel that landed before the phase started wins without the work being
+/// polled at all.
+///
+/// ❗ What `biased` buys: a connect the user already called off must not put a
+/// packet on the wire, spend an authentication attempt, or read the secret store.
+#[tokio::test]
+async fn a_cancel_that_landed_first_costs_no_packet() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    let cancel = CancellationToken::new();
+    cancel.cancel();
+    let polled = Arc::new(AtomicBool::new(false));
+    let flag = Arc::clone(&polled);
+    let work = async move {
+        flag.store(true, Ordering::Relaxed);
+        std::future::pending::<()>().await
+    };
+
+    assert!(matches!(phase(&cancel, work).await, Err(SftpConnectError::Cancelled)));
+    assert!(!polled.load(Ordering::Relaxed), "the work must never have been polled");
+}
+
+/// A cancel mid-flight stops a dial that would otherwise hang for the whole
+/// handshake budget.
+#[tokio::test]
+async fn a_cancel_stops_a_dial_that_would_otherwise_hang() {
+    let params = SftpConnectionParams::new(BLACK_HOLE, 22, "nobody", "/").without_agent();
+    let cancel = CancellationToken::new();
+    let token = cancel.clone();
+    tokio::spawn(async move {
+        // allowed-test-sleep: the canceller's head start, so the cancel lands mid-dial
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        token.cancel();
+    });
+
+    let started = std::time::Instant::now();
+    let outcome = dial(params, VolumeHost::detached(), None, cancel).await;
+    let took = started.elapsed();
+
+    assert!(matches!(outcome, Err(SftpConnectError::Cancelled)));
+    assert!(
+        took < Duration::from_secs(2),
+        "a black-holed address holds the dial for {HANDSHAKE_TIMEOUT:?} without a cancel; this one took {took:?}"
+    );
+}
+
+/// A connect called off before it starts never leaves the machine.
+#[tokio::test]
+async fn a_connect_called_off_before_it_starts_answers_at_once() {
+    let params = SftpConnectionParams::new(BLACK_HOLE, 22, "nobody", "/").without_agent();
+    let cancel = CancellationToken::new();
+    cancel.cancel();
+
+    let started = std::time::Instant::now();
+    let outcome = dial(params, VolumeHost::detached(), None, cancel).await;
+
+    assert!(matches!(outcome, Err(SftpConnectError::Cancelled)));
+    assert!(
+        started.elapsed() < Duration::from_millis(500),
+        "nothing should have been attempted at all"
+    );
+}

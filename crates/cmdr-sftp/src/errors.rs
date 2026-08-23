@@ -39,6 +39,10 @@ pub enum SftpConnectError {
     NeedsCredentials,
     /// The SSH transport or the SFTP subsystem itself refused.
     Transport(String),
+    /// The user called the connect off. ❗ Its own variant rather than a
+    /// timeout: nothing is wrong with the server or the credentials, so a
+    /// frontend that got one has nothing to report and nothing to retry.
+    Cancelled,
 }
 
 /// Turns an [`SftpError`] into the `Volume` vocabulary, for an operation on
