@@ -372,8 +372,9 @@ Worth stating plainly, because both non-wins are the ones people expect first an
 stay there, and per-package `-p` lanes are closed for reasons that have nothing to do with where the code lives:
 `scripts/check/DETAILS.md` § "The Rust input blocks" carries the contract and the measurements. ❗ Read it before
 offering a check-runner win as an extraction payoff: re-measured, a per-package split nets a LOSS on the Rust budget,
-and it resolves features differently from the workspace build it shares `target/` with. What a crate boundary does buy the runner is narrower cache scope for the
-source SCANNERS, whose input blocks are per-member: code that leaves the app tree stops busting the app-tree lanes.
+and it resolves features differently from the workspace build it shares `target/` with. What a crate boundary does buy
+the runner is narrower cache scope for the source SCANNERS, whose input blocks are per-member: code that leaves the app
+tree stops busting the app-tree lanes.
 
 **Full app builds get slightly SLOWER after a backend edit**, because the app still relinks:
 `docs/notes/index-extraction-baseline.md` measured +11% for "index edit, then `cargo build`". Expect the same sign for a

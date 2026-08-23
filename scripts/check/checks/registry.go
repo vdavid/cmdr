@@ -1460,8 +1460,10 @@ var AllChecks = []CheckDefinition{
 		// `cargo nextest list` compiles the test binaries, so it rides the same
 		// `target/` as the test lanes and costs ~1 s once they've warmed it.
 		DependsOn: []string{"desktop-rust-clippy"},
-		Inputs:    rustInputs,
-		Run:       RunNextestFilterCoverage,
+		// It compiles the test binaries, so it reads what every cargo lane reads —
+		// including `.config/nextest.toml`, which is the file it validates.
+		Inputs: rustCompileInputs,
+		Run:    RunNextestFilterCoverage,
 	},
 	{
 		ID:          "index-crate-isolation",
