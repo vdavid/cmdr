@@ -44,10 +44,13 @@ fn cancel_after(token: &CancellationToken, delay: Duration) {
 /// nothing outside the dial can see where a phase ends. A warm connect against
 /// `sftp-fixture-openssh` is about 20 ms end to end (2026-08-23), so 0–24 ms
 /// lands in the TCP connect, the key exchange, the auth ladder, and the hello in
-/// turn. A delay that arrives after the session is up is an ordinary race and
-/// answers `connected` — which is its own assertion, since ❗ the token is
-/// re-read after the dial lands. What must never happen is a wait that runs on
-/// into the phase budget.
+/// turn.
+///
+/// A delay that arrives around the moment the session lands is an ordinary race,
+/// and either answer is right: `connected` if the token was still clear when the
+/// dial returned, `cancelled` if it wasn't, because ❗ the token is re-read at
+/// exactly that point. What must never happen is a session that is both
+/// registered and called off, or a wait that runs on into the phase budget.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn a_cancel_during_the_handshake_stops_the_dial_promptly_and_registers_nothing() {
@@ -80,8 +83,8 @@ async fn a_cancel_during_the_handshake_stops_the_dial_promptly_and_registers_not
         match outcome {
             Err(SftpConnectError::Cancelled) => cancelled += 1,
             // The cancel lost the race with a connect that was already done. ❗ A
-            // live session, not a half-built one, and dropping it here is the
-            // shutdown.
+            // live session, not a half-built one, so dropping it is the shutdown
+            // and there is nothing else to undo.
             Ok(SftpConnectOutcome::Connected(volume)) => volume.disconnect().await,
             Ok(SftpConnectOutcome::NeedsHostKeyApproval(_)) => {
                 panic!("this server's key was approved before the sweep started")
