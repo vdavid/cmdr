@@ -137,8 +137,7 @@ async fn create_directory_already_exists() {
     fs::create_dir(tmp.path().join("existing")).unwrap();
     let result = create_directory_core(None, &parent, "existing").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("already exists"));
+    assert!(matches!(result.unwrap_err(), MutationError::AlreadyExists { .. }));
 }
 
 #[tokio::test]
@@ -147,8 +146,7 @@ async fn create_directory_empty_name() {
     let parent = tmp.path().to_string_lossy().to_string();
     let result = create_directory_core(None, &parent, "").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("cannot be empty"));
+    assert!(matches!(result.unwrap_err(), MutationError::NameEmpty));
 }
 
 #[tokio::test]
@@ -157,13 +155,11 @@ async fn create_directory_invalid_chars() {
     let parent = tmp.path().to_string_lossy().to_string();
     let result = create_directory_core(None, &parent, "foo/bar").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("invalid characters"));
+    assert!(matches!(result.unwrap_err(), MutationError::NameHasDisallowedCharacter));
 
     let result = create_directory_core(None, &parent, "foo\0bar").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("invalid characters"));
+    assert!(matches!(result.unwrap_err(), MutationError::NameHasDisallowedCharacter));
 }
 
 #[tokio::test]
@@ -182,8 +178,7 @@ async fn create_directory_unregistered_volume_errors_without_fs_write() {
     let parent = tmp.path().to_string_lossy().to_string();
     let result = create_directory_core(Some("no-such-volume-xyz".to_string()), &parent, "would-be-folder").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("Volume not found"));
+    assert!(matches!(result.unwrap_err(), MutationError::VolumeGone { .. }));
     assert!(
         !tmp.path().join("would-be-folder").exists(),
         "no directory should be created when the volume isn't registered"
@@ -202,8 +197,7 @@ async fn create_file_unregistered_volume_errors_without_fs_write() {
     let parent = tmp.path().to_string_lossy().to_string();
     let result = create_file_core(Some("no-such-volume-xyz".to_string()), &parent, "would-be-file.txt").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("Volume not found"));
+    assert!(matches!(result.unwrap_err(), MutationError::VolumeGone { .. }));
     assert!(
         !tmp.path().join("would-be-file.txt").exists(),
         "no file should be created when the volume isn't registered"
@@ -231,8 +225,7 @@ async fn create_file_already_exists() {
     fs::write(tmp.path().join("existing.txt"), b"hello").unwrap();
     let result = create_file_core(None, &parent, "existing.txt").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("already exists"));
+    assert!(matches!(result.unwrap_err(), MutationError::AlreadyExists { .. }));
 }
 
 #[tokio::test]
@@ -241,8 +234,7 @@ async fn create_file_empty_name() {
     let parent = tmp.path().to_string_lossy().to_string();
     let result = create_file_core(None, &parent, "").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("cannot be empty"));
+    assert!(matches!(result.unwrap_err(), MutationError::NameEmpty));
 }
 
 #[tokio::test]
@@ -251,13 +243,11 @@ async fn create_file_invalid_chars() {
     let parent = tmp.path().to_string_lossy().to_string();
     let result = create_file_core(None, &parent, "foo/bar.txt").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("invalid characters"));
+    assert!(matches!(result.unwrap_err(), MutationError::NameHasDisallowedCharacter));
 
     let result = create_file_core(None, &parent, "foo\0bar.txt").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("invalid characters"));
+    assert!(matches!(result.unwrap_err(), MutationError::NameHasDisallowedCharacter));
 }
 
 // ============================================================================
@@ -337,18 +327,21 @@ impl Volume for DeniedVolume {
     fn lane_key(&self) -> LaneKey {
         LaneKey::new(self.name.clone())
     }
+    // Carries the PATH, like every real backend: `PermissionDenied` is defined to,
+    // and a double that answers with its own word instead would let a regression
+    // in the path payload pass here.
     fn create_directory<'a>(
         &'a self,
-        _path: &'a Path,
+        path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(async { Err(VolumeError::PermissionDenied("denied".to_string())) })
+        Box::pin(async move { Err(VolumeError::PermissionDenied(path.display().to_string())) })
     }
     fn create_file<'a>(
         &'a self,
-        _path: &'a Path,
+        path: &'a Path,
         _content: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(async { Err(VolumeError::PermissionDenied("denied".to_string())) })
+        Box::pin(async move { Err(VolumeError::PermissionDenied(path.display().to_string())) })
     }
 }
 
@@ -364,10 +357,13 @@ async fn create_directory_core_maps_permission_denied_to_friendly_message() {
     );
     let result = create_directory_core(Some(vid), "/somewhere", "folder").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    let msg = result.unwrap_err();
-    assert!(msg.contains("Permission denied"), "got: {msg}");
-    assert!(msg.contains("folder") && msg.contains("/somewhere"), "got: {msg}");
+    // The volume's own refusal rides through untouched, path and all, so the
+    // frontend words it from the variant instead of parsing a sentence.
+    let err = result.unwrap_err();
+    assert!(
+        matches!(&err, MutationError::Volume { error: VolumeError::PermissionDenied(path) } if path.contains("/somewhere")),
+        "got: {err:?}",
+    );
 }
 
 #[tokio::test]
@@ -382,10 +378,11 @@ async fn create_file_core_maps_permission_denied_to_friendly_message() {
     );
     let result = create_file_core(Some(vid), "/somewhere", "file.txt").await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    let msg = result.unwrap_err();
-    assert!(msg.contains("Permission denied"), "got: {msg}");
-    assert!(msg.contains("file.txt") && msg.contains("/somewhere"), "got: {msg}");
+    let err = result.unwrap_err();
+    assert!(
+        matches!(&err, MutationError::Volume { error: VolumeError::PermissionDenied(path) } if path.contains("/somewhere")),
+        "got: {err:?}",
+    );
 }
 
 /// Writes a file whose first bytes are a zip signature (enough for the boundary
@@ -405,10 +402,13 @@ async fn create_directory_core_rejects_a_target_inside_an_archive() {
     let err = create_directory_core(None, &parent.to_string_lossy(), "newdir")
         .await
         .expect_err("creating inside an archive must be refused");
-    // allowed-error-string-match: the fn returns a String, and the archive-specific
-    // refusal is the signal that the FORK fired — a natural mkdir failure (volume
-    // not found, ENOTDIR) also errors, so `is_err()` alone wouldn't prove the guard.
-    assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
+    // The archive-specific variant is the signal that the FORK fired: a natural
+    // mkdir failure (volume not found, ENOTDIR) also errors, so `is_err()` alone
+    // wouldn't prove the guard.
+    assert!(
+        matches!(err, MutationError::ArchiveNotEditable),
+        "expected the archive refusal, got: {err:?}",
+    );
 }
 
 #[tokio::test]
@@ -421,8 +421,11 @@ async fn create_file_core_rejects_a_target_inside_an_archive() {
     let err = create_file_core(None, &zip.to_string_lossy(), "new.txt")
         .await
         .expect_err("creating inside an archive must be refused");
-    // allowed-error-string-match: see `create_directory_core_rejects_...`.
-    assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
+    // See `create_directory_core_rejects_...`.
+    assert!(
+        matches!(err, MutationError::ArchiveNotEditable),
+        "expected the archive refusal, got: {err:?}",
+    );
 }
 
 /// Builds a real, parseable zip with the given entries.
@@ -454,16 +457,20 @@ async fn route_archive_create_on_an_existing_inner_name_errors_without_building_
     let err_file = route_archive_create(&root_parent, "existing.txt", ArchiveEntryKind::File, None)
         .await
         .expect_err("mkfile onto an existing inner name must be refused");
-    // allowed-error-string-match: the fn returns a String; the app-wide "already
-    // exists" wording is what the FE keys its friendly message on.
-    assert!(err_file.contains("already exists"), "got: {err_file}");
+    assert!(
+        matches!(&err_file, MutationError::AlreadyExists { name } if name == "existing.txt"),
+        "got: {err_file:?}",
+    );
 
     // mkdir onto an existing name inside a subdirectory.
     let sub_parent = zip.join("sub").to_string_lossy().to_string();
     let err_dir = route_archive_create(&sub_parent, "existing.txt", ArchiveEntryKind::Dir, None)
         .await
         .expect_err("mkdir onto an existing inner name must be refused");
-    assert!(err_dir.contains("already exists"), "got: {err_dir}");
+    assert!(
+        matches!(&err_dir, MutationError::AlreadyExists { name } if name == "existing.txt"),
+        "got: {err_dir:?}",
+    );
 
     // Neither doomed edit built a temp.
     let temps: Vec<_> = fs::read_dir(dir.path())

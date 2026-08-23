@@ -26,6 +26,7 @@ pub use local_posix::LocalPosixVolume;
 /// volume's used bytes for tier-2 scan progress without re-implementing statfs.
 pub(crate) use local_posix::get_space_info_for_path;
 pub(crate) use local_posix::rename_local_exclusive;
+pub(crate) use local_posix::rename_volume_error;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use mtp::MtpVolume;
 #[cfg(any(target_os = "macos", target_os = "linux"))]

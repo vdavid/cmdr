@@ -90,8 +90,7 @@ async fn rename_managed_local_conflict_without_force_is_transparent() {
     fs::write(&new, "new").unwrap();
     let result = rename_managed(old.clone(), new.clone(), false, "root".to_string(), Initiator::User).await;
     assert!(result.is_err());
-    // allowed-error-string-match: the module returns a String; message is the signal
-    assert!(result.unwrap_err().contains("already exists"));
+    assert!(matches!(result.unwrap_err(), MutationError::AlreadyExists { .. }));
     assert!(old.exists() && new.exists(), "both intact on conflict");
     let _ = fs::remove_dir_all(&tmp);
 }
@@ -237,11 +236,14 @@ async fn rename_managed_routes_an_in_archive_rename_to_the_edit_driver() {
     let err = rename_managed(from, to, false, "root".to_string(), Initiator::User)
         .await
         .expect_err("routing needs an app handle the unit test doesn't wire");
-    // allowed-error-string-match: the fn returns a String; the "archive" wording is
-    // how we tell the routing fork fired from a natural rename failure.
+    // The archive-specific variant is how we tell the routing fork fired from a
+    // natural rename failure.
     assert!(
-        err.contains("archive"),
-        "expected the archive-routing signal, got: {err}"
+        matches!(
+            err,
+            MutationError::ArchiveNotEditable | MutationError::ArchiveEditNotReady
+        ),
+        "expected the archive-routing signal, got: {err:?}"
     );
 
     // A cross-boundary rename (OUT of the archive) is refused as a move, a
@@ -251,8 +253,8 @@ async fn rename_managed_routes_an_in_archive_rename_to_the_edit_driver() {
         .await
         .expect_err("a cross-boundary rename is refused");
     assert!(
-        cross.to_lowercase().contains("move"),
-        "a cross-boundary rename should suggest a move instead, got: {cross}"
+        matches!(cross, MutationError::RenameOutOfArchive),
+        "a cross-boundary rename should suggest a move instead, got: {cross:?}"
     );
     let _ = fs::remove_dir_all(&tmp);
 }
@@ -286,9 +288,10 @@ async fn route_archive_rename_onto_an_existing_name_errors_without_building_a_te
     let err = route_archive_rename(&from, &to, "root")
         .await
         .expect_err("renaming onto an existing name must be refused");
-    // allowed-error-string-match: the fn returns a String; the "already exists"
-    // wording is what the FE keys its friendly message on.
-    assert!(err.contains("already exists"), "got: {err}");
+    assert!(
+        matches!(&err, MutationError::AlreadyExists { name } if name == "taken.txt"),
+        "got: {err:?}",
+    );
 
     let temps: Vec<_> = fs::read_dir(&tmp)
         .expect("read dir")

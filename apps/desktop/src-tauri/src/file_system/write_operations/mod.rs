@@ -34,6 +34,7 @@ mod in_flight_temps;
 mod journal;
 mod journal_search;
 mod manager;
+mod mutation_error;
 mod operation_intent;
 mod overwrite;
 #[cfg(target_os = "macos")]
@@ -222,6 +223,7 @@ pub(crate) fn test_retain_failure(operation_id: &str, operation_type: WriteOpera
 // move_out}` / `compress_start` a given transfer reaches, so those four are
 // reached through `super::` inside this module and are NOT re-exported: one
 // routing, one place to keep it right.
+pub use mutation_error::MutationError;
 pub use transfer::volume::scan_for_volume_copy;
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
 // Test-only: the archive-edit and remote-transfer suites drive these drivers

@@ -33,7 +33,7 @@ const PROGRESS_SAMPLE_INTERVAL: Duration = Duration::from_millis(1);
 /// DESTINATION that already is. Handing both to the same path would name the
 /// wrong file in "there's already something called that", which is the one
 /// sentence in the rename flow the user acts on.
-fn rename_error(err: &io::Error, from: &Path, to: &Path) -> VolumeError {
+pub(crate) fn rename_volume_error(err: &io::Error, from: &Path, to: &Path) -> VolumeError {
     match err.kind() {
         io::ErrorKind::AlreadyExists | io::ErrorKind::DirectoryNotEmpty => VolumeError::from_io_at(err, to),
         _ => VolumeError::from_io_at(err, from),
@@ -427,9 +427,10 @@ impl Volume for LocalPosixVolume {
         Box::pin(async move {
             spawn_blocking(move || {
                 if !force && from_abs != to_abs {
-                    rename_local_exclusive(&from_abs, &to_abs).map_err(|e| rename_error(&e, &from_abs, &to_abs))?;
+                    rename_local_exclusive(&from_abs, &to_abs)
+                        .map_err(|e| rename_volume_error(&e, &from_abs, &to_abs))?;
                 } else {
-                    std::fs::rename(&from_abs, &to_abs).map_err(|e| rename_error(&e, &from_abs, &to_abs))?;
+                    std::fs::rename(&from_abs, &to_abs).map_err(|e| rename_volume_error(&e, &from_abs, &to_abs))?;
                 }
                 Ok(())
             })

@@ -9,10 +9,10 @@ use std::path::PathBuf;
 use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
-use super::util::{IpcError, timeout_detached};
+use super::util::{IpcError, timeout_detached, timeout_detached_typed};
 use crate::file_system::write_operations::trash::trash_single_journaled;
 use crate::file_system::write_operations::{
-    RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
+    MutationError, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
 };
 
 // ============================================================================
@@ -50,18 +50,22 @@ pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
 /// locked).
 #[tauri::command]
 #[specta::specta]
-pub async fn check_rename_permission(path: String) -> Result<(), IpcError> {
+pub async fn check_rename_permission(path: String) -> Result<(), MutationError> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
 
-    tokio::time::timeout(
+    match tokio::time::timeout(
         Duration::from_secs(2),
         tokio::task::spawn_blocking(move || check_rename_permission_sync(&path_buf)),
     )
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
-    .map_err(IpcError::from_err)
+    {
+        Ok(Ok(result)) => result,
+        Ok(Err(join_err)) => Err(MutationError::Unexpected {
+            detail: format!("the permission check didn't finish: {join_err}"),
+        }),
+        Err(_) => Err(MutationError::TimedOut),
+    }
 }
 
 /// Validates a new filename and checks for conflicts in the same directory.
@@ -102,7 +106,7 @@ pub async fn rename_file(
     force: bool,
     volume_id: Option<String>,
     initiator: Option<crate::operation_log::types::Initiator>,
-) -> Result<(), IpcError> {
+) -> Result<(), MutationError> {
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
     let (from_path, to_path) = if volume_id_str != "root" {
@@ -115,8 +119,10 @@ pub async fn rename_file(
     // Detached: the 5 s deadline bounds the FE's wait, not the rename. On MTP the
     // rename is a PTP `SetObjectPropValue`, and dropping it mid-transaction
     // wedges the phone; the op finishes behind the timeout instead.
-    timeout_detached(
+    timeout_detached_typed(
         Duration::from_secs(5),
+        || MutationError::TimedOut,
+        |detail| MutationError::Unexpected { detail },
         rename_managed(
             from_path,
             to_path,
@@ -165,8 +171,7 @@ mod tests {
     async fn test_check_rename_permission_nonexistent() {
         let result = check_rename_permission("/nonexistent_12345/file.txt".to_string()).await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct; message is the signal
-        assert!(result.unwrap_err().message.contains("doesn't exist"));
+        assert!(matches!(result.unwrap_err(), MutationError::NotFound { .. }));
     }
 
     // ========================================================================
@@ -287,8 +292,7 @@ mod tests {
         )
         .await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct; message is the signal
-        assert!(result.unwrap_err().message.contains("already exists"));
+        assert!(matches!(result.unwrap_err(), MutationError::AlreadyExists { .. }));
         // Both files still intact
         assert!(old.exists());
         assert!(new.exists());

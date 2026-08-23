@@ -232,6 +232,29 @@ where
     timeout_detached(remaining, fut).await
 }
 
+/// [`timeout_detached`] for a command that ships its OWN typed error enum.
+///
+/// The future's error crosses the wire unchanged and `on_timeout` mints the same
+/// type for the deadline, so the frontend keeps ONE exhaustive union to match on
+/// rather than a typed error plus a stringly-typed timeout beside it. Same
+/// detach semantics as [`timeout_detached`]: the work runs on to its own end.
+pub async fn timeout_detached_typed<T, E>(
+    timeout_duration: Duration,
+    on_timeout: impl FnOnce() -> E,
+    on_join_failure: impl FnOnce(String) -> E,
+    fut: impl Future<Output = Result<T, E>> + Send + 'static,
+) -> Result<T, E>
+where
+    T: Send + 'static,
+    E: Send + 'static,
+{
+    match tokio::time::timeout(timeout_duration, tokio::spawn(fut)).await {
+        Ok(Ok(result)) => result,
+        Ok(Err(join_err)) => Err(on_join_failure(join_err.to_string())),
+        Err(_) => Err(on_timeout()),
+    }
+}
+
 /// Bounds how long the FRONTEND waits, never the work itself.
 ///
 /// `fut` runs in its own task and the timeout races that task's join handle. On

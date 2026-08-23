@@ -20,6 +20,7 @@ use uuid::Uuid;
 
 use super::archive_edit::{self, ArchiveEditRequest};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
+use super::mutation_error::MutationError;
 use super::types::WriteOperationType;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::Changeset;
@@ -76,7 +77,7 @@ pub(crate) async fn rename_managed(
     force: bool,
     volume_id: String,
     initiator: Initiator,
-) -> Result<(), String> {
+) -> Result<(), MutationError> {
     // Renaming a path INSIDE an archive is a zip mutation: route it to the
     // managed archive-edit driver. The `.zip` file itself is a regular file —
     // renaming it must work like any other file — so only a genuinely-inner path
@@ -134,20 +135,34 @@ pub(crate) async fn rename_managed(
                 // the listing cache updates automatically.
                 let volume = crate::file_system::volume::manager::get_volume_manager()
                     .get(&volume_id)
-                    .ok_or_else(|| format!("Volume '{}' not found", volume_id))?;
-                volume.rename(&from, &to, force).await.map_err(|e| format!("{}", e))
+                    .ok_or(MutationError::VolumeGone {
+                        volume_id: volume_id.clone(),
+                    })?;
+                volume.rename(&from, &to, force).await.map_err(MutationError::from)
             } else {
                 // Local filesystem rename on the blocking pool.
                 let from_syscall = from.clone();
                 let to_syscall = to.clone();
                 tokio::task::spawn_blocking(move || {
                     if !force && from_syscall != to_syscall && std::fs::symlink_metadata(&to_syscall).is_ok() {
-                        return Err(format!("'{}' already exists", to_syscall.display()));
+                        return Err(MutationError::AlreadyExists {
+                            name: name_of(&to_syscall),
+                        });
                     }
-                    std::fs::rename(&from_syscall, &to_syscall).map_err(|e| format!("Rename failed: {}", e))
+                    // The two paths mean different things: `ENOENT` is the source
+                    // that's gone, `EEXIST` the destination that isn't free.
+                    std::fs::rename(&from_syscall, &to_syscall).map_err(|e| MutationError::Volume {
+                        error: crate::file_system::volume::backends::rename_volume_error(
+                            &e,
+                            &from_syscall,
+                            &to_syscall,
+                        ),
+                    })
                 })
                 .await
-                .map_err(|e| format!("Task failed: {}", e))??;
+                .map_err(|e| MutationError::Unexpected {
+                    detail: format!("the rename task didn't finish: {e}"),
+                })??;
 
                 // Notify the listing cache about the rename (the volume path does
                 // this itself via `notify_mutation`; the local path must do it
@@ -194,25 +209,24 @@ pub(crate) async fn rename_managed(
 /// Returns `Ok(())` once the managed op has STARTED (it runs asynchronously and
 /// emits `write-progress`/`write-complete`), unlike a plain rename which
 /// completes inline. The op id rides on the `operations-changed` queue snapshot.
-async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result<(), String> {
+async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result<(), MutationError> {
     // Confirmation happened at the routing site (parent-aware `path_is_inside_archive`),
     // so a pure string split suffices — and it works for a REMOTE zip, where the
     // `std::fs` confirm would wrongly fail. A `to` with no archive component means a
     // rename OUT of the archive (a move), which is refused here.
-    let (from_archive, from_inner) = archive::archive_boundary_candidate(from)
-        .ok_or_else(|| "This archive can't be edited right now.".to_string())?;
-    let (to_archive, to_inner) = archive::archive_boundary_candidate(to)
-        .ok_or_else(|| "Renaming an item out of an archive isn't supported. Move it instead.".to_string())?;
+    let (from_archive, from_inner) =
+        archive::archive_boundary_candidate(from).ok_or(MutationError::ArchiveNotEditable)?;
+    let (to_archive, to_inner) = archive::archive_boundary_candidate(to).ok_or(MutationError::RenameOutOfArchive)?;
     if from_archive != to_archive {
-        return Err("Renaming an item across archives isn't supported. Move it instead.".to_string());
+        return Err(MutationError::RenameAcrossArchives);
     }
     // Only zip archives are writable; tar and 7z are browse + extract only.
-    archive_edit::ensure_zip_writable(&from_archive).map_err(|_| "This archive is read-only.".to_string())?;
+    archive_edit::ensure_zip_writable(&from_archive).map_err(|_| MutationError::ArchiveReadOnly)?;
 
     let from_inner = archive_edit::normalize_inner_path(&from_inner);
     let to_inner = archive_edit::normalize_inner_path(&to_inner);
     if from_inner.is_empty() || to_inner.is_empty() {
-        return Err("This archive can't be edited right now.".to_string());
+        return Err(MutationError::ArchiveNotEditable);
     }
 
     // Reject renaming onto an existing inner name up front with the same friendly
@@ -221,11 +235,10 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
     // hit at write time — and no temp is built. (A no-op rename to the same name
     // is left to proceed; the mutator handles it harmlessly.)
     if to_inner != from_inner && archive_edit::archive_inner_exists(volume_id, &from_archive, &to_inner).await {
-        return Err(format!("'{}' already exists", leaf(&to_inner)));
+        return Err(MutationError::AlreadyExists { name: leaf(&to_inner) });
     }
 
-    let events =
-        archive_edit::global_tauri_sink().ok_or_else(|| "The app isn't ready to edit archives yet.".to_string())?;
+    let events = archive_edit::global_tauri_sink().ok_or(MutationError::ArchiveEditNotReady)?;
     let summary = OperationSummaryText {
         source: Some(leaf(&from_inner)),
         destination: Some(leaf(&to_inner)),
@@ -245,8 +258,18 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
     };
     archive_edit::archive_edit_start(events, request, 200)
         .await
-        .map_err(|e| format!("Couldn't start the archive edit: {e:?}"))?;
+        .map_err(|e| MutationError::ArchiveEditCouldntStart {
+            detail: format!("{e:?}"),
+        })?;
     Ok(())
+}
+
+/// The final component of a path, for the "already taken" message the rename
+/// editor shows inline (which quotes the NAME, never the whole path).
+fn name_of(path: &Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.to_string_lossy().into_owned())
 }
 
 /// The last `/`-separated component of an inner path (for the queue summary).
@@ -335,16 +358,16 @@ async fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
 
 /// Synchronous permission check: file exists, parent writable, and (macOS) not
 /// immutable / SIP-protected. Runs in `spawn_blocking` at the command layer.
-pub(crate) fn check_rename_permission_sync(path: &Path) -> Result<(), String> {
+pub(crate) fn check_rename_permission_sync(path: &Path) -> Result<(), MutationError> {
     // Check that the file itself exists
     if std::fs::symlink_metadata(path).is_err() {
-        return Err(format!("'{}' doesn't exist", path.display()));
+        return Err(MutationError::NotFound {
+            path: path.display().to_string(),
+        });
     }
 
     // Check parent directory is writable
-    let parent = path
-        .parent()
-        .ok_or_else(|| "Can't rename the root directory".to_string())?;
+    let parent = path.parent().ok_or(MutationError::CantRenameVolumeRoot)?;
     check_dir_writable(parent)?;
 
     // Check macOS-specific flags (immutable, SIP, locks)
@@ -356,35 +379,34 @@ pub(crate) fn check_rename_permission_sync(path: &Path) -> Result<(), String> {
 
 /// Checks if a directory is writable using access(W_OK).
 #[cfg(unix)]
-fn check_dir_writable(dir: &Path) -> Result<(), String> {
+fn check_dir_writable(dir: &Path) -> Result<(), MutationError> {
     use std::ffi::CString;
     use std::os::unix::ffi::OsStrExt;
 
-    let c_path = CString::new(dir.as_os_str().as_bytes()).map_err(|_| "Invalid path".to_string())?;
+    let c_path = CString::new(dir.as_os_str().as_bytes()).map_err(|_| MutationError::NameHasDisallowedCharacter)?;
     // SAFETY: c_path is a valid null-terminated C string
     let result = unsafe { libc::access(c_path.as_ptr(), libc::W_OK) };
     if result != 0 {
-        return Err(format!(
-            "The folder '{}' is not writable. Check folder permissions in Finder.",
-            dir.display()
-        ));
+        return Err(MutationError::ParentNotWritable {
+            path: dir.display().to_string(),
+        });
     }
     Ok(())
 }
 
 #[cfg(not(unix))]
-fn check_dir_writable(_dir: &Path) -> Result<(), String> {
+fn check_dir_writable(_dir: &Path) -> Result<(), MutationError> {
     Ok(())
 }
 
 /// Checks macOS-specific immutable/SIP/lock flags.
 #[cfg(target_os = "macos")]
-fn check_macos_flags(path: &Path) -> Result<(), String> {
+fn check_macos_flags(path: &Path) -> Result<(), MutationError> {
     use std::ffi::CString;
     use std::mem::MaybeUninit;
     use std::os::unix::ffi::OsStrExt;
 
-    let c_path = CString::new(path.as_os_str().as_bytes()).map_err(|_| "Invalid path".to_string())?;
+    let c_path = CString::new(path.as_os_str().as_bytes()).map_err(|_| MutationError::NameHasDisallowedCharacter)?;
 
     let mut stat = MaybeUninit::<libc::stat>::uninit();
     // SAFETY: c_path is valid, stat is a valid pointer
@@ -403,12 +425,14 @@ fn check_macos_flags(path: &Path) -> Result<(), String> {
     const SF_IMMUTABLE: u32 = 0x00020000;
 
     if (stat.st_flags & UF_IMMUTABLE) != 0 {
-        return Err(
-            "This file is locked (immutable flag). Unlock it in Finder > Get Info before renaming.".to_string(),
-        );
+        return Err(MutationError::FileLocked {
+            path: path.display().to_string(),
+        });
     }
     if (stat.st_flags & SF_IMMUTABLE) != 0 {
-        return Err("This file is protected by System Integrity Protection and can't be renamed.".to_string());
+        return Err(MutationError::SipProtected {
+            path: path.display().to_string(),
+        });
     }
 
     Ok(())

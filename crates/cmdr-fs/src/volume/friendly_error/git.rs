@@ -94,7 +94,7 @@ impl FriendlyGitErrorKind {
 
 /// A classified git failure: the [`FriendlyGitErrorKind`], the path it was
 /// about, and an optional raw message for the technical-details panel.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendlyGitError {
     /// What went wrong.
@@ -103,7 +103,11 @@ pub struct FriendlyGitError {
     pub path: String,
     /// Raw underlying message (for technical-details panels). Never shown
     /// without context.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ///
+    /// Serialized as `null` when absent rather than omitted: this struct crosses
+    /// IPC inside `VolumeError::FriendlyGit`, and specta can't represent a
+    /// conditionally-omitted field in one unified type.
+    #[serde(default)]
     pub raw: Option<String>,
 }
 

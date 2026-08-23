@@ -26,6 +26,7 @@ use uuid::Uuid;
 
 use super::archive_edit::{self, ArchiveEditRequest};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
+use super::mutation_error::MutationError;
 use super::types::WriteOperationType;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{AddEntry, AddSource, Changeset};
@@ -59,7 +60,7 @@ pub(crate) async fn create_directory_managed(
     parent_path: String,
     name: String,
     initiator: crate::operation_log::types::Initiator,
-) -> Result<String, String> {
+) -> Result<String, MutationError> {
     // A parent that crosses into a `.zip` means the new folder lands INSIDE the
     // archive: route to the managed archive-edit driver (an O(archive) rewrite
     // with a real progress bar), not the instant path. Returns the operation id
@@ -115,7 +116,7 @@ pub(crate) async fn create_file_managed(
     parent_path: String,
     name: String,
     initiator: crate::operation_log::types::Initiator,
-) -> Result<String, String> {
+) -> Result<String, MutationError> {
     // See `create_directory_managed`: a `.zip`-crossing parent routes the new
     // (empty) file into the archive via the managed edit driver (parent-aware, so
     // a REMOTE zip routes too).
@@ -170,14 +171,14 @@ async fn route_archive_create(
     name: &str,
     kind: ArchiveEntryKind,
     volume_id: Option<String>,
-) -> Result<String, String> {
+) -> Result<String, MutationError> {
     // Confirmation happened at the routing site (parent-aware
     // `path_crosses_archive_boundary`), so a pure string split suffices — and it
     // works for a REMOTE zip, where the `std::fs` confirm would wrongly fail.
-    let (archive_path, inner_parent) = archive::archive_boundary_candidate(Path::new(parent_path))
-        .ok_or_else(|| "This archive can't be edited right now.".to_string())?;
+    let (archive_path, inner_parent) =
+        archive::archive_boundary_candidate(Path::new(parent_path)).ok_or(MutationError::ArchiveNotEditable)?;
     // Only zip archives are writable; tar and 7z are browse + extract only.
-    archive_edit::ensure_zip_writable(&archive_path).map_err(|_| "This archive is read-only.".to_string())?;
+    archive_edit::ensure_zip_writable(&archive_path).map_err(|_| MutationError::ArchiveReadOnly)?;
     let inner_path = archive_edit::join_inner_path(&inner_parent, name);
 
     // Reject a duplicate up front with the same friendly message the real-FS
@@ -186,7 +187,7 @@ async fn route_archive_create(
     // write time — and no temp is built for a doomed edit.
     let parent_volume_id = volume_id.as_deref().unwrap_or("root");
     if archive_edit::archive_inner_exists(parent_volume_id, &archive_path, &inner_path).await {
-        return Err(format!("'{name}' already exists"));
+        return Err(MutationError::AlreadyExists { name: name.to_string() });
     }
 
     let changeset = match kind {
@@ -203,8 +204,7 @@ async fn route_archive_create(
         },
     };
 
-    let events =
-        archive_edit::global_tauri_sink().ok_or_else(|| "The app isn't ready to edit archives yet.".to_string())?;
+    let events = archive_edit::global_tauri_sink().ok_or(MutationError::ArchiveEditNotReady)?;
     let request = ArchiveEditRequest {
         archive_path,
         parent_volume_id: volume_id.unwrap_or_else(|| "root".to_string()),
@@ -220,7 +220,9 @@ async fn route_archive_create(
     };
     let started = archive_edit::archive_edit_start(events, request, 200)
         .await
-        .map_err(|e| format!("Couldn't start the archive edit: {e:?}"))?;
+        .map_err(|e| MutationError::ArchiveEditCouldntStart {
+            detail: format!("{e:?}"),
+        })?;
     Ok(started.operation_id)
 }
 
@@ -266,12 +268,12 @@ pub(crate) async fn create_directory_core(
     volume_id: Option<String>,
     parent_path: &str,
     name: &str,
-) -> Result<(PathBuf, String), String> {
+) -> Result<(PathBuf, String), MutationError> {
     if name.is_empty() {
-        return Err("Folder name cannot be empty".to_string());
+        return Err(MutationError::NameEmpty);
     }
     if name.contains('/') || name.contains('\0') {
-        return Err("Folder name contains invalid characters".to_string());
+        return Err(MutationError::NameHasDisallowedCharacter);
     }
 
     // Defensive fallback: the managed wrapper (`create_directory_managed`) routes
@@ -282,7 +284,7 @@ pub(crate) async fn create_directory_core(
     // `path_crosses` (NOT `path_is_inside`) so a `.zip` file AS the parent (a child
     // at the archive root) is caught too.
     if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
-        return Err("Creating inside an archive goes through the archive-edit path, not here".to_string());
+        return Err(MutationError::ArchiveNotEditable);
     }
 
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
@@ -296,13 +298,10 @@ pub(crate) async fn create_directory_core(
         // ignore set; no-ops for paths outside ~/Downloads.
         crate::downloads::note_pending_write_for_cmdr(&new_path);
 
-        volume.create_directory(&new_path).await.map_err(|e| match e {
-            crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name),
-            crate::file_system::VolumeError::PermissionDenied(_) => {
-                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
-            }
-            _ => format!("Couldn't create folder: {}", e),
-        })?;
+        volume
+            .create_directory(&new_path)
+            .await
+            .map_err(|e| named_conflict_or_volume(e, name))?;
 
         return Ok((new_path, expanded_path));
     }
@@ -313,7 +312,21 @@ pub(crate) async fn create_directory_core(
     // synchronous `std::fs::create_dir` on the async executor, which would
     // violate this module's "every FS-touching command is timed" contract on a
     // hung mount.
-    Err(format!("Volume not found: {}", volume_id))
+    Err(MutationError::VolumeGone { volume_id })
+}
+
+/// Reports a taken name by the NAME the user typed, and everything else by the
+/// volume's own typed answer.
+///
+/// The name matters because the New Folder / New File dialog quotes it back
+/// inline, right under the field the user is still standing in; the volume's
+/// `AlreadyExists` carries the full path, which reads as a different thing
+/// entirely in a one-line inline message.
+fn named_conflict_or_volume(e: crate::file_system::VolumeError, name: &str) -> MutationError {
+    match e {
+        crate::file_system::VolumeError::AlreadyExists(_) => MutationError::AlreadyExists { name: name.to_string() },
+        other => MutationError::Volume { error: other },
+    }
 }
 
 /// Core file-creation logic. Same shape as [`create_directory_core`].
@@ -321,12 +334,12 @@ pub(crate) async fn create_file_core(
     volume_id: Option<String>,
     parent_path: &str,
     name: &str,
-) -> Result<(PathBuf, String), String> {
+) -> Result<(PathBuf, String), MutationError> {
     if name.is_empty() {
-        return Err("File name cannot be empty".to_string());
+        return Err(MutationError::NameEmpty);
     }
     if name.contains('/') || name.contains('\0') {
-        return Err("File name contains invalid characters".to_string());
+        return Err(MutationError::NameHasDisallowedCharacter);
     }
 
     // Defensive fallback, same as `create_directory_core`: the managed wrapper
@@ -335,7 +348,7 @@ pub(crate) async fn create_file_core(
     // in production. It guards a direct `*_core` caller (tests) from a bogus
     // plain-FS write into a `.zip`. `path_crosses` also catches a `.zip`-file parent.
     if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
-        return Err("Creating inside an archive goes through the archive-edit path, not here".to_string());
+        return Err(MutationError::ArchiveNotEditable);
     }
 
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
@@ -349,20 +362,17 @@ pub(crate) async fn create_file_core(
         // set; no-ops for paths outside ~/Downloads.
         crate::downloads::note_pending_write_for_cmdr(&new_path);
 
-        volume.create_file(&new_path, b"").await.map_err(|e| match e {
-            crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name),
-            crate::file_system::VolumeError::PermissionDenied(_) => {
-                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
-            }
-            _ => format!("Couldn't create file: {}", e),
-        })?;
+        volume
+            .create_file(&new_path, b"")
+            .await
+            .map_err(|e| named_conflict_or_volume(e, name))?;
 
         return Ok((new_path, expanded_path));
     }
 
     // See `create_directory_core`: an unregistered volume means an unmount race;
     // error out instead of an untimed `std::fs::File::create_new` fallback.
-    Err(format!("Volume not found: {}", volume_id))
+    Err(MutationError::VolumeGone { volume_id })
 }
 
 /// Returns true if a synthetic entry diff should be emitted for this volume.

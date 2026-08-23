@@ -347,7 +347,9 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
             Some(crate::operation_log::types::Initiator::AiClient),
         )
         .await
-        .map_err(|e| ToolError::internal(e.message))?;
+        // `Display` on a `MutationError` is the log/diagnostic form, which is what
+        // an MCP tool error is: a machine-facing report, not user-facing prose.
+        .map_err(|e| ToolError::internal(e.to_string()))?;
         Ok(json!(format!("OK: Renamed to {new_name}.")))
     } else {
         // Resolution lives in the FE (it holds the live listing): the mcp-rename

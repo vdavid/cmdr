@@ -487,14 +487,15 @@ export const commands = {
   /**
    *  Creates a folder and returns its new path. Thin pass-through to the managed
    *  create op (`write_operations::create`): expand tilde (root only), wrap in the
-   *  5 s write timeout, map to `IpcError`.
+   *  5 s write timeout, and ship the typed `MutationError` the frontend renders
+   *  its words from.
    */
   createDirectory: (
     volumeId: string | null,
     parentPath: string,
     name: string,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) => typedError<string, IpcError>(__TAURI_INVOKE('create_directory', { volumeId, parentPath, name, initiator })),
+  ) => typedError<string, MutationError>(__TAURI_INVOKE('create_directory', { volumeId, parentPath, name, initiator })),
   /**
    *  Creates an empty file and returns its new path. Same shape as
    *  [`create_directory`].
@@ -504,7 +505,7 @@ export const commands = {
     parentPath: string,
     name: string,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) => typedError<string, IpcError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name, initiator })),
+  ) => typedError<string, MutationError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name, initiator })),
   /**
    *  Stores `password` for the archive at `archive_path` on `parent_volume_id`,
    *  overwriting any previous one (so a fresh attempt replaces a rejected password).
@@ -1088,7 +1089,7 @@ export const commands = {
    *  locked).
    */
   checkRenamePermission: (path: string) =>
-    typedError<null, IpcError>(__TAURI_INVOKE('check_rename_permission', { path })),
+    typedError<null, MutationError>(__TAURI_INVOKE('check_rename_permission', { path })),
   /**
    *  Validates a new filename and checks for conflicts in the same directory.
    *  Uses inode comparison to detect case-only renames (valid on case-insensitive APFS).
@@ -1113,7 +1114,7 @@ export const commands = {
     force: boolean,
     volumeId: string | null,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) => typedError<null, IpcError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
+  ) => typedError<null, MutationError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, IpcError>(__TAURI_INVOKE('move_to_trash', { path })),
   // Returns the current restricted-paths snapshot (sorted, absolute paths).
@@ -5800,6 +5801,26 @@ export type Freshness =
   | 'failed'
 
 /**
+ *  A classified git failure: the [`FriendlyGitErrorKind`], the path it was
+ *  about, and an optional raw message for the technical-details panel.
+ */
+export type FriendlyGitError = {
+  // What went wrong.
+  kind: FriendlyGitErrorKind
+  // Repo path or path under inspection, for log triage.
+  path: string
+  /**
+   *  Raw underlying message (for technical-details panels). Never shown
+   *  without context.
+   *
+   *  Serialized as `null` when absent rather than omitted: this struct crosses
+   *  IPC inside `VolumeError::FriendlyGit`, and specta can't represent a
+   *  conditionally-omitted field in one unified type.
+   */
+  raw?: string | null
+}
+
+/**
  *  What went wrong in the git layer. The frontend renders the words from its
  *  parallel factory; nothing here is user-facing prose.
  */
@@ -7855,6 +7876,100 @@ export type MtpStorageRemoved = {
   deviceId: string
   storageId: number
 }
+
+/**
+ *  A typed refusal from `rename_file`, `create_directory`, `create_file`, or
+ *  `check_rename_permission`.
+ */
+export type MutationError =
+  // The name was blank, or only whitespace.
+  | { type: 'nameEmpty' }
+  // The name held a `/` or a null byte, neither of which any filesystem takes.
+  | { type: 'nameHasDisallowedCharacter' }
+  // The item to rename isn't there any more.
+  | {
+      type: 'notFound'
+      // The path that was asked for.
+      path: string
+    }
+  // A volume's root has no parent to be renamed within.
+  | { type: 'cantRenameVolumeRoot' }
+  // The containing folder refuses writes, so the rename can't land.
+  | {
+      type: 'parentNotWritable'
+      // The folder, so the message can name it.
+      path: string
+    }
+  // macOS's user-immutable flag ("Locked" in Get Info) is set.
+  | {
+      type: 'fileLocked'
+      // The locked item.
+      path: string
+    }
+  // System Integrity Protection owns this path; no permission grant unlocks it.
+  | {
+      type: 'sipProtected'
+      // The protected item.
+      path: string
+    }
+  /**
+   *  The volume left the registry between the caller reading it and the write
+   *  (an unmount race). ❗ Not the same as a disconnected device: there is no
+   *  backend left to ask.
+   */
+  | {
+      type: 'volumeGone'
+      // The id that no longer resolves.
+      volumeId: string
+    }
+  // The path crosses into an archive that can't be opened for editing right now.
+  | { type: 'archiveNotEditable' }
+  // The archive format is browse-and-extract only (tar, 7z); only zip is writable.
+  | { type: 'archiveReadOnly' }
+  // Renaming can't lift an entry OUT of an archive; that's a move.
+  | { type: 'renameOutOfArchive' }
+  // Renaming can't carry an entry from one archive into another; that's a move.
+  | { type: 'renameAcrossArchives' }
+  /**
+   *  The archive-edit driver isn't wired up yet (no Tauri event sink), which
+   *  only happens before the app finishes starting.
+   */
+  | { type: 'archiveEditNotReady' }
+  // The archive edit refused to start.
+  | {
+      type: 'archiveEditCouldntStart'
+      // The driver's own words, for the technical-details disclosure.
+      detail: string
+    }
+  // Something already holds that name.
+  | {
+      type: 'alreadyExists'
+      // The name the user asked for, which is what the message quotes.
+      name: string
+    }
+  // The volume refused, and said why in its own vocabulary.
+  | {
+      type: 'volume'
+      // The backend's typed answer, rendered by the frontend's volume factory.
+      error: VolumeError
+    }
+  /**
+   *  The deadline passed before the volume answered. ❗ The write was NOT
+   *  cancelled: `timeout_detached` bounds the frontend's wait, not the work,
+   *  so it may still land.
+   */
+  | { type: 'timedOut' }
+  /**
+   *  The one honest fallback, for a failure nothing above classifies (a
+   *  panicked task, a join failure). The frontend renders a single "something
+   *  went wrong" message and shows `detail` only as technical detail; ❌ it
+   *  never renders `detail` as the message itself.
+   */
+  | {
+      type: 'unexpected'
+      // What the layer below reported, for the log and the details disclosure.
+      detail: string
+    }
 
 export type NegotiatedSummaryDto = {
   dialect: string
@@ -11033,6 +11148,137 @@ export type VolumeCopyScanResult = {
   destSpace: SpaceInfo | null
   conflicts: ScanConflict[]
 }
+
+/**
+ *  Error type for volume operations, and the value the frontend renders words
+ *  from.
+ *
+ *  ❗ **This crosses IPC as a discriminated union and the frontend owns 100% of
+ *  the prose.** Adjacently tagged (`{ "type": "notFound", "data": "/path" }`)
+ *  rather than the internally-tagged shape the rest of the app uses, because
+ *  most variants carry a positional payload; converting all of them to named
+ *  fields would touch ~380 call sites and buy only a flatter JSON object.
+ *  Rename a variant and the TS union member has to move with it, the same
+ *  contract `ListingErrorReason` and `FriendlyGitErrorKind` carry.
+ *
+ *  The `String`s in here are LOG AND TECHNICAL-DETAIL text, never a sentence
+ *  shown on its own: the path-carrying variants carry a path (see
+ *  [`from_io_at`](Self::from_io_at)), and the diagnostic-carrying ones carry
+ *  whatever the backend said, for the technical-details disclosure.
+ */
+export type VolumeError =
+  // No such path. Carries the path.
+  | { type: 'notFound'; data: string }
+  // The OS refused access. Carries the path.
+  | { type: 'permissionDenied'; data: string }
+  // The destination already exists. Carries the path.
+  | { type: 'alreadyExists'; data: string }
+  // Not supported by this volume type.
+  | { type: 'notSupported' }
+  // Device went away mid-operation.
+  | { type: 'deviceDisconnected'; data: string }
+  /**
+   *  The device's session died mid-operation but the device itself is still
+   *  attached, and a reopen is already running in the background (MTP: a PTP
+   *  `DeviceReset`, typically after a cancelled or timed-out transfer). The
+   *  operation that tripped it is lost, but retrying in a few seconds works —
+   *  ❌ never map this to `DeviceDisconnected`, which would tear a live device
+   *  out of the sidebar. MTP-only today. See `mtp/connection/DETAILS.md`
+   *  § "Session reset is not a disconnect".
+   */
+  | { type: 'deviceSessionReset'; data: string }
+  // Device or volume is read-only.
+  | { type: 'readOnly'; data: string }
+  // Device storage is full.
+  | {
+      type: 'storageFull'
+      data: {
+        // What the backend reported, for the technical-details panel.
+        message: string
+      }
+    }
+  // Connection timed out.
+  | { type: 'connectionTimeout'; data: string }
+  // Operation was cancelled by the user (progress callback returned Break).
+  | { type: 'cancelled'; data: string }
+  // The path is a directory, not a file (for example, SMB STATUS_FILE_IS_A_DIRECTORY).
+  | { type: 'isADirectory'; data: string }
+  /**
+   *  The destination can't hold this name, whatever it's asked to do with it.
+   *
+   *  Distinct from [`NotFound`](Self::NotFound): the backend never got as far as
+   *  looking, so retrying the same name can only fail the same way. The only fix
+   *  is a different name, which is why it can't ride as a generic
+   *  [`IoError`](Self::IoError) — that one offers a retry.
+   *
+   *  SMB raises it from `STATUS_OBJECT_NAME_INVALID`. smb2 maps the characters
+   *  SMB2 forbids outright (`"`, `*`, `:`, `<`, `>`, `?`, `\`, `|`, the control
+   *  characters, and a trailing space or period) into the Unicode private-use
+   *  area, so those copy through fine and what reaches here is a reserved Windows
+   *  device name (`CON`, `NUL`, `LPT1`), a name past the server's own length
+   *  limit, or a character the server's filesystem can't store. Carries what the
+   *  backend reported, for the technical-details panel.
+   */
+  | { type: 'invalidName'; data: string }
+  /**
+   *  The file is in `STATUS_DELETE_PENDING`: a delete has been requested on the server
+   *  but at least one open handle is keeping the file alive. The file will disappear
+   *  once the last handle closes; any new `Create` (stat, open, write) on the path
+   *  fails with this status in the meantime. SMB-only today.
+   */
+  | { type: 'deletePending'; data: string }
+  /**
+   *  The destination folder's cached handle was stale and the backend rejected
+   *  a write into it (MTP: the device re-keyed its object handles since the
+   *  folder was last listed). The backend has already refreshed its cache, so
+   *  the transfer engine retries the write once with a fresh source stream.
+   *  Carries the destination folder path for a destination-correct message if
+   *  the retry also fails. MTP-only today.
+   */
+  | { type: 'staleDestinationHandle'; data: string }
+  /**
+   *  Anything the backend couldn't classify further. The classifier
+   *  re-dispatches on `raw_os_error` when one is present.
+   */
+  | {
+      type: 'ioError'
+      data: {
+        // What the OS or backend reported, for the technical-details panel.
+        message: string
+        // The errno behind it, when there was one.
+        rawOsError: number | null
+      }
+    }
+  /**
+   *  A password-protected archive needs a password to browse (header-encrypted
+   *  7z) or extract (any encrypted entry). `wrong_attempt` is `false` when no
+   *  password has been tried and `true` when the supplied one was rejected, so
+   *  the frontend can prompt afresh vs. say "that password didn't work". The
+   *  archive backend raises this; the frontend supplies a per-archive password
+   *  via `set_archive_password` and retries. Carries no path — the failing path
+   *  is the one the caller was reading.
+   */
+  | {
+      type: 'needsPassword'
+      data: {
+        /**
+         *  `false` when no password has been tried yet, `true` when the supplied
+         *  one was rejected.
+         */
+        wrongAttempt: boolean
+      }
+    }
+  /**
+   *  Structured git-layer failure.
+   *
+   *  Carries the full `FriendlyGitError` (kind + path + optional raw detail)
+   *  so the listing pipeline's `listing_error_from_volume_error` ships the
+   *  typed git kind to `ErrorPane` as the `Git` reason (category from the
+   *  kind, no baked prose) without parsing strings; the FE renders the
+   *  git-specific copy. Built by the volume hooks in `file_system::git::mod`
+   *  (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`).
+   */
+  | { type: 'friendlyGit'; data: FriendlyGitError }
 
 /**
  *  Per-volume index status for the per-drive freshness badge.

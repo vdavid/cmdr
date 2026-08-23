@@ -355,8 +355,28 @@ pub enum ConnectionLiveness {
     Dead,
 }
 
-/// Error type for volume operations.
-#[derive(Debug, Clone)]
+/// Error type for volume operations, and the value the frontend renders words
+/// from.
+///
+/// ❗ **This crosses IPC as a discriminated union and the frontend owns 100% of
+/// the prose.** Adjacently tagged (`{ "type": "notFound", "data": "/path" }`)
+/// rather than the internally-tagged shape the rest of the app uses, because
+/// most variants carry a positional payload; converting all of them to named
+/// fields would touch ~380 call sites and buy only a flatter JSON object.
+/// Rename a variant and the TS union member has to move with it, the same
+/// contract `ListingErrorReason` and `FriendlyGitErrorKind` carry.
+///
+/// The `String`s in here are LOG AND TECHNICAL-DETAIL text, never a sentence
+/// shown on its own: the path-carrying variants carry a path (see
+/// [`from_io_at`](Self::from_io_at)), and the diagnostic-carrying ones carry
+/// whatever the backend said, for the technical-details disclosure.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(
+    tag = "type",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum VolumeError {
     /// No such path. Carries the path.
     NotFound(String),
@@ -447,6 +467,10 @@ pub enum VolumeError {
     FriendlyGit(crate::volume::friendly_error::git::FriendlyGitError),
 }
 
+/// ❗ **For logs and debugging only.** Nothing a user reads comes from here: the
+/// frontend renders every word from the typed variant (`src/lib/error-messages/`
+/// and `src/lib/file-operations/…`), through the message catalog, in ten locales.
+/// A `to_string()` that reaches a UI surface is a bug, not a shortcut.
 impl std::fmt::Display for VolumeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

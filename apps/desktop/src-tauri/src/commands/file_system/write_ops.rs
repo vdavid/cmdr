@@ -1,7 +1,7 @@
 //! Tauri commands for write operations (create, copy, move, delete, trash) and scan preview.
 
 use crate::file_system::write_operations::{
-    ConflictId, ConflictResolution, ConflictResolutionOutcome, ScanPreviewStartResult,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, MutationError, ScanPreviewStartResult,
     cancel_scan_preview as ops_cancel_scan_preview, create_directory_managed as ops_create_directory_managed,
     create_file_managed as ops_create_file_managed, get_scan_preview_totals as ops_get_scan_preview_totals,
     resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
@@ -22,7 +22,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::time::Duration;
 
-use crate::commands::util::IpcError;
+use crate::commands::util::timeout_detached_typed;
 use crate::file_system::Volume;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::manager::get_volume_manager;
@@ -100,7 +100,8 @@ fn reject_if_archive_inner<'a>(paths: impl IntoIterator<Item = &'a PathBuf>) -> 
 
 /// Creates a folder and returns its new path. Thin pass-through to the managed
 /// create op (`write_operations::create`): expand tilde (root only), wrap in the
-/// 5 s write timeout, map to `IpcError`.
+/// 5 s write timeout, and ship the typed `MutationError` the frontend renders
+/// its words from.
 #[tauri::command]
 #[specta::specta]
 pub async fn create_directory(
@@ -108,15 +109,15 @@ pub async fn create_directory(
     parent_path: String,
     name: String,
     initiator: Option<Initiator>,
-) -> Result<String, IpcError> {
+) -> Result<String, MutationError> {
     let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
-    tokio::time::timeout(
+    timeout_detached_typed(
         Duration::from_secs(5),
+        || MutationError::TimedOut,
+        |detail| MutationError::Unexpected { detail },
         ops_create_directory_managed(volume_id, expanded_parent, name, initiator.unwrap_or(Initiator::User)),
     )
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(IpcError::from_err)
 }
 
 /// Creates an empty file and returns its new path. Same shape as
@@ -128,15 +129,15 @@ pub async fn create_file(
     parent_path: String,
     name: String,
     initiator: Option<Initiator>,
-) -> Result<String, IpcError> {
+) -> Result<String, MutationError> {
     let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
-    tokio::time::timeout(
+    timeout_detached_typed(
         Duration::from_secs(5),
+        || MutationError::TimedOut,
+        |detail| MutationError::Unexpected { detail },
         ops_create_file_managed(volume_id, expanded_parent, name, initiator.unwrap_or(Initiator::User)),
     )
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(IpcError::from_err)
 }
 
 /// Expands tilde for local (`root`) parents only; volume paths are
