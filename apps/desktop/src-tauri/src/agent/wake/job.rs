@@ -19,7 +19,8 @@
 use rusqlite::Connection;
 use tokio_util::sync::CancellationToken;
 
-use super::quiet::{QuietWatch, discard_quiet_thread};
+use super::quiet::discard_quiet_thread;
+use super::watch::WakeToolWatch;
 use super::{Digest, Inbox, ScoredBundle, WakeReadiness, WakeTier, compact, persist, tier_of};
 use crate::agent::chat::context::ContextEnvelope;
 use crate::agent::chat::runtime::{ChatEventSink, ToolDispatcher, TurnParams, TurnResult, UserTurn, run_turn};
@@ -270,7 +271,7 @@ pub async fn run_wake(
     // The watch is what turns the model's typed `nothing_to_suggest` call into an outcome. It
     // wraps the wake's dispatcher and nothing else's, which is what leaves the tool inert in
     // the rail.
-    let watch = QuietWatch::new(dispatcher.as_ref());
+    let watch = WakeToolWatch::new(dispatcher.as_ref());
     let result = run_prepared_wake(
         llm.as_ref(),
         &watch,

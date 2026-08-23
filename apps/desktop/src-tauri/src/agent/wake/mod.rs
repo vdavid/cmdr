@@ -54,6 +54,7 @@ mod runner;
 mod settings;
 mod snapshot;
 mod staged;
+mod watch;
 mod writer;
 
 #[cfg(test)]
@@ -73,11 +74,12 @@ pub use job::{
     run_prepared_wake, run_wake, thread_title, wake_turn_params,
 };
 pub use persist::{clear, load, save_all, save_row};
-pub use quiet::{QuietWatch, discard_quiet_thread};
+pub use quiet::discard_quiet_thread;
 pub use readiness::{AgentGates, WakeReadiness, readiness};
 pub use settings::WakeSettings;
 pub use snapshot::{readiness_snapshot, refresh_readiness};
 pub use staged::{AgentWakeStaged, init_wake_staged_emitter};
+pub use watch::WakeToolWatch;
 pub use writer::start;
 
 /// How coarsely the app quantizes the tap's batch instants before admitting them.

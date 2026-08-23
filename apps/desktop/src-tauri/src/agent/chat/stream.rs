@@ -279,22 +279,22 @@ pub fn emit_turn_event(conversation_id: i64, event: AskCmdrStreamEvent) {
 }
 
 /// Forward every runtime event a turn produces onto the transport, until the turn drops its
-/// sender. Answers how many rename proposals went past, the one number a wake's log line needs.
+/// sender.
 ///
 /// ⚠️ Shared by the rail and by a wake so the two can't drift into streaming different things:
 /// one transport is only worth having if there is also one projection.
+///
+/// ❌ **Don't count proposals from this stream.** Only `propose_rename_plan` emits a
+/// `ProposalReady` (it opens a review dialog); the whole `propose_suggestions` half streams
+/// nothing, so a count taken here would read zero for most of what an agent actually stages.
+/// `agent/wake/watch.rs` counts the tool CALLS instead.
 pub async fn forward_to_windows(
     conversation_id: i64,
     events: &mut tokio::sync::mpsc::UnboundedReceiver<AgentChatEvent>,
-) -> usize {
-    let mut proposals = 0usize;
+) {
     while let Some(event) = events.recv().await {
-        if matches!(event, AgentChatEvent::ProposalReady { .. }) {
-            proposals += 1;
-        }
         emit_turn_event(conversation_id, to_wire_event(event));
     }
-    proposals
 }
 
 #[cfg(test)]

@@ -391,10 +391,15 @@ count. A THIRD event rather than a field on either of the other two, because it 
 carries progress, the indicator carries state, and a subscriber reconnecting to a state event would re-raise the same
 toast on every reload.
 
-`runner::run` emits it from the proposal count `forward_to_windows` returns, after the quiet-wake branch and BEFORE the
+`runner::run` emits it from `WakeToolWatch::proposals()` (`watch.rs`), after the quiet-wake branch and BEFORE the
 outcome line, whatever the turn then ended as. A cancel or a provider failure after the model already staged a group
 leaves that group in the store, waiting; staying quiet about it would hide work the user is expected to review.
 `announce_staged` no-ops at zero, so the caller does not have to remember.
+
+⚠️ **The count comes from the tool CALLS, ❌ never from the streamed events.** Only `propose_rename_plan` emits a
+`ProposalReady` — it opens a review dialog — while the whole `propose_suggestions` half (move, copy, trash, delete,
+compress, extract) streams nothing at all. A count taken off the stream reads zero for most of what a wake stages, and
+the toast never fires.
 
 **The `askCmdr.wakeToast` gate is the FRONTEND's.** The event says what happened; whether a window makes a noise about
 it is that window's business, and the settings store already updates live there. Gating the emit instead would mean a
@@ -441,8 +446,9 @@ a claim in one thread being backed by facts delivered to another, and the wrong 
 `ImageFactsLedger` refuse every content-citing proposal.
 
 **The sink** is a plain `UnboundedSender<AgentChatEvent>` the wake thread drains itself, through
-`stream::forward_to_windows` — the same projection a rail send uses, so the two can't drift. It
-counts proposals on the way past, the one number the outcome log line needs.
+`stream::forward_to_windows` — the same projection a rail send uses, so the two can't drift. What
+the turn DECIDED is read off `WakeToolWatch` instead (§ Saying a wake staged something), never off
+this stream.
 
 **The thread is announced at both ends.** `Started` goes out as the turn begins, which is what
 puts a wake's thread in the session list as it is created (nothing else says so: `SuggestionsChanged`
@@ -467,7 +473,7 @@ the user's session list must look exactly as it did. It says so by calling `noth
 
 **Typed, never phrased.** Reading "nothing to report" out of the model's prose would classify
 control flow by text, which `error-string-match` forbids and which breaks on the first copy edit
-or non-English reply. `QuietWatch` (`quiet.rs`) matches `ToolId::NothingToSuggest`.
+or non-English reply. `WakeToolWatch` (`watch.rs`) matches `ToolId::NothingToSuggest`.
 
 **The watch is a dispatcher decorator, and only a wake builds one.** It forwards every call
 unchanged and records that this one happened. That placement is the whole design: the tool itself

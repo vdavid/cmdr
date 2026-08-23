@@ -7,6 +7,7 @@ mod interest;
 mod job;
 mod readiness;
 mod tap;
+mod watch;
 
 use super::*;
 

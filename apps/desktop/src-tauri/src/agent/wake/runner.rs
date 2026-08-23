@@ -13,8 +13,8 @@ use tokio::sync::mpsc::unbounded_channel;
 
 use super::channel::{WakeControl, send_control};
 use super::indicator::{note_wake_finished, note_wake_started};
-use super::quiet::QuietWatch;
 use super::staged::announce_staged;
+use super::watch::WakeToolWatch;
 use super::{PreparedWake, RunWakeParams, WakeTier, wake_turn_params};
 use crate::agent::chat::budget;
 use crate::agent::chat::cancel;
@@ -107,13 +107,14 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
 
     // ⚠️ A wake owns a plain `UnboundedSender<AgentChatEvent>` and drains it itself, onto the
     // SAME conversation-keyed stream a rail send uses. That is what makes a wake's thread
-    // readable while it is still being written, and it counts proposals on the way past, which
-    // is the one number the log line needs.
+    // readable while it is still being written.
     let (sink, mut events) = unbounded_channel::<AgentChatEvent>();
     let draining = forward_to_windows(prepared.conversation_id, &mut events);
-    // The watch wraps the wake's dispatcher and nothing else's: `nothing_to_suggest` is a pure
-    // read whose handler changes nothing, so acting on the call belongs here, not in the tool.
-    let watch = QuietWatch::new(&dispatcher);
+    // The watch wraps the wake's dispatcher and nothing else's, and answers both questions the
+    // turn's own result can't: whether it said there was nothing to raise (a pure read whose
+    // handler changes nothing, so acting on it belongs here rather than in the tool), and
+    // whether it staged anything.
+    let watch = WakeToolWatch::new(&dispatcher);
     let driving = async {
         // Moved in so the sender drops when the turn ends; otherwise the drain above never
         // finishes and the join never returns.
@@ -129,7 +130,8 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
             )
             .await
     };
-    let (proposals, result) = tokio::join!(draining, driving);
+    let ((), result) = tokio::join!(draining, driving);
+    let proposals = watch.proposals();
 
     // ⚠️ The reason the model gave is deliberately NOT in the line below. `cmdr.log` ships in
     // auto-dispatched error reports and its redactor is path-shaped, so a sentence about which
