@@ -280,6 +280,23 @@ add a debug-only "flush now" command and let panic hooks call it. Don't add a qu
 on-disk persistence layer; the manual flow is the safety net (matches the FE log
 bridge's `beforeunload` semantics: best-effort, no durability guarantees).
 
+### Panics as a Flow B source
+
+`crash_reporter`'s panic courier is the one caller that reaches Flow B without going
+through `log_error!`. It calls `report_error(target, message, backtrace)` directly, the
+same function the macro expands to, because the backtrace it has to log belongs to the
+thread that panicked; a `force_capture()` inside the macro would describe the courier's own
+stack instead. Target is `cmdr_lib::crash_reporter::panic`, so a survived panic shows up as
+that category in the window and in the manifest's user note.
+
+The courier fires for every panic, and the 60 s debounce is what keeps fatal ones off this
+path: the process is gone before the timer, so the spawned flush is dropped and the crash
+file reports it at the next launch. **That's why the no-flush-on-shutdown rule above can't
+be relaxed** — a shutdown flush would ship an error report for every fatal panic on top of
+its crash report. Full mechanism, and why the courier is a thread rather than an inline
+call from the panic hook, is in `apps/desktop/src-tauri/src/crash_reporter/DETAILS.md`
+§ Two delivery paths.
+
 ### `log_error!` convention
 
 Use `log_error!` instead of `log::error!` at user-visible failure sites: anything that

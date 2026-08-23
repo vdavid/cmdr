@@ -22,9 +22,12 @@
 //!   panic could observe — and recovering would *propagate* — corrupt state. Here a
 //!   loud crash beats silently acting on torn data.
 //!
-//! The original panic is never masked by recovering: the panic hook + crash
-//! reporter still capture it. Recovering only suppresses the *second*, app-killing
-//! panic at the innocent next acquirer.
+//! Recovering never masks the original panic, and doesn't make it wait for a relaunch to
+//! be heard. The app's panic hook writes the crash file that a *fatal* panic is reported
+//! from at the next launch, and hands a *survived* panic (the case this policy creates) to
+//! a courier thread that reports it in the same session, gated on the error-report opt-in.
+//! Recovering only suppresses the *second*, app-killing panic at the innocent next
+//! acquirer. Both halves live in `apps/desktop/src-tauri/src/crash_reporter/`.
 //!
 //! ## The rule (enforced by the `lock-poison` checker)
 //!

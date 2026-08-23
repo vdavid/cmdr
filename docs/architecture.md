@@ -220,7 +220,7 @@ All under `apps/desktop/src-tauri/src/`.
 - `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection
 - `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags
-- `crash_reporter/`: Crash capture (panic hook + signal handler), next-launch detection, report sending
+- `crash_reporter/`: Crash capture (panic hook + signal handler), next-launch detection, in-session delivery of a survived panic, report sending
 - `feedback.rs`: Open-beta feedback: text validation + payload assembly + send to `POST /feedback`. IPC in
   `commands/feedback.rs`
 - `error_reporter/`: Error reports: bundle build (manifest + redacted log tail), short-ID + R2 upload, debounced
@@ -378,7 +378,8 @@ Two pipelines report what went wrong on a user's machine, both redacting payload
 first (see `security.md` for the privacy posture):
 
 - **Crash reporter** (`crash_reporter/`): captures panics + signals, persists a report to disk, and offers to send it on
-  the next launch. Targets `POST /crash-report`. For unexpected aborts only.
+  the next launch. Targets `POST /crash-report`. A panic the app SURVIVES also goes out in the same session, through the
+  error reporter's Flow B; the split is in `apps/desktop/src-tauri/src/crash_reporter/DETAILS.md`.
 - **Error reporter** (`error_reporter/` + `error-reporter/`): everything else (MTP weirdness, network glitches, generic
   failures), user-initiated (**Help > Send error report…**) or auto-send opt-in. Bundles a redacted debug-log tail,
   uploads to R2 via `POST /error-report`, returns a short `ERR-XXXXX` ID, and pings a private Discord channel.
