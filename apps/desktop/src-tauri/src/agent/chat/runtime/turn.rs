@@ -63,6 +63,9 @@ pub struct TurnParams<'a> {
     pub conversation_id: i64,
     pub user: Option<UserTurn<'a>>,
     pub cmdr_md: Option<&'a str>,
+    /// What the agent wrote about the user, already cut to this turn's share of the budget
+    /// (`agent::memory`). A separate field from `cmdr_md` on purpose — see [`PrefixInputs`].
+    pub memory: Option<&'a str>,
     pub envelope: &'a ContextEnvelope,
     pub offset: FixedOffset,
     /// Wall-clock secs stamped on rows written this turn; also the envelope's clock.
@@ -153,6 +156,7 @@ pub async fn run_turn(
         let prefix = PrefixInputs {
             system_prompt: SYSTEM_PROMPT,
             cmdr_md: params.cmdr_md,
+            memory: params.memory,
             tools,
         };
         let assembled = context::assemble_prompt(

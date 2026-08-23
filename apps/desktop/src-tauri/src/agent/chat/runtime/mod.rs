@@ -157,12 +157,14 @@ impl ChatRuntime {
         let _guard = self.locks.acquire(conversation_id, &sink).await;
 
         let cmdr_md = read_cmdr_md();
+        let memory = crate::agent::memory::read_for_turn(app, prompt_budget);
         let tools = crate::agent::tools::agent_tool_declarations();
         let dispatcher = AppHandleDispatcher::new(app.clone(), conversation_id);
         let params = TurnParams {
             conversation_id,
             user: Some(UserTurn::Text(&text)),
             cmdr_md: cmdr_md.as_deref(),
+            memory: memory.as_deref(),
             envelope: &envelope,
             offset,
             now_secs: now,

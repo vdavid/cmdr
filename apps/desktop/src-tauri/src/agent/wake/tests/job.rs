@@ -62,6 +62,7 @@ fn params(readiness: WakeReadiness, now: i64, envelope: &ContextEnvelope) -> Wak
         provider: ProviderTag::Anthropic,
         model: "test-model".to_string(),
         prompt_budget: 16_000,
+        memory: None,
     }
 }
 
@@ -74,6 +75,7 @@ fn run_params<'a>(now: i64, envelope: &'a ContextEnvelope) -> RunWakeParams<'a> 
         provider: ProviderTag::Anthropic,
         model: "test-model".to_string(),
         prompt_budget: 16_000,
+        memory: None,
     }
 }
 
@@ -722,6 +724,7 @@ async fn a_rail_turn_calling_nothing_to_suggest_deletes_nothing() {
             conversation_id: id,
             user: Some(UserTurn::Text("are we good?")),
             cmdr_md: None,
+            memory: None,
             envelope: &env,
             offset: chrono::FixedOffset::east_opt(0).expect("utc"),
             now_secs: 1_000,

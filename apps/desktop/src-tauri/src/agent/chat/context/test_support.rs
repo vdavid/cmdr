@@ -82,6 +82,7 @@ pub(crate) fn prefix<'a>(cmdr_md: Option<&'a str>, tools: &'a [ToolDeclaration])
     PrefixInputs {
         system_prompt: SYSTEM,
         cmdr_md,
+        memory: None,
         tools,
     }
 }

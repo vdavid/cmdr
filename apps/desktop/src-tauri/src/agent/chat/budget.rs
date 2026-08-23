@@ -166,6 +166,28 @@ pub fn wake_digest_budget(prompt_tokens: usize) -> usize {
     prompt_tokens.saturating_sub(FIXED_PROMPT_OVERHEAD_TOKENS) * WAKE_DIGEST_BUDGET_PERCENT / 100
 }
 
+/// What share of a turn's prompt budget the agent's own memory may claim.
+///
+/// A tenth, and a SHARE rather than a byte count, for a reason a flat cap can't cover: the
+/// system string is never elided (`context::assemble_prompt` tightens tool results only), so
+/// every byte of memory is a permanent tax on every turn of every thread. Run the numbers a
+/// flat 8 KB would give at the smallest window the app supports: [`MIN_LOCAL_CONTEXT_TOKENS`]
+/// resolves to a 9,830-token budget, the fixed overhead takes ~5,300 of it, and 8 KB of memory
+/// at [`CHARS_PER_TOKEN_ESTIMATE`] takes 2,048 more — leaving under 2,500 tokens for the
+/// digest, the envelope, the history, and every tool result. **And the agent writes this file
+/// itself**, so a flat cap lets it permanently degrade its own chat with no way back.
+const MEMORY_BUDGET_PERCENT: usize = 10;
+
+/// How many BYTES of memory this turn carries, out of its resolved prompt budget. Bytes rather
+/// than tokens because the reader is slicing a file (`agent::memory`), and it says in the
+/// prompt when it had to cut.
+///
+/// ⚠️ Not to be confused with `memory::MEMORY_DIR_MAX_BYTES`: that one protects DISK and is a
+/// constant; this one protects the PROMPT and moves with the model.
+pub fn memory_slice_bytes(prompt_tokens: usize) -> usize {
+    prompt_tokens.saturating_sub(FIXED_PROMPT_OVERHEAD_TOKENS) * MEMORY_BUDGET_PERCENT / 100 * CHARS_PER_TOKEN_ESTIMATE
+}
+
 /// One family's context window, matched by model-id prefix (longest first, like
 /// `agent::pricing`'s table, so a more specific id wins over the family it shares a stem
 /// with). The budget is DERIVED from the window ([`budget_for_window`]) rather than stored
@@ -623,6 +645,32 @@ mod tests {
         assert!(
             files_per_batch(floored) > 0,
             "a local user on the floor can rename a batch"
+        );
+    }
+
+    /// ⚠️ Memory is a PERMANENT tax: the system string is never elided, so whatever it claims
+    /// is gone from every turn of every thread for good. And the agent writes the file itself,
+    /// so a flat byte cap would let it degrade its own chat with no way back. At the smallest
+    /// window the app supports, a memory file sitting on its 64 KB disk cap has to be cut hard.
+    #[test]
+    fn memory_claims_a_share_of_the_budget_rather_than_a_fixed_block() {
+        let floored = budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize);
+        let on_the_floor = memory_slice_bytes(floored);
+
+        assert!(
+            on_the_floor < crate::agent::memory::MEMORY_DIR_MAX_BYTES as usize,
+            "a memory file at its disk cap must be CUT at the smallest window, not carried whole: \
+             {on_the_floor} bytes of a {floored}-token budget"
+        );
+        let workable = floored - FIXED_PROMPT_OVERHEAD_TOKENS;
+        assert!(
+            on_the_floor / CHARS_PER_TOKEN_ESTIMATE * 5 < workable,
+            "memory must leave the conversation the bulk of what the prefix didn't take: \
+             {on_the_floor} bytes against {workable} workable tokens"
+        );
+        assert!(
+            memory_slice_bytes(PROMPT_BUDGET_60K) > on_the_floor,
+            "a bigger window has to be able to carry more of it, or the share is a constant in disguise"
         );
     }
 

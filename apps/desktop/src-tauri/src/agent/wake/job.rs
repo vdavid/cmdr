@@ -85,6 +85,10 @@ pub struct RunWakeParams<'a> {
     pub provider: crate::agent::llm::types::ProviderTag,
     pub model: String,
     pub prompt_budget: usize,
+    /// What the agent has written about the user, already cut to this turn's share of the
+    /// budget (`agent::memory::read_for_turn`). A wake needs it as much as the rail does: it
+    /// is what stops the agent re-proposing what was already turned down.
+    pub memory: Option<&'a str>,
 }
 
 /// What a wake needs that it cannot work out for itself, for the whole job in one call.
@@ -101,6 +105,8 @@ pub struct WakeParams<'a> {
     pub provider: crate::agent::llm::types::ProviderTag,
     pub model: String,
     pub prompt_budget: usize,
+    /// What the agent has written about the user, cut to this turn's share of the budget.
+    pub memory: Option<&'a str>,
 }
 
 /// How a wake ended.
@@ -224,6 +230,7 @@ pub fn wake_turn_params<'a>(prepared: &'a PreparedWake, params: &'a RunWakeParam
         conversation_id: prepared.conversation_id,
         user: Some(UserTurn::Wake(&prepared.digest)),
         cmdr_md: None,
+        memory: params.memory,
         envelope: params.envelope,
         offset: params.offset,
         now_secs: params.now_secs,
@@ -285,6 +292,7 @@ pub async fn run_wake(
             provider: params.provider,
             model: params.model,
             prompt_budget: params.prompt_budget,
+            memory: params.memory,
         },
         sink,
         cancel,

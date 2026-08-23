@@ -81,7 +81,12 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
     )
     .await;
     let tools = crate::agent::tools::agent_tool_declarations();
+    // A wake reads the same memory the rail does. It is what keeps the agent from proposing
+    // again what the user already turned down, which is the whole difference between a
+    // colleague and a nag.
+    let memory = crate::agent::memory::read_for_turn(&app, slot.prompt_budget);
     let params = RunWakeParams {
+        memory: memory.as_deref(),
         now_secs: crate::agent::chat::runtime::now_secs(),
         envelope: &envelope,
         tools: &tools,

@@ -245,6 +245,7 @@ fn assemble_rename_turn(files: usize, budget: usize) -> (usize, usize, usize) {
     let real_prefix = PrefixInputs {
         system_prompt: crate::agent::chat::system_prompt::SYSTEM_PROMPT,
         cmdr_md: None,
+        memory: None,
         tools: &tools,
     };
     let assembled = assemble_prompt(&real_prefix, &transcript, &envelope_at(1_000), offset(), budget);
