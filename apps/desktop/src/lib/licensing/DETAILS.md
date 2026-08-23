@@ -106,8 +106,8 @@ Shape decisions worth keeping:
   measure them separately and they'd drift.
 
 The two lists render from one `{#each}` over a `sections` array rather than a snippet called twice: `{@render}` of a
-void snippet trips `@typescript-eslint/no-confusing-void-expression`, and a separate child component would need its own
-a11y test (`a11y-coverage` requires one per `lib/` component). The section headings are bound into a `headings` record
+void snippet trips `@typescript-eslint/no-confusing-void-expression`, and a separate child component would need covering in
+`licensing.a11y.test.ts` too (`a11y-coverage` requires every `lib/` component to be exercised). The section headings are bound into a `headings` record
 by section key so either jump button can `scrollIntoView` its heading (`behavior: 'auto'` under
 `prefers-reduced-motion: reduce`); `jumpTo(key)` returns the handler, so the two buttons differ only by key. They share
 one full-width 50/50 grid row above the scroll region, which reads as a pair of section tabs, which is what they are.

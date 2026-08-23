@@ -15,15 +15,16 @@ Depth for `CLAUDE.md`. Up: `apps/desktop/src/CLAUDE.md`.
   burst collapses into.
 - `StatusCorner.svelte.test.ts`: the structural contract (always mounted, children and the chip render before the
   hourglass).
-- `StatusCorner.a11y.test.ts`: tier-3 axe pass, idle and populated.
 - `operation-chip.test.ts`: every visibility gate, the bar's metric, and the progress-beats-failure precedence, as pure
   data.
 - `OperationChip.svelte.test.ts`: the rendered chip, driven through a real operations store.
-- `OperationChip.a11y.test.ts`: tier-3 axe pass, running and paused.
 - `operation-failure-watch.svelte.test.ts`: one toast per failure, no double-toast on a re-emitted snapshot, both
   suppression paths, and the collapse past three.
-- `OperationFailedToastContent.svelte.test.ts` (+ both toasts' `.a11y.test.ts`): the wording, the reason, and the
-  action.
+- `OperationFailedToastContent.svelte.test.ts`: the wording, the reason, and the action.
+- `status-corner.a11y.test.ts`: one directory-level tier-3 audit, because `svelte-tests` charges per test FILE
+  (`docs/testing.md` § "What a test actually costs"). Four blocks: the corner (idle and populated), the chip (running,
+  paused, and scanning), and both toasts. The chip's fake timers stay inside its own block; file-wide they'd stall the
+  other blocks' async renders.
 
 ## Layout model
 
@@ -95,7 +96,7 @@ the tooltip's string. It's `queue.chip.ariaLabel` with the percentage swapped fo
 gives up exactly the dishonest part and keeps the two that matter: the visible verb, which voice control needs to press
 the chip by the word a person can see on it (WCAG 2.5.3), and the closing promise naming what pressing it does. ❌ Don't
 re-collapse the two labels into one key to save a string: the tooltip is read, the aria label is spoken, and they
-legitimately want different sentences. `OperationChip.a11y.test.ts` pins both halves.
+legitimately want different sentences. The `OperationChip` block of `status-corner.a11y.test.ts` pins both halves.
 
 ### The failure state
 
