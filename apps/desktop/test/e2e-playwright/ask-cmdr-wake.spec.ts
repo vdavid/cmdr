@@ -271,10 +271,9 @@ test.describe('Ask Cmdr wakes on its own', () => {
     // The group really landed: the suggestions badge is the surface that promises completeness,
     // and the toast is only a nudge towards it.
     await expect
-      .poll(
-        () => page.evaluate<boolean>(`document.querySelector('.status-corner .indicator') !== null`),
-        { timeout: 10000 },
-      )
+      .poll(() => page.evaluate<boolean>(`document.querySelector('.status-corner .indicator') !== null`), {
+        timeout: 10000,
+      })
       .toBe(true)
 
     // ⚠️ Put the fake back before asserting anything else: the script sticks, and a later spec

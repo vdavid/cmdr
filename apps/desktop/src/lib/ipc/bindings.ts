@@ -4754,9 +4754,8 @@ export type ConversationSearchHit = {
    */
   snippet: string
   /**
-   *  `None` = user-started; a token says the agent opened it. Carried so a search result
-   *  wears the same glyph the thread list gives it — a hit that lost the mark would read
-   *  as a thread the user started and forgot.
+   *  `None` = user-started; a token says the agent opened it. Carried so a hit wears the same
+   *  glyph the thread list gives it, rather than reading as a thread the user began and forgot.
    */
   origin: ConversationOrigin | null
 }
