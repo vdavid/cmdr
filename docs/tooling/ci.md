@@ -60,7 +60,8 @@ server).
    `scripts/check/checks/DETAILS.md` § Field semantics). A reason on a check that IS referenced fails too, so excuses
    can't go stale.
 3. Every concrete path in `ci.yml`'s filter block exists (glob entries are checked via their static directory prefix).
-4. Every static path prefix in a registry check's `Inputs` (and in `GlobalInputs`) exists. A dead `Inputs` glob would
+4. Every static path prefix in a registry check's `Inputs` (and in `GlobalInputs`, which now names the runner core file
+   by file) exists. A dead `Inputs` glob would
    silently make the input-fingerprint cache skip a check whose real (renamed) sources changed. Same robust
    file-existence shape as rule 3; it deliberately does NOT reconcile `Inputs` against the filter sets (the filter ↔ app
    ↔ check mapping isn't 1:1, so a strict reconciliation would be flaky). The cache's real correctness backstop is that

@@ -143,7 +143,8 @@ pnpm check [flags]
     -> applyLaneFilters()            # FilterSlow/CIOnly/Fast/Freestyle/onlySlow, in order
     -> planCache() (plan.go)         # input-fingerprint cache, BEFORE pnpm+SMB:
         CollectRepoFingerprintData() #   one repo-wide `git ls-files`+`git status` pass
-        per check: FingerprintFor()  #   hash its Inputs ∪ GlobalInputs from that pass
+          LoadRunnerSources()        #   parse the checks package: which runner files each check reaches
+        per check: FingerprintFor()  #   hash its Inputs ∪ GlobalInputs ∪ its own runner sources
         split selected -> toRun / cached  # cache hit = entry fingerprint matches
     -> ensurePnpmDependencies()      # pnpm install once at root (skipped if all node checks cached)
     -> setupStackOrchestratorIfNeeded() # fixture Docker up only if a NON-cached check NeedsContainers
@@ -176,7 +177,10 @@ pnpm check [flags]
   filtered per check's Inputs)
 - **`checks/cache.go`**: Per-worktree cache file load/save (`node_modules/.cache/cmdr-check-cache.json`), atomic write,
   corrupt-tolerant
-- **`checks/inputs.go`**: Shared `Inputs` building blocks (mined from ci.yml filters) + `inputs()` concatenator
+- **`checks/inputs.go`**: Shared `Inputs` building blocks (mined from ci.yml filters), `GlobalInputs` (the runner core
+  every check carries), and the `inputs()` concatenator
+- **`checks/runner-sources.go`**: The per-check half of the runner's own inputs: parses the checks package and works out
+  which implementation files each check's `Run` reaches (§ "The runner's own source")
 - **`autofix_notice.go`**: Brackets the run with a `git status` snapshot and names, last, every committed file an
   auto-fixer rewrote (§ "The auto-fix notice")
 - **`colors.go`**: ANSI color constants
@@ -380,8 +384,9 @@ touched.
 **Mechanism (`plan.go` + `checks/fingerprint.go` + `checks/cache.go`):**
 
 - Each check declares `Inputs` (path globs it reads) in `registry.go`; the shared sets live in `checks/inputs.go`, mined
-  from ci.yml's `dorny/paths-filter` rules. Every check also carries the implicit `GlobalInputs` (`.mise.toml`,
-  `scripts/check/**`): a toolchain bump or an edit to the runner's own source invalidates everything.
+  from ci.yml's `dorny/paths-filter` rules. Every check also carries the implicit `GlobalInputs` (the toolchain pin plus
+  the runner CORE) and, on top of that, the runner implementation files its own `Run` reaches (see "The runner's own
+  source" below).
 - Fingerprinting is git-aware and runs ONE repo-wide pass (`git ls-files -s` for index blob SHAs,
   `git status --porcelain -z` for the few dirty/untracked/deleted files, which are hashed from disk), then filters per
   check in-process. It never walks `node_modules/` or `target/`; the whole pass is well under a second.
@@ -432,6 +437,61 @@ degrades to "run everything" — never an error.
 renamed dir can't silently leave a check fingerprinting nothing (and thus cache-skipping real changes). It does NOT try
 to reconcile `Inputs` against the ci.yml filter sets — that mapping isn't 1:1 and a strict reconciliation would be
 flaky; CI-runs-fresh is the real correctness backstop.
+
+### The runner's own source
+
+The runner is an input to every check it runs, but not all of it is an input to all of them. Editing
+`checks/desktop-rust-lock-poison.go` cannot change what `cargo nextest` reports. The split is in two halves.
+
+**The core (`GlobalInputs`, in `inputs.go`)** is what no analysis can attribute, so every check carries it:
+`scripts/check/*.go` (package `main`: the executor, the cache plan, the status line, the stats logs, the Docker
+orchestrator), `registry.go`, `inputs.go`, `fingerprint.go`, `cache.go`, `runner-sources.go`, `common.go`,
+`test-log.go`, `fixture-stacks.go`, `smb_ports.go`, `sftp_ports.go`, plus `go.mod`, `go.sum`, `scripts/check.sh`, and
+`.mise.toml`. Package `main` imports `checks` and never the reverse, so nothing a check reaches can reveal that the
+EXECUTOR uses a symbol; `TestRunnerCoreCoversWhatTheExecutorReaches` walks package `main`'s `checks.X` references and
+fails when one resolves to a non-core file. Two names are exempt with a reason at the declaration site:
+`NightlyToolchain` (`--print-nightly`) and `BuildDocGraph` / `DocGraph` (the `--docs-graph` renderer), neither of which
+runs during a check.
+
+**The per-check half (`runner-sources.go`)** is derived from the AST at plan time, because the whole runner is ONE Go
+package and package-level analysis buys nothing. Two rules, no type information:
+
+- A declaration reaches every package-level NAME it mentions as an identifier. Selector names (`x.Foo`) are deliberately
+  not resolved by name: half the package has a `String` method, and matching on the method name alone made every check
+  reach every file.
+- Reaching a TYPE reaches every method declared on it, wherever those live. That stands in for the type information:
+  a value can only exist if something in the closure names its type, and its behavior then travels with it. Not
+  theoretical: `invariant-density` reaches `docs-dead-links.go` ONLY through a method, and drops it the moment that rule
+  is removed.
+
+An `init()` is attributed to the package-level variables it assigns, so a check reading one of those reaches the init's
+file. An `init()` that does anything else (registering into somebody else's table, the shape file-level analysis cannot
+see) makes the analysis give up rather than answer.
+
+❗ **It fails closed.** A parse error, an unreadable `AllChecks`, a `Run` it can't resolve, or an unattributable `init()`
+drops EVERY check back to `scripts/check/**` — the pre-attribution behavior. A too-wide input set costs cache speed; a
+too-narrow one reports a green describing code it never ran, which is the failure mode that has shipped here twice
+(`CHANGELOG.md` missing from the shared Rust set, then from `desktopAppInputs()`). A synthetic definition with no
+registered ID (the E2E build's) gets the same wide answer.
+
+The allowlists and baselines beside the checks are DATA, read through a path built at runtime, so no source analysis
+attributes them: the eight checks that own one name it in `Inputs` through `runnerDataInputs`, and
+`TestAllowlistFilesAreFingerprintedByTheirCheck` fails both on an allowlist its check doesn't fingerprint and on one
+nothing watches at all.
+
+**Measured, 2026-08-23**, on this worktree with a warm cache (110 default lanes, 80 in `--fast`):
+
+- Editing one leaf check implementation (`checks/lock-poison.go`): 28 of 110 lanes re-ran, 1m24s. Of those 28, 10 are
+  the Go lanes that lint the runner (`scripts/**`), 12 are whole-repo doc and metric lanes (`**`), 2 are the registry
+  readers (`ci-coverage`, `member-coverage`), 2 were already red and never cache, and 2 are the real attribution:
+  `lock-poison` itself and `mtp-dropping-timeout`, which shares its scanner. The Rust battery, every frontend lane, the
+  website, and the dashboard all stayed cached. In `--fast`: 23 of 80, 17.9s.
+- Editing a core runner file (`runner.go`): 110 of 110, 3m33s. In `--fast`: 80 of 80, 19.2s.
+- Editing `.mise.toml`: 80 of 80 in `--fast`, 14.0s. Same by construction: it's a global input.
+
+So the leaf case, which is what 105 of the last six months' 509 runner-touching commits did, went from 110 lanes to 28
+and from 3m33s to 1m24s, and 76s of that 84s was the two lanes that were already failing (a failure never caches, so
+they re-run in every case). 315 of those 509 commits touched no core file at all.
 
 ### The Rust input blocks
 

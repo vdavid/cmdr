@@ -108,12 +108,13 @@ changelog. Fixed by giving the set `rustEmbeddedInputs`, which is why the `CHANG
 This is the same bug the original test was written for, in a set the original test did not look at — which is the case
 for making the guardrail registry-wide rather than per-set.
 
-## The next win is not here
+## The next win was the runner's own source, and it landed
 
-`GlobalInputs` carries `scripts/check/**`, so editing any file of the check runner invalidates every check in the repo.
-330 of the 1,889 Rust-touching commits touch it, and 205 touch nothing else. Editing
-`checks/desktop-rust-lock-poison.go` cannot change what `cargo nextest` reports, yet it re-runs the whole ~250 s Rust
-battery plus every frontend, website, and dashboard lane. That is four times more commits than everything narrowed here
-put together, and it is the thing to look at next. It needs per-check granularity over the runner's own source (a check
-depends on the runner core plus its own implementation file), which is a real design problem: the shared helpers in
-`common.go` and `runner.go` genuinely reach every lane.
+`GlobalInputs` carried `scripts/check/**`, so editing any file of the check runner invalidated every check in the repo.
+330 of the 1,889 Rust-touching commits touch it, and 205 touch nothing else: four times more commits than everything
+narrowed here put together. That is now fixed. A check fingerprints the runner CORE plus the implementation files its
+own `Run` reaches, derived from the AST at plan time and failing closed to the old behavior whenever the analysis is
+uncertain. Editing `checks/lock-poison.go` went from 110 lanes and 3m33s to 28 lanes and 1m24s.
+
+The mechanism, the core list and why each file is on it, what the analysis cannot prove, and the measurements:
+`scripts/check/DETAILS.md` § "The runner's own source".
