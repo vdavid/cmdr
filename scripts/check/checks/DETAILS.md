@@ -1168,7 +1168,8 @@ doubles as production code.
   either needs David's say-so). The crates' code is also covered by the desktop Rust lanes above, which all run
   workspace-wide; this scope is for checks about the crate boundary itself.
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
-  stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
+  stylelint, css-unused, a11y-contrast, a11y-coverage (every component has a tier-3 a11y test, colocated or in a
+  directory-level `*.a11y.test.ts` that imports it), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every
   `SOFT_DIALOG_REGISTRY` id has a row in the Debug > Soft dialogs gallery, and every row names a registered id),
   btn-restyle, bare-poll, svelte-check, import-cycles, jscpd (warn-only; the frontend clone list, TypeScript and

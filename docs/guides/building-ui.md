@@ -88,7 +88,8 @@ showed different numbers for the same transfer.
 A new `lib/ui/` primitive is a four-part contract, enforced so it can't half-land:
 
 1. The component itself in `lib/ui/`.
-2. A tier-3 a11y test (`*.a11y.test.ts`), enforced by the `a11y-coverage` check.
+2. A tier-3 a11y test, enforced by the `a11y-coverage` check: either a colocated `<Name>.a11y.test.ts` or a
+   `*.a11y.test.ts` in the same directory that imports the component.
 3. A section in the Debug > Components catalog (`routes/dev/components/`), enforced by `ui-primitive-coverage`.
 4. An entry in `../design-system.md` § Component patterns.
 

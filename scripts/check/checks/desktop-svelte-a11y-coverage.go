@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 )
 
 // Tier 3 a11y coverage check: every .svelte component under apps/desktop/src/lib/
-// must either have a colocated *.a11y.test.ts file (that imports the helper) OR
-// be listed in the allowlist with a reason.
+// must be exercised by an a11y test that imports the helper, OR be listed in the
+// allowlist with a reason.
 //
 // This guards against new components silently skipping a11y coverage. See
 // `docs/design-system.md` § "Automated contrast checks" for the full a11y
@@ -21,9 +22,15 @@ import (
 // Mechanics:
 //   - Scope: files under `apps/desktop/src/lib/` that git tracks (no untracked
 //     / gitignored files).
-//   - For each .svelte: either Foo.a11y.test.ts exists alongside AND imports
-//     from `$lib/test-a11y`, OR the component's relative path is in the
-//     allowlist.
+//   - For each .svelte, one of: Foo.a11y.test.ts exists alongside AND imports
+//     from `$lib/test-a11y`; OR some *.a11y.test.ts in the SAME directory
+//     imports from `$lib/test-a11y` and imports Foo.svelte itself; OR the
+//     component's relative path is in the allowlist.
+//   - The directory-level form is what lets one file cover a whole directory.
+//     The frontend lane's cost is per test FILE, not per test (`docs/testing.md`
+//     § "What a test actually costs"), so 24 one-test files cost ~24× what one
+//     24-test file costs. "Imports it" is resolved from parsed import
+//     statements (`a11y-test-imports.go`), never a substring search.
 //   - Flags dead allowlist entries (paths pointing to files that no longer
 //     exist). This forces cleanup when components move or get deleted.
 
@@ -96,6 +103,30 @@ func testFileIsValid(rootDir, testRelPath string) bool {
 	return strings.Contains(string(data), a11yCoverageTestImportMarker)
 }
 
+// componentsCoveredByDirectoryTests maps every component path that some
+// *.a11y.test.ts imports to true. Only files that also import the a11y helper
+// count, and only imports resolving into the test file's OWN directory: a
+// sibling directory's same-named component is a different component.
+func componentsCoveredByDirectoryTests(rootDir string, tracked []string) map[string]bool {
+	covered := map[string]bool{}
+	for _, rel := range tracked {
+		if !strings.HasSuffix(rel, ".a11y.test.ts") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(rootDir, rel))
+		if err != nil || !strings.Contains(string(data), a11yCoverageTestImportMarker) {
+			continue
+		}
+		dir := path.Dir(rel)
+		for imported := range importedPathsIn(rel, string(data)) {
+			if strings.HasSuffix(imported, ".svelte") && path.Dir(imported) == dir {
+				covered[imported] = true
+			}
+		}
+	}
+	return covered
+}
+
 type a11yCoverageResult struct {
 	uncoveredFiles     []string          // .svelte files without tests and not allowlisted
 	emptyTestFiles     []string          // test files that exist but don't import the helper
@@ -121,6 +152,17 @@ func scanA11yCoverage(rootDir string, allowlist a11yCoverageAllowlist) (a11yCove
 		trackedSet[f] = true
 	}
 
+	byDirectoryTest := componentsCoveredByDirectoryTests(rootDir, tracked)
+
+	// covered reports whether a component is exercised at all: by its colocated
+	// file, or by any directory-level a11y test that imports it.
+	covered := func(rel string) bool {
+		if testRel := testFilePathFor(rel); trackedSet[testRel] && testFileIsValid(rootDir, testRel) {
+			return true
+		}
+		return byDirectoryTest[rel]
+	}
+
 	// Walk every .svelte in scope.
 	for _, rel := range tracked {
 		if !strings.HasSuffix(rel, ".svelte") {
@@ -136,7 +178,7 @@ func scanA11yCoverage(rootDir string, allowlist a11yCoverageAllowlist) (a11yCove
 		if _, exempt := allowlist.Exempt[rel]; exempt {
 			// An exempt component that has a valid test anyway makes the
 			// entry redundant: the "can't be tested" reason no longer holds.
-			if testRel := testFilePathFor(rel); trackedSet[testRel] && testFileIsValid(rootDir, testRel) {
+			if covered(rel) {
 				result.redundantAllowlist = append(result.redundantAllowlist, rel)
 				continue
 			}
@@ -144,16 +186,17 @@ func scanA11yCoverage(rootDir string, allowlist a11yCoverageAllowlist) (a11yCove
 			continue
 		}
 
-		testRel := testFilePathFor(rel)
-		if !trackedSet[testRel] {
-			result.uncoveredFiles = append(result.uncoveredFiles, rel)
+		if covered(rel) {
+			result.coveredCount++
 			continue
 		}
-		if !testFileIsValid(rootDir, testRel) {
+		// A colocated file that exists but never imports the helper is a stub:
+		// name the file, since deleting or filling it is the fix.
+		if testRel := testFilePathFor(rel); trackedSet[testRel] {
 			result.emptyTestFiles = append(result.emptyTestFiles, testRel)
 			continue
 		}
-		result.coveredCount++
+		result.uncoveredFiles = append(result.uncoveredFiles, rel)
 	}
 
 	// Dead allowlist entries: paths in the allowlist that no longer exist as tracked files.
@@ -178,7 +221,8 @@ func formatA11yCoverageFailure(r a11yCoverageResult) string {
 	if len(r.uncoveredFiles) > 0 {
 		sb.WriteString(fmt.Sprintf("  %d component(s) without a tier-3 a11y test:\n", len(r.uncoveredFiles)))
 		for _, f := range r.uncoveredFiles {
-			sb.WriteString(fmt.Sprintf("    - %s (expected %s)\n", f, testFilePathFor(f)))
+			sb.WriteString(fmt.Sprintf("    - %s (add %s, or import it from a *.a11y.test.ts in %s/)\n",
+				f, testFilePathFor(f), path.Dir(f)))
 		}
 	}
 	if len(r.emptyTestFiles) > 0 {

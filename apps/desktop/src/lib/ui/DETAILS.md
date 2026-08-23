@@ -1235,7 +1235,19 @@ tier 1's job; focus traps and Escape-return-focus are tier 2's.
 Helper: `$lib/test-a11y` exports `expectNoA11yViolations(container)`. Same axe ruleset as E2E, minus `color-contrast`
 and `region` (both misfire in jsdom; see the helper's comments).
 
-Template: colocate `ComponentName.a11y.test.ts` next to the component.
+Two file layouts satisfy `a11y-coverage`, and both are equally enforced:
+
+- **Colocated**: `ComponentName.a11y.test.ts` next to the component. Right for a primitive with a rich state matrix.
+- **Directory-level**: any `*.a11y.test.ts` in the component's own directory that imports the component. Right for a
+  directory of many components with one or two states each; `svelte-tests` costs about the same for one test file as
+  for 91 test bodies (`docs/testing.md` § "What a test actually costs"), so one file per directory is dramatically
+  cheaper than one per component. Name it after the directory (`sections.a11y.test.ts`).
+
+The check resolves "imports the component" from parsed import statements, so a name in a comment or a `describe()`
+title buys nothing, and `SearchSection.svelte` never satisfies `Section.svelte`. A component whose import it can't
+resolve reads as a coverage gap.
+
+Template (the colocated shape; a directory-level file is the same with one `describe` block per component):
 
 ```ts
 import { describe, it } from 'vitest'
