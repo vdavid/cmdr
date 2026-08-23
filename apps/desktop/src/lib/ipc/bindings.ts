@@ -1509,6 +1509,13 @@ export const commands = {
        */
       possibleCrashLoop?: boolean
       /**
+       *  Whether the app outlived what this report describes. Drives which sentence the
+       *  next-launch dialog opens with, so it must never overstate what we know: see
+       *  [`AppFate`]. Defaults to [`AppFate::Unknown`] for crash files written before this
+       *  field existed.
+       */
+      appFate?: AppFate
+      /**
        *  `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
        *  `None` only when read from a crash file written by an older app version that
        *  didn't carry this field; new reports always set it.
@@ -4224,6 +4231,39 @@ export type AiTranslateErrorKind =
 
 export type AiVerifying = null
 
+/**
+ *  What we know about the app's fate AFTER this report hit disk.
+ *
+ *  A crash file is written at panic *initiation*, before anyone can know whether the
+ *  process will live: since the lock-poison policy in [`cmdr_fs::ignore_poison`], a panic
+ *  on a background thread routinely leaves the app running. The next launch is where the
+ *  answer is finally readable, and this is what carries it, so the dialog can say
+ *  something TRUE about every report it opens on.
+ *
+ *  Deliberately a tri-state at read time rather than a `survived: bool`: a bool's `false`
+ *  default would claim "the app quit" about every crash file written before the field
+ *  existed. [`Self::Unknown`] claims nothing instead.
+ */
+export type AppFate =
+  // Written by a build that didn't record a fate. Claim nothing about the app.
+  | 'unknown'
+  /**
+   *  The panic hook wrote the report and nothing has confirmed the app is still alive.
+   *
+   *  **Transient, on-disk only.** A living process upgrades it to [`Self::KeptRunning`]
+   *  (see `survival.rs`), and [`process_pending_crash`] resolves whatever is left to
+   *  [`Self::Ended`] at the next launch, where the absence of that upgrade is proof the
+   *  process didn't outlive the panic. The frontend therefore never sees this value.
+   */
+  | 'unconfirmed'
+  // The app went away: an unrecoverable signal, or a panic it didn't outlive.
+  | 'ended'
+  /**
+   *  The app was still running after the panic, proved either by the survival watchdog's
+   *  timer or by the app reaching its own quit path (`app_lifecycle.rs`).
+   */
+  | 'keptRunning'
+
 // Current status of the application license.
 export type AppStatus =
   // No license - personal use only.
@@ -4979,6 +5019,13 @@ export type CrashReport = {
    *  (potential crash loop). The frontend uses this to suppress auto-send.
    */
   possibleCrashLoop?: boolean
+  /**
+   *  Whether the app outlived what this report describes. Drives which sentence the
+   *  next-launch dialog opens with, so it must never overstate what we know: see
+   *  [`AppFate`]. Defaults to [`AppFate::Unknown`] for crash files written before this
+   *  field existed.
+   */
+  appFate?: AppFate
   /**
    *  `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
    *  `None` only when read from a crash file written by an older app version that

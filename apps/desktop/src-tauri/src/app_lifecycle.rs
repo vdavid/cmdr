@@ -15,7 +15,7 @@ use tauri::{AppHandle, Manager, Window, Wry};
 use crate::downloads;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use crate::network;
-use crate::{ai, file_viewer, mcp, quit, search, window_state};
+use crate::{ai, crash_reporter, file_viewer, mcp, quit, search, window_state};
 #[cfg(target_os = "macos")]
 use crate::{drag_image_detection, mtp};
 
@@ -111,6 +111,10 @@ pub fn on_run_event(app: &AppHandle<Wry>, event: tauri::RunEvent) {
         // ignores `prevent_exit` outright — asking there would show a
         // dialog nobody could answer, so the gate never sees it.
         tauri::RunEvent::ExitRequested { ref api, code, .. } => {
+            // An app alive enough to be asked to quit outlived any panic it wrote a crash
+            // file about, so the next launch must not open with "Cmdr quit unexpectedly".
+            // Free unless this session actually panicked. `crash_reporter/survival.rs`.
+            crash_reporter::note_app_still_running();
             if code != Some(tauri::RESTART_EXIT_CODE) && quit::request_quit(app) == quit::QuitOutcome::Held {
                 api.prevent_exit();
             }

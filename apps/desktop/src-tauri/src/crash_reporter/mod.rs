@@ -7,10 +7,13 @@
 mod panic_courier;
 #[cfg(unix)]
 mod signal_handler;
+mod survival;
 mod symbolicate;
 
 #[cfg(test)]
 mod panic_courier_tests;
+#[cfg(test)]
+mod survival_tests;
 #[cfg(test)]
 mod tests;
 
@@ -78,6 +81,37 @@ pub struct ActiveSettings {
     pub verbose_logging: Option<bool>,
 }
 
+/// What we know about the app's fate AFTER this report hit disk.
+///
+/// A crash file is written at panic *initiation*, before anyone can know whether the
+/// process will live: since the lock-poison policy in [`cmdr_fs::ignore_poison`], a panic
+/// on a background thread routinely leaves the app running. The next launch is where the
+/// answer is finally readable, and this is what carries it, so the dialog can say
+/// something TRUE about every report it opens on.
+///
+/// Deliberately a tri-state at read time rather than a `survived: bool`: a bool's `false`
+/// default would claim "the app quit" about every crash file written before the field
+/// existed. [`Self::Unknown`] claims nothing instead.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum AppFate {
+    /// Written by a build that didn't record a fate. Claim nothing about the app.
+    #[default]
+    Unknown,
+    /// The panic hook wrote the report and nothing has confirmed the app is still alive.
+    ///
+    /// **Transient, on-disk only.** A living process upgrades it to [`Self::KeptRunning`]
+    /// (see `survival.rs`), and [`process_pending_crash`] resolves whatever is left to
+    /// [`Self::Ended`] at the next launch, where the absence of that upgrade is proof the
+    /// process didn't outlive the panic. The frontend therefore never sees this value.
+    Unconfirmed,
+    /// The app went away: an unrecoverable signal, or a panic it didn't outlive.
+    Ended,
+    /// The app was still running after the panic, proved either by the survival watchdog's
+    /// timer or by the app reaching its own quit path (`app_lifecycle.rs`).
+    KeptRunning,
+}
+
 /// The crash report written to disk (JSON).
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -98,6 +132,12 @@ pub struct CrashReport {
     /// (potential crash loop). The frontend uses this to suppress auto-send.
     #[serde(default)]
     pub possible_crash_loop: bool,
+    /// Whether the app outlived what this report describes. Drives which sentence the
+    /// next-launch dialog opens with, so it must never overstate what we know: see
+    /// [`AppFate`]. Defaults to [`AppFate::Unknown`] for crash files written before this
+    /// field existed.
+    #[serde(default)]
+    pub app_fate: AppFate,
     /// `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
     /// `None` only when read from a crash file written by an older app version that
     /// didn't carry this field; new reports always set it.
@@ -227,6 +267,14 @@ fn handle_panic(info: &std::panic::PanicHookInfo<'_>) {
         &report,
     );
 
+    // Then the survival watchdog, for the same panic. Keep-first means only the panic
+    // that owns the crash file arms one, so there's at most one per session.
+    if wrote_crash_file
+        && let Some(crash_path) = CRASH_PATH.get()
+    {
+        survival::arm(crash_path);
+    }
+
     // Then the in-session path, for the panic the app is about to survive. Clones out of
     // the report that just went to disk, so the two can't describe the panic differently.
     // The short id rides along ONLY when this panic is the one on disk: keep-first means a
@@ -304,6 +352,10 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         uptime_secs: uptime_secs(),
         active_settings: CACHED_SETTINGS.get().cloned().unwrap_or_default(),
         possible_crash_loop: false,
+        // Nobody knows yet whether the app will live: the hook runs at panic initiation,
+        // before unwinding. `survival.rs` upgrades this from a thread that can only run if
+        // the process is still here; `process_pending_crash` resolves it if nothing did.
+        app_fate: AppFate::Unconfirmed,
         build_mode: Some(current_build_mode().to_string()),
         short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
         // The panic hook runs in normal Rust, so it can read the pre-resolved diag-id
@@ -389,6 +441,22 @@ fn install_signal_handlers(raw_crash_path: &Path) {
     signal_handler::install(raw_crash_path);
 }
 
+/// Records that the app is still running, so a crash file THIS session wrote stops
+/// claiming the app didn't outlive its panic.
+///
+/// Called from the app's quit path (`app_lifecycle.rs`): an app alive enough to be asked
+/// to quit outlived whatever it wrote a crash file about. Two atomic-ish loads and out on
+/// the normal path, where this session never panicked. See `survival.rs` for why both this
+/// and the watchdog's timer record the same fact.
+pub fn note_app_still_running() {
+    if !SESSION_CRASH_FILE_WRITTEN.load(Ordering::SeqCst) {
+        return;
+    }
+    if let Some(crash_path) = CRASH_PATH.get() {
+        survival::confirm_survival(crash_path);
+    }
+}
+
 // --- Crash file I/O ---
 
 fn write_crash_report(path: &Path, report: &CrashReport) -> Result<(), String> {
@@ -424,6 +492,16 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
         let mut dirty = false;
         if is_crash_loop(&report.timestamp) {
             report.possible_crash_loop = true;
+            dirty = true;
+        }
+        // The panic hook can't know the app's fate, so it writes `Unconfirmed` and
+        // `survival.rs` upgrades it from a thread that can only run while the process is
+        // alive. Reaching a LATER LAUNCH still unconfirmed is therefore the proof that no
+        // such upgrade happened: the app went down with the panic. Resolving it here, at
+        // the one moment the evidence is conclusive, is what lets the dialog pick its
+        // opening sentence from a settled value.
+        if report.app_fate == AppFate::Unconfirmed {
+            report.app_fate = AppFate::Ended;
             dirty = true;
         }
         // The panic hook couldn't gather the snapshot (compromised context), so attach the stable
@@ -476,6 +554,10 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
                 uptime_secs: 0.0, // Unknown for signal crashes from previous session
                 active_settings: CACHED_SETTINGS.get().cloned().unwrap_or_default(),
                 possible_crash_loop: false,
+                // No ambiguity on this path: SIGSEGV/SIGBUS/SIGABRT are unrecoverable, the
+                // handler re-raises them, and we're reading the evidence from the NEXT
+                // launch. The app is definitively gone.
+                app_fate: AppFate::Ended,
                 build_mode: Some(current_build_mode().to_string()),
                 short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
                 // Signal path: the async-signal-safe handler couldn't touch the diag id (no

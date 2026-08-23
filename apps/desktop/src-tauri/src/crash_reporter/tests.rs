@@ -27,6 +27,7 @@ fn crash_report_roundtrip() {
             verbose_logging: None,
         },
         possible_crash_loop: false,
+        app_fate: AppFate::Unconfirmed,
         build_mode: Some("release".to_string()),
         short_id: Some("CRASH-A2345".to_string()),
         diag_id: "diag_12345678-1234-1234-1234-1234567890ab".to_string(),
@@ -484,6 +485,7 @@ fn make_test_report() -> CrashReport {
         uptime_secs: 0.0,
         active_settings: ActiveSettings::default(),
         possible_crash_loop: false,
+        app_fate: AppFate::Unconfirmed,
         build_mode: Some("debug".to_string()),
         short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
         diag_id: "diag_00000000-0000-4000-8000-000000000000".to_string(),
@@ -522,4 +524,76 @@ fn sanitize_caps_on_a_char_boundary() {
 fn sanitize_leaves_a_short_message_unmarked() {
     let sanitized = sanitize_panic_message("index out of bounds: the len is 3 but the index is 7");
     assert!(!sanitized.ends_with(PANIC_MESSAGE_TRUNCATION_MARKER));
+}
+
+// --- App fate: what the next-launch dialog is allowed to claim ---
+
+/// A pending report on disk, `fate` as its recorded [`AppFate`] and a timestamp old
+/// enough that crash-loop detection stays out of the way.
+fn write_pending_report(path: &Path, fate: AppFate) {
+    let report = CrashReport {
+        timestamp: "2026-03-22T10:00:00+00:00".to_string(),
+        app_fate: fate,
+        ..make_test_report()
+    };
+    write_crash_report(path, &report).unwrap();
+}
+
+#[test]
+fn a_crash_file_written_before_app_fate_existed_claims_nothing() {
+    // The dialog picks its opening sentence from `app_fate`, so the value an older file
+    // reads back as decides what the user is told about a crash we know nothing about.
+    // `Unknown` is the only honest answer; a `survived: bool` would have said "the app
+    // quit unexpectedly" here on no evidence at all.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+
+    let mut json = serde_json::to_value(make_test_report()).unwrap();
+    json.as_object_mut().unwrap().remove("appFate");
+    std::fs::write(&path, serde_json::to_string(&json).unwrap()).unwrap();
+
+    let loaded = read_crash_report(&path).expect("a crash file from an older build still parses");
+    assert_eq!(loaded.app_fate, AppFate::Unknown);
+}
+
+#[test]
+fn an_unconfirmed_panic_resolves_to_ended_at_the_next_launch() {
+    // The hook writes `Unconfirmed` because it runs at panic initiation, before anyone
+    // knows. A process that lived would have upgraded it; still finding it unconfirmed a
+    // launch later IS the proof that the app went down with the panic.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+    write_pending_report(&path, AppFate::Unconfirmed);
+
+    process_pending_crash(&path, &dir.path().join(RAW_CRASH_FILE_NAME));
+
+    assert_eq!(read_crash_report(&path).unwrap().app_fate, AppFate::Ended);
+}
+
+#[test]
+fn a_confirmed_survival_is_never_downgraded_at_the_next_launch() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+    write_pending_report(&path, AppFate::KeptRunning);
+
+    process_pending_crash(&path, &dir.path().join(RAW_CRASH_FILE_NAME));
+
+    assert_eq!(
+        read_crash_report(&path).unwrap().app_fate,
+        AppFate::KeptRunning,
+        "the app was seen alive after this panic; the next launch can't unsee it"
+    );
+}
+
+#[test]
+fn an_older_crash_file_stays_unknown_at_the_next_launch() {
+    // Resolution applies to `Unconfirmed` only. Promoting `Unknown` to `Ended` would
+    // invent the very claim the tri-state exists to avoid.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+    write_pending_report(&path, AppFate::Unknown);
+
+    process_pending_crash(&path, &dir.path().join(RAW_CRASH_FILE_NAME));
+
+    assert_eq!(read_crash_report(&path).unwrap().app_fate, AppFate::Unknown);
 }
