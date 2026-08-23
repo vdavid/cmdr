@@ -112,6 +112,23 @@ the point of having one.
 opened onto a wake already in flight shows the answer streaming above an empty spot until the thread is re-read.
 Widening that event to carry the block is the fix if it ever matters.
 
+## The staged-proposal toast
+
+The one time the proactive agent interrupts. `agent-wake-staged` (`src-tauri/src/agent/wake/staged.rs`) fires when a wake's turn ends
+having staged at least one proposal; `wake-toast.svelte.ts` turns it into a toast and `WakeStagedToastContent.svelte`
+renders it, started from `routes/(main)/window-services.ts` in the main window only (the event reaches every window, and
+the settings window would otherwise raise its own copy).
+
+- **`askCmdr.wakeToast` is read at ANNOUNCE time**, never at subscribe time, so turning it off silences the wake already
+  in flight. That is the only reading of the switch that does what somebody flipping it mid-wake meant.
+- **The backend never emits for zero.** A quiet wake, and a wake whose model proposed nothing, say nothing at all.
+- **It AUTO-DISMISSES**, unlike the operation-failure toast. Nothing is lost when it goes: the proposals sit in the
+  suggestions badge until they are reviewed, so a persistent toast would just be a thing to close.
+- **Two actions, answering different questions**: "Review" opens the suggestions (WHAT it wants to do), and "See why"
+  opens the thread it reasoned in (WHY). Nobody asked for any of this, so the second one earns its place. ⚠️
+  `switchToThread` before `openRail`, for the same reason the indicator's click does it that way.
+- Grouped under `agent-wake-staged` with a cap of two, so a run of wakes can't push unrelated toasts off the screen.
+
 ## The wake indicator
 
 The status corner's word on the proactive half: `wake-indicator.svelte.ts` holds the state and the subscription,
@@ -467,11 +484,12 @@ fake path — which never sets a real provider — needs the gate to treat the f
 
 Copy lives in `intl/messages/en/askCmdr.json` (`askCmdr.*`, including the `askCmdr.sessions.*`,
 `askCmdr.composer.attach`/`dropHint`, `askCmdr.attachment.*`, `askCmdr.loadEarlier`, `askCmdr.wake.*`,
-`askCmdr.wakeDigest.*`, and the `askCmdr.consent.*` + `askCmdr.cost.*` keys), the settings copy in `settings.json` (`settings.askCmdr.*`, `settings.section.askCmdr`), and the
-command label in `commands.json` (`commands.askCmdrToggle.*`), each with an `@key` translator description. Translated
-across all 10 locales, so `desktop-i18n-coverage` is green. The name and the consent copy are the re-translation surface
-if David adjusts the product calls. Tool + error labels are literal-keyed records in `ask-cmdr-labels.ts` (a computed
-prefix would trip the unused-key check).
+`askCmdr.wakeDigest.*`, and the `askCmdr.consent.*` + `askCmdr.cost.*` keys), the settings copy in `settings.json`
+(`settings.askCmdr.*`, `settings.section.askCmdr`), and the command label in `commands.json`
+(`commands.askCmdrToggle.*`), each with an `@key` translator description. Translated across all 10 locales, so
+`desktop-i18n-coverage` is green. The name and the consent copy are the re-translation surface if David adjusts the
+product calls. Tool + error labels are literal-keyed records in `ask-cmdr-labels.ts` (a computed prefix would trip the
+unused-key check).
 
 ## Decisions
 

@@ -967,5 +967,23 @@
   "askCmdr.sessions.wakeThread": "Ask Cmdr started this chat",
   "@askCmdr.sessions.wakeThread": {
     "description": "Tooltip and spoken label on the small robot glyph beside a chat title in the chat list and in chat search results. It marks the chats nobody typed the first message in: Ask Cmdr noticed something and opened one by itself. The whole job of the label is telling those apart from chats the user started and forgot, so keep the emphasis on WHO started it. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case, no full stop."
+  },
+  "askCmdr.wakeToast.title": "Ask Cmdr has {countText} {count, plural, one {suggestion} other {suggestions}} for you",
+  "@askCmdr.wakeToast.title": {
+    "description": "Headline of the pop-up notice that appears when Ask Cmdr noticed something on its own and staged changes for the user to look at. Nobody asked for these, so the sentence names the agent as the one making the offer rather than telling the user to do anything. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case, no full stop.",
+    "placeholders": {
+      "countText": {
+        "content": "How many suggestions are waiting, already formatted with thousands separators, like 1,234. Always at least one."
+      },
+      "count": { "content": "The same count as a raw integer, used only to pick the singular or plural word." }
+    }
+  },
+  "askCmdr.wakeToast.action": "Review",
+  "@askCmdr.wakeToast.action": {
+    "description": "The main button on that pop-up notice. It opens the suggestions list, where the user approves or rejects each change; nothing runs before that. A VERB, and short: it sits on a small button beside a second, quieter link. Sentence case, no full stop."
+  },
+  "askCmdr.wakeToast.openThread": "See why",
+  "@askCmdr.wakeToast.openThread": {
+    "description": "The quieter, link-shaped second action on that pop-up notice, beside the main Review button. It opens the chat Ask Cmdr had with itself, where its reasoning is. The point of the wording is the difference between the two: Review shows WHAT it wants to do, this one shows WHY it wants to. Short, and sentence case, no full stop."
   }
 }

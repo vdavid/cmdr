@@ -25,6 +25,7 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { startAskCmdrTurnStream, stopAskCmdrTurnStream } from '$lib/ask-cmdr/ask-cmdr-turn-stream.svelte'
 import { startWakeIndicator, stopWakeIndicator } from '$lib/ask-cmdr/wake-indicator.svelte'
+import { startWakeToast, stopWakeToast } from '$lib/ask-cmdr/wake-toast.svelte'
 import { startDragOutEventBridge } from '$lib/file-explorer/drag/drag-out-event-bridge'
 import { startOsMountNoticeBridge } from '$lib/file-explorer/network/os-mount-notice-bridge'
 import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
@@ -108,6 +109,10 @@ export function startEarlyWindowServices(): void {
   // in the way when the agent can't. Same reason as above, plus a gate can move before this
   // window is up (the API key is set in another window entirely).
   void startWakeIndicator()
+  // The one time the proactive agent interrupts: it staged something to review. Nothing at all
+  // for a wake that stayed quiet, and nothing when `askCmdr.wakeToast` is off. Early, for the
+  // same reason as the two above: a wake can fire from launch replay.
+  void startWakeToast()
 }
 
 /**
@@ -191,6 +196,7 @@ export function stopWindowServices(): void {
   stopSuggestedOpsBadge()
   stopAskCmdrTurnStream()
   stopWakeIndicator()
+  stopWakeToast()
   destroyIndexState()
   destroyMediaEnrichState()
   stopOperationFailureWatch()

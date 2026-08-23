@@ -47,7 +47,7 @@ use tauri_specta::{Builder, collect_events};
 
 use crate::agent::chat::stream::AskCmdrTurn;
 use crate::agent::suggested_ops::SuggestionsChanged;
-use crate::agent::wake::AgentWakeStatus;
+use crate::agent::wake::{AgentWakeStaged, AgentWakeStatus};
 use crate::commands::search::SearchIndexReadyEvent;
 use crate::events::index_mapping::{
     AggregationProgressEvent, IndexAggregationCompleteEvent, IndexCoverageBranchEndedEvent,
@@ -869,6 +869,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             // What the status corner's wake indicator shows: a wake thinking, and which gate is
             // in the way when it can't (agent/wake/indicator.rs).
             AgentWakeStatus,
+            // A wake left proposals behind, so the main window can say so once
+            // (agent/wake/staged.rs).
+            AgentWakeStaged,
             // The quit gate holding an exit while operations run (quit/).
             QuitRequested,
             // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).

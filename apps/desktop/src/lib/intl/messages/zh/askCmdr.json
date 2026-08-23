@@ -675,5 +675,17 @@
   "askCmdr.sessions.wakeThread": "这个对话是 Ask Cmdr 发起的",
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ba3d8fa"
+  },
+  "askCmdr.wakeToast.title": "Ask Cmdr 有 {countText} {count, plural, other {条建议}}给你",
+  "@askCmdr.wakeToast.title": {
+    "sourceHash": "08b3d32"
+  },
+  "askCmdr.wakeToast.action": "查看",
+  "@askCmdr.wakeToast.action": {
+    "sourceHash": "aff0766"
+  },
+  "askCmdr.wakeToast.openThread": "看看原因",
+  "@askCmdr.wakeToast.openThread": {
+    "sourceHash": "0a641f8"
   }
 }

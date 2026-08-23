@@ -676,5 +676,17 @@
   "askCmdr.sessions.wakeThread": "Ask Cmdr startade den här chatten",
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ba3d8fa"
+  },
+  "askCmdr.wakeToast.title": "Ask Cmdr har {countText} {count, plural, one {förslag} other {förslag}} till dig",
+  "@askCmdr.wakeToast.title": {
+    "sourceHash": "08b3d32"
+  },
+  "askCmdr.wakeToast.action": "Granska",
+  "@askCmdr.wakeToast.action": {
+    "sourceHash": "aff0766"
+  },
+  "askCmdr.wakeToast.openThread": "Se varför",
+  "@askCmdr.wakeToast.openThread": {
+    "sourceHash": "0a641f8"
   }
 }

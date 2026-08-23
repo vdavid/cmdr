@@ -10,6 +10,7 @@ import {
   commands,
   events,
   type AgentErrorKindView,
+  type AgentWakeStaged,
   type AgentWakeStatus,
   type WakeReadinessView,
   type AskCmdrStreamEvent,
@@ -322,6 +323,22 @@ export async function agentWakeStatus(): Promise<AgentWakeStatus> {
  */
 export function onAgentWakeStatus(callback: (payload: AgentWakeStatus) => void): Promise<UnlistenFn> {
   return events.agentWakeStatus.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Subscribe to "a wake staged proposals": the one thing the proactive agent says out loud.
+ *
+ * ⚠️ One-shot, and NOT seeded. Unlike the indicator's status there is no "current value" to
+ * read at startup: a proposal staged before this window existed is already waiting in the
+ * suggestions badge, and re-announcing it on every reload would toast the same thing twice.
+ *
+ * ⚠️ It reaches EVERY window. Subscribe from the main window only, or the settings window
+ * raises its own copy of the toast.
+ */
+export function onAgentWakeStaged(callback: (payload: AgentWakeStaged) => void): Promise<UnlistenFn> {
+  return events.agentWakeStaged.listen((event) => {
     callback(event.payload)
   })
 }

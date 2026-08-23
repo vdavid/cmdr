@@ -463,6 +463,9 @@ pub fn run() {
             agent::chat::stream::init_turn_event_emitter(app.handle());
             // Same, for the status corner's wake indicator (agent/wake/indicator.rs).
             agent::wake::init_wake_status_emitter(app.handle());
+            // And for the one thing a wake says out loud: it staged something to review
+            // (agent/wake/staged.rs).
+            agent::wake::init_wake_staged_emitter(app.handle());
 
             // Restricted-paths tracker (TCC-gated paths the user has been
             // denied access to). Installs an NSApplicationDidBecomeActive

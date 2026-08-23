@@ -360,6 +360,7 @@ export {
   askCmdrWakeSettingsChanged,
   agentWakeStatus,
   onAgentWakeStatus,
+  onAgentWakeStaged,
 } from './ask-cmdr'
 export type {
   WakeReadinessView,

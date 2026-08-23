@@ -3766,6 +3766,7 @@ export const commands = {
 /** Events */
 export const events = {
   accentColorChanged: makeEvent<AccentColorChanged>('accent-color-changed'),
+  agentWakeStaged: makeEvent<AgentWakeStaged>('agent-wake-staged'),
   agentWakeStatus: makeEvent<AgentWakeStatus>('agent-wake-status'),
   aiDownloadProgress: makeEvent<DownloadProgress>('ai-download-progress'),
   aiExtracting: makeEvent<AiExtracting>('ai-extracting'),
@@ -3948,6 +3949,23 @@ export type AgentErrorKindView =
   | 'budgetExhausted'
   | 'unfinishedReply'
   | 'provider'
+
+/**
+ *  A wake left proposals behind. The user has something to look at, and never had to ask.
+ *
+ *  ⚠️ `Serialize` only beside the derive, like [`AgentWakeStatus`](super::AgentWakeStatus):
+ *  `tauri_specta::Event` wants `DeserializeOwned` solely for its Rust-side `listen`, which
+ *  nothing here does.
+ */
+export type AgentWakeStaged = {
+  // The thread the wake reasoned in, so a reader can go and see WHY it proposed this.
+  conversationId: number
+  /**
+   *  How many proposals went past on the way. Always at least one: a wake that staged
+   *  nothing says nothing.
+   */
+  proposals: number
+}
 
 /**
  *  What the status corner's wake indicator shows right now.

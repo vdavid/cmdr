@@ -675,5 +675,17 @@
   "askCmdr.sessions.wakeThread": "Ezt a beszélgetést az Ask Cmdr kezdte",
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ba3d8fa"
+  },
+  "askCmdr.wakeToast.title": "Az Ask Cmdrnek {countText} {count, plural, one {javaslata} other {javaslata}} van a számodra",
+  "@askCmdr.wakeToast.title": {
+    "sourceHash": "08b3d32"
+  },
+  "askCmdr.wakeToast.action": "Megnézem",
+  "@askCmdr.wakeToast.action": {
+    "sourceHash": "aff0766"
+  },
+  "askCmdr.wakeToast.openThread": "Miért?",
+  "@askCmdr.wakeToast.openThread": {
+    "sourceHash": "0a641f8"
   }
 }

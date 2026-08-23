@@ -679,5 +679,17 @@
   "askCmdr.sessions.wakeThread": "Ask Cmdr is dit gesprek begonnen",
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ba3d8fa"
+  },
+  "askCmdr.wakeToast.title": "Ask Cmdr heeft {countText} {count, plural, one {suggestie} other {suggesties}} voor je",
+  "@askCmdr.wakeToast.title": {
+    "sourceHash": "08b3d32"
+  },
+  "askCmdr.wakeToast.action": "Bekijken",
+  "@askCmdr.wakeToast.action": {
+    "sourceHash": "aff0766"
+  },
+  "askCmdr.wakeToast.openThread": "Waarom?",
+  "@askCmdr.wakeToast.openThread": {
+    "sourceHash": "0a641f8"
   }
 }

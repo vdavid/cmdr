@@ -675,5 +675,17 @@
   "askCmdr.sessions.wakeThread": "Ask Cmdr đã bắt đầu cuộc trò chuyện này",
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ba3d8fa"
+  },
+  "askCmdr.wakeToast.title": "Ask Cmdr có {countText} {count, plural, other {gợi ý}} cho bạn",
+  "@askCmdr.wakeToast.title": {
+    "sourceHash": "08b3d32"
+  },
+  "askCmdr.wakeToast.action": "Xem lại",
+  "@askCmdr.wakeToast.action": {
+    "sourceHash": "aff0766"
+  },
+  "askCmdr.wakeToast.openThread": "Xem lý do",
+  "@askCmdr.wakeToast.openThread": {
+    "sourceHash": "0a641f8"
   }
 }

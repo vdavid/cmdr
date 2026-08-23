@@ -376,6 +376,23 @@ corner's stop button is `ask_cmdr_cancel` with the id this event carries. That r
 `agent/chat/` rather than `commands/agent/chat.rs` precisely so the wake runner can reach it
 without importing upward.
 
+## Saying a wake staged something
+
+`staged.rs` carries a second `tauri_specta::Event`, `agent-wake-staged`, holding the conversation and the proposal
+count. A THIRD event rather than a field on either of the other two, because it is a one-shot fact: the turn stream
+carries progress, the indicator carries state, and a subscriber reconnecting to a state event would re-raise the same
+toast on every reload.
+
+`runner::run` emits it from the proposal count `forward_to_windows` returns, after the quiet-wake branch and BEFORE the
+outcome line, whatever the turn then ended as. A cancel or a provider failure after the model already staged a group
+leaves that group in the store, waiting; staying quiet about it would hide work the user is expected to review.
+`announce_staged` no-ops at zero, so the caller does not have to remember.
+
+**The `askCmdr.wakeToast` gate is the FRONTEND's.** The event says what happened; whether a window makes a noise about
+it is that window's business, and the settings store already updates live there. Gating the emit instead would mean a
+user who turns the toast back on mid-wake silently misses the one it was about to raise. The rest of the toast:
+`apps/desktop/src/lib/ask-cmdr/DETAILS.md` § The staged-proposal toast.
+
 ## Importance, on the writer thread
 
 ⚠️ Never in `route()`: `lookup` is SQLite behind a shared cache, and the live loop may do neither.

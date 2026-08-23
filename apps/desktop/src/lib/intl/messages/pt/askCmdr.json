@@ -677,5 +677,17 @@
   "askCmdr.sessions.wakeThread": "Foi o Ask Cmdr que começou esta conversa",
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ba3d8fa"
+  },
+  "askCmdr.wakeToast.title": "O Ask Cmdr tem {countText} {count, plural, one {sugestão} many {sugestões} other {sugestões}} para ti",
+  "@askCmdr.wakeToast.title": {
+    "sourceHash": "08b3d32"
+  },
+  "askCmdr.wakeToast.action": "Ver",
+  "@askCmdr.wakeToast.action": {
+    "sourceHash": "aff0766"
+  },
+  "askCmdr.wakeToast.openThread": "Ver porquê",
+  "@askCmdr.wakeToast.openThread": {
+    "sourceHash": "0a641f8"
   }
 }

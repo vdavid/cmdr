@@ -14,6 +14,7 @@ use tokio::sync::mpsc::unbounded_channel;
 use super::channel::{WakeControl, send_control};
 use super::indicator::{note_wake_finished, note_wake_started};
 use super::quiet::QuietWatch;
+use super::staged::announce_staged;
 use super::{PreparedWake, RunWakeParams, WakeTier, wake_turn_params};
 use crate::agent::chat::budget;
 use crate::agent::chat::cancel;
@@ -143,6 +144,12 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
         record_outcome("quiet", Some(prepared.tier), prepared.rows.len(), proposals);
         return;
     }
+
+    // ⚠️ Announced whatever the turn ENDED as, and before the outcome line. A cancel or a
+    // provider failure after the model already staged a group leaves that group sitting in the
+    // store, waiting; staying quiet about it would hide work the user is expected to review.
+    // `announce_staged` is a no-op at zero, which is the common case.
+    announce_staged(prepared.conversation_id, proposals);
 
     match result {
         Ok(TurnResult::Answered { .. }) => record_outcome("ran", Some(prepared.tier), prepared.rows.len(), proposals),
