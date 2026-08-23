@@ -7,6 +7,7 @@ it the agent relearns nothing and re-proposes what was already turned down. Dept
 
 - `store.rs`: `MemoryStore` — the caps, the write, the edit, and `read_for_prompt`, the slice a turn carries.
 - `jail.rs`: the one path check both tools call.
+- `refusal.rs`: `MemoryRefusal`. Its own module so the jail and the store can both name it without a module cycle.
 - `mod.rs`: `memory_root` / `store_for` / `read_for_turn`, the only lines that need an `AppHandle`.
 
 The tool handlers live with the rest of the toolset (`../tools/memory.rs`); the prompt fence lives with prompt assembly

@@ -1,4 +1,4 @@
-//! The two memory tools: the thin `AppHandle` half over the pure [`MemoryStore`].
+//! The two memory tools: the thin `AppHandle` half over the pure `MemoryStore`.
 //!
 //! Everything that decides anything — the jail, the caps, the edit's uniqueness rule — lives in
 //! `agent/memory/` and is unit-tested against a `tempdir`. What is left here is resolving the

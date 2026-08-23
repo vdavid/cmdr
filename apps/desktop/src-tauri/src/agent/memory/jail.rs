@@ -6,7 +6,7 @@
 
 use std::path::{Component, Path, PathBuf};
 
-use super::store::MemoryRefusal;
+use super::refusal::MemoryRefusal;
 
 /// The only file extension memory holds. Markdown is what the hub is fed to the model as, and
 /// a folder that can hold a `.sh` or a `.json` is a folder the agent can drop something
