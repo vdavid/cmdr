@@ -128,6 +128,12 @@ Two things about the method that are worth more than they look:
 crate evaluation. Which is why the one assertion in that file compares serial against windowed **in the same run on the
 same server** and asks for 4× where the shape shows 7× (7.2×, 7.1×, 7.0× across three consecutive runs).
 
+❗ **The slack in that gate is the point, ❌ not a number to tighten.** A gate set at the measurement leaves a ±30%
+method almost no headroom, and the first flake gets it lowered by whoever is unblocking a red run — at which point it
+means nothing at all. 4× is far enough below the shape to only ever fire on a real regression (a serial fallback, a
+window that stopped filling), and it is worth defending against a later "shouldn't this assert what we actually
+measured?" pass.
+
 ## The write window
 
 An upload is the read window's mirror: `writes.rs` keeps `WRITE_WINDOW_DEPTH` positioned writes in flight, each naming

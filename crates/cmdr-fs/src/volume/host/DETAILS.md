@@ -147,6 +147,12 @@ to. Both halves, or neither. This is what OpenSSH does.
 **Fingerprints rather than keys.** The seam speaks the OpenSSH `SHA256:…` string, so no SSH crate reaches into `cmdr-fs`
 and the value the store holds is the one a human compares against `ssh-keygen -lf`.
 
+**Rejected: resolving trust app-side and handing the backend a verdict** through its connection parameters, which would
+have needed no seam at all. It works exactly once. A verdict is decided before the dial, and the moment that matters
+most is the one the app isn't in: a reconnect hours later, from a backoff loop, against a server whose key changed while
+nobody was watching. A backend that can't re-ask has to either refuse every reconnect or trust whatever answers, and
+both are wrong. So the seam is a QUESTION the backend asks whenever it dials, not an answer it is handed.
+
 **Detached means trust-nothing**, and that asymmetry is deliberate: every other seam degrades to a no-op, but a
 credential-shaped seam that degraded to "yes" would make a security regression invisible in exactly the tests meant to
 catch it. The cost is that a no-op `record` leaves an approve-then-reconnect harness looping forever on "unknown →

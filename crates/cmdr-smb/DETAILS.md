@@ -536,7 +536,7 @@ where a filename belongs. `AlreadyExists` in the same `match` has it too.
   `op_name`, so a `path` beside it is the natural shape.
 - **Not done as a side effect of the SFTP work** — it's ~40 sites across a shipping backend's whole error surface, so it
   wants its own change. `LocalPosixVolume` has the same class of gap from a different cause (the blanket
-  `From<std::io::Error>`), tracked as an `#[ignore]`d cell in `local_posix_test.rs`.
+  `From<std::io::Error>`), tracked as an `#[ignore]`d cell in `local_posix_conformance_test.rs`.
 
 ## Gotchas
 

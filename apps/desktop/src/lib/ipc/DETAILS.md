@@ -208,6 +208,14 @@ problem to the helper instead of solving it. Just rename the locals at the call 
 5. Use it on the FE: `import { commands } from '$lib/ipc/bindings'; await commands.doThing(volumeId, force)`. If it
    returns `Result`, unwrap via `throwIpcError`.
 
+**A command surface may land with no frontend calling it, and nothing warns.** The Rust side is reachable from
+`ipc_command_manifest!`, so no `#[allow(dead_code)]` is needed, and `knip.json` ignores both `src/lib/ipc/bindings.ts`
+and `src/lib/tauri-commands/**`, so an unused generated binding and its typed wrapper trip nothing either. That is what
+lets a backend ship its whole IPC surface ahead of the UI that will call it — `commands/sftp.rs` and
+`tauri-commands/sftp.ts` are the worked example — and it means "nothing calls this" is never the signal that a surface
+is unfinished. `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend" is where a surface waiting for its UI says
+so out loud instead.
+
 ## Type shape constraints (specta rc.24)
 
 Two patterns specta rc.24 can't handle. New code must avoid them; existing exclusions are tracked below.
