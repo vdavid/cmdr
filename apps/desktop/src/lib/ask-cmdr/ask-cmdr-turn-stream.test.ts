@@ -9,8 +9,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AskCmdrSendOutcome, AskCmdrStreamEvent, AskCmdrTurn, ConversationRow } from '$lib/tauri-commands'
 
-const sendMock =
-  vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
+const sendMock = vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
 const listMock = vi.fn<(limit: number, offset: number, archived: boolean) => Promise<ConversationRow[]>>()
 const unlistenMock = vi.fn()
 const listenMock = vi.fn<(cb: (payload: AskCmdrTurn) => void) => Promise<() => void>>()

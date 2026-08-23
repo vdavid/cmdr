@@ -7,28 +7,51 @@ Pull-tier docs for `lib/ask-cmdr/`. Must-knows live in `CLAUDE.md`. Backend:
 
 Wrappers in `../tauri-commands/ask-cmdr.ts`:
 
-- `sendAskCmdrMessage(conversationId, text, onEvent)` — streaming, over a raw `invoke` + Tauri `Channel` (Channel isn't
-  specta-friendly, so it's one of the sanctioned raw-invoke sites, with the eslint opt-out). `conversationId` is `null`
-  for a new thread; the resolved id arrives both in the first `started` event and as the promise value. The command
-  returns the id at once and keeps streaming on a worker thread.
+- `sendAskCmdrMessage(conversationId, text, attachments, deniedNames)` — a plain specta command. `conversationId` is
+  `null` for a new thread; the resolved id comes back as the promise value, and the answer arrives on the subscription
+  below. It answers an `AskCmdrSendOutcome`: `accepted` with the id, or a typed refusal decided before the turn existed
+  (no consent, no slot, a local window too small). Those can't be streamed — half of them happen before there is a
+  thread to key an event on.
+- `onAskCmdrTurn(cb)` — the subscription every turn's progress arrives on, rail sends and wakes alike.
 - `cancelAskCmdr(id)`, `getAskCmdrConversation(id, limit, offset)`, `listAskCmdrConversations(...)` — plain specta
   commands.
 - `preflightBulkRename` / `reviseBulkRenameRow` / `applyBulkRename` / `cancelBulkRenameProposal` — the review dialog's
   four actions. Only opaque ids cross, plus the one name the user typed.
 
-`AskCmdrStreamEvent` is hand-mirrored from the Rust `Channel`-only enum (absent from `bindings.ts`). Everything it
-carries is generated, though: `MessageView` / `MessageBlock` / `ConversationRow` / `ConversationDetailView`, and the
-review row's `RenameProposalRowSnapshot` / `RenameEvidence` / `EvidenceCoverage` (re-exported as `RenameProposalRow` /
+Nothing here is hand-mirrored: `AskCmdrTurn` / `AskCmdrStreamEvent` are generated like everything they carry
+(`MessageView` / `MessageBlock` / `ConversationRow` / `ConversationDetailView`, and the review row's
+`RenameProposalRowSnapshot` / `RenameEvidence` / `EvidenceCoverage`, re-exported as `RenameProposalRow` /
 `RenameEvidence` / `RenameEvidenceCoverage`, the names the rail uses). ❌ Don't hand-mirror a type that has a generated
 counterpart; that's a drift seam.
 
 ## The streaming model
 
+**Subscribed by conversation, not by send.** One listener per window (`ask-cmdr-turn-stream.svelte.ts`, started from
+`routes/(main)/+page.svelte` so it exists in the MAIN window only) hears every turn the backend is running and hands
+each event to two places: `handleTurnEvent` in the stream slice, which keeps only the ones about the thread on screen,
+and the sessions slice, which reacts to a thread appearing or going away. That module is the one place allowed to know
+both, since the sessions slice calls into the trigger and the trigger never imports it back.
+
+Three things follow from the subscription being conversation-keyed rather than per-invoke, and each has a test in
+`ask-cmdr-turn-stream.test.ts`:
+
+- **A reload keeps the answer.** The webview goes away mid-turn and the backend keeps writing into `main.db`; the
+  reloaded rail lands on the same thread and the rest of the turn renders. There is no second `assistantStarted` to
+  hear, so `adoptLiveTurn` treats ANY live event for the thread on screen as proof a turn is running, and the reducer
+  creates the streaming bubble if there isn't one (`ensureAssistant`).
+- **A thread can disappear under the rail.** A quiet wake opens a thread, thinks in it, and deletes it seconds later;
+  `discarded` is the only way a subscriber can learn that, since there is nothing left to re-read. The rail steps off
+  into an empty chat and the session list drops the row.
+- **A stopped turn stays stopped.** A cancel gets no terminal event back, so the backend dribbles a chunk or two more.
+  Those would otherwise read as a live turn and re-enter "working…" with nothing coming to clear it, so the thread goes
+  on a stopped list until it is sent to again.
+
 `sendMessage` optimistically appends a `{ kind: 'user' }` item and flips `streaming` on, then calls
-`sendAskCmdrMessage`. Events drive the render (`handleStreamEvent`), each delegating to a tiny mutator so the switch
+`sendAskCmdrMessage`. Events drive the render (`applyStreamEvent`), each delegating to a tiny mutator so the switch
 stays simple:
 
-- `started` → set `conversationId` (the stop button + a new thread key on it).
+- `started` → the thread exists and is being worked on. A fresh chat has no id until this arrives (or until the send's
+  promise resolves, whichever is first); a wake emits it too, which is what tells the session list.
 - `assistantStarted` → push a streaming `{ kind: 'assistant', text: '', tools: [] }`.
 - `textDelta` → append to the last assistant's `text`; clear its `thinking`.
 - `reasoningTick` → set the last assistant's `thinking` (a subtle "thinking…" line; the reasoning content itself never
@@ -63,8 +86,8 @@ still shows on revisit). History renders the same lines via the `event`-role fol
 mechanics: `src-tauri/src/agent/chat/DETAILS.md` § Model-change events.
 
 **Cancel finalizes locally.** The runtime returns `Cancelled` with no terminal event, so `stopStreaming` cancels the
-backend AND finalizes the current bubble itself (a late `textDelta` that races in is harmless — it just appends a little
-more text to a non-streaming bubble).
+backend AND finalizes the current bubble itself, then puts the thread on the stopped list so the chunks still in flight
+are ignored rather than re-adopted as a live turn.
 
 History loads through `getAskCmdrConversation` on rail open (bootstrapping the most recent thread) and folds `tool`-role
 result rows into their assistant tool line by `callId`, so the thread shows one line per call.

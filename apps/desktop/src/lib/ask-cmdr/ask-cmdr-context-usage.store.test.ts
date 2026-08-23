@@ -7,8 +7,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AskCmdrSendOutcome, AskCmdrStreamEvent, ConversationDetailView } from '$lib/tauri-commands'
 
-const sendMock =
-  vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
+const sendMock = vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
 const getConversationMock =
   vi.fn<(id: number, limit: number, offset: number) => Promise<ConversationDetailView | null>>()
 

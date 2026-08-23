@@ -8,8 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AskCmdrSendOutcome, AskCmdrStreamEvent } from '$lib/tauri-commands'
 
-const sendMock =
-  vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
+const sendMock = vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
 const preflightRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const reviseRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const applyRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
@@ -126,12 +125,7 @@ describe('carrying denials into the next batch', () => {
     sendMessage('try again')
 
     // The rejected name rides the next send; the accepted one does not.
-    expect(sendMock).toHaveBeenLastCalledWith(
-      expect.anything(),
-      'try again',
-      [],
-      ['klarna-receipt.png'],
-    )
+    expect(sendMock).toHaveBeenLastCalledWith(expect.anything(), 'try again', [], ['klarna-receipt.png'])
 
     // And they are feedback on one decision, not a permanent denylist.
     finishTurn()

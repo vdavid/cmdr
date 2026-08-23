@@ -243,9 +243,9 @@ analytics work unchanged because they hang off a conversation.
 folder name is data; a backend-written English title would be untranslated copy shipped into
 the database, sitting in a list beside threads the user named themselves.
 
-The sink is a plain `ChatEventSink`, the same unbounded channel the rail uses. Nobody is
-watching a rail during a wake, so in M1 the wake thread drains it and discards (counting
-proposals on the way past); M2 item 1 puts the indicator on the other end.
+The sink is a plain `ChatEventSink`, the same unbounded channel the rail uses, drained onto the
+same conversation-keyed transport (`agent/chat/stream.rs`). So a wake's thread reads live while
+it is still being written, and the rail needs nothing wake-specific to show one.
 
 ## What drives it: three threads, and which lock each holds
 
@@ -369,9 +369,15 @@ to think declines without leaving an empty conversation behind. The concrete `Ag
 a claim in one thread being backed by facts delivered to another, and the wrong scope makes
 `ImageFactsLedger` refuse every content-citing proposal.
 
-**The sink** is a plain `UnboundedSender<AgentChatEvent>` the wake thread drains itself. The drain
-DISCARDS today and counts proposals on the way past; M2 item 1 replaces it with the
-`tauri_specta::Event` bridge that makes the turn visible live.
+**The sink** is a plain `UnboundedSender<AgentChatEvent>` the wake thread drains itself, through
+`stream::forward_to_windows` — the same projection a rail send uses, so the two can't drift. It
+counts proposals on the way past, the one number the outcome log line needs.
+
+**The thread is announced at both ends.** `Started` goes out as the turn begins, which is what
+puts a wake's thread in the session list as it is created (nothing else says so: `SuggestionsChanged`
+fires on proposals, and a wake that only looks makes none). `Discarded` goes out when a quiet wake
+deletes it again, because anyone watching that conversation cannot learn it any other way — there
+is nothing left to re-read.
 
 **The envelope** is captured exactly as the rail captures it. With no main window (a
 routine-launched app on macOS) `PaneStateStore` is absent and the pane fields come back empty,

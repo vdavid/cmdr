@@ -413,17 +413,44 @@ The runtime emits typed progress through `ChatEventSink` (a
 `tokio::sync::mpsc::UnboundedSender<AgentChatEvent>`). The `ask_cmdr_send_message` command
 is a thin adapter:
 
-1. Make the Tauri `Channel<AskCmdrStreamEvent>` from the command args.
-2. `let (tx, mut rx) = unbounded_channel();` and spawn a task: `while let Some(ev) =
-   rx.recv().await { channel.send(map_to_wire(ev))?; }`.
-3. Capture the `ContextEnvelope` from live state (`PaneStateStore` + `snapshot_volumes`),
+1. `let (tx, mut rx) = unbounded_channel();` and `stream::forward_to_windows(conversation_id,
+   &mut rx)`, which drains until the runtime drops its sender.
+2. Capture the `ContextEnvelope` from live state (`PaneStateStore` + `snapshot_volumes`),
    resolve the interactive-slot `GenaiAgentLlm`, then call
    `ChatRuntime::send_message(app, &llm, provider, model, conversation_id, text, envelope,
    offset, tx, cancel)`.
-4. Map `AgentChatEvent` → the wire `AskCmdrStreamEvent` (§7): `AssistantStarted` carries no
-   id (map to a bubble-start); the persisted assistant id arrives on `Done`. A refusal or
-   handler problem surfaces as `ToolCallFinished { ok: false }`. NEVER forward a reasoning
-   blob or provider state — the events already exclude them.
+3. `to_wire_event` maps `AgentChatEvent` → the wire `AskCmdrStreamEvent`: `AssistantStarted`
+   carries no id (map to a bubble-start); the persisted assistant id arrives on `Done`. A
+   refusal or handler problem surfaces as `ToolCallFinished { ok: false }`. NEVER forward a
+   reasoning blob or provider state — the events already exclude them.
+
+### One transport, keyed by conversation (`stream.rs`)
+
+Each wire event leaves as an `AskCmdrTurn { conversation_id, event }`, a `tauri_specta::Event`.
+
+**Why not the per-invoke `Channel<T>` this used to be.** Three things it couldn't do, each now a
+test:
+
+- **Survive a reload.** A channel dies with the webview that handed it in, so the forwarder broke
+  and the turn finished into `main.db` while the user watched a dead panel. A subscriber keyed on
+  the thread just picks the stream back up, which is why the forwarder deliberately has no "the
+  listener went away" exit.
+- **Serve a wake.** A wake has no invoke to reply into. It forwards through the same function, so
+  the two can't drift into streaming different things.
+- **Stay typed.** `Channel<T>` isn't specta-friendly, so the command rode raw `invoke` and the
+  wire enum never reached `bindings.ts`, leaving it hand-mirrored on the frontend with nothing
+  catching drift.
+
+Two variants map from no runtime event, because the runtime neither creates nor deletes threads:
+`Started` (a thread exists and is being worked on — how the session list hears about a wake's) and
+`Discarded` (a quiet wake deleted its thread; the one thing a subscriber can't recover from by
+re-reading, since there is nothing to read).
+
+A refusal decided BEFORE the turn exists is the command's `Err` (`AskCmdrSendRefusal`), not an
+event: half of them happen before there is a conversation to key one on.
+
+⚠️ The event reaches every window, and only the main window hosts a rail; the frontend scopes the
+subscription there (`lib/ask-cmdr/DETAILS.md` § The streaming model).
 
 The envelope's live sources (plan §9): focused pane path from `PaneStateStore` (it returns
 the pane SIDE, so resolve that side's directory from the snapshot), cursor + selection from

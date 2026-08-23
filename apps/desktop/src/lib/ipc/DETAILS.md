@@ -37,9 +37,8 @@ For commands that return `Result<T, E>` on the Rust side, the TS wrapper returns
 `{ status: 'ok', data: T } | { status: 'error', error: E }`. Most call sites unwrap via `throwIpcError` from
 `$lib/tauri-commands/ipc-types`.
 
-The Ask Cmdr bulk-rename preflight, apply, and cancel commands follow this generated-binding path. The streaming
-`proposalReady` event remains part of Ask Cmdr's Channel-only stream, so its display-only wire shape stays hand-mirrored
-in `tauri-commands/ask-cmdr.ts`.
+Every Ask Cmdr command follows this generated-binding path, streaming included: a turn's progress is a typed event keyed
+by conversation (`AskCmdrTurn`), not a reply channel, so nothing about the rail is hand-mirrored.
 
 ## Typed events
 

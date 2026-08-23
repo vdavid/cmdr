@@ -258,7 +258,7 @@ up front are lost on `NothingDue` and `Unavailable`, which are ordinary paths, n
   property the original order exists for.
 - **A run step, on the wake thread**: takes the digest, the conversation id, and the drained rows, and runs the turn
   under `ChatRuntime::wake`.
-- **The sink**: a wake owns a plain `UnboundedSender<AgentChatEvent>` and drains it. In M1 the drain discards; M2 item 1
+- **The sink**: a wake owns a plain `UnboundedSender<AgentChatEvent>` and drains it. In M1 the drain discards; M2 item 7
   replaces the drain with the `tauri_specta::Event` bridge. `run_wake` requires a `&ChatEventSink`, so this is not
   optional.
 - **The envelope**: captured the same way the rail does. With no main window (routine on macOS)
@@ -464,11 +464,10 @@ is asynchronous and is not the gate; the translations are.
    contract and `StatusCorner.a11y.test.ts` mounts the real corner, and neither mocks suggested-ops today, so a member
    that opens a subscription at mount breaks both.
 
-   ⚠️ **Not a `Channel`.** `Channel<AskCmdrStreamEvent>` is a per-invoke reply channel the frontend hands in
-   (`chat.rs:372`); a wake has no invoke. This is the indicator's own phase event, distinct from the turn stream in item
-   7, and both are `tauri_specta::Event`s following `SuggestionsChanged` (`suggested_ops/changed.rs:45`, registered at
-   `ipc.rs:842`, consumed via `onSuggestionsChanged`): event struct, `collect_events!` line, a `$lib/tauri-commands`
-   wrapper, bindings regen.
+   ⚠️ **Its own event, distinct from the turn stream item 7 built.** This is the indicator's PHASE, not a turn's
+   progress, so it is a second `tauri_specta::Event` following `SuggestionsChanged` (`suggested_ops/changed.rs:45`,
+   registered in `ipc.rs`, consumed via `onSuggestionsChanged`): event struct, `collect_events!` line, a
+   `$lib/tauri-commands` wrapper, bindings regen. `AskCmdrTurn` is the model to copy for the Rust half.
 
    Clicking opens the rail at that conversation. `switchToThread(id)` already exists (`ask-cmdr-trigger.svelte.ts:141`);
    call it before `openRail()`, which otherwise bootstraps the most recent thread on a closed→open transition and wastes
@@ -506,7 +505,14 @@ is asynchronous and is not the gate; the translations are.
 6. **Icons**: `bot` and `brain-circuit` are not in `icon-map.ts`, which imports each glyph explicitly. Both need an
    import and a map entry (`docs/guides/icons.md`).
 
-### 7. A wake's turn streams into the rail, live
+### 7. A wake's turn streams into the rail, live — DONE
+
+Landed. The transport is `agent/chat/stream.rs`: one `AskCmdrTurn { conversationId, event }` `tauri_specta::Event`,
+emitted by both `ask_cmdr_send_message` and the wake runner, subscribed once per main window in
+`lib/ask-cmdr/ask-cmdr-turn-stream.svelte.ts` and fanned out to the thread view and the session list. The `Channel` is
+gone, `ask_cmdr_send_message` is a plain specta command whose pre-turn refusals are its typed `Err`, and the wire enum
+is in `bindings.ts`. Two variants no runtime event maps to: `Started` (the session list's signal that a thread was
+created) and `Discarded` (a quiet wake took its thread away). What items 1-6 still need is below, unchanged.
 
 **Without this the indicator's click opens an EMPTY thread.** `run_turn` writes a message's content blocks only on that
 `respond` call's `End`, and the user-role message (for a wake, the digest) lands on the FIRST `End`, so a thread opened
@@ -746,10 +752,10 @@ actually happened lands later through `ProposalReportingSink` into `mark_group_c
 outcome recorded at claim time says "approved" for a group that then skipped every file. That seam holds only a
 `Connection` on the write engine's thread, with `write-ops-isolation` watching.
 
-⚠️ **Not `AskCmdrStreamEvent`.** A rejection arrives through `suggested_ops_reject`
-(`commands/agent/suggested_ops.rs:187`) with no open chat channel, so mirroring `ModelChanged` there buys nothing.
-`SuggestionsChanged` already fires on every approve and reject (`suggested_ops/mod.rs:121,135`) and the rail can refetch
-on it, which removes one of the three Rust surfaces this milestone looked like it needed.
+⚠️ **Not the turn stream.** A rejection arrives through `suggested_ops_reject` (`commands/agent/suggested_ops.rs:187`)
+with no open chat channel, so mirroring `ModelChanged` there buys nothing. `SuggestionsChanged` already fires on every
+approve and reject (`suggested_ops/mod.rs:121,135`) and the rail can refetch on it, which removes one of the three Rust
+surfaces this milestone looked like it needed.
 
 The conversation link survives to the hook: `get_group` gives `set_id` (`read.rs:63`), `get_sweep` gives
 `conversation_id` (`:78`). It is nullable and NULLed when a thread is deleted, and M1 adds `delete_conversation` — a
