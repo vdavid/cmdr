@@ -4,10 +4,10 @@
 
 `Volume` has always been the API between Cmdr and a storage backend, and it has always lived below the app. What it
 never had was exclusivity: a backend could implement the trait and ALSO reach sideways into the listing cache, the
-keychain, the volume registry, the analytics client, and the settings module. The mature SMB backend does that across
-roughly two dozen sites, and nothing stops the next one.
+keychain, the volume registry, the analytics client, and the settings module. `local_posix` and MTP still do, and
+nothing but this boundary stops the next one; SMB's retrofit had to unpick roughly two dozen such sites.
 
-Turning each reach into a named seam is what makes `cargo check -p cmdr-ftp` a complete verification loop: after the
+Turning each reach into a named seam is what makes `cargo check -p cmdr-sftp` a complete verification loop: after the
 boundary, a sideways reach is either one of the traits here or a compile error. That's the whole payoff, and it's
 overwhelmingly for the backends not yet written. A new backend gets it for free; retrofitting an old one is where the
 cost sits.
@@ -127,8 +127,8 @@ UI copy edit change what a backend means.
 (`session.rs::refresh_credentials_from_store`, which tries share-level then server-level) and the sign-in path's save
 (`reconnect.rs::do_reconnect_with_credentials`, which saves server-level so one password covers every share).
 
-`(service, scope)` generalizes that pair: `(hostname, share)` for SMB, `(endpoint, bucket)` for S3, `(hostname, None)`
-for FTP. `secret` rather than `password` because S3's is an access key.
+`(service, scope)` generalizes that pair: `(hostname, share)` for SMB, `("host:port", username)` for SFTP, and
+`(endpoint, bucket)` for S3. `secret` rather than `password` because S3's is an access key.
 
 ### `HostKeys`
 
@@ -167,9 +167,9 @@ lock is held).
 
 **Why a trait rather than a `cmdr-index` dependency.** A backend crate could import the index handle — both are
 Tauri-free crates, and `crates/cmdr-smb/src/volume/watcher.rs` already imports `cmdr_index::{WatchGap, WatchScope}`
-today. It shouldn't: depending on the index would put a quarter of the codebase inside `cargo check -p cmdr-ftp` for the
-sake of two method calls, which is the exact inner-loop win the crate boundary is being built to get. So `WatchGap` here
-is the seam's own, and the app's adapter maps it.
+today. It shouldn't: depending on the index would put a quarter of the codebase inside `cargo check -p cmdr-sftp` for
+the sake of two method calls, which is the exact inner-loop win the crate boundary is being built to get. So `WatchGap`
+here is the seam's own, and the app's adapter maps it.
 
 **`WatchScope` isn't here.** Its `Device` variant exists for MTP, where one PTP session carries several volumes and a
 reset invalidates all of them at once. That's the transport layer's shape, and MTP is app-resident. A volume backend
@@ -185,8 +185,8 @@ backend call unconditionally.
 design: the user moves a slider and the next batch picks it up without remounting, which is why it's a seam call and not
 a constructor argument.
 
-The `backend` argument is a settings namespace (`"smb"`, `"ftp"`, `"s3"`), not a classification — ❌ nothing branches on
-it, on either side; the app resolves it through a namespace-keyed table (§ "Where the app answers each seam").
+The `backend` argument is a settings namespace (`"smb"`, `"sftp"`, `"s3"`), not a classification — ❌ nothing branches
+on it, on either side; the app resolves it through a namespace-keyed table (§ "Where the app answers each seam").
 Connection parameters (address, port, region, passive mode) go through the backend's own constructor, typed as that
 backend wants them.
 
@@ -291,7 +291,7 @@ surfaces at the end of a move: check every `[\`Type::method\`]` link for an app-
 ## Writing a new backend
 
 1. Depend on `cmdr-fs`. Implement `Volume`. Take a `VolumeHost` in your constructor and store it.
-2. Declare your settings namespace once: `const BACKEND: BackendName = "ftp";`.
+2. Declare your settings namespace once: `const BACKEND: BackendName = "webdav";`.
 3. Every mutation you perform reports itself through `listings().directory_changed`, including writes that arrive via
    `write_from_stream`. A watcher event is not a substitute: watchers on network protocols are lossy under load.
 4. If you have a watcher: report every exit through `indexing().watch_gap`, including the ones that look like setup
@@ -323,6 +323,7 @@ the subsystem that can actually give it.
 - `ListingHost` ⇒ `file_system::listing::listing_host::AppListings`
 - `VolumeEventSink` ⇒ `events::volume_mapping::TauriVolumeEvents`
 - `CredentialStore` ⇒ `network::credential_store::KeychainCredentials`
+- `HostKeys` ⇒ `network::sftp_host_keys::AppHostKeys`
 - `IndexNotifier` ⇒ `index_host::VolumeIndexNotifier`
 - `UserActivity` ⇒ `priority::host_policy::AppUserActivity`
 - `AnalyticsSink` ⇒ `analytics::volume_sink::PostHogVolumeAnalytics`
@@ -341,19 +342,22 @@ Three things the adapters found that aren't trait shape, and matter to whoever w
   the frontend's reconnect manager subscribes to, and every backend's transitions ride it. A second connecting backend
   reuses the channel and inherits the banner, the backoff, and the sign-in prompt; ❌ don't add a parallel backend-named
   event.
-- **`AppBackendSettings` resolves through a table keyed by the namespace**, not a `match` on it. One row exists, `"smb"`
-  ⇒ the `network.smbConcurrency` setting, which is SMB's alone: label, help text, and table row all say so. A namespace
-  with no row gets a conservative built-in (2), because the day someone adds a backend and forgets its row is the day
-  that number ships, and an FTP server capped at four connections answers the fifth with a ban. Adding a backend's knob
-  is adding a row.
+- **`AppBackendSettings` resolves through a table keyed by the namespace**, never a `match` on it. Two rows today, and a
+  row says where a backend's number COMES FROM rather than promising a user can change it: `"smb"` ⇒ the
+  `network.smbConcurrency` setting, which is SMB's alone (label, help text, and table row all say so), and `"sftp"` ⇒ a
+  constant, because four operations share one SSH connection there and a second connection means a second
+  authentication. A namespace with no row gets a conservative built-in (2), because the day someone adds a backend and
+  forgets its row is the day that number ships, and an FTP server capped at four connections answers the fifth with a
+  ban. Adding a backend means adding its row, exposed knob or not; which row a backend may read is settled in
+  `file_system::backend_settings`' own doc comment.
 - **`IndexNotifier` needs no platform fork.** `Index::on_watch_gap` compiles everywhere and cfg-gates its own MTP arm,
   so the adapter is unconditional; only the app's own call sites carry
   `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
 
-`cmdr-archive` and SMB are both fully on the seams: SMB takes a `VolumeHost` in `connect_smb_volume`, keeps it on the
-share-scoped `SmbVolumeInner`, and reaches nothing in the app directly. `local_posix` and MTP still call
-`listing::caching`, `network::keychain`, and the rest, and stay app-resident on purpose. Which backends move and which
-don't: § "Which backends move" below.
+`cmdr-archive`, SMB, and SFTP are all fully on the seams: SMB takes a `VolumeHost` in `connect_smb_volume` and keeps it
+on the share-scoped `SmbVolumeInner`, SFTP takes one in `connect_sftp_volume`, and neither reaches anything in the app
+directly. `local_posix` and MTP still call `listing::caching`, `network::keychain`, and the rest, and stay app-resident
+on purpose. Which backends move and which don't: § "Which backends move" below.
 
 **Only the event sink needs a running app.** `volume_host::host()` hands out the app's real adapters even before
 `install()`, leaving only the frontend channel (and the app's runtime) unwired, because the listing cache, secret store,
@@ -364,11 +368,12 @@ real volume and assert on the real listing cache without standing a Tauri app up
 
 Worth stating plainly, because both non-wins are the ones people expect first and the real win is easy to miss.
 
-**`pnpm check` will NOT get faster, and no amount of extraction changes that.** `scripts/check/checks/inputs.go` defines
-one `rustInputs` set (`apps/desktop/src-tauri/**` + `crates/**` + the manifests) shared by every Rust check, so any Rust
-edit anywhere busts every Rust check's cache; `desktop-rust-clippy` and `desktop-rust-tests` then run `--workspace`, so
-the work doesn't shrink either. Getting a check-runner win takes new per-crate check lanes with narrowed `Inputs`, which
-is deliberate check-runner work and not a side effect of moving code.
+**`pnpm check` will NOT get faster, and no amount of extraction changes that.** The cargo lanes run `--workspace` and
+stay there, and per-package `-p` lanes are closed for reasons that have nothing to do with where the code lives:
+`scripts/check/DETAILS.md` § "The Rust input blocks" carries the contract and the measurements. ❗ Read it before
+offering a check-runner win as an extraction payoff: re-measured, a per-package split nets a LOSS on the Rust budget,
+and it resolves features differently from the workspace build it shares `target/` with. What a crate boundary does buy the runner is narrower cache scope for the
+source SCANNERS, whose input blocks are per-member: code that leaves the app tree stops busting the app-tree lanes.
 
 **Full app builds get slightly SLOWER after a backend edit**, because the app still relinks:
 `docs/notes/index-extraction-baseline.md` measured +11% for "index edit, then `cargo build`". Expect the same sign for a
@@ -377,7 +382,7 @@ backend.
 **The win is the scoped inner loop, and it comes from not compiling the app** — so it transfers whole to a small crate.
 The index extraction measured `cargo check --lib` −83% (4.35 s → 0.75 s) and `cargo test --lib --no-run` −85% (23–30 s →
 3.55 s). `cargo check -p cmdr-archive` compiles ~8k lines where it used to compile 332k. That structural ratio is what
-makes `cargo check -p cmdr-ftp` a complete verification loop for an agent that never opens the app crate, and it's the
+makes `cargo check -p cmdr-sftp` a complete verification loop for an agent that never opens the app crate, and it's the
 whole reason the seams exist. Release builds may also gain modestly (the index took a clean release build 214 s → 188 s,
 −12%, because more crates give cargo more codegen units), but archive plus SMB are ~7% of the tree against the index's
 28%, so don't expect that figure again.
@@ -388,9 +393,10 @@ ratio, as an order-of-magnitude reading.
 
 ## Which backends move
 
-`cmdr-archive` shipped. Every backend written from here (FTP, S3, SFTP) is a crate from day one, which costs almost
-nothing extra and gets the full benefit. The retrofits are judged one at a time, because retrofitting is where all the
-cost sits:
+`cmdr-archive` and `cmdr-sftp` shipped. Every backend written from here (S3, WebDAV, whatever follows) is a crate from
+day one, which costs almost nothing extra and gets the full benefit. FTP is not on that list: the protocol was weighed
+and parked, and `docs/notes/ftp-crate-evaluation-2026-08-22.md` is the argument. The retrofits are judged one at a time,
+because retrofitting is where all the cost sits:
 
 - **SMB shipped too**, in `crates/cmdr-smb/`, and it's the worked example for a RETROFIT the way archive is for a
   greenfield crate. All four structural problems this document enumerates came up and all four are answered: the
@@ -399,6 +405,11 @@ cost sits:
   was SPLITTING the ~5,300 lines of suites that had grown to cover both sides of the boundary, not rewriting paths.
   Which side each cell landed on, and the rule that decided it: `crates/cmdr-smb/DETAILS.md` § "Which side a test lives
   on".
+- **`cmdr-sftp` is the greenfield proof that the seam set isn't SMB-shaped**, which is the thing a second protocol was
+  ever needed for. It was a crate from day one against a protocol sharing nothing with SMB, and **not one existing seam
+  signature moved to fit it**. What it needed that didn't exist became a NEW seam, `HostKeys` (§ "Seam by seam") —
+  growth rather than a break, because no earlier backend's security depended on recognizing a server across sessions.
+  The backend itself: `crates/cmdr-sftp/DETAILS.md`.
 - **`local_posix` and MTP are permanently app-resident.** Both refusals are written out with their reasons in
   `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions", because that's where
   someone proposing "let's complete the set" will be standing.
