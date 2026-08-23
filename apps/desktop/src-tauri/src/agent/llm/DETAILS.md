@@ -89,10 +89,11 @@ Provider transport errors are classified by HTTP status once, upstream, in `crat
 name resolves to `Unrecognized` rather than failing, so the raw name stays representable for the transparent UI and the
 typed "tool not available" result. The read-only guarantee is that `Unrecognized` (and any future write tool) is never
 in `agent_tool_view()`, so dispatch refuses it — a typed view-membership check, not a string match. The known variants
-are the read-only families (`AppState`, `ListDir`, `ImportantFolders`, `FolderImportance`, `ListVolumes`,
-`OperationsList`, `OperationsGet`, `SearchPhotos`, `ImageFacts`), pinned 1:1 to `agent_tool_view()` by a structural test in `agent/tools`;
-`ToolId::KNOWN` excludes `Unrecognized` by design. `ProposeRenamePlan` is the one proposing variant: it stages a
-reviewable plan and remains subject to the same typed-view gate, never an approval or write route.
+are the read-only families, pinned 1:1 to `agent_tool_view()` by a structural test in `agent/tools` (so the catalog
+lives in `agent/tools/DETAILS.md` and this list can't rot beside it); `ToolId::KNOWN` excludes `Unrecognized` by design.
+`ProposeRenamePlan` and `ProposeSuggestions` are the proposing variants: they stage a reviewable plan and remain subject
+to the same typed-view gate, never an approval or write route. `NothingToSuggest` is the odd one out — a pure SIGNAL
+whose handler changes nothing, so that a wake's outcome is observable typed rather than read out of the model's wording.
 
 ## Tests
 
