@@ -24,7 +24,7 @@
 
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { alertFixtures } from './alert'
-import { deleteAiModelFixtures } from './ai-model'
+import { deleteAiModelFixtures, forgetMemoryFixtures } from './ai-model'
 import { archivePasswordFixtures } from './archive-password'
 import { crashReportFixtures } from './crash-report'
 import { deleteFixtures, goToPathFixtures, mkdirFixtures, newFileFixtures, transferFixtures } from './disk'
@@ -57,6 +57,7 @@ export const fixtureRecords = {
   expiration: expirationFixtures,
   'extension-change': extensionChangeFixtures,
   feedback: feedbackFixtures,
+  'forget-memory': forgetMemoryFixtures,
   'go-to-path': goToPathFixtures,
   'mkdir-confirmation': mkdirFixtures,
   'new-file-confirmation': newFileFixtures,

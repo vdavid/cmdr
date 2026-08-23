@@ -20,3 +20,18 @@ export const deleteAiModelFixtures: Record<string, DeleteAiModelFixture | undefi
   idle: { modelSizeFormatted: '4.1 GB', isDeleting: false },
   deleting: { modelSizeFormatted: '4.1 GB', isDeleting: true },
 }
+
+/**
+ * Fixtures for `forget-memory` (`$lib/settings/sections/ForgetMemoryDialog.svelte`),
+ * the settings-window confirmation over the agent's notes folder. Prop-driven like its
+ * neighbour above, so the gallery renders the same component the settings window does.
+ */
+export interface ForgetMemoryFixture {
+  /** Mid-delete: both buttons go dead, and Enter with them. */
+  isForgetting: boolean
+}
+
+export const forgetMemoryFixtures: Record<string, ForgetMemoryFixture | undefined> = {
+  idle: { isForgetting: false },
+  forgetting: { isForgetting: true },
+}

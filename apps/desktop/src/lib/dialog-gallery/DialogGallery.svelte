@@ -60,6 +60,7 @@
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
     import QuitConfirmationDialog from '$lib/quit/QuitConfirmationDialog.svelte'
     import DeleteAiModelDialog from '$lib/settings/sections/DeleteAiModelDialog.svelte'
+    import ForgetMemoryDialog from '$lib/settings/sections/ForgetMemoryDialog.svelte'
     // The viewer copy dialogs live in the viewer window's route. Same relative-import
     // shape `lib/search/ImageSearchResults.svelte` uses for `routes/viewer/media-view`.
     import ViewerCopyDialogs from '../../routes/viewer/ViewerCopyDialogs.svelte'
@@ -71,7 +72,7 @@
     import { buildStoreSeed, type StoreSeededDialogId } from './fixtures/store-seeded'
     import type { StoreSeed } from './store-seeding'
     import type { AlertFixture } from './fixtures/alert'
-    import type { DeleteAiModelFixture } from './fixtures/ai-model'
+    import type { DeleteAiModelFixture, ForgetMemoryFixture } from './fixtures/ai-model'
     import type { DeleteFixture, GoToPathFixture, NewEntryFixture, TransferFixture } from './fixtures/disk'
     import type { ExpirationFixture } from './fixtures/licensing'
     import type { ExtensionChangeFixture, RenameConflictFixture } from './fixtures/rename'
@@ -108,6 +109,7 @@
         | { kind: 'mkfile'; props: NewEntryFixture }
         | { kind: 'go-to-path'; props: GoToPathFixture }
         | { kind: 'delete-ai-model'; props: DeleteAiModelFixture }
+        | { kind: 'forget-memory'; props: ForgetMemoryFixture }
         | { kind: 'quit-confirmation'; props: QuitFixture }
         /** Renders nothing: the app's own mount site shows the seeded dialog. */
         | { kind: 'store-seeded'; seed: StoreSeed }
@@ -201,6 +203,8 @@
             })),
         'delete-ai-model': (id) =>
             withFixture(fixtureRecords['delete-ai-model'][id], (f) => ({ kind: 'delete-ai-model', props: f })),
+        'forget-memory': (id) =>
+            withFixture(fixtureRecords['forget-memory'][id], (f) => ({ kind: 'forget-memory', props: f })),
 
         'bulk-rename-review': (id) => withStoreSeed('bulk-rename-review', id),
         'error-report': (id) => withStoreSeed('error-report', id),
@@ -343,6 +347,8 @@
         <GoToPathDialog {...plan.props} onGo={closeGoToPathPreview} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'delete-ai-model'}
         <DeleteAiModelDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
+    {:else if plan?.kind === 'forget-memory'}
+        <ForgetMemoryDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'rollback-confirmation'}
         <RollbackConfirmDialog onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {/if}

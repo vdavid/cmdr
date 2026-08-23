@@ -135,6 +135,11 @@ export const SOFT_DIALOG_REGISTRY = [
     description: 'Confirmation before deleting the local AI model',
     whileOpen: allowsOperations(NOT_IN_THE_MAIN_WINDOW),
   },
+  {
+    id: 'forget-memory',
+    description: 'Confirmation before deleting everything Ask Cmdr has written down about the user',
+    whileOpen: allowsOperations(NOT_IN_THE_MAIN_WINDOW),
+  },
   { id: 'search', description: 'Whole-drive file search', whileOpen: BLOCKS_OPERATIONS },
   {
     id: 'go-to-path',
