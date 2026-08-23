@@ -24,8 +24,7 @@ ignore = [
   "RUSTSEC-2025-0052",
   # The Marvin attack: `rsa`'s private-key operations aren't constant-time, so an
   # observer who can time them may eventually recover the key. No patched version
-  # exists — RustCrypto's constant-time rewrite is still open — so the only lever
-  # is whether we compile RSA at all.
+  # exists, so the only lever is whether we compile RSA at all.
   #
   # It reaches us through `russh` -> `ssh-key`, both of which gate RSA behind
   # russh's default-on `rsa` feature. Turning that feature off drops the crate
@@ -37,18 +36,40 @@ ignore = [
   # What is actually exposed, which is narrower than the advisory's headline:
   #
   #   - Verifying a server's host key is a PUBLIC-key operation, and this
-  #     advisory is about private-key timing. Unaffected.
-  #   - An agent-held RSA key is signed by ssh-agent, not by this crate.
+  #     advisory is about private-key timing, so supporting an `ssh-rsa` host key
+  #     carries ZERO exposure. That half of the cost buys us nothing back.
+  #   - An agent-held RSA key is signed by ssh-agent, not by this crate, and the
+  #     password and keyboard-interactive rungs involve no RSA at all.
   #     Unaffected.
-  #   - The exposed case is a user with an RSA private key FILE, connecting to a
-  #     server that is both hostile and able to time our signatures precisely
-  #     enough. One signature per connection, over a network, against a key the
-  #     user could rotate to ed25519.
+  #   - The ONE exposed path is a user with an RSA private key FILE, which we
+  #     sign with in-process: one signature per connect attempt, over a
+  #     transcript the server only partly controls, against a key the user could
+  #     rotate to ed25519. Marvin is a chosen-ciphertext DECRYPTION oracle;
+  #     recovering a key from signatures is a harder shape needing far more
+  #     samples, and each sample here costs a full handshake.
+  #
+  # The escape hatch, so nobody re-derives it: russh's manifest is
+  # `default = ["flate2", "aws-lc-rs", "rsa"]` with
+  # `rsa = ["dep:rsa", "dep:pkcs1", "ssh-key/rsa"]`, and NEITHER `aws-lc-rs` nor
+  # `ring` supplies RSA (they're the symmetric and EC backends), so there's no
+  # feature flip that keeps RSA and drops this crate (verified against the
+  # russh 0.62.7 registry source, 2026-08-23). The real fix routes RSA
+  # PRIVATE-key ops through `aws-lc-rs` (already in our graph, AWS-LC/BoringSSL
+  # derived and side-channel-hardened) while `rsa` keeps parsing and
+  # verification. That needs a russh fork or an upstream PR, and we are
+  # deliberately NOT doing it now.
   #
   # ⚠️ This is a judgment call rather than a settled one: it trades a narrow
   # timing exposure against silently refusing servers and keys that work
-  # everywhere else. Revisit when RustCrypto ships the constant-time `rsa`, and
-  # drop this entry the day a patched version exists.
+  # everywhere else.
+  #
+  # When to re-check (verified 2026-08-23): the advisory's `patched` list is
+  # still empty in `rustsec/advisory-db`, the issue it points at,
+  # `RustCrypto/RSA#626` (padding isn't constant-time), is open, and so is the
+  # `rsa` 0.10 release those fixes ride on, `RustCrypto/RSA#647`, where the
+  # maintainer said on 2026-07-13 that it still needs significant work. We
+  # already build `rsa 0.10.0-rc.18`, so being on the 0.10 line is NOT the fix.
+  # Watch those two issues, and drop this entry the day a patched version exists.
   "RUSTSEC-2023-0071",
 ]
 

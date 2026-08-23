@@ -578,6 +578,11 @@ human, so it stops rather than guessing and burning an attempt.
 **RSA signs with SHA-512.** `PrivateKeyWithHashAlg::new(key, None)` maps to the legacy SHA-1 `ssh-rsa`, which OpenSSH
 has refused since 8.8, so an RSA-only server would reject every key we offered.
 
+Signing with an `id_rsa` key FILE is also the one path in this crate exposed to the Marvin timing attack
+(`RUSTSEC-2023-0071`), because the `rsa` crate's private-key operations aren't constant-time. The full exposure
+analysis, why we keep RSA compiled anyway, and what a real fix would take live in one place: the ignore entry's comment
+in `deny.toml`. ❗ Don't restate the reasoning here, and don't silence the advisory anywhere else.
+
 **Certificates from the agent are skipped.** Validating one needs the CA half of host trust, which this backend
 deliberately doesn't do.
 

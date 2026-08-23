@@ -92,6 +92,7 @@
     "crates/cmdr-index/src/media_index/network/tests.rs": 983,
     "crates/cmdr-index/src/media_index/scheduler/enrich_tests.rs": 1262,
     "scripts/check/checks/desktop-rust-cfg-gate_test.go": 1228,
+    "scripts/check/checks/index-crate-isolation.go": 821,
     "scripts/check/checks/lock-poison.go": 890,
     "scripts/check/checks/lock-poison_test.go": 975
   }

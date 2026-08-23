@@ -2,17 +2,11 @@
 # See https://github.com/rustsec/cargo-audit for documentation
 
 [advisories]
-# Ignored advisories - these are transitive dependencies we cannot fix
+# Ignored advisories. Each one needs a rationale; the rationale lives in exactly one
+# place, so this file points rather than restates.
 ignore = [
-    # RUSTSEC-2023-0071: Marvin Attack in rsa crate (timing sidechannel)
-    # Status: No fix available (as of 2026-01)
-    # This comes from: smb -> sspi -> rsa (and picky -> rsa)
-    # The smb crate is required for SMB network share functionality.
-    # The rsa crate still uses a non-constant-time implementation.
-    # Risk mitigation: This vulnerability requires network-observable timing
-    # information to exploit. Our SMB usage is for local file management,
-    # not handling sensitive cryptographic operations where timing attacks
-    # would be practical.
-    # TODO: Remove this ignore when sspi updates to a fixed rsa version.
+    # The Marvin timing attack in `rsa`, which reaches us through `russh` -> `ssh-key`.
+    # What's exposed, why we keep RSA compiled, what a fix would take, and when to
+    # re-check: the matching entry in `deny.toml`'s `[advisories] ignore`.
     "RUSTSEC-2023-0071",
 ]

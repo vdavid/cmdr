@@ -39,9 +39,10 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
   Linux-only and dev-only advisories. A finding in audit but not deny means "real, but nothing we ship links it" —
   triage it, don't panic. Losing either loses half the picture.
 - **Review `cargo-audit` ignores**: `apps/desktop/src-tauri/.cargo/audit.toml` carries ignored advisories that
-  cargo-audit can't verify as still-needed (currently `RUSTSEC-2023-0071`, waiting on `sspi` updating its `rsa` dep).
-  For each entry, check whether the upstream fix landed; if it did, remove the ignore. Frequency: quarterly, batched
-  with the allowlist cutback.
+  cargo-audit can't verify as still-needed (currently `RUSTSEC-2023-0071`, the Marvin timing attack in `rsa`, which
+  reaches us through `russh`). Each entry's rationale and its re-check trigger live in the matching `deny.toml` ignore
+  entry, so start there; if the upstream fix landed, remove both ignores. Frequency: quarterly, batched with the
+  allowlist cutback.
 
 ### Codebase health
 

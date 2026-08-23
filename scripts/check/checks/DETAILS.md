@@ -1160,15 +1160,15 @@ doubles as production code.
 
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
   scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
-  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its
-  `cargo metadata` tree, plus a per-bucket public-surface ceiling on `cmdr-index` and `cmdr-archive`. `cmdr-fs` and
-  `cmdr-smb` are deliberately uncapped (the first permanently, the second until its extraction finishes): it's shared
-  vocabulary whose job is to be named from everywhere. See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what
-  each index number means, the crate's own entry in `index-crate-isolation.go` for the archive ones, and why raising
-  either needs David's say-so), nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects
-  a live test, so a per-test cap or `test-group` can't be silently detached by a module move; it lists the workspace's
-  tests with `cargo nextest list --run-ignored all` and names where a stale atom's leaf went. It judges the HOST
-  platform, so a filter for a macOS-only test looks deleted on the Linux lane: those carry
+  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere
+  in its `cargo metadata` tree, plus a per-bucket public-surface ceiling on all of them except `cmdr-fs`, which is
+  permanently uncapped: it's shared vocabulary whose job is to be named from everywhere. See
+  `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
+  `index-crate-isolation.go` for the backend ones, and why raising any of them needs David's say-so),
+  nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a per-test cap
+  or `test-group` can't be silently detached by a module move; it lists the workspace's tests with
+  `cargo nextest list --run-ignored all` and names where a stale atom's leaf went. It judges the HOST platform, so a
+  filter for a macOS-only test looks deleted on the Linux lane: those carry
   `# allowed-unmatched-nextest-filter: macos-only, <why>`, which excuses the filter everywhere except the platform it
   names, so the lane that does compile the test still catches a rename. Atoms are read from `filter =` declarations
   only, never from comments quoting one). The crates' code is also covered by the desktop Rust lanes above, which all
