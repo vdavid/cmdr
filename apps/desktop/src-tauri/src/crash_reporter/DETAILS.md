@@ -67,16 +67,41 @@ Nothing new leaves the machine, and nothing leaves it sooner than the user agree
   can't be less redacted than the file.
 - A user who opted into crash reports but not error reports sees exactly today's behavior.
 
-### Known limitation: a survived panic can be reported twice
+### Told once, not twice: `reported_in_session`
 
-The crash file is written before anyone knows the app will live, and nothing deletes it
-when the in-session report goes out. A user with **both** opt-ins on therefore gets an
-error report now and a crash report at the next launch for the same panic. They land in
-different channels (Discord vs the crash email) and carry different payloads (log tail vs
-backtrace), so it's noise rather than a correctness problem, and deleting the file would
-lose the backtrace for crash-reports-only users. The next-launch report now says which
-case it is (§ App fate), so triage can pair the two rather than read the second as a
-separate crash.
+A user with **both** opt-ins on used to hear about the same survived panic twice: an error
+report in-session, then a crash dialog at the next launch. Telling someone the same thing
+twice spends trust and buys nothing, so the second one is now suppressed.
+
+`survival::record_in_session_delivery` stamps `reported_in_session = true` on the pending
+crash file, and `process_pending_crash` deletes a stamped report at the next launch instead
+of offering it. Deleted in the BACKEND, not hidden in the frontend, so a report nobody will
+ever be offered can't linger on disk.
+
+**The stamping seam is the whole design**: `auto_dispatcher::flush`'s `upload(...) => Ok(_)`
+arm, and nowhere else. It means DELIVERED, never ATTEMPTED, and every way the delivery can
+fall short leaves the report unstamped and therefore still offered:
+
+- **Opted out of error reports.** `on_error_logged` returns on the `ENABLED` gate before any
+  window exists, so `flush` can never run. A crash-reports-only user is untouched by this
+  whole mechanism and still gets their dialog, which
+  `the_opt_out_gate_means_a_crash_file_can_never_be_stamped_as_reported` pins.
+- **The app died inside the 60 s window.** The flush task goes with the process (that
+  non-flush is deliberate; `error_reporter/CLAUDE.md`), so nothing is stamped and the next
+  launch offers the report. This is the same signal that already sorts fatal from survived.
+- **The upload failed.** No network, or the server refused: the `Err` arm doesn't stamp.
+
+**Which panic gets stamped, under keep-first.** The stamp goes on whatever report is pending,
+which is the SESSION'S FIRST panic, not necessarily the one whose courier opened the window.
+That's still correct: a Flow B bundle is a log-tail bundle, and the courier logs every panic,
+first or not, so a bundle uploaded after panic #1 was logged carries panic #1. The report of
+the panic that actually shipped is the one being dropped. The assumption worth naming is the
+tail's bound: a panic could in principle scroll out of the log tail before the flush, in
+which case the stamp would drop a report whose panic didn't make the bundle. The window is at
+most ~70 s, so this needs a genuine logging storm; nothing else in the design depends on it.
+
+`reported_in_session` never carries information off the machine: a stamped report is deleted
+rather than uploaded, so every report that IS uploaded carries `false`.
 
 ## App fate: what the next-launch dialog is allowed to claim
 
@@ -176,6 +201,9 @@ is logged; everything after `crash_reporter::init` is also written to disk.
 - `appFate`: `"unknown"` / `"unconfirmed"` / `"ended"` / `"keptRunning"` (§ App fate). PII-free by construction: a
   four-value enum about the app's own behavior. The api server ignores it today, so it isn't stored server-side; adding
   a column would let the nightly crash email separate a real crash from a panic the app walked away from.
+- `reportedInSession`: always `false` in anything that reaches the server, since a stamped report is deleted rather than
+  uploaded (§ Told once, not twice). A bool that carries no information off the machine, kept in the payload only so the
+  on-disk file stays self-describing.
 
 ## Signal-handler limits we accept
 

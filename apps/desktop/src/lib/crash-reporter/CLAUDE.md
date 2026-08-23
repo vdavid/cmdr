@@ -10,7 +10,7 @@ and collects the user's choices.
 - `CrashReportDialog.svelte`: the decide-and-send dialog (report ID, expandable JSON, "Always send", attach-email,
   Dismiss / Send report).
 - `CrashReportToastContent.svelte`: the after-auto-send toast (one line + "Change in Settings > Updates").
-- `crash-copy.ts`: maps the report's `appFate` to the body key whose sentence is true of it.
+- `crash-copy.ts`: maps the report's `appFate` to the body, title, and sent-toast keys that are true of it.
 - `crash-reporter-i18n-parity.test.ts`: freezes the en copy for both. The `.a11y.test.ts` pair covers roles and labels.
 
 The flow lives in `routes/(main)/+layout.svelte` (`checkForPendingCrashReport`), not here: it calls
@@ -29,10 +29,10 @@ The flow lives in `routes/(main)/+layout.svelte` (`checkForPendingCrashReport`),
 - **Dismiss must reach the backend.** `dismissCrashReport` deletes the crash file; closing the dialog any other way
   (Escape, the × button) routes through `handleDismiss` for exactly that reason. Skip it and the same report re-offers
   itself on every launch.
-- **Not every crash report describes a crash the app died of**, so the body sentence comes from `crashDialogBodyKey`,
-  never a fixed key. Anything unsettled (`unconfirmed`, a missing `appFate` from an older build) falls to the `unknown`
-  sentence, which is true either way. Don't flip that default: it would tell a user their app crashed on the strength of
-  a field that wasn't there. The fate itself is decided backend-side; `src-tauri/src/crash_reporter/DETAILS.md`.
+- **Not every crash report describes a crash the app died of.** The body, the dialog title, and the sent toast all come
+  from `crash-copy.ts`, never a fixed key. Anything unsettled (`unconfirmed`, a missing `appFate` from an older build)
+  falls to the wording that claims least. Don't flip that default: it would tell a user their app crashed on the
+  strength of a field that wasn't there. The fate is decided backend-side; `src-tauri/src/crash_reporter/DETAILS.md`.
 - **The report JSON is shown verbatim and is safe to show.** The backend already redacted and capped it before it
   reached disk. Don't add fields to the displayed payload here or re-sanitize it: `src-tauri/src/crash_reporter/` is the
   single place that decides what a crash report contains.

@@ -33,8 +33,20 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
   `.unknown`. `ended` is the old fixed string; `keptRunning` says the app carried on and deliberately says "a report"
   rather than "a crash report"; `unknown` names no outcome, so it reads true whichever way an older report went. The
   backend settles the fate before the frontend ever sees it (`src-tauri/src/crash_reporter/DETAILS.md` § App fate), so
-  the `default:` branch here is a safety net, not a case the flow produces. The title, privacy note, and toast are
-  deliberately shared across all three: they describe the artifact and its contents, which don't change with the fate.
+  the `default:` branch here is a safety net, not a case the flow produces.
+- **Title**: `crashDialogTitleKey(report)`, split TWO ways rather than three. `ended` keeps the specific
+  `crashReporter.dialog.title.crash` ("Send crash report?"); the other two share `.title.report` ("Send report?"),
+  because they want identical wording and a third key would be duplication. Flattening `ended` to the neutral title
+  would trade accurate specificity for symmetry, which is the opposite of the point.
+- **Sent toast**: `crashSentToastKey(report)`, split the same two ways for the same reason. The toast takes the report
+  as a prop (`addToast(..., { props: { report } })`) purely to make that choice.
+- **Privacy note**: ONE string for all three cases. It says which part of the code "ran into the problem" rather than
+  "crashed", which is true of a genuine crash too, so three near-identical strings would buy nothing and give a future
+  edit two more places to miss.
+- **`alwaysSend` stays "Always send crash reports"**, deliberately un-split: the checkbox writes `updates.crashReports`,
+  whose canonical label in Settings > Updates is "Send crash reports". A neutral "Always send reports" would desync the
+  two surfaces and imply it also covers the separate error-reports setting. Renaming the setting itself is the coherent
+  fix, and it isn't this component's call.
 - **Report ID line**: only when `report.shortId` is set. Reports written by older app versions have none.
 - **Details block**: collapsed by default, expands to the pretty-printed report JSON with a Copy button. The JSON is
   already redacted and capped backend-side, which is what makes it safe to show verbatim; `user-select: text` is set so
@@ -56,10 +68,13 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
   `keptRunning` and `unknown` strings must not contain "quit", so a copy edit can't reintroduce the claim they exist to
   avoid. The shared attach-email label is frozen once in `$lib/attach-email/attach-email-i18n-parity.test.ts`, not per
   dialog.
-- `CrashReportDialog.a11y.test.ts` / `CrashReportToastContent.a11y.test.ts` run axe over the default renders. The dialog
-  test mocks `analytics.email` to empty, so it exercises the no-email shape only; the attach-email checkbox's own
-  behavior is covered by `$lib/attach-email/attach-email.test.ts` and `ErrorReportDialog.a11y.test.ts`, which render it
-  with an email on file and assert the sticky write.
+- `CrashReportDialog.a11y.test.ts` / `CrashReportToastContent.a11y.test.ts` run axe over the default renders. The
+  toast's report only picks which sentence it renders, so one state covers its markup. The dialog test mocks
+  `analytics.email` to empty, so it exercises the no-email shape only; the attach-email checkbox's own behavior is
+  covered by `$lib/attach-email/attach-email.test.ts` and by the error reporter's a11y coverage, which renders it with
+  an email on file and asserts the sticky write. An a11y test doesn't have to sit beside its component: a
+  DIRECTORY-LEVEL `<area>.a11y.test.ts` importing several of them satisfies `a11y-coverage` just as well, and much of
+  the frontend is consolidated that way. Don't assume a colocated file when looking for a component's coverage.
 - All three dialog states are in the dialog gallery (`dialog-gallery/fixtures/crash-report.ts`), one per fate the
   frontend can see: `panic` (a modern `ended` report with a short id and a long backtrace, to keep the scrollable
   details block honest at 440px), `survived-panic` (the same panic with `appFate: 'keptRunning'`), and
