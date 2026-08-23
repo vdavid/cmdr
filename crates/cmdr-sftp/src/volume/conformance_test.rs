@@ -123,3 +123,22 @@ async fn writability_matches_the_mutations_offered() {
 
     clean_scratch(&volume, &dir).await;
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn export_matches_the_bytes_offered() {
+    // ❗ The cell that says this backend can be COPIED FROM at all. Every method
+    // the copy engine calls on a source — `open_read_stream`, `read_range`,
+    // `scan_for_copy` — is implemented and works here, so nothing else in the
+    // suite notices when the one declaration that gates them is missing:
+    // `copy_between_volumes` refuses a source answering `supports_export() ==
+    // false` before it reads a byte, and logs nothing on the way out.
+    let (volume, dir) = stock_server_with_scratch("export-handshake").await;
+    let file = format!("{dir}/exported.txt");
+    let content = b"the bytes a copy would move";
+    volume.create_file(Path::new(&file), content).await.expect(FIXTURE);
+
+    conformance::assert_export_matches_the_bytes_offered(&volume, Path::new(&file), content).await;
+
+    clean_scratch(&volume, &dir).await;
+}

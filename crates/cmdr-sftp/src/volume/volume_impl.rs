@@ -114,6 +114,19 @@ impl Volume for SftpVolume {
         true
     }
 
+    /// Bytes stream out over the SFTP channel (`open_read_stream`, `read_range`),
+    /// so a server can be the SOURCE of a cross-volume copy.
+    ///
+    /// ❗ **Implementing the read path does not declare it.** The trait default is
+    /// `false`, and `copy_between_volumes` refuses a source that answers `false`
+    /// before it opens anything — synchronously, with no log line — while the same
+    /// answer reaches the frontend as `VolumeCapabilities.can_export` and greys
+    /// out copy-from in the pane. Every method involved works either way, so
+    /// nothing but `assert_export_matches_the_bytes_offered` notices.
+    fn supports_export(&self) -> bool {
+        true
+    }
+
     /// The primitive the copy path reads through.
     ///
     /// Behind it is a window of positioned reads, ❗ never the engine's own file
