@@ -30,6 +30,7 @@ use std::io::SeekFrom;
 use std::ops::ControlFlow;
 use std::path::Path;
 use std::pin::Pin;
+use std::sync::Arc;
 
 use cmdr_fs::volume::{VolumeError, VolumeReadStream};
 use futures_util::StreamExt;
@@ -79,11 +80,15 @@ pub(super) trait PositionedWrite: Clone + Send + 'static {
 #[derive(Clone)]
 pub(super) struct RemoteWrite {
     file: File,
+    /// The remote path this handle was opened at, carried so a failure on it can
+    /// answer with the path its `VolumeError` variant is defined to carry.
+    /// `Arc<str>` because a clone rides along with every in-flight write.
+    remote: Arc<str>,
 }
 
 impl RemoteWrite {
-    pub(super) fn new(file: File) -> Self {
-        Self { file }
+    pub(super) fn new(file: File, remote: Arc<str>) -> Self {
+        Self { file, remote }
     }
 
     /// Closes the handle and reports what the server said.
@@ -103,7 +108,7 @@ impl RemoteWrite {
     /// them are gone before `write_from_stream` closes. Anything new that holds a clone
     /// must drop it before the close.
     pub(super) async fn close(self) -> Result<(), VolumeError> {
-        self.file.close().await.map_err(|e| map_sftp_error(&e))
+        self.file.close().await.map_err(|e| map_sftp_error(&e, &self.remote))
     }
 }
 
@@ -115,7 +120,7 @@ impl PositionedWrite for RemoteWrite {
                 message: e.to_string(),
                 raw_os_error: e.raw_os_error(),
             })?;
-        self.file.write(bytes).await.map_err(|e| map_sftp_error(&e))
+        self.file.write(bytes).await.map_err(|e| map_sftp_error(&e, &self.remote))
     }
 }
 
@@ -214,8 +219,8 @@ impl SftpVolume {
             .truncate(true)
             .open(&remote)
             .await
-            .map_err(|e| map_sftp_error(&e))?;
-        let writer = RemoteWrite::new(file);
+            .map_err(|e| map_sftp_error(&e, &remote))?;
+        let writer = RemoteWrite::new(file, Arc::from(remote.as_str()));
 
         match self
             .pump(&mut stream, writer.clone(), &remote, size, depth, on_progress)

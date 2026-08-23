@@ -86,11 +86,15 @@ pub(super) trait PositionedRead: Clone + Send + 'static {
 #[derive(Clone)]
 pub(super) struct RemoteFile {
     file: File,
+    /// The remote path this handle was opened at, carried so a failure on it can
+    /// answer with the path its `VolumeError` variant is defined to carry.
+    /// `Arc<str>` because a clone rides along with every in-flight read.
+    remote: Arc<str>,
 }
 
 impl RemoteFile {
-    fn new(file: File) -> Self {
-        Self { file }
+    fn new(file: File, remote: Arc<str>) -> Self {
+        Self { file, remote }
     }
 
     /// The file's size, from an `fstat` on the handle already open.
@@ -98,7 +102,7 @@ impl RemoteFile {
     /// The handle rather than the path, so the answer describes the bytes this
     /// stream is about to read even if the name is replaced under it.
     async fn len(&mut self) -> Result<u64, VolumeError> {
-        let meta = self.file.metadata().await.map_err(|e| map_sftp_error(&e))?;
+        let meta = self.file.metadata().await.map_err(|e| map_sftp_error(&e, &self.remote))?;
         Ok(meta.len().unwrap_or(0))
     }
 }
@@ -122,7 +126,7 @@ impl PositionedRead for RemoteFile {
             // means exactly the answer's bytes out.
             Ok(Some(buffer)) => Ok(buffer.into()),
             Ok(None) => Ok(Vec::new()),
-            Err(e) => Err(map_sftp_error(&e)),
+            Err(e) => Err(map_sftp_error(&e, &self.remote)),
         }
     }
 }
@@ -243,10 +247,11 @@ impl SftpVolume {
     pub(super) async fn read_range_impl(&self, path: &Path, offset: u64, len: usize) -> Result<Vec<u8>, VolumeError> {
         let remote = self.to_remote_path(path)?;
         let session = self.clone_session().await?;
-        let file = session.sftp().open(&remote).await.map_err(|e| map_sftp_error(&e))?;
+        let file = session.sftp().open(&remote).await.map_err(|e| map_sftp_error(&e, &remote))?;
 
         let end = offset.saturating_add(len as u64);
-        let mut window = ChunkWindow::new(RemoteFile::new(file), offset, end, READ_WINDOW_DEPTH, CHUNK_BYTES);
+        let handle = RemoteFile::new(file, Arc::from(remote.as_str()));
+        let mut window = ChunkWindow::new(handle, offset, end, READ_WINDOW_DEPTH, CHUNK_BYTES);
         let mut out = Vec::with_capacity(len);
         while let Some(chunk) = window.next_chunk().await {
             let chunk = chunk?;
@@ -275,7 +280,7 @@ async fn produce_stream(
     let file = match session.sftp().open(&remote).await {
         Ok(file) => file,
         Err(e) => {
-            let _ = size_tx.send(Err(map_sftp_error(&e)));
+            let _ = size_tx.send(Err(map_sftp_error(&e, &remote)));
             return;
         }
     };
@@ -284,7 +289,7 @@ async fn produce_stream(
     // round trip after the open instead of two. The first read asks for a whole
     // chunk without knowing the size yet, which is safe: reading past the end of
     // a file answers with fewer bytes, never with an error.
-    let mut sizing = RemoteFile::new(file);
+    let mut sizing = RemoteFile::new(file, Arc::from(remote.as_str()));
     let mut head = sizing.clone();
     let (size, first) = tokio::join!(sizing.len(), head.read_at(0, CHUNK_BYTES));
 

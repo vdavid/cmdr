@@ -5,6 +5,8 @@
 //! same way `cmdr-smb`'s `ShareListError` carries one; the host renders every
 //! human word from the typed variant.
 
+use log::debug;
+
 use cmdr_fs::volume::VolumeError;
 use openssh_sftp_client::Error as SftpError;
 use openssh_sftp_client::error::SftpErrorKind;
@@ -39,7 +41,17 @@ pub enum SftpConnectError {
     Transport(String),
 }
 
-/// Turns an [`SftpError`] into the `Volume` vocabulary.
+/// Turns an [`SftpError`] into the `Volume` vocabulary, for an operation on
+/// `path`.
+///
+/// ❗ **`path` is not context, it's the payload.** [`VolumeError::NotFound`] and
+/// [`VolumeError::PermissionDenied`] are DEFINED to carry the path
+/// (`cmdr-fs/src/volume/types.rs`), and the transfer layer takes that literally:
+/// `map_volume_error` forwards the string straight into `SourceNotFound { path }`,
+/// which the frontend renders as the name of the file the user is missing. Putting
+/// the server's sentence there instead reads to a user as a filename that was never
+/// on their disk. The wording isn't lost — it goes to the log, where a support case
+/// can still find it. `assert_not_found_carries_the_path` holds every backend to this.
 ///
 /// ⚠️ SFTP v3 collapses most of errno into `SSH_FX_FAILURE`
 /// ([`SftpErrorKind::Failure`]), so a `Failure` here is genuinely
@@ -47,9 +59,9 @@ pub enum SftpConnectError {
 /// takes a stat probe, which belongs on the write path where there's something
 /// to probe. Reading paths only need the four codes the protocol does
 /// distinguish.
-pub fn map_sftp_error(err: &SftpError) -> VolumeError {
+pub fn map_sftp_error(err: &SftpError, path: &str) -> VolumeError {
     match err {
-        SftpError::SftpError(kind, message) => classify(*kind, &message.to_string()),
+        SftpError::SftpError(kind, message) => classify(*kind, &message.to_string(), path),
         // The channel under the engine died: the session is gone, and every
         // operation on it fails fast rather than hanging.
         SftpError::IOError(io) => VolumeError::DeviceDisconnected(io.to_string()),
@@ -123,7 +135,7 @@ pub(crate) enum Attempted {
 pub(crate) fn resolve_ambiguity(err: &SftpError, path: &str, attempted: Attempted, found: WhatIsThere) -> VolumeError {
     match err {
         SftpError::SftpError(kind, message) => resolve(*kind, &message.to_string(), path, attempted, found),
-        other => map_sftp_error(other),
+        other => map_sftp_error(other, path),
     }
 }
 
@@ -134,7 +146,7 @@ fn resolve(kind: SftpErrorKind, message: &str, path: &str, attempted: Attempted,
     // `SSH_FX_NO_SUCH_FILE` was precise, and re-reading it through a probe taken
     // afterwards would build a lie out of a stale answer.
     if !matches!(kind, SftpErrorKind::Failure) {
-        return classify(kind, message);
+        return classify(kind, message, path);
     }
     match (attempted, found) {
         (Attempted::TakingAName, WhatIsThere::NotADirectory | WhatIsThere::Directory) => {
@@ -153,16 +165,28 @@ fn resolve(kind: SftpErrorKind, message: &str, path: &str, attempted: Attempted,
         // was about something else entirely: a full disk, a read-only export, a
         // quota. ❗ The probe may only make a report MORE accurate, never
         // invent one.
-        (Attempted::TakingAName | Attempted::RemovingANode, _) => classify(kind, message),
+        (Attempted::TakingAName | Attempted::RemovingANode, _) => classify(kind, message, path),
     }
 }
 
 /// The status-code half of the mapping, split out so the table is testable
 /// without a server: the error type's message field has no public constructor.
-fn classify(kind: SftpErrorKind, message: &str) -> VolumeError {
+///
+/// The two path-carrying variants get `path`; the server's own wording goes to
+/// the log rather than into the payload the frontend renders. ❗ `debug!` and not
+/// higher: `exists` and the write path's `probe` ask questions that answer
+/// `NoSuchFile` as their ORDINARY result, so a warning here would fire on every
+/// healthy conflict check.
+fn classify(kind: SftpErrorKind, message: &str, path: &str) -> VolumeError {
     match kind {
-        SftpErrorKind::NoSuchFile => VolumeError::NotFound(message.to_string()),
-        SftpErrorKind::PermDenied => VolumeError::PermissionDenied(message.to_string()),
+        SftpErrorKind::NoSuchFile => {
+            debug!("SFTP {path}: the server reports no such file ({message})");
+            VolumeError::NotFound(path.to_string())
+        }
+        SftpErrorKind::PermDenied => {
+            debug!("SFTP {path}: the server refused access ({message})");
+            VolumeError::PermissionDenied(path.to_string())
+        }
         SftpErrorKind::OpUnsupported => VolumeError::NotSupported,
         _ => VolumeError::IoError {
             message: message.to_string(),

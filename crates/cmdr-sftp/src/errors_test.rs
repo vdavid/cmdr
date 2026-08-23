@@ -20,7 +20,7 @@ fn the_codes_the_protocol_distinguishes_map_to_typed_variants() {
         }),
         (SftpErrorKind::OpUnsupported, |e| matches!(e, VolumeError::NotSupported)),
     ] {
-        let mapped = classify(kind, "denied");
+        let mapped = classify(kind, "denied", "/srv/data/notes.txt");
         assert!(matches(&mapped), "{kind:?} mapped to {mapped:?}");
     }
 }
@@ -31,16 +31,17 @@ fn the_catch_all_code_stays_unclassified() {
     // OpenSSH. Guessing `AlreadyExists` here would make the folder-merge walker
     // merge into a directory that doesn't exist; telling them apart takes a stat
     // probe on the write path, where there's something to probe.
-    let mapped = classify(SftpErrorKind::Failure, "failure");
+    let mapped = classify(SftpErrorKind::Failure, "failure", "/srv/data/notes.txt");
     assert!(matches!(mapped, VolumeError::IoError { .. }), "got {mapped:?}");
 }
 
 #[test]
 fn a_dead_channel_reads_as_a_disconnect_rather_than_an_io_hiccup() {
     // The pane has to stop asking rather than retry into a session that's gone.
-    let mapped = map_sftp_error(&SftpError::IOError(std::io::Error::from(
-        std::io::ErrorKind::ConnectionReset,
-    )));
+    let mapped = map_sftp_error(
+        &SftpError::IOError(std::io::Error::from(std::io::ErrorKind::ConnectionReset)),
+        "/srv/data/notes.txt",
+    );
     assert!(matches!(mapped, VolumeError::DeviceDisconnected(_)), "got {mapped:?}");
 }
 
@@ -130,4 +131,59 @@ fn a_code_the_protocol_does_distinguish_is_never_second_guessed() {
         WhatIsThere::NotADirectory,
     );
     assert!(matches!(resolved, VolumeError::NotFound(_)), "got {resolved:?}");
+}
+
+#[test]
+fn the_two_path_carrying_variants_carry_the_path_and_not_the_servers_wording() {
+    // ❗ The payload, not the classification. `VolumeError::NotFound` and
+    // `PermissionDenied` are DEFINED to carry the path, and the transfer layer
+    // forwards that string verbatim into `SourceNotFound { path }` for the
+    // frontend to render as the name of the missing file. Carrying the server's
+    // own sentence instead shipped `source_not_found` with a path of
+    // "Err Message: No such file, Language Tag: " — a filename that was never on
+    // anybody's disk.
+    //
+    // Reading the payload out is not error classification (nothing branches on
+    // it); it's the only way to assert what a variant carries.
+    const PATH: &str = "/srv/data/notes.txt";
+    let VolumeError::NotFound(carried) = classify(SftpErrorKind::NoSuchFile, "No such file", PATH) else {
+        panic!("NoSuchFile must map to NotFound");
+    };
+    assert_eq!(carried, PATH, "NotFound must carry the path");
+
+    let VolumeError::PermissionDenied(carried) = classify(SftpErrorKind::PermDenied, "Permission denied", PATH) else {
+        panic!("PermDenied must map to PermissionDenied");
+    };
+    assert_eq!(carried, PATH, "PermissionDenied must carry the path");
+}
+
+#[test]
+fn a_resolved_catch_all_carries_the_path_through_every_arm_that_can() {
+    // `resolve` had the path in scope all along and spent it on the
+    // `AlreadyExists` arm only; its fall-through arms reach the same two
+    // path-carrying variants and owe the same payload.
+    const PATH: &str = "/srv/data/notes.txt";
+    let resolved = resolve(
+        SftpErrorKind::NoSuchFile,
+        "No such file",
+        PATH,
+        Attempted::TakingAName,
+        WhatIsThere::Nothing,
+    );
+    let VolumeError::NotFound(carried) = resolved else {
+        panic!("got {resolved:?}");
+    };
+    assert_eq!(carried, PATH);
+
+    let resolved = resolve(
+        SftpErrorKind::Failure,
+        "failure",
+        PATH,
+        Attempted::TakingAName,
+        WhatIsThere::NotADirectory,
+    );
+    let VolumeError::AlreadyExists(carried) = resolved else {
+        panic!("got {resolved:?}");
+    };
+    assert_eq!(carried, PATH, "the arm that already carried the path still does");
 }

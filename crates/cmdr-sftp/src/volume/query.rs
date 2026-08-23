@@ -44,7 +44,7 @@ impl SftpVolume {
             .fs()
             .open_dir(&remote)
             .await
-            .map_err(|e| map_sftp_error(&e))?;
+            .map_err(|e| map_sftp_error(&e, &remote))?;
 
         let mut entries = Vec::new();
         let mut tally = ListingProgress::default();
@@ -58,7 +58,7 @@ impl SftpVolume {
             // `openssh-sftp-client`: it deserializes names through `ssh_format`,
             // which is strict. Loud and lossless beats the alternative, where a
             // folder copy writes files under names that address nothing.
-            let entry = next.map_err(|e| map_sftp_error(&e))?;
+            let entry = next.map_err(|e| map_sftp_error(&e, &remote))?;
             let Some(built) = file_entry(&entry, &remote) else {
                 continue;
             };
@@ -89,7 +89,7 @@ impl SftpVolume {
             .fs()
             .metadata(&remote)
             .await
-            .map_err(|e| map_sftp_error(&e))?;
+            .map_err(|e| map_sftp_error(&e, &remote))?;
         let name = Path::new(&remote)
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())

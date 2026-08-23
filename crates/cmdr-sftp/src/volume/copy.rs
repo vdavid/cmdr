@@ -69,14 +69,14 @@ impl SftpVolume {
             .sftp()
             .open(&remote_from)
             .await
-            .map_err(|e| map_sftp_error(&e))?;
+            .map_err(|e| map_sftp_error(&e, &remote_from))?;
         // The length is what the source says NOW, and it is not chased. A file
         // that grew under the copy is the same call as one that grew under a
         // streamed read, and both report the tree they started from.
         let total = source
             .metadata()
             .await
-            .map_err(|e| map_sftp_error(&e))?
+            .map_err(|e| map_sftp_error(&e, &remote_from))?
             .len()
             .unwrap_or(0);
 
@@ -88,9 +88,12 @@ impl SftpVolume {
             .truncate(true)
             .open(&remote_to)
             .await
-            .map_err(|e| map_sftp_error(&e))?;
+            .map_err(|e| map_sftp_error(&e, &remote_to))?;
 
-        match self.copy_chunks(&mut source, &mut dest, total, on_progress).await {
+        match self
+            .copy_chunks(&mut source, &mut dest, total, &remote_to, on_progress)
+            .await
+        {
             Ok(()) => {}
             Err(e) => {
                 // ❗ The partial goes with the failure, cancellation included. The
@@ -106,7 +109,7 @@ impl SftpVolume {
         // ❗ Awaited, ❌ never dropped. A dropped `File` sends the same
         // `SSH_FXP_CLOSE` on a detached task and throws away the one report a
         // server gives of bytes it accepted but could not commit.
-        dest.close().await.map_err(|e| map_sftp_error(&e))?;
+        dest.close().await.map_err(|e| map_sftp_error(&e, &remote_to))?;
         Ok(total)
     }
 
@@ -116,6 +119,7 @@ impl SftpVolume {
         source: &mut File,
         dest: &mut File,
         total: u64,
+        remote_to: &str,
         on_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     ) -> Result<(), VolumeError> {
         // An empty source still reports once, so a caller's bar reaches 100%
@@ -136,7 +140,7 @@ impl SftpVolume {
             let Some(take) = NonZeroU64::new(take) else {
                 break;
             };
-            source.copy_to(dest, take).await.map_err(|e| map_sftp_error(&e))?;
+            source.copy_to(dest, take).await.map_err(|e| map_sftp_error(&e, remote_to))?;
             copied += take.get();
             // ❗ The only cancellation this path has. There is no token here, so a
             // caller that never looked at the callback would be uncancelable.

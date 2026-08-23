@@ -23,6 +23,7 @@
 //! clobbering" the reasoning behind the claim.
 
 use std::path::Path;
+use std::sync::Arc;
 
 use cmdr_fs::volume::{DirectoryCreation, MutationEvent, Volume, VolumeError};
 use log::debug;
@@ -58,7 +59,7 @@ impl SftpVolume {
 
         // Past this point the file is OURS: `SSH_FXF_EXCL` proved nothing was
         // there, so cleaning up after a failure can't take away anybody's data.
-        let mut writer = RemoteWrite::new(file);
+        let mut writer = RemoteWrite::new(file, Arc::from(remote.as_str()));
         let wrote = write_all_at(&mut writer, 0, content).await;
         // ❗ `File::close()` rather than a drop, and its answer is part of the
         // write: a drop sends the same `SSH_FXP_CLOSE` on a detached task and
@@ -212,7 +213,7 @@ impl SftpVolume {
                 Attempted::RemovingANode,
                 WhatIsThere::Directory,
             )),
-            _ => Err(map_sftp_error(&first)),
+            _ => Err(map_sftp_error(&first, &remote)),
         }
     }
 
@@ -262,7 +263,7 @@ impl SftpVolume {
         };
         let found = self.probe(session, remote_to).await;
         if found == WhatIsThere::Nothing {
-            return Err(map_sftp_error(&first));
+            return Err(map_sftp_error(&first, remote_from));
         }
         self.remove_whatever_is_at(session, remote_to, found).await?;
         session
@@ -270,7 +271,7 @@ impl SftpVolume {
             .fs()
             .rename(remote_from, remote_to)
             .await
-            .map_err(|e| map_sftp_error(&e))
+            .map_err(|e| map_sftp_error(&e, remote_to))
     }
 
     /// `force = false`: the destination must be free, and stay whatever it is if
@@ -331,7 +332,7 @@ impl SftpVolume {
         let _ = session.sftp().fs().remove_file(remote_to).await;
 
         if self.probe(session, remote_from).await != WhatIsThere::Directory {
-            return Err(map_sftp_error(&first));
+            return Err(map_sftp_error(&first, remote_from));
         }
         // A directory can't be renamed onto a file (`ENOTDIR`), so the claim has
         // to be directory-shaped. `SSH_FXP_MKDIR` refuses an occupied name just
@@ -341,7 +342,7 @@ impl SftpVolume {
             Ok(()) => Ok(()),
             Err(e) => {
                 let _ = session.sftp().fs().remove_dir(remote_to).await;
-                Err(map_sftp_error(&e))
+                Err(map_sftp_error(&e, remote_to))
             }
         }
     }
@@ -369,7 +370,7 @@ impl SftpVolume {
             WhatIsThere::NotADirectory => session.sftp().fs().remove_file(remote).await,
             WhatIsThere::Nothing => return Ok(()),
         };
-        removed.map_err(|e| map_sftp_error(&e))
+        removed.map_err(|e| map_sftp_error(&e, remote))
     }
 
     /// The failure of an operation that was trying to take a name, read through
