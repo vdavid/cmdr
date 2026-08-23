@@ -7,46 +7,30 @@ all live on this side of the boundary.
 ## Must-knows
 
 - **`index_mapping.rs` owns every drive-index / media-index frontend payload.** ❌ Don't add a `tauri_specta::Event`
-  struct inside `indexing/`, `media_index/`, or `importance/` — those emit `IndexEvent` and name no wire format. A new
-  frontend event needs three things: a variant in `indexing/events/sink.rs`, an arm in `route`, and a line in `ipc.rs`'s
-  `collect_events!`. The `route` match is exhaustive, so the compiler catches the second; nothing catches a missing
-  third but the frontend never seeing the event.
-- **`route` emits AND returns the wire name it emitted under**, read off the payload's own `Event::NAME`. Don't add a
-  separate name-lookup table: it would drift from what actually ships, and the completeness test would then be checking
-  the table instead of the behavior.
-- **The coverage-branch pair is the ONE thing the sink doesn't forward on sight.** `WalkAnnouncer` holds a branch-started
-  event for a second and drops it entirely if the walk ends first, because a phase announces 50-150 branches and most
-  finish in well under a second. The rule lives here, ❌ never in `cmdr-index` (the crate reports what it's doing) and ❌
-  never in the frontend (which then holds no timers and renders what it's told). An END is never held back, and a run's
-  terminal event closes any branch still open.
-- **`route(event, None)` suppresses only the Tauri emit.** Every host-side arm still runs, which is how `tests.rs`
-  proves a crate-side failure reaches `auto_dispatcher` without an app. ❌ So no arm may reach for `app.state()`: it
-  would drop everything in that test and before `agent::start` runs. `FolderActivity` (the agent's tap) and
-  `PathAccessDenied` use a process-global.
-- **`IndexEvent::Error` is the index's only path to a shipped error report** (a subsystem can't invoke the crate-root
-  `log_error!` macro). The English sentence is written here because that's what a human reads; the subsystem ships the
-  numbers. The backtrace is still the failure's — `emit` is a synchronous call from the failing code.
-- **Payload structs live here; the values they carry don't.** `ScanRunKind`, `CoveragePhase`, `RescanReason`,
-  `ActivityPhase`, `Freshness`, `AggregationPhase`, `MediaEnrichTerminalReason`, and `IndexFailure` keep their
-  `specta::Type` derives with their subsystems: a schema derive on a value is fine there, a presentation decision
-  isn't. There's no presentation type for the drive-index phase here at all — what each phase is CALLED is a message
-  key (`src/lib/indexing/indexing-steps.ts`).
-- **One event, one wire name, no exceptions.** `every_event_maps_to_a_destination_with_a_non_empty_name` checks every
-  routed name is unique, and ❌ nothing is excused from it: an exclusion there would hide exactly the collision it is
-  written to catch.
+  struct inside `indexing/`, `media_index/`, or `importance/`. A new frontend event needs a variant in
+  `indexing/events/sink.rs`, an arm in `route`, and a line in `ipc.rs`'s `collect_events!`. Only the second is
+  compiler-checked; a missing third just means the frontend never sees it.
+- **`route(event, None)` suppresses only the Tauri emit**, and every host-side arm still runs. ❌ So no arm may reach
+  for `app.state()`: it would drop everything in `tests.rs` and before `agent::start` runs. `FolderActivity` (the
+  agent's tap) and `PathAccessDenied` use a process-global instead.
+- **`route` returns the wire name it emitted**, read off the payload's own `Event::NAME`. ❌ No separate lookup table:
+  it would drift, and the completeness test would then check the table instead of the behavior.
+- **One event, one wire name, no exceptions.** ❌ Nothing is excused from
+  `every_event_maps_to_a_destination_with_a_non_empty_name`; an exclusion hides the collision it exists to catch.
+- **Payload structs live here; the values they carry don't.** `ScanRunKind`, `CoveragePhase`, and the six others keep
+  their `specta::Type` derives with their subsystems: a schema derive on a value is fine there, a presentation decision
+  isn't.
+- **The coverage-branch hold is the one thing the sink doesn't forward on sight**, and the rule lives here: ❌ never in
+  `cmdr-index` (the crate reports what it's doing), ❌ never in the frontend (which holds no timers).
+- ❗ **Two `TauriEventSink` types exist in the crate**: this one (`IndexEvent`) and
+  `file_system::write_operations::TauriEventSink` (`OperationEventSink`). Deliberate, but a bare grep returns both.
 
 ## Module map
 
-- `index_mapping.rs` — the 18 payload structs, `route` (including the agent's tap adapter, `DETAILS.md`), the
-  error-report rendering, and `TauriEventSink`.
-  `index_mapping/walk_announcer.rs` — the one-second hold on the coverage-branch pair (below).
-- `volume_mapping.rs` — `TauriVolumeEvents`, which turns a storage backend's typed connection transitions into
-  `VolumeConnectionChanged`, mapping `cmdr-fs`'s `VolumeConnection` onto `network`'s wire enum in the one match where
-  the two meet. ❗ Both enums are `Copy`, so a state that must CARRY something (a host key to look at) hands it
-  over through a command's typed outcome instead.
-
-There are TWO `TauriEventSink` types in the crate: this one (for `IndexEvent`) and
-`file_system::write_operations::TauriEventSink` (for `OperationEventSink`). Deliberate, but a bare grep returns both.
+- `index_mapping.rs` — the payload structs, `route`, the error-report rendering, and `TauriEventSink`.
+  `index_mapping/walk_announcer.rs` — the one-second hold on the coverage-branch pair.
+- `volume_mapping.rs` — `TauriVolumeEvents`, mapping `cmdr-fs`'s `VolumeConnection` onto `network`'s wire enum.
 
 The typed side of the boundary (`IndexEvent`, `EventSink`, `IndexErrorReport`, `Diagnostic`) and the full variant
-catalog: `crates/cmdr-index/src/indexing/events/DETAILS.md`. Rationale and the naming rules for this side: `DETAILS.md`.
+catalog: `crates/cmdr-index/src/indexing/events/DETAILS.md`. Rationale, the naming rules, the branch-hold numbers, and
+why both `Copy` enums refuse to carry a payload: `DETAILS.md`.

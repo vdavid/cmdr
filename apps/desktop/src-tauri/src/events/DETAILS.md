@@ -55,6 +55,27 @@ Two rules it must keep, both of which fail silently if broken:
   `send_rollup` takes no lock and opens no connection. The importance lookup, the quantization, and the admit all
   happen on the wake loop's own thread; canonical rationale is `agent/wake/DETAILS.md`.
 
+## What stays on the subsystem's side
+
+`ScanRunKind`, `CoveragePhase`, `RescanReason`, `ActivityPhase`, `Freshness`, `AggregationPhase`,
+`MediaEnrichTerminalReason`, and `IndexFailure` keep their `specta::Type` derives with their subsystems. A schema
+derive on a VALUE is fine there; a presentation decision is not. There is no presentation type for the drive-index
+phase here at all: what each phase is CALLED is a message key (`src/lib/indexing/indexing-steps.ts`), because the
+frontend is where a phase gets a name a human reads.
+
+`volume_mapping.rs` meets the same line from the other direction. Both `cmdr-fs`'s `VolumeConnection` and `network`'s
+wire enum are `Copy`, so a state that must CARRY something (a host key for the user to look at) hands it over through a
+command's typed outcome instead of growing a payload on the event.
+
+## The coverage-branch hold
+
+`WalkAnnouncer` holds a branch-STARTED event for a second and drops it entirely if the walk ends first, because a phase
+announces 50-150 branches and most finish in well under a second. An END is never held back, and a run's terminal event
+closes any branch still open.
+
+The rule lives on this side deliberately: ❌ never in `cmdr-index`, whose job is reporting what it is doing rather than
+deciding what is worth showing, and ❌ never in the frontend, which then holds no timers and renders what it is told.
+
 ## `raise` — the error-report rendering
 
 `IndexErrorReport` describes what broke; `raise` writes the sentence. Four variants, four target categories:
