@@ -1780,3 +1780,36 @@ donc aucun doublement n'a été nécessaire (les valeurs citées ci-dessous le s
 - Aucune des deux valeurs n'est identique à l'anglais : pas de `sameAsSourceJustification`. Aucun `: ; ! ? %`, donc la
   règle d'espace avant ponctuation ne se pose pas ; aucune apostrophe, donc aucun doublement ICU ; aucun U+2019 ni
   U+202F.
+
+## Le dialogue d'incident : `a quitté inopinément`, `a continué son exécution`, `la dernière fois` en fin de proposition
+
+Trois décisions prises sur preuves de la pile de référence, dont une correction d'une valeur déjà livrée.
+
+- **CORRECTION — « quit unexpectedly » → `a quitté inopinément`** · `fr/macOS/AppKit/AppKitErrors.json` : « Lors de sa
+  précédente ouverture, %@ a quitté inopinément pendant la réouverture des fenêtres. » · high. La valeur livrée
+  auparavant, `s''est fermé de façon inattendue`, n'a **aucune attestation** dans toute la pile ; c'est une paraphrase.
+  Apple a créé le concept et l'utilisateur francophone lit cette formule dans les dialogues de plantage du système,
+  donc c'est elle qui fait autorité. Seule la locution verbale change ; `la dernière fois` reste où elle était.
+- **« kept running » → `a continué son exécution`** · `fr/macOS/AppKit/NSExceptionAlert.json` `69.title` : « … pour
+  continuer l'exécution de l'application dans un état instable … » · high. C'est le dialogue d'exception d'Apple
+  lui-même, c'est-à-dire exactement notre surface. Le catalogue confirme le champ lexical avec `en cours` :
+  `Toujours en cours en arrière-plan.` et `Garder ce transfert en cours en arrière-plan`
+  (`fileOperations.transferProgress.*`). ❌ Pas `en cours d''exécution` : zéro occurrence dans le catalogue, ne pas
+  l'introduire. ❌ Pas `a continué de fonctionner` : `fonctionner` veut dire « marcher / être compatible » partout dans
+  la pile (macOS `LA20`/`LA35`, Thunar, Double Commander), jamais « rester en marche ». ❌ Pas `est resté ouvert` :
+  décrit une fenêtre, pas un processus.
+- **`la dernière fois` se place EN FIN de proposition, jamais en tête** · les trois seules occurrences de la pile la
+  placent en fin (`AppKit/Document.json` « … ouvert ou enregistré pour la dernière fois. », Thunar `:2659`,
+  Dolphin `:4744`), et les cinq occurrences du catalogue livré font pareil · high. Quand Apple veut l'antéposer, elle
+  change de construction (`Lors de sa précédente ouverture, …`), elle ne déplace pas `la dernière fois`. Les trois
+  variantes du corps partagent donc la même charpente, `Cmdr <verbe> … la dernière fois.`
+- **`continuer à` + infinitif, pas `continuer de`** · macOS `PE79`/`PE80`/`PE81` (« continuer à copier les autres »),
+  Thunar `:3174`. `continuer de` n'apparaît qu'une fois dans toute la pile (Thunar `:3161`), sur la même chaîne
+  anglaise qu'une variante en `à`. Noté ici parce que la question revient à chaque phrase de continuité, même si la
+  valeur retenue ci-dessus emploie `continuer` + complément de nom.
+- **« a report » sans « crash » → `un rapport`** · la seconde phrase reprend celle de `.ended` sans `d''incident`, et
+  `rapport d''incident` reste réservé au vrai plantage. Titre et confirmation suivent la même coupe :
+  `Envoyer le rapport d''incident ?` / `Envoyer le rapport ?`, `Rapport d''incident envoyé. …` / `Rapport envoyé. …` ·
+  high.
+- **`crashReporter.dialog.privacyNote` était déjà neutre** (« la partie du code concernée »), donc la valeur ne bouge
+  pas alors que l'anglais est passé de « crashed » à « ran into the problem ». Seule l'empreinte a été rafraîchie.

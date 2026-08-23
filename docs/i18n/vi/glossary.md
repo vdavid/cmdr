@@ -1461,3 +1461,33 @@ Giá trị đã chốt:
 - `.keptRunning` →
   `Lần trước Cmdr đã gặp sự cố ở chế độ nền nhưng vẫn tiếp tục chạy. Đây là báo cáo kèm chi tiết có thể giúp khắc phục việc này.`
 - `.unknown` → `Lần trước Cmdr đã gặp sự cố. Đây là báo cáo kèm chi tiết có thể giúp khắc phục việc này.`
+
+## Bổ sung: `thoát bất ngờ`, `ở chế độ nền`, và hai hướng đã loại
+
+- **SỬA — "quit unexpectedly" → `thoát bất ngờ`** · `macOS/AppKit/AppKitErrors.json:90` ("ứng dụng thoát bất ngờ") ·
+  high. Đây là lần duy nhất `bất ngờ` xuất hiện trong toàn bộ kho tham chiếu tiếng Việt ngoài Total Commander, và nó
+  nằm đúng khái niệm của chúng ta. Giá trị cũ `thoát đột ngột` không có nguồn nào chứng thực, nên `.ended` đã đổi theo
+  Apple. Phần còn lại của câu giữ nguyên.
+- **"in the background" → `ở chế độ nền`, GIỮ NGUYÊN** · thuật ngữ Microsoft chốt phần đầu `nền` (`background task` →
+  `tác vụ nền`, id=19019; `background` tính từ → `nền`, id=18758; `background printing` → `in dưới nền`, id=18908), và
+  catalog của Cmdr đã dùng `ở chế độ nền` nhất quán ở chín chuỗi trở lên (`settings.indexing.enabled.description`,
+  `ai.toast.downloadCloseTooltip`, `indexing.firstConnect.body`, `fileOperations.transferProgress.stallUnknown`, …).
+  Cùng một từ đầu `nền`, nên đổi riêng một chuỗi sang `tác vụ nền` hay `dưới nền` chỉ phá vỡ tính nhất quán mà không
+  được gì · high.
+- ❌ **Không dùng `ngầm`**: cả hai lần xuất hiện trong kho thuật ngữ đều nói về thứ nằm dưới lòng đất (`khu vực ngầm`,
+  `đi đường ngầm`), không phải tiến trình chạy nền.
+- ❌ **Không dùng `hậu trường`**: không có lần xuất hiện nào trong toàn bộ kho.
+- ⚠️ **Bẫy nghĩa "hình nền"**: hầu hết các lần `nền` xuất hiện trong kho là nghĩa THỊ GIÁC (`hình nền` = ảnh nền,
+  `màu nền`, `màn hình nền`); cả 25 kết quả đầu từ `nautilus.po` đều là chuỗi về ảnh nền màn hình. Đừng lấy chúng làm
+  bằng chứng cho nghĩa "chạy nền".
+- **"kept running" → `vẫn tiếp tục chạy`** · `macOS/AppKit/NSExceptionAlert.json` ("Chọn "Tiếp tục" để tiếp tục chạy
+  trong trạng thái không nhất quán") · high. **Thì không phải là vấn đề ở tiếng Việt**: tiếng Việt không chia động từ
+  theo thì, nên câu quá khứ dùng chính động từ ấy với `Lần trước` ở đầu câu. Vấn đề "không nguồn nào có câu quá khứ nói
+  ứng dụng sống sót" mà tiếng Đức gặp phải đơn giản là không tồn tại ở đây.
+- **`sự cố` là "problem" chung, KHÔNG phải "crash"** · Finder ("Nếu bạn tiếp tục gặp sự cố, hãy gặp quản trị viên hệ
+  thống của bạn"), AppKit ("Đã có sự cố khi truy xuất thông tin dịch vụ") — cả hai đều nói về vấn đề mà ứng dụng vượt
+  qua được. Vì thế `crashReporter.dialog.privacyNote` giữ nguyên `đã gặp sự cố` dù tiếng Anh đã đổi từ "crashed" sang
+  "ran into the problem": bản tiếng Việt vốn đã trung tính. Chỉ làm mới dấu vân nguồn.
+- **`báo cáo sự cố` mới là "crash report"** · nên "a report" (không có "crash") phải là `báo cáo` trần. Tiêu đề và
+  thông báo xác nhận cắt y hệt: `Gửi báo cáo sự cố?` / `Gửi báo cáo?`, `Đã gửi báo cáo sự cố. …` /
+  `Đã gửi báo cáo. …` · high.

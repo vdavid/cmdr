@@ -1,7 +1,11 @@
 {
-  "crashReporter.dialog.title": "发送崩溃报告？",
-  "@crashReporter.dialog.title": {
+  "crashReporter.dialog.title.crash": "发送崩溃报告？",
+  "@crashReporter.dialog.title.crash": {
     "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.title.report": "发送报告？",
+  "@crashReporter.dialog.title.report": {
+    "sourceHash": "d8b86d2"
   },
   "crashReporter.dialog.body.ended": "Cmdr 上次意外退出了。这是一份崩溃报告，里面的详情有助于修复这个问题。",
   "@crashReporter.dialog.body.ended": {
@@ -15,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "962305e"
   },
-  "crashReporter.dialog.privacyNote": "它包含应用版本、macOS 版本，以及代码中崩溃的部分。不含文件名或个人数据。",
+  "crashReporter.dialog.privacyNote": "它包含应用版本、macOS 版本，以及代码中出现问题的部分。不含文件名或个人数据。",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "7f7912a"
+    "sourceHash": "c6875a7"
   },
   "crashReporter.dialog.reportIdLabel": "报告 ID：",
   "@crashReporter.dialog.reportIdLabel": {
@@ -55,9 +59,13 @@
   "@crashReporter.dialog.sending": {
     "sourceHash": "286a3af"
   },
-  "crashReporter.sentToast.message": "崩溃报告已发送。感谢你帮助改进 Cmdr。",
-  "@crashReporter.sentToast.message": {
+  "crashReporter.sentToast.message.crash": "崩溃报告已发送。感谢你帮助改进 Cmdr。",
+  "@crashReporter.sentToast.message.crash": {
     "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.message.report": "报告已发送。感谢你帮助改进 Cmdr。",
+  "@crashReporter.sentToast.message.report": {
+    "sourceHash": "a676ed5"
   },
   "crashReporter.sentToast.changeSettings": "在“设置 > 更新”中更改",
   "@crashReporter.sentToast.changeSettings": {

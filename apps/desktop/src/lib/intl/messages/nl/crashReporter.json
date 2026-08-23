@@ -1,7 +1,11 @@
 {
-  "crashReporter.dialog.title": "Crashrapport versturen?",
-  "@crashReporter.dialog.title": {
+  "crashReporter.dialog.title.crash": "Crashrapport versturen?",
+  "@crashReporter.dialog.title.crash": {
     "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.title.report": "Rapport versturen?",
+  "@crashReporter.dialog.title.report": {
+    "sourceHash": "d8b86d2"
   },
   "crashReporter.dialog.body.ended": "Cmdr is de vorige keer onverwachts gestopt. Hier is een crashrapport met details die kunnen helpen dit op te lossen.",
   "@crashReporter.dialog.body.ended": {
@@ -15,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "962305e"
   },
-  "crashReporter.dialog.privacyNote": "Het bevat de appversie, de macOS-versie en welk deel van de code crashte. Geen bestandsnamen of persoonlijke gegevens.",
+  "crashReporter.dialog.privacyNote": "Het bevat de appversie, de macOS-versie en welk deel van de code het probleem tegenkwam. Geen bestandsnamen of persoonlijke gegevens.",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "7f7912a"
+    "sourceHash": "c6875a7"
   },
   "crashReporter.dialog.reportIdLabel": "Rapport-ID:",
   "@crashReporter.dialog.reportIdLabel": {
@@ -55,9 +59,13 @@
   "@crashReporter.dialog.sending": {
     "sourceHash": "286a3af"
   },
-  "crashReporter.sentToast.message": "Crashrapport verstuurd. Bedankt dat je helpt Cmdr te verbeteren.",
-  "@crashReporter.sentToast.message": {
+  "crashReporter.sentToast.message.crash": "Crashrapport verstuurd. Bedankt dat je helpt Cmdr te verbeteren.",
+  "@crashReporter.sentToast.message.crash": {
     "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.message.report": "Rapport verstuurd. Bedankt dat je helpt Cmdr te verbeteren.",
+  "@crashReporter.sentToast.message.report": {
+    "sourceHash": "a676ed5"
   },
   "crashReporter.sentToast.changeSettings": "Wijzig in Instellingen > Updates",
   "@crashReporter.sentToast.changeSettings": {

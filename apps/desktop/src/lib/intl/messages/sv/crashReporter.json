@@ -1,7 +1,11 @@
 {
-  "crashReporter.dialog.title": "Skicka kraschrapport?",
-  "@crashReporter.dialog.title": {
+  "crashReporter.dialog.title.crash": "Skicka kraschrapport?",
+  "@crashReporter.dialog.title.crash": {
     "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.title.report": "Skicka rapport?",
+  "@crashReporter.dialog.title.report": {
+    "sourceHash": "d8b86d2"
   },
   "crashReporter.dialog.body.ended": "Cmdr avslutades oväntat förra gången. Här är en kraschrapport med detaljer som kan hjälpa till att åtgärda det.",
   "@crashReporter.dialog.body.ended": {
@@ -15,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "962305e"
   },
-  "crashReporter.dialog.privacyNote": "Den innehåller appversionen, macOS-versionen och vilken del av koden som kraschade. Inga filnamn eller personuppgifter.",
+  "crashReporter.dialog.privacyNote": "Den innehåller appversionen, macOS-versionen och vilken del av koden som stötte på problemet. Inga filnamn eller personuppgifter.",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "7f7912a"
+    "sourceHash": "c6875a7"
   },
   "crashReporter.dialog.reportIdLabel": "Rapport-ID:",
   "@crashReporter.dialog.reportIdLabel": {
@@ -55,9 +59,13 @@
   "@crashReporter.dialog.sending": {
     "sourceHash": "286a3af"
   },
-  "crashReporter.sentToast.message": "Kraschrapporten skickades. Tack för att du hjälper till att göra Cmdr bättre.",
-  "@crashReporter.sentToast.message": {
+  "crashReporter.sentToast.message.crash": "Kraschrapporten skickades. Tack för att du hjälper till att göra Cmdr bättre.",
+  "@crashReporter.sentToast.message.crash": {
     "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.message.report": "Rapporten skickades. Tack för att du hjälper till att göra Cmdr bättre.",
+  "@crashReporter.sentToast.message.report": {
+    "sourceHash": "a676ed5"
   },
   "crashReporter.sentToast.changeSettings": "Ändra under Inställningar > Uppdateringar",
   "@crashReporter.sentToast.changeSettings": {

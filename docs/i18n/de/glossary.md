@@ -1314,3 +1314,44 @@ ist nicht passiert.
 - Beide neuen Werte enthalten keine Apostrophe; die ICU-Doppelapostroph-Regel greift hier nicht.
 - Zu prüfen beim Overflow-Check: das deutsche `.keptRunning` läuft auf rund 160 Zeichen gegenüber rund 140 im
   Englischen, in einem Dialogtext, der schon Datenschutzhinweis und Berichts-ID trägt.
+
+### Nachtrag: was hinter `und weitergelaufen` steckt
+
+- **`ist … weitergelaufen` ist ZUSAMMENGESETZT, nicht gefunden.** Keine Quelle irgendwo in der Referenzsammlung liefert
+  einen Satz in der Vergangenheit, der sagt, dass eine App einen Fehler überlebt hat: weder macOS noch Microsoft noch
+  die orthodoxen (Total Commander, Double Commander) oder die Explorer-Manager (Nautilus, Thunar, Dolphin) haben so eine
+  Zeichenkette überhaupt im Bestand. Der Ausdruck entsteht aus dem im Katalog gesetzten Wortstamm (`weiterlaufen`,
+  `Läuft weiter im Hintergrund`) plus normalem Perfekt. `high` bleibt die Konfidenz, weil die Morphologie keine
+  Übersetzungsentscheidung ist, aber das Protokoll muss sagen, dass hier zusammengesetzt und nicht belegt wurde.
+- ❌ Nicht `hat weitergearbeitet`: „arbeiten“ behauptet mehr, als wir wissen (dass die App weiter NÜTZLICH war), während
+  wir nur wissen, dass der Prozess noch lief.
+- ❌ Nicht `wurde fortgesetzt`: Passiv mit fehlendem Agens, und im Katalog gehört `fortsetzen` zu einem VORGANG, den
+  jemand fortsetzt, nicht zur App selbst.
+- **Der Streit um `auf ein Problem gestoßen` ist entschieden und soll nicht neu aufgerollt werden.** Microsofts
+  deutscher Styleguide führt `ist ein Problem aufgetreten` ausdrücklich als Negativbeispiel; macOS benutzt genau diese
+  Form überall; unser `auf ein Problem gestoßen` ist eine dritte Form, die Apple ebenfalls ausliefert und die Cmdr im
+  Nominativ hält. Wer künftig mit dem MS-Styleguide in der Hand „korrigieren“ will, findet hier die Antwort.
+- **`.ended` bleibt unangetastet**: macOS Problem Reporter gibt `%@ quit unexpectedly.` als `%@ wurde unerwartet
+  beendet.` wieder, wortgleich mit unserer ausgelieferten Zeile in der tragenden Hälfte. `confirmed`.
+- **Zur Entscheidung offen (bei David)**: `…, ist aber weitergelaufen` statt der schlichten Reihung `und
+  weitergelaufen`. Deutsch will an dieser Stelle normalerweise eine adversative Partikel, und die `aber`-Variante liest
+  sich wärmer; die schlichte Reihung spiegelt dafür das Englische. Ein Einzeiler-Tausch, falls er sie vorzieht.
+
+### Datenschutzhinweis: `auf das Problem gestoßen`, nicht `abgestürzt`
+
+`crashReporter.dialog.privacyNote` ist EINE Zeichenkette für alle drei Fälle des Dialogs, also darf sie kein
+Absturz-Wort tragen: „welcher Teil des Codes auf das Problem gestoßen ist“ stimmt auch dann, wenn Cmdr weitergelaufen
+ist. Gleiche Wendung wie in den Textkörpern, damit der Dialog aus einer Stimme spricht · high.
+
+### Titel und Bestätigung: `Absturzbericht` nur, wenn es wirklich abgestürzt ist
+
+Der Katalog trennt `Absturzbericht` und schlichten `Bericht` schon konsequent, und genau diese Trennung trägt hier:
+
+- `crashReporter.dialog.title.crash` → `Absturzbericht senden?` (unverändert), `.title.report` → `Bericht senden?`
+- `crashReporter.sentToast.message.crash` → `Absturzbericht gesendet. …` (unverändert), `.message.report` →
+  `Bericht gesendet. …`
+
+Beides ist dieselbe Operation wie im Englischen: das Absturz-Wortglied entfällt, sonst ändert sich nichts · high.
+❌ `crashReporter.dialog.alwaysSend` bleibt `Absturzberichte immer senden`: das Kästchen schaltet die Einstellung
+`updates.crashReports`, deren kanonisches Label in Einstellungen > Updates `Absturzberichte senden` heißt. Neutral
+formuliert würde es so klingen, als schlösse es auch Fehlerberichte ein, was es nicht tut.

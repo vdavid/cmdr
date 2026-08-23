@@ -1,7 +1,11 @@
 {
-  "crashReporter.dialog.title": "¿Enviar informe de fallos?",
-  "@crashReporter.dialog.title": {
+  "crashReporter.dialog.title.crash": "¿Enviar informe de fallos?",
+  "@crashReporter.dialog.title.crash": {
     "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.title.report": "¿Enviar informe?",
+  "@crashReporter.dialog.title.report": {
+    "sourceHash": "d8b86d2"
   },
   "crashReporter.dialog.body.ended": "Cmdr se cerró inesperadamente la última vez. Aquí tienes un informe de fallos con detalles que pueden ayudar a solucionarlo.",
   "@crashReporter.dialog.body.ended": {
@@ -15,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "962305e"
   },
-  "crashReporter.dialog.privacyNote": "Incluye la versión de la app, la versión de macOS y qué parte del código falló. Ningún nombre de archivo ni datos personales.",
+  "crashReporter.dialog.privacyNote": "Incluye la versión de la app, la versión de macOS y qué parte del código tuvo el problema. Ningún nombre de archivo ni datos personales.",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "7f7912a"
+    "sourceHash": "c6875a7"
   },
   "crashReporter.dialog.reportIdLabel": "ID del informe:",
   "@crashReporter.dialog.reportIdLabel": {
@@ -55,9 +59,13 @@
   "@crashReporter.dialog.sending": {
     "sourceHash": "286a3af"
   },
-  "crashReporter.sentToast.message": "Informe de fallos enviado. Gracias por ayudar a mejorar Cmdr.",
-  "@crashReporter.sentToast.message": {
+  "crashReporter.sentToast.message.crash": "Informe de fallos enviado. Gracias por ayudar a mejorar Cmdr.",
+  "@crashReporter.sentToast.message.crash": {
     "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.message.report": "Informe enviado. Gracias por ayudar a mejorar Cmdr.",
+  "@crashReporter.sentToast.message.report": {
+    "sourceHash": "a676ed5"
   },
   "crashReporter.sentToast.changeSettings": "Cambiar en Ajustes > Actualizaciones",
   "@crashReporter.sentToast.changeSettings": {

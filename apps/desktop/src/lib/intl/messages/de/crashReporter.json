@@ -1,7 +1,11 @@
 {
-  "crashReporter.dialog.title": "Absturzbericht senden?",
-  "@crashReporter.dialog.title": {
+  "crashReporter.dialog.title.crash": "Absturzbericht senden?",
+  "@crashReporter.dialog.title.crash": {
     "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.title.report": "Bericht senden?",
+  "@crashReporter.dialog.title.report": {
+    "sourceHash": "d8b86d2"
   },
   "crashReporter.dialog.body.ended": "Cmdr wurde beim letzten Mal unerwartet beendet. Hier ist ein Absturzbericht mit Details, die bei der Behebung helfen können.",
   "@crashReporter.dialog.body.ended": {
@@ -15,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "962305e"
   },
-  "crashReporter.dialog.privacyNote": "Er enthält die App-Version, die macOS-Version und welcher Teil des Codes abgestürzt ist. Keine Dateinamen, keine persönlichen Daten.",
+  "crashReporter.dialog.privacyNote": "Er enthält die App-Version, die macOS-Version und welcher Teil des Codes auf das Problem gestoßen ist. Keine Dateinamen, keine persönlichen Daten.",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "7f7912a"
+    "sourceHash": "c6875a7"
   },
   "crashReporter.dialog.reportIdLabel": "Berichts-ID:",
   "@crashReporter.dialog.reportIdLabel": {
@@ -55,9 +59,13 @@
   "@crashReporter.dialog.sending": {
     "sourceHash": "286a3af"
   },
-  "crashReporter.sentToast.message": "Absturzbericht gesendet. Danke, dass du hilfst, Cmdr zu verbessern.",
-  "@crashReporter.sentToast.message": {
+  "crashReporter.sentToast.message.crash": "Absturzbericht gesendet. Danke, dass du hilfst, Cmdr zu verbessern.",
+  "@crashReporter.sentToast.message.crash": {
     "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.message.report": "Bericht gesendet. Danke, dass du hilfst, Cmdr zu verbessern.",
+  "@crashReporter.sentToast.message.report": {
+    "sourceHash": "a676ed5"
   },
   "crashReporter.sentToast.changeSettings": "In Einstellungen > Updates ändern",
   "@crashReporter.sentToast.changeSettings": {
