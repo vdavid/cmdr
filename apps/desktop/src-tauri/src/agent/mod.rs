@@ -10,7 +10,8 @@
 //! - `store`: the `main.db` durable store; `start(app)` lands here.
 //! - `suggested_ops`: the service over the proposal spine (selector resolution against the
 //!   drive index, and the acceptance-rate metric).
-//! - `tools`: the in-process read-only toolset (the agent's registry view).
+//! - `memory`: the Markdown folder the agent writes about the user, jailed and capped.
+//! - `tools`: the in-process toolset (the agent's registry view).
 //! - `chat`: the chat runtime and the pure context-assembly core.
 //!
 //! See `CLAUDE.md` for must-knows and `DETAILS.md` for the map.
@@ -18,6 +19,7 @@
 pub mod chat;
 pub mod consent;
 pub mod llm;
+pub mod memory;
 pub mod pricing;
 pub mod store;
 pub mod suggested_ops;
