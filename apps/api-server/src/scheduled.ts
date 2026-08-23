@@ -1,4 +1,4 @@
-import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashEmailRow } from './email'
+import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashEmailRow, type CrashFate } from './email'
 import type { Bindings } from './types'
 import {
   recomputeTotal,
@@ -18,12 +18,24 @@ function buildModeToEnv(buildMode: string | null | undefined): 'prod' | 'dev' | 
   return '?'
 }
 
+/**
+ * Map the DB `app_fate` column to the label the email shows. `keptRunning` is the one value that
+ * says the app survived; everything else either says it went down or says nothing, and a row that
+ * says nothing must not be rendered as a crash. `unconfirmed` shouldn't reach the DB at all (the
+ * client resolves it at the next launch), and it claims nothing either way, so it reads as `'?'`.
+ */
+function appFateToLabel(appFate: string | null | undefined): CrashFate {
+  if (appFate === 'ended') return 'crashed'
+  if (appFate === 'keptRunning') return 'kept running'
+  return '?'
+}
+
 async function handleCrashNotifications(env: Bindings): Promise<void> {
   if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
 
   // One row per crash, newest first. No grouping: the email shows every report.
   const { results } = await env.TELEMETRY_DB.prepare(
-    `SELECT id, app_version, os_version, arch, signal, top_function, created_at, build_mode, short_id, email, panic_message
+    `SELECT id, app_version, os_version, arch, signal, top_function, created_at, build_mode, short_id, email, panic_message, app_fate
          FROM crash_reports
          WHERE notified_at IS NULL
          ORDER BY created_at DESC`,
@@ -39,6 +51,7 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
     short_id: string | null
     email: string | null
     panic_message: string | null
+    app_fate: string | null
   }>()
 
   if (results.length === 0) return
@@ -46,6 +59,7 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
   const crashes: CrashEmailRow[] = results.map((row) => ({
     when: row.created_at,
     env: buildModeToEnv(row.build_mode),
+    fate: appFateToLabel(row.app_fate),
     id: row.short_id ?? '?',
     site: row.top_function,
     signal: row.signal,

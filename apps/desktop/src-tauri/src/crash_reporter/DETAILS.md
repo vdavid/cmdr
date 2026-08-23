@@ -120,6 +120,12 @@ Four states, `#[serde(default)]` so an older crash file still parses:
   SIGABRT are unrecoverable and we're reading the raw file from the NEXT launch).
 - **`kept_running`**: the app was seen alive after the panic.
 
+The four camelCase serialized names are an api-server contract, not just a local enum: the ingest endpoint validates
+`appFate` against exactly this set and stores it in `crash_reports.app_fate`, where the nightly crash email ranks a
+real crash apart from a panic the app walked away from. Rename a variant and every report 400s, so a rename lands in
+`apps/api-server/src/telemetry/telemetry.ts` in the same change (`apps/api-server/src/telemetry/DETAILS.md` § Crash
+reports).
+
 ### Two seams record survival, and neither can lie the other way
 
 Both call `survival::confirm_survival`, which only ever moves `unconfirmed` →
@@ -199,8 +205,10 @@ is logged; everything after `crash_reporter::init` is also written to disk.
   names.
 - `imageBase` (optional): the main executable's load address at crash time, as `"0x…"`. See § Image base.
 - `appFate`: `"unknown"` / `"unconfirmed"` / `"ended"` / `"keptRunning"` (§ App fate). PII-free by construction: a
-  four-value enum about the app's own behavior. The api server ignores it today, so it isn't stored server-side; adding
-  a column would let the nightly crash email separate a real crash from a panic the app walked away from.
+  four-value enum about the app's own behavior. Stored server-side in `crash_reports.app_fate`, where the nightly crash
+  email reads it to rank a real crash apart from a panic the app walked away from
+  (`apps/api-server/src/telemetry/DETAILS.md` § Crash reports). The server validates against exactly these four values,
+  so renaming a variant here needs the server updated in the same change.
 - `reportedInSession`: always `false` in anything that reaches the server, since a stamped report is deleted rather than
   uploaded (§ Told once, not twice). A bool that carries no information off the machine, kept in the payload only so the
   on-disk file stays self-describing.

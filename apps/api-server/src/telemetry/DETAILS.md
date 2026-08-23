@@ -8,7 +8,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 ## Files
 
 - **`telemetry.ts`**: routes `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`, plus
-  `extractTopFunction` and the sanitizers.
+  `extractTopFunction`, `validateOptionalEnum` / `validateOptionalPattern`, and the sanitizers.
 - **`error-report.ts`**: `POST /error-report` (multipart upload to R2, presigned Discord notification).
 - **`error-report-intake.ts`**: admission control — daily byte budget, intake pause flag, once-a-day alert claims,
   notification fan-out cap.
@@ -22,7 +22,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 ## Request flows
 
 ```
-Crash report: POST /crash-report → rate-limit by IP (CRASH_REPORT_LIMITER, 429 if over) → validate payload (size + required fields + optional diagId/email shape) → hash IP with daily salt → write to D1 incl. nullable diag_id + email (fire-and-forget via waitUntil) → 204
+Crash report: POST /crash-report → rate-limit by IP (CRASH_REPORT_LIMITER, 429 if over) → validate payload (size + required fields + optional buildMode/appFate membership + diagId/email shape) → hash IP with daily salt → write to D1 incl. nullable diag_id + email + app_fate (fire-and-forget via waitUntil) → 204
 
 Error report: POST /error-report → rate-limit by IP (ERROR_REPORT_LIMITER, 429 if over) → global intake gates (intake_paused, then the day's byte budget; 503 + Retry-After if either trips, plus one Discord ping the day the budget runs out) → read the body under MAX_BODY_BYTES, cancelling past it (413) → parse multipart, validate bundle + meta (400/413) → stream the bundle to R2 under error-reports/{prod|dev}/{date}/{id}-{uuid}.zip → in waitUntil: bump total_bytes, charge the daily budget, tryEvict, then a Discord embed (capped at DAILY_NOTIFICATION_CAP/day) → 200 {id}
 
@@ -40,10 +40,20 @@ Update check proxy: GET /update-check/:version → hash IP with daily salt → I
 D1 table `crash_reports`. Columns: `hashed_ip`, `app_version`, `os_version`, `arch`, `signal`, `top_function`,
 `backtrace`, `build_mode` (`'release'` / `'debug'`, nullable for legacy rows), `short_id` (`CRASH-XXXXX`, nullable for
 legacy rows), `diag_id` (`diag_<uuid>`, nullable), `email` (nullable), `panic_message` (nullable: signal crashes carry
-no panic payload, and legacy rows predate the column). Validates payload size (max 64 KB), required fields, and the
-shape of optional fields before writing. `diagId` must match `^diag_[0-9a-f-]{36}$` (a malformed value, including any
-`anal_`-prefixed one, is rejected 400); `email` is loosely shape-checked and surfaced as the "Reply to" column in the
-crash-notification email (`../scheduled.ts` / `../email.ts`). No authentication required.
+no panic payload, and legacy rows predate the column), `app_fate` (nullable, migration `0015`). Validates payload size
+(max 64 KB), required fields, and the shape of optional fields before writing. `diagId` must match
+`^diag_[0-9a-f-]{36}$` (a malformed value, including any `anal_`-prefixed one, is rejected 400); `email` is loosely
+shape-checked and surfaced as the "Reply to" column in the crash-notification email (`../scheduled.ts` / `../email.ts`).
+No authentication required.
+
+**`app_fate` is what ranks a report's severity:** `'ended'` (the app went down with it) versus `'keptRunning'` (a
+background-thread panic it survived), plus `'unknown'` / `'unconfirmed'`, which claim nothing. Without it a real crash
+and a problem the app walked away from are the same row, since both read `signal: panic`. Validated against the exact
+four values the client's `AppFate` enum serializes (`apps/desktop/src-tauri/src/crash_reporter/mod.rs`) and rejected 400
+outside them, because the column exists to be grouped on and an invented value would become its own bucket in the
+nightly email. Absent or `null` stores NULL, so a client older than the field still reports. The one consumer is the
+email's Fate column and subject (`../../DETAILS.md` § Cron handler); `/admin/crashes` groups by day/site/signal and does
+not read it.
 
 **`top_function` derivation (`extractTopFunction`):** the grouping key is the topmost backtrace frame that is real
 application code. Frames belonging to the panic machinery are skipped first (`crash_reporter`, `std::panicking`,

@@ -575,3 +575,74 @@ describe('panicMessage', () => {
     expect(stored.endsWith('… (truncated)')).toBe(true)
   })
 })
+
+/**
+ * `appFate` is what separates a crash the app died of from a background panic it walked
+ * away from (`apps/desktop/src-tauri/src/crash_reporter/DETAILS.md` § App fate). It is a
+ * four-value enum about the app's own behavior, so it carries no PII; the point of storing
+ * it is that the nightly email can rank the two differently.
+ */
+describe('appFate', () => {
+  /** bindArgs index of `app_fate` in the INSERT. */
+  const appFateIndex = 12
+
+  it('stores the fate when supplied', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport({ ...validCrashReport, appFate: 'keptRunning' }, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][appFateIndex]).toBe('keptRunning')
+  })
+
+  it('stores every value the client enum can serialize', async () => {
+    for (const fate of ['unknown', 'unconfirmed', 'ended', 'keptRunning']) {
+      const { db, bindMock } = createMockD1()
+      const bindings = createBindings({ TELEMETRY_DB: db })
+
+      const res = await postCrashReport({ ...validCrashReport, appFate: fate }, bindings)
+
+      expect(res.status).toBe(204)
+      expect(bindMock.mock.calls[0][appFateIndex]).toBe(fate)
+    }
+  })
+
+  it('stores NULL when the field is absent, so an older client can still report', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport(validCrashReport, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][appFateIndex]).toBeNull()
+  })
+
+  it('accepts an explicit null (Rust serializes Option::None that way)', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport({ ...validCrashReport, appFate: null }, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][appFateIndex]).toBeNull()
+  })
+
+  it('rejects a value outside the enum', async () => {
+    const bindings = createBindings()
+    const res = await postCrashReport({ ...validCrashReport, appFate: 'survived' }, bindings)
+
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid appFate')
+  })
+
+  it('rejects a non-string fate', async () => {
+    const bindings = createBindings()
+    const res = await postCrashReport({ ...validCrashReport, appFate: { evil: true } }, bindings)
+
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid appFate')
+  })
+})

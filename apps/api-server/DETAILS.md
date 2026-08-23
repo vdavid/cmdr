@@ -18,6 +18,8 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **`email.ts`**: Resend delivery (HTML + plain text, multi-seat), behind the single `sendViaResend` wrapper.
 - **`discord.ts`**: Discord webhook client (single retry on 429, drop-on-failure).
 - **`scheduled.ts`**: the cron jobs (crash notifications, daily aggregation, DB size, retention sweep, eviction sweep).
+  Tests split by axis: `crash-notification-email.test.ts` covers the one job whose output is a document (query → row →
+  rendered HTML and subject), `scheduled.test.ts` the DB-writing jobs, with the D1/env fakes in `cron-test-helpers.ts`.
 - **`user-agent.ts`**: `classifyUaFamily` / `resolveUaFamily`, shared by the download write path and the funnel read
   path so neither area imports the other.
 - **`scripts/generate-keys.js`**: Ed25519 key pair generation (run once at setup).
@@ -213,7 +215,8 @@ back to the OAuth login).
 
 **D1 for telemetry and fulfillment:** crash reports, downloads, update checks, heartbeats, feedback, and the
 `license_issuance` record all live in D1 (binding `TELEMETRY_DB`, database `cmdr-telemetry`). Migrations live in
-`migrations/` (latest: `0014_downloads_daily_unique.sql`, the distinct-downloader rollup the retention sweep writes;
+`migrations/` (latest: `0015_crash_app_fate.sql`, the nullable `app_fate` column the crash email ranks rows by;
+`0014_downloads_daily_unique.sql` is the distinct-downloader rollup the retention sweep writes;
 `0013_minimize_stored_identifiers.sql` adds `downloads.ua_family` and erases the crash-table IP hashes;
 `0012_license_issuance.sql` is the fulfillment record; `0011_crash_panic_message.sql` adds the nullable `panic_message`
 column; `0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email`
@@ -237,10 +240,16 @@ A single `scheduled` handler runs every 3 hours (`0 */3 * * *`). It runs its job
 failure doesn't block the others:
 
 1. **Crash notifications** (every invocation): queries `crash_reports WHERE notified_at IS NULL`, sorted newest-first,
-   marks rows as notified, then sends an email via Resend with one row per crash report (When, Env, ID, Site, Signal,
-   Version, Reply to) plus a full-width sub-row carrying the redacted `panic_message` (an em-dash when the row has
-   none). Marks before sending to prefer missed notifications over duplicates. Requires `CRASH_NOTIFICATION_EMAIL` and
-   `RESEND_API_KEY`.
+   marks rows as notified, then sends an email via Resend with one row per crash report (When, Env, Fate, ID, Site,
+   Signal, Version, Reply to) plus a full-width sub-row carrying the redacted `panic_message` (an em-dash when the row
+   has none). Marks before sending to prefer missed notifications over duplicates. Requires `CRASH_NOTIFICATION_EMAIL`
+   and `RESEND_API_KEY`.
+   - **Fate is the severity ranking**, and the reason the email is worth reading row by row: `crashed` (red) for
+     `app_fate = 'ended'`, `kept running` (amber) for `'keptRunning'`, `?` (gray) for a NULL or `'unconfirmed'` row that
+     claims nothing. Two rows that both read `signal: panic` are otherwise indistinguishable, though one killed the app
+     and one didn't. The subject carries it too, since that's all you see without opening: the plain count when nothing
+     survived, `, the app kept running` when every report did, and `(N kept running)` for a mix. Only survivors are
+     counted there — a NULL fate is never tallied as a crash.
 2. **Daily aggregation** (00:00 UTC only): aggregates yesterday's `update_checks` into `daily_active_users` via
    `INSERT OR IGNORE ... GROUP BY`, then prunes raw update checks older than 7 days. Idempotent via existence check.
 3. **DB size check** (00:00 UTC only): queries the D1 pragma for total database size, alerting by email over 100 MB.

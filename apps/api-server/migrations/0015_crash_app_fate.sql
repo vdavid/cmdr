@@ -1,0 +1,16 @@
+-- Whether the app outlived what the report describes: `'ended'` (an unrecoverable signal, or a
+-- panic the app went down with) or `'keptRunning'` (a background-thread panic it survived, since
+-- the lock-poison policy stopped taking the process down with it). Without this the two are
+-- indistinguishable in a row that reads `signal: panic` either way, and the nightly crash email
+-- ranks a real crash the same as a problem the app walked away from.
+--
+-- Also carries the two values that claim nothing: `'unknown'` (a crash file from a build that
+-- didn't record a fate) and `'unconfirmed'` (nothing had yet confirmed the app was alive; the
+-- client resolves it at the next launch, so it should never reach us, and storing it verbatim is
+-- how we'd find out otherwise).
+--
+-- Nullable: rows written before this column existed, and reports from clients older than the
+-- field, stay NULL. PII-free by construction, being a four-value enum about the app's own
+-- behavior. Source of truth for the values: `AppFate` in
+-- `apps/desktop/src-tauri/src/crash_reporter/mod.rs`.
+ALTER TABLE crash_reports ADD COLUMN app_fate TEXT;

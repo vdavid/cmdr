@@ -15,6 +15,12 @@ async function sendViaResend(resend: Resend, payload: CreateEmailOptions, label:
   }
 }
 
+/** The fate column's rendered values. `'?'` is the honest answer, never a guessed `'crashed'`. */
+export type CrashFate = 'crashed' | 'kept running' | '?'
+
+/** Text color per fate, in the email's existing language: red for a crash, amber for a survived panic, gray for unknown. */
+const fateColors: Record<CrashFate, string> = { crashed: '#dc2626', 'kept running': '#d97706', '?': '#9ca3af' }
+
 /**
  * One row in the crash notification email. The email lists every crash report (no
  * grouping by `top_function` like the previous incarnation) so each row maps to a
@@ -25,6 +31,12 @@ export interface CrashEmailRow {
   when: string
   /** Friendly env (`'prod'` for release, `'dev'` for debug, `'?'` for unknown). */
   env: 'prod' | 'dev' | '?'
+  /**
+   * What the app did after the report was written: `'crashed'` (it went down), `'kept running'`
+   * (a background panic it survived), or `'?'` for a row whose `app_fate` claims nothing. This is
+   * the severity ranking; two rows can otherwise read identically.
+   */
+  fate: CrashFate
   /** `CRASH-XXXXX`, or `'?'` for rows from older clients. */
   id: string
   /** `top_function`. */
@@ -40,6 +52,19 @@ export interface CrashEmailRow {
   message: string | null
 }
 
+/**
+ * The subject line, which is the whole email for anyone who doesn't open it. A survived panic is
+ * a lower-severity thing than a crash, so it is named there rather than only in the table; when
+ * nothing survived, the line is the plain count it has always been. Only survivors are counted:
+ * a NULL `app_fate` claims nothing, so it is never tallied as a crash.
+ */
+function crashSubject(totalCount: number, keptRunningCount: number): string {
+  const base = `Cmdr: ${String(totalCount)} new crash report${totalCount === 1 ? '' : 's'}`
+  if (keptRunningCount === 0) return base
+  if (keptRunningCount === totalCount) return `${base}, the app kept running`
+  return `${base} (${String(keptRunningCount)} kept running)`
+}
+
 interface CrashNotificationParams {
   crashes: CrashEmailRow[]
   totalCount: number
@@ -49,7 +74,7 @@ interface CrashNotificationParams {
 
 export async function sendCrashNotificationEmail(params: CrashNotificationParams): Promise<void> {
   const resend = new Resend(params.resendApiKey)
-  const subject = `Cmdr: ${String(params.totalCount)} new crash report${params.totalCount === 1 ? '' : 's'}`
+  const subject = crashSubject(params.totalCount, params.crashes.filter((c) => c.fate === 'kept running').length)
 
   const tableRows = params.crashes
     .map(
@@ -57,6 +82,7 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
         <tr>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px; white-space: nowrap;">${escapeHtml(entry.when)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px; text-align: center;">${escapeHtml(entry.env)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px; white-space: nowrap; color: ${fateColors[entry.fate]};">${escapeHtml(entry.fate)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 13px;">${escapeHtml(entry.id)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 13px;">${escapeHtml(entry.site)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.signal)}</td>
@@ -68,7 +94,7 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
             }</td>
         </tr>
         <tr>
-            <td colspan="7" style="padding: 6px 12px 12px; border: 1px solid #e5e7eb; border-top: 0; font-family: monospace; font-size: 12px; color: #b91c1c; word-break: break-word;">${
+            <td colspan="8" style="padding: 6px 12px 12px; border: 1px solid #e5e7eb; border-top: 0; font-family: monospace; font-size: 12px; color: #b91c1c; word-break: break-word;">${
               entry.message ? escapeHtml(entry.message) : '<span style="color: #9ca3af; font-family: inherit;">—</span>'
             }</td>
         </tr>`,
@@ -95,6 +121,7 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
             <tr>
                 <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">When</th>
                 <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center; background: #f9fafb;">Env</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Fate</th>
                 <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">ID</th>
                 <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Site</th>
                 <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Signal</th>
