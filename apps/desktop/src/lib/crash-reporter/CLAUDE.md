@@ -1,7 +1,7 @@
 # Crash reporter (frontend)
 
-The next-launch "here's what happened last time" surface: a dialog when the user hasn't opted in (or the app looks
-stuck in a crash loop), a toast when they have. Capture, sanitizing, and upload are all backend
+The next-launch "here's what happened last time" surface: a dialog when the user hasn't opted in (or the app looks stuck
+in a crash loop), a toast when they have. Capture, sanitizing, and upload are all backend
 (`src-tauri/src/crash_reporter/`); this side only decides which surface to show, which sentence is true of the report,
 and collects the user's choices.
 
@@ -31,8 +31,8 @@ The flow lives in `routes/(main)/+layout.svelte` (`checkForPendingCrashReport`),
   itself on every launch.
 - **Not every crash report describes a crash the app died of**, so the body sentence comes from `crashDialogBodyKey`,
   never a fixed key. Anything unsettled (`unconfirmed`, a missing `appFate` from an older build) falls to the `unknown`
-  sentence, which is true either way. Don't flip that default: it would tell a user their app crashed on the strength
-  of a field that wasn't there. The fate itself is decided backend-side; `src-tauri/src/crash_reporter/DETAILS.md`.
+  sentence, which is true either way. Don't flip that default: it would tell a user their app crashed on the strength of
+  a field that wasn't there. The fate itself is decided backend-side; `src-tauri/src/crash_reporter/DETAILS.md`.
 - **The report JSON is shown verbatim and is safe to show.** The backend already redacted and capped it before it
   reached disk. Don't add fields to the displayed payload here or re-sanitize it: `src-tauri/src/crash_reporter/` is the
   single place that decides what a crash report contains.

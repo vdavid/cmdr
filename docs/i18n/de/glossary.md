@@ -1309,8 +1309,8 @@ ist nicht passiert.
 - **"a report" (nicht „a crash report“) → `ein Bericht`** · der zweite Satz ist wortgleich mit `.ended`, nur ohne
   `Absturz-`: „Hier ist ein Bericht mit Details, die bei der Behebung helfen können.“ · high. Dieses eine fehlende
   Wortglied trägt die ganze Aussage „nichts ist abgestürzt“.
-- **`.unknown` sagt weder das eine noch das andere**: „Cmdr ist beim letzten Mal auf ein Problem gestoßen.“ Kein `im
-  Hintergrund`, kein `weitergelaufen`, kein `beendet` — der Satz stimmt, egal ob Cmdr danach lief oder nicht.
+- **`.unknown` sagt weder das eine noch das andere**: „Cmdr ist beim letzten Mal auf ein Problem gestoßen.“ Kein
+  `im Hintergrund`, kein `weitergelaufen`, kein `beendet` — der Satz stimmt, egal ob Cmdr danach lief oder nicht.
 - Beide neuen Werte enthalten keine Apostrophe; die ICU-Doppelapostroph-Regel greift hier nicht.
 - Zu prüfen beim Overflow-Check: das deutsche `.keptRunning` läuft auf rund 160 Zeichen gegenüber rund 140 im
   Englischen, in einem Dialogtext, der schon Datenschutzhinweis und Berichts-ID trägt.

@@ -1403,14 +1403,14 @@ bakgrundstråd, appen fortsatte och användaren avslutade själv) och `.unknown`
 noterade vilket det var). `.ended` är oförändrad. De två nya får ALDRIG påstå att Cmdr kraschade, avslutades eller
 stannade, och de säger `en rapport`, inte `en kraschrapport`: inget kraschade.
 
-- **"ran into a problem" → `stötte på ett problem`** · standardkollokation i svenskan (`stöta på problem`), inget
-  belägg i piles men det är för att varje pile-formulering är opersonlig: macOS AppKit skriver
+- **"ran into a problem" → `stötte på ett problem`** · standardkollokation i svenskan (`stöta på problem`), inget belägg
+  i piles men det är för att varje pile-formulering är opersonlig: macOS AppKit skriver
   `Det inträffade ett problem med att hämta …` (`sv/macOS/AppKit/AppKitErrors.json` rad 95–98), Finder
   `ett problem inträffade med skivenheten` (`LocalizableMerged.json` `PE37`), Nautilus
   `Ett problem uppstod när detta program kördes` (`nautilus.po` rad 846). Ingen av dem kan ta `Cmdr` som subjekt, och
   alla tre systersträngarna gör det på engelska (`.ended` gör det redan på svenska: "Cmdr avslutades oväntat …"), så
-  parallelliteten mellan varianterna avgör. `high`. ❌ Inte `råkade ut för`: bär en olycksnyans engelskans neutrala
-  "ran into" inte har. ❌ Inte `Det inträffade ett problem i Cmdr …`: korrekt Apple-svenska, men bryter subjektet mot
+  parallelliteten mellan varianterna avgör. `high`. ❌ Inte `råkade ut för`: bär en olycksnyans engelskans neutrala "ran
+  into" inte har. ❌ Inte `Det inträffade ett problem i Cmdr …`: korrekt Apple-svenska, men bryter subjektet mot
   systernycklarna och blir dubbelt tungt i `.keptRunning` ("i bakgrunden i Cmdr").
 - **"kept running" (appen, inte en åtgärd) → `fortsatte köra`** · macOS egen undantagsdialog har exakt verbparet:
   `sv/macOS/AppKit/NSExceptionAlert.json` `69.title` "Klicka på ”Fortsätt” om du vill fortsätta köra appen i ett
@@ -1419,17 +1419,16 @@ stannade, och de säger `en rapport`, inte `en kraschrapport`: inget kraschade.
   `hålla igång` är transitivt och är redan bokat för köns "Håll igång den här i bakgrunden", så det skulle läsas som att
   användaren gjorde något. ❌ Inte `fortsatte fungera`: `fungera` handlar om att en funktion fortsätter verka
   (glossarets "keep working" → `fortsätter fungera`), inte om att processen levde vidare, vilket är hela poängen här.
-- **"in the background" → `i bakgrunden`** · den etablerade posten (Total Commander `WCMD.LNG.utf8` `1237=`
-  "…pågående aktivitet(er) i bakgrunden!", `4004="I &bakgrunden"`). Ordföljden i slutfältet är plats före tid på
-  svenska, alltså `i bakgrunden förra gången`, samma ordning som engelskan · `high`.
+- **"in the background" → `i bakgrunden`** · den etablerade posten (Total Commander `WCMD.LNG.utf8` `1237=` "…pågående
+  aktivitet(er) i bakgrunden!", `4004="I &bakgrunden"`). Ordföljden i slutfältet är plats före tid på svenska, alltså
+  `i bakgrunden förra gången`, samma ordning som engelskan · `high`.
 - **"a report" (utan `krasch`) → `en rapport`** · Microsoft `SWEDISH.tbx` (`report` → `rapport`, neutrum). Andra
-  meningen är `.ended`:s andra mening med `krasch`-ledet borttaget, tecken för tecken, så de tre varianterna delar
-  exakt samma avslutning · `high`.
+  meningen är `.ended`:s andra mening med `krasch`-ledet borttaget, tecken för tecken, så de tre varianterna delar exakt
+  samma avslutning · `high`.
 - **`förra gången` behålls, trots att Apple säger `När du senast …`** · macOS renderar "The last time you opened %@, it
-  unexpectedly quit …" som "När du senast öppnade %@ avslutades det oväntat …"
-  (`sv/macOS/AppKit/AppKitErrors.json` rad 91), och `förra gången` har noll träffar i hela piles. Men `.ended` säger
-  redan `förra gången` och de tre nycklarna fyller samma plats i samma dialog: en variant som byter till en
-  bisatskonstruktion skulle läsa som en annan mening. Enhetligheten vinner. Om `.ended` någon gång skrivs om är
-  `När Cmdr senast kördes …` det belagda alternativet för alla tre samtidigt · `high` för valet, `tentative` för
-  formuleringen i sig.
+  unexpectedly quit …" som "När du senast öppnade %@ avslutades det oväntat …" (`sv/macOS/AppKit/AppKitErrors.json` rad
+  91), och `förra gången` har noll träffar i hela piles. Men `.ended` säger redan `förra gången` och de tre nycklarna
+  fyller samma plats i samma dialog: en variant som byter till en bisatskonstruktion skulle läsa som en annan mening.
+  Enhetligheten vinner. Om `.ended` någon gång skrivs om är `När Cmdr senast kördes …` det belagda alternativet för alla
+  tre samtidigt · `high` för valet, `tentative` för formuleringen i sig.
 - Inget `sameAsSourceJustification` behövs: båda värdena skiljer sig från engelskan.

@@ -54,8 +54,8 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
 - `crash-reporter-i18n-parity.test.ts` freezes every en string the dialog and toast render. An intended copy edit lands
   in `intl/messages/en/crashReporter.json` and here together. The three body goldens carry a second assertion: the
   `keptRunning` and `unknown` strings must not contain "quit", so a copy edit can't reintroduce the claim they exist to
-  avoid. The shared attach-email label is frozen once in
-  `$lib/attach-email/attach-email-i18n-parity.test.ts`, not per dialog.
+  avoid. The shared attach-email label is frozen once in `$lib/attach-email/attach-email-i18n-parity.test.ts`, not per
+  dialog.
 - `CrashReportDialog.a11y.test.ts` / `CrashReportToastContent.a11y.test.ts` run axe over the default renders. The dialog
   test mocks `analytics.email` to empty, so it exercises the no-email shape only; the attach-email checkbox's own
   behavior is covered by `$lib/attach-email/attach-email.test.ts` and `ErrorReportDialog.a11y.test.ts`, which render it

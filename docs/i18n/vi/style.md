@@ -166,9 +166,9 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **`sự cố` is "problem", not "crash": pick the verb that carries the quitting.** The pile shows `sự cố` used for
   ordinary problems the app survives (macOS Finder "Nếu bạn tiếp tục gặp sự cố…", AppKit "Đã có sự cố khi truy xuất…",
   verified 2026-08-23), so `gặp sự cố` is safe in a string that must NOT claim Cmdr quit. What claims quitting is the
-  verb: `thoát đột ngột`. Keep that split, because the crash-dialog body now has three variants (`crashReporter.dialog
-  .body.ended` / `.keptRunning` / `.unknown`) and only `.ended` may say the app quit. Same trap in the noun: `báo cáo sự
-  cố` means "crash report", so a string that says just "a report" must read `báo cáo` alone.
+  verb: `thoát đột ngột`. Keep that split, because the crash-dialog body now has three variants
+  (`crashReporter.dialog .body.ended` / `.keptRunning` / `.unknown`) and only `.ended` may say the app quit. Same trap
+  in the noun: `báo cáo sự cố` means "crash report", so a string that says just "a report" must read `báo cáo` alone.
 - **Sibling copy variants share every sentence they can.** Where English varies only the first sentence across a set of
   keys (the three crash-dialog bodies), translate the shared tail ONCE and reuse it verbatim, so the dialog reads as one
   string with a swapped opener. Wording details and the settled values: `glossary.md` § Ba biến thể phần thân.

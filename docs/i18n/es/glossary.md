@@ -1414,19 +1414,19 @@ siendo citar a los hermanos largos del catálogo.
 El diálogo del siguiente arranque elige una de tres frases según lo que el informe registró. `.ended` no cambia; las dos
 nuevas **no pueden decir que Cmdr se cerró, falló o se detuvo**, porque no ocurrió nada de eso.
 
-- **"ran into a problem" → `tuvo un problema`** · el corpus de macOS ES usa la forma impersonal
-  (`AppKitErrors.json`: "Ha habido un problema al intentar obtener…"; Finder `PE90` "hay un problema con el archivo";
-  Nautilus "Hubo un problema al ejecutar este programa"), y Microsoft `SPANISH.tbx` fija `problem` → `problema`
-  (31254_1597568_1679737). Ninguna fuente puede tomar `Cmdr` como sujeto, y las tres claves hermanas lo hacen, así que
-  decide el paralelismo con `.ended` · high.
+- **"ran into a problem" → `tuvo un problema`** · el corpus de macOS ES usa la forma impersonal (`AppKitErrors.json`:
+  "Ha habido un problema al intentar obtener…"; Finder `PE90` "hay un problema con el archivo"; Nautilus "Hubo un
+  problema al ejecutar este programa"), y Microsoft `SPANISH.tbx` fija `problem` → `problema` (31254_1597568_1679737).
+  Ninguna fuente puede tomar `Cmdr` como sujeto, y las tres claves hermanas lo hacen, así que decide el paralelismo con
+  `.ended` · high.
 - **"kept running" → `siguió funcionando`** · high. ❌ No `siguió ejecutándose`: en este catálogo `ejecutarse` nombra
-  una *operación* que sigue en segundo plano (`transferProgress.backgroundedToast`: "Sigue ejecutándose en segundo
+  una _operación_ que sigue en segundo plano (`transferProgress.backgroundedToast`: "Sigue ejecutándose en segundo
   plano"), que es justo la lectura equivocada aquí, y colocado detrás de `en segundo plano` la invita. `funcionar`
   además es más cálido y menos técnico. `sigue/siguió funcionando` no tiene ni una aparición en todo el pile (macOS no
   trae ninguna cadena de tipo "still running"), así que la elección se apoya en la coherencia del catálogo.
 - **"in the background" → `en segundo plano`** · ya fijado en el glosario; Microsoft `SPANISH.tbx` (`background`
-  adjetivo, 16344_18758_18759), Double Commander ("Cuando la aplicación esté en segundo plano"), Dolphin ("indexando
-  los archivos en segundo plano"), Total Commander ("operaciones activas en segundo plano") · confirmed. Se engancha al
+  adjetivo, 16344_18758_18759), Double Commander ("Cuando la aplicación esté en segundo plano"), Dolphin ("indexando los
+  archivos en segundo plano"), Total Commander ("operaciones activas en segundo plano") · confirmed. Se engancha al
   problema, no al hecho de seguir funcionando. Dato negativo: **`segundo plano` no aparece en ninguna parte del corpus
   de macOS ES** (Finder, AppKit ni Ajustes del Sistema), así que el término se apoya en Microsoft y los gestores de
   archivos.

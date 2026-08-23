@@ -1659,10 +1659,10 @@ le, tehát egyikük sem állíthatja, hogy leállt.
 - **„and kept running” → `és tovább futott`** · a katalógus saját, szállított alakja ugyanerre a fogalomra:
   `transferProgress.stallUnknown` „Still running in the background” = `Tovább fut a háttérben`, mellette
   `Hagyd futni a háttérben`. A pile-ban erre a jelentésre NINCS közvetlen találat (`tovább fut`, `továbbra is fut`,
-  `fut tovább` mind nulla); a legközelebbi az AppKit `NSExceptionAlert`
-  („…ha szeretné folytatni a futtatást az inkonzisztens állapot ellenére”), ami ugyanez a fogalom, de felhasználói
-  döntésként. Az ige `fut` alakját a Double Commander is hozza (`Ha az alkalmazás a háttérben fut`) · high a szókincsre,
-  `tentative` a múlt idejű `futott` alakra: arra sem a pile-ban, sem a katalógusban nincs fedezet.
+  `fut tovább` mind nulla); a legközelebbi az AppKit `NSExceptionAlert` („…ha szeretné folytatni a futtatást az
+  inkonzisztens állapot ellenére”), ami ugyanez a fogalom, de felhasználói döntésként. Az ige `fut` alakját a Double
+  Commander is hozza (`Ha az alkalmazás a háttérben fut`) · high a szókincsre, `tentative` a múlt idejű `futott` alakra:
+  arra sem a pile-ban, sem a katalógusban nincs fedezet.
 - **„in the background” → `a háttérben`** · a szótár szava (`background → háttér`); a futás értelmében a kétpaneles pár
   és a Microsoft a forrás (Total Commander `Letöltés a háttérben`, Double Commander `Ha az alkalmazás a háttérben fut`,
   ms `háttérben futó feladat`). A macOS `hu` a szót KIZÁRÓLAG látvány értelemben ismeri (`Háttérkép`, `háttérszín`),

@@ -1740,41 +1740,43 @@ donc aucun doublement n'a été nécessaire (les valeurs citées ci-dessous le s
   high (vérifié sur la pile de référence, 2026-08-23).
   - **Pourquoi pas la tournure impersonnelle d'Apple** (« Un problème s'est produit lors de… »,
     `fr/macOS/AppKit/AppKitErrors.json` ; Nautilus `fr` « Il y a eu un problème lors de l'exécution de ce logiciel. ») :
-    les trois variantes remplissent la même phrase du même dialogue, et `.ended` est déjà livré avec Cmdr en sujet.
-    Dans `.keptRunning`, le sujet DOIT rester Cmdr, puisque c'est Cmdr qui est resté ouvert.
+    les trois variantes remplissent la même phrase du même dialogue, et `.ended` est déjà livré avec Cmdr en sujet. Dans
+    `.keptRunning`, le sujet DOIT rester Cmdr, puisque c'est Cmdr qui est resté ouvert.
 - **"kept running", l'APP et non une opération → `est resté ouvert`** · le catalogue `fr` a déjà settled ce prédicat
   exact : `main.instanceLock.alertTitle` rend "Cmdr is already running" par « Cmdr est déjà ouvert », et c'est aussi la
-  formule de macOS pour une app déjà lancée · high. Le participe s'accorde au masculin avec Cmdr, comme le `s''est
-  fermé` de `.ended`.
+  formule de macOS pour une app déjà lancée · high. Le participe s'accorde au masculin avec Cmdr, comme le
+  `s''est fermé` de `.ended`.
   - ❌ **Pas `a continué de fonctionner`** : la famille `fonctionner` n'est attestée nulle part dans la pile `fr` pour
     cet emploi (macOS, les quatre `.po`, Total Commander et la terminologie MS : zéro occurrence), et l'adopter
     coûterait au catalogue son mot unique pour « Cmdr tourne ». La pile ne propose que des formes plus techniques ou
     plus rares : « en cours d'exécution » (Nautilus, Thunar, Dolphin, Double Commander ; registre process) et « en
     service » (macOS `N144`, « quand le Finder est en service »).
-  - **Bénéfice voulu : `est resté ouvert` est l'antonyme direct du `s''est fermé` de `.ended`.** Les deux clés
-    occupent le même emplacement et ne s'affichent jamais ensemble, donc le contraste rend la distinction immédiate
-    pour qui voit l'une ou l'autre. Ne pas « harmoniser » une clé sur l'autre.
+  - **Bénéfice voulu : `est resté ouvert` est l'antonyme direct du `s''est fermé` de `.ended`.** Les deux clés occupent
+    le même emplacement et ne s'affichent jamais ensemble, donc le contraste rend la distinction immédiate pour qui voit
+    l'une ou l'autre. Ne pas « harmoniser » une clé sur l'autre.
   - **Ne pas confondre avec `en cours`**, le mot du catalogue pour une OPÉRATION qui tourne
     (`main.quit.operationsHeading` « Toujours en cours », `queue.row.status`). Ici le sujet est l'app, pas une
     opération.
-- **"in the background" → `en arrière-plan`** · unanime dans la pile (terminologie MS FRA `background task` → « tâche
-  en arrière-plan » ; Double Commander "When application is in the &background" → « Quand l'application est en
+- **"in the background" → `en arrière-plan`** · unanime dans la pile (terminologie MS FRA `background task` → « tâche en
+  arrière-plan » ; Double Commander "When application is in the &background" → « Quand l'application est en
   &arrière-plan » ; Dolphin « une indexation de vos fichiers en arrière-plan ») et déjà settled dans ce glossaire pour
   le bouton du dialogue de progression · high. « en tâche de fond » n'a aucune occurrence dans la pile `fr`.
 - **"a report" et non "a crash report" → `un rapport` tout court** · la 2e phrase reprend mot pour mot celle de `.ended`
   en retirant le seul mot qui porte « crash » : « Voici un rapport d''incident avec des détails qui peuvent aider à
   corriger ça. » → « Voici un rapport avec des détails qui peuvent aider à corriger ça. » C'est exactement ce que fait
-  l'anglais, et `incident` est justement le mot que ce glossaire réserve au plantage (`crash report → rapport
-  d''incident`). La terminologie MS FRA confirme le nom nu (`Diagnostic Report` → « Rapport de diagnostic » ; `report`
-  au sens « document généré par une application » → « rapport » dans cinq entrées sur sept, la septième, « état »,
-  appartenant au registre ERP) · high.
+  l'anglais, et `incident` est justement le mot que ce glossaire réserve au plantage
+  (`crash report → rapport d''incident`). La terminologie MS FRA confirme le nom nu (`Diagnostic Report` → « Rapport de
+  diagnostic » ; `report` au sens « document généré par une application » → « rapport » dans cinq entrées sur sept, la
+  septième, « état », appartenant au registre ERP) · high.
 - **`.keptRunning` met `La dernière fois,` en tête**, là où `.ended` et `.unknown` le laissent en fin de proposition.
   Raison : `.keptRunning` porte déjà `en arrière-plan`, et empiler « en arrière-plan la dernière fois » alourdit la
   phrase sans rien gagner. Les trois valeurs ne se croisent jamais à l'écran, donc l'ordre peut différer ; la voix,
   elle, reste identique. `.unknown` calque `.ended` mot pour mot, prédicat mis à part.
 - Valeurs :
-  - `.keptRunning` : `La dernière fois, Cmdr a rencontré un problème en arrière-plan et est resté ouvert. Voici un rapport avec des détails qui peuvent aider à corriger ça.`
-  - `.unknown` : `Cmdr a rencontré un problème la dernière fois. Voici un rapport avec des détails qui peuvent aider à corriger ça.`
+  - `.keptRunning` :
+    `La dernière fois, Cmdr a rencontré un problème en arrière-plan et est resté ouvert. Voici un rapport avec des détails qui peuvent aider à corriger ça.`
+  - `.unknown` :
+    `Cmdr a rencontré un problème la dernière fois. Voici un rapport avec des détails qui peuvent aider à corriger ça.`
 - Aucune des deux valeurs n'est identique à l'anglais : pas de `sameAsSourceJustification`. Aucun `: ; ! ? %`, donc la
   règle d'espace avant ponctuation ne se pose pas ; aucune apostrophe, donc aucun doublement ICU ; aucun U+2019 ni
   U+202F.

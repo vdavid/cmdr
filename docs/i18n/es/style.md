@@ -154,8 +154,8 @@ strings are counted, so no plural branches are needed there.
 - **Length: Spanish runs ~15–25% longer than English.** Overflow-check tight buttons ("Copiar", "Descartar", "Enviar
   informe") against the pseudolocale (`en-XA`). Watch `queue.row.stalled` in particular: "Sin progreso desde hace 45 s"
   is ~40% longer than the English it replaces, in the narrow ETA slot of an operation row.
-- **`ejecutarse` names an OPERATION that keeps running, never the app.** The catalog already spends it on
-  "Sigue ejecutándose en segundo plano" (`transferProgress.backgroundedToast`), so an app that survived a problem
+- **`ejecutarse` names an OPERATION that keeps running, never the app.** The catalog already spends it on "Sigue
+  ejecutándose en segundo plano" (`transferProgress.backgroundedToast`), so an app that survived a problem
   `siguió funcionando`. Putting `ejecutándose` right after `en segundo plano` would read as the operation, not Cmdr.
   Evidence: `glossary.md` § El diálogo de fallos.
 
