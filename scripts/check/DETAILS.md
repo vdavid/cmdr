@@ -474,6 +474,13 @@ speed; a too-narrow one reports a green describing code it never ran, which is t
 twice (`CHANGELOG.md` missing from the shared Rust set, then from `desktopAppInputs()`). A synthetic definition with no
 registered ID (the E2E build's) gets the same wide answer.
 
+**What it can't prove**, and what covers each gap: package `main`'s own internals (nothing in `checks` can reference
+them, so all of `scripts/check/*.go` is core by policy, renderers and stats included); a symbol the executor reaches
+into the checks package for (`TestRunnerCoreCoversWhatTheExecutorReaches`); a file no `Run` reaches at all
+(`TestGlobalInputsCoverWhatNoCheckCanReach`); and dispatch through `reflect`, which would defeat name-based analysis
+entirely. Nothing in the package imports `reflect` outside its tests today, and a check that needed to would have to put
+its file in the core set.
+
 The analysis runs once per `pnpm check`, inside `CollectRepoFingerprintData`: ~30 ms for all 116 checks (parsing ~130
 files), against a planning budget already spending two git forks (measured 2026-08-23, `LoadRunnerSources` timed on this
 worktree).
