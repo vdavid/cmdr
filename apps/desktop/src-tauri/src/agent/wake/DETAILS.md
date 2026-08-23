@@ -219,6 +219,13 @@ real conversation the user can reply to, so skipping `ConversationLocks` would l
 the wake's own turn run concurrently in one thread. **At most one wake is in flight**: the writer
 thread keeps a flag and clears it on the `WakeFinished` control message.
 
+⚠️ **A declined attempt backs off, and that is not a nicety.** The timer parks with
+`recv_timeout`, and a deadline that has passed keeps having passed, so a park computed from the
+inbox alone is zero-length and the thread spins a core flat. `askCmdr.proactive` ships FALSE, so
+"due and declined" is M1's default state. `park_for` is floored by a `not_before` stamp that
+every path through `try_wake` sets, and any control message clears it, so a gate opening is felt
+at once rather than after the backoff.
+
 ⚠️ **That means TWO write connections to `main.db`**, the writer thread's and the turn's. WAL
 makes it fine, and the writer thread's writes are single-row and never held across an await, so
 the worst case is a brief wait on the busy timeout rather than a multi-second stall.

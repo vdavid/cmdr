@@ -124,9 +124,7 @@ struct WakeLoop {
     inbox: Inbox,
     importance: ImportanceCache,
     settings: WakeSettings,
-    /// ⚠️ At most one wake in flight. A second prepared while the first runs would queue behind
-    /// the same conversation lock for a whole model call, holding rows the first one could have
-    /// carried.
+    /// Whether a wake thread is running right now. See [`WakeLoop::try_wake`].
     wake_in_flight: bool,
     /// Unix seconds before which no wake is attempted, however overdue the inbox looks. See
     /// [`DECLINED_WAKE_BACKOFF`].
@@ -198,16 +196,22 @@ impl WakeLoop {
 
     /// Prepare a wake if one is due, and hand it to its own thread.
     fn try_wake(&mut self) {
-        if self.wake_in_flight {
-            return;
-        }
         let now = now_secs();
         if now < self.not_before || !self.inbox.due_at(now) {
             return;
         }
-        // Whatever happens below, don't come straight back: the deadline that brought us here
-        // has passed and will keep having passed, and a zero-length park is a spin.
+        // ⚠️ Whatever happens below, don't come straight back: the deadline that brought us here
+        // has passed and will keep having passed, and a zero-length park is a spin. This is set
+        // BEFORE every remaining early return, the in-flight one included.
         self.not_before = now.saturating_add(DECLINED_WAKE_BACKOFF.as_secs());
+
+        // At most one wake in flight. A second prepared while the first runs would queue behind
+        // the same conversation lock for a whole model call, holding rows the first could have
+        // carried. `WakeFinished` clears the stamp above, so the next one starts as soon as this
+        // one ends rather than waiting out the backoff.
+        if self.wake_in_flight {
+            return;
+        }
 
         // The fourth gate, beside the three in `readiness.rs`. Checked before anything is
         // resolved, so an opted-out user's inbox costs nothing beyond the rows. Silent: this is
