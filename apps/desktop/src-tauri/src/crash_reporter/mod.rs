@@ -254,8 +254,8 @@ fn write_first_crash_report(crash_path: Option<&Path>, already_written: &AtomicB
         return false;
     }
     if let Err(e) = write_crash_report(crash_path, report) {
-        // Can't use log here (might be the thing that panicked).
-        // Write to stderr via libc::write to be safe even in a broken state.
+        // Straight to stderr: `log` might be the thing that panicked, and taking its
+        // mutex from inside the hook would deadlock if the panicking thread still holds it.
         #[allow(clippy::print_stderr, reason = "log may be the thing that panicked")]
         {
             eprintln!("Crash reporter: couldn't write crash file: {e}");
