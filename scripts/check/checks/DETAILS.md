@@ -1171,9 +1171,8 @@ doubles as production code.
   platform, so a filter for a macOS-only test looks deleted on the Linux lane: those carry
   `# allowed-unmatched-nextest-filter: macos-only, <why>`, which excuses the filter everywhere except the platform it
   names, so the lane that does compile the test still catches a rename. Atoms are read from `filter =` declarations
-  only, never from comments quoting one). The crates' code is also
-  covered by the desktop Rust lanes above, which all run workspace-wide; this scope is for checks about the crate
-  boundary itself.
+  only, never from comments quoting one). The crates' code is also covered by the desktop Rust lanes above, which all
+  run workspace-wide; this scope is for checks about the crate boundary itself.
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every component has a tier-3 a11y test, colocated or in a
   directory-level `*.a11y.test.ts` that imports it), ui-primitive-coverage (every top-level `lib/ui/*.svelte` primitive
