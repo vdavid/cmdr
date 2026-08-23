@@ -498,6 +498,12 @@ A dial has three phases, and left alone it can hold a sign-in dialog for the ful
   token and the second on a cancelled one. The wait in `await_hello` measures 1.3 ms against `sftp-fixture-openssh`
   (instrumented dial, 2026-08-23), out of a ~20 ms connect, so no amount of timing gets a cell into it reliably.
 
+  Measured on the SERVER side too, because "not a leak" is a claim about what the far end sees: 20 back-to-back
+  cancelled hellos against `sftp-fixture-openssh` peak at **two** concurrent `sshd-session` processes and settle back to
+  zero (`docker exec … ps -eo args`, 2026-08-23). The detached tasks finish about as fast as they're made. The shipped
+  cell asserts the same thing in-process, by awaiting the handle `finish_detached` hands back, which needs no container
+  name to stay true.
+
 ❗ **A cancelled connect leaves nothing behind.** `volume::connect_sftp_volume` re-reads the token after the dial lands,
 so a cancel racing a session home still answers `Cancelled` and lets the session go: no volume registered, no host key
 approved, no secret written. The app-side half of that promise is `sftp_volume_wiring::connect_and_register`, which
