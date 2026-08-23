@@ -568,10 +568,24 @@ component (`a11y-coverage`); an E2E driving the wake-aware fake through a forced
 `i18n-tag-param-collision`, `i18n-stale`, `message-keys-fresh`, `message-key-naming`, `message-keys-unused`,
 `message-screenshots-fresh`, `a11y-coverage`, `a11y-contrast`, `knip`, `desktop-bundle-size`.
 
-## M3: memory
+## M3: memory — DONE
 
 **Intent**: without this the agent relearns nothing and re-proposes what was already rejected. It is the difference
 between a colleague and a nag.
+
+Landed, all eleven items. What the last three became, and the one thing that could not be finished on the agent box:
+
+- **Item 9's bump revoked the whole beta on purpose** (`CONSENT_COPY_VERSION` 2 → 3), and the copy it collects a
+  signature on now names the two things the old wording hid: memory riding every message to the provider indefinitely
+  (photo-derived text included), and a proactive agent that messages the provider unprompted. `noContents` was rewritten
+  rather than appended to. Both the rail's screen and the settings disclosure carry it, and a returning user gets
+  `askCmdr.consent.whatsNew.*` plus a third settings state, "Ask Cmdr is paused".
+- **The bump also had to take the inbox with it.** `Inbox::purge_if_not_permitted` drops the backlog and clears
+  `agent_inbox` at launch and on every readiness change: after the bump every user is un-consented while rows describing
+  what they did with their files sit on disk.
+- **`pnpm i18n:shots` could not run** (it refuses when another app holds the front position, which is every run on the
+  unattended box). The new consent keys carry a hand-set `@key.screenshot: ask-cmdr-consent.png`, correct for the
+  surface they render on, but `capture-report.json` won't list them until a capture runs on the laptop.
 
 ### 1. Fix `read_cmdr_md()` first, and say what the fix means
 
@@ -710,7 +724,7 @@ Encourages capturing what matters, on request or on meeting something worth keep
 anything"** (`system_prompt.rs:47`), and `prompt_states_the_read_only_self_description` (`:142`) pins the phrase "never
 act". `Access::Memory` makes it false. A second rewrite of the same promise, in a different file, with its own guard.
 
-### 9. Consent
+### 9. Consent — DONE
 
 ⚠️ **Still open, and item 8's disclosure does not replace it.** The prompt now tells the MODEL what saving costs; the
 consent copy still tells the USER that Ask Cmdr "only looks and speaks; it never changes anything", which is false.
@@ -731,7 +745,7 @@ Bumping `CONSENT_COPY_VERSION` (`agent/consent.rs:16`) revokes every beta user. 
   their `agent_inbox` rows (folder paths, counts, timestamps) sit on disk. Clear them, and test it.
 - These keys carry `@key.screenshot: ask-cmdr-consent.png`, so `pnpm i18n:shots` needs a re-run.
 
-### 10. Two controls
+### 10. Two controls — DONE
 
 "Open memory folder" and "Forget everything", in the Ask Cmdr section.
 
@@ -743,12 +757,17 @@ Bumping `CONSENT_COPY_VERSION` (`agent/consent.rs:16`) revokes every beta user. 
   `lib/dialog-gallery/gallery-registry.ts`, or `dialog-gallery-coverage` fails. `DeleteAiModelDialog.svelte` is the
   precedent. Plus its colocated `*.a11y.test.ts`.
 
-### 11. What does NOT need doing
+### 11. What does NOT need doing — VERIFIED
 
-Verified, so nobody re-audits it: crash and error report bundles don't touch the data dir beyond `index-*.db` sizes
-(`diagnostics_snapshot.rs:86`), and the log bundle takes only `cmdr.log*` (`logging/mod.rs:117`), never `llm-logs/`.
-**The residual hole is `cmdr.log` itself**: ❌ never log memory content, and never log a wake reason verbatim (M1 item
-6).
+Re-checked against `main` on 2026-08-23, after memory moved into the data dir, by reading every collector rather than
+trusting the earlier note. It holds: `diagnostics_snapshot.rs`'s `index_db_sizes` does ONE non-recursive
+`read_dir(data_dir)` keeping only `index-`-prefixed `.db` names and their `len()`, so it never descends into `ai/`; the
+log half takes `cmdr.log` plus `cmdr.log.<digits>` out of the LOG dir, never `llm-logs/`; and the crash reporter names
+its two data-dir files itself. **The residual hole is `cmdr.log` itself**: ❌ never log memory content, and never log a
+wake reason verbatim (M1 item 6).
+
+Written down durably in `docs/security.md` § What a bundle never picks up and
+`apps/desktop/src-tauri/src/agent/memory/DETAILS.md`, so it survives this file being wiped.
 
 ### M3 tests
 
@@ -760,6 +779,12 @@ refusal, unit-tested against a `tempdir`; plus a thin handler that resolves the 
 TDD: the jail (every escape attempt), the caps, and the `CMDR_DATA_DIR` fix. After: prompt assembly carrying both files
 labelled and fenced, memory truncating rather than blowing the budget at `MIN_LOCAL_CONTEXT_TOKENS`, the consent
 re-prompt, and the inbox purge on a consent miss.
+
+All of it landed: `memory/tests.rs` (25, jail and caps and `forget_all`), `chat/runtime/cmdr_md.rs` (10),
+`chat/context/tests.rs` (the fence, its placement before the rules, and a planted rule after a forged end marker),
+`chat/budget.rs` (the slice moving with the window), `wake/tests/inbox.rs` (the purge, and the three states that must
+NOT purge), and `AskCmdrConsent.a11y.test.ts` (a returning user is told what changed, a first-timer is not, the memory
+and proactive disclosures are always there, and the old "never changes anything" promise cannot come back).
 
 ## M4: the feedback loop
 
