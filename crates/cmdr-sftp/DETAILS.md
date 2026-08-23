@@ -363,6 +363,24 @@ directory that still holds something (`sftp-server.c`'s `errno_to_portable`, Ope
 is what the app renders "this folder still has something in it" from, and MTP and LocalPosix both report the host
 platform's, so this one does too.
 
+### What a variant CARRIES
+
+Classifying right is half of it; the payload is the other half, and it reaches the user directly. `VolumeError::NotFound`
+and `PermissionDenied` are DEFINED to carry the PATH (`cmdr-fs/src/volume/types.rs`), and
+`transfer_error.rs::map_volume_error` forwards that string straight into `SourceNotFound { path }`, which the frontend
+renders as the name of the file the user is missing. This crate shipped the server's own sentence there instead, and QA
+read it back verbatim: `{"type":"source_not_found","path":"Err Message: No such file, Language Tag: "}`.
+
+- ❗ **`map_sftp_error` takes the path it is mapping a failure for**, so a pathless `NotFound` is not constructible
+  here. `RemoteFile` and `RemoteWrite` each carry the remote path they were opened at (an `Arc<str>`, since a clone
+  rides with every in-flight read and write), which is what lets the four handle-based sites answer too.
+- The server's wording isn't lost, it goes to the log. ❗ `debug!` and not higher: `exists` and the write path's
+  `probe` ask questions that answer `NoSuchFile` as their ORDINARY result, so a warning would fire on every healthy
+  conflict check.
+- `AlreadyExists` already carried the path through `resolve`; both of that function's fall-through arms now do too.
+- Held by `conformance::assert_not_found_carries_the_path`. ⚠️ `LocalPosixVolume` and `SmbVolume` do NOT keep this
+  contract yet, each for its own reason; that assertion's doc comment names both.
+
 ❗ **The probe classifies, ❌ never guards.** Asked BEFORE an operation, "is anything at this path" is a TOCTOU window,
 and on a server with `posix-rename@openssh.com` what fits in that window is a silently overwritten file. Asked after, it
 decides nothing that hasn't already happened, so it can only make a report more accurate — which is why a code the
@@ -605,6 +623,13 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
   there.
 - **`supports_streaming` → true**, with `open_read_stream`, `open_read_stream_for_scan`, and `read_range` behind it (§
   "The read window"). The other read overrides deliberately keep their defaults, and that section says why.
+- **`supports_export` → true**, and ❗ **it is a SEPARATE answer from implementing the read path**. The trait default
+  is `false`, `copy_between_volumes` refuses a source that answers `false` before it opens anything (synchronously, with
+  no log line), and the same answer reaches the frontend as `VolumeCapabilities.can_export` and greys out copy-from in
+  the pane. Every method the copy engine calls works either way, so nothing fails and nothing is logged: this shipped
+  with the whole read path implemented and every copy off a server refused.
+  `conformance::assert_export_matches_the_bytes_offered` is what catches it now, by streaming a file back byte for byte
+  and then holding the declaration to what just happened.
 - **`is_writable` → true**, because every mutation is implemented. The shared conformance assertion holds the
   declaration to what the server actually accepts.
 - **`create_directory_all` is overridden** where SMB and MTP leave the default. The default spends one `exists()` round
@@ -639,6 +664,12 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
   `expand_path`, `fsync`, `hardlink`, `posix_rename`, and `copy`. Free space needs the protocol crate vendored, which is
   the same escape hatch the filename problem uses. The two answers have to agree, or a pane polls something that always
   refuses.
+  ❗ **The app owes the other half of this contract**, and for a while it didn't pay it: the transfer pre-flight
+  propagated the `NotSupported` as a failure, so every copy INTO a server died after ~500 ms. `NotSupported` here means
+  "can't tell", ❌ never "no room". Both pre-flights go through
+  `write_operations/transfer/volume/copy.rs::dest_space_if_known`, which reads the refusal as `None` and proceeds while
+  still propagating every OTHER error. ❌ Don't answer this with a guessed number to make a caller's life easier; the
+  caller is the one that has to cope.
 
 ## Connecting from the frontend
 
@@ -814,6 +845,12 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   its cells in parallel, so a fixed name has two of them deleting each other's files and reporting it as a backend bug.
 - **App-side**: anything driving `write_operations`, the volume registry, or the listing cache. ❌ Don't widen this
   crate's public surface to keep a test on that side; move the test instead.
+  ❗ **A green suite here is not evidence that a copy works.** Two blockers shipped with every cell in this crate
+  passing, because neither lived here: `supports_export` is a declaration the copy ENGINE reads, and the free-space
+  pre-flight is the engine's own. The cells that would have caught them are
+  `write_operations/sftp_transfer_integration_test.rs`, which drives `copy_between_volumes` in both directions against
+  `sftp-fixture-openssh` and checksums both ends. Anything touching this backend's capability answers or its error
+  payloads owes a check on that side too.
 
 The suites' prelude is `volume/test_support.rs`, ❌ not a `use super::*` glob out of `mod.rs`: what a glob pulls in
 isn't determinable without building, which is what made the SMB extraction's suites impossible to size in advance.

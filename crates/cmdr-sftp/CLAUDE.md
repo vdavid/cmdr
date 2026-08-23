@@ -27,6 +27,10 @@ user-facing words.
 - **❌ Never stat a path to decide whether to write it**: it's a TOCTOU window with an overwritten file in it.
 - **❗ Capabilities are read once, at dial** (`SshConnection::extensions()`). ❌ Never a `Sftp::support_*` predicate at
   a call site.
+- **❗ What this backend SAYS is as load-bearing as what it does.** The copy engine gates on `supports_export` before
+  calling anything (a defaulted `false` refuses every copy off this server silently), and `NotFound` /
+  `PermissionDenied` must carry the PATH, ❌ never the server's wording: the frontend renders that payload as the
+  missing file's name.
 - **❌ A password is offered once unattended; a passphrase never is** (`auth::reconnect_policy`). ❗ The gate is the
   RUNG, not an empty store.
 - **❗ Every wire-touching delegator in `volume_impl.rs` wraps itself in `noting`.** No watcher here: operations ARE how
