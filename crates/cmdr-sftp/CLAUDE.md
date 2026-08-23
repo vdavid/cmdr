@@ -14,8 +14,8 @@ user-facing words.
 
 - **❗ Keep `russh` in `transport.rs`.** Eight breaking minors in eight months; a bump stays one file's problem.
 - **❌ Never call `Sftp::close()`** — it hangs forever over a `russh` channel; dropping the session IS the shutdown.
-- **❗ `File::close()` is the opposite: awaited, and only by its LAST clone.** A surviving clone makes it a silent
-  no-op and the upload reports success on bytes nobody committed.
+- **❗ `File::close()` is the opposite: awaited, and only by its LAST clone.** A surviving clone makes it a silent no-op
+  and the upload reports success on bytes nobody committed.
 - **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE: a cancelled connect panics
   inside the engine. ❌ Never time out `Sftp::new`.
 - **Host-key trust keys on `(host, port, algorithm)` AND pins negotiation to it** — ❌ never one without the other. ❌

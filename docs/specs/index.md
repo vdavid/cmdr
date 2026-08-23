@@ -10,17 +10,6 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-08-22 `sftp-backend-plan.md` - **SFTP is the top planned feature, and the seams are proven enough to build it
-      on.** A `crates/cmdr-sftp` backend plus its IPC surface, no frontend (David builds the sign-in UX after). Six
-      milestones plus a check-runner prerequisite, on `russh` + `openssh-sftp-client`
-      (`docs/notes/sftp-crate-evaluation-2026-08-22.md`). The heart is a request window Cmdr owns: sequential SFTP is
-      4.2 MB/s at 50 ms RTT and a window is worth 5-10×, and no crate ships one. Four reviews found four data-safety
-      traps worth knowing before starting: `posix-rename` clobbers where `Volume::rename` must refuse, SFTP v3 collapses
-      every error into one code that five conformance assertions branch on, `File::read` advances its offset by the
-      REQUESTED length so `read_all` silently holes a file, and `land` deletes the destination on any rename error.
-      **Scoped in beyond SFTP**: the `land` fix (SMB benefits equally), a `HostKeys` seam, and a pane-refresh shortcut,
-      which turns out not to exist today.
-
 - [ ] 2026-08-21 `agent-wake-loop.md` - **Ask Cmdr can suggest things, but never notices anything on its own.** The
       whole proactive half is built (store, executors, dialog, approval bridge, indicator, ten locales, and all of
       `agent/wake/` under 54 tests) and nothing drives it: `run_wake` and `Inbox::admit_if_permitted` have no production
@@ -57,6 +46,14 @@ that lives beside the code, and git holds the history.
 
 Deferred future work. Unchecked by default; the folder name is the status. Each entry notes what shipped and what's
 left, so the durable intent survives the wipe.
+
+- [ ] 2026-08-23 `later/sftp-follow-ups.md` - **The SFTP backend ships without a way to reach it.** The crate, its IPC
+      surface, and the fixtures are done and documented in `crates/cmdr-sftp/DETAILS.md`; four things are open. The
+      sidebar has no SFTP arm and path resolution doesn't answer for a remote path, so David's sign-in UI is the next
+      build (its whole guide is one section of that `DETAILS.md`). Free space and non-UTF-8 filenames wait on the same
+      vendoring of `openssh-sftp-protocol` + `ssh_format`, so they're one job. The auth rung a banner shows is decided
+      per dial and nothing refreshes it, which the banner design has to settle first. And two backends still put their
+      protocol's wording where `VolumeError::NotFound` promises a path.
 
 - [ ] 2026-08-20 `later/i18n-screenshot-gaps.md` - Translator-screenshot coverage: which catalog families are still
       uncoupled, why each resists capture, and what closing it takes. Stands at **2,101 / 2,989 keys (70%)**: 1,200
