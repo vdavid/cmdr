@@ -411,6 +411,20 @@ fn a_full_memory_folder_still_takes_a_decision() {
     assert!(log.contains("rejected: move 12 files"));
 }
 
+/// ⚠️ The first decision usually lands before the agent has ever written a note, so the folder
+/// does not exist yet. A ring that needed one already there would silently drop the very first
+/// lesson of every install.
+#[test]
+fn the_first_decision_lands_before_the_folder_exists() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let store = MemoryStore::new(dir.path().join("ai").join("memory"));
+
+    store.record_outcome("2026-08-23 turned down: trash 12 item(s) under /Users/x/Downloads");
+
+    let log = std::fs::read_to_string(store.root().join(OUTCOMES_FILE)).expect("the ring");
+    assert!(log.contains("turned down: trash"));
+}
+
 /// The ring is capped like everything else here, so a decade of decisions cannot walk the
 /// folder past its disk cap.
 #[test]
