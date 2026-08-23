@@ -139,10 +139,19 @@ test.describe('Ask Cmdr rail', () => {
     await closeRailIfOpen(tauriPage as TauriPage)
   })
 
-  // Runs FIRST (before any chat test accepts consent): on a fresh profile the rail opens to
-  // the opt-in gate, "Not now" closes it recording nothing, and accepting unlocks the chat.
+  // The rail opens to the opt-in gate for someone who hasn't opted in, "Not now" closes it
+  // recording nothing, and accepting unlocks the chat.
+  //
+  // ⚠️ It CLEARS consent first rather than assuming a fresh profile. Consent lives in
+  // `main.db` and outlives every test in the shard, so this used to lean on being the first
+  // spec in the file AND the file being first in the shard — and `ask-cmdr-wake.spec.ts`
+  // sorts ahead of this one (`-` before `.`) and consents to run a wake at all. Clearing is
+  // what the settings "Turn off" button does, so the test starts from a state a user reaches.
   test('gates on consent, and accepting unlocks the chat', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
+    await page.evaluate(
+      `(async function(){ await window.__TAURI_INTERNALS__.invoke('ask_cmdr_revoke_consent'); })()`,
+    )
     await openRailViaMenu(page)
     // The gate is shown; the composer is not reachable yet.
     await expect.poll(() => consentShown(page), { timeout: 3000 }).toBe(true)
