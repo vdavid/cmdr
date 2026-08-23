@@ -11,7 +11,8 @@ an interest score, scores deadlines, and a wake turns whatever waits into one bu
   halves: `prepare_wake`, then `run_prepared_wake`). `persist.rs` is the one file here taking a `Connection`.
 - The driver: `channel.rs` (the tap's process-global lane), `writer.rs` (the thread owning the `Inbox`, its write
   connection, and the timer), `runner.rs` (the wake thread and its outcome line), `snapshot.rs` (cached readiness),
-  `importance.rs` (TTL-cached weights), `settings.rs` (cadence and `proactive`).
+  `importance.rs` (TTL-cached weights), `settings.rs` (cadence and `proactive`), `quiet.rs` (a wake with nothing to
+  say).
 
 ## Must-knows
 
@@ -38,6 +39,10 @@ an interest score, scores deadlines, and a wake turns whatever waits into one bu
   exist. ⚠️ `settings.json` is sparse: spell every default out, since `unwrap_or_default()` means a zero-second cadence.
 - **A cadence change RE-PRICES the inbox, not just the timer** (`Inbox::reprice`). The merge is min-only, so a
   lengthened delay would otherwise never reach anything already waiting.
+- **A wake with nothing to say deletes its own thread, and only a wake does** (`quiet.rs`). `nothing_to_suggest` is a
+  pure `Access::Read` signal with an inert handler, because the RAIL shares the one tool view; `QuietWatch` wraps the
+  wake's dispatcher and acts on the typed call afterwards. ❌ Never log the reason it gives, and never plain-delete the
+  thread: fold its cost onto the reserved row first, or the proactive agent's spend reads zero.
 
 Depth for every bullet above: `DETAILS.md`. What a wake produces: `../suggested_ops/CLAUDE.md`. The store:
 `../store/proposals/CLAUDE.md`.

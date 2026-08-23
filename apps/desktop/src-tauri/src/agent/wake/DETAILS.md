@@ -375,10 +375,43 @@ process that dies mid-turn loses that digest rather than re-delivering it on res
 Re-delivery would mean the user hears about the same activity twice, and the folder is still
 there to be looked at again.
 
+## A wake that finds nothing leaves no thread
+
+The agent is allowed to look and decide none of it is worth a person's attention, and when it does
+the user's session list must look exactly as it did. It says so by calling `nothing_to_suggest`
+(`agent/tools/quiet.rs`), and this module acts on the call.
+
+**Typed, never phrased.** Reading "nothing to report" out of the model's prose would classify
+control flow by text, which `error-string-match` forbids and which breaks on the first copy edit
+or non-English reply. `QuietWatch` (`quiet.rs`) matches `ToolId::NothingToSuggest`.
+
+**The watch is a dispatcher decorator, and only a wake builds one.** It forwards every call
+unchanged and records that this one happened. That placement is the whole design: the tool itself
+is `Access::Read` with an inert handler, because there is ONE `agent_tool_view()` and a tool that
+deleted its own conversation would delete a USER's thread the moment a confused model reached for
+it in the rail. `wake/tests/job.rs` pins both halves — a noop wake leaves no thread, and a rail
+turn calling the same tool deletes nothing.
+
+**The delete runs after the turn, under the single-flight guard.** `run_wake` (the single-thread
+path the tests drive) calls `discard_quiet_thread` directly; production goes through
+`ChatRuntime::discard_quiet_wake`, which takes the conversation's lock first — a wake thread is a
+real conversation, so without it a reply the user is typing could be persisting into a thread
+being deleted underneath them.
+
+**What it spent survives.** `cost_meter` cascades on the conversation, so a plain delete would
+erase the proactive agent's cost from the one place the user can see it. The rows fold onto the
+reserved quiet-wakes thread first, in one transaction with the delete (`agent/store/DETAILS.md`
+§ v8). A failure leaves the thread standing WITH its cost rather than gone without it.
+
+**The `reason` is memory, not a log line.** ⚠️ Never log it verbatim: `cmdr.log` ships inside error
+reports, including the auto-dispatched ones the user never previews, and `redact_line_salted` is
+path-shaped, so a sentence naming which of the user's folders were boring travels intact. The
+outcome line says THAT a wake was quiet; `WakeOutcome::Quiet` carries the reason for M3's memory.
+
 ## What the wake loop reports
 
 Nothing else reports on it at all, so `runner::record_outcome` writes one counted log line per
-outcome (`ran`, `nothing_due`, `not_ready`, `unavailable`, `cancelled`, `failed`) with the tier
+outcome (`ran`, `quiet`, `nothing_due`, `not_ready`, `unavailable`, `cancelled`, `failed`) with the tier
 that triggered it, plus the matching anonymous `agent_wake` analytics event. Without it the two
 deferred tuning knobs can only be ranked by a support message, and "the agent is twitchy" arrives
 as a complaint rather than a number. ❌ Every property is categorical: an outcome token, a tier

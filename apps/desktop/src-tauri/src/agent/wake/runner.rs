@@ -13,6 +13,7 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio_util::sync::CancellationToken;
 
 use super::channel::{WakeControl, send_control};
+use super::quiet::QuietWatch;
 use super::{PreparedWake, RunWakeParams, WakeTier, wake_turn_params};
 use crate::agent::chat::budget;
 use crate::agent::chat::runtime::{AgentChatEvent, AppHandleDispatcher, ChatRuntime, TurnResult};
@@ -98,6 +99,9 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
         }
         proposals
     };
+    // The watch wraps the wake's dispatcher and nothing else's: `nothing_to_suggest` is a pure
+    // read whose handler changes nothing, so acting on the call belongs here, not in the tool.
+    let watch = QuietWatch::new(&dispatcher);
     let driving = async {
         // Moved in so the sender drops when the turn ends; otherwise the drain above never
         // finishes and the join never returns.
@@ -105,7 +109,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
         runtime
             .wake(
                 slot.llm.as_ref(),
-                &dispatcher,
+                &watch,
                 params.tools,
                 &wake_turn_params(&prepared, &params),
                 &sink,
@@ -114,6 +118,17 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
             .await
     };
     let (proposals, result) = tokio::join!(draining, driving);
+
+    // ⚠️ The reason the model gave is deliberately NOT in the line below. `cmdr.log` ships in
+    // auto-dispatched error reports and its redactor is path-shaped, so a sentence about which
+    // of the user's folders were boring would travel intact. Log THAT a wake was quiet.
+    if watch.stayed_quiet() {
+        if let Err(e) = runtime.discard_quiet_wake(prepared.conversation_id).await {
+            log::warn!(target: LOG_TARGET, "a quiet wake's thread stayed behind: {e}");
+        }
+        record_outcome("quiet", Some(prepared.tier), prepared.rows.len(), proposals);
+        return;
+    }
 
     match result {
         Ok(TurnResult::Answered { .. }) => record_outcome("ran", Some(prepared.tier), prepared.rows.len(), proposals),

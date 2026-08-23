@@ -19,6 +19,7 @@
 use rusqlite::Connection;
 use tokio_util::sync::CancellationToken;
 
+use super::quiet::{QuietWatch, discard_quiet_thread};
 use super::{Digest, Inbox, ScoredBundle, WakeReadiness, WakeTier, compact, persist, tier_of};
 use crate::agent::chat::context::ContextEnvelope;
 use crate::agent::chat::runtime::{ChatEventSink, ToolDispatcher, TurnParams, TurnResult, run_turn};
@@ -110,6 +111,18 @@ pub enum WakeOutcome {
         tier: WakeTier,
         /// How many folder-windows the digest covered.
         folders: usize,
+    },
+    /// A turn ran and the agent said, through `nothing_to_suggest`, that none of it was worth
+    /// raising. The thread it thought in is GONE, so there is no id to hand back; only what it
+    /// spent survives, on the reserved quiet-wakes row.
+    Quiet {
+        /// The strongest tier among the rows it looked at.
+        tier: WakeTier,
+        /// How many folder-windows it looked at.
+        folders: usize,
+        /// The short reason the model gave, for the agent's own memory. ⚠️ Never log it: see
+        /// `wake/quiet.rs`.
+        reason: Option<String>,
     },
     /// A gate is closed; the indicator says which.
     NotReady(WakeReadiness),
@@ -252,9 +265,13 @@ pub async fn run_wake(
 
     let llm = llm_for(prepared.conversation_id);
     let dispatcher = dispatcher_for(prepared.conversation_id);
+    // The watch is what turns the model's typed `nothing_to_suggest` call into an outcome. It
+    // wraps the wake's dispatcher and nothing else's, which is what leaves the tool inert in
+    // the rail.
+    let watch = QuietWatch::new(dispatcher.as_ref());
     let result = run_prepared_wake(
         llm.as_ref(),
-        dispatcher.as_ref(),
+        &watch,
         conn,
         &prepared,
         &RunWakeParams {
@@ -270,6 +287,18 @@ pub async fn run_wake(
         cancel,
     )
     .await;
+
+    // The delete happens HERE, after the turn, rather than in the tool: the tool is a pure
+    // `Access::Read` signal, and one that mutated would be `Write` under the registry's
+    // tiebreaker and would reach the rail's threads too.
+    if watch.stayed_quiet() {
+        discard_quiet_thread(conn, prepared.conversation_id);
+        return WakeOutcome::Quiet {
+            tier: prepared.tier,
+            folders: prepared.rows.len(),
+            reason: watch.reason(),
+        };
+    }
 
     WakeOutcome::Ran {
         conversation_id: prepared.conversation_id,

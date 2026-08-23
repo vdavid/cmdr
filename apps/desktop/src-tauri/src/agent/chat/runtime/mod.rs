@@ -203,6 +203,21 @@ impl ChatRuntime {
         Ok(run_turn(llm, dispatcher, &conn, tools, params, sink, cancel).await)
     }
 
+    /// Take away the thread a wake opened after it said, through `nothing_to_suggest`, that it
+    /// had nothing worth raising — keeping what that turn spent on the reserved quiet-wakes row.
+    ///
+    /// ⚠️ **Under the single-flight guard**, like every other write to a live thread. A wake
+    /// thread is a real conversation, so without the guard a reply the user is typing into it
+    /// could be persisting into a thread that is being deleted underneath them.
+    ///
+    /// The wake path decides WHETHER (`agent/wake/quiet.rs` watches the tool call); this is only
+    /// the write, which lives here because the connection and the lock do.
+    pub async fn discard_quiet_wake(&self, conversation_id: i64) -> Result<(), AgentStoreError> {
+        let _guard = self.locks.acquire_quiet(conversation_id).await;
+        let conn = store::open_write_connection(&self.db_path)?;
+        store::discard_conversation_keeping_cost(&conn, conversation_id)
+    }
+
     /// Record that a settings change switched an open thread's effective model, honoring
     /// the single-flight lock so the event lands only AFTER any in-flight turn finishes
     /// (that turn keeps its already-resolved model; the event marks the boundary). Returns

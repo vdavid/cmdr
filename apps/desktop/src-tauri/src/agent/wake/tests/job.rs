@@ -9,7 +9,7 @@ use crate::agent::chat::context::ContextEnvelope;
 use crate::agent::chat::runtime::{ToolDispatchOutcome, ToolDispatcher, TurnResult};
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::fake::{FakeAgentLlm, ScriptedTurn};
-use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ProviderTag};
+use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ProviderTag, ToolId};
 use crate::agent::store::{MIGRATIONS, run_migrations};
 use crate::agent::types::ConversationOrigin;
 
@@ -545,5 +545,138 @@ async fn the_llm_and_the_dispatcher_are_built_for_the_thread_the_wake_creates() 
         *seen.lock().expect("not poisoned"),
         vec![conversation_id, conversation_id],
         "both factories were handed the thread the wake opened"
+    );
+}
+
+// ── A wake with nothing to say ────────────────────────────────────────────────
+
+/// An LLM factory that calls `nothing_to_suggest` and then signs off, which is what a wake
+/// with nothing worth raising does.
+fn says_nothing(reason: &'static str) -> impl Fn(i64) -> Box<dyn AgentLlm> {
+    move |_| {
+        Box::new(FakeAgentLlm::script(vec![
+            ScriptedTurn::CallTools(vec![(
+                ToolId::NothingToSuggest,
+                serde_json::json!({ "reason": reason }),
+            )]),
+            ScriptedTurn::Say(vec!["Nothing worth raising.".to_string()]),
+        ]))
+    }
+}
+
+/// The whole point of the tool: a wake that finds nothing leaves the user's session list
+/// exactly as it was — no thread, no digest, no "we had a look and it was fine".
+///
+/// ⚠️ **But the cost survives it.** `cost_meter` cascades on the conversation, so deleting the
+/// thread outright would erase what the proactive agent spent from the one place the user can
+/// see it. The rows fold onto the reserved quiet-wakes thread first.
+#[tokio::test]
+async fn a_noop_wake_leaves_no_thread_but_keeps_what_it_spent() {
+    let conn = migrated_conn();
+    let reserved = crate::agent::store::quiet_wakes_conversation(&conn).expect("the reserved row");
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    let due_at = inbox.next_deadline().expect("something waits");
+
+    let (sink, _events) = tokio::sync::mpsc::unbounded_channel();
+    let env = envelope(due_at as i64);
+
+    let outcome = run_wake(
+        &says_nothing("all of it is cache churn"),
+        &no_tools,
+        &conn,
+        &mut inbox,
+        params(WakeReadiness::Ready, due_at as i64, &env),
+        &sink,
+        &CancellationToken::new(),
+    )
+    .await;
+
+    let WakeOutcome::Quiet { tier, folders, reason } = outcome else {
+        panic!("expected a quiet wake, got {outcome:?}");
+    };
+    assert_eq!(tier, WakeTier::Hot);
+    assert_eq!(folders, 1);
+    assert_eq!(reason.as_deref(), Some("all of it is cache churn"));
+
+    assert_eq!(visible_threads(&conn), 0, "the user's session list is untouched");
+    assert_eq!(inbox.len(), 0, "the rows it looked at are still spent");
+
+    let stray: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM cost_meter WHERE conversation_id <> ?1",
+            rusqlite::params![reserved],
+            |row| row.get(0),
+        )
+        .expect("count");
+    assert_eq!(stray, 0, "no cost row is left pointing at the vanished thread");
+    let kept: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM cost_meter WHERE conversation_id = ?1",
+            rusqlite::params![reserved],
+            |row| row.get(0),
+        )
+        .expect("count");
+    assert_eq!(kept, 1, "what the quiet wake spent moved onto the reserved thread");
+}
+
+/// ⚠️ **There is one `agent_tool_view()`, so the RAIL sees this tool too**, and there it must
+/// be completely inert. A user's own thread that somehow calls `nothing_to_suggest` keeps its
+/// thread, its messages, and its place in the session list: only a wake wraps its dispatcher
+/// in the watch that acts on the call.
+#[tokio::test]
+async fn a_rail_turn_calling_nothing_to_suggest_deletes_nothing() {
+    use crate::agent::chat::runtime::{TurnParams, run_turn};
+
+    let conn = migrated_conn();
+    let id = crate::agent::store::create_conversation(&conn, "the user's own thread", 1_000, None).expect("create");
+
+    let llm = FakeAgentLlm::script(vec![
+        ScriptedTurn::CallTools(vec![(
+            ToolId::NothingToSuggest,
+            serde_json::json!({ "reason": "confused model" }),
+        )]),
+        ScriptedTurn::Say(vec!["Nothing to report.".to_string()]),
+    ]);
+    let (sink, _events) = tokio::sync::mpsc::unbounded_channel();
+    let env = envelope(1_000);
+
+    // Exactly the shape the rail runs: `run_turn` against the plain dispatcher, with no wake
+    // watch wrapping it.
+    let result = run_turn(
+        &llm,
+        &NoTools,
+        &conn,
+        &[],
+        &TurnParams {
+            conversation_id: id,
+            user_text: Some("are we good?"),
+            cmdr_md: None,
+            envelope: &env,
+            offset: chrono::FixedOffset::east_opt(0).expect("utc"),
+            now_secs: 1_000,
+            provider: ProviderTag::Anthropic,
+            model: "test-model".to_string(),
+            prompt_budget: 16_000,
+        },
+        &sink,
+        &CancellationToken::new(),
+    )
+    .await;
+
+    assert!(matches!(result, TurnResult::Answered { .. }), "{result:?}");
+    assert_eq!(visible_threads(&conn), 1, "the user's thread is still listed");
+    let detail = crate::agent::store::get_conversation(&conn, id, 10, 0)
+        .expect("get")
+        .expect("the thread is still there");
+    assert!(
+        detail.total_messages >= 2,
+        "its messages survive too, got {}",
+        detail.total_messages
     );
 }
