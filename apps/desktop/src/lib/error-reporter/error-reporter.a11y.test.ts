@@ -1,16 +1,76 @@
 /**
- * Tier 3 a11y tests for `ErrorReportDialog.svelte`.
+ * Tier 3 a11y tests for the error reporter: the report dialog and the three
+ * toasts it can leave behind.
  *
- * The dialog exposes a textarea, a manifest preview, and send/cancel actions.
- * The `prepareErrorReportPreview` IPC is mocked so the test runs deterministically.
+ * One file per component would cost about four times as much: `svelte-tests`
+ * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
+ * costs"). Each block below keeps its component's own doc comment, props, and
+ * assertions.
+ *
+ * Two stubs needed care. `$lib/settings` is stubbed only for the dialog (its
+ * `getSetting` answers every non-email key with the attach-default flag, which
+ * would quietly answer for the toasts too), so it's a mutable the dialog's block
+ * installs in its own `beforeEach`, with `null` meaning "use the real export".
+ * `./error-report-flow.svelte` is stubbed by the auto-send block but used FOR REAL
+ * by the dialog's, which drives `errorReportFlow.open` and asserts on it; spreading
+ * the real module and overriding only `openErrorReportDialog` gives each block
+ * exactly what it had.
  */
 
-import { describe, it, vi, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
+import AutoSendToastContent from './AutoSendToastContent.svelte'
+import BundleSavedToastContent from './BundleSavedToastContent.svelte'
 import ErrorReportDialog from './ErrorReportDialog.svelte'
+import ErrorReportToastContent from './ErrorReportToastContent.svelte'
+import { setLastAutoSentReportId, getLastAutoSentReportId } from './auto-send-toast-state.svelte'
+import { setLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
+import { setLastSentReportId, getLastSentReportId } from './error-report-toast-state.svelte'
+import { closeErrorReportDialog, errorReportFlow, openErrorReportDialog } from './error-report-flow.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
-import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
+import { dismissToast } from '$lib/ui/toast'
+import { showInFinder } from '$lib/tauri-commands'
 import { sendErrorReport } from '$lib/tauri-commands/error-reporter'
+import { openSettingsWindow } from '$lib/settings/settings-window'
+
+// What `getSetting` answers. `null` means "use the real export", which is what the
+// three toast blocks, which never stubbed settings, always saw.
+let settingsStub: ((id: string) => unknown) | null = null
+const setSettingMock = vi.fn()
+
+vi.mock('$lib/ui/toast', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  dismissToast: vi.fn(),
+  addToast: vi.fn(),
+}))
+
+vi.mock('$lib/settings/settings-window', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  openSettingsWindow: vi.fn(() => Promise.resolve()),
+}))
+
+vi.mock('./error-report-flow.svelte', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  openErrorReportDialog: vi.fn(),
+}))
+
+vi.mock('$lib/tauri-commands', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  showInFinder: vi.fn(() => Promise.resolve()),
+  notifyDialogOpened: vi.fn(() => Promise.resolve()),
+  notifyDialogClosed: vi.fn(() => Promise.resolve()),
+}))
+
+vi.mock('$lib/settings', async (importOriginal) => {
+  const actual = await importOriginal<{ getSetting: (id: string) => unknown }>()
+  return {
+    ...actual,
+    getSetting: vi.fn((id: string): unknown => (settingsStub ? settingsStub(id) : actual.getSetting(id))),
+    setSetting: (id: string, value: unknown) => {
+      setSettingMock(id, value)
+    },
+  }
+})
 
 const previewPayload = {
   id: 'ERR-AB23X',
@@ -47,46 +107,208 @@ const previewPayload = {
   totalRedactedLines: 42,
 }
 
-vi.mock('$lib/tauri-commands', () => ({
-  notifyDialogOpened: vi.fn(() => Promise.resolve()),
-  notifyDialogClosed: vi.fn(() => Promise.resolve()),
-}))
-
 vi.mock('$lib/tauri-commands/error-reporter', () => ({
   prepareErrorReportPreview: vi.fn(() => Promise.resolve(previewPayload)),
   sendErrorReport: vi.fn(() => Promise.resolve({ id: 'ERR-AB23X' })),
   saveErrorReportToDisk: vi.fn(() => Promise.resolve('/tmp/bundle.zip')),
 }))
 
-// Settings are mocked per-test via these refs so the email-on-file and sticky-default
-// states can vary. Defaults: no email on file, attach-default off.
-let mockEmail = ''
-let mockAttachDefault = false
-const setSettingMock = vi.fn()
-vi.mock('$lib/settings', () => ({
-  getSetting: vi.fn((id: string) => (id === 'analytics.email' ? mockEmail : mockAttachDefault)),
-  setSetting: (id: string, value: unknown) => {
-    setSettingMock(id, value)
-  },
-}))
-
-vi.mock('$lib/ui/toast', () => ({
-  addToast: vi.fn(),
-}))
-
-// jsdom doesn't ship navigator.clipboard.
+// jsdom doesn't ship navigator.clipboard; stub it for the copy tests.
 Object.defineProperty(navigator, 'clipboard', {
   value: { writeText: vi.fn(() => Promise.resolve()) },
   writable: true,
 })
 
+// These components share one jsdom document, the dialog portals into
+// `document.body`, and axe resolves ARIA id references document-wide. Clearing
+// between tests keeps each audit looking at its own container only.
+afterEach(() => {
+  document.body.innerHTML = ''
+})
+
+/**
+ * Tier 3 a11y tests for `AutoSendToastContent.svelte`.
+ *
+ * Toast body shown after the Flow B auto-dispatcher uploads a report. Reads the last
+ * auto-sent ID from a module-level `$state` set via `setLastAutoSentReportId(id)`.
+ */
+describe('AutoSendToastContent', () => {
+  it('default render has no a11y violations', async () => {
+    setLastAutoSentReportId('ERR-AUTO1')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(AutoSendToastContent, { target, props: {} })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('renders the most recently set auto-sent ID', () => {
+    setLastAutoSentReportId('ERR-AUTO2')
+    expect(getLastAutoSentReportId()).toBe('ERR-AUTO2')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(AutoSendToastContent, { target, props: {} })
+    expect(target.textContent).toContain('ERR-AUTO2')
+    expect(target.textContent).toContain('Error report sent')
+    expect(target.textContent).toContain('Reference ID')
+  })
+
+  it('View button dismisses the toast and opens the report dialog', async () => {
+    setLastAutoSentReportId('ERR-VIEW1')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(AutoSendToastContent, { target, props: {} })
+    await tick()
+    const viewButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'View')
+    if (!viewButton) throw new Error('View button missing')
+    viewButton.click()
+    expect(dismissToast).toHaveBeenCalledWith('error-report-auto-sent')
+    expect(openErrorReportDialog).toHaveBeenCalled()
+  })
+
+  it('Change settings button dismisses the toast and opens the settings window', async () => {
+    setLastAutoSentReportId('ERR-SET01')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(AutoSendToastContent, { target, props: {} })
+    await tick()
+    const settingsButton = Array.from(target.querySelectorAll('button')).find(
+      (b) => b.textContent.trim() === 'Change settings',
+    )
+    if (!settingsButton) throw new Error('Change settings button missing')
+    settingsButton.click()
+    expect(dismissToast).toHaveBeenCalledWith('error-report-auto-sent')
+    expect(openSettingsWindow).toHaveBeenCalled()
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `BundleSavedToastContent.svelte`.
+ *
+ * Toast body shown after a successful "Save bundle to disk (debug)" action.
+ * Reads the saved-bundle path from a module-level `$state` set via
+ * `setLastSavedBundlePath(path)`.
+ */
+describe('BundleSavedToastContent', () => {
+  it('default render has no a11y violations', async () => {
+    setLastSavedBundlePath('/Users/test/Application Support/com.veszelovszki.cmdr-dev/error-report-debug.zip')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(BundleSavedToastContent, { target, props: {} })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('renders the most recently saved path', () => {
+    setLastSavedBundlePath('/tmp/bundle-XYZ.zip')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(BundleSavedToastContent, { target, props: {} })
+    expect(target.textContent).toContain('/tmp/bundle-XYZ.zip')
+  })
+
+  it('Reveal in Finder button calls showInFinder with the saved path', async () => {
+    setLastSavedBundlePath('/tmp/bundle-REV.zip')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(BundleSavedToastContent, { target, props: {} })
+    await tick()
+    const revealButton = Array.from(target.querySelectorAll('button')).find(
+      (b) => b.textContent.trim() === 'Reveal in Finder',
+    )
+    if (!revealButton) throw new Error('Reveal in Finder button missing')
+    revealButton.click()
+    expect(showInFinder).toHaveBeenCalledWith('/tmp/bundle-REV.zip')
+  })
+
+  it('Dismiss button calls dismissToast with the toast ID', async () => {
+    setLastSavedBundlePath('/tmp/bundle-DIS.zip')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(BundleSavedToastContent, { target, props: {} })
+    await tick()
+    const dismissButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Dismiss')
+    if (!dismissButton) throw new Error('Dismiss button missing')
+    dismissButton.click()
+    expect(dismissToast).toHaveBeenCalledWith('error-report-bundle-saved')
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `ErrorReportToastContent.svelte`.
+ *
+ * Toast body shown after a successful error-report send. Reads the last sent ID
+ * from a module-level `$state` set via `setLastSentReportId(id)`.
+ */
+describe('ErrorReportToastContent', () => {
+  it('default render has no a11y violations', async () => {
+    setLastSentReportId('ERR-AB23X')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ErrorReportToastContent, { target, props: {} })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('renders the most recently set sent ID', () => {
+    setLastSentReportId('ERR-99XYZ')
+    expect(getLastSentReportId()).toBe('ERR-99XYZ')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ErrorReportToastContent, { target, props: {} })
+    expect(target.textContent).toContain('ERR-99XYZ')
+  })
+
+  it('Copy ID button copies to the clipboard', async () => {
+    setLastSentReportId('ERR-COPY1')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ErrorReportToastContent, { target, props: {} })
+    await tick()
+    const copyButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Copy ID')
+    if (!copyButton) throw new Error('Copy ID button missing')
+    copyButton.click()
+    await tick()
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vitest spy on prototype method
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ERR-COPY1')
+  })
+
+  it('Dismiss button calls dismissToast with the toast ID', async () => {
+    setLastSentReportId('ERR-DISMS')
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ErrorReportToastContent, { target, props: {} })
+    await tick()
+    const dismissButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Dismiss')
+    if (!dismissButton) throw new Error('Dismiss button missing')
+    dismissButton.click()
+    expect(dismissToast).toHaveBeenCalledWith('error-report-sent')
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `ErrorReportDialog.svelte`.
+ *
+ * The dialog exposes a textarea, a manifest preview, and send/cancel actions.
+ * The `prepareErrorReportPreview` IPC is mocked so the test runs deterministically.
+ */
 describe('ErrorReportDialog', () => {
+  // Settings are mocked per-test via these refs so the email-on-file and sticky-default
+  // states can vary. Defaults: no email on file, attach-default off.
+  let mockEmail = ''
+  let mockAttachDefault = false
+
   beforeEach(() => {
     closeErrorReportDialog()
     mockEmail = ''
     mockAttachDefault = false
+    settingsStub = (id: string): unknown => (id === 'analytics.email' ? mockEmail : mockAttachDefault)
     setSettingMock.mockClear()
     vi.mocked(sendErrorReport).mockClear()
+  })
+
+  afterEach(() => {
+    settingsStub = null
   })
 
   it('default render has no a11y violations', async () => {

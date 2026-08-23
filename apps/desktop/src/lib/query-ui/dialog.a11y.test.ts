@@ -50,7 +50,7 @@ afterEach(() => {
 /**
  * Tier 3 a11y tests for `QueryDialog.svelte`, the shared orchestrator.
  *
- * Mirrors `lib/search/SearchDialog.a11y.test.ts` but mounts QueryDialog directly with
+ * Mirrors the `SearchDialog` block of `lib/search/search.a11y.test.ts` but mounts QueryDialog directly with
  * a minimal Search-shaped config. Covers the three macro-states that matter
  * structurally:
  *   - loading (inputs disabled, index not ready)

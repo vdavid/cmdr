@@ -353,7 +353,7 @@ index loads, so the re-run still lands.
 IME guard, and the `lastDialogEvent` ownership. The `QueryDialog` block of `dialog.a11y.test.ts` runs axe-core across loading /
 index-ready / AI-on against a minimal Search-shaped config. Search's full integration tests live in the
 `lib/search/SearchDialog.<concern>.svelte.test.ts` family (session, shortcuts, ai, auto-apply, open-in-pane, scope,
-images, coverage, handoff) plus `lib/search/SearchDialog.a11y.test.ts`, and they mount QueryDialog through the Search
+images, coverage, handoff) plus the `SearchDialog` block of `lib/search/search.a11y.test.ts`, and they mount QueryDialog through the Search
 wrapper.
 
 The four controller modules carry their own suites (`query-runner.test.ts`, `recent-popover.test.ts`,
