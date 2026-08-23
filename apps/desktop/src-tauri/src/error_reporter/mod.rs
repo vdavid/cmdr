@@ -85,27 +85,39 @@ pub use bundle_capper::cap_bundle_to_mb;
 #[macro_export]
 macro_rules! log_error {
     (target: $target:expr, $($arg:tt)+) => {{
-        let __msg = format!($($arg)+);
-        let __bt = ::std::backtrace::Backtrace::force_capture();
-        ::log::error!(target: $target, "{}", __msg);
-        ::log::debug!(
-            target: "cmdr_lib::error_reporter::backtrace",
-            "Backtrace for [{}] {}:\n{}",
-            $target, __msg, __bt,
+        $crate::error_reporter::report_error(
+            $target,
+            &format!($($arg)+),
+            &::std::backtrace::Backtrace::force_capture(),
         );
-        $crate::error_reporter::auto_dispatcher::on_error_logged($target, &__msg);
     }};
     ($($arg:tt)+) => {{
-        let __msg = format!($($arg)+);
-        let __bt = ::std::backtrace::Backtrace::force_capture();
-        ::log::error!("{}", __msg);
-        ::log::debug!(
-            target: "cmdr_lib::error_reporter::backtrace",
-            "Backtrace for [{}] {}:\n{}",
-            module_path!(), __msg, __bt,
+        $crate::error_reporter::report_error(
+            module_path!(),
+            &format!($($arg)+),
+            &::std::backtrace::Backtrace::force_capture(),
         );
-        $crate::error_reporter::auto_dispatcher::on_error_logged(module_path!(), &__msg);
     }};
+}
+
+/// The body of [`log_error!`], as a function so a caller holding a backtrace that ISN'T
+/// its own can reuse the exact same three steps.
+///
+/// The one such caller is the crash reporter's panic courier
+/// (`crate::crash_reporter::panic_courier`): it delivers a survived panic, whose backtrace
+/// was captured on the *panicking* thread, so a `force_capture()` here would describe the
+/// courier's stack instead of the fault. Everything else goes through the macro.
+///
+/// `target` is passed explicitly rather than read from `module_path!()` here, so the log
+/// record still carries the CALL SITE's target (the dispatch tree's per-chain filters and
+/// the log format both key off it).
+pub fn report_error(target: &str, message: &str, backtrace: &dyn std::fmt::Display) {
+    log::error!(target: target, "{message}");
+    log::debug!(
+        target: "cmdr_lib::error_reporter::backtrace",
+        "Backtrace for [{target}] {message}:\n{backtrace}",
+    );
+    auto_dispatcher::on_error_logged(target, message);
 }
 
 /// Short ID prefix for error reports. The alphabet, length, and generation routine

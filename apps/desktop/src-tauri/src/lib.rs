@@ -189,6 +189,10 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Before anything in this crate can panic. It can't write a crash file until
+    // `crash_reporter::init` resolves the data dir; see `crash_reporter/CLAUDE.md`.
+    crash_reporter::install_panic_hook();
+
     // Refuse to start an E2E run with no isolated data dir: it would resolve every persisted
     // store to the developer's real prod dir and corrupt it (e.g. a screenshot `favorites.add`
     // bleeding "left" favorites into prod). Must run before anything resolves a data dir.

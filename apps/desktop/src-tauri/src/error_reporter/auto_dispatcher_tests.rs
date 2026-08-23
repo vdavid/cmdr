@@ -11,14 +11,10 @@
 //! parallel would race.
 
 use super::auto_dispatcher::{
-    flush_spawned_for_test, jitter_window, pick_jitter_offset_for_test, record_error_for_test, reset_for_test,
-    set_enabled, simulate_late_app_handle_for_test, snapshot_for_test,
+    TEST_LOCK, flush_spawned_for_test, jitter_window, pick_jitter_offset_for_test, record_error_for_test,
+    reset_for_test, set_enabled, simulate_late_app_handle_for_test, snapshot_for_test,
 };
-use std::sync::Mutex;
 use std::time::{Duration, Instant};
-
-/// Serializes test access to the process-global dispatcher state.
-static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 fn lock_and_reset() -> std::sync::MutexGuard<'static, ()> {
     let guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());

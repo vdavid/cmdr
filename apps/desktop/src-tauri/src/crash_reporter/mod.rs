@@ -4,8 +4,13 @@
 //! - **Panic hook**: full stdlib access, writes JSON crash file directly
 //! - **Signal handler**: async-signal-safe only, writes raw addresses to a pre-opened fd
 
+mod panic_courier;
+#[cfg(unix)]
+mod signal_handler;
 mod symbolicate;
 
+#[cfg(test)]
+mod panic_courier_tests;
 #[cfg(test)]
 mod tests;
 
@@ -14,7 +19,8 @@ use crate::redact;
 use crate::settings;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Once, OnceLock};
 use std::time::Instant;
 
 const CRASH_FILE_NAME: &str = "crash-report.json";
@@ -41,6 +47,26 @@ fn current_build_mode() -> &'static str {
 
 static APP_START_TIME: OnceLock<Instant> = OnceLock::new();
 static CACHED_SETTINGS: OnceLock<ActiveSettings> = OnceLock::new();
+
+/// Where the panic hook writes the crash file. [`init`] sets it once the app data dir
+/// resolves; it stays `None` before that, and for the whole session if the lookup fails.
+/// A hook with no path still logs and still dispatches in-session, so a fallible directory
+/// lookup can no longer cost a session its panic reporting entirely.
+static CRASH_PATH: OnceLock<PathBuf> = OnceLock::new();
+
+/// Makes [`install_panic_hook`] idempotent. It's called from `run()` (as early as this
+/// crate gets control) and again from [`init`]; without this the second call would chain
+/// our hook onto itself and report every panic twice.
+static HOOK_INSTALLED: Once = Once::new();
+
+/// True once this session's hook has written a crash file.
+///
+/// **Keep-first.** The pending crash file holds ONE report, and the first panic of a
+/// session is the causal one; the panics that follow are usually its consequences. Before
+/// this flag, panic number two overwrote the evidence for panic number one. Nothing is
+/// lost by keeping the first: every panic, first or not, is logged by the courier and so
+/// rides along in the log tail of any error report bundle.
+static SESSION_CRASH_FILE_WRITTEN: AtomicBool = AtomicBool::new(false);
 
 /// Active settings snapshot cached at startup for inclusion in crash reports.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type)]
@@ -119,13 +145,24 @@ pub struct CrashReport {
     pub image_base: Option<String>,
 }
 
-/// Initializes the crash reporter: panic hook, signal handlers, and settings cache.
-/// Call this early in app startup, before anything that might crash.
+/// Points the crash reporter at the app data dir: settings cache, previous session's
+/// pending report, the crash-file path the hook writes to, and the signal handlers.
+///
+/// The panic hook itself is NOT installed here. It goes up in `run()`, before Tauri builds
+/// anything, so a panic during startup is still caught; this only hands it a path to write
+/// to. A failure to resolve the data dir therefore costs the crash FILE, not the hook.
 pub fn init<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     APP_START_TIME.get_or_init(Instant::now);
+    // Belt and braces: `run()` installs it, and this makes the module correct even if some
+    // future entry point reaches `init` first.
+    install_panic_hook();
 
     let Ok(data_dir) = config::resolved_app_data_dir(app) else {
-        log::warn!("Crash reporter: couldn't resolve app data dir, skipping init");
+        log::warn!(
+            "Crash reporter: couldn't resolve the app data dir. The panic hook stays installed \
+             (panics are still logged and, with error reports opted in, still reported in-session), \
+             but no crash file can be written this session."
+        );
         return;
     };
 
@@ -138,7 +175,9 @@ pub fn init<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     // Process any pending crash file from a previous session
     process_pending_crash(&crash_path, &raw_crash_path);
 
-    install_panic_hook(crash_path);
+    // Only now: arming the hook's disk write before the previous session's report has been
+    // read would let a panic in `process_pending_crash` overwrite the report it was reading.
+    let _ = CRASH_PATH.set(crash_path);
 
     #[cfg(unix)]
     install_signal_handlers(&raw_crash_path);
@@ -155,24 +194,74 @@ pub fn take_pending_crash_report<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -
 
 // --- Panic hook ---
 
-fn install_panic_hook(crash_path: PathBuf) {
-    let default_hook = std::panic::take_hook();
+/// Installs the panic hook. Idempotent, and safe to call before anything else in the
+/// process: with no [`CRASH_PATH`] yet it simply skips the disk write.
+///
+/// Call it as early as possible. Anything that panics before this runs gets the default
+/// hook only (a stderr line), with no crash file and no in-session report.
+pub fn install_panic_hook() {
+    HOOK_INSTALLED.call_once(|| {
+        let default_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            handle_panic(info);
+            // Call the default hook so the app still aborts normally
+            default_hook(info);
+        }));
+    });
+}
 
-    std::panic::set_hook(Box::new(move |info| {
-        let report = build_panic_report(info);
+/// The hook body: write the crash file, then hand a notice to the courier thread.
+///
+/// ❌ **Nothing added here may be able to panic.** A panic inside a panic hook aborts the
+/// process before unwinding starts, so `catch_unwind` here would not help; see
+/// [`panic_courier`] for the mechanism. That's also why in-session delivery runs on
+/// another thread instead of calling the dispatcher from here.
+fn handle_panic(info: &std::panic::PanicHookInfo<'_>) {
+    let report = build_panic_report(info);
 
-        if let Err(e) = write_crash_report(&crash_path, &report) {
-            // Can't use log here (might be the thing that panicked).
-            // Write to stderr via libc::write to be safe even in a broken state.
-            #[allow(clippy::print_stderr, reason = "log may be the thing that panicked")]
-            {
-                eprintln!("Crash reporter: couldn't write crash file: {e}");
-            }
+    // Disk first, and unchanged: for a panic that kills the app this is the ONLY delivery
+    // path, and the process may be gone microseconds from now.
+    let wrote_crash_file = write_first_crash_report(
+        CRASH_PATH.get().map(PathBuf::as_path),
+        &SESSION_CRASH_FILE_WRITTEN,
+        &report,
+    );
+
+    // Then the in-session path, for the panic the app is about to survive. Clones out of
+    // the report that just went to disk, so the two can't describe the panic differently.
+    // The short id rides along ONLY when this panic is the one on disk: keep-first means a
+    // follow-on panic has no crash file, and quoting an id for a report nobody will find
+    // sends triage after the wrong panic.
+    panic_courier::notify(panic_courier::PanicNotice {
+        message: report.panic_message.clone(),
+        thread_name: report.thread_name.clone(),
+        backtrace_frames: report.backtrace_frames.clone(),
+        crash_file_short_id: wrote_crash_file.then(|| report.short_id.clone()).flatten(),
+    });
+}
+
+/// Writes `report` to `crash_path`, unless there's no path or `already_written` is already
+/// set. Returns whether it wrote.
+///
+/// `already_written` is [`SESSION_CRASH_FILE_WRITTEN`] in production and a fresh flag in
+/// tests; passing it in keeps the keep-first rule testable without burning the real one.
+fn write_first_crash_report(crash_path: Option<&Path>, already_written: &AtomicBool, report: &CrashReport) -> bool {
+    let Some(crash_path) = crash_path else {
+        // No app data dir this session (see `init`). The hook still runs; only the file is lost.
+        return false;
+    };
+    if already_written.swap(true, Ordering::SeqCst) {
+        return false;
+    }
+    if let Err(e) = write_crash_report(crash_path, report) {
+        // Can't use log here (might be the thing that panicked).
+        // Write to stderr via libc::write to be safe even in a broken state.
+        #[allow(clippy::print_stderr, reason = "log may be the thing that panicked")]
+        {
+            eprintln!("Crash reporter: couldn't write crash file: {e}");
         }
-
-        // Call the default hook so the app still aborts normally
-        default_hook(info);
-    }));
+    }
+    true
 }
 
 /// Hex-formatted load address of the main image for THIS process, or `None` when we
@@ -293,246 +382,6 @@ fn parse_backtrace_frames(backtrace_str: &str) -> Vec<String> {
             Some(trimmed.to_string())
         })
         .collect()
-}
-
-// --- Signal handler (Unix only) ---
-
-#[cfg(unix)]
-mod signal_handler {
-    use std::os::unix::io::RawFd;
-    use std::path::Path;
-    use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
-
-    /// Max stack frames to capture in the signal handler.
-    const MAX_FRAMES: usize = 256;
-
-    /// Pre-opened fd for writing raw crash data. Set at init, read in signal handler.
-    static RAW_FD: AtomicI32 = AtomicI32::new(-1);
-
-    // The raw crash file format (binary):
-    //   - 4 bytes: magic "CMCR"
-    //   - 4 bytes: version (u32 LE)
-    //   - 4 bytes: signal number (i32 LE)
-    //   - 4 bytes: frame count (u32 LE)
-    //   - 8 bytes: main-image load address (u64 LE; 0 when unknown)
-    //   - N * 8 bytes: instruction pointer addresses (u64 LE)
-    //   - 32 bytes: app version (zero-padded ASCII)
-    const MAGIC: &[u8; 4] = b"CMCR";
-    const VERSION: u32 = 2;
-    const APP_VERSION_FIELD_LEN: usize = 32;
-    /// Byte offset where frame addresses start: header (16) + image base (8).
-    const FRAMES_START: usize = 24;
-
-    /// Load address of the main executable, captured at init.
-    ///
-    /// Resolved in [`install`] (normal context) rather than in the handler, so the
-    /// handler only has to do an atomic load, which IS async-signal-safe. The dyld
-    /// lookup itself isn't, so it must never move into the handler.
-    static IMAGE_BASE: AtomicU64 = AtomicU64::new(0);
-
-    unsafe extern "C" {
-        /// macOS/glibc `backtrace()` from execinfo.h: async-signal-safe on macOS.
-        fn backtrace(buffer: *mut *mut libc::c_void, size: libc::c_int) -> libc::c_int;
-    }
-
-    #[cfg(target_os = "macos")]
-    unsafe extern "C" {
-        /// Mach header of the image at `image_index`. Index 0 is the main executable.
-        fn _dyld_get_image_header(image_index: u32) -> *const libc::c_void;
-    }
-
-    /// The main executable's load address, or 0 if we can't determine it.
-    ///
-    /// ASLR randomizes this per launch, so without it the captured instruction
-    /// pointers are meaningless off-machine. With it, `addr - base` is a stable
-    /// per-build offset: comparable across users (crash grouping) and resolvable
-    /// with `atos -o <binary> -l <base>`.
-    #[cfg(target_os = "macos")]
-    pub fn current_image_base() -> u64 {
-        // SAFETY: `_dyld_get_image_header` takes an image index and returns a borrowed
-        // pointer (or null) without transferring ownership. Index 0 is the main
-        // executable and is always loaded. We only cast the pointer to an integer
-        // address and never dereference it, so a null or stale value is harmless.
-        unsafe { _dyld_get_image_header(0) as u64 }
-    }
-
-    /// Non-macOS Unix (the Linux E2E container) has no `_dyld_*`; report "unknown".
-    #[cfg(not(target_os = "macos"))]
-    pub fn current_image_base() -> u64 {
-        0
-    }
-
-    pub fn install(raw_crash_path: &Path) {
-        // Pre-open the fd for the raw crash file. O_WRONLY | O_CREAT | O_TRUNC
-        // will be applied at write time by truncating to 0 first.
-        let path_cstr = match std::ffi::CString::new(raw_crash_path.as_os_str().as_encoded_bytes()) {
-            Ok(c) => c,
-            Err(_) => {
-                log::warn!("Crash reporter: invalid raw crash path, signal handlers not installed");
-                return;
-            }
-        };
-
-        // SAFETY: `path_cstr` is a valid, NUL-terminated C string (built above and held
-        // alive across the call). `open` returns a fresh fd or a negative value on failure,
-        // which we check below before storing it.
-        let fd = unsafe {
-            libc::open(
-                path_cstr.as_ptr(),
-                libc::O_WRONLY | libc::O_CREAT | libc::O_TRUNC,
-                0o644,
-            )
-        };
-        if fd < 0 {
-            log::warn!("Crash reporter: couldn't open raw crash file, signal handlers not installed");
-            return;
-        }
-        RAW_FD.store(fd, Ordering::SeqCst);
-
-        // Resolve the ASLR base now, while we're still in normal context. The handler
-        // can then just load the atomic (signal-safe); the dyld call itself is not.
-        IMAGE_BASE.store(current_image_base(), Ordering::SeqCst);
-
-        // Register signal handlers for SIGSEGV, SIGBUS, SIGABRT
-        for sig in [libc::SIGSEGV, libc::SIGBUS, libc::SIGABRT] {
-            // SAFETY: `action` is zeroed before use, so every field starts in a valid state;
-            // `sigemptyset` then empties `sa_mask`. `sa_sigaction` points at `signal_handler`,
-            // a valid `extern "C"` SA_SIGINFO handler with the matching signature. `&action` is
-            // a live, fully-initialized `sigaction`, and the null `oldact` pointer is allowed.
-            unsafe {
-                let mut action: libc::sigaction = std::mem::zeroed();
-                action.sa_sigaction = signal_handler as *const () as usize;
-                action.sa_flags = libc::SA_SIGINFO | libc::SA_RESETHAND;
-                libc::sigemptyset(&mut action.sa_mask);
-                libc::sigaction(sig, &action, std::ptr::null_mut());
-            }
-        }
-    }
-
-    /// Async-signal-safe signal handler. Only uses write() and _exit().
-    extern "C" fn signal_handler(sig: libc::c_int, _info: *mut libc::siginfo_t, _ctx: *mut libc::c_void) {
-        let fd = RAW_FD.load(Ordering::SeqCst);
-        if fd < 0 {
-            // SAFETY: `_exit` is async-signal-safe and never returns; no allocation or
-            // locking on this path. Reached only when no fd was opened, so there's nothing
-            // to write.
-            unsafe { libc::_exit(128 + sig) };
-        }
-
-        // Seek to beginning and truncate.
-        // SAFETY: `fd` was checked non-negative above and is the pre-opened crash-file fd.
-        // `lseek`/`ftruncate` are async-signal-safe; no allocation or locking on this path.
-        unsafe {
-            libc::lseek(fd, 0, libc::SEEK_SET);
-            libc::ftruncate(fd, 0);
-        }
-
-        // Capture raw instruction pointer addresses
-        let mut frames: [*mut libc::c_void; MAX_FRAMES] = [std::ptr::null_mut(); MAX_FRAMES];
-        // SAFETY: `frames` is a stack array of exactly `MAX_FRAMES` valid slots, and we pass
-        // that same count, so `backtrace` writes within bounds. `backtrace` is async-signal-safe
-        // on macOS (Linux glibc is safe in practice); no allocation or locking on this path.
-        let frame_count = unsafe { backtrace(frames.as_mut_ptr(), MAX_FRAMES as libc::c_int) };
-        let frame_count = if frame_count < 0 { 0 } else { frame_count as u32 };
-
-        // Write header: magic + version + signal + frame_count + image base
-        write_bytes(fd, MAGIC);
-        write_bytes(fd, &VERSION.to_le_bytes());
-        write_bytes(fd, &sig.to_le_bytes());
-        write_bytes(fd, &frame_count.to_le_bytes());
-        // Plain atomic load: async-signal-safe (the dyld lookup happened at install).
-        write_bytes(fd, &IMAGE_BASE.load(Ordering::Relaxed).to_le_bytes());
-
-        // Write frame addresses as u64 LE
-        for frame in frames.iter().take(frame_count as usize) {
-            let addr = *frame as u64;
-            write_bytes(fd, &addr.to_le_bytes());
-        }
-
-        // Write app version (zero-padded to fixed length)
-        let version_bytes = env!("CARGO_PKG_VERSION").as_bytes();
-        let mut version_buf = [0u8; APP_VERSION_FIELD_LEN];
-        let copy_len = version_bytes.len().min(APP_VERSION_FIELD_LEN);
-        version_buf[..copy_len].copy_from_slice(&version_bytes[..copy_len]);
-        write_bytes(fd, &version_buf);
-
-        // Close and re-raise to get the default behavior (core dump, etc.)
-        // SAFETY: `fd` is the valid pre-opened crash-file fd (checked non-negative above);
-        // `close` and `raise` are async-signal-safe, with no allocation or locking on this path.
-        unsafe {
-            libc::close(fd);
-            libc::raise(sig);
-        }
-    }
-
-    /// Async-signal-safe write helper.
-    fn write_bytes(fd: RawFd, buf: &[u8]) {
-        let mut written = 0;
-        while written < buf.len() {
-            // SAFETY: `buf[written..]` is an in-bounds subslice (`written < buf.len()`), so the
-            // pointer and length (`buf.len() - written`) describe valid initialized bytes.
-            // `write` is async-signal-safe; no allocation or locking on this path.
-            let n = unsafe { libc::write(fd, buf[written..].as_ptr().cast(), buf.len() - written) };
-            if n <= 0 {
-                break;
-            }
-            written += n as usize;
-        }
-    }
-
-    /// Reads the raw crash file and returns (signal, frame_addresses, image_base, app_version).
-    /// `image_base` is 0 when the crashing build couldn't determine it.
-    /// Returns None if the file doesn't exist or is corrupt.
-    pub fn read_raw_crash(path: &Path) -> Option<(i32, Vec<u64>, u64, String)> {
-        let data = std::fs::read(path).ok()?;
-
-        // Minimum size: header(16) + image_base(8) + version_field(32)
-        if data.len() < FRAMES_START + APP_VERSION_FIELD_LEN {
-            log::info!("Crash reporter: raw crash file too small, discarding");
-            let _ = std::fs::remove_file(path);
-            return None;
-        }
-
-        if &data[0..4] != MAGIC {
-            log::info!("Crash reporter: raw crash file bad magic, discarding");
-            let _ = std::fs::remove_file(path);
-            return None;
-        }
-
-        let version = u32::from_le_bytes(data[4..8].try_into().ok()?);
-        if version != VERSION {
-            log::info!("Crash reporter: raw crash file version mismatch ({version}), discarding");
-            let _ = std::fs::remove_file(path);
-            return None;
-        }
-
-        let signal = i32::from_le_bytes(data[8..12].try_into().ok()?);
-        let frame_count = u32::from_le_bytes(data[12..16].try_into().ok()?) as usize;
-        let image_base = u64::from_le_bytes(data[16..FRAMES_START].try_into().ok()?);
-
-        let frames_end = FRAMES_START + frame_count * 8;
-        let expected_len = frames_end + APP_VERSION_FIELD_LEN;
-        if data.len() < expected_len {
-            log::info!("Crash reporter: raw crash file truncated, discarding");
-            let _ = std::fs::remove_file(path);
-            return None;
-        }
-
-        let mut addresses = Vec::with_capacity(frame_count);
-        for i in 0..frame_count {
-            let offset = FRAMES_START + i * 8;
-            let addr = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
-            addresses.push(addr);
-        }
-
-        let version_slice = &data[frames_end..frames_end + APP_VERSION_FIELD_LEN];
-        let app_version = std::str::from_utf8(version_slice)
-            .ok()?
-            .trim_end_matches('\0')
-            .to_string();
-
-        Some((signal, addresses, image_base, app_version))
-    }
 }
 
 #[cfg(unix)]

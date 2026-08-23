@@ -351,6 +351,59 @@ fn integration_panic_child_creates_crash_file() {
     assert_eq!(loaded.app_version, env!("CARGO_PKG_VERSION"));
 }
 
+#[test]
+fn the_first_panic_of_a_session_lands_on_disk() {
+    // The next-launch path for a FATAL panic. In-session delivery is additive; this is
+    // still the only thing that survives the process dying.
+    let dir = tempfile::tempdir().unwrap();
+    let crash_path = dir.path().join(CRASH_FILE_NAME);
+    let written = AtomicBool::new(false);
+
+    assert!(write_first_crash_report(
+        Some(&crash_path),
+        &written,
+        &make_test_report()
+    ));
+    let loaded = read_crash_report(&crash_path).expect("the report reads back");
+    assert_eq!(loaded.app_version, env!("CARGO_PKG_VERSION"));
+    assert_eq!(loaded.panic_message.as_deref(), Some("test panic"));
+}
+
+#[test]
+fn a_second_panic_does_not_clobber_the_first_report() {
+    // The pending crash file holds one report, and the first panic is the causal one.
+    // Later panics still reach triage through the log tail the courier writes.
+    let dir = tempfile::tempdir().unwrap();
+    let crash_path = dir.path().join(CRASH_FILE_NAME);
+    let written = AtomicBool::new(false);
+
+    let mut first = make_test_report();
+    first.panic_message = Some("the root cause".to_string());
+    assert!(write_first_crash_report(Some(&crash_path), &written, &first));
+
+    let mut second = make_test_report();
+    second.panic_message = Some("the consequence".to_string());
+    assert!(
+        !write_first_crash_report(Some(&crash_path), &written, &second),
+        "the second panic must not write"
+    );
+
+    let loaded = read_crash_report(&crash_path).expect("the first report is still there");
+    assert_eq!(loaded.panic_message.as_deref(), Some("the root cause"));
+}
+
+#[test]
+fn a_session_with_no_data_dir_still_takes_a_panic_in_stride() {
+    // `init` bails before setting a crash path when the data dir won't resolve. The hook
+    // is installed regardless, so this branch has to be a quiet no-op, not a panic.
+    let written = AtomicBool::new(false);
+    assert!(!write_first_crash_report(None, &written, &make_test_report()));
+    assert!(
+        !written.load(Ordering::SeqCst),
+        "a session with no path must not burn the one write it might get later"
+    );
+}
+
 fn make_test_report() -> CrashReport {
     CrashReport {
         version: CRASH_FILE_VERSION,
