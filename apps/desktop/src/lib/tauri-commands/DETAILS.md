@@ -38,13 +38,15 @@ commands, and notable non-obvious placements.
   health of any connecting volume, not just SMB), `checkFullDiskAccess`, `checkFullDiskAccessQuiet`,
   `getMacosMajorVersion`, `openPrivacySettings`, `openSystemSettingsUrl`.
 - **`networking.ts`**: SMB host discovery, share listing, Keychain credential ops, mounting, direct-connection upgrade,
-  in-place `reconnectSmbVolume` and per-volume `disconnectSmbVolume`.
+  in-place `reconnectSmbVolume` and per-volume `disconnectSmbVolume`, plus `getVolumeSignInState(volumeId)` — what a
+  sign-in on any volume would ask for (`'nothing'` / `'password'` / `'key_passphrase'`), backend-neutral and ❗ asked
+  when the affordance renders, ❌ never kept from an earlier answer.
 - **`mtp.ts`**: Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy.
 - **`sftp.ts`**: SFTP servers: connect (a tagged `SftpConnectResult`, never a message to parse), disconnect, the
   two-phase host-key approval, the saved-server list, and the password store. The whole frontend contract, including the
   approval sequence and the per-rung banner table: `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend". ❗
-  Reconnecting an SFTP volume uses `networking.ts`'s `reconnectSmbVolume` / `reconnectSmbVolumeWithCredentials`, which
-  are backend-neutral despite the name.
+  Reconnecting an SFTP volume, and asking what a sign-in would want, use `networking.ts`'s `reconnectSmbVolume` /
+  `reconnectSmbVolumeWithCredentials` / `getVolumeSignInState`, all three backend-neutral (two despite the name).
 - **`licensing.ts`**: license status, activation, expiry, server validation.
 - **`settings.ts`**: port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands.
 - **`tab.ts`**: tab context menu: `showTabContextMenu`, `onTabContextAction`.

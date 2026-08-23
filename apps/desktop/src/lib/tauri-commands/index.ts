@@ -201,7 +201,9 @@ export {
   upgradeToSmbVolumeUsingSavedPassword,
   reconnectSmbVolume,
   reconnectSmbVolumeWithCredentials,
+  getVolumeSignInState,
   disconnectSmbVolume,
+  type SignInPrompt,
   type UpgradeResult,
   connectToServer,
   removeManualServer,
@@ -825,6 +827,5 @@ export type {
   SftpConnectResult,
   SftpHostKeyApprovalResult,
   SftpHostKeyIdentity,
-  SftpSignInPrompt,
   SftpTarget,
 } from './sftp'

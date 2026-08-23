@@ -61,13 +61,18 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   deliberately no command that returns a stored secret. The flow behind the commands is
   `network::sftp_volume_wiring`; the frontend contract is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the
   frontend".
-  - ❗ **Reconnecting an SFTP volume uses `network.rs`'s two `reconnect_smb_*` commands**, which are backend-neutral
-    despite the name: both delegate to a `Volume` trait method on whatever is registered. Renaming them is a
-    cross-backend follow-up rather than something SFTP does on its own.
+  - ❗ **Reconnecting an SFTP volume, and asking what a sign-in would want, both go through `network.rs`**: the two
+    `reconnect_smb_*` commands and `get_volume_sign_in_state`. All three are backend-neutral (they delegate to a
+    `Volume` trait method on whatever is registered); renaming the two `smb`-prefixed ones is a cross-backend follow-up
+    rather than something SFTP does on its own.
+  - ❗ **`connect_sftp_volume`'s result carries `rung` and ❌ nothing about a later sign-in.** The rung is a fact about
+    that dial; what a sign-in would ask for is decided per dial too, so it is a query, not a payload.
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   in-place reconnect (`reconnect_smb_volume`: backend single-flighted via `Volume::attempt_reconnect`;
   `reconnect_smb_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via
-  `Volume::reconnect_with_credentials`), per-volume disconnect (`disconnect_smb_volume`: macOS shells out to
+  `Volume::reconnect_with_credentials`), what a sign-in would ask for (`get_volume_sign_in_state`, via
+  `Volume::sign_in_prompt` — read live when a banner renders, ❌ never carried on a connect result; an unregistered id
+  and a backend with no story of its own both answer `password`, the safe way to be wrong), per-volume disconnect (`disconnect_smb_volume`: macOS shells out to
   `diskutil unmount`, Linux drops the smb2 session). Borrow Finder's saved password (macOS):
   `system_has_saved_smb_password` (prompt-free probe driving the "Use saved password" offer) and
   `upgrade_to_smb_volume_using_saved_password` (consent-gated read via `secrets::system_keychain_smb` → direct smb2 →

@@ -19,12 +19,18 @@
  *   the event).
  * - `retryNow(volumeId)` fires an attempt immediately and resets backoff.
  * - `cancel(volumeId)` clears the cycle without touching the connection.
+ *
+ * On a `needs_credentials` event the cycle stops and the manager asks the backend
+ * what a sign-in on that volume would want (`getSignInPrompt` reads it back).
+ * Asked at the flip and never carried over: the credential a remote volume comes
+ * back on is decided per dial. `DETAILS.md` § "SMB live-reconnect flow".
  */
 
 import { untrack } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { reconnectSmbVolume, onVolumeConnectionChanged } from '$lib/tauri-commands'
+import { reconnectSmbVolume, getVolumeSignInState, onVolumeConnectionChanged } from '$lib/tauri-commands'
+import type { SignInPrompt } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
@@ -59,6 +65,17 @@ export interface ReconnectState {
 interface VolumeEntry {
   state: ReconnectState
   refcount: number
+  /**
+   * What a sign-in on this volume would ask for, as of the last `needs-auth`
+   * flip. `null` until one happens.
+   *
+   * Nothing renders this yet, and that's deliberate: the SFTP sign-in UI is
+   * David's next piece of work, and this is the value it reads (the same shape
+   * as the `needs_host_key_approval` state, which is also stored and not shown).
+   * Recorded here rather than kept from the connect result because the credential
+   * a remote volume comes back on is decided per dial.
+   */
+  signIn: SignInPrompt | null
   /** Active `setTimeout` handle for the next attempt, if `status === 'waiting'`. */
   timerId: ReturnType<typeof setTimeout> | null
   /** Subscribers' success callbacks. Fired when state transitions back to Direct. */
@@ -81,7 +98,7 @@ class SmbReconnectManager {
           this.handleDisconnected(volumeId)
           break
         case 'needs_credentials':
-          this.handleNeedsAuth(volumeId)
+          void this.handleNeedsAuth(volumeId)
           break
         case 'connected':
           this.handleConnected(volumeId)
@@ -151,6 +168,14 @@ class SmbReconnectManager {
       return null
     }
     return entry.state
+  }
+
+  /**
+   * What a sign-in on this volume would ask for, as of the last `needs-auth`
+   * flip, or `null` if there hasn't been one (or the answer is still in flight).
+   */
+  getSignInPrompt(volumeId: string): SignInPrompt | null {
+    return this.map.get(volumeId)?.signIn ?? null
   }
 
   /** Whether a cycle is currently running for this volume. */
@@ -234,13 +259,34 @@ class SmbReconnectManager {
    * "Sign in" prompt instead of the generic "unreachable" banner. The user signs in
    * via `reconnectSmbVolumeWithCredentials`; success arrives as a `connected` event.
    */
-  private handleNeedsAuth(volumeId: string): void {
-    untrack(() => {
+  private async handleNeedsAuth(volumeId: string): Promise<void> {
+    // Everything up to the first `await` runs synchronously with the event, so
+    // `runAttempt`'s in-flight check still sees `needs-auth` the moment it flips.
+    const flipped = untrack(() => {
       const entry = this.map.get(volumeId)
-      if (!entry) return // No subscribers; the next nav re-enters the flow.
+      if (!entry) return false // No subscribers; the next nav re-enters the flow.
       if (entry.timerId) clearTimeout(entry.timerId)
       entry.timerId = null
       entry.state = { ...entry.state, status: 'needs-auth' }
+      this.map.set(volumeId, entry) // notify subscribers
+      return true
+    })
+    if (!flipped) return
+
+    // Asked here, and asked again on every later flip: the credential a remote
+    // volume comes back on is decided per dial, so a value kept from the connect
+    // that opened it describes a session that has since ended.
+    let prompt: SignInPrompt
+    try {
+      prompt = await getVolumeSignInState(volumeId)
+    } catch (e) {
+      log.warn('Reading the sign-in state for {volumeId} failed: {error}', { volumeId, error: String(e) })
+      return
+    }
+    untrack(() => {
+      const entry = this.map.get(volumeId)
+      if (!entry) return
+      entry.signIn = prompt
       this.map.set(volumeId, entry) // notify subscribers
     })
   }
@@ -344,6 +390,7 @@ function freshEntry(): VolumeEntry {
   return {
     state: freshState(),
     refcount: 0,
+    signIn: null,
     timerId: null,
     successCallbacks: new Set(),
   }

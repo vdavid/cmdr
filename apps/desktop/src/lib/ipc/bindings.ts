@@ -3442,6 +3442,21 @@ export const commands = {
       __TAURI_INVOKE('reconnect_smb_volume_with_credentials', { volumeId, username, password }),
     ),
   /**
+   *  What a "Sign in" affordance on this volume may ask a person for, right now.
+   *
+   *  ❗ **Asked when the affordance renders, ❌ never carried on a connect result.**
+   *  A backend that authenticates per connection can prove itself with a different
+   *  credential each time it dials, so an answer captured when the volume was
+   *  opened describes a session that may already be gone. This reads the live
+   *  volume, which is the only moment the answer is true.
+   *
+   *  A volume with no sign-in story of its own, and an id nothing is registered
+   *  under, both answer `Password` (`Volume::sign_in_prompt`'s default): the one
+   *  safe way to be wrong here is a needless password box, because a wrong
+   *  `Nothing` is a volume the user can't sign in to at all.
+   */
+  getVolumeSignInState: (volumeId: string) => __TAURI_INVOKE<SignInPrompt>('get_volume_sign_in_state', { volumeId }),
+  /**
    *  Disconnects a single SMB volume by tearing down its OS mount.
    *
    *  Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`], mapping
@@ -4652,7 +4667,7 @@ export type ConnectedDeviceInfo = {
   storages: MtpStorageInfo[]
 }
 
-// A live SFTP volume, and what the reconnect banner needs to know about it.
+// A live SFTP volume, as the connect that made it saw it.
 export type ConnectedSftpVolume = {
   /**
    *  The id every listing, tab, saved path, and index entry is filed under.
@@ -4660,10 +4675,13 @@ export type ConnectedSftpVolume = {
    *  volumes.
    */
   volumeId: string
-  // Which credential proved this session.
+  /**
+   *  Which credential proved this session. ❗ A fact about THIS dial, and
+   *  nothing more: the next one can land on another rung, so ❌ don't derive a
+   *  later sign-in from it. `get_volume_sign_in_state` answers that, from the
+   *  live volume, at the moment a banner asks.
+   */
   rung: SftpAuthRung
-  // What a "Sign in" affordance may ask for if this session later drops.
-  signIn: SftpSignInPrompt
 }
 
 export type ConnectionDiagnosticsDto = {
@@ -9739,31 +9757,6 @@ export type SftpHostKeyIdentity = {
   fingerprint: string
 }
 
-/**
- *  What a "Sign in" affordance may ask for on a volume built on a given rung.
- *
- *  ❗ The backend answers this rather than the frontend deriving it from the
- *  rung, because getting it wrong ships a button that answers `NotSupported`
- *  every time it's pressed.
- */
-export type SftpSignInPrompt =
-  /**
-   *  ❌ Nothing to ask, so ❌ no sign-in button. An agent session and an
-   *  unencrypted key file come back on their own; there is no secret a person
-   *  could type that would help.
-   */
-  | 'nothing'
-  /**
-   *  The account's password. Saved to the secret store on a successful sign-in,
-   *  so the next reconnect is silent.
-   */
-  | 'password'
-  /**
-   *  The passphrase on the key file. ❗ Used for that session and ❌ never
-   *  saved: persisting it would undo what encrypting the key asked for.
-   */
-  | 'key_passphrase'
-
 // Information about a discovered share.
 export type ShareInfo = {
   // The share name as the server spells it (`archive`, never `//nas/archive`).
@@ -9841,6 +9834,36 @@ export type ShareListResult = {
   // True when this answer came from the in-memory cache rather than the wire.
   fromCache: boolean
 }
+
+/**
+ *  What a "Sign in" affordance on a volume may ask a person for.
+ *
+ *  ❗ **Read from the live volume at the moment the affordance renders**, ❌
+ *  never captured when the volume was opened. A backend that authenticates per
+ *  connection can prove itself with a different credential each time it dials,
+ *  so a value stored earlier describes a session that may no longer exist, and it
+ *  goes wrong in both directions: a stale [`Nothing`](Self::Nothing) leaves a
+ *  volume that now wants a password with no way in, and a stale
+ *  [`KeyPassphrase`](Self::KeyPassphrase) asks for a secret the session doesn't
+ *  use. [`Volume::sign_in_prompt`](super::Volume::sign_in_prompt) is the read.
+ */
+export type SignInPrompt =
+  /**
+   *  ❌ Nothing to ask, so ❌ no sign-in button. The session comes back on its
+   *  own (an ssh-agent identity, an unencrypted key file), and there is no
+   *  secret a person could type that would help.
+   */
+  | 'nothing'
+  /**
+   *  The account's password. Persisted on a successful sign-in, so the next
+   *  reconnect is silent.
+   */
+  | 'password'
+  /**
+   *  The passphrase on a key file. ❗ Used for that session and ❌ never saved:
+   *  persisting it would undo what encrypting the key asked for.
+   */
+  | 'key_passphrase'
 
 export type SigningInfoDto = {
   active: boolean

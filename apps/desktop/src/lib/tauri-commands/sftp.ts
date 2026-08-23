@@ -14,7 +14,7 @@ import type {
 import { throwIpcError } from './ipc-types'
 
 export type { HostKeyPrompt, KnownSftpServer, SftpConnectResult, SftpHostKeyApprovalResult, TrustedHostKey }
-export type { SftpAuthRung, SftpSignInPrompt, ConnectedSftpVolume, SftpHostKeyIdentity } from '$lib/ipc/bindings'
+export type { SftpAuthRung, ConnectedSftpVolume, SftpHostKeyIdentity } from '$lib/ipc/bindings'
 
 /** How to reach one SFTP server. No secret: the backend reads those from the secret store itself. */
 export interface SftpTarget {

@@ -719,7 +719,36 @@ pub async fn disconnect_network_host(
     Ok(result)
 }
 
-// --- SMB direct-connection reconnect ---
+// --- Volume reconnect and sign-in ---
+//
+// Backend-neutral despite two of the three names: each one asks whatever volume
+// is registered under the id, so an SFTP volume goes through them unchanged. The
+// frontend's reconnect manager calls all three and never branches on backend.
+
+/// What a "Sign in" affordance on this volume may ask a person for, right now.
+///
+/// ❗ **Asked when the affordance renders, ❌ never carried on a connect result.**
+/// A backend that authenticates per connection can prove itself with a different
+/// credential each time it dials, so an answer captured when the volume was
+/// opened describes a session that may already be gone. This reads the live
+/// volume, which is the only moment the answer is true.
+///
+/// A volume with no sign-in story of its own, and an id nothing is registered
+/// under, both answer `Password` (`Volume::sign_in_prompt`'s default): the one
+/// safe way to be wrong here is a needless password box, because a wrong
+/// `Nothing` is a volume the user can't sign in to at all.
+#[tauri::command]
+#[specta::specta]
+// No timeout wrapper: this reads a lock and a map, and reaches no device.
+pub async fn get_volume_sign_in_state(volume_id: String) -> cmdr_fs::volume::SignInPrompt {
+    use crate::file_system::volume::manager::get_volume_manager;
+
+    get_volume_manager()
+        .get(&volume_id)
+        .map_or(cmdr_fs::volume::SignInPrompt::Password, |volume| {
+            volume.sign_in_prompt()
+        })
+}
 
 /// Tries to rebuild the smb2 session for a Disconnected `SmbVolume` in place.
 ///
@@ -845,3 +874,7 @@ pub fn set_network_enabled(enabled: bool, app_handle: tauri::AppHandle) {
         crate::network::clear_discovered_hosts(&app_handle);
     }
 }
+
+#[cfg(test)]
+#[path = "network_test.rs"]
+mod network_test;

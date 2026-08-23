@@ -72,38 +72,7 @@ impl From<AuthRungUsed> for SftpAuthRung {
     }
 }
 
-/// What a "Sign in" affordance may ask for on a volume built on a given rung.
-///
-/// ❗ The backend answers this rather than the frontend deriving it from the
-/// rung, because getting it wrong ships a button that answers `NotSupported`
-/// every time it's pressed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "snake_case")]
-pub enum SftpSignInPrompt {
-    /// ❌ Nothing to ask, so ❌ no sign-in button. An agent session and an
-    /// unencrypted key file come back on their own; there is no secret a person
-    /// could type that would help.
-    Nothing,
-    /// The account's password. Saved to the secret store on a successful sign-in,
-    /// so the next reconnect is silent.
-    Password,
-    /// The passphrase on the key file. ❗ Used for that session and ❌ never
-    /// saved: persisting it would undo what encrypting the key asked for.
-    KeyPassphrase,
-}
-
-impl SftpSignInPrompt {
-    /// What this rung's sign-in may offer.
-    fn for_rung(rung: SftpAuthRung) -> Self {
-        match rung {
-            SftpAuthRung::Agent | SftpAuthRung::KeyFile => Self::Nothing,
-            SftpAuthRung::EncryptedKeyFile => Self::KeyPassphrase,
-            SftpAuthRung::Password | SftpAuthRung::KeyboardInteractive => Self::Password,
-        }
-    }
-}
-
-/// A live SFTP volume, and what the reconnect banner needs to know about it.
+/// A live SFTP volume, as the connect that made it saw it.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectedSftpVolume {
@@ -111,10 +80,11 @@ pub struct ConnectedSftpVolume {
     /// Derived from `host:port:username`, so two accounts on one server are two
     /// volumes.
     pub volume_id: String,
-    /// Which credential proved this session.
+    /// Which credential proved this session. ❗ A fact about THIS dial, and
+    /// nothing more: the next one can land on another rung, so ❌ don't derive a
+    /// later sign-in from it. `get_volume_sign_in_state` answers that, from the
+    /// live volume, at the moment a banner asks.
     pub rung: SftpAuthRung,
-    /// What a "Sign in" affordance may ask for if this session later drops.
-    pub sign_in: SftpSignInPrompt,
 }
 
 /// What connecting produced.
@@ -204,14 +174,10 @@ pub async fn connect_sftp_volume(
     params.use_agent = use_agent;
 
     match sftp_volume_wiring::connect_and_register(&display_name, params).await {
-        SftpConnection::Connected { volume_id, rung } => {
-            let rung = SftpAuthRung::from(rung);
-            SftpConnectResult::Connected(ConnectedSftpVolume {
-                volume_id,
-                rung,
-                sign_in: SftpSignInPrompt::for_rung(rung),
-            })
-        }
+        SftpConnection::Connected { volume_id, rung } => SftpConnectResult::Connected(ConnectedSftpVolume {
+            volume_id,
+            rung: SftpAuthRung::from(rung),
+        }),
         SftpConnection::NeedsHostKeyApproval(prompt) => SftpConnectResult::NeedsHostKeyApproval(prompt),
         SftpConnection::HostKeyRevoked { algorithm, fingerprint } => {
             SftpConnectResult::HostKeyRevoked(SftpHostKeyIdentity { algorithm, fingerprint })

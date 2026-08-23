@@ -1,7 +1,7 @@
 # What the SFTP backend still owes
 
 The backend and its IPC surface are done: `crates/cmdr-sftp` connects, lists, reads, writes, copies, scans, and comes
-back after a drop, and `crates/cmdr-sftp/DETAILS.md` is the canonical account of all of it. Four things are open, and
+back after a drop, and `crates/cmdr-sftp/DETAILS.md` is the canonical account of all of it. Three things are open, and
 each one is written down beside the code it belongs to. This file exists so they stay schedulable rather than only
 discoverable by someone already reading the crate.
 
@@ -20,7 +20,9 @@ resolution has to agree with it.
 branches on, the three-round first connection, the two-phase host-key approval, and what the banner shows per auth rung.
 The open questions are design ones (which sidebar section, what icon, what an eject means), not protocol ones.
 
-**Cost**: the UI work, plus item 3 below, which the banner runs into immediately.
+**Cost**: the UI work. What a sign-in may ask for is already answered live by `getVolumeSignInState(volumeId)`, and the
+reconnect manager already stores it per volume; the banner reads it rather than deriving anything from the connect
+result.
 
 ## 2. Free space and non-UTF-8 filenames both wait on one vendoring
 
@@ -43,22 +45,7 @@ already paid).
 **Trigger**: a user hitting either. Vendoring buys a permanent maintenance obligation on two crates, so it wants a real
 report behind it rather than a hypothetical.
 
-## 3. `signIn` goes stale, and the banner is what notices
-
-`connectSftpVolume` answers with the auth rung the session was built on and what a later "Sign in" may ask for. Both are
-decided **per dial**, and a mid-life reconnect can land on a different rung — adding an agent identity moves a
-`password` volume up to `agent`, removing one drops it back — while `volume-connection-changed` is payload-free by
-design and no command re-reads the current rung for a live volume. So a banner built on the connect-time answer goes
-stale in both directions: it can leave a volume that now wants a password with no way in, or ask for a secret the
-session no longer uses.
-
-**The two ways out**, both written up in `crates/cmdr-sftp/DETAILS.md` § "What the banner shows, per rung": widen the
-event (a deliberate compile-time refusal across `events/volume_mapping.rs`'s `wire_state`), or add a command answering
-the current rung and `signIn` for a `volumeId` and have the banner call it whenever the connection state flips.
-
-❗ **Settle this before designing the banner**, not after: it decides whether the banner is event-driven or asks.
-
-## 4. Not SFTP, but this effort surfaced it: two backends drop the path from `NotFound`
+## 3. Not SFTP, but this effort surfaced it: two backends drop the path from `NotFound`
 
 `VolumeError::NotFound` and `PermissionDenied` are defined to carry the missing PATH, and the transfer layer forwards
 that payload straight into what the frontend renders as the name of the file the user is looking for. `LocalPosixVolume`

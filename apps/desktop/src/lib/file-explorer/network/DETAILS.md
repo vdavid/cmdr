@@ -203,6 +203,18 @@ thin wrapper over `NetworkLoginForm`). Submitting calls `reconnectSmbVolumeWithC
 the new password and reconnects; success arrives as a `connected` event that clears the state and reloads. Pinned by
 `smb-reconnect-manager.svelte.test.ts`.
 
+❗ **`handleNeedsAuth` also asks `getVolumeSignInState(volumeId)` and stores the answer on the entry**
+(`getSignInPrompt(volumeId)` reads it back). It is asked HERE, at the flip, and ❌ never carried over from earlier: the
+credential a remote volume comes back on is decided per dial, so an answer kept from the connect that opened it
+describes a session that has since ended. On SFTP that is the difference between a volume the user can sign in to and
+one with no way in at all; the reasoning and the per-rung table are `crates/cmdr-sftp/DETAILS.md` § "What the banner
+shows, per rung". The flip itself stays synchronous with the event (the `await` comes after), so `runAttempt`'s
+in-flight `needs-auth` check is unaffected.
+
+❗ **Nothing renders the stored prompt yet, deliberately**, the same way `needs_host_key_approval` is handled below: the
+SFTP sign-in UI is the piece still to build, and this is the value it reads. SMB's own sign-in doesn't consult it —
+`SmbReauthView` asks for a username and a password, which is what the default answer says anyway.
+
 ❗ `needs_host_key_approval` is the fourth `volume-connection-changed` state, and the manager **ignores it on purpose**,
 with a comment saying so. It only ever describes an SFTP volume whose host key stopped matching, and that must never
 take the sign-in path: a password box in front of a possible man-in-the-middle is how a password gets typed into one.

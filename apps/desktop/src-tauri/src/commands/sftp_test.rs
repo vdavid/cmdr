@@ -30,34 +30,6 @@ fn every_auth_rung_crosses_as_its_own_value() {
     );
 }
 
-/// ❌ **A sign-in button that can only answer `NotSupported` must never be
-/// shown.** The two rungs that come back on their own have no secret a person
-/// could supply, and this is the answer the banner reads.
-#[test]
-fn only_the_rungs_a_typed_secret_can_mend_offer_a_sign_in() {
-    assert_eq!(
-        SftpSignInPrompt::for_rung(SftpAuthRung::Agent),
-        SftpSignInPrompt::Nothing
-    );
-    assert_eq!(
-        SftpSignInPrompt::for_rung(SftpAuthRung::KeyFile),
-        SftpSignInPrompt::Nothing
-    );
-    assert_eq!(
-        SftpSignInPrompt::for_rung(SftpAuthRung::EncryptedKeyFile),
-        SftpSignInPrompt::KeyPassphrase,
-        "❗ the passphrase is used for that session and never saved"
-    );
-    assert_eq!(
-        SftpSignInPrompt::for_rung(SftpAuthRung::Password),
-        SftpSignInPrompt::Password
-    );
-    assert_eq!(
-        SftpSignInPrompt::for_rung(SftpAuthRung::KeyboardInteractive),
-        SftpSignInPrompt::Password
-    );
-}
-
 /// The secret store is keyed per account, ❌ never per host.
 ///
 /// Two accounts on one server sharing an entry means a reconnect can retry the

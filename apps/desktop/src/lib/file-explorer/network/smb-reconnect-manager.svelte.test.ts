@@ -8,15 +8,17 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { VolumeConnection, VolumeConnectionChanged } from '$lib/ipc/bindings'
+import type { SignInPrompt, VolumeConnection, VolumeConnectionChanged } from '$lib/ipc/bindings'
 
 // Hoisted mocks: must run before importing the module under test.
 const mockReconnect = vi.fn<(volumeId: string) => Promise<void>>()
+const mockSignInState = vi.fn<(volumeId: string) => Promise<SignInPrompt>>()
 const mockListen = vi.fn<(handler: (payload: VolumeConnectionChanged) => void) => Promise<() => void>>()
 let lastEventHandler: ((payload: VolumeConnectionChanged) => void) | null = null
 
 vi.mock('$lib/tauri-commands', () => ({
   reconnectSmbVolume: (id: string) => mockReconnect(id),
+  getVolumeSignInState: (id: string) => mockSignInState(id),
   // The manager subscribes to `volume-connection-changed` through this typed wrapper,
   // so the test captures its unwrapped-payload handler here.
   onVolumeConnectionChanged: (handler: (payload: VolumeConnectionChanged) => void) => {
@@ -43,6 +45,8 @@ describe('smbReconnectManager', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     mockReconnect.mockReset()
+    mockSignInState.mockReset()
+    mockSignInState.mockResolvedValue('password')
     mockListen.mockReset()
     mockListen.mockResolvedValue(() => {
       lastEventHandler = null
@@ -132,6 +136,52 @@ describe('smbReconnectManager', () => {
     expect(smbReconnectManager.getState('vol-auth')).toBeNull()
 
     smbReconnectManager.cancel('vol-auth')
+    unsub()
+  })
+
+  /**
+   * The banner asks the backend what a sign-in would want, at the moment it has
+   * something to ask about. Nothing renders this yet (the SFTP sign-in UI isn't
+   * built), so the cell asserts on the stored value.
+   */
+  it('asks what a sign-in would want when a volume needs auth', async () => {
+    await smbReconnectManager.init()
+    const unsub = smbReconnectManager.subscribe('vol-prompt')
+    mockSignInState.mockResolvedValue('key_passphrase')
+
+    emit('vol-prompt', 'needs_credentials')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockSignInState).toHaveBeenCalledWith('vol-prompt')
+    expect(smbReconnectManager.getSignInPrompt('vol-prompt')).toBe('key_passphrase')
+
+    smbReconnectManager.cancel('vol-prompt')
+    unsub()
+  })
+
+  /**
+   * The answer is asked again every time, and never carried over: the rung a
+   * remote volume comes back on is decided per dial, so the previous answer is a
+   * statement about a session that has since ended.
+   */
+  it('re-asks on a later needs-auth rather than reusing the first answer', async () => {
+    await smbReconnectManager.init()
+    const unsub = smbReconnectManager.subscribe('vol-prompt-again')
+
+    mockSignInState.mockResolvedValue('nothing')
+    emit('vol-prompt-again', 'needs_credentials')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(smbReconnectManager.getSignInPrompt('vol-prompt-again')).toBe('nothing')
+
+    emit('vol-prompt-again', 'connected')
+    mockSignInState.mockResolvedValue('password')
+    emit('vol-prompt-again', 'needs_credentials')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockSignInState).toHaveBeenCalledTimes(2)
+    expect(smbReconnectManager.getSignInPrompt('vol-prompt-again')).toBe('password')
+
+    smbReconnectManager.cancel('vol-prompt-again')
     unsub()
   })
 

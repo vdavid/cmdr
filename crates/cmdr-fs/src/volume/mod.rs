@@ -513,6 +513,24 @@ pub trait Volume: Send + Sync {
         None
     }
 
+    /// What a "Sign in" affordance on this volume may ask for, **right now**.
+    ///
+    /// Asked when the affordance renders, which is after this volume reported
+    /// [`VolumeConnection::NeedsCredentials`](host::events::VolumeConnection::NeedsCredentials).
+    /// ❗ An implementation whose credential is decided per dial has to answer
+    /// from its live state, ❌ never from what the first connection used: that
+    /// value is a prediction, and by the time anything reads it the session it
+    /// described is gone.
+    ///
+    /// The default is [`SignInPrompt::Password`], which is what every backend
+    /// that asks for one uses, and it is the safe way to be wrong: a needless
+    /// password box is recoverable, while a wrong [`SignInPrompt::Nothing`]
+    /// leaves a volume the user can't sign in to at all. Override it where a
+    /// backend has rungs a password can't mend (`SftpVolume`).
+    fn sign_in_prompt(&self) -> SignInPrompt {
+        SignInPrompt::Password
+    }
+
     /// This volume's [`Retirement`] flag, when it keeps one.
     ///
     /// The registry retires a volume as it leaves the registry, and this is how

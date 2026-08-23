@@ -15,8 +15,10 @@ use std::sync::atomic::Ordering;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
-    ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
+    ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
+
+use crate::auth::AuthRungUsed;
 use tokio_util::sync::CancellationToken;
 
 use super::streams::{READ_WINDOW_DEPTH, SCAN_WINDOW_DEPTH};
@@ -38,6 +40,24 @@ impl SftpVolume {
             self.note_lost_session(error);
         }
         outcome
+    }
+}
+
+/// What a person could type to mend a session built on `rung`.
+///
+/// ❗ The backend owns this mapping rather than the frontend deriving it from the
+/// rung: getting it wrong ships a sign-in button that can only ever answer
+/// `NotSupported`, or no button where one was the only way back in.
+fn prompt_for(rung: AuthRungUsed) -> SignInPrompt {
+    match rung {
+        AuthRungUsed::Agent
+        | AuthRungUsed::KeyFile {
+            passphrase_protected: false,
+        } => SignInPrompt::Nothing,
+        AuthRungUsed::KeyFile {
+            passphrase_protected: true,
+        } => SignInPrompt::KeyPassphrase,
+        AuthRungUsed::Password | AuthRungUsed::KeyboardInteractive => SignInPrompt::Password,
     }
 }
 
@@ -347,6 +367,18 @@ impl Volume for SftpVolume {
         inner.host.runtime().clone().spawn(async move {
             inner.session.write().await.take();
         });
+    }
+
+    /// What an attended sign-in may ask for, ❗ derived from the rung the LAST
+    /// dial landed on rather than the first.
+    ///
+    /// The rung moves under a volume: an ssh-agent identity appearing lifts a
+    /// password volume to the agent rung, and one going away drops it back. So
+    /// this reads [`SftpVolume::auth_rung`] every time it is asked, and the app
+    /// asks it when the banner renders. `DETAILS.md` § "What the banner shows,
+    /// per rung".
+    fn sign_in_prompt(&self) -> SignInPrompt {
+        prompt_for(self.auth_rung())
     }
 
     /// Rebuilds the session in place, on the terms the auth rung allows

@@ -128,6 +128,31 @@ pub enum SmbConnectionState {
     Disconnected,
 }
 
+/// What a "Sign in" affordance on a volume may ask a person for.
+///
+/// ❗ **Read from the live volume at the moment the affordance renders**, ❌
+/// never captured when the volume was opened. A backend that authenticates per
+/// connection can prove itself with a different credential each time it dials,
+/// so a value stored earlier describes a session that may no longer exist, and it
+/// goes wrong in both directions: a stale [`Nothing`](Self::Nothing) leaves a
+/// volume that now wants a password with no way in, and a stale
+/// [`KeyPassphrase`](Self::KeyPassphrase) asks for a secret the session doesn't
+/// use. [`Volume::sign_in_prompt`](super::Volume::sign_in_prompt) is the read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum SignInPrompt {
+    /// ❌ Nothing to ask, so ❌ no sign-in button. The session comes back on its
+    /// own (an ssh-agent identity, an unencrypted key file), and there is no
+    /// secret a person could type that would help.
+    Nothing,
+    /// The account's password. Persisted on a successful sign-in, so the next
+    /// reconnect is silent.
+    Password,
+    /// The passphrase on a key file. ❗ Used for that session and ❌ never saved:
+    /// persisting it would undo what encrypting the key asked for.
+    KeyPassphrase,
+}
+
 /// Identifies the shared physical resource a volume contends for, so the
 /// operation manager can serialize transfers that would thrash the same device
 /// or saturate the same single transport.

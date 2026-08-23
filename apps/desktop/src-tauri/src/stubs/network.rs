@@ -392,6 +392,16 @@ pub async fn reconnect_smb_volume_with_credentials(
     Err("Direct SMB connection not supported on this platform".to_string())
 }
 
+/// What a sign-in on this volume may ask for (stub: the trait's own default).
+///
+/// ❗ `Password`, ❌ never `Nothing`: a wrong `Nothing` is a volume with no way
+/// to sign in, and this platform has no volume that could answer better.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_volume_sign_in_state(_volume_id: String) -> cmdr_fs::volume::SignInPrompt {
+    cmdr_fs::volume::SignInPrompt::Password
+}
+
 /// Probe for a Finder-saved SMB password (stub: always false).
 #[tauri::command]
 #[specta::specta]

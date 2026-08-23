@@ -710,14 +710,17 @@ is that a sign-in UI genuinely branches on all of it.
   `forgetKnownSftpServer(host, port, username)` → `boolean`. A successful connect already calls the middle one, so the
   update command is for editing a server without connecting (renaming it, changing its root or key file).
 
-**Reconnecting is the backend-neutral pair that is unfortunately named `smb`**: `reconnectSmbVolume(volumeId)` and
-`reconnectSmbVolumeWithCredentials(volumeId, username, password)` call `Volume::attempt_reconnect` and
-`Volume::reconnect_with_credentials` on whatever is registered, so they work on an SFTP volume as they stand. For the
-passphrase rung, `password` carries the key passphrase.
+**Reconnecting and signing in are backend-neutral, and two of the three are unfortunately named `smb`**:
+`reconnectSmbVolume(volumeId)`, `reconnectSmbVolumeWithCredentials(volumeId, username, password)`, and
+`getVolumeSignInState(volumeId)` call `Volume::attempt_reconnect`, `Volume::reconnect_with_credentials`, and
+`Volume::sign_in_prompt` on whatever is registered, so they work on an SFTP volume as they stand. For the passphrase
+rung, `password` carries the key passphrase. All three live in `apps/desktop/src-tauri/src/commands/network.rs` and are
+wrapped in `apps/desktop/src/lib/tauri-commands/networking.ts`.
 
 `SftpConnectResult` is tagged on `outcome`:
 
-- `connected` → `{ volumeId, rung, signIn }`. `volumeId` is what to navigate to; the other two are below.
+- `connected` → `{ volumeId, rung }`. `volumeId` is what to navigate to; `rung` is which credential proved THIS dial,
+  and ❌ nothing to derive a later sign-in from (§ "What the banner shows, per rung").
 - `needs_host_key_approval` → `{ host, port, algorithm, fingerprint, kind }`, `kind` being `unknown` or `changed`.
 - `host_key_revoked` → `{ algorithm, fingerprint }`. ❌ Not approvable at all: `@revoked` in `~/.ssh/known_hosts` says
   this exact key is known to be compromised, so there is no button, only an explanation.
@@ -778,11 +781,18 @@ an authentication attempt against a server that locks accounts.
 
 ### What the banner shows, per rung
 
-`connected` carries `rung` (which credential proved the session) and `signIn` (what a later "Sign in" may ask for). ❗
-`signIn` is the backend's answer rather than something to derive from `rung`: getting it wrong ships a button that
-answers `NotSupported` every time it's pressed.
+❗ **`getVolumeSignInState(volumeId)` is the answer, asked when the banner renders**, and there is deliberately no
+second source: the connect result carries `rung` and nothing else about signing in. The rung is decided per DIAL, so a
+mid-life reconnect can land somewhere else than the connect did — adding an ssh-agent identity lifts a `password` volume
+to `agent`, removing one drops it back — while `volume-connection-changed` is payload-free by design (§ "Mid-life") and
+carries no rung. An answer captured at connect therefore goes wrong in both directions: a stale `nothing` leaves a
+volume that now wants a password with no way in at all, and a stale `key_passphrase` asks for a secret the session no
+longer uses. Reading it live is what closes both.
 
-| `rung`                 | unattended reconnect                       | `signIn`         | attended reconnect                 |
+The backend owns the mapping rather than the frontend deriving it from `rung`: getting it wrong ships a button that
+answers `NotSupported` every time it's pressed, or no button where one was the only way back in.
+
+| `rung`                 | unattended reconnect                       | sign-in state    | attended reconnect                 |
 | ---------------------- | ------------------------------------------ | ---------------- | ---------------------------------- |
 | `agent`                | dials freely; a removed identity refuses   | `nothing`        | `NotSupported`                     |
 | `key_file`             | dials freely                               | `nothing`        | `NotSupported`                     |
@@ -790,23 +800,23 @@ answers `NotSupported` every time it's pressed.
 | `password`             | ONE dial, then `NeedsCredentials` for good | `password`       | saves the secret, then dials       |
 | `keyboard_interactive` | `NeedsCredentials` without dialing         | `password`       | saves the secret, then dials       |
 
+A volume that is not SFTP, and an id nothing is registered under, both answer `password` (`Volume::sign_in_prompt`'s
+default). That is the safe way to be wrong: this is only ever asked about a volume that just reported
+`needs_credentials`, so a needless password box is recoverable while a wrong `nothing` is a volume nobody can sign in
+to. The rung-by-rung cells are `crates/cmdr-sftp/src/volume/reconnect_test.rs`; the default's are
+`apps/desktop/src-tauri/src/commands/network_test.rs`.
+
 - ❗ **The username field in a sign-in form is read-only, and it is the volume's own account.**
   `reconnect_with_credentials` refuses a username that isn't this volume's, because the volume id is
   `host:port:username`: signing in as somebody else is opening another volume, not mending this one. Two accounts on one
   server are two volumes, two saved-server entries, and two secret-store entries.
 - ❗ **An attended sign-in on the passphrase rung doesn't save what it was given.** A passphrase-protected volume asks
   again after every drop, and that is correct — the gate is the rung, not the store (§ "The one secret entry").
-- ❗ **`signIn` arrives once, on the connect outcome, and nothing ever refreshes it.** The rung is decided per DIAL, so
-  a mid-life reconnect can land somewhere else than the connect did, and the frontend hears nothing about it: adding an
-  agent identity moves a `password` volume up to `agent`, whose honest `signIn` is `nothing` and whose button should
-  disappear; removing one drops an `agent` volume to `password` or `encrypted_key_file`, where a button should appear
-  that isn't there. `volume-connection-changed` is payload-free by design (§ "Mid-life"), so `needs_credentials` carries
-  no rung, and no command re-reads the current rung for a live volume. A banner built on the connect-time value
-  therefore goes stale in both directions: a stale `nothing` leaves a volume that now wants a password with no way in,
-  and a stale `key_passphrase` asks for a secret the session no longer uses. Reconnecting through `connectSftpVolume` is
-  the only thing that corrects it today. ❗ Settle this before designing the banner: either widen the event (a
-  compile-time refusal across `events/volume_mapping.rs`'s `wire_state`, on purpose) or add a command that answers the
-  current `rung` + `signIn` for a `volumeId`, and have the banner call it whenever the connection state flips.
+- ❗ **The frontend's reconnect manager already asks, and stores the answer without showing it.**
+  `smb-reconnect-manager.svelte.ts`'s `handleNeedsAuth` calls `getVolumeSignInState` on every flip to `needs-auth` and
+  writes it into the volume's entry, readable through `getSignInPrompt(volumeId)`. Nothing renders it yet, on purpose,
+  the same way `needs_host_key_approval` is handled there: the sign-in UI is the piece still to build, and this is the
+  value it reads.
 
 ### Mid-life: the key that stopped matching
 

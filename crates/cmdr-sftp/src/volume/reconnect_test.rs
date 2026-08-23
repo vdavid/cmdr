@@ -17,11 +17,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
-use cmdr_fs::volume::Volume;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::{CredentialStore, CredentialsNotStored, StoredCredentials};
 use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection, VolumeEventSink};
 use cmdr_fs::volume::host::host_keys::InMemoryHostKeys;
+use cmdr_fs::volume::{SignInPrompt, Volume};
 
 use super::super::SftpVolume;
 use super::super::test_support::{TEST_ROOT, make_test_volume_with};
@@ -267,6 +267,75 @@ async fn signing_in_as_a_different_account_is_refused() {
 
     assert!(matches!(refusal, Err(cmdr_fs::volume::VolumeError::NotSupported)));
     assert_eq!(credentials.reads(), 0);
+}
+
+// ── What a sign-in may ask for, read live ────────────────────────────
+
+/// Every rung offers exactly the secret that could mend it, and nothing else.
+///
+/// ❗ The backend answers this rather than the frontend deriving it from the
+/// rung. Getting it wrong ships a button that answers `NotSupported` every time
+/// it's pressed, or no button at all where one was the only way back in.
+///
+/// Asked through `&dyn Volume`, which is the only way the app can ask: an
+/// inherent method of the same name would satisfy every assertion here and leave
+/// the command reading the trait's default.
+#[test]
+fn every_rung_offers_only_the_secret_that_could_mend_it() {
+    for (rung, expected) in [
+        (AuthRungUsed::Agent, SignInPrompt::Nothing),
+        (
+            AuthRungUsed::KeyFile {
+                passphrase_protected: false,
+            },
+            SignInPrompt::Nothing,
+        ),
+        (
+            AuthRungUsed::KeyFile {
+                passphrase_protected: true,
+            },
+            SignInPrompt::KeyPassphrase,
+        ),
+        (AuthRungUsed::Password, SignInPrompt::Password),
+        (AuthRungUsed::KeyboardInteractive, SignInPrompt::Password),
+    ] {
+        let (_events, _credentials, volume) = offline_volume(rung);
+        let asked_the_way_the_app_asks: &dyn Volume = &volume;
+        assert_eq!(asked_the_way_the_app_asks.sign_in_prompt(), expected, "{rung:?}");
+    }
+}
+
+/// ❗ **The prompt follows the rung the LAST dial landed on, never the first.**
+///
+/// The rung is decided per dial, so a reconnect can land somewhere else than the
+/// connect did: an ssh-agent identity appearing moves a password volume up to the
+/// agent rung, and one going away drops it back. A prompt captured when the
+/// volume was opened is a prediction about a session that no longer exists, and
+/// it goes wrong in both directions — a stale `Nothing` leaves a volume that now
+/// wants a password with no way in at all, and a stale `KeyPassphrase` asks for a
+/// secret the session doesn't use.
+///
+/// `set_auth_rung` is the same call `reconnect.rs` makes when a fresh dial proves
+/// itself on a different rung, so this is that moment with the wire left out.
+#[test]
+fn the_prompt_follows_the_rung_the_last_dial_landed_on() {
+    let (_events, _credentials, volume) = offline_volume(AuthRungUsed::Agent);
+    let asked_the_way_the_app_asks: &dyn Volume = &volume;
+    assert_eq!(
+        asked_the_way_the_app_asks.sign_in_prompt(),
+        SignInPrompt::Nothing,
+        "an agent session is missing nothing a person could type"
+    );
+
+    // The identity the agent was holding goes away, and the next dial proves
+    // itself with the stored password instead.
+    volume.inner.set_auth_rung(AuthRungUsed::Password);
+
+    assert_eq!(
+        asked_the_way_the_app_asks.sign_in_prompt(),
+        SignInPrompt::Password,
+        "a volume that wants a password now has to say so, or the banner has no way back in"
+    );
 }
 
 // ── What only a server that says no can show ─────────────────────────

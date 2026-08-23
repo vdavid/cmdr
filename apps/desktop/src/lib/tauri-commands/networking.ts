@@ -5,6 +5,7 @@ import { commands, events } from '$lib/ipc/bindings'
 import type {
   MountResult,
   NetworkHostContextAction,
+  SignInPrompt,
   SmbCredentials,
   SmbFellBackToOsMount,
   UpgradeResult,
@@ -18,6 +19,8 @@ import type {
   NetworkHost,
   ShareListResult,
 } from '../file-explorer/types'
+
+export type { SignInPrompt }
 
 /** Result of connecting to a manually-specified server. */
 export interface ManualConnectResult {
@@ -423,6 +426,23 @@ export async function reconnectSmbVolumeWithCredentials(
 ): Promise<void> {
   const res = await commands.reconnectSmbVolumeWithCredentials(volumeId, username, password)
   if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
+ * What a "Sign in" affordance on this volume may ask the user for, right now.
+ *
+ * Ask when the affordance renders, and never hold on to the answer: a backend
+ * that authenticates per connection can prove itself with a different credential
+ * each time it dials, so a value kept from earlier describes a session that may
+ * already be gone.
+ *
+ * Backend-neutral. A volume with no sign-in story of its own, and an id nothing
+ * is registered under, both answer `'password'`, which is the safe way to be
+ * wrong: a needless password box is recoverable, a wrong `'nothing'` is a volume
+ * the user can't sign in to at all.
+ */
+export async function getVolumeSignInState(volumeId: string): Promise<SignInPrompt> {
+  return await commands.getVolumeSignInState(volumeId)
 }
 
 /**
