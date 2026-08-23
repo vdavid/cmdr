@@ -51,6 +51,7 @@ jobs:
               - 'crates/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
+              - '.config/nextest.toml'
               - 'rust-toolchain.toml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
