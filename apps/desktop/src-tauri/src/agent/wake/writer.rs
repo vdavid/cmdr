@@ -35,8 +35,8 @@ const IDLE_POLL: Duration = Duration::from_secs(60);
 /// ⚠️ **How long a declined attempt waits before trying again, and why the loop needs one at
 /// all.** A deadline that has passed stays passed. Without a backoff the park would compute to
 /// zero, `recv_timeout` would return instantly, and the loop would spin a core flat for as long
-/// as an overdue row sits there — which is the DEFAULT state in M1, since `askCmdr.proactive`
-/// ships false. A gate or settings change clears it, so opening the gate is felt at once.
+/// as an overdue row sits there — the ordinary state for anybody without consent or an API key.
+/// A gate or settings change clears it, so opening the gate is felt at once.
 const DECLINED_WAKE_BACKOFF: Duration = Duration::from_secs(5 * 60);
 
 /// Start the wake loop. Called once, from `agent::start`, after the store handle and the chat
@@ -354,9 +354,9 @@ mod tests {
     use super::*;
 
     /// ⚠️ The spin guard. A deadline that has passed keeps having passed, so a park computed
-    /// from it alone is zero-length, and a zero-length `recv_timeout` returns instantly. With
-    /// `askCmdr.proactive` shipping false, an overdue row the loop declines to act on is the
-    /// DEFAULT state in M1 — this is the difference between a parked thread and a hot core.
+    /// from it alone is zero-length, and a zero-length `recv_timeout` returns instantly. An
+    /// overdue row the loop declines to act on is the ordinary state for anybody without
+    /// consent or an API key — this is the difference between a parked thread and a hot core.
     #[test]
     fn an_overdue_row_the_loop_declined_parks_instead_of_spinning() {
         let overdue = Some(1_780_000_000);

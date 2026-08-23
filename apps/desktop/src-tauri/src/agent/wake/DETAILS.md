@@ -87,9 +87,15 @@ which the slider cannot reach.)
 choice about whether a staged proposal raises a toast; it reaches the backend only as a reason to re-read, so nothing
 here holds it.
 
+**`askCmdr.proactive` defaults to TRUE**, which is the feature: the agent watches whenever consent and a working
+provider both exist. It is not what protects somebody who never wanted AI — `readiness.rs` holds consent, disk access,
+and the key, and a wake spends nothing until all three are open. This row is the user's own "no thanks". It shipped
+FALSE while the surfaces were being built, because a release landing then would have created threads with no indicator,
+toast, or readiness surface to find them by.
+
 ⚠️ **`settings.json` is SPARSE**, so both reads are `Option` and both defaults are spelled out in `from_parts`.
-`unwrap_or_default()` would ship `false` forever for the boolean and a ZERO-second cadence for the delay, which is a
-wake per live batch. A value off the slider's track (a hand-edited file) is clamped to `MIN_HOT_DELAY..=MAX_HOT_DELAY`:
+`unwrap_or_default()` would ship `false` forever for the boolean — silently turning the feature off for every user who
+never opened the row — and a ZERO-second cadence for the delay, which is a wake per live batch. A value off the slider's track (a hand-edited file) is clamped to `MIN_HOT_DELAY..=MAX_HOT_DELAY`:
 below the shortest stop the agent wakes on its own noise, and above the longest the warm tier is pinned to its cap
 anyway.
 
@@ -172,7 +178,9 @@ A merge can only pull a deadline earlier and can only raise the stored interest.
 and it also stops a later, duller contribution from demoting what an earlier burst established.
 
 **A cold row has NO deadline** (`deliver_by: Option<u64>`, nullable in the table since migration v7). That is what
-"rides along" means mechanically: the row waits, any wake drains it, and nothing about it can cause a wake. Given a
+"rides along" means mechanically: the row waits, any wake drains the WHOLE inbox and takes it along, and nothing about
+it can cause a wake. That whole-inbox drain is also where a MAX-interest reporting policy comes from without anybody
+writing one: whatever is waiting gets reported on, ranked by interest inside the digest's budget. Given a
 real time like every other row, a trickle in a barely-scored folder comes due on its own and spends a model turn
 reporting that a cache directory changed.
 
@@ -300,8 +308,8 @@ thread keeps a flag and clears it on the `WakeFinished` control message.
 
 ⚠️ **A declined attempt backs off, and that is not a nicety.** The timer parks with
 `recv_timeout`, and a deadline that has passed keeps having passed, so a park computed from the
-inbox alone is zero-length and the thread spins a core flat. `askCmdr.proactive` ships FALSE, so
-"due and declined" is M1's default state. `park_for` is floored by a `not_before` stamp that
+inbox alone is zero-length and the thread spins a core flat. "Due and declined" is the ordinary
+state for anybody without consent or an API key, not a rare one. `park_for` is floored by a `not_before` stamp that
 every path through `try_wake` sets, and any control message clears it, so a gate opening is felt
 at once rather than after the backoff.
 

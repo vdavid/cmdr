@@ -3,14 +3,16 @@
 //! [`load`] is the ONE place the loop reads them: `askCmdr.proactive` and `askCmdr.wakeDelay`,
 //! both re-read on every `SettingsChanged` control message so a change applies with no restart.
 //!
-//! ⚠️ **`proactive` ships FALSE.** M1 alone would create threads carrying an English digest
-//! frozen in `main.db`, with no indicator, no toast, and no readiness surface, so a release
-//! landing before those surfaces exist would hand beta users invisible threads. The end state is
-//! David's call; the default here only stages it.
+//! ⚠️ **`proactive` ships TRUE**, which is the whole point of the feature: the agent watches
+//! whenever consent and a working provider both exist. It is not the gate that decides that —
+//! `readiness.rs` still holds consent, disk access, and the key, and every one of them has to
+//! be open before a wake can spend anything. This setting is the user's own "no thanks",
+//! nothing more.
 //!
 //! ⚠️ **`settings.json` is SPARSE**, so both reads are `Option` and both defaults are spelled
-//! out. `unwrap_or_default()` would ship `false` forever for the boolean and a zero-second
-//! cadence for the delay, and a zero-second cadence is a wake per batch.
+//! out. `unwrap_or_default()` would silently ship `false` for the boolean, turning the feature
+//! off for every user who never opened the row, and a zero-second cadence for the delay, which
+//! is a wake per batch.
 
 use std::time::Duration;
 
@@ -20,7 +22,7 @@ use super::{DEFAULT_HOT_DELAY, MAX_HOT_DELAY, MIN_HOT_DELAY};
 
 /// The registry default for `askCmdr.proactive`, mirrored here because the store is sparse and
 /// an untouched row reaches Rust as an absent key rather than as a value.
-const PROACTIVE_DEFAULT: bool = false;
+const PROACTIVE_DEFAULT: bool = true;
 
 /// What the wake loop needs out of the user's settings. Values, so the loop re-reads on a
 /// change rather than holding a live reference to anything.
@@ -69,12 +71,16 @@ mod tests {
     use super::*;
     use crate::agent::wake::WAKE_DELAY_STOPS;
 
-    /// ⚠️ M1 ships the proactive gate CLOSED on purpose. A release landing between M1 and M2
-    /// would otherwise create threads the user has no indicator, toast, or readiness surface to
-    /// find. Flipping this is M2's deliberate act, not a side effect of wiring the setting.
+    /// ⚠️ The agent watches by default, which is the feature. It was staged shut while the
+    /// surfaces were being built — a release landing then would have created threads with no
+    /// indicator, toast, or readiness surface to find them by — and this pins that it stays
+    /// open. Turning it back off is a product decision, never a side effect of editing here.
+    ///
+    /// It is not the ONLY gate: `readiness.rs` still holds consent, disk access, and a working
+    /// provider, and a wake spends nothing until all three are open.
     #[test]
-    fn the_proactive_gate_ships_closed() {
-        assert!(!WakeSettings::default().proactive);
+    fn the_agent_watches_by_default() {
+        assert!(WakeSettings::default().proactive);
     }
 
     /// The cadence starts at the slider's attentive end, which is what `DEFAULT_HOT_DELAY`
@@ -85,16 +91,17 @@ mod tests {
     }
 
     /// ⚠️ **The sparse-store trap.** `settings.json` holds only what an actor explicitly set,
-    /// so both keys are absent for every user who has never opened the row. `unwrap_or_default`
-    /// on the two `Option`s would ship `false` and a zero-second cadence forever; the defaults
-    /// have to be the registry's own.
+    /// so both keys are absent for every user who has never opened the row — which is most of
+    /// them. `unwrap_or_default` on the two `Option`s would ship `false` and a zero-second
+    /// cadence forever, silently turning the feature off; the defaults have to be the
+    /// registry's own.
     #[test]
     fn an_untouched_settings_file_reads_as_the_registry_defaults() {
         assert_eq!(from_parts(None, None), WakeSettings::default());
     }
 
-    /// What the user actually chose wins, including turning the gate ON: the staged default is
-    /// a default, not a lock.
+    /// What the user actually chose wins in both directions: the default is a default, and
+    /// somebody who said no thanks must keep getting nothing.
     #[test]
     fn an_explicit_choice_beats_the_default_in_both_directions() {
         assert!(from_parts(Some(true), None).proactive);

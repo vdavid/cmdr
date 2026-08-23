@@ -178,7 +178,10 @@ export const aiSettings: SettingDefinitionSource[] = [
     // fourth gate the scheduler checks beside consent, disk access, and a provider.
     // The Rust loader mirrors this default explicitly (`WakeSettings::from_parts`):
     // the store is sparse, so an untouched row reaches the backend as an absent key.
-    default: false,
+    // ⚠️ ON by default, which is the feature. The other three gates are what keep it
+    // from doing anything for somebody who never opted into AI at all; this row is
+    // the user's own "no thanks".
+    default: true,
     component: 'switch',
   },
   {
