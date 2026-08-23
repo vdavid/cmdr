@@ -37,7 +37,7 @@ interest score, scores deadlines, and a wake turns whatever waits into one budge
   (`agent/chat/stream.rs`), bracketed by `Started` and, when it stays quiet, `Discarded`.
 - **The corner hears about it on a SEPARATE event** (`indicator.rs`, `agent-wake-status`): phase plus readiness, cleared
   on every exit so no stale spinner offers a click into a deleted thread. Its stop button is `ask_cmdr_cancel` on the
-  shared `agent::chat::cancel` registry, ❌ never a second mechanism.
+  shared `agent::chat::cancel` registry rather than a second mechanism.
 - **`askCmdr.proactive` ships FALSE** (`settings.rs`). ⚠️ `settings.json` is sparse: spell every default out, or
   `unwrap_or_default()` means a zero-second cadence.
 - **A cadence change RE-PRICES the inbox, not just the timer** (`Inbox::reprice`), since the merge is min-only.

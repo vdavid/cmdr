@@ -11,6 +11,8 @@
         'archive-restore': 'Unarchive action on an archived Ask Cmdr chat row in the sessions panel.',
         'arrow-left': 'Back button in the onboarding wizard.',
         'arrow-right': 'Rename metaphor between the current and new name in the Ask Cmdr bulk-rename review dialog.',
+        bot: 'The status-corner wake indicator while Ask Cmdr is running a conversation it started on its own.',
+        'brain-circuit': 'The status-corner wake indicator when Ask Cmdr is allowed to watch but a gate (Full Disk Access, or an API key) still stands in the way.',
         check: 'Selected-state check in onboarding cloud-provider rows, the settings checkbox, the select and combobox dropdowns, the breadcrumb volume menu, and the transfer scan-complete marker.',
         'chevron-down': 'Closed-state indicator on the combobox trigger, and the expand toggle in the download toast.',
         'chevron-right': 'Expand toggle for the per-file error list in the transfer error dialog.',

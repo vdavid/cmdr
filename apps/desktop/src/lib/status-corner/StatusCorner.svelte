@@ -12,7 +12,14 @@
     // `children` renders left of both. Members stay ordered here, in the corner
     // that owns placement, so the hourglass-stays-last rule is visible in one
     // file rather than spread across the callers.
+    //
+    // The wake indicator sits immediately LEFT of the suggestions badge, so the
+    // two AI glyphs read as one group. That side, not the other: the row is
+    // right-aligned and grows leftward, so a member that comes and goes with
+    // each wake can't be allowed to shove the persistent badge sideways every
+    // time the agent has a look at something.
     import type { Snippet } from 'svelte'
+    import WakeIndicator from '$lib/ask-cmdr/WakeIndicator.svelte'
     import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
     import SuggestedOpsIndicator from '$lib/suggested-ops/SuggestedOpsIndicator.svelte'
     import OperationChip from './OperationChip.svelte'
@@ -28,6 +35,7 @@
 <div class="status-corner">
     {@render children?.()}
     <OperationChip />
+    <WakeIndicator />
     <SuggestedOpsIndicator />
     <IndexingStatusIndicator />
 </div>

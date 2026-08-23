@@ -628,5 +628,21 @@
   "askCmdr.context.tooltip": "{usedText} av {budgetText} tokens använda (uppskattat)",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
+  },
+  "askCmdr.wake.thinking": "Ask Cmdr tittar på vad som har ändrats. Öppna chatten.",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "c4367ad"
+  },
+  "askCmdr.wake.stop": "Stoppa det Ask Cmdr håller på med",
+  "@askCmdr.wake.stop": {
+    "sourceHash": "6559df8"
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr kan bara bevaka mappar den kan se. Ställ in fullständig åtkomst till skivan.",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "sourceHash": "fd24fd2"
+  },
+  "askCmdr.wake.needsApiKey": "Ask Cmdr bevakar, men behöver en API-nyckel för att tänka. Öppna inställningarna.",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "e9b96e6"
   }
 }

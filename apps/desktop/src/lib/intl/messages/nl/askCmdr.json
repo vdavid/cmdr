@@ -631,5 +631,21 @@
   "askCmdr.context.tooltip": "{usedText} van {budgetText} tokens gebruikt (geschat)",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
+  },
+  "askCmdr.wake.thinking": "Ask Cmdr kijkt even naar wat er is veranderd. Open de chat.",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "c4367ad"
+  },
+  "askCmdr.wake.stop": "Stoppen waar Ask Cmdr mee bezig is",
+  "@askCmdr.wake.stop": {
+    "sourceHash": "6559df8"
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr kan alleen mappen bekijken die het kan zien. Stel volledige schijftoegang in.",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "sourceHash": "fd24fd2"
+  },
+  "askCmdr.wake.needsApiKey": "Ask Cmdr kijkt mee, maar heeft een API-sleutel nodig om te denken. Open de instellingen.",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "e9b96e6"
   }
 }

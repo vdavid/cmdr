@@ -629,5 +629,21 @@
   "askCmdr.context.tooltip": "{usedText} de {budgetText} tokens usados (estimado)",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
+  },
+  "askCmdr.wake.thinking": "Ask Cmdr está echando un vistazo a lo que ha cambiado. Abre el chat.",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "c4367ad"
+  },
+  "askCmdr.wake.stop": "Detener lo que está haciendo Ask Cmdr",
+  "@askCmdr.wake.stop": {
+    "sourceHash": "6559df8"
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr solo puede vigilar las carpetas que puede ver. Configura el acceso a todo el disco.",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "sourceHash": "fd24fd2"
+  },
+  "askCmdr.wake.needsApiKey": "Ask Cmdr está vigilando, pero necesita una clave de API para pensar. Abre los ajustes.",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "e9b96e6"
   }
 }

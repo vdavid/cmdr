@@ -627,5 +627,21 @@
   "askCmdr.context.tooltip": "已使用 {usedText} / {budgetText} 个 token（估算）",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
+  },
+  "askCmdr.wake.thinking": "Ask Cmdr 正在看看有哪些变化。打开聊天。",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "c4367ad"
+  },
+  "askCmdr.wake.stop": "停止 Ask Cmdr 正在做的事",
+  "@askCmdr.wake.stop": {
+    "sourceHash": "6559df8"
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr 只能观察它能看到的文件夹。设置完全磁盘访问权限。",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "sourceHash": "fd24fd2"
+  },
+  "askCmdr.wake.needsApiKey": "Ask Cmdr 正在观察，但需要 API 密钥才能思考。打开设置。",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "e9b96e6"
   }
 }

@@ -13,6 +13,8 @@ Wrappers in `../tauri-commands/ask-cmdr.ts`:
   (no consent, no slot, a local window too small). Those can't be streamed — half of them happen before there is a
   thread to key an event on.
 - `onAskCmdrTurn(cb)` — the subscription every turn's progress arrives on, rail sends and wakes alike.
+- `agentWakeStatus()` + `onAgentWakeStatus(cb)` — the wake indicator's seed and its subscription. See § The wake
+  indicator.
 - `cancelAskCmdr(id)`, `getAskCmdrConversation(id, limit, offset)`, `listAskCmdrConversations(...)` — plain specta
   commands.
 - `preflightBulkRename` / `reviseBulkRenameRow` / `applyBulkRename` / `cancelBulkRenameProposal` — the review dialog's
@@ -91,6 +93,45 @@ are ignored rather than re-adopted as a live turn.
 
 History loads through `getAskCmdrConversation` on rail open (bootstrapping the most recent thread) and folds `tool`-role
 result rows into their assistant tool line by `callId`, so the thread shows one line per call.
+
+## The wake indicator
+
+The status corner's word on the proactive half: `wake-indicator.svelte.ts` holds the state and the subscription,
+`WakeIndicator.svelte` renders it, and `routes/(main)/window-services.ts` starts it in the main window only (the event
+reaches every window, and only this one has a corner).
+
+**Its own event, not the turn stream.** `agent-wake-status` carries a `WakePhase` (`idle`, or `thinking` with the
+conversation id) plus the readiness gap. The turn stream carries a turn's PROGRESS to whoever is showing that thread;
+this carries a phase to a corner showing no thread at all, so folding them would subscribe the corner to every text
+delta of every rail send. The one read at startup is not redundant with the subscription: a wake already running when
+the window opened announced itself before anyone was listening, and so did a gate that closed before then.
+
+### What renders, and what does not
+
+`wakeIndicatorMode` is the whole decision, and it exists because two docs used to state the rule differently.
+`agent/wake/readiness.rs` held that every readiness gap is worth reporting: somebody who declined Full Disk Access and
+somebody with a tidy Downloads folder otherwise see the identical nothing, and only one of those is the feature working.
+`SuggestedOpsIndicator` held that an always-present control for a feature with nothing to say is noise. Read together
+literally, they put a permanent AI nag in front of every user who never wanted AI.
+
+The resolution: a gap is reported to somebody who opted IN and hit a wall, and to nobody else.
+
+- `silent` — no consent, or `askCmdr.proactive` off, or ready and idle. Nothing is being watched, or nothing has
+  happened, so the corner says nothing.
+- `thinking` — a wake is on a provider right now. ⚠️ This one renders REGARDLESS of the setting: it is spending the
+  user's money at that moment, and a forced wake (or a setting turned off mid-turn) must not be able to run invisibly.
+- `needsFullDiskAccess` / `needsApiKey` — the two closable gaps, each with the screen that closes it (the system privacy
+  pane, and AI > Provider).
+
+### Its two actions
+
+Clicking the thinking glyph runs `switchToThread(id)` and THEN `openRail()`. That order matters: a closed→open
+transition otherwise bootstraps the most recent thread and wastes a fetch on one we are about to replace. The turn's own
+events keep arriving on the conversation-keyed stream, so the rail fills in as the wake writes.
+
+The stop button is `cancelAskCmdr(id)`, the same command the composer's Stop calls. A wake registers its cancel token in
+the one registry (`agent/chat/cancel.rs`), so there is no wake-specific stop to keep in step — which is also why the
+registry lives below `commands/` rather than inside the chat command.
 
 ## Sessions, search, message paging
 

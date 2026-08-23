@@ -1,14 +1,20 @@
 # Status corner
 
 The main window's word on background work: the top-right row (`StatusCorner.svelte`, mounted once by
-`routes/(main)/+page.svelte`) hosting `OperationChip.svelte` and `$lib/indexing/IndexingStatusIndicator.svelte` (the
-hourglass), with any `children` to their left. The chip's pick-and-measure rules are pure, in `operation-chip.ts`;
+`routes/(main)/+page.svelte`) hosting `OperationChip.svelte`, `$lib/ask-cmdr/WakeIndicator.svelte`,
+`$lib/suggested-ops/SuggestedOpsIndicator.svelte`, and `$lib/indexing/IndexingStatusIndicator.svelte` (the hourglass),
+with any `children` to their left. The chip's pick-and-measure rules are pure, in `operation-chip.ts`;
 `operation-failure-watch.svelte.ts` raises the failure toast.
 
 ## Must-knows
 
-- **The corner owns placement, its members don't**: it carries the `position: absolute`, the offsets, and `--z-sticky`,
-  and each member is a plain inline box. The hourglass stays last; everything else renders left of it.
+- **The corner owns placement AND order, its members don't**: it carries the `position: absolute`, the offsets, and
+  `--z-sticky`, and each member is a plain inline box. The hourglass stays last; everything else renders left of it. ⚠️
+  A TRANSIENT member goes LEFT of a persistent one (the wake indicator left of the suggestions badge): the row is
+  right-aligned and grows leftward, so the other order shoves the persistent one sideways every time it appears.
+- **A member opens NO subscription at mount.** `StatusCorner.svelte.test.ts` and `StatusCorner.a11y.test.ts` mount the
+  real corner and stub neither the suggestions badge nor the wake indicator, so a listener in a member's `onMount`
+  breaks both suites. Each member's state lives in its own `*.svelte.ts`, started from `routes/(main)/`.
 - **No positioned ancestor, on purpose**: `.main-content` stays static, or the corner moves with it.
 - **The row is always mounted, so it's `pointer-events: none`** with `auto` on its children, or an empty box over the
   pane eats clicks.

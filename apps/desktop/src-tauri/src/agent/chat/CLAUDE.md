@@ -30,7 +30,7 @@ the crash cases, the numbers: `DETAILS.md`.
 - **Content is written only on `End`; the user row on the FIRST `End`.** The crash-safety contract
   (cases (a)–(d) in `DETAILS.md`, red-guarded). Don't pre-persist either row.
 - **The pure core is genuinely pure — keep it that way.** Offset, envelope, `CMDR.md`, and budget
-  all arrive as values; every context test runs with no tokio runtime. ❌ No `Utc::now()` and no
+  all arrive as values; every context test runs with no tokio runtime, with no `Utc::now()` and no
   filesystem in `context.rs`.
 - **Budget pressure NEVER touches the current turn's tool results** (`MIN_ELISION_TURNS_BACK`).
   Handed a stub instead of the content it was told to name files by, a model invents — that shipped,

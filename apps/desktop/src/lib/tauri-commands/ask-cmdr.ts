@@ -11,7 +11,6 @@ import {
   events,
   type AgentErrorKindView,
   type AgentWakeStatus,
-  type WakePhase,
   type WakeReadinessView,
   type AskCmdrStreamEvent,
   type AskCmdrTurn,
@@ -36,8 +35,6 @@ import {
 import { throwIpcError } from './ipc-types'
 
 export type {
-  AgentWakeStatus,
-  WakePhase,
   WakeReadinessView,
   AskCmdrStreamEvent,
   AskCmdrTurn,

@@ -627,5 +627,21 @@
   "askCmdr.context.tooltip": "{usedText} / {budgetText} token felhasználva (becsült)",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
+  },
+  "askCmdr.wake.thinking": "Az Ask Cmdr épp megnézi, mi változott. Nyisd meg a csevegést.",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "c4367ad"
+  },
+  "askCmdr.wake.stop": "Az Ask Cmdr éppen futó munkájának leállítása",
+  "@askCmdr.wake.stop": {
+    "sourceHash": "6559df8"
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Az Ask Cmdr csak azokat a mappákat tudja figyelni, amelyeket lát. Állítsd be a teljes lemezhozzáférést.",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "sourceHash": "fd24fd2"
+  },
+  "askCmdr.wake.needsApiKey": "Az Ask Cmdr figyel, de a gondolkodáshoz API-kulcs kell. Nyisd meg a beállításokat.",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "e9b96e6"
   }
 }

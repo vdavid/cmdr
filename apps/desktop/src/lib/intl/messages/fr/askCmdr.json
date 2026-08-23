@@ -629,5 +629,21 @@
   "askCmdr.context.tooltip": "{usedText} jetons utilisés sur {budgetText} (estimation)",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
+  },
+  "askCmdr.wake.thinking": "Ask Cmdr regarde ce qui a changé. Ouvrir la conversation.",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "c4367ad"
+  },
+  "askCmdr.wake.stop": "Arrêter ce que fait Ask Cmdr",
+  "@askCmdr.wake.stop": {
+    "sourceHash": "6559df8"
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr ne peut surveiller que les dossiers qu''il peut voir. Configurer l''accès complet au disque.",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "sourceHash": "fd24fd2"
+  },
+  "askCmdr.wake.needsApiKey": "Ask Cmdr surveille, mais il lui faut une clé d''API pour réfléchir. Ouvrir les réglages.",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "e9b96e6"
   }
 }

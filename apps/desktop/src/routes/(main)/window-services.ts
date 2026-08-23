@@ -24,6 +24,7 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { startAskCmdrTurnStream, stopAskCmdrTurnStream } from '$lib/ask-cmdr/ask-cmdr-turn-stream.svelte'
+import { startWakeIndicator, stopWakeIndicator } from '$lib/ask-cmdr/wake-indicator.svelte'
 import { startDragOutEventBridge } from '$lib/file-explorer/drag/drag-out-event-bridge'
 import { startOsMountNoticeBridge } from '$lib/file-explorer/network/os-mount-notice-bridge'
 import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
@@ -103,6 +104,10 @@ export function startEarlyWindowServices(): void {
   // turn it wasn't watching from the start (a reload, or a wake), and what tells the session
   // list a wake just opened a thread.
   void startAskCmdrTurnStream()
+  // The status corner's wake indicator: whether a wake is thinking right now, and which gate is
+  // in the way when the agent can't. Same reason as above, plus a gate can move before this
+  // window is up (the API key is set in another window entirely).
+  void startWakeIndicator()
 }
 
 /**
@@ -185,6 +190,7 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
 export function stopWindowServices(): void {
   stopSuggestedOpsBadge()
   stopAskCmdrTurnStream()
+  stopWakeIndicator()
   destroyIndexState()
   destroyMediaEnrichState()
   stopOperationFailureWatch()

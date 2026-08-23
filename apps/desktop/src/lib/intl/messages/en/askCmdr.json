@@ -880,5 +880,21 @@
   "@askCmdr.context.tooltip": {
     "description": "Tooltip on the context-usage gauge. usedText and budgetText are preformatted numbers (with thousands separators). Both are chars/4 estimates, never a tokenizer's count, so the copy says so.",
     "screenshot": "ask-cmdr-chat.png"
+  },
+  "askCmdr.wake.thinking": "Ask Cmdr is having a look at what changed. Open the chat.",
+  "@askCmdr.wake.thinking": {
+    "description": "Tooltip and spoken label on the status-corner indicator shown while Ask Cmdr is running a conversation it started on its own. Pressing it opens that chat in the rail, which is what the second sentence promises. Sentence case; two short sentences, because the label has to say both what is happening and what pressing it does."
+  },
+  "askCmdr.wake.stop": "Stop what Ask Cmdr is doing",
+  "@askCmdr.wake.stop": {
+    "description": "Spoken label and tooltip on the small stop button beside that indicator, which ends the conversation Ask Cmdr started on its own. Longer than the rail's bare \"Stop\" on purpose: this button carries no visible text and sits in the window corner, so the label is the only thing naming what it stops. Sentence case, no full stop."
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr can only watch folders it can see. Set up full disk access.",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "description": "Tooltip and spoken label on the status-corner indicator shown when the user let Ask Cmdr watch their folders but macOS Full Disk Access is still outstanding, so the agent can only see part of the disk. Pressing it opens the system privacy settings. Only ever shown to somebody who opted in, so it reads as a step left to finish, never as a warning. The second sentence names Apple's own setting: use the same wording as `search.coverage.setUpFullDiskAccess` so the two surfaces agree. Sentence case."
+  },
+  "askCmdr.wake.needsApiKey": "Ask Cmdr is watching, but it needs an API key to think. Open settings.",
+  "@askCmdr.wake.needsApiKey": {
+    "description": "Tooltip and spoken label on the status-corner indicator shown when the user let Ask Cmdr watch their folders but no AI provider is configured, so nothing can be sent anywhere. Pressing it opens Cmdr's AI settings. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case."
   }
 }

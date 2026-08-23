@@ -629,5 +629,21 @@
   "askCmdr.context.tooltip": "{usedText} von {budgetText} Tokens genutzt (geschätzt)",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
+  },
+  "askCmdr.wake.thinking": "Ask Cmdr schaut sich gerade an, was sich geändert hat. Chat öffnen.",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "c4367ad"
+  },
+  "askCmdr.wake.stop": "Anhalten, was Ask Cmdr gerade tut",
+  "@askCmdr.wake.stop": {
+    "sourceHash": "6559df8"
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr kann nur Ordner beobachten, die es sehen kann. Festplattenzugriff einrichten.",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "sourceHash": "fd24fd2"
+  },
+  "askCmdr.wake.needsApiKey": "Ask Cmdr beobachtet, braucht zum Denken aber einen API-Schlüssel. Einstellungen öffnen.",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "e9b96e6"
   }
 }

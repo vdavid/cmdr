@@ -4,6 +4,11 @@
     // A plain inline box, because the corner owns placement (`status-corner/CLAUDE.md`). It
     // hides at zero rather than showing an empty badge: an always-present control for a feature
     // that has nothing to say is noise in the one corner reserved for work in progress.
+    //
+    // `WakeIndicator` beside it follows the same rule, with the one refinement that reconciles
+    // it against `agent/wake/readiness.rs` (which holds that every readiness gap is worth
+    // reporting): a gap IS something to say, but only to somebody who opted in. Nothing shows
+    // for a user who never consented or who turned the proactive loop off.
     import Icon from '$lib/ui/Icon.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'

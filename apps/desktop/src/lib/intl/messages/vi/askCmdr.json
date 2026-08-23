@@ -627,5 +627,21 @@
   "askCmdr.context.tooltip": "Đã dùng {usedText} trên {budgetText} token (ước tính)",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
+  },
+  "askCmdr.wake.thinking": "Ask Cmdr đang xem qua những gì đã thay đổi. Mở cuộc trò chuyện.",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "c4367ad"
+  },
+  "askCmdr.wake.stop": "Dừng việc Ask Cmdr đang làm",
+  "@askCmdr.wake.stop": {
+    "sourceHash": "6559df8"
+  },
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr chỉ theo dõi được những thư mục nó nhìn thấy. Thiết lập quyền truy cập toàn bộ đĩa.",
+  "@askCmdr.wake.needsFullDiskAccess": {
+    "sourceHash": "fd24fd2"
+  },
+  "askCmdr.wake.needsApiKey": "Ask Cmdr đang theo dõi, nhưng cần khóa API để suy nghĩ. Mở cài đặt.",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "e9b96e6"
   }
 }

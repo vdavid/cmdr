@@ -4,7 +4,8 @@ Depth for `CLAUDE.md`. Up: `apps/desktop/src/CLAUDE.md`.
 
 ## What's here
 
-- `StatusCorner.svelte`: the row. One optional `children` snippet, then `OperationChip`, then `IndexingStatusIndicator`.
+- `StatusCorner.svelte`: the row. One optional `children` snippet, then `OperationChip`, then `WakeIndicator`, then
+  `SuggestedOpsIndicator`, then `IndexingStatusIndicator`.
 - `OperationChip.svelte`: the corner chip (markup, copy, and the settle timer), in either of its two states.
 - `operation-chip.ts`: pure — what the corner has to say (`pickChipState`), which operation it previews, how full its
   bar is, and the destination name its tooltip uses.
@@ -46,7 +47,18 @@ A member is a plain inline box:
 
 The hourglass renders last so the eye finds it in the same place regardless of what else is showing. A member this
 module owns renders inline, before it; a member owned elsewhere arrives through `children`, which keeps the corner from
-importing half the app.
+importing half the app. The two AI members break that last rule on purpose and are NAMED imports, because David placed
+them between the chip and the hourglass and `children` renders left of both — the corner owns ordering, and having it
+visible in one file beats spreading it across the callers.
+
+Among those two, the wake indicator goes on the LEFT. The row is right-aligned and shrink-to-fit, so it grows leftward:
+a member that comes and goes with every wake would otherwise shove the persistent suggestions badge sideways each time
+the agent had a look at something. The transient member takes the moving edge.
+
+⚠️ **A member must open no subscription at mount.** `StatusCorner.svelte.test.ts` and `StatusCorner.a11y.test.ts` mount
+the real corner with the AI members unstubbed, so a listener in a member's `onMount` breaks both. Each member reads
+module `$state` that a `*.svelte.ts` populates, started from `routes/(main)/window-services.ts`. Both AI members are
+also silent in their default state, which is what lets those suites mount them without any setup at all.
 
 ## The operation chip
 

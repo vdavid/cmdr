@@ -362,8 +362,6 @@ export {
   onAgentWakeStatus,
 } from './ask-cmdr'
 export type {
-  AgentWakeStatus,
-  WakePhase,
   WakeReadinessView,
   AskCmdrStreamEvent,
   AskCmdrTurn,
