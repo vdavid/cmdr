@@ -268,6 +268,15 @@ test.describe('Ask Cmdr wakes on its own', () => {
     expect(toast).toContain('Review')
     expect(toast).toContain('See why')
 
+    // The group really landed: the suggestions badge is the surface that promises completeness,
+    // and the toast is only a nudge towards it.
+    await expect
+      .poll(
+        () => page.evaluate<boolean>(`document.querySelector('.status-corner .indicator') !== null`),
+        { timeout: 10000 },
+      )
+      .toBe(true)
+
     // ⚠️ Put the fake back before asserting anything else: the script sticks, and a later spec
     // forcing a wake would otherwise stage another group.
     await forceAgentWake(page, `/Users/e2e/${folderName}-done`, 'reply')
