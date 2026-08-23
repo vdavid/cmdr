@@ -3,7 +3,7 @@
  * trigger/popover lifecycle and the writes back to the settings store.
  *
  * The pure keyboard helper has its own tests in `swatch-keyboard.test.ts`,
- * and the a11y tier lives in `SettingColorSwatchPicker.a11y.test.ts`.
+ * and the a11y tier lives in the `SettingColorSwatchPicker` block of `setting-components.a11y.test.ts`.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'

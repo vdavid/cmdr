@@ -4,7 +4,7 @@
  * query matching a registry command — including `showInPalette: false` ones
  * like "Open command palette" (regression: palette-only search hid it).
  *
- * Same global mocks as `SettingsContent.a11y.test.ts`: child sections pull
+ * Same global mocks as `setting-components.a11y.test.ts`: child sections pull
  * heavy state, so the Tauri boundaries are stubbed.
  */
 

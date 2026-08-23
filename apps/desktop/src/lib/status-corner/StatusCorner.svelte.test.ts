@@ -4,7 +4,7 @@
  * not the hourglass — carries the corner placement.
  *
  * The indexing state and the volume store are stubbed the same way
- * `$lib/indexing/IndexingStatusIndicator.a11y.test.ts` stubs them, so the
+ * the `IndexingStatusIndicator` block of `$lib/indexing/stateful.a11y.test.ts` stubs them, so the
  * hourglass can be driven between idle and scanning without a real indexer.
  */
 

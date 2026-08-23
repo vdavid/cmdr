@@ -1,7 +1,7 @@
 /**
  * Behavior tests for `Switch.svelte`.
  *
- * The a11y sibling (`Switch.a11y.test.ts`) covers the axe audit and the basic toggle; this file
+ * The a11y sibling (the `Switch` block of `controls.a11y.test.ts`) covers the axe audit and the basic toggle; this file
  * pins the parts a consumer relies on: the ARIA role Ark gives the hidden input, the disabled
  * control refusing to change, and the label snippet rendering next to the track.
  */

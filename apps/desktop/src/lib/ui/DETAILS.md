@@ -596,7 +596,7 @@ Open state is left uncontrolled (owned by Ark) with `openOnClick`: clicking the 
 input's focus — the trigger focuses the input on click, so a focus-open handler races the trigger's toggle and flashes
 the popup shut. Same standardized Lucide chevron as `Select`. No `Portal`, no entrance animation. Covered by
 `Combobox.svelte.test.ts` (the empty-list / custom-value / list-arrives-after-fetch invariants, plus the click-select
-path) and `Combobox.a11y.test.ts`.
+path) and the `Combobox` block of `overlays.a11y.test.ts`.
 
 ## Popover
 
@@ -1193,7 +1193,7 @@ resets to a default. `thumbProps` spreads onto the thumb, which is where `data-t
 
 ❌ Never render `Slider.HiddenInput`: nothing here posts a form, and a focusable input inside the thumb trips axe's
 nested-interactive and unlabeled-input rules. The readout, ticks, and end labels are all `aria-hidden` too, since the
-slider already announces its own value and bounds. `Slider.a11y.test.ts` pins both.
+slider already announces its own value and bounds. The `Slider` block of `text-inputs.a11y.test.ts` pins both.
 
 The range fill animates on `--transition-base`, dropped under `prefers-reduced-motion` (WKWebView honors that one).
 

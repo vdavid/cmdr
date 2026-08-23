@@ -104,7 +104,7 @@ sections compose).
   (`dialogId: 'delete-ai-model'`, `role="alertdialog"`). Props are `modelSizeFormatted` / `isDeleting` / `onConfirm` /
   `onCancel`; the section owns the flags and the `uninstallAi()` call, so the dialog performs nothing itself. While
   `isDeleting` the title, body, and both buttons change and Escape and Enter are inert, so an uninstall in flight can't
-  be cancelled or double-fired (pinned by `DeleteAiModelDialog.a11y.test.ts`). It's the only settings dialog the
+  be cancelled or double-fired (pinned by the `DeleteAiModelDialog` block of `sections.a11y.test.ts`). It's the only settings dialog the
   dev-only dialog gallery can open; see `lib/dialog-gallery/DETAILS.md`.
 - **`ImageIndexingSection.svelte`**: `Indexing › Image indexing` subsection (second subsection of Indexing): on-device
   image-content (OCR) search. One `SectionCard` (titled by `settings.mediaIndex.card`) holding the `mediaIndex.enabled`
@@ -210,7 +210,8 @@ sections compose).
   anyway"; `reservedByMacOsMessage` / `fixedKeyMessage` / `systemShortcutMessage`). Native > fixed > normal in mixed
   sets; system checked only when no in-app conflict. Unit-tested
 
-Each section ships with an `*.a11y.test.ts` (axe-core tier-3). `McpServerSection`, `UpdatesSection`, `SearchSection`,
+Every section is axe-audited (tier-3) from one of the four directory-level `*.a11y.test.ts` files here, because
+`svelte-tests` charges per test FILE (`docs/testing.md` § "What a test actually costs"). `McpServerSection`, `UpdatesSection`, `SearchSection`,
 `DriveIndexingSection`, `NotificationsSection`, and `KeyboardShortcutsSection` also have functional `*.test.ts` /
 `*.svelte.test.ts` files; the pure-helper `.ts` files have unit tests next to them.
 `NotificationsSection.svelte.test.ts` and `DriveIndexingSection.svelte.test.ts` each pin their section's render contract

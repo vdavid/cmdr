@@ -1,6 +1,6 @@
 /**
  * Behavior tests for `ModalDialog.svelte`. Tier-3 a11y wiring lives in
- * `ModalDialog.a11y.test.ts`. This file covers focus restoration on close, the
+ * the `ModalDialog` block of `overlays.a11y.test.ts`. This file covers focus restoration on close, the
  * Enter-on-focused-button suppression, resizing, and the MCP close registry.
  */
 
