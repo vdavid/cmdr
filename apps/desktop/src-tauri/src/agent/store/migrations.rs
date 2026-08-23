@@ -77,6 +77,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "agent_inbox.deliver_by is nullable, so a cold row rides along without a deadline",
         up: migrate_v7_nullable_deliver_by,
     },
+    Migration {
+        version: 8,
+        description: "the reserved quiet-wakes thread, so a deleted noop wake still leaves its cost behind",
+        up: migrate_v8_quiet_wakes_thread,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
@@ -441,4 +446,33 @@ fn migrate_v7_nullable_deliver_by(tx: &Transaction<'_>) -> rusqlite::Result<()> 
         CREATE INDEX agent_inbox_deliver_by ON agent_inbox (deliver_by);
         ",
     )
+}
+
+/// One reserved conversation row that holds what QUIET wakes spent, so deleting their threads
+/// doesn't erase the proactive agent's cost.
+///
+/// A wake that finds nothing leaves no thread (`agent/wake/`), and `cost_meter.conversation_id`
+/// is `ON DELETE CASCADE`, so the plain delete would take the spend with it — out of the one
+/// place the user can see what the proactive agent costs.
+///
+/// ⚠️ **`ON DELETE SET NULL` is not available here.** The column is `NOT NULL` on purpose:
+/// SQLite treats NULLs as distinct in a PK, so a nullable column inside `cost_meter`'s PK breaks
+/// `ON CONFLICT DO UPDATE` and every write inserts a duplicate instead of upserting (see
+/// [`migrate_v1_initial`]). A real row for the totals to point at is what keeps the upsert
+/// working.
+///
+/// The title is empty on purpose: nothing renders this row, so an English string here would be
+/// untranslated copy frozen in the database with no reader. Its identity is the `quiet_wakes`
+/// origin token, which is also what `list_conversations` hides it by.
+fn migrate_v8_quiet_wakes_thread(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|since| since.as_secs() as i64)
+        .unwrap_or(0);
+    tx.execute(
+        "INSERT INTO conversations (title, created_at, updated_at, archived, origin)
+         VALUES ('', ?1, ?1, 0, 'quiet_wakes')",
+        rusqlite::params![now],
+    )?;
+    Ok(())
 }

@@ -73,6 +73,30 @@ ANDs on conflict, so a day/thread/model that ever took an unpriced contribution 
 honest lower bound ("unknown"), never a silent $0 (spec §2.4). The per-day cross-thread rollup (`cost_summary`) sums with
 `GROUP BY day` and reads `fully_priced` from `MIN(priced)`.
 
+## v8: the reserved quiet-wakes thread
+
+A wake that finds nothing leaves no thread (`agent/wake/`), which means DELETING the conversation it opened to think in.
+`cost_meter.conversation_id` cascades, so the plain delete would take the spend with it — out of the one place the user
+can see what the proactive agent costs them. Over a week of quiet wakes that is the whole proactive bill, silently zero.
+
+**Why not `ON DELETE SET NULL`.** Because of the trap above: the column is NOT NULL so the upsert works at all. Making
+it nullable to hold an orphaned total would break `ON CONFLICT DO UPDATE` for every ordinary turn, which is a far worse
+bug than the one it fixes.
+
+**What v8 does instead.** It inserts exactly one conversation row with origin `quiet_wakes` and an empty title. Before
+deleting a quiet wake's thread, `discard_conversation_keeping_cost` folds that thread's `cost_meter` rows onto the
+reserved id, through the same `ON CONFLICT (day, conversation_id, provider, model) DO UPDATE` shape `record_cost` uses,
+with `priced = priced AND excluded.priced` so one unpriced quiet wake makes the reserved total an honest lower bound.
+Fold and delete share one transaction, so a crash between them cannot drop the spend.
+
+**Why an origin token rather than a fixed id.** `list_conversations` hides the row by `origin IS NOT 'quiet_wakes'`
+(`IS NOT`, because `<>` answers NULL for the common NULL origin and would empty the list), and M2's thread icon reads
+the same token set, so one vocabulary covers both. A fixed id would also have to be negative to avoid colliding with
+`INTEGER PRIMARY KEY` allocation, which then hands the next real thread id `0`.
+
+The title is empty on purpose: nothing renders this row, so an English string would be untranslated copy frozen in the
+database with no reader.
+
 ## v4: the proposal spine
 
 `proposal_sets` / `proposals` / `proposal_ops` / `proposal_acceptances`, the durable half of the suggested-ops feature.

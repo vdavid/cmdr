@@ -4524,7 +4524,15 @@ export type ConversationDetailView = {
  *  v1 never writes a non-null origin; `Notification` is the forward-compat surface
  *  the column exists to hold.
  */
-export type ConversationOrigin = 'notification'
+export type ConversationOrigin =
+  | 'notification'
+  /**
+   *  The one reserved row, created by migration v8 and never shown: it holds what
+   *  quiet wakes spent, after their own threads are deleted. It needs a token of its
+   *  own rather than masquerading as a wake thread, because the session list hides it
+   *  by exactly this token and the rail's thread icon reads the same set.
+   */
+  | 'quietWakes'
 
 // A conversation header row. Wire type (the thread list).
 export type ConversationRow = {

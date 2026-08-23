@@ -53,6 +53,11 @@ token_enum! {
     /// the column exists to hold.
     pub enum ConversationOrigin {
         Notification => "notification",
+        /// The one reserved row, created by migration v8 and never shown: it holds what
+        /// quiet wakes spent, after their own threads are deleted. It needs a token of its
+        /// own rather than masquerading as a wake thread, because the session list hides it
+        /// by exactly this token and the rail's thread icon reads the same set.
+        QuietWakes => "quiet_wakes",
     }
 }
 

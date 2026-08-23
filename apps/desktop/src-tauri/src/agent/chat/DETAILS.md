@@ -235,7 +235,7 @@ limits**:
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
   row's 59 tokens, so **101**.
 
-27 files at 16,000, 68 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
+26 files at 16,000, 67 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
 crossover the reply's ceiling binds and a bigger window buys no bigger batch.
 
 **Both limits are load-bearing.** The number is advertised to the model as "propose this many files" and the model
@@ -278,7 +278,7 @@ the test and this section together.
 - **A 100-file content-based rename: 41,554 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
-- So **60k does 100 files, 16k does roughly 27** (`files_per_batch` says 101 and 27). A model's window must exceed the
+- So **60k does 100 files, 16k does roughly 26** (`files_per_batch` says 101 and 26). A model's window must exceed the
   whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 
 ## The runtime (`runtime/`)

@@ -82,6 +82,15 @@ fn say(text: &'static str) -> impl Fn(i64) -> Box<dyn AgentLlm> {
     move |_| Box::new(FakeAgentLlm::script(vec![ScriptedTurn::Say(vec![text.to_string()])]))
 }
 
+/// How many threads a user would see. ❌ Never a bare `COUNT(*) FROM conversations`: the store
+/// reserves one hidden row for what quiet wakes spent, and counting it reads as a thread a wake
+/// opened.
+fn visible_threads(conn: &Connection) -> i64 {
+    crate::agent::store::list_conversations(conn, 100, 0, true)
+        .expect("list threads")
+        .len() as i64
+}
+
 fn no_tools(_conversation_id: i64) -> Box<dyn ToolDispatcher> {
     Box::new(NoTools)
 }
@@ -184,9 +193,7 @@ async fn a_closed_gate_creates_no_thread_and_keeps_the_backlog() {
 
     assert!(matches!(outcome, WakeOutcome::NotReady(WakeReadiness::NeedsApiKey)));
     assert_eq!(inbox.len(), 1, "the backlog waits for the key");
-    let threads: i64 = conn
-        .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
-        .expect("count");
+    let threads = visible_threads(&conn);
     assert_eq!(threads, 0, "nothing was opened");
 }
 
@@ -270,9 +277,7 @@ fn a_prepare_that_cannot_render_a_digest_keeps_the_backlog() {
     assert!(matches!(outcome, PrepareOutcome::NothingDue), "{outcome:?}");
     assert_eq!(inbox.len(), 1, "the backlog is exactly as it was");
     assert_eq!(load(&conn).expect("read").len(), 1, "and so is the table");
-    let threads: i64 = conn
-        .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
-        .expect("count");
+    let threads = visible_threads(&conn);
     assert_eq!(threads, 0, "nothing was opened");
 }
 
@@ -335,9 +340,7 @@ fn a_forced_prepare_still_obeys_the_gates() {
         matches!(outcome, PrepareOutcome::NotReady(WakeReadiness::NeedsConsent)),
         "{outcome:?}"
     );
-    let threads: i64 = conn
-        .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
-        .expect("count");
+    let threads = visible_threads(&conn);
     assert_eq!(threads, 0, "nothing was opened");
 }
 
@@ -360,9 +363,7 @@ fn a_forced_prepare_on_an_empty_inbox_opens_nothing() {
     );
 
     assert!(matches!(outcome, PrepareOutcome::NothingDue), "{outcome:?}");
-    let threads: i64 = conn
-        .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
-        .expect("count");
+    let threads = visible_threads(&conn);
     assert_eq!(threads, 0);
 }
 

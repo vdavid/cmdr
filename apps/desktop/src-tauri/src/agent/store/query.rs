@@ -181,24 +181,92 @@ const CONVERSATION_COLUMNS: &str = "id, title, created_at, updated_at, archived,
 
 /// Conversations newest-activity first, paged. `include_archived = false` filters the
 /// archived flag; the `conversations_updated` index serves the order.
+///
+/// The reserved `quiet_wakes` ledger row is filtered out either way — it is a cost total, not
+/// a conversation, and `include_archived` is about threads the user set aside, not about
+/// bookkeeping. `IS NOT` rather than `<>` because the common case is a NULL origin, which `<>`
+/// would answer NULL to and drop every user thread from the list.
 pub fn list_conversations(
     conn: &Connection,
     limit: u32,
     offset: u32,
     include_archived: bool,
 ) -> Result<Vec<ConversationRow>, AgentStoreError> {
-    let where_sql = if include_archived { "" } else { "WHERE archived = 0" };
+    let visible = "origin IS NOT ?3";
+    let where_sql = if include_archived {
+        format!("WHERE {visible}")
+    } else {
+        format!("WHERE archived = 0 AND {visible}")
+    };
     let sql = format!(
         "SELECT {CONVERSATION_COLUMNS} FROM conversations {where_sql} \
          ORDER BY updated_at DESC, id DESC LIMIT ?1 OFFSET ?2"
     );
     let mut stmt = conn.prepare_cached(&sql)?;
-    let mut rows = stmt.query(rusqlite::params![limit, offset])?;
+    let mut rows = stmt.query(rusqlite::params![
+        limit,
+        offset,
+        ConversationOrigin::QuietWakes.as_token()
+    ])?;
     let mut out = Vec::new();
     while let Some(row) = rows.next()? {
         out.push(map_conversation_row(row)?);
     }
     Ok(out)
+}
+
+/// The id of the reserved thread that holds what quiet wakes spent. Created by migration v8,
+/// so it is present on every store this build opens; the `Err` is for a DB somebody edited by
+/// hand, and its callers keep the thread rather than lose its cost record.
+pub fn quiet_wakes_conversation(conn: &Connection) -> Result<i64, AgentStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT id FROM conversations WHERE origin = ?1 ORDER BY id LIMIT 1")?;
+    let mut rows = stmt.query(rusqlite::params![ConversationOrigin::QuietWakes.as_token()])?;
+    match rows.next()? {
+        Some(row) => Ok(row.get(0)?),
+        None => Err(AgentStoreError::Decode {
+            column: "origin",
+            value: ConversationOrigin::QuietWakes.as_token().to_string(),
+        }),
+    }
+}
+
+/// Delete a conversation outright. Its messages, cost rows, and proposals cascade, and the FTS
+/// delete trigger de-indexes its text.
+///
+/// The store's one delete: everything else archives. It exists for the thread a QUIET wake
+/// opened, which the user must never see. Fold the cost first with
+/// [`discard_conversation_keeping_cost`] rather than calling this on a thread that spent
+/// anything.
+pub fn delete_conversation(conn: &Connection, id: i64) -> Result<(), AgentStoreError> {
+    conn.execute("DELETE FROM conversations WHERE id = ?1", rusqlite::params![id])?;
+    Ok(())
+}
+
+/// Move one conversation's cost rows onto the reserved quiet-wakes thread, then delete the
+/// conversation. Both in one transaction, so a crash between them can't drop the spend.
+///
+/// ⚠️ The fold is the same `ON CONFLICT (day, conversation_id, provider, model) DO UPDATE`
+/// shape [`record_cost`] uses, and `priced` carries as `priced AND excluded.priced` for the
+/// same reason: a reserved row that absorbed one unpriced turn is a LOWER BOUND, and claiming
+/// a complete price it doesn't have is exactly the silent-$0 the meter exists to prevent.
+pub fn discard_conversation_keeping_cost(conn: &Connection, id: i64) -> Result<(), AgentStoreError> {
+    let reserved = quiet_wakes_conversation(conn)?;
+    let tx = conn.unchecked_transaction()?;
+    tx.execute(
+        "INSERT INTO cost_meter
+            (day, conversation_id, provider, model, prompt_tokens, completion_tokens, cost_micros, priced)
+         SELECT day, ?2, provider, model, prompt_tokens, completion_tokens, cost_micros, priced
+           FROM cost_meter WHERE conversation_id = ?1
+         ON CONFLICT (day, conversation_id, provider, model) DO UPDATE SET
+            prompt_tokens     = prompt_tokens + excluded.prompt_tokens,
+            completion_tokens = completion_tokens + excluded.completion_tokens,
+            cost_micros       = cost_micros + excluded.cost_micros,
+            priced            = priced AND excluded.priced",
+        rusqlite::params![id, reserved],
+    )?;
+    tx.execute("DELETE FROM conversations WHERE id = ?1", rusqlite::params![id])?;
+    tx.commit()?;
+    Ok(())
 }
 
 /// Rename a conversation. Does not touch `updated_at` (that tracks message activity, not

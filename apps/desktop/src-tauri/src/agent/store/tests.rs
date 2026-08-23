@@ -109,11 +109,12 @@ fn unparseable_file_recreates_fresh() {
         MIGRATIONS.last().expect("ladder non-empty").version,
         "the recreated DB is at the current schema version"
     );
-    let count: i64 = store
-        .conn()
-        .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
-        .expect("the conversations table exists and reads");
-    assert_eq!(count, 0, "the recreated DB has the real schema and no rows");
+    let threads = list_conversations(store.conn(), 50, 0, true).expect("the conversations table exists and reads");
+    assert!(
+        threads.is_empty(),
+        "the recreated DB has the real schema and no threads"
+    );
+    quiet_wakes_conversation(store.conn()).expect("only the reserved cost-ledger row, which nothing lists");
 }
 
 /// A fresh `AgentStore::open` on a new path builds the full production schema at the
@@ -210,7 +211,7 @@ where
 #[test]
 fn conversation_origin_tokens_round_trip() {
     assert_token_round_trip(
-        &[ConversationOrigin::Notification],
+        &[ConversationOrigin::Notification, ConversationOrigin::QuietWakes],
         |o| o.as_token(),
         ConversationOrigin::from_token,
     );

@@ -26,24 +26,26 @@ spine. Depth (DDL rationale, the FTS design, the search-JOIN gotcha, no-retentio
   `AND`/`OR`/`NOT`, an unbalanced `"`) throw an fts5 syntax error, and parameter binding does NOT help (the string is
   parsed as query syntax). Always route through `sanitize_fts_query`.
 - **`search_conversations` JOINs the FTS match back to `messages`, which MASKS orphan index rows**, so a broken delete
-  trigger looks fine through search. Test de-index correctness against the FTS index directly
-  (`SELECT COUNT(*) FROM messages_fts WHERE … MATCH …`), never only through the search API. External-content FTS5 is
-  easy to desync; this is the top DB risk here.
+  trigger looks fine through search. External-content FTS5 desyncs easily (the top DB risk here), so test de-indexing
+  against `messages_fts` directly, never only through the search API.
 - **`cost_meter.conversation_id` is NOT NULL by necessity.** SQLite treats NULLs as distinct in a PK, so a nullable
   column inside the PK breaks `ON CONFLICT DO UPDATE` (every write inserts a duplicate instead of upserting). Keep it NOT
   NULL; the per-day cross-thread rollup is computed at query time (`SUM … GROUP BY day`).
-- **`content_blocks` is a backend-only column.** It carries the opaque provider reasoning blob, which must NEVER cross to
-  the frontend. `StoredMessage` is deliberately not a wire type; the IPC layer derives a display `MessageView`.
+- **One reserved conversation row nothing lists** (origin `quiet_wakes`, v8) keeps what quiet wakes spent once their
+  threads are deleted. ❌ Never count threads with a bare `COUNT(*) FROM conversations`. `delete_conversation` is the
+  store's one delete; a thread that spent anything goes through `discard_conversation_keeping_cost`, which folds its
+  cost onto that row first. `DETAILS.md` § v8.
+- **`content_blocks` is a backend-only column**: it carries the opaque provider reasoning blob, which must NEVER cross
+  to the frontend. `StoredMessage` is not a wire type; the IPC layer derives a display `MessageView`.
 - **`role = 'event'` rows are UI timeline entries (typed `ConversationEvent`), NEVER transcript content.** The token
-  lives outside `AgentRole` on purpose, so the transcript loader can't feed one to a provider — a new reader of
-  `messages` must branch on `StoredContent` and decide what an event row means for it. They carry no `text_for_search`
-  (never searchable). `conversations.last_model` (v2) records the last turn's model to power model-change events.
-- **Consent lives in the `meta` table, not a settings preference.** `get_consent`/`set_consent`/`clear_consent`
-  read/write the `ask_cmdr_consent_version` + `ask_cmdr_consent_at` meta rows (agent state, `sqlite3`-inspectable). A
-  partial/absent record reads as no consent, so the gate fails CLOSED. The copy version is owned by
-  `agent::consent::CONSENT_COPY_VERSION`, not here.
-- **`conversation_cost` sums a thread's whole cost meter and ANDs `priced`** (any unpriced turn ⇒ `fully_priced = false`),
-  so the per-thread footer renders the honest miss-path (local ⇒ free; unpriced ⇒ unknown; never a silent $0). Pricing
-  itself is `crate::agent::pricing`, not the store.
+  lives outside `AgentRole` so the transcript loader can't feed one to a provider; a new reader of `messages` branches
+  on `StoredContent` and decides what an event means for it. They carry no `text_for_search`.
+  `conversations.last_model` (v2) records the last turn's model, powering model-change events.
+- **Consent lives in the `meta` table, not a settings preference.** `get_consent`/`set_consent`/`clear_consent` own the
+  `ask_cmdr_consent_version` + `ask_cmdr_consent_at` rows; a partial or absent record reads as no consent, so the gate
+  fails CLOSED. The copy version belongs to `agent::consent::CONSENT_COPY_VERSION`, not here.
+- **`conversation_cost` sums a thread's cost meter and ANDs `priced`** (any unpriced turn ⇒ `fully_priced = false`), so
+  the footer stays honest: local ⇒ free, unpriced ⇒ unknown, never a silent $0. Pricing itself is
+  `crate::agent::pricing`.
 
 Depth: `DETAILS.md`.

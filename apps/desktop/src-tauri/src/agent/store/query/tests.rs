@@ -509,3 +509,116 @@ fn cost_rollup_marks_a_day_unpriced_when_any_row_is_unpriced() {
         "a day with any unpriced row reads unpriced, so cost shows 'unknown', never a silent $0"
     );
 }
+
+// ── Deleting a thread, and the cost record that outlives it ──────────────────
+
+/// The one delete in the store, and it takes the whole thread with it: messages cascade, and
+/// the FTS index de-indexes them through the delete trigger. Archiving was the alternative and
+/// was rejected for the case this exists for — "we looked and found nothing" fifty times is not
+/// a record worth keeping, archived or not.
+#[test]
+fn deleting_a_conversation_takes_its_messages_and_its_search_rows() {
+    let conn = migrated_conn();
+    let id = create_conversation(&conn, "gone soon", 10, None).expect("create");
+    let keeper = create_conversation(&conn, "stays", 10, None).expect("create keeper");
+    append_user_text(&conn, id, "findmeplease", 20);
+    append_user_text(&conn, keeper, "findmeplease", 20);
+    assert_eq!(search_ids(&conn, "findmeplease").len(), 2);
+
+    delete_conversation(&conn, id).expect("delete");
+
+    assert!(get_conversation(&conn, id, 10, 0).expect("get").is_none());
+    let messages: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM messages WHERE conversation_id = ?1",
+            rusqlite::params![id],
+            |row| row.get(0),
+        )
+        .expect("count");
+    assert_eq!(messages, 0, "messages cascade with the thread");
+    assert_eq!(
+        search_ids(&conn, "findmeplease"),
+        vec![keeper],
+        "the deleted thread left the FTS index too"
+    );
+}
+
+/// The reserved thread that holds what quiet wakes spent exists from the migration and is
+/// invisible in the session list, archived or not. It is a ledger row, not a conversation:
+/// the user never opened it and can never reply to it.
+#[test]
+fn the_reserved_quiet_wakes_thread_never_shows_in_the_session_list() {
+    let conn = migrated_conn();
+    let reserved = quiet_wakes_conversation(&conn).expect("the reserved row exists");
+    let mine = create_conversation(&conn, "mine", 100, None).expect("create");
+
+    let visible = list_conversations(&conn, 50, 0, false).expect("list");
+    assert_eq!(visible.iter().map(|c| c.id).collect::<Vec<_>>(), vec![mine]);
+    let all = list_conversations(&conn, 50, 0, true).expect("list all");
+    assert!(
+        !all.iter().any(|c| c.id == reserved),
+        "including archived threads must not surface the ledger row either"
+    );
+}
+
+/// ⚠️ **What a quiet wake spent survives the thread that spent it.** `cost_meter` cascades on
+/// the conversation, so a plain delete would erase the proactive agent's cost from the one
+/// place the user can see it. The rows fold onto the reserved thread first, summing tokens and
+/// micros through the same upsert `record_cost` uses.
+#[test]
+fn discarding_a_quiet_wake_folds_its_cost_onto_the_reserved_thread() {
+    let conn = migrated_conn();
+    let reserved = quiet_wakes_conversation(&conn).expect("reserved");
+    let first = create_conversation(&conn, "wake one", 100, None).expect("create");
+    let second = create_conversation(&conn, "wake two", 200, None).expect("create");
+    record_cost(&conn, &cost("2026-08-23", first, ProviderTag::Anthropic, 100, 10, 300)).expect("record");
+    record_cost(&conn, &cost("2026-08-23", second, ProviderTag::Anthropic, 40, 4, 120)).expect("record");
+
+    discard_conversation_keeping_cost(&conn, first).expect("discard one");
+    discard_conversation_keeping_cost(&conn, second).expect("discard two");
+
+    assert!(get_conversation(&conn, first, 10, 0).expect("get").is_none());
+    assert!(get_conversation(&conn, second, 10, 0).expect("get").is_none());
+
+    let folded = conversation_cost(&conn, reserved).expect("cost");
+    assert_eq!(folded.prompt_tokens, 140, "two quiet wakes accumulate on one row");
+    assert_eq!(folded.completion_tokens, 14);
+    assert_eq!(folded.cost_micros, 420);
+    assert!(folded.fully_priced);
+
+    let rows: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM cost_meter WHERE conversation_id = ?1",
+            rusqlite::params![reserved],
+            |row| row.get(0),
+        )
+        .expect("count");
+    assert_eq!(rows, 1, "same day, provider, and model upsert onto one row");
+}
+
+/// `priced` ANDs, exactly as `record_cost` does: one unpriced quiet wake makes the reserved
+/// row's total a lower bound. Carrying it any other way would claim a complete price the
+/// reserved row doesn't have.
+#[test]
+fn an_unpriced_quiet_wake_makes_the_reserved_total_a_lower_bound() {
+    let conn = migrated_conn();
+    let reserved = quiet_wakes_conversation(&conn).expect("reserved");
+    let priced = create_conversation(&conn, "priced", 100, None).expect("create");
+    let unpriced = create_conversation(&conn, "unpriced", 200, None).expect("create");
+    record_cost(&conn, &cost("2026-08-23", priced, ProviderTag::Anthropic, 100, 10, 300)).expect("record");
+    let mut unknown = cost("2026-08-23", unpriced, ProviderTag::Anthropic, 40, 4, 0);
+    unknown.priced = false;
+    record_cost(&conn, &unknown).expect("record");
+
+    discard_conversation_keeping_cost(&conn, priced).expect("discard priced");
+    assert!(
+        conversation_cost(&conn, reserved).expect("cost").fully_priced,
+        "a priced wake alone leaves the reserved row priced"
+    );
+
+    discard_conversation_keeping_cost(&conn, unpriced).expect("discard unpriced");
+    assert!(
+        !conversation_cost(&conn, reserved).expect("cost").fully_priced,
+        "one unpriced contribution makes the whole reserved row a lower bound"
+    );
+}

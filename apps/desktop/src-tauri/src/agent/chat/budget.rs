@@ -630,8 +630,8 @@ mod tests {
     fn a_batch_hint_derives_from_the_budget() {
         // (budget − 10% headroom − 5,077 of prefix) / 349 per file, while the prompt is what
         // binds.
-        assert_eq!(files_per_batch(16_000), 27);
-        assert_eq!(files_per_batch(32_000), 68);
+        assert_eq!(files_per_batch(16_000), 26);
+        assert_eq!(files_per_batch(32_000), 67);
         // Past roughly 45,000 the reply's own ceiling binds instead, and the hint stops
         // growing with the budget: 6,000 emittable tokens / 59 per row.
         assert_eq!(files_per_batch(60_000), 101);
