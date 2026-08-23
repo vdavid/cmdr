@@ -1,42 +1,48 @@
 # Wake pipeline (`agent/wake/`)
 
-How the agent decides it has something worth saying, before any model is involved. Change events become per-folder
-counters, counters become an interest score, scores become deadlines, and a wake turns whatever is waiting into one
-budgeted digest. Depth: `DETAILS.md`.
+How the agent decides it has something worth saying, and then says it. Change events become per-folder counters,
+counters an interest score, scores deadlines, and a wake turns whatever waits into one budgeted digest and one turn.
+Depth: `DETAILS.md`.
 
 ## Module map
 
-- `coalesce.rs`: events or per-batch rollups into per-folder counters, both through one `Merger` fold.
-- `interest.rs`: how much a bundle is worth waking for (`interest`), and how soon (`wake_delay`, taking the user's hot
-  delay as a value; warm derives from it, cold gets none).
-- `compact.rs`: the digest, fitted to a hard token budget, with whatever missed a line rolled up and counted.
+- `coalesce.rs`: events or rollups into per-folder counters, through one `Merger` fold.
+- `interest.rs`: how much a bundle is worth waking for, and how soon (`wake_delay` takes the user's hot delay as a
+  value; warm derives from it, cold gets none). Also `tier_of`, what the outcome line counts.
+- `compact.rs`: the digest, fitted to a hard token budget; what missed a line is rolled up and counted.
 - `inbox.rs`: what is waiting, when it comes due, and what a restart does to it.
 - `readiness.rs`: whether the agent may watch, and whether it may think.
-- `job.rs`: the wake itself — gates, digest, a thread, and one `run_turn`.
-- `persist.rs`: the one file here that takes a `Connection` for the inbox. Everything else is values in, values out.
+- `job.rs`: one wake, in two halves — `prepare_wake` (gates, digest, thread, drain) and `run_prepared_wake` (the turn).
+- `persist.rs`: the one pure-core file taking a `Connection`; the rest is values in, values out.
+- The driver: `channel.rs` (the tap's process-global inbox), `writer.rs` (the thread owning the `Inbox`, its write
+  connection, and the timer), `runner.rs` (the wake thread and the counted outcome line), `snapshot.rs` (cached
+  readiness), `importance.rs` (TTL-cached weights), `settings.rs` (the cadence and `proactive` seam).
 
 ## Must-knows
 
-- **Bundles carry counters, never file names.** Names would grow memory with the EVENT count on exactly the path that
-  has to survive five million of them, and would spend digest budget on detail the agent can pull with a `list_dir`
-  once it is awake. The digest says WHERE and HOW MUCH; the agent looks up WHAT.
-- **Unscored importance is not zero.** `interest` mirrors `WeightLookup`s three-way answer and refuses its `score()`
-  collapse: a folder the importance scorer has not reached yet must stay distinguishable from one scored as junk, or a
-  project cloned five minutes ago ranks exactly like `node_modules` and the agent silently ignores it.
-- **Consent outranks disk access outranks the key**, because each state asks the user for something. Without consent
-  the pipeline stores NOTHING; with consent but no key, signal accumulates and waits. None of the three is silence.
-- **A merge can only pull a deadline earlier.** Otherwise a folder on a steady trickle has its deadline postponed by
-  every new arrival and never comes due, which looks like an agent that is asleep rather than patient.
-- **Gotcha: a cold row's deadline is `None`, and no-deadline LOSES every merge.** Merging two `deliver_by`s with
-  `Option::min` compiles, reads right, and does the opposite (`None < Some(_)`), so a junk contribution erases a hot
-  row's deadline and that folder never wakes. `soonest` is the merge; `next_deadline` and `reconcile` hit the same trap
-  from the other side. All three are tested, and `DETAILS.md` says why.
-- **Any wake drains the WHOLE inbox.** The expensive part is the model turn, not the row, so cold bundles ride along
-  free and a MAX-interest wake policy falls out rather than being written.
-- **The tap is a second observer inside `process_live_batch`, placed AFTER rename detection and storm coalescing**, and
-  it hands over per-batch rollups. Never a parallel FSEvents subscription, and never per-file messages across the crate
-  boundary. Why, and the `downloads/` watcher question: `DETAILS.md`.
-- **A wake reuses `run_turn` and opens a real thread** with `ConversationOrigin::Notification`, so the sweep it produces
-  points back at reasoning the user can read. Nothing is drained until the turn is certain to run.
+- ❌ **Nothing on the live-loop thread may take a lock or touch SQLite.** The tap builds a `FolderActivity`, calls
+  `send_rollup`, returns; the writer thread does the lookup, the admit, and the write. A mutex would block every live
+  batch for a model call; a per-admit connection would run the migration ladder against a 5 s busy timeout.
+- **Bundles carry counters, never file names.** Names grow memory with the EVENT count, on the one path that must
+  survive five million. The digest says WHERE and HOW MUCH; the agent looks up WHAT.
+- **Unscored importance is not zero.** `interest` and `importance.rs` mirror `WeightLookup`s three-way answer and
+  refuse its `score()` collapse: a folder the scorer hasn't reached must stay distinguishable from one scored as junk,
+  or a fresh clone ranks like `node_modules` and the agent ignores it.
+- **Consent outranks disk access outranks the key**, because each asks the user for something. Without consent the
+  pipeline stores NOTHING; with consent but no key, signal accumulates. None of the three is silence, and the answer is
+  CACHED (`snapshot.rs`) rather than queried per batch.
+- **A merge can only pull a deadline earlier.** Otherwise a steady trickle postpones a folder forever, which looks
+  like an agent asleep rather than patient.
+- **Gotcha: a cold row's deadline is `None`, and no-deadline LOSES every merge.** `Option::min` compiles, reads right,
+  does the opposite (`None < Some(_)`). `soonest`, `next_deadline`, and `reconcile` each say so explicitly, each tested.
+- **Any wake drains the WHOLE inbox.** The expensive part is the turn, not the row, so cold bundles ride along free
+  and a MAX-interest policy falls out rather than being written.
+- **The tap is a second observer inside `process_live_batch`, AFTER rename detection and storm coalescing**, handing
+  over per-batch rollups. Never a parallel FSEvents subscription, never per-file messages. Why, the 60 s window the APP
+  (never the crate) applies, and the `downloads/` watcher: `DETAILS.md`.
+- **A wake reuses `ChatRuntime` and opens a real thread** with `ConversationOrigin::Notification`, so the sweep points
+  back at reasoning the user can read. Nothing drains until the turn is certain; the turn runs on its own thread, so
+  the inbox is never held across it.
+- **`askCmdr.proactive` ships FALSE** (`settings.rs`), so nothing wakes until M2 makes wakes visible.
 
-What a wake produces: `../suggested_ops/CLAUDE.md`. The store beneath: `../store/proposals/CLAUDE.md`.
+What a wake produces: `../suggested_ops/CLAUDE.md`. The store: `../store/proposals/CLAUDE.md`.

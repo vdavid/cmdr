@@ -161,7 +161,7 @@ run `pnpm check rustdoc` after adding a module whose name matches an existing it
 
 ## The wake job
 
-`run_wake` reuses `run_turn` rather than growing a second turn loop: budget enforcement,
+A wake reuses `run_turn` rather than growing a second turn loop: budget enforcement,
 elision, crash-safe persistence, and cost metering must not differ between the user asking and
 the agent noticing, and two loops guarantee they eventually will. Single-flight and
 cancellation come from the same guards for the same reason.
@@ -171,6 +171,7 @@ shaped from the rows WITHOUT draining them, then the thread, and only then the d
 step that can decline does so before anything is spent, so a budget too small to say anything,
 or a store that will not take a new thread, leaves the backlog exactly as it was. Draining
 first and discovering the problem afterwards would lose signal with nothing to show for it.
+That order is also why the job splits at exactly that seam (§ The two halves of a wake).
 
 An empty digest means the wake stays quiet rather than opening a thread that reports silence.
 
@@ -185,32 +186,172 @@ folder name is data; a backend-written English title would be untranslated copy 
 the database, sitting in a list beside threads the user named themselves.
 
 The sink is a plain `ChatEventSink`, the same unbounded channel the rail uses. Nobody is
-watching a rail during a wake, so the caller supplies one that drives the indicator instead.
+watching a rail during a wake, so in M1 the wake thread drains it and discards (counting
+proposals on the way past); M2 item 1 puts the indicator on the other end.
 
-## The two seams nothing drives yet
+## What drives it: three threads, and which lock each holds
 
-The pipeline is whole and tested from `EventBundle` in to a sweep out, and **nothing in the
-app calls either end**: `Inbox::admit_if_permitted` and `run_wake` have no production caller,
-only tests. Two adapters close that, and each has constraints worth stating before somebody
-builds it.
+⚠️ Say this once, explicitly, because "the lock" means two different things here and conflating
+them produces either a stalled indexer or a raced thread.
 
-**The tap adapter** maps the crate-side per-batch rollup into `EventBundle` and calls
-`admit_if_permitted`. It belongs beside the observer described above, and it follows
+- **The live loop** owns nothing of ours and holds nothing. `TauriEventSink::emit`
+  (`events/index_mapping.rs`) calls `route()` SYNCHRONOUSLY on the caller's thread, and that
+  caller is the live loop, itself a tokio task. So the tap builds a `FolderActivity`, calls
+  `channel::send_rollup`, and returns.
+- **The writer thread** (`writer.rs`) owns the `Inbox`, ONE long-lived write connection, and the
+  timer. It never blocks on a turn.
+- **The wake thread** (`runner.rs`) owns the turn and holds the per-conversation
+  `ConversationLocks` guard across it.
+
+Two things would stall the live loop if the tap owned the inbox instead. A **mutex around the
+inbox** would be held across `run_turn`'s awaits, blocking every live batch for an LLM call and a
+runtime worker with it. A **write connection per admit** would be worse: `open_write_connection`
+applies the WAL pragmas and runs the FULL MIGRATION LADDER on every open, against a 5 s
+`busy_timeout`, with the writer thread already holding a connection.
+
+**The INBOX is released before the turn.** The writer thread prepares, hands off, and goes
+straight back to servicing the channel. Blocking there would leave the bounded channel
+unserviced for minutes and drop rollups wholesale, which is a different thing entirely from the
+pathological-burst drop the bound sanctions.
+
+**The CONVERSATION lock is held across the turn**, taken on the wake thread. A wake thread is a
+real conversation the user can reply to, so skipping `ConversationLocks` would let a reply and
+the wake's own turn run concurrently in one thread. **At most one wake is in flight**: the writer
+thread keeps a flag and clears it on the `WakeFinished` control message.
+
+⚠️ **That means TWO write connections to `main.db`**, the writer thread's and the turn's. WAL
+makes it fine, and the writer thread's writes are single-row and never held across an await, so
+the worst case is a brief wait on the busy timeout rather than a multi-second stall.
+
+⚠️ **The wake thread is not a tokio task.** `run_turn` holds a rusqlite `Connection` across
+awaits, which is why `ask_cmdr_send_message` spawns a dedicated `std::thread` with a
+current-thread runtime. `runner.rs` copies that shape.
+
+## The channel, and why it is a process-global
+
+`channel.rs` holds one `std::sync::mpsc` pair behind a `OnceLock`, created by whichever side
+reaches it first.
+
+⚠️ **❌ Not managed Tauri state.** The indexer starts before the agent does (`lib.rs`, plus a
+second start inside a `spawn`, so it is a race rather than a reliable ordering), and anything
+registered in `agent::start` would miss launch replay, the busiest window the tap will ever see.
+`restricted_paths` is the precedent for the shape.
+
+Rollups arriving before `agent::start` sit in the buffer and are consumed once the thread comes
+up, so some of launch replay survives. The buffer is deliberately NOT sized to catch all of it:
+readiness cannot even be evaluated before the store is open (consent lives in `main.db`), so
+anything older than that would be refused admission anyway.
+
+**The bound is for ROLLUPS only** (`MAX_QUEUED_ROLLUPS`), so a pathological burst drops rather
+than growing without limit, and the drops are counted and logged. The tap's payload is signal,
+not correctness: the folder will change again. ⚠️ **Control messages never drop.** A settings
+change re-arms the timer and re-prices queued rows, and the force-wake command is a message too;
+dropping one is a bug rather than degraded signal. One channel carries both, and the bound
+applies only to the rollup variant, so the loop can service messages and its timer in one
+`recv_timeout`.
+
+`FolderActivity` is where the agent-side vocabulary starts. It carries the volume id (for the
+importance lookup), the folder, the four counters, `last_event_at`, and `observed_at` — **the
+batch's own instant, ❌ never a window start**.
+
+## Readiness is a cached atomic
+
+`snapshot.rs` keeps one `AtomicU8`, refreshed by `refresh_readiness` on consent, on the Full Disk
+Access decision, and on `configure_ai`. ⚠️ Reading `WakeReadiness` per batch would mean a SQLite
+round trip on the live loop's path, since the consent bit lives in `main.db`. It fails CLOSED:
+before the store is open the answer is `NeedsConsent`, so nothing is stored for a purpose the
+user has not agreed to. M2 item 5's IPC reads the same snapshot.
+
+`refresh_readiness` returns nothing on purpose: `readiness_snapshot()` is the one way to read the
+value, so no caller can act on a copy a later refresh has already moved past.
+
+## Importance, on the writer thread
+
+⚠️ Never in `route()`: `lookup` is SQLite behind a shared cache, and the live loop may do neither.
+`ImportanceIndex::open` is already cheap (the connection is lazy and thread-local), so the cost
+to avoid is the per-folder `lookup`. `importance.rs` caches it for 60 s behind a bounded map —
+folders repeat heavily across batches, and a stale weight only misprices one wake. Opened with
+`available_for(&volume_id)`, ❌ not `SignalSet::all()`, because a network volume degrades its
+signal set. `WeightLookup` maps to `FolderImportance` variant for variant, never through
+`score()` (the `CLAUDE.md` must-know says what that collapse would cost).
+
+## The window is the APP's, not the crate's
+
+A 60 s agent policy must not leak into `cmdr-index`, and `Inbox::admit` merges on exact
+`(folder, window_start)` equality. So the crate reports its batch instant and
+`FolderActivity::into_bundle` floors it to `WAKE_WINDOW`. Left unresolved, every ~1 s batch would
+become its own inbox row.
+
+## The two halves of a wake, and what each may spend
+
+`prepare_wake` runs on the writer thread and is everything that can DECLINE plus the commit: the
+gates, `due_at`, the digest shaped from `scored()` WITHOUT draining, the empty-render bail, and
+`create_conversation`. Only once all of those pass does it `drain()` and `persist::clear`.
+
+⚠️ Naively handing the drained rows over up front would throw that guarantee away: rows handed
+over before the thread exists are lost on `NothingDue` and `Unavailable`, which are ordinary
+paths, not crashes.
+
+`run_prepared_wake` takes the digest, the conversation id, and the drained rows, and runs the
+turn. In production the wake thread routes it through `ChatRuntime::wake` instead, which adds the
+connection and the single-flight guard; `wake_turn_params` is the one place a wake's `TurnParams`
+is composed, so the two cannot drift.
+
+**The slot resolves BEFORE the thread is opened.** `resolve_agent_llm` and `resolve_prompt_budget`
+(`agent/chat/session.rs`, shared with the rail) run on the writer thread, so a wake with nowhere
+to think declines without leaving an empty conversation behind. The concrete `AgentLlm` and the
+`AppHandleDispatcher` are built only once the conversation id exists: evidence scope is what stops
+a claim in one thread being backed by facts delivered to another, and the wrong scope makes
+`ImageFactsLedger` refuse every content-citing proposal.
+
+**The sink** is a plain `UnboundedSender<AgentChatEvent>` the wake thread drains itself. The drain
+DISCARDS today and counts proposals on the way past; M2 item 1 replaces it with the
+`tauri_specta::Event` bridge that makes the turn visible live.
+
+**The envelope** is captured exactly as the rail captures it. With no main window (a
+routine-launched app on macOS) `PaneStateStore` is absent and the pane fields come back empty,
+which is the honest answer rather than a reason to skip the capture.
+
+**Crash semantics, stated on purpose**: `persist::clear` runs with the drain, BEFORE the turn. A
+process that dies mid-turn loses that digest rather than re-delivering it on restart.
+Re-delivery would mean the user hears about the same activity twice, and the folder is still
+there to be looked at again.
+
+## What the wake loop reports
+
+Nothing else reports on it at all, so `runner::record_outcome` writes one counted log line per
+outcome (`ran`, `nothing_due`, `not_ready`, `unavailable`, `cancelled`, `failed`) with the tier
+that triggered it, plus the matching anonymous `agent_wake` analytics event. Without it the two
+deferred tuning knobs can only be ranked by a support message, and "the agent is twitchy" arrives
+as a complaint rather than a number. ❌ Every property is categorical: an outcome token, a tier
+token, and coarse count buckets. Never a path, never a folder name, never what the digest said.
+
+## The tap adapter, the one seam still undriven
+
+Everything above is wired except the PRODUCER: nothing calls `channel::send_rollup` yet. The
+adapter that will belongs beside the observer described at the top, and it follows
 `ChurnObserver`'s shape deliberately: that type is passed by `&mut` so a live batch cannot be
-processed without one, and a `churn_monitor/tests.rs` scanner walks every live-batch driver
-and fails when one of them doesn't build a real observer. Inherit both, or the cold-start
-replay path silently taps nothing, which is the failure `live.rs`'s own comment records
-having already happened once. The mapping is the whole adapter: `cmdr-index` may never name
-the agent (`index-crate-isolation`), so the rollup crosses on the existing `IndexEvent` seam
-and the agent-side vocabulary starts here.
+processed without one, and a `churn_monitor/tests.rs` scanner walks every live-batch driver and
+fails when one of them doesn't build a real observer. Inherit both, or the cold-start replay path
+silently taps nothing, which is the failure `live.rs`'s own comment records having already
+happened once.
 
-**The scheduler** owns a timer that fires at `Inbox::next_deadline` and calls `run_wake`. It
-has to resolve provider, model, and prompt budget the way the command layer does for a user
-send (the budget is read fresh per send, so a wake reading a stale one would think with a
-different window than the rail), and it supplies the `ChatEventSink`: a wake has no rail
-watching it, so the sink drives the indicator instead. `run_wake` already declines cheaply on
-every gate, so the scheduler may call it whenever a deadline passes and needs no gate logic of
-its own.
+Its whole job is the mapping: `cmdr-index` may never name the agent (`index-crate-isolation`), so
+the rollup crosses on the existing `IndexEvent` seam and `route()` maps it into a
+`FolderActivity`. ⚠️ **The app side must NOT route through managed state**: `route()` takes
+`app: Option<&AppHandle>` and the completeness test calls `route(event, None)`, so a handler
+reaching for `app.state()` would silently drop every bundle. Use `channel::send_rollup`, exactly
+as `PathAccessDenied` uses `restricted_paths::record_denial`.
+
+**Every `WakeReadiness` gap is a state the indicator renders with an action; none of them is
+silence.** A user who declined Full Disk Access and a user with a tidy Downloads folder otherwise
+see the identical nothing, and only one of those is the feature working.
+
+**A wake creates a conversation, so wake threads appear in the rail session list.** Ten wakes over
+a quiet week is ten threads the user never started, interleaved with their own. The `origin`
+column is already `notification` on every one, so filtering needs no schema work; the choice
+between filtering the default view and giving them their own affordance is a product call nobody
+has made.
 
 **Every `WakeReadiness` gap is a state the indicator renders with an action; none of them is
 silence.** A user who declined Full Disk Access and a user with a tidy Downloads folder

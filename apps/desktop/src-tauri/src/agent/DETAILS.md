@@ -33,7 +33,14 @@ The backend modules:
   non-view name before `execute_tool`. Depth: `tools/DETAILS.md`.
 - `chat/`: the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
   crash-safe persistence, the `AgentChatEvent` seam) and the pure, TDD-heavy context-assembly core (stable prefix,
-  elide-only compaction, the fresh context envelope on the latest user turn only). Depth: `chat/DETAILS.md`.
+  elide-only compaction, the fresh context envelope on the latest user turn only). `chat/session.rs` is what a turn
+  needs resolved from live app state (the LLM slot, the prompt budget, the envelope), shared by the rail's command and
+  by a wake — it sits here rather than in `commands/agent/`, which is ABOVE `agent/` and so unreachable from a wake.
+  Depth: `chat/DETAILS.md`.
+- `wake/`: the proactive half — the pure noticing pipeline (coalesce → interest → compact → inbox) plus the loop that
+  drives it. `agent::start` brings up one thread owning the `Inbox`, a long-lived write connection, and the timer; the
+  indexer's tap reaches it through a process-global channel and a prepared wake runs on its own thread, so neither the
+  live loop nor the inbox is ever held across a model call. Depth: `wake/DETAILS.md`.
 
 ## The agent can propose; only the user can approve
 

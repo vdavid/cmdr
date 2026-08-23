@@ -13,7 +13,8 @@ entity, not the surface, so later proactive slices (proposals, notifications) gr
   metric. See `suggested_ops/CLAUDE.md`.
 - `types.rs`: store-only token enums (`ConversationOrigin`, the proposal vocabulary) + `token_enum!` macro.
 - `tools/`: the in-process toolset plus gated dispatch (the no-write choke point). See `tools/CLAUDE.md`.
-- `wake/`: the pure wake pipeline and its gates. See `wake/CLAUDE.md`.
+- `wake/`: the proactive half — the pure noticing pipeline, its gates, and the thread that drives them (started
+  by `start(app)`). See `wake/CLAUDE.md`.
 - `chat/`: the chat runtime (`run_turn` + `ChatRuntime`: single-flight, budgets, cancellation, crash-safe persistence,
   the `AgentChatEvent` seam) + pure context assembly. See `chat/CLAUDE.md`.
 - `consent.rs`: the consent gate (`CONSENT_COPY_VERSION` + `has_current_consent`, fails closed).

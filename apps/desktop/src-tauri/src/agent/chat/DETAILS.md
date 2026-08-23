@@ -172,9 +172,8 @@ Bumping any constant is a conscious change (never a silent side effect).
 
 `budget::resolve_prompt_budget` takes a `BudgetInputs` (provider, model, the user's `askCmdr.chatMemorySize` choice, the
 local server's window) and answers a `ResolvedBudget` carrying `prompt_tokens`, the `BudgetSource` that decided, the
-window it believes the model has, and whether the user's size exceeds that window. The command layer
-(`commands/agent/chat.rs`) gathers those values once per send and logs the source; the core reads no settings and no app
-state (invariant 2).
+window it believes the model has, and whether the user's size exceeds that window. `session.rs` gathers those values
+once per turn and logs the source; the core reads no settings and no app state (invariant 2).
 
 - **`UserSetting`** — an explicit size, used exactly as chosen. It is never clamped down: our table will be wrong
   sometimes and the user may be right about their own model. `over_known_window` rides along, the settings row warns
@@ -250,6 +249,16 @@ the real shapes: a batch of exactly that size, assembled against that budget, fi
 show the number; they don't own it. The **per-turn envelope** carries it to the model (`rename batch: up to N files`),
 because it moves with the model and the setting and so can't live in the cached prefix.
 
+### Sizing a wake's digest from the budget
+
+`wake_digest_budget(prompt_tokens)` gives a wake's digest a fifth of what is left after the fixed prefix. Derived rather
+than a constant, for the same reason `files_per_batch` is: the digest OPENS the turn, and everything after it (the
+envelope, the tool results the agent pulls once awake, its own reasoning) shares the same window, so a flat number would
+let one digest push a small-local-window user's tool results out of the prompt.
+
+`0` is a meaningful answer — a budget that cannot hold the prefix cannot hold a digest either, and `prepare_wake` then
+stays quiet rather than opening a thread it can say nothing in.
+
 ### What the budgets buy, measured
 
 Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every figure below is pinned within a tenth by
@@ -277,6 +286,28 @@ typed `AgentErrorKind`), `dispatch.rs` (the `ToolDispatcher` seam and `AppHandle
 `turn.rs` (`run_turn` and everything it drives), `cost.rs` (metering one completed
 `respond`), `cmdr_md.rs` (which `CMDR.md`, and how much of it). `mod.rs` re-exports all of
 it, so callers keep saying `chat::runtime::X`.
+
+`ChatRuntime` has two entry points and they differ only in what they already know.
+`send_message` may create the thread and derives its title from the user's text; `wake` is
+handed a thread `agent::wake::prepare_wake` already opened and a `TurnParams` already composed
+(`wake_turn_params`). Both open their own write connection and take the per-conversation
+single-flight guard. ⚠️ **A wake must not bypass this**: a wake thread is a real conversation the
+user can reply to, so calling `run_turn` directly would let the reply and the wake's own turn
+run concurrently in one thread. It also means TWO write connections to `main.db` during a wake,
+this one and the wake loop's; WAL makes that fine (`wake/DETAILS.md` says why).
+
+### What a turn resolves from live app state (`session.rs`)
+
+The LLM slot, the prompt budget, and the context envelope, all read FRESH per turn. It sits in
+`agent/` rather than in `commands/agent/`, which is ABOVE `agent/`: a wake resolves the same
+three and may not import upward. One copy is the point — a wake reading a stale budget would
+think with a different window than the rail, silently, and nothing about the resulting thread
+would say why.
+
+`capture_envelope` takes already-mapped `EnvelopeAttachment`s, so the command layer's view type
+stays in the command layer. With no main window (a routine-launched app on macOS)
+`PaneStateStore` is absent and the pane fields come back empty — the honest answer, and not a
+reason to skip the capture.
 
 ### Which `CMDR.md`, and how much of it
 
