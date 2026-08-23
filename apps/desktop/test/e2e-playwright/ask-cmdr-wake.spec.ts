@@ -57,6 +57,34 @@ async function reloadSessions(page: TauriPage): Promise<void> {
   await page.evaluate(`document.querySelector('.ask-cmdr-rail [aria-label="Chats"]')?.click()`)
 }
 
+/**
+ * Arms a DOM watch for the status corner's wake indicator, then answers once it has gone busy and
+ * back to idle: a full wake, start to finish.
+ *
+ * ⚠️ A `MutationObserver` rather than a poll, and armed BEFORE the wake is forced. The fake answers
+ * in milliseconds, so a poll would routinely sample after the indicator had already come and gone
+ * and would report "idle" without having waited for anything. The observer cannot miss the
+ * transition, and the `busy` flag is what makes the wait non-vacuous: an indicator that never
+ * appeared leaves `idle` false and the poll below times out rather than passing early.
+ */
+async function watchForWake(page: TauriPage): Promise<void> {
+  await page.evaluate(`(() => {
+    const seen = { busy: false, idle: false }
+    window.__wakeSeen = seen
+    const check = () => {
+      if (document.querySelector('.status-corner .wake-indicator .thinking') !== null) seen.busy = true
+      else if (seen.busy) seen.idle = true
+    }
+    check()
+    new MutationObserver(check).observe(document.body, { subtree: true, childList: true })
+  })()`)
+}
+
+/** Waits for the wake armed by `watchForWake` to have run and finished. */
+async function awaitWakeFinished(page: TauriPage): Promise<void> {
+  await expect.poll(() => page.evaluate<boolean>(`window.__wakeSeen?.idle === true`), { timeout: 20000 }).toBe(true)
+}
+
 /** Opens the rail via the View-menu toggle, re-dispatching inside the poll: the cross-source
  * double-fire guard (dispatch-dedup.ts, 300ms) can drop a fire that lands right after another
  * test's toggle. Idempotent once open. */
@@ -159,14 +187,14 @@ test.describe('Ask Cmdr wakes on its own', () => {
     await openRail(page)
     await ensureConsented(page)
 
+    await watchForWake(page)
     await forceAgentWake(page, `/Users/e2e/${quietFolder}`, true)
 
     // ⚠️ Absence can only be asserted at the END. A wake opens its thread BEFORE the turn runs
-    // and deletes it after, so a poll mid-flight would legitimately see the row. The settle
-    // also keeps the control below out of the same wake: any wake drains the whole inbox, so a
-    // rollup landing before the first prepare would merge into it. The fake answers instantly,
-    // so a few seconds is generous.
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    // and deletes it after, so a poll mid-flight would legitimately see the row. Waiting for the
+    // quiet wake to FINISH is also what keeps the control below out of it: any wake drains the
+    // whole inbox, so a rollup landing before the first prepare would merge into the same one.
+    await awaitWakeFinished(page)
 
     await forceAgentWake(page, `/Users/e2e/${loudFolder}`, false)
     await expect
