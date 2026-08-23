@@ -474,6 +474,10 @@ speed; a too-narrow one reports a green describing code it never ran, which is t
 twice (`CHANGELOG.md` missing from the shared Rust set, then from `desktopAppInputs()`). A synthetic definition with no
 registered ID (the E2E build's) gets the same wide answer.
 
+The analysis runs once per `pnpm check`, inside `CollectRepoFingerprintData`: ~30 ms for all 116 checks (parsing ~130
+files), against a planning budget already spending two git forks (measured 2026-08-23, `LoadRunnerSources` timed on this
+worktree).
+
 The allowlists and baselines beside the checks are DATA, read through a path built at runtime, so no source analysis
 attributes them: the eight checks that own one name it in `Inputs` through `runnerDataInputs`, and
 `TestAllowlistFilesAreFingerprintedByTheirCheck` fails both on an allowlist its check doesn't fingerprint and on one
