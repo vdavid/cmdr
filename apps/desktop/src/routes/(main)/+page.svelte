@@ -577,6 +577,8 @@
         getExplorer: () => explorerRef,
         // Menu items are a user gesture, so they absorb a rejection like the keyboard does.
         dispatch: dispatchFromUi,
+        // The MCP adapter is the one caller that needs the rejection itself.
+        dispatchForMcp: handleCommandExecute,
         dialogs: {
             setAboutWindow: (show: boolean) => {
                 showAboutWindow = show

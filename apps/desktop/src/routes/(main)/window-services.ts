@@ -69,8 +69,18 @@ import { setupMcpListeners } from './mcp-listeners'
 export interface WindowServicesContext {
   /** Live read of the explorer handle (`undefined` until `DualPaneExplorer` mounts; HMR can swap it). */
   getExplorer: () => ExplorerAPI | undefined
-  /** Dispatch through the same typed command bus the keyboard / palette / menu paths use. */
+  /**
+   * Dispatch a command from a USER GESTURE (menu item, dialog action). Absorbs the rejection: a
+   * handler that rejects has already said its piece in a toast, and there is nobody to hand it to.
+   */
   dispatch: <K extends CommandId>(commandId: K, ...args: CommandDispatchArgs<K>) => Promise<void>
+  /**
+   * ⚠️ Dispatch for the MCP adapter, which PROPAGATES the rejection. A few handlers reject on
+   * purpose so the adapter can report the real outcome back to the agent (`select` names a file
+   * that isn't in the listing; `pane.refresh` when a re-read outlives its wait). ❌ Never hand
+   * `dispatch` here: an absorbed rejection turns every one of those refusals into `ok: true`.
+   */
+  dispatchForMcp: <K extends CommandId>(commandId: K, ...args: CommandDispatchArgs<K>) => Promise<void>
   /** Write-only dialog setters (the component owns the `$state`). */
   dialogs: {
     setAboutWindow: (show: boolean) => void
@@ -134,8 +144,9 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
   await setupMcpListeners({
     getExplorer: ctx.getExplorer,
     // The MCP adapter dispatches through the same typed command bus as the keyboard / palette /
-    // menu paths, so MCP events get the uniform preamble (log + breadcrumb + search-results guard).
-    dispatch: ctx.dispatch,
+    // menu paths, so MCP events get the uniform preamble (log + breadcrumb + search-results guard)
+    // — but through the strict dispatcher, so a refusal reaches the agent as one.
+    dispatch: ctx.dispatchForMcp,
     listenTauri: makeListenTauri(unlistenFns),
     isAiEnabled: () => getSetting('ai.provider') !== 'off',
   })
