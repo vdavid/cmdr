@@ -741,5 +741,45 @@
   "askCmdr.wakeToast.openThread": "Ver por qué",
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
+  },
+  "askCmdr.decision.rejected": "Rechazaste {verbName} {countText} {count, plural, one {elemento} many {elementos} other {elementos}}",
+  "@askCmdr.decision.rejected": {
+    "sourceHash": "19d12c1"
+  },
+  "askCmdr.decision.approved": "Aprobaste {verbName} {countText} {count, plural, one {elemento} many {elementos} other {elementos}}",
+  "@askCmdr.decision.approved": {
+    "sourceHash": "aa911e6"
+  },
+  "askCmdr.decision.result": "{doneText} hechos, {skippedText} omitidos, {failedText} con errores",
+  "@askCmdr.decision.result": {
+    "sourceHash": "13d97c7"
+  },
+  "askCmdr.decision.verbMove": "mover",
+  "@askCmdr.decision.verbMove": {
+    "sourceHash": "6e86294"
+  },
+  "askCmdr.decision.verbCopy": "copiar",
+  "@askCmdr.decision.verbCopy": {
+    "sourceHash": "20a184a"
+  },
+  "askCmdr.decision.verbTrash": "mover a la papelera",
+  "@askCmdr.decision.verbTrash": {
+    "sourceHash": "ea05c85"
+  },
+  "askCmdr.decision.verbDelete": "eliminar",
+  "@askCmdr.decision.verbDelete": {
+    "sourceHash": "8901f3f"
+  },
+  "askCmdr.decision.verbRename": "renombrar",
+  "@askCmdr.decision.verbRename": {
+    "sourceHash": "c4b4eea"
+  },
+  "askCmdr.decision.verbCompress": "comprimir",
+  "@askCmdr.decision.verbCompress": {
+    "sourceHash": "45391ae"
+  },
+  "askCmdr.decision.verbExtract": "extraer",
+  "@askCmdr.decision.verbExtract": {
+    "sourceHash": "c924f71"
   }
 }

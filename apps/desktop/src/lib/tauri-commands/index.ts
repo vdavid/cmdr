@@ -386,6 +386,7 @@ export type {
   RenameProposalRow,
   WakeDigestFolderView,
   WakeDigestRollupView,
+  ProposalDecision,
 } from './ask-cmdr'
 
 // Suggested ops (the review dialog's reads, and the rejection it records)

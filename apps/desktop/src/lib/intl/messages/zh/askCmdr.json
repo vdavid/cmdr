@@ -739,5 +739,45 @@
   "askCmdr.wakeToast.openThread": "看看原因",
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
+  },
+  "askCmdr.decision.rejected": "你拒绝了{verbName} {countText} {count, plural, other {个项目}}",
+  "@askCmdr.decision.rejected": {
+    "sourceHash": "19d12c1"
+  },
+  "askCmdr.decision.approved": "你批准了{verbName} {countText} {count, plural, other {个项目}}",
+  "@askCmdr.decision.approved": {
+    "sourceHash": "aa911e6"
+  },
+  "askCmdr.decision.result": "{doneText} 个完成，{skippedText} 个跳过，{failedText} 个失败",
+  "@askCmdr.decision.result": {
+    "sourceHash": "13d97c7"
+  },
+  "askCmdr.decision.verbMove": "移动",
+  "@askCmdr.decision.verbMove": {
+    "sourceHash": "6e86294"
+  },
+  "askCmdr.decision.verbCopy": "复制",
+  "@askCmdr.decision.verbCopy": {
+    "sourceHash": "20a184a"
+  },
+  "askCmdr.decision.verbTrash": "移到废纸篓",
+  "@askCmdr.decision.verbTrash": {
+    "sourceHash": "ea05c85"
+  },
+  "askCmdr.decision.verbDelete": "删除",
+  "@askCmdr.decision.verbDelete": {
+    "sourceHash": "8901f3f"
+  },
+  "askCmdr.decision.verbRename": "重命名",
+  "@askCmdr.decision.verbRename": {
+    "sourceHash": "c4b4eea"
+  },
+  "askCmdr.decision.verbCompress": "压缩",
+  "@askCmdr.decision.verbCompress": {
+    "sourceHash": "45391ae"
+  },
+  "askCmdr.decision.verbExtract": "解压",
+  "@askCmdr.decision.verbExtract": {
+    "sourceHash": "c924f71"
   }
 }

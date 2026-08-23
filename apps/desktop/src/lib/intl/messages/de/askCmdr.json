@@ -741,5 +741,45 @@
   "askCmdr.wakeToast.openThread": "Warum?",
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
+  },
+  "askCmdr.decision.rejected": "Du hast {verbName} {countText} {count, plural, one {Element} other {Elementen}} abgelehnt",
+  "@askCmdr.decision.rejected": {
+    "sourceHash": "19d12c1"
+  },
+  "askCmdr.decision.approved": "Du hast {verbName} {countText} {count, plural, one {Element} other {Elementen}} zugestimmt",
+  "@askCmdr.decision.approved": {
+    "sourceHash": "aa911e6"
+  },
+  "askCmdr.decision.result": "{doneText} erledigt, {skippedText} übersprungen, {failedText} fehlgeschlagen",
+  "@askCmdr.decision.result": {
+    "sourceHash": "13d97c7"
+  },
+  "askCmdr.decision.verbMove": "das Verschieben von",
+  "@askCmdr.decision.verbMove": {
+    "sourceHash": "6e86294"
+  },
+  "askCmdr.decision.verbCopy": "das Kopieren von",
+  "@askCmdr.decision.verbCopy": {
+    "sourceHash": "20a184a"
+  },
+  "askCmdr.decision.verbTrash": "das Verschieben in den Papierkorb von",
+  "@askCmdr.decision.verbTrash": {
+    "sourceHash": "ea05c85"
+  },
+  "askCmdr.decision.verbDelete": "das Löschen von",
+  "@askCmdr.decision.verbDelete": {
+    "sourceHash": "8901f3f"
+  },
+  "askCmdr.decision.verbRename": "das Umbenennen von",
+  "@askCmdr.decision.verbRename": {
+    "sourceHash": "c4b4eea"
+  },
+  "askCmdr.decision.verbCompress": "das Komprimieren von",
+  "@askCmdr.decision.verbCompress": {
+    "sourceHash": "45391ae"
+  },
+  "askCmdr.decision.verbExtract": "das Entpacken von",
+  "@askCmdr.decision.verbExtract": {
+    "sourceHash": "c924f71"
   }
 }

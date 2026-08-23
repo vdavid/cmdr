@@ -741,5 +741,45 @@
   "askCmdr.wakeToast.openThread": "Voir pourquoi",
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
+  },
+  "askCmdr.decision.rejected": "Tu as refusé de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}",
+  "@askCmdr.decision.rejected": {
+    "sourceHash": "19d12c1"
+  },
+  "askCmdr.decision.approved": "Tu as accepté de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}",
+  "@askCmdr.decision.approved": {
+    "sourceHash": "aa911e6"
+  },
+  "askCmdr.decision.result": "{doneText} effectués, {skippedText} ignorés, {failedText} en échec",
+  "@askCmdr.decision.result": {
+    "sourceHash": "13d97c7"
+  },
+  "askCmdr.decision.verbMove": "déplacer",
+  "@askCmdr.decision.verbMove": {
+    "sourceHash": "6e86294"
+  },
+  "askCmdr.decision.verbCopy": "copier",
+  "@askCmdr.decision.verbCopy": {
+    "sourceHash": "20a184a"
+  },
+  "askCmdr.decision.verbTrash": "mettre à la corbeille",
+  "@askCmdr.decision.verbTrash": {
+    "sourceHash": "ea05c85"
+  },
+  "askCmdr.decision.verbDelete": "supprimer",
+  "@askCmdr.decision.verbDelete": {
+    "sourceHash": "8901f3f"
+  },
+  "askCmdr.decision.verbRename": "renommer",
+  "@askCmdr.decision.verbRename": {
+    "sourceHash": "c4b4eea"
+  },
+  "askCmdr.decision.verbCompress": "compresser",
+  "@askCmdr.decision.verbCompress": {
+    "sourceHash": "45391ae"
+  },
+  "askCmdr.decision.verbExtract": "extraire",
+  "@askCmdr.decision.verbExtract": {
+    "sourceHash": "c924f71"
   }
 }

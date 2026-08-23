@@ -740,5 +740,45 @@
   "askCmdr.wakeToast.openThread": "Se varför",
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
+  },
+  "askCmdr.decision.rejected": "Du tackade nej till att {verbName} {countText} {count, plural, one {objekt} other {objekt}}",
+  "@askCmdr.decision.rejected": {
+    "sourceHash": "19d12c1"
+  },
+  "askCmdr.decision.approved": "Du godkände att {verbName} {countText} {count, plural, one {objekt} other {objekt}}",
+  "@askCmdr.decision.approved": {
+    "sourceHash": "aa911e6"
+  },
+  "askCmdr.decision.result": "{doneText} klara, {skippedText} överhoppade, {failedText} misslyckades",
+  "@askCmdr.decision.result": {
+    "sourceHash": "13d97c7"
+  },
+  "askCmdr.decision.verbMove": "flytta",
+  "@askCmdr.decision.verbMove": {
+    "sourceHash": "6e86294"
+  },
+  "askCmdr.decision.verbCopy": "kopiera",
+  "@askCmdr.decision.verbCopy": {
+    "sourceHash": "20a184a"
+  },
+  "askCmdr.decision.verbTrash": "flytta till papperskorgen",
+  "@askCmdr.decision.verbTrash": {
+    "sourceHash": "ea05c85"
+  },
+  "askCmdr.decision.verbDelete": "radera",
+  "@askCmdr.decision.verbDelete": {
+    "sourceHash": "8901f3f"
+  },
+  "askCmdr.decision.verbRename": "byta namn på",
+  "@askCmdr.decision.verbRename": {
+    "sourceHash": "c4b4eea"
+  },
+  "askCmdr.decision.verbCompress": "komprimera",
+  "@askCmdr.decision.verbCompress": {
+    "sourceHash": "45391ae"
+  },
+  "askCmdr.decision.verbExtract": "packa upp",
+  "@askCmdr.decision.verbExtract": {
+    "sourceHash": "c924f71"
   }
 }

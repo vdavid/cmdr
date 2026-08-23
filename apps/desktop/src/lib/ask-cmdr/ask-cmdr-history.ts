@@ -25,8 +25,14 @@ export function buildRailMessages(detail: ConversationDetailView): RailMessage[]
       // user-role row can carry either. The digest wins when it's there: a wake never also
       // types something.
       const digest = message.blocks.find((b) => b.type === 'wakeDigest')
+      const decisions = message.blocks.find((b) => b.type === 'proposalDecisions')
       if (digest) {
         out.push({ kind: 'wakeDigest', id: message.id, folders: digest.folders, rollups: digest.rollups })
+      } else if (decisions) {
+        // The opener of the follow-up turn a rejected sweep earns: structured for the same
+        // reason a digest is, and it sits where a user bubble would because it is the
+        // user-role row of that turn.
+        out.push({ kind: 'proposalDecisions', id: message.id, decisions: decisions.decisions })
       } else {
         out.push({ kind: 'user', id: message.id, text: joinText(message), attachments: [] })
       }
@@ -42,6 +48,10 @@ export function buildRailMessages(detail: ConversationDetailView): RailMessage[]
     } else if (message.role === 'event') {
       for (const block of message.blocks) {
         if (block.type === 'modelChanged') out.push({ kind: 'modelChange', model: block.model })
+        // One decision, as the store recorded it the moment the user answered.
+        if (block.type === 'proposalDecisions') {
+          out.push({ kind: 'proposalDecisions', id: message.id, decisions: block.decisions })
+        }
       }
     }
     // `tool`-role messages carry only results, already folded into the tool lines above.

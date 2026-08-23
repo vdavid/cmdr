@@ -9,6 +9,7 @@
 import type {
   AskCmdrErrorKind,
   AttachmentRef,
+  ProposalDecision,
   SkipBreakdown,
   WakeDigestFolderView,
   WakeDigestRollupView,
@@ -59,6 +60,13 @@ export type RailMessage =
       /** The folders the digest had no room to name, so the block can admit its own gaps. */
       rollups: WakeDigestRollupView[]
     }
+  /** What the user answered when the agent suggested something. Two transcript rows land
+   * here on purpose: an `event` row carrying one decision as it happens, and the opener of
+   * the follow-up turn a rejected sweep earns, carrying a whole sweep's worth.
+   *
+   * ⚠️ **Verbs, counts, and the group's own display text, never a sentence.** The English the
+   * model reads is a prompt and never crosses IPC. */
+  | { kind: 'proposalDecisions'; id: number | null; decisions: ProposalDecision[] }
   /** A timeline line marking that the thread's effective model changed between turns. */
   | { kind: 'modelChange'; model: string }
   /** A timeline line marking that older lookups left the model's context so this turn would

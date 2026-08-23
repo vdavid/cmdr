@@ -34,6 +34,7 @@ import {
   type UsageView,
   type WakeDigestFolderView,
   type WakeDigestRollupView,
+  type ProposalDecision,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
@@ -58,6 +59,9 @@ export type {
   WakeDigestFolderView,
   /** The folders a wake's digest had no room to name, summarized under a shared ancestor. */
   WakeDigestRollupView,
+  /** One proposal group the user answered: the verb, the count, and what became of it.
+   * Numbers and the group's own display text only, so the rail owns every word around them. */
+  ProposalDecision,
 }
 
 /** Why an assistant turn ended, on the wire (the generated `StopReasonView`). */

@@ -1042,5 +1042,74 @@
   "askCmdr.wakeToast.openThread": "See why",
   "@askCmdr.wakeToast.openThread": {
     "description": "The quieter, link-shaped second action on that pop-up notice, beside the main Review button. It opens the chat Ask Cmdr had with itself, where its reasoning is. The point of the wording is the difference between the two: Review shows WHAT it wants to do, this one shows WHY it wants to. Short, and sentence case, no full stop."
+  },
+  "askCmdr.decision.rejected": "You turned down {verbName} {countText} {count, plural, one {item} other {items}}",
+  "@askCmdr.decision.rejected": {
+    "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This is the wording for a suggestion the person said no to in the review. Sentence case, no full stop. Address the person directly, in the informal register this app uses throughout.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files or folders the suggestion covered, already formatted with thousands separators, like 1,234."
+      },
+      "count": { "content": "The same count as a raw integer, used only to pick the singular or plural word." },
+      "verbName": {
+        "content": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting."
+      }
+    }
+  },
+  "askCmdr.decision.approved": "You approved {verbName} {countText} {count, plural, one {item} other {items}}",
+  "@askCmdr.decision.approved": {
+    "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This is the wording for a suggestion the person approved and that has since finished running; what actually happened to each file is said on the next line, askCmdr.decision.result. Sentence case, no full stop. Address the person directly, in the informal register this app uses throughout.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files or folders the suggestion covered, already formatted with thousands separators, like 1,234."
+      },
+      "count": { "content": "The same count as a raw integer, used only to pick the singular or plural word." },
+      "verbName": {
+        "content": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting."
+      }
+    }
+  },
+  "askCmdr.decision.result": "{doneText} done, {skippedText} skipped, {failedText} failed",
+  "@askCmdr.decision.result": {
+    "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This second line follows an approved suggestion and says what the run actually did, which is not always what was approved: a file that changed after the review is passed over rather than acted on. All three numbers are always shown, zeros included, because a partial run is exactly what this line exists to admit to. Lowercase fragments joined by commas, no full stop.",
+    "placeholders": {
+      "doneText": {
+        "content": "How many files the run finished, already formatted with thousands separators, like 1,234."
+      },
+      "skippedText": {
+        "content": "How many files the run passed over, already formatted with thousands separators, like 1,234."
+      },
+      "failedText": {
+        "content": "How many files the run could not finish, already formatted with thousands separators, like 1,234."
+      }
+    }
+  },
+  "askCmdr.decision.verbMove": "moving",
+  "@askCmdr.decision.verbMove": {
+    "description": "The name of one action Ask Cmdr can suggest (moving files to another folder), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop."
+  },
+  "askCmdr.decision.verbCopy": "copying",
+  "@askCmdr.decision.verbCopy": {
+    "description": "The name of one action Ask Cmdr can suggest (copying files to another folder), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop."
+  },
+  "askCmdr.decision.verbTrash": "trashing",
+  "@askCmdr.decision.verbTrash": {
+    "description": "The name of one action Ask Cmdr can suggest (moving files to the system trash, where they can still be recovered), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop."
+  },
+  "askCmdr.decision.verbDelete": "deleting",
+  "@askCmdr.decision.verbDelete": {
+    "description": "The name of one action Ask Cmdr can suggest (erasing files for good, with no trash to recover them from), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop."
+  },
+  "askCmdr.decision.verbRename": "renaming",
+  "@askCmdr.decision.verbRename": {
+    "description": "The name of one action Ask Cmdr can suggest (giving files new names in place), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop."
+  },
+  "askCmdr.decision.verbCompress": "compressing",
+  "@askCmdr.decision.verbCompress": {
+    "description": "The name of one action Ask Cmdr can suggest (packing files into an archive), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop."
+  },
+  "askCmdr.decision.verbExtract": "extracting",
+  "@askCmdr.decision.verbExtract": {
+    "description": "The name of one action Ask Cmdr can suggest (unpacking an archive), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop."
   }
 }

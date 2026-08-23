@@ -15,6 +15,7 @@
     import AskCmdrToolLine from './AskCmdrToolLine.svelte'
     import AskCmdrAttachmentChip from './AskCmdrAttachmentChip.svelte'
     import AskCmdrWakeDigest from './AskCmdrWakeDigest.svelte'
+    import AskCmdrProposalDecisions from './AskCmdrProposalDecisions.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { undoRename, type RailMessage } from './ask-cmdr-trigger.svelte'
 
@@ -85,6 +86,12 @@
          right-aligned bubble: nobody typed it, so it doesn't belong on the user's side. -->
     <div class="msg">
         <AskCmdrWakeDigest folders={message.folders} rollups={message.rollups} />
+    </div>
+{:else if message.kind === 'proposalDecisions'}
+    <!-- What the user answered about a suggestion. Full width rather than a right-aligned
+         bubble: it is a record of a decision, not something anybody typed. -->
+    <div class="msg">
+        <AskCmdrProposalDecisions decisions={message.decisions} />
     </div>
 {:else if message.kind === 'assistant'}
     <div class="msg">

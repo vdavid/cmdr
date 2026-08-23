@@ -123,4 +123,44 @@ describe('buildRailMessages', () => {
       },
     ])
   })
+
+  /** What the user answered arrives on two different rows, and both have to fold into the one
+   *  item the rail renders: an `event` row the moment they answered, and the user-role opener
+   *  of the follow-up turn a rejected sweep earns. The second carries no text either, so
+   *  missing it would render an empty bubble where the reason for the turn should be. */
+  it('renders a decision the same way whether it arrives as an event or as a follow-up opener', () => {
+    const rejected = {
+      verb: 'trash' as const,
+      what: '/Users/dana/Downloads/*.dmg',
+      ops: 12,
+      outcome: { kind: 'rejected' as const },
+    }
+    const items = buildRailMessages(
+      detail([
+        {
+          id: 3,
+          seq: 0,
+          role: 'event',
+          createdAt: 0,
+          promptTokens: null,
+          completionTokens: null,
+          blocks: [{ type: 'proposalDecisions', decisions: [rejected] }],
+        },
+        {
+          id: 4,
+          seq: 1,
+          role: 'user',
+          createdAt: 0,
+          promptTokens: null,
+          completionTokens: null,
+          blocks: [{ type: 'proposalDecisions', decisions: [rejected] }],
+        },
+      ]),
+    )
+
+    expect(items).toEqual([
+      { kind: 'proposalDecisions', id: 3, decisions: [rejected] },
+      { kind: 'proposalDecisions', id: 4, decisions: [rejected] },
+    ])
+  })
 })
