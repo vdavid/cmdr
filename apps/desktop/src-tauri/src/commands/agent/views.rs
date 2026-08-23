@@ -13,6 +13,7 @@ use crate::agent::chat::context::{AttachmentKind, EnvelopeAttachment};
 use crate::agent::chat::stream::AgentErrorKindView;
 use crate::agent::llm::types::{AgentPart, AgentRole};
 use crate::agent::store::{self, ConversationRow, StoredMessage};
+use crate::agent::types::ProposalDecision;
 
 /// Why a send never started.
 ///
@@ -111,6 +112,16 @@ pub enum MessageBlock {
         folders: Vec<WakeDigestFolderView>,
         rollups: Vec<WakeDigestRollupView>,
     },
+    /// What the user did with the proposals this thread made: one entry per answered group.
+    ///
+    /// Two rows reach the rail as this block, and deliberately as the SAME one. An `event`-role
+    /// row carries a single decision as it happens, for the user's eyes; a `user`-role row
+    /// carries a whole sweep's worth, because it is what opened the follow-up turn the agent
+    /// learns from. One shape, one renderer, one set of strings.
+    ///
+    /// ⚠️ **Verbs, counts, and the group's own display text, never a sentence.** The English
+    /// the model reads (`ProposalDecision::render`) is a prompt and stays one.
+    ProposalDecisions { decisions: Vec<ProposalDecision> },
 }
 
 /// One folder a wake's digest named outright, and what happened in it. Every count is a
@@ -256,6 +267,9 @@ pub(super) fn to_message_view(message: StoredMessage) -> MessageView {
                             })
                             .collect(),
                     }),
+                    AgentPart::ProposalOutcomes(outcomes) => Some(MessageBlock::ProposalDecisions {
+                        decisions: outcomes.decisions,
+                    }),
                 })
                 .collect();
             (role.into(), blocks)
@@ -263,6 +277,15 @@ pub(super) fn to_message_view(message: StoredMessage) -> MessageView {
         store::StoredContent::Event(store::ConversationEvent::ModelChanged { model }) => {
             (MessageRoleView::Event, vec![MessageBlock::ModelChanged { model }])
         }
+        // One decision, in the same block the follow-up turn's opener uses: the rail draws one
+        // line per decision either way, and a second shape would be a second renderer for the
+        // same sentence.
+        store::StoredContent::Event(store::ConversationEvent::ProposalDecided { decision }) => (
+            MessageRoleView::Event,
+            vec![MessageBlock::ProposalDecisions {
+                decisions: vec![decision],
+            }],
+        ),
     };
     MessageView {
         id: message.id,

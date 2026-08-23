@@ -189,6 +189,8 @@ fn agent_part_to_genai(part: &AgentPart, tool_names: &ToolNames<'_>) -> Vec<Cont
         // The provider reads prose, so the structured digest renders on its way out. This is
         // the ONLY place it becomes English, which is what keeps the persisted row localizable.
         AgentPart::WakeDigest(digest) => vec![ContentPart::Text(digest.render())],
+        // Same contract as the digest above: the only place a sweep's outcomes become English.
+        AgentPart::ProposalOutcomes(outcomes) => vec![ContentPart::Text(outcomes.render())],
         AgentPart::ToolCall(call) => vec![ContentPart::ToolCall(GenaiToolCall {
             call_id: call.call_id.clone(),
             fn_name: call.tool.as_wire_name().to_string(),

@@ -29,6 +29,7 @@ use rusqlite::Connection;
 
 use decorator::ProposalReportingSink;
 
+use super::super::memory::MemoryStore;
 use super::super::store::AgentStoreError;
 use super::super::store::proposals::{
     AcceptanceOutcome, ClaimOutcome, ClaimRefusal, ProposalGroup, ProposalOp, get_group, page_ops, record_acceptance,
@@ -96,6 +97,10 @@ const OP_PAGE: u32 = 1_000;
 /// operation gets, the destination is created if missing exactly as it would be, and a
 /// conflict is answered exactly as it would be. Approval transfers responsibility; it does
 /// not change what runs.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the approval hand-off; every one of these outlives the caller and has to be moved in"
+)]
 pub async fn approve_and_execute(
     conn: &Connection,
     reporting_conn: Connection,
@@ -103,6 +108,7 @@ pub async fn approve_and_execute(
     group_id: i64,
     deselected_op_ids: &[i64],
     now: i64,
+    memory: Option<MemoryStore>,
 ) -> Result<ApprovalOutcome, AgentStoreError> {
     match record_acceptance(conn, group_id, deselected_op_ids, now)? {
         AcceptanceOutcome::Accepted { .. } => {}
@@ -131,8 +137,13 @@ pub async fn approve_and_execute(
         ClaimOutcome::Refused(refusal) => return Ok(ApprovalOutcome::Refused(ApprovalRefusal::Claim(refusal))),
     };
 
-    let sink: Arc<dyn OperationEventSink> =
-        Arc::new(ProposalReportingSink::new(events, group_id, op_ids, reporting_conn));
+    let sink: Arc<dyn OperationEventSink> = Arc::new(ProposalReportingSink::new(
+        events,
+        group_id,
+        op_ids,
+        reporting_conn,
+        memory,
+    ));
 
     match start_for(&group, sources, &ops, expected, sink).await {
         Ok(operation) => Ok(ApprovalOutcome::Started(ApprovedGroup { group_id, operation })),

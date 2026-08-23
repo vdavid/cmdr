@@ -41,6 +41,7 @@ pub use claim::{
 pub use complete::{CompleteOutcome, mark_group_completed, record_op_outcome};
 pub use read::{
     GroupSummary, ProposalOp, ProposalSweep, count_ops, count_pending, get_group, get_sweep, list_groups, page_ops,
+    rejected_groups_since,
 };
 pub use recovery::recover_interrupted_groups;
 pub use write::{

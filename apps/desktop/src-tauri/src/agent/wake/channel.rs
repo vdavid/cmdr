@@ -85,7 +85,9 @@ pub enum WakeControl {
     ReadinessChanged,
     /// The user's cadence or the proactive toggle moved. Re-read the settings and re-arm.
     SettingsChanged,
-    /// The wake thread finished, so another may be prepared.
+    /// The background turn thread finished, so another may be prepared. A wake and a
+    /// rejection's follow-up share one in-flight flag, so they share this message too: at most
+    /// one background turn at a time, whichever kind.
     WakeFinished,
     /// Act on whatever is in the inbox NOW, ignoring the timer and the proactive toggle.
     ///
@@ -94,6 +96,12 @@ pub enum WakeControl {
     /// instead of adding to it, and `test_mode.rs` draws the line there. The gates that
     /// protect the user (consent, disk access, a provider) are NOT bypassed.
     ForceWake,
+    /// The user turned down a group in this sweep, so the agent has something to ask about.
+    ///
+    /// ⚠️ **One message per REJECTED GROUP, one turn per SWEEP.** The loop coalesces: "reject
+    /// all" over an eight-group sweep sends eight of these and spends one model call. A
+    /// dismissed dialog sends none at all (`../outcomes.rs`).
+    SweepRejected { set_id: i64 },
 }
 
 /// The endpoint: one sender, the receiver waiting to be claimed, and the rollup accounting the

@@ -139,3 +139,95 @@ token_enum! {
         Irreversible => "irreversible",
     }
 }
+
+/// What became of one proposal group once the user answered it.
+///
+/// ⚠️ **`Ran` is written when the operation SETTLES, never when the user clicked approve.** The
+/// claim is only a claim: a group can be approved and then skip every file behind a fingerprint
+/// mismatch, and an outcome recorded at claim time would teach the agent that the user wanted
+/// something they never got. `suggested_ops/bridge/decorator.rs` is where the real answer lands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum ProposalOutcomeKind {
+    /// The user said no in the review.
+    Rejected,
+    /// The user approved it and the operation has since finished, however it finished.
+    Ran { done: u32, skipped: u32, failed: u32 },
+}
+
+/// One answered proposal group: what was asked, over how much, and what the user did.
+///
+/// ⚠️ **Both a stored shape and a wire shape**, like the rest of this module's vocabulary: it
+/// rides inside a `ConversationEvent`'s persisted JSON, inside the follow-up turn's persisted
+/// user message, AND across IPC as a display block. So a field rename here is a change to data
+/// already on disk, not a refactor.
+///
+/// ❌ **No rationale, no file names, no op paths.** A decision line goes into the agent's memory
+/// ring, which rides the prefix of every later turn; the group's own display text (a path or a
+/// pattern the user already saw) plus a count is the whole of what a lesson needs.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposalDecision {
+    pub verb: ProposalVerb,
+    /// The group's display name: a path or a pattern, so the user's own data rather than copy.
+    pub what: String,
+    /// The live op count the user was answering about.
+    pub ops: u32,
+    pub outcome: ProposalOutcomeKind,
+}
+
+/// What the user answered across one sweep.
+///
+/// ⚠️ **One sweep, ❌ never one group.** "Reject all" over an eight-group sweep is eight
+/// rejections, and a follow-up turn each would be eight model calls serialized behind one
+/// conversation lock. The sweep is the unit the user experienced as one decision.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposalOutcomes {
+    pub decisions: Vec<ProposalDecision>,
+}
+
+impl ProposalOutcomeKind {
+    /// The stable token, for the memory ring's line and the anonymous analytics event.
+    pub fn as_token(self) -> &'static str {
+        match self {
+            ProposalOutcomeKind::Rejected => "rejected",
+            ProposalOutcomeKind::Ran { .. } => "ran",
+        }
+    }
+}
+
+impl ProposalDecision {
+    /// The decision as the MODEL reads it: one line, terse, English.
+    ///
+    /// ❌ Never render this into the UI. It is what goes into the memory ring and into the
+    /// follow-up turn's prompt; the rail says the same numbers in the user's own language.
+    pub fn render(&self) -> String {
+        let verb = self.verb.as_token();
+        let ops = self.ops;
+        match self.outcome {
+            ProposalOutcomeKind::Rejected => format!("turned down: {verb} {ops} item(s) under {}", self.what),
+            ProposalOutcomeKind::Ran { done, skipped, failed } => format!(
+                "approved: {verb} {ops} item(s) under {} ({done} done, {skipped} skipped, {failed} failed)",
+                self.what
+            ),
+        }
+    }
+}
+
+impl ProposalOutcomes {
+    /// The sweep as the MODEL reads it, one line per group. Empty renders empty, never a
+    /// header saying nothing happened: that would spend budget to say nothing.
+    pub fn render(&self) -> String {
+        self.decisions
+            .iter()
+            .map(|decision| format!("{}\n", decision.render()))
+            .collect()
+    }
+
+    /// Every path the block mentions, in order. The follow-up message's FTS text: the display
+    /// names are the user's own data rather than authored copy.
+    pub fn paths(&self) -> Vec<&str> {
+        self.decisions.iter().map(|decision| decision.what.as_str()).collect()
+    }
+}

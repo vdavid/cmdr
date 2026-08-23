@@ -35,6 +35,8 @@ pub use selector::{DriveIndex, IndexedFile, OpSelector, SelectorIndex, SelectorR
 
 use rusqlite::Connection;
 
+use super::memory::MemoryStore;
+use super::outcomes::{self, RejectSource};
 use super::store::AgentStoreError;
 use super::store::proposals::{
     ClaimOutcome, GroupIntent, NewGroup, NewOp, NewSweep, OpSnapshot, RejectOutcome, ReproposeOutcome,
@@ -128,12 +130,27 @@ pub fn approve(conn: &Connection, group_id: i64, now: i64) -> Result<ClaimOutcom
 ///
 /// The verb and count are read BEFORE the transition, because that's the group the user was
 /// looking at when they said no.
-pub fn reject(conn: &Connection, group_id: i64, now: i64) -> Result<RejectOutcome, AgentStoreError> {
+///
+/// ⚠️ **The `Rejected` arm is where the agent hears about it**, and that is not an accident of
+/// placement: `reject_group` is a conditional `UPDATE … WHERE status = 'pending'` that answers
+/// `Rejected` only when a row actually moved, so the hook fires exactly once per group, across
+/// restarts, with no new column to keep in step.
+///
+/// ⚠️ **`source` decides whether anything is learned.** A dismissed dialog is the same store
+/// transition and a completely different signal; see [`crate::agent::outcomes::RejectSource`].
+pub fn reject(
+    conn: &Connection,
+    group_id: i64,
+    now: i64,
+    source: RejectSource,
+    memory: Option<&MemoryStore>,
+) -> Result<RejectOutcome, AgentStoreError> {
     let before = get_group(conn, group_id)?;
     let outcome = super::store::proposals::reject_group(conn, group_id, now)?;
     if let (RejectOutcome::Rejected, Some(group)) = (&outcome, before) {
         let op_count = count_ops(conn, group_id, Some(crate::agent::types::OpStatus::Pending))?;
         analytics::group_rejected(group.verb, op_count);
+        outcomes::record_rejection(conn, memory, source, &group, op_count as u32, now);
         changed::announce(conn, SuggestionChange::Rejected, Some(group_id));
     }
     Ok(outcome)

@@ -1033,6 +1033,7 @@ async fn a_model_change_between_turns_logs_an_event_row_before_the_user_message(
                 _ => "other",
             },
             store::StoredContent::Event(store::ConversationEvent::ModelChanged { .. }) => "event",
+            store::StoredContent::Event(store::ConversationEvent::ProposalDecided { .. }) => "decision",
         })
         .collect();
     assert_eq!(shapes, vec!["user", "assistant", "event", "user", "assistant"]);

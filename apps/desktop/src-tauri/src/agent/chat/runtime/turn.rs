@@ -22,6 +22,7 @@ use crate::agent::llm::types::{
     ToolDeclaration, WakeDigest,
 };
 use crate::agent::store::{self, AgentStoreError};
+use crate::agent::types::ProposalOutcomes;
 
 /// What opens a turn: what the person typed, or what a wake noticed.
 ///
@@ -35,6 +36,9 @@ pub enum UserTurn<'a> {
     Text(&'a str),
     /// What a wake found waiting for it.
     Wake(&'a WakeDigest),
+    /// What the user did with a sweep the agent proposed. Opens the follow-up turn a rejection
+    /// asks for, and carries the same "data, never prose" contract as a digest.
+    Outcomes(&'a ProposalOutcomes),
 }
 
 impl UserTurn<'_> {
@@ -43,6 +47,7 @@ impl UserTurn<'_> {
         match self {
             UserTurn::Text(text) => AgentPart::Text((*text).to_string()),
             UserTurn::Wake(digest) => AgentPart::WakeDigest((*digest).clone()),
+            UserTurn::Outcomes(outcomes) => AgentPart::ProposalOutcomes((*outcomes).clone()),
         }
     }
 
@@ -52,6 +57,7 @@ impl UserTurn<'_> {
         match self {
             UserTurn::Text(text) => (*text).to_string(),
             UserTurn::Wake(digest) => digest.paths().join(" "),
+            UserTurn::Outcomes(outcomes) => outcomes.paths().join(" "),
         }
     }
 }

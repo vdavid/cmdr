@@ -419,8 +419,8 @@ impl WakeDigestRollup {
 }
 
 /// One ordered content part of a message. The variant keys serialize snake_case
-/// (`text`, `tool_call`, `tool_result`, `reasoning`, `wake_digest`) for a
-/// plainly-inspectable DB `content_blocks` JSON.
+/// (`text`, `tool_call`, `tool_result`, `reasoning`, `wake_digest`,
+/// `proposal_outcomes`) for a plainly-inspectable DB `content_blocks` JSON.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentPart {
@@ -432,6 +432,10 @@ pub enum AgentPart {
     /// What a wake noticed, structured. The provider reads [`WakeDigest::render`]; the rail
     /// reads the numbers and says them in the user's own language.
     WakeDigest(WakeDigest),
+    /// What the user did with a sweep's proposals, structured. Opens the follow-up turn the
+    /// same way a digest opens a wake, and for the same reason: a rendered English sentence
+    /// would freeze one locale's copy in `main.db` where no later locale pass can reach it.
+    ProposalOutcomes(crate::agent::types::ProposalOutcomes),
 }
 
 /// A full message: a role, its ordered typed parts, and its timestamp. Every

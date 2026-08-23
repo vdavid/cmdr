@@ -250,7 +250,18 @@ pub async fn cancel_bulk_rename_proposal(app: AppHandle, proposal_id: String) {
         let Ok(conn) = crate::agent::store::open_write_connection(&db_path) else {
             return;
         };
-        if let Err(e) = crate::agent::suggested_ops::reject(&conn, group_id, now_secs()) {
+        // ⚠️ **A dismissal, ❌ not a rejection.** The group needs an answer and gets one, but
+        // the user said nothing about the proposal by pressing Escape. Recording a lesson from
+        // it would teach the agent an opinion nobody gave, and asking "why did you say no?"
+        // would spend a model call and land a turn in whatever thread they had open — this
+        // sweep's `conversation_id` is the RAIL conversation.
+        if let Err(e) = crate::agent::suggested_ops::reject(
+            &conn,
+            group_id,
+            now_secs(),
+            crate::agent::outcomes::RejectSource::DialogDismissed,
+            None,
+        ) {
             log::warn!(target: "agent::propose", "closing a rename review didn't record the rejection: {e}");
         }
     })

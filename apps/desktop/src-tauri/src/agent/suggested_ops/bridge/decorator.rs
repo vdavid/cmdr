@@ -15,6 +15,8 @@ use std::sync::{Arc, Mutex};
 
 use rusqlite::Connection;
 
+use crate::agent::chat::runtime::now_secs;
+use crate::agent::memory::MemoryStore;
 use crate::agent::store::proposals::{mark_group_completed, record_op_outcome};
 use crate::agent::types::OpStatus;
 use crate::file_system::write_operations::{
@@ -36,6 +38,14 @@ pub(super) struct ProposalReportingSink {
     /// One connection for the operation lifetime rather than one per event: a group may
     /// carry 60 000 sources, and opening a connection per source would dominate the run.
     conn: Mutex<Connection>,
+    /// Where the agent's lesson goes, resolved by the command layer and MOVED in for the same
+    /// reason the connection is: the operation outlives the call that started it.
+    ///
+    /// ⚠️ **This seam is why the store is pure.** The write engine's thread has no `AppHandle`
+    /// and may never name one (`write-ops-isolation`), so a memory store that needed one would
+    /// have nowhere to be built here — and this is the only place an approval's REAL outcome
+    /// is known.
+    memory: Option<MemoryStore>,
 }
 
 impl ProposalReportingSink {
@@ -44,12 +54,14 @@ impl ProposalReportingSink {
         group_id: i64,
         op_ids: HashMap<PathBuf, i64>,
         conn: Connection,
+        memory: Option<MemoryStore>,
     ) -> Self {
         Self {
             inner,
             group_id,
             op_ids,
             conn: Mutex::new(conn),
+            memory,
         }
     }
 
@@ -115,6 +127,11 @@ impl OperationEventSink for ProposalReportingSink {
                     "couldn't mark group {} completed: {e}", self.group_id
                 ),
             }
+            // ⚠️ HERE, and not at `approve`. An outcome recorded when the user clicked would
+            // say "approved" for a group that then skipped every file, and the agent would
+            // learn the user wanted something they never got. The per-op statuses above are
+            // already written by the time settle fires, so this reads the truth.
+            crate::agent::outcomes::record_completion(&conn, self.memory.as_ref(), self.group_id, now_secs());
         }
         self.inner.emit_settled(event);
     }

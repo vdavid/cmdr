@@ -6,6 +6,7 @@ use rusqlite::Connection;
 
 use super::*;
 use crate::agent::llm::types::{AgentPart, AgentRole, AgentToolCall, ProviderTag, ReasoningState, ToolId};
+use crate::agent::store::append_event;
 use crate::agent::types::ConversationOrigin;
 
 /// An in-memory `main.db` at the current schema. FTS5 works in-memory, so this exercises

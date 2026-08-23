@@ -15,10 +15,12 @@
 //! write-connection lifetime.
 
 mod connection;
+mod events;
 mod inbox;
 mod migrations;
 pub mod proposals;
 mod query;
+mod rows;
 
 use std::path::{Path, PathBuf};
 
@@ -26,14 +28,15 @@ use rusqlite::{Connection, ErrorCode};
 
 pub use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
+pub use events::{ConversationEvent, append_event};
 pub use inbox::{StoredInboxRow, clear_inbox, load_inbox, replace_inbox, upsert_inbox_row};
 pub use migrations::{MIGRATIONS, Migration, run_migrations};
 pub use query::{
-    AskCmdrConsent, ConversationCost, ConversationDetail, ConversationEvent, ConversationRow, ConversationSearchHit,
-    CostDay, CostRecord, CostSummary, StoredContent, StoredMessage, append_event, append_message, archive_conversation,
-    clear_consent, conversation_context_usage, conversation_cost, conversation_last_model, cost_summary,
-    create_conversation, delete_conversation, discard_conversation_keeping_cost, get_consent, get_conversation,
-    list_conversations, list_messages, quiet_wakes_conversation, record_cost, rename_conversation, sanitize_fts_query,
+    AskCmdrConsent, ConversationCost, ConversationDetail, ConversationRow, ConversationSearchHit, CostDay, CostRecord,
+    CostSummary, StoredContent, StoredMessage, append_message, archive_conversation, clear_consent,
+    conversation_context_usage, conversation_cost, conversation_last_model, cost_summary, create_conversation,
+    delete_conversation, discard_conversation_keeping_cost, get_consent, get_conversation, list_conversations,
+    list_messages, quiet_wakes_conversation, record_cost, rename_conversation, sanitize_fts_query,
     search_conversations, set_consent, set_conversation_context_usage, set_conversation_last_model,
 };
 

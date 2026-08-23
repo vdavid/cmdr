@@ -16,8 +16,9 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::AppHandle;
 
 use super::channel::{self, FolderActivity, WakeControl, WakeMessage};
+use super::followup::{self, FollowUpQueue};
 use super::importance::ImportanceCache;
-use super::runner::{self, ResolvedSlot};
+use super::runner::{self, BackgroundTurn, ResolvedSlot};
 use super::settings::{self, WakeSettings};
 use super::snapshot::readiness_snapshot;
 use super::{Inbox, PrepareOutcome, PrepareParams, persist, prepare_wake};
@@ -76,6 +77,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
         wake_in_flight: false,
         not_before: 0,
         forced: false,
+        follow_ups: FollowUpQueue::default(),
         app,
         conn,
     };
@@ -101,6 +103,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
         }
         loop_state.report_dropped_rollups();
         loop_state.try_wake();
+        loop_state.try_follow_up();
     }
 }
 
@@ -139,12 +142,37 @@ struct WakeLoop {
     /// and the proactive toggle say. Cleared once the attempt is actually made, so a force
     /// arriving while a wake runs lands on the next pass rather than being swallowed.
     forced: bool,
+    /// Sweeps the user turned something down in, waiting out their coalescing window. One
+    /// entry per sweep, which is what makes "reject all" one model call.
+    follow_ups: FollowUpQueue,
 }
 
 impl WakeLoop {
     /// How long to park before the next thing that could need doing.
+    ///
+    /// Two clocks now: the inbox's next deadline and the earliest rejection whose coalescing
+    /// window is about to close. Parking past the second would leave a follow-up sitting until
+    /// something unrelated woke the loop.
     fn park(&self) -> Duration {
-        park_for(self.inbox.next_deadline(), self.not_before, now_secs())
+        let now = now_secs();
+        let wake = park_for(self.inbox.next_deadline(), self.not_before, now);
+        match self.follow_ups.next_due() {
+            Some(due) => wake.min(Duration::from_secs(due.saturating_sub(now))),
+            None => wake,
+        }
+    }
+
+    /// Note that a group in this sweep was turned down, so the agent can ask about it.
+    ///
+    /// ⚠️ **A closed gate DROPS the ask rather than parking it.** "Why did you say no?" is only
+    /// worth asking while the answer is still in the user's head, and a question that surfaces
+    /// the week they finally set an API key reads as the app having been sitting on it.
+    fn note_rejection(&mut self, set_id: i64) {
+        if !followup::may_ask(&self.settings, readiness_snapshot()) {
+            log::debug!(target: LOG_TARGET, "a rejection went unasked about: the agent is not allowed to speak");
+            return;
+        }
+        self.follow_ups.note(set_id, now_secs());
     }
 
     /// Fold one rollup into the inbox and write the row it touched.
@@ -184,6 +212,7 @@ impl WakeLoop {
             WakeControl::ReadinessChanged => self.purge_inbox_if_not_permitted(),
             WakeControl::WakeFinished => self.wake_in_flight = false,
             WakeControl::ForceWake => self.forced = true,
+            WakeControl::SweepRejected { set_id } => self.note_rejection(set_id),
         }
         // Every control message is a reason the last decision may no longer hold: the gate the
         // wake was refused by may have opened, or the wake it was waiting on may have finished.
@@ -298,7 +327,11 @@ impl WakeLoop {
         ) {
             PrepareOutcome::Ready(prepared) => {
                 self.wake_in_flight = true;
-                runner::spawn(self.app.clone(), slot.into_resolved(prepared.conversation_id), prepared);
+                runner::spawn(
+                    self.app.clone(),
+                    slot.into_resolved(prepared.conversation_id),
+                    BackgroundTurn::Wake(prepared),
+                );
             }
             PrepareOutcome::NotReady(gap) => {
                 log::debug!(target: LOG_TARGET, "the wake gate closed between the check and the prepare: {gap:?}");
@@ -307,6 +340,42 @@ impl WakeLoop {
             PrepareOutcome::NothingDue => runner::record_outcome("nothing_due", None, self.inbox.len(), 0),
             PrepareOutcome::Unavailable => runner::record_outcome("unavailable", None, self.inbox.len(), 0),
         }
+    }
+
+    /// Ask about one sweep the user turned down, if its coalescing window has closed.
+    ///
+    /// ⚠️ **Shares `wake_in_flight` with a wake.** At most one background turn at a time,
+    /// whichever kind: two would queue behind each other's conversation locks and spend the
+    /// user's money in parallel for no benefit. The queue keeps until the running one reports
+    /// finished.
+    fn try_follow_up(&mut self) {
+        if self.wake_in_flight {
+            return;
+        }
+        // Re-checked here as well as at the ask: a gate can close during the window.
+        if !followup::may_ask(&self.settings, readiness_snapshot()) {
+            self.follow_ups.clear();
+            return;
+        }
+        let now = now_secs();
+        let Some((set_id, since)) = self.follow_ups.take_due(now) else {
+            return;
+        };
+        let Some(prepared) = followup::prepare(&self.conn, set_id, since as i64) else {
+            return;
+        };
+        // Resolved the same way a wake resolves it, and only once there is something to say, so
+        // a follow-up with nowhere to think costs nothing.
+        let Some(slot) = self.resolve_slot() else {
+            runner::record_outcome("followup_unavailable", None, 0, 0);
+            return;
+        };
+        self.wake_in_flight = true;
+        runner::spawn(
+            self.app.clone(),
+            slot.into_resolved(prepared.conversation_id),
+            BackgroundTurn::FollowUp(prepared),
+        );
     }
 
     /// The provider, the model, and the budget this wake would think with — resolved the same

@@ -20,6 +20,7 @@ pub mod chat;
 pub mod consent;
 pub mod llm;
 pub mod memory;
+pub mod outcomes;
 pub mod pricing;
 pub mod store;
 pub mod suggested_ops;

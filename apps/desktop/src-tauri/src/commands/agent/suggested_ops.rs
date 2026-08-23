@@ -188,9 +188,20 @@ pub async fn suggested_ops_page(
 pub async fn suggested_ops_reject(app: AppHandle, group_id: i64) -> Result<RejectResultView, IpcError> {
     let db_path = super::db_path(&app).ok_or_else(|| IpcError::from_err("Cmdr's suggestion store isn't open."))?;
     let now = now_secs();
+    // Resolved here because the agent's own seams are pure: the store is parameterized on a
+    // root, and this is the layer that still holds an `AppHandle`.
+    let memory = crate::agent::memory::store_for(&app);
     tauri::async_runtime::spawn_blocking(move || {
         let conn = crate::agent::store::open_write_connection(&db_path).map_err(IpcError::from_err)?;
-        let outcome = crate::agent::suggested_ops::reject(&conn, group_id, now).map_err(IpcError::from_err)?;
+        // A real "no" from the review, which is the one rejection the agent learns from.
+        let outcome = crate::agent::suggested_ops::reject(
+            &conn,
+            group_id,
+            now,
+            crate::agent::outcomes::RejectSource::Review,
+            memory.as_ref(),
+        )
+        .map_err(IpcError::from_err)?;
         Ok(match outcome {
             crate::agent::store::proposals::RejectOutcome::Rejected => RejectResultView::Rejected,
             crate::agent::store::proposals::RejectOutcome::NotPending { found } => {
@@ -572,6 +583,9 @@ pub async fn suggested_ops_approve(
 ) -> Result<ApprovalResultView, IpcError> {
     let db_path = super::db_path(&app).ok_or_else(|| IpcError::from_err("Cmdr's suggestion store isn't open."))?;
     let now = now_secs();
+    // Resolved before the handle is moved into the sink: what actually happened is only known
+    // when the operation settles, on a thread that may never name an `AppHandle`.
+    let memory = crate::agent::memory::store_for(&app);
     let (send, receive) = tokio::sync::oneshot::channel();
 
     std::thread::spawn(move || {
@@ -595,6 +609,7 @@ pub async fn suggested_ops_approve(
                 group_id,
                 &deselected_op_ids,
                 now,
+                memory,
             )
             .await
             .map_err(|e| e.to_string())

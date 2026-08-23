@@ -92,6 +92,30 @@ pub fn get_sweep(conn: &Connection, set_id: i64) -> Result<Option<ProposalSweep>
     }
 }
 
+/// The groups of ONE sweep the user turned down at or after `since`, in proposal order.
+///
+/// Scoped by `decided_at` rather than by status alone so a rejection weeks later reports only
+/// itself: the follow-up turn asks "why did you say no to THIS?", and re-listing every group
+/// the sweep ever lost would teach the agent the same lesson twice.
+pub fn rejected_groups_since(
+    conn: &Connection,
+    set_id: i64,
+    since: i64,
+) -> Result<Vec<ProposalGroup>, AgentStoreError> {
+    let sql = format!(
+        "SELECT {GROUP_COLUMNS} FROM proposals
+         WHERE set_id = ?1 AND status = ?2 AND decided_at IS NOT NULL AND decided_at >= ?3
+         ORDER BY seq"
+    );
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(params![set_id, ProposalStatus::Rejected.as_token(), since])?;
+    let mut out = Vec::new();
+    while let Some(row) = rows.next()? {
+        out.push(map_group_row(row)?);
+    }
+    Ok(out)
+}
+
 /// Group summaries, newest first, optionally filtered to one status. Counts come from
 /// `COUNT(*)` subqueries, so this stays cheap however large the groups are.
 pub fn list_groups(conn: &Connection, status: Option<ProposalStatus>) -> Result<Vec<GroupSummary>, AgentStoreError> {

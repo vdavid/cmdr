@@ -7394,6 +7394,18 @@ export type MessageBlock =
    *  renders them collapsed.
    */
   | { type: 'wakeDigest'; folders: WakeDigestFolderView[]; rollups: WakeDigestRollupView[] }
+  /**
+   *  What the user did with the proposals this thread made: one entry per answered group.
+   *
+   *  Two rows reach the rail as this block, and deliberately as the SAME one. An `event`-role
+   *  row carries a single decision as it happens, for the user's eyes; a `user`-role row
+   *  carries a whole sweep's worth, because it is what opened the follow-up turn the agent
+   *  learns from. One shape, one renderer, one set of strings.
+   *
+   *  ⚠️ **Verbs, counts, and the group's own display text, never a sentence.** The English
+   *  the model reads (`ProposalDecision::render`) is a prompt and stays one.
+   */
+  | { type: 'proposalDecisions'; decisions: ProposalDecision[] }
 
 // A message's role, on the wire.
 export type MessageRoleView =
@@ -8350,6 +8362,41 @@ export type PrepareResult = {
    */
   loading: boolean
 }
+
+/**
+ *  One answered proposal group: what was asked, over how much, and what the user did.
+ *
+ *  ⚠️ **Both a stored shape and a wire shape**, like the rest of this module's vocabulary: it
+ *  rides inside a `ConversationEvent`'s persisted JSON, inside the follow-up turn's persisted
+ *  user message, AND across IPC as a display block. So a field rename here is a change to data
+ *  already on disk, not a refactor.
+ *
+ *  ❌ **No rationale, no file names, no op paths.** A decision line goes into the agent's memory
+ *  ring, which rides the prefix of every later turn; the group's own display text (a path or a
+ *  pattern the user already saw) plus a count is the whole of what a lesson needs.
+ */
+export type ProposalDecision = {
+  verb: ProposalVerb
+  // The group's display name: a path or a pattern, so the user's own data rather than copy.
+  what: string
+  // The live op count the user was answering about.
+  ops: number
+  outcome: ProposalOutcomeKind
+}
+
+/**
+ *  What became of one proposal group once the user answered it.
+ *
+ *  ⚠️ **`Ran` is written when the operation SETTLES, never when the user clicked approve.** The
+ *  claim is only a claim: a group can be approved and then skip every file behind a fingerprint
+ *  mismatch, and an outcome recorded at claim time would teach the agent that the user wanted
+ *  something they never got. `suggested_ops/bridge/decorator.rs` is where the real answer lands.
+ */
+export type ProposalOutcomeKind =
+  // The user said no in the review.
+  | { kind: 'rejected' }
+  // The user approved it and the operation has since finished, however it finished.
+  | { kind: 'ran'; done: number; skipped: number; failed: number }
 
 /**
  *  Where a group sits in its lifecycle, stored in `proposals.status`.

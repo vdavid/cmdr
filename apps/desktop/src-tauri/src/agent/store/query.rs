@@ -25,6 +25,8 @@ use rusqlite::Connection;
 
 use super::super::types::ConversationOrigin;
 use super::AgentStoreError;
+use super::events::{ConversationEvent, EVENT_ROLE_TOKEN};
+use super::rows::insert_message_row;
 use crate::agent::llm::types::{AgentPart, AgentRole, ProviderTag};
 
 /// A conversation header row. Wire type (the thread list).
@@ -39,21 +41,6 @@ pub struct ConversationRow {
     /// `None` = user-started (the v1 case). A non-null token is a programmatic origin.
     pub origin: Option<ConversationOrigin>,
 }
-
-/// A UI-facing event recorded in a conversation's timeline (a `role = 'event'` message
-/// row). Events share the conversation's `seq` ordering but NEVER enter the LLM
-/// transcript — they exist for the user's eyes (and the history view) only.
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum ConversationEvent {
-    /// The conversation's effective model changed between turns; `model` is the new name.
-    ModelChanged { model: String },
-}
-
-/// The `messages.role` token for event rows. Kept OUTSIDE `AgentRole` on purpose: an
-/// event is not an LLM transcript role, so the seam's enum can't represent one and the
-/// transcript loader can't accidentally feed one to a provider.
-const EVENT_ROLE_TOKEN: &str = "event";
 
 /// What one stored message row holds: a transcript message (an LLM-facing role plus its
 /// ordered typed parts) or a UI-facing conversation event.
@@ -406,28 +393,6 @@ pub fn append_message(
     )
 }
 
-/// Append a UI-facing event row (see [`ConversationEvent`]) to a conversation, returning
-/// `(message_id, seq)`. Events interleave with messages via the shared per-conversation
-/// `seq`, carry no searchable text, and never enter the LLM transcript.
-pub fn append_event(
-    conn: &Connection,
-    conversation_id: i64,
-    event: &ConversationEvent,
-    now: i64,
-) -> Result<(i64, i64), AgentStoreError> {
-    let content_blocks = serde_json::to_string(event).map_err(AgentStoreError::ContentBlocks)?;
-    insert_message_row(
-        conn,
-        conversation_id,
-        EVENT_ROLE_TOKEN,
-        &content_blocks,
-        "",
-        None,
-        None,
-        now,
-    )
-}
-
 /// The model name the conversation's most recent completed turn (or recorded model-change
 /// event) used. `None` means no turn has run yet.
 pub fn conversation_last_model(conn: &Connection, conversation_id: i64) -> Result<Option<String>, AgentStoreError> {
@@ -489,53 +454,6 @@ pub fn set_conversation_context_usage(
         rusqlite::params![conversation_id, prompt_tokens as i64, prompt_budget as i64],
     )?;
     Ok(())
-}
-
-/// The shared insert for message and event rows: derive the per-conversation `seq` and
-/// bump the conversation's `updated_at`, all inside one transaction so the seq can't race
-/// and the two writes commit together.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "one row's full column set; a params struct would just relocate the arity"
-)]
-fn insert_message_row(
-    conn: &Connection,
-    conversation_id: i64,
-    role_token: &str,
-    content_blocks: &str,
-    text_for_search: &str,
-    prompt_tokens: Option<u32>,
-    completion_tokens: Option<u32>,
-    now: i64,
-) -> Result<(i64, i64), AgentStoreError> {
-    let tx = conn.unchecked_transaction()?;
-    let seq: i64 = tx.query_row(
-        "SELECT COALESCE(MAX(seq), -1) + 1 FROM messages WHERE conversation_id = ?1",
-        rusqlite::params![conversation_id],
-        |row| row.get(0),
-    )?;
-    tx.execute(
-        "INSERT INTO messages
-            (conversation_id, seq, role, content_blocks, text_for_search, prompt_tokens, completion_tokens, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        rusqlite::params![
-            conversation_id,
-            seq,
-            role_token,
-            content_blocks,
-            text_for_search,
-            prompt_tokens,
-            completion_tokens,
-            now,
-        ],
-    )?;
-    let message_id = tx.last_insert_rowid();
-    tx.execute(
-        "UPDATE conversations SET updated_at = ?2 WHERE id = ?1",
-        rusqlite::params![conversation_id, now],
-    )?;
-    tx.commit()?;
-    Ok((message_id, seq))
 }
 
 // ── Cross-thread FTS5 search ─────────────────────────────────────────────────

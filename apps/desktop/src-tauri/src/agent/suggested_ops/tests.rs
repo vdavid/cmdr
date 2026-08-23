@@ -123,6 +123,121 @@ fn a_selector_freezes_at_creation_and_is_never_resolved_again() {
     );
 }
 
+// ── What the user's answer teaches the agent ──────────────────────────────────
+
+/// A group with a real sweep behind it, and a memory store to learn into.
+fn a_trashable_group(conn: &Connection) -> i64 {
+    let index = FakeIndex::holding(&["/Users/someone/Downloads/one.dmg"]);
+    let selector = downloads_dmgs();
+    let ops = resolve_selector_ops(&index, &selector).expect("resolve");
+    let group = selector_group(&selector, GroupIntent::Trash { sources: ops }, None).expect("build group");
+    propose(conn, &NewSweep::default(), std::slice::from_ref(&group), 100)
+        .expect("propose")
+        .group_ids[0]
+}
+
+fn memory_store() -> (tempfile::TempDir, MemoryStore) {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let root = dir.path().join("memory");
+    std::fs::create_dir_all(&root).expect("root");
+    let store = MemoryStore::new(root);
+    (dir, store)
+}
+
+fn remembered(store: &MemoryStore) -> String {
+    std::fs::read_to_string(store.root().join(crate::agent::memory::OUTCOMES_FILE)).unwrap_or_default()
+}
+
+/// A "no" in the review is a judgment about the proposal, and the whole point of M4 is that the
+/// agent hears it. The lesson goes into the memory ring with no model call, so an approval and
+/// a rejection teach it equally.
+#[test]
+fn saying_no_in_the_review_teaches_the_agent() {
+    let conn = migrated_conn();
+    let (_dir, memory) = memory_store();
+    let group_id = a_trashable_group(&conn);
+
+    let outcome = reject(&conn, group_id, 200, RejectSource::Review, Some(&memory)).expect("reject");
+
+    assert!(matches!(outcome, RejectOutcome::Rejected), "{outcome:?}");
+    let learned = remembered(&memory);
+    assert!(learned.contains("turned down"), "nothing was learned: {learned:?}");
+    assert!(learned.contains("trash"), "the verb is part of the lesson: {learned:?}");
+}
+
+/// ⚠️ **Escape on a rename review is recorded as a rejection, and it is NOT one.**
+/// `cancel_bulk_rename_proposal` calls the same store transition, but the user expressed no
+/// opinion by closing a window. Learning from it would teach the agent something nobody said,
+/// and the follow-up turn it would ask for lands in whatever thread the user has open, because
+/// that sweep's `conversation_id` is the RAIL conversation.
+#[test]
+fn closing_a_dialog_teaches_the_agent_nothing() {
+    let conn = migrated_conn();
+    let (_dir, memory) = memory_store();
+    let group_id = a_trashable_group(&conn);
+
+    let outcome = reject(&conn, group_id, 200, RejectSource::DialogDismissed, Some(&memory)).expect("reject");
+
+    assert!(
+        matches!(outcome, RejectOutcome::Rejected),
+        "the group still gets its answer: {outcome:?}"
+    );
+    assert_eq!(
+        remembered(&memory),
+        "",
+        "a dismissed dialog is not an opinion, so there is nothing to remember"
+    );
+}
+
+/// The user's own half of the record. ⚠️ A `ConversationEvent` alone would teach the agent
+/// NOTHING (they never enter the LLM transcript), which is why the memory ring exists beside
+/// it — but a lesson the user can't see in the thread they got the suggestion in is just as
+/// wrong in the other direction.
+#[test]
+fn a_decision_shows_up_in_the_thread_that_suggested_it() {
+    let conn = migrated_conn();
+    let conversation_id = crate::agent::store::create_conversation(&conn, "Downloads", 50, None).expect("thread");
+    let index = FakeIndex::holding(&["/Users/someone/Downloads/one.dmg"]);
+    let selector = downloads_dmgs();
+    let ops = resolve_selector_ops(&index, &selector).expect("resolve");
+    let group = selector_group(&selector, GroupIntent::Trash { sources: ops }, None).expect("build group");
+    let sweep = NewSweep {
+        conversation_id: Some(conversation_id),
+        ..NewSweep::default()
+    };
+    let group_id = propose(&conn, &sweep, std::slice::from_ref(&group), 100)
+        .expect("propose")
+        .group_ids[0];
+
+    reject(&conn, group_id, 200, RejectSource::Review, None).expect("reject");
+
+    let timeline = crate::agent::store::list_messages(&conn, conversation_id, 100, 0).expect("messages");
+    let decided = timeline.iter().find_map(|message| match &message.content {
+        crate::agent::store::StoredContent::Event(crate::agent::store::ConversationEvent::ProposalDecided {
+            decision,
+        }) => Some(decision),
+        _ => None,
+    });
+    let decided = decided.expect("the thread says what the user answered");
+    assert_eq!(decided.verb, crate::agent::types::ProposalVerb::Trash);
+    assert_eq!(decided.ops, 1);
+}
+
+/// The transition is conditional, so the hook fires once per group however many times the
+/// button is pressed. Without that, a double click would double the lesson's weight.
+#[test]
+fn a_second_rejection_of_the_same_group_teaches_nothing_more() {
+    let conn = migrated_conn();
+    let (_dir, memory) = memory_store();
+    let group_id = a_trashable_group(&conn);
+
+    reject(&conn, group_id, 200, RejectSource::Review, Some(&memory)).expect("reject");
+    let after_first = remembered(&memory);
+    reject(&conn, group_id, 300, RejectSource::Review, Some(&memory)).expect("reject again");
+
+    assert_eq!(remembered(&memory), after_first);
+}
+
 /// The index snapshot rides onto the op rows, so the executor can tell at apply time whether
 /// the file is still the one the user reviewed.
 #[test]

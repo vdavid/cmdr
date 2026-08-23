@@ -226,9 +226,15 @@ pub async fn run_prepared_wake(
 /// connection and the single-flight guard. Two places composing a wake's turn independently
 /// is how the two would drift.
 pub fn wake_turn_params<'a>(prepared: &'a PreparedWake, params: &'a RunWakeParams<'a>) -> TurnParams<'a> {
+    turn_params(prepared.conversation_id, UserTurn::Wake(&prepared.digest), params)
+}
+
+/// The shape both background turns share: a wake's digest and a rejection's outcomes differ
+/// only in what opens them, so everything else is written once.
+pub fn turn_params<'a>(conversation_id: i64, user: UserTurn<'a>, params: &'a RunWakeParams<'a>) -> TurnParams<'a> {
     TurnParams {
-        conversation_id: prepared.conversation_id,
-        user: Some(UserTurn::Wake(&prepared.digest)),
+        conversation_id,
+        user: Some(user),
         cmdr_md: None,
         memory: params.memory,
         envelope: params.envelope,

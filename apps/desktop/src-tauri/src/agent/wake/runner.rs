@@ -12,13 +12,14 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 
 use super::channel::{WakeControl, send_control};
+use super::followup::PreparedFollowUp;
 use super::indicator::{note_wake_finished, note_wake_started};
 use super::staged::announce_staged;
 use super::watch::WakeToolWatch;
-use super::{PreparedWake, RunWakeParams, WakeTier, wake_turn_params};
+use super::{PreparedWake, RunWakeParams, WakeTier, turn_params};
 use crate::agent::chat::budget;
 use crate::agent::chat::cancel;
-use crate::agent::chat::runtime::{AgentChatEvent, AppHandleDispatcher, ChatRuntime, TurnResult};
+use crate::agent::chat::runtime::{AgentChatEvent, AppHandleDispatcher, ChatRuntime, TurnResult, UserTurn};
 use crate::agent::chat::session::{capture_envelope, local_offset};
 use crate::agent::chat::stream::{AskCmdrStreamEvent, emit_turn_event, forward_to_windows};
 use crate::agent::llm::AgentLlm;
@@ -35,22 +36,84 @@ pub(super) struct ResolvedSlot {
     pub prompt_budget: usize,
 }
 
-/// Run one prepared wake on its own thread. Returns immediately; the thread announces itself
-/// finished with a [`WakeControl::WakeFinished`] control message, which is what lets the writer
-/// thread prepare the next one.
-pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
+/// The two kinds of turn this thread runs, and everything that differs between them.
+///
+/// One path rather than two because the machinery around the turn is identical: the same
+/// envelope, the same memory, the same transport, the same cancel registration, the same
+/// corner. Only the opener, the thread's provenance, and what a quiet answer means differ.
+pub(super) enum BackgroundTurn {
+    /// The agent noticed something and opened a thread of its own to say it in.
+    Wake(PreparedWake),
+    /// The user turned a sweep down, and the agent is asking why — in THEIR thread.
+    FollowUp(PreparedFollowUp),
+}
+
+impl BackgroundTurn {
+    fn conversation_id(&self) -> i64 {
+        match self {
+            BackgroundTurn::Wake(prepared) => prepared.conversation_id,
+            BackgroundTurn::FollowUp(prepared) => prepared.conversation_id,
+        }
+    }
+
+    /// What the turn opens with, persisted as DATA either way: a rendered English sentence
+    /// would freeze one locale's copy in `main.db` where no locale pass could reach it.
+    fn opener(&self) -> UserTurn<'_> {
+        match self {
+            BackgroundTurn::Wake(prepared) => UserTurn::Wake(&prepared.digest),
+            BackgroundTurn::FollowUp(prepared) => UserTurn::Outcomes(&prepared.outcomes),
+        }
+    }
+
+    /// The tier and folder count the outcome line reports. A follow-up has neither: it is not
+    /// answering the inbox.
+    fn scale(&self) -> (Option<WakeTier>, usize) {
+        match self {
+            BackgroundTurn::Wake(prepared) => (Some(prepared.tier), prepared.rows.len()),
+            BackgroundTurn::FollowUp(_) => (None, 0),
+        }
+    }
+
+    /// The outcome token's prefix, so the two kinds stay separable in the log and in analytics.
+    fn token(&self, outcome: &'static str) -> &'static str {
+        match self {
+            BackgroundTurn::Wake(_) => outcome,
+            BackgroundTurn::FollowUp(_) => followup_token(outcome),
+        }
+    }
+}
+
+/// ⚠️ Paired by hand because the outcome tokens are `&'static str` all the way into the
+/// analytics event, and a formatted string would leak a `String` per turn into a categorical
+/// property. A new outcome that forgets its twin here reports as a wake, which is why the
+/// fallback is loud rather than silent.
+fn followup_token(outcome: &'static str) -> &'static str {
+    match outcome {
+        "ran" => "followup_ran",
+        "cancelled" => "followup_cancelled",
+        "failed" => "followup_failed",
+        "quiet" => "followup_quiet",
+        _ => "followup_unavailable",
+    }
+}
+
+/// Run one prepared background turn on its own thread. Returns immediately; the thread
+/// announces itself finished with a [`WakeControl::WakeFinished`] control message, which is
+/// what lets the writer thread prepare the next one.
+pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, turn: BackgroundTurn) {
     let spawned = std::thread::Builder::new()
         .name("agent-wake-turn".to_string())
         .spawn(move || {
             // The corner goes busy before anything slow, and clears on EVERY exit below: a
             // stale `Thinking` would leave a spinner up forever and offer a click into a
             // thread a quiet wake has since deleted.
-            note_wake_started(prepared.conversation_id);
+            note_wake_started(turn.conversation_id());
             match tokio::runtime::Builder::new_current_thread().enable_all().build() {
-                Ok(runtime) => runtime.block_on(run(app, slot, prepared)),
+                Ok(runtime) => runtime.block_on(run(app, slot, &turn)),
                 Err(e) => {
-                    crate::log_error!(target: LOG_TARGET, "building the wake turn's runtime failed: {e}");
-                    record_outcome("unavailable", Some(prepared.tier), prepared.rows.len(), 0);
+                    crate::log_error!(target: LOG_TARGET, "building the background turn's runtime failed: {e}");
+                    let (tier, folders) = turn.scale();
+                    record_outcome(turn.token("unavailable"), tier, folders, 0);
                 }
             }
             note_wake_finished();
@@ -65,10 +128,16 @@ pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) 
     }
 }
 
-async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
-    // The thread already exists (prepare opened it), so say so before anything slow: this is
-    // what puts a wake's thread in the session list as it is created rather than on next load.
-    emit_turn_event(prepared.conversation_id, AskCmdrStreamEvent::Started);
+async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
+    let conversation_id = turn.conversation_id();
+    let (tier, folders) = turn.scale();
+    // A wake's thread was created moments ago, so say so before anything slow: this is what puts
+    // it in the session list as it is created rather than on next load. A follow-up speaks in a
+    // thread that has been there all along, so announcing one would claim a thread was created
+    // that wasn't.
+    if matches!(turn, BackgroundTurn::Wake(_)) {
+        emit_turn_event(conversation_id, AskCmdrStreamEvent::Started);
+    }
 
     // ⚠️ Captured exactly as the rail captures it. With no main window (a routine-launched app
     // on macOS) `PaneStateStore` is absent and the pane fields come back empty, which is the
@@ -95,27 +164,27 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
         model: slot.model,
         prompt_budget: slot.prompt_budget,
     };
-    let dispatcher = AppHandleDispatcher::new(app.clone(), prepared.conversation_id);
+    let dispatcher = AppHandleDispatcher::new(app.clone(), conversation_id);
 
-    // ⚠️ A real token, registered under this thread's id. A wake is a multi-second background
+    // ⚠️ A real token, registered under this thread's id. A background turn is a multi-second
     // action spending the user's money, and `docs/design-principles.md` requires those be
     // cancelable; the status corner's stop button is `ask_cmdr_cancel` with this id, the same
     // call the rail's stop makes. The guard clears the entry on every exit below.
-    let cancel_token = cancel::register_cancel(prepared.conversation_id);
-    let _cancel_guard = cancel::CancelGuard::new(prepared.conversation_id);
+    let cancel_token = cancel::register_cancel(conversation_id);
+    let _cancel_guard = cancel::CancelGuard::new(conversation_id);
 
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
-        log::warn!(target: LOG_TARGET, "the chat runtime is not registered; the wake has nowhere to run");
-        record_outcome("unavailable", Some(prepared.tier), prepared.rows.len(), 0);
+        log::warn!(target: LOG_TARGET, "the chat runtime is not registered; the turn has nowhere to run");
+        record_outcome(turn.token("unavailable"), tier, folders, 0);
         return;
     };
 
-    // ⚠️ A wake owns a plain `UnboundedSender<AgentChatEvent>` and drains it itself, onto the
-    // SAME conversation-keyed stream a rail send uses. That is what makes a wake's thread
+    // ⚠️ A background turn owns a plain `UnboundedSender<AgentChatEvent>` and drains it itself,
+    // onto the SAME conversation-keyed stream a rail send uses. That is what makes its thread
     // readable while it is still being written.
     let (sink, mut events) = unbounded_channel::<AgentChatEvent>();
-    let draining = forward_to_windows(prepared.conversation_id, &mut events);
-    // The watch wraps the wake's dispatcher and nothing else's, and answers both questions the
+    let draining = forward_to_windows(conversation_id, &mut events);
+    // The watch wraps this turn's dispatcher and nothing else's, and answers both questions the
     // turn's own result can't: whether it said there was nothing to raise (a pure read whose
     // handler changes nothing, so acting on it belongs here rather than in the tool), and
     // whether it staged anything.
@@ -129,7 +198,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
                 slot.llm.as_ref(),
                 &watch,
                 params.tools,
-                &wake_turn_params(&prepared, &params),
+                &turn_params(conversation_id, turn.opener(), &params),
                 &sink,
                 &cancel_token,
             )
@@ -141,14 +210,19 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
     // ⚠️ The reason the model gave is deliberately NOT in the line below. `cmdr.log` ships in
     // auto-dispatched error reports and its redactor is path-shaped, so a sentence about which
     // of the user's folders were boring would travel intact. Log THAT a wake was quiet.
+    //
+    // ⚠️ **Only a WAKE's thread goes away.** A follow-up speaks in a thread the user owns, and a
+    // model reaching for `nothing_to_suggest` there must not take it with them.
     if watch.stayed_quiet() {
-        if let Err(e) = runtime.discard_quiet_wake(prepared.conversation_id).await {
-            log::warn!(target: LOG_TARGET, "a quiet wake's thread stayed behind: {e}");
+        if let BackgroundTurn::Wake(_) = turn {
+            if let Err(e) = runtime.discard_quiet_wake(conversation_id).await {
+                log::warn!(target: LOG_TARGET, "a quiet wake's thread stayed behind: {e}");
+            }
+            // ⚠️ Anything subscribed to this conversation is now watching a thread that no
+            // longer exists, and re-reading it can't tell them so. Say it.
+            emit_turn_event(conversation_id, AskCmdrStreamEvent::Discarded);
         }
-        // ⚠️ Anything subscribed to this conversation is now watching a thread that no longer
-        // exists, and re-reading it can't tell them so (there is nothing to read). Say it.
-        emit_turn_event(prepared.conversation_id, AskCmdrStreamEvent::Discarded);
-        record_outcome("quiet", Some(prepared.tier), prepared.rows.len(), proposals);
+        record_outcome(turn.token("quiet"), tier, folders, proposals);
         return;
     }
 
@@ -156,18 +230,18 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
     // provider failure after the model already staged a group leaves that group sitting in the
     // store, waiting; staying quiet about it would hide work the user is expected to review.
     // `announce_staged` is a no-op at zero, which is the common case.
-    announce_staged(prepared.conversation_id, proposals);
+    announce_staged(conversation_id, proposals);
 
     match result {
-        Ok(TurnResult::Answered { .. }) => record_outcome("ran", Some(prepared.tier), prepared.rows.len(), proposals),
-        Ok(TurnResult::Cancelled) => record_outcome("cancelled", Some(prepared.tier), prepared.rows.len(), proposals),
+        Ok(TurnResult::Answered { .. }) => record_outcome(turn.token("ran"), tier, folders, proposals),
+        Ok(TurnResult::Cancelled) => record_outcome(turn.token("cancelled"), tier, folders, proposals),
         Ok(TurnResult::Failed(kind)) => {
-            log::warn!(target: LOG_TARGET, "the wake turn ended without an answer: {kind:?}");
-            record_outcome("failed", Some(prepared.tier), prepared.rows.len(), proposals);
+            log::warn!(target: LOG_TARGET, "the background turn ended without an answer: {kind:?}");
+            record_outcome(turn.token("failed"), tier, folders, proposals);
         }
         Err(e) => {
-            log::warn!(target: LOG_TARGET, "the wake turn could not open the store: {e}");
-            record_outcome("unavailable", Some(prepared.tier), prepared.rows.len(), proposals);
+            log::warn!(target: LOG_TARGET, "the background turn could not open the store: {e}");
+            record_outcome(turn.token("unavailable"), tier, folders, proposals);
         }
     }
 }

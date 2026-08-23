@@ -62,7 +62,7 @@ fn sink_over(
 ) -> (Arc<CollectorEventSink>, ProposalReportingSink) {
     let collector = Arc::new(CollectorEventSink::new());
     let op_ids: HashMap<PathBuf, i64> = ops.iter().map(|op| (PathBuf::from(&op.source_path), op.id)).collect();
-    let sink = ProposalReportingSink::new(collector.clone(), group_id, op_ids, reporting);
+    let sink = ProposalReportingSink::new(collector.clone(), group_id, op_ids, reporting, None);
     (collector, sink)
 }
 
@@ -201,6 +201,32 @@ fn a_group_the_decorator_settled_survives_the_next_launch_sweep() {
 
     crate::agent::store::proposals::recover_interrupted_groups(&conn).expect("sweep");
     assert_eq!(group_status(&conn, group_id), ProposalStatus::Completed);
+}
+
+/// ⚠️ **An approval's real outcome is only known at SETTLE.** Recording it at the claim would
+/// tell the agent the user got what they approved; here, one of the two files was skipped, and
+/// the lesson has to say so or the agent learns from a claim rather than from what happened.
+#[test]
+fn what_the_agent_learns_from_an_approval_is_what_actually_ran() {
+    let dir = TestDir::new("bridge_learns");
+    let (_conn, reporting, group_id, ops) = fixture(&dir);
+    let memory_root = dir.join("memory");
+    std::fs::create_dir_all(&memory_root).expect("memory root");
+    let memory = crate::agent::memory::MemoryStore::new(&memory_root);
+    let collector = Arc::new(CollectorEventSink::new());
+    let op_ids: HashMap<PathBuf, i64> = ops.iter().map(|op| (PathBuf::from(&op.source_path), op.id)).collect();
+    let sink = ProposalReportingSink::new(collector, group_id, op_ids, reporting, Some(memory));
+
+    sink.emit_source_item_done(done("/Users/someone/Downloads/one.dmg", SourceItemOutcome::Done));
+    sink.emit_source_item_done(done("/Users/someone/Downloads/two.dmg", SourceItemOutcome::Skipped));
+    sink.emit_settled(settled());
+
+    let learned = std::fs::read_to_string(memory_root.join(crate::agent::memory::OUTCOMES_FILE)).expect("the ring");
+    assert!(learned.contains("approved: trash"), "{learned:?}");
+    assert!(
+        learned.contains("1 done, 1 skipped, 0 failed"),
+        "the lesson is what ran, not what was claimed: {learned:?}"
+    );
 }
 
 /// The binding is a LIVE capture, and this is the difference that makes: it holds the file as
