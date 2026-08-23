@@ -8,7 +8,8 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
 - `+layout.svelte` / `+page.svelte`: layout (gates children on `settingsReady`, mounts the quit prompt) and the app
   shell (mounts `DualPaneExplorer`; owns dialog visibility, the `explorerRef` handle, keydown, licensing).
 - `command-dispatch.ts` + `command-handlers/` are the dispatch core and its family-grouped handlers; `listener-setup.ts`
-  holds the menu / MCP-dialog / window-focus listeners.
+  holds the menu / MCP-dialog / window-focus listeners; `window-services.ts` starts and stops every subscription the
+  window holds for its lifetime.
 - Supporting pure modules: `startup-gates.ts`, `mcp-listeners.ts`, `explorer-api.ts`, `dispatch-dedup.ts`,
   `global-keydown.ts`, `global-contextmenu.ts`.
 

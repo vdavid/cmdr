@@ -22,14 +22,9 @@
     import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
     import SuggestedOpsDialog from '$lib/suggested-ops/SuggestedOpsDialog.svelte'
     import { suggestedOpsState } from '$lib/suggested-ops/suggested-ops-trigger.svelte'
-    import { startSuggestedOpsBadge, stopSuggestedOpsBadge } from '$lib/suggested-ops/suggested-ops-badge.svelte'
     import AskCmdrRail from '$lib/ask-cmdr/AskCmdrRail.svelte'
     import BulkRenameReviewDialog from '$lib/ask-cmdr/BulkRenameReviewDialog.svelte'
     import { askCmdrState } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
-    import {
-        startAskCmdrTurnStream,
-        stopAskCmdrTurnStream,
-    } from '$lib/ask-cmdr/ask-cmdr-turn-stream.svelte'
     import { goToPath } from '$lib/go-to-path/go-to-path'
     import {
         getFocusedPanePath,
@@ -38,46 +33,18 @@
     } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
     import StatusCorner from '$lib/status-corner/StatusCorner.svelte'
-    import {
-        initMainWindowOperations,
-        destroyMainWindowOperations,
-    } from '$lib/file-operations/queue/main-window-operations.svelte'
-    import { initSnapshotPurge, destroySnapshotPurge } from '$lib/search/snapshot-purge'
-    import {
-        initSettledOperationsWatch,
-        destroySettledOperationsWatch,
-    } from '$lib/file-operations/settled-operations'
-    import {
-        initOperationSessions,
-        destroyOperationSessions,
-    } from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
-    import {
-        startOperationFailureWatch,
-        stopOperationFailureWatch,
-    } from '$lib/status-corner/operation-failure-watch.svelte'
     import OperationConflictDialog from '$lib/file-operations/OperationConflictDialog.svelte'
-    import {
-        startOperationConflictHost,
-        stopOperationConflictHost,
-    } from '$lib/file-operations/operation-conflict.svelte'
     import StaleDriveDialog from '$lib/indexing/StaleDriveDialog.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
-    import {
-        initIndexState,
-        destroyIndexState,
-        initMediaEnrichState,
-        destroyMediaEnrichState,
-    } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch } from '$lib/shortcuts/shortcut-dispatch'
+    import { registerKnownDialogs } from '$lib/tauri-commands'
     import { markDispatchSource } from './dispatch-dedup'
     import { navCommandForMouseButton } from './mouse-nav'
     import { resolveGlobalKeyAction } from './global-keydown'
     import { resolveGlobalContextMenuAction } from './global-contextmenu'
     import { isMacOS } from '$lib/shortcuts/key-capture'
-    import { type UnlistenFn, registerKnownDialogs } from '$lib/tauri-commands'
     import { getMessage } from '$lib/intl/messages.svelte'
     import { showMainOnMount } from './show-main-on-mount'
-    import { startMenuOperationGate } from './menu-operation-gate.svelte'
     import {
         type StartupGatesContext,
         maybeRunWhatsNew,
@@ -85,23 +52,16 @@
         resolveOnboardingMount,
     } from './startup-gates'
     import {
-        type ListenerSetupContext,
-        makeListenTauri,
-        setupMenuListeners,
-        setupDialogListeners,
-        setupWindowFocusListener,
-    } from './listener-setup'
+        type WindowServicesContext,
+        startEarlyWindowServices,
+        startWindowServices,
+        stopWindowServices,
+    } from './window-services'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { isGalleryDialogOpen } from '$lib/dialog-gallery/gallery-state.svelte'
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
-    import { getSetting } from '$lib/settings'
     import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
-    import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
-    import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
-    import { startLowDiskSpaceEventBridge } from '$lib/low-disk-space/event-bridge.svelte'
-    import { startOsMountNoticeBridge } from '$lib/file-explorer/network/os-mount-notice-bridge'
-    import { startDragOutEventBridge } from '$lib/file-explorer/drag/drag-out-event-bridge'
     import { revealSearchResultInPane } from '$lib/file-explorer/navigation/navigate-and-select'
     import {
         handleCommandExecute as dispatchCommand,
@@ -109,8 +69,6 @@
     } from './command-dispatch'
     import { getAppLogger } from '$lib/logging/logger'
     import { type CommandId, type CommandDispatchArgs } from '$lib/commands'
-    import { setupMcpListeners } from './mcp-listeners'
-    import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { initAppMode, getAppMode, decorateMainWindowTitle, type AppMode } from '$lib/app-mode'
     import {
         getCachedStatus,
@@ -182,18 +140,6 @@
             console.error('Failed to open debug window:', error)
         }
     }
-
-    // Unlisten functions for menu, MCP, and dialog listeners (cleaned up on
-    // destroy, important for HMR). Shared with the extracted `listener-setup.ts`
-    // helpers and with `setupMcpListeners` so every registered listener tears
-    // down through one array.
-    const tauriUnlistenFns: UnlistenFn[] = []
-
-    /** Tears down the native-menu enabled-state sync on destroy (HMR safety). */
-    let stopMenuOperationGate: (() => void) | null = null
-
-    /** `listenTauri` bound to the shared cleanup array; passed to `setupMcpListeners`. */
-    const listenTauri = makeListenTauri(tauriUnlistenFns)
 
     /**
      * Explorer-owned overlays that should suppress centralized dispatch: a
@@ -337,19 +283,9 @@
         // and for the gate that refuses an MCP file operation while a dialog is up)
         void registerKnownDialogs(SOFT_DIALOG_REGISTRY)
 
-        // Grey out the File menu's operation items while a dialog is up or Ask Cmdr
-        // has focus. Chrome only; every real refusal is elsewhere.
-        stopMenuOperationGate = startMenuOperationGate()
-
-        // Seed and subscribe the suggestions badge. The seed is not redundant with the
-        // subscription: suggestions never expire, so a group proposed in an earlier session
-        // is already waiting before anything emits.
-        void startSuggestedOpsBadge()
-
-        // Subscribe to every Ask Cmdr turn, this window only. It is what keeps the rail
-        // rendering a turn it wasn't watching from the start (a reload, or a wake), and what
-        // tells the session list a wake just opened a thread.
-        void startAskCmdrTurnStream()
+        // The window's fire-and-forget subscriptions, up before the awaits below can
+        // delay them (`window-services.ts` § Two start phases).
+        startEarlyWindowServices()
 
         // Load license status from cache (fast, no network)
         try {
@@ -396,7 +332,7 @@
         void showMainOnMount()
 
         // Initialize centralized shortcut dispatch and global keyboard/context menu
-        // handlers. These must be registered BEFORE setupTauriEventListeners() because
+        // handlers. These must be registered BEFORE `startWindowServices()` because
         // that call may throw in non-Tauri environments (e.g. Playwright smoke tests).
         initShortcutDispatch()
 
@@ -409,8 +345,8 @@
         document.addEventListener('mousedown', handleMouseDown)
         document.addEventListener('mouseup', handleMouseUp)
 
-        // Set up Tauri event listeners (extracted to reduce complexity)
-        await setupTauriEventListeners()
+        // The listeners and stores that need the explorer handle and the command bus.
+        await startWindowServices(windowServicesCtx)
 
         // Wait for Svelte to flush any pending DOM updates so DualPaneExplorer
         // (which renders when `showApp=true`) is in the DOM before we look for
@@ -432,101 +368,9 @@
         }
     })
 
-    /**
-     * Set up Tauri event listeners for menu actions, MCP events, etc.
-     */
-    async function setupTauriEventListeners() {
-        await setupMenuListeners(listenerSetupCtx)
-        await setupDialogListeners(listenerSetupCtx)
-        await setupMcpListeners({
-            getExplorer: () => explorerRef,
-            // The MCP adapter dispatches through the same typed command bus as the
-            // keyboard / palette / menu paths. `handleCommandExecute` already binds
-            // the shared dispatch context, so MCP events get the uniform preamble
-            // (log + breadcrumb + search-results guard).
-            dispatch: handleCommandExecute,
-            listenTauri,
-            isAiEnabled: () => getSetting('ai.provider') !== 'off',
-        })
-        await initIndexState()
-        // Image-enrichment progress joins the same top-right indicator, a
-        // second publisher; listen-first-then-query, like initIndexState.
-        await initMediaEnrichState()
-        // The main window's own view of the operation registry: the same store
-        // and the same two app-wide streams the queue window subscribes to, so
-        // corner status can read live operations with no new event or IPC.
-        await initMainWindowOperations()
-        // This window's session registry: one session per operation, shared by
-        // every view of it. Subscribed here, before anything can ask for a
-        // session, because its listeners are async and an operation dispatched
-        // while they're being set up would go unheard.
-        await initOperationSessions()
-        // Stored search snapshots drop rows for files an operation removed, from
-        // the per-path outcome stream. Independent of any pane or dialog: a
-        // snapshot outlives both. See `$lib/search/snapshot-purge.ts`.
-        await initSnapshotPurge()
-        // Remembers which operations have finished tearing down, so a follow-up
-        // that reads an operation's journal rows knows when they became
-        // readable. Armed here because the settle for an operation routinely
-        // lands before anything thinks to wait for it. See
-        // `$lib/file-operations/settled-operations.ts`.
-        await initSettledOperationsWatch()
-        // Watches that store for operations that stopped before they were done,
-        // and says so. After the store, so the first snapshot has somewhere to
-        // land before anything reads it.
-        startOperationFailureWatch()
-        // The main window's answer to a conflict in an operation no progress
-        // dialog is showing. After the store too: it pauses and resumes off the
-        // rows, and reads them to name which operation is asking.
-        await startOperationConflictHost()
-        await setupWindowFocusListener(listenerSetupCtx)
-        // Native Quick Look (macOS) event wiring: `quick-look-closed` flips
-        // `isOpen` on the state singleton; `quick-look-key` routes panel
-        // keystrokes back into the focused pane (and intercepts Shift+Space
-        // to close).
-        const unlistenQuickLook = await initQuickLookListeners(() => explorerRef)
-        tauriUnlistenFns.push(unlistenQuickLook)
-        // Downloads notifications event bridge: one `download-detected`
-        // listener that fans out to the in-app toast and/or the macOS
-        // native notification per the current settings value.
-        const unlistenDownloads = await startDownloadsEventBridge(explorerRef)
-        tauriUnlistenFns.push(unlistenDownloads)
-        // Global go-to-latest-download hotkey bridge (default ⌃⌥⌘J): one
-        // `global-shortcut-fired` listener; routes through `goToLatestDownload`
-        // and shows the first-trigger warn toast when `acknowledged === false`.
-        const unlistenGlobalShortcut = await startGlobalShortcutBridge(explorerRef)
-        tauriUnlistenFns.push(unlistenGlobalShortcut)
-        // Low-disk-space warning bridge: one `low-disk-space` listener (the
-        // backend poller's boot-volume hysteresis detector) dispatched to a
-        // persistent warn toast or a macOS notification per the settings value.
-        const unlistenLowDiskSpace = await startLowDiskSpaceEventBridge()
-        tauriUnlistenFns.push(unlistenLowDiskSpace)
-        // OS-mount fallback notice: one `smb-fell-back-to-os-mount` listener turning
-        // the backend's once-per-server signal into a persistent toast with a
-        // "Try connecting directly" button, retired when the share goes direct.
-        const unlistenOsMountNotice = await startOsMountNoticeBridge()
-        tauriUnlistenFns.push(unlistenOsMountNotice)
-        // Drag-out completion bridge: one `drag-out-session-started` +
-        // `drag-out-session-complete` pair per drag session, turned into a single
-        // signs-of-life → completion toast (downloading a phone/NAS file to
-        // Finder shows nothing on Finder's side; this is our feedback surface).
-        const unlistenDragOut = await startDragOutEventBridge()
-        tauriUnlistenFns.push(unlistenDragOut)
-    }
-
     onDestroy(() => {
         destroyShortcutDispatch()
-        stopSuggestedOpsBadge()
-        stopAskCmdrTurnStream()
-        destroyIndexState()
-        destroyMediaEnrichState()
-        stopOperationFailureWatch()
-        stopOperationConflictHost()
-        destroyMainWindowOperations()
-        destroyOperationSessions()
-        destroySnapshotPurge()
-        destroySettledOperationsWatch()
-        stopMenuOperationGate?.()
+        stopWindowServices()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
         }
@@ -539,12 +383,6 @@
         if (handleMouseUp) {
             document.removeEventListener('mouseup', handleMouseUp)
         }
-        // Clean up every menu / MCP / dialog / window-focus listener (prevents
-        // duplicate listeners after HMR). All of them register into this one array.
-        for (const unlisten of tauriUnlistenFns) {
-            unlisten()
-        }
-        tauriUnlistenFns.length = 0
     })
 
     /**
@@ -731,16 +569,14 @@
     }
 
     /**
-     * Context for the extracted `listener-setup.ts` helpers: live getters for
-     * reads, setter callbacks for writes, the shared cleanup array, and the
-     * dispatch + whats-new callbacks that stay component-owned (they touch
-     * reactive `$state`).
+     * Context for the extracted `window-services.ts` lifecycle: live getters for
+     * reads, setter callbacks for writes, and the dispatch + whats-new callbacks
+     * that stay component-owned (they touch reactive `$state`).
      */
-    const listenerSetupCtx: ListenerSetupContext = {
+    const windowServicesCtx: WindowServicesContext = {
         getExplorer: () => explorerRef,
         // Menu items are a user gesture, so they absorb a rejection like the keyboard does.
         dispatch: dispatchFromUi,
-        unlistenFns: tauriUnlistenFns,
         dialogs: {
             setAboutWindow: (show: boolean) => {
                 showAboutWindow = show

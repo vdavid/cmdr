@@ -27,6 +27,14 @@ here:
 - **`global-contextmenu.ts` is the same split for the right-click**: `resolveGlobalContextMenuAction(event)` is pure
   (`native-text-menu` / `suppress`), `+page.svelte` runs `stopPropagation` or `preventDefault`. § Right-click ownership.
 - **`startup-gates.ts` owns what a launch SHOWS.** § Startup gates.
+- **`window-services.ts` owns the window's LIFETIME subscriptions**, in two start phases whose order is load-bearing.
+  `startEarlyWindowServices()` runs at the very top of `onMount` and holds only fire-and-forget subscribers (the menu
+  gate, the suggestions badge, the Ask Cmdr turn stream, the wake indicator): each of them can miss events that arrive
+  before it subscribes, and the licence read plus the onboarding gate between them and phase 2 are real awaits.
+  `startWindowServices(ctx)` runs AFTER the document-level key handlers, because its first `listen` rejects outside
+  Tauri (the Playwright smoke tests) and the handlers have to survive that. `stopWindowServices()` drains both plus the
+  module-owned `unlistenFns` array. Same context discipline as `listener-setup.ts`: getters in, callbacks out, no
+  captured `$state`.
 - **`command-dispatch-context.ts` is deliberately a LEAF**, importing nothing from the core or the handlers, so handler
   modules and `command-dispatch.ts` can both import the context types without a cycle. It's re-exported from
   `command-dispatch.ts` for callers.
