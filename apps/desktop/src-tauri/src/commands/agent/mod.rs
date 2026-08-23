@@ -13,6 +13,7 @@
 //! - [`consent`]: the opt-in gate's status/accept/revoke surface.
 //! - [`cost`]: the per-thread footer total and the per-day rollup.
 //! - [`suggested_ops`]: what the Suggested ops dialog reads, and the rejection it records.
+//! - [`wake`]: the live-apply push that tells the proactive loop its settings moved.
 //!
 //! The two connection helpers below are the only shared plumbing: every store-reading
 //! command opens a short-lived connection off the IPC thread through them, so a missing
@@ -26,6 +27,7 @@ mod conversations;
 mod cost;
 mod suggested_ops;
 mod views;
+mod wake;
 
 // Glob re-exports, so each `#[tauri::command]`'s generated companion items (`__cmd__*`,
 // `__tauri_command_name_*`, `__specta__fn__*`) come along: the `ipc.rs` manifest registers
@@ -40,6 +42,7 @@ pub use conversations::*;
 pub use cost::*;
 pub use suggested_ops::*;
 pub use views::*;
+pub use wake::*;
 
 use tauri::{AppHandle, Manager};
 

@@ -146,6 +146,34 @@ impl Inbox {
         true
     }
 
+    /// Push a new cadence across every row already waiting.
+    ///
+    /// ⚠️ **Not optional, and not automatic.** [`admit`](Self::admit) merges min-only on
+    /// purpose (the starvation guard), so a LENGTHENED cadence would otherwise never reach
+    /// anything queued: the user asks for a calmer agent and the backlog keeps firing on the
+    /// old, twitchy schedule. The writer thread calls this on every settings change.
+    ///
+    /// Each deadline SHIFTS by its tier's delta rather than being recomputed from a clock, so
+    /// the row keeps the moment it arrived and moving the slider and moving it back is a no-op.
+    /// A cold row stays without a deadline at every cadence: the slider moves the hot tier, and
+    /// riding along is not a delay that can be lengthened.
+    pub fn reprice(&mut self, previous_hot_delay: Duration, hot_delay: Duration) {
+        for row in &mut self.rows {
+            let (Some(deadline), Some(before), Some(after)) = (
+                row.deliver_by,
+                wake_delay(row.interest, previous_hot_delay),
+                wake_delay(row.interest, hot_delay),
+            ) else {
+                continue;
+            };
+            row.deliver_by = Some(
+                deadline
+                    .saturating_sub(before.as_secs())
+                    .saturating_add(after.as_secs()),
+            );
+        }
+    }
+
     /// The soonest deadline waiting, if anything is.
     pub fn next_deadline(&self) -> Option<u64> {
         // ⚠️ `filter_map`, not `map(…).min()`: `None` sorts BELOW every `Some`, so the plain

@@ -228,3 +228,51 @@ fn chat_memory_size_reads_a_preset_and_treats_everything_else_as_automatic() {
         );
     }
 }
+
+/// ⚠️ `settings.json` is SPARSE: it holds only what an actor explicitly set, so the proactive
+/// key is absent for every user who never touched the row. The absence has to read as "unset"
+/// rather than as `false`, or the loader cannot tell "the user turned it off" apart from "the
+/// user never saw it" and the registry default has nowhere to apply.
+#[test]
+fn the_proactive_toggle_reads_as_unset_when_nobody_has_touched_it() {
+    assert_eq!(parse_ask_cmdr_proactive(r#"{ "askCmdr.proactive": true }"#), Some(true));
+    assert_eq!(
+        parse_ask_cmdr_proactive(r#"{ "askCmdr.proactive": false }"#),
+        Some(false)
+    );
+    for contents in [
+        "{}",
+        r#"{ "askCmdr.proactive": "true" }"#, // a string, not the stored boolean form
+        "not json at all",
+    ] {
+        assert_eq!(
+            parse_ask_cmdr_proactive(contents),
+            None,
+            "{contents} must read as unset, so the registry default decides"
+        );
+    }
+}
+
+/// The cadence is stored as a plain count of seconds, which is what the slider persists. A
+/// zero, a negative, or a string is not a cadence anybody chose, so it reads as unset and the
+/// default applies rather than becoming a wake every no seconds.
+#[test]
+fn the_wake_delay_reads_seconds_and_rejects_what_is_not_a_cadence() {
+    assert_eq!(
+        parse_ask_cmdr_wake_delay_secs(r#"{ "askCmdr.wakeDelay": 300 }"#),
+        Some(300)
+    );
+    for contents in [
+        "{}",
+        r#"{ "askCmdr.wakeDelay": "300" }"#,
+        r#"{ "askCmdr.wakeDelay": 0 }"#,
+        r#"{ "askCmdr.wakeDelay": -5 }"#,
+        "not json at all",
+    ] {
+        assert_eq!(
+            parse_ask_cmdr_wake_delay_secs(contents),
+            None,
+            "{contents} must read as unset, so the registry default decides"
+        );
+    }
+}

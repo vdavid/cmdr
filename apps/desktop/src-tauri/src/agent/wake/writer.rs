@@ -170,15 +170,32 @@ impl WakeLoop {
 
     fn handle_control(&mut self, control: WakeControl) {
         match control {
-            // ⚠️ Item 7 also re-prices the queued rows here: the merge is min-only, so a
-            // LENGTHENED delay would otherwise never reach anything already waiting.
-            WakeControl::SettingsChanged => self.settings = settings::load(&self.app),
+            WakeControl::SettingsChanged => self.reload_settings(),
             WakeControl::ReadinessChanged => {}
             WakeControl::WakeFinished => self.wake_in_flight = false,
         }
         // Every control message is a reason the last decision may no longer hold: the gate the
         // wake was refused by may have opened, or the wake it was waiting on may have finished.
         self.not_before = 0;
+    }
+
+    /// Re-read the cadence and the proactive gate, and push the new cadence across the rows
+    /// already waiting.
+    ///
+    /// ⚠️ **The re-pricing half is not optional.** `Inbox::admit` merges min-only (the
+    /// starvation guard), so a LENGTHENED cadence would reach only bundles that arrive AFTER
+    /// the change: somebody who asks for a calmer agent would keep being woken on the old
+    /// schedule by everything already queued. The park is recomputed by the loop right after
+    /// this returns, so a moved deadline re-arms the timer with it.
+    fn reload_settings(&mut self) {
+        let previous = self.settings;
+        self.settings = settings::load(&self.app);
+        if previous.hot_delay != self.settings.hot_delay {
+            self.inbox.reprice(previous.hot_delay, self.settings.hot_delay);
+            if let Err(e) = persist::save_all(&self.conn, &self.inbox) {
+                log::warn!(target: LOG_TARGET, "the re-priced inbox was not written back: {e}");
+            }
+        }
     }
 
     /// Say how much the bound cost, if anything. Silent when nothing dropped, so a quiet run

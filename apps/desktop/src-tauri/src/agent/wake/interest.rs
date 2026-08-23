@@ -14,6 +14,22 @@ use super::EventBundle;
 /// §18); what has to hold is the ORDER, which `wake_delay` is tested for.
 pub const DEFAULT_HOT_DELAY: Duration = Duration::from_secs(5);
 
+/// Every cadence the `askCmdr.wakeDelay` slider can land on, in seconds, shortest first.
+///
+/// ⚠️ **Mirrored by `constraints.sliderStops` on the registry entry** in
+/// `apps/desktop/src/lib/settings/definitions/ai.ts`. The frontend owns which stop the user
+/// picks; this side owns what an arbitrary stored number is pulled back to, so the two lists
+/// have to say the same thing. Nothing enforces that mechanically, so change both together.
+pub const WAKE_DELAY_STOPS: [u64; 10] = [5, 15, 30, 60, 2 * 60, 5 * 60, 15 * 60, 30 * 60, 60 * 60, 2 * 60 * 60];
+
+/// The shortest cadence the slider offers. A stored value below it only arrives from a
+/// hand-edited `settings.json`, and honouring it would have the agent wake on its own noise.
+pub const MIN_HOT_DELAY: Duration = Duration::from_secs(WAKE_DELAY_STOPS[0]);
+
+/// The longest cadence the slider offers. Past it the warm tier is pinned to
+/// [`MAX_WARM_DELAY`] anyway, so a larger number buys nothing but a hot tier nobody can reach.
+pub const MAX_HOT_DELAY: Duration = Duration::from_secs(WAKE_DELAY_STOPS[WAKE_DELAY_STOPS.len() - 1]);
+
 /// How much more patience a warm bundle gets than a hot one: a minute for every second.
 ///
 /// One number the user moves, both tiers following it, so "calmer, please" means calmer

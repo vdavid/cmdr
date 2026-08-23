@@ -508,6 +508,46 @@ fn parse_ask_cmdr_chat_memory_size(contents: &str) -> Option<usize> {
         .filter(|tokens| *tokens > 0)
 }
 
+/// Whether the user let Ask Cmdr start conversations on its own (`askCmdr.proactive`), read
+/// fresh from `settings.json` so a change applies with no restart.
+///
+/// ⚠️ `None` means the key is ABSENT, not `false`. The store is sparse (it holds only what an
+/// actor explicitly set), so the caller substitutes the registry default rather than reading
+/// an untouched row as an opt-out. `agent::wake::WakeSettings` is that caller.
+pub fn load_ask_cmdr_proactive<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<bool> {
+    let data_dir = crate::config::resolved_app_data_dir(app).ok()?;
+    let contents = fs::read_to_string(data_dir.join("settings.json")).ok()?;
+    parse_ask_cmdr_proactive(&contents)
+}
+
+/// The parsing half of [`load_ask_cmdr_proactive`], pure so it can be tested without an app
+/// handle. Only a real JSON boolean counts; anything else is an unset key.
+fn parse_ask_cmdr_proactive(contents: &str) -> Option<bool> {
+    let json: serde_json::Value = serde_json::from_str(contents).ok()?;
+    json.get("askCmdr.proactive").and_then(|v| v.as_bool())
+}
+
+/// The user's wake cadence in seconds (`askCmdr.wakeDelay`), read fresh from `settings.json`
+/// so a change applies with no restart.
+///
+/// The number is the HOT tier's delay, the one cadence value the slider moves; warm derives
+/// from it. `None` for an absent or nonsensical value, so the caller substitutes the registry
+/// default and clamps to the slider's track.
+pub fn load_ask_cmdr_wake_delay_secs<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<u64> {
+    let data_dir = crate::config::resolved_app_data_dir(app).ok()?;
+    let contents = fs::read_to_string(data_dir.join("settings.json")).ok()?;
+    parse_ask_cmdr_wake_delay_secs(&contents)
+}
+
+/// The parsing half of [`load_ask_cmdr_wake_delay_secs`], pure so it can be tested without an
+/// app handle. A zero or a negative is not a cadence anybody chose, so it reads as unset.
+fn parse_ask_cmdr_wake_delay_secs(contents: &str) -> Option<u64> {
+    let json: serde_json::Value = serde_json::from_str(contents).ok()?;
+    json.get("askCmdr.wakeDelay")
+        .and_then(serde_json::Value::as_u64)
+        .filter(|secs| *secs > 0)
+}
+
 /// Reads `developer.verboseLogging` from disk *before* the Tauri app handle exists.
 ///
 /// Mirrors [`early_load_max_log_storage_mb`]. Used by the logging dispatch builder so

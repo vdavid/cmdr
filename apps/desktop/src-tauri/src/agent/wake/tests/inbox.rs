@@ -1,5 +1,7 @@
 //! The inbox: what is waiting, when it comes due, and what a restart does to it.
 
+use std::time::Duration;
+
 use super::super::*;
 
 /// A folder with `created` arrivals, in the window starting at `window_start`.
@@ -393,4 +395,89 @@ fn a_missing_key_still_lets_signal_accumulate() {
 
     assert!(admitted);
     assert_eq!(inbox.len(), 1);
+}
+
+/// ⚠️ **The re-pricing trap.** A merge is min-only, deliberately (the starvation guard above),
+/// so a LENGTHENED cadence would never reach anything already waiting: the user asks for a
+/// calmer agent, and every row currently queued still fires on the old, twitchy schedule. The
+/// setting has to be pushed across the inbox explicitly.
+#[test]
+fn a_lengthened_cadence_reaches_the_rows_already_waiting() {
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    assert_eq!(inbox.next_deadline(), Some(1_000 + DEFAULT_HOT_DELAY.as_secs()));
+
+    let calmer = Duration::from_secs(30 * 60);
+    inbox.reprice(DEFAULT_HOT_DELAY, calmer);
+
+    assert_eq!(
+        inbox.next_deadline(),
+        Some(1_000 + calmer.as_secs()),
+        "the row keeps the moment it arrived and takes the new patience"
+    );
+}
+
+/// Attentiveness applies just as immediately in the other direction: somebody who moves the
+/// slider to its shortest stop expects the backlog to come due now, not on the old schedule.
+#[test]
+fn a_shortened_cadence_pulls_the_waiting_rows_in() {
+    let mut inbox = Inbox::default();
+    let calm = Duration::from_secs(30 * 60);
+    inbox.admit(arrivals("/Users/someone/Downloads", 3, 100), IMPORTANT, calm, 1_000);
+
+    inbox.reprice(calm, DEFAULT_HOT_DELAY);
+
+    assert_eq!(inbox.next_deadline(), Some(1_000 + DEFAULT_HOT_DELAY.as_secs()));
+}
+
+/// A cold row has no deadline at ANY cadence: the slider moves the hot tier, and cold's
+/// ride-along is not a delay that can be lengthened. Handing it one here would undo the whole
+/// reason a cache directory stopped spending model turns.
+#[test]
+fn repricing_leaves_a_cold_row_without_a_deadline() {
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Library/Caches/build", 1, 100),
+        FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    assert_eq!(inbox.next_deadline(), None, "cold to begin with");
+
+    inbox.reprice(DEFAULT_HOT_DELAY, Duration::from_secs(2 * 60 * 60));
+
+    assert_eq!(inbox.next_deadline(), None);
+    assert_eq!(inbox.len(), 1, "and it is still riding along");
+}
+
+/// Moving the slider and moving it back leaves the inbox exactly where it was. The shift is
+/// against the row's own arrival, not against whenever the user happened to open Settings, so
+/// fiddling with the control cannot walk a deadline away from its folder.
+#[test]
+fn repricing_there_and_back_changes_nothing() {
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    // A warm row too, so the tier-specific delta is exercised rather than the hot one twice.
+    inbox.admit(
+        arrivals("/Users/someone/Documents", 1, 100),
+        FolderImportance::Scored(0.4),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    let before = inbox.rows().to_vec();
+
+    inbox.reprice(DEFAULT_HOT_DELAY, Duration::from_secs(15 * 60));
+    inbox.reprice(Duration::from_secs(15 * 60), DEFAULT_HOT_DELAY);
+
+    assert_eq!(inbox.rows(), before.as_slice());
 }

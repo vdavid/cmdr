@@ -136,16 +136,13 @@ fn the_same_inputs_always_score_the_same() {
     assert_eq!(first.value(), second.value());
 }
 
-/// Every stop on the cadence slider, in seconds: the user's whole range of answers to "how
-/// twitchy should this be?".
-const SLIDER_STOPS: [u64; 10] = [5, 15, 30, 60, 2 * 60, 5 * 60, 15 * 60, 30 * 60, 60 * 60, 2 * 60 * 60];
-
-/// ⚠️ The tier ORDER is a pinned contract, and the hot tier is now a user setting, so it has to
+/// ⚠️ The tier ORDER is a pinned contract, and the hot tier is a user setting, so it has to
 /// hold at every stop rather than at the default. Tested across the whole slider because a
-/// derived warm tier is exactly the kind of arithmetic that inverts at one end.
+/// derived warm tier is exactly the kind of arithmetic that inverts at one end. Driven from the
+/// production stop table, so a stop added to the registry cannot slip past this untested.
 #[test]
 fn the_tier_order_holds_at_every_slider_stop() {
-    for seconds in SLIDER_STOPS {
+    for seconds in WAKE_DELAY_STOPS {
         let hot_delay = Duration::from_secs(seconds);
         let hot = wake_delay(Interest::of(0.9), hot_delay).expect("a hot bundle wakes the agent");
         let warm = wake_delay(Interest::of(0.5), hot_delay).expect("a warm bundle wakes the agent");
