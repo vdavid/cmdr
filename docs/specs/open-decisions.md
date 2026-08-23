@@ -78,3 +78,11 @@ design.
     killed sits at the thin end of that ratio, topped by `busy_db_is_retried_not_deleted` at **1.4×**, which no duration
     rule catches without also catching a dozen honest two-second tests. Seeding a margin ratchet still needs David's OK
     (it's a new allowlist). Evidence: `docs/notes/rust-test-flake-analysis-2026-08-23.md`.
+
+    **David's answer (2026-08-23): don't build the margin ratchet, and the standard he wants is different from both
+    options above.** He wants a test flagged when it takes longer than two seconds **on a SATURATED machine**, not an
+    idle one, on the grounds that almost every test here can be refactored to finish in a very short time. That inverts
+    the framing: the idle-machine measurement this entry argues from is the wrong baseline, and a test needing more than
+    two seconds under load is a test to fix rather than a threshold to tune around. Nothing is being built for it right
+    now; capture the standard so a future duration check is measured under saturation and not against the 26 s idle
+    run.

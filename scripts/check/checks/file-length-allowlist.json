@@ -41,7 +41,7 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/types.rs": 987,
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 1459,
     "apps/desktop/src-tauri/src/file_viewer/session_test.rs": 1777,
-    "apps/desktop/src-tauri/src/lib.rs": 808,
+    "apps/desktop/src-tauri/src/lib.rs": 825,
     "apps/desktop/src-tauri/src/mcp/server.rs": 1008,
     "apps/desktop/src-tauri/src/mcp/tests/tool_registry_tests.rs": 872,
     "apps/desktop/src-tauri/src/mtp/connection/directory_ops.rs": 983,

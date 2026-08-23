@@ -187,6 +187,28 @@ use tauri::Manager;
 // exposes them through a typed `tauri_specta::Builder`. See `ipc.rs` for the
 // migration recipe.
 
+// ── On this file's length (`file-length` allowlists it at 803) ───────────────
+//
+// Two different masses, and only one of them is a smell:
+//
+// - ~190 lines of preamble: 92 `mod`/`use` declarations plus 13 `use foo as _;`
+//   markers that `unused_crate_dependencies` (above) needs. Both are structurally
+//   required, and moving them elsewhere would hide the crate's own map. Nothing
+//   to win here.
+// - ~610 lines of `run()`: the startup sequence.
+//
+// Opinion, so the next reader doesn't have to re-derive it: **the allowlist bump
+// is right and a split would currently make this worse.** `run()` is one strictly
+// ORDERED sequence, and the order is load-bearing in ways the code says out loud
+// (the panic hook goes in before anything in this crate can panic; the E2E
+// data-dir guard goes in before anything resolves persisted state). Extracting
+// stretches of it into `startup/*.rs` helpers buys line count and pays for it by
+// making those ordering constraints invisible at the call site, which is exactly
+// the class of silent detachment this repo keeps getting bitten by.
+//
+// What WOULD justify a split: `run()` growing phases that are genuinely
+// independent of each other rather than sequenced. Extract those, by phase, and
+// leave the ordered spine here. Splitting by line count alone is the wrong cut.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Before anything in this crate can panic. It can't write a crash file until
