@@ -322,9 +322,9 @@ async fn hello(
 ///
 /// Both requests are ordinary `russh` futures, so they go under the token like
 /// the handshake phases do. ❗ Split from [`await_hello`] so a cell can run this
-/// half on a live token and hand the other half a cancelled one — the hello
-/// window is a millisecond wide against a local server and can't be reached by
-/// timing.
+/// half on a live token and hand the other half a cancelled one: the wait in
+/// [`await_hello`] measures 1.3 ms against `sftp-fixture-openssh` (2026-08-23),
+/// which no amount of timing reaches reliably.
 async fn start_engine(
     session: &client::Handle<TrustHandler>,
     host: &VolumeHost,
@@ -403,7 +403,12 @@ type Finishing = JoinHandle<Result<(), tokio::task::JoinError>>;
 /// completion or its task panics on an `unwrap` (§ hazard 1), so the only safe
 /// way to walk away from a hello is to stop WAITING for it. The session rides
 /// along and goes with it, so the server sees the connection close as soon as the
-/// engine is done — bounded by the same window a live connect gets.
+/// engine is done.
+///
+/// A FULL [`SUBSYSTEM_TIMEOUT`] of its own, ❌ not the remainder of the dial's:
+/// a cancel arriving late in the window would otherwise yank a hello that was
+/// milliseconds away, and nobody is waiting on this task, so what matters is only
+/// that it's bounded.
 fn finish_detached(
     host: &VolumeHost,
     session: client::Handle<TrustHandler>,

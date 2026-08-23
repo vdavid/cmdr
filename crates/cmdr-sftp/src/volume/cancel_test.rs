@@ -40,12 +40,14 @@ fn cancel_after(token: &CancellationToken, delay: Duration) {
 /// A cancel landing anywhere in a live handshake ends the connect at once, and
 /// ❗ leaves no volume behind.
 ///
-/// The delays sweep the whole handshake rather than aiming at one phase: a local
-/// connect is about 20 ms end to end (measured against `sftp-fixture-openssh`,
-/// 2026-08-23), so 0–16 ms lands in the TCP connect, the key exchange, and the
-/// auth ladder in turn. A delay that arrives after the session is up is an
-/// ordinary race and answers `connected`; what must never happen is a wait that
-/// runs on into the phase budget.
+/// The delays sweep the whole connect rather than aiming at one phase, because
+/// nothing outside the dial can see where a phase ends. A warm connect against
+/// `sftp-fixture-openssh` is about 20 ms end to end (2026-08-23), so 0–24 ms
+/// lands in the TCP connect, the key exchange, the auth ladder, and the hello in
+/// turn. A delay that arrives after the session is up is an ordinary race and
+/// answers `connected` — which is its own assertion, since ❗ the token is
+/// re-read after the dial lands. What must never happen is a wait that runs on
+/// into the phase budget.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn a_cancel_during_the_handshake_stops_the_dial_promptly_and_registers_nothing() {
@@ -56,7 +58,7 @@ async fn a_cancel_during_the_handshake_stops_the_dial_promptly_and_registers_not
     drop(connect_fixture(&host, params.clone()).await);
 
     let mut cancelled = 0;
-    for delay_ms in [0, 2, 4, 6, 8, 10, 12, 14, 16] {
+    for delay_ms in [0, 3, 6, 9, 12, 15, 18, 21, 24] {
         let cancel = CancellationToken::new();
         cancel_after(&cancel, Duration::from_millis(delay_ms));
 
@@ -89,7 +91,7 @@ async fn a_cancel_during_the_handshake_stops_the_dial_promptly_and_registers_not
     }
     assert!(
         cancelled > 0,
-        "none of the nine delays landed inside a handshake, so this cell tested nothing"
+        "none of the nine delays landed inside a connect, so this cell tested nothing"
     );
 
     // The server and this process both survived being walked away from nine

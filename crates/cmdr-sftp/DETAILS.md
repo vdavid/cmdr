@@ -484,18 +484,19 @@ A dial has three phases and a budget each, so a connect can hold for 30 s with n
   connect the user called off never puts a packet on the wire, never spends an authentication attempt, and never reads
   the secret store.
 - **The SFTP hello can't be dropped**, per hazard 2 above. A cancel there ends the USER's wait immediately and hands the
-  still-running engine to `finish_detached`, which waits it out on a task of its own (bounded by `SUBSYSTEM_TIMEOUT`,
-  the same window a live connect gets) and then drops both the engine and the session. ❗ **Deliberate rather than a
-  leak.** The alternative is the `unwrap` panic, and the alternative to _that_ is making the user wait out a hello they
-  already walked away from. The task is what closes the socket, so the server sees the connection go as soon as the
-  engine is done.
+  still-running engine to `finish_detached`, which waits it out on a task of its own and then drops both the engine and
+  the session. That task gets a full `SUBSYSTEM_TIMEOUT` of its own rather than the remainder of the dial's, so a cancel
+  arriving late in the window doesn't yank a hello that was milliseconds away; nobody is waiting on it, so all that
+  matters is that it's bounded. ❗ **Deliberate rather than a leak.** The alternative is the `unwrap` panic, and the
+  alternative to _that_ is making the user wait out a hello they already walked away from. The task is what closes the
+  socket, so the server sees the connection go as soon as the engine is done.
 - **The timeout path is NOT handed to `finish_detached`**, and the asymmetry is on purpose: a window that elapsed with
   no hello means the server is broken rather than slow, so holding its socket open for another one buys nothing.
   Dropping the session errors the engine's read task out before its `unwrap`, which is safe.
 - **`hello` is two halves** so a cell can reach the second one: `start_engine` does the droppable channel work,
   `await_hello` does the part that can't be dropped, and `dial_cancelling_inside_the_hello` runs the first on a live
-  token and the second on a cancelled one. Against a local server the real window is about a millisecond wide, so no
-  amount of timing gets a cell into it.
+  token and the second on a cancelled one. The wait in `await_hello` measures 1.3 ms against `sftp-fixture-openssh`
+  (instrumented dial, 2026-08-23), out of a ~20 ms connect, so no amount of timing gets a cell into it reliably.
 
 ❗ **A cancelled connect leaves nothing behind.** `volume::connect_sftp_volume` re-reads the token after the dial lands,
 so a cancel racing a session home still answers `Cancelled` and lets the session go: no volume registered, no host key
