@@ -113,6 +113,14 @@ func withFakes(t *testing.T) *composerFakes {
 	// environment.
 	for _, s := range All() {
 		t.Setenv(s.composeDirEnv, filepath.Join(root, "nonexistent-compose-"+s.Name))
+		// Neutralize any keys-dir override so KeysDir tracks the sandboxed lease
+		// root. ❗ Also what keeps a test honest: `EnsureKeysDir` pins the
+		// resolved path with a bare `os.Setenv`, and without a `t.Setenv` to
+		// restore, one test's temp path would ride into the next one's config
+		// hash.
+		if env := s.KeysDirEnv(); env != "" {
+			t.Setenv(env, "")
+		}
 	}
 	t.Setenv("CMDR_ALPHA_COMPOSE_DIR", filepath.Join(root, "nonexistent-compose-alpha"))
 	t.Setenv("CMDR_BETA_COMPOSE_DIR", filepath.Join(root, "nonexistent-compose-beta"))
@@ -610,6 +618,72 @@ func TestRegisteredStacksAreDistinct(t *testing.T) {
 		claim("lock path", s.LockPath(), s.Name)
 		claim("lease dir", s.LeaseDir(), s.Name)
 		claim("compose dir", s.composeDirRel, s.Name)
+		if dir := s.KeysDir(); dir != "" {
+			claim("keys dir", dir, s.Name)
+		}
+	}
+}
+
+func TestSftpKeysDirIsMachineWideAndSmbHasNone(t *testing.T) {
+	// ❗ The keys dir is a bind SOURCE for a MACHINE-WIDE stack, so it belongs in
+	// /tmp beside the lock and the lease dir. A path under a checkout bakes the
+	// starting worktree into containers that sibling worktrees adopt; deleting
+	// that worktree then breaks key auth in all of them at once.
+	if got := SFTP.KeysDir(); got != "/tmp/cmdr-sftp-keys" {
+		t.Fatalf("the SFTP keys dir is %q, want /tmp/cmdr-sftp-keys", got)
+	}
+	// SMB mounts nothing from the host, and must stay that way rather than
+	// inheriting an empty-but-present directory.
+	if got := SMB.KeysDir(); got != "" {
+		t.Fatalf("the SMB stack grew a keys dir (%q); it bind-mounts nothing", got)
+	}
+	if got := SMB.KeysDirEnv(); got != "" {
+		t.Fatalf("the SMB stack grew a keys-dir env var (%q)", got)
+	}
+}
+
+func TestEnsureKeysDirCreatesEveryLeafAndPinsTheEnv(t *testing.T) {
+	withFakes(t)
+	want := SFTP.KeysDir()
+
+	if err := SFTP.EnsureKeysDir(); err != nil {
+		t.Fatalf("EnsureKeysDir: %v", err)
+	}
+
+	// Every leaf up front: Docker auto-creates a missing bind source root-owned
+	// on Linux, and the container's own write into it then fails.
+	for _, leaf := range SFTP.KeysSubdirs() {
+		if st, err := os.Stat(filepath.Join(want, leaf)); err != nil || !st.IsDir() {
+			t.Fatalf("EnsureKeysDir left %s/%s uncreated (%v)", want, leaf, err)
+		}
+	}
+	if len(SFTP.KeysSubdirs()) == 0 {
+		t.Fatal("the SFTP stack lists no keys leaves, so the loop above asserts nothing")
+	}
+	// Pinned in the env, so compose binds what this process resolved rather than
+	// falling back to its own `${…:-default}`.
+	if got := os.Getenv(SFTP.KeysDirEnv()); got != want {
+		t.Fatalf("EnsureKeysDir left %s=%q, want %q", SFTP.KeysDirEnv(), got, want)
+	}
+}
+
+func TestEnsureKeysDirIsANoOpForAStackThatMountsNothing(t *testing.T) {
+	withFakes(t)
+	if err := SMB.EnsureKeysDir(); err != nil {
+		t.Fatalf("EnsureKeysDir on a stack with no keys dir: %v", err)
+	}
+}
+
+func TestKeysDirFoldsIntoTheConfigHash(t *testing.T) {
+	withFakes(t)
+	before := SFTP.computeConfigHash(ModeCore)
+
+	// A stack whose containers bind a DIFFERENT host directory is as stale as
+	// one bound to different ports, and far quieter: every container stays
+	// healthy while every key-auth cell reads a directory nobody writes.
+	t.Setenv(SFTP.KeysDirEnv(), filepath.Join(t.TempDir(), "elsewhere"))
+	if after := SFTP.computeConfigHash(ModeCore); after == before {
+		t.Fatal("moving the keys dir left the config hash unchanged, so an adopter would keep containers bound to the old one")
 	}
 }
 

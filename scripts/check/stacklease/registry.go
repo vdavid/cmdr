@@ -65,10 +65,22 @@ var SMB = &Stack{
 // (`apps/desktop/test/sftp-servers/start.sh`). A drift between them shows up as a
 // cell with no server, which reads as a backend bug rather than as a fixture one.
 var SFTP = &Stack{
-	Name:          "sftp",
-	ProjectName:   "sftp-fixture",
-	lockFile:      "cmdr-sftp.lock",
-	leaseDirName:  "cmdr-sftp-leases",
+	Name:         "sftp",
+	ProjectName:  "sftp-fixture",
+	lockFile:     "cmdr-sftp.lock",
+	leaseDirName: "cmdr-sftp-leases",
+	// The two key-auth services bind-mount a host directory to publish the key
+	// pair they generate at start. ❗ It lives beside the lock and the lease dir
+	// because it is machine-wide state of a machine-wide stack: a per-checkout
+	// path bakes the starting worktree into a live container that sibling
+	// worktrees then ADOPT, so deleting that worktree breaks key auth for all of
+	// them. `apps/desktop/test/sftp-servers/docker-compose.yml`,
+	// `start.sh`, and `cmdr_sftp::volume::testing::fixture_key_path` read the
+	// same `CMDR_SFTP_KEYS_DIR` with the same default; `TestSftpFixturePathsAgree`
+	// is what keeps those four copies equal.
+	keysDirName:   "cmdr-sftp-keys",
+	keysSubdirs:   []string{"keyonly", "passphrase"},
+	keysDirEnv:    "CMDR_SFTP_KEYS_DIR",
 	composeDirRel: "apps/desktop/test/sftp-servers",
 	composeDirEnv: "CMDR_SFTP_COMPOSE_DIR",
 	composeFiles:  []string{"docker-compose.yml"},

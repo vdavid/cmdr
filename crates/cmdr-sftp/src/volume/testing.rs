@@ -103,19 +103,32 @@ pub fn fixture_params(service: &str, fallback_port: u16) -> SftpConnectionParams
     .without_agent()
 }
 
+/// Where the key-auth fixtures publish the pair they generate at container
+/// start, when nothing overrides it.
+///
+/// ❗ Machine-wide, ❌ never derived from this checkout. The container stack is
+/// machine-wide and a sibling worktree ADOPTS a running one rather than
+/// recreating it, so a per-checkout bind source bakes the STARTING worktree's
+/// absolute path into a live container while every reader resolves against its
+/// OWN. Delete that worktree and key auth fails everywhere, pointing at the
+/// backend rather than at the fixture. Canonical home:
+/// `scripts/check/stacklease/registry.go`'s `SFTP` stack, beside the lock and
+/// lease paths; `TestSftpFixturePathsAgree` pins this default to the compose
+/// file's and `start.sh`'s.
+const FIXTURE_KEYS_DIR_DEFAULT: &str = "/tmp/cmdr-sftp-keys";
+
 /// The private key the entrypoint generated for a key-auth fixture.
 ///
 /// Written to the bind mount at container start rather than checked in: a
-/// private key in a repo is a private key on the internet.
+/// private key in a repo is a private key on the internet. The check runner pins
+/// `CMDR_SFTP_KEYS_DIR` before bring-up; the fallback is the compose file's own
+/// default, so a bare `start.sh` works too.
 pub fn fixture_key_path(service: &str) -> std::path::PathBuf {
-    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(std::path::Path::parent)
-        .expect("this crate sits two levels under the repo root");
-    repo_root
-        .join("apps/desktop/test/sftp-servers/.keys")
-        .join(service)
-        .join("id_ed25519")
+    let dir = std::env::var("CMDR_SFTP_KEYS_DIR")
+        .ok()
+        .filter(|d| !d.is_empty())
+        .unwrap_or_else(|| FIXTURE_KEYS_DIR_DEFAULT.to_string());
+    std::path::PathBuf::from(dir).join(service).join("id_ed25519")
 }
 
 /// A host that remembers approvals and can answer for a secret.

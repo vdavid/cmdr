@@ -85,14 +85,24 @@ CheckDefinition{
   (`TestEveryCheckDeclaresInputs` fails the suite otherwise): an empty list fingerprints on the global inputs alone, so
   the check would be cache-skipped even when its own files change — a correctness hole. Reuse a shared set from
   `inputs.go` (`rustCompileInputs`, `rustScanInputs(kinds…)`, `rustAppTreeInputs`, `svelteInputs`, `websiteInputs`,
-  `apiServerInputs`, `goScriptsInputs`, `workflowsInputs`, `desktopAppInputs()`), or `wholeRepoInputs` (`**`) for a
-  whole-tree scanner. A Rust source scanner passes the SAME member kinds it declares in `rustScannerJurisdictions`;
-  `TestScannerInputsMatchTheirJurisdiction` fails when the two disagree in either direction. **Be conservative: when
-  unsure whether the check reads a path, include it.** A too-wide list only costs cache speed; a too-narrow one costs
-  correctness. The global inputs (`.mise.toml`, `scripts/check/**`) are added automatically — don't list them.
-  `ci-coverage` rule 4 fails if any static path prefix in your Inputs doesn't exist on disk. A `!`-prefixed entry
-  EXCLUDES matching paths from the set (including from the globals); it's the only way to make a set too narrow, so read
-  `../DETAILS.md` § "Exclusions" before adding one, and give it a test.
+  `apiServerInputs`, `goScriptsInputs`, `goTestsInputs`, `workflowsInputs`, `desktopAppInputs()`), or `wholeRepoInputs`
+  (`**`) for a whole-tree scanner. A Rust source scanner passes the SAME member kinds it declares in
+  `rustScannerJurisdictions`; `TestScannerInputsMatchTheirJurisdiction` fails when the two disagree in either direction.
+  **Be conservative: when unsure whether the check reads a path, include it.** A too-wide list only costs cache speed; a
+  too-narrow one costs correctness. The global inputs (`.mise.toml`, `scripts/check/**`) are added automatically — don't
+  list them. `ci-coverage` rule 4 fails if any static path prefix in your Inputs doesn't exist on disk. A `!`-prefixed
+  entry EXCLUDES matching paths from the set (including from the globals); it's the only way to make a set too narrow,
+  so read `../DETAILS.md` § "Exclusions" before adding one, and give it a test.
+
+### A Go TEST that reads outside the Go tree widens the lane's Inputs
+
+`scripts-go-tests` runs the check runner's own `go test`, so its Inputs are the fingerprint for every Go test in the
+repo, ❗ including the ones that assert about files elsewhere in the tree. `TestSftpFixturePathsAgree` and
+`TestSftpFixturePortsMatchComposeDefaults` compare the SFTP fixture stack's keys dir and host ports across four copies:
+the Go value in `stacklease/registry.go` and `sftp_ports.go`, the `${…:-default}` in the compose file and in `start.sh`,
+and the fallback in `crates/cmdr-sftp/src/volume/testing.rs`. With only `scripts/**` fingerprinted, editing any of the
+three non-Go copies is a cache hit and the guard never runs on the change it exists to catch. `goTestsInputs` names them
+for that reason. A future cross-tree Go test does the same, or its guard is decorative.
 
 ### ⚠️ A fresh worktree inherits the cache, so a green check can be a stale answer
 

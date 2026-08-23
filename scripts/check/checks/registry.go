@@ -1238,7 +1238,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-vet"},
 		IsFast:      true,
-		Inputs:      goScriptsInputs,
+		Inputs:      goTestsInputs,
 		Run:         RunGoTests,
 	},
 	{

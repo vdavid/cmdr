@@ -22,6 +22,8 @@ for iterating by hand.
   defaults to 10480+. Two stacks sharing a range made them mutually exclusive on one machine.
 - **Its own lease namespace** (`/tmp/cmdr-sftp.lock`, `/tmp/cmdr-sftp-leases`), so downing one stack at zero holders can
   never touch the other. The model: `scripts/check/DETAILS.md` § "Two fixture stacks, two lease namespaces".
+- **It mounts host state**, which SMB doesn't: `/tmp/cmdr-sftp-keys` is the third machine-wide path beside those two.
+  See § Keys.
 
 ## The servers
 
@@ -91,8 +93,27 @@ Both live in `image/entrypoint.sh`, and both cost hours to rediscover.
 
 ## Keys
 
-The key-auth servers generate a pair at start and write the private half to `.keys/<service>/id_ed25519`, a bind mount
-this directory gitignores. ❌ Nothing here is checked in: a private key in a repo is a private key on the internet.
+The key-auth servers generate a pair at start and write the private half to `/tmp/cmdr-sftp-keys/<service>/id_ed25519`,
+a bind mount. ❌ Nothing is checked in: a private key in a repo is a private key on the internet.
+
+⚠️ **That path is machine-wide, and ❌ never one relative to a checkout.** The stack is machine-wide (one compose
+project, one port range, `/tmp/cmdr-sftp.lock`), and a sibling worktree **adopts** a running stack rather than
+recreating it, so its host state has to be machine-wide too. Compose resolves a relative bind source against the compose
+file's own directory, which bakes the **starting** worktree's absolute path into the live containers while every reader
+resolves against its **own** checkout. Delete the starting worktree and `/keys` no longer exists inside the containers:
+every key-auth cell fails, in every worktree at once, pointing at the backend rather than at the fixture.
+
+Four places name the path, and they have to agree:
+
+- `keysDirName` in `scripts/check/stacklease/registry.go` is the canonical one, beside the lock and lease paths. The
+  library creates the directory and its per-service leaves before bring-up, and exports `CMDR_SFTP_KEYS_DIR`.
+- `docker-compose.yml` and `start.sh` carry `${CMDR_SFTP_KEYS_DIR:-/tmp/cmdr-sftp-keys}` for a bare run with no check
+  runner around it. `start.sh` creates the leaves itself, because Docker auto-creates a missing bind source root-owned
+  on Linux and the container's own write into it then fails.
+- `cmdr_sftp::volume::testing::fixture_key_path` reads the same variable with the same default.
+
+`TestSftpFixturePathsAgree` (`scripts/check/checks/sftp_fixture_paths_test.go`) reads all four and fails on any drift;
+`TestSftpFixturePortsMatchComposeDefaults` does the same for the port defaults below.
 
 ## Host keys are fresh per container
 
@@ -109,3 +130,7 @@ reads one server's real fingerprint and offers it against another's address.
    lists have to agree, or a cell ends up with no server.
 3. Add its port to `smbServiceHostPorts`' sibling, `sftpServiceHostPorts` in `scripts/check/checks/sftp_ports.go`, and
    to the lane's wait guard in `scripts/check/checks/desktop-rust-integration-tests.go`.
+   `TestSftpFixturePortsMatchComposeDefaults` fails on a service whose compose default and table entry disagree, and on
+   one the table forgot entirely (only `sftp-fixture-bench` may be absent, and only because CI must never gate on it).
+4. If it bind-mounts anything from the host, give it a leaf under the machine-wide keys dir (`keysSubdirs` in
+   `scripts/check/stacklease/registry.go`), ❌ never a path relative to the compose file. See § Keys.

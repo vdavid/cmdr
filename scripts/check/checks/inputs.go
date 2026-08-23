@@ -267,6 +267,22 @@ var goScriptsInputs = []string{
 	"apps/desktop/scripts/**",
 }
 
+// The SFTP fixture stack declares its machine-wide keys dir and its host ports
+// in Go, and each of these files repeats them for the runner-less path
+// (`start.sh` and the compose file's `${…:-default}`) or reads them back
+// (`fixture_key_path`, `fixture_port`). `TestSftpFixturePathsAgree` and
+// `TestSftpFixturePortsMatchComposeDefaults` are what keep the copies equal.
+const (
+	sftpComposeRel = "apps/desktop/test/sftp-servers/docker-compose.yml"
+	sftpStartRel   = "apps/desktop/test/sftp-servers/start.sh"
+	sftpTestingRel = "crates/cmdr-sftp/src/volume/testing.rs"
+)
+
+// goTestsInputs is goScriptsInputs plus the files a Go TEST reads from outside
+// the Go tree. ❗ Without them a drift in one of those files is a cache hit, and
+// the guard never runs on the very change it exists to catch.
+var goTestsInputs = append([]string{sftpComposeRel, sftpStartRel, sftpTestingRel}, goScriptsInputs...)
+
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks
 // read.
 var workflowsInputs = []string{

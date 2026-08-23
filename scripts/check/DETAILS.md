@@ -677,9 +677,10 @@ rebinding it.
 ### Two fixture stacks, two lease namespaces
 
 `stacklease` leases any Docker Compose fixture stack, not just SMB. Every protocol-shaped thing is a field on `Stack`
-(`stacklease/registry.go`): compose project, `/tmp` lock file, `/tmp` lease dir, compose dir + files, mode → service
-table, the services that ship no `HEALTHCHECK`, and the port-env prefix that folds into the config hash. The
-adopt-or-reconcile policy, the dead-PID sweep, and the down-at-zero teardown are one implementation over that value.
+(`stacklease/registry.go`): compose project, `/tmp` lock file, `/tmp` lease dir, the optional `/tmp` keys dir a stack's
+containers bind-mount, compose dir + files, mode → service table, the services that ship no `HEALTHCHECK`, and the
+port-env prefix that folds into the config hash. The adopt-or-reconcile policy, the dead-PID sweep, and the down-at-zero
+teardown are one implementation over that value.
 
 - **Separate namespaces are the point.** Each stack has its own flock target and its own lease dir, so one stack's
   holders are invisible to the other and downing one at zero can never touch the other's containers. The runner uses the
@@ -687,6 +688,15 @@ adopt-or-reconcile policy, the dead-PID sweep, and the down-at-zero teardown are
 - **SMB's `/tmp` paths are frozen** at `cmdr-smb.lock` and `cmdr-smb-leases`, pinned by a test. A sibling worktree on
   older code holds its lease at those exact paths; moving them would make a live holder invisible and re-open the
   teardown race the library exists to close.
+- **A stack's HOST state is machine-wide too, all of it.** SMB mounts nothing from the host; SFTP's two key-auth
+  services bind-mount `/tmp/cmdr-sftp-keys/<service>`, a third machine-wide path beside the lock and the lease dir. ❌
+  Never a path relative to the compose file: compose resolves a relative bind source against the compose file's own
+  directory, so a per-checkout path bakes the **starting** worktree into containers that sibling worktrees then adopt,
+  and deleting that worktree breaks key auth for all of them at once. `Stack.EnsureKeysDir` creates the leaves before
+  bring-up (Docker would auto-create a missing bind source root-owned on Linux, which then fails the container's own
+  write) and exports `CMDR_SFTP_KEYS_DIR` so compose binds what this process resolved. The resolved dir folds into the
+  config hash next to the ports, so adopting a stack bound to a different one reconciles instead. Why, and the four
+  copies of the default: `apps/desktop/test/sftp-servers/README.md` § Keys.
 - **A check declares `NeedsContainers []StackMode`**, so it can ask for several stacks. Both strings resolve against the
   registry, and `TestEveryDeclaredStackModeResolves` (`stack_orchestrator_test.go`) turns a typo into a millisecond
   failure rather than one minutes into a run, after planning and `pnpm install`.

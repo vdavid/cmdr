@@ -18,6 +18,21 @@ PROJECT_NAME="sftp-fixture"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
+# Where the key-auth servers publish the pair they generate at start.
+#
+# ❗ Machine-wide, exactly like the lease dir, ❌ never a path under this
+# checkout: compose resolves a relative bind source against this file's directory,
+# so a per-worktree path would bake THIS worktree into containers that sibling
+# worktrees adopt. The default has to stay equal to the compose file's, to
+# `keysDirName` in scripts/check/stacklease/registry.go, and to the one
+# `cmdr_sftp::volume::testing::fixture_key_path` reads back —
+# `TestSftpFixturePathsAgree` fails the run if any of the four drifts.
+#
+# ❗ Created here rather than left to Docker: Docker auto-creates a missing bind
+# source ROOT-owned on Linux, and the container's own write into it then fails.
+KEYS_DIR="${CMDR_SFTP_KEYS_DIR:-/tmp/cmdr-sftp-keys}"
+mkdir -p "$KEYS_DIR/keyonly" "$KEYS_DIR/passphrase"
+
 # ❗ Keep this table in lock-step with `modeServices` in
 # scripts/check/stacklease/registry.go. The lease helper is what actually brings
 # the stack up on a check run; this list is what the fallback and the readiness

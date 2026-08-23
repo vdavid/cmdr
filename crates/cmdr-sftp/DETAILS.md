@@ -1049,6 +1049,21 @@ isn't determinable without building, which is what made the SMB extraction's sui
 must not gate CI (a throughput measurement, a soak loop) needs its own feature or env gate instead — an `#[ignore]`
 would put it in the gating lane under runner contention.
 
+### What the fixtures resolve against
+
+❗ **Every fixture path is machine-wide or comes from the environment, ❌ never from `CARGO_MANIFEST_DIR`.** The
+container stack is machine-wide (one compose project, one port range, one lease namespace) and a sibling worktree
+**adopts** a running stack rather than recreating it. A path derived from this crate's checkout resolves against the
+**reading** worktree, while the containers hold whichever worktree happened to bring the stack up — two scopes that must
+agree and structurally can't. When the starting worktree is deleted, the bind source is gone inside the containers and
+every key-auth cell fails in every worktree at once, reading as a backend bug.
+
+So `fixture_port` reads `SFTP_FIXTURE_<SERVICE>_PORT` and `fixture_key_path` reads `CMDR_SFTP_KEYS_DIR`, each falling
+back to the compose file's own default so a bare `start.sh` works. The canonical values live in
+`scripts/check/stacklease/registry.go` (the keys dir, beside the lock and lease paths) and
+`scripts/check/checks/sftp_ports.go` (the ports); `TestSftpFixturePathsAgree` and
+`TestSftpFixturePortsMatchComposeDefaults` read every copy and fail on a drift.
+
 The servers themselves: `apps/desktop/test/sftp-servers/README.md`.
 
 ## The public surface is capped

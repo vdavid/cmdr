@@ -11,6 +11,13 @@
 # stacks sharing a range made them mutually exclusive on one machine. The check
 # runner exports every `SFTP_FIXTURE_*_PORT` before bring-up (`ApplySftpPortEnv`).
 #
+# ❗ The two key-auth services bind-mount `${CMDR_SFTP_KEYS_DIR:-/tmp/cmdr-sftp-keys}`,
+# a MACHINE-WIDE path like the lease dir, ❌ never one relative to this file.
+# Compose resolves a relative bind source against this file's own directory, so a
+# per-checkout path bakes the starting worktree into a live container that sibling
+# worktrees then adopt; delete that worktree and every key-auth cell fails
+# everywhere. The canonical path lives in `scripts/check/stacklease/registry.go`.
+#
 # One image, `image/`. What differs between services is env, so a quirk is a
 # line here rather than a Dockerfile to keep in sync.
 
@@ -37,7 +44,7 @@ services:
     <<: *fixture
     environment:
       AUTH: key
-    volumes: ['./.keys/keyonly:/keys']
+    volumes: ['${CMDR_SFTP_KEYS_DIR:-/tmp/cmdr-sftp-keys}/keyonly:/keys']
     ports: ['${SFTP_FIXTURE_KEYONLY_PORT:-12481}:22']
 
   # A key file with a passphrase on it: the rung that reconnects out of the secret
@@ -47,7 +54,7 @@ services:
     environment:
       AUTH: passphrase
       KEY_PASSPHRASE: letmein
-    volumes: ['./.keys/passphrase:/keys']
+    volumes: ['${CMDR_SFTP_KEYS_DIR:-/tmp/cmdr-sftp-keys}/passphrase:/keys']
     ports: ['${SFTP_FIXTURE_PASSPHRASE_PORT:-12482}:22']
 
   # `PasswordAuthentication no` + `KbdInteractiveAuthentication yes`: the
