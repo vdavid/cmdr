@@ -267,3 +267,5 @@ pub(crate) fn now_secs() -> i64 {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod wake_tests;

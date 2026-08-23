@@ -1,6 +1,7 @@
 //! Runtime tests: single-flight, the per-message budgets, cancellation at a tool
 //! boundary, the crash-safe persistence model, cost metering, and an end-to-end
-//! fake-driven multi-tool turn.
+//! fake-driven multi-tool turn. The wake path has its own file (`wake_tests.rs`)
+//! and borrows the fixtures here.
 //!
 //! Tool dispatch is exercised through a scripted [`ToolDispatcher`] double (there is no
 //! in-tree full-Tauri harness for the agent toolset at unit-test scope), and the LLM
@@ -22,7 +23,6 @@ use tokio_util::sync::CancellationToken;
 use super::*;
 use crate::agent::chat::context::{ContextEnvelope, MAX_TOOL_TURNS, MAX_WALL_TIME};
 use crate::agent::llm::AgentDeltaStream;
-use crate::agent::llm::fake::{FakeAgentLlm, ScriptedTurn};
 use crate::agent::llm::types::{
     AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentToolCall, AgentToolResult,
     AgentUsage, ProviderTag, ToolDeclaration, ToolId,
@@ -60,7 +60,7 @@ fn envelope() -> ContextEnvelope {
     }
 }
 
-fn params<'a>(conversation_id: i64, user_text: Option<&'a str>) -> TurnParams<'a> {
+pub(super) fn params<'a>(conversation_id: i64, user_text: Option<&'a str>) -> TurnParams<'a> {
     TurnParams {
         conversation_id,
         user_text,
@@ -225,7 +225,7 @@ fn program_to_deltas(program: Program) -> Vec<Result<AgentDelta, AgentLlmError>>
 // ── Scripted dispatchers ──────────────────────────────────────────────────────
 
 /// Returns a successful, structured tool result for every call.
-struct OkDispatcher;
+pub(super) struct OkDispatcher;
 
 impl ToolDispatcher for OkDispatcher {
     fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
@@ -1102,7 +1102,7 @@ async fn a_failed_first_attempt_records_no_event_and_leaves_last_model_untouched
 
 /// A `ChatRuntime` over a temp-dir `main.db` with one conversation stamped to
 /// `model-one`, as if one turn had completed.
-fn runtime_with_stamped_conversation() -> (tempfile::TempDir, ChatRuntime, i64) {
+pub(super) fn runtime_with_stamped_conversation() -> (tempfile::TempDir, ChatRuntime, i64) {
     let dir = tempfile::tempdir().expect("temp dir");
     let db = store::main_db_path(dir.path());
     let conn = store::open_write_connection(&db).expect("open");
@@ -1398,69 +1398,5 @@ async fn a_send_without_current_consent_never_calls_the_llm() {
         llm.calls_seen().len(),
         1,
         "with consent, the send drives the LLM exactly once"
-    );
-}
-
-// ── The wake path (a turn the agent started, in a thread it already opened) ────
-
-/// A wake goes through `ChatRuntime` like every other turn: the rail never calls `run_turn`
-/// directly, and neither may the agent. What that buys here is the write connection, the
-/// single-flight guard, and the persistence contract, unchanged between the user asking and
-/// the agent noticing.
-#[tokio::test]
-async fn a_wake_runs_its_turn_in_the_thread_it_was_handed() {
-    let (_dir, runtime, _stamped) = runtime_with_stamped_conversation();
-    // A thread with no completed turn yet, the way the prepare step hands one over.
-    let conn = store::open_write_connection(&runtime.db_path).expect("open");
-    let id = store::create_conversation(&conn, "Downloads", 100, None).expect("create");
-    drop(conn);
-    let llm = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["Four files arrived.".to_string()])]);
-    let (sink, _rx) = unbounded_channel();
-
-    let result = runtime
-        .wake(
-            &llm,
-            &OkDispatcher,
-            &[],
-            &params(id, Some("4 new in ~/Downloads")),
-            &sink,
-            &CancellationToken::new(),
-        )
-        .await
-        .expect("the store took the turn");
-
-    assert!(matches!(result, TurnResult::Answered { .. }), "{result:?}");
-    let conn = store::open_read_connection(&runtime.db_path).expect("open read");
-    let rows = store::list_messages(&conn, id, 10, 0).expect("list");
-    assert_eq!(rows.len(), 2, "the digest and the answer");
-}
-
-/// ⚠️ The CONVERSATION lock is held across a wake's turn, taken on the wake thread. A wake
-/// thread is a real conversation the user can reply to, so skipping `ConversationLocks` would
-/// let a reply and the wake's own turn run concurrently in one thread.
-#[tokio::test]
-async fn a_wake_queues_behind_whatever_already_holds_its_thread() {
-    let (_dir, runtime, id) = runtime_with_stamped_conversation();
-    let llm = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["Four files arrived.".to_string()])]);
-    let (sink, mut rx) = unbounded_channel();
-
-    // Stand in for a rail send already running in this thread.
-    let guard = runtime.locks.acquire_quiet(id).await;
-
-    let turn = params(id, Some("4 new in ~/Downloads"));
-    let cancel = CancellationToken::new();
-    let waking = runtime.wake(&llm, &OkDispatcher, &[], &turn, &sink, &cancel);
-    // Releasing only once `Queued` has landed proves the wake actually waited for the lock
-    // rather than racing past it.
-    let releasing = async {
-        let queued = rx.recv().await;
-        assert!(matches!(queued, Some(AgentChatEvent::Queued)), "{queued:?}");
-        drop(guard);
-    };
-
-    let (result, ()) = tokio::join!(waking, releasing);
-    assert!(
-        matches!(result.expect("the store took the turn"), TurnResult::Answered { .. }),
-        "the wake ran once the thread was free"
     );
 }

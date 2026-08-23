@@ -61,8 +61,10 @@ pub fn readiness_snapshot() -> WakeReadiness {
 /// decision.
 ///
 /// A change is announced to the wake loop, which may have parked its timer against the old
-/// answer. Announcing unconditionally would wake the loop on every settings save.
-pub fn refresh_readiness<R: Runtime>(app: &AppHandle<R>) -> WakeReadiness {
+/// answer. Announcing unconditionally would wake the loop on every settings save. The new value
+/// is not returned: [`readiness_snapshot`] is the one way to read it, so no caller can end up
+/// acting on a copy that a later refresh has already moved past.
+pub fn refresh_readiness<R: Runtime>(app: &AppHandle<R>) {
     let gates = AgentGates {
         consented: consented(app),
         fda_pending: crate::fda_gate::is_fda_pending_runtime(),
@@ -74,7 +76,6 @@ pub fn refresh_readiness<R: Runtime>(app: &AppHandle<R>) -> WakeReadiness {
         log::debug!(target: LOG_TARGET, "readiness moved to {next:?}");
         send_control(WakeControl::ReadinessChanged);
     }
-    next
 }
 
 /// Whether the user has accepted the current consent copy. Fails closed: no store, no
