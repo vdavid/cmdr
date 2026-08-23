@@ -1,10 +1,12 @@
-//! The Ask Cmdr agent's in-process read-only tool layer.
+//! The Ask Cmdr agent's in-process tool layer: the reads, the proposals, and its own memory.
 //!
 //! One authored registry, two consumer views (agent-spec D49): the agent's tools
 //! are `consumers: [Agent], access: Read` entries in the shared `mcp_tools!` table,
 //! and this module is where their handlers, schemas, and typed result shapes live
 //! ([`read`]) and where the runtime reaches them:
 //!
+//! - [`memory`]: the two tools that write the agent's own notes — the only write in the
+//!   view, jailed to `<data-dir>/ai/memory/` by `agent::memory`.
 //! - [`quiet`]: the one signal tool — how a wake says it found nothing worth
 //!   raising. The handler is inert; only the wake path acts on the call.
 //! - [`suggestions`]: the suggested-ops surface — two reads over the proposal
@@ -18,6 +20,7 @@
 //! See `CLAUDE.md` for the must-knows (reuse the core; the honesty contract; the
 //! Unrecognized-out-of-view invariant) and `DETAILS.md` for the tool catalog.
 
+pub mod memory;
 pub mod propose;
 pub mod quiet;
 pub mod read;

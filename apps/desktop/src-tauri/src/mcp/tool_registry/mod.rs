@@ -25,9 +25,10 @@
 //! destructive-but-prompting ops (`copy`/`move`/`delete` with `autoConfirm` absent carry
 //! `IfAutoConfirm`, effectively open), so a gate-based agent filter would let a destructive tool
 //! into the agent's view. The structural tests pin the agent view to exactly its authored
-//! `[agent]` entries AND require every one to be [`Access::Read`] or [`Access::Propose`], never
-//! [`Access::Write`]. **The agent can propose; only the user can approve** — no tool approves a
-//! proposal.
+//! `[agent]` entries AND require every one to be [`Access::Read`], [`Access::Propose`], or
+//! [`Access::Memory`], never [`Access::Write`]. **The agent can propose; only the user can
+//! approve** — no tool approves a proposal, and the only thing it writes is its own memory
+//! folder.
 //!
 //! Wire output must stay byte-identical: each schema is the exact `json!` block (hoisted into
 //! [`schemas`] verbatim), and the tool order is the historical category concatenation. The
@@ -64,9 +65,9 @@ pub enum Consumer {
     Agent,
 }
 
-/// Whether a tool reads, asks, or mutates. The agent view admits `Read` and `Propose` and must
-/// contain zero `Write` tools — this is the guarantee [`TokenGate`] alone can't give (see the
-/// module docs).
+/// Whether a tool reads, asks, remembers, or mutates. The agent view admits `Read`, `Propose`,
+/// and `Memory`, and must contain zero `Write` tools — this is the guarantee [`TokenGate`] alone
+/// can't give (see the module docs).
 ///
 /// The agent dispatch (`crate::agent::tools`) reads [`tool_access`] as a runtime backstop: it
 /// refuses to execute any tool classified `Write`, so "the agent can't act" holds even against a
@@ -82,6 +83,17 @@ pub enum Access {
     /// (`EXPECTED_PROPOSE_TOOL_NAMES`), because no structural check can prove a handler doesn't
     /// mutate.
     Propose,
+    /// Writes inside the agent's OWN memory folder (`<data-dir>/ai/memory/`), and nowhere else.
+    ///
+    /// ⚠️ **A deliberate widening of the app's central agent-safety invariant.** "The agent
+    /// never changes anything" becomes "the agent writes only into its memory folder" — still
+    /// structural, but it is a different promise, so it is authored by hand into
+    /// `EXPECTED_MEMORY_TOOL_NAMES` for the same reason [`Access::Propose`] is: no structural
+    /// check can prove a handler stays in the jail, so a human has to put the name there having
+    /// read it. ❌ It must never be acquired as a side effect of editing a registry line.
+    ///
+    /// The containment itself is `agent::memory`'s jail, not this tag.
+    Memory,
     /// Mutates the filesystem OR app state (nav, cursor, selection, tabs, dialogs, settings,
     /// connect/eject, file ops, rollback-cancel); when in doubt a tool is `Write`. Never reachable
     /// from the agent view.
@@ -725,6 +737,22 @@ mcp_tools! {
         consumers: &[Consumer::Agent],
         access: Access::Read,
         run: app_params crate::agent::tools::quiet::execute_nothing_to_suggest
+    },
+    "memory_write" => {
+        desc: "Save a note about the user in your own memory folder, creating the file or replacing it whole. Facts about them and how they like things, never instructions to yourself. AGENTS.md is the file to use unless you have a reason not to.",
+        schema: crate::agent::tools::memory::memory_write_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Memory,
+        run: app_params crate::agent::tools::memory::execute_memory_write
+    },
+    "memory_edit" => {
+        desc: "Change or drop one part of a memory file: oldString must appear exactly once, and an empty newString deletes it. Use it to prune what has gone stale rather than rewriting the whole file.",
+        schema: crate::agent::tools::memory::memory_edit_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Memory,
+        run: app_params crate::agent::tools::memory::execute_memory_edit
     },
     "list_volumes" => {
         desc: "List every volume Cmdr can see (local disks, SMB shares, MTP devices, and the Network root) with each one's kind, index freshness (fresh / scanning / stale / off), and — for SMB — its connection state (direct / os_mount / disconnected).",

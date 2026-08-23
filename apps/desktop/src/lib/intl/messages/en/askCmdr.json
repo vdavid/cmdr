@@ -167,6 +167,22 @@
   "@askCmdr.tool.nothingToSuggest.done": {
     "description": "Past-tense label on the same tool line once the assistant decided the activity was not worth raising. It must read as a calm, complete answer rather than as something going wrong: finding nothing is a good outcome. Pairs with askCmdr.tool.nothingToSuggest.doing."
   },
+  "askCmdr.tool.memoryWrite.doing": "Saving a note about you",
+  "@askCmdr.tool.memoryWrite.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant saves something it learned about this person into its own small notes folder, so it doesn''t have to ask again next time. Notes are facts and preferences about the person, and they stay on this computer until a message is sent. Nothing about the person''s files changes. Pairs with askCmdr.tool.memoryWrite.done."
+  },
+  "askCmdr.tool.memoryWrite.done": "Saved a note about you",
+  "@askCmdr.tool.memoryWrite.done": {
+    "description": "Past-tense label on the same tool line once the note is saved. It must read as calm and ordinary, not as an alert: remembering a preference is a small helpful act. Pairs with askCmdr.tool.memoryWrite.doing."
+  },
+  "askCmdr.tool.memoryEdit.doing": "Updating its notes",
+  "@askCmdr.tool.memoryEdit.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant changes or removes one part of the notes it keeps about this person, usually to drop something that has gone out of date. ''Its'' refers to the assistant, so use whatever form your language uses for a thing''s own possessions. Pairs with askCmdr.tool.memoryEdit.done."
+  },
+  "askCmdr.tool.memoryEdit.done": "Updated its notes",
+  "@askCmdr.tool.memoryEdit.done": {
+    "description": "Past-tense label on the same tool line once the notes are updated. Pairs with askCmdr.tool.memoryEdit.doing."
+  },
   "askCmdr.tool.unknown.doing": "Working",
   "@askCmdr.tool.unknown.doing": {
     "description": "Present-tense fallback status for a tool the rail doesn't have a specific label for."

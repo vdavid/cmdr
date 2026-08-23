@@ -160,6 +160,22 @@
   "@askCmdr.tool.nothingToSuggest.done": {
     "sourceHash": "2287381"
   },
+  "askCmdr.tool.memoryWrite.doing": "Enregistrement d''une note à votre sujet",
+  "@askCmdr.tool.memoryWrite.doing": {
+    "sourceHash": "9c2a59e"
+  },
+  "askCmdr.tool.memoryWrite.done": "A enregistré une note à votre sujet",
+  "@askCmdr.tool.memoryWrite.done": {
+    "sourceHash": "cb3d875"
+  },
+  "askCmdr.tool.memoryEdit.doing": "Mise à jour de ses propres notes",
+  "@askCmdr.tool.memoryEdit.doing": {
+    "sourceHash": "9cfe004"
+  },
+  "askCmdr.tool.memoryEdit.done": "A mis à jour ses propres notes",
+  "@askCmdr.tool.memoryEdit.done": {
+    "sourceHash": "5fdfbdc"
+  },
   "askCmdr.tool.unknown.doing": "Travail en cours",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

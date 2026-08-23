@@ -32,6 +32,8 @@ const TOOL_LABEL_KEYS: Record<string, { doing: MessageKey; done: MessageKey }> =
     doing: 'askCmdr.tool.nothingToSuggest.doing',
     done: 'askCmdr.tool.nothingToSuggest.done',
   },
+  memory_write: { doing: 'askCmdr.tool.memoryWrite.doing', done: 'askCmdr.tool.memoryWrite.done' },
+  memory_edit: { doing: 'askCmdr.tool.memoryEdit.doing', done: 'askCmdr.tool.memoryEdit.done' },
 }
 
 const UNKNOWN_TOOL_KEYS = { doing: 'askCmdr.tool.unknown.doing', done: 'askCmdr.tool.unknown.done' } as const

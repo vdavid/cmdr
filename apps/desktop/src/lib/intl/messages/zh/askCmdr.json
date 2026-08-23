@@ -160,6 +160,22 @@
   "@askCmdr.tool.nothingToSuggest.done": {
     "sourceHash": "2287381"
   },
+  "askCmdr.tool.memoryWrite.doing": "正在记下关于你的信息",
+  "@askCmdr.tool.memoryWrite.doing": {
+    "sourceHash": "9c2a59e"
+  },
+  "askCmdr.tool.memoryWrite.done": "已记下关于你的信息",
+  "@askCmdr.tool.memoryWrite.done": {
+    "sourceHash": "cb3d875"
+  },
+  "askCmdr.tool.memoryEdit.doing": "正在更新自己的笔记",
+  "@askCmdr.tool.memoryEdit.doing": {
+    "sourceHash": "9cfe004"
+  },
+  "askCmdr.tool.memoryEdit.done": "已更新自己的笔记",
+  "@askCmdr.tool.memoryEdit.done": {
+    "sourceHash": "5fdfbdc"
+  },
   "askCmdr.tool.unknown.doing": "正在处理",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

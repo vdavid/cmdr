@@ -6,11 +6,16 @@
 //! turns into a typed "not available" tool-result WITHOUT ever calling
 //! `execute_tool`. So the boundary holds at runtime, not just structurally: the parse
 //! step is the gate, backed by a `tool_access` check that refuses anything the registry
-//! doesn't classify [`Access::Read`] or [`Access::Propose`] even if it entered the view.
+//! doesn't classify [`Access::Read`], [`Access::Propose`], or [`Access::Memory`] even if it
+//! entered the view.
 //!
 //! **The agent can propose; only the user can approve.** A [`Access::Propose`] tool
 //! stages a proposal and opens a review surface; it mutates nothing. Approval originates
 //! in the frontend as a user action, and there is no tool that approves a proposal.
+//!
+//! **And it writes only its own notes.** [`Access::Memory`] widens the gate by exactly one
+//! folder (`agent::memory`'s jail); the promise the app makes is "the agent writes only into
+//! its memory folder", which is still structural.
 
 use serde_json::json;
 use tauri::{AppHandle, Runtime};
@@ -21,12 +26,12 @@ use crate::agent::tools::propose::rename::{RenameDispatchOutcome, RenameProposal
 use crate::mcp::{Access, Consumer, execute_tool, tool_access};
 
 /// The access axis of the gate: whether a registry access class may dispatch through the
-/// agent's view. [`Access::Read`] and [`Access::Propose`] may, [`Access::Write`] never may,
-/// and an unclassified name (`None`) never may. Pure, so the widened rule is unit-testable
-/// against every variant without an authored tool per variant.
+/// agent's view. [`Access::Read`], [`Access::Propose`], and [`Access::Memory`] may,
+/// [`Access::Write`] never may, and an unclassified name (`None`) never may. Pure, so the
+/// widened rule is unit-testable against every variant without an authored tool per variant.
 fn access_is_dispatchable(access: Option<Access>) -> bool {
     match access {
-        Some(Access::Read | Access::Propose) => true,
+        Some(Access::Read | Access::Propose | Access::Memory) => true,
         Some(Access::Write) | None => false,
     }
 }
@@ -47,7 +52,7 @@ pub fn refuse_unavailable(call_id: &str, tool: &ToolId) -> Option<AgentToolResul
         content: json!({
             "available": false,
             "requested": tool.as_wire_name(),
-            "reason": "That tool isn't available. Ask Cmdr can prepare a rename plan or suggest file operations for you to review, but it can't change anything, approve a proposal, or read file contents.",
+            "reason": "That tool isn't available. Ask Cmdr can prepare a rename plan, suggest file operations for you to review, and save notes in its own memory folder. It can't touch your files, approve a proposal, or read file contents.",
         }),
         elided: false,
     })
@@ -114,16 +119,20 @@ mod tests {
     use tokio_util::sync::CancellationToken;
 
     #[test]
-    fn the_access_gate_admits_read_and_propose_and_refuses_everything_else() {
+    fn the_access_gate_admits_read_propose_and_memory_and_refuses_everything_else() {
         // The gate's access axis, exercised directly against every `Access` variant.
         // The name-based tests below can only reach the variants some tool is actually
         // authored with, so with no `Propose` tool authored yet they'd cover `Propose`
         // vacuously. This one doesn't: it pins the widened rule itself — the agent may
-        // read and may ask, and may never write.
+        // read, may ask, and may write its own notes, and may never write anything else.
         assert!(access_is_dispatchable(Some(Access::Read)), "a read tool must dispatch");
         assert!(
             access_is_dispatchable(Some(Access::Propose)),
             "a propose tool must dispatch — it stages a proposal for the user, it doesn't act"
+        );
+        assert!(
+            access_is_dispatchable(Some(Access::Memory)),
+            "a memory tool must dispatch — the agent writes its own notes, and nothing else"
         );
         assert!(
             !access_is_dispatchable(Some(Access::Write)),

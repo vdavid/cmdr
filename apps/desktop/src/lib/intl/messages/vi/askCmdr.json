@@ -160,6 +160,22 @@
   "@askCmdr.tool.nothingToSuggest.done": {
     "sourceHash": "2287381"
   },
+  "askCmdr.tool.memoryWrite.doing": "Đang lưu ghi chú về bạn",
+  "@askCmdr.tool.memoryWrite.doing": {
+    "sourceHash": "9c2a59e"
+  },
+  "askCmdr.tool.memoryWrite.done": "Đã lưu ghi chú về bạn",
+  "@askCmdr.tool.memoryWrite.done": {
+    "sourceHash": "cb3d875"
+  },
+  "askCmdr.tool.memoryEdit.doing": "Đang cập nhật ghi chú của mình",
+  "@askCmdr.tool.memoryEdit.doing": {
+    "sourceHash": "9cfe004"
+  },
+  "askCmdr.tool.memoryEdit.done": "Đã cập nhật ghi chú của mình",
+  "@askCmdr.tool.memoryEdit.done": {
+    "sourceHash": "5fdfbdc"
+  },
   "askCmdr.tool.unknown.doing": "Đang xử lý",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

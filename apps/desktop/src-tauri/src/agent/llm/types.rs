@@ -183,6 +183,11 @@ pub enum ToolId {
     /// A wake's typed way of saying it looked and found nothing worth raising. A pure
     /// signal: the handler changes nothing, and only the wake path acts on the call.
     NothingToSuggest,
+    /// Saves a note about the user in the agent's own memory folder, creating the file or
+    /// replacing it whole. The only write in the view, jailed to `<data-dir>/ai/memory/`.
+    MemoryWrite,
+    /// Changes or drops one exact, unique passage inside one memory file.
+    MemoryEdit,
     /// A tool name the agent does not recognize (hallucinated, a typo, or a
     /// write/non-view tool). Carries the raw name for the transparent UI and the
     /// typed "tool not available" result; always refused by dispatch.
@@ -193,7 +198,7 @@ impl ToolId {
     /// Every known read-only variant, in wire order. Excludes [`ToolId::Unrecognized`]
     /// by design (it's the refusal case, never a view entry). The 1:1 structural test
     /// asserts these map exactly onto `agent_tool_view()`.
-    pub const KNOWN: [ToolId; 15] = [
+    pub const KNOWN: [ToolId; 17] = [
         ToolId::AppState,
         ToolId::ListDir,
         ToolId::ListPaneFiles,
@@ -209,6 +214,8 @@ impl ToolId {
         ToolId::GetSuggestionGroup,
         ToolId::ProposeSuggestions,
         ToolId::NothingToSuggest,
+        ToolId::MemoryWrite,
+        ToolId::MemoryEdit,
     ];
 
     /// The wire name for this tool: the genai `fn_name`, the DB token, and the IPC
@@ -230,6 +237,8 @@ impl ToolId {
             ToolId::GetSuggestionGroup => "get_suggestion_group",
             ToolId::ProposeSuggestions => "propose_suggestions",
             ToolId::NothingToSuggest => "nothing_to_suggest",
+            ToolId::MemoryWrite => "memory_write",
+            ToolId::MemoryEdit => "memory_edit",
             ToolId::Unrecognized(name) => name.as_str(),
         }
     }
@@ -255,6 +264,8 @@ impl ToolId {
             "get_suggestion_group" => ToolId::GetSuggestionGroup,
             "propose_suggestions" => ToolId::ProposeSuggestions,
             "nothing_to_suggest" => ToolId::NothingToSuggest,
+            "memory_write" => ToolId::MemoryWrite,
+            "memory_edit" => ToolId::MemoryEdit,
             other => ToolId::Unrecognized(other.to_string()),
         }
     }

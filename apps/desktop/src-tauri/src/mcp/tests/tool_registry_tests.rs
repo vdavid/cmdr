@@ -741,6 +741,8 @@ const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "get_suggestion_group",
     "propose_suggestions",
     "nothing_to_suggest",
+    "memory_write",
+    "memory_edit",
 ];
 
 /// Set-equality: the agent view equals exactly its authored `consumers:[agent]` entries. This is
@@ -764,20 +766,65 @@ fn test_agent_tool_view_is_exactly_expected_set() {
 /// generically; see `mcp/DETAILS.md` § Consumer and access views.
 const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &["propose_rename_plan", "propose_suggestions"];
 
-/// The agent can propose; only the user can approve. Structurally: every tool in the agent's view
-/// is `Access::Read` or `Access::Propose`, and NEVER `Access::Write`. This is the guarantee
-/// `TokenGate::Open` cannot give — `Open` covers destructive ops that still prompt the user
-/// (`copy`/`move`/`delete` with `autoConfirm` absent carry `IfAutoConfirm`), so a gate-based filter
-/// would let a `Write` tool into the agent's view. The regression anchor for "the agent still can't
-/// write, and can now ask".
+/// The agent's `Memory` tools, authored by hand for the same reason the `Propose` list is.
+///
+/// ⚠️ **This list is where the app's central agent-safety invariant was deliberately widened.**
+/// "Ask Cmdr never changes anything" became "Ask Cmdr writes only into its own memory folder",
+/// and the containment is `agent::memory`'s jail rather than this tag. No structural check can
+/// prove a handler stays inside that jail, so a human puts each name here on purpose, having
+/// read the handler. Tagging an entry `access: Memory` without listing it here fails.
+const EXPECTED_MEMORY_TOOL_NAMES: &[&str] = &["memory_write", "memory_edit"];
+
+/// The agent can propose; only the user can approve; and the only thing it writes is its own
+/// notes. Structurally: every tool in the agent's view is `Access::Read`, `Access::Propose`, or
+/// `Access::Memory`, and NEVER `Access::Write`. This is the guarantee `TokenGate::Open` cannot
+/// give — `Open` covers destructive ops that still prompt the user (`copy`/`move`/`delete` with
+/// `autoConfirm` absent carry `IfAutoConfirm`), so a gate-based filter would let a `Write` tool
+/// into the agent's view. The regression anchor for "the agent still can't touch the user's
+/// files, and can now ask and remember".
 #[test]
 fn test_agent_tool_view_never_writes() {
     for tool in agent_tool_view() {
         let access = tool_access(&tool.name);
         assert!(
-            matches!(access, Some(Access::Read) | Some(Access::Propose)),
-            "agent-visible tool '{}' is {access:?} — the agent view admits only Read and Propose, never Write",
+            matches!(
+                access,
+                Some(Access::Read) | Some(Access::Propose) | Some(Access::Memory)
+            ),
+            "agent-visible tool '{}' is {access:?} — the agent view admits Read, Propose, and Memory, never Write",
             tool.name
+        );
+    }
+}
+
+/// A `Memory` tool only exists if a human authored it into `EXPECTED_MEMORY_TOOL_NAMES`. The
+/// twin of `test_propose_tools_are_an_explicit_allowlist`, and the more load-bearing of the
+/// two: `Propose` widens what the agent may ASK for, `Memory` widens what it may DO.
+#[test]
+fn test_memory_tools_are_an_explicit_allowlist() {
+    use std::collections::BTreeSet;
+    let allowed: BTreeSet<&str> = EXPECTED_MEMORY_TOOL_NAMES.iter().copied().collect();
+    let actual: BTreeSet<String> = agent_tool_view()
+        .into_iter()
+        .filter(|t| tool_access(&t.name) == Some(Access::Memory))
+        .map(|t| t.name)
+        .collect();
+    let actual_refs: BTreeSet<&str> = actual.iter().map(String::as_str).collect();
+    assert_eq!(
+        actual_refs, allowed,
+        "the registry's Memory tools differ from the hand-authored allowlist"
+    );
+}
+
+/// ⚠️ `Access::Memory` is the agent's ONLY write, and it belongs to the in-process agent alone.
+/// An external MCP client reaching one would be a filesystem write through a transport whose
+/// whole security story is "agents do only what users can do, no filesystem access".
+#[test]
+fn test_memory_tools_are_not_exposed_to_external_mcp_clients() {
+    for name in EXPECTED_MEMORY_TOOL_NAMES {
+        assert!(
+            !tool_available_to(name, Consumer::AiClient),
+            "'{name}' writes to disk and must not be reachable over the HTTP transport"
         );
     }
 }
