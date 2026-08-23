@@ -26,7 +26,9 @@ import type { ContextUsage } from './ask-cmdr-context-usage'
 
 // `vi.hoisted` so the shared mutable state exists before the hoisted `vi.mock`
 // factories run.
-const { triggerState, flags, costMock } = vi.hoisted(() => ({
+const { triggerState, flags, costMock, consentState } = vi.hoisted(() => ({
+  // A plain mutable object, so the consent block can move `needsReconsent` before mounting.
+  consentState: { accepted: true, acceptedAt: null, needsReconsent: false },
   triggerState: {
     streaming: false,
     width: 340,
@@ -60,7 +62,7 @@ vi.mock('./ask-cmdr-trigger.svelte', () => ({
 
 // Consent granted so the rail renders the chat (not the opt-in gate).
 vi.mock('./ask-cmdr-consent.svelte', () => ({
-  consentState: { accepted: true, acceptedAt: null },
+  consentState,
   refreshConsent: vi.fn(),
   acceptConsent: vi.fn(() => Promise.resolve(true)),
   revokeConsent: vi.fn(),
@@ -88,6 +90,7 @@ import AskCmdrCostFooter from './AskCmdrCostFooter.svelte'
 import AskCmdrMessage from './AskCmdrMessage.svelte'
 import AskCmdrRail from './AskCmdrRail.svelte'
 import AskCmdrToolLine from './AskCmdrToolLine.svelte'
+import { getMessage } from '$lib/intl/messages.svelte'
 
 /** A fresh container, appended to the document and ready to mount into. */
 function container(): HTMLDivElement {
@@ -169,18 +172,72 @@ describe('AskCmdrComposer a11y', () => {
 })
 
 /**
- * Tier 3 a11y tests for `AskCmdrConsent.svelte`, the opt-in gate.
+ * Tier 3 a11y tests for `AskCmdrConsent.svelte`, the opt-in gate, plus the one branch it
+ * owns: the "here's what changed" block a returning user gets and a first-time user doesn't.
  *
  * The screen: a labelled group (heading + intro + the "what leaves your Mac" list + the
- * read-only reassurance + the local-storage note), and the two actions (Not now / Turn on).
+ * reassurance paragraphs + the local-storage note), and the two actions (Not now / Turn on).
  * The consent + trigger modules are mocked so it mounts without a backend.
  */
 describe('AskCmdrConsent a11y', () => {
-  it('the opt-in gate has no a11y violations', async () => {
+  async function mountGate(): Promise<HTMLElement> {
     const target = container()
     mount(AskCmdrConsent, { target, props: {} })
     await tick()
+    return target
+  }
+
+  beforeEach(() => {
+    consentState.needsReconsent = false
+  })
+
+  it('the opt-in gate has no a11y violations', async () => {
+    const target = await mountGate()
     await expectNoA11yViolations(target)
+    target.remove()
+  })
+
+  it('the re-prompt has no a11y violations either', async () => {
+    consentState.needsReconsent = true
+    const target = await mountGate()
+    await expectNoA11yViolations(target)
+    target.remove()
+  })
+
+  /**
+   * The disclosure the whole re-prompt exists for. Without it the bump collects a signature
+   * on the old promise, which is the one thing a consent bump must not do.
+   */
+  it('always discloses the memory the agent keeps and sends', async () => {
+    const target = await mountGate()
+    expect(target.textContent).toContain(getMessage('askCmdr.consent.item.memory'))
+    expect(target.textContent).toContain(getMessage('askCmdr.consent.memory'))
+    expect(target.textContent).toContain(getMessage('askCmdr.consent.proactive'))
+    target.remove()
+  })
+
+  /** ❌ The old promise must not come back: the agent proposes changes and writes its notes. */
+  it('no longer claims the agent never changes anything', async () => {
+    const target = await mountGate()
+    expect(target.textContent).not.toContain('never changes anything')
+    target.remove()
+  })
+
+  it('says nothing about a change to somebody who is opting in for the first time', async () => {
+    const target = await mountGate()
+    expect(target.textContent).not.toContain(getMessage('askCmdr.consent.whatsNew.title'))
+    target.remove()
+  })
+
+  /**
+   * Somebody whose opt-in the copy bump revoked has a whole thread history sitting behind this
+   * screen. Showing them the first-run pitch with no reason for it reads as the app losing it.
+   */
+  it('tells a returning user what changed', async () => {
+    consentState.needsReconsent = true
+    const target = await mountGate()
+    expect(target.textContent).toContain(getMessage('askCmdr.consent.whatsNew.title'))
+    expect(target.textContent).toContain(getMessage('askCmdr.consent.whatsNew.body'))
     target.remove()
   })
 })

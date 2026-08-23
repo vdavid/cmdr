@@ -1509,6 +1509,14 @@
   "@settings.askCmdr.status.off": {
     "sourceHash": "0420c9a"
   },
+  "settings.askCmdr.status.needsReview": "Ask Cmdr 已暂停",
+  "@settings.askCmdr.status.needsReview": {
+    "sourceHash": "9b7a74e"
+  },
+  "settings.askCmdr.status.changed": "自你开启以来它有了变化，正在等你确认。请先阅读下面的新内容，然后重新开启。",
+  "@settings.askCmdr.status.changed": {
+    "sourceHash": "190838b"
+  },
   "settings.askCmdr.status.onSince": "自 {date} 起开启",
   "@settings.askCmdr.status.onSince": {
     "sourceHash": "2f573fd"
@@ -1516,6 +1524,10 @@
   "settings.askCmdr.turnOn": "开启 Ask Cmdr",
   "@settings.askCmdr.turnOn": {
     "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnBackOn": "重新开启",
+  "@settings.askCmdr.turnBackOn": {
+    "sourceHash": "b8bc676"
   },
   "settings.askCmdr.turnOff": "关闭 Ask Cmdr",
   "@settings.askCmdr.turnOff": {
@@ -1596,6 +1608,22 @@
   "settings.askCmdr.wakeToast.description": "当 Ask Cmdr 准备好待你查看的内容时，在角落显示一条小提示。",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "f07a46e"
+  },
+  "settings.askCmdr.memory.title": "Ask Cmdr 记住的内容",
+  "@settings.askCmdr.memory.title": {
+    "sourceHash": "4b102db"
+  },
+  "settings.askCmdr.memory.description": "Ask Cmdr 保存着一个关于你的小笔记文件夹，并随每条消息一起发送。可以看看，也可以清空重来。",
+  "@settings.askCmdr.memory.description": {
+    "sourceHash": "bcd73ea"
+  },
+  "settings.askCmdr.memory.open": "打开笔记文件夹",
+  "@settings.askCmdr.memory.open": {
+    "sourceHash": "cffe1da"
+  },
+  "settings.askCmdr.memory.forgotten": "Ask Cmdr 的笔记已清空，它从这里重新开始。",
+  "@settings.askCmdr.memory.forgotten": {
+    "sourceHash": "a50ed99"
   },
   "settings.askCmdr.spend.title": "花费",
   "@settings.askCmdr.spend.title": {

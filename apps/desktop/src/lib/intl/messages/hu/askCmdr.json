@@ -356,9 +356,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "A Cmdr soha nem küldi el magukat a fájlokat: sem a fájlok tartalmát, sem fotókat, sem bélyegképeket. A fotókeresés az egyetlen funkció, amely belenéz a képeidbe, és csak akkor, amikor keresel bennük: a Cmdr által a találati fotókban felismert szöveg és azok címkéi a szolgáltatódhoz kerülnek, hogy meg tudja találni őket. Az Ask Cmdr csak néz és beszél; soha semmit nem változtat.",
+  "askCmdr.consent.item.memory": "Az Ask Cmdr rólad készített jegyzetei, minden üzenettel újra elküldve",
+  "@askCmdr.consent.item.memory": {
+    "sourceHash": "54bee04"
+  },
+  "askCmdr.consent.noContents": "A Cmdr soha nem küldi el magukat a fájlokat: sem a fájlok tartalmát, sem fotókat, sem bélyegképeket. A fotókeresés az egyetlen funkció, amely belenéz a képeidbe, és csak akkor, amikor keresel bennük: a Cmdr által a találati fotókban felismert szöveg és azok címkéi a szolgáltatódhoz kerülnek, hogy meg tudja találni őket. Az Ask Cmdr javasolhat átnevezést, áthelyezést és rendrakást, de egyetlen fájllal sem történik semmi, amíg jóvá nem hagyod.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "764a421"
+    "sourceHash": "99f9add"
+  },
+  "askCmdr.consent.memory": "Az Ask Cmdr jegyzeteket ír rólad: hogyan szereted rendezni a dolgokat, mit utasítottál el korábban, és mindent, amit megkérsz, hogy jegyezzen meg. Ezek a jegyzetek minden elküldött üzenettel együtt mennek, amíg csak léteznek, és tartalmazhatnak olyan szöveget is, amelyet a Cmdr a fotóidban ismert fel. Bármikor elolvashatod vagy törölheted őket az Ask Cmdr beállításaiban.",
+  "@askCmdr.consent.memory": {
+    "sourceHash": "80facfd"
+  },
+  "askCmdr.consent.proactive": "Az Ask Cmdr figyeli azokat a mappákat is, amiket használsz, és beszélgetést kezd, ha van mit javasolnia, így úgy is mehetnek üzenetek a szolgáltatódhoz, hogy te nem kérdeztél semmit. Ezt az Ask Cmdr beállításaiban, a „Magától” résznél kapcsolhatod ki.",
+  "@askCmdr.consent.proactive": {
+    "sourceHash": "1d0b671"
   },
   "askCmdr.consent.local": "A csevegéseid a Mac-eden maradnak, egy helyi adatbázisban, amit megnyithatsz és elolvashatsz. Te választod ki a szolgáltatót és a modellt, és láthatod, mennyibe kerül az egyes beszélgetések.",
   "@askCmdr.consent.local": {
@@ -375,6 +387,30 @@
   "askCmdr.consent.decline": "Most nem",
   "@askCmdr.consent.decline": {
     "sourceHash": "a0e63d7"
+  },
+  "askCmdr.consent.whatsNew.title": "Mi változott azóta, hogy bekapcsoltad",
+  "@askCmdr.consent.whatsNew.title": {
+    "sourceHash": "641705c"
+  },
+  "askCmdr.consent.whatsNew.body": "Az Ask Cmdr mostantól jegyzeteket őriz rólad a beszélgetések között, és magától is elkezdhet egy beszélgetést, ha észrevesz valami említésre méltót. Ez többet ígér annál, mint amihez hozzájárultál, ezért itt van újra az egész.",
+  "@askCmdr.consent.whatsNew.body": {
+    "sourceHash": "88751a5"
+  },
+  "askCmdr.forget.title": "Elfelejtsen mindent, amire az Ask Cmdr emlékszik?",
+  "@askCmdr.forget.title": {
+    "sourceHash": "95f576a"
+  },
+  "askCmdr.forget.message": "Az Ask Cmdr eldobja a rólad készített jegyzeteit, és tiszta lappal indul. A csevegéseid és a fájljaid pontosan úgy maradnak, ahogy vannak.",
+  "@askCmdr.forget.message": {
+    "sourceHash": "5687160"
+  },
+  "askCmdr.forget.confirm": "Minden elfelejtése",
+  "@askCmdr.forget.confirm": {
+    "sourceHash": "11d164a"
+  },
+  "askCmdr.forget.cancel": "Mégsem",
+  "@askCmdr.forget.cancel": {
+    "sourceHash": "19766ed"
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {token}}",
   "@askCmdr.cost.tokens": {

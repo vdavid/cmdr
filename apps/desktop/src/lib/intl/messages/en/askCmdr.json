@@ -385,9 +385,24 @@
     "description": "Consent list item: files or folders the user attaches to a question are sent by reference (name and path), never their contents. Sentence case, no period.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.noContents": "Cmdr doesn’t send the files themselves: no file contents, no photos, no thumbnails. Photo search is the one thing that reaches inside your images, and only when you have it search them: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr only looks and speaks; it never changes anything.",
+  "askCmdr.consent.item.memory": "The notes Ask Cmdr keeps about you, sent again with every message",
+  "@askCmdr.consent.item.memory": {
+    "description": "Sixth item in the Ask Cmdr consent list of what leaves the Mac: the assistant's own memory notes about the user, which are re-sent with every single message. Sentence case, no period.",
+    "screenshot": "ask-cmdr-consent.png"
+  },
+  "askCmdr.consent.noContents": "Cmdr doesn’t send the files themselves: no file contents, no photos, no thumbnails. Photo search is the one thing that reaches inside your images, and only when you have it search them: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
   "@askCmdr.consent.noContents": {
-    "description": "Reassurance paragraph on the Ask Cmdr consent screen: the files themselves (contents, photos, thumbnails) are never sent; the one exception is photo search, which sends image-derived text (recognized text and tags) when used; and the assistant is read-only. The apostrophes are U+2019.",
+    "description": "Reassurance paragraph on the Ask Cmdr consent screen, and in the same disclosure in Settings > Ask Cmdr: the files themselves (contents, photos, thumbnails) are never sent; the one exception is photo search, which sends image-derived text (recognized text and tags) when used; and the assistant proposes file changes but never carries one out without the user approving it. The last sentence must NOT promise that the assistant changes nothing, because it writes its own notes and it proposes renames and moves. The apostrophes are U+2019.",
+    "screenshot": "ask-cmdr-consent.png"
+  },
+  "askCmdr.consent.memory": "Ask Cmdr writes itself notes about you: how you like things organized, what you’ve turned down before, anything you ask it to remember. Those notes ride along with every message you send, for as long as they exist, and they can include text Cmdr recognized inside your photos. You can read them, or wipe them, any time in the Ask Cmdr settings.",
+  "@askCmdr.consent.memory": {
+    "description": "Paragraph on the Ask Cmdr consent screen, and in the same disclosure in Settings > Ask Cmdr, about the assistant's memory: it writes notes about the user, those notes go to the provider with every message for as long as they exist, they can contain text recognized inside the user's photos, and the user can read or delete them in settings. This is the disclosure the whole re-prompt exists for, so keep all four facts. The apostrophe is U+2019.",
+    "screenshot": "ask-cmdr-consent.png"
+  },
+  "askCmdr.consent.proactive": "Ask Cmdr also watches the folders you use and starts a conversation when it has something to suggest, so messages can reach your provider without you asking first. You can turn that off in the Ask Cmdr settings, under “On its own”.",
+  "@askCmdr.consent.proactive": {
+    "description": "Paragraph on the Ask Cmdr consent screen, and in the same disclosure in Settings > Ask Cmdr: the assistant can start conversations by itself, so messages reach the provider without the user typing anything, and the user can switch that off. The quoted phrase is the heading of that settings group (settings.askCmdr.proactive.title), so translate it exactly the same way in both places. The quotes are U+201C and U+201D.",
     "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.local": "Your chats stay on your Mac, in a local database you can open and read. You pick the provider and model, and you can see what each conversation costs.",
@@ -409,6 +424,32 @@
   "@askCmdr.consent.decline": {
     "description": "Secondary button on the Ask Cmdr consent screen that closes the rail without opting in. Sentence case.",
     "screenshot": "ask-cmdr-consent.png"
+  },
+  "askCmdr.consent.whatsNew.title": "What’s changed since you turned this on",
+  "@askCmdr.consent.whatsNew.title": {
+    "description": "Heading above the Ask Cmdr consent screen, shown ONLY to someone who already accepted an older version of this copy, so they can see why they are being asked again. Sentence case. The apostrophe is U+2019.",
+    "screenshot": "ask-cmdr-consent.png"
+  },
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr now keeps notes about you between chats, and it can start a conversation on its own when it notices something worth mentioning. That’s a bigger promise than the one you agreed to, so here it all is again.",
+  "@askCmdr.consent.whatsNew.body": {
+    "description": "Paragraph under askCmdr.consent.whatsNew.title, shown only to someone being asked again after the consent copy changed. Names the two new things (notes kept between chats, and starting conversations unprompted) and says why the whole screen is being shown again. The apostrophe is U+2019.",
+    "screenshot": "ask-cmdr-consent.png"
+  },
+  "askCmdr.forget.title": "Forget everything Ask Cmdr remembers?",
+  "@askCmdr.forget.title": {
+    "description": "Title of the confirmation dialog opened by the \"Forget everything\" button in Settings > Ask Cmdr. A question, sentence case."
+  },
+  "askCmdr.forget.message": "Ask Cmdr throws away its notes about you and starts from a blank page. Your chats and your files stay exactly as they are.",
+  "@askCmdr.forget.message": {
+    "description": "Body of the \"Forget everything\" confirmation dialog: the assistant's memory notes are deleted, and neither the chat history nor any of the user's files are touched."
+  },
+  "askCmdr.forget.confirm": "Forget everything",
+  "@askCmdr.forget.confirm": {
+    "description": "Destructive confirm button in the \"Forget everything\" dialog, and the label of the button in Settings > Ask Cmdr that opens it. Starts with a verb, sentence case."
+  },
+  "askCmdr.forget.cancel": "Cancel",
+  "@askCmdr.forget.cancel": {
+    "description": "Secondary button that closes the \"Forget everything\" dialog without deleting anything. Sentence case."
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {tokens}}",
   "@askCmdr.cost.tokens": {

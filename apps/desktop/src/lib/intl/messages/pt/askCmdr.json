@@ -358,9 +358,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "O Cmdr nunca envia os arquivos em si: nem o conteúdo dos arquivos, nem fotos, nem miniaturas. A busca de fotos é a única coisa que olha dentro das suas imagens, e só quando você a usa para buscá-las: o texto que o Cmdr reconheceu dentro das fotos correspondentes e as etiquetas delas vão para o seu provedor para que ele possa encontrá-las. O Ask Cmdr só vê e fala; ele nunca muda nada.",
+  "askCmdr.consent.item.memory": "As anotações que o Ask Cmdr mantém sobre você, enviadas de novo a cada mensagem",
+  "@askCmdr.consent.item.memory": {
+    "sourceHash": "54bee04"
+  },
+  "askCmdr.consent.noContents": "O Cmdr nunca envia os arquivos em si: nem o conteúdo dos arquivos, nem fotos, nem miniaturas. A busca de fotos é a única coisa que olha dentro das suas imagens, e só quando você a usa para buscá-las: o texto que o Cmdr reconheceu dentro das fotos correspondentes e as etiquetas delas vão para o seu provedor para que ele possa encontrá-las. O Ask Cmdr pode sugerir renomeações, movimentações e faxinas, e nada acontece com nenhum arquivo até você aprovar.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "764a421"
+    "sourceHash": "99f9add"
+  },
+  "askCmdr.consent.memory": "O Ask Cmdr escreve anotações sobre você: como você gosta de organizar as coisas, o que você recusou antes, tudo o que você pedir para ele lembrar. Essas anotações vão junto com cada mensagem que você envia, enquanto existirem, e podem incluir texto que o Cmdr reconheceu dentro das suas fotos. Você pode lê-las, ou apagá-las, quando quiser nos ajustes do Ask Cmdr.",
+  "@askCmdr.consent.memory": {
+    "sourceHash": "80facfd"
+  },
+  "askCmdr.consent.proactive": "O Ask Cmdr também acompanha as pastas que você usa e abre uma conversa quando tem algo a sugerir, então mensagens podem ir para o seu provedor sem você pedir. Dá para desativar isso nos ajustes do Ask Cmdr, em “Por conta própria”.",
+  "@askCmdr.consent.proactive": {
+    "sourceHash": "1d0b671"
   },
   "askCmdr.consent.local": "Seus chats ficam no seu Mac, em um banco de dados local que você pode abrir e ler. Você escolhe o provedor e o modelo, e pode ver quanto cada conversa custa.",
   "@askCmdr.consent.local": {
@@ -377,6 +389,30 @@
   "askCmdr.consent.decline": "Agora não",
   "@askCmdr.consent.decline": {
     "sourceHash": "a0e63d7"
+  },
+  "askCmdr.consent.whatsNew.title": "O que mudou desde que você ativou",
+  "@askCmdr.consent.whatsNew.title": {
+    "sourceHash": "641705c"
+  },
+  "askCmdr.consent.whatsNew.body": "O Ask Cmdr agora guarda anotações sobre você de uma conversa para outra, e pode começar uma conversa por conta própria quando percebe algo que vale mencionar. É mais do que você aceitou na época, então aqui está tudo de novo.",
+  "@askCmdr.consent.whatsNew.body": {
+    "sourceHash": "88751a5"
+  },
+  "askCmdr.forget.title": "Esquecer tudo o que o Ask Cmdr lembra?",
+  "@askCmdr.forget.title": {
+    "sourceHash": "95f576a"
+  },
+  "askCmdr.forget.message": "O Ask Cmdr joga fora as anotações sobre você e começa com uma página em branco. Seus chats e seus arquivos ficam exatamente como estão.",
+  "@askCmdr.forget.message": {
+    "sourceHash": "5687160"
+  },
+  "askCmdr.forget.confirm": "Esquecer tudo",
+  "@askCmdr.forget.confirm": {
+    "sourceHash": "11d164a"
+  },
+  "askCmdr.forget.cancel": "Cancelar",
+  "@askCmdr.forget.cancel": {
+    "sourceHash": "19766ed"
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {token} many {tokens} other {tokens}}",
   "@askCmdr.cost.tokens": {

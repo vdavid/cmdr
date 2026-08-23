@@ -24,13 +24,20 @@ interface ConsentState {
   accepted: boolean | null
   /** Unix secs the user last accepted the current copy, or `null`. */
   acceptedAt: number | null
+  /**
+   * The user opted in once, to copy that has since changed materially, so the bump revoked
+   * them. Without this, someone with a whole thread history behind the consent screen looks
+   * exactly like someone who never wanted AI, and both surfaces say a bare "off" at them.
+   */
+  needsReconsent: boolean
 }
 
-export const consentState = $state<ConsentState>({ accepted: null, acceptedAt: null })
+export const consentState = $state<ConsentState>({ accepted: null, acceptedAt: null, needsReconsent: false })
 
 function apply(status: AskCmdrConsentStatus): void {
   consentState.accepted = status.accepted
   consentState.acceptedAt = status.accepted ? status.acceptedAt : null
+  consentState.needsReconsent = !status.accepted && status.acceptedVersion !== null
 }
 
 /** Refresh the cached consent status from the store. Called on rail open and settings mount. */
@@ -42,6 +49,7 @@ export async function refreshConsent(): Promise<void> {
     // Fail closed: an unreadable status keeps the gate shut rather than opening it.
     consentState.accepted = false
     consentState.acceptedAt = null
+    consentState.needsReconsent = false
   }
 }
 

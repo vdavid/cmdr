@@ -20,9 +20,17 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingSlider from '../components/SettingSlider.svelte'
     import { formatDuration, seconds } from '$lib/units'
-    import { askCmdrCostSummary, askCmdrModelWindow, type CostSummary } from '$lib/tauri-commands'
+    import {
+        askCmdrCostSummary,
+        askCmdrForgetMemory,
+        askCmdrMemoryFolder,
+        askCmdrModelWindow,
+        requestRevealPath,
+        type CostSummary,
+    } from '$lib/tauri-commands'
     import { consentState, refreshConsent, acceptConsent, revokeConsent } from '$lib/ask-cmdr/ask-cmdr-consent.svelte'
     import { formatUsdMicros } from '$lib/ask-cmdr/ask-cmdr-cost'
+    import ForgetMemoryDialog from './ForgetMemoryDialog.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
 
     interface Props {
@@ -42,6 +50,10 @@
         void refreshConsent()
     })
     const enabled = $derived(consentState.accepted === true)
+    // Someone who opted in once, to wording that has since changed materially, so the bump
+    // revoked them. Without this they read as "off", identical to someone who never wanted AI,
+    // while a whole thread history sits behind the rail's consent screen.
+    const needsReconsent = $derived(consentState.needsReconsent)
 
     async function toggle(): Promise<void> {
         if (busy) return
@@ -129,6 +141,35 @@
         }),
     )
 
+    // The memory controls. "Open memory folder" needs the path from Rust (it moves with
+    // `CMDR_DATA_DIR`), and this window has no panes, so the main window is asked to show it.
+    let forgetOpen = $state(false)
+    let forgetting = $state(false)
+    let forgotten = $state(false)
+
+    async function openMemoryFolder(): Promise<void> {
+        try {
+            await requestRevealPath(await askCmdrMemoryFolder())
+        } catch (e: unknown) {
+            log.warn('opening the memory folder failed: {error}', { error: String(e) })
+        }
+    }
+
+    async function forgetEverything(): Promise<void> {
+        if (forgetting) return
+        forgetting = true
+        try {
+            const count = await askCmdrForgetMemory()
+            log.info('the user cleared Ask Cmdr’s memory: {count} note(s)', { count })
+            forgotten = true
+        } catch (e: unknown) {
+            log.warn('clearing Ask Cmdr’s memory failed: {error}', { error: String(e) })
+        } finally {
+            forgetting = false
+            forgetOpen = false
+        }
+    }
+
     // The per-day spend rollup (loaded on mount; refreshed when the section re-enables).
     let spend = $state<CostSummary | null>(null)
     $effect(() => {
@@ -161,27 +202,46 @@
     {/snippet}
     <p class="intro">{tString('settings.askCmdr.intro')}</p>
 
-    <!-- Enable / consent -->
+    <!-- Enable / consent. Three states, not two: "paused" is somebody who said yes to
+         wording that has since changed, and a bare "off" at them loses that entirely. -->
     <div class="enable-row">
         <div class="enable-status">
             <span class="status-label">
-                {tString(enabled ? 'settings.askCmdr.status.on' : 'settings.askCmdr.status.off')}
+                {#if enabled}
+                    {tString('settings.askCmdr.status.on')}
+                {:else if needsReconsent}
+                    {tString('settings.askCmdr.status.needsReview')}
+                {:else}
+                    {tString('settings.askCmdr.status.off')}
+                {/if}
             </span>
             {#if enabled && consentState.acceptedAt}
                 <span class="status-since">
                     {tString('settings.askCmdr.status.onSince', { date: localIsoDate(consentState.acceptedAt) })}
                 </span>
+            {:else if needsReconsent}
+                <span class="status-changed">{tString('settings.askCmdr.status.changed')}</span>
             {/if}
         </div>
         <Button variant={enabled ? 'secondary' : 'primary'} disabled={busy} onclick={() => void toggle()}>
-            {tString(enabled ? 'settings.askCmdr.turnOff' : 'settings.askCmdr.turnOn')}
+            {#if enabled}
+                {tString('settings.askCmdr.turnOff')}
+            {:else if needsReconsent}
+                {tString('settings.askCmdr.turnBackOn')}
+            {:else}
+                {tString('settings.askCmdr.turnOn')}
+            {/if}
         </Button>
     </div>
 
-    <!-- What Ask Cmdr sends (the same copy as the opt-in screen) -->
-    <details class="disclosure">
+    <!-- What Ask Cmdr sends (the same copy as the opt-in screen). Open by default for
+         somebody being asked again: the button above says "read what's new below". -->
+    <details class="disclosure" open={needsReconsent}>
         <summary>{tString('settings.askCmdr.disclosure.title')}</summary>
         <div class="disclosure-body">
+            {#if needsReconsent}
+                <p class="changed-lede">{tString('askCmdr.consent.whatsNew.body')}</p>
+            {/if}
             <p>{tString('askCmdr.consent.intro')}</p>
             <ul>
                 <li>{tString('askCmdr.consent.item.messages')}</li>
@@ -189,8 +249,11 @@
                 <li>{tString('askCmdr.consent.item.sizes')}</li>
                 <li>{tString('askCmdr.consent.item.envelope')}</li>
                 <li>{tString('askCmdr.consent.item.attachments')}</li>
+                <li>{tString('askCmdr.consent.item.memory')}</li>
             </ul>
             <p>{tString('askCmdr.consent.noContents')}</p>
+            <p>{tString('askCmdr.consent.memory')}</p>
+            <p>{tString('askCmdr.consent.proactive')}</p>
             <p>{tString('askCmdr.consent.local')}</p>
             <p class="fine">{tString('askCmdr.consent.logsNote')}</p>
         </div>
@@ -275,6 +338,22 @@
         </SettingRow>
     {/if}
 
+    <!-- What Ask Cmdr remembers: the notes are about the user, so they get to read them and
+         to throw them away. -->
+    <h3 class="group-title">{tString('settings.askCmdr.memory.title')}</h3>
+    <p class="provider-hint">{tString('settings.askCmdr.memory.description')}</p>
+    <div class="memory-actions">
+        <Button variant="secondary" onclick={() => void openMemoryFolder()}>
+            {tString('settings.askCmdr.memory.open')}
+        </Button>
+        <Button variant="secondary" onclick={() => (forgetOpen = true)}>
+            {tString('askCmdr.forget.confirm')}
+        </Button>
+    </div>
+    {#if forgotten}
+        <p class="memory-forgotten" role="status">{tString('settings.askCmdr.memory.forgotten')}</p>
+    {/if}
+
     <!-- Spend -->
     <h3 class="group-title">{tString('settings.askCmdr.spend.title')}</h3>
     {#if spend && spend.days.length > 0}
@@ -297,6 +376,14 @@
         <p class="provider-hint">{tString('settings.askCmdr.spend.empty')}</p>
     {/if}
 </SettingsSection>
+
+{#if forgetOpen}
+    <ForgetMemoryDialog
+        isForgetting={forgetting}
+        onConfirm={() => void forgetEverything()}
+        onCancel={() => (forgetOpen = false)}
+    />
+{/if}
 
 <style>
     .intro {
@@ -328,6 +415,30 @@
     .status-since {
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
+    }
+
+    .status-changed {
+        max-width: 36rem;
+        font-size: var(--font-size-xs);
+        line-height: var(--font-line-height-prose);
+        color: var(--color-warning-text);
+    }
+
+    .changed-lede {
+        font-weight: 500;
+        color: var(--color-text-primary);
+    }
+
+    .memory-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xxs) 0;
+    }
+
+    .memory-forgotten {
+        margin: var(--spacing-xs) 0 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
     }
 
     .disclosure {

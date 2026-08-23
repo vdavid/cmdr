@@ -1510,6 +1510,14 @@
   "@settings.askCmdr.status.off": {
     "sourceHash": "0420c9a"
   },
+  "settings.askCmdr.status.needsReview": "Az Ask Cmdr szünetel",
+  "@settings.askCmdr.status.needsReview": {
+    "sourceHash": "9b7a74e"
+  },
+  "settings.askCmdr.status.changed": "Megváltozott azóta, hogy bekapcsoltad, ezért a jóváhagyásodra vár. Olvasd el lentebb, mi az újdonság, aztán kapcsold vissza.",
+  "@settings.askCmdr.status.changed": {
+    "sourceHash": "190838b"
+  },
   "settings.askCmdr.status.onSince": "Bekapcsolva ekkor: {date}",
   "@settings.askCmdr.status.onSince": {
     "sourceHash": "2f573fd"
@@ -1517,6 +1525,10 @@
   "settings.askCmdr.turnOn": "Ask Cmdr bekapcsolása",
   "@settings.askCmdr.turnOn": {
     "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnBackOn": "Visszakapcsolás",
+  "@settings.askCmdr.turnBackOn": {
+    "sourceHash": "b8bc676"
   },
   "settings.askCmdr.turnOff": "Ask Cmdr kikapcsolása",
   "@settings.askCmdr.turnOff": {
@@ -1597,6 +1609,22 @@
   "settings.askCmdr.wakeToast.description": "Egy apró üzenet a sarokban, amikor az Ask Cmdr előkészít valamit átnézésre.",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "f07a46e"
+  },
+  "settings.askCmdr.memory.title": "Amire az Ask Cmdr emlékszik",
+  "@settings.askCmdr.memory.title": {
+    "sourceHash": "4b102db"
+  },
+  "settings.askCmdr.memory.description": "Az Ask Cmdr egy kis mappányi jegyzetet vezet rólad, és minden üzenettel elküldi. Nézz bele, vagy kezdd elölről.",
+  "@settings.askCmdr.memory.description": {
+    "sourceHash": "bcd73ea"
+  },
+  "settings.askCmdr.memory.open": "Jegyzetmappa megnyitása",
+  "@settings.askCmdr.memory.open": {
+    "sourceHash": "cffe1da"
+  },
+  "settings.askCmdr.memory.forgotten": "Az Ask Cmdr jegyzetei eltűntek. Innentől tiszta lappal indul.",
+  "@settings.askCmdr.memory.forgotten": {
+    "sourceHash": "a50ed99"
   },
   "settings.askCmdr.spend.title": "Kiadás",
   "@settings.askCmdr.spend.title": {

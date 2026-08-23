@@ -1510,6 +1510,14 @@
   "@settings.askCmdr.status.off": {
     "sourceHash": "0420c9a"
   },
+  "settings.askCmdr.status.needsReview": "Ask Cmdr está en pausa",
+  "@settings.askCmdr.status.needsReview": {
+    "sourceHash": "9b7a74e"
+  },
+  "settings.askCmdr.status.changed": "Ha cambiado desde que lo activaste, así que espera tu visto bueno. Lee abajo lo que hay de nuevo y vuelve a activarlo.",
+  "@settings.askCmdr.status.changed": {
+    "sourceHash": "190838b"
+  },
   "settings.askCmdr.status.onSince": "Activado desde el {date}",
   "@settings.askCmdr.status.onSince": {
     "sourceHash": "2f573fd"
@@ -1517,6 +1525,10 @@
   "settings.askCmdr.turnOn": "Activar Ask Cmdr",
   "@settings.askCmdr.turnOn": {
     "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnBackOn": "Volver a activar",
+  "@settings.askCmdr.turnBackOn": {
+    "sourceHash": "b8bc676"
   },
   "settings.askCmdr.turnOff": "Desactivar Ask Cmdr",
   "@settings.askCmdr.turnOff": {
@@ -1597,6 +1609,22 @@
   "settings.askCmdr.wakeToast.description": "Un mensaje pequeño en la esquina cuando Ask Cmdr deja algo listo para que lo revises.",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "f07a46e"
+  },
+  "settings.askCmdr.memory.title": "Lo que Ask Cmdr recuerda",
+  "@settings.askCmdr.memory.title": {
+    "sourceHash": "4b102db"
+  },
+  "settings.askCmdr.memory.description": "Ask Cmdr guarda una pequeña carpeta de notas sobre ti y la envía con cada mensaje. Échale un vistazo, o empieza de cero.",
+  "@settings.askCmdr.memory.description": {
+    "sourceHash": "bcd73ea"
+  },
+  "settings.askCmdr.memory.open": "Abrir carpeta de notas",
+  "@settings.askCmdr.memory.open": {
+    "sourceHash": "cffe1da"
+  },
+  "settings.askCmdr.memory.forgotten": "Las notas de Ask Cmdr ya no están. Empieza de cero desde aquí.",
+  "@settings.askCmdr.memory.forgotten": {
+    "sourceHash": "a50ed99"
   },
   "settings.askCmdr.spend.title": "Gasto",
   "@settings.askCmdr.spend.title": {

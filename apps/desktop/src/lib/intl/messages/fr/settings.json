@@ -1520,6 +1520,14 @@
   "@settings.askCmdr.status.off": {
     "sourceHash": "0420c9a"
   },
+  "settings.askCmdr.status.needsReview": "Ask Cmdr est en pause",
+  "@settings.askCmdr.status.needsReview": {
+    "sourceHash": "9b7a74e"
+  },
+  "settings.askCmdr.status.changed": "Il a changé depuis que vous l''avez activé, il attend donc votre accord. Lisez ci-dessous ce qui est nouveau, puis réactivez-le.",
+  "@settings.askCmdr.status.changed": {
+    "sourceHash": "190838b"
+  },
   "settings.askCmdr.status.onSince": "Activé depuis le {date}",
   "@settings.askCmdr.status.onSince": {
     "sourceHash": "2f573fd"
@@ -1527,6 +1535,10 @@
   "settings.askCmdr.turnOn": "Activer Ask Cmdr",
   "@settings.askCmdr.turnOn": {
     "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnBackOn": "Réactiver",
+  "@settings.askCmdr.turnBackOn": {
+    "sourceHash": "b8bc676"
   },
   "settings.askCmdr.turnOff": "Désactiver Ask Cmdr",
   "@settings.askCmdr.turnOff": {
@@ -1607,6 +1619,22 @@
   "settings.askCmdr.wakeToast.description": "Un petit message dans le coin quand Ask Cmdr prépare quelque chose à examiner.",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "f07a46e"
+  },
+  "settings.askCmdr.memory.title": "Ce dont Ask Cmdr se souvient",
+  "@settings.askCmdr.memory.title": {
+    "sourceHash": "4b102db"
+  },
+  "settings.askCmdr.memory.description": "Ask Cmdr conserve un petit dossier de notes sur vous et l''envoie avec chaque message. Jetez-y un œil, ou repartez de zéro.",
+  "@settings.askCmdr.memory.description": {
+    "sourceHash": "bcd73ea"
+  },
+  "settings.askCmdr.memory.open": "Ouvrir le dossier de notes",
+  "@settings.askCmdr.memory.open": {
+    "sourceHash": "cffe1da"
+  },
+  "settings.askCmdr.memory.forgotten": "Les notes d''Ask Cmdr ont disparu. Il repart de zéro à partir d''ici.",
+  "@settings.askCmdr.memory.forgotten": {
+    "sourceHash": "a50ed99"
   },
   "settings.askCmdr.spend.title": "Dépenses",
   "@settings.askCmdr.spend.title": {

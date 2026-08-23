@@ -1507,6 +1507,14 @@
   "@settings.askCmdr.status.off": {
     "sourceHash": "0420c9a"
   },
+  "settings.askCmdr.status.needsReview": "Ask Cmdr đang tạm dừng",
+  "@settings.askCmdr.status.needsReview": {
+    "sourceHash": "9b7a74e"
+  },
+  "settings.askCmdr.status.changed": "Nó đã thay đổi kể từ khi bạn bật, nên đang chờ bạn đồng ý. Hãy đọc phần mới ở bên dưới, rồi bật lại.",
+  "@settings.askCmdr.status.changed": {
+    "sourceHash": "190838b"
+  },
   "settings.askCmdr.status.onSince": "Đã bật từ {date}",
   "@settings.askCmdr.status.onSince": {
     "sourceHash": "2f573fd"
@@ -1514,6 +1522,10 @@
   "settings.askCmdr.turnOn": "Bật Ask Cmdr",
   "@settings.askCmdr.turnOn": {
     "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnBackOn": "Bật lại",
+  "@settings.askCmdr.turnBackOn": {
+    "sourceHash": "b8bc676"
   },
   "settings.askCmdr.turnOff": "Tắt Ask Cmdr",
   "@settings.askCmdr.turnOff": {
@@ -1594,6 +1606,22 @@
   "settings.askCmdr.wakeToast.description": "Một thông báo nhỏ ở góc màn hình khi Ask Cmdr chuẩn bị sẵn điều gì đó để bạn xem lại.",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "f07a46e"
+  },
+  "settings.askCmdr.memory.title": "Những gì Ask Cmdr nhớ",
+  "@settings.askCmdr.memory.title": {
+    "sourceHash": "4b102db"
+  },
+  "settings.askCmdr.memory.description": "Ask Cmdr giữ một thư mục nhỏ chứa ghi chú về bạn và gửi kèm mọi tin nhắn. Hãy xem thử, hoặc bắt đầu lại từ đầu.",
+  "@settings.askCmdr.memory.description": {
+    "sourceHash": "bcd73ea"
+  },
+  "settings.askCmdr.memory.open": "Mở thư mục ghi chú",
+  "@settings.askCmdr.memory.open": {
+    "sourceHash": "cffe1da"
+  },
+  "settings.askCmdr.memory.forgotten": "Các ghi chú của Ask Cmdr đã biến mất. Nó bắt đầu lại từ đây.",
+  "@settings.askCmdr.memory.forgotten": {
+    "sourceHash": "a50ed99"
   },
   "settings.askCmdr.spend.title": "Chi tiêu",
   "@settings.askCmdr.spend.title": {

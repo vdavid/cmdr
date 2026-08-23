@@ -527,7 +527,11 @@ fn a_closable_gap_keeps_the_backlog() {
             1_000,
         );
 
-        assert_eq!(inbox.purge_if_not_permitted(readiness), 0, "{readiness:?} drops nothing");
+        assert_eq!(
+            inbox.purge_if_not_permitted(readiness),
+            0,
+            "{readiness:?} drops nothing"
+        );
         assert_eq!(inbox.len(), 1, "{readiness:?} keeps the row");
     }
 }

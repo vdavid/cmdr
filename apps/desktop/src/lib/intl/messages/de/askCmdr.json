@@ -358,9 +358,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr sendet die Dateien selbst nie: keine Dateiinhalte, keine Fotos, keine Miniaturen. Die Fotosuche ist das Einzige, was in deine Bilder hineinschaut, und nur, wenn du sie damit durchsuchst: Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen an deinen Anbieter, damit er sie finden kann. Ask Cmdr schaut nur und antwortet; es verändert nie etwas.",
+  "askCmdr.consent.item.memory": "Die Notizen, die Ask Cmdr über dich führt, bei jeder Nachricht erneut gesendet",
+  "@askCmdr.consent.item.memory": {
+    "sourceHash": "54bee04"
+  },
+  "askCmdr.consent.noContents": "Cmdr sendet die Dateien selbst nie: keine Dateiinhalte, keine Fotos, keine Miniaturen. Die Fotosuche ist das Einzige, was in deine Bilder hineinschaut, und nur, wenn du sie damit durchsuchst: Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen an deinen Anbieter, damit er sie finden kann. Ask Cmdr kann Umbenennungen, Verschiebungen und Aufräumaktionen vorschlagen, und an keiner Datei passiert etwas, bevor du zustimmst.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "764a421"
+    "sourceHash": "99f9add"
+  },
+  "askCmdr.consent.memory": "Ask Cmdr schreibt sich Notizen über dich: wie du Dinge gern sortierst, was du früher abgelehnt hast, alles, worum du es bittest. Diese Notizen gehen mit jeder Nachricht mit, die du sendest, solange es sie gibt, und sie können Text enthalten, den Cmdr in deinen Fotos erkannt hat. Du kannst sie jederzeit in den Ask-Cmdr-Einstellungen lesen oder löschen.",
+  "@askCmdr.consent.memory": {
+    "sourceHash": "80facfd"
+  },
+  "askCmdr.consent.proactive": "Ask Cmdr behält außerdem die Ordner im Blick, die du nutzt, und beginnt einen Chat, wenn es etwas vorzuschlagen hat. Nachrichten können also zu deinem Anbieter gehen, ohne dass du gefragt hast. Du kannst das in den Ask-Cmdr-Einstellungen unter „Von selbst“ abschalten.",
+  "@askCmdr.consent.proactive": {
+    "sourceHash": "1d0b671"
   },
   "askCmdr.consent.local": "Deine Chats bleiben auf deinem Mac, in einer lokalen Datenbank, die du öffnen und lesen kannst. Du wählst Anbieter und Modell und siehst, was jeder Chat kostet.",
   "@askCmdr.consent.local": {
@@ -377,6 +389,30 @@
   "askCmdr.consent.decline": "Nicht jetzt",
   "@askCmdr.consent.decline": {
     "sourceHash": "a0e63d7"
+  },
+  "askCmdr.consent.whatsNew.title": "Was sich geändert hat, seit du das aktiviert hast",
+  "@askCmdr.consent.whatsNew.title": {
+    "sourceHash": "641705c"
+  },
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr merkt sich jetzt Notizen über dich von Chat zu Chat, und es kann von selbst ein Gespräch beginnen, wenn ihm etwas Erwähnenswertes auffällt. Das ist mehr, als du damals zugestimmt hast, deshalb hier noch einmal das Ganze.",
+  "@askCmdr.consent.whatsNew.body": {
+    "sourceHash": "88751a5"
+  },
+  "askCmdr.forget.title": "Alles vergessen, woran sich Ask Cmdr erinnert?",
+  "@askCmdr.forget.title": {
+    "sourceHash": "95f576a"
+  },
+  "askCmdr.forget.message": "Ask Cmdr wirft seine Notizen über dich weg und fängt mit einem leeren Blatt an. Deine Chats und deine Dateien bleiben genau so, wie sie sind.",
+  "@askCmdr.forget.message": {
+    "sourceHash": "5687160"
+  },
+  "askCmdr.forget.confirm": "Alles vergessen",
+  "@askCmdr.forget.confirm": {
+    "sourceHash": "11d164a"
+  },
+  "askCmdr.forget.cancel": "Abbrechen",
+  "@askCmdr.forget.cancel": {
+    "sourceHash": "19766ed"
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {Token} other {Tokens}}",
   "@askCmdr.cost.tokens": {

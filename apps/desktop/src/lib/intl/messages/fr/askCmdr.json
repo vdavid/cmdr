@@ -356,9 +356,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr n''envoie jamais les fichiers eux-mêmes : ni le contenu des fichiers, ni les photos, ni les miniatures. La recherche de photos est la seule chose qui regarde à l''intérieur de vos images, et uniquement quand vous l''utilisez pour les rechercher : le texte que Cmdr a reconnu dans les photos correspondantes et leurs tags sont envoyés à votre fournisseur pour qu''il puisse les trouver. Ask Cmdr ne fait que regarder et parler ; il ne change jamais rien.",
+  "askCmdr.consent.item.memory": "Les notes qu''Ask Cmdr conserve sur vous, renvoyées à chaque message",
+  "@askCmdr.consent.item.memory": {
+    "sourceHash": "54bee04"
+  },
+  "askCmdr.consent.noContents": "Cmdr n''envoie jamais les fichiers eux-mêmes : ni le contenu des fichiers, ni les photos, ni les miniatures. La recherche de photos est la seule chose qui regarde à l''intérieur de vos images, et uniquement quand vous l''utilisez pour les rechercher : le texte que Cmdr a reconnu dans les photos correspondantes et leurs tags sont envoyés à votre fournisseur pour qu''il puisse les trouver. Ask Cmdr peut suggérer des renommages, des déplacements et des rangements, et rien n''arrive à un fichier tant que vous ne l''avez pas approuvé.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "764a421"
+    "sourceHash": "99f9add"
+  },
+  "askCmdr.consent.memory": "Ask Cmdr se rédige des notes sur vous : comment vous aimez ranger les choses, ce que vous avez refusé auparavant, tout ce que vous lui demandez de retenir. Ces notes accompagnent chaque message que vous envoyez, tant qu''elles existent, et elles peuvent contenir du texte que Cmdr a reconnu dans vos photos. Vous pouvez les lire, ou les effacer, à tout moment dans les réglages d''Ask Cmdr.",
+  "@askCmdr.consent.memory": {
+    "sourceHash": "80facfd"
+  },
+  "askCmdr.consent.proactive": "Ask Cmdr surveille aussi les dossiers que vous utilisez et lance une discussion quand il a quelque chose à suggérer : des messages peuvent donc partir vers votre fournisseur sans que vous ayez rien demandé. Vous pouvez désactiver cela dans les réglages d''Ask Cmdr, sous « De sa propre initiative ».",
+  "@askCmdr.consent.proactive": {
+    "sourceHash": "1d0b671"
   },
   "askCmdr.consent.local": "Vos conversations restent sur votre Mac, dans une base de données locale que vous pouvez ouvrir et consulter. Vous choisissez le fournisseur et le modèle, et vous pouvez voir ce que coûte chaque conversation.",
   "@askCmdr.consent.local": {
@@ -375,6 +387,30 @@
   "askCmdr.consent.decline": "Plus tard",
   "@askCmdr.consent.decline": {
     "sourceHash": "a0e63d7"
+  },
+  "askCmdr.consent.whatsNew.title": "Ce qui a changé depuis que vous l''avez activé",
+  "@askCmdr.consent.whatsNew.title": {
+    "sourceHash": "641705c"
+  },
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr conserve désormais des notes sur vous d''une discussion à l''autre, et il peut lancer une discussion de lui-même quand il remarque quelque chose qui mérite d''être signalé. C''est un engagement plus large que celui que vous avez accepté, alors le voici en entier.",
+  "@askCmdr.consent.whatsNew.body": {
+    "sourceHash": "88751a5"
+  },
+  "askCmdr.forget.title": "Oublier tout ce dont Ask Cmdr se souvient ?",
+  "@askCmdr.forget.title": {
+    "sourceHash": "95f576a"
+  },
+  "askCmdr.forget.message": "Ask Cmdr jette ses notes sur vous et repart d''une page blanche. Vos discussions et vos fichiers restent exactement tels qu''ils sont.",
+  "@askCmdr.forget.message": {
+    "sourceHash": "5687160"
+  },
+  "askCmdr.forget.confirm": "Tout oublier",
+  "@askCmdr.forget.confirm": {
+    "sourceHash": "11d164a"
+  },
+  "askCmdr.forget.cancel": "Annuler",
+  "@askCmdr.forget.cancel": {
+    "sourceHash": "19766ed"
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {jeton} many {jetons} other {jetons}}",
   "@askCmdr.cost.tokens": {

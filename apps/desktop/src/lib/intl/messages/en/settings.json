@@ -1903,6 +1903,16 @@
     "description": "Status line in Ask Cmdr settings when the feature is turned off. Sentence case, no period.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
+  "settings.askCmdr.status.needsReview": "Ask Cmdr is paused",
+  "@settings.askCmdr.status.needsReview": {
+    "description": "Status line in Ask Cmdr settings, in place of \"Ask Cmdr is on\" / \"Ask Cmdr is off\", for someone who had it on but whose opt-in no longer covers what it does. Sentence case, no period. \"Ask Cmdr\" is a product name and stays as it is.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.status.changed": "It changed since you turned it on, so it’s waiting for your OK. Read what’s new below, then switch it back on.",
+  "@settings.askCmdr.status.changed": {
+    "description": "Explanation under the paused status line in Ask Cmdr settings: why the feature paused itself and what to do about it. \"below\" is the disclosure text further down the same screen. The apostrophes are U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
   "settings.askCmdr.status.onSince": "On since {date}",
   "@settings.askCmdr.status.onSince": {
     "description": "Smaller line under the status showing when the user turned Ask Cmdr on. date is a preformatted date string.",
@@ -1914,6 +1924,11 @@
   "settings.askCmdr.turnOn": "Turn on Ask Cmdr",
   "@settings.askCmdr.turnOn": {
     "description": "Button that opts into and turns on Ask Cmdr from settings. Starts with a verb. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.turnBackOn": "Turn back on",
+  "@settings.askCmdr.turnBackOn": {
+    "description": "Button in Ask Cmdr settings that accepts the updated wording and switches the feature back on. Shown instead of \"Turn on Ask Cmdr\" for someone who had it on before. Starts with a verb. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.turnOff": "Turn off Ask Cmdr",
@@ -2023,6 +2038,26 @@
   "settings.askCmdr.wakeToast.description": "A small message in the corner when Ask Cmdr stages something for you to review.",
   "@settings.askCmdr.wakeToast.description": {
     "description": "Help text under the suggestion-notice switch, describing the corner message (a toast).",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.memory.title": "What Ask Cmdr remembers",
+  "@settings.askCmdr.memory.title": {
+    "description": "Heading of the memory group in Ask Cmdr settings, over the two controls that open the notes folder and delete everything in it. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.memory.description": "Ask Cmdr keeps a small folder of notes about you, and sends it with every message. Have a look, or start it over.",
+  "@settings.askCmdr.memory.description": {
+    "description": "Paragraph under the \"What Ask Cmdr remembers\" heading in Ask Cmdr settings, introducing the two buttons below it.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.memory.open": "Open memory folder",
+  "@settings.askCmdr.memory.open": {
+    "description": "Button in Ask Cmdr settings that shows the assistant's notes folder in Cmdr's own file pane. Starts with a verb. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.memory.forgotten": "Ask Cmdr’s notes are gone. It starts over from here.",
+  "@settings.askCmdr.memory.forgotten": {
+    "description": "Confirmation line shown in Ask Cmdr settings right after the user confirms \"Forget everything\". The apostrophe is U+2019.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.spend.title": "Spending",

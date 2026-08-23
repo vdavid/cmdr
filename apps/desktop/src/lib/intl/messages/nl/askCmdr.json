@@ -359,9 +359,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr verstuurt nooit de bestanden zelf: geen bestandsinhoud, geen foto''s, geen miniaturen. De fotozoekfunctie is het enige dat in je afbeeldingen kijkt, en alleen wanneer je ermee zoekt: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden. Ask Cmdr kijkt en praat alleen; het verandert nooit iets.",
+  "askCmdr.consent.item.memory": "De notities die Ask Cmdr over je bijhoudt, bij elk bericht opnieuw meegestuurd",
+  "@askCmdr.consent.item.memory": {
+    "sourceHash": "54bee04"
+  },
+  "askCmdr.consent.noContents": "Cmdr verstuurt nooit de bestanden zelf: geen bestandsinhoud, geen foto''s, geen miniaturen. De fotozoekfunctie is het enige dat in je afbeeldingen kijkt, en alleen wanneer je ermee zoekt: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden. Ask Cmdr kan hernoemen, verplaatsen en opruimen voorstellen, en er gebeurt niets met een bestand tot jij het goedkeurt.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "764a421"
+    "sourceHash": "99f9add"
+  },
+  "askCmdr.consent.memory": "Ask Cmdr schrijft notities over je: hoe je dingen graag ordent, wat je eerder hebt afgewezen, alles wat je het vraagt te onthouden. Die notities gaan mee met elk bericht dat je stuurt, zolang ze bestaan, en ze kunnen tekst bevatten die Cmdr in je foto''s heeft herkend. Je kunt ze op elk moment lezen of wissen in de Ask Cmdr-instellingen.",
+  "@askCmdr.consent.memory": {
+    "sourceHash": "80facfd"
+  },
+  "askCmdr.consent.proactive": "Ask Cmdr houdt ook de mappen in de gaten die je gebruikt en begint een chat zodra het iets voor te stellen heeft, dus er kunnen berichten naar je aanbieder gaan zonder dat je er zelf om vraagt. Je zet dat uit in de Ask Cmdr-instellingen, onder “Uit zichzelf”.",
+  "@askCmdr.consent.proactive": {
+    "sourceHash": "1d0b671"
   },
   "askCmdr.consent.local": "Je chats blijven op je Mac, in een lokale database die je kunt openen en lezen. Je kiest de aanbieder en het model, en je kunt zien wat elke chat kost.",
   "@askCmdr.consent.local": {
@@ -378,6 +390,30 @@
   "askCmdr.consent.decline": "Niet nu",
   "@askCmdr.consent.decline": {
     "sourceHash": "a0e63d7"
+  },
+  "askCmdr.consent.whatsNew.title": "Wat er veranderd is sinds je dit aanzette",
+  "@askCmdr.consent.whatsNew.title": {
+    "sourceHash": "641705c"
+  },
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr houdt nu notities over je bij tussen chats door, en het kan uit zichzelf een gesprek beginnen als het iets opmerkt dat het waard is. Dat is een grotere belofte dan waar je destijds ja op zei, dus hier staat het allemaal opnieuw.",
+  "@askCmdr.consent.whatsNew.body": {
+    "sourceHash": "88751a5"
+  },
+  "askCmdr.forget.title": "Alles vergeten wat Ask Cmdr onthoudt?",
+  "@askCmdr.forget.title": {
+    "sourceHash": "95f576a"
+  },
+  "askCmdr.forget.message": "Ask Cmdr gooit zijn notities over je weg en begint met een leeg blad. Je chats en je bestanden blijven precies zoals ze zijn.",
+  "@askCmdr.forget.message": {
+    "sourceHash": "5687160"
+  },
+  "askCmdr.forget.confirm": "Alles vergeten",
+  "@askCmdr.forget.confirm": {
+    "sourceHash": "11d164a"
+  },
+  "askCmdr.forget.cancel": "Annuleer",
+  "@askCmdr.forget.cancel": {
+    "sourceHash": "19766ed"
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {tokens}}",
   "@askCmdr.cost.tokens": {

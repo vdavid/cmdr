@@ -356,9 +356,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr không bao giờ gửi chính các tệp: không gửi nội dung tệp, không gửi ảnh, không gửi ảnh thu nhỏ. Tìm kiếm ảnh là thứ duy nhất nhìn vào bên trong hình ảnh của bạn, và chỉ khi bạn dùng nó để tìm: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng. Ask Cmdr chỉ xem và nói; không bao giờ thay đổi bất cứ điều gì.",
+  "askCmdr.consent.item.memory": "Các ghi chú mà Ask Cmdr lưu về bạn, được gửi lại cùng mỗi tin nhắn",
+  "@askCmdr.consent.item.memory": {
+    "sourceHash": "54bee04"
+  },
+  "askCmdr.consent.noContents": "Cmdr không bao giờ gửi chính các tệp: không gửi nội dung tệp, không gửi ảnh, không gửi ảnh thu nhỏ. Tìm kiếm ảnh là thứ duy nhất nhìn vào bên trong hình ảnh của bạn, và chỉ khi bạn dùng nó để tìm: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng. Ask Cmdr có thể đề xuất đổi tên, di chuyển và dọn dẹp, và không có gì xảy ra với tệp nào cho đến khi bạn phê duyệt.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "764a421"
+    "sourceHash": "99f9add"
+  },
+  "askCmdr.consent.memory": "Ask Cmdr tự viết ghi chú về bạn: bạn thích sắp xếp mọi thứ ra sao, trước đây bạn đã từ chối điều gì, và bất cứ điều gì bạn nhờ nó nhớ. Những ghi chú đó đi kèm mọi tin nhắn bạn gửi, chừng nào chúng còn tồn tại, và có thể chứa văn bản mà Cmdr nhận dạng được bên trong ảnh của bạn. Bạn có thể đọc hoặc xóa chúng bất cứ lúc nào trong cài đặt Ask Cmdr.",
+  "@askCmdr.consent.memory": {
+    "sourceHash": "80facfd"
+  },
+  "askCmdr.consent.proactive": "Ask Cmdr cũng theo dõi các thư mục bạn dùng và bắt đầu một cuộc trò chuyện khi có điều gì đó để đề xuất, nên tin nhắn có thể đến nhà cung cấp của bạn mà bạn không hỏi gì trước. Bạn có thể tắt điều đó trong cài đặt Ask Cmdr, ở mục “Tự chủ động”.",
+  "@askCmdr.consent.proactive": {
+    "sourceHash": "1d0b671"
   },
   "askCmdr.consent.local": "Các cuộc trò chuyện của bạn ở lại trên Mac, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở và đọc. Bạn chọn nhà cung cấp và mô hình, và bạn có thể xem chi phí của mỗi cuộc trò chuyện.",
   "@askCmdr.consent.local": {
@@ -375,6 +387,30 @@
   "askCmdr.consent.decline": "Để sau",
   "@askCmdr.consent.decline": {
     "sourceHash": "a0e63d7"
+  },
+  "askCmdr.consent.whatsNew.title": "Những gì đã thay đổi kể từ khi bạn bật tính năng này",
+  "@askCmdr.consent.whatsNew.title": {
+    "sourceHash": "641705c"
+  },
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr giờ đây lưu ghi chú về bạn giữa các cuộc trò chuyện, và có thể tự mở một cuộc trò chuyện khi nhận thấy điều gì đó đáng nói. Đó là lời hứa rộng hơn điều bạn đã đồng ý, nên đây là toàn bộ nội dung một lần nữa.",
+  "@askCmdr.consent.whatsNew.body": {
+    "sourceHash": "88751a5"
+  },
+  "askCmdr.forget.title": "Quên mọi thứ Ask Cmdr đang nhớ?",
+  "@askCmdr.forget.title": {
+    "sourceHash": "95f576a"
+  },
+  "askCmdr.forget.message": "Ask Cmdr vứt bỏ các ghi chú về bạn và bắt đầu lại từ trang trắng. Các cuộc trò chuyện và tệp của bạn vẫn nguyên như cũ.",
+  "@askCmdr.forget.message": {
+    "sourceHash": "5687160"
+  },
+  "askCmdr.forget.confirm": "Quên mọi thứ",
+  "@askCmdr.forget.confirm": {
+    "sourceHash": "11d164a"
+  },
+  "askCmdr.forget.cancel": "Hủy",
+  "@askCmdr.forget.cancel": {
+    "sourceHash": "19766ed"
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, other {token}}",
   "@askCmdr.cost.tokens": {

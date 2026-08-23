@@ -8,7 +8,7 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { acceptConsent } from './ask-cmdr-consent.svelte'
+    import { acceptConsent, consentState } from './ask-cmdr-consent.svelte'
     import { closeRail, openRail } from './ask-cmdr-trigger.svelte'
 
     let acceptButton = $state<HTMLButtonElement | null>(null)
@@ -36,6 +36,14 @@
 <div class="consent" role="group" aria-labelledby="ask-cmdr-consent-title">
     <div class="consent-scroll">
         <span class="consent-glyph"><Icon name="sparkles" size={28} aria-hidden="true" /></span>
+        {#if consentState.needsReconsent}
+            <!-- Someone who already said yes to older copy, whose threads are now behind this
+                 screen. Without this they'd see the first-run pitch and no reason for it. -->
+            <div class="consent-changed">
+                <h3 class="consent-changed-title">{tString('askCmdr.consent.whatsNew.title')}</h3>
+                <p class="consent-changed-body">{tString('askCmdr.consent.whatsNew.body')}</p>
+            </div>
+        {/if}
         <h2 id="ask-cmdr-consent-title" class="consent-title">{tString('askCmdr.consent.title')}</h2>
         <p class="consent-intro">{tString('askCmdr.consent.intro')}</p>
         <ul class="consent-list">
@@ -44,8 +52,11 @@
             <li>{tString('askCmdr.consent.item.sizes')}</li>
             <li>{tString('askCmdr.consent.item.envelope')}</li>
             <li>{tString('askCmdr.consent.item.attachments')}</li>
+            <li>{tString('askCmdr.consent.item.memory')}</li>
         </ul>
         <p class="consent-para">{tString('askCmdr.consent.noContents')}</p>
+        <p class="consent-para">{tString('askCmdr.consent.memory')}</p>
+        <p class="consent-para">{tString('askCmdr.consent.proactive')}</p>
         <p class="consent-para">{tString('askCmdr.consent.local')}</p>
         <p class="consent-note">{tString('askCmdr.consent.logsNote')}</p>
     </div>
@@ -83,6 +94,28 @@
     .consent-glyph {
         display: block;
         color: var(--color-accent-text);
+    }
+
+    .consent-changed {
+        margin: var(--spacing-sm) 0 var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border-subtle);
+    }
+
+    .consent-changed-title {
+        margin: 0 0 var(--spacing-xxs);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .consent-changed-body {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        line-height: var(--font-line-height-prose);
+        color: var(--color-text-secondary);
     }
 
     .consent-title {

@@ -356,9 +356,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr skickar aldrig själva filerna: inget filinnehåll, inga foton, inga miniatyrer. Fotosökningen är det enda som tittar inuti dina bilder, och bara när du söker med den: texten som Cmdr känt igen i de matchande fotona och deras taggar skickas till din leverantör så att den kan hitta dem. Ask Cmdr tittar och pratar bara. Den ändrar aldrig något.",
+  "askCmdr.consent.item.memory": "Anteckningarna som Ask Cmdr för om dig, som skickas med igen vid varje meddelande",
+  "@askCmdr.consent.item.memory": {
+    "sourceHash": "54bee04"
+  },
+  "askCmdr.consent.noContents": "Cmdr skickar aldrig själva filerna: inget filinnehåll, inga foton, inga miniatyrer. Fotosökningen är det enda som tittar inuti dina bilder, och bara när du söker med den: texten som Cmdr känt igen i de matchande fotona och deras taggar skickas till din leverantör så att den kan hitta dem. Ask Cmdr kan föreslå namnbyten, flyttar och upprensningar, och ingenting händer med en fil förrän du godkänner det.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "764a421"
+    "sourceHash": "99f9add"
+  },
+  "askCmdr.consent.memory": "Ask Cmdr skriver anteckningar om dig: hur du gillar att ha saker ordnade, vad du har tackat nej till förut, och allt du ber den komma ihåg. Anteckningarna följer med varje meddelande du skickar, så länge de finns, och de kan innehålla text som Cmdr känt igen inuti dina foton. Du kan läsa dem, eller radera dem, när som helst i inställningarna för Ask Cmdr.",
+  "@askCmdr.consent.memory": {
+    "sourceHash": "80facfd"
+  },
+  "askCmdr.consent.proactive": "Ask Cmdr håller också koll på mapparna du använder och startar ett samtal när den har något att föreslå, så meddelanden kan gå till din leverantör utan att du frågat om något. Du kan stänga av det i inställningarna för Ask Cmdr, under ”På eget initiativ”.",
+  "@askCmdr.consent.proactive": {
+    "sourceHash": "1d0b671"
   },
   "askCmdr.consent.local": "Dina chattar stannar på din Mac, i en lokal databas du kan öppna och läsa. Du väljer leverantör och modell, och du kan se vad varje chatt kostar.",
   "@askCmdr.consent.local": {
@@ -375,6 +387,30 @@
   "askCmdr.consent.decline": "Inte nu",
   "@askCmdr.consent.decline": {
     "sourceHash": "a0e63d7"
+  },
+  "askCmdr.consent.whatsNew.title": "Vad som har ändrats sedan du slog på det här",
+  "@askCmdr.consent.whatsNew.title": {
+    "sourceHash": "641705c"
+  },
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr sparar nu anteckningar om dig mellan chattarna, och den kan starta ett samtal på eget initiativ när den lägger märke till något värt att nämna. Det är ett större löfte än det du sa ja till, så här kommer alltihop igen.",
+  "@askCmdr.consent.whatsNew.body": {
+    "sourceHash": "88751a5"
+  },
+  "askCmdr.forget.title": "Glömma allt som Ask Cmdr minns?",
+  "@askCmdr.forget.title": {
+    "sourceHash": "95f576a"
+  },
+  "askCmdr.forget.message": "Ask Cmdr slänger sina anteckningar om dig och börjar med ett blankt blad. Dina chattar och dina filer är kvar precis som de är.",
+  "@askCmdr.forget.message": {
+    "sourceHash": "5687160"
+  },
+  "askCmdr.forget.confirm": "Glöm allt",
+  "@askCmdr.forget.confirm": {
+    "sourceHash": "11d164a"
+  },
+  "askCmdr.forget.cancel": "Avbryt",
+  "@askCmdr.forget.cancel": {
+    "sourceHash": "19766ed"
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {tokens}}",
   "@askCmdr.cost.tokens": {

@@ -1516,6 +1516,14 @@
   "@settings.askCmdr.status.off": {
     "sourceHash": "0420c9a"
   },
+  "settings.askCmdr.status.needsReview": "Ask Cmdr är pausad",
+  "@settings.askCmdr.status.needsReview": {
+    "sourceHash": "9b7a74e"
+  },
+  "settings.askCmdr.status.changed": "Den har ändrats sedan du slog på den, så den väntar på ditt godkännande. Läs vad som är nytt nedan och slå sedan på den igen.",
+  "@settings.askCmdr.status.changed": {
+    "sourceHash": "190838b"
+  },
   "settings.askCmdr.status.onSince": "På sedan {date}",
   "@settings.askCmdr.status.onSince": {
     "sourceHash": "2f573fd"
@@ -1523,6 +1531,10 @@
   "settings.askCmdr.turnOn": "Aktivera Ask Cmdr",
   "@settings.askCmdr.turnOn": {
     "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnBackOn": "Slå på igen",
+  "@settings.askCmdr.turnBackOn": {
+    "sourceHash": "b8bc676"
   },
   "settings.askCmdr.turnOff": "Stäng av Ask Cmdr",
   "@settings.askCmdr.turnOff": {
@@ -1603,6 +1615,22 @@
   "settings.askCmdr.wakeToast.description": "Ett litet meddelande i hörnet när Ask Cmdr lägger fram något att granska.",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "f07a46e"
+  },
+  "settings.askCmdr.memory.title": "Vad Ask Cmdr minns",
+  "@settings.askCmdr.memory.title": {
+    "sourceHash": "4b102db"
+  },
+  "settings.askCmdr.memory.description": "Ask Cmdr har en liten mapp med anteckningar om dig och skickar med den i varje meddelande. Ta en titt, eller börja om.",
+  "@settings.askCmdr.memory.description": {
+    "sourceHash": "bcd73ea"
+  },
+  "settings.askCmdr.memory.open": "Öppna anteckningsmappen",
+  "@settings.askCmdr.memory.open": {
+    "sourceHash": "cffe1da"
+  },
+  "settings.askCmdr.memory.forgotten": "Ask Cmdrs anteckningar är borta. Den börjar om härifrån.",
+  "@settings.askCmdr.memory.forgotten": {
+    "sourceHash": "a50ed99"
   },
   "settings.askCmdr.spend.title": "Utgifter",
   "@settings.askCmdr.spend.title": {
