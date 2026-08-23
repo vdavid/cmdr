@@ -5,7 +5,7 @@
     "apps/api-server": 17,
     "apps/desktop": 2,
     "apps/desktop/src": 268,
-    "apps/desktop/src-tauri": 382,
+    "apps/desktop/src-tauri": 385,
     "apps/desktop/test": 20,
     "apps/website": 1,
     "crates/cmdr-archive": 4,
