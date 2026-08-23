@@ -84,5 +84,4 @@ design.
     idle one, on the grounds that almost every test here can be refactored to finish in a very short time. That inverts
     the framing: the idle-machine measurement this entry argues from is the wrong baseline, and a test needing more than
     two seconds under load is a test to fix rather than a threshold to tune around. Nothing is being built for it right
-    now; capture the standard so a future duration check is measured under saturation and not against the 26 s idle
-    run.
+    now; capture the standard so a future duration check is measured under saturation and not against the 26 s idle run.
