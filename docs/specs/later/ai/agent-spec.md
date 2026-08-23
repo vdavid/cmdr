@@ -810,12 +810,13 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
 ## 17. Build order
 
 **Superseded in part (David's call, 2026-08-18); the shape decisions now live in
-`apps/desktop/src-tauri/src/agent/store/proposals/DETAILS.md`, and what remains unbuilt is
-`docs/specs/agent-wake-loop.md`.** David's call: milestones 1, 2, 4, and 5 below ship as ONE release rather than staged,
-because a proposal store with no window, or a window with one op kind, is not a shippable half. That plan absorbs them
-and carries the shape decisions (a group is one verb and one destination; freeze moves from creation to approval). The
-ordering rationale below still explains WHY the original sequence was wrong; it just no longer describes the release
-plan. Milestones 3, 6, 7, and 8 are untouched and still queue behind it.
+`apps/desktop/src-tauri/src/agent/store/proposals/DETAILS.md`, and the proactive half has since shipped end to end
+(`agent/wake/`, `agent/memory/`); what it deliberately left is `docs/specs/later/ai/wake-loop-follow-ups.md`.** David's
+call: milestones 1, 2, 4, and 5 below ship as ONE release rather than staged, because a proposal store with no window,
+or a window with one op kind, is not a shippable half. That plan absorbs them and carries the shape decisions (a group
+is one verb and one destination; freeze moves from creation to approval). The ordering rationale below still explains
+WHY the original sequence was wrong; it just no longer describes the release plan. Milestones 3, 6, 7, and 8 are
+untouched and still queue behind it.
 
 Milestones 1-4 and 9 of the original order are done or mostly done (§0). What follows is the remaining order, and it
 deliberately **inverts the original sequence**: the original spent the knowledge layer, event pipeline, and wake loop
