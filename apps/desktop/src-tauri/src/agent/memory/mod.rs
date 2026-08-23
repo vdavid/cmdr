@@ -18,7 +18,6 @@ use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, Runtime};
 
-pub use jail::MEMORY_EXTENSION;
 pub use refusal::MemoryRefusal;
 pub use store::{HUB_FILE, MEMORY_DIR_MAX_BYTES, MemoryStore, MemoryWritten};
 
