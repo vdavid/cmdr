@@ -11,6 +11,8 @@ shapes colocated here. Depth: `DETAILS.md`.
 - `propose/`: server-owned rename proposals (`propose_rename_plan`) and the image-facts evidence ledger.
   `propose/CLAUDE.md`.
 - `suggestions/`: the suggested-ops trio over the proposal spine. `suggestions/CLAUDE.md`.
+- `quiet.rs`: `nothing_to_suggest`, the one pure SIGNAL tool. Its handler acknowledges and changes nothing; the wake
+  path acts on the call, and a rail turn calling it is inert. `DETAILS.md` § A tool that is only a signal.
 - `view.rs`: the gated dispatch — `dispatch` + `refuse_unavailable`, the read-only choke point.
 - `mod.rs`: `agent_tool_declarations()` (registry view → `ToolDeclaration`s).
 

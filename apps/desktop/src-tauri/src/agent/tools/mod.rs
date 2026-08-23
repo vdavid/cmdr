@@ -5,6 +5,8 @@
 //! and this module is where their handlers, schemas, and typed result shapes live
 //! ([`read`]) and where the runtime reaches them:
 //!
+//! - [`quiet`]: the one signal tool — how a wake says it found nothing worth
+//!   raising. The handler is inert; only the wake path acts on the call.
 //! - [`suggestions`]: the suggested-ops surface — two reads over the proposal
 //!   spine plus the one `Propose` tool that stages a sweep or amends a pending
 //!   group.
@@ -17,6 +19,7 @@
 //! Unrecognized-out-of-view invariant) and `DETAILS.md` for the tool catalog.
 
 pub mod propose;
+pub mod quiet;
 pub mod read;
 pub mod suggestions;
 pub mod view;

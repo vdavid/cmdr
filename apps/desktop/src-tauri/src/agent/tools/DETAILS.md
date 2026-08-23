@@ -70,6 +70,33 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   over the proposal spine: what the agent has already put in front of the user (summaries and counts, never op rows),
   one group's ops paged, and the one tool that stages a sweep or amends a pending group. Access classes, the
   resolve-check-write order, the selector schema, and the last-opened gap: `suggestions/DETAILS.md`.
+- **`nothing_to_suggest`** (`quiet.rs`) — one argument, a short `reason`, and no effect at all. See § A tool that is
+  only a signal.
+
+## A tool that is only a signal (`nothing_to_suggest`)
+
+Every other entry here answers a question or stages a proposal. This one exists so a wake can say "I looked, and none
+of it is worth your attention" in a form the code can read.
+
+**Why typed rather than phrased.** A wake that finds nothing must leave no thread behind, and deciding that from the
+model's wording would classify control flow by text — what `error-string-match` forbids, and what breaks on the first
+copy edit or non-English reply. The call resolves to `ToolId::NothingToSuggest`, and that is what the wake path matches
+on.
+
+**Why the handler is inert.** There is ONE `agent_tool_view()`, so the rail sees this tool too. A handler that deleted
+the conversation would be `Access::Write` under the registry's tiebreaker (failing `test_agent_tool_view_never_writes`),
+and it would delete a USER's thread the moment a rail turn called it. So the handler acknowledges and returns; the
+delete lives on the wake path, after the turn (`agent/wake/`), and a rail turn calling this changes nothing —
+`wake/tests/job.rs` pins that.
+
+**Why the `reason` never reaches a log.** It exists for the agent's own memory (M3) and is trimmed to
+`MAX_REASON_CHARS`. ❌ It must never be logged verbatim: `cmdr.log` ships inside error reports, including the
+auto-dispatched ones the user never previews, and `redact::redact_line_salted` is path-shaped, so it does nothing to a
+sentence about which of the user's folders were boring. Log that a wake was quiet, never what it said.
+
+**What it costs everyone else.** The schema is prefix, so all 15 declarations are paid on every rail turn: this one is
+105 tokens of the 5,077 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
+being able to stay silent, and it's why the description is two sentences.
 
 ## One tool, both questions (`list_dir`)
 

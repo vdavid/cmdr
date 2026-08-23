@@ -740,6 +740,7 @@ const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "list_suggestions",
     "get_suggestion_group",
     "propose_suggestions",
+    "nothing_to_suggest",
 ];
 
 /// Set-equality: the agent view equals exactly its authored `consumers:[agent]` entries. This is

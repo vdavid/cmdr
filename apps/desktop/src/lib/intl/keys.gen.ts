@@ -247,6 +247,8 @@ export type MessageKey =
   | 'askCmdr.tool.listSuggestions.done'
   | 'askCmdr.tool.listVolumes.doing'
   | 'askCmdr.tool.listVolumes.done'
+  | 'askCmdr.tool.nothingToSuggest.doing'
+  | 'askCmdr.tool.nothingToSuggest.done'
   | 'askCmdr.tool.operationsGet.doing'
   | 'askCmdr.tool.operationsGet.done'
   | 'askCmdr.tool.operationsList.doing'

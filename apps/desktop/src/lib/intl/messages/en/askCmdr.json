@@ -159,6 +159,14 @@
   "@askCmdr.tool.proposeSuggestions.done": {
     "description": "Past-tense label on the same tool line once the assistant finished preparing its suggested file operations. The user still reviews and approves each group separately, so this must not read as if anything ran. Pairs with askCmdr.tool.proposeSuggestions.doing."
   },
+  "askCmdr.tool.nothingToSuggest.doing": "Deciding whether it’s worth raising",
+  "@askCmdr.tool.nothingToSuggest.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant weighs whether the file activity it was shown is worth telling the person about at all. It is allowed to conclude that nothing is. Nothing is read and nothing changes. The apostrophe is U+2019. Pairs with askCmdr.tool.nothingToSuggest.done."
+  },
+  "askCmdr.tool.nothingToSuggest.done": "Found nothing worth raising",
+  "@askCmdr.tool.nothingToSuggest.done": {
+    "description": "Past-tense label on the same tool line once the assistant decided the activity was not worth raising. It must read as a calm, complete answer rather than as something going wrong: finding nothing is a good outcome. Pairs with askCmdr.tool.nothingToSuggest.doing."
+  },
   "askCmdr.tool.unknown.doing": "Working",
   "@askCmdr.tool.unknown.doing": {
     "description": "Present-tense fallback status for a tool the rail doesn't have a specific label for."

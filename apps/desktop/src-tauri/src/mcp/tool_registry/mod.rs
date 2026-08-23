@@ -718,6 +718,14 @@ mcp_tools! {
         access: Access::Propose,
         run: app_params crate::agent::tools::suggestions::execute_propose_suggestions
     },
+    "nothing_to_suggest" => {
+        desc: "Say that the activity you were shown is not worth telling the user about, and stop. Call it instead of proposing anything when nothing you found deserves a person's attention. It changes nothing and shows nothing.",
+        schema: crate::agent::tools::quiet::nothing_to_suggest_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::quiet::execute_nothing_to_suggest
+    },
     "list_volumes" => {
         desc: "List every volume Cmdr can see (local disks, SMB shares, MTP devices, and the Network root) with each one's kind, index freshness (fresh / scanning / stale / off), and — for SMB — its connection state (direct / os_mount / disconnected).",
         schema: crate::agent::tools::read::volumes::list_volumes_schema(),

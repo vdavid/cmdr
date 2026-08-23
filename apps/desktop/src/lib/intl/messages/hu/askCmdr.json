@@ -152,6 +152,14 @@
   "@askCmdr.tool.proposeSuggestions.done": {
     "sourceHash": "42457d2"
   },
+  "askCmdr.tool.nothingToSuggest.doing": "Annak eldöntése, hogy érdemes-e szólni",
+  "@askCmdr.tool.nothingToSuggest.doing": {
+    "sourceHash": "51ef519"
+  },
+  "askCmdr.tool.nothingToSuggest.done": "Nem talált semmi említésre méltót",
+  "@askCmdr.tool.nothingToSuggest.done": {
+    "sourceHash": "2287381"
+  },
   "askCmdr.tool.unknown.doing": "Folyamatban",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

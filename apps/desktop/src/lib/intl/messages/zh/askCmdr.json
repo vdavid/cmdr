@@ -152,6 +152,14 @@
   "@askCmdr.tool.proposeSuggestions.done": {
     "sourceHash": "42457d2"
   },
+  "askCmdr.tool.nothingToSuggest.doing": "正在判断是否值得一提",
+  "@askCmdr.tool.nothingToSuggest.doing": {
+    "sourceHash": "51ef519"
+  },
+  "askCmdr.tool.nothingToSuggest.done": "没有发现值得一提的内容",
+  "@askCmdr.tool.nothingToSuggest.done": {
+    "sourceHash": "2287381"
+  },
   "askCmdr.tool.unknown.doing": "正在处理",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

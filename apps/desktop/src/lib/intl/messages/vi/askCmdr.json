@@ -152,6 +152,14 @@
   "@askCmdr.tool.proposeSuggestions.done": {
     "sourceHash": "42457d2"
   },
+  "askCmdr.tool.nothingToSuggest.doing": "Đang cân nhắc có nên nhắc đến không",
+  "@askCmdr.tool.nothingToSuggest.doing": {
+    "sourceHash": "51ef519"
+  },
+  "askCmdr.tool.nothingToSuggest.done": "Không tìm thấy gì đáng nhắc đến",
+  "@askCmdr.tool.nothingToSuggest.done": {
+    "sourceHash": "2287381"
+  },
   "askCmdr.tool.unknown.doing": "Đang xử lý",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

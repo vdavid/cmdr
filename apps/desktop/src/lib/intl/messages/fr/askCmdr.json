@@ -152,6 +152,14 @@
   "@askCmdr.tool.proposeSuggestions.done": {
     "sourceHash": "42457d2"
   },
+  "askCmdr.tool.nothingToSuggest.doing": "Évaluation de l''intérêt d''en parler",
+  "@askCmdr.tool.nothingToSuggest.doing": {
+    "sourceHash": "51ef519"
+  },
+  "askCmdr.tool.nothingToSuggest.done": "N''a rien trouvé qui mérite d''être signalé",
+  "@askCmdr.tool.nothingToSuggest.done": {
+    "sourceHash": "2287381"
+  },
   "askCmdr.tool.unknown.doing": "Travail en cours",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

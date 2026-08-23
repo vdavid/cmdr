@@ -152,6 +152,14 @@
   "@askCmdr.tool.proposeSuggestions.done": {
     "sourceHash": "42457d2"
   },
+  "askCmdr.tool.nothingToSuggest.doing": "Bedömer om det är värt att nämna",
+  "@askCmdr.tool.nothingToSuggest.doing": {
+    "sourceHash": "51ef519"
+  },
+  "askCmdr.tool.nothingToSuggest.done": "Hittade inget värt att nämna",
+  "@askCmdr.tool.nothingToSuggest.done": {
+    "sourceHash": "2287381"
+  },
   "askCmdr.tool.unknown.doing": "Arbetar",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

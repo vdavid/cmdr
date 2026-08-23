@@ -28,6 +28,10 @@ const TOOL_LABEL_KEYS: Record<string, { doing: MessageKey; done: MessageKey }> =
     done: 'askCmdr.tool.getSuggestionGroup.done',
   },
   propose_suggestions: { doing: 'askCmdr.tool.proposeSuggestions.doing', done: 'askCmdr.tool.proposeSuggestions.done' },
+  nothing_to_suggest: {
+    doing: 'askCmdr.tool.nothingToSuggest.doing',
+    done: 'askCmdr.tool.nothingToSuggest.done',
+  },
 }
 
 const UNKNOWN_TOOL_KEYS = { doing: 'askCmdr.tool.unknown.doing', done: 'askCmdr.tool.unknown.done' } as const
