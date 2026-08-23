@@ -98,9 +98,8 @@ pub struct ConversationSearchHit {
     /// An FTS5 excerpt around the match, or the message start if the term is early.
     /// Plain text with `…` ellipses; no markup (rendered as escaped text).
     pub snippet: String,
-    /// `None` = user-started; a token says the agent opened it. Carried so a search result
-    /// wears the same glyph the thread list gives it — a hit that lost the mark would read
-    /// as a thread the user started and forgot.
+    /// `None` = user-started; a token says the agent opened it. Carried so a hit wears the same
+    /// glyph the thread list gives it, rather than reading as a thread the user began and forgot.
     pub origin: Option<ConversationOrigin>,
 }
 
@@ -160,17 +159,21 @@ pub fn create_conversation(
     Ok(conn.last_insert_rowid())
 }
 
-fn map_conversation_row(row: &rusqlite::Row<'_>) -> Result<ConversationRow, AgentStoreError> {
-    let origin_token: Option<String> = row.get(5)?;
-    let origin = match origin_token {
-        Some(token) => Some(
-            ConversationOrigin::from_token(&token).ok_or_else(|| AgentStoreError::Decode {
+/// Decode the nullable `conversations.origin` column. NULL is the user-started case; an unknown
+/// token is a typed decode error, or a row from a newer schema reads as a thread the user began.
+fn origin_of(token: Option<String>) -> Result<Option<ConversationOrigin>, AgentStoreError> {
+    token
+        .map(|token| {
+            ConversationOrigin::from_token(&token).ok_or(AgentStoreError::Decode {
                 column: "origin",
                 value: token,
-            })?,
-        ),
-        None => None,
-    };
+            })
+        })
+        .transpose()
+}
+
+fn map_conversation_row(row: &rusqlite::Row<'_>) -> Result<ConversationRow, AgentStoreError> {
+    let origin = origin_of(row.get(5)?)?;
     Ok(ConversationRow {
         id: row.get(0)?,
         title: row.get(1)?,
@@ -186,10 +189,9 @@ const CONVERSATION_COLUMNS: &str = "id, title, created_at, updated_at, archived,
 /// Conversations newest-activity first, paged. `include_archived = false` filters the
 /// archived flag; the `conversations_updated` index serves the order.
 ///
-/// The reserved `quiet_wakes` ledger row is filtered out either way — it is a cost total, not
-/// a conversation, and `include_archived` is about threads the user set aside, not about
-/// bookkeeping. `IS NOT` rather than `<>` because the common case is a NULL origin, which `<>`
-/// would answer NULL to and drop every user thread from the list.
+/// The reserved `quiet_wakes` ledger row is filtered out either way — it is a cost total, not a
+/// conversation, and `include_archived` is about threads the user set aside, not bookkeeping. ⚠️
+/// `IS NOT`, ❌ never `<>`: the common case is a NULL origin, which `<>` answers NULL to.
 pub fn list_conversations(
     conn: &Connection,
     limit: u32,
@@ -560,9 +562,9 @@ pub fn sanitize_fts_query(input: &str) -> Option<String> {
     (!terms.is_empty()).then(|| terms.join(" "))
 }
 
-/// Conversations whose messages match `query`, newest-activity first (by the most recent
-/// matching message), paged. Distinct conversations even when several of a thread's
-/// messages match. An empty/uses-only-punctuation query returns no hits.
+/// Conversations whose messages match `query`, newest-activity first (by the most recent matching
+/// message), paged. Distinct conversations even when several of a thread's messages match. An
+/// empty or punctuation-only query returns no hits.
 pub fn search_conversations(
     conn: &Connection,
     query: &str,
@@ -572,12 +574,10 @@ pub fn search_conversations(
     let Some(match_query) = sanitize_fts_query(query) else {
         return Ok(Vec::new());
     };
-    // Per conversation: the max matching message id (the newest matching message,
-    // ids being insert-monotonic) drives a deterministic snippet, and MAX(created_at)
-    // orders threads by most recent match. The `hit` subquery yields a snippet for
-    // every matching rowid; joining it on that max id picks one excerpt per thread.
-    // `snippet(messages_fts, 0, '', '', '…', 10)`: column 0 (`text_for_search`), no
-    // highlight markers (the frontend escapes + styles), `…` ellipsis, ~10 tokens.
+    // Per conversation: the max matching message id (the newest match, ids being
+    // insert-monotonic) drives a deterministic snippet, and MAX(created_at) orders threads by
+    // most recent match. The `hit` subquery yields a snippet per matching rowid; joining it on
+    // that max id picks one excerpt per thread, over column 0 with no highlight markers.
     let mut stmt = conn.prepare_cached(
         "SELECT c.id, c.title, c.updated_at, hit.snippet, c.origin
          FROM conversations c
@@ -600,22 +600,12 @@ pub fn search_conversations(
     let mut rows = stmt.query(rusqlite::params![match_query, limit, offset])?;
     let mut out = Vec::new();
     while let Some(row) = rows.next()? {
-        let origin_token: Option<String> = row.get(4)?;
-        let origin = match origin_token {
-            Some(token) => Some(
-                ConversationOrigin::from_token(&token).ok_or_else(|| AgentStoreError::Decode {
-                    column: "origin",
-                    value: token,
-                })?,
-            ),
-            None => None,
-        };
         out.push(ConversationSearchHit {
             conversation_id: row.get(0)?,
             title: row.get(1)?,
             updated_at: row.get(2)?,
             snippet: row.get(3)?,
-            origin,
+            origin: origin_of(row.get(4)?)?,
         });
     }
     Ok(out)

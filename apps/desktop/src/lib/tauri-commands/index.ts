@@ -1,5 +1,5 @@
-// Re-export all modules for backward compatibility
-// This allows existing imports from '$lib/tauri-commands' to continue working
+// Re-export all modules: the one import path for backend communication, stable across any
+// reshuffle of the sub-files below it.
 
 // File listing (on-demand virtual scrolling API, sync status, font metrics)
 export {
@@ -42,8 +42,7 @@ export {
   onListingCancelled,
   getBriefColumnTextWidths,
 } from './file-listing'
-// Streaming-listing event payload types now flow from the typed-events bindings
-// via the `file-listing.ts` re-export.
+// Streaming-listing event payload types, from the typed-events bindings via `file-listing.ts`.
 export type {
   ListingOpeningEvent,
   ListingProgressEvent,
@@ -277,8 +276,7 @@ export type { StreamingListingStartResult } from '../file-explorer/types'
 /** Which side of a named row `getFileBeside` reads. */
 export type { RowBeside } from '$lib/ipc/bindings'
 
-// Write + scan-preview event payload types now flow from the typed-events
-// bindings via the `write-operations.ts` re-export.
+// Write + scan-preview event payload types, from typed events via `write-operations.ts`.
 export type {
   TransferActivity,
   TransferWaitReason,
@@ -311,7 +309,6 @@ export type {
 
 // Analytics (PostHog feature events through the single backend path)
 export { trackEvent } from './analytics'
-
 // Beta-tester signup (subscribes the contact email; sends NO install id)
 export { betaSignup } from './beta-signup'
 export type { BetaSignupResult } from './beta-signup'
@@ -477,8 +474,8 @@ export {
 // Restricted-paths event
 export { onRestrictedPathsChanged } from './restricted-paths'
 
-// Window-management events (MCP dialog lifecycle, execute-command relay,
-// settings self-close, viewer word-wrap, restricted-settings forward)
+// Window-management events (MCP dialog lifecycle, execute-command relay, settings
+// self-close, viewer word-wrap, restricted-settings forward)
 export {
   onExecuteCommand,
   emitExecuteCommand,

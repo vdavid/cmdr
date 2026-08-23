@@ -325,9 +325,8 @@ pub fn run() {
             // `cmdr_fs::volume::host`, which declares the other side of each seam.
             volume_host::install(app.handle());
 
-            // Mount the typed `tauri-specta` events onto the app. Required before
-            // any `Event::emit` / `Event::listen` call resolves the event name
-            // from the registry. See `ipc.rs` for the event collection.
+            // Mount the typed `tauri-specta` events onto the app. Required before any
+            // `Event::emit` / `Event::listen` resolves a name. Collection: `ipc.rs`.
             specta_builder.mount_events(app);
 
             // E2E: keep a test run's swarm of windows from stealing the developer's
@@ -449,22 +448,20 @@ pub fn run() {
             mtp::volume_wiring::install_volume_registrar();
 
             // Wire the "busy volumes" emitter so write ops can broadcast
-            // `volumes-busy-changed` (drives disabling Eject while a transfer
-            // touches a device). Before any write op can run.
+            // `volumes-busy-changed` (drives disabling Eject while a transfer touches a
+            // device). Before any write op can run.
             file_system::init_busy_volume_emitter(app.handle());
 
-            // Operation-manager event emitter for `operations-changed` (drives
-            // the queue window's row set). Before any write op can run.
+            // Operation-manager emitter for `operations-changed` (the queue window's row set).
             file_system::init_operation_event_emitter(app.handle());
             // The status-corner indicator subscribes to this rather than polling `main.db`.
             agent::suggested_ops::init_suggestions_event_emitter(app.handle());
             // Every Ask Cmdr turn — a rail send or a wake — streams over this one event, keyed
             // by conversation. Before the agent starts, since a wake can fire from launch replay.
             agent::chat::stream::init_turn_event_emitter(app.handle());
-            // Same, for the status corner's wake indicator (agent/wake/indicator.rs).
+            // Same, for the status corner's wake indicator and the one thing a wake says out
+            // loud: it staged something to review (agent/wake/{indicator,staged}.rs).
             agent::wake::init_wake_status_emitter(app.handle());
-            // And for the one thing a wake says out loud: it staged something to review
-            // (agent/wake/staged.rs).
             agent::wake::init_wake_staged_emitter(app.handle());
 
             // Restricted-paths tracker (TCC-gated paths the user has been
