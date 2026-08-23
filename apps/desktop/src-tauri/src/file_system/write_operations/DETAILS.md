@@ -144,20 +144,20 @@ configuration, and it speaks nobody else's. Nothing in it may `use` a sibling (t
 
 **Why the rule is absolute.** The dependency graph under `write_operations` is a fan-in: 30-odd modules point at
 `types`, and `types` is the sink. A single upward import from the sink closes a circle through everything that fans in
-behind it. Three of them (`event_sinks::OperationEventSink`, `error_classification::IoResultExt`, and
-`manager::LifecycleStatus`) welded eleven siblings — `analytics`, `conflict_slot`, `error_classification`, `eta`,
-`event_sinks`, `manager`, `state`, `status_cache`, `types`, `unique_name`, `validation` — into one strongly-connected
-component in which no module could be read, tested, or moved alone. It was the app crate's largest module tangle, and
-the whole of it hung on those three lines. Cutting them dropped the crate from 121 modules in some cycle to 110 and its
-largest raw component from 11 to 10, with no other change to the graph (measured with cargo-modules 0.27.0,
-`pnpm check module-cycles`, 2026-08-23).
+behind it — not a local mistake, a subsystem-wide one. Three such lines (`event_sinks::OperationEventSink`,
+`error_classification::IoResultExt`, and `manager::LifecycleStatus`) once welded eleven modules — `analytics`,
+`conflict_slot`, `error_classification`, `eta`, `event_sinks`, `manager`, `state`, `status_cache`, `types`,
+`unique_name`, `validation` — into one strongly-connected component where nothing could be read, tested, or moved
+alone, and it was the app crate's largest tangle. Three lines bought all of that, which is why the rule allows no
+exception. Cutting them took the crate from 121 modules in some cycle to 110 and its largest raw component from 11 to
+10, changing nothing else in the graph (cargo-modules 0.27.0, `pnpm check module-cycles`, 2026-08-23).
 
-**What the cut looks like in practice.** Two of the three were re-export facades that let callers write
-`types::OperationEventSink` and `types::IoResultExt`; those names now come from `event_sinks` and
-`error_classification`, the modules that define them, which is where a reader looks anyway and what a third of the call
-sites already did. The third was `LifecycleStatus`, defined in `manager.rs` but carried on `types::OperationStatus`
-and re-exported to the frontend as a wire enum — vocabulary living one layer too high. It now sits in `types.rs` beside
-`WriteOperationType` and `WriteOperationPhase`; `manager` imports it like everyone else.
+**Where the three names live instead.** `OperationEventSink` comes from `event_sinks` and `IoResultExt` from
+`error_classification` — the modules that define them, which is where a reader looks anyway (and a `types::` alias for
+either is a `use` of a sibling, so the floor rule already forbids it). `LifecycleStatus` sits in `types.rs` beside
+`WriteOperationType` and
+`WriteOperationPhase`, because it IS vocabulary: `types::OperationStatus` carries it and it crosses the wire to the
+frontend as a serde/specta enum. `manager` imports it like everyone else.
 
 **How it stays cut.** `module-cycles` re-measures this home on every slow run, and its allowlist for
 `cmdr::file_system::write_operations` is ratcheted to the remaining tangle. A new upward import from `types` fails the
