@@ -1,10 +1,11 @@
-//! The wake loop's IPC surface: the live-apply push behind its three settings.
+//! The wake loop's IPC surface: the live-apply push behind its three settings, and the seed
+//! read the status corner's indicator starts from.
 //!
 //! The loop owns its own thread, its own inbox, and a timer parked against a deadline, so a
 //! settings change has to REACH it rather than being noticed the next time something happens.
-//! Everything here is a message on the never-dropped control lane; nothing touches the inbox.
+//! The push is a message on the never-dropped control lane; nothing here touches the inbox.
 
-use crate::agent::wake::{WakeControl, send_control};
+use crate::agent::wake::{AgentWakeStatus, WakeControl, send_control, wake_status};
 
 /// Tell the wake loop its settings moved, so it re-reads them and re-arms.
 ///
@@ -20,4 +21,17 @@ use crate::agent::wake::{WakeControl, send_control};
 #[specta::specta]
 pub fn ask_cmdr_wake_settings_changed() {
     send_control(WakeControl::SettingsChanged);
+}
+
+/// What the status corner's wake indicator should show right now: whether a wake is thinking,
+/// and which gate is in the way if it can't.
+///
+/// ⚠️ **A seed, not a poll.** `agent-wake-status` announces every move, and the corner
+/// subscribes to it; this exists because a wake already running when the window opens, or a
+/// gate that closed before it did, announced itself to nobody. Same shape as the suggestions
+/// badge's one read at startup.
+#[tauri::command]
+#[specta::specta]
+pub fn agent_wake_status() -> AgentWakeStatus {
+    wake_status()
 }

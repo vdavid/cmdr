@@ -47,6 +47,7 @@ use tauri_specta::{Builder, collect_events};
 
 use crate::agent::chat::stream::AskCmdrTurn;
 use crate::agent::suggested_ops::SuggestionsChanged;
+use crate::agent::wake::AgentWakeStatus;
 use crate::commands::search::SearchIndexReadyEvent;
 use crate::events::index_mapping::{
     AggregationProgressEvent, IndexAggregationCompleteEvent, IndexCoverageBranchEndedEvent,
@@ -423,6 +424,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::agent::ask_cmdr_cost_summary,
                     crate::commands::agent::ask_cmdr_model_window,
                     crate::commands::agent::ask_cmdr_wake_settings_changed,
+                    crate::commands::agent::agent_wake_status,
                     crate::commands::selection::translate_selection_query,
                     crate::commands::selection::get_recent_selections,
                     crate::commands::selection::add_recent_selection,
@@ -864,6 +866,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             // Every Ask Cmdr turn's progress, keyed by conversation: rail sends and wakes
             // alike (agent/chat/stream.rs).
             AskCmdrTurn,
+            // What the status corner's wake indicator shows: a wake thinking, and which gate is
+            // in the way when it can't (agent/wake/indicator.rs).
+            AgentWakeStatus,
             // The quit gate holding an exit while operations run (quit/).
             QuitRequested,
             // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).

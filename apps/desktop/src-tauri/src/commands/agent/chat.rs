@@ -26,11 +26,10 @@
 //! thread; the frontend disables the composer while a turn streams, so a thread never has
 //! two concurrent sends). The command resolves/creates the conversation id up front, emits
 //! `Started` on it, and registers the turn's [`CancellationToken`] under that id;
-//! [`ask_cmdr_cancel`] trips it.
+//! [`ask_cmdr_cancel`] trips it. The registry itself is `agent::chat::cancel`, one level
+//! down, because a WAKE registers in it too and may not import upward.
 
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{LazyLock, Mutex};
 
 use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
@@ -42,6 +41,7 @@ use super::{
 };
 use crate::agent::AgentDb;
 use crate::agent::chat::budget;
+use crate::agent::chat::cancel;
 use crate::agent::chat::runtime::{AgentChatEvent, ChatRuntime};
 use crate::agent::chat::session::{
     AgentSlot, capture_envelope, local_offset, provider_and_model, resolve_agent_llm, resolve_prompt_budget,
@@ -51,22 +51,6 @@ use crate::agent::consent::has_current_consent;
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::ProviderTag;
 use crate::agent::store;
-use crate::ignore_poison::IgnorePoison;
-
-// ── Cancellation registry (keyed by conversation id) ───────────────────────────
-
-static CANCELS: LazyLock<Mutex<HashMap<i64, CancellationToken>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
-
-/// Register a fresh cancel token for a conversation and return a clone the turn owns.
-fn register_cancel(conversation_id: i64) -> CancellationToken {
-    let token = CancellationToken::new();
-    CANCELS.lock_ignore_poison().insert(conversation_id, token.clone());
-    token
-}
-
-fn unregister_cancel(conversation_id: i64) {
-    CANCELS.lock_ignore_poison().remove(&conversation_id);
-}
 
 // ── The model a thread would use right now ─────────────────────────────────────
 
@@ -229,7 +213,7 @@ pub async fn ask_cmdr_send_message(
     let llm = llm_kind.into_llm(conversation_id);
 
     // Register the cancel token before spawning so a stop that arrives immediately hits it.
-    let cancel = register_cancel(conversation_id);
+    let cancel = cancel::register_cancel(conversation_id);
 
     std::thread::spawn(move || {
         let runtime = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
@@ -243,7 +227,7 @@ pub async fn ask_cmdr_send_message(
                         detail: Some(e.to_string()),
                     },
                 );
-                unregister_cancel(conversation_id);
+                cancel::unregister_cancel(conversation_id);
                 return;
             }
         };
@@ -286,13 +270,7 @@ async fn drive_turn(
     cancel: CancellationToken,
 ) {
     // RAII: drop the registry entry when the turn ends, even on an early return/panic.
-    struct CancelGuard(i64);
-    impl Drop for CancelGuard {
-        fn drop(&mut self) {
-            unregister_cancel(self.0);
-        }
-    }
-    let _guard = CancelGuard(conversation_id);
+    let _guard = cancel::CancelGuard::new(conversation_id);
 
     let envelope = capture_envelope(
         &app,
@@ -360,10 +338,11 @@ fn create_conversation_now(db_path: &Path, text: &str) -> Result<i64, store::Age
 
 /// Stop the in-flight turn for a thread. Idempotent: an unknown id (already finished) is a
 /// no-op. A clean stop at the next tool boundary or stream chunk, not a hard abort.
+///
+/// One command for both kinds of turn: a wake registers in the same registry, so the status
+/// corner's stop button and the rail's are the same call with a different id.
 #[tauri::command]
 #[specta::specta]
 pub fn ask_cmdr_cancel(conversation_id: i64) {
-    if let Some(token) = CANCELS.lock_ignore_poison().get(&conversation_id) {
-        token.cancel();
-    }
+    cancel::cancel_turn(conversation_id);
 }

@@ -10,6 +10,9 @@ import {
   commands,
   events,
   type AgentErrorKindView,
+  type AgentWakeStatus,
+  type WakePhase,
+  type WakeReadinessView,
   type AskCmdrStreamEvent,
   type AskCmdrTurn,
   type ConversationRow,
@@ -33,6 +36,9 @@ import {
 import { throwIpcError } from './ipc-types'
 
 export type {
+  AgentWakeStatus,
+  WakePhase,
+  WakeReadinessView,
   AskCmdrStreamEvent,
   AskCmdrTurn,
   ConversationRow,
@@ -290,4 +296,28 @@ export async function askCmdrModelWindow(): Promise<ModelWindowView> {
  */
 export async function askCmdrWakeSettingsChanged(): Promise<void> {
   await commands.askCmdrWakeSettingsChanged()
+}
+
+/**
+ * What the status corner's wake indicator should show right now.
+ *
+ * ⚠️ A SEED, not a poll: [`onAgentWakeStatus`] announces every move. This covers the two the
+ * corner can miss — a wake already running when the window opened, and a gate that closed
+ * before it did.
+ */
+export async function agentWakeStatus(): Promise<AgentWakeStatus> {
+  return commands.agentWakeStatus()
+}
+
+/**
+ * Subscribe to the wake indicator's status: a wake starting or finishing, and a readiness gate
+ * moving.
+ *
+ * ⚠️ It reaches EVERY window, and only the main window has a status corner. Subscribe from
+ * there only, exactly as [`onAskCmdrTurn`] is scoped.
+ */
+export function onAgentWakeStatus(callback: (payload: AgentWakeStatus) => void): Promise<UnlistenFn> {
+  return events.agentWakeStatus.listen((event) => {
+    callback(event.payload)
+  })
 }

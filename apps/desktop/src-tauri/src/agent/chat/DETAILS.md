@@ -407,6 +407,16 @@ without `End` while the token is set (a user stop, distinguished from a crash) �
 `TurnResult::Cancelled` with no `Failed` event; stream-cancel itself drops the reqwest body
 via the token threaded into `AgentLlm::respond`.
 
+The tokens live in `cancel.rs`, one process-global map keyed by conversation id (single-flight
+means at most one turn per thread, so the id is a sufficient key). ⚠️ **It sits here rather
+than in `commands/agent/chat.rs` because a WAKE registers in it too**: `agent/wake/runner.rs`
+is below `commands/` and may not import upward, and a wake is a multi-second background turn
+spending the user's money, which `docs/design-principles.md` requires be cancelable. One
+registry means `ask_cmdr_cancel` stops either kind of turn without knowing which it is, and the
+status corner's stop button is that same command with the id its event carries. `CancelGuard`
+clears the entry on every exit, so a turn that returned early can't leave a token for the next
+turn on the same thread to be stopped by.
+
 ## The event seam (`AgentChatEvent`)
 
 The runtime emits typed progress through `ChatEventSink` (a

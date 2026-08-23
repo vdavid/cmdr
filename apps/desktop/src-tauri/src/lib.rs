@@ -461,6 +461,9 @@ pub fn run() {
             // Every Ask Cmdr turn — a rail send or a wake — streams over this one event, keyed
             // by conversation. Before the agent starts, since a wake can fire from launch replay.
             agent::chat::stream::init_turn_event_emitter(app.handle());
+            // The status corner's wake indicator subscribes to this rather than polling. Before
+            // the agent starts, for the same reason: a wake can fire from launch replay.
+            agent::wake::init_wake_status_emitter(app.handle());
 
             // Restricted-paths tracker (TCC-gated paths the user has been
             // denied access to). Installs an NSApplicationDidBecomeActive

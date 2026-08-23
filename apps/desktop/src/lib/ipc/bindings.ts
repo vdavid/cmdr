@@ -2593,6 +2593,9 @@ export const commands = {
   /**
    *  Stop the in-flight turn for a thread. Idempotent: an unknown id (already finished) is a
    *  no-op. A clean stop at the next tool boundary or stream chunk, not a hard abort.
+   *
+   *  One command for both kinds of turn: a wake registers in the same registry, so the status
+   *  corner's stop button and the rail's are the same call with a different id.
    */
   askCmdrCancel: (conversationId: number) => __TAURI_INVOKE<void>('ask_cmdr_cancel', { conversationId }),
   /**
@@ -2782,6 +2785,16 @@ export const commands = {
    *  message is serviced wins and two changes racing can't leave the loop on the older one.
    */
   askCmdrWakeSettingsChanged: () => __TAURI_INVOKE<void>('ask_cmdr_wake_settings_changed'),
+  /**
+   *  What the status corner's wake indicator should show right now: whether a wake is thinking,
+   *  and which gate is in the way if it can't.
+   *
+   *  ⚠️ **A seed, not a poll.** `agent-wake-status` announces every move, and the corner
+   *  subscribes to it; this exists because a wake already running when the window opens, or a
+   *  gate that closed before it did, announced itself to nobody. Same shape as the suggestions
+   *  badge's one read at startup.
+   */
+  agentWakeStatus: () => __TAURI_INVOKE<AgentWakeStatus>('agent_wake_status'),
   /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
@@ -3753,6 +3766,7 @@ export const commands = {
 /** Events */
 export const events = {
   accentColorChanged: makeEvent<AccentColorChanged>('accent-color-changed'),
+  agentWakeStatus: makeEvent<AgentWakeStatus>('agent-wake-status'),
   aiDownloadProgress: makeEvent<DownloadProgress>('ai-download-progress'),
   aiExtracting: makeEvent<AiExtracting>('ai-extracting'),
   aiInstallComplete: makeEvent<AiInstallComplete>('ai-install-complete'),
@@ -3934,6 +3948,18 @@ export type AgentErrorKindView =
   | 'budgetExhausted'
   | 'unfinishedReply'
   | 'provider'
+
+/**
+ *  What the status corner's wake indicator shows right now.
+ *
+ *  ⚠️ `Serialize` only, like [`AskCmdrTurn`](crate::agent::chat::stream::AskCmdrTurn):
+ *  `tauri_specta::Event` wants `DeserializeOwned` solely for its Rust-side `listen`, which
+ *  nothing here does.
+ */
+export type AgentWakeStatus = {
+  phase: WakePhase
+  readiness: WakeReadinessView
+}
 
 // A writer's aggregation pass moved through one of its phases.
 export type AggregationProgressEvent = {
@@ -10899,6 +10925,29 @@ export type VolumesChanged = {
   // Whether the local volume listing timed out (some volumes may be missing).
   timedOut: boolean
 }
+
+/**
+ *  Whether a wake is thinking, and in which thread.
+ *
+ *  A tagged enum rather than a nullable id beside a boolean, so "thinking with no thread" and
+ *  "idle with a thread" are unrepresentable: the corner's click target is exactly the id in
+ *  the `Thinking` arm.
+ */
+export type WakePhase =
+  // Nothing is running. The corner shows a readiness gap or nothing at all.
+  | { phase: 'idle' }
+  /**
+   *  A wake is on a provider right now, in this thread. The corner offers a way in and a way
+   *  to stop it.
+   */
+  | { phase: 'thinking'; conversationId: number }
+
+/**
+ *  The wire form of [`WakeReadiness`]. A separate type because the pure core's enum carries no
+ *  serde derives on purpose: `readiness.rs` is values-in-values-out and knows nothing about a
+ *  wire.
+ */
+export type WakeReadinessView = 'ready' | 'needsConsent' | 'needsFullDiskAccess' | 'needsApiKey'
 
 /**
  *  How a live search's walk ended. Typed, because three of the four leave the

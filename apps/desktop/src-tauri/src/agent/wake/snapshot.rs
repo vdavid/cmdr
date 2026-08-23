@@ -75,6 +75,10 @@ pub fn refresh_readiness<R: Runtime>(app: &AppHandle<R>) {
     if previous != as_code(next) {
         log::debug!(target: LOG_TARGET, "readiness moved to {next:?}");
         send_control(WakeControl::ReadinessChanged);
+        // The status corner renders the gap for a user who opted in, so it has to hear about a
+        // gate closing or opening: the API key is set in another window and Full Disk Access is
+        // granted outside the app entirely.
+        super::indicator::emit_status();
     }
 }
 

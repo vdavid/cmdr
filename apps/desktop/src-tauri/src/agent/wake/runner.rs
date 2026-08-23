@@ -10,12 +10,13 @@
 
 use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
-use tokio_util::sync::CancellationToken;
 
 use super::channel::{WakeControl, send_control};
+use super::indicator::{note_wake_finished, note_wake_started};
 use super::quiet::QuietWatch;
 use super::{PreparedWake, RunWakeParams, WakeTier, wake_turn_params};
 use crate::agent::chat::budget;
+use crate::agent::chat::cancel;
 use crate::agent::chat::runtime::{AgentChatEvent, AppHandleDispatcher, ChatRuntime, TurnResult};
 use crate::agent::chat::session::{capture_envelope, local_offset};
 use crate::agent::chat::stream::{AskCmdrStreamEvent, emit_turn_event, forward_to_windows};
@@ -40,6 +41,10 @@ pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) 
     let spawned = std::thread::Builder::new()
         .name("agent-wake-turn".to_string())
         .spawn(move || {
+            // The corner goes busy before anything slow, and clears on EVERY exit below: a
+            // stale `Thinking` would leave a spinner up forever and offer a click into a
+            // thread a quiet wake has since deleted.
+            note_wake_started(prepared.conversation_id);
             match tokio::runtime::Builder::new_current_thread().enable_all().build() {
                 Ok(runtime) => runtime.block_on(run(app, slot, prepared)),
                 Err(e) => {
@@ -47,12 +52,14 @@ pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) 
                     record_outcome("unavailable", Some(prepared.tier), prepared.rows.len(), 0);
                 }
             }
+            note_wake_finished();
             // ⚠️ Whatever happened, the writer thread has to hear that this one is done, or it
             // will never prepare another.
             send_control(WakeControl::WakeFinished);
         });
     if let Err(e) = spawned {
         crate::log_error!(target: LOG_TARGET, "the wake thread did not start: {e}");
+        note_wake_finished();
         send_control(WakeControl::WakeFinished);
     }
 }
@@ -84,6 +91,13 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
     };
     let dispatcher = AppHandleDispatcher::new(app.clone(), prepared.conversation_id);
 
+    // ⚠️ A real token, registered under this thread's id. A wake is a multi-second background
+    // action spending the user's money, and `docs/design-principles.md` requires those be
+    // cancelable; the status corner's stop button is `ask_cmdr_cancel` with this id, the same
+    // call the rail's stop makes. The guard clears the entry on every exit below.
+    let cancel_token = cancel::register_cancel(prepared.conversation_id);
+    let _cancel_guard = cancel::CancelGuard::new(prepared.conversation_id);
+
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
         log::warn!(target: LOG_TARGET, "the chat runtime is not registered; the wake has nowhere to run");
         record_outcome("unavailable", Some(prepared.tier), prepared.rows.len(), 0);
@@ -110,7 +124,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
                 params.tools,
                 &wake_turn_params(&prepared, &params),
                 &sink,
-                &CancellationToken::new(),
+                &cancel_token,
             )
             .await
     };

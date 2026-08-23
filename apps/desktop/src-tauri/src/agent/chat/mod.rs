@@ -1,5 +1,7 @@
 //! The chat runtime and its pure context-assembly core.
 //!
+//! - [`cancel`]: the one registry of in-flight turns, keyed by conversation. Below
+//!   `commands/` because a wake registers in it too.
 //! - [`budget`]: the per-model prompt budget table plus the one token-size estimator the
 //!   whole agent shares (including each tool's self-cap). Pure data + arithmetic.
 //! - [`context`]: the pure core — values in, prompt out, no I/O and no clock. The
@@ -22,6 +24,7 @@
 //! table.
 
 pub mod budget;
+pub mod cancel;
 pub mod context;
 pub mod runtime;
 pub mod session;

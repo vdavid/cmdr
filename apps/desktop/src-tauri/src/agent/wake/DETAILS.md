@@ -187,8 +187,14 @@ to paste a key, for a feature they have not opted into is asking them to widen a
 Disk access outranks the key because it decides whether the agent can SEE anything.
 
 **Silence lies under a pending FDA decision**: a user who declined and a user with a tidy Downloads folder see the
-identical nothing, and only one of those is the feature working. Every state is a value the indicator renders with an
-action.
+identical nothing, and only one of those is the feature working. So `NeedsFullDiskAccess` and `NeedsApiKey` both render
+in the status corner, each with the action that closes them.
+
+⚠️ **`NeedsConsent` is the one state that renders as silence**, and `askCmdr.proactive` being off silences the corner
+the same way. Read literally, rendering every state puts a permanent AI nag in front of every user who never wanted AI,
+which is the noise `SuggestedOpsIndicator` hides at zero to avoid. The gap is for a user who opted IN and hit a wall.
+Both gates live in the frontend's wake indicator; the enum here stays complete, because the writer thread and the
+inbox still need all four answers.
 
 **Without consent the pipeline stores nothing** (`admits_to_inbox`). Admitting rows means keeping a record of what the
 user has been doing with their files for a purpose they have not agreed to, and it would mean consenting on a Tuesday
@@ -328,7 +334,32 @@ before the store is open the answer is `NeedsConsent`, so nothing is stored for 
 user has not agreed to. M2 item 5's IPC reads the same snapshot.
 
 `refresh_readiness` returns nothing on purpose: `readiness_snapshot()` is the one way to read the
-value, so no caller can act on a copy a later refresh has already moved past.
+value, so no caller can act on a copy a later refresh has already moved past. On a real move it
+also emits `agent-wake-status`, because the two gates that render are set outside the main
+window: the API key in the settings window, Full Disk Access outside the app entirely.
+
+## The indicator's own event
+
+`indicator.rs` carries one `tauri_specta::Event`, `agent-wake-status`, holding both facts the
+status corner needs: the `WakePhase` (`Idle`, or `Thinking { conversation_id }`) and the
+readiness gap. Two facts on one event because a subscriber reconciling two would render a state
+neither meant, and because they answer the same question.
+
+⚠️ **Separate from the turn stream** (`agent/chat/stream.rs`). That one carries a turn's
+PROGRESS to whoever is showing that thread; this one carries a phase to a corner showing no
+thread. Folded together, the corner would subscribe to every text delta of every rail send.
+
+The phase lives in an `AtomicI64` holding the thinking thread's id, `0` for none (rowids are
+always positive, so the sentinel cannot collide). `runner::spawn` sets it before anything slow
+and clears it on EVERY exit — a stale `Thinking` would leave a spinner up forever and offer a
+click into a thread a quiet wake has since deleted. `agent_wake_status()` reads it as the
+frontend's one seed, for the wake already running when the window opened.
+
+⚠️ **Cancel is not new machinery.** A wake registers its `CancellationToken` in
+`agent::chat::cancel` under its conversation id, the same registry a rail send uses, so the
+corner's stop button is `ask_cmdr_cancel` with the id this event carries. That registry sits in
+`agent/chat/` rather than `commands/agent/chat.rs` precisely so the wake runner can reach it
+without importing upward.
 
 ## Importance, on the writer thread
 

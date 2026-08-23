@@ -358,8 +358,13 @@ export {
   askCmdrCostSummary,
   askCmdrModelWindow,
   askCmdrWakeSettingsChanged,
+  agentWakeStatus,
+  onAgentWakeStatus,
 } from './ask-cmdr'
 export type {
+  AgentWakeStatus,
+  WakePhase,
+  WakeReadinessView,
   AskCmdrStreamEvent,
   AskCmdrTurn,
   AskCmdrSendOutcome,

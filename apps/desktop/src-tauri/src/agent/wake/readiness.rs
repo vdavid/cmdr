@@ -7,9 +7,15 @@
 //! agent can SEE anything, and the key last, because it only decides whether the agent can
 //! THINK about what it saw.
 //!
-//! Every state is a value the indicator renders with an action to take. ❌ None of them is
-//! silence: a user who declined disk access and a user with a tidy Downloads folder would
+//! Every state is a value with an action to take, and the status corner renders two of the
+//! three: a user who declined disk access and a user with a tidy Downloads folder would
 //! otherwise see the identical nothing, and only one of those is the feature working.
+//!
+//! ⚠️ **[`WakeReadiness::NeedsConsent`] is the exception, and renders as SILENCE.** It is the
+//! state of every user who never wanted AI, and an always-present nag in front of them is
+//! exactly the noise `SuggestedOpsIndicator` hides at zero to avoid. `askCmdr.proactive` being
+//! off is the same case: nothing is watching, so the corner has nothing to report. Both gates
+//! are the frontend's, in the status corner's wake indicator; the values here stay complete.
 
 /// What the app knows about the three gates, in the polarity each source reports.
 ///

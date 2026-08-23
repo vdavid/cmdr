@@ -44,6 +44,7 @@ mod coalesce;
 mod compact;
 mod importance;
 mod inbox;
+mod indicator;
 mod interest;
 mod job;
 mod persist;
@@ -61,6 +62,7 @@ pub use channel::{FolderActivity, MAX_QUEUED_ROLLUPS, WakeControl, send_control,
 pub use coalesce::{coalesce, merge_bundles};
 pub use compact::{Digest, DigestLine, Rollup, ScoredBundle, compact};
 pub use inbox::{Inbox, InboxRow, ReconcileReport, SETTLE_AFTER_LAUNCH, STALE_AFTER};
+pub use indicator::{AgentWakeStatus, WakePhase, WakeReadinessView, init_wake_status_emitter, wake_status};
 pub use interest::{
     DEFAULT_HOT_DELAY, FolderImportance, HOT_THRESHOLD, Interest, MAX_HOT_DELAY, MAX_WARM_DELAY, MIN_HOT_DELAY,
     WAKE_DELAY_STOPS, WARM_THRESHOLD, WakeTier, interest, tier_of, wake_delay,
