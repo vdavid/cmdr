@@ -118,6 +118,10 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   "Verstuur rapport" reads better than "Verzend rapport" for the crash-report button. Low stakes; both are correct.
 - **crash report → crashrapport** (high, but no exact macOS string for the noun): macOS has "Crashrapportage" (the
   reporting feature). Confirm "crashrapport" for the artifact reads natural in Cmdr's dialog.
+- **The two new crash-dialog openings** (`crashReporter.dialog.body.keptRunning`/`.unknown`): confirm
+  `een probleem tegengekomen` over the better-sourced but stiffer Tier-1 `heeft … aangetroffen`, and
+  `is gewoon blijven werken` over `is gewoon actief gebleven`. Both picks trade a citation for Cmdr's warmer register.
+  Evidence and the rejected alternatives: `glossary.md` § De drie crashdialoog-openingen.
 - **Ask Cmdr tool-status doing/done pairs** (`askCmdr.tool.*`): no pile precedent for AI-assistant status lines, so the
   seven pairs are coined (present tense for "doing", past-participle-led for "done"; see glossary "Ask Cmdr pass" REVIEW
   FLAGS). Confirm the tone lands, and that seven distinct verbs read as a coherent family rather than ad hoc.

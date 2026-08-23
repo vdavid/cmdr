@@ -1685,3 +1685,32 @@ REVIEW FLAGS (prullenmandweigeringen):
   `fileExplorer.functionKeyBar.deletePermanentlyAction` en het glossarium `definitief verwijderen` aanhouden (macOS Tier
   1). Deze nieuwe regel volgt het glossarium. Een locale-brede veegbeurt naar `definitief` is de aanbeveling; buiten het
   bestek van deze pass.
+
+## De drie crashdialoog-openingen (`crashReporter.dialog.body.ended`/`.keptRunning`/`.unknown`)
+
+Het dialoogvenster bij de volgende start kiest nu één van drie zinnen, afhankelijk van wat het rapport heeft
+vastgelegd. `.ended` blijft ongewijzigd; de twee nieuwe **mogen niet zeggen dat Cmdr is gecrasht, gestopt of
+afgesloten**, want dat is precies wat er niet gebeurde. Alle drie delen dezelfde opening `Cmdr is de vorige keer …`,
+overgenomen uit de onaangeroerde `.ended`.
+
+- **"ran into a problem" → `een probleem tegengekomen`** · `tentative`. macOS Finder `nl` `NE105`
+  ("'^0' heeft een fout aangetroffen") levert de vorm met de app als onderwerp, maar `aangetroffen` is stijf voor
+  Cmdrs toon; de Microsoft `nl` stijlgids (p. 48/52) schrijft juist de onpersoonlijke vorm voor
+  ("Er is een probleem opgetreden bij …"), die Cmdr niet als onderwerp kan nemen zoals het Engels doet. `tegenkomen`
+  is gekozen op de macOS-vorm en draagt geen enkele betekenis van "beëindigd".
+- **"kept running" → `is gewoon blijven werken`** · `tentative`. Dubbele infinitief in de voltooide tijd, passend bij
+  de zustersleutel `.ended`; `gewoon` draagt de geruststelling van het Engelse "kept". Bronnen voor het semantische
+  veld: Dolphin `nl` ("is nog steeds actief"), macOS Finder ("terwijl de Finder actief is"), Thunar ("draaiende …
+  instantie"). ❌ Niet `doorlopen`: dit catalogusveld reserveert dat voor een *bewerking* die doorloopt
+  (`queueTooltip`, `stallUnknown`, `backgroundedToast`), niet voor de app zelf. ❌ Niet `bleef gewoon draaien`: korter
+  en spreektaliger, maar de catalogusregel uit de hernoemingsronde wil de voltooide tijd voor gebeurtenissen in het
+  recente verleden.
+- **"in the background" → `op de achtergrond`** · de al vastgelegde regel, uit Double Commander `nl`
+  ("Werk op de achtergrond") · high. Echt afwezig in macOS/Nautilus `nl`: die kennen alleen de visuele achtergrond
+  (bureaubladafbeelding), geen achtergrond*taak*.
+- **"a report" (zonder "crash") → `een rapport`** · de vastgelegde regel `report → rapport` (Microsoft `nl`
+  stijlgids p. 54), naast het cataloguswoord `crashrapport`. De tweede zin is die van `.ended`, met `crashrapport`
+  vervangen door `rapport` · high.
+- **`.unknown` zegt niets over de afloop**: alleen dat er een probleem was. Daardoor klopt de zin of Cmdr nu is
+  gestopt of gewoon is doorgegaan.
+- Geen van beide waarden bevat een apostrof, dus de ICU-verdubbelingsregel speelt hier niet.
