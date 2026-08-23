@@ -64,7 +64,7 @@ type surfaceCeilings struct {
 // surfaceGuardedCrates are the guarded crates whose public surface is ALSO capped.
 // Not every guarded crate is: `cmdr-fs` is deliberately absent, because it's shared
 // vocabulary whose whole job is to be named from everywhere, so a count of its `pub`
-// items would measure the wrong thing, and `cmdr-sftp`'s is still growing.
+// items would measure the wrong thing.
 //
 // HandleType names the one type whose methods get their own bucket, or is empty when
 // the crate has no such type. A backend crate doesn't: its API is the `Volume` trait
@@ -162,6 +162,28 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   15,
 			PublicModules:  4,
 			SubsystemItems: 18,
+		},
+	},
+	{
+		// Measured 2026-08-23 with this check's own `countSurface`, and set with
+		// David's say-so to exactly what the crate exposes — no headroom, so the
+		// first widening is a conversation rather than a silent drift.
+		//
+		// Three public modules is the whole tree a host can name a path into: `auth`
+		// (for `AuthRungUsed`), `transport` (for `HostKeyPrompt` and its kind), and
+		// `volume` (for `approve_host_key`, `HostKeyApproval`, and the `testing`
+		// fixtures). ❗ `errors`, `extensions`, `known_hosts`, `params`, and `trust`
+		// stay `pub(crate)`, and the three types the app needs from them arrive as
+		// root re-exports: `trust` and `known_hosts` hold the man-in-the-middle
+		// decision, which nothing outside this crate has any business reaching into.
+		//
+		// Item-by-item, and what each module is for: `crates/cmdr-sftp/DETAILS.md`
+		// § "The public surface is capped".
+		Name: "cmdr-sftp",
+		Ceilings: surfaceCeilings{
+			RootPromises:   10,
+			PublicModules:  3,
+			SubsystemItems: 23,
 		},
 	},
 	{

@@ -868,19 +868,14 @@ would put it in the gating lane under runner contention.
 
 The servers themselves: `apps/desktop/test/sftp-servers/README.md`.
 
-## The public surface, measured and waiting for its ceiling
+## The public surface is capped
 
-`cmdr-sftp` is in `guardedIndexCrates`, so nothing here may name `cmdr`, `tauri`, or `tauri-specta`. It is deliberately
-**not** in `surfaceGuardedCrates` yet: every entry there records David's say-so for its numbers, so the number is
-measured here and the entry waits for him rather than being invented.
+`cmdr-sftp` is in `guardedIndexCrates`, so nothing here may name `cmdr`, `tauri`, or `tauri-specta`. It is also in
+`surfaceGuardedCrates`, capped at **10 root promises / 3 public modules / 23 items in them** (measured 2026-08-23 with
+the check's own `countSurface`, and set with David's say-so). That's the shape `cmdr-smb` and `cmdr-archive` carry: no
+slack, so the first widening is a conversation rather than a silent drift, and raising it needs his explicit say-so.
 
-Measured 2026-08-23 with the check's own `countSurface`, the crate complete through the IPC surface:
-
-| bucket         | `cmdr-sftp` | `cmdr-smb` | `cmdr-archive` |
-| -------------- | ----------- | ---------- | -------------- |
-| root promises  | 10          | 15         | 35             |
-| public modules | 3           | 4          | 4              |
-| items in them  | 23          | 18         | 36             |
+For scale, the same three buckets: `cmdr-smb` is 15 / 4 / 18, `cmdr-archive` 35 / 4 / 36.
 
 Three public modules, and each is named by path from outside the crate: `auth` (for `AuthRungUsed`), `transport` (for
 `HostKeyPrompt` and its kind), and `volume` (for `approve_host_key`, `HostKeyApproval`, and the `testing` fixtures).
@@ -889,10 +884,6 @@ them (`SftpConnectError`, `ServerExtensions`, `SftpConnectionParams`) arrive as 
 `pub mod` promises everything `pub` inside it, and `trust` and `known_hosts` in particular hold the man-in-the-middle
 decision, which nothing outside this crate has any business reaching into.
 
-**The recommended ceiling is 10 / 3 / 23**, the measurement itself. That's the shape `cmdr-smb` and `cmdr-archive`
-carry: no slack, so the first widening is a conversation rather than a silent drift.
-
 ⚠️ One `pub` item in `transport` is unreachable from outside even so: `presented_host_key` returns
-`trust::PresentedHostKey`, whose module is now `pub(crate)`. It has exactly one caller, `volume::approve_host_key`, so
-`pub(crate)` fits it. Narrowing it is worth doing when the ceiling lands rather than before, so the number the entry
-records is the number the code has today.
+`trust::PresentedHostKey`, whose module is `pub(crate)`. It has exactly one caller, `volume::approve_host_key`, so
+`pub(crate)` fits it, and narrowing it frees an item under the ceiling rather than needing one.

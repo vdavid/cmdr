@@ -244,8 +244,8 @@ All under `apps/desktop/src-tauri/src/`.
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` carry
 no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata`
-graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, and `cmdr-smb` at the numbers their audits landed
-on. The two dev CLIs and the vendored fork are ordinary members.
+graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` at the numbers their
+audits landed on. The two dev CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
