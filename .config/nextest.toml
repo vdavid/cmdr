@@ -243,8 +243,6 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 #     provably-live watch, no vacuous pass); `scan_latest_fallback_...` is
 #     delivery-independent but opens a live watch, so it's grouped to not add to
 #     the others' starvation.
-#   - `viewer_tail_integration`: the appender writes continuously until the test
-#     sees a `Grew`.
 #   - `cmdr-archive`'s `watch::host_seam_test` rewrite tests: `drive_until_refreshed`
 #     redoes the zip rewrite (in place, or via temp+rename) until the watch reaches
 #     the host's archive-refresh seam. ❌ These names are crate-relative and carry no
@@ -260,7 +258,7 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 # full-suite `cargo nextest run` loops green at `retries = 0`, and 10/10
 # `cargo test --lib downloads::watcher_test` loops green (verified 2026-07 on a
 # 16-core M-series; baseline before the in-test fix was ~2/3 runs failing).
-filter = 'test(downloads::watcher_test::dropping_a_file_emits_one_event) + test(downloads::watcher_test::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher_test::latest_download_returns_ring_value_after_event) + test(downloads::watcher_test::note_pending_write_suppresses_matching_event) + test(downloads::watcher_test::scan_latest_fallback_finds_file_with_no_events) + test(tail_watcher_sees_appender_task_events_within_debounce) + test(watch::host_seam_test::a_rewrite_asks_the_host_to_refresh_the_archive_listings) + test(watch::host_seam_test::a_temp_rename_swap_still_asks_for_a_refresh)'
+filter = 'test(downloads::watcher_test::dropping_a_file_emits_one_event) + test(downloads::watcher_test::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher_test::latest_download_returns_ring_value_after_event) + test(downloads::watcher_test::note_pending_write_suppresses_matching_event) + test(downloads::watcher_test::scan_latest_fallback_finds_file_with_no_events) + test(watch::host_seam_test::a_rewrite_asks_the_host_to_refresh_the_archive_listings) + test(watch::host_seam_test::a_temp_rename_swap_still_asks_for_a_refresh)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 

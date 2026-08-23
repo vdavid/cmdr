@@ -318,6 +318,15 @@ list is keyed by path. Dropping the last subscription unwatches the path.
 **Manager thread polls with a 200 ms timeout.** This is the only path that lets `close_session` make the manager exit
 when the file is idle (no events). Without it, `recv` would block forever and the thread would leak.
 
+**Real-FSEvents delivery is proven in `watcher_test.rs` and nowhere else.** `watcher_observes_append_within_debounce`
+(one append → `Grew(n)` with `n` equal to the on-disk size), `watcher_debounces_rapid_writes` (50 writes in under
+100 ms → one `Grew` at the final size, at most 5 leftovers), `watcher_observes_truncation_as_shrunk`, and
+`watcher_observes_inode_replace` cover the four classifications against a live stream. ❌ Don't add a second test that
+subscribes and waits for a `Grew`: the watcher observes the FILESYSTEM, so which thread, task, or runtime wrote the
+bytes is invisible to it, and a duplicate only adds another live FSEvents stream to the serialized `real-notify` group.
+A separate `tests/viewer_tail_integration.rs` binary made exactly that mistake and failed 22 of 113 sampled runs
+(2026-08-09 to 2026-08-23) while these four never failed once.
+
 ## Key decisions
 
 **Decision**: Three-backend architecture (FullLoad / ByteSeek / LineIndex) instead of one general-purpose backend.
