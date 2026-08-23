@@ -46,7 +46,7 @@
 # putting it here only serializes something fast; give it a cap-only override
 # instead (see the arming-only block below).
 real-notify = { max-threads = 1 }
-# Synthetic FAT32/exFAT disk-image fixtures (`indexing::external_drive_fixture`,
+# Synthetic FAT32/exFAT disk-image fixtures (`indexing::tests::external_drive_fixture`,
 # macOS-only, `#[ignore]`d — run via `--run-ignored`). Each attaches a real disk
 # image via hdiutil (FSKit `msdos`) and the live-FSEvents probes block on real
 # event delivery. Serialize them: concurrent attach/detach churn on the same
@@ -70,7 +70,7 @@ sftp-bench = { max-threads = 1 }
 # cap. 30 s matches the fixture's own `HDIUTIL_TIMEOUT` SIGKILL guard, so a
 # genuinely wedged FSKit service is caught by the fixture first and the cap
 # stays a backstop. Serialized via the `disk-image` group above.
-filter = 'test(indexing::external_drive_fixture::)'
+filter = 'test(indexing::tests::external_drive_fixture::)'
 test-group = 'disk-image'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
@@ -209,7 +209,7 @@ slow-timeout = { period = "40s", terminate-after = 1 }
 # actually works. Same unreachable-deadline shape as the watch-root test above:
 # 40 s puts the cap over its own wait. Precedes the general cold-drive override
 # below so it wins (first matching override per setting).
-filter = 'test(indexing::lifecycle::cover::cold_drive_tests::a_change_inside_a_walked_branch)'
+filter = 'test(indexing::lifecycle::cover::cold_drive_tests::branches::a_change_inside_a_walked_branch)'
 test-group = 'real-notify'
 slow-timeout = { period = "40s", terminate-after = 1 }
 
@@ -245,7 +245,7 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 # 15 s budget (no second budget stacks). A real regression — the watcher stops
 # emitting — therefore surfaces immediately here instead of being masked by a
 # retry. Mechanisms:
-#   - `downloads/watcher.rs` tests: `observe_mutation` redoes the real
+#   - `downloads/watcher_test.rs` tests: `observe_mutation` redoes the real
 #     create/rename on a fresh name until a matching emit; `prime_watch` proves
 #     the watch live before the ring-order mutation;
 #     `note_pending_write_suppresses_matching_event` redoes a
@@ -267,11 +267,11 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 # their live watches from multiplying each other's starvation. NOTE this group
 # only serializes under `cargo nextest` (process-per-test); under plain
 # `cargo test` the whole module shares one process, where a `WATCH_SERIAL` mutex
-# in `downloads::watcher::tests` does the equivalent. Proof: 10/10 saturated
+# in `downloads::watcher_test` does the equivalent. Proof: 10/10 saturated
 # full-suite `cargo nextest run` loops green at `retries = 0`, and 10/10
-# `cargo test --lib downloads::watcher` loops green (verified 2026-07 on a
+# `cargo test --lib downloads::watcher_test` loops green (verified 2026-07 on a
 # 16-core M-series; baseline before the in-test fix was ~2/3 runs failing).
-filter = 'test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(downloads::watcher::tests::note_pending_write_suppresses_matching_event) + test(downloads::watcher::tests::scan_latest_fallback_finds_file_with_no_events) + test(tail_watcher_sees_appender_task_events_within_debounce) + test(watch::host_seam_test::a_rewrite_asks_the_host_to_refresh_the_archive_listings) + test(watch::host_seam_test::a_temp_rename_swap_still_asks_for_a_refresh)'
+filter = 'test(downloads::watcher_test::dropping_a_file_emits_one_event) + test(downloads::watcher_test::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher_test::latest_download_returns_ring_value_after_event) + test(downloads::watcher_test::note_pending_write_suppresses_matching_event) + test(downloads::watcher_test::scan_latest_fallback_finds_file_with_no_events) + test(tail_watcher_sees_appender_task_events_within_debounce) + test(watch::host_seam_test::a_rewrite_asks_the_host_to_refresh_the_archive_listings) + test(watch::host_seam_test::a_temp_rename_swap_still_asks_for_a_refresh)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 

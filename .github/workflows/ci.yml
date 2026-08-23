@@ -251,6 +251,12 @@ jobs:
       - name: Check rustdoc links
         run: ./scripts/check/check --check desktop-rust-rustdoc --ci
 
+      # Before the suite, because it says whether the suite is running under the
+      # caps and groups its config claims. A filter that selects nothing drops
+      # its tests back to the global cap and full parallelism, silently.
+      - name: Check nextest filter coverage
+        run: ./scripts/check/check --check nextest-filter-coverage --ci
+
       - name: Run Rust tests
         run: ./scripts/check/check --check desktop-rust-tests --ci
 

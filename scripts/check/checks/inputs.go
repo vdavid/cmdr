@@ -59,6 +59,9 @@ var rustInputs = inputs([]string{
 	"rustfmt.toml",
 	"clippy.toml",
 	"deny.toml",
+	// Per-test caps and test-groups: change one and the test lanes enforce
+	// something different, so a cached pass from before the edit isn't one.
+	".config/nextest.toml",
 	"pnpm-lock.yaml", // bindings-fresh and some Rust tooling resolve node deps
 	// `whats_new` pulls the changelog into the binary with `include_str!`, and a
 	// test parses the real thing, so it's a compile-time source like any `.rs`.

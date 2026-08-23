@@ -104,6 +104,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-cargo-udeps":       "`--workspace` via CargoSelectionArgs",
 	"desktop-rust-module-cycles":     "every first-party library member (`kind = app` with a `src/lib.rs`), one `--lib` graph each; a bin-only tool has no library graph and the vendored fork's module layout isn't ours to ratchet",
 	"desktop-rust-tests":             "`--workspace` via HostCargoLaneArgs",
+	"nextest-filter-coverage":        "`--workspace` via HostCargoLaneArgs, listing rather than running, so it sees exactly the tests `desktop-rust-tests` does",
 	"desktop-rust-integration-tests": "`--workspace` via HostCargoLaneArgs, narrowed by a filter expression",
 	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
 	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate; the regen itself is `--workspace` via `pnpm bindings:regen`",

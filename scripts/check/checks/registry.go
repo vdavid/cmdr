@@ -1443,6 +1443,20 @@ var AllChecks = []CheckDefinition{
 		Run: RunWorkspaceMemberCoverage,
 	},
 	{
+		ID:                "nextest-filter-coverage",
+		Nickname:          "nextest-filters",
+		DisplayName:       "every nextest override still selects a test",
+		App:               AppCrates,
+		Tech:              "🦀 Rust",
+		Exclusive:         ResourceCargoBuildDir,
+		FreestyleIncompat: true,
+		// `cargo nextest list` compiles the test binaries, so it rides the same
+		// `target/` as the test lanes and costs ~1 s once they've warmed it.
+		DependsOn: []string{"desktop-rust-clippy"},
+		Inputs:    rustInputs,
+		Run:       RunNextestFilterCoverage,
+	},
+	{
 		ID:          "index-crate-isolation",
 		Nickname:    "index-isolation",
 		DisplayName: "the app-free crates stay app-free",

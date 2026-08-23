@@ -1165,8 +1165,11 @@ doubles as production code.
   `cmdr-smb` are deliberately uncapped (the first permanently, the second until its extraction finishes): it's shared
   vocabulary whose job is to be named from everywhere. See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what
   each index number means, the crate's own entry in `index-crate-isolation.go` for the archive ones, and why raising
-  either needs David's say-so). The crates' code is also covered by the desktop Rust lanes above, which all run
-  workspace-wide; this scope is for checks about the crate boundary itself.
+  either needs David's say-so), nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects
+  a live test, so a per-test cap or `test-group` can't be silently detached by a module move; it lists the workspace's
+  tests with `cargo nextest list --run-ignored all` and names where a stale atom's leaf went). The crates' code is also
+  covered by the desktop Rust lanes above, which all run workspace-wide; this scope is for checks about the crate
+  boundary itself.
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every component has a tier-3 a11y test, colocated or in a
   directory-level `*.a11y.test.ts` that imports it), ui-primitive-coverage (every top-level `lib/ui/*.svelte` primitive
