@@ -91,6 +91,7 @@
     "crates/cmdr-index/src/media_index/ann/tests.rs": 833,
     "crates/cmdr-index/src/media_index/network/tests.rs": 983,
     "crates/cmdr-index/src/media_index/scheduler/enrich_tests.rs": 1262,
+    "crates/cmdr-sftp/src/transport.rs": 834,
     "crates/cmdr-sftp/src/volume/reconnect_test.rs": 838,
     "scripts/check/checks/desktop-rust-cfg-gate_test.go": 1228,
     "scripts/check/checks/index-crate-isolation.go": 821,

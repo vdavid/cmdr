@@ -102,12 +102,13 @@ async fn a_cancel_during_the_handshake_stops_the_dial_promptly_and_registers_not
 /// engine's `Sftp::new` future, and must not leave the session it builds alive.
 ///
 /// The window is about a millisecond wide against a local server, so a cell can't
-/// reach it by timing: `transport::dial_cancelling_inside_the_hello` runs the
-/// handshake on a live token and hands `hello` an already-cancelled one, which is
-/// the same code path a real cancel takes. What comes back is the task that
-/// finishes the abandoned engine, so awaiting it proves the engine ran to
-/// completion (had it been dropped, its task would have panicked on an `unwrap`)
-/// and that both the engine and the session were then let go.
+/// reach it by timing. `transport::dial_cancelling_inside_the_hello` runs
+/// everything up to the engine's start on a live token and hands `await_hello` an
+/// already-cancelled one, which is the code path a real cancel takes. What comes
+/// back is the task that finishes the abandoned engine, so awaiting it proves the
+/// engine ran to completion (dropped or aborted, its task would have died on the
+/// `tasks.rs` `unwrap` instead) and that both it and the session were then let
+/// go.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn a_cancel_inside_the_hello_window_leaves_no_live_session_and_no_panic() {

@@ -94,7 +94,7 @@ async fn a_cancel_ends_a_phase_before_its_budget_does() {
     });
 
     let started = tokio::time::Instant::now();
-    let outcome = phase(&cancel, std::future::pending::<()>()).await;
+    let outcome = within(&cancel, handshake_deadline(), std::future::pending::<()>()).await;
 
     assert!(matches!(outcome, Err(SftpConnectError::Cancelled)));
     assert!(
@@ -107,7 +107,12 @@ async fn a_cancel_ends_a_phase_before_its_budget_does() {
 /// backstop the token doesn't replace: nobody is watching a reconnect.
 #[tokio::test(start_paused = true)]
 async fn a_phase_nobody_cancels_still_ends_at_its_budget() {
-    let outcome = phase(&CancellationToken::new(), std::future::pending::<()>()).await;
+    let outcome = within(
+        &CancellationToken::new(),
+        handshake_deadline(),
+        std::future::pending::<()>(),
+    )
+    .await;
     assert!(matches!(outcome, Err(SftpConnectError::TimedOut)));
 }
 
@@ -115,7 +120,7 @@ async fn a_phase_nobody_cancels_still_ends_at_its_budget() {
 #[tokio::test]
 async fn a_phase_that_finishes_hands_its_value_back() {
     assert!(matches!(
-        phase(&CancellationToken::new(), std::future::ready(7)).await,
+        within(&CancellationToken::new(), handshake_deadline(), std::future::ready(7)).await,
         Ok(7)
     ));
 }
@@ -138,7 +143,10 @@ async fn a_cancel_that_landed_first_costs_no_packet() {
         std::future::pending::<()>().await
     };
 
-    assert!(matches!(phase(&cancel, work).await, Err(SftpConnectError::Cancelled)));
+    assert!(matches!(
+        within(&cancel, handshake_deadline(), work).await,
+        Err(SftpConnectError::Cancelled)
+    ));
     assert!(!polled.load(Ordering::Relaxed), "the work must never have been polled");
 }
 

@@ -29,13 +29,14 @@
 //! [`dial`] takes a [`CancellationToken`] and honours it in three places, and
 //! the third one is unlike the other two:
 //!
-//! - The key exchange and the auth ladder each run through [`phase`], which
-//!   races the work against the token and DROPS it on a cancel. `russh` unwinds
-//!   a dropped future cleanly, so those two phases stop on the spot.
+//! - The key exchange, the auth ladder, and the two channel requests all run
+//!   through [`within`], which races the work against the token and DROPS it on
+//!   a cancel. `russh` unwinds a dropped future cleanly, so they stop on the
+//!   spot.
 //! - The SFTP hello can't be dropped, per hazard 1. A cancel there ends the
 //!   USER's connect immediately and hands the still-running engine to
 //!   [`finish_detached`], which waits it out on a task of its own and throws
-//!   away both the engine and the session. ❗ Deliberate, ❌ not a leak.
+//!   away both the engine and the session. Deliberate rather than a leak.
 
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -184,7 +185,12 @@ pub async fn dial(
         Opened::Session(session) => session,
     };
 
-    let rung = phase(&cancel, authenticate(&mut session, &params, &host, offered_secret)).await??;
+    let rung = within(
+        &cancel,
+        handshake_deadline(),
+        authenticate(&mut session, &params, &host, offered_secret),
+    )
+    .await??;
 
     match hello(session, &host, &cancel).await? {
         HelloEnded::Arrived(connection) => Ok(DialOutcome::Connected { connection, rung }),
@@ -197,20 +203,30 @@ pub async fn dial(
     }
 }
 
-/// Runs one connect phase under both the handshake budget and the user's cancel.
+/// Runs one step of a connect under a deadline and the user's cancel.
 ///
-/// ❗ Either ending DROPS `work`, which is exactly why the key exchange and the
-/// auth ladder are cancelable at all: `russh` unwinds a dropped future cleanly.
-/// ❌ Never run the SFTP hello through this — dropping THAT future panics the
-/// engine's task (§ hazard 1), which is why [`hello`] has a shape of its own.
-async fn phase<T>(cancel: &CancellationToken, work: impl Future<Output = T>) -> Result<T, SftpConnectError> {
+/// ❗ Either ending DROPS `work`, which is exactly why the key exchange, the auth
+/// ladder, and the two channel requests are cancelable at all: `russh` unwinds a
+/// dropped future cleanly. ❌ Never run `Sftp::new` through this — dropping THAT
+/// future panics the engine's task (§ hazard 1), which is why [`await_hello`]
+/// races only its join handle.
+async fn within<T>(
+    cancel: &CancellationToken,
+    deadline: tokio::time::Instant,
+    work: impl Future<Output = T>,
+) -> Result<T, SftpConnectError> {
     tokio::select! {
         // Biased so an already-cancelled token wins without polling `work` at
-        // all: a cancel that lands before a phase starts must cost no packet.
+        // all: a cancel that lands before a step starts must cost no packet.
         biased;
         () = cancel.cancelled() => Err(SftpConnectError::Cancelled),
-        done = tokio::time::timeout(HANDSHAKE_TIMEOUT, work) => done.map_err(|_elapsed| SftpConnectError::TimedOut),
+        done = tokio::time::timeout_at(deadline, work) => done.map_err(|_elapsed| SftpConnectError::TimedOut),
     }
+}
+
+/// The deadline one handshake phase gets, counted from now.
+fn handshake_deadline() -> tokio::time::Instant {
+    tokio::time::Instant::now() + HANDSHAKE_TIMEOUT
 }
 
 /// What the key exchange came to.
@@ -240,8 +256,9 @@ async fn open_session(
         seen: Arc::clone(&seen),
     };
 
-    match phase(
+    match within(
         cancel,
+        handshake_deadline(),
         client::connect(config, (params.host.as_str(), params.port), handler),
     )
     .await?
@@ -281,33 +298,65 @@ enum HelloEnded {
 /// Opens the channel, asks for the `sftp` subsystem, and waits out the server's
 /// hello.
 ///
-/// ❗ The one phase a cancel can't shorten by dropping a future. `Sftp::new` runs
-/// in a task of its own and only its JOIN HANDLE is ever raced, so a cancel here
-/// ends the user's wait at once and leaves the engine to
+/// ❗ **One deadline covers all three**, rather than a budget each: a server that
+/// stalls picks whichever of them it likes, and three windows here would make the
+/// worst case a user sits through 50 s instead of 30 s.
+///
+/// The first two are ordinary `russh` futures and go under the token like the
+/// handshake phases do. The hello is the one a cancel can't shorten by dropping:
+/// `Sftp::new` runs in a task of its own and only its JOIN HANDLE is ever raced,
+/// so a cancel there ends the user's wait at once and leaves the engine to
 /// [`finish_detached`].
 async fn hello(
     session: client::Handle<TrustHandler>,
     host: &VolumeHost,
     cancel: &CancellationToken,
 ) -> Result<HelloEnded, SftpConnectError> {
-    let channel = session
-        .channel_open_session()
-        .await
+    let deadline = tokio::time::Instant::now() + SUBSYSTEM_TIMEOUT;
+    let starting = start_engine(&session, host, cancel, deadline).await?;
+    await_hello(session, host, cancel, deadline, starting).await
+}
+
+/// The droppable half: open the channel, ask for `sftp`, and put `Sftp::new` on
+/// a task of its own.
+///
+/// Both requests are ordinary `russh` futures, so they go under the token like
+/// the handshake phases do. ❗ Split from [`await_hello`] so a cell can run this
+/// half on a live token and hand the other half a cancelled one — the hello
+/// window is a millisecond wide against a local server and can't be reached by
+/// timing.
+async fn start_engine(
+    session: &client::Handle<TrustHandler>,
+    host: &VolumeHost,
+    cancel: &CancellationToken,
+    deadline: tokio::time::Instant,
+) -> Result<JoinHandle<Result<Sftp, openssh_sftp_client::Error>>, SftpConnectError> {
+    let channel = within(cancel, deadline, session.channel_open_session())
+        .await?
         .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
-    channel
-        .request_subsystem(true, "sftp")
-        .await
+    within(cancel, deadline, channel.request_subsystem(true, "sftp"))
+        .await?
         .map_err(|e| SftpConnectError::Transport(e.to_string()))?;
 
     let (reader, writer) = tokio::io::split(channel.into_stream());
-    let mut starting = host.runtime().spawn(Sftp::new(writer, reader, SftpOptions::new()));
+    Ok(host.runtime().spawn(Sftp::new(writer, reader, SftpOptions::new())))
+}
+
+/// The half a cancel can't shorten by dropping: waiting out the server's hello.
+async fn await_hello(
+    session: client::Handle<TrustHandler>,
+    host: &VolumeHost,
+    cancel: &CancellationToken,
+    deadline: tokio::time::Instant,
+    mut starting: JoinHandle<Result<Sftp, openssh_sftp_client::Error>>,
+) -> Result<HelloEnded, SftpConnectError> {
     let waited = tokio::select! {
         biased;
         () = cancel.cancelled() => None,
         // ❗ `&mut`, so the handle survives a cancel and can be handed on. Timing
         // out drops it, which DETACHES the task rather than aborting it: the
         // `Sftp::new` future stays alive and its `unwrap` keeps a receiver.
-        joined = tokio::time::timeout(SUBSYSTEM_TIMEOUT, &mut starting) => Some(joined),
+        joined = tokio::time::timeout_at(deadline, &mut starting) => Some(joined),
     };
     let Some(joined) = waited else {
         return Ok(HelloEnded::Cancelled(finish_detached(host, session, starting)));
@@ -382,8 +431,8 @@ fn finish_detached(
 ///
 /// ❗ The one phase a cell can't reach by timing: against a local server it is
 /// about a millisecond wide, and it is also the only one where a wrong shape
-/// panics rather than fails. Everything from the cancel on is [`hello`]'s own
-/// code, so a cell driving this drives production.
+/// panics rather than fails. Everything from the cancel on is [`await_hello`]'s
+/// own code, so a cell driving this drives production.
 ///
 /// `cfg(test)` rather than the crate's `testing` feature because this is
 /// `pub(crate)`: nothing outside the crate could call it whatever the gate said.
@@ -398,11 +447,20 @@ pub(crate) async fn dial_cancelling_inside_the_hello(
             "this helper needs a server whose key is already approved".to_string(),
         ));
     };
-    phase(&live, authenticate(&mut session, &params, &host, None)).await??;
+    within(
+        &live,
+        handshake_deadline(),
+        authenticate(&mut session, &params, &host, None),
+    )
+    .await??;
 
+    // Everything up to here on a live token, so the engine really is waiting on
+    // the server's hello when the cancel lands.
+    let deadline = tokio::time::Instant::now() + SUBSYSTEM_TIMEOUT;
+    let starting = start_engine(&session, &host, &live, deadline).await?;
     let cancelled = CancellationToken::new();
     cancelled.cancel();
-    match hello(session, &host, &cancelled).await? {
+    match await_hello(session, &host, &cancelled, deadline, starting).await? {
         HelloEnded::Cancelled(finishing) => Ok(finishing),
         HelloEnded::Arrived(_) => Err(SftpConnectError::Transport(
             "an already-cancelled token still let the hello through".to_string(),
