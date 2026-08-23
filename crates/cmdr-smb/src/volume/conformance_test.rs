@@ -136,3 +136,27 @@ async fn smb_integration_is_writable_honors_the_shared_declaration_contract() {
 
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// The shared export-handshake assertion, against a real SMB server: the bytes
+/// stream back over smb2, and `supports_export()` says so.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_export_honors_the_shared_handshake_contract() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    let file = format!("{base}/exported.txt");
+    let content = b"the bytes a copy would move";
+    smb_vol.create_file(Path::new(&file), content).await.unwrap();
+
+    cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(
+        smb_vol.as_ref(),
+        Path::new(&file),
+        content,
+    )
+    .await;
+
+    ensure_clean(&smb_vol, &base).await;
+}

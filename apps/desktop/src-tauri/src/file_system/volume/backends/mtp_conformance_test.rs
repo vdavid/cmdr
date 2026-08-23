@@ -91,3 +91,42 @@ async fn is_writable_honors_the_shared_declaration_contract() {
 
     teardown(&device_id, &fixture).await;
 }
+
+/// The shared export-handshake assertion, over a real `MtpVolume`: bytes come
+/// back through bounded `GetPartialObject64` windows, and `supports_export()`
+/// says so.
+///
+/// ❗ Seeded through the device's BACKING DIR plus a rescan, not `create_file`:
+/// MTP answers that `NotSupported` (an upload here is `write_from_stream`, one
+/// `SendObject` transaction), which is why this backend's suite has no
+/// `create_file` conformance cell either.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn export_honors_the_shared_handshake_contract() {
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let content = b"the bytes a copy would move";
+    std::fs::write(fixture.root().join("internal/exported.txt"), content).expect("seed the file on the device");
+    crate::mtp::virtual_device::rescan_virtual_device();
+    let (device_id, volume) = connect_primed_volume(&fixture).await;
+
+    cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(
+        &volume,
+        Path::new("/exported.txt"),
+        content,
+    )
+    .await;
+
+    teardown(&device_id, &fixture).await;
+}
+
+/// The shared `NotFound`-payload assertion, over a real `MtpVolume`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn not_found_honors_the_shared_path_payload_contract() {
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let (device_id, volume) = connect_primed_volume(&fixture).await;
+
+    cmdr_fs::volume::conformance::assert_not_found_carries_the_path(&volume, Path::new("/no-such-file.txt")).await;
+
+    teardown(&device_id, &fixture).await;
+}

@@ -348,6 +348,25 @@ pub async fn assert_export_matches_the_bytes_offered(volume: &dyn Volume, path: 
 /// Matching on the payload's TEXT here is not error classification (nothing
 /// branches on it); it's the only way to check what a variant carries, the same
 /// way the rename and create_file assertions check what a refusal left behind.
+///
+/// ⚠️ **Two backends do NOT keep this contract yet, so this assertion is wired
+/// into `InMemoryVolume`, `cmdr-archive`, MTP, and `cmdr-sftp` only.** Both open
+/// gaps leak their layer's own wording where a filename belongs, and both are
+/// bigger than the backend that surfaced them:
+/// - **`LocalPosixVolume`** reports `NotFound("No such file or directory (os
+///   error 2)")`. The cause is shared: `types.rs`'s
+///   `impl From<std::io::Error> for VolumeError` fills all three path-carrying
+///   variants with `err.to_string()`, and a bare `std::io::Error` has no path to
+///   do better with. Its cell exists and is `#[ignore]`d with the details
+///   (`local_posix_test.rs`).
+/// - **`SmbVolume`** reports `NotFound("Protocol error:
+///   STATUS_OBJECT_NAME_NOT_FOUND during Create")`, and `AlreadyExists` beside
+///   it has the same leak. Carried as prose rather than an ignored cell because
+///   the SMB integration lane runs `--run-ignored only`, so an ignored cell
+///   there still runs. `cmdr-smb/DETAILS.md` § "The `NotFound` payload gap".
+///
+/// ❌ Don't relax this assertion to bring either of them in; the assertion is
+/// right, and `cmdr-sftp`'s `map_sftp_error` shows the fix shape.
 pub async fn assert_not_found_carries_the_path(volume: &dyn Volume, missing: &Path) {
     assert!(
         !volume.exists(missing).await,

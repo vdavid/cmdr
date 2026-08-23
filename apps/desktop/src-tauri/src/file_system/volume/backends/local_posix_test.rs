@@ -764,3 +764,45 @@ async fn is_writable_honors_the_shared_declaration_contract() {
 
     cmdr_fs::volume::conformance::assert_writability_matches_the_mutations_offered(&volume, Path::new("scratch")).await;
 }
+
+/// The shared export-handshake assertion: LocalPosix streams its bytes, so it
+/// must say `supports_export()`.
+#[tokio::test]
+async fn export_honors_the_shared_handshake_contract() {
+    let test_dir = TestDir::new("export_handshake_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let content = b"the bytes a copy would move";
+    volume.create_file(Path::new("exported.txt"), content).await.unwrap();
+
+    cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(&volume, Path::new("exported.txt"), content)
+        .await;
+}
+
+/// The shared `NotFound`-payload assertion: the string the frontend renders as
+/// the missing file's name really is its path.
+///
+/// ⚠️ **Ignored because LocalPosix does NOT keep this contract today, and the
+/// cell is here to say so rather than to pass.** It reports
+/// `NotFound("No such file or directory (os error 2)")`, and
+/// `transfer_error.rs::map_volume_error` forwards that into
+/// `SourceNotFound { path }` — so a local file that vanished under a
+/// local↔remote copy names the errno where the frontend renders a filename.
+/// Exactly the leak `cmdr-sftp` was fixed for.
+///
+/// The cause is shared, not local: `cmdr-fs/src/volume/types.rs`'s
+/// `impl From<std::io::Error> for VolumeError` fills all three path-carrying
+/// variants with `err.to_string()`, and a bare `std::io::Error` has no path in
+/// it to do better with. Honoring the contract means either applying the path at
+/// each of `local_posix.rs`'s ~23 `?` sites or retiring the blanket conversion
+/// workspace-wide — a call for David, not a side effect of the SFTP fix.
+///
+/// ❌ Don't relax the assertion to make this green; the assertion is right.
+/// Un-ignore it when the conversion carries a path.
+#[ignore = "known gap: LocalPosix reports NotFound(errno string), not the path — see the doc comment above"]
+#[tokio::test]
+async fn not_found_honors_the_shared_path_payload_contract() {
+    let test_dir = TestDir::new("not_found_payload_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    cmdr_fs::volume::conformance::assert_not_found_carries_the_path(&volume, Path::new("no-such-file.txt")).await;
+}

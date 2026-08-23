@@ -241,6 +241,26 @@ async fn create_directory_all_honors_the_shared_honesty_contract() {
     conformance::assert_create_directory_all_reports_an_existing_dir_honestly(&volume, Path::new("/album")).await;
 }
 
+/// The shared export-handshake assertion, over the double every other suite's
+/// fixtures stand on: it streams bytes, so it must claim export.
+#[tokio::test]
+async fn export_honors_the_shared_handshake_contract() {
+    let volume = InMemoryVolume::new("Test");
+    let content = b"the bytes a copy would move";
+    volume.create_file(Path::new("/exported.txt"), content).await.unwrap();
+
+    conformance::assert_export_matches_the_bytes_offered(&volume, Path::new("/exported.txt"), content).await;
+}
+
+/// The shared `NotFound`-payload assertion. The double is the oracle every other
+/// backend's fixtures are compared against, so it owes the payload too.
+#[tokio::test]
+async fn not_found_honors_the_shared_path_payload_contract() {
+    let volume = InMemoryVolume::new("Test");
+
+    conformance::assert_not_found_carries_the_path(&volume, Path::new("/no-such-file.txt")).await;
+}
+
 #[tokio::test]
 async fn test_delete_nonexistent_returns_error() {
     let volume = InMemoryVolume::new("Test");

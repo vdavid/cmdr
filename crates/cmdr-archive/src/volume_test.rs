@@ -707,3 +707,29 @@ async fn is_writable_honors_the_shared_declaration_contract() {
 
     cmdr_fs::volume::conformance::assert_writability_matches_the_mutations_offered(&volume, Path::new("scratch")).await;
 }
+
+/// The shared export-handshake assertion, from the read-only side: an archive
+/// volume exists to be copied OUT of, so the bytes it streams and the capability
+/// it declares must agree.
+#[tokio::test]
+async fn export_honors_the_shared_handshake_contract() {
+    let archive = TestArchive::from_entries(&[stored("a.txt", "the bytes a copy would move")]);
+    let volume = archive.volume();
+
+    cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(
+        &volume,
+        Path::new("a.txt"),
+        b"the bytes a copy would move",
+    )
+    .await;
+}
+
+/// The shared `NotFound`-payload assertion: a member that isn't in the archive
+/// reports its own name.
+#[tokio::test]
+async fn not_found_honors_the_shared_path_payload_contract() {
+    let archive = TestArchive::from_entries(&[stored("a.txt", "x")]);
+    let volume = archive.volume();
+
+    cmdr_fs::volume::conformance::assert_not_found_carries_the_path(&volume, Path::new("no-such-file.txt")).await;
+}
