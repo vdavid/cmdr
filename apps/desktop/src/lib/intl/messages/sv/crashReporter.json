@@ -3,9 +3,17 @@
   "@crashReporter.dialog.title": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.body": "Cmdr avslutades oväntat förra gången. Här är en kraschrapport med detaljer som kan hjälpa till att åtgärda det.",
-  "@crashReporter.dialog.body": {
+  "crashReporter.dialog.body.ended": "Cmdr avslutades oväntat förra gången. Här är en kraschrapport med detaljer som kan hjälpa till att åtgärda det.",
+  "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.body.keptRunning": "Cmdr stötte på ett problem i bakgrunden förra gången och fortsatte köra. Här är en rapport med detaljer som kan hjälpa till att åtgärda det.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "1ed6290"
+  },
+  "crashReporter.dialog.body.unknown": "Cmdr stötte på ett problem förra gången. Här är en rapport med detaljer som kan hjälpa till att åtgärda det.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "962305e"
   },
   "crashReporter.dialog.privacyNote": "Den innehåller appversionen, macOS-versionen och vilken del av koden som kraschade. Inga filnamn eller personuppgifter.",
   "@crashReporter.dialog.privacyNote": {

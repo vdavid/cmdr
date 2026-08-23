@@ -3,9 +3,17 @@
   "@crashReporter.dialog.title": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.body": "Cmdr s''est fermé de façon inattendue la dernière fois. Voici un rapport d''incident avec des détails qui peuvent aider à corriger ça.",
-  "@crashReporter.dialog.body": {
+  "crashReporter.dialog.body.ended": "Cmdr s''est fermé de façon inattendue la dernière fois. Voici un rapport d''incident avec des détails qui peuvent aider à corriger ça.",
+  "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.body.keptRunning": "La dernière fois, Cmdr a rencontré un problème en arrière-plan et est resté ouvert. Voici un rapport avec des détails qui peuvent aider à corriger ça.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "1ed6290"
+  },
+  "crashReporter.dialog.body.unknown": "Cmdr a rencontré un problème la dernière fois. Voici un rapport avec des détails qui peuvent aider à corriger ça.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "962305e"
   },
   "crashReporter.dialog.privacyNote": "Il contient la version de l''app, la version de macOS et la partie du code concernée. Aucun nom de fichier ni donnée personnelle.",
   "@crashReporter.dialog.privacyNote": {

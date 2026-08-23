@@ -190,6 +190,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   textstorlek". A name ending in a consonant takes the plain `-s`: "Cmdrs direktanslutning". Never write `macOS'`.
 - **Multipliers use `gånger`, not `x`.** English's "4x slower" becomes "fyra gånger långsammare"; the spell-out rule
   (one through nine as words, 10+ as digits) applies inside the multiplier, so "fyra gånger" but "100 gånger".
+- **Syskonvarianter av samma mening delar ram.** När engelskan delar en nyckel i flera varianter som fyller samma plats
+  i samma dialog (`crashReporter.dialog.body.ended`/`.keptRunning`/`.unknown`), ska den delade delen vara identisk
+  tecken för tecken och subjektet vara detsamma i alla varianter. Det får väga tyngre än en enskild belagd formulering:
+  en variant som byter konstruktion läses som en annan mening, inte som samma mening med ett annat innehåll. Skriv om
+  alla varianter samtidigt eller ingen. Belägg och det avvisade alternativet: `glossary.md` § Kraschdialogens tre
+  varianter.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

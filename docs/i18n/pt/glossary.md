@@ -1260,3 +1260,36 @@ Mesma superfície das 31 recusas acima (linha única sob o campo de nome ou num 
 - Varredura pt-PT (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o nome),
   mais U+2019, apóstrofo duplo e espaço duplo: zero ocorrências nos dois valores. Nenhum `sameAsSourceJustification`
   necessário.
+
+### Diálogo de falha: as três aberturas (`crashReporter.dialog.body.ended`/`keptRunning`/`unknown`)
+
+O diálogo do próximo lançamento agora escolhe uma de três frases conforme o que o relatório registrou. As três abrem
+com **O Cmdr** e carregam **da última vez**, e só a segunda oração muda; isso é o paralelismo que faz a diferença entre
+elas ficar visível.
+
+- "Cmdr ran into a problem" · **O Cmdr teve um problema** · o substantivo **problema** é o termo já fixado (linha
+  "error report" → "relatório de problema"; guia de estilo pt-BR da Microsoft prescreve "Houve um problema." para uma
+  abertura desse tipo, e o Finder pt-BR usa "houve um problema com a unidade de disco", `LocalizableMerged.json`
+  `PE37`) · high. O verbo **ter** entra porque aqui o Cmdr é o sujeito (as fontes usam a forma impessoal "houve"), e
+  `ter um problema` é a regência natural do pt-BR nessa posição. ❌ Não usar **falha** nesta frase: `falha` é a palavra
+  do crash (linha "crash report"), e estas duas chaves existem justamente porque nada travou. A colocação exata não tem
+  atestação no pile (`teve/ocorreu/encontrou um problema`: zero ocorrências).
+- "and kept running" · **e continuou funcionando** · high. Diz que o app seguiu utilizável, sem afirmar que ele parou,
+  fechou ou encerrou. ❌ Não **continuou em execução**: `em execução` existe no pile (Dolphin pt-BR "ainda está em
+  execução", Double Commander pt-BR "TC ainda está em execução"), mas é o registro técnico de aviso, e o `crashReporter`
+  é tranquilizador. ❌ Não **continuou rodando**: colidiria com "rodando em segundo plano" do catálogo
+  (`transferProgress.backgroundedToast`) e faria parecer que o app seguiu *em segundo plano*. ❌ Não **travou** nem
+  **parou** (linha do aviso de transferência parada): ambos leem como falha.
+- "in the background" (a tarefa que teve o problema) · **em segundo plano** · a linha "background / send to background"
+  do glossário, mais terminologia da Microsoft pt-BR (`background` adjetivo → "em segundo plano"; `background task` →
+  "tarefa em segundo plano") e Total Commander pt-BR (`1237` "operações ativas em segundo plano") · confirmed.
+- "Here''s a report with details that can help fix this" · **Aqui está um relatório com detalhes que ajudam a corrigir
+  isso** · é a segunda frase já publicada em `crashReporter.dialog.body.ended`, menos o **de falha** · confirmed. O
+  inglês também trocou "a crash report" por "a report" nas duas chaves novas: nada falhou, então o relatório perde o
+  qualificador. `relatório` sozinho continua correto (terminologia da Microsoft: "Relatório de Erros do Windows").
+- **A chave `unknown` não pode dizer nem uma coisa nem outra**: ela sai para relatórios escritos por versões antigas do
+  Cmdr, que não registravam se o app seguiu rodando. Por isso ela fica só com "O Cmdr teve um problema da última vez." —
+  sem `encerrou`, sem `continuou`, verdadeira nos dois casos.
+- Marcadores brasileiros do lote: o gerúndio **funcionando** (nunca "a funcionar"). Varredura pt-PT (ficheiro, `estar a`
+  + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o nome, você omitido): zero ocorrências. Nenhum
+  valor precisa de `sameAsSourceJustification`.

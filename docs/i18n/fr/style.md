@@ -161,10 +161,21 @@ names Cmdr opens into (System Settings panes, "Corbeille") should match a French
 
 Existing crash-reporter term choices (keep consistent across the catalog):
 
-- crash report → rapport d'incident · "incident" is the standard, non-alarmist French term (matches Apple's "rapport
-  d'incident"); avoid "rapport de plantage" which is more colloquial
-- crashed / quit unexpectedly → s'est fermé(e) de façon inattendue · matches macOS French phrasing for an unexpected
-  quit
+- crash report → rapport d'incident · "incident" is Microsoft FRA's settled non-alarmist noun for a crash (`crash` →
+  "incident", `crash recovery` → "récupération sur incident", `crash telemetry` → "télémétrie des incidents"); avoid
+  "rapport de plantage", which is more colloquial and which the pile only attests as a glossary gloss (`crash group` →
+  "groupe de plantages"). Apple is NOT a source here: French macOS leaves "Crash Reporter" in English
+  (`fr/macOS/AppKit/NSExceptionAlert.json`) and has no "rapport d'incident" anywhere (verified against the reference
+  pile, 2026-08-23).
+- crashed / quit unexpectedly → s'est fermé de façon inattendue · the shipped value in
+  `crashReporter.dialog.body.ended`. It deliberately does NOT follow macOS, which writes "a quitté inopinément"
+  (`fr/macOS/AppKit/AppKitErrors.json`: "The last time you opened %@, it unexpectedly quit…" → "Lors de sa précédente
+  ouverture, %@ a quitté inopinément…", verified 2026-08-23). Keep the catalog's calmer paraphrase; don't re-source it
+  to Apple, and don't write the gendered "fermé(e)" (the subject is Cmdr, masculine).
+- kept running (the APP carried on after a background problem) → est resté ouvert · never "a continué de fonctionner";
+  see `glossary.md` § Le rapport quand Cmdr n'a PAS quitté
+- report, with no "crash" (the non-crash variants of the dialog body) → rapport, plain · the sibling `.ended` value
+  minus "d'incident", the one word that carries "crash"
 - Report ID → identifiant du rapport
 - Updates → Mises à jour · in-app navigation section
 - Send → Envoyer

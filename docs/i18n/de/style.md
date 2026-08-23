@@ -190,6 +190,9 @@ Dateien".
   `langsamer … als` together, so move the aside to the end of the sentence.
 - **`button` on screen is „die Taste“**, not MS-terminology's „Schaltfläche“ (Windows convention); macOS de and the
   existing catalog both say „Klicke unten auf die Taste …“. Terms: `glossary.md`.
+- **„auf ein Problem stoßen“, nicht „es ist ein Problem aufgetreten“.** Der Microsoft-Styleguide führt die
+  `aufgetreten`-Form als Negativbeispiel; die `stoßen`-Form hält Cmdr im Nominativ und passt zur Stilregel „kein
+  ‚Fehler‘“. Belege: `glossary.md` § Absturzdialog.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

@@ -137,6 +137,11 @@ Two mechanics that bite in Portuguese specifically:
 - Decimal/thousands: both use comma decimal, period (pt-PT) or period/space thousands. `Intl` handles this; don't
   hardcode.
 - See the template's ICU mechanics note (double apostrophes, keep `{placeholder}`/`<tag>` verbatim).
+- **O diálogo de falha tem três aberturas, e duas delas não podem falar em falha.**
+  `crashReporter.dialog.body.ended` fala do app que encerrou; `keptRunning` e `unknown` descrevem um problema que o
+  Cmdr atravessou (ou pode ter atravessado), então nelas não entram `falha`, `encerrou`, `fechou`, `parou` nem
+  `travou`, e o relatório fica **relatório** sem o `de falha`. Evidência e os termos recusados: `glossary.md` § Diálogo
+  de falha.
 
 ## Decisions to confirm with David
 

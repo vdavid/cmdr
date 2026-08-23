@@ -3,9 +3,17 @@
   "@crashReporter.dialog.title": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.body": "Cmdr 上次意外退出了。这是一份崩溃报告，里面的详情有助于修复这个问题。",
-  "@crashReporter.dialog.body": {
+  "crashReporter.dialog.body.ended": "Cmdr 上次意外退出了。这是一份崩溃报告，里面的详情有助于修复这个问题。",
+  "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.body.keptRunning": "Cmdr 上次在后台出现了问题，之后一直在运行。这是一份报告，里面的详情有助于修复这个问题。",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "1ed6290"
+  },
+  "crashReporter.dialog.body.unknown": "Cmdr 上次出现了问题。这是一份报告，里面的详情有助于修复这个问题。",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "962305e"
   },
   "crashReporter.dialog.privacyNote": "它包含应用版本、macOS 版本，以及代码中崩溃的部分。不含文件名或个人数据。",
   "@crashReporter.dialog.privacyNote": {

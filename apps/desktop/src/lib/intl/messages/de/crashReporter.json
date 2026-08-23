@@ -3,9 +3,17 @@
   "@crashReporter.dialog.title": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.body": "Cmdr wurde beim letzten Mal unerwartet beendet. Hier ist ein Absturzbericht mit Details, die bei der Behebung helfen können.",
-  "@crashReporter.dialog.body": {
+  "crashReporter.dialog.body.ended": "Cmdr wurde beim letzten Mal unerwartet beendet. Hier ist ein Absturzbericht mit Details, die bei der Behebung helfen können.",
+  "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.body.keptRunning": "Cmdr ist beim letzten Mal im Hintergrund auf ein Problem gestoßen und weitergelaufen. Hier ist ein Bericht mit Details, die bei der Behebung helfen können.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "1ed6290"
+  },
+  "crashReporter.dialog.body.unknown": "Cmdr ist beim letzten Mal auf ein Problem gestoßen. Hier ist ein Bericht mit Details, die bei der Behebung helfen können.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "962305e"
   },
   "crashReporter.dialog.privacyNote": "Er enthält die App-Version, die macOS-Version und welcher Teil des Codes abgestürzt ist. Keine Dateinamen, keine persönlichen Daten.",
   "@crashReporter.dialog.privacyNote": {

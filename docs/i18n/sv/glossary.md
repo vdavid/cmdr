@@ -1395,3 +1395,41 @@ Två nycklar till i `errors.mutation.*`-familjen (RAW, ingen ICU), samma enradsy
   är avsiktligt kort eftersom den tekniska orsaken visas separat, så svenskan lägger inte till något skäl. ❌ Inte det
   opersonliga `Det gick inte att flytta till papperskorgen` som `errors.write.*`-rubrikerna använder: här namnger
   engelskan `macOS` som den som sa nej.
+
+## Kraschdialogens tre varianter: kraschade, fortsatte, eller vet inte (`crashReporter.dialog.body.keptRunning`/`.unknown`)
+
+Engelskan delade upp den gamla `body`-nyckeln i tre: `.ended` (appen gick ner), `.keptRunning` (problemet träffade en
+bakgrundstråd, appen fortsatte och användaren avslutade själv) och `.unknown` (rapport från en äldre version som inte
+noterade vilket det var). `.ended` är oförändrad. De två nya får ALDRIG påstå att Cmdr kraschade, avslutades eller
+stannade, och de säger `en rapport`, inte `en kraschrapport`: inget kraschade.
+
+- **"ran into a problem" → `stötte på ett problem`** · standardkollokation i svenskan (`stöta på problem`), inget
+  belägg i piles men det är för att varje pile-formulering är opersonlig: macOS AppKit skriver
+  `Det inträffade ett problem med att hämta …` (`sv/macOS/AppKit/AppKitErrors.json` rad 95–98), Finder
+  `ett problem inträffade med skivenheten` (`LocalizableMerged.json` `PE37`), Nautilus
+  `Ett problem uppstod när detta program kördes` (`nautilus.po` rad 846). Ingen av dem kan ta `Cmdr` som subjekt, och
+  alla tre systersträngarna gör det på engelska (`.ended` gör det redan på svenska: "Cmdr avslutades oväntat …"), så
+  parallelliteten mellan varianterna avgör. `high`. ❌ Inte `råkade ut för`: bär en olycksnyans engelskans neutrala
+  "ran into" inte har. ❌ Inte `Det inträffade ett problem i Cmdr …`: korrekt Apple-svenska, men bryter subjektet mot
+  systernycklarna och blir dubbelt tungt i `.keptRunning` ("i bakgrunden i Cmdr").
+- **"kept running" (appen, inte en åtgärd) → `fortsatte köra`** · macOS egen undantagsdialog har exakt verbparet:
+  `sv/macOS/AppKit/NSExceptionAlert.json` `69.title` "Klicka på ”Fortsätt” om du vill fortsätta köra appen i ett
+  instabilt läge" (verifierat i piles `sv/macOS/`, 2026-08-23), och Dolphin belägger intransitivt `kör` om ett program:
+  "Programmet '%1' kör fortfarande i terminalpanelen" (`dolphin.po` rad 299). `high`. ❌ Inte `höll igång`: katalogens
+  `hålla igång` är transitivt och är redan bokat för köns "Håll igång den här i bakgrunden", så det skulle läsas som att
+  användaren gjorde något. ❌ Inte `fortsatte fungera`: `fungera` handlar om att en funktion fortsätter verka
+  (glossarets "keep working" → `fortsätter fungera`), inte om att processen levde vidare, vilket är hela poängen här.
+- **"in the background" → `i bakgrunden`** · den etablerade posten (Total Commander `WCMD.LNG.utf8` `1237=`
+  "…pågående aktivitet(er) i bakgrunden!", `4004="I &bakgrunden"`). Ordföljden i slutfältet är plats före tid på
+  svenska, alltså `i bakgrunden förra gången`, samma ordning som engelskan · `high`.
+- **"a report" (utan `krasch`) → `en rapport`** · Microsoft `SWEDISH.tbx` (`report` → `rapport`, neutrum). Andra
+  meningen är `.ended`:s andra mening med `krasch`-ledet borttaget, tecken för tecken, så de tre varianterna delar
+  exakt samma avslutning · `high`.
+- **`förra gången` behålls, trots att Apple säger `När du senast …`** · macOS renderar "The last time you opened %@, it
+  unexpectedly quit …" som "När du senast öppnade %@ avslutades det oväntat …"
+  (`sv/macOS/AppKit/AppKitErrors.json` rad 91), och `förra gången` har noll träffar i hela piles. Men `.ended` säger
+  redan `förra gången` och de tre nycklarna fyller samma plats i samma dialog: en variant som byter till en
+  bisatskonstruktion skulle läsa som en annan mening. Enhetligheten vinner. Om `.ended` någon gång skrivs om är
+  `När Cmdr senast kördes …` det belagda alternativet för alla tre samtidigt · `high` för valet, `tentative` för
+  formuleringen i sig.
+- Inget `sameAsSourceJustification` behövs: båda värdena skiljer sig från engelskan.

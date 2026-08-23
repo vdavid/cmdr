@@ -1289,3 +1289,28 @@ Einschub, steht deshalb überall in der eigenen deutschen Anführung „…“ u
   Standarddeutsch und trägt denselben trockenen Ton wie das Englische. Bewusst kurz: der technische Grund steht separat
   unter „Technische Details“. ❌ Nicht `Die Datei ließ sich nicht …` (so lautet schon
   `errors.write.ioError.message.trash`, und macOS als Absender geht dabei verloren).
+
+## Absturzdialog: die drei Eröffnungssätze (`crashReporter.dialog.body.ended`/`.keptRunning`/`.unknown`)
+
+Der Dialog beim nächsten Start wählt einen von drei Sätzen, je nachdem, was der Bericht festgehalten hat. `.ended`
+bleibt unverändert; die beiden anderen dürfen NICHT behaupten, Cmdr sei abgestürzt oder beendet worden, denn genau das
+ist nicht passiert.
+
+- **"ran into a problem" → `ist auf ein Problem gestoßen`** · Microsoft-Styleguide de gibt „We've hit a snag.“ als „Wir
+  sind leider auf ein Problem gestoßen.“ wieder · high. Cmdr bleibt Subjekt im Nominativ (keine Genitivfalle beim
+  Markennamen), und „Fehler“ bleibt draußen (Stilregel). ❌ Nicht „Bei Cmdr ist ein Problem aufgetreten“: derselbe
+  Styleguide führt „ist ein Problem aufgetreten“ ausdrücklich als Negativbeispiel; macOS Finder benutzt die Form zwar
+  („da ein Problem mit dem Laufwerk aufgetreten ist“, `PE37`), sie macht Cmdr aber zum Objekt eines Nebensatzes und
+  klingt nach Amtsdeutsch.
+- **"and kept running" → `und weitergelaufen`** · das Weiterlauf-Wortfeld des Katalogs (`Läuft weiter im Hintergrund`,
+  `Im Hintergrund weiterlaufen lassen`) · high. Perfekt mit geteiltem Hilfsverb `ist`; beide Verben nehmen `sein`. In
+  der Referenzsammlung gibt es KEINEN Beleg für „kept running“ (kein `weiterlaufen`, `läuft weiter`, `fortgesetzt` in
+  allen acht Quellen, geprüft 2026-08-23), deshalb entscheidet die Katalogkonsistenz.
+- **"a report" (nicht „a crash report“) → `ein Bericht`** · der zweite Satz ist wortgleich mit `.ended`, nur ohne
+  `Absturz-`: „Hier ist ein Bericht mit Details, die bei der Behebung helfen können.“ · high. Dieses eine fehlende
+  Wortglied trägt die ganze Aussage „nichts ist abgestürzt“.
+- **`.unknown` sagt weder das eine noch das andere**: „Cmdr ist beim letzten Mal auf ein Problem gestoßen.“ Kein `im
+  Hintergrund`, kein `weitergelaufen`, kein `beendet` — der Satz stimmt, egal ob Cmdr danach lief oder nicht.
+- Beide neuen Werte enthalten keine Apostrophe; die ICU-Doppelapostroph-Regel greift hier nicht.
+- Zu prüfen beim Overflow-Check: das deutsche `.keptRunning` läuft auf rund 160 Zeichen gegenüber rund 140 im
+  Englischen, in einem Dialogtext, der schon Datenschutzhinweis und Berichts-ID trägt.

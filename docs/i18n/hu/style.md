@@ -163,6 +163,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   `Hagyd futni a háttérben`, `Sorba` ⊂ `Áthelyezés a műveleti sorba`. A capital mid-sentence isn't Hungarian, so
   containment here is always case-insensitive.
 - **Length** runs near English; still overflow-check against the pseudolocale (`en-XA`).
+- **A magyarázó prózában a nem végzetes probléma szava `probléma`**, nem `hiba` (a hiba-regisztert a hang kerüli) és nem
+  `gond` (arra a `hu` pile nulla találatot ad). Forrás és teljes érvelés: `glossary.md` § Ha a Cmdr nem állt le.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

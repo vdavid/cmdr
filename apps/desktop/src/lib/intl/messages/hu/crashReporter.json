@@ -3,9 +3,17 @@
   "@crashReporter.dialog.title": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.body": "A Cmdr legutóbb váratlanul bezárult. Itt egy összeomlási jelentés a részletekkel, ami segíthet ezt kijavítani.",
-  "@crashReporter.dialog.body": {
+  "crashReporter.dialog.body.ended": "A Cmdr legutóbb váratlanul bezárult. Itt egy összeomlási jelentés a részletekkel, ami segíthet ezt kijavítani.",
+  "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.body.keptRunning": "A Cmdr legutóbb a háttérben problémába ütközött, és tovább futott. Itt egy jelentés a részletekkel, ami segíthet ezt kijavítani.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "1ed6290"
+  },
+  "crashReporter.dialog.body.unknown": "A Cmdr legutóbb problémába ütközött. Itt egy jelentés a részletekkel, ami segíthet ezt kijavítani.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "962305e"
   },
   "crashReporter.dialog.privacyNote": "Tartalmazza az app verzióját, a macOS verzióját, és hogy a kód melyik része omlott össze. Fájlnevek és személyes adatok nélkül.",
   "@crashReporter.dialog.privacyNote": {

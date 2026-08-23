@@ -1422,3 +1422,40 @@ luật giọng (không `lỗi`/`thất bại`). Dùng lại từ đã chốt: �
   chối"), và catalog đã chốt `Từ chối` cho deny/reject ở đợt phê duyệt theo dòng. `mục này` = "this item" giống
   `errors.mutation.fileLocked` ("Mục này đang bị khóa."). Chuỗi cố ý ngắn vì lý do kỹ thuật hiện riêng dưới "Chi tiết kỹ
   thuật", nên đừng thêm gợi ý khắc phục · high
+
+## Ba biến thể phần thân của hộp thoại báo cáo sự cố (`crashReporter.dialog.body.*`, 2026-08-23)
+
+Hộp thoại lần khởi động kế tiếp giờ chọn một trong ba câu tùy theo những gì báo cáo ghi lại. `.ended` (Cmdr thoát đột
+ngột) giữ nguyên bản dịch cũ; hai khóa mới phải nói ĐÚNG sự thật:
+
+- `.keptRunning`: sự cố xảy ra ở một tác vụ nền và Cmdr **vẫn chạy tiếp**, người dùng tự thoát. Tuyệt đối không được
+  nói ứng dụng thoát, đóng, hay dừng.
+- `.unknown`: báo cáo do phiên bản Cmdr cũ ghi, không biết ứng dụng có chạy tiếp hay không, nên câu phải đúng cho cả hai
+  trường hợp: không nói thoát, cũng không nói chạy tiếp.
+
+Từ và cách nói đã chốt cho nhóm này:
+
+- **"ran into a problem" → `gặp sự cố`** · macOS Finder (`Nếu bạn tiếp tục gặp sự cố, hãy gặp quản trị viên hệ thống của
+  bạn.`) và AppKit (`Đã có sự cố khi truy xuất thông tin dịch vụ từ ứng dụng.` = "There was a problem retrieving…"),
+  kiểm chứng trong `_ignored/i18n/vi/macOS/`, 2026-08-23 · high. Đây là bằng chứng quan trọng: `gặp sự cố` là "gặp vấn
+  đề", KHÔNG hàm ý ứng dụng đã thoát, nên dùng được cho cả `.keptRunning` lẫn `.unknown`. Từ mang nghĩa "thoát" trong
+  catalog là `thoát đột ngột` (chỉ dành riêng cho `.ended`).
+- **"kept running" → `vẫn tiếp tục chạy`** · macOS AppKit `NSExceptionAlert` (`Chọn "Tiếp tục" để tiếp tục chạy trong
+  trạng thái không nhất quán.`), đúng ngay ngữ cảnh hộp thoại sự cố · high. Nối bằng `nhưng vẫn` chứ không phải `và
+  vẫn`: `nhưng vẫn` là kết hợp tự nhiên trong tiếng Việt và giữ nguyên nghĩa của "and kept running".
+- **"in the background" → `ở chế độ nền`** · thuật ngữ Microsoft (`background` tính từ, định nghĩa "operating without
+  interaction with the user while the user is working on another task" → `nền`; `background task` → `tác vụ nền`),
+  `VIETNAMESE.tbx`, kiểm chứng 2026-08-23 · high. Pile KHÔNG có chuỗi `chế độ nền` nào, nhưng catalog Cmdr đã dùng
+  `chạy ở chế độ nền` cho "run in the background", nên giữ cho nhất quán.
+- **"Here''s a report…" (KHÔNG phải "a crash report") → `Đây là báo cáo kèm chi tiết có thể giúp khắc phục việc này.`** ·
+  đúng câu thứ hai của `.ended` sau khi bỏ chữ mang nghĩa "crash" (`báo cáo sự cố` → `báo cáo`) · high. Cả ba biến thể
+  dùng chung câu này để hộp thoại chỉ khác nhau ở câu đầu.
+- **Ghi chú của Apple để tham khảo về sau**: macOS AppKit dịch "unexpectedly quit" là `thoát bất ngờ` và "The last time
+  you opened %@" là `Lần cuối cùng bạn mở %@` (`AppKitErrors.json`, 2026-08-23). Catalog Cmdr đang dùng `thoát đột ngột`
+  và `Lần trước`; giữ nguyên cho nhất quán, ghi lại đây phòng khi có đợt chuyển sang từ của Apple.
+
+Giá trị đã chốt:
+
+- `.keptRunning` → `Lần trước Cmdr đã gặp sự cố ở chế độ nền nhưng vẫn tiếp tục chạy. Đây là báo cáo kèm chi tiết có thể
+  giúp khắc phục việc này.`
+- `.unknown` → `Lần trước Cmdr đã gặp sự cố. Đây là báo cáo kèm chi tiết có thể giúp khắc phục việc này.`

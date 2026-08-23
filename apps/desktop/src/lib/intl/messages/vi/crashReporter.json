@@ -3,9 +3,17 @@
   "@crashReporter.dialog.title": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.body": "Lần trước Cmdr đã thoát đột ngột. Đây là báo cáo sự cố kèm chi tiết có thể giúp khắc phục việc này.",
-  "@crashReporter.dialog.body": {
+  "crashReporter.dialog.body.ended": "Lần trước Cmdr đã thoát đột ngột. Đây là báo cáo sự cố kèm chi tiết có thể giúp khắc phục việc này.",
+  "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.body.keptRunning": "Lần trước Cmdr đã gặp sự cố ở chế độ nền nhưng vẫn tiếp tục chạy. Đây là báo cáo kèm chi tiết có thể giúp khắc phục việc này.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "1ed6290"
+  },
+  "crashReporter.dialog.body.unknown": "Lần trước Cmdr đã gặp sự cố. Đây là báo cáo kèm chi tiết có thể giúp khắc phục việc này.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "962305e"
   },
   "crashReporter.dialog.privacyNote": "Báo cáo gồm phiên bản ứng dụng, phiên bản macOS, và phần mã nào đã gặp sự cố. Không có tên tệp hay dữ liệu cá nhân.",
   "@crashReporter.dialog.privacyNote": {

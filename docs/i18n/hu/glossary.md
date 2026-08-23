@@ -56,6 +56,8 @@ Settled while translating `errors.json` (second pass, 2026-06-21):
   way to render "couldn't/failed" without a bare "hiba"/"sikertelen" label (e.g. "Nem sikerült beolvasni ezt a mappát").
 - problem / glitch (soft "error" in explanations): `gond` · descriptive, extends the prior `error → Probléma` voice rule
   · tentative. Keeps error copy calm; "temporary glitch" → "átmeneti hiccup" (loanword kept, as it reads casual-native).
+  **SUPERSEDED for the plain "problem" sense as of 2026-08-23: use `probléma`.** `gond` has ZERO attestation anywhere in
+  the `hu` reference pile; the evidence and the full argument are in § Ha a Cmdr nem állt le.
 - retry (full-sentence imperative): `próbáld újra` / `lépj ide újra` (informal `te`, per Formality) · high. The short
   button stays `Újra` (prior pass); this is the in-sentence verb form, not the button label.
 - permission (access right): `engedély` · mac, ms · high. The FDA/privacy GRANT sense uses `jogosultság`
@@ -1635,3 +1637,51 @@ Két további kulcs ugyanebbe a családba (Kukába helyezés elutasításai):
   · high. Szándékosan rövid: a technikai ok külön, a „Technikai részletek” alatt jelenik meg. Az `A macOS` névelője a
   kiejtés szerinti („makOS”), ahogy a katalógus máshol is (`errors.mutation.sipProtected`).
 - Ennél a két kulcsnál sem kell `sameAsSourceJustification`: mindkét érték eltér az angoltól.
+
+## Ha a Cmdr nem állt le: az összeomlásjelentő két új nyitómondata (`…keptRunning` / `.unknown`, 2026-08-23)
+
+Az összeomlásjelentő párbeszéd nyitómondata már nem egyetlen fix mondat: a jelentés maga rögzíti, hogy a Cmdr leállt-e.
+A `.ended` (`váratlanul bezárult`) változatlan; ez a két új kulcs viszont olyan esetet ír le, amelyben a Cmdr NEM állt
+le, tehát egyikük sem állíthatja, hogy leállt.
+
+- **„ran into a problem” → `problémába ütközött`** · a `-ba/-be ütközik` szerkezet macOS Finder, Tier 1:
+  `A(z) „^0” hibába ütközött.` (`LocalizableMerged`, `NE105`). A főnév `probléma`, mert az Apple
+  összeomlás-párbeszédének egész családja ezt használja (`CrashReporterSupport.framework/hu.lproj`:
+  `A számítógépe újraindult egy probléma miatt.`, `Grafikai problémát észlelt a rendszer.`,
+  `jelentést küldhet a problémáról`; ellenőrizve macOS 26.5.2 alatt, 2026-08-23), a Microsoft-terminológia is
+  `probléma`, és a katalógus hangneme kerüli a puszta `hiba` szót (`error → Probléma`) · high.
+  - ❌ NEM `gondba ütközött`: a `gond`/`gondba` szóra a teljes `hu` pile NULLA találatot ad (macOS, Microsoft, Nautilus,
+    Thunar, Dolphin, Total Commander, Double Commander). A fenti `problem / glitch → gond · tentative` sor ezzel megdől.
+  - ❌ NEM az Apple `egy probléma miatt` szerkezete: az mindig leállást jelentő főigét kíván (`újraindult`,
+    `nem nyitható meg`), tehát pont azt állítaná, amit ennek a két kulcsnak tagadnia kell.
+  - ❌ NEM `Probléma történt a Cmdrben`: a pile-ban a `történt` szinte kizárólag a `Hiba történt …` fordulatban él, és a
+    párbeszéd hangja kerüli a hiba-regisztert.
+- **„and kept running” → `és tovább futott`** · a katalógus saját, szállított alakja ugyanerre a fogalomra:
+  `transferProgress.stallUnknown` „Still running in the background” = `Tovább fut a háttérben`, mellette
+  `Hagyd futni a háttérben`. A pile-ban erre a jelentésre NINCS közvetlen találat (`tovább fut`, `továbbra is fut`,
+  `fut tovább` mind nulla); a legközelebbi az AppKit `NSExceptionAlert`
+  („…ha szeretné folytatni a futtatást az inkonzisztens állapot ellenére”), ami ugyanez a fogalom, de felhasználói
+  döntésként. Az ige `fut` alakját a Double Commander is hozza (`Ha az alkalmazás a háttérben fut`) · high a szókincsre,
+  `tentative` a múlt idejű `futott` alakra: arra sem a pile-ban, sem a katalógusban nincs fedezet.
+- **„in the background” → `a háttérben`** · a szótár szava (`background → háttér`); a futás értelmében a kétpaneles pár
+  és a Microsoft a forrás (Total Commander `Letöltés a háttérben`, Double Commander `Ha az alkalmazás a háttérben fut`,
+  ms `háttérben futó feladat`). A macOS `hu` a szót KIZÁRÓLAG látvány értelemben ismeri (`Háttérkép`, `háttérszín`),
+  tehát itt nincs Tier-1 döntőbíró, nem pedig hiányzik (2. bányászati csapda) · high.
+- **Szórend: `A Cmdr legutóbb a háttérben problémába ütközött`** · a `.ended` testvér mintája
+  (`A Cmdr legutóbb váratlanul bezárult`): `A Cmdr` + `legutóbb` + a módosító + az ige. A fókuszpozícióba (közvetlenül
+  az ige elé) a `problémába` kerül, a `a háttérben` a topikmezőbe: ez a semleges magyar olvasat · high.
+- **A második mondat szó szerint a `.ended`-é, az `összeomlási` jelző nélkül:
+  `Itt egy jelentés a részletekkel, ami segíthet ezt kijavítani.`** · az angol is „a report”-ot mond „a crash report”
+  helyett, mert semmi nem omlott össze. A diagnosztikai `jelentés` Tier 1 (`CrashReporterSupport`: `Jelentés…` gomb,
+  `küldjön jelentést az Apple számára`) és Microsoft (`report` = `jelentés`) · high.
+- **A két kulcson tiltott szavak** (a pile szerint ezek viszik a „leállt” jelentést): `váratlanul kilépett` (Apple
+  összeomlás-párbeszéd), `váratlanul bezárult` (AppKit, és a `.ended` sajátja), `összeomlott` / `összeomlás` (ms, AppKit
+  `Összeomlás` gomb). A puszta `leáll` és `kilép` a pile-ban végig szándékos megállítást jelöl, de ezek a kulcsok
+  egyiket sem használják.
+- **A `.unknown` a hátteret sem nevezi meg**: régi Cmdr-verzió jelentése áll mögötte, amely nem rögzítette, hogy az app
+  tovább futott-e, ezért a mondatnak mindkét kimenetelre igaznak kell lennie.
+- `sameAsSourceJustification` egyik kulcsnál sem kell: mindkét érték eltér az angoltól.
+- ⚠️ Angol oldali ellentmondás, NEM itt javítható: a párbeszéd címe mindhárom törzsváltozat alatt ugyanaz
+  (`crashReporter.dialog.title` = „Send crash report?” = `Elküldöd az összeomlási jelentést?`), tehát a `keptRunning`
+  ágon a cím összeomlást állít, miközben a törzs éppen ezt tagadja. A magyar hűen követi az angolt; a feloldás az `en`
+  kulcs dolga.

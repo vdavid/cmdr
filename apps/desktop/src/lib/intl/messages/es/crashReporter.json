@@ -3,9 +3,17 @@
   "@crashReporter.dialog.title": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.body": "Cmdr se cerró inesperadamente la última vez. Aquí tienes un informe de fallos con detalles que pueden ayudar a solucionarlo.",
-  "@crashReporter.dialog.body": {
+  "crashReporter.dialog.body.ended": "Cmdr se cerró inesperadamente la última vez. Aquí tienes un informe de fallos con detalles que pueden ayudar a solucionarlo.",
+  "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.body.keptRunning": "La última vez, Cmdr tuvo un problema en segundo plano y siguió funcionando. Aquí tienes un informe con detalles que pueden ayudar a solucionarlo.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "1ed6290"
+  },
+  "crashReporter.dialog.body.unknown": "Cmdr tuvo un problema la última vez. Aquí tienes un informe con detalles que pueden ayudar a solucionarlo.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "962305e"
   },
   "crashReporter.dialog.privacyNote": "Incluye la versión de la app, la versión de macOS y qué parte del código falló. Ningún nombre de archivo ni datos personales.",
   "@crashReporter.dialog.privacyNote": {
