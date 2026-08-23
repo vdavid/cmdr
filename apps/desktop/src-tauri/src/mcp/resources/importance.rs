@@ -76,7 +76,10 @@ pub(crate) struct VolumeOverview {
 /// redistributes exactly as the recompute that wrote the weights did. Offline
 /// volumes (kind unregistered) fall back to the local mask — the breakdown is a
 /// nicety, and a path lookup is almost always the local volume anyway.
-fn available_for(volume_id: &str) -> SignalSet {
+///
+/// Shared with the wake loop's importance cache, which opens the same indexes for
+/// the same reason and must not fork the mask.
+pub(crate) fn available_for(volume_id: &str) -> SignalSet {
     crate::index_host::index()
         .volume_kind(volume_id)
         .and_then(cmdr_index::importance::signal_availability)

@@ -21,6 +21,13 @@
 //! - **No inbox, no deadlines held anywhere, no wake job, no LLM.** [`wake_delay`] turns an
 //!   interest score into a delay and hands it back; whoever owns a clock does the waiting.
 //!
+//! ## What drives it
+//!
+//! [`start`] brings up the loop that does own a clock: a dedicated thread holding the [`Inbox`],
+//! one write connection, and the timer. The tap hands it rollups through [`send_rollup`]; it
+//! prepares a wake and hands THAT to its own thread, so neither the indexer nor the inbox ever
+//! waits on a model call. Depth: `DETAILS.md`.
+//!
 //! ## The properties worth defending
 //!
 //! - **The digest never exceeds its budget.** Not with the rollups, not with the "and more"
@@ -33,17 +40,24 @@
 //! Depth (the windowing rule, the interest formula, the compaction fold, the token estimate):
 //! `DETAILS.md`.
 
+mod channel;
 mod coalesce;
 mod compact;
+mod importance;
 mod inbox;
 mod interest;
 mod job;
 mod persist;
 mod readiness;
+mod runner;
+mod settings;
+mod snapshot;
+mod writer;
 
 #[cfg(test)]
 mod tests;
 
+pub use channel::{FolderActivity, MAX_QUEUED_ROLLUPS, WakeControl, send_control, send_rollup};
 pub use coalesce::{coalesce, merge_bundles};
 pub use compact::{Digest, DigestLine, Rollup, ScoredBundle, compact};
 pub use inbox::{Inbox, InboxRow, ReconcileReport, SETTLE_AFTER_LAUNCH, STALE_AFTER};
@@ -57,6 +71,16 @@ pub use job::{
 };
 pub use persist::{clear, load, save_all, save_row};
 pub use readiness::{AgentGates, WakeReadiness, readiness};
+pub use settings::WakeSettings;
+pub use snapshot::{readiness_snapshot, refresh_readiness};
+pub use writer::start;
+
+/// How coarsely the app quantizes the tap's batch instants before admitting them.
+///
+/// ⚠️ **The APP quantizes, ❌ never `cmdr-index`**: a 60 s agent policy must not leak into the
+/// index crate. `Inbox::admit` merges on exact `(folder, window_start)` equality, so without
+/// this every ~1 s live batch would become its own inbox row.
+pub const WAKE_WINDOW: std::time::Duration = std::time::Duration::from_secs(60);
 
 /// What kind of change happened. Intent-bearing kinds (a file appearing, a file being renamed)
 /// mean more to the agent than churn (a file written to again), which is what [`interest()`]

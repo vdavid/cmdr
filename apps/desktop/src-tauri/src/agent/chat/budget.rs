@@ -147,6 +147,25 @@ pub fn files_per_batch(prompt_tokens: usize) -> usize {
     prompt_fits.min(reply_fits)
 }
 
+/// What share of a turn's prompt budget a wake's DIGEST may claim.
+///
+/// A fifth: the digest opens the turn, and everything after it (the envelope, the tool results
+/// the agent pulls once it is awake, its own reasoning) has to fit in the same window. The
+/// compactor spends whatever it gets on the highest-interest folders first and rolls the rest
+/// up, so a smaller share costs detail rather than correctness.
+const WAKE_DIGEST_BUDGET_PERCENT: usize = 20;
+
+/// What a wake's digest may spend, out of the turn's resolved prompt budget.
+///
+/// Derived rather than a constant, for the same reason [`files_per_batch`] is: a user on a
+/// small local window must not have the digest alone push their tool results out of the
+/// prompt. `0` is a meaningful answer — a budget that cannot hold the prefix cannot hold a
+/// digest either, and the wake then stays quiet rather than opening a thread it can say
+/// nothing in.
+pub fn wake_digest_budget(prompt_tokens: usize) -> usize {
+    prompt_tokens.saturating_sub(FIXED_PROMPT_OVERHEAD_TOKENS) * WAKE_DIGEST_BUDGET_PERCENT / 100
+}
+
 /// One family's context window, matched by model-id prefix (longest first, like
 /// `agent::pricing`'s table, so a more specific id wins over the family it shares a stem
 /// with). The budget is DERIVED from the window ([`budget_for_window`]) rather than stored

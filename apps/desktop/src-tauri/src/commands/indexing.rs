@@ -224,6 +224,8 @@ pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), S
 #[specta::specta]
 pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), String> {
     crate::fda_gate::set_fda_pending(false);
+    // Disk access is the wake loop's second gate, and it caches the answer.
+    crate::agent::wake::refresh_readiness(&app);
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     crate::mtp::start_mtp_watcher(&app);

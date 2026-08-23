@@ -446,6 +446,10 @@ pub fn configure_ai<R: Runtime>(
             };
     }
 
+    // The wake loop gates on whether a provider can answer, and it caches that rather than
+    // asking per live batch. This is the one place the answer can move.
+    crate::agent::wake::refresh_readiness(&app);
+
     // Health check asynchronously (the slow part, up to 60s)
     if let Some((pid, port, cancel)) = spawn_result {
         let _ = AiStarting.emit(&app);

@@ -92,6 +92,13 @@ pub fn start(app: &AppHandle) {
             // Register the chat runtime against the same DB so the IPC command is a
             // thin pass-through (`app.state::<chat::runtime::ChatRuntime>()`).
             chat::runtime::register(app, db_path.clone());
+            // The gates the wake loop reads are cached, and consent lives in the DB that just
+            // opened, so this is the first moment the answer can be anything but "no".
+            wake::refresh_readiness(app);
+            // Bring up the loop that owns the inbox, its write connection, and the timer.
+            // Rollups the indexer's tap sent before now are already waiting in the channel and
+            // get consumed as soon as the thread comes up.
+            wake::start(app.clone(), db_path.clone(), data_dir.clone());
             log::debug!(target: "agent::store", "main.db ready at {}", db_path.display());
         }
         Err(e) => log::warn!(target: "agent::store", "main.db not opened: {e}"),

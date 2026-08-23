@@ -57,7 +57,12 @@ pub async fn ask_cmdr_consent_status(app: AppHandle) -> Result<AskCmdrConsentSta
 #[specta::specta]
 pub async fn ask_cmdr_accept_consent(app: AppHandle) -> Result<(), String> {
     let now = now_secs();
-    with_write_connection(app, move |conn| store::set_consent(conn, CONSENT_COPY_VERSION, now)).await
+    let handle = app.clone();
+    let recorded = with_write_connection(app, move |conn| store::set_consent(conn, CONSENT_COPY_VERSION, now)).await;
+    // Consent is the wake loop's first gate, and it reads a cached answer rather than the
+    // store. Without this the pipeline would keep refusing every rollup until the next launch.
+    crate::agent::wake::refresh_readiness(&handle);
+    recorded
 }
 
 /// Turn Ask Cmdr off by clearing consent (the settings "turn off" path). The next rail
@@ -65,5 +70,8 @@ pub async fn ask_cmdr_accept_consent(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn ask_cmdr_revoke_consent(app: AppHandle) -> Result<(), String> {
-    with_write_connection(app, store::clear_consent).await
+    let handle = app.clone();
+    let cleared = with_write_connection(app, store::clear_consent).await;
+    crate::agent::wake::refresh_readiness(&handle);
+    cleared
 }
