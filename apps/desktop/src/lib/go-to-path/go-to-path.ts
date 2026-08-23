@@ -59,7 +59,9 @@ export async function goToPath(
   const baseDir = getFocusedPanePath()
   const result = await resolveGoToPath(input, baseDir)
   if (result.status === 'error') {
-    log.warn('goToPath: resolve failed for {input}: {error}', { input, error: result.error.message })
+    // The backend's refusal is typed, so the log names the REASON; there is no
+    // sentence here for a copy edit to change under it.
+    log.warn("goToPath: couldn't resolve {input}: {reason}", { input, reason: result.error.type })
     return undefined
   }
 

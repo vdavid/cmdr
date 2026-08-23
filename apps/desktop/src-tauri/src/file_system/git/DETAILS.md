@@ -52,7 +52,7 @@ here:
 Wired from `commands/file_system/git.rs`:
 
 - `get_git_repo_info(path) -> TimedOut<Option<RepoInfo>>` – one-shot lookup, 2 s timeout
-- `subscribe_git_state(repo_root) -> Result<RepoInfo, IpcError>` – registers a subscriber, returns current `RepoInfo` synchronously, then emits `git-state-changed` events. 2 s timeout (the synchronous handshake calls `discover_repo` + `repo_info` so a hung repo would otherwise freeze IPC)
+- `subscribe_git_state(repo_root) -> Result<RepoInfo, GitSubscribeError>` – registers a subscriber, returns current `RepoInfo` synchronously, then emits `git-state-changed` events. 2 s timeout (the synchronous handshake calls `discover_repo` + `repo_info` so a hung repo would otherwise freeze IPC). `GitSubscribeError` (in `commands/file_system/git.rs`) is `Git { error: FriendlyGitError }` / `TimedOut` / `Unexpected { detail }`, so git's own typed kind reaches the frontend intact and `src/lib/error-messages/git-error-messages.ts` words it per locale
 - `unsubscribe_git_state(repo_root) -> ()` – drops one subscriber; tears down the watcher when refcount hits zero
 - `get_git_status_for_paths(repo_root, dir) -> TimedOut<Vec<EntryStatus>>` – gix status walk, 5 s timeout
 - `set_show_virtual_git_portal(enabled)` (in `commands::settings`) – flips the live portal toggle. Pushed by `settings-applier.ts` whenever `fileExplorer.git.showVirtualGitPortal` changes

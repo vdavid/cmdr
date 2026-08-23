@@ -17,7 +17,9 @@ use crate::file_system::{
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
 
-use crate::commands::util::{IpcError, TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+use crate::commands::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+use crate::file_system::listing::brief_columns::BriefColumnsError;
+use crate::file_system::listing::fuzzy_jump::FuzzyJumpError;
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 use crate::file_system::volume::manager::get_volume_manager;
 use cmdr_fs::volume::WatchCoverage;
@@ -182,7 +184,7 @@ pub async fn list_directory_start(
     sort_by: SortColumn,
     sort_order: SortOrder,
     directory_sort_mode: Option<DirectorySortMode>,
-) -> Result<ListingStartResult, IpcError> {
+) -> Result<ListingStartResult, ListingStartError> {
     // Foreground activity: the user navigated. This command is the local-volume
     // path, so attribute it to "root" — the same volume id the FE uses for local.
     // Background work yields to this: media enrichment (app-wide), and the local
@@ -198,12 +200,31 @@ pub async fn list_directory_start(
     .await
     {
         Ok(Ok(result)) => Ok(result),
-        Ok(Err(e)) => Err(IpcError::from_err(format!(
-            "Failed to start directory listing '{}': {}",
-            path, e
-        ))),
-        Err(_) => Err(IpcError::timeout()),
+        // `VolumeError` carries the errno AND the path, which is what the
+        // frontend's listing-error factory renders from; a formatted sentence
+        // would throw both away.
+        Ok(Err(e)) => Err(ListingStartError::Volume {
+            error: cmdr_fs::volume::VolumeError::from_io_at(&e, &path_buf),
+        }),
+        Err(_) => Err(ListingStartError::TimedOut),
     }
+}
+
+/// Why a synchronous listing start didn't produce a listing.
+///
+/// ❌ Not prose: `VolumeError` is the wire type the frontend's listing-error
+/// factory already words, in every locale.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum ListingStartError {
+    /// The volume refused, and said why in its own vocabulary.
+    Volume {
+        /// The backend's typed answer, errno and path intact.
+        error: cmdr_fs::volume::VolumeError,
+    },
+    /// The read didn't finish inside the command's wait. ❗ It was NOT
+    /// cancelled.
+    TimedOut,
 }
 
 /// Returns immediately; reads in background.
@@ -319,10 +340,15 @@ pub async fn get_brief_column_text_widths(
     font_id: String,
     include_hidden: bool,
 ) -> Result<BriefColumnWidths, BriefColumnsIpcError> {
-    blocking_typed_result_with_timeout(Duration::from_secs(2), BriefColumnsIpcError::timeout, move || {
-        ops_compute_brief_column_text_widths(&listing_id, items_per_column, has_parent, &font_id, include_hidden)
-            .map_err(BriefColumnsIpcError::from)
-    })
+    blocking_typed_result_with_timeout(
+        Duration::from_secs(2),
+        BriefColumnsIpcError::timeout,
+        |detail| BriefColumnsIpcError::from(BriefColumnsError::Other(detail)),
+        move || {
+            ops_compute_brief_column_text_widths(&listing_id, items_per_column, has_parent, &font_id, include_hidden)
+                .map_err(BriefColumnsIpcError::from)
+        },
+    )
     .await
 }
 
@@ -353,8 +379,8 @@ pub async fn find_first_fuzzy_match(
     listing_id: String,
     query: String,
     include_hidden: bool,
-) -> Result<Option<usize>, IpcError> {
-    ops_fuzzy_find_first_match_in_listing(&listing_id, &query, include_hidden).map_err(IpcError::from_err)
+) -> Result<Option<usize>, FuzzyJumpError> {
+    ops_fuzzy_find_first_match_in_listing(&listing_id, &query, include_hidden)
 }
 
 #[tauri::command]

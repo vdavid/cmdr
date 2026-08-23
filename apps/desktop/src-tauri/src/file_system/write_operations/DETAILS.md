@@ -330,6 +330,15 @@ The four copy mechanisms (`copy_strategy::LocalCopyStrategy`) each hand `stage_a
 
 **Special files skipped.** Sockets, FIFOs, and device files are filtered out during scan.
 
+## Who speaks `MutationError`
+
+Four command families answer with it, so every instant-mutation surface matches ONE exhaustive union: `rename_file`,
+`check_rename_permission`, and `move_to_trash` (`commands/rename.rs`); `create_directory` / `create_file`
+(`commands/file_system/write_ops.rs`); `check_rename_validity`, whose own answer is a typed `RenameValidityResult` so
+the only `Err` it can produce is the deadline or a panicked task; and `paste_clipboard_as_file`, which is a managed
+`CreateFile` op under the hood and refuses the way one does (`paste_clipboard.rs`). A volume's own refusal rides through
+`MutationError::Volume` carrying the whole `VolumeError`. Full rules: `docs/guides/error-handling.md`.
+
 ## Cmdr-own-write hook (downloads watcher)
 
 Every write-op driver MUST register its destination with the downloads watcher's ignore set BEFORE issuing the syscall. This is what makes the watcher silently suppress events Cmdr itself caused, so the user doesn't see a "Downloaded foo.bin" toast when they just used Cmdr to copy 100 files into `~/Downloads`.

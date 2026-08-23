@@ -30,7 +30,7 @@ pub async fn execute_favorites(params: &Value) -> ToolResult {
             let name = params.get("name").and_then(|v| v.as_str()).map(str::to_string);
             crate::commands::favorites::add_favorite(path.clone(), name)
                 .await
-                .map_err(|e| ToolError::internal(format!("Couldn't add favorite: {}", e.message)))?;
+                .map_err(|e| ToolError::internal(format!("Couldn't add favorite: {}", e)))?;
             Ok(json!(format!("OK: Added favorite for {path}.")))
         }
         "rename" => {
@@ -41,14 +41,14 @@ pub async fn execute_favorites(params: &Value) -> ToolResult {
                 .ok_or_else(|| ToolError::invalid_params("rename requires a 'name' parameter"))?;
             crate::commands::favorites::rename_favorite(id.clone(), name.to_string())
                 .await
-                .map_err(|e| ToolError::internal(format!("Couldn't rename favorite: {}", e.message)))?;
+                .map_err(|e| ToolError::internal(format!("Couldn't rename favorite: {}", e)))?;
             Ok(json!(format!("OK: Renamed favorite {id} to {name}.")))
         }
         "remove" => {
             let id = require_id(params)?;
             crate::commands::favorites::remove_favorite(id.clone())
                 .await
-                .map_err(|e| ToolError::internal(format!("Couldn't remove favorite: {}", e.message)))?;
+                .map_err(|e| ToolError::internal(format!("Couldn't remove favorite: {}", e)))?;
             Ok(json!(format!("OK: Removed favorite {id}.")))
         }
         "reorder" => {
@@ -68,7 +68,7 @@ pub async fn execute_favorites(params: &Value) -> ToolResult {
                 })?;
             crate::commands::favorites::reorder_favorites(ordered_ids)
                 .await
-                .map_err(|e| ToolError::internal(format!("Couldn't reorder favorites: {}", e.message)))?;
+                .map_err(|e| ToolError::internal(format!("Couldn't reorder favorites: {}", e)))?;
             Ok(json!("OK: Reordered favorites."))
         }
         other => Err(ToolError::invalid_params(format!(

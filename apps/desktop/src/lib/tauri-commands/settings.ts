@@ -2,6 +2,7 @@
 
 import { Channel, invoke } from '@tauri-apps/api/core'
 import { type UnlistenFn } from '@tauri-apps/api/event'
+import type { AiApiKeyError } from '$lib/ipc/bindings'
 import {
   commands,
   events,
@@ -11,6 +12,7 @@ import {
   type SettingValue,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
+import { throwAiSecretError } from '$lib/settings/sections/ai-secret-error'
 
 // ============================================================================
 // Settings commands
@@ -398,8 +400,12 @@ export async function getAiRuntimeStatus(): Promise<AiRuntimeStatus> {
 
 /** Outcome of a `configureAi` push. */
 export interface ConfigureAiOutcome {
-  /** Set when the provider's key exists but the OS secret store wouldn't hand it over. */
-  secretStoreError: unknown
+  /**
+   * Set when the provider's key exists but the OS secret store wouldn't hand it
+   * over. Typed, so the toast branches on the variant rather than on the store's
+   * own English (`describeSecretError`).
+   */
+  secretStoreError: AiApiKeyError | null
 }
 
 /**
@@ -463,7 +469,7 @@ export async function checkAiConnection(baseUrl: string, providerId: string): Pr
 /** Stores the API key for a cloud provider in the OS secret store (macOS Keychain etc.). */
 export async function saveAiApiKey(providerId: string, apiKey: string): Promise<void> {
   const res = await commands.saveAiApiKey(providerId, apiKey)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwAiSecretError(res.error)
 }
 
 /** What a window may know about a stored key: that there is one, and an opaque fingerprint. */
@@ -481,14 +487,14 @@ export interface AiApiKeyStatus {
  */
 export async function getAiApiKeyStatus(providerId: string): Promise<AiApiKeyStatus> {
   const res = await commands.getAiApiKeyStatus(providerId)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwAiSecretError(res.error)
   return res.data
 }
 
 /** Removes the stored API key for a cloud provider. Idempotent. */
 export async function deleteAiApiKey(providerId: string): Promise<void> {
   const res = await commands.deleteAiApiKey(providerId)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwAiSecretError(res.error)
 }
 
 // ============================================================================

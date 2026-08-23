@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod budget_tests;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::future::Future;
 use tokio::time::Duration;
 
@@ -17,37 +17,40 @@ pub struct TimedOut<T: Serialize + specta::Type> {
     pub timed_out: bool,
 }
 
-/// Structured IPC error with a timeout flag.
-/// Used by commands returning `Result<T, IpcError>` so the frontend can
-/// distinguish timeout errors from real failures without string matching.
-#[derive(Debug, Clone, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct IpcError {
-    pub message: String,
-    pub timed_out: bool,
+/// The only two ways a command can fail when the work it wraps can't itself
+/// refuse: the deadline passed, or the task never came back.
+///
+/// ❗ It is NOT a general-purpose IPC error. Reach for it only where the
+/// underlying call is genuinely infallible (a store write that swallows its own
+/// errors, a pure resolve); a command whose work has real refusals owes the
+/// frontend its own vocabulary, the way `MutationError` and `EjectError` do.
+///
+/// ❌ Nothing here is prose a user reads. These commands are logged, not
+/// worded, today; a surface that grows words for them renders from the variant.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum DeadlineError {
+    /// The work didn't finish inside the command's wait. ❗ It was NOT
+    /// cancelled: the deadline bounds the frontend's wait, not the work.
+    TimedOut,
+    /// The task panicked, so no answer is coming.
+    Unexpected {
+        /// What the runtime reported, for the log.
+        detail: String,
+    },
 }
 
-impl std::fmt::Display for IpcError {
+impl std::fmt::Display for DeadlineError {
+    /// ❗ For logs and debugging only.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl IpcError {
-    pub fn timeout() -> Self {
-        Self {
-            message: "Operation timed out (the volume may be slow or unresponsive)".to_string(),
-            timed_out: true,
-        }
-    }
-
-    pub fn from_err(err: impl std::fmt::Display) -> Self {
-        Self {
-            message: err.to_string(),
-            timed_out: false,
+        match self {
+            Self::TimedOut => f.write_str("timed out"),
+            Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),
         }
     }
 }
+
+impl std::error::Error for DeadlineError {}
 
 /// Runs a blocking closure on the blocking thread pool with a timeout.
 /// Returns the fallback value if the closure doesn't complete in time.
@@ -81,21 +84,8 @@ pub async fn blocking_with_timeout_flag<T: Send + Serialize + specta::Type + 'st
     }
 }
 
-/// Like `blocking_with_timeout`, but for closures returning `Result`.
-/// On timeout, returns `Err(IpcError::timeout())`.
-pub async fn blocking_result_with_timeout<T: Send + 'static>(
-    timeout_duration: Duration,
-    f: impl FnOnce() -> Result<T, String> + Send + 'static,
-) -> Result<T, IpcError> {
-    match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
-        Ok(Ok(result)) => result.map_err(IpcError::from_err),
-        Ok(Err(e)) => Err(IpcError::from_err(e)),
-        Err(_) => Err(IpcError::timeout()),
-    }
-}
-
-/// Like `blocking_result_with_timeout`, but for a command that ships its OWN typed
-/// error enum instead of `IpcError`.
+/// Runs a blocking closure that can refuse, under a deadline, in the command's
+/// OWN typed error vocabulary.
 ///
 /// The closure's error crosses the wire unchanged, and `on_timeout` mints the same
 /// type for the deadline case, so the frontend keeps one exhaustive thing to match on
@@ -103,6 +93,7 @@ pub async fn blocking_result_with_timeout<T: Send + 'static>(
 pub async fn blocking_typed_result_with_timeout<T, E>(
     timeout_duration: Duration,
     on_timeout: impl FnOnce() -> E,
+    on_join_failure: impl FnOnce(String) -> E,
     f: impl FnOnce() -> Result<T, E> + Send + 'static,
 ) -> Result<T, E>
 where
@@ -111,9 +102,8 @@ where
 {
     match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
         Ok(Ok(result)) => result,
-        // A JoinError means the blocking task panicked; the deadline is the honest
-        // thing to report either way, since no result is coming.
-        Ok(Err(_)) | Err(_) => Err(on_timeout()),
+        Ok(Err(join_err)) => Err(on_join_failure(join_err.to_string())),
+        Err(_) => Err(on_timeout()),
     }
 }
 
@@ -212,32 +202,44 @@ impl Deadline {
     }
 }
 
-/// [`timeout_detached`] against what's LEFT of `deadline`.
+/// [`timeout_detached_typed`] against what's LEFT of `deadline`.
 ///
-/// A spent deadline returns the timeout without spawning: the work would only be
+/// A spent deadline mints `on_timeout` without spawning: the work would only be
 /// abandoned a moment later, and the caller has already been kept as long as it
 /// agreed to wait.
 pub async fn timeout_detached_within<T, E>(
     deadline: &Deadline,
+    on_timeout: impl FnOnce() -> E,
+    on_join_failure: impl FnOnce(String) -> E,
     fut: impl Future<Output = Result<T, E>> + Send + 'static,
-) -> Result<T, IpcError>
+) -> Result<T, E>
 where
     T: Send + 'static,
-    E: std::fmt::Display + Send + 'static,
+    E: Send + 'static,
 {
     let remaining = deadline.remaining();
     if remaining.is_zero() {
-        return Err(IpcError::timeout());
+        return Err(on_timeout());
     }
-    timeout_detached(remaining, fut).await
+    timeout_detached_typed(remaining, on_timeout, on_join_failure, fut).await
 }
 
-/// [`timeout_detached`] for a command that ships its OWN typed error enum.
+/// Bounds how long the FRONTEND waits, never the work itself.
+///
+/// `fut` runs in its own task and the timeout races that task's join handle. On
+/// expiry the handle is dropped, which DETACHES the task: it keeps running to
+/// its own end. The caller gets `on_timeout()` promptly, the work finishes
+/// safely behind it.
 ///
 /// The future's error crosses the wire unchanged and `on_timeout` mints the same
 /// type for the deadline, so the frontend keeps ONE exhaustive union to match on
-/// rather than a typed error plus a stringly-typed timeout beside it. Same
-/// detach semantics as [`timeout_detached`]: the work runs on to its own end.
+/// rather than a typed error plus a stringly-typed timeout beside it.
+///
+/// ❌ Use this, not a bare `tokio::time::timeout(d, fut)`, for anything that can
+/// reach a device backend. A bare timeout DROPS the future wherever it happens
+/// to be, and on MTP that abandons an in-flight PTP transaction and wedges the
+/// user's phone (`mtp/connection/CLAUDE.md`). An IPC deadline is a promise about
+/// the reply, not permission to abandon a half-written transaction.
 pub async fn timeout_detached_typed<T, E>(
     timeout_duration: Duration,
     on_timeout: impl FnOnce() -> E,
@@ -252,32 +254,5 @@ where
         Ok(Ok(result)) => result,
         Ok(Err(join_err)) => Err(on_join_failure(join_err.to_string())),
         Err(_) => Err(on_timeout()),
-    }
-}
-
-/// Bounds how long the FRONTEND waits, never the work itself.
-///
-/// `fut` runs in its own task and the timeout races that task's join handle. On
-/// expiry the handle is dropped, which DETACHES the task: it keeps running to
-/// its own end. The caller gets `IpcError::timeout()` promptly, the work
-/// finishes safely behind it.
-///
-/// ❌ Use this, not a bare `tokio::time::timeout(d, fut)`, for anything that can
-/// reach a device backend. A bare timeout DROPS the future wherever it happens
-/// to be, and on MTP that abandons an in-flight PTP transaction and wedges the
-/// user's phone (`mtp/connection/CLAUDE.md`). An IPC deadline is a promise about
-/// the reply, not permission to abandon a half-written transaction.
-pub async fn timeout_detached<T, E>(
-    timeout_duration: Duration,
-    fut: impl Future<Output = Result<T, E>> + Send + 'static,
-) -> Result<T, IpcError>
-where
-    T: Send + 'static,
-    E: std::fmt::Display + Send + 'static,
-{
-    match tokio::time::timeout(timeout_duration, tokio::spawn(fut)).await {
-        Ok(Ok(result)) => result.map_err(IpcError::from_err),
-        Ok(Err(join_err)) => Err(IpcError::from_err(format!("Task failed: {join_err}"))),
-        Err(_) => Err(IpcError::timeout()),
     }
 }

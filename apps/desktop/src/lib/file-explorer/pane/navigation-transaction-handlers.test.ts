@@ -160,7 +160,6 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
     onVolumeContextAction: vi.fn().mockResolvedValue(() => {}),
     onVolumeUnmounted: vi.fn().mockResolvedValue(() => {}),
-    getIpcErrorMessage: (e: unknown) => String(e),
   }
 })
 

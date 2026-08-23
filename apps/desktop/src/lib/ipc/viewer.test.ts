@@ -67,17 +67,17 @@ describe('commands.viewerOpen', () => {
     })
   })
 
-  it('surfaces IpcError on the error branch (timedOut: false for non-blocking errors)', async () => {
+  it('keeps the typed ViewerError intact on the error branch, kind and fields and all', async () => {
     const ipc = installIpcMock()
     ipc.mock('viewer_open', () => {
-      throw { message: 'File not found', timedOut: false }
+      throw { kind: 'notFound', path: '/nope.txt' }
     })
 
     const result = await commands.viewerOpen('/nope.txt', 'root', 'viewer-123')
 
     expect(result.status).toBe('error')
     if (result.status === 'error') {
-      expect(result.error).toEqual({ message: 'File not found', timedOut: false })
+      expect(result.error).toEqual({ kind: 'notFound', path: '/nope.txt' })
     }
   })
 })

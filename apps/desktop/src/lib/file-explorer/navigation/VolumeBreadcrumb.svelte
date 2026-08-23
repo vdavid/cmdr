@@ -5,7 +5,6 @@
         ejectVolume,
         enableDriveIndex,
         forgetDriveIndex,
-        getIpcErrorMessage,
         mediaIndexVolumeState,
         onVolumeContextAction,
         rescanDriveIndex,
@@ -35,6 +34,7 @@
     import { describeUsbSpeed, type VolumeInfo } from '../types'
     import { filesystemLabel } from './filesystem-label'
     import { isVolumeEjectable } from './eject-predicate'
+    import { wordEjectRefusal } from './eject-error-messages'
     import { buildFavoriteTooltip } from './favorite-tooltip'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -626,7 +626,7 @@
             // `mtp-device-disconnected` (MTP). No toast needed — the change is
             // visible. Panes redirect to root via the existing listeners.
         } catch (e) {
-            addToast(tString('fileExplorer.pane.ejectFailedToast', { volumeName: volume.name, message: getIpcErrorMessage(e) }), {
+            addToast(tString('fileExplorer.pane.ejectFailedToast', { volumeName: volume.name, message: wordEjectRefusal(e) }), {
                 level: 'error',
             })
         }

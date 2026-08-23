@@ -1371,3 +1371,60 @@ nur im Präsens:
 - Zweiter Satz aus `crashReporter.dialog.privacyNote` (`welcher Teil des Codes auf das Problem gestoßen ist`), hier als
   Akkusativobjekt mit Relativsatz (`den Teil des Codes, der …`), weil der Einstellungstext artikellos aufzählt. Ersetzt
   `Absturzstelle`, das nur für den Absturzfall stimmte · high.
+
+## Auswerfen und Trennen: die neun Absagen (`errors.eject.*`, 2026-08-23)
+
+Neun kurze Zeilen in einem Toast oben rechts, jede als Satz HINTER einem Doppelpunkt: der Rahmen ist
+`fileExplorer.pane.ejectFailedToast` („{volumeName} ließ sich nicht auswerfen: …“) oder `.disconnectFailedToast`
+(„Trennen nicht möglich: …“). Rohfamilie (`errors.*`): einfache Apostrophe, kein ICU, kein Markdown. Jeder Wert muss
+also für sich als vollständiger Satz lesbar sein und darf den Rahmen nicht wiederholen.
+
+- **`drive` bleibt `Laufwerk`** · der ganze Katalog sagt so (`settings.indexing.*`,
+  `onboarding.stepOptional.indexing.*`) · high. `Volume` bleibt dem technischen Sinn vorbehalten (§ Terms, `style.md`);
+  die Eject-Zeilen sprechen von dem Ding, das der Nutzer angesteckt hat, deshalb `Laufwerk`.
+- **„removable“ → `Wechselmedium`** · macOS Finder `de` (`NE31` „Das Wechselmedium „^0“ wird gerade verwendet …“,
+  `NE80`, `TL_HELP_EJCT` „Wechselmedien auswerfen und von Servern trennen“) und MS-Terminologie (`removable media` →
+  `Wechselmedien`, Term-ID 177320, AUT/DEU/CHE/LUX) · high. `notEjectable` wird damit zur Aussage über die Bauart des
+  Laufwerks, nicht über einen Misserfolg: „Dieses Laufwerk ist kein Wechselmedium, es bleibt also verbunden.“
+- **„in use“ → `in Verwendung`** · macOS Finder `de` (`NE66` „The volume can’t be ejected because it’s currently in
+  use.“ → „Das Volume ist gerade in Verwendung und kann nicht ausgeworfen werden.“) · high. ❌ Nicht `belegt` oder
+  `gesperrt`: `gesperrt`/`geschützt` gehört im Katalog schon zu `locked`.
+- **„Close any open files and apps“ → `Schließe offene Dateien und beende laufende Apps`** · macOS `NE52` („Quit any
+  open applications, and then try again.“ → „Beende die Programme und versuche es erneut.“) liefert das Verb `beenden`
+  für Programme; das Substantiv nimmt Cmdrs eigenes `App` (`errors.listing.resourceBusy.explanation` „eine andere App
+  oder ein anderer Prozess“), nicht Apples `Programm` · high. Dateien werden geschlossen, Apps beendet: ein gemeinsames
+  Verb für beides gibt es im Deutschen nicht.
+- **„idle“ → `nicht mehr beschäftigt`** · der Katalog setzt beides schon: `indexing.enrich.pausedIdle` („Waiting until
+  you're idle“ → „Wartet, bis du nicht mehr beschäftigt bist“) und `fileExplorer.mtp.deviceBusy` („Device is busy.“ →
+  „Gerät ist beschäftigt.“) · high. Damit trägt `mtpDisconnectRefused` dasselbe Wortfeld wie die MTP-Meldung, die der
+  Nutzer vorher gesehen hat.
+- **„unplug“ → `abziehen`** · `errors.listing.deviceReconnecting.suggestion` („There's nothing to unplug.“ → „Du musst
+  nichts abziehen.“) und `errors.provider.macDroid.*` („Zieh das USB-Kabel ab …“) · high.
+- **„wouldn't“ (eine Absage der Gegenseite) → `wollte nicht`** · dieselbe Entscheidung wie bei
+  `errors.mutation.trashRefused` („macOS wollte das nicht in den Papierkorb bewegen.“) · high für die Konsistenz,
+  `tentative` für den Baustein selbst: die Referenzsammlung kennt für „wouldn't“ nur unpersönliche Passiv-Absagen. Wert:
+  „Das Gerät wollte seine Verbindung nicht schließen.“
+- **`disconnect` bleibt `trennen`, auch für eine Freigabe** · macOS `TL_HELP_EJCT` („Eject disks and unmount servers“ →
+  „Wechselmedien auswerfen und von Servern trennen“) · high. ❌ Nicht `aushängen` (GNOME Nautilus `de`: „Unmount“ →
+  „Aushängen“), das ist das Linux-Idiom und steht in keinem macOS-String.
+- **`busy` nimmt das gesetzte `Vorgang`** · „Auf diesem Laufwerk läuft noch ein Vorgang von Cmdr. Wirf es aus, sobald er
+  fertig ist.“ · Satzrahmen von `main.quit.title` („Ein Vorgang läuft noch. Trotzdem beenden?“), `Vorgang` ist im
+  Katalog der Name für Kopieren/Bewegen/Löschen (`Vorgangswarteschlange`, `Vorgangsprotokoll`) · high. ❌ Nicht wörtlich
+  „Cmdr bewegt noch Dateien“: `bewegen` ist in Cmdr der NAME des Move-Befehls, und die Meldung erscheint genauso beim
+  Kopieren und Löschen. Der Markenname bleibt im Satz (Quellstring nennt Cmdr, `desktop-i18n-dont-translate` prüft das).
+- **`timedOut` ist keine Absage, sondern eine offene Frage** → „Das Laufwerk hat noch nicht geantwortet, das Auswerfen
+  klappt also womöglich trotzdem noch.“ · wortgleicher Bau wie das schon ausgelieferte Geschwister
+  `errors.mutation.timedOut` („Das Volume hat noch nicht geantwortet, die Änderung klappt also womöglich trotzdem
+  noch.“) · high. ❌ Kein reflexives „wirft sich selbst aus“, ❌ nichts mit `Fehler` oder `abgebrochen`.
+- **`unexpected` ist wortgleich mit `errors.mutation.unexpected`** — gleicher englischer Quellsatz, gleiche deutsche
+  Zeile: „Etwas ist schiefgelaufen, und Cmdr konnte nicht erkennen, was genau.“ · high.
+- **`mtpIdMissingDevicePrefix` →
+  `Cmdr konnte nicht erkennen, welches Gerät das ist, und kann es deshalb nicht trennen.`** · `erkennen` ist die
+  Katalogstimme für „Cmdr couldn't tell“ (`errors.mutation.unexpected`), `Gerät` ist gesetzt (§ Terms) · high.
+- **Die Wiederholung im Trenn-Rahmen ist gewollt**: „Trennen nicht möglich: Das ist keine Netzwerkfreigabe, es gibt also
+  nichts zu trennen.“ Der Wert muss allein stehen können (er landet auch im Auswerf-Rahmen), deshalb bleibt das zweite
+  `trennen` drin.
+- Kein `sameAsSourceJustification` nötig: alle neun Werte unterscheiden sich vom Englischen.
+- Zu prüfen beim Overflow-Check: `unmountRefused` (rund 125 Zeichen gegenüber 84 im Englischen) und
+  `mtpDisconnectRefused` (rund 110) sind die längsten; beide erscheinen im Toast HINTER dem Rahmensatz, der bei einem
+  langen `{volumeName}` schon breit ist.

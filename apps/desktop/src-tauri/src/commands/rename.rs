@@ -3,15 +3,16 @@
 //! Thin pass-throughs: the rename validation + the managed rename mutation live
 //! in `file_system::write_operations::rename`. These commands expand tilde,
 //! resolve the `volume_id`, apply the IPC timeout tiers (2 s validity/permission,
-//! 5 s rename), and ship the typed `MutationError` the frontend words itself
-//! (`check_rename_validity` still answers with a typed `RenameValidityResult`, so
-//! its `IpcError` only ever carries the deadline).
+//! 5 s rename), and ship the typed `MutationError` the frontend words itself.
+//! Every command in the family speaks that one vocabulary, `check_rename_validity`
+//! included: its answer is a typed `RenameValidityResult`, so the only `Err` it
+//! can produce is the deadline or a panicked task.
 
 use std::path::PathBuf;
 use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
-use super::util::{IpcError, timeout_detached, timeout_detached_typed};
+use super::util::timeout_detached_typed;
 use crate::file_system::write_operations::trash::trash_single_journaled;
 use crate::file_system::write_operations::{
     MutationError, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
@@ -84,15 +85,17 @@ pub async fn check_rename_validity(
     old_name: String,
     new_name: String,
     volume_id: Option<String>,
-) -> Result<RenameValidityResult, IpcError> {
+) -> Result<RenameValidityResult, MutationError> {
     let expanded_dir = expand_tilde(&dir);
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
     // Detached: conflict detection on a non-local volume LISTS the directory, so
     // on MTP a bare timeout would drop a listing mid-`GetObjectInfo`.
-    timeout_detached(
+    timeout_detached_typed(
         Duration::from_secs(2),
-        check_rename_validity_impl(expanded_dir, old_name, new_name, volume_id_str),
+        || MutationError::TimedOut,
+        |detail| MutationError::Unexpected { detail },
+        async move { Ok(check_rename_validity_impl(expanded_dir, old_name, new_name, volume_id_str).await) },
     )
     .await
 }

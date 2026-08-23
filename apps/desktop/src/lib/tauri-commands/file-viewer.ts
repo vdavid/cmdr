@@ -7,6 +7,7 @@ import {
   type RangeEnd,
   type SearchMode as ViewerSearchMode,
   type SearchStatus as ViewerSearchStatus,
+  type SeekTargetKind,
   type ViewerContentKind,
   type ViewerError,
 } from '$lib/ipc/bindings'
@@ -120,19 +121,27 @@ export interface SearchPollResult {
  */
 export async function viewerOpen(path: string, volumeId = 'root', windowLabel = ''): Promise<ViewerOpenResult> {
   const res = await commands.viewerOpen(path, volumeId, windowLabel)
-  if (res.status === 'error') throwViewerOpenError(res.error)
+  if (res.status === 'error') throwViewerError(res.error)
   return res.data
 }
 
 /**
- * Throws a viewer-open failure carrying the typed `ViewerError` on a `viewerError`
- * property, so the caller can render friendly per-variant copy (the archive family:
- * `extractTooLarge`, `archive`) rather than a stringified backend message. The
- * `Error.message` is a best-effort fallback for generic consumers / logs.
+ * Throws a viewer failure carrying the typed `ViewerError` on a `viewerError`
+ * property, so the caller can branch on the VARIANT (the archive family:
+ * `extractTooLarge`, `archive`; the deadline: `timedOut`) and render friendly
+ * per-variant copy. The `Error.message` is a best-effort diagnostic for logs and
+ * generic consumers; ❌ nothing a user reads comes from it.
  */
-function throwViewerOpenError(error: ViewerError): never {
+function throwViewerError(error: ViewerError): never {
   const message = 'message' in error ? error.message : error.kind
   throw Object.assign(new Error(message), { viewerError: error })
+}
+
+/** The typed viewer refusal behind a caught value, or `null` when it isn't one. */
+export function asViewerError(error: unknown): ViewerError | null {
+  if (typeof error !== 'object' || error === null) return null
+  const carried = (error as { viewerError?: unknown }).viewerError
+  return typeof carried === 'object' && carried !== null && 'kind' in carried ? (carried as ViewerError) : null
 }
 
 /**
@@ -143,19 +152,25 @@ function throwViewerOpenError(error: ViewerError): never {
  */
 export async function viewerOpenAsText(path: string, volumeId = 'root', windowLabel = ''): Promise<ViewerOpenResult> {
   const res = await commands.viewerOpenAsText(path, volumeId, windowLabel)
-  if (res.status === 'error') throwViewerOpenError(res.error)
+  if (res.status === 'error') throwViewerError(res.error)
   return res.data
 }
 
-/** Fetches lines from a viewer session. */
+/**
+ * Fetches lines from a viewer session.
+ *
+ * A refusal throws the backend's typed `ViewerError`; `asViewerError` gets it
+ * back, so the deadline is a variant (`timedOut`) rather than a flag beside a
+ * sentence.
+ */
 export async function viewerGetLines(
   sessionId: string,
-  targetType: 'line' | 'byte' | 'fraction',
+  targetType: SeekTargetKind,
   targetValue: number,
   count: number,
 ): Promise<LineChunk> {
   const res = await commands.viewerGetLines(sessionId, targetType, targetValue, count)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwViewerError(res.error)
   return res.data
 }
 

@@ -4,6 +4,7 @@ import { type UnlistenFn } from '@tauri-apps/api/event'
 import type { VolumeInfo } from '../file-explorer/types'
 import type { TimedOut } from './ipc-types'
 import { getAppLogger } from '$lib/logging/logger'
+import { throwEjectError } from '$lib/file-explorer/navigation/eject-error'
 import {
   commands,
   events,
@@ -142,12 +143,13 @@ export async function getVolumeSpace(path: string): Promise<TimedOut<VolumeSpace
  *
  * Resolves once the unmount or disconnect is initiated. The volume disappears
  * from the picker shortly after, via `volume-unmounted` or
- * `mtp-device-disconnected`. Throws an `IpcError`-shaped exception on failure
- * (e.g. "Resource busy" if Finder still has the volume open).
+ * `mtp-device-disconnected`. A refusal throws an `EjectFailure` carrying the
+ * typed `EjectError`; `asEjectError` gets it back, and
+ * `renderEjectError` words it.
  */
 export async function ejectVolume(volumeId: string): Promise<void> {
   const res = await commands.ejectVolume(volumeId)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwEjectError(res.error)
 }
 
 /**

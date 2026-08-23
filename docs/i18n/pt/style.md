@@ -137,6 +137,13 @@ Two mechanics that bite in Portuguese specifically:
 - Decimal/thousands: both use comma decimal, period (pt-PT) or period/space thousands. `Intl` handles this; don't
   hardcode.
 - See the template's ICU mechanics note (double apostrophes, keep `{placeholder}`/`<tag>` verbatim).
+- **network drive fica `disco de rede`, nunca "drive de rede".** O termo do disco é **disco** (Finder) em todos os
+  sentidos, e o `errors.json` já foi alinhado nas quatro chaves de rede; o bolsão de `drive externo / interno / virtual`
+  continua aberto em outras chaves. Evidência, as chaves alinhadas e as que faltam: `glossary.md` § "drive de rede"
+  reconciliado.
+- **Os nove avisos de ejetar/desconectar entram depois de dois pontos** (`fileExplorer.pane.ejectFailedToast` /
+  `disconnectFailedToast`), então cada valor é uma oração completa, começa com maiúscula e cabe em uma ou duas frases
+  curtas. `timedOut` não pode soar como falha. Evidência: `glossary.md` § Recusas de ejetar e desconectar.
 - **O diálogo de falha tem três aberturas, e duas delas não podem falar em falha.** `crashReporter.dialog.body.ended`
   fala do app que encerrou; `keptRunning` e `unknown` descrevem um problema que o Cmdr atravessou (ou pode ter
   atravessado), então nelas não entram `falha`, `encerrou`, `fechou`, `parou` nem `travou`, e o relatório fica

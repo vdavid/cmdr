@@ -190,7 +190,12 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
 3. **`smb-reconnect-manager.svelte.ts`** (if any subscribers are present) starts a per-volume backoff cycle calling
    `reconnectSmbVolume(volumeId)` per tick. Resolves when the BE emits a follow-up `state: "connected"` event. Only its
    per-tick command is SMB-specific; the cycle itself is backend-agnostic, so it keeps the SMB name until a second
-   backend needs it and the command generalizes.
+   backend needs it and the command generalizes. A tick that doesn't take arrives as a typed `ReconnectError`
+   (`volumeNotFound`, or `volume` wrapping the whole `VolumeError`), thrown as a `ReconnectFailure` by
+   `reconnect-error.ts` and read back with `asReconnectError`. The manager LOGS it through `describeReconnectRefusal`,
+   which names the reason (`volume/needsPassword`) rather than a sentence a copy edit could change under it. None of
+   this is user-facing: the reconnecting view, the gave-up banner, and the sign-in form each carry their own translated
+   copy. The error-path map is `docs/guides/error-handling.md`.
 4. **`FilePane.svelte`** subscribes via `$effect` whenever the pane is on an SMB volume. Subscription is refcounted
    (both panes on one share share a cycle). During an active cycle FilePane swaps the list for `SmbReconnectingView`; on
    `gave-up` it swaps to `VolumeUnreachableBanner` (`smbGaveUp` variant); on success the `onSuccess` callback re-runs

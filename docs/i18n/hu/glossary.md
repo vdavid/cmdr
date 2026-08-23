@@ -1699,3 +1699,79 @@ váratlan bezárulásról. Minden elem a fenti összeomlásjelentő-szakaszból 
   (`settings.updates.crashReports.label`) marad `Összeomlás-jelentések küldése`: az a beállítás neve.
 - **A második mondat a `crashReporter.dialog.privacyNote`-ból jön** (`hogy a kód melyik része ütközött a problémába`),
   az `összeomlás helye` helyett, ami csak összeomláskor volt igaz · high.
+
+- ⚠️ Angol oldali ellentmondás, NEM itt javítható: a párbeszéd címe mindhárom törzsváltozat alatt ugyanaz
+  (`crashReporter.dialog.title` = „Send crash report?” = `Elküldöd az összeomlási jelentést?`), tehát a `keptRunning`
+  ágon a cím összeomlást állít, miközben a törzs éppen ezt tagadja. A magyar hűen követi az angolt; a feloldás az `en`
+  kulcs dolga.
+
+## Kiadás és leválasztás: a `errors.eject.*` buboréküzenetek (2026-08-23)
+
+Kilenc kulcs. Mind a KETTŐSPONT UTÁNI mondat egy rövid buborékban: a burkoló vagy `fileExplorer.pane.ejectFailedToast`
+(`Nem sikerült kiadni: {volumeName}: {message}`), vagy `fileExplorer.pane.disconnectFailedToast`
+(`Nem sikerült a leválasztás: {message}`). RAW család (nincs ICU), tehát egyszeres aposztróf; a `hu/errors.json`
+egyetlen `''` párt sem tartalmaz, ez a fájl bevett alakja. Egy-két rövid mondat, markdown nélkül.
+
+- **„in use” (a kötetet/meghajtót valami fogja) → `használatban van`** · macOS Finder Tier 1, sok találat: `NE66` („A
+  kötet nem adható ki, mert jelenleg használatban van.”), `NE31`, `NE79`, `NE80`, `PE7`, `PE19` (ellenőrizve macOS
+  26.5.2, `LocalizableMerged`, 2026-08-23) · high.
+- **„Close any open files and apps, then eject again.” →
+  `Zárd be a nyitott fájlokat és alkalmazásokat, majd add ki újra.`** · szerkezetében szó szerint a macOS `NE52` („Az
+  ezeken a lemezeken lévő néhány fájl még használatban lehet. Léptessen ki minden nyitott alkalmazást, majd próbálja
+  újra.”), önözésből tegezésbe téve · high. Az Apple `léptessen ki` (= quit) helyett `zárd be`, mert az angol is a
+  lágyabb „close”-t mondja, és a mondat fájlokra is vonatkozik.
+- **removable (meghajtóra) → `cserélhető`** · macOS Finder Tier 1 (`KIND_FORMATTER_28_0` = `Cserélhető kötet`,
+  `KIND_FORMATTER_28_1` = `Cserélhető`, `GV3` = `Cserélhető kötetek`) ÉS Microsoft (`removable drive` =
+  `cserélhető meghajtó`) · high. A két forrás egyetért, ezért nincs macOS-vs-Windows hasadás. Nem `eltávolítható`: arra
+  egyik forrásban sincs fedezet.
+- **network share → `hálózati megosztás`** · Microsoft-terminológia Tier 2 (`network share` = `hálózati megosztás`,
+  HUN), a `megosztás` tő pedig már a szótár szava · high. A macOS a fogalmat `szerverkötet`-nek hívja (`FF22.2`), de az
+  a csatolt kötetet nevezi meg, nem magát a megosztást, ezért itt a Microsoft-alak a pontosabb.
+- **device (telefon, tablet, kamera kábelen) → `eszköz`** · macOS Finder Tier 1 (`PE5.1` = „A művelet nem hajtható
+  végre, mert az eszköz eltűnt.”, `PE92`), Double Commander („külső eszközök (például okostelefonok)”) · high.
+- **„Unplug it once it's idle.” → `Húzd ki, amikor már nincs használatban.`** · az `unplug`-ra a `hu` pile-ban nincs
+  közvetlen találat (a macOS `Tartsa csatlakoztatva az eszközt` a legközelebbi, ellentétes irányból), a `kihúz` viszont
+  a köznyelvi alak, és a második fele a fenti Tier-1 `használatban van` tagadása · high a `használatban` részre,
+  `tentative` a `Húzd ki` igére.
+- **`errors.eject.timedOut` NEM kudarcként fogalmaz**:
+  `A meghajtó még nem válaszolt, de a kiadás magától is befejeződhet.` · a testvér `errors.mutation.timedOut` mintája
+  (`A kötet még nem válaszolt, így a módosítás attól még végbemehet.`) és a `nem válaszolt` Tier-1 töve · high. A
+  `-hat/-het` viszi az angol „may still eject on its own” engedékeny jelentését; a `kiadás` főnév kerüli a
+  `kiadódik`-féle kényszeredett visszaható alakot.
+- **`errors.eject.unexpected` SZÁNDÉKOSAN eltér a szó szerint azonos angolú `errors.mutation.unexpected`-tól.** Angol
+  mindkettőnél: „Something went wrong, and Cmdr couldn't tell what.” (azonos `sourceHash`, `0c9d9f5`).
+  - `errors.mutation.unexpected` marad `Valami nem sikerült, és a Cmdr nem tudta megállapítani, hogy mi.`
+  - `errors.eject.unexpected` = `A Cmdr problémába ütközött, és nem tudta megállapítani, hogy mi.`
+  - **Miért**: a kiadás-buborék burkolója maga `Nem sikerült kiadni: …`-val kezdődik, tehát a settled alak közvetlen
+    szóismétlést adna („Nem sikerült kiadni: Naspolya: Valami nem sikerült, és…”). A `problémába ütközött` a fenti
+    összeomlásjelentő-blokkban már bizonyított Tier-1 szerkezet (`NE105` = „A(z) „^0” hibába ütközött.”), a mondat
+    második fele pedig szó szerint a settled alaké, így a két kulcs továbbra is egy hangon szól · high.
+- **`errors.eject.busy`**: `A Cmdr még fájlokat mozgat ezen a meghajtón. Add ki, amint ez befejeződik.` A `Cmdr` alanyos
+  szerkezet a katalógus bevett alakja (22 `A Cmdr nem …` érték); az `ezen a meghajtón` helyhatározós forma kerüli a
+  toldalékolt helyettesítőt, ahogy a `style.md` § Notes and decisions előírja.
+- Egyik kulcsnál sem kell `sameAsSourceJustification`: mind a kilenc érték eltér az angoltól.
+
+### A macOS-panelnevek magyarul: `Infó megjelenítése` és `Zárolt` (ugyanez a passz)
+
+A `errors.write.fileLocked.suggestion.mac` és a `errors.write.permissionDenied.suggestion.deleteMac` addig angolul
+hagyta a két panelnevet („Get Info”, „Locked”) egyébként magyar mondatban. Az Apple MINDKETTŐT lefordítja, tehát a
+
+1. terminológiai alapelv (fordítsd, amit az Apple fordít) szerint magyarul kell állniuk; a `BRAND_WORDS` sem tartalmazza
+   egyiket sem.
+
+- **Get Info → `Infó megjelenítése`** · macOS Finder Tier 1, közvetlen kulcs-egyeztetéssel: `Localizable`
+  `"Get Info" = "Infó megjelenítése"`, továbbá `MenuBar.strings` `300801.title` (en_GB `Get Info` → hu
+  `Infó megjelenítése`), `LocalizableMerged` `N165`, `TL22`, és futó szövegben `NE18`, `BN43`, `N30`, `PE14` („Válassza
+  a Fájl > Infó megjelenítése parancsot…”). Ellenőrizve macOS 26.5.2 (`sw_vers`), 2026-08-23 · high.
+- **Locked (a jelölőnégyzet az infóablakban) → `Zárolt`** · macOS Finder Tier 1: `InfoWindowGeneralView.strings`
+  `1073.title` (en_GB `Locked` → hu `Zárolt`). Az Apple futó szövegben idézőjelbe teszi (`NE18`: „szüntesse meg a
+  „Zárolt” kijelöltségét”, `NE43`, `PE14`), ezért a katalógusban is `„Zárolt”` a `style.md` idézőjel-szabálya szerint.
+  Ellenőrizve macOS 26.5.2, 2026-08-23 · high.
+- **A regiszter marad Cmdr-es, csak a CÍMKÉK az Apple-éi.** Az Apple mondata önöz és hivatalos („szüntesse meg a …
+  kijelöltségét”); a miénk tegez és köznyelvi: `vedd ki a „Zárolt” pipát`. A menüutat az Apple sem teszi idézőjelbe, a
+  jelölőnégyzet nevét igen; ezt követjük.
+- ⚠️ **Két kulcs MÉG angolul hagyja** (nem ehhez a passzhoz tartoznak, ezért érintetlenek):
+  `errors.listing.noPermissionErrno.suggestion` és `errors.listing.permissionDenied.suggestion` a „válaszd a Get Info
+  menüt, és nézd meg a Sharing & Permissions részt” fordulatot írja. A kész magyar alak mindkettőhöz:
+  `Infó megjelenítése`, illetve `Megosztás és jogok` (macOS Tier 1, `N30`/`N32`/`NE43`: „válassza a Fájl > Infó
+  megjelenítése parancsot, majd kattintson a Megosztás és jogok részre”).

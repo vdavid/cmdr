@@ -1,5 +1,5 @@
 import { getFileBeside, refreshListing } from '$lib/tauri-commands'
-import { getIpcErrorMessage, moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
+import { moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
 import { asMutationError } from '$lib/file-operations/mutation-error'
 import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
 import { validateFilename, getExtension } from '$lib/utils/filename-validation'
@@ -616,15 +616,15 @@ export function createRenameFlow(deps: RenameFlowDeps) {
                 // Unforced: a top-up after an unconfirmed rename.
                 void refreshListing(deps.getListingId(), false)
               } else {
-                // The typed refusal is worded in the user's language; a value that
-                // never reached the typed path falls back to whatever it carried.
+                // Worded in the user's language either way: a value that never
+                // reached the typed path reads as the backend's own honest
+                // fallback rather than as raw English.
                 addToast(
-                  failure
-                    ? renderMutationError(failure, target.isDirectory ? 'folder' : 'file')
-                    : getIpcErrorMessage(e),
-                  {
-                    level: 'error',
-                  },
+                  renderMutationError(
+                    failure ?? { type: 'unexpected', detail: '' },
+                    target.isDirectory ? 'folder' : 'file',
+                  ),
+                  { level: 'error' },
                 )
               }
               if (rename.isSuperseded(sessionId)) return

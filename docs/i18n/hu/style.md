@@ -54,8 +54,20 @@ Format: each line is `English: chosen · sources · confidence`. Confidence is `
 - viewer (the file viewer): `megjelenítő` · no exact Tier-1 match · tentative. macOS uses `Előnézet`/`Gyorsnézet` for
   preview, but those name Quick Look (a brand, kept verbatim). For Cmdr's own viewer, `megjelenítő` reads naturally.
 - eject: `kiadás` · mac ("Kiadás", "Egy kiadása", "Összes kiadása") · high. "Lemez kiadása".
-- disconnect (network): `leválasztás` · mac ("Leválaszt", "Kapcsolat bontása") · high.
+- disconnect (network): `leválasztás` · mac ("Leválaszt", "Kapcsolat bontása"), xf ("Failed to unmount" = "leválasztása
+  sikertelen") · high.
 - share (an SMB share): `megosztás` · mac, ms, gn · high.
+- network share: `hálózati megosztás` · ms ("network share" = "hálózati megosztás", HUN) · high.
+- removable (of a drive): `cserélhető` · mac ("Cserélhető kötet", "Cserélhető"), ms ("removable drive" = "cserélhető
+  meghajtó") · high.
+- device (a phone, tablet, or camera on a cable): `eszköz` · mac ("mert az eszköz eltűnt"), Double Commander ("külső
+  eszközök (például okostelefonok)") · high.
+- in use (something still holds the volume): `használatban van` · mac ("A kötet nem adható ki, mert jelenleg
+  használatban van.") · high.
+- Get Info (the Finder info window/command): `Infó megjelenítése` · mac (Finder `Localizable`, `MenuBar` `300801.title`)
+  · high. Apple localizes it, so it is NOT a kept-English brand.
+- Locked (the checkbox in that window): `Zárolt` · mac (Finder `InfoWindowGeneralView` `1073.title`) · high. Quote it in
+  running text (`„Zárolt”`), as Apple does.
 - search: `keresés` · mac ("Keresés"), ms, gn, xf · high.
 - sort: `rendezés` · mac ("Rendezés módja"), ms · high.
 - settings: `beállítások` · mac ("Beállítások"), ms · high.
@@ -165,6 +177,15 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Length** runs near English; still overflow-check against the pseudolocale (`en-XA`).
 - **A magyarázó prózában a nem végzetes probléma szava `probléma`**, nem `hiba` (a hiba-regisztert a hang kerüli) és nem
   `gond` (arra a `hu` pile nulla találatot ad). Forrás és teljes érvelés: `glossary.md` § Ha a Cmdr nem állt le.
+- **A macOS panelneveit magyarul írjuk, mert az Apple is lefordítja őket.** `Get Info` → `Infó megjelenítése`, `Locked`
+  → `Zárolt`, `Sharing & Permissions` → `Megosztás és jogok`. Egyik sincs a `BRAND_WORDS` listán, tehát az
+  1. terminológiai alapelv (fordítsd, amit az Apple fordít) érvényes rájuk. A CÍMKÉK az Apple-éi, a MONDAT a miénk:
+     tegezünk és köznyelvi maradunk (`vedd ki a „Zárolt” pipát`), nem másoljuk az Apple önöző hivatalnyelvét
+     (`szüntesse meg a … kijelöltségét`). Bizonyítékok: `glossary.md` § A macOS-panelnevek magyarul.
+- **Ugyanaz az angol mondat KÉT különböző magyar alakot kaphat, ha a burkoló szöveg eltér.** A `errors.eject.unexpected`
+  és a `errors.mutation.unexpected` angolul betű szerint azonos, magyarul mégsem az: az előbbi a
+  `Nem sikerült kiadni: …` burkoló után áll, ahol a settled `Valami nem sikerült` közvetlen szóismétlés lenne. Ilyenkor
+  a settled alak marad az alapeset, az eltérést pedig a `glossary.md`-ben indokoljuk, forrással.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

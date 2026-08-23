@@ -69,6 +69,15 @@ Straightforward (sources agree, `high`):
 - done → Gereed · macOS ("Done"→"Gereed") · high
 - save → bewaren · macOS ("Save"→"Bewaar"); macOS uses "bewaren", NOT "opslaan", for save · high
 - file → bestand (plural bestanden) · macOS, MS, Nautilus · high
+- Get Info (Finder) → Toon info · macOS Finder ("Get Info"→"Toon info") · high
+- Locked (the Info-panel checkbox) → Beveiligd · macOS Finder (`InfoWindowGeneralView` `1073.title`) + AppKit
+  ("Locked"→"Beveiligd") · high
+- uncheck Locked → deselecteer ‘Beveiligd’ · macOS Finder `NE18`, Apple's own wording for this same recovery advice ·
+  high
+- eject (past participle) → uitgeworpen · from the settled eject→uitwerpen · high
+- in use → in gebruik · macOS Finder ("… is in gebruik") · high
+- unplug (a device) → loskoppelen ("Koppel het los") · catalog `mtp.permissionDialog.helpText`, macOS-consistent · high
+- idle (a device) → niet meer bezig · counterpart of the catalog's "Het apparaat is bezig" · high
 
 Add rows as terms come up, each with sources and a confidence.
 
@@ -103,6 +112,14 @@ Duplicating the whole sentence per branch works too but rots twice as fast.
 - **Length:** Dutch runs slightly longer than English (compounds like "crashrapport", "instellingen"), but far less than
   German. Overflow-check the layout against the pseudolocale (`en-XA`); watch buttons and toasts.
 - **Compound nouns concatenate** ("crashrapport", "foutcode"). Correct Dutch; don't space-separate them.
+- **macOS UI names Apple localizes get the Dutch name, even when the English `@key.description` says otherwise.**
+  `Get Info` → `Toon info` and the Info-panel `Locked` → `Beveiligd` are both localized by Apple, so term-choice
+  principle 1 wins over a source description that predates the rule. Only names Apple itself keeps English (Finder,
+  Spotlight, Terminal, Disk Utility, First Aid, Activity Monitor) stay verbatim. Report the clash upward rather than
+  silently following the description.
+- **An `errors.eject.*` value is read AFTER its wrapper's colon** (`{volumeName} uitwerpen lukte niet: …` /
+  `Verbinding verbreken lukte niet: …`), so check the sentence against the wrapper and don't restate the wrapper's verb
+  unless English does too.
 - **Numbers and dates come from the formatter layer** (comma decimal, period thousands). Never hardcode separators.
 - **Speed multipliers**: write them as digits plus `x` and the equality shape, `4x zo langzaam als …` /
   `4x zo snel als …`, not `4x langzamer dan`, which leaves open whether the factor applies to the difference or the
@@ -140,6 +157,16 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
 - **"4x slower" → "4x zo langzaam als"** (`osMountFallback.message`): nothing in the pile puts a multiplier in front of
   a comparative, so the equality shape is a judgment call over the shorter, more colloquial "4x langzamer dan". Confirm
   which one reads better in a toast.
+- **`errors.eject.notEjectable` avoids the macOS word for "removable"**: macOS `nl` says `Verwijderbaar`, but in a
+  sentence about ejecting that reads as _deletable_ (the same collision that already ruled out `Verwijder` for eject),
+  so the string says what you can do instead: "Deze schijf kun je niet uitwerpen, dus hij blijft aangesloten." Confirm
+  the sidestep.
+- **`errors.eject.notAnSmbVolume` repeats "verbreken" after its wrapper** ("Verbinding verbreken lukte niet: Dit is geen
+  netwerkshare, dus er is geen verbinding om te verbreken."). English repeats it the same way, and Dutch `verbreken`
+  needs its object, so it's deliberate. Confirm it doesn't grate in a small toast.
+- **`vergrendeld` vs `beveiligd` for a locked file**: `errors.write.fileLocked.*` says `vergrendeld`, while
+  `errors.mutation.fileLocked` and Apple itself say `beveiligd`. Left as-is this pass; confirm a locale-wide sweep to
+  `beveiligd`. Evidence: `glossary.md` § Get Info en Beveiligd.
 - **"The transfer has stopped moving" → "De overdracht komt niet meer vooruit"**: picked over the more idiomatic
   standstill phrase "ligt stil", which sits too close to the neighbouring "Gepauzeerd" state. Confirm the tradeoff.
 

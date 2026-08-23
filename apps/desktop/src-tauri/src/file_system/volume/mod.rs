@@ -23,6 +23,7 @@ pub mod backends;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod eject;
 pub(crate) mod manager;
+pub mod reconnect_error;
 
 pub use backends::LocalPosixVolume;
 pub(crate) use backends::rename_local_exclusive;

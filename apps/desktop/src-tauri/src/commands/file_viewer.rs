@@ -2,10 +2,10 @@
 
 use tokio::time::Duration;
 
-use super::util::{IpcError, blocking_result_with_timeout};
+use super::util::blocking_typed_result_with_timeout;
 use crate::file_viewer::{
-    self, EncodingOptions, FileEncoding, LineChunk, RangeEnd, SearchMode, SearchPollResult, SeekTarget, ViewerError,
-    ViewerOpenResult, ViewerSessionStatus,
+    self, EncodingOptions, FileEncoding, LineChunk, RangeEnd, SearchMode, SearchPollResult, SeekTarget, SeekTargetKind,
+    ViewerError, ViewerOpenResult, ViewerSessionStatus,
 };
 use log::debug;
 use tauri::Manager;
@@ -61,7 +61,7 @@ pub async fn viewer_open(
     window_label: String,
 ) -> Result<ViewerOpenResult, ViewerError> {
     let timeout = open_timeout_for(&path);
-    // Typed `ViewerError` (not a stringified `IpcError`) so the FE can render friendly
+    // Typed `ViewerError` (never a stringified message) so the FE can render friendly
     // copy for the archive family — `ExtractTooLarge` (preview cap), `Archive`
     // (encrypted / corrupt / unsupported codec) — matching `viewer_read_range`.
     match tokio::time::timeout(
@@ -118,37 +118,34 @@ pub async fn viewer_open_as_text(
 ///
 /// # Arguments
 /// * `session_id` - The session ID from `viewer_open`.
-/// * `target_type` - One of "line", "byte", or "fraction".
+/// * `target_kind` - Which of the three seeks `target_value` means.
 /// * `target_value` - The seek value (line number, byte offset, or fraction 0.0-1.0).
 /// * `count` - Number of lines to fetch.
 #[tauri::command]
 #[specta::specta]
 pub async fn viewer_get_lines(
     session_id: String,
-    target_type: String,
+    target_type: SeekTargetKind,
     target_value: f64,
     count: usize,
-) -> Result<LineChunk, IpcError> {
-    let target = match target_type.as_str() {
-        "line" => SeekTarget::Line(target_value as usize),
-        "byte" => SeekTarget::ByteOffset(target_value as u64),
-        "fraction" => SeekTarget::Fraction(target_value),
-        other => {
-            return Err(IpcError::from_err(format!(
-                "Unknown target type: {}. Use 'line', 'byte', or 'fraction'.",
-                other
-            )));
-        }
+) -> Result<LineChunk, ViewerError> {
+    let target = match target_type {
+        SeekTargetKind::Line => SeekTarget::Line(target_value as usize),
+        SeekTargetKind::Byte => SeekTarget::ByteOffset(target_value as u64),
+        SeekTargetKind::Fraction => SeekTarget::Fraction(target_value),
     };
 
     debug!(
-        "viewer_get_lines: session={}, target_type={}, target_value={}, count={}",
+        "viewer_get_lines: session={}, target_type={:?}, target_value={}, count={}",
         session_id, target_type, target_value, count
     );
 
-    let result = blocking_result_with_timeout(VIEWER_TIMEOUT, move || {
-        file_viewer::get_lines(&session_id, target, count).map_err(|e| e.to_string())
-    })
+    let result = blocking_typed_result_with_timeout(
+        VIEWER_TIMEOUT,
+        || ViewerError::TimedOut,
+        |message| ViewerError::Io { message },
+        move || file_viewer::get_lines(&session_id, target, count),
+    )
     .await?;
 
     debug!(

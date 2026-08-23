@@ -58,7 +58,7 @@ pub use session::{
     set_encoding, set_tail_mode, write_range_to_file,
 };
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Maximum file size for FullLoadBackend (1 MB).
 const FULL_LOAD_THRESHOLD: u64 = 1024 * 1024;
@@ -73,6 +73,22 @@ const MAX_BACKWARD_SCAN: usize = 8192;
 /// The frontend highlights additional matches client-side on visible lines, so stopping early
 /// doesn't lose highlighting: it only caps the prev/next navigation index.
 const MAX_SEARCH_MATCHES: usize = 10_000;
+
+/// Which kind of seek the caller is asking for, as a value the wire enforces.
+///
+/// The command pairs it with a numeric `target_value`; keeping the KIND an enum
+/// is what stops the backend re-parsing a free-form string and inventing an
+/// error arm for a case typed callers can't reach.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum SeekTargetKind {
+    /// `target_value` is a 0-based line number.
+    Line,
+    /// `target_value` is a byte offset.
+    Byte,
+    /// `target_value` is a fraction of the file (0.0 = start, 1.0 = end).
+    Fraction,
+}
 
 /// Where to seek in the file.
 #[derive(Debug, Clone)]

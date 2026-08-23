@@ -1308,3 +1308,78 @@ falar só de fechamento. Tudo vem da seção do diálogo de falha acima, no pres
   `settings.updates.crashReports.label` continua `Enviar relatórios de falha`: é o nome do ajuste.
 - **Segunda frase tirada de `crashReporter.dialog.privacyNote`** (`qual parte do código teve o problema`), no lugar de
   `o local da falha`, verdadeiro só quando algo falhou · high.
+
+### Recusas de ejetar e desconectar: as nove mensagens do aviso rápido (`errors.eject.*`, 2026-08-23)
+
+Cada valor entra num aviso rápido DEPOIS de dois pontos: `fileExplorer.pane.ejectFailedToast` ("Não foi possível ejetar
+{volumeName}: …") ou `fileExplorer.pane.disconnectFailedToast` ("Não foi possível desconectar: …"). Família RAW, sem
+ICU, apóstrofos simples (nenhum dos nove precisa de apóstrofo). O aviso é pequeno, então cada valor fica em uma ou duas
+frases curtas.
+
+- **A frase depois dos dois pontos começa com maiúscula**, como o inglês: cada valor é uma oração completa e o invólucro
+  não sabe qual dos nove vai cair ali · high.
+- **"is being used" (o volume ocupado) → `está usando` / `usando este disco`** · macOS Finder pt-BR é a fonte direta
+  para toda essa família: "O volume não pode ser ejetado porque está sendo usado atualmente.", "Você não pode ejetar
+  “^0” porque ele está sendo usado.", "Há um disco em “^0” que está em uso e não pode ser ejetado."
+  (`LocalizableMerged.json`) · confirmed. Em `unmountRefused` o sujeito é o **algo** do inglês (linha já fixada em
+  `errors.mutation`), então a voz fica ativa: `Algo ainda está usando este disco.` ❌ O `(ocupado)` do glossário é o
+  rótulo curto do alternador de volumes, não entra em frase corrida.
+- **"Close any open files and apps" → `Feche os arquivos e aplicativos abertos`** · o Finder pt-BR fecha a mesma receita
+  com "Encerre todos os aplicativos abertos e tente novamente." e "Talvez alguns arquivos desses discos estejam sendo
+  usados." · high. O inglês pede arquivos E apps, então os dois entram num só sintagma; **depois ejete-o de novo** usa a
+  ênclise pt-BR e o `de novo` que o resto do `errors.json` já usa ("tente de novo", "monte-o de novo").
+- **"isn't removable" → `não é removível`** · macOS Finder pt-BR ("Removível", "Volume Removível"), Thunar pt-BR
+  ("Unidade removível"), Total Commander pt-BR ("Disco removível"), terminologia da Microsoft (`removable` → removível)
+  · confirmed. O fecho **então ele continua conectado** reusa o `continua conectado` já publicado em
+  `errors.listing.deviceReconnecting.explanation`.
+- **"isn't connected any more" → `não está mais conectado`** · macOS Finder pt-BR "Não foi possível concluir a operação
+  porque o disco “^0” não está mais disponível." dá o **não está mais**; **conectado** é a linha Connect/Disconnect do
+  glossário · high. `Esse disco` (não "este"): o disco já sumiu, então o demonstrativo se afasta.
+- **"network share" → `compartilhamento de rede`** · terminologia da Microsoft (`network share` → "compartilhamento de
+  rede") e o valor já publicado em `errors.listing.remotePermissionDenied.explanation` ("está em um compartilhamento de
+  rede") · confirmed. O "This" vira **Este item**, o substantivo que o Finder usa nessa posição (mesma decisão
+  registrada na seção das recusas de mover para o Lixo), porque o alvo pode ser um disco local ou um celular MTP, e
+  "Este volume" prejulgaria isso.
+- **"wouldn't close its connection" → `se recusou a encerrar a conexão`** · **recusar** é o verbo do pile para uma
+  recusa do sistema/dispositivo (Nautilus pt-BR "O servidor recusou a conexão", Finder pt-BR "“^0” recusou seu
+  pedido."), a mesma escolha já registrada em `errors.mutation.trashRefused` · high. A colocação `encerrar a conexão`
+  não tem atestação no pile (zero ocorrências); **encerrar** é o verbo do catálogo para terminar algo em curso
+  (`main.quit`, "Encerrar Cmdr") e é a regência natural do pt-BR aqui.
+- **"Unplug it" → `Desconecte-o`** · o catálogo já equipara unplug e desconectar em
+  `errors.listing.deviceReconnecting.suggestion` ("There's nothing to unplug." → "Não é preciso desconectar nada.") ·
+  confirmed. **idle → `ocioso`** · terminologia da Microsoft (`idle` → ocioso, `idle timeout` → "tempo limite ocioso"),
+  Thunar pt-BR ("dispositivos ociosos") e a linha `quando o Mac está ocioso` deste glossário · high.
+- **`timedOut` NÃO é uma falha** · `O disco ainda não respondeu, então a ejeção ainda pode ser concluída sozinha.` Mesma
+  regra do irmão `errors.mutation.timedOut` ("O volume ainda não respondeu, então a alteração ainda pode ser
+  concluída"), com o mesmo **ainda pode ser concluída**. O substantivo **a ejeção** é do Finder pt-BR ("mantenha a tecla
+  Option pressionada durante a ejeção") · high; **sozinha** traduz o "on its own", que é a parte tranquilizadora: dá
+  para não fazer nada. ❌ Nunca "não foi possível" nem "não deu certo" aqui.
+- **`unexpected` copia o irmão letra por letra** · `Algo deu errado, e o Cmdr não conseguiu identificar o quê.`,
+  idêntico a `errors.mutation.unexpected` (o inglês das duas chaves também é idêntico) · confirmed. O mesmo
+  `não conseguiu identificar` serve `mtpIdMissingDevicePrefix` ("O Cmdr não conseguiu identificar qual é este
+  dispositivo, então não consegue desconectá-lo.").
+- **`busy`: o gerúndio brasileiro** · `O Cmdr ainda está movendo arquivos neste disco. Ejete-o assim que isso terminar.`
+  **está movendo** (nunca "está a mover"), **assim que** para o "once" (Total Commander pt-BR "assim que eles forem
+  salvos"), e a ênclise **Ejete-o**.
+- Varredura pt-PT (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o nome,
+  você omitido), mais U+2019, apóstrofo duplo e espaço duplo: zero ocorrências nos nove valores. Nenhum
+  `sameAsSourceJustification` necessário: os nove diferem do inglês.
+
+### "drive de rede" reconciliado para "disco de rede" (`errors.listing.*`, 2026-08-23)
+
+O bolsão sinalizado nas seções do interruptor mestre de indexação e das 31 recusas: quatro valores de `errors.json`
+ainda diziam **drive de rede**, contra o **disco de rede** fixado na seção do índice de imagens em rede.
+
+- **network drive → `disco de rede`** · confirmado de novo contra o pile: o macOS pt-BR Finder usa **disco** em toda a
+  família ("Discos rígidos", "Discos externos", "Ejetar discos e desmontar servidores"), e "de rede" é o qualificador
+  corrente (Total Commander pt-BR `5164` "Exibir os nomes e caminhos de &discos de rede"). A terminologia da Microsoft
+  diz `network drive` → "unidade de rede", mas o princípio 2 de escolha de termos põe o Finder na frente · high. ❌
+  Nunca "drive de rede" nem "unidade de rede".
+- Chaves alinhadas: `errors.listing.staleConnection.suggestion`, `errors.listing.pathNotFoundErrno.suggestion`,
+  `errors.listing.notFound.suggestion`, `errors.listing.deviceDisconnected.explanation`. O inglês não mudou, então o
+  `@key.sourceHash` das quatro fica intacto.
+- ⚠️ **O bolsão continua aberto em outras dez chaves**, fora do escopo deste lote: `staleConnection.explanation`
+  ("drives de rede (NFS, SMB)"), `quotaExceeded.explanation` ("drives de rede"), `notSupported.explanation` ("certos
+  drives de rede"), mais o **drive externo** de `notSupportedErrno.suggestion` e `deviceProblem.suggestion`, o **drive
+  interno** de `crossDeviceOperation.explanation` e `attributeNotFound.suggestion`, e o **drive virtual** do **pCloud**
+  em `errors.provider.pCloudFuse.*`. Todos merecem o mesmo `disco`.

@@ -49,7 +49,6 @@ vi.mock('$lib/tauri-commands', () => ({
   createDirectory: vi.fn(() => Promise.resolve()),
   createFile: vi.fn(() => Promise.resolve()),
   refreshListing: vi.fn(() => Promise.resolve()),
-  isIpcError: vi.fn(() => false),
   resolveGoToPath: vi.fn(() => Promise.resolve({ status: 'ok', data: { kind: 'directory' } })),
   readClipboardText: vi.fn(() => Promise.resolve(null)),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),

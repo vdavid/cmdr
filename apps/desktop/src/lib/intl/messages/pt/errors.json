@@ -127,7 +127,7 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "Veja o que tentar:\n- Saia desta pasta e volte\n- Se for um drive de rede, tente desmontá-lo e montá-lo de novo no Finder\n- Verifique se o servidor que hospeda esta pasta está em execução\n- No Terminal, execute `mount` para ver os volumes montados no momento",
+  "errors.listing.staleConnection.suggestion": "Veja o que tentar:\n- Saia desta pasta e volte\n- Se for um disco de rede, tente desmontá-lo e montá-lo de novo no Finder\n- Verifique se o servidor que hospeda esta pasta está em execução\n- No Terminal, execute `mount` para ver os volumes montados no momento",
   "@errors.listing.staleConnection.suggestion": {
     "sourceHash": "05960c8"
   },
@@ -175,7 +175,7 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num drive de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta principal e procure o item por lá\n- No Terminal, execute `ls -la` na pasta principal para ver o que há nela",
+  "errors.listing.pathNotFoundErrno.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num disco de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta principal e procure o item por lá\n- No Terminal, execute `ls -la` na pasta principal para ver o que há nela",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -463,7 +463,7 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.notFound.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num drive de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta principal e procure o item por lá\n- No Terminal, execute `ls -la` na pasta principal para ver o que há nela",
+  "errors.listing.notFound.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num disco de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta principal e procure o item por lá\n- No Terminal, execute `ls -la` na pasta principal para ver o que há nela",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -531,7 +531,7 @@
   "@errors.listing.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.listing.deviceDisconnected.explanation": "O dispositivo que guarda `{path}` foi desconectado durante a operação. Isso pode acontecer se um cabo USB se soltar, um celular entrar em repouso, ou um drive de rede perder a conexão.",
+  "errors.listing.deviceDisconnected.explanation": "O dispositivo que guarda `{path}` foi desconectado durante a operação. Isso pode acontecer se um cabo USB se soltar, um celular entrar em repouso, ou um disco de rede perder a conexão.",
   "@errors.listing.deviceDisconnected.explanation": {
     "sourceHash": "c8b7b10"
   },
@@ -1604,5 +1604,41 @@
   "errors.mutation.trashRefused": "O macOS se recusou a mover este item para o Lixo.",
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
+  },
+  "errors.eject.busy": "O Cmdr ainda está movendo arquivos neste disco. Ejete-o assim que isso terminar.",
+  "@errors.eject.busy": {
+    "sourceHash": "0600dd5"
+  },
+  "errors.eject.volumeNotFound": "Esse disco não está mais conectado, então não há nada para ejetar.",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "62a3af2"
+  },
+  "errors.eject.mtpIdMissingDevicePrefix": "O Cmdr não conseguiu identificar qual é este dispositivo, então não consegue desconectá-lo.",
+  "@errors.eject.mtpIdMissingDevicePrefix": {
+    "sourceHash": "d26b57b"
+  },
+  "errors.eject.notEjectable": "Este disco não é removível, então ele continua conectado.",
+  "@errors.eject.notEjectable": {
+    "sourceHash": "bb88249"
+  },
+  "errors.eject.notAnSmbVolume": "Este item não é um compartilhamento de rede, então não há nada para desconectar.",
+  "@errors.eject.notAnSmbVolume": {
+    "sourceHash": "d49623e"
+  },
+  "errors.eject.mtpDisconnectRefused": "O dispositivo se recusou a encerrar a conexão. Desconecte-o assim que ele estiver ocioso.",
+  "@errors.eject.mtpDisconnectRefused": {
+    "sourceHash": "d49861f"
+  },
+  "errors.eject.unmountRefused": "Algo ainda está usando este disco. Feche os arquivos e aplicativos abertos, depois ejete-o de novo.",
+  "@errors.eject.unmountRefused": {
+    "sourceHash": "1ff7d31"
+  },
+  "errors.eject.timedOut": "O disco ainda não respondeu, então a ejeção ainda pode ser concluída sozinha.",
+  "@errors.eject.timedOut": {
+    "sourceHash": "c592421"
+  },
+  "errors.eject.unexpected": "Algo deu errado, e o Cmdr não conseguiu identificar o quê.",
+  "@errors.eject.unexpected": {
+    "sourceHash": "0c9d9f5"
   }
 }

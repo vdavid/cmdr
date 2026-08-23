@@ -1,76 +1,73 @@
 import { tString } from '$lib/intl/messages.svelte'
 import { isMacOS } from '$lib/shortcuts/key-capture'
-import { isIpcError } from '$lib/tauri-commands/ipc-types'
+import type { AiApiKeyError } from '$lib/ipc/bindings'
+import { TypedFailure, failureOf } from '$lib/ipc/typed-failure'
 
-/** Possible variants of the Rust `AiApiKeyError` enum we surface to the UI. */
-type SecretErrorKind = 'access_denied' | 'other' | 'unknown'
+/** An `Error` that still carries the secret store's typed refusal. */
+export class AiSecretFailure extends TypedFailure<AiApiKeyError> {
+  constructor(failure: AiApiKeyError) {
+    super(failure, `secret store refused: ${failure.type}`)
+    this.name = 'AiSecretFailure'
+  }
+}
+
+/** Throws a wire `AiApiKeyError` as an `Error`, keeping the typed value. */
+export function throwAiSecretError(failure: AiApiKeyError): never {
+  throw new AiSecretFailure(failure)
+}
+
+/**
+ * The typed refusal behind a caught value, or `null` when it isn't one.
+ *
+ * `configure_ai` hands its `secretStoreError` back as a bare wire value rather
+ * than a throw, so that shape is accepted here too; both roads reach the same
+ * variant.
+ */
+export function asAiSecretError(error: unknown): AiApiKeyError | null {
+  const thrown = failureOf(AiSecretFailure, error)
+  if (thrown !== null) return thrown
+  if (typeof error !== 'object' || error === null || !('type' in error)) return null
+  const tag = error.type
+  return tag === 'not_found' || tag === 'access_denied' || tag === 'other' ? (error as AiApiKeyError) : null
+}
 
 export interface SecretErrorMessage {
   /** Short, fits in a toast title or inline status line. */
   title: string
   /** Optional second sentence with actionable guidance (open Keychain Access, unlock keyring, etc.). */
   body?: string
-  /** Underlying error message from the OS, for a "details" affordance. */
+  /** The store's own words, for a "details" affordance. ❌ Never the message itself. */
   detail?: string
   /** Toast level the caller should use when surfacing this. */
   level: 'warn' | 'error'
 }
 
-/** Pulls a `kind` + `message` out of whatever the Tauri command rejected with. The error shape
- *  varies: `IpcError` from `throwIpcError`, a bare `AiApiKeyError` object, or a generic JS Error. */
-function extractErrorShape(e: unknown): { kind: SecretErrorKind; message: string } {
-  // IpcError shape: { message, timedOut }. Wraps the underlying serialized error.
-  if (isIpcError(e)) {
-    const msg = e.message
-    const kind = inferKindFromMessage(msg)
-    return { kind, message: msg }
-  }
-
-  // Raw `AiApiKeyError` serialized over IPC: { type: 'access_denied' | 'other' | 'not_found', message }
-  if (typeof e === 'object' && e !== null && 'type' in e) {
-    const obj = e as Record<string, unknown>
-    const tag = typeof obj.type === 'string' ? obj.type : ''
-    const message = typeof obj.message === 'string' ? obj.message : 'Unknown error'
-    if (tag === 'access_denied') return { kind: 'access_denied', message }
-    if (tag) return { kind: 'other', message }
-  }
-
-  if (e instanceof Error) {
-    return { kind: inferKindFromMessage(e.message), message: e.message }
-  }
-
-  return { kind: 'unknown', message: typeof e === 'string' ? e : 'Unknown error' }
-}
-
-/** Heuristic for stringly-typed errors. Prefer the typed `AiApiKeyError` path when possible. */
-function inferKindFromMessage(msg: string): SecretErrorKind {
-  const lower = msg.toLowerCase()
-
-  if (lower.includes('denied') || lower.includes('cancelled') || lower.includes('canceled')) {
-    return 'access_denied'
-  }
-  return 'other'
-}
-
-/** Translate a save/read failure from the secret store into user-facing copy. Platform-aware
- *  guidance helps users actually fix the underlying issue (Keychain ACL on macOS, locked keyring
- *  on Linux, etc.) instead of just seeing a raw error message. */
+/**
+ * Translate a save/read refusal from the secret store into user-facing copy.
+ *
+ * The backend's `AiApiKeyError` is typed, so the branch is a VARIANT: `access_denied`
+ * is the one the OS-specific guidance exists for (a Keychain ACL on macOS, a locked
+ * keyring on Linux), and everything else reads as the generic notice. ❌ Nothing here
+ * inspects the store's message: `detail` carries it for a details affordance and
+ * nothing else.
+ */
 export function describeSecretError(e: unknown, operation: 'save' | 'read'): SecretErrorMessage {
-  const { kind, message } = extractErrorShape(e)
+  const failure = asAiSecretError(e)
+  const detail = failure?.message ?? (e instanceof Error ? e.message : typeof e === 'string' ? e : undefined)
 
-  if (kind === 'access_denied') {
+  if (failure?.type === 'access_denied') {
     if (isMacOS()) {
       return {
         title: tString('ai.secretError.keychainTitle', { op: operation }),
         body: tString('ai.secretError.keychainBody', { op: operation }),
-        detail: message,
+        detail,
         level: 'error',
       }
     }
     return {
       title: tString('ai.secretError.keyringTitle', { op: operation }),
       body: tString('ai.secretError.keyringBody'),
-      detail: message,
+      detail,
       level: 'error',
     }
   }
@@ -78,7 +75,7 @@ export function describeSecretError(e: unknown, operation: 'save' | 'read'): Sec
   return {
     title: tString('ai.secretError.genericTitle', { op: operation }),
     body: tString('ai.secretError.genericBody'),
-    detail: message,
+    detail,
     level: 'error',
   }
 }

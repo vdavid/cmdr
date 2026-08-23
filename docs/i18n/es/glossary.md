@@ -1455,3 +1455,54 @@ presente:
   ajuste.
 - La segunda frase se toma de `crashReporter.dialog.privacyNote` (`qué parte del código tuvo el problema`) y sustituye a
   `la ubicación del fallo`, que solo era cierta si algo falló · high.
+
+## Expulsar y desconectar: los nueve avisos del selector de volúmenes (`errors.eject.*`, 2026-08-23)
+
+Nueve claves nuevas. Cada valor se inserta detrás de dos puntos, en un aviso breve de la esquina superior derecha:
+`No se pudo expulsar {volumeName}: …` o `No se pudo desconectar: …` (`fileExplorer.pane.ejectFailedToast` /
+`.disconnectFailedToast`). Familia RAW: apóstrofos simples y sin marcadores. Como en el bloque de `errors.mutation.*`,
+la regla es **citar al hermano antes que inventar la frase**.
+
+- **"drive" (el volumen que se expulsa) → `disco`** · macOS Finder es el corpus más denso que hay para esta frase exacta
+  y siempre dice `disco`: NE31/NE80 "El disco “^0” está en uso y no se puede expulsar.", NE79 "Un disco en “^0” está en
+  uso y no se puede expulsar.", TL_HELP_EJCT "Expulsar discos y desmontar servidores", AppKit `AppKitErrors` "The disk
+  could not be ejected because it is in use by “%@”." → "No se ha podido expulsar el disco porque está siendo usado por
+  “%@”." · high. Ojo con los otros dos usos de "drive" ya asentados en el catálogo: `unidades` cuando es la lista de
+  volúmenes del usuario ("your drives" → "tus unidades", `askCmdr.tool.listVolumes.doing`) y `disco de red` /
+  `disco externo` en prosa larga. Aquí manda el sentido de expulsión, así que `disco`.
+- **removable → `extraíble`** · macOS Finder (`KIND_FORMATTER_28_0` "Volumen extraíble", `GV3` "Volúmenes extraíbles") +
+  terminología de Microsoft (`removable` → `extraíble`, 17166_639981_654018; `removable drive` → `unidad extraíble`) ·
+  high. Valor: "Este disco no es extraíble, así que se queda conectado."
+- **idle (un dispositivo que ya no está trabajando) → `inactivo`** · terminología de Microsoft (`idle` → `inactivo`,
+  9514_63893_63894) · high.
+- **"Unplug it" → `Desconecta el cable`**, no `Desconéctalo` · el catálogo ya traduce "unplug" con `desconectar`
+  (`errors.listing.deviceReconnecting.suggestion`, "There's nothing to unplug." → "No hace falta desconectar nada."),
+  pero aquí `Desconéctalo` chocaría con el comando `Desconectar` de Cmdr, que es justo lo que acaba de no funcionar.
+  Nombrar el cable deja claro que es la acción física, y el cable ya está en el catálogo
+  (`errors.listing.deviceDisconnected.suggestion`, "asegúrate de que el cable esté bien sujeto"). El pile no tiene
+  ninguna cadena con `desenchufar` · high (el giro), tentative (que `cable` sea siempre exacto: un MTP va por USB, así
+  que sí lo es hoy)
+- **"The device wouldn't close its connection." → `El dispositivo no cerró su conexión.`** · mismo antropomorfismo
+  inglés que `trashRefused`, y la misma solución: el hecho en pasado y sin veredicto. ❌ No `no quiso cerrar` (demasiado
+  coloquial) ni `rechazó cerrar` (`rechazar` pide objeto nominal) · high
+- **`timedOut` no es un fallo**, se copia la fórmula ya asentada de `errors.mutation.timedOut` ("El volumen aún no ha
+  respondido, así que es posible que el cambio sí se aplique."): "El disco aún no ha respondido, así que es posible que
+  sí se expulse por su cuenta." El `sí` enfático carga el "may still" · high (consistencia)
+- **`volumeNotFound` calca a `errors.mutation.volumeGone`** ("Ese volumen ya no está disponible, así que no cambió
+  nada."), con el mismo esqueleto `Ese … ya no está …, así que …`: "Ese disco ya no está conectado, así que no hay nada
+  que expulsar." El giro `no hay nada que + infinitivo` ya está en el catálogo (`askCmdr.renameUndo.unavailable`, "No
+  hay nada que restaurar.") · high
+- **network share → `recurso compartido de red`** · ya asentado en el catálogo (`errors.listing.notSupportedErrno`,
+  `settings.indexing.askForEachDrive`, `settings.network.timeoutMode`) sobre macOS + terminología de Microsoft · high
+  (se reafirma)
+- **`unexpected` es literalmente la misma cadena inglesa que `errors.mutation.unexpected`**, así que reutiliza su valor
+  palabra por palabra: "Algo salió mal y Cmdr no pudo saber qué." Dos claves distintas con el mismo texto es lo
+  correcto: el inglés también las tiene idénticas · high
+- **"Close any open files and apps" → `Cierra los archivos y las apps que tengas abiertos`** · la relativa con `tener`
+  evita el participio suelto (`los archivos y las apps abiertos` obliga a un masculino plural que suena forzado con un
+  sustantivo femenino al lado) y suena a instrucción de macOS. `app` en minúscula ya está en el glosario · high
+- **`busy` reutiliza el `todavía está + gerundio` del catálogo** (`errors.mutation.archiveEditNotReady`, "Cmdr todavía
+  se está iniciando"): "Cmdr todavía está moviendo archivos en este disco. Expúlsalo cuando termine." El clítico `-lo`
+  concuerda con `disco`, así que no hay género que exponer · high
+- Ningún valor lleva apóstrofo ni marcador `{}`, y los nueve difieren del inglés, así que no hace falta
+  `sameAsSourceJustification`.

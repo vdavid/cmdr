@@ -31,6 +31,7 @@ import { SvelteMap } from 'svelte/reactivity'
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { reconnectSmbVolume, getVolumeSignInState, onVolumeConnectionChanged } from '$lib/tauri-commands'
 import type { SignInPrompt } from '$lib/tauri-commands'
+import { asReconnectError, describeReconnectRefusal } from './reconnect-error'
 import { getAppLogger } from '$lib/logging/logger'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
@@ -355,10 +356,13 @@ class SmbReconnectManager {
       // idempotent so calling both paths is safe).
       this.handleConnected(volumeId)
     } catch (e) {
-      log.info('Reconnect attempt {attempt} for {volumeId} failed: {error}', {
+      // The backend's refusal is typed, so the log records the REASON rather
+      // than a sentence a copy edit could change under it.
+      const refusal = asReconnectError(e)
+      log.info("Reconnect attempt {attempt} for {volumeId} didn't take: {reason}", {
         attempt: attemptIndex + 1,
         volumeId,
-        error: String(e),
+        reason: refusal === null ? String(e) : describeReconnectRefusal(refusal),
       })
       // Re-fetch entry: `cancel` may have run during the attempt.
       const e2 = this.map.get(volumeId)

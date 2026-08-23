@@ -97,7 +97,11 @@ Settled terms (sources agree):
 - **sort: `sắp xếp`** · GNOME ("Sắp xếp"). `high`.
 - **sidebar: `khung bên`** · GNOME ("khung bên"). `high`.
 - **disconnect: `ngắt kết nối`** · macOS AppKit ("Ngắt kết nối"). `high`.
-- **get info: `lấy thông tin`** · macOS Finder ("Lấy thông tin"). `high`.
+- **get info: `Lấy thông tin`; the Locked checkbox in that panel: `Đã khóa`** · macOS Finder Tier 1 (`N165`, `TL22`, the
+  `"Get Info"` key in `Localizable.json`; `AXNODE1` is the checkbox's own accessibility name, and `NE18` builds our
+  exact sentence: `Chọn Tệp > Lấy thông tin, bỏ chọn “Đã khóa” rồi thử lại.`), verified 2026-08-23. Apple DOES localize
+  both, so ❌ never leave "Get Info" or "Locked" in English inside Vietnamese prose, whatever an `en` `@key.description`
+  says. `high`.
 
 Tentative / needs a native check:
 
@@ -172,6 +176,14 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **Sibling copy variants share every sentence they can.** Where English varies only the first sentence across a set of
   keys (the three crash-dialog bodies), translate the shared tail ONCE and reuse it verbatim, so the dialog reads as one
   string with a swapped opener. Wording details and the settled values: `glossary.md` § Ba biến thể phần thân.
+- **Eject / disconnect error copy sits AFTER a colon.** `errors.eject.*` is dropped into
+  `Không thể tháo {volumeName}: …` or `Không thể ngắt kết nối: …`, so the wrapper already carries the "couldn't" part.
+  Write only the reason plus the next step; don't restate the refusal. Terms and evidence: `glossary.md` § Lỗi khi tháo
+  ổ đĩa / ngắt kết nối.
+- **`di chuyển` is reserved for the Move operation.** When English uses a loose "moving files" that also covers copies
+  and deletes, write the plain `chuyển tệp`; `di chuyển tệp` would narrow the sentence to one operation.
+- **`rút` (unplug) has no pile source in Vietnamese** and rests entirely on catalog consistency (four shipped MTP
+  strings). Use it only where the English genuinely tells someone to pull the cable, never for a connection reset.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

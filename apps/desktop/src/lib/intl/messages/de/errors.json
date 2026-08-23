@@ -1604,5 +1604,41 @@
   "errors.mutation.trashRefused": "macOS wollte das nicht in den Papierkorb bewegen.",
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
+  },
+  "errors.eject.busy": "Auf diesem Laufwerk läuft noch ein Vorgang von Cmdr. Wirf es aus, sobald er fertig ist.",
+  "@errors.eject.busy": {
+    "sourceHash": "0600dd5"
+  },
+  "errors.eject.volumeNotFound": "Dieses Laufwerk ist nicht mehr verbunden, es gibt also nichts auszuwerfen.",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "62a3af2"
+  },
+  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr konnte nicht erkennen, welches Gerät das ist, und kann es deshalb nicht trennen.",
+  "@errors.eject.mtpIdMissingDevicePrefix": {
+    "sourceHash": "d26b57b"
+  },
+  "errors.eject.notEjectable": "Dieses Laufwerk ist kein Wechselmedium, es bleibt also verbunden.",
+  "@errors.eject.notEjectable": {
+    "sourceHash": "bb88249"
+  },
+  "errors.eject.notAnSmbVolume": "Das ist keine Netzwerkfreigabe, es gibt also nichts zu trennen.",
+  "@errors.eject.notAnSmbVolume": {
+    "sourceHash": "d49623e"
+  },
+  "errors.eject.mtpDisconnectRefused": "Das Gerät wollte seine Verbindung nicht schließen. Zieh es ab, sobald es nicht mehr beschäftigt ist.",
+  "@errors.eject.mtpDisconnectRefused": {
+    "sourceHash": "d49861f"
+  },
+  "errors.eject.unmountRefused": "Dieses Laufwerk ist noch in Verwendung. Schließe offene Dateien und beende laufende Apps, dann wirf es erneut aus.",
+  "@errors.eject.unmountRefused": {
+    "sourceHash": "1ff7d31"
+  },
+  "errors.eject.timedOut": "Das Laufwerk hat noch nicht geantwortet, das Auswerfen klappt also womöglich trotzdem noch.",
+  "@errors.eject.timedOut": {
+    "sourceHash": "c592421"
+  },
+  "errors.eject.unexpected": "Etwas ist schiefgelaufen, und Cmdr konnte nicht erkennen, was genau.",
+  "@errors.eject.unexpected": {
+    "sourceHash": "0c9d9f5"
   }
 }

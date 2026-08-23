@@ -93,16 +93,21 @@ would resolve symlinks and require the path to exist).
 
 ## IPC contract (`commands/favorites.rs`)
 
-Thin async pass-throughs, each `blocking_result_with_timeout` (5s, the write tier) since the store
-write touches the filesystem. After persisting, each re-emits `volumes-changed` via
+Thin async pass-throughs, each `blocking_typed_result_with_timeout` (5 s, the write tier) since the
+store write touches the filesystem. After persisting, each re-emits `volumes-changed` via
 `volume_broadcast::emit_volumes_changed()` so both panes' switchers refresh live
 (subscribe-don't-poll). Listing rides the existing `list_volumes` / `volumes-changed` path, so
 there's no `list_favorites` command.
 
-- `add_favorite(path: String, name: Option<String>) -> Result<(), IpcError>`
-- `remove_favorite(id: String) -> Result<(), IpcError>`
-- `rename_favorite(id: String, name: String) -> Result<(), IpcError>`
-- `reorder_favorites(ordered_ids: Vec<String>) -> Result<(), IpcError>`
+- `add_favorite(path: String, name: Option<String>) -> Result<(), DeadlineError>`
+- `remove_favorite(id: String) -> Result<(), DeadlineError>`
+- `rename_favorite(id: String, name: String) -> Result<(), DeadlineError>`
+- `reorder_favorites(ordered_ids: Vec<String>) -> Result<(), DeadlineError>`
+
+`DeadlineError` (`commands/util.rs`) rather than a vocabulary of their own, because the store
+swallows its own write errors: a favorite that doesn't reach disk still applies in memory, so a
+missed deadline (or a panicked blocking task) is the only thing these four can report. Every other
+command family owns its error type; the map is `docs/guides/error-handling.md`.
 
 Registered in the `ipc.rs` manifest, which feeds both runtime dispatch and the specta types.
 

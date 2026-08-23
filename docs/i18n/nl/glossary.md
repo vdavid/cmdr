@@ -146,8 +146,11 @@ From the `errors.json` pass (mined `_ignored/i18n/nl/macOS`, 2026-06-21; mostly 
 - OS pane names arrive via `{system_settings}` / `{privacy_and_security}` / `{files_and_folders}` / `{full_disk_access}`
   placeholders (keep the `{token}` literal); the git-error suggestions instead hardcode the English pane names ("System
   Settings > Privacy & Security > Files and Folders"), kept verbatim per their `@key` notes. macOS-feature literals
-  "Disk Utility", "First Aid", "Activity Monitor", "Spotlight", "Terminal", "Finder", "Get Info" stay English
-  (do-not-translate).
+  "Disk Utility", "First Aid", "Activity Monitor", "Spotlight", "Terminal", "Finder" stay English (do-not-translate) ·
+  high.
+- **"Get Info" and "Locked" are NOT do-not-translate in `nl`** — Apple localizes both, so term-choice principle 1 says
+  we follow the Dutch Finder: `Get Info` → `Toon info`, the Info-panel checkbox `Locked` → `Beveiligd`. See § Get Info
+  en Beveiligd below for the evidence · high.
 
 From the `onboarding.json` + `fileOperations.json` pass (mined `_ignored/i18n/nl/`, 2026-06-21):
 
@@ -1727,3 +1730,73 @@ mag niet langer alleen over stoppen gaan. Alles komt uit de crashdialoog-sectie 
 - **Tweede zin uit `crashReporter.dialog.privacyNote`** (`welk deel van de code het probleem tegenkwam`), in plaats van
   `crashlocatie`, dat alleen klopte bij een crash · high. Meteen ook `app-versie` → `appversie`: gesloten samenstelling,
   zoals privacyNote al schreef, zodat één veld op twee schermen niet twee spellingen krijgt.
+
+## Get Info en Beveiligd (macOS-UI-namen die Apple wél vertaalt)
+
+Twee waarden lieten de Engelse macOS-namen staan in verder Nederlandse zin (`errors.write.fileLocked.suggestion.mac`,
+`errors.write.permissionDenied.suggestion.deleteMac`). Dat is rechtgezet: Apple vertaalt beide namen, dus
+term-keuzeprincipe 1 ("localize what Apple localizes") geldt hier.
+
+- **"Get Info" → `Toon info`** · macOS Finder `nl` (`Localizable.json`: `"Get Info"` = `"Toon info"`; en
+  `"Shows the Get Info window for an item or items"` = `"Toont het venster 'Toon info' voor een of meer onderdelen"`) ·
+  high. In de catalogus al de vaste vorm: `menu.file.getInfo`, `commands.fileGetInfo.mac.label` en
+  `errors.mutation.fileLocked` schrijven alle drie `Toon info`. De twee gerepareerde waarden waren de laatste
+  achterblijvers.
+- **"Locked" (het aankruisvak in het infovenster) → `Beveiligd`** · macOS Finder `nl` (`InfoWindowGeneralView.json`
+  `1073.title` = `Beveiligd`; `LocalizableMerged.json` `AXNODE1` = `Beveiligd`) en AppKit `nl` (`AutosaveButton.json`
+  `"Locked"` = `"Beveiligd"`) · high. ❌ Niet `Vergrendeld`: AppKit reserveert `vergrendeld` voor het document-slot in
+  de prullenmand, en het aankruisvak dat de gebruiker in Finder ziet heet `Beveiligd`.
+- **"uncheck Locked" → `deselecteer ‘Beveiligd’`** · Apple's eigen zin voor precies dit herstel-advies, macOS Finder
+  `nl` `LocalizableMerged.json` `NE18`:
+  `"Kies 'Archief' > 'Toon info', deselecteer 'Beveiligd' en probeer het opnieuw."` (Engelse zijde:
+  `"Choose File > Get Info, deselect “Locked,” and then try again."`). Ook `BN43` gebruikt
+  `deselecteer het aankruisvak 'Beveiligd'` · high. Aanhalingstekens volgens de stijlregel `‘…’`, zoals
+  `errors.mutation.fileLocked` al doet.
+- Het Engelse `@key.description` van beide sleutels zegt nog "do NOT translate" over `Get Info` en `Locked`. Dat botst
+  met term-keuzeprincipe 1 en met de rest van de catalogus; **REVIEW FLAG** voor de bron-`en`-beschrijving en voor de
+  andere acht talen, die waarschijnlijk dezelfde achterblijvers hebben.
+- **REVIEW FLAG (`vergrendeld` vs `beveiligd`)**: `errors.write.fileLocked.title/message` en de proza-zin in
+  `permissionDenied.suggestion.deleteMac` zeggen `vergrendeld`, terwijl `errors.mutation.fileLocked` en Apple zelf
+  `beveiligd` gebruiken voor dezelfde bestandsstaat. Buiten het bereik van deze ronde gelaten; een locale-brede
+  gelijktrekking is de moeite waard.
+
+## De negen uitwerp- en verbreekzinnen (`errors.eject.*`)
+
+Elke waarde valt achter een dubbele punt in `fileExplorer.pane.ejectFailedToast`
+(`{volumeName} uitwerpen lukte niet: …`) of `fileExplorer.pane.disconnectFailedToast`
+(`Verbinding verbreken lukte niet: …`), dus de zin moet als vervolg lezen en mag het wikkelwerkwoord niet herhalen.
+`errors.*` is een RAW-familie: gewone apostrofs, geen ICU. Geen van de negen waarden bevat er een.
+
+- **eject → `uitwerpen` / `Werp … uit`** · de al vastgelegde regel (Nautilus, Dolphin, Microsoft; macOS' eigen
+  `Verwijder media` botst met _delete_) · high. Voltooid deelwoord `uitgeworpen`; de catalogus had het al in
+  `errors.listing.remotePermissionDenied.suggestion` ("werp de share dan uit").
+- **drive → `schijf`, een de-woord** · glossaryregel `drive/disk → schijf` · high. Voornaamwoord dus `hij` / `hem`
+  ("Werp hem uit", "hij blijft aangesloten"), net als `onthoudt of hij aan of uit staat`.
+- ❌ **"removable" NIET als `verwijderbaar`**, hoewel macOS `nl` dat gebruikt (`"Removable"` = `"Verwijderbaar"`,
+  `"Removable Volume"` = `"Verwijderbaar volume"`). In een zin over uitwerpen leest `verwijderbaar` als _te
+  verwijderen/te wissen_, precies de botsing waarom `Verwijder` als vertaling van _eject_ al was afgewezen.
+  `errors.eject.notEjectable` zegt daarom wat de gebruiker kan doen: `Deze schijf kun je niet uitwerpen` · high.
+- **"is in use" → `is in gebruik`** · macOS Finder `nl` ("Het volume kan niet worden verwijderd, omdat het momenteel in
+  gebruik is", "'^0' is in gebruik en kan niet worden verwijderd") · high.
+- **"Close any open files and apps" → `Sluit open bestanden, stop geopende apps`** · macOS Finder `nl` ("Sommige
+  bestanden op deze schijven zijn mogelijk in gebruik. Stop geopende apps en probeer het opnieuw.") levert
+  `stop geopende apps` letterlijk · high.
+- **"wouldn't …" → `wilde … niet …`** · de cataloguslijn uit `errors.mutation.trashRefused` ("macOS wilde dit niet naar
+  de prullenmand verplaatsen") · high. Vandaar `Het apparaat wilde de verbinding niet verbreken`.
+- **"unplug it" → `koppel het los`** · catalogus `mtp.permissionDialog.helpText` ("Koppel het apparaat … los") en
+  `errors.listing.deviceProblem.suggestion` ("Koppel het apparaat los en sluit het opnieuw aan") · high.
+- **"once it's idle" → `zodra het niet meer bezig is`** · tegenhanger van `fileExplorer.mtp.deviceBusy` ("Het apparaat
+  is bezig") · high.
+- **"hasn't answered yet" → `heeft nog niet gereageerd`** · exact de zusterzin `errors.mutation.timedOut` ("Het volume
+  heeft nog niet gereageerd, dus de wijziging gaat misschien toch nog door"), zelfde vorm, zelfde geruststelling · high.
+- **"network share" → `netwerkshare`** · de vastgelegde regel, en de vorm die `errors.json` elders al gebruikt
+  (`errors.listing.remotePermissionDenied.explanation`) · high. `gedeelde map` is gereserveerd voor de SMB-map-lijsten
+  in `fileExplorer.json`.
+- **"Something went wrong, and Cmdr couldn't tell what." → letterlijk dezelfde Nederlandse zin als
+  `errors.mutation.unexpected`** ("Er ging iets mis, en Cmdr kon niet achterhalen wat.") · high. Zelfde Engelse bron,
+  zelfde toast-rol; één vertaling voor beide houdt de vangnetzin herkenbaar.
+- **REVIEW FLAG (`errors.eject.notAnSmbVolume`)**:
+  `Dit is geen netwerkshare, dus er is geen verbinding om te verbreken.` herhaalt `verbreken` na de wikkel
+  `Verbinding verbreken lukte niet:`. Het Engels herhaalt daar net zo goed ("Couldn't disconnect: … nothing to
+  disconnect"), en Nederlands heeft een object nodig bij `verbreken`, dus de herhaling is bewust. Bevestigen of het in
+  de toast stoort.

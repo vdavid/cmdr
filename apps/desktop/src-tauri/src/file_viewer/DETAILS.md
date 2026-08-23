@@ -52,8 +52,9 @@ The viewer renders images and PDFs inline instead of showing the binary warning.
 - `media_protocol.rs`: the async URI scheme handler. Pure helpers (`parse_token_from_uri`, `resolve_range`,
   `build_response`) are unit-tested; `handle_request` is the thin Tauri shell. It resolves the token (unknown -> 404),
   then runs its OWN `tauri::async_runtime::spawn_blocking` + `tokio::time::timeout` (expiry -> 504; deliberately NOT
-  `blocking_with_timeout`, which returns an `IpcError`, not an HTTP response). Honors `Range`: 206 with inclusive
-  `Content-Range`/`Accept-Ranges`, end clamped to `size-1`, 416 when unsatisfiable, 200 when no range. `Content-Type`
+  the command layer's timeout helpers, which answer in a command's typed error vocabulary where a scheme handler owes an
+  HTTP response). Honors `Range`: 206 with inclusive `Content-Range`/`Accept-Ranges`, end clamped to `size-1`, 416 when
+  unsatisfiable, 200 when no range. `Content-Type`
   comes from the token's stored magic-byte MIME, never the extension. Registered once in the `lib.rs` builder chain via
   `register_asynchronous_uri_scheme_protocol(media_protocol::SCHEME, ...)`, before any window exists (correct: `viewer-*`
   windows are lazy and inherit the app-wide scheme).
@@ -173,7 +174,10 @@ if file_size < 1MB {
 ## Tauri commands
 
 - `viewer_open(path)` → `ViewerOpenResult` (session ID, metadata, initial lines, backend type)
-- `viewer_get_lines(session_id, target_type, target_value, count)` → `LineChunk`
+- `viewer_get_lines(session_id, target_type, target_value, count)` → `Result<LineChunk, ViewerError>`. `target_type` is
+  the typed `SeekTargetKind` (`line` / `byte` / `fraction`), which pairs with the numeric `target_value`; a typed
+  parameter is what keeps the backend from re-parsing a free-form string and needing an error arm for a case no caller
+  can reach
 - `viewer_read_range(session_id, read_id, anchor, focus)` → `Result<String, ViewerError>`: reads a logical
   `(line, offset)` range as one UTF-8 string. Endpoints are `RangeEnd::Line { line, offset }` (UTF-16 code unit offset)
   or `RangeEnd::Eof` (used by ⌘A in ByteSeek-no-index mode). `read_id` is FE-allocated so cancel can land without an
@@ -427,12 +431,14 @@ same mutex: if it sees `Cancelled`, it leaves it. Tests `test_worker_done_after_
 **Decision**: Sparse checkpoints every 256 lines instead of indexing every line.
 **Why**: Indexing every line in a 100M-line file would need ~800 MB of offset data (8 bytes each). At 256-line intervals, the same file needs ~3 MB. The trade-off is that seeking to a specific line requires reading forward up to 255 lines from the nearest checkpoint, which takes <1ms on any modern disk, well within the 16ms frame budget for 60fps scrolling.
 
-**Decision**: `ViewerError` is a `serde(tag = "kind")` enum exported through `specta::Type`, not stringified into
-`IpcError`. **Why**: the copy flow specifically needs to distinguish `Cancelled` (user pressed Escape, show nothing)
-from `TimedOut` (read exceeded 60 s, offer Retry) from `OutOfRange` / `Io` (real failure). String matching on the
-message would break the no-string-classification rule (AGENTS.md) and silently break when copy changes. The typed enum
-flows through `tauri-specta` to `bindings.ts` as a discriminated union; the frontend's `viewerReadRange` wrapper
-returns `{ ok, error }` and the page matches on `error.kind`.
+**Decision**: `ViewerError` is a `serde(tag = "kind")` enum exported through `specta::Type`, and it IS the wire type for
+every viewer command that can refuse. **Why**: the copy flow specifically needs to distinguish `Cancelled` (user pressed
+Escape, show nothing) from `TimedOut` (read exceeded 60 s, offer Retry) from `OutOfRange` / `Io` (real failure). Flattening
+it into a message would break the no-string-classification rule (AGENTS.md) and silently break when copy changes. The
+typed enum flows through `tauri-specta` to `bindings.ts` as a discriminated union; the frontend's `viewerReadRange`
+wrapper returns `{ ok, error }` and the page matches on `error.kind`. The deadline mints `ViewerError::TimedOut` itself
+(`blocking_typed_result_with_timeout`), so the frontend has ONE union to match rather than a typed error plus a separate
+timeout shape. Why every family owns its error type: `docs/guides/error-handling.md`.
 
 **Decision**: Session map (`SESSIONS`) is a global `LazyLock<Mutex<HashMap>>` rather than Tauri managed state.
 **Why**: Same reasoning as the AI manager. Viewer sessions need to be accessed from background threads (search, indexing) that don't have an `AppHandle`. A global makes the session cache accessible from any context without threading an `AppHandle` through every call chain.

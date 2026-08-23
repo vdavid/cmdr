@@ -38,8 +38,6 @@ vi.mock('$lib/tauri-commands', () => ({
   getFileBeside: vi.fn(),
   getFileRange: vi.fn(),
   refreshListing: vi.fn(),
-  getIpcErrorMessage: (e: unknown) => String(e),
-  isIpcError: () => false,
   moveToTrash: vi.fn(),
 }))
 // Only `validateFilename` is stubbed; the extension-policy tests below hand the

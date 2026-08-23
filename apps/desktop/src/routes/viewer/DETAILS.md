@@ -218,6 +218,15 @@ instead. Two literals are deliberately not copy and carry an eslint-disable: the
 glyphs (the a11y labels and tooltips carry the real copy). The runtime works in the capability-restricted viewer window
 (pure `Intl` + static-imported JSON, no IPC).
 
+## A read that didn't come back
+
+`viewerGetLines` throws the backend's typed `ViewerError` with its fields copied onto the `Error`, so the deadline is a
+VARIANT (`kind: 'timedOut'`) rather than a flag beside a sentence. Both surfaces read it the same way, through
+`asViewerError(e)?.kind`: `viewer-scroll.svelte.ts` routes `timedOut` to `deps.onTimeoutError()` and logs everything
+else by kind, and `+page.svelte`'s `openFailureCopy` maps `timedOut` / `extractTooLarge` / `archive` to their own
+catalog keys and falls back to `viewer.error.readFailed` for anything that never reached the typed path. Nothing renders
+the backend's own words. The wider split: `docs/guides/error-handling.md`.
+
 ## Gotchas
 
 - `$state(false)` in `.svelte.ts` triggers `@typescript-eslint/no-unnecessary-condition` because the linter doesn't know

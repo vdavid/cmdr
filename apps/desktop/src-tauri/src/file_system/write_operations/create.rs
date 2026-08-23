@@ -3,9 +3,9 @@
 //! The command layer (`commands/file_system/write_ops.rs`) is a thin
 //! pass-through: it expands tilde, resolves the `volume_id`, calls
 //! `create_directory_managed` / `create_file_managed` wrapped in its 5 s IPC
-//! timeout, and maps the returned `String` error to `IpcError`. All the logic
-//! lives here per "smart backend / thin frontend"; the backend never names the
-//! command layer's `IpcError` or `expand_tilde`.
+//! timeout, and ships the typed `MutationError` unchanged. All the logic lives
+//! here per "smart backend / thin frontend"; the backend never names the command
+//! layer or `expand_tilde`.
 //!
 //! Create is a managed instant op: the mutation runs inside
 //! `manager::run_instant`, so it registers a `Running` record + marks its volume

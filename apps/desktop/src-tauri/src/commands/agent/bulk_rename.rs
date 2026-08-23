@@ -15,7 +15,57 @@ use crate::agent::store::proposals::ClaimOutcome;
 use crate::agent::tools::propose::rename::{
     AcceptedRenamePreflights, BulkRenamePreflight, BulkRenamePreflightStatus, RenameSourceFingerprint,
 };
-use crate::commands::util::IpcError;
+/// Why a rename review couldn't be checked or applied.
+///
+/// ❌ Not prose: the review dialog words its own states (its per-row
+/// `askCmdr.renameReview.nameRejected` notice, and re-reading the plan when it
+/// has moved on); the variant is what the log records.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum BulkRenameError {
+    /// The review this plan belonged to is gone: the app restarted, or somebody
+    /// already answered the group.
+    ReviewExpired,
+    /// Something moved under the review (a revised name, a different subset), so
+    /// the plan has to be looked at again before it can run.
+    NeedsAnotherLook,
+    /// The plan has no rows left to apply.
+    NothingToApply,
+    /// The row edit was turned down (the name, the row id, or the store).
+    RowRefused {
+        /// What the propose layer reported, for the log.
+        detail: String,
+    },
+    /// The rename batch wouldn't start.
+    CouldntStart {
+        /// What the write-operations layer reported, for the log.
+        detail: String,
+    },
+    /// The preflight didn't finish inside the command's wait.
+    TimedOut,
+    /// Nothing above classifies it (a panicked task).
+    Unexpected {
+        /// What the runtime reported, for the log.
+        detail: String,
+    },
+}
+
+impl std::fmt::Display for BulkRenameError {
+    /// ❗ For logs and debugging only.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ReviewExpired => f.write_str("the review has expired"),
+            Self::NeedsAnotherLook => f.write_str("the plan changed under the review"),
+            Self::NothingToApply => f.write_str("no rows to apply"),
+            Self::RowRefused { detail } => write!(f, "row refused: {detail}"),
+            Self::CouldntStart { detail } => write!(f, "couldn't start: {detail}"),
+            Self::TimedOut => f.write_str("timed out"),
+            Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),
+        }
+    }
+}
+
+impl std::error::Error for BulkRenameError {}
 use crate::file_system::write_operations::{LocalContent, RemoteContent, SourceFingerprint};
 
 const BULK_RENAME_PREFLIGHT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -29,13 +79,13 @@ pub async fn preflight_bulk_rename(
     app: AppHandle,
     proposal_id: String,
     allowed_row_ids: Vec<String>,
-) -> Result<BulkRenamePreflight, IpcError> {
+) -> Result<BulkRenamePreflight, BulkRenameError> {
     tokio::time::timeout(
         BULK_RENAME_PREFLIGHT_TIMEOUT,
         crate::agent::tools::propose::rename::preflight(&app, proposal_id, allowed_row_ids),
     )
     .await
-    .map_err(|_| IpcError::timeout())
+    .map_err(|_| BulkRenameError::TimedOut)
 }
 
 /// Starts the user-approved subset of a server-owned rename plan. Paths and
@@ -46,7 +96,7 @@ pub async fn apply_bulk_rename(
     app: AppHandle,
     proposal_id: String,
     allowed_row_ids: Vec<String>,
-) -> Result<crate::file_system::write_operations::WriteOperationStartResult, IpcError> {
+) -> Result<crate::file_system::write_operations::WriteOperationStartResult, BulkRenameError> {
     let (Some(db), Some(accepted_preflights)) =
         (app.try_state::<AgentDb>(), app.try_state::<AcceptedRenamePreflights>())
     else {
@@ -62,7 +112,7 @@ pub async fn apply_bulk_rename(
             crate::agent::tools::propose::rename::preflight(&app, proposal_id.clone(), allowed_row_ids.clone()),
         )
         .await
-        .map_err(|_| IpcError::timeout())?;
+        .map_err(|_| BulkRenameError::TimedOut)?;
         if preflight.status != BulkRenamePreflightStatus::Ready {
             return Err(review_again());
         }
@@ -79,7 +129,7 @@ pub async fn apply_bulk_rename(
         return Err(review_is_over());
     };
     if proposal.rows.is_empty() {
-        return Err(IpcError::from_err("This rename plan has no rows to apply."));
+        return Err(BulkRenameError::NothingToApply);
     }
     // One volume for the whole plan, straight off the group. There is nothing to cross-check:
     // a rename group binds one source volume and its rows can't carry a different answer.
@@ -128,19 +178,19 @@ pub async fn apply_bulk_rename(
         rows,
         initiator,
     )
-    .map_err(IpcError::from_err)
+    .map_err(|detail| BulkRenameError::CouldntStart { detail })
 }
 
-fn group_id_of(proposal_id: &str) -> Result<i64, IpcError> {
-    crate::agent::tools::propose::rename::numeric_id(proposal_id).ok_or_else(review_is_over)
+fn group_id_of(proposal_id: &str) -> Result<i64, BulkRenameError> {
+    crate::agent::tools::propose::rename::numeric_id(proposal_id).ok_or(BulkRenameError::ReviewExpired)
 }
 
-fn review_is_over() -> IpcError {
-    IpcError::from_err("This rename review has expired. Ask Cmdr to prepare it again.")
+fn review_is_over() -> BulkRenameError {
+    BulkRenameError::ReviewExpired
 }
 
-fn review_again() -> IpcError {
-    IpcError::from_err("Review the rename plan again before applying it.")
+fn review_again() -> BulkRenameError {
+    BulkRenameError::NeedsAnotherLook
 }
 
 fn now_secs() -> i64 {
@@ -162,15 +212,15 @@ pub async fn revise_bulk_rename_row(
     proposal_id: String,
     row_id: String,
     destination_name: String,
-) -> Result<crate::agent::tools::propose::rename::RenameProposalRowSnapshot, IpcError> {
+) -> Result<crate::agent::tools::propose::rename::RenameProposalRowSnapshot, BulkRenameError> {
     // Off the IPC thread: the edit lands in `main.db`, and a command that opens a database
     // must not block the handler.
     tauri::async_runtime::spawn_blocking(move || {
         crate::agent::tools::propose::rename::revise_row(&app, &proposal_id, &row_id, &destination_name)
-            .map_err(|error| IpcError::from_err(error.message))
+            .map_err(|error| BulkRenameError::RowRefused { detail: error.message })
     })
     .await
-    .map_err(IpcError::from_err)?
+    .map_err(|e| BulkRenameError::Unexpected { detail: e.to_string() })?
 }
 
 /// Who the operation log credits for a batch. The agent proposed it, but a row the user
@@ -427,6 +477,33 @@ mod tests {
                 modified: None,
             }),
             "remote-row"
+        );
+    }
+}
+
+#[cfg(test)]
+mod wire_tests {
+    use super::BulkRenameError;
+
+    /// A review that MOVED ON and a review that EXPIRED are different answers:
+    /// the dialog re-reads for one and starts over for the other. Flattened into
+    /// sentences they were only distinguishable by reading them.
+    #[test]
+    fn the_two_review_refusals_stay_distinguishable_by_variant() {
+        assert_eq!(
+            serde_json::to_value(BulkRenameError::ReviewExpired).unwrap(),
+            serde_json::json!({ "type": "reviewExpired" })
+        );
+        assert_eq!(
+            serde_json::to_value(BulkRenameError::NeedsAnotherLook).unwrap(),
+            serde_json::json!({ "type": "needsAnotherLook" })
+        );
+        assert_eq!(
+            serde_json::to_value(BulkRenameError::RowRefused {
+                detail: "that name is taken".to_string()
+            })
+            .unwrap(),
+            serde_json::json!({ "type": "rowRefused", "detail": "that name is taken" })
         );
     }
 }

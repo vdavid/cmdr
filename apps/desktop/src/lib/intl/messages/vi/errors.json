@@ -1349,7 +1349,7 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "8381d02"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang bị khóa. Mở khóa nó trong Finder (Get Info > bỏ chọn Locked) rồi thử lại.",
+  "errors.write.permissionDenied.suggestion.deleteMac": "Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang bị khóa. Mở khóa nó trong Finder (Lấy thông tin > bỏ chọn “Đã khóa”) rồi thử lại.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
     "sourceHash": "1e6e123"
   },
@@ -1417,7 +1417,7 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "62b1038"
   },
-  "errors.write.fileLocked.suggestion.mac": "Mở khóa nó trong Finder (Get Info > bỏ chọn Locked) rồi thử lại.",
+  "errors.write.fileLocked.suggestion.mac": "Mở khóa nó trong Finder (Lấy thông tin > bỏ chọn “Đã khóa”) rồi thử lại.",
   "@errors.write.fileLocked.suggestion.mac": {
     "sourceHash": "8f84de5"
   },
@@ -1604,5 +1604,41 @@
   "errors.mutation.trashRefused": "macOS đã từ chối chuyển mục này vào Thùng rác.",
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
+  },
+  "errors.eject.busy": "Cmdr vẫn đang chuyển tệp trên ổ đĩa này. Hãy tháo khi việc đó hoàn tất.",
+  "@errors.eject.busy": {
+    "sourceHash": "0600dd5"
+  },
+  "errors.eject.volumeNotFound": "Ổ đĩa đó không còn kết nối nữa, nên không có gì để tháo.",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "62a3af2"
+  },
+  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr không nhận ra đây là thiết bị nào, nên không ngắt kết nối được.",
+  "@errors.eject.mtpIdMissingDevicePrefix": {
+    "sourceHash": "d26b57b"
+  },
+  "errors.eject.notEjectable": "Ổ đĩa này không phải loại có thể tháo, nên nó luôn kết nối.",
+  "@errors.eject.notEjectable": {
+    "sourceHash": "bb88249"
+  },
+  "errors.eject.notAnSmbVolume": "Đây không phải mục chia sẻ mạng, nên không có gì để ngắt kết nối.",
+  "@errors.eject.notAnSmbVolume": {
+    "sourceHash": "d49623e"
+  },
+  "errors.eject.mtpDisconnectRefused": "Thiết bị đã từ chối đóng kết nối. Hãy rút nó ra khi không còn bận.",
+  "@errors.eject.mtpDisconnectRefused": {
+    "sourceHash": "d49861f"
+  },
+  "errors.eject.unmountRefused": "Vẫn còn thứ gì đó đang sử dụng ổ đĩa này. Hãy đóng các tệp và ứng dụng đang mở, rồi tháo lại.",
+  "@errors.eject.unmountRefused": {
+    "sourceHash": "1ff7d31"
+  },
+  "errors.eject.timedOut": "Ổ đĩa vẫn chưa phản hồi, nên việc tháo vẫn có thể tự hoàn tất.",
+  "@errors.eject.timedOut": {
+    "sourceHash": "c592421"
+  },
+  "errors.eject.unexpected": "Có gì đó không ổn, và Cmdr không rõ là gì.",
+  "@errors.eject.unexpected": {
+    "sourceHash": "0c9d9f5"
   }
 }

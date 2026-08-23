@@ -29,7 +29,45 @@ use crate::agent::store::proposals::{
 };
 use crate::agent::suggested_ops::bridge::{ApprovalOutcome, ApprovalRefusal};
 use crate::agent::types::{OpStatus, ProposalStatus, ProposalVerb, Reversibility};
-use crate::commands::util::IpcError;
+/// Why a suggested-ops read or answer didn't happen.
+///
+/// ❌ Not prose: the review dialog shows its own translated notice
+/// (`suggestedOps.loadFailed`) and the badge quietly stays at zero; the variant
+/// is what the log records.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum SuggestedOpsError {
+    /// The suggestion store isn't open: agent features are off, or the app is
+    /// still starting.
+    StoreNotOpen,
+    /// The store refused the read or the write.
+    Store {
+        /// What SQLite reported, for the log.
+        detail: String,
+    },
+    /// The approval ran on its own thread and never answered, so what happened
+    /// is genuinely unknown; the dialog re-reads rather than guessing.
+    ApprovalDidntFinish,
+    /// Nothing above classifies it (a panicked task).
+    Unexpected {
+        /// What the runtime reported, for the log.
+        detail: String,
+    },
+}
+
+impl std::fmt::Display for SuggestedOpsError {
+    /// ❗ For logs and debugging only.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::StoreNotOpen => f.write_str("the suggestion store isn't open"),
+            Self::Store { detail } => write!(f, "store: {detail}"),
+            Self::ApprovalDidntFinish => f.write_str("the approval never answered"),
+            Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),
+        }
+    }
+}
+
+impl std::error::Error for SuggestedOpsError {}
 
 /// How long the destination check may take before the row says it doesn't know. A dead mount
 /// must leave the dialog usable rather than hanging the whole list.
@@ -127,7 +165,7 @@ pub struct SuggestedOpPage {
 /// that loaded them to count them would stall the dialog it exists to open.
 #[tauri::command]
 #[specta::specta]
-pub async fn suggested_ops_list(app: AppHandle) -> Result<Vec<SuggestedSweepView>, IpcError> {
+pub async fn suggested_ops_list(app: AppHandle) -> Result<Vec<SuggestedSweepView>, SuggestedOpsError> {
     let summaries = with_read_connection(app.clone(), Vec::new(), move |conn| {
         let groups = list_groups(conn, Some(ProposalStatus::Pending))?;
         let mut out = Vec::with_capacity(groups.len());
@@ -138,7 +176,7 @@ pub async fn suggested_ops_list(app: AppHandle) -> Result<Vec<SuggestedSweepView
         Ok(out)
     })
     .await
-    .map_err(IpcError::from_err)?;
+    .map_err(|detail| SuggestedOpsError::Store { detail })?;
 
     // The destination checks touch the filesystem, so they run OUTSIDE the database read and
     // each under its own deadline: one unresponsive mount must cost one row's certainty, not
@@ -159,7 +197,7 @@ pub async fn suggested_ops_page(
     group_id: i64,
     offset: u32,
     limit: u32,
-) -> Result<SuggestedOpPage, IpcError> {
+) -> Result<SuggestedOpPage, SuggestedOpsError> {
     let empty = SuggestedOpPage {
         ops: Vec::new(),
         offset,
@@ -175,7 +213,7 @@ pub async fn suggested_ops_page(
         })
     })
     .await
-    .map_err(IpcError::from_err)
+    .map_err(|detail| SuggestedOpsError::Store { detail })
 }
 
 /// The user said no to a group.
@@ -185,14 +223,15 @@ pub async fn suggested_ops_page(
 /// silently doing nothing.
 #[tauri::command]
 #[specta::specta]
-pub async fn suggested_ops_reject(app: AppHandle, group_id: i64) -> Result<RejectResultView, IpcError> {
-    let db_path = super::db_path(&app).ok_or_else(|| IpcError::from_err("Cmdr's suggestion store isn't open."))?;
+pub async fn suggested_ops_reject(app: AppHandle, group_id: i64) -> Result<RejectResultView, SuggestedOpsError> {
+    let db_path = super::db_path(&app).ok_or(SuggestedOpsError::StoreNotOpen)?;
     let now = now_secs();
     // Resolved here because the agent's own seams are pure: the store is parameterized on a
     // root, and this is the layer that still holds an `AppHandle`.
     let memory = crate::agent::memory::store_for(&app);
     tauri::async_runtime::spawn_blocking(move || {
-        let conn = crate::agent::store::open_write_connection(&db_path).map_err(IpcError::from_err)?;
+        let conn = crate::agent::store::open_write_connection(&db_path)
+            .map_err(|e| SuggestedOpsError::Store { detail: e.to_string() })?;
         // A real "no" from the review, which is the one rejection the agent learns from.
         let outcome = crate::agent::suggested_ops::reject(
             &conn,
@@ -201,7 +240,7 @@ pub async fn suggested_ops_reject(app: AppHandle, group_id: i64) -> Result<Rejec
             crate::agent::outcomes::RejectSource::Review,
             memory.as_ref(),
         )
-        .map_err(IpcError::from_err)?;
+        .map_err(|e| SuggestedOpsError::Store { detail: e.to_string() })?;
         Ok(match outcome {
             crate::agent::store::proposals::RejectOutcome::Rejected => RejectResultView::Rejected,
             crate::agent::store::proposals::RejectOutcome::NotPending { found } => {
@@ -211,7 +250,7 @@ pub async fn suggested_ops_reject(app: AppHandle, group_id: i64) -> Result<Rejec
         })
     })
     .await
-    .map_err(IpcError::from_err)?
+    .map_err(|e| SuggestedOpsError::Unexpected { detail: e.to_string() })?
 }
 
 /// What a rejection did, or why it didn't.
@@ -580,8 +619,8 @@ pub async fn suggested_ops_approve(
     app: AppHandle,
     group_id: i64,
     deselected_op_ids: Vec<i64>,
-) -> Result<ApprovalResultView, IpcError> {
-    let db_path = super::db_path(&app).ok_or_else(|| IpcError::from_err("Cmdr's suggestion store isn't open."))?;
+) -> Result<ApprovalResultView, SuggestedOpsError> {
+    let db_path = super::db_path(&app).ok_or(SuggestedOpsError::StoreNotOpen)?;
     let now = now_secs();
     // Resolved before the handle is moved into the sink: what actually happened is only known
     // when the operation settles, on a thread that may never name an `AppHandle`.
@@ -619,8 +658,8 @@ pub async fn suggested_ops_approve(
 
     let outcome = receive
         .await
-        .map_err(|_| IpcError::from_err("Approving didn't finish. Open the review again."))?
-        .map_err(IpcError::from_err)?;
+        .map_err(|_| SuggestedOpsError::ApprovalDidntFinish)?
+        .map_err(|detail| SuggestedOpsError::Store { detail })?;
     Ok(to_approval_view(outcome))
 }
 
@@ -654,5 +693,32 @@ fn refusal_view(refusal: ApprovalRefusal) -> ApprovalResultView {
         ApprovalRefusal::TargetMissing { verb } => ApprovalResultView::CouldNotStart {
             detail: format!("the stored group has no target for {}", verb.as_token()),
         },
+    }
+}
+
+#[cfg(test)]
+mod wire_tests {
+    use super::SuggestedOpsError;
+
+    /// "The store isn't open" (agent features off) and "the store refused" (a
+    /// locked database) call for different answers from the dialog, so they stay
+    /// separate variants rather than two spellings of one sentence.
+    #[test]
+    fn a_store_that_isnt_open_is_not_a_store_that_refused() {
+        assert_eq!(
+            serde_json::to_value(SuggestedOpsError::StoreNotOpen).unwrap(),
+            serde_json::json!({ "type": "storeNotOpen" })
+        );
+        assert_eq!(
+            serde_json::to_value(SuggestedOpsError::Store {
+                detail: "database is locked".to_string()
+            })
+            .unwrap(),
+            serde_json::json!({ "type": "store", "detail": "database is locked" })
+        );
+        assert_eq!(
+            serde_json::to_value(SuggestedOpsError::ApprovalDidntFinish).unwrap(),
+            serde_json::json!({ "type": "approvalDidntFinish" })
+        );
     }
 }

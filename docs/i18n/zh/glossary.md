@@ -1335,3 +1335,39 @@ Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时�
 - **第二句取自 `crashReporter.dialog.privacyNote`**（`代码中出现问题的部分`），替掉只在真崩溃时才成立的 `崩溃位置` ·
   `high`。顺带把 `App 版本` 统一成 `应用版本`：同一个字段在两个界面上不该有两种写法，而 `App`
   那条术语是给云服务商文案用的。
+
+### Eject / disconnect error copy (`errors.eject.*`, 2026-08-23)
+
+Toast sentences that land after a colon in `fileExplorer.pane.ejectFailedToast` (`无法推出 {volumeName}：…`) or
+`fileExplorer.pane.disconnectFailedToast` (`无法断开连接：…`), so they start mid-sentence and stay one or two short
+clauses. macOS Finder zh-CN as Tier 1 (verified against the reference pile, 2026-08-23).
+
+- **eject (verb, in running error copy)** · `推出` · macOS Finder `TL15`/`N199` (`Eject`), `NE31`
+  (`你不能推出“^0”，因为它正在使用中。`), `NE66`, `NE79` · `confirmed`. Matches the settled explorer-pass term.
+- **removable / not removable** · `可移除` / `不可移除` · macOS Finder `KIND_FORMATTER_28_1` (`Removable` → `可移除`),
+  `GV3`/`GV3.1` (`Removable Volumes` → `可移除的宗卷`) · `high`
+- **in use / something is still using it** · `还有东西在使用…` · macOS `NE52`
+  (`Some files on these disks may be in use. Quit any open applications, and then try again.` →
+  `这些磁盘上的一些文件可能正在使用中。请退出所有打开的应用程序，然后重试。`), plus the catalog's own
+  `errors.volume.deletePending` (`还有东西占着它`) · `high`. Kept vaguer than Finder's `正在使用中` because the English
+  is deliberately unspecific ("Something").
+- **unplug (a phone or camera)** · `拔下线缆` · catalog precedent (`errors.provider.macDroid.*`: `拔下再插上 USB 线缆`;
+  `errors.listing.deviceReconnecting.suggestion`: `无需拔下设备`) · `high`. `拔下线缆` beats `拔下设备` here because the
+  sentence already has `设备` as its subject.
+- **drive (the thing being ejected)** · `驱动器` · settings-pass term, reused so all nine strings say the same noun.
+  Finder's own eject copy says `磁盘`, but the English source says "drive", and the catalog already writes
+  `驱动器断开了` (`errors.write.destinationNotFound.suggestion`) · `high`
+- **network share** · `网络共享` · reused from `errors.listing.notSupportedErrno.explanation` / `remotePermissionDenied`
+  · `high`
+
+Conventions worth keeping for this family:
+
+- **Don't echo the wrapper's verb back at the user.** `无法断开连接：` already says "couldn't disconnect", so the
+  sentence after it uses a different construction (`没法断开它`, `没有连接需要断开`) rather than a second
+  `无法断开连接`.
+- **`没法` is the friendly stand-in for a second `无法`** in a sentence whose wrapper already spent `无法`. Both are
+  neutral; `没法` is the spoken register `style.md` asks for.
+- **A timeout is not a failure.** `errors.eject.timedOut` says the drive may still finish on its own
+  (`可能过一会儿它会自己推出`), no `失败`/`错误`, matching the English intent.
+- **`errors.eject.unexpected` is word-for-word `errors.mutation.unexpected`** (`出了点问题，Cmdr 也说不清是什么。`): the
+  English sources are identical, so the Chinese is too.

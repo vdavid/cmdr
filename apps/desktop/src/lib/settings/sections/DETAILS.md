@@ -198,8 +198,14 @@ sections compose).
 - **`advanced-grouping.ts`**: Pure card-grouping logic for `AdvancedSection` (group `section: ['Advanced']` settings by
   resolved `card` title, registry order; trailing untitled "Other" bucket for any with no `cardKey`). Tested by a
   set-equality regression guard (union of grouped === all Advanced settings)
-- **`ai-secret-error.ts`**: Pure mapper from OS secret-store error variants to user-facing strings. Used by
-  `AiCloudSection`
+- **`ai-secret-error.ts`**: the typed carrier AND the words for an OS secret-store refusal. `AiSecretFailure` (a
+  `TypedFailure` over `$lib/ipc/typed-failure.ts`) keeps the backend's `AiApiKeyError` intact across the throw: the
+  `saveAiApiKey` / `getAiApiKeyStatus` / `deleteAiApiKey` wrappers raise it with `throwAiSecretError`, and
+  `describeSecretError(e, 'save' | 'read')` reads it back with `asAiSecretError`, then branches on the VARIANT:
+  `access_denied` gets the OS-specific guidance (a Keychain ACL on macOS, a locked keyring on Linux), everything else
+  the generic notice. Nothing inspects the store's own message; it rides in `detail` for a details affordance only.
+  `configure_ai` hands its `secretStoreError` back as a bare wire value rather than a throw, so `asAiSecretError`
+  accepts that shape too. Used by `AiCloudSection`, `$lib/onboarding/CloudProviderSetup.svelte`, and `../ai-config.ts`
 - **`license-section-utils.ts`**: Pure label/status formatters extracted from `LicenseSection` for testability
 - **`ram-gauge-utils.ts`**: Pure stacked-bar segment math for `AiLocalSection`'s memory gauge (used → projected → free,
   plus warning thresholds)
@@ -290,8 +296,9 @@ Cloud API keys live in the OS secret store via `saveAiApiKey` / `getAiApiKeyStat
 `AiCloudSection.svelte` uses `SettingPasswordInput` in **controlled** mode (passes `value` + `onchange`) so the store
 isn't touched. The controlled value is only what the user TYPED this session: a stored key is never readable from a
 window (`docs/security.md` § "AI API keys"), so the field starts empty over a "your key is saved" placeholder, and
-`keyIsSet` (not the field's contents) is what makes the config checkable. Error mapping flows through
-`ai-secret-error.ts`. See parent DETAILS.md § "Why store cloud AI API keys in the OS secret store".
+`keyIsSet` (not the field's contents) is what makes the config checkable. A save or read refusal is worded by
+`ai-secret-error.ts` from the typed `AiApiKeyError` variant (§ above; the error-path map is
+`docs/guides/error-handling.md`). See parent DETAILS.md § "Why store cloud AI API keys in the OS secret store".
 
 ### Hot-apply for AI provider/key/model is wired in the applier, not here
 

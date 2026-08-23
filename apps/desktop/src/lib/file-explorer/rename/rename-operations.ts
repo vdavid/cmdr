@@ -15,17 +15,14 @@ export interface ConflictFileInfo {
 }
 
 export type RenameConflictResolution = 'overwrite-trash' | 'overwrite-delete' | 'cancel' | 'continue'
-import {
-  checkRenamePermission,
-  checkRenameValidity,
-  getIpcErrorMessage,
-  renameFile,
-  type RenameValidityResult,
-} from '$lib/tauri-commands'
+import { checkRenamePermission, checkRenameValidity, renameFile, type RenameValidityResult } from '$lib/tauri-commands'
 import { asMutationError, isMutationTimeout } from '$lib/file-operations/mutation-error'
 import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
+import { getAppLogger } from '$lib/logging/logger'
 import type { RenameTarget } from './rename-state.svelte'
 import type { ExtensionChangePolicy } from '$lib/settings'
+
+const log = getAppLogger('rename')
 
 export type RenameResult =
   | { type: 'noop' }
@@ -102,7 +99,9 @@ export async function executeRenameSave(
   try {
     validity = await checkRenameValidity(target.parentPath, target.originalName, trimmedName, volumeId)
   } catch (e) {
-    return { type: 'error', message: getIpcErrorMessage(e) }
+    // Same typed vocabulary as the rename itself, so a validity check that can't
+    // run reads in the user's own language rather than in `diskutil` English.
+    return { type: 'error', message: renameFailureMessage(e, target.isDirectory) }
   }
 
   if (!validity.valid) {
@@ -146,13 +145,15 @@ export async function performRename(
  * The one sentence a rename refusal says.
  *
  * The backend's answer is typed, so the words come from the catalog in the
- * user's own language; the `getIpcErrorMessage` fallback covers a value that
- * never reached the typed path at all (a thrown `Error` from the IPC layer
- * itself), which no locale can help with anyway.
+ * user's own language. A value that never reached the typed path at all (a
+ * thrown `Error` from the IPC layer itself) reads as the same honest fallback
+ * the backend would have sent, with the raw value logged instead of shown.
  */
 function renameFailureMessage(e: unknown, isDirectory: boolean): string {
   const failure = asMutationError(e)
-  return failure ? renderMutationError(failure, isDirectory ? 'folder' : 'file') : getIpcErrorMessage(e)
+  if (failure) return renderMutationError(failure, isDirectory ? 'folder' : 'file')
+  log.warn('A rename call threw an untyped value: {error}', { error: String(e) })
+  return renderMutationError({ type: 'unexpected', detail: '' }, isDirectory ? 'folder' : 'file')
 }
 
 /** Checks rename permission and returns a message to show, or null if permitted. */

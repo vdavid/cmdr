@@ -455,32 +455,32 @@ pub(crate) async fn check_rename_validity_impl(
     old_name: String,
     new_name: String,
     volume_id: String,
-) -> Result<RenameValidityResult, String> {
+) -> RenameValidityResult {
     use crate::file_system::validation::{validate_filename, validate_path_length};
 
     let trimmed = new_name.trim();
 
     // Validate filename
     if let Err(error) = validate_filename(trimmed) {
-        return Ok(RenameValidityResult {
+        return RenameValidityResult {
             valid: false,
             error: Some(error),
             has_conflict: false,
             is_case_only_rename: false,
             conflict: None,
-        });
+        };
     }
 
     // Validate resulting path length
     let new_path = PathBuf::from(&dir).join(trimmed);
     if let Err(error) = validate_path_length(&new_path) {
-        return Ok(RenameValidityResult {
+        return RenameValidityResult {
             valid: false,
             error: Some(error),
             has_conflict: false,
             is_case_only_rename: false,
             conflict: None,
-        });
+        };
     }
 
     // Check for conflict: does a sibling with this name already exist?
@@ -489,24 +489,24 @@ pub(crate) async fn check_rename_validity_impl(
     if volume_id != "root" {
         // Non-local volume: use Volume trait for conflict detection
         let conflict_info = check_sibling_conflict_via_volume(&volume_id, &new_path).await;
-        Ok(RenameValidityResult {
+        RenameValidityResult {
             valid: true,
             error: None,
             has_conflict: conflict_info.0,
             // MTP is case-sensitive, no case-only rename ambiguity
             is_case_only_rename: false,
             conflict: conflict_info.1,
-        })
+        }
     } else {
         // Local filesystem: use symlink_metadata with inode comparison
         let conflict_info = check_sibling_conflict(&old_path, &new_path);
-        Ok(RenameValidityResult {
+        RenameValidityResult {
             valid: true,
             error: None,
             has_conflict: conflict_info.0,
             is_case_only_rename: conflict_info.1,
             conflict: conflict_info.2,
-        })
+        }
     }
 }
 

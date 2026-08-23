@@ -24,6 +24,8 @@
 //! (`commands/file_system/listing.rs`) a thin pass-through that just grabs the
 //! read lock and delegates here.
 
+use crate::ignore_poison::RwLockIgnorePoison as _;
+use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
 use nucleo_matcher::{
@@ -84,6 +86,33 @@ pub fn find_first_match<'a>(rows: impl Iterator<Item = &'a FileEntry>, query: &s
     best.map(|(idx, _)| idx)
 }
 
+/// The one way a fuzzy jump can't answer at all.
+///
+/// ❌ Not prose: the frontend logs the variant and leaves the cursor where it
+/// was. Kept typed so a future surface can word it, and so a test asserts the
+/// refusal by variant.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum FuzzyJumpError {
+    /// The pane's cached listing is gone (it navigated away, or the cache was
+    /// evicted between the keystroke and this call).
+    ListingNotFound {
+        /// The listing the caller asked about.
+        listing_id: String,
+    },
+}
+
+impl std::fmt::Display for FuzzyJumpError {
+    /// ❗ For logs and debugging only.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ListingNotFound { listing_id } => write!(f, "listing not found: {listing_id}"),
+        }
+    }
+}
+
+impl std::error::Error for FuzzyJumpError {}
+
 /// Convenience wrapper that grabs the `LISTING_CACHE` read lock, runs
 /// `find_first_match`, and emits a single `type_to_jump` debug log line with
 /// the per-call timing. The Tauri command in `commands::file_system::listing`
@@ -92,15 +121,15 @@ pub fn fuzzy_find_first_match_in_listing(
     listing_id: &str,
     query: &str,
     include_hidden: bool,
-) -> Result<Option<usize>, String> {
+) -> Result<Option<usize>, FuzzyJumpError> {
     let started = Instant::now();
-    let cache = LISTING_CACHE
-        .read()
-        .map_err(|_| "Failed to acquire cache lock".to_string())?;
+    // Recovering is right for a read of a cache: a panic elsewhere left the map
+    // intact, and refusing every jump afterwards would be worse than reading it.
+    let cache = LISTING_CACHE.read_ignore_poison();
 
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+    let listing = cache.get(listing_id).ok_or_else(|| FuzzyJumpError::ListingNotFound {
+        listing_id: listing_id.to_string(),
+    })?;
 
     let rows = listing.rows(include_hidden);
     let result = find_first_match(rows.iter(), query);

@@ -12,7 +12,7 @@
  * decision deriveds and handlers live here.
  */
 
-import { getIpcErrorMessage } from '$lib/tauri-commands/ipc-types'
+import { wordEjectRefusal } from '../navigation/eject-error-messages'
 import { disconnectSmbVolume, upgradeToSmbVolumeWithCredentials, type UpgradeResult } from '$lib/tauri-commands'
 import { directConnectionUnavailableMessage } from '../network/upgrade-messages'
 import { registerSmbLoginHost } from '../network/smb-login-hosts'
@@ -146,9 +146,11 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     // remove the entry; meanwhile the user expects the pane to leave the broken
     // share immediately, so navigate away in parallel.
     void disconnectSmbVolume(targetVolumeId).catch((e: unknown) => {
-      const message = getIpcErrorMessage(e)
-      log.warn('Disconnect SMB volume {volumeId} failed: {error}', { volumeId: targetVolumeId, error: message })
-      addToast(tString('fileExplorer.pane.disconnectFailedToast', { message }), { level: 'error' })
+      // `wordEjectRefusal` logs the backend's technical detail and hands back
+      // the localized sentence; the raw `diskutil` text never reaches the toast.
+      addToast(tString('fileExplorer.pane.disconnectFailedToast', { message: wordEjectRefusal(e) }), {
+        level: 'error',
+      })
     })
     void resolveValidPath(deps.getCurrentPath(), { volumeRoot: deps.getVolumePath() }).then((validPath) => {
       deps.navigateToFallback(validPath)

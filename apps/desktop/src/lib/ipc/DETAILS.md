@@ -194,7 +194,7 @@ problem to the helper instead of solving it. Just rename the locals at the call 
    ```rust
    #[tauri::command]
    #[specta::specta]
-   pub async fn do_thing(volume_id: String, force: bool) -> Result<DoneInfo, IpcError> { ... }
+   pub async fn do_thing(volume_id: String, force: bool) -> Result<DoneInfo, DoThingError> { ... }
    ```
 2. Any new DTO crossing the IPC boundary needs `#[derive(specta::Type)]`. Drop `Deserialize` if the type is
    serialize-only (a return value, not a parameter), and never add `#[serde(skip_serializing_if = ...)]`. See § Type
@@ -205,7 +205,8 @@ problem to the helper instead of solving it. Just rename the locals at the call 
    list instead, with a comment saying which, and stays on raw invoke on the frontend.
 4. `pnpm bindings:regen`. Commit `bindings.ts` alongside the Rust change.
 5. Use it on the FE: `import { commands } from '$lib/ipc/bindings'; await commands.doThing(volumeId, force)`. If it
-   returns `Result`, unwrap via `throwIpcError`.
+   returns `Result`, unwrap it: throw a `TypedFailure` subclass (`typed-failure.ts`) when the refusal reaches a person,
+   `throwIpcError` when it only ever reaches a log.
 
 **A command surface may land with no frontend calling it, and nothing warns.** The Rust side is reachable from
 `ipc_command_manifest!`, so no `#[allow(dead_code)]` is needed, and `knip.json` ignores both `src/lib/ipc/bindings.ts`

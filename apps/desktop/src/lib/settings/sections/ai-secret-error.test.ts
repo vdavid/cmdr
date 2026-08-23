@@ -51,15 +51,28 @@ describe('describeSecretError', () => {
     expect(describeSecretError(err, 'read').title.toLowerCase()).toContain('read')
   })
 
-  it('infers access_denied from a stringly-typed Error message', () => {
+  it("never guesses the classification out of the store's own words", () => {
+    // Pre-fix this read `access_denied` out of the word "cancelled", so a copy
+    // edit or a localized OS message silently changed which guidance appeared.
     const err = new Error('Operation was cancelled by the user')
     const out = describeSecretError(err, 'read')
-    expect(out.title).toContain('denied')
+
+    expect(out.title).toBe(describeSecretError({ type: 'other', message: 'anything' }, 'read').title)
+    expect(out.title).not.toContain('Keychain')
   })
 
-  it('handles bare strings as last-resort input', () => {
+  it("keeps an untyped value's text as detail, never as the classification", () => {
     const out = describeSecretError('something went wrong', 'save')
+
     expect(out.detail).toBe('something went wrong')
+    expect(out.title).not.toContain('something went wrong')
     expect(out.level).toBe('error')
+  })
+
+  it('treats not_found as generic rather than as denied access', () => {
+    const out = describeSecretError({ type: 'not_found', message: 'no such key' }, 'read')
+
+    expect(out.title).not.toContain('Keychain')
+    expect(out.detail).toBe('no such key')
   })
 })

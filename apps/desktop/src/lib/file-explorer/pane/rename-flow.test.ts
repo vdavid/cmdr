@@ -31,8 +31,6 @@ vi.mock('$lib/tauri-commands', () => ({
   getFileAt: vi.fn(),
   getFileRange: vi.fn(),
   refreshListing: vi.fn(),
-  getIpcErrorMessage: (e: unknown) => String(e),
-  isIpcError: () => false,
   moveToTrash: vi.fn(),
 }))
 vi.mock('$lib/utils/filename-validation', () => ({

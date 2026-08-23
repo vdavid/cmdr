@@ -25,7 +25,7 @@ export const commands = {
       | 'alwaysByName'
       | null,
   ) =>
-    typedError<ListingStartResult, IpcError>(
+    typedError<ListingStartResult, ListingStartError>(
       __TAURI_INVOKE('list_directory_start', { path, includeHidden, sortBy, sortOrder, directorySortMode }),
     ),
   /**
@@ -414,7 +414,9 @@ export const commands = {
    *  setting the cursor (the parent entry is never in `LISTING_CACHE`).
    */
   findFirstFuzzyMatch: (listingId: string, query: string, includeHidden: boolean) =>
-    typedError<number | null, IpcError>(__TAURI_INVOKE('find_first_fuzzy_match', { listingId, query, includeHidden })),
+    typedError<number | null, FuzzyJumpError>(
+      __TAURI_INVOKE('find_first_fuzzy_match', { listingId, query, includeHidden }),
+    ),
   resortListing: (
     listingId: string,
     sortBy: SortColumn,
@@ -972,7 +974,7 @@ export const commands = {
     destPath: string,
     maxConflicts: number | null,
   ) =>
-    typedError<VolumeCopyScanResult, IpcError>(
+    typedError<VolumeCopyScanResult, VolumeScanError>(
       __TAURI_INVOKE('scan_volume_for_copy', { sourceVolumeId, sourcePaths, destVolumeId, destPath, maxConflicts }),
     ),
   /**
@@ -993,7 +995,7 @@ export const commands = {
     sourceVolumeId: string | null,
     sourcePaths: string[] | null,
   ) =>
-    typedError<ScanConflict[], IpcError>(
+    typedError<ScanConflict[], VolumeScanError>(
       __TAURI_INVOKE('scan_volume_for_conflicts', { volumeId, sourceItems, destPath, sourceVolumeId, sourcePaths }),
     ),
   // Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
@@ -1070,7 +1072,7 @@ export const commands = {
    *  Without this, IPC could freeze waiting for the watcher to register.
    */
   subscribeGitState: (repoRoot: string) =>
-    typedError<RepoInfo, IpcError>(__TAURI_INVOKE('subscribe_git_state', { repoRoot })),
+    typedError<RepoInfo, GitSubscribeError>(__TAURI_INVOKE('subscribe_git_state', { repoRoot })),
   /**
    *  Drops one subscriber for the repo. The watcher itself stays alive until the
    *  last subscriber unsubscribes.
@@ -1097,7 +1099,7 @@ export const commands = {
    *  (needed for MTP and other non-local volumes).
    */
   checkRenameValidity: (dir: string, oldName: string, newName: string, volumeId: string | null) =>
-    typedError<RenameValidityResult, IpcError>(
+    typedError<RenameValidityResult, MutationError>(
       __TAURI_INVOKE('check_rename_validity', { dir, oldName, newName, volumeId }),
     ),
   /**
@@ -1163,12 +1165,14 @@ export const commands = {
    *
    *  # Arguments
    *  * `session_id` - The session ID from `viewer_open`.
-   *  * `target_type` - One of "line", "byte", or "fraction".
+   *  * `target_kind` - Which of the three seeks `target_value` means.
    *  * `target_value` - The seek value (line number, byte offset, or fraction 0.0-1.0).
    *  * `count` - Number of lines to fetch.
    */
-  viewerGetLines: (sessionId: string, targetType: string, targetValue: number, count: number) =>
-    typedError<LineChunk, IpcError>(__TAURI_INVOKE('viewer_get_lines', { sessionId, targetType, targetValue, count })),
+  viewerGetLines: (sessionId: string, targetType: SeekTargetKind, targetValue: number, count: number) =>
+    typedError<LineChunk, ViewerError>(
+      __TAURI_INVOKE('viewer_get_lines', { sessionId, targetType, targetValue, count }),
+    ),
   // Gets the current status of a viewer session (backend type, indexing state).
   viewerGetStatus: (sessionId: string) =>
     typedError<ViewerSessionStatus, string>(__TAURI_INVOKE('viewer_get_status', { sessionId })),
@@ -2493,9 +2497,12 @@ export const commands = {
   /**
    *  Resolves a typed input against the focused pane's `base_dir`. Serves the
    *  live as-you-type warning, the actual jump, and the clipboard-prefill check.
+   *
+   *  `go_to_path::resolve` always answers (an unreachable path is a `GoToPathResolution`
+   *  variant, not an error), so a missed deadline is the only thing this can report.
    */
   resolveGoToPath: (input: string, baseDir: string) =>
-    typedError<GoToPathResolution, IpcError>(__TAURI_INVOKE('resolve_go_to_path', { input, baseDir })),
+    typedError<GoToPathResolution, DeadlineError>(__TAURI_INVOKE('resolve_go_to_path', { input, baseDir })),
   // Reads the persisted recent-path entries (newest first).
   getRecentPaths: () => __TAURI_INVOKE<RecentPathEntry[]>('get_recent_paths'),
   /**
@@ -2512,18 +2519,18 @@ export const commands = {
    *  defaults to the path's file name.
    */
   addFavorite: (path: string, name: string | null) =>
-    typedError<null, IpcError>(__TAURI_INVOKE('add_favorite', { path, name })),
+    typedError<null, DeadlineError>(__TAURI_INVOKE('add_favorite', { path, name })),
   // Removes a favorite by id. No-op when the id isn't present.
-  removeFavorite: (id: string) => typedError<null, IpcError>(__TAURI_INVOKE('remove_favorite', { id })),
+  removeFavorite: (id: string) => typedError<null, DeadlineError>(__TAURI_INVOKE('remove_favorite', { id })),
   // Renames a favorite by id. No-op when the id isn't present.
   renameFavorite: (id: string, name: string) =>
-    typedError<null, IpcError>(__TAURI_INVOKE('rename_favorite', { id, name })),
+    typedError<null, DeadlineError>(__TAURI_INVOKE('rename_favorite', { id, name })),
   /**
    *  Reorders the favorites to match `ordered_ids`. Unknown ids are ignored; favorites missing from
    *  the list are appended in their current order, so a stale order never drops an entry.
    */
   reorderFavorites: (orderedIds: string[]) =>
-    typedError<null, IpcError>(__TAURI_INVOKE('reorder_favorites', { orderedIds })),
+    typedError<null, DeadlineError>(__TAURI_INVOKE('reorder_favorites', { orderedIds })),
   /**
    *  Returns the displayable releases in `since_version < v <= current`, newest
    *  first, truncated to `max`. `since_version = None` means no lower bound (the
@@ -2623,13 +2630,17 @@ export const commands = {
    *  frontend supplies opaque ids only, never source paths or destination names.
    */
   preflightBulkRename: (proposalId: string, allowedRowIds: string[]) =>
-    typedError<BulkRenamePreflight, IpcError>(__TAURI_INVOKE('preflight_bulk_rename', { proposalId, allowedRowIds })),
+    typedError<BulkRenamePreflight, BulkRenameError>(
+      __TAURI_INVOKE('preflight_bulk_rename', { proposalId, allowedRowIds }),
+    ),
   /**
    *  Starts the user-approved subset of a server-owned rename plan. Paths and
    *  names never cross this IPC boundary: the frontend submits only opaque ids.
    */
   applyBulkRename: (proposalId: string, allowedRowIds: string[]) =>
-    typedError<WriteOperationStartResult, IpcError>(__TAURI_INVOKE('apply_bulk_rename', { proposalId, allowedRowIds })),
+    typedError<WriteOperationStartResult, BulkRenameError>(
+      __TAURI_INVOKE('apply_bulk_rename', { proposalId, allowedRowIds }),
+    ),
   /**
    *  Replaces one row's proposed name with the one the user typed in the review, and answers the
    *  row as the dialog should now show it. The name is validated server-side; the row keeps no
@@ -2637,7 +2648,7 @@ export const commands = {
    *  rechecked before it can reach the filesystem.
    */
   reviseBulkRenameRow: (proposalId: string, rowId: string, destinationName: string) =>
-    typedError<RenameProposalRowSnapshot, IpcError>(
+    typedError<RenameProposalRowSnapshot, BulkRenameError>(
       __TAURI_INVOKE('revise_bulk_rename_row', { proposalId, rowId, destinationName }),
     ),
   /**
@@ -2654,10 +2665,10 @@ export const commands = {
    *  Counts only: not one op row is read here, because a group of 60 000 is legitimate and a list
    *  that loaded them to count them would stall the dialog it exists to open.
    */
-  suggestedOpsList: () => typedError<SuggestedSweepView[], IpcError>(__TAURI_INVOKE('suggested_ops_list')),
+  suggestedOpsList: () => typedError<SuggestedSweepView[], SuggestedOpsError>(__TAURI_INVOKE('suggested_ops_list')),
   // One page of a group's ops, in `seq` order.
   suggestedOpsPage: (groupId: number, offset: number, limit: number) =>
-    typedError<SuggestedOpPage, IpcError>(__TAURI_INVOKE('suggested_ops_page', { groupId, offset, limit })),
+    typedError<SuggestedOpPage, SuggestedOpsError>(__TAURI_INVOKE('suggested_ops_page', { groupId, offset, limit })),
   /**
    *  The user said no to a group.
    *
@@ -2666,7 +2677,7 @@ export const commands = {
    *  silently doing nothing.
    */
   suggestedOpsReject: (groupId: number) =>
-    typedError<RejectResultView, IpcError>(__TAURI_INVOKE('suggested_ops_reject', { groupId })),
+    typedError<RejectResultView, SuggestedOpsError>(__TAURI_INVOKE('suggested_ops_reject', { groupId })),
   /**
    *  Approve a group: claim it and hand its ops to the queue.
    *
@@ -2679,7 +2690,9 @@ export const commands = {
    *  dialog wait on an event.
    */
   suggestedOpsApprove: (groupId: number, deselectedOpIds: number[]) =>
-    typedError<ApprovalResultView, IpcError>(__TAURI_INVOKE('suggested_ops_approve', { groupId, deselectedOpIds })),
+    typedError<ApprovalResultView, SuggestedOpsError>(
+      __TAURI_INVOKE('suggested_ops_approve', { groupId, deselectedOpIds }),
+    ),
   /**
    *  A settings change may have switched the model for an open thread: record it as a
    *  conversation event once any in-flight turn finishes (the turn keeps its already-resolved
@@ -2978,7 +2991,7 @@ export const commands = {
         name: string
         kind: PastedKind
       } | null,
-      IpcError
+      MutationError
     >(__TAURI_INVOKE('paste_clipboard_as_file', { volumeId, directory })),
   // Clears the in-process cut state without touching the system clipboard.
   clearClipboardCutState: () => __TAURI_INVOKE<void>('clear_clipboard_cut_state'),
@@ -3441,13 +3454,15 @@ export const commands = {
    *  Called by the frontend reconnect manager on each backoff tick (and on
    *  "Retry now" / lazy nav-time retry). Backend single-flights concurrent calls,
    *  so the FE is free to fire on its own schedule. Returns `Ok(())` on success
-   *  (state is now `Direct`), or an `IpcError` describing why the rebuild failed.
+   *  (state is now `Direct`), or a typed [`ReconnectError`] saying why the
+   *  rebuild didn't happen.
    *
-   *  Calling this on a non-SMB volume yields `IpcError` with `NotSupported`
-   *  (the trait default). The FE only ever invokes this for known SMB volumes.
+   *  Calling this on a non-SMB volume yields `ReconnectError::Volume` carrying
+   *  `VolumeError::NotSupported` (the trait default). The FE only ever invokes
+   *  this for known SMB volumes.
    */
   reconnectSmbVolume: (volumeId: string) =>
-    typedError<null, IpcError>(__TAURI_INVOKE('reconnect_smb_volume', { volumeId })),
+    typedError<null, ReconnectError>(__TAURI_INVOKE('reconnect_smb_volume', { volumeId })),
   /**
    *  Reconnects an SMB volume with freshly-entered credentials.
    *
@@ -3455,10 +3470,11 @@ export const commands = {
    *  auth failure (a `needs_credentials` `volume-connection-changed` event). The volume persists
    *  the new password (so future reconnects are silent) and runs the standard reconnect; on
    *  success the backend emits `volume-connection-changed { state: "connected" }`. On a non-SMB
-   *  volume this yields `NotSupported` (trait default); the FE only invokes it for SMB.
+   *  volume this yields `ReconnectError::Volume` carrying `VolumeError::NotSupported` (trait
+   *  default); the FE only invokes it for SMB.
    */
   reconnectSmbVolumeWithCredentials: (volumeId: string, username: string, password: string) =>
-    typedError<null, IpcError>(
+    typedError<null, ReconnectError>(
       __TAURI_INVOKE('reconnect_smb_volume_with_credentials', { volumeId, username, password }),
     ),
   /**
@@ -3479,13 +3495,13 @@ export const commands = {
   /**
    *  Disconnects a single SMB volume by tearing down its OS mount.
    *
-   *  Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`], mapping
-   *  the typed `EjectError` to the wire `IpcError` (preserving the timeout flag).
-   *  Called by the "Disconnect" button in `SmbReconnectingView` / the gave-up
+   *  Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`]; the
+   *  typed `EjectError` IS the wire type, so it crosses unchanged. Called by the
+   *  "Disconnect" button in `SmbReconnectingView` / the gave-up
    *  `VolumeUnreachableBanner`.
    */
   disconnectSmbVolume: (volumeId: string) =>
-    typedError<null, IpcError>(__TAURI_INVOKE('disconnect_smb_volume', { volumeId })),
+    typedError<null, EjectError>(__TAURI_INVOKE('disconnect_smb_volume', { volumeId })),
   /**
    *  Ejects a volume. Picks the right teardown for the volume's kind.
    *
@@ -3494,7 +3510,7 @@ export const commands = {
    *  disk volumes) or `mtp-device-disconnected` (for MTP) will fire shortly
    *  after and panes rooted at the volume redirect to root.
    */
-  ejectVolume: (volumeId: string) => typedError<null, IpcError>(__TAURI_INVOKE('eject_volume', { volumeId })),
+  ejectVolume: (volumeId: string) => typedError<null, EjectError>(__TAURI_INVOKE('eject_volume', { volumeId })),
   // Removes a manually-added server by ID.
   removeManualServer: (serverId: string) =>
     typedError<null, string>(__TAURI_INVOKE('remove_manual_server', { serverId })),
@@ -3864,7 +3880,7 @@ export const commands = {
    *  which has neither.
    */
   createDialogGalleryFixtures: () =>
-    typedError<DialogGalleryFixtures, IpcError>(__TAURI_INVOKE('create_dialog_gallery_fixtures')),
+    typedError<DialogGalleryFixtures, DeadlineError>(__TAURI_INVOKE('create_dialog_gallery_fixtures')),
   /**
    *  Debug-only escape hatch: build the bundle and write it to the app data dir as a `.zip`.
    *  Helpful when iterating on the redactor or the manifest format.
@@ -4553,6 +4569,47 @@ export type BulkRenameBlockReason =
   | 'volumeUnavailable'
 
 /**
+ *  Why a rename review couldn't be checked or applied.
+ *
+ *  ❌ Not prose: the review dialog words its own states (its per-row
+ *  `askCmdr.renameReview.nameRejected` notice, and re-reading the plan when it
+ *  has moved on); the variant is what the log records.
+ */
+export type BulkRenameError =
+  /**
+   *  The review this plan belonged to is gone: the app restarted, or somebody
+   *  already answered the group.
+   */
+  | { type: 'reviewExpired' }
+  /**
+   *  Something moved under the review (a revised name, a different subset), so
+   *  the plan has to be looked at again before it can run.
+   */
+  | { type: 'needsAnotherLook' }
+  // The plan has no rows left to apply.
+  | { type: 'nothingToApply' }
+  // The row edit was turned down (the name, the row id, or the store).
+  | {
+      type: 'rowRefused'
+      // What the propose layer reported, for the log.
+      detail: string
+    }
+  // The rename batch wouldn't start.
+  | {
+      type: 'couldntStart'
+      // What the write-operations layer reported, for the log.
+      detail: string
+    }
+  // The preflight didn't finish inside the command's wait.
+  | { type: 'timedOut' }
+  // Nothing above classifies it (a panicked task).
+  | {
+      type: 'unexpected'
+      // What the runtime reported, for the log.
+      detail: string
+    }
+
+/**
  *  A row's user-action-time validation result. It deliberately contains no
  *  path or destination authority: the frontend retains only opaque row ids.
  */
@@ -5116,6 +5173,31 @@ export type CreditInfoDto = {
 }
 
 /**
+ *  The only two ways a command can fail when the work it wraps can't itself
+ *  refuse: the deadline passed, or the task never came back.
+ *
+ *  ❗ It is NOT a general-purpose IPC error. Reach for it only where the
+ *  underlying call is genuinely infallible (a store write that swallows its own
+ *  errors, a pure resolve); a command whose work has real refusals owes the
+ *  frontend its own vocabulary, the way `MutationError` and `EjectError` do.
+ *
+ *  ❌ Nothing here is prose a user reads. These commands are logged, not
+ *  worded, today; a surface that grows words for them renders from the variant.
+ */
+export type DeadlineError =
+  /**
+   *  The work didn't finish inside the command's wait. ❗ It was NOT
+   *  cancelled: the deadline bounds the frontend's wait, not the work.
+   */
+  | { type: 'timedOut' }
+  // The task panicked, so no answer is coming.
+  | {
+      type: 'unexpected'
+      // What the runtime reported, for the log.
+      detail: string
+    }
+
+/**
  *  A near-duplicate cluster: the paths of images whose feature prints are within the
  *  dedup cosine threshold of each other. Crosses the IPC boundary.
  */
@@ -5347,6 +5429,90 @@ export type DryRunResult = {
   // True if `conflicts` is a sample (`conflicts_total > conflicts.len()`).
   conflictsSampled: boolean
 }
+
+/**
+ *  Why an eject or an SMB disconnect didn't happen, as a value rather than a
+ *  sentence.
+ *
+ *  ❌ **Nothing in this enum is prose a user reads.** It IS the wire type: the
+ *  frontend renders every word from the typed variant through the
+ *  `errors.eject.*` catalog in nine locales
+ *  (`src/lib/file-explorer/eject-error-messages.ts`). The `detail` fields carry
+ *  `diskutil`'s own stderr, which says useful non-enumerable things ("in use by
+ *  process 1234 (mds)"); they render as technical detail beside the message,
+ *  ❌ never as the message. Same split as `MutationError` on the write path;
+ *  `docs/guides/error-handling.md` is the map.
+ */
+export type EjectError =
+  /**
+   *  A write op is reading from or writing to this volume; refuse to tear it
+   *  down mid-transfer. The picker disables Eject for busy volumes, so
+   *  reaching here means a race (or an MCP / automation caller).
+   */
+  | { type: 'busy' }
+  // `volume_id` isn't registered in `VolumeManager` (a race: unmounted mid-op).
+  | {
+      type: 'volumeNotFound'
+      // The id that no longer resolves.
+      volumeId: string
+    }
+  /**
+   *  The MTP volume id is shaped wrong: missing the `{device_id}:{storage_id}`
+   *  separator.
+   */
+  | {
+      type: 'mtpIdMissingDevicePrefix'
+      // The malformed id, verbatim.
+      volumeId: string
+    }
+  /**
+   *  The volume can't be ejected at all: not SMB, not MTP, and the OS reports
+   *  it as fixed. Typical for the boot volume and other internal disks.
+   */
+  | {
+      type: 'notEjectable'
+      // The volume asked about.
+      volumeId: string
+    }
+  /**
+   *  Disconnect was asked of a volume that isn't a network share. The UI only
+   *  offers Disconnect for SMB volumes, so this is a race or an automation
+   *  caller.
+   */
+  | {
+      type: 'notAnSmbVolume'
+      // The volume asked about.
+      volumeId: string
+    }
+  // The device wouldn't close its MTP session.
+  | {
+      type: 'mtpDisconnectRefused'
+      // What the MTP layer reported, for the log and the details line.
+      detail: string
+    }
+  /**
+   *  `diskutil` / `umount` turned the unmount down. The overwhelmingly common
+   *  case is an open file somewhere, and `detail` usually names the process.
+   */
+  | {
+      type: 'unmountRefused'
+      // The tool's own stderr, for the log and the details line.
+      detail: string
+    }
+  /**
+   *  The `diskutil` / `umount` subprocess didn't finish within the timeout.
+   *  ❗ The unmount was NOT cancelled; it may still land.
+   */
+  | { type: 'timedOut' }
+  /**
+   *  The one honest fallback, for a failure nothing above classifies (a
+   *  panicked task). ❌ `detail` is never the message.
+   */
+  | {
+      type: 'unexpected'
+      // What the layer below reported, for the log and the details line.
+      detail: string
+    }
 
 /**
  *  The outcome of a per-drive "Turn on indexing" request.
@@ -5937,6 +6103,24 @@ export type FrontendLogEntry = {
 }
 
 /**
+ *  The one way a fuzzy jump can't answer at all.
+ *
+ *  ❌ Not prose: the frontend logs the variant and leaves the cursor where it
+ *  was. Kept typed so a future surface can word it, and so a test asserts the
+ *  refusal by variant.
+ */
+export type FuzzyJumpError =
+  /**
+   *  The pane's cached listing is gone (it navigated away, or the cache was
+   *  evicted between the keystroke and this call).
+   */
+  {
+    type: 'listingNotFound'
+    // The listing the caller asked about.
+    listingId: string
+  }
+
+/**
  *  Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
  *  `RepoInfo` snapshot. The `…Payload` suffix wouldn't kebab-case to the existing
  *  wire string, so the name is pinned via `event_name`.
@@ -5945,6 +6129,35 @@ export type GitStateChangedPayload = {
   repoRoot: string
   info: RepoInfo
 }
+
+/**
+ *  Why the git-state handshake didn't answer.
+ *
+ *  ❌ Not prose: `FriendlyGitError` carries git's own typed kind, which the
+ *  frontend already words in every locale
+ *  (`src/lib/error-messages/git-error-messages.ts`).
+ */
+export type GitSubscribeError =
+  /**
+   *  Git refused, and said why in its own vocabulary (not a repo, a hung or
+   *  corrupt one).
+   */
+  | {
+      type: 'git'
+      // Git's typed answer, kind and path intact.
+      error: FriendlyGitError
+    }
+  /**
+   *  The handshake didn't finish inside the command's wait, which on a 50k-file
+   *  repo or a dead NFS mount is the common case.
+   */
+  | { type: 'timedOut' }
+  // The blocking task panicked, so no answer is coming.
+  | {
+      type: 'unexpected'
+      // What the runtime reported, for the log.
+      detail: string
+    }
 
 /**
  *  Result of [`set_global_go_to_latest_shortcut`]: the new status the Settings row
@@ -6541,16 +6754,6 @@ export type IndexStatusResponse = {
 export type Initiator = 'user' | 'aiClient' | 'agent' | 'agentEdited'
 
 /**
- *  Structured IPC error with a timeout flag.
- *  Used by commands returning `Result<T, IpcError>` so the frontend can
- *  distinguish timeout errors from real failures without string matching.
- */
-export type IpcError = {
-  message: string
-  timedOut: boolean
-}
-
-/**
  *  The per-item outcome. A canceled/failed op keeps `Done` rows for what it
  *  reached — exactly what a rollback needs (D4).
  */
@@ -7055,6 +7258,25 @@ export type ListingReadCompleteEvent = {
   listingId: string
   totalCount: number
 }
+
+/**
+ *  Why a synchronous listing start didn't produce a listing.
+ *
+ *  ❌ Not prose: `VolumeError` is the wire type the frontend's listing-error
+ *  factory already words, in every locale.
+ */
+export type ListingStartError =
+  // The volume refused, and said why in its own vocabulary.
+  | {
+      type: 'volume'
+      // The backend's typed answer, errno and path intact.
+      error: VolumeError
+    }
+  /**
+   *  The read didn't finish inside the command's wait. ❗ It was NOT
+   *  cancelled.
+   */
+  | { type: 'timedOut' }
 
 // Result of starting a new directory listing.
 export type ListingStartResult = {
@@ -8902,6 +9124,31 @@ export type ReclaimResult = {
 }
 
 /**
+ *  A typed refusal from `reconnect_smb_volume` /
+ *  `reconnect_smb_volume_with_credentials`.
+ */
+export type ReconnectError =
+  /**
+   *  The id isn't registered in `VolumeManager` any more (a race: the share
+   *  was unmounted between the frontend's tick and the backend acting on it).
+   */
+  | {
+      type: 'volumeNotFound'
+      // The id that no longer resolves.
+      volumeId: string
+    }
+  /**
+   *  The volume refused, and said why in its own vocabulary. A non-SMB volume
+   *  answers `VolumeError::NotSupported` here (the trait default); the
+   *  frontend only ever calls this for known SMB volumes.
+   */
+  | {
+      type: 'volume'
+      // The backend's typed answer.
+      error: VolumeError
+    }
+
+/**
  *  `reduce-transparency-changed`: the macOS Accessibility > Display > Reduce
  *  transparency setting changed. `reduce` is the new value (`true` = reduce
  *  transparency / use opaque backgrounds).
@@ -9807,6 +10054,21 @@ export type SearchStatus =
   | { status: 'idle' }
   | { status: 'invalidQuery'; message: string }
 
+/**
+ *  Which kind of seek the caller is asking for, as a value the wire enforces.
+ *
+ *  The command pairs it with a numeric `target_value`; keeping the KIND an enum
+ *  is what stops the backend re-parsing a free-form string and inventing an
+ *  error arm for a case typed callers can't reach.
+ */
+export type SeekTargetKind =
+  // `target_value` is a 0-based line number.
+  | 'line'
+  // `target_value` is a byte offset.
+  | 'byte'
+  // `target_value` is a fraction of the file (0.0 = start, 1.0 = end).
+  | 'fraction'
+
 // A single recent-selection entry, persisted verbatim.
 export type SelectionHistoryEntry = {
   id: string
@@ -10525,6 +10787,37 @@ export type SuggestedOpView = {
   // Modification time in unix seconds, from the same frozen snapshot.
   snapshotModified: number | null
 }
+
+/**
+ *  Why a suggested-ops read or answer didn't happen.
+ *
+ *  ❌ Not prose: the review dialog shows its own translated notice
+ *  (`suggestedOps.loadFailed`) and the badge quietly stays at zero; the variant
+ *  is what the log records.
+ */
+export type SuggestedOpsError =
+  /**
+   *  The suggestion store isn't open: agent features are off, or the app is
+   *  still starting.
+   */
+  | { type: 'storeNotOpen' }
+  // The store refused the read or the write.
+  | {
+      type: 'store'
+      // What SQLite reported, for the log.
+      detail: string
+    }
+  /**
+   *  The approval ran on its own thread and never answered, so what happened
+   *  is genuinely unknown; the dialog re-reads rather than guessing.
+   */
+  | { type: 'approvalDidntFinish' }
+  // Nothing above classifies it (a panicked task).
+  | {
+      type: 'unexpected'
+      // What the runtime reported, for the log.
+      detail: string
+    }
 
 // One sweep, with the groups still waiting on the user.
 export type SuggestedSweepView = {
@@ -11463,6 +11756,44 @@ export type VolumeMounted = {
   // The volume path (like "/Volumes/MyDrive").
   volumePath: string
 }
+
+/**
+ *  Why a pre-flight scan or a conflict check couldn't answer.
+ *
+ *  ❌ Not prose: the transfer dialog shows its own "couldn't check" state and
+ *  logs the variant. `VolumeError` is the wire type the frontend already words,
+ *  so a scan that fails on the device says exactly what the device said.
+ */
+export type VolumeScanError =
+  // The source volume isn't registered (a race: it was ejected mid-dialog).
+  | {
+      type: 'sourceVolumeNotFound'
+      // The id that no longer resolves.
+      volumeId: string
+    }
+  // The destination volume isn't registered.
+  | {
+      type: 'destinationVolumeNotFound'
+      // The id that no longer resolves.
+      volumeId: string
+    }
+  // The volume refused, and said why in its own vocabulary.
+  | {
+      type: 'volume'
+      // The backend's typed answer.
+      error: VolumeError
+    }
+  /**
+   *  The scan didn't finish inside the command's budget. ❗ It was NOT
+   *  cancelled: the deadline bounds the dialog's wait, not the scan.
+   */
+  | { type: 'timedOut' }
+  // The scan task panicked, so no answer is coming.
+  | {
+      type: 'unexpected'
+      // What the runtime reported, for the log.
+      detail: string
+    }
 
 /**
  *  Typed `volume-space-changed` Tauri event. The struct name kebab-cases to the

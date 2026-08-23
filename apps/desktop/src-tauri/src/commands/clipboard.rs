@@ -12,6 +12,7 @@ use objc2::MainThreadMarker;
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 
 use crate::clipboard;
+use crate::file_system::write_operations::MutationError;
 
 #[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -265,9 +266,7 @@ pub async fn paste_clipboard_as_file(
     app: tauri::AppHandle,
     volume_id: Option<String>,
     directory: String,
-) -> Result<Option<clipboard::PastedClipboardFile>, crate::commands::util::IpcError> {
-    use crate::commands::util::IpcError;
-
+) -> Result<Option<clipboard::PastedClipboardFile>, MutationError> {
     // 1. Read the RAW flavors on the main thread (NSPasteboard requires it). This
     // does the minimum on-main: just copies bytes off the pasteboard.
     let (tx, rx) = std::sync::mpsc::channel();
@@ -276,18 +275,22 @@ pub async fn paste_clipboard_as_file(
         let data = clipboard::read_pasteboard_data(mtm);
         let _ = tx.send(data);
     })
-    .map_err(|e| IpcError::from_err(format!("Couldn't run on main thread: {e}")))?;
+    .map_err(|e| MutationError::Unexpected {
+        detail: format!("the main-thread hop didn't run: {e}"),
+    })?;
 
-    let data = rx
-        .recv()
-        .map_err(|e| IpcError::from_err(format!("Couldn't receive pasteboard data: {e}")))?;
+    let data = rx.recv().map_err(|e| MutationError::Unexpected {
+        detail: format!("the pasteboard read didn't come back: {e}"),
+    })?;
 
     // 2. Pick the highest-intent flavor OFF the main thread, in a blocking task —
     // the TIFF→PNG decode is CPU-bound and can be hundreds of ms, so it must not
     // sit on the UI thread OR block the async reactor.
     let payload = tokio::task::spawn_blocking(move || clipboard::pick_clipboard_payload(data))
         .await
-        .map_err(|e| IpcError::from_err(format!("Clipboard decode task failed: {e}")))?;
+        .map_err(|e| MutationError::Unexpected {
+            detail: format!("the clipboard decode task didn't finish: {e}"),
+        })?;
 
     // Tilde-expand for the local `root` volume only; volume paths are volume-relative.
     let expanded = if volume_id.as_deref().unwrap_or("root") == "root" {
@@ -303,8 +306,7 @@ pub async fn paste_clipboard_as_file(
         crate::file_system::write_operations::write_payload_to_dir(volume_id, std::path::Path::new(&expanded), payload),
     )
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(IpcError::from_err)
+    .map_err(|_| MutationError::TimedOut)?
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -321,10 +323,10 @@ pub async fn paste_clipboard_as_file(
     _app: tauri::AppHandle,
     _volume_id: Option<String>,
     _directory: String,
-) -> Result<Option<clipboard::PastedClipboardFile>, crate::commands::util::IpcError> {
-    Err(crate::commands::util::IpcError::from_err(
-        "Clipboard operations are not yet supported on this platform",
-    ))
+) -> Result<Option<clipboard::PastedClipboardFile>, MutationError> {
+    Err(MutationError::Volume {
+        error: cmdr_fs::volume::VolumeError::NotSupported,
+    })
 }
 
 /// Clears the in-process cut state without touching the system clipboard.

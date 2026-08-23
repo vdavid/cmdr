@@ -17,7 +17,6 @@ vi.mock('$lib/tauri-commands', () => ({
   createFile: vi.fn(() => Promise.resolve()),
   findFileIndex: vi.fn(() => Promise.resolve(null)),
   getFileAt: vi.fn(() => Promise.resolve(null)),
-  isIpcError: vi.fn(() => false),
   onDirectoryDiff: vi.fn(() => Promise.resolve(() => {})),
 }))
 

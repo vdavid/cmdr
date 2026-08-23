@@ -15,9 +15,10 @@
 //!
 //! Non-ejectable volumes return an error.
 //!
-//! The `commands::eject` IPC layer is a thin delegate over [`eject`]: it maps the
-//! typed [`EjectError`] to the wire `IpcError` (including the timeout flag).
+//! The `commands::eject` IPC layer is a thin delegate over [`eject`]: [`EjectError`]
+//! IS the wire type, so nothing is flattened on the way out.
 
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 /// Action the eject pipeline takes for a given volume.
@@ -99,44 +100,100 @@ pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, EjectDecis
     })
 }
 
-/// Errors from the eject pipeline. Typed variants so the command layer maps each
-/// to `IpcError` — and distinguishes a genuine subprocess timeout — without
-/// string-matching.
-#[derive(Debug)]
+/// Why an eject or an SMB disconnect didn't happen, as a value rather than a
+/// sentence.
+///
+/// ❌ **Nothing in this enum is prose a user reads.** It IS the wire type: the
+/// frontend renders every word from the typed variant through the
+/// `errors.eject.*` catalog in nine locales
+/// (`src/lib/file-explorer/eject-error-messages.ts`). The `detail` fields carry
+/// `diskutil`'s own stderr, which says useful non-enumerable things ("in use by
+/// process 1234 (mds)"); they render as technical detail beside the message,
+/// ❌ never as the message. Same split as `MutationError` on the write path;
+/// `docs/guides/error-handling.md` is the map.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum EjectError {
     /// A write op is reading from or writing to this volume; refuse to tear it
-    /// down mid-transfer.
+    /// down mid-transfer. The picker disables Eject for busy volumes, so
+    /// reaching here means a race (or an MCP / automation caller).
     Busy,
     /// `volume_id` isn't registered in `VolumeManager` (a race: unmounted mid-op).
-    VolumeNotFound { volume_id: String },
-    /// The kind dispatch couldn't pick an action.
-    Decision(EjectDecisionError),
-    /// The MTP disconnect, `diskutil`, or `umount` call failed. Carries the
-    /// already-formatted, user-facing reason.
-    Failed(String),
+    VolumeNotFound {
+        /// The id that no longer resolves.
+        volume_id: String,
+    },
+    /// The MTP volume id is shaped wrong: missing the `{device_id}:{storage_id}`
+    /// separator.
+    MtpIdMissingDevicePrefix {
+        /// The malformed id, verbatim.
+        volume_id: String,
+    },
+    /// The volume can't be ejected at all: not SMB, not MTP, and the OS reports
+    /// it as fixed. Typical for the boot volume and other internal disks.
+    NotEjectable {
+        /// The volume asked about.
+        volume_id: String,
+    },
+    /// Disconnect was asked of a volume that isn't a network share. The UI only
+    /// offers Disconnect for SMB volumes, so this is a race or an automation
+    /// caller.
+    NotAnSmbVolume {
+        /// The volume asked about.
+        volume_id: String,
+    },
+    /// The device wouldn't close its MTP session.
+    MtpDisconnectRefused {
+        /// What the MTP layer reported, for the log and the details line.
+        detail: String,
+    },
+    /// `diskutil` / `umount` turned the unmount down. The overwhelmingly common
+    /// case is an open file somewhere, and `detail` usually names the process.
+    UnmountRefused {
+        /// The tool's own stderr, for the log and the details line.
+        detail: String,
+    },
     /// The `diskutil` / `umount` subprocess didn't finish within the timeout.
+    /// ❗ The unmount was NOT cancelled; it may still land.
     TimedOut,
+    /// The one honest fallback, for a failure nothing above classifies (a
+    /// panicked task). ❌ `detail` is never the message.
+    Unexpected {
+        /// What the layer below reported, for the log and the details line.
+        detail: String,
+    },
 }
 
 impl std::fmt::Display for EjectError {
+    /// ❗ For logs, MCP replies, and debugging only; every user-facing word
+    /// comes from the typed variant.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            // The picker disables Eject for busy volumes, so reaching here means a
-            // race (or an MCP / automation caller); the message tells the user to
-            // retry once the transfer finishes.
-            Self::Busy => write!(
-                f,
-                "operations are in progress on this device. Eject again once they finish"
-            ),
-            Self::VolumeNotFound { volume_id } => write!(f, "Volume not found: {}", volume_id),
-            Self::Decision(e) => write!(f, "{}", e),
-            Self::Failed(msg) => write!(f, "{}", msg),
-            Self::TimedOut => write!(f, "Eject timed out (the volume may be slow or unresponsive)"),
+            Self::Busy => f.write_str("operations are in progress on this device"),
+            Self::VolumeNotFound { volume_id } => write!(f, "volume not found: {volume_id}"),
+            Self::MtpIdMissingDevicePrefix { volume_id } => {
+                write!(f, "MTP volume id {volume_id} is missing a device prefix")
+            }
+            Self::NotEjectable { volume_id } => write!(f, "volume {volume_id} isn't ejectable"),
+            Self::NotAnSmbVolume { volume_id } => write!(f, "volume {volume_id} isn't an SMB volume"),
+            Self::MtpDisconnectRefused { detail } => write!(f, "MTP disconnect refused: {detail}"),
+            Self::UnmountRefused { detail } => write!(f, "unmount refused: {detail}"),
+            Self::TimedOut => f.write_str("timed out"),
+            Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),
         }
     }
 }
 
 impl std::error::Error for EjectError {}
+
+impl From<EjectDecisionError> for EjectError {
+    fn from(error: EjectDecisionError) -> Self {
+        match error {
+            EjectDecisionError::MtpIdMissingDevicePrefix { volume_id } => Self::MtpIdMissingDevicePrefix { volume_id },
+            EjectDecisionError::NotEjectable { volume_id } => Self::NotEjectable { volume_id },
+        }
+    }
+}
 
 /// Ejects a volume. Picks the right teardown for the volume's kind.
 ///
@@ -188,7 +245,7 @@ pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
         is_smb,
         is_mtp,
     })
-    .map_err(EjectError::Decision)?;
+    .map_err(EjectError::from)?;
 
     match action {
         EjectAction::MtpDisconnect { device_id } => mtp_disconnect(&device_id).await,
@@ -260,8 +317,8 @@ async fn stop_index_blocking(volume_id: &str) {
 ///
 /// Errors:
 /// - [`EjectError::VolumeNotFound`] if the id isn't registered (a race).
-/// - [`EjectError::Failed`] when the volume isn't SMB (a race or automation
-///   caller; the UI only offers Disconnect for SMB volumes).
+/// - [`EjectError::NotAnSmbVolume`] when the volume isn't SMB (a race or
+///   automation caller; the UI only offers Disconnect for SMB volumes).
 pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
     use crate::file_system::volume::manager::get_volume_manager;
 
@@ -272,10 +329,9 @@ pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
         })?;
 
     if volume.smb_connection_state().is_none() {
-        return Err(EjectError::Failed(format!(
-            "Volume {} isn't an SMB volume; can't disconnect",
-            volume_id
-        )));
+        return Err(EjectError::NotAnSmbVolume {
+            volume_id: volume_id.to_string(),
+        });
     }
 
     #[cfg(target_os = "macos")]
@@ -349,20 +405,22 @@ async fn mtp_disconnect(device_id: &str) -> Result<(), EjectError> {
             crate::mtp::MtpDisconnectReason::User,
         )
         .await
-        .map_err(|e| EjectError::Failed(format!("Couldn't disconnect {}: {}", device_id, e)))
+        .map_err(|e| EjectError::MtpDisconnectRefused { detail: e.to_string() })
 }
 
 /// Runs a blocking eject subprocess with a 15 s timeout, mapping the outcome to
-/// [`EjectError`] (a real timeout becomes [`EjectError::TimedOut`] so the wire
-/// error carries the timeout flag).
+/// [`EjectError`]. A real deadline becomes [`EjectError::TimedOut`], which the
+/// frontend words differently from a refusal because the unmount may still land.
 async fn run_eject_subprocess(
     timeout: Duration,
     f: impl FnOnce() -> Result<(), String> + Send + 'static,
 ) -> Result<(), EjectError> {
     match tokio::time::timeout(timeout, tokio::task::spawn_blocking(f)).await {
         Ok(Ok(Ok(()))) => Ok(()),
-        Ok(Ok(Err(e))) => Err(EjectError::Failed(e)),
-        Ok(Err(join_err)) => Err(EjectError::Failed(join_err.to_string())),
+        Ok(Ok(Err(detail))) => Err(EjectError::UnmountRefused { detail }),
+        Ok(Err(join_err)) => Err(EjectError::Unexpected {
+            detail: join_err.to_string(),
+        }),
         Err(_elapsed) => Err(EjectError::TimedOut),
     }
 }
@@ -374,13 +432,13 @@ async fn diskutil_run(verb: &'static str, mount_path: &str) -> Result<(), EjectE
         let output = std::process::Command::new("diskutil")
             .args([verb, &path_for_cmd])
             .output()
-            .map_err(|e| format!("Couldn't run diskutil: {}", e))?;
+            .map_err(|e| format!("couldn't run diskutil: {e}"))?;
         if output.status.success() {
             log::info!(target: "eject", "diskutil {} succeeded for {}", verb, path_for_cmd);
             Ok(())
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            Err(format!("diskutil {} failed: {}", verb, stderr.trim()))
+            Err(format!("diskutil {}: {}", verb, stderr.trim()))
         }
     })
     .await
@@ -396,12 +454,12 @@ async fn diskutil_run(verb: &'static str, mount_path: &str) -> Result<(), EjectE
         let output = std::process::Command::new("umount")
             .arg(&path_for_cmd)
             .output()
-            .map_err(|e| format!("Couldn't run umount: {}", e))?;
+            .map_err(|e| format!("couldn't run umount: {e}"))?;
         if output.status.success() {
             Ok(())
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            Err(format!("umount failed: {}", stderr.trim()))
+            Err(format!("umount: {}", stderr.trim()))
         }
     })
     .await
@@ -549,5 +607,55 @@ mod tests {
             is_mtp: false,
         };
         assert_eq!(decide_eject_action(&ctx).unwrap(), EjectAction::DiskutilUnmount);
+    }
+}
+
+#[cfg(test)]
+mod wire_tests {
+    use super::*;
+
+    /// The wire shape the frontend matches on. Internally tagged, camelCase, with
+    /// the fields intact — the same contract `MutationError` keeps.
+    #[test]
+    fn eject_error_crosses_the_wire_as_a_tagged_value() {
+        let json = serde_json::to_value(EjectError::VolumeNotFound {
+            volume_id: "volumes-usb".to_string(),
+        })
+        .unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({ "type": "volumeNotFound", "volumeId": "volumes-usb" })
+        );
+
+        let json = serde_json::to_value(EjectError::UnmountRefused {
+            detail: "in use by process 1234 (mds)".to_string(),
+        })
+        .unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({ "type": "unmountRefused", "detail": "in use by process 1234 (mds)" })
+        );
+
+        assert_eq!(
+            serde_json::to_value(EjectError::TimedOut).unwrap(),
+            serde_json::json!({ "type": "timedOut" })
+        );
+    }
+
+    /// A decision refusal keeps its own identity instead of collapsing into a
+    /// generic "couldn't".
+    #[test]
+    fn a_decision_refusal_keeps_its_variant() {
+        let err: EjectError = EjectDecisionError::NotEjectable {
+            volume_id: "root".to_string(),
+        }
+        .into();
+        assert!(matches!(err, EjectError::NotEjectable { ref volume_id } if volume_id == "root"));
+
+        let err: EjectError = EjectDecisionError::MtpIdMissingDevicePrefix {
+            volume_id: "no-colon".to_string(),
+        }
+        .into();
+        assert!(matches!(err, EjectError::MtpIdMissingDevicePrefix { .. }));
     }
 }

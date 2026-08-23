@@ -1,4 +1,10 @@
 // Shared IPC types for timeout-aware backend communication.
+//
+// ❌ There is deliberately no generic "IPC error" type here any more. Every
+// command family ships its OWN typed error enum, which the frontend renders from
+// through the message catalog (`$lib/ipc/typed-failure.ts` carries one across a
+// throw). A shared `{ message, timedOut }` shape is how a typed refusal used to
+// become an untranslated English sentence in front of a person.
 
 /**
  * Wraps a backend result with a flag indicating whether the operation timed out.
@@ -11,42 +17,19 @@ export interface TimedOut<T> {
 }
 
 /**
- * Structured IPC error from the backend.
- * Commands returning `Result<T, IpcError>` send this on failure.
- * The `timedOut` flag lets the frontend distinguish timeout errors from real failures
- * without fragile string matching.
- */
-export interface IpcError {
-  message: string
-  timedOut: boolean
-}
-
-/** Type guard: checks if an unknown error value is a structured IpcError. */
-export function isIpcError(error: unknown): error is IpcError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    'timedOut' in error &&
-    typeof (error as IpcError).message === 'string' &&
-    typeof (error as IpcError).timedOut === 'boolean'
-  )
-}
-
-/** Extracts a human-readable message from a caught IPC error (IpcError, Error, or string). */
-export function getIpcErrorMessage(error: unknown): string {
-  if (isIpcError(error)) return error.message
-  if (error instanceof Error) return error.message
-  return String(error)
-}
-
-/**
- * Throws a typed IPC error value as an actual Error object, satisfying
- * `@typescript-eslint/only-throw-error`. When the error value has a `.message`
- * string property (e.g. IpcError), the Error message is set to that string and
- * the original properties are copied onto the Error so `isIpcError()` and similar
- * checks still work. Plain strings become `new Error(string)`. Everything else is
- * JSON-stringified into the message.
+ * Throws a wire error value as an actual `Error`, satisfying
+ * `@typescript-eslint/only-throw-error`, with the original properties copied
+ * onto it so a catch site can still read them.
+ *
+ * `Error.message` is a best-effort DIAGNOSTIC for logs and generic consumers.
+ * ❌ Nothing a user reads comes from it: a command family whose refusal reaches
+ * a human throws a `TypedFailure` subclass instead and words it from the catalog
+ * (`$lib/ipc/typed-failure.ts`).
+ *
+ * A tagged wire error (`{ type: 'timedOut', … }`, the shape every typed command
+ * family ships) becomes `Error("timedOut")` rather than a blob of JSON, so a log
+ * line names the REASON. Plain strings become `new Error(string)`; anything else
+ * falls back to JSON.
  *
  * Use this in typed-bindings error paths:
  *   if (res.status === 'error') throwIpcError(res.error)
@@ -54,14 +37,11 @@ export function getIpcErrorMessage(error: unknown): string {
 export function throwIpcError(error: unknown): never {
   if (error instanceof Error) throw error
   if (typeof error === 'string') throw new Error(error)
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof (error as Record<string, unknown>)['message'] === 'string'
-  ) {
-    const msg = (error as Record<string, unknown>)['message'] as string
-    throw Object.assign(new Error(msg), error)
+  if (typeof error === 'object' && error !== null) {
+    const fields = error as Record<string, unknown>
+    for (const key of ['message', 'type', 'kind'] as const) {
+      if (typeof fields[key] === 'string') throw Object.assign(new Error(fields[key]), error)
+    }
   }
   throw new Error(JSON.stringify(error))
 }

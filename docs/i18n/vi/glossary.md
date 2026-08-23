@@ -76,9 +76,11 @@ UI/section phrasings settled here (for consistency in other files):
 
 - **"Here's what to try" (error-list lead-in): `Bạn có thể thử:`** · natural friendly framing, ends in a colon before
   the bullet list. `tentative`.
-- **Terminal, Disk Utility, First Aid, Activity Monitor, Spotlight, Finder, Get Info, System Settings** · macOS
-  feature/app names; kept in English per the do-not-translate rule (these match what a Vietnamese macOS may localize,
-  but Cmdr's error copy references them as proper names alongside literal commands).
+- **Terminal, Disk Utility, First Aid, Activity Monitor, Spotlight, Finder, System Settings** · macOS feature/app names
+  Cmdr's error copy references as proper names alongside literal commands.
+- ⚠️ **Get Info is NOT one of them: Apple localizes it as `Lấy thông tin`** (and the Locked checkbox as `Đã khóa`). See
+  § Lỗi khi tháo ổ đĩa / ngắt kết nối, 2026-08-23, for the Tier-1 keys. The other names above are still owed a per-name
+  check against `_ignored/i18n/vi/macOS/` rather than a blanket keep-English rule.
 
 Added during the `settings.json` pass (2026-06-21). Reuses the prior-pass terms above (eject → `tháo`, tab → `thẻ`, pane
 → `khung`, share → `chia sẻ`, mount → `gắn kết`, index → `chỉ mục`/`lập chỉ mục`, drive/volume → `ổ đĩa`); new terms
@@ -1503,3 +1505,64 @@ tới việc Cmdr thoát nữa. Mọi thành phần lấy từ mục hộp tho�
   ❌ NHÃN `settings.updates.crashReports.label` giữ nguyên `Gửi báo cáo sự cố`: đó là tên của cài đặt.
 - **Câu thứ hai lấy từ `crashReporter.dialog.privacyNote`** (`phần mã nào đã gặp sự cố`), thay cho `vị trí sự cố`, vốn
   chỉ đúng khi ứng dụng thật sự đã thoát · high.
+
+## Lỗi khi tháo ổ đĩa / ngắt kết nối (`errors.eject.*`, 2026-08-23)
+
+Chín khóa mới, tất cả đều rơi vào thông báo nhỏ ở góc trên bên phải, sau dấu hai chấm của
+`fileExplorer.pane.ejectFailedToast` (`Không thể tháo {volumeName}: …`) hoặc `.disconnectFailedToast`
+(`Không thể ngắt kết nối: …`). Vì vế đầu đã nói "không thể", vế sau chỉ nêu lý do và bước tiếp theo, không lặp lại lời
+than. Dùng lại từ đã chốt: eject → `tháo`, disconnect → `ngắt kết nối`, drive/volume → `ổ đĩa`, device → `thiết bị`,
+share → `mục chia sẻ`, `thao tác` cho hạng mục thao tác tệp.
+
+- **"in use" (ổ đĩa đang bị chiếm) → `đang sử dụng`** · macOS Finder Tier 1, đúng ngay ngữ cảnh tháo ổ đĩa: `NE66`
+  ("Không thể tháo ổ đĩa vì ổ đĩa đang được sử dụng."), `NE31`, `NE79`, `NE80`, kiểm chứng trong
+  `_ignored/i18n/vi/macOS/`, 2026-08-23 · high. `errors.eject.unmountRefused` giữ chủ ngữ chung chung `thứ gì đó` (giống
+  `errors.volume.alreadyExists`) vì bản tiếng Anh cố tình không đoán đó là ứng dụng nào.
+- **"once that finishes" → `khi việc đó hoàn tất`** · macOS Finder `LA17` ("Thử lại khi tác vụ hiện tại đã hoàn tất.") ·
+  high.
+- **"removable" (ổ đĩa tháo rời được) → `có thể tháo`** · macOS Finder Tier 1: `KIND_FORMATTER_28_1` "Removable" →
+  `Có thể tháo`, `KIND_FORMATTER_28_0`/`GV3.1` "Removable Volume" → `Ổ đĩa có thể tháo`, kiểm chứng 2026-08-23 · high.
+  Câu phủ định lấy khung LOẠI ổ đĩa (`Ổ đĩa này không phải loại có thể tháo`) chứ không nói `không tháo được`: cách sau
+  nghe như macOS vừa từ chối một lần, trong khi khóa này nói ổ đĩa vốn không bao giờ tháo được. Thunar `vi` dịch
+  "Removable Drive" là `Đĩa di động`, nhưng Tier 1 thắng.
+- **"moving files" (nghĩa rộng: sao chép, di chuyển, hoặc xóa) → `chuyển tệp`** · ❌ đừng dùng `di chuyển tệp`:
+  `di chuyển` là từ đã chốt riêng cho thao tác Move (`fileOperations.transferDialog.toggleMove`), nên nó sẽ thu hẹp câu
+  xuống đúng một thao tác trong khi `@key.description` nói cả ba. `chuyển` trần là động từ chung mà catalog đã dùng
+  (`Ghi đè và chuyển tệp cũ vào thùng rác`, `macOS đã từ chối chuyển mục này…`) · high (nhất quán catalog).
+- **"wouldn't close its connection" → `đã từ chối đóng kết nối`** · `từ chối` là từ Apple dùng cho việc khước từ (xem
+  đợt `errors.mutation.trashRefused`), và ở đây chủ ngữ là thiết bị · high.
+- **"unplug" → `rút … ra`** · catalog đã ship `rút` ở bốn chỗ MTP (`errors.listing.deviceReconnecting.suggestion` "Bạn
+  không cần rút thiết bị ra", `errors.provider.macDroid.*` "Rút rồi cắm lại cáp USB", `mtp.permissionDialog.helpText`) ·
+  high (nhất quán catalog). Kho tham chiếu KHÔNG có chuỗi "unplug" nào, nên bằng chứng duy nhất là chính catalog. Lưu ý
+  cái bẫy ngược ở `errors.volume.deviceSessionReset`: ở đó ❌ cấm dùng `rút`; ở khóa này bản tiếng Anh bảo rút thật nên
+  `rút` mới đúng.
+- **"once it's idle" → `khi không còn bận`** · kho tham chiếu không có "idle" cho thiết bị (`indexing.enrich.pausedIdle`
+  dùng `rảnh` nhưng nói về NGƯỜI DÙNG rảnh, không dùng lại được cho máy). Phủ định `bận` (thuật ngữ Microsoft, đã chốt ở
+  `menu.volume.ejectBusy` → `(đang bận)`) là cách nói tự nhiên nhất · `tentative`.
+- **`errors.eject.timedOut` KHÔNG phải là thất bại**, giống hệt `errors.mutation.timedOut`: việc tháo chưa bị hủy và vẫn
+  có thể xong. Vế đầu dùng lại nguyên văn vế đầu của khóa anh em (`Ổ đĩa vẫn chưa phản hồi`), vế sau đổi kết quả:
+  `nên việc tháo vẫn có thể tự hoàn tất.` · high (nhất quán catalog).
+- **`errors.eject.unexpected` có bản tiếng Anh GIỐNG HỆT `errors.mutation.unexpected`**, nên dùng chung một bản dịch
+  nguyên văn: `Có gì đó không ổn, và Cmdr không rõ là gì.` · high.
+- **`errors.eject.volumeNotFound` đi theo khung của `errors.mutation.volumeGone`** (`Ổ đĩa đó không còn … nữa, nên …`),
+  chỉ đổi `khả dụng` thành `kết nối` vì bản tiếng Anh nói "isn't connected any more" · high.
+- Không cần `sameAsSourceJustification`: cả chín giá trị đều khác bản tiếng Anh.
+
+### SỬA: Apple CÓ dịch "Get Info" và "Locked" sang tiếng Việt
+
+Hai khóa cũ (`errors.write.fileLocked.suggestion.mac`, `errors.write.permissionDenied.suggestion.deleteMac`) để nguyên
+`Get Info` và `Locked` bằng tiếng Anh giữa câu tiếng Việt. Đó là lỗi: macOS `vi` dịch cả hai, nên người dùng mở Finder
+ra sẽ không thấy chữ nào khớp.
+
+- **Get Info → `Lấy thông tin`** · macOS Finder Tier 1: `N165`, `TL22`, và khóa `"Get Info"` trong `Localizable.json`
+  đều là `Lấy thông tin`, kiểm chứng trong `_ignored/i18n/vi/macOS/Finder/`, 2026-08-23 · high.
+- **Locked (ô đánh dấu trong bảng Lấy thông tin) → `Đã khóa`** · macOS Finder Tier 1: `AXNODE1` (tên trợ năng của chính
+  ô đánh dấu) là `Đã khóa`; `NE18` dựng nguyên câu tương đương của chúng ta —
+  `Chọn Tệp > Lấy thông tin, bỏ chọn “Đã khóa” rồi thử lại.` — và `NE43`, `BN43` lặp lại cùng cách viết, kiểm chứng
+  2026-08-23 · high.
+- Giữ dấu nháy cong `“…”` quanh `Đã khóa` đúng như Apple viết. Ghi chú "dùng nháy thẳng ASCII" ở đợt trước chỉ áp dụng
+  cho dấu nháy quanh `{path}`/`{name}`, không áp dụng cho tên một thành phần giao diện được trích dẫn.
+- ⚠️ **`@key.description` bên `en` của HAI khóa này vẫn ghi "do NOT translate them"**, mâu thuẫn với chính
+  `errors.mutation.fileLocked` (mô tả ở đó ghi "Apple localizes it, so use your locale's Finder wording") và với bằng
+  chứng Tier 1 ở trên. Bản `vi` đi theo bằng chứng. Cần một đợt sửa mô tả bên `en`; đây là việc của nguồn, không phải
+  của bản dịch.

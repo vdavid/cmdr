@@ -5,7 +5,8 @@ commands, and notable non-obvious placements.
 
 ## Per-file inventory
 
-- **`ipc-types.ts`**: `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()`: shared timeout-aware types.
+- **`ipc-types.ts`**: `TimedOut<T>` and `throwIpcError()`. ❌ No generic IPC error type: each command family ships its
+  own typed enum, and a refusal a person reads crosses the throw as a `TypedFailure` (`$lib/ipc/typed-failure.ts`).
 - **`index.ts`**: barrel re-export of everything below.
 - **`file-listing.ts`**: virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`),
   `getFileBeside` (the row next to a named one, resolved and read under one backend lock), drag-and-drop, `pathExists`,

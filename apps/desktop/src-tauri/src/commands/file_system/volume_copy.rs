@@ -11,12 +11,12 @@ use crate::file_system::{
     scan_for_volume_copy as ops_scan_for_volume_copy, start_volume_compress, start_volume_copy, start_volume_move,
     transfer_would_land_on_its_source,
 };
-use cmdr_fs::volume::Volume;
+use cmdr_fs::volume::{Volume, VolumeError};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::time::Duration;
 
-use crate::commands::util::{Deadline, IpcError, timeout_detached, timeout_detached_within};
+use crate::commands::util::{Deadline, timeout_detached_typed, timeout_detached_within};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
@@ -113,7 +113,7 @@ pub async fn scan_volume_for_copy(
     dest_volume_id: String,
     dest_path: String,
     max_conflicts: Option<usize>,
-) -> Result<VolumeCopyScanResult, IpcError> {
+) -> Result<VolumeCopyScanResult, VolumeScanError> {
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
     let dest_path = PathBuf::from(dest_path);
 
@@ -121,13 +121,17 @@ pub async fn scan_volume_for_copy(
     // (sizing an extract-out) and the dest routes consistently with the copy op.
     let (source_volume, _) = resolve_source_volume(&source_volume_id, source_paths.first())
         .await
-        .ok_or_else(|| IpcError::from_err(format!("Source volume '{}' not found", source_volume_id)))?;
+        .ok_or(VolumeScanError::SourceVolumeNotFound {
+            volume_id: source_volume_id,
+        })?;
 
     let dest_volume = get_volume_manager()
         .resolve(&dest_volume_id, &dest_path)
         .await
         .volume
-        .ok_or_else(|| IpcError::from_err(format!("Destination volume '{}' not found", dest_volume_id)))?;
+        .ok_or(VolumeScanError::DestinationVolumeNotFound {
+            volume_id: dest_volume_id,
+        })?;
 
     let max_conflicts = max_conflicts.unwrap_or(100);
     // Same anchoring the copy op applies, so the scan sizes and counts conflicts
@@ -137,13 +141,68 @@ pub async fn scan_volume_for_copy(
     // Run scan (now async). Detached: a copy scan of an MTP source is a recursive
     // listing that outlives 30 s on any photo-heavy folder, and dropping it
     // mid-`GetObjectInfo` wedges the phone.
-    timeout_detached(Duration::from_secs(30), async move {
-        ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts)
-            .await
-            .map_err(|e| e.to_string())
-    })
+    timeout_detached_typed(
+        Duration::from_secs(30),
+        || VolumeScanError::TimedOut,
+        |detail| VolumeScanError::Unexpected { detail },
+        async move {
+            ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts)
+                .await
+                .map_err(|error| VolumeScanError::Volume { error })
+        },
+    )
     .await
 }
+
+/// Why a pre-flight scan or a conflict check couldn't answer.
+///
+/// ❌ Not prose: the transfer dialog shows its own "couldn't check" state and
+/// logs the variant. `VolumeError` is the wire type the frontend already words,
+/// so a scan that fails on the device says exactly what the device said.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum VolumeScanError {
+    /// The source volume isn't registered (a race: it was ejected mid-dialog).
+    SourceVolumeNotFound {
+        /// The id that no longer resolves.
+        volume_id: String,
+    },
+    /// The destination volume isn't registered.
+    DestinationVolumeNotFound {
+        /// The id that no longer resolves.
+        volume_id: String,
+    },
+    /// The volume refused, and said why in its own vocabulary.
+    Volume {
+        /// The backend's typed answer.
+        error: VolumeError,
+    },
+    /// The scan didn't finish inside the command's budget. ❗ It was NOT
+    /// cancelled: the deadline bounds the dialog's wait, not the scan.
+    TimedOut,
+    /// The scan task panicked, so no answer is coming.
+    Unexpected {
+        /// What the runtime reported, for the log.
+        detail: String,
+    },
+}
+
+impl std::fmt::Display for VolumeScanError {
+    /// ❗ For logs and debugging only.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SourceVolumeNotFound { volume_id } => write!(f, "source volume not found: {volume_id}"),
+            Self::DestinationVolumeNotFound { volume_id } => {
+                write!(f, "destination volume not found: {volume_id}")
+            }
+            Self::Volume { error } => write!(f, "volume: {error}"),
+            Self::TimedOut => f.write_str("timed out"),
+            Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),
+        }
+    }
+}
+
+impl std::error::Error for VolumeScanError {}
 
 /// Checks which source items already exist at the destination. Returns conflict details for UI.
 ///
@@ -162,7 +221,7 @@ pub async fn scan_volume_for_conflicts(
     dest_path: String,
     source_volume_id: Option<String>,
     source_paths: Option<Vec<String>>,
-) -> Result<Vec<ScanConflict>, IpcError> {
+) -> Result<Vec<ScanConflict>, VolumeScanError> {
     scan_volume_for_conflicts_within(
         Deadline::new(CONFLICT_CHECK_BUDGET),
         volume_id,
@@ -192,7 +251,7 @@ pub(crate) async fn scan_volume_for_conflicts_within(
     dest_path: String,
     source_volume_id: Option<String>,
     source_paths: Option<Vec<String>>,
-) -> Result<Vec<ScanConflict>, IpcError> {
+) -> Result<Vec<ScanConflict>, VolumeScanError> {
     let dest_path = PathBuf::from(dest_path);
     log::debug!(
         target: CONFLICT_LOG_TARGET,
@@ -206,12 +265,15 @@ pub(crate) async fn scan_volume_for_conflicts_within(
     // routes to its ArchiveVolume (consistent with the copy op's routing).
     let resolve_id = volume_id.clone();
     let resolve_path = dest_path.clone();
-    let volume = timeout_detached_within(&deadline, async move {
-        Ok::<_, String>(get_volume_manager().resolve(&resolve_id, &resolve_path).await.volume)
-    })
+    let volume = timeout_detached_within(
+        &deadline,
+        || VolumeScanError::TimedOut,
+        |detail| VolumeScanError::Unexpected { detail },
+        async move { Ok::<_, VolumeScanError>(get_volume_manager().resolve(&resolve_id, &resolve_path).await.volume) },
+    )
     .await
     .inspect_err(|e| log_conflict_outcome(&deadline, "couldn't reach the destination volume", e))?
-    .ok_or_else(|| IpcError::from_err(format!("Volume '{}' not found", volume_id)))?;
+    .ok_or(VolumeScanError::DestinationVolumeNotFound { volume_id })?;
 
     // Same anchoring the copy op applies: the dialog's box is volume-relative,
     // so without it the scan asks a share for a path outside its mount and
@@ -240,17 +302,28 @@ pub(crate) async fn scan_volume_for_conflicts_within(
     if let (Some(src_volume_id), Some(src_paths)) = (source_volume_id, source_paths) {
         let paths: Vec<PathBuf> = src_paths.iter().map(PathBuf::from).collect();
         let first = paths.first().cloned();
-        let resolved = timeout_detached_within(&deadline, async move {
-            Ok::<_, String>(resolve_source_volume(&src_volume_id, first.as_ref()).await)
-        })
+        let resolved = timeout_detached_within(
+            &deadline,
+            || VolumeScanError::TimedOut,
+            |detail| VolumeScanError::Unexpected { detail },
+            async move { Ok::<_, VolumeScanError>(resolve_source_volume(&src_volume_id, first.as_ref()).await) },
+        )
         .await;
         if let Ok(Some((src_volume, _))) = resolved {
             resolved_source = Some((Arc::clone(&src_volume), paths.clone()));
             // Detached (see `timeout_detached`): the batch stat reaches the
             // source device, so the deadline must not drop it.
-            let batch = timeout_detached_within(&deadline, async move {
-                src_volume.scan_for_copy_batch(&paths).await.map_err(|e| e.to_string())
-            })
+            let batch = timeout_detached_within(
+                &deadline,
+                || VolumeScanError::TimedOut,
+                |detail| VolumeScanError::Unexpected { detail },
+                async move {
+                    src_volume
+                        .scan_for_copy_batch(&paths)
+                        .await
+                        .map_err(|error| VolumeScanError::Volume { error })
+                },
+            )
             .await;
             match batch {
                 Ok(batch) => merge_source_types_from_batch(&mut source_items, &batch),
@@ -263,7 +336,7 @@ pub(crate) async fn scan_volume_for_conflicts_within(
                         target: CONFLICT_LOG_TARGET,
                         "source batch stat unavailable after {:.0}s, using name-only items: {}",
                         deadline.elapsed().as_secs_f64(),
-                        e.message
+                        e
                     );
                 }
             }
@@ -273,12 +346,17 @@ pub(crate) async fn scan_volume_for_conflicts_within(
     // Run conflict scan (now async), detached so the destination device isn't
     // left mid-transaction if the scan overruns.
     let dest_volume = Arc::clone(&volume);
-    let found = timeout_detached_within(&deadline, async move {
-        volume
-            .scan_for_conflicts(&source_items, &dest_path)
-            .await
-            .map_err(|e| e.to_string())
-    })
+    let found = timeout_detached_within(
+        &deadline,
+        || VolumeScanError::TimedOut,
+        |detail| VolumeScanError::Unexpected { detail },
+        async move {
+            volume
+                .scan_for_conflicts(&source_items, &dest_path)
+                .await
+                .map_err(|error| VolumeScanError::Volume { error })
+        },
+    )
     .await;
     match found {
         Ok(conflicts) => {
@@ -337,13 +415,13 @@ fn drop_self_collisions(
 /// The one line a check that couldn't answer leaves behind. WARN, because the
 /// dialog is about to tell the user it doesn't know what's at their destination,
 /// and that's exactly the state worth noticing in a log.
-fn log_conflict_outcome(deadline: &Deadline, what: &str, e: &IpcError) {
+fn log_conflict_outcome(deadline: &Deadline, what: &str, e: &VolumeScanError) {
     log::warn!(
         target: CONFLICT_LOG_TARGET,
         "conflict check gave up after {:.1}s: {} ({})",
         deadline.elapsed().as_secs_f64(),
         what,
-        e.message
+        e
     );
 }
 
@@ -405,7 +483,9 @@ pub struct SourceItemInput {
 
 #[cfg(test)]
 mod tests {
-    use super::{Deadline, SourceItemInput, merge_source_types_from_batch, scan_volume_for_conflicts_within};
+    use super::{
+        Deadline, SourceItemInput, VolumeScanError, merge_source_types_from_batch, scan_volume_for_conflicts_within,
+    };
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
     use crate::file_system::{BatchScanResult, CopyScanResult, InMemoryVolume, LocalPosixVolume, SourceItemInfo};
     use crate::test_support::WedgedVolume;
@@ -454,7 +534,10 @@ mod tests {
         .expect("the check must come back on its own, not be cut off by the test");
 
         let err = outcome.expect_err("a check that never reached either volume cannot report 'no conflicts'");
-        assert!(err.timed_out, "and it says WHY, so the dialog can offer a retry");
+        assert!(
+            matches!(err, VolumeScanError::TimedOut),
+            "and it says WHY by variant, so the dialog can offer a retry without reading a sentence"
+        );
         assert!(
             started.elapsed() < budget * 4,
             "the whole check owes one budget, not one per leg: took {:?}",

@@ -13,7 +13,7 @@
 //! [`resolve_range`], the `Content-Type` from the entry) so the testable logic lives
 //! outside the Tauri glue. It does its OWN `spawn_blocking` + `tokio::time::timeout`
 //! (mapping expiry to **504**) rather than reusing `blocking_with_timeout`, because a
-//! scheme handler must answer with an HTTP-shaped response, not an `IpcError`. The
+//! scheme handler must answer with an HTTP-shaped response, not a typed IPC error. The
 //! file-read syscalls carry the same network-mount hazard as IPC commands
 //! (`docs/architecture.md` § Platform constraints), only the return shape differs.
 //!
@@ -267,7 +267,7 @@ pub fn handle_request(request: Request<Vec<u8>>, responder: tauri::UriSchemeResp
     };
 
     // Own `spawn_blocking` + timeout: a scheme handler must answer with an HTTP
-    // response, so we can't reuse `blocking_with_timeout` (it returns an `IpcError`).
+    // response, so it can't reuse the command layer's timeout helpers.
     tauri::async_runtime::spawn(async move {
         let read = tauri::async_runtime::spawn_blocking(move || build_response(&entry, range_header));
         let response = match tokio::time::timeout(MEDIA_READ_TIMEOUT, read).await {

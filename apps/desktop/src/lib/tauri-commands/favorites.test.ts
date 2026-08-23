@@ -17,7 +17,7 @@ import { commands } from '$lib/ipc/bindings'
 import { addFavorite, removeFavorite, renameFavorite, reorderFavorites, stripFavoritePrefix } from './favorites'
 
 const ok = { status: 'ok' as const, data: null }
-const err = { status: 'error' as const, error: { message: 'nope', timedOut: false } }
+const err = { status: 'error' as const, error: { type: 'timedOut' as const } }
 
 describe('stripFavoritePrefix', () => {
   it('strips the fav- prefix to recover the bare favorite id', () => {
@@ -62,8 +62,8 @@ describe('favorites wrappers', () => {
     expect(commands.reorderFavorites).toHaveBeenCalledWith(['a', 'b', 'c'])
   })
 
-  it('throws the IpcError on an error result', async () => {
+  it('throws the typed refusal on an error result, naming the reason', async () => {
     vi.mocked(commands.addFavorite).mockResolvedValueOnce(err)
-    await expect(addFavorite('/x', null)).rejects.toBeTruthy()
+    await expect(addFavorite('/x', null)).rejects.toThrow('timedOut')
   })
 })

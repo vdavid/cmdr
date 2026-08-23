@@ -1828,3 +1828,65 @@ plus parler seulement d'une fermeture. Tout est repris de la section du dialogue
 - **Deuxième phrase reprise de `crashReporter.dialog.privacyNote`** (`la partie du code concernée`), à la place de
   `l''emplacement de l''incident`, vrai seulement en cas de plantage · high. La virgule de série que l'ancienne valeur
   avait héritée de l'anglais disparaît au passage : le français ne l'utilise pas (règle déjà notée plus haut).
+
+## Éjection et déconnexion refusées : les neuf clés `errors.eject.*` (2026-08-23)
+
+Une phrase par clé, affichée dans une notification brève en haut à droite. Chaque valeur est la phrase qui suit le
+deux-points d'un des deux moules du catalogue `fr` : `fileExplorer.pane.ejectFailedToast` (« Impossible d'éjecter
+{volumeName} : {message} ») ou `.disconnectFailedToast` (« Impossible de se déconnecter : {message} »). D'où deux
+contraintes : la valeur commence par une majuscule (comme toutes les valeurs `errors.*`) et ne redit jamais « Impossible
+de … », que le moule porte déjà. Famille RAW : apostrophes ASCII simples, aucun ICU, aucun `{token}`.
+
+- **removable → `amovible`** · macOS Tier 1 (« Volume amovible », « Volumes amovibles », « Amovible ») ; Nautilus et
+  Thunar `fr` confirment (« médias amovibles », « Disque amovible ») · high.
+- **network share → `partage réseau`** · terminologie Microsoft FRA (entrée `network share` → `partage réseau`,
+  masculin) et déjà en place dans le catalogue `fr` (`errors.listing.remotePermissionDenied.explanation`,
+  `settings.indexing.askForEachDrive.description`) · high. macOS `fr` ne nomme pas le concept (il dit « Dossier partagé
+  », qui est le partage local du Finder, un autre concept).
+- **disconnect, TRANSITIF (Cmdr déconnecte un appareil) → `déconnecter` tout court** · macOS `fr` (« Ne déconnectez pas
+  l'appareil tant que l'effacement n'est pas terminé. ») et le catalogue (`fileExplorer.mtp.disconnected` « L'appareil a
+  été déconnecté. ») · high. Le pronominal `se déconnecter` reste réservé au fait de quitter un SERVEUR (macOS Finder «
+  Disconnect » → « Se déconnecter »), qui est le sens du moule `.disconnectFailedToast`. Les deux emplois coexistent
+  dans ce lot, ne pas les uniformiser.
+- **`isn't connected any more` → `n'est plus connecté`** · calque du moule déjà livré dans ce fichier
+  (`errors.mutation.volumeGone` « Ce volume n'est plus disponible, rien n'a donc été modifié. ») ; macOS `fr` atteste
+  l'adjectif (`Connecté` / `Non connecté`, « Mac connectés à votre identifiant Apple ») · high.
+- **`there's nothing to eject / to disconnect` → `il n'y a donc rien à éjecter` / `… à déconnecter`** · reprend
+  `errors.listing.deviceReconnecting.suggestion` du même fichier (« Il n'y a rien à débrancher. ») · high.
+- **`Something is still using this drive` → `Quelque chose utilise encore ce disque.`** · macOS Tier 1 donne le verbe («
+  Impossible d'éjecter le disque car il est utilisé par « %@ ». », « Impossible d'éjecter « ^0 » car il est utilisé. »)
+  et le catalogue atteste l'agent indéfini (`errors.volume.deletePending` « … et quelque chose le maintient encore
+  ouvert. ») · high. On garde la voix active de l'anglais plutôt que le passif d'Apple.
+- **`wouldn't close its connection` → `a refusé de fermer sa connexion`** · `a refusé` est le prédicat non alarmiste
+  déjà retenu pour les `wouldn't` du catalogue (« macOS a refusé de placer cet élément dans la corbeille. », « Connexion
+  refusée », « Authentification refusée ») · high. Ni « erreur » ni « échec ».
+- **`idle` (un appareil MTP qui ne travaille plus) → `quand il n'est plus occupé`** · négation du settled
+  `busy → occupé` (terminologie Microsoft, § Menus natifs) · high. La pile `fr` n'a aucun équivalent direct d'« idle » ;
+  passer par `occupé` garde le lot cohérent avec l'infobulle `fileExplorer.navigation.ejectBusyTooltip`.
+- **`unplug` → `débrancher`** · catalogue `fr` (`errors.listing.deviceReconnecting.suggestion`,
+  `mtp.permissionDialog.helpText` « débranchez puis rebranchez l'appareil ») · high.
+- **`Cmdr couldn't tell which device this is` → `Cmdr n'a pas reconnu cet appareil`** · `reconnaître` est le verbe du
+  catalogue pour une référence que la machine ne rattache plus à rien (`errors.listing.staleConnection.explanation` « …
+  une ancienne référence que le serveur ne reconnaît plus ») · high. La suite est coordonnée
+  (`et ne peut donc pas le déconnecter`) plutôt que juxtaposée avec un `il` : le `il` d'une seconde proposition
+  reprendrait `cet appareil`, l'antécédent masculin le plus proche, et dirait le contraire.
+- **`Something went wrong, and Cmdr couldn't tell what` →
+  `Un problème est survenu, et Cmdr n'a pas pu identifier lequel.`** · valeur reprise MOT POUR MOT de
+  `errors.mutation.unexpected`, même anglais, même repli calme `error → problème` · high.
+
+Un piège de sens à ne jamais « corriger » :
+
+- **`errors.eject.timedOut` ne dit PAS un échec.** L'éjection n'a pas été annulée et peut encore se terminer toute seule
+  : « Le disque n'a pas encore répondu, donc l'éjection peut encore aboutir d'elle-même. » Même moule que
+  `errors.mutation.timedOut` (« Le volume n'a pas encore répondu, donc la modification peut encore aboutir. »), verbe
+  `aboutir` compris, et même discipline : on nomme l'OBJET (`l'éjection`, féminin, d'où `d'elle-même`), on ne
+  pronominalise pas, sinon l'antécédent le plus proche serait `le disque`.
+
+Autres valeurs du lot : `busy` → « Cmdr déplace encore des fichiers sur ce disque. Éjectez-le une fois l'opération
+terminée. » (`l'opération` est le nom générique du catalogue, cf. `errors.volume.cancelled` et `.notSupported` ; il
+couvre la copie, le déplacement et la suppression que l'anglais résume par « that »). `notEjectable` → « Ce disque n'est
+pas amovible, il reste donc connecté. »
+
+Aucun `sameAsSourceJustification` nécessaire : les neuf valeurs diffèrent de l'anglais. Aucun `: ; ! ? %` dans les
+valeurs, donc la règle d'espace avant ponctuation ne se pose pas ; aucune apostrophe doublée (famille RAW), aucun U+2019
+ni U+202F.

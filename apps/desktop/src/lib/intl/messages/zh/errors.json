@@ -1604,5 +1604,41 @@
   "errors.mutation.trashRefused": "macOS 拒绝把这个项目移到废纸篓。",
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
+  },
+  "errors.eject.busy": "Cmdr 还在读写这个驱动器上的文件。完成后再推出。",
+  "@errors.eject.busy": {
+    "sourceHash": "0600dd5"
+  },
+  "errors.eject.volumeNotFound": "这个驱动器已经断开了，所以不用再推出。",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "62a3af2"
+  },
+  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr 认不出这是哪台设备，所以没法断开它。",
+  "@errors.eject.mtpIdMissingDevicePrefix": {
+    "sourceHash": "d26b57b"
+  },
+  "errors.eject.notEjectable": "这个驱动器不可移除，所以会一直保持连接。",
+  "@errors.eject.notEjectable": {
+    "sourceHash": "bb88249"
+  },
+  "errors.eject.notAnSmbVolume": "这不是网络共享，所以没有连接需要断开。",
+  "@errors.eject.notAnSmbVolume": {
+    "sourceHash": "d49623e"
+  },
+  "errors.eject.mtpDisconnectRefused": "设备没有关闭连接。等它空闲下来再拔下线缆。",
+  "@errors.eject.mtpDisconnectRefused": {
+    "sourceHash": "d49861f"
+  },
+  "errors.eject.unmountRefused": "还有东西在使用这个驱动器。请关闭打开的文件和 App，然后再次推出。",
+  "@errors.eject.unmountRefused": {
+    "sourceHash": "1ff7d31"
+  },
+  "errors.eject.timedOut": "这个驱动器还没有响应，可能过一会儿它会自己推出。",
+  "@errors.eject.timedOut": {
+    "sourceHash": "c592421"
+  },
+  "errors.eject.unexpected": "出了点问题，Cmdr 也说不清是什么。",
+  "@errors.eject.unexpected": {
+    "sourceHash": "0c9d9f5"
   }
 }

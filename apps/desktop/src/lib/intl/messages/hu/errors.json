@@ -1349,7 +1349,7 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "8381d02"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Ellenőrizd, hogy van írási hozzáférésed a szülőmappához. Lehet, hogy a fájl zárolva van. Oldd fel a Finderben (Get Info > vedd ki a Locked pipát), majd próbáld újra.",
+  "errors.write.permissionDenied.suggestion.deleteMac": "Ellenőrizd, hogy van írási hozzáférésed a szülőmappához. Lehet, hogy a fájl zárolva van. Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
     "sourceHash": "1e6e123"
   },
@@ -1417,7 +1417,7 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "62b1038"
   },
-  "errors.write.fileLocked.suggestion.mac": "Oldd fel a Finderben (Get Info > vedd ki a Locked pipát), majd próbáld újra.",
+  "errors.write.fileLocked.suggestion.mac": "Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.",
   "@errors.write.fileLocked.suggestion.mac": {
     "sourceHash": "8f84de5"
   },
@@ -1604,5 +1604,41 @@
   "errors.mutation.trashRefused": "A macOS nem engedte ezt a Kukába helyezni.",
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
+  },
+  "errors.eject.busy": "A Cmdr még fájlokat mozgat ezen a meghajtón. Add ki, amint ez befejeződik.",
+  "@errors.eject.busy": {
+    "sourceHash": "0600dd5"
+  },
+  "errors.eject.volumeNotFound": "Ez a meghajtó már nincs csatlakoztatva, így nincs mit kiadni.",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "62a3af2"
+  },
+  "errors.eject.mtpIdMissingDevicePrefix": "A Cmdr nem tudta megállapítani, melyik eszközről van szó, ezért nem tudja leválasztani.",
+  "@errors.eject.mtpIdMissingDevicePrefix": {
+    "sourceHash": "d26b57b"
+  },
+  "errors.eject.notEjectable": "Ez a meghajtó nem cserélhető, ezért csatlakoztatva marad.",
+  "@errors.eject.notEjectable": {
+    "sourceHash": "bb88249"
+  },
+  "errors.eject.notAnSmbVolume": "Ez nem hálózati megosztás, így nincs mit leválasztani.",
+  "@errors.eject.notAnSmbVolume": {
+    "sourceHash": "d49623e"
+  },
+  "errors.eject.mtpDisconnectRefused": "Az eszköz nem zárta le a kapcsolatot. Húzd ki, amikor már nincs használatban.",
+  "@errors.eject.mtpDisconnectRefused": {
+    "sourceHash": "d49861f"
+  },
+  "errors.eject.unmountRefused": "Valami még használja ezt a meghajtót. Zárd be a nyitott fájlokat és alkalmazásokat, majd add ki újra.",
+  "@errors.eject.unmountRefused": {
+    "sourceHash": "1ff7d31"
+  },
+  "errors.eject.timedOut": "A meghajtó még nem válaszolt, de a kiadás magától is befejeződhet.",
+  "@errors.eject.timedOut": {
+    "sourceHash": "c592421"
+  },
+  "errors.eject.unexpected": "A Cmdr problémába ütközött, és nem tudta megállapítani, hogy mi.",
+  "@errors.eject.unexpected": {
+    "sourceHash": "0c9d9f5"
   }
 }

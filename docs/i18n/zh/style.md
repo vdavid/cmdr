@@ -170,6 +170,10 @@ inflection.
   and SystemSettings, verified against the reference pile, 2026-08-21), and onboarding already writes
   `点按下方的 <strong>…</strong>`. The catalog still has ~10 stragglers on `点击`; write `点按` in new strings and
   converge the rest opportunistically.
+- **Toast strings that follow a colon carry the wrapper's verb, so don't repeat it.** Several error values are dropped
+  into a wrapper key (`无法推出 {volumeName}：…`, `无法断开连接：…`) and read as the sentence AFTER the colon. Write
+  them to continue that sentence, and pick a different construction for the second clause (`没法断开它` instead of a
+  second `无法断开连接`). Examples and the per-term evidence: `glossary.md` § Eject / disconnect error copy.
 - **No letter case; the sentence-case rule is moot for Chinese text.** Han characters are unicameral. Just keep Latin
   brand words (Cmdr, macOS) as-is.
 - **Each script is its own pass.** Never machine-convert Simplified↔Traditional (one-to-many mappings + divergent

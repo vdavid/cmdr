@@ -19,7 +19,6 @@
         ejectVolume,
         onVolumeContextAction,
         onVolumeUnmounted,
-        getIpcErrorMessage,
     } from '$lib/tauri-commands'
     import type {
         SortColumn,
@@ -105,6 +104,7 @@
     import { resyncMenuAccelerators } from '$lib/shortcuts'
     import DragOverlay from '../drag/DragOverlay.svelte'
     import { addToast, addToastForPane } from '$lib/ui/toast'
+    import { wordEjectRefusal } from '../navigation/eject-error-messages'
     import { tString } from '$lib/intl/messages.svelte'
 
     function saveTabsForPaneSide(pane: 'left' | 'right') {
@@ -659,7 +659,7 @@
                     addToast(
                         tString('fileExplorer.pane.ejectFailedToast', {
                             volumeName: payload.volumeName,
-                            message: getIpcErrorMessage(e),
+                            message: wordEjectRefusal(e),
                         }),
                         { level: 'error' },
                     )

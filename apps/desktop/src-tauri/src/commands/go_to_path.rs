@@ -6,7 +6,7 @@
 
 use tokio::time::Duration;
 
-use crate::commands::util::{IpcError, blocking_result_with_timeout};
+use crate::commands::util::{DeadlineError, blocking_typed_result_with_timeout};
 use crate::go_to_path::history::{MAX_RECENTS, RECENT_PATHS, RecentPathEntry};
 use crate::go_to_path::{self, GoToPathResolution};
 
@@ -15,10 +15,19 @@ const RESOLVE_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Resolves a typed input against the focused pane's `base_dir`. Serves the
 /// live as-you-type warning, the actual jump, and the clipboard-prefill check.
+///
+/// `go_to_path::resolve` always answers (an unreachable path is a `GoToPathResolution`
+/// variant, not an error), so a missed deadline is the only thing this can report.
 #[tauri::command]
 #[specta::specta]
-pub async fn resolve_go_to_path(input: String, base_dir: String) -> Result<GoToPathResolution, IpcError> {
-    blocking_result_with_timeout(RESOLVE_TIMEOUT, move || Ok(go_to_path::resolve(&input, &base_dir))).await
+pub async fn resolve_go_to_path(input: String, base_dir: String) -> Result<GoToPathResolution, DeadlineError> {
+    blocking_typed_result_with_timeout(
+        RESOLVE_TIMEOUT,
+        || DeadlineError::TimedOut,
+        |detail| DeadlineError::Unexpected { detail },
+        move || Ok(go_to_path::resolve(&input, &base_dir)),
+    )
+    .await
 }
 
 /// Reads the persisted recent-path entries (newest first).

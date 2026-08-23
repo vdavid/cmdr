@@ -1604,5 +1604,41 @@
   "errors.mutation.trashRefused": "macOS a refusé de placer cet élément dans la corbeille.",
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
+  },
+  "errors.eject.busy": "Cmdr déplace encore des fichiers sur ce disque. Éjectez-le une fois l'opération terminée.",
+  "@errors.eject.busy": {
+    "sourceHash": "0600dd5"
+  },
+  "errors.eject.volumeNotFound": "Ce disque n'est plus connecté, il n'y a donc rien à éjecter.",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "62a3af2"
+  },
+  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr n'a pas reconnu cet appareil et ne peut donc pas le déconnecter.",
+  "@errors.eject.mtpIdMissingDevicePrefix": {
+    "sourceHash": "d26b57b"
+  },
+  "errors.eject.notEjectable": "Ce disque n'est pas amovible, il reste donc connecté.",
+  "@errors.eject.notEjectable": {
+    "sourceHash": "bb88249"
+  },
+  "errors.eject.notAnSmbVolume": "Ce n'est pas un partage réseau, il n'y a donc rien à déconnecter.",
+  "@errors.eject.notAnSmbVolume": {
+    "sourceHash": "d49623e"
+  },
+  "errors.eject.mtpDisconnectRefused": "L'appareil a refusé de fermer sa connexion. Débranchez-le quand il n'est plus occupé.",
+  "@errors.eject.mtpDisconnectRefused": {
+    "sourceHash": "d49861f"
+  },
+  "errors.eject.unmountRefused": "Quelque chose utilise encore ce disque. Fermez les fichiers et les apps ouverts, puis éjectez-le à nouveau.",
+  "@errors.eject.unmountRefused": {
+    "sourceHash": "1ff7d31"
+  },
+  "errors.eject.timedOut": "Le disque n'a pas encore répondu, donc l'éjection peut encore aboutir d'elle-même.",
+  "@errors.eject.timedOut": {
+    "sourceHash": "c592421"
+  },
+  "errors.eject.unexpected": "Un problème est survenu, et Cmdr n'a pas pu identifier lequel.",
+  "@errors.eject.unexpected": {
+    "sourceHash": "0c9d9f5"
   }
 }

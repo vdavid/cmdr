@@ -24,19 +24,55 @@ The consequence that bites: **reason, provider, and git-kind names are an IPC co
 variant, a `Provider` variant, or a `FriendlyGitErrorKind` on one side only and the parity test fails (or, worse, it
 mis-renders at runtime). Change both sides in the same commit.
 
-## Three error paths
+## Four error paths
 
 - **Listing errors** (a pane can't show a folder): the pipeline above, ending in `ErrorPane`.
 - **Write errors** (a copy, move, delete, or compress didn't finish): the backend emits `write-error` carrying a typed
   `WriteOperationError`, and the frontend renders it through `file-operations/transfer/transfer-error-messages.ts` into
   `TransferErrorDialog` / `FallbackErrorContent`. Same principle, separate factories; they share the
   `FriendlyErrorMessage` shape so the two can converge later.
-- **Mutation refusals** (a rename, New Folder, New File, or single move to the Trash didn't happen): the command RETURNS
-  a typed `MutationError` (no event), and the frontend renders one plain-text line through
+- **Mutation refusals** (a rename, New Folder, New File, a single move to the Trash, or a clipboard paste didn't
+  happen): the command RETURNS a typed `MutationError` (no event), and the frontend renders one plain-text line through
   `apps/desktop/src/lib/file-operations/mutation-error-messages.ts`, inline under the name field or in a toast.
   `MutationError::Volume` carries the WHOLE `VolumeError`, which is itself the wire type (adjacently tagged, structured
   fields intact), so a backend that grows a variant reaches the frontend without a second vocabulary to keep in step.
   `renderVolumeError` is exported for any other surface that gets one.
+- **Device teardown refusals** (an eject or a network-share disconnect didn't happen): the command RETURNS a typed
+  `EjectError`, and the frontend words it through
+  `apps/desktop/src/lib/file-explorer/navigation/eject-error-messages.ts` into the eject / disconnect toast.
+  `diskutil`'s own stderr rides along in a `detail` field and goes to the LOG, never into the toast.
+
+## Every command family owns its error type
+
+There is deliberately no shared IPC error struct. The one that used to sit in `commands/util.rs`
+(`IpcError { message, timed_out }`, plus a `from_err` constructor) was ergonomic enough to reach 39 call sites, and it
+stringified whatever typed error arrived. `EjectError::Busy`, a proper enum with fields and doc comments, came out the
+other side as an English sentence that a _translated_ toast then interpolated verbatim: the worst of both worlds, in
+nine locales. Adding a shared error type back is how that regrows.
+
+The rule that replaced it:
+
+- **Reuse the vocabulary the command belongs to.** A mutation answers with `MutationError`, the viewer with
+  `ViewerError`, anything volume-shaped nests `VolumeError` (already the wire type). A new vocabulary is the last
+  resort, not the first move.
+- **A small enum beside the family** when none fits: `EjectError`, `ReconnectError`, `GitSubscribeError`,
+  `VolumeScanError`, `FontMetricsError`, `SuggestedOpsError`, `BulkRenameError`, `FuzzyJumpError`, `ListingStartError`.
+  Each is `specta::Type`, internally tagged
+  (`#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]`), and carries the fields a caller
+  acts on.
+- **`DeadlineError` is the ONE shared type**, and only where the wrapped work genuinely cannot refuse (the favorites
+  writes, `resolve_go_to_path`), so "the deadline passed" and "the task panicked" exhaust the failure modes.
+- **Free-form OS text is a `detail` field, never the message.** `MutationError::Unexpected { detail }`,
+  `EjectError::UnmountRefused { detail }`, and their siblings carry what `diskutil` or the Trash actually said, for the
+  log and a technical-details disclosure. The message the person reads always comes from a catalog key.
+- **A typed error needs a typed carrier on the frontend.** `throwIpcError` flattens anything without a `.message` into
+  `new Error(JSON.stringify(...))`, which is exactly the string this design exists to end. A refusal that reaches a
+  human crosses the throw as a `TypedFailure` subclass (`apps/desktop/src/lib/ipc/typed-failure.ts`: `MutationFailure`,
+  `EjectFailure`, `ReconnectFailure`, `AiSecretFailure`), and the catch site asks `failureOf` for the value back.
+  `throwIpcError` survives only for the commands still answering with a bare `String`.
+- **A typed IPC parameter, too, where control flow depended on one.** `viewer_get_lines` used to take
+  `target_type: String` and re-parse it, which meant an error arm for a case no typed caller could reach; it takes a
+  `SeekTargetKind` now.
 
 ## Where each piece lives
 
@@ -52,8 +88,14 @@ mis-renders at runtime). Change both sides in the same commit.
 - **Emitting the event**: `apps/desktop/src-tauri/src/file_system/listing/streaming.rs`.
 - **Mutation refusals**: the enum is `apps/desktop/src-tauri/src/file_system/write_operations/mutation_error.rs`; the
   words are `apps/desktop/src/lib/file-operations/mutation-error-messages.ts`, and
-  `apps/desktop/src/lib/file-operations/mutation-error.ts` is what keeps the typed value alive across the throw
-  (`throwIpcError` would flatten it into a JSON string).
+  `apps/desktop/src/lib/file-operations/mutation-error.ts` is what keeps the typed value alive across the throw.
+- **Eject and disconnect refusals**: the enum is `apps/desktop/src-tauri/src/file_system/volume/eject.rs`; the words are
+  `apps/desktop/src/lib/file-explorer/navigation/eject-error-messages.ts`, and
+  `apps/desktop/src/lib/file-explorer/navigation/eject-error.ts` carries the value across the throw. The three toasts
+  that word an eject share `wordEjectRefusal`, which also routes the technical detail to the log.
+- **The typed-error catalogue and the deadline helpers**:
+  [the command layer](../../apps/desktop/src-tauri/src/commands/DETAILS.md#decisions) and
+  `apps/desktop/src-tauri/src/commands/CLAUDE.md`.
 
 ## Cross-cutting rules
 
@@ -68,8 +110,9 @@ These sit between the layers, so neither side's doc owns them alone.
   `conformance::assert_not_found_carries_the_path` holds every backend to it.
 - **A typed IPC error needs a typed TIMEOUT too.** `commands/util.rs`'s `timeout_detached_typed` /
   `blocking_typed_result_with_timeout` mint the caller's own error type on the deadline, so the frontend matches ONE
-  exhaustive union instead of a typed error plus a stringly-typed timeout beside it. A `MutationError::TimedOut` also
-  means the write may STILL LAND (the deadline detaches, it doesn't cancel), and the copy says so.
+  exhaustive union instead of a typed error plus a stringly-typed timeout beside it. A `MutationError::TimedOut` or an
+  `EjectError::TimedOut` also means the work may STILL LAND (the deadline detaches, it doesn't cancel), and the copy
+  says so.
 - **`category` picks the icon and severity color; it does NOT gate the buttons.** `retryHint` alone decides "Try again",
   and it's deliberately set under all three categories. `actionKind` alone decides "Open System Settings".
 - **Every interpolated runtime value passes through `esc(...)`.** The composed explanation and suggestion are
@@ -120,6 +163,11 @@ Both sides change together, in one commit. The per-side recipes are canonical in
 
 A new provider additionally needs its detection arm in `detect_provider`, its suggestions in
 `provider-error-messages.ts`, and a row in the `volumes/CLAUDE.md` provider table.
+
+A new **eject refusal** is the same two-sided move again: add the `EjectError` variant, return it from `eject.rs`, add
+the `errors.eject.<variant>` key with its `@key` description, run `pnpm intl:keys` +
+`node apps/desktop/scripts/sync-locale-keys.ts`, translate into every locale, and add the arm to `EJECT_MESSAGE` in
+`eject-error-messages.ts` (a record type that demands every variant, so the frontend can't compile with one missing).
 
 A new **mutation refusal** is the same two-sided move in a different pair of files: add the `MutationError` variant with
 its typed fields, return it from `create.rs` / `rename.rs`, add the `errors.mutation.<variant>` key with its `@key`

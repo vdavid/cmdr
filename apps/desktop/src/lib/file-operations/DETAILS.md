@@ -49,6 +49,10 @@ technical detail beside it there.)
   `new Error(JSON.stringify(...))`, which would put the wire JSON in front of the user. `throwMutationError` throws a
   `MutationFailure` that keeps the typed value on the error object; `asMutationError` reads it back, and
   `isMutationTimeout` answers the one question several call sites ask without anybody parsing a sentence.
+- **`MutationFailure` is a `TypedFailure<MutationError>`** (`$lib/ipc/typed-failure.ts`), the shared base every family's
+  carrier extends, so `asMutationError` is a thin `failureOf(MutationFailure, …)` and one `instanceof` can't hand back
+  another family's payload. Adding a family is the same three lines `mutation-error.ts` shows; the map is
+  `docs/guides/error-handling.md`.
 - **`mutation-error-messages.ts` owns the words.** `renderMutationError(failure, 'file' | 'folder')` and the exported
   `renderVolumeError(error)`. Copy comes from `errors.mutation.*` / `errors.volume.*` through `getMessage()` (RAW, no
   ICU), because the values interpolate uncontrolled filenames whose apostrophes and braces would collide with ICU

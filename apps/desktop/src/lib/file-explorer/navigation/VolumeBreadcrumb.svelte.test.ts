@@ -20,7 +20,6 @@ vi.mock('$lib/tauri-commands', () => ({
   resolvePathVolume: vi.fn(() => Promise.resolve({ volume: { id: 'root', path: '/' } })),
   upgradeToSmbVolume: vi.fn(() => Promise.resolve({ status: 'success' })),
   ejectVolume: vi.fn(() => Promise.resolve()),
-  getIpcErrorMessage: (e: unknown) => String(e),
   getVolumeSpace: vi.fn(() => Promise.resolve(null)),
   systemHasSavedSmbPassword: vi.fn(() => Promise.resolve(false)),
   upgradeToSmbVolumeUsingSavedPassword: vi.fn(() => Promise.resolve({ status: 'success' })),

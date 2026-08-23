@@ -344,9 +344,13 @@ trait it dispatches over. `commands::eject::eject_volume` is a thin delegate; th
 
 The MCP `eject` tool wraps `eject::eject` directly (not the command), surfacing `Busy` / non-ejectable as honest tool errors; see `mcp/DETAILS.md`.
 
-Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `Decision`, `Failed`, `TimedOut`); the command maps
-`TimedOut` to `IpcError::timeout()` and the rest to `IpcError::from_err`, so the wire error keeps the timeout flag
-without string-matching. Returns once teardown is *initiated* — `volume-unmounted` / `mtp-device-disconnected` fire
+Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `MtpIdMissingDevicePrefix`, `NotEjectable`,
+`NotAnSmbVolume`, `MtpDisconnectRefused`, `UnmountRefused`, `TimedOut`, `Unexpected`), and it IS the wire type:
+`commands::eject` passes it straight through, so nothing is flattened on the way out and the frontend words each
+variant from `errors.eject.*` (`src/lib/file-explorer/navigation/DETAILS.md` § "Eject button + row context menu").
+`diskutil`'s own stderr rides in the `detail` field of `UnmountRefused` / `MtpDisconnectRefused` and goes to the LOG,
+never into the toast.
+Returns once teardown is *initiated* — `volume-unmounted` / `mtp-device-disconnected` fire
 shortly after and panes rooted at the volume redirect to root. `disconnect_smb_volume` (in `commands::network`) is the
 same `diskutil unmount` pattern for the explicit SMB-disconnect path.
 

@@ -205,8 +205,8 @@ ArrowLeft/Escape to close, Enter to activate).
 Ejectable volumes (USB, SD, DMG, MTP, SMB — see `eject-predicate.ts`) show a small `⏏`-shaped icon button on the right
 of each dropdown row and on the right of the closed/header chip. Clicking it calls `ejectVolume(id)` which dispatches in
 the backend: SMB → `diskutil unmount`, MTP → connection manager disconnect, physical / DMG → `diskutil eject`. Clicking
-the inline button does NOT close the dropdown (`handleEjectClick` no longer flips `isOpen`), so the user can eject
-several drives in a row; each ejected volume vanishes from the list via the existing `volume-unmounted` /
+the inline button does NOT close the dropdown (`handleEjectClick` leaves `isOpen` alone), so the user can eject several
+drives in a row; each ejected volume vanishes from the list via the existing `volume-unmounted` /
 `mtp-device-disconnected` flow — no extra success toast.
 
 Right-clicking a dropdown row opens a NATIVE (muda) context menu via `show_volume_row_context_menu`: a favorite row gets
@@ -228,6 +228,25 @@ The native row / breadcrumb eject items are gated backend-side: `show_volume_row
 `show_breadcrumb_context_menu` pass the volume ID, and the Rust builder renders the `Eject` item disabled with a
 ` (busy)` suffix. The real safety net is the `eject_volume` backend guard, which refuses a busy volume even if the UI is
 stale or an MCP caller bypasses it. See `src-tauri/src/file_system/write_operations/CLAUDE.md` § "Busy-volumes set".
+
+**A refusal speaks the catalog, never `diskutil`.** `ejectVolume` / `disconnectSmbVolume` throw an `EjectFailure`
+(`eject-error.ts`, a subclass of the shared `TypedFailure` in `$lib/ipc/typed-failure.ts`) carrying the backend's typed
+`EjectError` intact. Three surfaces word one: the dropdown / header button (`VolumeBreadcrumb`'s `handleEjectClick`),
+the native menu pick (`DualPaneExplorer`), and the SMB disconnect (`../pane/smb-view-state.svelte.ts`). All three go
+through `wordEjectRefusal(e)` in `eject-error-messages.ts`, which:
+
+- picks the one sentence for the variant from `errors.eject.*` through `getMessage()` (a RAW catalog lookup, never ICU
+  `t()`: the `ejectFailedToast` around it interpolates uncontrolled volume names, whose apostrophes and braces collide
+  with ICU grammar);
+- sends `ejectTechnicalDetail(error)` to the LOG. That's the `detail` field of `unmountRefused` / `mtpDisconnectRefused`
+  / `unexpected`, usually `diskutil`'s own stderr naming the process still holding the drive. It never reaches the
+  message: it's untranslated OS text;
+- answers a value that isn't an `EjectError` at all (the IPC transport itself broke) with the same honest
+  `errors.eject.unexpected` line, logging the raw value.
+
+`renderEjectError` is a mapped type over `EjectError['type']`, so a backend that grows a variant stops the frontend
+compiling until it has words for it. Backend classification and the variant list:
+`src-tauri/src/file_system/volume/DETAILS.md`; the whole error-path map is `docs/guides/error-handling.md`.
 
 ### Editable favorites
 

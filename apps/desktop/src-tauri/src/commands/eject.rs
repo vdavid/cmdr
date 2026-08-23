@@ -1,8 +1,7 @@
 //! Eject commands: thin delegates to the volume-teardown logic in
-//! [`crate::file_system::volume::eject`]. These map the typed `EjectError` to
-//! the wire `IpcError` (preserving the timeout flag) and nothing more.
+//! [`crate::file_system::volume::eject`]. `EjectError` IS the wire type, so
+//! these pass the typed refusal straight through.
 
-use crate::commands::util::IpcError;
 use crate::file_system::volume::eject::{self, EjectError};
 
 /// Ejects a volume. Picks the right teardown for the volume's kind.
@@ -13,11 +12,8 @@ use crate::file_system::volume::eject::{self, EjectError};
 /// after and panes rooted at the volume redirect to root.
 #[tauri::command]
 #[specta::specta]
-pub async fn eject_volume(volume_id: String) -> Result<(), IpcError> {
-    eject::eject(&volume_id).await.map_err(|e| match e {
-        EjectError::TimedOut => IpcError::timeout(),
-        other => IpcError::from_err(other),
-    })
+pub async fn eject_volume(volume_id: String) -> Result<(), EjectError> {
+    eject::eject(&volume_id).await
 }
 
 /// Returns the IDs of volumes that currently have a write op (copy / move /

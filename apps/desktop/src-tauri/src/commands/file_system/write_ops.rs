@@ -22,7 +22,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::time::Duration;
 
-use crate::commands::util::timeout_detached_typed;
+use crate::commands::util::{DeadlineError, timeout_detached_typed};
 use crate::file_system::Volume;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::manager::get_volume_manager;
@@ -59,9 +59,12 @@ async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathB
         // terminal outcome the ordinary way.
         let owned_id = volume_id.to_string();
         let owned_source = first_source.expect("candidate implies a source").clone();
-        let resolved = crate::commands::util::timeout_detached(Duration::from_secs(15), async move {
-            Ok::<_, String>(get_volume_manager().resolve(&owned_id, &owned_source).await)
-        })
+        let resolved = timeout_detached_typed(
+            Duration::from_secs(15),
+            || DeadlineError::TimedOut,
+            |detail| DeadlineError::Unexpected { detail },
+            async move { Ok::<_, DeadlineError>(get_volume_manager().resolve(&owned_id, &owned_source).await) },
+        )
         .await;
         // `is_archive` gates whether we actually got the ArchiveVolume (a mislabeled
         // `.zip` falls through to the parent, which the branches below handle).

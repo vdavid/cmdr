@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use tauri::AppHandle;
 
-use crate::commands::util::{IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout_flag};
+use crate::commands::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
 use crate::file_system::git::{
     EntryStatus, FriendlyGitError, RepoInfo, discover_repo, get_watcher_registry, list_status, repo_info,
 };
@@ -52,23 +52,43 @@ pub async fn get_git_repo_info(path: String) -> TimedOut<Option<RepoInfo>> {
 /// Without this, IPC could freeze waiting for the watcher to register.
 #[tauri::command]
 #[specta::specta]
-pub async fn subscribe_git_state(app: AppHandle, repo_root: String) -> Result<RepoInfo, IpcError> {
-    blocking_result_with_timeout(GIT_SUBSCRIBE_TIMEOUT, move || {
-        let path = PathBuf::from(&repo_root);
-        get_watcher_registry()
-            .subscribe(app, &path)
-            .map_err(format_friendly_git_error)
-    })
+pub async fn subscribe_git_state(app: AppHandle, repo_root: String) -> Result<RepoInfo, GitSubscribeError> {
+    blocking_typed_result_with_timeout(
+        GIT_SUBSCRIBE_TIMEOUT,
+        || GitSubscribeError::TimedOut,
+        |detail| GitSubscribeError::Unexpected { detail },
+        move || {
+            let path = PathBuf::from(&repo_root);
+            get_watcher_registry()
+                .subscribe(app, &path)
+                .map_err(|error| GitSubscribeError::Git { error })
+        },
+    )
     .await
 }
 
-/// Renders a `FriendlyGitError` as its one-line typed form so it carries through
-/// `IpcError::message` for the rare git-subscribe handshake failure (hung/corrupt
-/// repo). The user-facing git copy lives on the frontend
-/// (`src/lib/error-messages/git-error-messages.ts`); this fallback string is technical
-/// (`git: <Kind> (<path>)`) and surfaces only via `getIpcErrorMessage()`.
-fn format_friendly_git_error(err: FriendlyGitError) -> String {
-    err.to_string()
+/// Why the git-state handshake didn't answer.
+///
+/// ❌ Not prose: `FriendlyGitError` carries git's own typed kind, which the
+/// frontend already words in every locale
+/// (`src/lib/error-messages/git-error-messages.ts`).
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum GitSubscribeError {
+    /// Git refused, and said why in its own vocabulary (not a repo, a hung or
+    /// corrupt one).
+    Git {
+        /// Git's typed answer, kind and path intact.
+        error: FriendlyGitError,
+    },
+    /// The handshake didn't finish inside the command's wait, which on a 50k-file
+    /// repo or a dead NFS mount is the common case.
+    TimedOut,
+    /// The blocking task panicked, so no answer is coming.
+    Unexpected {
+        /// What the runtime reported, for the log.
+        detail: String,
+    },
 }
 
 /// Drops one subscriber for the repo. The watcher itself stays alive until the

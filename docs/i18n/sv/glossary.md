@@ -1444,3 +1444,60 @@ bara om att Cmdr avslutas. Allt är hämtat från kraschdialogsavsnittet ovan, i
   `settings.updates.crashReports.label` står kvar som `Skicka kraschrapporter`: det är inställningens namn.
 - **Andra meningen hämtad från `crashReporter.dialog.privacyNote`** (`vilken del av koden som stötte på problemet`), i
   stället för `kraschplats`, som bara stämde vid en krasch · high.
+
+## Utmatning och frånkoppling som inte gick igenom (`errors.eject.*`, 2026-08-23)
+
+Nio nycklar i en kort avisering uppe till höger, alltid EFTER kolon i `fileExplorer.pane.ejectFailedToast` ("Det gick
+inte att mata ut {volumeName}: …") eller `.disconnectFailedToast` ("Det gick inte att koppla från: …"). Familjen är RAW,
+inte ICU: vanliga apostrofer, inga dubblerade. Meningarna är korta eftersom aviseringen är liten, och de får inte
+upprepa ramens "det gick inte att": ramen säger redan att det inte hände, värdet säger varför.
+
+- **in use (om en volym eller enhet) → `används`** · macOS Finder `sv` genomgående: "Volymen kan inte matas ut eftersom
+  den används" (`NE66`), "”^0” används och kan inte matas ut" (`NE31`), "En skiva på ”^0” används och kunde inte matas
+  ut" (`NE79`), AppKit "Skivan kunde inte matas ut eftersom den används av ”%@”" (verifierat i pilen 2026-08-23) ·
+  `high`. `unmountRefused` blir därför "Något använder fortfarande den här enheten". ❌ Inte Microsofts `upptagen`: den
+  termen är bokad för badgen `(upptagen)` på menyraden (`menu.volume.ejectBusy`), där den namnger ett tillstånd, inte
+  vad som pågår.
+- **"Close any open files and apps" → `Stäng öppna filer och appar`** · katalogens egen vändning
+  (`errors.listing.deletePending.suggestion`: "Stäng eventuella andra appar som kan ha den här filen öppen") plus macOS
+  `NE52` ("Avsluta alla öppna appar och försök sedan igen") · `high`. Katalogen säger redan `stäng` om appar, så ett
+  enda verb bär både filerna och apparna; `sedan` markerar ordningen precis som Apples "och försök sedan igen", vilket
+  gör att meningen klarar sig utan komma mellan de två `och`.
+- **removable (om en enhet) → `borttagbar`** · macOS Finder `sv` (`KIND_FORMATTER_28_0` "Removable Volume" → "Borttagbar
+  volym", `KIND_FORMATTER_28_1` "Borttagbar", `GV3` "Borttagbara volymer"; verifierat i pilen 2026-08-23) · `high`.
+  macOS vinner enligt Finder-regeln: Microsoft (`removable drive` → "flyttbar enhet"), Thunar och Total Commander
+  ("Flyttbar enhet", "Flyttbara media") säger alla `flyttbar`, men Apple använder aldrig det ordet, och det här är
+  precis Finders begrepp. Skriv `borttagbar` om enheten, inte om filer.
+- **"so it stays connected" → `så den förblir ansluten`** · `förblir` är katalogens etablerade ord för ett tillstånd som
+  består ("innehållet förblir låst tills du låser upp det", "mappstorlekar förblir dolda") och macOS `sv` har det med
+  samma innebörd ("förblir det sparat på iCloud") · `high`.
+- **unplug (fysiskt dra ur) → `koppla ur`, skilt från disconnect → `koppla från`** · katalogens egna värden
+  (`errors.listing.deviceReconnecting.suggestion`: "Du behöver inte koppla ur något", `fileExplorer.mtp.deviceNotFound`:
+  "Den kan ha kopplats ur", `mtp.permissionDialog.helpText`: "kopplar du ur och i enheten igen") · `high`. Om själva
+  USB-kabeln säger katalogen `dra ur` (`errors.provider.macDroid.*`). De tre verben är alltså tre olika saker:
+  `koppla från` (programmässigt), `koppla ur` (enheten ur porten), `dra ur` (kabeln).
+- **idle (om en ansluten enhet) → `när den inte används`** · samma `används`-tråd som ovan, vilket gör hela familjen
+  konsekvent · `high`. ❌ Inte Microsofts `inaktiv` (`idle` → "inaktiv"): korrekt term, men i en avisering till någon
+  med en telefon i kabeln läses "när den är inaktiv" som ett tekniskt tillstånd, och `används` är redan ordet den här
+  familjen använder för motsatsen.
+- **"close its connection" → `stänga sin anslutning`** · Total Commander `sv` ("Vill du stänga anslutningen till '%s'?",
+  verifierat i pilen 2026-08-23) · `high`. Tvåpanelslinjen är källan; macOS har ingen motsvarande sträng. "wouldn't"
+  blir `ville inte`, alltså "Enheten ville inte stänga sin anslutning": aktivt, utan skuld, och utan att påstå något om
+  orsaken (den skrivs till loggen).
+- **eject som substantiv → `utmatningen`** · verbet `mata ut` är satt (`style.md`), och Microsoft belägger stammen i
+  sammansättning (`insert/eject port` → "in-/utmatningsport") · `tentative` för den fristående substantivformen, ingen
+  källa har den ensam i den här betydelsen. Behövs i `timedOut`, som följer systernyckeln `errors.mutation.timedOut`
+  ordagrant ("Volymen har inte svarat än, så ändringen kan fortfarande gå igenom") och byter `ändringen` mot
+  `utmatningen`. ❌ Inte "så den kan fortfarande matas ut": det läses som att DU fortfarande kan mata ut den, alltså en
+  möjlighet i stället för en pågående åtgärd, och det är precis den missläsningen engelskans "on its own" undviker.
+- **`unexpected` är ordagrant systernyckeln `errors.mutation.unexpected`** · samma engelska källsträng, alltså samma
+  svenska: "Något gick fel och Cmdr kunde inte avgöra vad det var." · `high`. `gick fel` är den idiomatiska svenskan för
+  "went wrong" och används redan genom hela katalogen; förbudet i `style.md` gäller `fel` som ETIKETT på händelsen, inte
+  kollokationen.
+- **"couldn't tell which device" → `kunde inte avgöra vilken enhet`** · samma `avgöra` som i `mutation.unexpected` ·
+  `high`. Slutet blir `så den går inte att koppla från`: `gå att` + infinitiv i stället för passivt
+  `kan inte kopplas från` (style.md:s passiv-`-s`-regel), och `Cmdr` upprepas inte i andra satsen.
+- **"there's nothing to …" → `så det finns inget att …`** · katalogens `askCmdr.renameUndo.unavailable` ("Det finns
+  inget att återställa … eller så är dess enhet inte ansluten") · `high`. Samma mall bär både `volumeNotFound`
+  (`… inget att mata ut`) och `notAnSmbVolume` (`… inget att koppla från`).
+- **Inga `sameAsSourceJustification`** · alla nio värden skiljer sig från engelskan.

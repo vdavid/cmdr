@@ -22,6 +22,7 @@ use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::{EntryType, Initiator, OpKind};
 
 use super::manager;
+use super::mutation_error::MutationError;
 use super::types::WriteOperationType;
 use super::unique_name::numbered_name;
 
@@ -37,7 +38,7 @@ pub(crate) async fn write_payload_to_dir(
     volume_id: Option<String>,
     dir: &Path,
     payload: ClipboardPayload,
-) -> Result<Option<PastedClipboardFile>, String> {
+) -> Result<Option<PastedClipboardFile>, MutationError> {
     let Some(content) = payload_to_content(payload) else {
         return Ok(None);
     };
@@ -45,7 +46,9 @@ pub(crate) async fn write_payload_to_dir(
     let volume_id_str = volume_id.clone().unwrap_or_else(|| "root".to_string());
     let volume = get_volume_manager()
         .get(&volume_id_str)
-        .ok_or_else(|| format!("Volume not found: {volume_id_str}"))?;
+        .ok_or_else(|| MutationError::VolumeGone {
+            volume_id: volume_id_str.clone(),
+        })?;
 
     // Route through the managed `CreateFile` instant op (David-approved bypass routing): the
     // write is a real mutation, so it registers a brief `Running` record, marks
@@ -70,16 +73,15 @@ pub(crate) async fn write_payload_to_dir(
             // before the syscall (no-op outside ~/Downloads).
             crate::downloads::note_pending_write_for_cmdr(&path);
             match volume.create_file(&path, &content.bytes).await {
-                Ok(()) => break Ok::<(PathBuf, String), String>((path, name)),
+                Ok(()) => break Ok::<(PathBuf, String), MutationError>((path, name)),
                 Err(VolumeError::AlreadyExists(_)) => {
                     counter = counter
                         .checked_add(1)
-                        .ok_or("Too many name collisions for the pasted file")?;
+                        .ok_or(MutationError::AlreadyExists { name: name.clone() })?;
                 }
-                Err(VolumeError::PermissionDenied(_)) => {
-                    return Err(format!("Permission denied: can't write into '{}'", dir.display()));
-                }
-                Err(e) => return Err(format!("Couldn't write the pasted file: {e}")),
+                // Every other refusal is the volume's own, and `VolumeError`
+                // carries the path and the reason the frontend already words.
+                Err(error) => return Err(MutationError::Volume { error }),
             }
         }
     };

@@ -196,6 +196,14 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   en variant som byter konstruktion läses som en annan mening, inte som samma mening med ett annat innehåll. Skriv om
   alla varianter samtidigt eller ingen. Belägg och det avvisade alternativet: `glossary.md` § Kraschdialogens tre
   varianter.
+- **Ett värde som hamnar efter kolon upprepar inte ramen.** `errors.eject.*` matas in i
+  `fileExplorer.pane.ejectFailedToast` ("Det gick inte att mata ut {volumeName}: …") och `.disconnectFailedToast`. Ramen
+  har redan sagt att det inte hände, så värdet säger bara varför och vad man gör åt det; inget "det gick inte att" en
+  gång till, och ingen inledande versal-mening som läser som en ny rubrik. Belägg och de nio värdena: `glossary.md` §
+  Utmatning och frånkoppling.
+- **`koppla från`, `koppla ur` och `dra ur` är tre olika saker.** Programmässig frånkoppling, enheten ur porten, kabeln
+  ur uttaget. Engelskan har `disconnect` och `unplug`; svenskan skiljer dem tydligare, så välj efter vad som faktiskt
+  händer. Belägg: `glossary.md` § Utmatning och frånkoppling.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

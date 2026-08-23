@@ -15,11 +15,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 
 - **History is pushed on listing success AND failure.** `FilePane.svelte`'s `onPathChange?.(loadPath)` fires from both
   `handleListingComplete` and the `listing-error` handler when the path still exists. Drop the failure branch and a
-  TCC-restricted folder stays absent from history, so `Cmd+[` jumps back two steps. (The deleted-path auto-fallback
-  pushes via its own `commitPathFromListing`, not here.)
-- **`push()` vs `pushPath()`.** Callers holding per-entry resources (the search-results snapshot store, via
-  `pushHistoryEntry`) must use `push()`: it returns `droppedEntries` to release dropped refs; `pushPath` discards them.
-  A no-op push returns the same `history` ref, so `===` dedup works.
+  TCC-restricted folder stays absent from history, so `Cmd+[` jumps back two steps.
+- **`push()` vs `pushPath()`.** Callers holding per-entry resources must use `push()`: it returns `droppedEntries` to
+  release dropped refs; `pushPath` discards them. A no-op push returns the same `history` ref, so `===` dedup works.
 - **`MAX_HISTORY_PER_TAB = 100`, every volume uniformly.** Don't tighten (hurts power users) or bump.
 - **`path-resolution.ts` is a separate module to break a cycle**: `app-status-store.ts` imports `resolveValidPath`,
   `path-navigation.ts` imports `getLastUsedPathForVolume` from it. Keep `resolveValidPath` here.
@@ -38,6 +36,8 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   dot's color. **While the MASTER switch is off (`getDriveIndexingEnabled()`), `driveIndexMenuActions` returns NOTHING**
   and the menu shows one note: the backend refuses every start then, so per-drive actions would promise work that can't
   happen (model: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md`). DETAILS § Drive index freshness badge.
+- **Eject refusals are worded by `wordEjectRefusal(e)` from `errors.eject.*`**; ❌ never toast `String(e)` or
+  `diskutil`'s stderr.
 - **Favorites: mutate ONLY via the `commands.*` wrappers, always stripping the `fav-` prefix** (`stripFavoritePrefix`;
   the switcher id is `fav-<favoriteId>`, the commands take the bare id). The `volume-grouping.ts` favorites group always
   renders even when empty (the placeholder row) — don't tidy it into a hide-when-empty branch. "Add to favorites" is in

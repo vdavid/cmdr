@@ -1604,5 +1604,41 @@
   "errors.mutation.trashRefused": "macOS no permitió mover esto a la papelera.",
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
+  },
+  "errors.eject.busy": "Cmdr todavía está moviendo archivos en este disco. Expúlsalo cuando termine.",
+  "@errors.eject.busy": {
+    "sourceHash": "0600dd5"
+  },
+  "errors.eject.volumeNotFound": "Ese disco ya no está conectado, así que no hay nada que expulsar.",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "62a3af2"
+  },
+  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr no pudo saber de qué dispositivo se trata, así que no puede desconectarlo.",
+  "@errors.eject.mtpIdMissingDevicePrefix": {
+    "sourceHash": "d26b57b"
+  },
+  "errors.eject.notEjectable": "Este disco no es extraíble, así que se queda conectado.",
+  "@errors.eject.notEjectable": {
+    "sourceHash": "bb88249"
+  },
+  "errors.eject.notAnSmbVolume": "Esto no es un recurso compartido de red, así que no hay nada que desconectar.",
+  "@errors.eject.notAnSmbVolume": {
+    "sourceHash": "d49623e"
+  },
+  "errors.eject.mtpDisconnectRefused": "El dispositivo no cerró su conexión. Desconecta el cable cuando esté inactivo.",
+  "@errors.eject.mtpDisconnectRefused": {
+    "sourceHash": "d49861f"
+  },
+  "errors.eject.unmountRefused": "Algo sigue usando este disco. Cierra los archivos y las apps que tengas abiertos y vuelve a expulsarlo.",
+  "@errors.eject.unmountRefused": {
+    "sourceHash": "1ff7d31"
+  },
+  "errors.eject.timedOut": "El disco aún no ha respondido, así que es posible que sí se expulse por su cuenta.",
+  "@errors.eject.timedOut": {
+    "sourceHash": "c592421"
+  },
+  "errors.eject.unexpected": "Algo salió mal y Cmdr no pudo saber qué.",
+  "@errors.eject.unexpected": {
+    "sourceHash": "0c9d9f5"
   }
 }

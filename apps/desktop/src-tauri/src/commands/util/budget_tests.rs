@@ -5,7 +5,7 @@
 //! [`Deadline`]: a command with several legs answers within ONE wall clock, not
 //! within the sum of whatever timeouts its legs happen to carry.
 
-use super::{BlockingBudget, Deadline, IpcError, timeout_detached_within};
+use super::{BlockingBudget, Deadline, DeadlineError, timeout_detached_within};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Duration;
@@ -94,13 +94,21 @@ async fn a_spent_deadline_refuses_the_next_leg_outright() {
 
     let ran = Arc::new(AtomicBool::new(false));
     let flag = Arc::clone(&ran);
-    let outcome: Result<(), IpcError> = timeout_detached_within(&deadline, async move {
-        flag.store(true, Ordering::SeqCst);
-        Ok::<(), String>(())
-    })
+    let outcome: Result<(), DeadlineError> = timeout_detached_within(
+        &deadline,
+        || DeadlineError::TimedOut,
+        |detail| DeadlineError::Unexpected { detail },
+        async move {
+            flag.store(true, Ordering::SeqCst);
+            Ok::<(), DeadlineError>(())
+        },
+    )
     .await;
 
-    assert!(outcome.expect_err("nothing is left to wait with").timed_out);
+    assert!(matches!(
+        outcome.expect_err("nothing is left to wait with"),
+        DeadlineError::TimedOut
+    ));
     assert!(
         !ran.load(Ordering::SeqCst),
         "work that would be abandoned a moment later is never started"
@@ -122,4 +130,77 @@ async fn a_panicking_task_frees_its_permit() {
         7,
         "the next caller still gets in"
     );
+}
+
+/// Every command family's refusal is distinguishable BY VARIANT, with its data
+/// intact, once it crosses the wire.
+///
+/// The families were flattened into `{ message, timed_out }` before, so a
+/// `Busy` and an OS refusal arrived as two English sentences a caller could only
+/// tell apart by reading them. These pin the shape the frontend matches on: one
+/// `type` tag, camelCase fields, and no free-form text carrying the
+/// classification.
+#[cfg(test)]
+mod wire_shape_tests {
+    use super::DeadlineError;
+    use crate::commands::file_system::VolumeScanError;
+    use crate::file_system::listing::fuzzy_jump::FuzzyJumpError;
+    use crate::file_system::volume::reconnect_error::ReconnectError;
+    use serde_json::json;
+
+    #[test]
+    fn a_deadline_tells_a_timeout_from_a_panicked_task() {
+        assert_eq!(
+            serde_json::to_value(DeadlineError::TimedOut).unwrap(),
+            json!({ "type": "timedOut" })
+        );
+        assert_eq!(
+            serde_json::to_value(DeadlineError::Unexpected {
+                detail: "the task panicked".to_string()
+            })
+            .unwrap(),
+            json!({ "type": "unexpected", "detail": "the task panicked" })
+        );
+    }
+
+    #[test]
+    fn a_reconnect_refusal_carries_the_volumes_own_answer_rather_than_a_sentence() {
+        let json = serde_json::to_value(ReconnectError::Volume {
+            error: cmdr_fs::volume::VolumeError::NotSupported,
+        })
+        .unwrap();
+        assert_eq!(json["type"], "volume");
+        // The nested `VolumeError` stays a VALUE, so the frontend's existing
+        // volume factory words it rather than a second vocabulary being invented.
+        assert!(json["error"].is_object() || json["error"].is_string());
+    }
+
+    #[test]
+    fn a_scan_refusal_names_which_side_went_missing() {
+        assert_eq!(
+            serde_json::to_value(VolumeScanError::SourceVolumeNotFound {
+                volume_id: "mtp-1:65537".to_string()
+            })
+            .unwrap(),
+            json!({ "type": "sourceVolumeNotFound", "volumeId": "mtp-1:65537" })
+        );
+        assert_eq!(
+            serde_json::to_value(VolumeScanError::DestinationVolumeNotFound {
+                volume_id: "smb-naspi".to_string()
+            })
+            .unwrap(),
+            json!({ "type": "destinationVolumeNotFound", "volumeId": "smb-naspi" })
+        );
+    }
+
+    #[test]
+    fn a_lost_listing_says_which_one() {
+        assert_eq!(
+            serde_json::to_value(FuzzyJumpError::ListingNotFound {
+                listing_id: "listing-7".to_string()
+            })
+            .unwrap(),
+            json!({ "type": "listingNotFound", "listingId": "listing-7" })
+        );
+    }
 }

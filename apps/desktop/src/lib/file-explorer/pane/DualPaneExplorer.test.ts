@@ -141,7 +141,6 @@ vi.mock('$lib/tauri-commands', () => ({
   onDragModifiers: vi.fn().mockResolvedValue(() => {}),
   onRestrictedPathsChanged: vi.fn().mockResolvedValue(() => {}),
   onGitStateChanged: vi.fn().mockResolvedValue(() => {}),
-  getIpcErrorMessage: (e: unknown) => String(e),
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests

@@ -233,6 +233,10 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
 - **Speed multipliers spell out "fois".** English UI writes `4x` / `100x`; French prose writes "4 fois plus lente",
   "parfois 100 fois". Keep the digit, drop the `x`: the bare `x` form reads as English marketing copy. See `glossary.md`
   § Notification de repli sur le montage macOS.
+- **Une valeur insérée après un deux-points ne redit pas le moule.** Plusieurs clés `errors.*` sont livrées dans une
+  notification qui porte déjà « Impossible de … : », donc la valeur commence directement par l'observation et jamais par
+  un second « Impossible de … ». Elle garde sa majuscule initiale, comme toutes les valeurs `errors.*`. Exemple
+  travaillé : `glossary.md` § Éjection et déconnexion refusées.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

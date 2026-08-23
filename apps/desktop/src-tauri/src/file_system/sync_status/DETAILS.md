@@ -188,7 +188,7 @@ to protect is now the pool's job, so the cap can rise without giving anything ba
 
 ## Decision: the deadline lives in the module, not in `blocking_with_timeout_flag`
 
-**Why:** the same reasoning as `commands/util.rs::timeout_detached`. An IPC deadline is a promise about the reply, not
+**Why:** the same reasoning as `commands/util.rs::timeout_detached_typed`. An IPC deadline is a promise about the reply, not
 permission to abandon the work. Applying it inside `statuses_within` lets the module return the paths it already knows
 (cache hits plus whatever the batch resolved before the clock ran out) instead of the empty fallback the generic helper
 would substitute, and lets the batch keep running so the answer is ready next time.

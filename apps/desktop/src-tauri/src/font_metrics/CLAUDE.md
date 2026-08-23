@@ -35,9 +35,10 @@ Cache: `METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>`. `FontMet
 - **Cache key is `"{family}-{weight}-{size}"`** (for example `"system-400-12"`) and MUST match the frontend's
   `getCurrentFontId()`. No validation: a mismatch just returns `None`. Size varies with `appearance.textSize` × system
   Accessibility text size, so several sizes can coexist in cache. If `getCurrentFontId()`'s format changes, width
-  calculation silently breaks. The Brief-column path surfaces a missing key as `BriefColumnsError::FontMetricsNotReady`
-  → `IpcError { message: "font_metrics_not_ready" }`; the frontend catches that, calls `ensureFontMetricsLoaded()`, and
-  retries once, rendering at `MAX_BRIEF_COLUMN_WIDTH` until widths arrive.
+  calculation silently breaks. The Brief-column path surfaces a missing key as `BriefColumnsError::FontMetricsNotReady`,
+  which crosses the wire as `BriefColumnsIpcError { kind: fontMetricsNotReady, … }`; the frontend branches on `kind`,
+  calls `ensureFontMetricsLoaded()`, and retries once, leaving the columns at their provisional width until widths
+  arrive.
 - **Both writes serialize under the lock, then write the file after releasing it.** That's what lets `extend` merge
   into the cached map without cloning it out; a few thousand pairs is not a map you want to copy per call, and this
   path used to clone it twice.

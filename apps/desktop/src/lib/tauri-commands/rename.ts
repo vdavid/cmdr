@@ -1,7 +1,6 @@
 // Rename-related Tauri command wrappers
 
 import { commands, type Initiator, type ValidationError } from '$lib/ipc/bindings'
-import { throwIpcError } from './ipc-types'
 import { throwMutationError } from '$lib/file-operations/mutation-error'
 
 export interface RenameConflictFileInfo {
@@ -33,7 +32,7 @@ export async function checkRenameValidity(
   volumeId?: string,
 ): Promise<RenameValidityResult> {
   const res = await commands.checkRenameValidity(dir, oldName, newName, volumeId ?? null)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwMutationError(res.error)
   return res.data
 }
 

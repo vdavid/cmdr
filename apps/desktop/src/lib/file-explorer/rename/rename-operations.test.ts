@@ -18,11 +18,15 @@ vi.mock('$lib/tauri-commands', () => ({
   checkRenameValidity: checkRenameValiditySpy,
   checkRenamePermission: vi.fn(),
   renameFile: renameFileSpy,
-  getIpcErrorMessage: (e: unknown) => String(e),
-  isIpcError: () => false,
+}))
+
+vi.mock('$lib/logging/logger', () => ({
+  getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
 
 import { tString } from '$lib/intl/messages.svelte'
+import { MutationFailure } from '$lib/file-operations/mutation-error'
+import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
 import { executeRenameSave } from './rename-operations'
 import type { RenameTarget } from './rename-state.svelte'
 
@@ -82,5 +86,35 @@ describe('a name the backend turns down', () => {
       expect(message).not.toContain('{')
       expect(message.length).toBeGreaterThan(0)
     }
+  })
+})
+
+describe("a validity check that can't run at all", () => {
+  /** Runs a save whose validity check rejects with `thrown`, and hands back what it said. */
+  async function messageForThrow(thrown: unknown): Promise<string> {
+    checkRenameValiditySpy.mockRejectedValue(thrown)
+    const result = await executeRenameSave(FILE, 'whatever.txt', 'yes')
+    expect(result.type).toBe('error')
+    return result.type === 'error' ? result.message : ''
+  }
+
+  it("speaks the user's language, from the same typed vocabulary the rename itself uses", async () => {
+    const message = await messageForThrow(new MutationFailure({ type: 'volumeGone', volumeId: 'smb-naspi' }))
+
+    expect(message).toBe(renderMutationError({ type: 'volumeGone', volumeId: 'smb-naspi' }, 'file'))
+  })
+
+  it('keeps a deadline distinguishable from a refusal, without reading either sentence', async () => {
+    const timedOut = await messageForThrow(new MutationFailure({ type: 'timedOut' }))
+    const gone = await messageForThrow(new MutationFailure({ type: 'volumeGone', volumeId: 'x' }))
+
+    expect(timedOut).not.toBe(gone)
+  })
+
+  it("never puts the transport's own English in front of a person", async () => {
+    const message = await messageForThrow(new Error('IPC channel closed unexpectedly'))
+
+    expect(message).not.toContain('IPC channel')
+    expect(message).toBe(renderMutationError({ type: 'unexpected', detail: '' }, 'file'))
   })
 })

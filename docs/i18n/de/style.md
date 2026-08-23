@@ -90,6 +90,13 @@ Straightforward (sources agree, `high`):
 - bookmark → Lesezeichen · macOS, MS terminology ("Lesezeichen erstellen") · high
 - sidebar → Seitenleiste · macOS Finder · high
 - download → Download (noun) / laden (verb) · MS/macOS common usage · high
+- removable (media) → Wechselmedium · macOS Finder („Wechselmedien auswerfen und von Servern trennen“), MS terminology
+  (`removable media` → Wechselmedien) · high
+- in use → in Verwendung · macOS Finder („Das Volume ist gerade in Verwendung …“) · high
+- idle → nicht mehr beschäftigt · the catalog's own pair (`indexing.enrich.pausedIdle`, `fileExplorer.mtp.deviceBusy`) ·
+  high
+- unplug → abziehen · the catalog („Du musst nichts abziehen.“, „Zieh das USB-Kabel ab …“) · high
+- operation (a copy/move/delete) → Vorgang · the catalog throughout (Vorgangswarteschlange, Vorgangsprotokoll) · high
 
 Contested or sense-specific (read the block):
 
@@ -193,6 +200,13 @@ Dateien".
 - **„auf ein Problem stoßen“, nicht „es ist ein Problem aufgetreten“.** Der Microsoft-Styleguide führt die
   `aufgetreten`-Form als Negativbeispiel; die `stoßen`-Form hält Cmdr im Nominativ und passt zur Stilregel „kein
   ‚Fehler‘“. Belege: `glossary.md` § Absturzdialog.
+- **A toast value that lands AFTER a colon still has to be a whole sentence.** The `errors.eject.*` values are dropped
+  into „{volumeName} ließ sich nicht auswerfen: …“ and „Trennen nicht möglich: …“, and the same value serves both
+  frames. So write each one so it stands alone, and accept a repeated verb („… nichts zu trennen“ after „Trennen nicht
+  möglich:“) rather than trimming the value to fit one frame. Worked set: `glossary.md` § Auswerfen und Trennen.
+- **Don't translate „moving files“ literally when the message also covers copying and deleting.** `bewegen` is the NAME
+  of Cmdr's Move command in German, so it reads as that one operation; use the catalog's `Vorgang` instead („Auf diesem
+  Laufwerk läuft noch ein Vorgang von Cmdr.“).
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

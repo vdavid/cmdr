@@ -2,6 +2,8 @@
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '$lib/ipc/bindings'
+import { throwEjectError } from '$lib/file-explorer/navigation/eject-error'
+import { throwReconnectError } from '$lib/file-explorer/network/reconnect-error'
 import type {
   MountResult,
   NetworkHostContextAction,
@@ -404,11 +406,12 @@ export async function upgradeToSmbVolumeWithCredentials(
  *
  * Called by the per-volume reconnect manager on each backoff tick (and on
  * "Retry now" / lazy nav-time retry). Backend single-flights concurrent calls.
- * Resolves on success; throws on failure with an `IpcError`-shaped exception.
+ * Resolves on success; a refusal throws a `ReconnectFailure` carrying the typed
+ * `ReconnectError`, which `asReconnectError` gets back.
  */
 export async function reconnectSmbVolume(volumeId: string): Promise<void> {
   const res = await commands.reconnectSmbVolume(volumeId)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwReconnectError(res.error)
 }
 
 /**
@@ -417,7 +420,8 @@ export async function reconnectSmbVolume(volumeId: string): Promise<void> {
  * password went stale). The backend persists the new password and reconnects; on
  * success a `volume-connection-changed { state: "connected" }` event follows.
  *
- * Resolves on success; throws on failure with an `IpcError`-shaped exception.
+ * Resolves on success; a refusal throws a `ReconnectFailure` carrying the typed
+ * `ReconnectError`, which `asReconnectError` gets back.
  */
 export async function reconnectSmbVolumeWithCredentials(
   volumeId: string,
@@ -425,7 +429,7 @@ export async function reconnectSmbVolumeWithCredentials(
   password: string,
 ): Promise<void> {
   const res = await commands.reconnectSmbVolumeWithCredentials(volumeId, username, password)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwReconnectError(res.error)
 }
 
 /**
@@ -450,13 +454,13 @@ export async function getVolumeSignInState(volumeId: string): Promise<SignInProm
  * dropping the smb2 session (Linux, until GVFS unmount is wired up). The
  * `volumes-changed` event removes the volume from the picker shortly after.
  *
- * Resolves on success; throws on failure with an `IpcError`-shaped exception
- * (for example, "diskutil unmount failed: Resource busy" if a Finder window
- * still has the volume open).
+ * Resolves on success; a refusal throws an `EjectFailure` carrying the typed
+ * `EjectError` (`unmountRefused` when a Finder window still has the share
+ * open). `asEjectError` gets it back, and `renderEjectError` words it.
  */
 export async function disconnectSmbVolume(volumeId: string): Promise<void> {
   const res = await commands.disconnectSmbVolume(volumeId)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwEjectError(res.error)
 }
 
 // ============================================================================

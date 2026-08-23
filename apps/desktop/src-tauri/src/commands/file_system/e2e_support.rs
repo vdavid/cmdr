@@ -44,18 +44,24 @@ pub fn fail_next_brief_column_widths(count: usize) {
 #[specta::specta]
 pub async fn create_dialog_gallery_fixtures(
     app: tauri::AppHandle,
-) -> Result<crate::dev_fixtures::DialogGalleryFixtures, crate::commands::util::IpcError> {
-    use crate::commands::util::{IpcError, blocking_result_with_timeout};
+) -> Result<crate::dev_fixtures::DialogGalleryFixtures, crate::commands::util::DeadlineError> {
+    use crate::commands::util::{DeadlineError, blocking_typed_result_with_timeout};
     use tokio::time::Duration;
 
     // Generous for a local write, because the FIRST call creates a few dozen
     // files; every later one only stats them.
     const FIXTURE_TIMEOUT: Duration = Duration::from_secs(30);
 
-    let data_dir = crate::config::resolved_app_data_dir(&app).map_err(IpcError::from_err)?;
-    blocking_result_with_timeout(FIXTURE_TIMEOUT, move || {
-        crate::dev_fixtures::ensure_dialog_gallery_fixtures(&data_dir.join(crate::dev_fixtures::FIXTURE_DIR_NAME))
-    })
+    let data_dir = crate::config::resolved_app_data_dir(&app).map_err(|detail| DeadlineError::Unexpected { detail })?;
+    blocking_typed_result_with_timeout(
+        FIXTURE_TIMEOUT,
+        || DeadlineError::TimedOut,
+        |detail| DeadlineError::Unexpected { detail },
+        move || {
+            crate::dev_fixtures::ensure_dialog_gallery_fixtures(&data_dir.join(crate::dev_fixtures::FIXTURE_DIR_NAME))
+                .map_err(|detail| DeadlineError::Unexpected { detail })
+        },
+    )
     .await
 }
 

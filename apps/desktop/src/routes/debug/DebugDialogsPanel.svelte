@@ -41,7 +41,7 @@
         const result = await commands.createDialogGalleryFixtures()
         if (result.status === 'error') {
             // eslint-disable-next-line no-console -- Debug window is dev-only
-            console.error('Creating the dialog gallery fixture directory failed:', result.error.message)
+            console.error("Couldn't create the dialog gallery fixture directory:", result.error.type)
             return null
         }
         return result.data

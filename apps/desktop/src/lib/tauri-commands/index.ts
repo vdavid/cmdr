@@ -57,6 +57,7 @@ export {
   viewerOpen,
   viewerOpenAsText,
   viewerGetLines,
+  asViewerError,
   viewerSearchStart,
   viewerSearchPoll,
   viewerSearchCancel,
@@ -144,8 +145,8 @@ export {
 export type { PaneFileEntry, PaneState, McpTabInfo } from './app-state'
 
 // Shared IPC types (timeout-aware wrappers)
-export type { TimedOut, IpcError } from './ipc-types'
-export { isIpcError, getIpcErrorMessage, throwIpcError } from './ipc-types'
+export type { TimedOut } from './ipc-types'
+export { throwIpcError } from './ipc-types'
 
 // Storage (volumes, space, permissions)
 export {

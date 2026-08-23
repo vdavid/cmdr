@@ -1,5 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity'
-import { viewerGetLines, isIpcError } from '$lib/tauri-commands'
+import { viewerGetLines, asViewerError } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { createLineHeightMap, getLineHeight } from './viewer-line-heights.svelte'
 import { onDebouncedScaleChange } from '$lib/text-size.svelte'
@@ -213,12 +213,15 @@ export function createViewerScroll(deps: ScrollDeps) {
       }
     } catch (e) {
       if (fetchId === currentFetchId) {
-        if (isIpcError(e) && e.timedOut) {
+        // `viewerGetLines` throws the backend's typed `ViewerError` with its
+        // fields copied onto the Error, so the timeout is a VARIANT, never a
+        // flag beside a sentence.
+        const kind = asViewerError(e)?.kind
+        if (kind === 'timedOut') {
           deps.onTimeoutError()
           log.error('fetchLines[{fetchId}]: timed out', { fetchId })
         } else {
-          const msg = isIpcError(e) ? e.message : String(e)
-          log.error('fetchLines[{fetchId}]: failed with error {error}', { fetchId, error: msg })
+          log.error("fetchLines[{fetchId}]: didn't come back ({reason})", { fetchId, reason: kind ?? String(e) })
         }
       }
     }

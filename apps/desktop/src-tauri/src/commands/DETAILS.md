@@ -9,8 +9,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   cross-platform, and `commands::volumes_linux` is a `#[cfg(target_os = "linux")] pub use volumes as volumes_linux;`
   kept only until `ipc.rs` stops registering the Linux set under that path. See
   `../volumes_linux/DETAILS.md` § "One command module".
-- **`util.rs`**: `TimedOut<T>`, `IpcError`, `blocking_with_timeout`, `blocking_with_timeout_flag`,
-  `blocking_result_with_timeout`.
+- **`util.rs`**: `TimedOut<T>`, `DeadlineError`, `blocking_with_timeout`, `blocking_with_timeout_flag`,
+  `blocking_typed_result_with_timeout`, `timeout_detached_typed`, `Deadline` + `timeout_detached_within`, and
+  `BlockingBudget`.
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
   `listing.rs`: streaming + virtual-scroll listing, path queries, `find_first_fuzzy_match` (type-to-jump),
   benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). `refresh_listing`
@@ -39,8 +40,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `clipboard.rs::read_clipboard_files`. `drag.rs`: native drag, self-drag overlay (see "Drag session locality" below).
   `e2e_support.rs`: feature-gated E2E/debug commands. `listing.rs::path_exists` is SMB-aware: a disconnected SMB volume
   returns an immediate `false`, so it re-checks `smb_connection_state()` and reports `timedOut: true` instead, and a
-  transient blip can't evict the user from a network folder. The TS types matching every `TimedOut<T>` / `IpcError`
-  return live in `$lib/tauri-commands/ipc-types.ts`.
+  transient blip can't evict the user from a network folder. `TimedOut<T>`'s TS twin lives in
+  `$lib/tauri-commands/ipc-types.ts`; every typed error enum's twin is generated into `$lib/ipc/bindings.ts`.
 - **`volumes.rs`** (macOS): `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume`
   (statfs-based, no volume enumeration), `resolve_location`. The latter two share one `resolve_path_to_volume` body
   (protocol dispatch for `mtp://` / `smb://` plus the local `statfs` branch), so a virtual path resolves the same way
@@ -103,8 +104,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   a 5 s backstop.
 - **`eject.rs`**: `eject_volume(volume_id)` + `get_busy_volume_ids()`, thin delegates. The teardown logic (kind
   dispatch, the pure unit-tested `decide_eject_action`, the busy-volume guard, and the `diskutil`/`umount`/MTP
-  shell-out) lives in `file_system::volume::eject`; the command only maps the typed `EjectError` to `IpcError`
-  (preserving the timeout flag). `get_busy_volume_ids()` bootstraps the picker's busy set (see
+  shell-out) lives in `file_system::volume::eject`. `EjectError` IS the wire type, so the command returns it unchanged
+  and the frontend words each variant from `errors.eject.*`. `get_busy_volume_ids()` bootstraps the picker's busy set (see
   `write_operations/DETAILS.md` § "Busy-volumes set").
 - **`favorites.rs`**: `add_favorite`, `remove_favorite`, `rename_favorite`, `reorder_favorites`. Thin pass-throughs over
   `crate::favorites::store`; each persists `favorites.json` (5s write timeout) then re-emits `volumes-changed`. No
@@ -117,7 +118,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `check_rename_permission`, `check_rename_validity`, `rename_file`. `rename_file` calls `notify_mutation` after success
   to update the listing cache (both local and volume-aware paths).
 - **`volume_id` on the write commands.** `create_directory` / `create_file` / `rename_file` only expand tilde (root),
-  resolve the `volume_id`, apply the 5 s write timeout, and map to `IpcError`; the logic and the managed instant op live
+  resolve the `volume_id`, and apply the 5 s write timeout, shipping the typed `MutationError` unchanged; the logic and the managed instant op live
   in `file_system::write_operations::{create,rename}`. For a non-root `volume_id`, `delete_files` uses the volume-aware
   delete and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`), and `rename_file` passes the id
   through and skips permission checks. The local rename notifies the listing cache via `notify_rename_in_listing`, the
@@ -232,10 +233,22 @@ doesn't protect against hung NFS/SMB mounts where even `path.exists()` can block
 returns a fallback (or error) instead of freezing the IPC thread or exhausting the blocking pool. Commands that already
 use `spawn_blocking` wrap it with `tokio::time::timeout` instead.
 
-**Timeout-aware return types (`TimedOut<T>` and `IpcError`).** A plain fallback is indistinguishable from a real
-empty/none result ("no volumes mounted" vs "timed out before listing volumes"). `TimedOut<T>`
-(`{ data, timedOut }`) for non-`Result` returns; `IpcError` (`{ message, timedOut }`) for `Result` returns. The bare
-`blocking_with_timeout` stays for the rare read where the distinction genuinely doesn't matter.
+**Timeout-aware return types.** A plain fallback is indistinguishable from a real empty/none result ("no volumes
+mounted" vs "timed out before listing volumes"). `TimedOut<T>` (`{ data, timedOut }`) carries the distinction for
+non-`Result` returns; the bare `blocking_with_timeout` stays for the rare read where it genuinely doesn't matter. A
+`Result` return carries it as a VARIANT of the command family's own error enum (`MutationError::TimedOut`,
+`EjectError::TimedOut`, `DeadlineError::TimedOut`), which is why `timeout_detached_typed` takes an `on_timeout` that
+mints the caller's type.
+
+**Every command's `Err` is a typed enum, and there is deliberately no shared one.** A generic
+`IpcError { message, timed_out }` with a `from_err` constructor used to sit in `util.rs`. Being ergonomic, it spread to
+39 call sites and stringified whatever typed error reached it, so `EjectError::Busy` (a proper enum with fields and doc
+comments) arrived on the frontend as an English sentence that a translated toast then interpolated verbatim. The rule
+that replaced it: reuse the vocabulary the command belongs to (`MutationError` for a mutation, `ViewerError` for the
+viewer, `VolumeError` nested inside either), or add a small enum beside the family. `DeadlineError` is the ONE shared
+type, and only for commands whose wrapped work genuinely cannot refuse (the favorites writes, `resolve_go_to_path`),
+where "the deadline passed" and "the task panicked" exhaust the failure modes. The frontend renders every variant from
+the message catalog: `docs/guides/error-handling.md`.
 
 **JSON for all Tauri IPC, not binary (MessagePack/Protobuf).** Benchmarked with real directory listings: MessagePack is
 34-58% SLOWER than JSON despite being 17-19% smaller. Tauri serializes `Vec<u8>` as a JSON array of numbers, so binary
@@ -281,9 +294,9 @@ For anything that can reach a device backend (any command taking a `volume_id`: 
 transaction mid-data-phase on MTP, which leaves the phone expecting bytes nobody will send and wedges it until replug.
 See `mtp/connection/DETAILS.md` § "No dropping timeouts".
 
-`util::timeout_detached` is the shape to use: it spawns the future and races the deadline against the resulting JOIN
-HANDLE. On expiry the handle is dropped, which DETACHES the task rather than cancelling it, so the caller returns
-`IpcError::timeout()` on schedule and the transaction finishes safely behind it. The cost is that the work isn't
+`util::timeout_detached_typed` is the shape to use: it spawns the future and races the deadline against the resulting
+JOIN HANDLE. On expiry the handle is dropped, which DETACHES the task rather than cancelling it, so the caller returns
+its own `TimedOut` variant on schedule and the transaction finishes safely behind it. The cost is that the work isn't
 actually stopped, which is the right trade for a device op (the alternative is a bricked device) and harmless for a
 local one (the deadline only ever fires on a hung mount, where dropping the future wouldn't unblock the syscall
 either).

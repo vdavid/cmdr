@@ -12,10 +12,9 @@
         viewerClose,
         viewerSetupMenu,
         viewerSetWordWrap,
-        isIpcError,
+        asViewerError,
         onViewerWordWrapToggled,
         activateWindowMenu,
-        type ViewerError,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
@@ -555,21 +554,18 @@
     /**
      * Maps a caught viewer-open failure to the display copy + whether it was a
      * timeout, so the three open sites (mount, retry, view-as-text reopen) render
-     * one consistent, per-variant message. Inspects the typed `ViewerError` carried
-     * on `viewerError` (archive family gets friendly copy); falls back to the
-     * `IpcError` timeout flag, then a stringified message, then the generic copy.
+     * one consistent, per-variant message. Every branch reads the typed
+     * `ViewerError`; anything that never reached the typed path at all reads as the
+     * generic copy rather than as the backend's own English.
      */
     function openFailureCopy(e: unknown): { message: string; isTimeout: boolean } {
-        const ve =
-            e && typeof e === 'object' && 'viewerError' in e ? (e as { viewerError: ViewerError }).viewerError : undefined
+        const ve = asViewerError(e)
         if (ve) {
             if (ve.kind === 'timedOut') return { message: tString('viewer.error.timeout'), isTimeout: true }
             if (ve.kind === 'extractTooLarge') return { message: tString('viewer.error.archiveTooLarge'), isTimeout: false }
             if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), isTimeout: false }
         }
-        if (isIpcError(e) && e.timedOut) return { message: tString('viewer.error.timeout'), isTimeout: true }
-        const message = typeof e === 'string' ? e : isIpcError(e) ? e.message : tString('viewer.error.readFailed')
-        return { message, isTimeout: false }
+        return { message: tString('viewer.error.readFailed'), isTimeout: false }
     }
 
     /**

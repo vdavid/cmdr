@@ -10,7 +10,7 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
   standalone operation-queue window).
 - Umbrella-level files: `TransferProgressReadout.svelte`, `scan-throughput.ts`, `foreground-operation.svelte.ts`,
   `foreground-request.ts`, `operation-conflict.svelte.ts`, `settled-operations.ts`, plus `mutation-error.ts` +
-  `mutation-error-messages.ts` (the rename / mkdir / mkfile refusal path). What each one is: DETAILS § File map.
+  `mutation-error-messages.ts` (the mutation-refusal path). What each one is: DETAILS § File map.
 
 ## Must-knows
 
@@ -24,10 +24,11 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
 - **The foreground slot is released on EVERY route out of the dialog**, Queue and auto-queue included: that handoff is
   when ambient surfaces start speaking. Release with `clearForegroundOperation(id)`, ❌ never a bare
   `setForegroundOperationId(null)` (a late teardown silences the next dialog's operation).
-- **A rename / mkdir / mkfile refusal stays TYPED to the surface.** Throw it with `throwMutationError` (❌
-  `throwIpcError` flattens it to JSON), read it back with `asMutationError`, word it with `renderMutationError`. ❌
-  Never render `Unexpected.detail` or a `VolumeError` diagnostic as the message; `technicalDetail()` returns those
-  separately. `timedOut` means the write may STILL LAND. DETAILS § "Mutation refusals".
+- **A rename / mkdir / mkfile refusal stays TYPED to the surface.** Throw it with `throwMutationError` (a
+  `TypedFailure`; ❌ `throwIpcError` flattens it to JSON), read it back with `asMutationError`, word it with
+  `renderMutationError`. ❌ Never render `Unexpected.detail` or a `VolumeError` diagnostic as the message;
+  `technicalDetail()` returns those separately. `timedOut` means the write may STILL LAND. DETAILS § "Mutation
+  refusals".
 - **An error dialog is a HANDOVER, not a release.** `handleTransferError` passes the id to `setForegroundFailureId`
   while the dialog still owns it; closing releases it and dismisses the failure. Skip it and the chip and toast announce
   what the user is already reading.

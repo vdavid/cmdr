@@ -1,5 +1,6 @@
 //! Tauri commands for network host discovery and SMB share listing.
 
+use crate::file_system::volume::reconnect_error::ReconnectError;
 use crate::network::{
     AuthMode, DiscoveryState, NetworkHost, ShareListError, ShareListResult, get_discovered_hosts,
     get_discovery_state_value, get_host_for_resolution, resolve_host_ip, service_name_to_hostname, smb_client,
@@ -755,24 +756,24 @@ pub async fn get_volume_sign_in_state(volume_id: String) -> cmdr_fs::volume::Sig
 /// Called by the frontend reconnect manager on each backoff tick (and on
 /// "Retry now" / lazy nav-time retry). Backend single-flights concurrent calls,
 /// so the FE is free to fire on its own schedule. Returns `Ok(())` on success
-/// (state is now `Direct`), or an `IpcError` describing why the rebuild failed.
+/// (state is now `Direct`), or a typed [`ReconnectError`] saying why the
+/// rebuild didn't happen.
 ///
-/// Calling this on a non-SMB volume yields `IpcError` with `NotSupported`
-/// (the trait default). The FE only ever invokes this for known SMB volumes.
+/// Calling this on a non-SMB volume yields `ReconnectError::Volume` carrying
+/// `VolumeError::NotSupported` (the trait default). The FE only ever invokes
+/// this for known SMB volumes.
 #[tauri::command]
 #[specta::specta]
-pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::commands::util::IpcError> {
-    use crate::commands::util::IpcError;
+pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), ReconnectError> {
     use crate::file_system::volume::manager::get_volume_manager;
 
     let volume = get_volume_manager()
         .get(&volume_id)
-        .ok_or_else(|| IpcError::from_err(format!("Volume not found: {}", volume_id)))?;
+        .ok_or_else(|| ReconnectError::VolumeNotFound {
+            volume_id: volume_id.clone(),
+        })?;
 
-    volume
-        .attempt_reconnect()
-        .await
-        .map_err(|e| IpcError::from_err(e.to_string()))
+    volume.attempt_reconnect().await.map_err(ReconnectError::from)
 }
 
 /// Reconnects an SMB volume with freshly-entered credentials.
@@ -781,43 +782,39 @@ pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::comman
 /// auth failure (a `needs_credentials` `volume-connection-changed` event). The volume persists
 /// the new password (so future reconnects are silent) and runs the standard reconnect; on
 /// success the backend emits `volume-connection-changed { state: "connected" }`. On a non-SMB
-/// volume this yields `NotSupported` (trait default); the FE only invokes it for SMB.
+/// volume this yields `ReconnectError::Volume` carrying `VolumeError::NotSupported` (trait
+/// default); the FE only invokes it for SMB.
 #[tauri::command]
 #[specta::specta]
 pub async fn reconnect_smb_volume_with_credentials(
     volume_id: String,
     username: String,
     password: String,
-) -> Result<(), crate::commands::util::IpcError> {
-    use crate::commands::util::IpcError;
+) -> Result<(), ReconnectError> {
     use crate::file_system::volume::manager::get_volume_manager;
 
     let volume = get_volume_manager()
         .get(&volume_id)
-        .ok_or_else(|| IpcError::from_err(format!("Volume not found: {}", volume_id)))?;
+        .ok_or_else(|| ReconnectError::VolumeNotFound {
+            volume_id: volume_id.clone(),
+        })?;
 
     volume
         .reconnect_with_credentials(username, password)
         .await
-        .map_err(|e| IpcError::from_err(e.to_string()))
+        .map_err(ReconnectError::from)
 }
 
 /// Disconnects a single SMB volume by tearing down its OS mount.
 ///
-/// Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`], mapping
-/// the typed `EjectError` to the wire `IpcError` (preserving the timeout flag).
-/// Called by the "Disconnect" button in `SmbReconnectingView` / the gave-up
+/// Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`]; the
+/// typed `EjectError` IS the wire type, so it crosses unchanged. Called by the
+/// "Disconnect" button in `SmbReconnectingView` / the gave-up
 /// `VolumeUnreachableBanner`.
 #[tauri::command]
 #[specta::specta]
-pub async fn disconnect_smb_volume(volume_id: String) -> Result<(), crate::commands::util::IpcError> {
-    use crate::commands::util::IpcError;
-    use crate::file_system::volume::eject::{self, EjectError};
-
-    eject::disconnect_smb(&volume_id).await.map_err(|e| match e {
-        EjectError::TimedOut => IpcError::timeout(),
-        other => IpcError::from_err(other),
-    })
+pub async fn disconnect_smb_volume(volume_id: String) -> Result<(), crate::file_system::volume::eject::EjectError> {
+    crate::file_system::volume::eject::disconnect_smb(&volume_id).await
 }
 
 // --- Manual Server Commands ---
