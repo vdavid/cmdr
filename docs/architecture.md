@@ -220,7 +220,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection
 - `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags
-- `crash_reporter/`: Crash capture (panic hook + signal handler), next-launch detection, in-session delivery of a survived panic, report sending
+- `crash_reporter/`: Crash capture (panic hook + signal handler), next-launch detection, in-session delivery of a
+  survived panic, report sending
 - `feedback.rs`: Open-beta feedback: text validation + payload assembly + send to `POST /feedback`. IPC in
   `commands/feedback.rs`
 - `error_reporter/`: Error reports: bundle build (manifest + redacted log tail), short-ID + R2 upload, debounced
