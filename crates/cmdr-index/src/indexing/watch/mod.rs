@@ -11,6 +11,7 @@
 //! - [`branches`]: how much of a volume its loop answers for — everything on a
 //!   scanned volume, and exactly what a search walk covered on a walked one.
 
+pub(crate) mod activity_monitor;
 pub(crate) mod branches;
 pub(crate) mod churn_monitor;
 pub(crate) mod event_loop;

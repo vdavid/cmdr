@@ -160,6 +160,13 @@ need its own idea of firmlinks, right on one machine and wrong on the next. It r
 `IndexStatusResponse`, which is what lets a reloaded window name the running phase. What each phase is CALLED stays the
 host's.
 
+A sixteenth followed, same way (51 → 52): **`FolderChangeRollup`**, what one live batch changed rolled up per folder,
+carried by `IndexEvent::FolderActivity`. Only the corrected live stream can say it — there a rename is one event and a
+removal storm is one anchor — and only this crate has that stream. ⚠️ **One item is the whole grant.** The four counts
+are flat `u32` fields rather than a second public counters type, and the flags-to-kind reduction behind them
+(`../watch/activity_monitor.rs`) is crate-private, because what an event COUNTS AS is a decision the rollup already
+answers. A public change-kind enum would spend a second promise and needs its own argument.
+
 ⚠️ **Which of the check's counters a new item spends is not a choice, so read the right one before assuming headroom.**
 `index-crate-isolation` counts `SubsystemItems` in the modules it can REACH by walking `pub mod` declarations from
 `lib.rs`, which for this crate is `importance` and `media_index` and nothing else. `indexing` is private, so everything

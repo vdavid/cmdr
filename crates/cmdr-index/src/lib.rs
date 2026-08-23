@@ -85,9 +85,9 @@ pub use indexing::handle::{
 /// host maps these to its own wire format; the index produces no user-facing
 /// words. Named rather than globbed, so the surface is readable from this file.
 pub use indexing::events::{
-    ActivityPhase, CoveragePhase, Diagnostic, EventSink, IndexDebugStatusResponse, IndexErrorReport, IndexEvent,
-    IndexEventKind, IndexStatusResponse, MemoryWatchdogAction, NoopEventSink, PhaseRecord, RescanReason, ScanRunKind,
-    VolumeIndexStatus,
+    ActivityPhase, CoveragePhase, Diagnostic, EventSink, FolderChangeRollup, IndexDebugStatusResponse,
+    IndexErrorReport, IndexEvent, IndexEventKind, IndexStatusResponse, MemoryWatchdogAction, NoopEventSink,
+    PhaseRecord, RescanReason, ScanRunKind, VolumeIndexStatus,
 };
 
 /// The vocabulary the handle's own signatures are written in.

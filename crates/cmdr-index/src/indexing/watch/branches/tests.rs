@@ -12,7 +12,7 @@ use std::sync::atomic::Ordering;
 use super::*;
 use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::store::ROOT_ID;
-use crate::indexing::watch::churn_monitor::ChurnObserver;
+use crate::indexing::watch::activity_monitor::BatchObservers;
 use crate::indexing::watch::event_loop::{drain_promoted, process_live_batch, queue_admitted};
 use crate::indexing::watch::watcher::FsEventFlags;
 use tokio_util::sync::CancellationToken;
@@ -118,7 +118,7 @@ impl Fixture {
         }
         let conn = IndexStore::open_read_connection(&self.db_path).expect("read connection");
         let mut origins = HashSet::new();
-        let mut churn = ChurnObserver::disabled();
+        let mut observers = BatchObservers::disabled();
         process_live_batch(
             &mut pending,
             &mut reconciler,
@@ -126,7 +126,7 @@ impl Fixture {
             &conn,
             &self.writer,
             &mut origins,
-            &mut churn,
+            &mut observers,
         );
         self.writer.flush_blocking().expect("flush");
     }

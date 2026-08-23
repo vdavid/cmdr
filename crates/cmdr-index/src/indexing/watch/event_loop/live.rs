@@ -14,8 +14,8 @@ use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 
+use super::super::activity_monitor::{BatchObservers, ChangeKind};
 use super::super::branches::{Admission, WatchScope};
-use super::super::churn_monitor::ChurnObserver;
 use super::super::watcher;
 use super::{
     BacklogTracker, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure,
@@ -239,11 +239,12 @@ pub(in crate::indexing) async fn run_live_event_loop(
     // reads as progress and only a stuck queue warns.
     let mut backlog = BacklogTracker::new();
 
-    // Per-subtree churn observability (`indexing/watch/churn_monitor.rs`): inert (and
-    // free) unless `CMDR_CHURN_SPIKE` is set. `process_live_batch` does the
-    // recording; this only owns the state and feeds it the raw-event counter the
-    // loop already maintains.
-    let mut churn = ChurnObserver::from_env(&volume_id, Instant::now());
+    // What watches this loop's batches: the per-subtree churn monitor (inert, and
+    // free, unless `CMDR_CHURN_SPIKE` is set) and the per-folder activity tap,
+    // which reports through this loop's own sink. `process_live_batch` does all
+    // the recording; this only owns the state and feeds the churn side the
+    // raw-event counter the loop already maintains.
+    let mut observers = BatchObservers::from_env(&volume_id, Arc::clone(&events), Instant::now());
 
     loop {
         tokio::select! {
@@ -284,7 +285,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         drain_promoted(&scope, &mut pending_events, &mut reconciler, &writer);
                         process_live_batch(
                             &mut pending_events, &mut reconciler, &space, &conn,
-                            &writer, &mut pending_origins, churn.with_raw_total(event_count),
+                            &writer, &mut pending_origins, observers.with_raw_total(event_count),
                         );
                         if !pending_origins.is_empty() {
                             let changed = mark_pending_and_drain(&volume_id, &mut pending_origins);
@@ -367,7 +368,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                 let batch_start = Instant::now();
                 process_live_batch(
                     &mut pending_events, &mut reconciler, &space, &conn,
-                    &writer, &mut pending_origins, churn.with_raw_total(event_count),
+                    &writer, &mut pending_origins, observers.with_raw_total(event_count),
                 );
                 let batch_ms = batch_start.elapsed().as_millis();
                 batches_since_heartbeat += 1;
@@ -471,7 +472,7 @@ pub(in crate::indexing) fn process_live_batch(
     conn: &Connection,
     writer: &IndexWriter,
     pending_origins: &mut HashSet<String>,
-    churn: &mut ChurnObserver,
+    observers: &mut BatchObservers,
 ) {
     // Churn observability, BEFORE the early return and before the drain: an
     // idle period must still close and emit, or the time series grows holes
@@ -482,8 +483,9 @@ pub(in crate::indexing) fn process_live_batch(
     // purpose: there is more than one live loop (`live.rs` and `replay.rs`
     // Phase 3), and hooking one of them silently measured nothing on the
     // cold-start replay path. Every live batch funnels through here, so this is
-    // the only site that cannot be forgotten.
-    churn.observe(pending_events.keys().map(String::as_str), Instant::now());
+    // the only site that cannot be forgotten. The activity tap below rides the
+    // same guarantee, one stage later in the batch.
+    observers.observe_churn(pending_events.keys().map(String::as_str), Instant::now());
 
     if pending_events.is_empty() {
         return;
@@ -506,8 +508,13 @@ pub(in crate::indexing) fn process_live_batch(
     // Pass 1: process directory creations (shorter paths first = parents before children)
     if !dir_creations.is_empty() {
         dir_creations.sort_by_key(|(path, _)| path.len());
-        for (_path, event) in &dir_creations {
+        for (path, event) in &dir_creations {
             max_event_id = max_event_id.max(event.event_id);
+            // ⚠️ Folded in EXPLICITLY. `pending_events.drain()` above empties the
+            // input map into two vectors, and this is the one the later passes
+            // never see, so a tap reading only Pass 2 would miss every new
+            // directory — the single most intent-bearing thing a batch can hold.
+            observers.activity().record_event(path, &event.flags);
             reconciler.process_live_event(event, conn, writer, pending_origins);
         }
         // Flush so the read connection can resolve the newly created directories
@@ -522,7 +529,7 @@ pub(in crate::indexing) fn process_live_batch(
     // Pass 1.5: rename detection by inode. Removes matched events from
     // `other_events` and replaces the create/delete dance with a single
     // `MoveEntryV2`, preserving the entry's `dir_stats`.
-    let rename_handled = detect_renames_by_inode(
+    let renamed_paths = detect_renames_by_inode(
         &mut other_events,
         space,
         conn,
@@ -530,7 +537,14 @@ pub(in crate::indexing) fn process_live_batch(
         pending_origins,
         &mut max_event_id,
     );
-    if rename_handled > 0 {
+    // ⚠️ The MATCHED renames, which the pre-pass has just taken out of
+    // `other_events`. Only the FAILED matches survive into Pass 2, so a tap
+    // reading the corrected stream alone would count the noise and drop every
+    // real rename — and a rename-only batch would report nothing at all.
+    for path in &renamed_paths {
+        observers.activity().record(path, ChangeKind::Renamed);
+    }
+    if !renamed_paths.is_empty() {
         // Flush so Phase 2's `resolve_path` calls see the moved rows. Without
         // this, the OLD-path event of a matched rename could see the row at
         // its original `(parent_id, name)` and try to delete it.
@@ -549,8 +563,9 @@ pub(in crate::indexing) fn process_live_batch(
     // storm still converges (the reconcile sees final disk state).
     let (removals, non_removals): (Vec<_>, Vec<_>) = other_events.into_iter().partition(|(_p, e)| e.flags.item_removed);
 
-    for (_path, event) in &non_removals {
+    for (path, event) in &non_removals {
         max_event_id = max_event_id.max(event.event_id);
+        observers.activity().record_event(path, &event.flags);
         reconciler.process_live_event(event, conn, writer, pending_origins);
     }
 
@@ -565,6 +580,12 @@ pub(in crate::indexing) fn process_live_batch(
                 removals.len(),
                 anchor.display(),
             );
+            // ⚠️ Surfaced to the tap BEFORE the drop filter below throws the
+            // strict-descendant removals away. Without this a sixty-thousand-file
+            // delete inside a surviving folder contributes nothing at all, because
+            // every per-file event it produced is about to be dropped in favour of
+            // the rescan.
+            observers.activity().record_storm_anchor(&anchor.to_string_lossy());
             reconciler.queue_must_scan_sub_dirs(anchor, writer);
         }
 
@@ -603,7 +624,7 @@ pub(in crate::indexing) fn process_live_batch(
         // saver the incident log shows working across batches, engaged early).
         let mut processed_any_dir = false;
         let mut flushed_dirs = false;
-        for (_path, event) in &kept {
+        for (path, event) in &kept {
             if event.flags.item_is_dir {
                 processed_any_dir = true;
             } else if processed_any_dir && !flushed_dirs {
@@ -614,6 +635,7 @@ pub(in crate::indexing) fn process_live_batch(
                 });
                 flushed_dirs = true;
             }
+            observers.activity().record_event(path, &event.flags);
             reconciler.process_live_event(event, conn, writer, pending_origins);
         }
     }
@@ -621,14 +643,24 @@ pub(in crate::indexing) fn process_live_batch(
     if max_event_id > 0 {
         let _ = writer.send(WriteMessage::UpdateLastEventId(max_event_id));
     }
+
+    // Close the batch: the tap reports its per-folder rollups through the loop's
+    // sink. Last, so everything the batch corrected is already folded in.
+    observers.finish_batch();
 }
 
 /// Inspect every `item_renamed` event in `events`. For each path that still
 /// exists on disk and has an inode that already maps to a DB entry at a
 /// *different* `(parent_id, name)`, send `MoveEntryV2` and remove the event.
 ///
-/// Returns the number of renames handled so the caller can decide whether to
-/// flush before Phase 2.
+/// Returns the NEW paths of the renames it handled, so the caller can decide
+/// whether to flush before Phase 2 and can report them as renames.
+///
+/// ⚠️ **The paths, ❌ not a bare count.** A matched event is `retain`ed out of
+/// `events`, so after this call only the FAILED matches are still in the batch.
+/// Anything downstream reading the corrected stream alone would therefore see
+/// the noise and none of the signal, and a rename-only batch would look empty.
+/// These are the successes, and they are only available here.
 ///
 /// Events whose stat fails are *not* removed (they're either the OLD-path
 /// side of a successful match, which silently no-ops in Phase 2 once the row
@@ -640,8 +672,8 @@ pub(super) fn detect_renames_by_inode(
     writer: &IndexWriter,
     pending_origins: &mut HashSet<String>,
     max_event_id: &mut u64,
-) -> usize {
-    let mut handled = 0usize;
+) -> Vec<String> {
+    let mut handled: Vec<String> = Vec::new();
 
     events.retain(|(path, event)| {
         if !event.flags.item_renamed {
@@ -739,7 +771,7 @@ pub(super) fn detect_renames_by_inode(
         // `node_modules` still flip its whole subtree's floor status.
         pending_origins.insert(new_parent_path);
         *max_event_id = (*max_event_id).max(event.event_id);
-        handled += 1;
+        handled.push(path.clone());
         false
     });
 

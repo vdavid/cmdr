@@ -23,7 +23,7 @@ use super::store::{IndexFailure, IndexStatus};
 pub(crate) mod payload;
 pub(crate) mod sink;
 
-pub use payload::{ActivityPhase, CoveragePhase, MemoryWatchdogAction, RescanReason, ScanRunKind};
+pub use payload::{ActivityPhase, CoveragePhase, FolderChangeRollup, MemoryWatchdogAction, RescanReason, ScanRunKind};
 
 #[cfg(any(test, feature = "testing"))]
 pub use sink::RecordingSink;

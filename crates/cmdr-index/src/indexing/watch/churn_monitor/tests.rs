@@ -205,10 +205,16 @@ fn a_pathological_depth_is_cut_and_counted() {
 /// it, so a whole boot route measured nothing while every unit test passed.
 ///
 /// Both live loops now funnel through `process_live_batch`, which takes a
-/// `ChurnObserver` by `&mut` — so the compiler enforces the hook at every live
-/// batch. This test guards the remaining hole the compiler can't see: a NEW
-/// live loop appearing in a third file, or an existing one quietly downgrading
-/// to `ChurnObserver::disabled()`.
+/// `BatchObservers` (the churn observer bundled with the activity tap) by
+/// `&mut` — so the compiler enforces the hook at every live batch. This test
+/// guards the remaining hole the compiler can't see: a NEW live loop appearing
+/// in a third file, or an existing one quietly downgrading to
+/// `BatchObservers::disabled()`.
+///
+/// The literal it scans for is the BUNDLE's constructor, since that is the one
+/// call that builds a real churn observer. Its sibling in
+/// `activity_monitor/tests.rs` scans for the same call for the tap's sake, and
+/// both must keep passing.
 ///
 /// The scan is RECURSIVE: a live loop added in a subdirectory of `event_loop/`
 /// would otherwise slip past the very guard this test exists to be. `tests`
@@ -250,9 +256,9 @@ fn every_live_loop_owns_a_real_churn_observer() {
             continue;
         }
         assert!(
-            src.contains("ChurnObserver::from_env("),
+            src.contains("BatchObservers::from_env("),
             // allowed-pluralize-noun: `{name}` is a file name and `drives` is the verb, not a plural noun.
-            "{name} drives live batches but never builds a real ChurnObserver, \
+            "{name} drives live batches but never builds a real observer bundle, \
              so the churn spike would silently measure nothing on that route"
         );
         drivers.push(name);
@@ -261,7 +267,7 @@ fn every_live_loop_owns_a_real_churn_observer() {
     assert_eq!(
         drivers,
         vec!["live.rs".to_string(), "replay.rs".to_string()],
-        "the set of live-batch drivers changed; wire the new one's ChurnObserver, then update this list"
+        "the set of live-batch drivers changed; wire the new one's BatchObservers, then update this list"
     );
 }
 

@@ -46,8 +46,11 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
   `HUGE_DIR_CHILDREN`). Structural role below; the cost-bounding RATIONALE is canonical in `../reconcile/DETAILS.md` §
   Bounding verification cost.
 - **event_loop/storm.rs** — removal-storm coalescing helpers (`REMOVAL_STORM_THRESHOLD`, `STORM_GROUP_PREFIX_DEPTH`).
-- **event_loop/tests/** — `ingestion` / `merge` / `rename` / `split_parent` clusters plus shared fixtures in `mod.rs`.
+- **event_loop/tests/** — `activity` / `ingestion` / `merge` / `rename` / `split_parent` clusters plus shared fixtures
+  in `mod.rs`.
 - **churn_monitor.rs (+churn_monitor/)** — the off-by-default per-subtree churn observability spike (below).
+- **activity_monitor.rs (+activity_monitor/)** — the per-folder activity tap over the corrected stream, plus
+  `BatchObservers`, the pair `process_live_batch` takes (below).
 
 ## Watching what a search walked
 
@@ -296,10 +299,51 @@ restate it here.
 ## Churn-monitor spike (`churn_monitor.rs`)
 
 Read-only per-subtree churn observability for the sealed-subtrees spike, off unless `CMDR_CHURN_SPIKE` is set. It hooks
-`process_live_batch`, which takes a `ChurnObserver` by `&mut` so BOTH live loops (`live.rs` post-scan and `replay.rs`
+`process_live_batch`, which takes a `BatchObservers` by `&mut` so BOTH live loops (`live.rs` post-scan and `replay.rs`
 Phase 3 post-replay) are covered by construction — hooking only one of them measured nothing on the whole cold-start
 replay route, and `churn_monitor/tests.rs::every_live_loop_owns_a_real_churn_observer` now guards that. It rolls every
 path's churn up the ancestor chain and logs one `indexing::churn` rollup per period (top-N directories by rolled-up
 count, with a distinct-churny-children signal). Writes no index state and changes no behaviour. Pure and clock-injected,
 so it's promotable into real churn accounting rather than throwaway. Collection and analysis handover:
 `docs/notes/churn-observability-spike.md`.
+
+## The activity tap (`activity_monitor.rs`)
+
+The second observer on the same batch, and a different measurement. The churn monitor reads RAW deduplicated paths,
+which is right for "how hard does this subtree churn" and wrong for "did something meaningful happen here": there a
+rename is a create plus a delete, and an `rm -rf` is sixty thousand removals. The tap folds the batch AFTER the
+corrections, and emits one `IndexEvent::FolderActivity` per batch carrying a `FolderChangeRollup` per folder. What the
+rollups are FOR is the host's business; this module names no consumer. (Cmdr's is `agent/wake/`.)
+
+**Two observers, one struct.** `BatchObservers` bundles them because `process_live_batch` sits at exactly seven
+arguments and `clippy::too_many_arguments` defaults to seven, which `clippy.toml` doesn't raise. Both scanners
+(`churn_monitor/tests.rs` and `activity_monitor/tests.rs`) assert every live-batch driver builds one with
+`BatchObservers::from_env(`, which is the hole the `&mut` can't cover: a third live loop in a new file, or an existing
+one downgrading to the test-only disabled pair.
+
+⚠️ **Three of the four counters are UNREACHABLE from the natural reading point**, and taking "fold the corrected stream"
+literally ships a tap that counts almost nothing. Each is wired explicitly in `process_live_batch`:
+
+- **Matched renames.** `detect_renames_by_inode` `retain`s its matches out of the batch, so only the FAILED matches
+  reach Pass 2. It returns the matched paths for exactly this reason; without them the tap counts the noise, drops the
+  signal, and a rename-only batch reports nothing at all.
+- **Storm-coalesced removals.** The storm path queues an anchor as a rescan and drops every strict-descendant removal,
+  so a sixty-thousand-file delete inside a surviving folder would contribute nothing. The anchor is surfaced and counted
+  as ONE removal inside the anchor itself — the only input credited to the named folder rather than its parent, because
+  the storm happened IN it. (`storm::scope_to_requeue` keeps the anchor's own removal, so a deleted anchor also shows up
+  once through the normal path.)
+- **Directory creations.** `pending_events.drain()` splits the batch in two and Pass 1 consumes the `dir_creations`
+  vector, which no later pass sees. Folded in at Pass 1.
+
+⚠️ **The flags are not one-hot.** One coalesced `FsChangeEvent` can carry `item_created`, `item_removed`, and
+`item_renamed` at once, so `kind_of` picks one: **renamed, then created, then removed, then modified**. A different
+order moves what a consumer reads out of the counts materially, which is why it is one documented function with a test
+rather than an incidental branch order. An event carrying none of the four (a bare `must_scan_sub_dirs` anchor) counts
+as nothing, or every rescan would inflate into activity.
+
+**A directory's own event counts in its PARENT.** A rollup describes the folder a change happened IN, and `/a/b`
+appearing is a change in `/a`. The storm anchor is the documented exception above.
+
+**Nothing survives a batch**: the map drains on report, so memory is bounded by one batch's folders, and a per-batch
+folder cap (4,096, the same order as the host channel's bound) stops a pathological batch handing a host half a million
+rollups to loop over on the live-loop thread. Past it the extra folders are dropped and logged.

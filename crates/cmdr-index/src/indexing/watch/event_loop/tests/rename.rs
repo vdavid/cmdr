@@ -8,14 +8,14 @@ use std::sync::atomic::Ordering;
 
 use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::store::{DirStatsById, ROOT_ID};
-use crate::indexing::watch::churn_monitor;
+use crate::indexing::watch::activity_monitor;
 use crate::indexing::watch::event_loop::live::detect_renames_by_inode;
 use crate::indexing::writer::IndexWriter;
 
 /// Create a temp dir under CARGO_MANIFEST_DIR (Linux's `should_exclude`
 /// blocks `/tmp/`, but we don't actually scan here (the path just has
 /// to exist on disk so `stat` succeeds and gives us a real inode).
-fn rename_test_tempdir() -> tempfile::TempDir {
+pub(super) fn rename_test_tempdir() -> tempfile::TempDir {
     let base = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     tempfile::Builder::new()
         .prefix("cmdr-rename-test-")
@@ -24,7 +24,7 @@ fn rename_test_tempdir() -> tempfile::TempDir {
 }
 
 /// Spawn a writer + DB and return everything callers need.
-fn rename_test_setup() -> (IndexWriter, PathBuf, tempfile::TempDir) {
+pub(super) fn rename_test_setup() -> (IndexWriter, PathBuf, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create db temp dir");
     let db_path = dir.path().join("rename-test.db");
     let _store = IndexStore::open(&db_path).expect("open store");
@@ -34,7 +34,7 @@ fn rename_test_setup() -> (IndexWriter, PathBuf, tempfile::TempDir) {
 
 /// Insert each path component as a directory entry, returning the deepest
 /// dir's entry_id. Mirrors `verifier::tests::ensure_path_in_db`.
-fn insert_path_chain(db_path: &Path, path: &Path, writer: &IndexWriter) -> i64 {
+pub(super) fn insert_path_chain(db_path: &Path, path: &Path, writer: &IndexWriter) -> i64 {
     let conn = IndexStore::open_write_connection(db_path).unwrap();
     let path_str = path.to_string_lossy();
     let components: Vec<&str> = path_str.split('/').filter(|c| !c.is_empty()).collect();
@@ -116,7 +116,7 @@ fn run_live_batch(
             &conn,
             writer,
             &mut pending_paths,
-            &mut churn_monitor::ChurnObserver::disabled(),
+            &mut activity_monitor::BatchObservers::disabled(),
         );
     });
     writer.flush_blocking().unwrap();
@@ -327,7 +327,11 @@ fn detect_renames_by_inode_same_parent_uses_move_and_preserves_stats() {
     );
     writer.flush_blocking().unwrap();
 
-    assert_eq!(handled, 1, "should detect the rename and emit one MoveEntryV2");
+    assert_eq!(
+        handled,
+        vec![new_dir_path.to_string_lossy().to_string()],
+        "should detect the rename, emit one MoveEntryV2, and hand the matched path back"
+    );
     assert_eq!(events.len(), 0, "matched event should be removed from the batch");
     assert_eq!(max_event_id, 100);
     assert!(pending_paths.contains(&fs_root.path().to_string_lossy().to_string()));
@@ -428,7 +432,7 @@ fn detect_renames_by_inode_cross_parent_propagates_deltas() {
     );
     writer.flush_blocking().unwrap();
 
-    assert_eq!(handled, 1);
+    assert_eq!(handled.len(), 1);
     assert_eq!(events.len(), 0);
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
@@ -483,7 +487,7 @@ fn detect_renames_by_inode_no_match_keeps_event() {
         &mut max_event_id,
     );
 
-    assert_eq!(handled, 0, "no inode match → no rename detected");
+    assert!(handled.is_empty(), "no inode match → no rename detected");
     assert_eq!(events.len(), 1, "event remains for Phase 2");
     assert_eq!(max_event_id, 0, "max_event_id only bumped on matches");
     assert!(pending_paths.is_empty());
@@ -545,7 +549,7 @@ fn inode_reuse_is_never_a_false_move_when_inodes_are_nulled() {
             &mut max_event_id,
         );
         writer.shutdown();
-        handled
+        handled.len()
     };
 
     // Trusted volume (inode stored): a stable inode genuinely IS the same file, so
@@ -605,7 +609,7 @@ fn detect_renames_by_inode_ignores_non_renamed_events() {
         &mut max_event_id,
     );
 
-    assert_eq!(handled, 0);
+    assert!(handled.is_empty());
     assert_eq!(events.len(), 1, "non-renamed event is passed through");
 
     writer.shutdown();
@@ -637,7 +641,7 @@ fn detect_renames_by_inode_keeps_old_path_event_when_path_is_gone() {
         &mut max_event_id,
     );
 
-    assert_eq!(handled, 0);
+    assert!(handled.is_empty());
     assert_eq!(events.len(), 1, "gone-path event must remain for Phase 2 to handle");
 
     writer.shutdown();
@@ -712,7 +716,7 @@ fn process_live_batch_rename_preserves_dir_stats_and_old_path_no_ops() {
             &conn,
             &writer,
             &mut pending_paths,
-            &mut churn_monitor::ChurnObserver::disabled(),
+            &mut activity_monitor::BatchObservers::disabled(),
         );
     });
     writer.flush_blocking().unwrap();

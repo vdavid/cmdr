@@ -13,8 +13,8 @@ use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 
+use super::super::activity_monitor::BatchObservers;
 use super::super::branches::{self, Admission, WatchScope};
-use super::super::churn_monitor::ChurnObserver;
 use super::super::watcher;
 use super::live::{drain_promoted, mark_pending_and_drain, process_live_batch, queue_admitted};
 use super::verification::run_background_verification;
@@ -454,11 +454,11 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     }
 
     let mut live_count = 0u64;
-    // Per-subtree churn observability, same as `run_live_event_loop`: this loop
-    // drives live batches too (the cold-start replay path never reaches
-    // `run_live_event_loop`), so it needs its own observer or the whole
-    // journal-replay route measures nothing.
-    let mut churn = ChurnObserver::from_env(&volume_id, Instant::now());
+    // Churn observability and the per-folder activity tap, same as
+    // `run_live_event_loop`: this loop drives live batches too (the cold-start
+    // replay path never reaches `run_live_event_loop`), so it needs its own
+    // observers or the whole journal-replay route reports nothing.
+    let mut observers = BatchObservers::from_env(&volume_id, Arc::clone(&events), Instant::now());
     let mut live_pending_origins = HashSet::<String>::new();
     let mut live_pending_events = HashMap::<String, watcher::FsChangeEvent>::new();
     let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
@@ -498,7 +498,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                         drain_promoted(&scope, &mut live_pending_events, &mut reconciler, &writer);
                         process_live_batch(
                             &mut live_pending_events, &mut reconciler, &space, &conn,
-                            &writer, &mut live_pending_origins, churn.with_raw_total(live_count),
+                            &writer, &mut live_pending_origins, observers.with_raw_total(live_count),
                         );
                         if !live_pending_origins.is_empty() {
                             let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
@@ -562,7 +562,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 drain_promoted(&scope, &mut live_pending_events, &mut reconciler, &writer);
                 process_live_batch(
                     &mut live_pending_events, &mut reconciler, &space, &conn,
-                    &writer, &mut live_pending_origins, churn.with_raw_total(live_count),
+                    &writer, &mut live_pending_origins, observers.with_raw_total(live_count),
                 );
                 if !live_pending_origins.is_empty() {
                     let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);

@@ -23,7 +23,9 @@ use crate::indexing::aggregator::AggregationPhase;
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::store::IndexFailure;
 
-use super::payload::{ActivityPhase, CoveragePhase, MemoryWatchdogAction, RescanReason, ScanRunKind};
+use super::payload::{
+    ActivityPhase, CoveragePhase, FolderChangeRollup, MemoryWatchdogAction, RescanReason, ScanRunKind,
+};
 
 /// Why a volume's enrichment pass ended. A typed discriminant, never a string:
 /// the frontend clears the indicator row on `Completed` /
@@ -344,6 +346,26 @@ pub enum IndexEvent {
         /// The path that couldn't be read.
         path: PathBuf,
     },
+    /// What one live batch changed, rolled up per folder over the CORRECTED
+    /// stream (after rename detection and removal-storm coalescing).
+    ///
+    /// ⚠️ **This is the one variant where a dropped event costs SIGNAL rather
+    /// than a UI update.** The trait's fire-and-forget contract below says a
+    /// drop never costs correctness, and that still holds — nothing downstream
+    /// of this is a record anyone is owed — but a consumer reading it learns
+    /// slightly less about what the user has been doing. That is acceptable:
+    /// the folder will change again. Say it here rather than letting the
+    /// contract look silently violated.
+    FolderActivity {
+        /// The volume the batch belongs to.
+        volume_id: String,
+        /// The batch's own instant, unix seconds. ❌ Never a window start: any
+        /// coalescing window is the HOST's policy, and a field named for one
+        /// here would lie about who decided it.
+        observed_at: u64,
+        /// One rollup per folder the batch touched.
+        folders: Vec<FolderChangeRollup>,
+    },
 }
 
 /// The variants of [`IndexEvent`] without their payloads.
@@ -395,6 +417,8 @@ pub enum IndexEventKind {
     Error,
     /// [`IndexEvent::PathAccessDenied`].
     PathAccessDenied,
+    /// [`IndexEvent::FolderActivity`].
+    FolderActivity,
 }
 
 impl IndexEventKind {
@@ -404,7 +428,7 @@ impl IndexEventKind {
     /// exhaustive, so a new variant doesn't compile until it has a slot, and the
     /// slot doesn't compile until this array has room for it. That's what makes
     /// the host's completeness test meaningful.
-    pub const ALL: [Self; 21] = [
+    pub const ALL: [Self; 22] = [
         Self::ScanStarted,
         Self::CoverageBranchStarted,
         Self::CoverageBranchEnded,
@@ -426,6 +450,7 @@ impl IndexEventKind {
         Self::MediaEnrichTerminal,
         Self::Error,
         Self::PathAccessDenied,
+        Self::FolderActivity,
     ];
 
     /// Where this kind sits in [`ALL`](Self::ALL).
@@ -458,6 +483,7 @@ impl IndexEventKind {
             Self::MediaEnrichTerminal => const { Self::slot(18) },
             Self::Error => const { Self::slot(19) },
             Self::PathAccessDenied => const { Self::slot(20) },
+            Self::FolderActivity => const { Self::slot(21) },
         }
     }
 
@@ -513,6 +539,7 @@ impl IndexEvent {
             Self::MediaEnrichTerminal { .. } => IndexEventKind::MediaEnrichTerminal,
             Self::Error { .. } => IndexEventKind::Error,
             Self::PathAccessDenied { .. } => IndexEventKind::PathAccessDenied,
+            Self::FolderActivity { .. } => IndexEventKind::FolderActivity,
         }
     }
 
@@ -540,7 +567,8 @@ impl IndexEvent {
             | Self::FreshnessChanged { volume_id, .. }
             | Self::PhaseChanged { volume_id, .. }
             | Self::MediaEnrichProgress { volume_id, .. }
-            | Self::MediaEnrichTerminal { volume_id, .. } => Some(volume_id),
+            | Self::MediaEnrichTerminal { volume_id, .. }
+            | Self::FolderActivity { volume_id, .. } => Some(volume_id),
             Self::DirsUpdated { .. }
             | Self::MemoryWarning { .. }
             | Self::Error { .. }
@@ -689,6 +717,18 @@ pub fn one_of_every_kind() -> Vec<IndexEvent> {
         },
         IndexEvent::PathAccessDenied {
             path: PathBuf::from("/Users/someone/Downloads"),
+        },
+        IndexEvent::FolderActivity {
+            volume_id: "root".into(),
+            observed_at: 1_780_000_027,
+            folders: vec![FolderChangeRollup {
+                folder: "/Users/someone/Downloads".into(),
+                created: 3,
+                modified: 1,
+                removed: 0,
+                renamed: 2,
+                last_event_at: 1_780_000_027,
+            }],
         },
     ]
 }

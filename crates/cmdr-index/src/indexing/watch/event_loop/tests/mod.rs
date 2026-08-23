@@ -1,4 +1,5 @@
 //! Tests for the event loop, clustered onto the production seams:
+//! - `activity`: the per-folder activity tap end to end through `process_live_batch`.
 //! - `merge`: `merge_fs_events` dedup/flag-priority, buffer overflow/mode, and
 //!   replay-dedup tests (the event-buffer behavior).
 //! - `rename`: inode rename pre-pass, removal-storm coalescing, and the
@@ -16,6 +17,7 @@
 
 use super::*;
 
+mod activity;
 mod ingestion;
 mod merge;
 mod rename;

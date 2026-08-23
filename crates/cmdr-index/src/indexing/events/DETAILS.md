@@ -8,6 +8,10 @@ the phase-transition emitter. It imports DOWN only, so it sits in no dependency 
 
 ## The values an event carries (`payload.rs`)
 
+`FolderChangeRollup` is the odd one out here and deliberately so: it carries no `serde` and no `specta::Type`, because
+it rides `IndexEvent::FolderActivity` into host machinery and never onto a wire the frontend reads. It still belongs in
+`payload.rs` for the same structural reason its neighbours do — a value an event carries lives below the envelope.
+
 `ScanRunKind`, `RescanReason`, `ActivityPhase`, and `MemoryWatchdogAction` live below both `sink.rs` and `mod.rs`
 because both name them: the envelope carries them, and the IPC responses (`IndexStatusResponse.scan_run_kind`,
 `IndexDebugStatusResponse.activity_phase`) report them back. Keeping them in `mod.rs` is what made `sink.rs` import its
@@ -20,10 +24,10 @@ the same idea from the other direction: it now sits in `sink.rs` beside the `Ind
 The index subsystems say what happened; the app decides what a human sees. A subsystem builds an `IndexEvent` and hands
 it to an injected `EventSink`. Nothing here names a wire format, an event name, or a sentence.
 
-`IndexEvent` has 21 variants. Eighteen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
+`IndexEvent` has 22 variants. Eighteen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
 `CoverageBranchEnded`, `CoveragePhaseStarted`, `ScanProgress`, `ScanComplete`, `ScanAborted`, `DirsUpdated`,
 `ReplayProgress`, `ReplayComplete`, `RescanScheduled`, `AggregationProgress`, `AggregationComplete`, `MemoryWarning`,
-`FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`, `MediaEnrichTerminal`). Three reach the host's own machinery
+`FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`, `MediaEnrichTerminal`). Four reach the host's own machinery
 instead:
 
 - **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by the
@@ -38,6 +42,13 @@ instead:
   moment their own files started answering; the marker behind it still drives exactly one subscriber INSIDE the crate
   (`lifecycle/phases/completion.rs`). The app routes it `Destination::AnalyticsOnly` and nothing renders it, since what
   a user sees is the size that appears, not the marker.
+- **`FolderActivity { volume_id, observed_at, folders }`** — what one live batch changed, rolled up per folder over the
+  CORRECTED stream (`../watch/activity_monitor.rs`). ❌ Never one payload per file: `INGESTION_HARD_CAP` is 5,000,000,
+  and a batch's rollups are bounded by its distinct folders instead. `observed_at` is the batch's own instant, ❌ never
+  a window start — any coalescing window is the host's policy, and a field named for one here would lie about who
+  decided it. ⚠️ **This is the one variant where a dropped event costs SIGNAL** rather than a UI update. That is
+  acceptable (the folder will change again) and it is said at the variant, so the `EventSink` contract doesn't look
+  silently violated.
 
 **`CoveragePhaseStarted` carries a typed `CoveragePhase`**, one of the crate's own public values (`payload.rs`), and
 that enum's declaration order IS the schedule the phase queue runs. The order lives there and nowhere else, so a host

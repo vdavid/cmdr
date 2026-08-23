@@ -157,6 +157,38 @@ pub enum ActivityPhase {
     Failed,
 }
 
+/// One folder's already-corrected activity within one live batch.
+///
+/// The rollup a batch reports instead of its events. ❌ Never one payload per file:
+/// `INGESTION_HARD_CAP` is 5,000,000, and a per-file payload would put five million of them
+/// across the host boundary on exactly the path the counters exist to survive. A batch's
+/// rollups are bounded by the distinct folders it touched.
+///
+/// Counts rather than names, for the same reason: names grow memory with the EVENT count, and
+/// what a consumer needs from this is where something happened and how much, not what.
+///
+/// ⚠️ No serde and no `specta::Type`, unlike its neighbours here: this rides the `IndexEvent`
+/// seam into host machinery, never onto a wire the frontend reads.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FolderChangeRollup {
+    /// The folder the changes happened IN, absolute in the volume's own path space. A
+    /// directory's own event counts in its PARENT: this names where a change landed, not what
+    /// changed.
+    pub folder: String,
+    /// Entries that appeared.
+    pub created: u32,
+    /// Entries whose content changed.
+    pub modified: u32,
+    /// Entries that went away.
+    pub removed: u32,
+    /// Entries renamed in place, as the inode pre-pass MATCHED them. A rename is one event
+    /// here, never the create-plus-delete pair a raw stream reports.
+    pub renamed: u32,
+    /// The newest change in the rollup, unix seconds. Carried apart from the batch's own
+    /// instant because a consumer may quantize one and not the other.
+    pub last_event_at: u64,
+}
+
 impl std::fmt::Display for ActivityPhase {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

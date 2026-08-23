@@ -18,7 +18,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::pluralize;
 
 use super::stress_test_helpers::{build_synthetic_tree, check_db_consistency, make_file_entry, setup_writer};
-use crate::indexing::watch::churn_monitor;
+use crate::indexing::watch::activity_monitor;
 
 // ── Test 1: concurrent scan + events + replay ───────────────────────
 
@@ -868,7 +868,7 @@ fn mixed_storm_reaches_consistent_fixed_point() {
             &conn,
             &writer,
             &mut pending_paths,
-            &mut churn_monitor::ChurnObserver::disabled(),
+            &mut activity_monitor::BatchObservers::disabled(),
         );
 
         // Fixed point: drain the writer, then require BOTH no active rescan AND an empty
