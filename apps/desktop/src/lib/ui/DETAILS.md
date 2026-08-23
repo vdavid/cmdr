@@ -1241,10 +1241,10 @@ Two file layouts satisfy `a11y-coverage`, and both are equally enforced:
 - **Directory-level**: any `*.a11y.test.ts` in the component's own directory that imports the component. Right for a
   directory of many components with one or two states each; `svelte-tests` costs about the same for one test file as for
   91 test bodies (`docs/testing.md` § "What a test actually costs"), so one file per directory is dramatically cheaper
-  than one per component. Name it after the directory (`sections.a11y.test.ts`). When one file can't hold the
-  directory (mocks that can't be reconciled, or the 800-line `file-length` mark), split by what divides them and
-  say why in each file's doc comment: `presentational` vs `stateful` in `lib/indexing/`, `presentational` vs
-  `dialog` in `lib/query-ui/`. Never raise the `file-length` allowlist to keep one file.
+  than one per component. Name it after the directory (`sections.a11y.test.ts`). When one file can't hold the directory
+  (mocks that can't be reconciled, or the 800-line `file-length` mark), split by what divides them and say why in each
+  file's doc comment: `presentational` vs `stateful` in `lib/indexing/`, `presentational` vs `dialog` in
+  `lib/query-ui/`. Never raise the `file-length` allowlist to keep one file.
 
 The check resolves "imports the component" from parsed import statements, so a name in a comment or a `describe()` title
 buys nothing, and `SearchSection.svelte` never satisfies `Section.svelte`. A component whose import it can't resolve
@@ -1277,9 +1277,9 @@ mock `$lib/tauri-commands` at the top of the file. Set `CMDR_A11Y_DEBUG=1` to lo
 investigating why a test passes silently.
 
 Current coverage: 73 `.a11y.test.ts` files, most of them directory-level, covering dialogs, file explorer panes,
-settings components and sections, search, command palette, toasts, crash/licensing/onboarding, and MTP dialogs. Skipped tests (marked
-`it.skip` with a `TODO:` + axe rule ID) flag real a11y findings the team hasn't fixed yet. Do NOT remove those skips
-without fixing the underlying component. Each skip has a concrete fix noted in the test file.
+settings components and sections, search, command palette, toasts, crash/licensing/onboarding, and MTP dialogs. Skipped
+tests (marked `it.skip` with a `TODO:` + axe rule ID) flag real a11y findings the team hasn't fixed yet. Do NOT remove
+those skips without fixing the underlying component. Each skip has a concrete fix noted in the test file.
 
 ## Key decisions
 

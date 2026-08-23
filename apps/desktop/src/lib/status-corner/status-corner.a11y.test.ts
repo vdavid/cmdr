@@ -146,7 +146,10 @@ describe('OperationChip a11y', () => {
     etaSeconds: null,
   }
 
-  function renderChip(status: OperationSnapshot['status'], progress: WriteProgressEvent = runningProgress): HTMLElement {
+  function renderChip(
+    status: OperationSnapshot['status'],
+    progress: WriteProgressEvent = runningProgress,
+  ): HTMLElement {
     store?._testApplySnapshot([snapshot(status)])
     store?._testApplyProgress(progress)
     const target = document.createElement('div')

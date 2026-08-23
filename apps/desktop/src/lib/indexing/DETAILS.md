@@ -321,8 +321,8 @@ next progress tick.
 `IndexingDriveRow`): an images bar + a bytes bar (both aria-labeled), an "N of M images" line, images/min
 (`computeWindowRate`), and the per-volume ETA (`blendEtas` over elapsed + windowed). A paused row shows the paused
 message and no bars. No overall ETA (per-row only, consistent with the drive rows). Tests:
-`media-enrich-state.svelte.test.ts` (terminal clears / re-voices, listen-first seeding, fresh-object reactivity) and
-the `IndexingEnrichRow` block of `presentational.a11y.test.ts` (mirrors the `IndexingDriveRow` block beside it).
+`media-enrich-state.svelte.test.ts` (terminal clears / re-voices, listen-first seeding, fresh-object reactivity) and the
+`IndexingEnrichRow` block of `presentational.a11y.test.ts` (mirrors the `IndexingDriveRow` block beside it).
 
 ## Two-tier scan progress (`computeScanProgress`)
 
@@ -390,18 +390,18 @@ first, which reads both for real.
   unknown-kind null).
 - **`media-enrich-queued.test.ts`**: the pure `isEnrichQueued` predicate (toggle off, ineligible volume, already
   enriching, no drive rows, opted-in SMB).
-- **`stateful.a11y.test.ts`, `IndexingStatusIndicator` block**: tier-3 axe checks for idle (renders nothing), single-drive scanning
-  (counter-only, first-scan tier-2, calibrated-with-bar — each asserting the always-on drive heading), aggregating, the
-  primary-expands-secondary-collapses multi-drive case, and a phase-only mid-reconcile volume (visible, catch-up
-  active). Mocks both `index-state.svelte` (incl. `getVolumePhase` / `getActivePhaseVolumeIds` / `placeholderActivity` /
-  `ROOT_VOLUME_ID`) and the volume store's `getVolumes`.
-- **`presentational.a11y.test.ts`, `IndexingDriveRow` block**: per-row axe checks for the wrapper, including the first-scan tier-2 row (count +
-  elapsed, no `progressbar` role).
-- **`IndexingStatusBody.svelte.test.ts`** + the `IndexingStatusBody` block of `presentational.a11y.test.ts`: the shared checklist body, mounted
-  per scenario from a fixture — the four local steps with state, tier-1 bar, tier-2 first scan (count + elapsed +
-  first-scan hint, NO progressbar), counter-only, the compute step (sub-phase line + bar), the reconcile step (catch-up
-  active, no detail), network (no Save/Catch-up), and replay (one step). The a11y test pins the `<ul>`/`<li>` roles +
-  the visually-hidden status words.
+- **`stateful.a11y.test.ts`, `IndexingStatusIndicator` block**: tier-3 axe checks for idle (renders nothing),
+  single-drive scanning (counter-only, first-scan tier-2, calibrated-with-bar — each asserting the always-on drive
+  heading), aggregating, the primary-expands-secondary-collapses multi-drive case, and a phase-only mid-reconcile volume
+  (visible, catch-up active). Mocks both `index-state.svelte` (incl. `getVolumePhase` / `getActivePhaseVolumeIds` /
+  `placeholderActivity` / `ROOT_VOLUME_ID`) and the volume store's `getVolumes`.
+- **`presentational.a11y.test.ts`, `IndexingDriveRow` block**: per-row axe checks for the wrapper, including the
+  first-scan tier-2 row (count + elapsed, no `progressbar` role).
+- **`IndexingStatusBody.svelte.test.ts`** + the `IndexingStatusBody` block of `presentational.a11y.test.ts`: the shared
+  checklist body, mounted per scenario from a fixture — the four local steps with state, tier-1 bar, tier-2 first scan
+  (count + elapsed + first-scan hint, NO progressbar), counter-only, the compute step (sub-phase line + bar), the
+  reconcile step (catch-up active, no detail), network (no Save/Catch-up), and replay (one step). The a11y test pins the
+  `<ul>`/`<li>` roles + the visually-hidden status words.
 - **`index-state.svelte.test.ts`**: per-volume aggregation attribution, plus `index-scan-aborted` clearing a volume's
   activity + aggregation (the network-abort stuck-row regression), plus the per-volume `phase` map
   (`index-phase-changed` sets the active phase, `live` / `idle` and an abort clear it, volumes stay independent), plus

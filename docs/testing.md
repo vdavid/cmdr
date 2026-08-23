@@ -52,11 +52,11 @@ Consequences for anyone tuning a lane:
 
 The lever above is applied to the tier-3 a11y tests: the tier went from 214 files to 73 without losing a single test
 (696 tests in the a11y set before and after, five of them the parked `it.skip`s). The biggest single wins were
-`settings/sections/` (24 files to 4, import CPU 47.5 s to 9.2 s) and `lib/indexing/` (7 to 2, import CPU ~50 s to
-~4.5 s); measure a directory in isolation and read its import + transform totals, since the whole-set numbers swing by
-~100 s of CPU run to run on a busy machine. (Measured 2026-08-23, M-series laptop, two or three `pnpm exec vitest run`
-runs per directory.) `a11y-coverage` accepts any `*.a11y.test.ts` in a component's own directory that imports it, so
-merging never weakens the guarantee (`apps/desktop/src/lib/ui/DETAILS.md` § "Adding a component-level a11y test").
+`settings/sections/` (24 files to 4, import CPU 47.5 s to 9.2 s) and `lib/indexing/` (7 to 2, import CPU ~50 s to ~4.5
+s); measure a directory in isolation and read its import + transform totals, since the whole-set numbers swing by ~100 s
+of CPU run to run on a busy machine. (Measured 2026-08-23, M-series laptop, two or three `pnpm exec vitest run` runs per
+directory.) `a11y-coverage` accepts any `*.a11y.test.ts` in a component's own directory that imports it, so merging
+never weakens the guarantee (`apps/desktop/src/lib/ui/DETAILS.md` § "Adding a component-level a11y test").
 
 What's left is a deliberate long tail: nine directories still hold two a11y files each, and merging one saves a single
 file, which is under the measurement noise. Four of those nine are two files on purpose (`lib/indexing/`,
