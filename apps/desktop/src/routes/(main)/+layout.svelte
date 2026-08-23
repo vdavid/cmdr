@@ -154,6 +154,9 @@
                         id: 'crash-report-sent',
                         level: 'info',
                         dismissal: 'persistent',
+                        // The toast names the artifact, and "crash report" is only true when
+                        // the app actually went down with it. `$lib/crash-reporter/crash-copy`.
+                        props: { report },
                     })
                     crashLog.info('Crash report auto-sent')
                 } catch (e) {

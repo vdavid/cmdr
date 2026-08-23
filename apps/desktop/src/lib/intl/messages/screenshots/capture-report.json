@@ -7016,7 +7016,7 @@
       "crashReporter.dialog.reportIdLabel",
       "crashReporter.dialog.send",
       "crashReporter.dialog.showDetails",
-      "crashReporter.dialog.title",
+      "crashReporter.dialog.title.crash",
       "fileExplorer.breadcrumb.navigateTooltip",
       "fileExplorer.columns.ext",
       "fileExplorer.columns.modified",

@@ -28,3 +28,24 @@ export function crashDialogBodyKey(report: { appFate?: AppFate | null }): Messag
       return 'crashReporter.dialog.body.unknown'
   }
 }
+
+/**
+ * Whether this report is about a crash Cmdr actually went down with.
+ *
+ * The dialog title and the sent toast both name the artifact, and "crash report" is false
+ * for a survived panic and unprovable for a report that carries no fate. They split two
+ * ways rather than three, because the two non-crash cases want the identical wording.
+ */
+function isCrash(report: { appFate?: AppFate | null }): boolean {
+  return report.appFate === 'ended'
+}
+
+/** Dialog title. `.ended` keeps the specific "Send crash report?"; the rest go neutral. */
+export function crashDialogTitleKey(report: { appFate?: AppFate | null }): MessageKey {
+  return isCrash(report) ? 'crashReporter.dialog.title.crash' : 'crashReporter.dialog.title.report'
+}
+
+/** The after-auto-send toast, split the same way and for the same reason as the title. */
+export function crashSentToastKey(report: { appFate?: AppFate | null }): MessageKey {
+  return isCrash(report) ? 'crashReporter.sentToast.message.crash' : 'crashReporter.sentToast.message.report'
+}

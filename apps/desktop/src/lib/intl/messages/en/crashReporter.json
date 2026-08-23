@@ -1,8 +1,15 @@
 {
-  "crashReporter.dialog.title": "Send crash report?",
-  "@crashReporter.dialog.title": {
-    "description": "Title of the dialog shown on the next launch after Cmdr crashed, asking permission to send a crash report.",
+  "crashReporter.dialog.title.crash": "Send crash report?",
+  "@crashReporter.dialog.title.crash": {
+    "description": "Title of the dialog shown on the next launch when Cmdr went down with the crash it is reporting. A dialog title, so keep it short. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "crash-report-panic.png"
+  },
+
+  "crashReporter.dialog.title.report": "Send report?",
+  "@crashReporter.dialog.title.report": {
+    "description": "Title of the same dialog when Cmdr did NOT crash: the problem hit a background task and the app carried on, or the report is from an older version that did not record what happened. It must NOT say \"crash\", which is why this is a separate title from the crash one. A dialog title, so keep it short.",
+    "screenshot": "error-report.png",
+    "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
 
   "crashReporter.dialog.body.ended": "Cmdr quit unexpectedly last time. Here''s a crash report with details that can help fix this.",
@@ -25,9 +32,9 @@
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
 
-  "crashReporter.dialog.privacyNote": "It includes the app version, macOS version, and which part of the code crashed. No file names or personal data.",
+  "crashReporter.dialog.privacyNote": "It includes the app version, macOS version, and which part of the code ran into the problem. No file names or personal data.",
   "@crashReporter.dialog.privacyNote": {
-    "description": "Privacy reassurance in the crash-report dialog, listing what the report contains and confirming it has no personal data. \"macOS\" is Apple's OS name (do not translate).",
+    "description": "Privacy reassurance in the crash-report dialog, listing what the report contains and confirming it has no personal data. One string for all three cases of the dialog, so it says the code \"ran into the problem\" rather than \"crashed\": that stays true whether Cmdr went down or carried on. Don't reintroduce a crash word. \"macOS\" is Apple's OS name (do not translate).",
     "screenshot": "crash-report-panic.png"
   },
 
@@ -88,9 +95,16 @@
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
 
-  "crashReporter.sentToast.message": "Crash report sent. Thanks for helping improve Cmdr.",
-  "@crashReporter.sentToast.message": {
-    "description": "Toast confirming the crash report was sent, thanking the user. \"Cmdr\" is the product name (do not translate).",
+  "crashReporter.sentToast.message.crash": "Crash report sent. Thanks for helping improve Cmdr.",
+  "@crashReporter.sentToast.message.crash": {
+    "description": "Toast confirming the report was sent, thanking the user. This is the wording for a report about a crash Cmdr went down with. \"Cmdr\" is the product name (do not translate).",
+    "screenshot": "error-report.png",
+    "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+  },
+
+  "crashReporter.sentToast.message.report": "Report sent. Thanks for helping improve Cmdr.",
+  "@crashReporter.sentToast.message.report": {
+    "description": "The same toast when Cmdr did NOT crash: the problem hit a background task and the app carried on, or the report is from an older version that did not record what happened. It must NOT say \"crash\", which is why this is a separate string. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },

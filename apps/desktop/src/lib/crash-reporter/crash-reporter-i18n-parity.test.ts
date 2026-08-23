@@ -27,9 +27,8 @@ afterAll(() => {
 
 describe('crash-reporter dialog copy parity (en)', () => {
   it('resolves the static dialog strings', () => {
-    expect(tString('crashReporter.dialog.title')).toBe('Send crash report?')
     expect(tString('crashReporter.dialog.privacyNote')).toBe(
-      'It includes the app version, macOS version, and which part of the code crashed. No file names or personal data.',
+      'It includes the app version, macOS version, and which part of the code ran into the problem. No file names or personal data.',
     )
     expect(tString('crashReporter.dialog.reportIdLabel')).toBe('Report ID:')
     expect(tString('crashReporter.dialog.reportIdHelp')).toBe('Mention this if you reach out about the issue.')
@@ -40,6 +39,19 @@ describe('crash-reporter dialog copy parity (en)', () => {
     expect(tString('crashReporter.dialog.dismiss')).toBe('Dismiss')
     expect(tString('crashReporter.dialog.send')).toBe('Send report')
     expect(tString('crashReporter.dialog.sending')).toBe('Sending...')
+  })
+})
+
+describe('crash-reporter dialog title parity (en), two titles for three cases', () => {
+  it('keeps the specific title for a real crash', () => {
+    expect(tString('crashReporter.dialog.title.crash')).toBe('Send crash report?')
+  })
+
+  it('drops the crash word for the two cases that cannot claim one', () => {
+    const title = tString('crashReporter.dialog.title.report')
+    expect(title).toBe('Send report?')
+    // Lowercase-insensitive on the stem, so neither "Crash" nor "crash" slips back in.
+    expect(title).not.toContain('rash')
   })
 })
 
@@ -70,7 +82,13 @@ describe('crash-reporter dialog body copy parity (en), one true sentence per app
 
 describe('crash-reporter sent-toast copy parity (en)', () => {
   it('resolves the toast strings', () => {
-    expect(tString('crashReporter.sentToast.message')).toBe('Crash report sent. Thanks for helping improve Cmdr.')
+    expect(tString('crashReporter.sentToast.message.crash')).toBe('Crash report sent. Thanks for helping improve Cmdr.')
     expect(tString('crashReporter.sentToast.changeSettings')).toBe('Change in Settings > Updates')
+  })
+
+  it('drops the crash word when nothing crashed', () => {
+    const sent = tString('crashReporter.sentToast.message.report')
+    expect(sent).toBe('Report sent. Thanks for helping improve Cmdr.')
+    expect(sent).not.toContain('rash')
   })
 })

@@ -3,6 +3,12 @@
     import Button from '$lib/ui/Button.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { tString } from '$lib/intl/messages.svelte'
+    import { crashSentToastKey } from './crash-copy'
+    import type { CrashReport } from '$lib/tauri-commands'
+
+    // The report that was just auto-sent. It decides whether this toast may say "crash":
+    // a panic the app walked away from didn't crash it. `./crash-copy.ts`.
+    const { report }: { report: CrashReport } = $props()
 
     function handleOpenSettings() {
         dismissToast('crash-report-sent')
@@ -11,7 +17,7 @@
 </script>
 
 <div class="content">
-    <span class="message">{tString('crashReporter.sentToast.message')}</span>
+    <span class="message">{tString(crashSentToastKey(report))}</span>
     <div class="actions">
         <Button size="mini" variant="secondary" onclick={handleOpenSettings}
             >{tString('crashReporter.sentToast.changeSettings')}</Button
