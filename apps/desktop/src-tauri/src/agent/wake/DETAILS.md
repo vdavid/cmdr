@@ -333,22 +333,34 @@ deferred tuning knobs can only be ranked by a support message, and "the agent is
 as a complaint rather than a number. ❌ Every property is categorical: an outcome token, a tier
 token, and coarse count buckets. Never a path, never a folder name, never what the digest said.
 
-## The tap adapter, the one seam still undriven
+## The tap adapter
 
-Everything above is wired except the PRODUCER: nothing calls `channel::send_rollup` yet. The
-adapter that will belongs beside the observer described at the top, and it follows
-`ChurnObserver`'s shape deliberately: that type is passed by `&mut` so a live batch cannot be
-processed without one, and a `churn_monitor/tests.rs` scanner walks every live-batch driver and
-fails when one of them doesn't build a real observer. Inherit both, or the cold-start replay path
-silently taps nothing, which is the failure `live.rs`'s own comment records having already
-happened once.
+The producer, in two halves either side of the crate boundary.
 
-Its whole job is the mapping: `cmdr-index` may never name the agent (`index-crate-isolation`), so
-the rollup crosses on the existing `IndexEvent` seam and `route()` maps it into a
-`FolderActivity`. ⚠️ **The app side must NOT route through managed state**: `route()` takes
-`app: Option<&AppHandle>` and the completeness test calls `route(event, None)`, so a handler
-reaching for `app.state()` would silently drop every bundle. Use `channel::send_rollup`, exactly
-as `PathAccessDenied` uses `restricted_paths::record_denial`.
+**Crate side** (`crates/cmdr-index/src/indexing/watch/activity_monitor.rs`, canonical in that module's
+`../DETAILS.md`): an `ActivityObserver` bundled with `ChurnObserver` into the `BatchObservers`
+that `process_live_batch` takes by `&mut`, so a live batch cannot be processed without one. Two
+source scanners walk every live-batch driver and fail when one doesn't build a real bundle. Both
+guarantees are inherited on purpose, or the cold-start replay path silently taps nothing — the
+failure `live.rs`'s own comment records having happened once already.
+
+**App side** (`events/index_mapping.rs`): `cmdr-index` may never name the agent
+(`index-crate-isolation`), so its rollups cross on the existing `IndexEvent` seam as
+`FolderActivity`, and `route()` maps each one into this module's [`FolderActivity`] and calls
+`send_rollup`. ⚠️ **❌ Never through managed state**: `route()` takes `app: Option<&AppHandle>`,
+the completeness test calls `route(event, None)`, and nothing is registered before
+`agent::start` — so a handler reaching for `app.state()` would drop every rollup in the test AND
+through launch replay. `PathAccessDenied` → `restricted_paths::record_denial` is the precedent.
+
+**What the counters mean, and the one decision behind them.** The crate reduces each event's
+flags to a single kind with a documented priority: **renamed, then created, then removed, then
+modified**. The flags are not one-hot (a coalesced event can carry created, removed, and renamed
+at once), and a different order moves `intent_share()` materially, so it is a decision rather
+than a detail. Three of the four counters would otherwise be unreachable at the tap's placement:
+matched renames leave the batch in the inode pre-pass, storm removals are dropped for a subtree
+rescan (the anchor contributes one `removed` instead), and directory creations sit in their own
+vector. A directory's own event counts in its PARENT, matching this module's rule that a bundle
+describes the folder a change happened IN.
 
 **Every `WakeReadiness` gap is a state the indicator renders with an action; none of them is
 silence.** A user who declined Full Disk Access and a user with a tidy Downloads folder otherwise
@@ -360,12 +372,3 @@ column is already `notification` on every one, so filtering needs no schema work
 between filtering the default view and giving them their own affordance is a product call nobody
 has made.
 
-**Every `WakeReadiness` gap is a state the indicator renders with an action; none of them is
-silence.** A user who declined Full Disk Access and a user with a tidy Downloads folder
-otherwise see the identical nothing, and only one of those is the feature working.
-
-**A wake creates a conversation, so wake threads appear in the rail session list.** Ten wakes
-over a quiet week is ten threads the user never started, interleaved with their own. The
-`origin` column is already `notification` on every one, so filtering needs no schema work; the
-choice between filtering the default view and giving them their own affordance is a product
-call nobody has made.

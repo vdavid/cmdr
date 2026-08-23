@@ -15,9 +15,8 @@
 //! ## What this module deliberately does not do
 //!
 //! - ❌ **No event subscription.** [`FolderEvent`] is this module's own vocabulary, not the
-//!   indexer's type. Where the agent taps the indexer's corrected stream is an open design
-//!   question (agent-spec §18.14), and taking a value keeps it open rather than answering it by
-//!   accident.
+//!   indexer's type. The tap crosses the crate boundary on the `IndexEvent` seam and `route()`
+//!   maps into this vocabulary, so the pure core never names an indexer type.
 //! - **No inbox, no deadlines held anywhere, no wake job, no LLM.** [`wake_delay`] turns an
 //!   interest score into a delay and hands it back; whoever owns a clock does the waiting.
 //!
@@ -99,8 +98,8 @@ pub enum ChangeKind {
 
 /// One already-corrected change, in this module's own vocabulary.
 ///
-/// Deliberately NOT the indexer's event type: the tap point is undesigned (agent-spec §18.14),
-/// and a value here means the answer stays open. Whoever wires the stream later maps into this.
+/// Deliberately NOT the indexer's event type: a value here keeps the pure core free of any
+/// indexer vocabulary, and `route()` does the mapping at the boundary.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FolderEvent {
     /// The folder the change happened IN, not the changed path. The pipeline counts per folder.

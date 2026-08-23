@@ -26,14 +26,34 @@ silently: a variant could map to `"index-scan-started"` in the table while emitt
 wire, and every test would still pass. Here the name comes from `E::NAME` on the payload the arm just emitted, so a
 test reading it is reading what shipped.
 
-`Destination` has three variants:
+`Destination` names every place an event can end up, one variant each:
 
 - `Frontend(&'static str)` — a Tauri event under that wire name.
 - `ErrorReport` — routed to `raise`, which renders the report and calls `log_error!`.
 - `RestrictedPaths` — routed to `restricted_paths::record_denial`, which filters to known TCC prefixes itself.
+- `AnalyticsOnly` — taken off the stream by `analytics/first_index.rs` before routing; nothing renders it.
+- `AgentWake` — `FolderActivity`'s rollups, handed to `agent::wake::send_rollup`.
+
+❌ A new host-side destination never reuses a neighbour. This enum's whole job is saying where an event went, so a
+shared variant makes the one type that answers that question lie.
 
 `app: None` is the test seam: it skips the `payload.emit(app)` call and changes nothing else, so a test exercises the
-real routing (including both host-side arms) with no app. `TauriEventSink::emit` is `route(event, Some(&self.app))`.
+real routing (including every host-side arm) with no app. `TauriEventSink::emit` is `route(event, Some(&self.app))`.
+
+## The tap adapter (`FolderActivity`)
+
+The one arm that feeds another subsystem rather than a UI or a report. `cmdr-index` may never name the agent
+(`index-crate-isolation`), so its per-batch, per-folder rollups cross on the `IndexEvent` seam and this arm maps each
+one into an `agent::wake::FolderActivity`.
+
+Two rules it must keep, both of which fail silently if broken:
+
+- ⚠️ **Through the process-global channel, ❌ never `app.state()`.** `app` is `None` in the completeness test and in
+  every window before `agent::start` registers anything, including launch replay — the busiest window the tap will ever
+  see. `PathAccessDenied` → `restricted_paths::record_denial` is the precedent.
+- ⚠️ **This runs on the LIVE-LOOP thread**, synchronously, because `emit` calls `route` on the caller's thread.
+  `send_rollup` takes no lock and opens no connection. The importance lookup, the quantization, and the admit all
+  happen on the wake loop's own thread; canonical rationale is `agent/wake/DETAILS.md`.
 
 ## `raise` — the error-report rendering
 

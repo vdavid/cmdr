@@ -6,6 +6,7 @@ mod inbox;
 mod interest;
 mod job;
 mod readiness;
+mod tap;
 
 use super::*;
 

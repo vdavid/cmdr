@@ -372,6 +372,11 @@ pub enum Destination {
     /// frontend has no use for it: what it renders is the size that appears, not
     /// the marker behind it.
     AnalyticsOnly,
+    /// The agent's wake loop, through its process-global channel
+    /// (`agent::wake::send_rollup`). ❌ Its own variant rather than
+    /// [`AnalyticsOnly`](Self::AnalyticsOnly): this enum's whole job is saying
+    /// where an event went, and reusing a neighbour would make it lie.
+    AgentWake,
 }
 
 /// Emit `payload` if there's an app to emit it to, and report its wire name.
@@ -557,6 +562,43 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
         IndexEvent::PathAccessDenied { path } => {
             crate::restricted_paths::record_denial(&path);
             Destination::RestrictedPaths
+        }
+        // The tap adapter: the index's per-folder rollups become the agent's own
+        // vocabulary and go straight into the wake loop's channel.
+        //
+        // ⚠️ **Through the process-global, ❌ never `app.state()`.** `app` is
+        // `None` in the completeness test and on every call from a sink built
+        // before a handle exists, so a handler reaching for managed state would
+        // silently drop every rollup in exactly the window the tap matters most
+        // (launch replay). `PathAccessDenied` above is the precedent.
+        //
+        // ⚠️ **This runs on the LIVE-LOOP thread**, synchronously: `emit` calls
+        // `route` on the caller's thread. `send_rollup` takes no lock, opens no
+        // connection, and returns; the importance lookup and the admit happen on
+        // the wake loop's own thread.
+        IndexEvent::FolderActivity {
+            volume_id,
+            observed_at,
+            folders,
+        } => {
+            for rollup in folders {
+                crate::agent::wake::send_rollup(crate::agent::wake::FolderActivity {
+                    volume_id: volume_id.clone(),
+                    folder: rollup.folder,
+                    counters: crate::agent::wake::ChangeCounters {
+                        created: rollup.created,
+                        modified: rollup.modified,
+                        removed: rollup.removed,
+                        renamed: rollup.renamed,
+                    },
+                    // The batch's own instant. The APP floors it to the wake
+                    // window on the far side of the channel, which is why the
+                    // crate reports an instant and not a window start.
+                    observed_at,
+                    last_event_at: rollup.last_event_at,
+                });
+            }
+            Destination::AgentWake
         }
     }
 }
