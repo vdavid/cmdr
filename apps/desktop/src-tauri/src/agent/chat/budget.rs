@@ -660,13 +660,15 @@ mod tests {
         assert!(
             on_the_floor < crate::agent::memory::MEMORY_DIR_MAX_BYTES as usize,
             "a memory file at its disk cap must be CUT at the smallest window, not carried whole: \
-             {on_the_floor} bytes of a {floored}-token budget"
+             {} of a {floored}-token budget",
+            crate::pluralize::pluralize(on_the_floor as u64, "byte")
         );
         let workable = floored - FIXED_PROMPT_OVERHEAD_TOKENS;
         assert!(
             on_the_floor / CHARS_PER_TOKEN_ESTIMATE * 5 < workable,
             "memory must leave the conversation the bulk of what the prefix didn't take: \
-             {on_the_floor} bytes against {workable} workable tokens"
+             {} against {workable} workable tokens",
+            crate::pluralize::pluralize(on_the_floor as u64, "byte")
         );
         assert!(
             memory_slice_bytes(PROMPT_BUDGET_60K) > on_the_floor,

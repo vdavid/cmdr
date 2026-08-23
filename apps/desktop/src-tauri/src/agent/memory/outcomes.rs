@@ -139,6 +139,7 @@ mod tests {
             text = fold(&text, &entry(n));
             assert!(
                 text.len() <= OUTCOMES_MAX_BYTES,
+                // allowed-pluralize-noun: assertion message; the loop only reaches it past the cap, never at n == 1.
                 "the ring reached {} bytes after {n} decisions",
                 text.len()
             );

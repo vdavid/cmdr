@@ -112,8 +112,10 @@ fn detail_of(refusal: &MemoryRefusal) -> String {
         // what the tools may claim, which is the folder minus the decision ring's reserve, and
         // quoting the bigger number would send the model pruning to a ceiling it can't reach.
         MemoryRefusal::DirectoryFull { used, cap, wanted } => format!(
-            "Memory is full: {used} bytes of {cap} used, and this write wants {wanted}. \
-             Prune what has gone stale with memory_edit, then write again."
+            "Memory is full: {} of {cap} used, and this write wants {}. \
+             Prune what has gone stale with memory_edit, then write again.",
+            crate::pluralize::pluralize(*used, "byte"),
+            crate::pluralize::pluralize(*wanted, "byte")
         ),
         MemoryRefusal::NoSuchFile => "There is no such memory file yet. Use memory_write to start it.".to_string(),
         MemoryRefusal::NoMatch => {
@@ -121,6 +123,7 @@ fn detail_of(refusal: &MemoryRefusal) -> String {
                 .to_string()
         }
         MemoryRefusal::NotUnique { matches } => format!(
+            // allowed-pluralize-noun: a non-unique match is two or more by definition, so "1 times" is unreachable.
             "That text appears {matches} times, so nothing was changed. Include enough surrounding lines to \
              pick out the one you mean."
         ),

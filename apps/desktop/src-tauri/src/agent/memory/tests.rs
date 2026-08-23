@@ -433,6 +433,7 @@ fn the_decision_ring_stays_inside_its_reserve() {
 
     for n in 0..300 {
         store.record_outcome(&format!(
+            // allowed-pluralize-noun: synthetic fixture text, sized to fill the ring; nobody reads it.
             "2026-08-23 approved: trash {n} files under /Users/x/Downloads"
         ));
     }
