@@ -13,8 +13,9 @@ const websiteBundleBaselineRel = "scripts/check/checks/website-bundle-size-basel
 
 const websiteBundleBaselineComment = "Baseline for the website-bundle-size check (warn-only). " +
 	"Asset names are content-hash-normalized (About.DvK3R9p1.css → About.*.css) so rebuilds compare stably. " +
-	"A local run ratchets totalBytes down when dist/ shrinks; raising it needs David's OK: " +
-	"delete this file and run `pnpm check bundle-size` against a fresh build to regenerate."
+	"A local run ratchets totalBytes down when dist/ shrinks. Raising it is FINE without asking, unlike most " +
+	"allowlists here: delete this file and run `pnpm check bundle-size` against a fresh build to regenerate. The warn " +
+	"at the moment of growth is the signal; the number is only a record of where the bundle stands."
 
 func websiteBundleSpec(rootDir string) bundleSizeSpec {
 	return bundleSizeSpec{

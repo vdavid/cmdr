@@ -575,9 +575,8 @@
      */
     const windowServicesCtx: WindowServicesContext = {
         getExplorer: () => explorerRef,
-        // Menu items are a user gesture, so they absorb a rejection like the keyboard does.
+        // A user gesture absorbs a rejection; the MCP adapter is the one caller that needs it (why: the interface).
         dispatch: dispatchFromUi,
-        // The MCP adapter is the one caller that needs the rejection itself.
         dispatchForMcp: handleCommandExecute,
         dialogs: {
             setAboutWindow: (show: boolean) => {

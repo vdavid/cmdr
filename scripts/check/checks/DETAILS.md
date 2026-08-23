@@ -539,9 +539,10 @@ means zero new CI-contract surface (both E2E checks already carry `NotInCI` reas
 website's `dist/` total against `website-bundle-size-baseline.json` and warns when it grows more than 10%, listing the
 largest assets with their baseline sizes. Asset names are content-hash-normalized (`About.DvK3R9p1.css` → `About.*.css`)
 so rebuilds compare stably. The baseline follows the file-length ratchet discipline: local runs rewrite it downward when
-`dist/` shrinks past the 10% band; raising it is always deliberate — delete the baseline file and run
-`pnpm check bundle-size` against a fresh build (needs David's OK). A missing baseline is created on the spot locally and
-reported as a warning in CI.
+`dist/` shrinks past the 10% band; raising it is a deliberate act but needs no approval — delete the baseline file and
+run `pnpm check bundle-size` against a fresh build. A missing baseline is created on the spot locally and reported as a
+warning in CI. The same exemption covers `desktop-bundle-size`; the reasoning is in
+`.claude/rules/file-length-allowlist.md`.
 
 ## Allowlist shrink-wrap
 

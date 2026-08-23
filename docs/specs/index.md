@@ -45,9 +45,8 @@ left, so the durable intent survives the wipe.
 - [ ] 2026-08-23 `later/ai/wake-loop-follow-ups.md` - What the shipped proactive agent deliberately left. Two interest
       tuning knobs and three cadence constants that want a week of real wakes before anyone moves them (the per-outcome
       log line and analytics event exist for exactly that), reading file contents, a thread-timeline event for a
-      chat-memory-size change (half a day, unblocked), the rail not refetching on a decision, and two chores needing a
-      machine with a foreground: the consent screenshots, and one look at an 11% frontend bundle jump before its
-      baseline is refreshed.
+      chat-memory-size change (half a day, unblocked), the rail not refetching on a decision, and one chore needing a
+      machine with a foreground: the consent screenshots.
 - [ ] 2026-08-20 `later/i18n-screenshot-gaps.md` - Translator-screenshot coverage: which catalog families are still
       uncoupled, why each resists capture, and what closing it takes. Stands at **2,101 / 2,989 keys (70%)**: 1,200
       direct plus 901 representative, over 132 captured surfaces with none failed. The percentage fell from the shipped

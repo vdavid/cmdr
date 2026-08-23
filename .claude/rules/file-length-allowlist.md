@@ -18,5 +18,9 @@ rules per subsystem, and a rule earns its place on whether the invariant is wort
 Encoding an invariant in a type is still better than writing a rule about it; the count just isn't the thing that
 decides.
 
+**The two bundle-size baselines are exempt too** (`desktop-bundle-size`, `website-bundle-size`): delete the baseline
+file, re-run the check, no need to ask. The warn at the moment of growth is the signal, and you still report it; the
+stored number only records where the bundle stands.
+
 Per-allowlist mechanics and the `exempt` section (generated files like `bindings.ts`):
 `scripts/check/checks/DETAILS.md`.

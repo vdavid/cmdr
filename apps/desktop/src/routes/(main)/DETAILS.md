@@ -35,6 +35,14 @@ here:
   Tauri (the Playwright smoke tests) and the handlers have to survive that. `stopWindowServices()` drains both plus the
   module-owned `unlistenFns` array. Same context discipline as `listener-setup.ts`: getters in, callbacks out, no
   captured `$state`.
+- **The window hands out TWO dispatchers, and which one a caller gets is a correctness question.** `dispatchFromUi`
+  absorbs the rejection: a few handlers reject on purpose, a user gesture has nobody to hand that to, and the handler
+  has already said its piece in a toast, so the alternative is an unhandled rejection. `handleCommandExecute` propagates
+  it, and the MCP adapter is the one caller that needs it — several tools refuse BY rejecting (`select` naming a file
+  that isn't in the listing, `pane.refresh` when a re-read outlives its wait), and the adapter turns that throw into the
+  `mcp-response` error an agent reads. ❌ Hand the adapter the absorbing one and every such refusal reports `ok: true`
+  instead, silently. `WindowServicesContext` carries both (`dispatch`, `dispatchForMcp`); `mcp-agent-tools.spec.ts` §
+  "honest errors" is what catches the mix-up.
 - **`command-dispatch-context.ts` is deliberately a LEAF**, importing nothing from the core or the handlers, so handler
   modules and `command-dispatch.ts` can both import the context types without a cycle. It's re-exported from
   `command-dispatch.ts` for callers.

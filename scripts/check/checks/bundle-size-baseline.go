@@ -209,7 +209,7 @@ func runBundleSizeCheck(ctx *CheckContext, spec bundleSizeSpec) (CheckResult, er
 		for _, line := range describeTopAssets(scan.assets, baseline.TopAssets) {
 			msg += "\n  - " + line
 		}
-		msg += fmt.Sprintf("\nIf the growth is intended, refresh the baseline: delete %s and run `%s` (raising it needs David's OK).",
+		msg += fmt.Sprintf("\nIf the growth is intended, refresh the baseline: delete %s and run `%s`. No need to ask first.",
 			spec.baselineRel, spec.refreshCmd)
 		return CheckResult{Code: ResultWarning, Message: msg, Total: -1, Issues: -1, Changes: -1}, nil
 

@@ -35,14 +35,10 @@ Each item says what it costs and what would trigger it. None of them blocks anyt
   limitation the wake digest has. A naive subscription would refetch for every decision whether or not it concerns the
   open thread; the fix wants the conversation-keyed filter the turn stream already uses.
 
-## Two chores that need a machine with a foreground
+## One chore that needs a machine with a foreground
 
 - **`pnpm i18n:shots` has never run against the new consent copy.** It refuses when another app holds the front
   position, so it cannot run on the headless agent box. The five new `askCmdr.consent.*` keys carry
   `@key.screenshot: ask-cmdr-consent.png` by hand, which is correct for the surface they render on and keeps
   `message-screenshots-fresh` green, but they read as uncoupled in the generated `coverage-report.md` until a capture
   runs.
-- **The frontend bundle grew 11.1% over its baseline** (6.2 MB against 5.5 MB, `desktop-bundle-size`, warn-only). Some
-  of that is the surfaces this effort added, but the growth is larger than the added components and roughly 60 new
-  catalog strings explain, and it is concentrated in the one shared chunk that inlines every locale. Worth one look
-  before the baseline is refreshed, so an accidental eager import is not baselined in as intended growth.

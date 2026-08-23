@@ -23,8 +23,9 @@ const desktopBundleBaselineRel = "scripts/check/checks/desktop-bundle-size-basel
 const desktopBundleBaselineComment = "Baseline for the desktop-bundle-size check (warn-only). " +
 	"Measures the SvelteKit output the Tauri app embeds, built fresh into a private dir so it never touches apps/desktop/build/. " +
 	"Asset names are content-hash-normalized (chunks/AbC12345.js → chunks/*.js) so rebuilds compare stably. " +
-	"A local run ratchets totalBytes down when the bundle shrinks; raising it needs David's OK: " +
-	"delete this file and run `pnpm check desktop-bundle-size` to regenerate."
+	"A local run ratchets totalBytes down when the bundle shrinks. Raising it is FINE without asking, unlike most " +
+	"allowlists here: delete this file and run `pnpm check desktop-bundle-size` to regenerate. The warn at the moment " +
+	"of growth is the signal; the number is only a record of where the bundle stands."
 
 // desktopBundleOutDir is where this check builds, deliberately NOT
 // `apps/desktop/build/`. That directory is the one the Tauri build embeds and
