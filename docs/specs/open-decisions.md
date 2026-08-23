@@ -69,8 +69,13 @@ design.
     frontend's 0.87, and it is also the codebase's top bug source. `AGENTS.md` says the fix is to make each invariant
     unrepresentable in a type rather than to raise the number. Worth scheduling rather than letting it drift.
 
-12. **A per-test duration budget for the Rust suites**, mirroring the two seconds E2E already enforces. ⚠️ **Not
-    decidable yet.** The figure everyone quotes (16 of about 4,900 tests over two seconds) cannot currently be
-    re-derived, because until the ANSI fix landing alongside this restructure, nextest's coloured output made every
-    line-anchored parser match almost nothing: a recent `rust-tests` run logged 32 of about 4,900 tests. Land the fix,
-    take one clean full run, then decide against real numbers.
+12. **A per-test duration budget for the Rust suites**, mirroring the two seconds E2E already enforces. **Recommend:
+    build it, but budget the MARGIN, not the duration.** The blocker is gone: one clean full run on 2026-08-23 is 6,599
+    tests in 26 s wall clock, with **12 over two seconds**, three over three, and one over five. (`~/cmdr-test-log.csv`
+    logs only about 30 passes per run because `testLogSlowSeconds` is 1.0 s, which is by design, not the parser bug this
+    entry used to suspect.) What a flat two-second rule would buy is the wrong thing, though: of the four causes behind
+    every Rust flake measured this month, three have no duration signal at all (0.25 s, 1.6 s, and a config fact with no
+    runtime), while the fourth ranks perfectly by **cap ÷ idle runtime** — every test two saturated full-suite runs
+    killed sits at the thin end of that ratio, topped by `busy_db_is_retried_not_deleted` at **1.4×**, which no duration
+    rule catches without also catching a dozen honest two-second tests. Seeding a margin ratchet still needs David's OK
+    (it's a new allowlist). Evidence: `docs/notes/rust-test-flake-analysis-2026-08-23.md`.

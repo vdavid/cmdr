@@ -422,6 +422,12 @@ individual test, on the red path as well as the green one, carrying its status (
 duration, and attempt. Fast clean passes are dropped so the file stays small, so absence means "fast, or never ran",
 never "passed". Schema, covered lanes, and ready-made ranking queries: `scripts/check/DETAILS.md` § "The per-test log".
 
+❗ Two ways a naive ranking over those logs lies, both of which have produced a wrong analysis: a FAIL RATE over
+`~/cmdr-test-log.csv` is conditioned on the test also being slow (every non-pass is kept, only passes over 1.0 s are),
+so compare failure COUNTS; and the verdict message in `~/cmdr-check-log.csv` carries a test's path AS IT WAS, so a
+module move splits one test's history across two names and a test in an integration-test binary carries no `::` at all.
+Worked example, plus what the numbers turned out to mean: `docs/notes/rust-test-flake-analysis-2026-08-23.md`.
+
 ### Caps are not runtimes
 
 A per-test `slow-timeout` in `.config/nextest.toml` is a hang backstop, typically 20-50x the real runtime. Don't quote
@@ -434,6 +440,12 @@ machine** against the default 8 s cap: a 2.4x margin, not the 10x the cap sugges
 tests starvation kills. And the headline offender of that analysis, `dropping_a_file_emits_one_event`, was already on a
 20 s cap with `real-notify` serialization, so its 17.75 s burn was against 20 s rather than the assumed 8 s. **Measure
 the test; never derive either direction from the cap.**
+
+The quantity that predicts a starvation kill is the **margin**, cap ÷ idle runtime. Every test two saturated full-suite
+runs killed on 2026-08-23 sat at the thin end of it, and the suite's thinnest is
+`indexing::store::tests::open_and_recover::busy_db_is_retried_not_deleted` at **1.4×** (5.55 s under the global 8 s
+cap). Raw duration doesn't predict it: the SMB test that failed most often all month cost 0.25 s idle. Full table:
+`docs/notes/rust-test-flake-analysis-2026-08-23.md`.
 
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 

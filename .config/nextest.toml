@@ -23,6 +23,15 @@
 # bar is high: the test must exercise something that can't be made faster
 # without losing coverage (a real network call, a build artifact materialisation,
 # etc.). "It just takes that long" is not a reason — refactor the test instead.
+#
+# ❗ Every `test(x)` below is a SUBSTRING match on a test's FULL path, so a filter
+# spelling a module path stops matching the moment that module moves — and nextest
+# says nothing. Its tests silently fall back to the 8 s cap and full parallelism,
+# and the symptom is a flake weeks later that reads like host contention. Three
+# refactors detached seven filters that way in five weeks. `nextest-filter-coverage`
+# now fails on a filter that selects nothing, so RENAMING a test module means
+# running `pnpm check nextest-filters`, not hoping. Prefer a bare test name over a
+# module path where one is unique: it survives the move.
 
 [test-groups]
 # NOTE: there is deliberately no `virtual-mtp` group. Virtual-MTP tests used to

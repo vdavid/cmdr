@@ -15,6 +15,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing for a decision that hasn't been made yet:**
 
+- `rust-test-flake-analysis-2026-08-23.md` — what actually makes the Rust lanes go red, measured rather than assumed,
+  and the numbers `docs/specs/open-decisions.md` item 12 needed. **The recommendation is to budget a test's MARGIN
+  (per-test cap ÷ idle runtime), not its duration**: every test two saturated full-suite runs killed sits at the thin
+  end of that ratio, while three of the four causes found have no duration signal at all. Read it before anyone seeds a
+  duration allowlist, and read the first section regardless: it carries the two ways `~/cmdr-test-log.csv` and
+  `~/cmdr-check-log.csv` mislead a naive top-offenders query.
 - `sftp-crate-evaluation-2026-08-22.md`: which Rust crate the SFTP backend gets built on, with each candidate's source
   read rather than its README. **The recommendation is `russh` + `openssh-sftp-client`**, and the reasoning is written
   out so it can be argued with. Read it before anyone proposes `russh-sftp` (the popular default) or a libssh2 binding:

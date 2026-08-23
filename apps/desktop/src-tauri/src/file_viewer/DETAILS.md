@@ -324,7 +324,7 @@ when the file is idle (no events). Without it, `recv` would block forever and th
 `watcher_observes_inode_replace` cover the four classifications against a live stream. ❌ Don't add a second test that
 subscribes and waits for a `Grew`: the watcher observes the FILESYSTEM, so which thread, task, or runtime wrote the
 bytes is invisible to it, and a duplicate only adds another live FSEvents stream to the serialized `real-notify` group.
-A separate `tests/viewer_tail_integration.rs` binary made exactly that mistake and failed 22 of 113 sampled runs
+A separate integration-test binary in the app crate made exactly that mistake and failed 22 of 113 sampled runs
 (2026-08-09 to 2026-08-23) while these four never failed once.
 
 ## Key decisions

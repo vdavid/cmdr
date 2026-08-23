@@ -39,9 +39,7 @@ ordering. Invoked via `pnpm check` at the repo root. Check authoring: `checks/CL
   `/tmp/cmdr-smb-leases`: a sibling worktree on older code holds a lease there.
 - **The lane's filter comes from one fixture table** (`checks/fixture-lane-coverage.go`), which
   `desktop-fixture-lane-coverage` guards. ❌ Never name a `package(x)` for a crate not yet on disk: nextest fails to
-  PARSE the filterset and the lane dies. An unmatched `test(prefix)` is fine there, but ❌ never in
-  `.config/nextest.toml`: a per-test override matching nothing drops its tests back to the global 8 s cap and full
-  parallelism in silence. `nextest-filter-coverage` fails on one.
+  PARSE the filterset and the lane dies. An unmatched `test(prefix)` is fine here.
 - **cmdr's SMB stack binds host ports 11480+, not smb2's default 10480+**, so both harnesses coexist
   (`checks.ApplySmbPortEnv()`); ❌ don't revert to the default range.
 - **An auto-fixer rewriting a COMMITTED file is a green local run and a red CI one** (CI only checks formatting). The
