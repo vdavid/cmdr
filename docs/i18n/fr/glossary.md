@@ -1813,3 +1813,18 @@ Trois décisions prises sur preuves de la pile de référence, dont une correcti
   high.
 - **`crashReporter.dialog.privacyNote` était déjà neutre** (« la partie du code concernée »), donc la valeur ne bouge
   pas alors que l'anglais est passé de « crashed » à « ran into the problem ». Seule l'empreinte a été rafraîchie.
+
+## Le texte du réglage des rapports couvre désormais les deux cas (`settings.updates.crashReports.description`)
+
+Le réglage envoie aussi un rapport quand un problème en arrière-plan n'a PAS fait quitter l'app, donc l'aide ne peut
+plus parler seulement d'une fermeture. Tout est repris de la section du dialogue d'incident ci-dessus, au présent :
+
+- **`quand Cmdr quitte inopinément`** applique enfin la CORRECTION attestée (`fr/macOS/AppKit/AppKitErrors.json`) à
+  cette clé, à la place de `se ferme de façon inattendue`, la paraphrase non attestée qu'elle traînait encore · high.
+- **`rencontre un problème en arrière-plan`** vient de `crashReporter.dialog.body.keptRunning` · high.
+- **`un rapport` tout court**, pas `un rapport d''incident` : la phrase couvre les deux cas, même opération que
+  `.title.report` · high. ❌ Le LIBELLÉ `settings.updates.crashReports.label` garde `Envoyer les rapports d''incident` :
+  c'est le nom du réglage.
+- **Deuxième phrase reprise de `crashReporter.dialog.privacyNote`** (`la partie du code concernée`), à la place de
+  `l''emplacement de l''incident`, vrai seulement en cas de plantage · high. La virgule de série que l'ancienne valeur
+  avait héritée de l'anglais disparaît au passage : le français ne l'utilise pas (règle déjà notée plus haut).

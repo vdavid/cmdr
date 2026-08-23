@@ -1490,3 +1490,16 @@ Giá trị đã chốt:
   "ran into the problem": bản tiếng Việt vốn đã trung tính. Chỉ làm mới dấu vân nguồn.
 - **`báo cáo sự cố` mới là "crash report"** · nên "a report" (không có "crash") phải là `báo cáo` trần. Tiêu đề và thông
   báo xác nhận cắt y hệt: `Gửi báo cáo sự cố?` / `Gửi báo cáo?`, `Đã gửi báo cáo sự cố. …` / `Đã gửi báo cáo. …` · high.
+
+## Mô tả cài đặt gửi báo cáo giờ đúng cho cả hai kết cục (`settings.updates.crashReports.description`)
+
+Công tắc này vẫn gửi báo cáo khi một panic ở chế độ nền KHÔNG làm ứng dụng thoát, nên phần trợ giúp không thể chỉ nói
+tới việc Cmdr thoát nữa. Mọi thành phần lấy từ mục hộp thoại báo cáo sự cố ở trên:
+
+- **`khi Cmdr thoát bất ngờ`** lấy từ `crashReporter.dialog.body.ended` (đã theo Apple, `AppKitErrors.json`) · high.
+- **`gặp sự cố ở chế độ nền`** lấy từ `.keptRunning` · high. Tiếng Việt không chia thì, nên câu ở đây dùng đúng động từ
+  ấy, không cần đổi gì.
+- **`báo cáo` trần**, không phải `báo cáo sự cố`, vì câu bao cả hai kết cục — đúng phép cắt như `.title.report` · high.
+  ❌ NHÃN `settings.updates.crashReports.label` giữ nguyên `Gửi báo cáo sự cố`: đó là tên của cài đặt.
+- **Câu thứ hai lấy từ `crashReporter.dialog.privacyNote`** (`phần mã nào đã gặp sự cố`), thay cho `vị trí sự cố`, vốn
+  chỉ đúng khi ứng dụng thật sự đã thoát · high.

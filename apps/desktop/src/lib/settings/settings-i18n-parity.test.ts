@@ -117,3 +117,23 @@ describe('settings catalog string parity (en)', () => {
     expect(tString('settings.control.resetToDefault')).toBe('Reset to default')
   })
 })
+
+/**
+ * The crash-report setting's description is the only place outside the dialog that
+ * tells the user WHEN a report goes out, and since the app survives a background
+ * panic (`crash_reporter/survival.rs`), "when Cmdr quits" no longer covers it: a
+ * survived panic that wasn't already reported in-session still becomes an auto-sent
+ * report. The description has to be true for both fates, the same way
+ * `crashReporter.dialog.body.*` splits into one true sentence per fate.
+ */
+describe('crash-report setting description (en), true for both app fates', () => {
+  it('names the background problem the app keeps running through, not only a quit', () => {
+    const description = getSettingDefinition('updates.crashReports')?.description
+    expect(description).toBe(
+      'Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, macOS version, and where in the code the problem happened. Never file names or personal data.',
+    )
+    // The regression to catch: scoping the sentence back to quitting, which would
+    // describe only one of the two cases that actually send a report.
+    expect(description).not.toContain('quits unexpectedly')
+  })
+})

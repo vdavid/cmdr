@@ -1147,9 +1147,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "Stuur automatisch crashrapporten wanneer Cmdr onverwachts stopt. Bevat de app-versie, macOS-versie en crashlocatie. Nooit bestandsnamen of persoonlijke gegevens.",
+  "settings.updates.crashReports.description": "Stuur automatisch een rapport wanneer Cmdr onverwachts stopt of op de achtergrond een probleem tegenkomt. Bevat de appversie, de macOS-versie en welk deel van de code het probleem tegenkwam. Nooit bestandsnamen of persoonlijke gegevens.",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "6c74422"
+    "sourceHash": "e726766"
   },
   "settings.updates.errorReports.label": "Foutrapporten automatisch sturen",
   "@settings.updates.errorReports.label": {

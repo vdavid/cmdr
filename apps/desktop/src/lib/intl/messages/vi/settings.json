@@ -1141,9 +1141,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "Tự động gửi báo cáo sự cố khi Cmdr thoát bất ngờ. Gồm phiên bản ứng dụng, phiên bản macOS, và vị trí sự cố. Không bao giờ gồm tên tệp hay dữ liệu cá nhân.",
+  "settings.updates.crashReports.description": "Tự động gửi báo cáo khi Cmdr thoát bất ngờ hoặc gặp sự cố ở chế độ nền. Gồm phiên bản ứng dụng, phiên bản macOS, và phần mã nào đã gặp sự cố. Không bao giờ gồm tên tệp hay dữ liệu cá nhân.",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "6c74422"
+    "sourceHash": "e726766"
   },
   "settings.updates.errorReports.label": "Tự động gửi báo cáo trục trặc",
   "@settings.updates.errorReports.label": {

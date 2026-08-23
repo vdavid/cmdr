@@ -1685,3 +1685,18 @@ le, tehát egyikük sem állíthatja, hogy leállt.
   (`crashReporter.dialog.title` = „Send crash report?” = `Elküldöd az összeomlási jelentést?`), tehát a `keptRunning`
   ágon a cím összeomlást állít, miközben a törzs éppen ezt tagadja. A magyar hűen követi az angolt; a feloldás az `en`
   kulcs dolga.
+
+## A jelentésküldés beállításszövege már mindkét kimenetelre igaz (`settings.updates.crashReports.description`)
+
+A kapcsoló akkor is küld jelentést, ha egy háttérbeli panic NEM zárta be az appot, tehát a súgószöveg nem szólhat csak a
+váratlan bezárulásról. Minden elem a fenti összeomlásjelentő-szakaszból jön, jelen időben:
+
+- **`ha a Cmdr váratlanul bezárul`** a `crashReporter.dialog.body.ended` igéjéből (`váratlanul bezárult`, AppKit), a
+  kulcs korábbi `váratlanul kilép` alakja helyett: a két felület így ugyanazt az igét mondja ugyanarra a kimenetelre ·
+  high.
+- **`a háttérben problémába ütközik`** a `.keptRunning`-ból, ugyanazzal a szórenddel (topik + módosító + fókusz + ige) ·
+  high. A jelen idő puszta morfológia, nem új termdöntés.
+- **`egy jelentést`** az `összeomlás-` jelző nélkül, mert a mondat mindkét esetre vonatkozik · high. ❌ A CÍMKE
+  (`settings.updates.crashReports.label`) marad `Összeomlás-jelentések küldése`: az a beállítás neve.
+- **A második mondat a `crashReporter.dialog.privacyNote`-ból jön** (`hogy a kód melyik része ütközött a problémába`),
+  az `összeomlás helye` helyett, ami csak összeomláskor volt igaz · high.

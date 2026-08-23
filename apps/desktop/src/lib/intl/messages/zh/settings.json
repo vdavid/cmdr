@@ -1143,9 +1143,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "当 Cmdr 意外退出时自动发送崩溃报告。包含 App 版本、macOS 版本和崩溃位置。绝不包含文件名或个人数据。",
+  "settings.updates.crashReports.description": "当 Cmdr 意外退出或在后台出现问题时，自动发送一份报告。包含应用版本、macOS 版本，以及代码中出现问题的部分。绝不包含文件名或个人数据。",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "6c74422"
+    "sourceHash": "e726766"
   },
   "settings.updates.errorReports.label": "自动发送错误报告",
   "@settings.updates.errorReports.label": {

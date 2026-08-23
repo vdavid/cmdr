@@ -1146,9 +1146,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "Skicka automatiskt kraschrapporter när Cmdr avslutas oväntat. Innehåller appversion, macOS-version och kraschplats. Aldrig filnamn eller personuppgifter.",
+  "settings.updates.crashReports.description": "Skicka automatiskt en rapport när Cmdr avslutas oväntat eller stöter på ett problem i bakgrunden. Innehåller appversion, macOS-version och vilken del av koden som stötte på problemet. Aldrig filnamn eller personuppgifter.",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "6c74422"
+    "sourceHash": "e726766"
   },
   "settings.updates.errorReports.label": "Skicka felrapporter automatiskt",
   "@settings.updates.errorReports.label": {

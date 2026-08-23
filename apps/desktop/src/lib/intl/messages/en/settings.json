@@ -1439,9 +1439,9 @@
     "description": "Label for the crash-report opt-in toggle. In Settings > Updates & privacy.",
     "screenshot": "settings-updates.png"
   },
-  "settings.updates.crashReports.description": "Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location. Never file names or personal data.",
+  "settings.updates.crashReports.description": "Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, macOS version, and where in the code the problem happened. Never file names or personal data.",
   "@settings.updates.crashReports.description": {
-    "description": "Help text for the crash-reports toggle, in a privacy-reassuring voice. \"Cmdr\" is the product name and \"macOS\" a brand name; keep both.",
+    "description": "Help text for the crash-reports toggle, in a privacy-reassuring voice. The setting covers BOTH cases that send a report: Cmdr going down with a crash, and a problem in a background task the app kept running through. So the first sentence must not scope it to the app quitting, the same split as crashReporter.dialog.body.ended vs .keptRunning. \"a report\" rather than \"a crash report\" for the same reason. \"Cmdr\" is the product name and \"macOS\" a brand name; keep both.",
     "screenshot": "settings-updates.png"
   },
 

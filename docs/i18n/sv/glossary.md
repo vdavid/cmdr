@@ -1432,3 +1432,15 @@ stannade, och de säger `en rapport`, inte `en kraschrapport`: inget kraschade.
   Enhetligheten vinner. Om `.ended` någon gång skrivs om är `När Cmdr senast kördes …` det belagda alternativet för alla
   tre samtidigt · `high` för valet, `tentative` för formuleringen i sig.
 - Inget `sameAsSourceJustification` behövs: båda värdena skiljer sig från engelskan.
+
+## Inställningstexten för rapporter gäller nu båda utfallen (`settings.updates.crashReports.description`)
+
+Reglaget skickar en rapport även när en panic i bakgrunden INTE tog ner appen, så hjälptexten kan inte längre handla
+bara om att Cmdr avslutas. Allt är hämtat från kraschdialogsavsnittet ovan, i presens:
+
+- **`när Cmdr avslutas oväntat`** från `crashReporter.dialog.body.ended`; **`stöter på ett problem i bakgrunden`** från
+  `.keptRunning` · high. Presensformen är ren morfologi, inte ett nytt termval.
+- **`en rapport`** utan `krasch`-ledet, eftersom meningen täcker båda utfallen · high. ❌ ETIKETTEN
+  `settings.updates.crashReports.label` står kvar som `Skicka kraschrapporter`: det är inställningens namn.
+- **Andra meningen hämtad från `crashReporter.dialog.privacyNote`** (`vilken del av koden som stötte på problemet`), i
+  stället för `kraschplats`, som bara stämde vid en krasch · high.

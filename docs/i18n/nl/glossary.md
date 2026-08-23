@@ -1713,3 +1713,17 @@ onaangeroerde `.ended`.
 - **`.unknown` zegt niets over de afloop**: alleen dat er een probleem was. Daardoor klopt de zin of Cmdr nu is gestopt
   of gewoon is doorgegaan.
 - Geen van beide waarden bevat een apostrof, dus de ICU-verdubbelingsregel speelt hier niet.
+
+## De instellingstekst voor rapporten dekt nu beide gevallen (`settings.updates.crashReports.description`)
+
+De schakelaar stuurt ook een rapport wanneer een probleem op de achtergrond de app NIET heeft gestopt, dus de hulptekst
+mag niet langer alleen over stoppen gaan. Alles komt uit de crashdialoog-sectie hierboven, in de tegenwoordige tijd:
+
+- **`wanneer Cmdr onverwachts stopt`** uit `crashReporter.dialog.body.ended`;
+  **`op de achtergrond een probleem tegenkomt`** uit `.keptRunning` · `tentative` voor `tegenkomen` (om de reden die
+  daar staat), `high` voor de rest.
+- **`een rapport`** zonder `crash`, omdat de zin beide gevallen dekt · high. ❌ Het LABEL
+  `settings.updates.crashReports.label` blijft `Crashrapporten sturen`: dat is de naam van de instelling.
+- **Tweede zin uit `crashReporter.dialog.privacyNote`** (`welk deel van de code het probleem tegenkwam`), in plaats van
+  `crashlocatie`, dat alleen klopte bij een crash · high. Meteen ook `app-versie` → `appversie`: gesloten samenstelling,
+  zoals privacyNote al schreef, zodat één veld op twee schermen niet twee spellingen krijgt.

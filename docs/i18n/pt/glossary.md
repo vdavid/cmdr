@@ -1293,3 +1293,18 @@ ficar visível.
 - Marcadores brasileiros do lote: o gerúndio **funcionando** (nunca "a funcionar"). Varredura pt-PT (ficheiro, `estar a`
   - infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o nome, você omitido): zero ocorrências. Nenhum
     valor precisa de `sameAsSourceJustification`.
+
+## O texto do ajuste de relatórios agora vale para os dois casos (`settings.updates.crashReports.description`)
+
+O botão também envia um relatório quando um problema em segundo plano NÃO encerrou o app, então a ajuda não pode mais
+falar só de fechamento. Tudo vem da seção do diálogo de falha acima, no presente:
+
+- **`quando o Cmdr encerra de forma inesperada`** vem do verbo de `crashReporter.dialog.body.ended`
+  (`encerrou de forma inesperada`), no lugar do `fecha de forma inesperada` que esta chave ainda trazia: as duas telas
+  passam a dizer o mesmo verbo para o mesmo desfecho · high.
+- **`tem um problema em segundo plano`** vem de `.keptRunning` · high. O presente é morfologia, não uma decisão de termo
+  nova.
+- **`um relatório`** sem `de falha`, porque a frase cobre os dois casos · high. ❌ O RÓTULO
+  `settings.updates.crashReports.label` continua `Enviar relatórios de falha`: é o nome do ajuste.
+- **Segunda frase tirada de `crashReporter.dialog.privacyNote`** (`qual parte do código teve o problema`), no lugar de
+  `o local da falha`, verdadeiro só quando algo falhou · high.

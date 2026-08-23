@@ -1441,3 +1441,17 @@ nuevas **no pueden decir que Cmdr se cerró, falló o se detuvo**, porque no ocu
   de las tres variantes cada vez, así que la divergencia es invisible para el usuario; queda anotada por si una futura
   pasada de coherencia intenta unificarlas.
 - Ningún valor necesita `sameAsSourceJustification`: los dos difieren del inglés.
+
+## El texto de ajustes de informes ahora cubre los dos casos (`settings.updates.crashReports.description`)
+
+El interruptor también envía un informe cuando un problema en segundo plano NO cerró la app, así que la ayuda ya no
+puede hablar solo de que Cmdr se cierra. Todas las piezas salen de la sección del diálogo de fallos de arriba, en
+presente:
+
+- `cuando Cmdr se cierra inesperadamente` de `crashReporter.dialog.body.ended`; `tiene un problema en segundo plano` de
+  `.keptRunning` · high. El presente es morfología, no una decisión de término nueva.
+- `un informe` (sin `de fallos`) porque la frase cubre los dos casos, la misma operación que en `.title.report` · high.
+  ❌ La ETIQUETA `settings.updates.crashReports.label` sigue siendo `Enviar informes de fallos`: es el nombre del
+  ajuste.
+- La segunda frase se toma de `crashReporter.dialog.privacyNote` (`qué parte del código tuvo el problema`) y sustituye a
+  `la ubicación del fallo`, que solo era cierta si algo falló · high.

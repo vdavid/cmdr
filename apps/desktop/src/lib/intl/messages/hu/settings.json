@@ -1144,9 +1144,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "Automatikusan elküldi az összeomlás-jelentéseket, amikor a Cmdr váratlanul kilép. Tartalmazza az app verzióját, a macOS verzióját és az összeomlás helyét. Fájlneveket vagy személyes adatokat soha.",
+  "settings.updates.crashReports.description": "Automatikusan elküld egy jelentést, ha a Cmdr váratlanul bezárul, vagy a háttérben problémába ütközik. Tartalmazza az app verzióját, a macOS verzióját, és hogy a kód melyik része ütközött a problémába. Fájlneveket vagy személyes adatokat soha.",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "6c74422"
+    "sourceHash": "e726766"
   },
   "settings.updates.errorReports.label": "Hibajelentések automatikus küldése",
   "@settings.updates.errorReports.label": {

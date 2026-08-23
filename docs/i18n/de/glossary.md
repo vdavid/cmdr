@@ -1356,3 +1356,18 @@ Beides ist dieselbe Operation wie im Englischen: das Absturz-Wortglied entfällt
 `crashReporter.dialog.alwaysSend` bleibt `Absturzberichte immer senden`: das Kästchen schaltet die Einstellung
 `updates.crashReports`, deren kanonisches Label in Einstellungen > Updates `Absturzberichte senden` heißt. Neutral
 formuliert würde es so klingen, als schlösse es auch Fehlerberichte ein, was es nicht tut.
+
+## Der Einstellungstext für Absturzberichte deckt jetzt beide Fälle (`settings.updates.crashReports.description`)
+
+Der Schalter schickt auch dann einen Bericht, wenn ein Panic im Hintergrund die App NICHT beendet hat, also darf der
+Hilfetext nicht mehr nur vom unerwarteten Beenden sprechen. Alle Bausteine stammen aus dem Absturzdialog-Abschnitt oben,
+nur im Präsens:
+
+- `wenn Cmdr unerwartet beendet wird` aus `crashReporter.dialog.body.ended`, `im Hintergrund auf ein Problem stößt` aus
+  `.keptRunning` · high. Die Präsensform ist reine Morphologie, keine neue Termentscheidung.
+- `einen Bericht` statt `Absturzberichte`, weil der Satz beide Fälle abdeckt: dieselbe Operation wie bei `.title.report`
+  · high. ❌ Das LABEL `settings.updates.crashReports.label` bleibt `Absturzberichte senden` — das ist der kanonische
+  Name der Einstellung, genau wie bei `crashReporter.dialog.alwaysSend`.
+- Zweiter Satz aus `crashReporter.dialog.privacyNote` (`welcher Teil des Codes auf das Problem gestoßen ist`), hier als
+  Akkusativobjekt mit Relativsatz (`den Teil des Codes, der …`), weil der Einstellungstext artikellos aufzählt. Ersetzt
+  `Absturzstelle`, das nur für den Absturzfall stimmte · high.

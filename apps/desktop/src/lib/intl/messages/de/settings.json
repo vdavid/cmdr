@@ -1147,9 +1147,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "Sendet automatisch Absturzberichte, wenn Cmdr unerwartet beendet wird. Enthält App-Version, macOS-Version und Absturzstelle. Nie Dateinamen oder persönliche Daten.",
+  "settings.updates.crashReports.description": "Sendet automatisch einen Bericht, wenn Cmdr unerwartet beendet wird oder im Hintergrund auf ein Problem stößt. Enthält App-Version, macOS-Version und den Teil des Codes, der auf das Problem gestoßen ist. Nie Dateinamen oder persönliche Daten.",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "6c74422"
+    "sourceHash": "e726766"
   },
   "settings.updates.errorReports.label": "Fehlerberichte automatisch senden",
   "@settings.updates.errorReports.label": {
