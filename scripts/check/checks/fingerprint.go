@@ -26,7 +26,7 @@ import (
 //     are hashed from disk; deletions drop the path from the set entirely.
 //
 // Per check, we filter that repo-wide picture to the check's input globs (its
-// Inputs plus the GlobalInputs), sort the surviving path→content-hash pairs, and
+// Inputs, the GlobalInputs, and the runner sources it reaches), sort the surviving path→content-hash pairs, and
 // hash the whole sorted list. Including the sorted file list in the hash means an
 // add or a remove changes the fingerprint even if no surviving file's content
 // did.
@@ -44,6 +44,10 @@ type RepoFingerprintData struct {
 	// deleted is the set of repo-relative paths removed from the working tree but
 	// still tracked in the index; they must drop out of every fingerprint.
 	deleted map[string]bool
+	// runnerSources maps a check to the runner implementation files it can reach
+	// (`runner-sources.go`). A nil index, or one whose analysis gave up, hands
+	// every check the whole runner tree.
+	runnerSources *RunnerSourceIndex
 }
 
 // CollectRepoFingerprintData runs the two git commands once and assembles the
@@ -55,6 +59,7 @@ func CollectRepoFingerprintData(rootDir string) (*RepoFingerprintData, error) {
 		indexBlobs:         map[string]string{},
 		dirtyContentHashes: map[string]string{},
 		deleted:            map[string]bool{},
+		runnerSources:      LoadRunnerSources(rootDir),
 	}
 
 	lsOut, err := runGit(rootDir, "ls-files", "-s")
@@ -160,14 +165,25 @@ func hashFileContent(absPath string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
+// PatternsFor is the full input set of one check: what it declares in `Inputs`,
+// the `GlobalInputs` every check carries, and the runner implementation files
+// this check's own `Run` reaches (`runner-sources.go`). The third part is why
+// editing one check's file doesn't re-run the other 115.
+func (data *RepoFingerprintData) PatternsFor(def *CheckDefinition) []string {
+	runnerSources := data.runnerSources.For(def.ID)
+	patterns := make([]string, 0, len(def.Inputs)+len(GlobalInputs)+len(runnerSources))
+	patterns = append(patterns, def.Inputs...)
+	patterns = append(patterns, GlobalInputs...)
+	patterns = append(patterns, runnerSources...)
+	return patterns
+}
+
 // FingerprintFor computes the fingerprint of a single check's input set against
 // the shared repo data. The input set is the check's Inputs plus GlobalInputs.
 // The fingerprint is stable for an identical tree and changes on any content,
 // add, or remove within the input set.
 func (data *RepoFingerprintData) FingerprintFor(def *CheckDefinition) string {
-	patterns := make([]string, 0, len(def.Inputs)+len(GlobalInputs))
-	patterns = append(patterns, def.Inputs...)
-	patterns = append(patterns, GlobalInputs...)
+	patterns := data.PatternsFor(def)
 
 	// Gather path→hash for every input file: clean tracked files use the index
 	// blob SHA; dirty/untracked files override with their working-tree hash;

@@ -195,19 +195,6 @@ type CheckDefinition struct {
 // (see `desktop-rust-rustdoc.go`).
 const ResourceCargoBuildDir = "cargo-build-dir"
 
-// GlobalInputs are paths that affect every check's fingerprint regardless of its
-// own Inputs: a toolchain bump (.mise.toml), an edit to the runner's own source
-// (scripts/check/**, which includes the registry where Inputs lists live), or a
-// change to the root lockfiles every check's tooling resolves against. Mirrors
-// the ".mise.toml + ci.yml in every filter" rule in ci.yml's change-detection
-// block. Conservative by design: scripts/check/** alone means any edit to a
-// check invalidates the whole cache, which is correct (the runner's behavior
-// just changed) and cheap (the next run re-establishes it).
-var GlobalInputs = []string{
-	".mise.toml",
-	"scripts/check/**",
-}
-
 // EffectiveCpuWeight returns the scheduling weight clamped to [1, capacity], so
 // an unset weight counts as light (1) and an over-budget weight can still run
 // once nothing else holds the budget (it never deadlocks the admission gate).

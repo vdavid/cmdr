@@ -135,7 +135,7 @@ var AllChecks = []CheckDefinition{
 		IsSlow:            true,
 		FreestyleIncompat: true,
 		DependsOn:         nil,
-		Inputs:            rustCompileInputs,
+		Inputs:            inputs(rustCompileInputs, runnerDataInputs("module-cycles-allowlist.json")),
 		Run:               RunRustModuleCycles,
 	},
 	{
@@ -153,7 +153,7 @@ var AllChecks = []CheckDefinition{
 		// one thing in 837 local runs, which is what got it demoted to CI-only.
 		FreestyleIncompat: true,
 		DependsOn:         nil,
-		Inputs:            rustScanInputs(KindApp, KindTool),
+		Inputs:            inputs(rustScanInputs(KindApp, KindTool), runnerDataInputs("jscpd-rust-allowlist.json")),
 		Run:               RunJscpdRust,
 	},
 	{
@@ -297,7 +297,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustScanInputs(KindApp, KindTool),
+		Inputs:            inputs(rustScanInputs(KindApp, KindTool), runnerDataInputs("lock-poison-allowlist.json")),
 		Run:               RunLockPoison,
 	},
 	{
@@ -774,7 +774,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		IsFast:      true,
-		Inputs:      svelteInputs,
+		Inputs:      inputs(svelteInputs, runnerDataInputs("a11y-coverage-allowlist.json")),
 		Run:         RunA11yCoverage,
 	},
 	{
@@ -784,7 +784,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		IsFast:      true,
-		Inputs:      svelteInputs,
+		Inputs:      inputs(svelteInputs, runnerDataInputs("ui-primitive-coverage-allowlist.json")),
 		Run:         RunUiPrimitiveCoverage,
 	},
 	{
@@ -848,7 +848,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
-		Inputs:      svelteInputs,
+		Inputs:      inputs(svelteInputs, runnerDataInputs("jscpd-frontend-allowlist.json")),
 		Run:         RunJscpdFrontend,
 	},
 	{
@@ -977,7 +977,7 @@ var AllChecks = []CheckDefinition{
 		// not an E2E build carrying the dialog gallery.
 		IsFast:  false,
 		NotInCI: "warn-only metric; it can never fail, so a CI step would be noise",
-		Inputs:  svelteInputs,
+		Inputs:  inputs(svelteInputs, runnerDataInputs("desktop-bundle-size-baseline.json")),
 		Run:     RunDesktopBundleSize,
 	},
 	{
@@ -989,7 +989,7 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   []string{"website-build"},
 		IsFast:      true, // cheap dist/ walk; self-skips when dist/ is absent (like html-validate)
 		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
-		Inputs:      websiteInputs,
+		Inputs:      inputs(websiteInputs, runnerDataInputs("website-bundle-size-baseline.json")),
 		Run:         RunWebsiteBundleSize,
 	},
 	{

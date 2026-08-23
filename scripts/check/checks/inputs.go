@@ -1,5 +1,7 @@
 package checks
 
+import "strings"
+
 // Shared input-set building blocks for the input-fingerprint cache. Each check's
 // Inputs field (see CheckDefinition) is the union of one of these sets plus the
 // GlobalInputs every check carries implicitly. The sets are mined from ci.yml's
@@ -28,9 +30,9 @@ package checks
 // nextest runs no doctests, no frontend module imports one
 // (`TestNoFrontendSourceLoadsAgentDocs`), and every scanner parses source files.
 //
-// The veto spans the union with GlobalInputs, so it also drops
-// `scripts/check/**`'s own `CLAUDE.md` / `DETAILS.md` from those lanes'
-// fingerprints. Same reasoning: the runner's docs don't change what a lane
+// The veto spans the union with GlobalInputs and with the runner sources a check
+// reaches, so the runner's own `CLAUDE.md` / `DETAILS.md` stay out of those lanes'
+// fingerprints too. Same reasoning: the runner's docs don't change what a lane
 // enforces. The doc-scanning lanes (`claude-md-length`, `docs-reachable`, …) take
 // `wholeRepoInputs` and are unaffected, which is the whole point of scoping the
 // veto to code lanes.
@@ -41,6 +43,50 @@ package checks
 var agentDocExclusions = []string{
 	"!**/CLAUDE.md",
 	"!**/DETAILS.md",
+}
+
+// GlobalInputs are the paths that affect EVERY check's fingerprint regardless of
+// its own Inputs: the toolchain pin, and the runner core (everything that decides
+// how a check is selected, executed, cached, and reported). Mirrors the
+// ".mise.toml + ci.yml in every filter" rule in ci.yml's change-detection block.
+//
+// ❗ This is the runner core, NOT the whole runner. A check ALSO fingerprints the
+// implementation files its own `Run` reaches, which `runner-sources.go` works out
+// from the AST, so editing one check's file no longer re-runs the other 115.
+// Everything here is a file no such analysis can attribute:
+//
+//   - `scripts/check/*.go` is package `main` (the executor, the cache plan, the
+//     status line, the stats logs, the Docker orchestrator). A check can't
+//     reference it, and it decides how every check runs.
+//   - `registry.go` holds every check's config, `inputs.go` the shared input
+//     blocks, `fingerprint.go` + `cache.go` + `runner-sources.go` the cache
+//     itself, `common.go` the context and process handling every check runs
+//     through, and `test-log.go` the per-test record every lane records into.
+//     `fixture-stacks.go`, `smb_ports.go`, and `sftp_ports.go` are the fixture
+//     vocabulary and the port env the orchestrator applies before any lane runs.
+//   - `go.mod` / `go.sum` and `check.sh` build and start the runner itself.
+//
+// `TestGlobalInputsCoverWhatNoCheckCanReach` and
+// `TestRunnerCoreCoversWhatTheExecutorReaches` prove nothing else in the runner
+// tree is left unattributed, in both directions.
+var GlobalInputs = []string{
+	".mise.toml",
+	"scripts/check.sh",
+	"scripts/check/*.go",
+	"scripts/check/go.mod",
+	"scripts/check/go.sum",
+	"scripts/check/stack-lease/**",
+	"scripts/check/stacklease/**",
+	"scripts/check/checks/cache.go",
+	"scripts/check/checks/common.go",
+	"scripts/check/checks/fingerprint.go",
+	"scripts/check/checks/fixture-stacks.go",
+	"scripts/check/checks/inputs.go",
+	"scripts/check/checks/registry.go",
+	"scripts/check/checks/runner-sources.go",
+	"scripts/check/checks/sftp_ports.go",
+	"scripts/check/checks/smb_ports.go",
+	"scripts/check/checks/test-log.go",
 }
 
 // A workspace member as the input sets see it: the package name cargo knows it
@@ -225,6 +271,21 @@ var goScriptsInputs = []string{
 // read.
 var workflowsInputs = []string{
 	".github/workflows/**",
+}
+
+// runnerDataInputs names data files that live beside the check implementations:
+// the JSON allowlists and baselines a warn-only scanner reads on every run.
+// `runner-sources.go` attributes the runner's SOURCE to the checks that reach it,
+// but a data file is read through a path built at runtime, so the check that owns
+// one names it here. `TestAllowlistFilesAreFingerprintedByTheirCheck` fails on an
+// allowlist whose check doesn't fingerprint it (a hand-edited entry would
+// cache-skip the check that enforces it) and on one nothing watches at all.
+func runnerDataInputs(names ...string) []string {
+	out := make([]string, 0, len(names))
+	for _, name := range names {
+		out = append(out, strings.Join(runnerChecksDirParts, "/")+"/"+name)
+	}
+	return out
 }
 
 // wholeRepoInputs is for checks that walk the entire tree (file-length,
