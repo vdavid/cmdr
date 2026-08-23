@@ -6,16 +6,29 @@
 //! transport, and starts the backoff loop below. Everything after that is the
 //! policy in [`crate::auth::reconnect_policy`] being obeyed.
 //!
-//! Three rules hold this module up:
+//! **Two independent switches decide what may happen, in this order.**
 //!
-//! - ❌ **Never loop on an authentication attempt.** Repeated wrong passwords
-//!   lock accounts. The password rung gets exactly one unattended try, latched by
-//!   [`SftpVolumeInner::password_attempt_spent`], and only a human clears it.
+//! 1. **"Reconnect automatically"**, the user's own per-server switch
+//!    ([`SftpVolume::set_auto_reconnect`]). Off means ❌ no unattended dial, ever,
+//!    whatever is stored and whatever rung proved the last session.
+//! 2. **The rung's policy** ([`crate::auth::reconnect_policy`]), asked only once
+//!    the switch has said yes.
+//!
+//! ❌ **Neither switch silently changes the other's meaning.** The second one,
+//! "remember the secret", is exactly "the Keychain holds a secret for this
+//! account" — so this module ❌ never writes one that wasn't already there, and
+//! [`SftpVolumeInner::unattended_reconnect`] is how the frontend learns that a
+//! switch is on and can't work.
+//!
+//! Three rules hold the rest of it up:
+//!
+//! - ❌ **Never loop on an authentication attempt.** Repeated refusals lock
+//!   accounts. The two secret-backed rungs get exactly one unattended try each,
+//!   latched by [`SftpVolumeInner::auth_attempt_spent`], and only a human clears
+//!   it.
 //! - ❗ **A secret dies with the dial it built.** An attended reconnect passes
-//!   what the user typed straight to [`guarded_dial`]; only a PASSWORD is also
-//!   written to the store, because that is where a password already lives.
-//!   ❌ Never a key passphrase — persisting one would quietly turn the rung that
-//!   deliberately cannot reconnect unattended into one that can.
+//!   what the user typed straight to [`guarded_dial`]; the store is only ever
+//!   REFRESHED, never seeded.
 //! - ❗ **A dial is never dropped mid-handshake.** [`guarded_dial`] runs it in a
 //!   task and awaits the join handle, because a cancelled connect panics inside
 //!   the engine (`transport.rs`).
@@ -31,7 +44,9 @@ use log::{debug, info, warn};
 
 use super::state::ConnectionState;
 use super::{SftpVolume, SftpVolumeInner};
-use crate::auth::{AuthRungUsed, ReconnectPolicy, reconnect_policy};
+use crate::auth::{
+    AuthRungUsed, ReconnectPolicy, UnattendedReconnect, reconnect_policy, redials_from_the_store, unattended_reconnect,
+};
 use crate::errors::SftpConnectError;
 use crate::params::SftpConnectionParams;
 use crate::transport::{self, DialOutcome};
@@ -71,6 +86,11 @@ pub(super) async fn guarded_dial(
 /// Why an attempt didn't leave a live session, in the terms the loop acts on.
 #[derive(Debug)]
 enum Stalled {
+    /// The user's "reconnect automatically" switch is off. ❗ Its own arm rather
+    /// than [`Self::NeedsUser`]: the credentials may be perfectly fine, and
+    /// telling the frontend they aren't would put a sign-in box in front of a
+    /// setting.
+    AutoReconnectOff,
     /// Only a human moves this forward. Retrying costs an authentication attempt
     /// and buys nothing.
     NeedsUser,
@@ -105,12 +125,18 @@ impl SftpVolume {
         }
         let inner = Arc::clone(&self.inner);
         let handle = inner.self_handle();
+        // ❗ Read before the task, so the switch decides whether a backoff loop is
+        // even born. `rebuild` refuses one anyway; not starting it is what keeps a
+        // volume the user switched off from sleeping through six timers.
+        let auto_reconnect = inner.auto_reconnect.load(Ordering::Relaxed);
         inner.host.runtime().spawn(async move {
             // Dropping the transport IS the shutdown; the engine's own drop
             // orders it and both its tasks exit (`transport.rs` § hazard 1).
             inner.session.write().await.take();
             drop(inner);
-            run_reconnect_loop(handle).await;
+            if auto_reconnect {
+                run_reconnect_loop(handle).await;
+            }
         });
     }
 }
@@ -148,23 +174,17 @@ impl SftpVolumeInner {
             | AuthRungUsed::KeyFile {
                 passphrase_protected: false,
             } => Err(VolumeError::NotSupported),
-            // The store is where a password already lives, so saving it is what
-            // makes the NEXT reconnect silent. The dial gets it directly too, so
-            // a keychain that refuses the write still reconnects now.
-            AuthRungUsed::Password | AuthRungUsed::KeyboardInteractive => {
-                self.save_password(&username, &password).await;
-                self.password_attempt_spent.store(false, Ordering::Relaxed);
-                self.rebuild(Some(password))
-                    .await
-                    .map_err(|stalled| self.report(stalled))
-            }
-            // ❌ A key passphrase is NOT saved. Persisting it would make this rung
-            // reconnect unattended forever after, which is the opposite of what
-            // putting a passphrase on a key means.
-            AuthRungUsed::KeyFile {
+            // The dial gets the typed secret directly, so a keychain that refuses
+            // the write still reconnects now. The same three rungs, ❌ with no
+            // special case for the passphrase: what decides whether it's written
+            // down is the "remember the secret" switch, not the rung.
+            AuthRungUsed::Password
+            | AuthRungUsed::KeyboardInteractive
+            | AuthRungUsed::KeyFile {
                 passphrase_protected: true,
             } => {
-                self.password_attempt_spent.store(false, Ordering::Relaxed);
+                self.refresh_remembered_secret(&username, &password).await;
+                self.auth_attempt_spent.store(false, Ordering::Relaxed);
                 self.rebuild(Some(password))
                     .await
                     .map_err(|stalled| self.report(stalled))
@@ -213,7 +233,7 @@ impl SftpVolumeInner {
                 }
                 *self.session.write().await = Some(Arc::new(connection));
                 self.set_auth_rung(rung);
-                self.password_attempt_spent.store(false, Ordering::Relaxed);
+                self.auth_attempt_spent.store(false, Ordering::Relaxed);
                 self.emit_if_changed(ConnectionState::Connected);
                 info!(target: "volume", "sftp volume '{}' is back", self.volume_id);
                 Ok(())
@@ -223,7 +243,7 @@ impl SftpVolumeInner {
             Err(SftpConnectError::AuthenticationRejected) => {
                 // The one unattended password attempt, spent. Only a human clears
                 // this, through `do_reconnect_with_credentials`.
-                self.password_attempt_spent.store(true, Ordering::Relaxed);
+                self.auth_attempt_spent.store(true, Ordering::Relaxed);
                 Err(Stalled::NeedsUser)
             }
             Err(SftpConnectError::NeedsCredentials) => Err(Stalled::NeedsUser),
@@ -236,14 +256,21 @@ impl SftpVolumeInner {
         }
     }
 
-    /// What the rung this session was built on may do on its own.
+    /// Whether this volume may dial on its own right now: the switch first, then
+    /// the rung.
     fn check_unattended_policy(&self) -> Result<(), Stalled> {
+        // ❗ Asked first, so "off" never depends on the rung or on what the store
+        // holds. That ordering IS the promise that neither switch changes the
+        // other's meaning.
+        if !self.auto_reconnect.load(Ordering::Relaxed) {
+            return Err(Stalled::AutoReconnectOff);
+        }
         match reconnect_policy(self.auth_rung()) {
             ReconnectPolicy::Freely => Ok(()),
             // ❌ Never a second unattended attempt. The store is re-read on every
             // dial, so the ONE try already carries whatever the user changed.
             ReconnectPolicy::RetryOnceFromStore => {
-                if self.password_attempt_spent.load(Ordering::Relaxed) {
+                if self.auth_attempt_spent.load(Ordering::Relaxed) {
                     Err(Stalled::NeedsUser)
                 } else {
                     Ok(())
@@ -253,6 +280,53 @@ impl SftpVolumeInner {
         }
     }
 
+    /// Starts the backoff loop for a volume that is down, if one is worth
+    /// starting.
+    ///
+    /// ❗ Only from `Disconnected`. `Connected` has nothing to rebuild, and
+    /// `NeedsCredentials` / `NeedsHostKeyApproval` are states a person moves
+    /// forward — a loop against either would spend authentication attempts, or
+    /// dial a server whose key stopped matching.
+    pub(super) fn start_reconnect_loop_if_down(&self) {
+        if self.connection_state() != ConnectionState::Disconnected || self.unmounted.load(Ordering::Relaxed) {
+            return;
+        }
+        let handle = self.self_handle();
+        self.host.runtime().spawn(run_reconnect_loop(handle));
+    }
+
+    /// Whether an unattended reconnect can happen as this volume stands, for the
+    /// frontend to warn on.
+    ///
+    /// ❗ The secret store is asked only for the rungs that redial out of it: on
+    /// macOS a read can put a Keychain prompt in front of the user, and a banner
+    /// rendering is no reason for one. ❗ On a blocking task when it IS asked.
+    pub(super) async fn unattended_reconnect(&self) -> UnattendedReconnect {
+        let on = self.auto_reconnect.load(Ordering::Relaxed);
+        let rung = self.auth_rung();
+        let secret_stored = if on && redials_from_the_store(rung) {
+            self.stored_secret_exists().await
+        } else {
+            false
+        };
+        unattended_reconnect(on, rung, secret_stored)
+    }
+
+    /// Whether the Keychain holds a secret for this account, which is the whole
+    /// meaning of the "remember the secret" switch.
+    ///
+    /// ❗ On a blocking task: the store may put a prompt in front of this, and a
+    /// modal dialog on the async runtime stalls every other volume. ❌ The secret
+    /// itself is dropped on the spot; only its existence comes back.
+    async fn stored_secret_exists(&self) -> bool {
+        let host = self.host.clone();
+        let service = self.params.credential_service();
+        let scope = self.params.username.clone();
+        tokio::task::spawn_blocking(move || host.credentials().credentials(&service, Some(&scope)).is_some())
+            .await
+            .unwrap_or(false)
+    }
+
     /// Reports the stall and turns it into the trait's vocabulary.
     ///
     /// ❗ `PermissionDenied` for everything a human owns, which is what stops the
@@ -260,6 +334,15 @@ impl SftpVolumeInner {
     /// worse.
     fn report(&self, stalled: Stalled) -> VolumeError {
         match stalled {
+            // ❗ `Disconnected`, which is the plain truth, and `NotSupported`,
+            // which has exactly one source: this volume doesn't do unattended
+            // reconnects. ❌ Never `NeedsCredentials` — nothing is wrong with the
+            // credentials, and a frontend that got one would open a sign-in box
+            // over a setting the user chose.
+            Stalled::AutoReconnectOff => {
+                self.emit_if_changed(ConnectionState::Disconnected);
+                VolumeError::NotSupported
+            }
             Stalled::NeedsUser => {
                 self.emit_if_changed(ConnectionState::NeedsCredentials);
                 VolumeError::PermissionDenied(self.volume_id.clone())
@@ -285,27 +368,38 @@ impl SftpVolumeInner {
         }
     }
 
-    /// Writes the password the user typed to the secret store.
+    /// Brings a REMEMBERED secret up to date with the one the user just typed.
     ///
-    /// ❗ On a blocking task: the store may put a Keychain prompt in front of
-    /// this, and blocking the async runtime on a modal dialog stalls every other
+    /// ❗ **Refreshes, ❌ never seeds.** "Remember the secret" means exactly "the
+    /// Keychain holds one for this account", so a store with nothing in it is the
+    /// user having said no, and writing the typed secret there would switch the
+    /// other toggle on behind their back. `save_sftp_credentials` is how a person
+    /// says yes.
+    ///
+    /// ❗ Both halves on ONE blocking task: the store may put a Keychain prompt in
+    /// front of either, and a modal dialog on the async runtime stalls every other
     /// volume. A refusal is non-fatal — only the "silent next time" guarantee is
     /// lost.
-    async fn save_password(&self, username: &str, password: &str) {
+    async fn refresh_remembered_secret(&self, username: &str, secret: &str) {
         let host = self.host.clone();
         let service = self.params.credential_service();
         let scope = username.to_string();
         let stored = StoredCredentials {
             username: username.to_string(),
-            secret: password.to_string(),
+            secret: secret.to_string(),
         };
-        let saved =
-            tokio::task::spawn_blocking(move || host.credentials().save_credentials(&service, Some(&scope), &stored))
-                .await;
-        if !matches!(saved, Ok(Ok(()))) {
+        let written = tokio::task::spawn_blocking(move || {
+            let store = host.credentials();
+            if store.credentials(&service, Some(&scope)).is_none() {
+                return Ok(());
+            }
+            store.save_credentials(&service, Some(&scope), &stored)
+        })
+        .await;
+        if !matches!(written, Ok(Ok(()))) {
             warn!(
                 target: "volume",
-                "sftp volume '{}': the secret store didn't take the new password; this session still came up",
+                "sftp volume '{}': the secret store didn't take the new secret; this session still came up",
                 self.volume_id
             );
         }
@@ -333,13 +427,19 @@ async fn run_reconnect_loop(handle: SelfHandle<SftpVolumeInner>) {
         match inner.rebuild(None).await {
             Ok(()) => return,
             Err(stalled) => {
-                let needs_a_person = !matches!(stalled, Stalled::Transient(_));
+                let switched_off = matches!(stalled, Stalled::AutoReconnectOff);
+                let stop = !matches!(stalled, Stalled::Transient(_));
                 inner.report(stalled);
-                if needs_a_person {
-                    info!(
-                        target: "volume",
-                        "sftp volume '{volume_id}' needs a person; stopping the backoff so nothing burns an authentication attempt"
-                    );
+                if stop {
+                    if switched_off {
+                        // The user turned it off while the loop was sleeping.
+                        info!(target: "volume", "sftp volume '{volume_id}' no longer reconnects automatically; stopping the backoff");
+                    } else {
+                        info!(
+                            target: "volume",
+                            "sftp volume '{volume_id}' needs a person; stopping the backoff so nothing burns an authentication attempt"
+                        );
+                    }
                     return;
                 }
                 debug!(

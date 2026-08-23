@@ -30,8 +30,12 @@ user-facing words.
 - **❗ What this backend SAYS is as load-bearing as what it does.** The copy engine gates on `supports_export` before
   calling anything, and `NotFound` / `PermissionDenied` carry the PATH — ❌ never the server's wording, which the
   frontend renders as the missing file's name.
-- **❌ A password is offered once unattended; a passphrase never is** (`auth::reconnect_policy`). ❗ The gate is the
-  RUNG, not an empty store.
+- **❗ Two independent switches gate a reconnect, `auto_reconnect` first, then the rung.** Off means no unattended dial
+  at all: `NotSupported` + `Disconnected`, ❌ never `NeedsCredentials`. Neither switch changes the other's meaning, so
+  an attended sign-in REFRESHES a remembered secret and never seeds one. `auth::unattended_reconnect` is what tells the
+  frontend a switch is on and can't work.
+- **❌ A secret is offered once unattended, then a person** (`auth::reconnect_policy`), on both the password and the
+  encrypted-key rungs.
 - **❗ Operations ARE how a dead session is found** (no watcher here), so every wire-touching delegator in
   `volume_impl.rs` wraps itself in `noting`.
 - **❗ Report transitions, never states** (`state.rs`); a retired volume reports nothing.

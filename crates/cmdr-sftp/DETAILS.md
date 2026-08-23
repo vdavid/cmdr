@@ -286,9 +286,10 @@ There is no watcher here, so nothing notices a dead session until something uses
 added without `noting` leaves a volume showing as connected until somebody else's call notices.
 
 **The state is three-valued** (`state.rs`), where SMB's is two: `NeedsCredentials` is a state this backend RESTS in,
-because a passphrase-protected key genuinely cannot come back on its own. Every report goes through `emit_if_changed`,
-so a server that is down produces one event rather than one per failing operation, and a RETIRED volume reports nothing
-at all — its id belongs to a newer instance, and news under it would show a healthy volume as dropped.
+because a rung that redials out of the secret store stops after one refusal and a keyboard-interactive one never dials
+at all. Every report goes through `emit_if_changed`, so a server that is down produces one event rather than one per
+failing operation, and a RETIRED volume reports nothing at all — its id belongs to a newer instance, and news under it
+would show a healthy volume as dropped.
 
 **Retirement and the self-handle.** The loop outlives the call that started it, so it reaches its own state through a
 `SelfHandle<SftpVolumeInner>` and re-asks every iteration: a volume that was ejected or superseded stops answering.
@@ -301,27 +302,26 @@ later finds the state already moved and can't report a disconnect for a volume t
 
 ### What each rung may do, and what the frontend sees
 
-`auth::reconnect_policy` is the table; `rebuild` obeys it for an UNATTENDED attempt and skips it when the user has just
-typed a secret, which is the whole difference the policy is about.
+❗ The **`auto_reconnect` switch is asked first** (§ "The two switches"); with it off, every `attempt_reconnect` cell
+below reads `NotSupported` without dialing and the volume reports `Disconnected`. The table is what happens with it on.
+`auth::reconnect_policy` is the rung half; `rebuild` obeys it for an UNATTENDED attempt and skips it when the user has
+just typed a secret, which is the whole difference the policy is about.
 
-| rung                  | `attempt_reconnect`                        | `reconnect_with_credentials`       |
-| --------------------- | ------------------------------------------ | ---------------------------------- |
-| agent                 | dials freely; a removed identity refuses   | `NotSupported`                     |
-| key file, unencrypted | dials freely                               | `NotSupported`                     |
-| key file, passphrase  | `NeedsCredentials` without dialing         | uses the secret, ❌ never saves it |
-| password              | ONE dial, then `NeedsCredentials` for good | saves the secret, then dials       |
-| keyboard-interactive  | `NeedsCredentials` without dialing         | saves the secret, then dials       |
+| rung                  | `attempt_reconnect`                        | `reconnect_with_credentials`         |
+| --------------------- | ------------------------------------------ | ------------------------------------ |
+| agent                 | dials freely; a removed identity refuses   | `NotSupported`                       |
+| key file, unencrypted | dials freely                               | `NotSupported`                       |
+| key file, passphrase  | ONE dial, then `NeedsCredentials` for good | refreshes a remembered secret, dials |
+| password              | ONE dial, then `NeedsCredentials` for good | refreshes a remembered secret, dials |
+| keyboard-interactive  | `NeedsCredentials` without dialing         | refreshes a remembered secret, dials |
 
-- ❌ **The password latch is the point.** The frontend's reconnect manager calls `attempt_reconnect` on every backoff
-  tick, so without `password_attempt_spent` a wrong password is offered every few seconds until the account locks. It is
-  set only on a real `AuthenticationRejected` (a refused connection is not a burnt attempt) and cleared only by a human,
-  through `reconnect_with_credentials`.
+- ❌ **The latch is the point.** The frontend's reconnect manager calls `attempt_reconnect` on every backoff tick, so
+  without `auth_attempt_spent` a wrong secret is offered every few seconds until the account locks. It is set only on a
+  real `AuthenticationRejected` (a refused connection, and a dial that offered nothing, are not burnt attempts) and
+  cleared only by a human, through `reconnect_with_credentials`.
 - **The store is re-read on every dial**, so the ONE unattended try already carries whatever the user changed.
-- ❗ **An attended reconnect never persists a key passphrase.** It is passed to `transport::dial` as `offered_secret`,
-  used for that dial, and dropped, where a password is also written to the store. ❗ That is a "don't collect what you
-  don't need" rule rather than the thing that stops unattended reconnects: the policy gates on the RUNG, so an encrypted
-  key file refuses however full the store is. A passphrase saved through `save_sftp_credentials` for a first connect (§
-  "The one secret entry") doesn't change that.
+- ❗ **"Refreshes" means refreshes**, on every rung including the passphrase one: an attended reconnect writes the typed
+  secret to the store only if the store already holds one. § "The two switches" has the why.
 - ❗ **Another account is another volume.** The id is `host:port:username`, so `reconnect_with_credentials` refuses a
   username that isn't this volume's rather than quietly authenticating as somebody else under this volume's name and
   index.
@@ -588,18 +588,79 @@ deliberately doesn't do.
 
 ### What a dropped session may do, per rung
 
-`auth::reconnect_policy` maps the rung a session was BUILT on:
+`auth::reconnect_policy` maps the rung a session was BUILT on. ❗ It is the SECOND gate: `auto_reconnect` is asked
+first, and off outranks every row here (§ "The two switches").
 
 - **agent** → reconnect freely. A vanished socket or a removed identity surfaces as a refusal on the retry.
 - **unencrypted key file** → freely.
-- **passphrase-protected key file** → `NeedsCredentials`, without dialing. ❗ The gate is the RUNG, not an empty store:
-  a passphrase saved for the first connect still doesn't buy an unattended reconnect.
+- **passphrase-protected key file** → re-read the store and try **once**, then `NeedsCredentials`. Same row as the
+  password.
 - **password** → re-read the store (it may have changed) and try **once**, then `NeedsCredentials`. ❌ Never a loop:
-  repeated wrong passwords lock accounts.
+  repeated refusals lock accounts.
 - **keyboard-interactive** → never unattended. The server asks the questions and there is nobody to answer them.
+
+**Decision: the encrypted key file shares the password's row**, and ❌ don't move it back on the argument that "a
+passphrase isn't held past the session it unlocked". That's true of the in-memory copy and beside the point: the
+passphrase comes out of the same `CredentialStore` entry the password does, the store is re-read on every dial, and a
+passphrase-protected key can't make its FIRST connection unless one is stored (§ "The one secret entry"). A rung that
+refused to dial would be refusing to do the thing the user had already set up; what stops an unattended reconnect is a
+switch that says so. The single-try latch stays, because a refused key spends a server-side authentication attempt
+exactly like a refused password does, and `MaxAuthTries` and fail2ban don't care which one it was.
+
+**Why the two secret-backed rungs don't latch on "nothing was offered".** `auth_attempt_spent` is set only on a real
+`AuthenticationRejected`. A dial that found an empty store offered nothing, spent nothing, and would succeed the moment
+the user saves a secret — so the next tick is allowed to try. What it costs is a TCP connect and a key exchange per
+tick, which is why the loop stops after the first one anyway.
 
 The loop that acts on this policy lands with the reconnect work; the policy is here because it's the part that has to be
 right rather than the part that's plumbing.
+
+### The two switches
+
+Two independent per-server toggles, and ❌ neither may silently change the other's meaning.
+
+1. **"Remember the secret"** (`save_sftp_credentials` / `has_sftp_credentials` / `delete_sftp_credentials`). Its meaning
+   is exactly "the Keychain holds a secret for this account", and ❗ **there is deliberately no separate flag**: the
+   store IS the state, so nothing can drift out of sync with it, and a user who deletes the entry through Keychain
+   Access has turned the switch off. It's read back with `has_sftp_credentials`.
+2. **"Reconnect automatically"** (`KnownSftpServer::auto_reconnect`, `SftpConnectionParams::auto_reconnect`,
+   `SftpVolume::set_auto_reconnect`). Its meaning is exactly "may Cmdr redial unattended when the session drops". ❗
+   Settable regardless of whether a secret is stored, and ❗ **on by default** — SFTP has always come back on its own,
+   so a stored entry with no such field reads as `true` and nobody's saved server gets switched off by an upgrade.
+
+**Their combination has a precondition, and the backend states it rather than implying it.** On the password and
+encrypted-key rungs an unattended reconnect is only POSSIBLE if the secret is remembered, because that's where the dial
+reads it from. `auth::unattended_reconnect(auto_reconnect, rung, secret_stored)` is the whole rule, in one function:
+
+- off → `TurnedOff`, whatever is stored and whatever rung proved the session.
+- on + agent / unencrypted key → `Ready`.
+- on + password / encrypted key + a stored secret → `Ready`.
+- on + password / encrypted key + **nothing stored** → `NeedsStoredSecret`. **This is the state a UI warns about.**
+- on + keyboard-interactive → `RungCannot`. ❌ Never `NeedsStoredSecret`: remembering a secret wouldn't buy a reconnect
+  here, so pointing the user at that switch is a dead end.
+
+The store is read only for the two rungs that can use it, on a blocking task, so rendering a banner is never a needless
+Keychain prompt.
+
+**What each switch does NOT do:**
+
+- ❌ Turning auto-reconnect on never writes a secret. An attended sign-in REFRESHES a remembered secret and never seeds
+  one (`reconnect::refresh_remembered_secret`): an empty store is the user having said no, and writing to it would flip
+  the other switch behind their back. That applies to the passphrase rung too, which has no special case.
+- Remembering a secret doesn't turn auto-reconnect on. It only makes it possible.
+- Auto-reconnect off doesn't block an ATTENDED reconnect. `reconnect_with_credentials` is a person acting, and the
+  switch is about what happens with nobody watching.
+
+**What "off" looks like on the wire.** `attempt_reconnect` answers `VolumeError::NotSupported` and the volume reports
+`Disconnected`. ❌ Never `NeedsCredentials`: nothing is wrong with the credentials, and a frontend that got one would
+open a sign-in box over a setting the user chose. `note_lost_session` also skips starting the backoff loop, so a
+switched-off volume doesn't sleep through six timers to refuse six times.
+
+❗ **Switching it back ON acts immediately**, rather than at the next drop: `set_auto_reconnect(true)` starts the
+backoff loop when the volume is sitting `Disconnected` (`start_reconnect_loop_if_down`). That is the one moment the
+switch would otherwise look broken, because a user flips it on precisely because a volume is down. ❌ Only from
+`Disconnected`: `NeedsCredentials` and `NeedsHostKeyApproval` are states a person moves forward, and a loop against
+either would spend authentication attempts or dial a server whose key stopped matching.
 
 ## Path handling
 
@@ -694,8 +755,8 @@ is that a sign-in UI genuinely branches on all of it.
 
 ### The commands
 
-- `connectSftpVolume({ displayName, host, port, username, remoteRoot, keyFile, useAgent })` → `SftpConnectResult`. On
-  `connected` the volume is already registered and the server is already in the saved list.
+- `connectSftpVolume({ displayName, host, port, username, remoteRoot, keyFile, useAgent, autoReconnect })` →
+  `SftpConnectResult`. On `connected` the volume is already registered and the server is already in the saved list.
 - `disconnectSftpVolume(volumeId)` → `boolean` (whether there was an SFTP volume under that id). Drops the session and
   unregisters the volume.
 - `approveSftpHostKey({ host, port, algorithm, fingerprint })` → `SftpHostKeyApprovalResult`.
@@ -705,10 +766,19 @@ is that a sign-in UI genuinely branches on all of it.
 - `saveSftpCredentials(host, port, username, secret)` / `hasSftpCredentials(...)` → `boolean` /
   `deleteSftpCredentials(...)`. The two writing ones throw a `KeychainError`. ❗ There is deliberately **no** command
   that hands a secret back: the backend reads the store itself when it builds a session. ❗ **One entry per account,
-  whatever the rung uses it for** — see § "The one secret entry" below.
+  whatever the rung uses it for** — see § "The one secret entry" below. ❗ **These three ARE the "remember the secret"
+  switch**: save turns it on, `hasSftpCredentials` reads it, delete turns it off, and there is no fourth flag to keep in
+  sync (§ "The two switches").
 - `getKnownSftpServers()` → `KnownSftpServer[]` / `updateKnownSftpServer(target)` /
   `forgetKnownSftpServer(host, port, username)` → `boolean`. A successful connect already calls the middle one, so the
-  update command is for editing a server without connecting (renaming it, changing its root or key file).
+  update command is for editing a server without connecting (renaming it, changing its root or key file, or moving the
+  `autoReconnect` switch). ❗ `updateKnownSftpServer` also pushes `autoReconnect` into a volume that happens to be
+  mounted, so the switch takes effect now rather than on the next connect.
+- `getSftpUnattendedReconnect(volumeId)` → `SftpUnattendedReconnect | null`, the backend's answer to "the switch is on
+  and nothing comes back". ❗ Ask it when the banner renders, the same way `getVolumeSignInState` is asked, and ❌ never
+  derive it in the frontend from a rung plus a `hasSftpCredentials` call: the rung is decided per DIAL, so a derivation
+  goes stale the moment a reconnect lands somewhere else. `null` means nothing SFTP is mounted under that id — an honest
+  "there's no rung to reason about" rather than a guess.
 
 **Reconnecting and signing in are backend-neutral, and two of the three are unfortunately named `smb`**:
 `reconnectSmbVolume(volumeId)`, `reconnectSmbVolumeWithCredentials(volumeId, username, password)`, and
@@ -752,12 +822,14 @@ for whichever rung it reaches: the password on the password and keyboard-interac
 the key-file rung. ❗ So a passphrase-protected key needs its passphrase saved to connect the FIRST time; there is no
 other way in, because the connect command deliberately takes no secret argument.
 
-❗ **Saving a passphrase does not make that rung reconnect unattended.** `auth::reconnect_policy` gates on the RUNG, not
-on whether a secret exists, so an encrypted key file still answers `NeedsCredentials` without dialing however full the
-store is. What saving it costs is having the passphrase in the secret store at all, which weakens what encrypting the
-key bought — a question worth putting to the user ("remember this passphrase?") rather than one the backend answers. An
-attended reconnect never saves it: `reconnect_with_credentials` passes a typed passphrase straight to the dial and drops
-it, and saves only on the password and keyboard-interactive rungs.
+**Which is why "remember the secret" is one switch, not two.** The same entry backs a password and a passphrase, so a UI
+that offered "remember my password" and "remember my passphrase" separately would be offering the same checkbox twice.
+What remembering a passphrase costs is having it in the secret store at all, which weakens some of what encrypting the
+key bought — a real question to put to the user, and one they answer by leaving the box unticked and signing in each
+time.
+
+❗ **Remembering a secret makes an unattended reconnect possible; it doesn't turn one on.** That's the `autoReconnect`
+switch, and the two are read together by `getSftpUnattendedReconnect` (§ "The two switches").
 
 ### The two-phase approval, in order
 
@@ -792,13 +864,15 @@ longer uses. Reading it live is what closes both.
 The backend owns the mapping rather than the frontend deriving it from `rung`: getting it wrong ships a button that
 answers `NotSupported` every time it's pressed, or no button where one was the only way back in.
 
-| `rung`                 | unattended reconnect                       | sign-in state    | attended reconnect                 |
-| ---------------------- | ------------------------------------------ | ---------------- | ---------------------------------- |
-| `agent`                | dials freely; a removed identity refuses   | `nothing`        | `NotSupported`                     |
-| `key_file`             | dials freely                               | `nothing`        | `NotSupported`                     |
-| `encrypted_key_file`   | `NeedsCredentials` without dialing         | `key_passphrase` | uses the secret, ❌ never saves it |
-| `password`             | ONE dial, then `NeedsCredentials` for good | `password`       | saves the secret, then dials       |
-| `keyboard_interactive` | `NeedsCredentials` without dialing         | `password`       | saves the secret, then dials       |
+With `autoReconnect` on (off makes every "unattended reconnect" cell `NotSupported` without dialing):
+
+| `rung`                 | unattended reconnect                       | sign-in state    | attended reconnect                   |
+| ---------------------- | ------------------------------------------ | ---------------- | ------------------------------------ |
+| `agent`                | dials freely; a removed identity refuses   | `nothing`        | `NotSupported`                       |
+| `key_file`             | dials freely                               | `nothing`        | `NotSupported`                       |
+| `encrypted_key_file`   | ONE dial, then `NeedsCredentials` for good | `key_passphrase` | refreshes a remembered secret, dials |
+| `password`             | ONE dial, then `NeedsCredentials` for good | `password`       | refreshes a remembered secret, dials |
+| `keyboard_interactive` | `NeedsCredentials` without dialing         | `password`       | refreshes a remembered secret, dials |
 
 A volume that is not SFTP, and an id nothing is registered under, both answer `password` (`Volume::sign_in_prompt`'s
 default). That is the safe way to be wrong: this is only ever asked about a volume that just reported
@@ -810,8 +884,21 @@ to. The rung-by-rung cells are `crates/cmdr-sftp/src/volume/reconnect_test.rs`; 
   `reconnect_with_credentials` refuses a username that isn't this volume's, because the volume id is
   `host:port:username`: signing in as somebody else is opening another volume, not mending this one. Two accounts on one
   server are two volumes, two saved-server entries, and two secret-store entries.
-- ❗ **An attended sign-in on the passphrase rung doesn't save what it was given.** A passphrase-protected volume asks
-  again after every drop, and that is correct — the gate is the rung, not the store (§ "The one secret entry").
+- ❗ **An attended sign-in refreshes a remembered secret and never starts remembering one** (§ "The two switches"). A
+  volume whose secret isn't remembered asks again after every drop, and that is correct: it's what the user chose.
+
+**What to show for the two switches.** Both belong wherever a server is edited, and both are settable independently.
+
+- `getSftpUnattendedReconnect(volumeId)` is the only thing to branch a warning on. `ready` and `turned_off` show nothing
+  beyond the switch's own state.
+- `needs_stored_secret` is the one warning worth writing: auto-reconnect is on, and this server signs in from the secret
+  store with nothing in it, so the volume will stop and ask every time. The fix the copy names is the other switch,
+  "remember the secret", rather than turning auto-reconnect off.
+- `rung_cannot` means the server asks its own questions at every sign-in, so the remember switch isn't the fix and
+  offering it would send the user to store a secret that buys nothing.
+- ❗ **Before a server has ever connected there is no answer**, because there is no rung yet, and
+  `getSftpUnattendedReconnect` says `null` rather than guessing. Show both switches plainly in that state; the warning
+  appears once the backend knows what it's warning about.
 - ❗ **The frontend's reconnect manager already asks, and stores the answer without showing it.**
   `smb-reconnect-manager.svelte.ts`'s `handleNeedsAuth` calls `getVolumeSignInState` on every flip to `needs-auth` and
   writes it into the volume's entry, readable through `getSignInPrompt(volumeId)`. Nothing renders it yet, on purpose,
@@ -886,19 +973,21 @@ The servers themselves: `apps/desktop/test/sftp-servers/README.md`.
 ## The public surface is capped
 
 `cmdr-sftp` is in `guardedIndexCrates`, so nothing here may name `cmdr`, `tauri`, or `tauri-specta`. It is also in
-`surfaceGuardedCrates`, capped at **10 root promises / 3 public modules / 23 items in them** (measured 2026-08-23 with
-the check's own `countSurface`, and set with David's say-so). That's the shape `cmdr-smb` and `cmdr-archive` carry: no
-slack, so the first widening is a conversation rather than a silent drift, and raising it needs his explicit say-so.
+`surfaceGuardedCrates`, capped at **10 root promises / 3 public modules / 25 items in them** (measured with the check's
+own `countSurface`). That's the shape `cmdr-smb` and `cmdr-archive` carry: no slack, so the first widening is a
+conversation rather than a silent drift, and raising it needs David's explicit say-so.
 
 For scale, the same three buckets: `cmdr-smb` is 15 / 4 / 18, `cmdr-archive` 35 / 4 / 36.
 
-Three public modules, and each is named by path from outside the crate: `auth` (for `AuthRungUsed`), `transport` (for
-`HostKeyPrompt` and its kind), and `volume` (for `approve_host_key`, `HostKeyApproval`, and the `testing` fixtures).
-`errors`, `extensions`, `known_hosts`, `params`, and `trust` are `pub(crate)`; the three types the app does need from
-them (`SftpConnectError`, `ServerExtensions`, `SftpConnectionParams`) arrive as root re-exports. ❗ Keep it that way: a
-`pub mod` promises everything `pub` inside it, and `trust` and `known_hosts` in particular hold the man-in-the-middle
-decision, which nothing outside this crate has any business reaching into.
+Three public modules, and each is named by path from outside the crate: `auth` (for `AuthRungUsed` and
+`UnattendedReconnect`), `transport` (for `HostKeyPrompt` and its kind), and `volume` (for `approve_host_key`,
+`HostKeyApproval`, `SftpVolume`'s two switch methods, and the `testing` fixtures). `errors`, `extensions`,
+`known_hosts`, `params`, and `trust` are `pub(crate)`; the three types the app does need from them (`SftpConnectError`,
+`ServerExtensions`, `SftpConnectionParams`) arrive as root re-exports. ❗ Keep it that way: a `pub mod` promises
+everything `pub` inside it, and `trust` and `known_hosts` in particular hold the man-in-the-middle decision, which
+nothing outside this crate has any business reaching into.
 
-⚠️ One `pub` item in `transport` is unreachable from outside even so: `presented_host_key` returns
-`trust::PresentedHostKey`, whose module is `pub(crate)`. It has exactly one caller, `volume::approve_host_key`, so
-`pub(crate)` fits it, and narrowing it frees an item under the ceiling rather than needing one.
+The item budget moved from 23 to 25 for the two per-server switches: `auth::UnattendedReconnect`,
+`SftpVolume::set_auto_reconnect`, and `SftpVolume::unattended_reconnect` cost three, and narrowing
+`transport::presented_host_key` to `pub(crate)` gave one back. That one was `pub` and unreachable anyway: it returns
+`trust::PresentedHostKey`, whose module is `pub(crate)`, and its only caller is `volume::approve_host_key`.

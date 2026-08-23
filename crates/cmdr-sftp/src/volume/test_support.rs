@@ -59,7 +59,10 @@ pub fn make_test_volume_with(root: &str, rung: AuthRungUsed, host: VolumeHost) -
             me: me.clone(),
             reconnect_lock: tokio::sync::Mutex::new(()),
             unmounted: AtomicBool::new(false),
-            password_attempt_spent: AtomicBool::new(false),
+            // On, the way every saved server is: a cell that wants the switch off
+            // moves it the way the app does, through `set_auto_reconnect`.
+            auto_reconnect: AtomicBool::new(true),
+            auth_attempt_spent: AtomicBool::new(false),
             host,
         }),
     }

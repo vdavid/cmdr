@@ -26,7 +26,7 @@ use crate::network::sftp_host_keys::{self, TrustedHostKey};
 use crate::network::sftp_known_servers::{self, KnownSftpServer};
 use crate::network::sftp_volume_wiring::{self, SftpConnection};
 use cmdr_sftp::SftpConnectionParams;
-use cmdr_sftp::auth::AuthRungUsed;
+use cmdr_sftp::auth::{AuthRungUsed, UnattendedReconnect};
 use cmdr_sftp::transport::HostKeyPrompt;
 use cmdr_sftp::volume::HostKeyApproval;
 
@@ -47,12 +47,12 @@ pub enum SftpAuthRung {
     Agent,
     /// An unencrypted key file. Comes back on its own.
     KeyFile,
-    /// A passphrase-protected key file. ❗ Cannot come back unattended: the
-    /// passphrase isn't held past the session it unlocked.
+    /// A passphrase-protected key file. Comes back from the remembered
+    /// passphrase: one unattended retry, then a person.
     EncryptedKeyFile,
     /// A password from the secret store. One unattended retry, then a person.
     Password,
-    /// The server drove the prompts. Never unattended.
+    /// The server drove the prompts. Never unattended, however full the store is.
     KeyboardInteractive,
 }
 
@@ -120,6 +120,45 @@ pub enum SftpConnectResult {
     Unreachable,
 }
 
+/// Whether an SFTP volume can actually come back on its own as it stands.
+///
+/// ❗ **The backend's answer to "the switch is on and nothing happens".** The two
+/// switches are independent — "remember the secret" is exactly a Keychain entry
+/// (`has_sftp_credentials` reads it, `save_sftp_credentials` / delete move it),
+/// and "reconnect automatically" is exactly this one — but their COMBINATION has
+/// a precondition, and this enum is where it's said out loud. ❌ Never derive it
+/// in the frontend from a rung plus a credential check: the rung is decided per
+/// dial and the derivation goes stale the moment one lands elsewhere.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum SftpUnattendedReconnect {
+    /// The switch is off. Nothing redials on its own, whatever is remembered. A
+    /// person reconnects by hand, and that is the whole story.
+    TurnedOff,
+    /// On, and it works. Nothing to show.
+    Ready,
+    /// ❗ On, and it can't do anything: this volume signs in from the secret store
+    /// and nothing is stored. **This is the state a UI warns about**, and the way
+    /// out is remembering the secret.
+    NeedsStoredSecret,
+    /// On, but this server asks its own questions at every sign-in
+    /// (keyboard-interactive, which is where 2FA lives), so no stored secret can
+    /// buy an unattended reconnect. ❌ Don't offer "remember the secret" as the
+    /// fix here; it isn't one.
+    RungCannot,
+}
+
+impl From<UnattendedReconnect> for SftpUnattendedReconnect {
+    fn from(answer: UnattendedReconnect) -> Self {
+        match answer {
+            UnattendedReconnect::TurnedOff => Self::TurnedOff,
+            UnattendedReconnect::Ready => Self::Ready,
+            UnattendedReconnect::NeedsStoredSecret => Self::NeedsStoredSecret,
+            UnattendedReconnect::RungCannot => Self::RungCannot,
+        }
+    }
+}
+
 /// One host key, named the way a human checks it against `ssh-keygen -lf`.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -160,6 +199,10 @@ pub enum SftpHostKeyApprovalResult {
 /// parameter.
 #[tauri::command]
 #[specta::specta]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one argument per saved-server field, mirroring `update_known_sftp_server`"
+)]
 pub async fn connect_sftp_volume(
     display_name: String,
     host: String,
@@ -168,10 +211,12 @@ pub async fn connect_sftp_volume(
     remote_root: String,
     key_file: Option<String>,
     use_agent: bool,
+    auto_reconnect: bool,
 ) -> SftpConnectResult {
     let mut params = SftpConnectionParams::new(&host, port, &username, remote_root);
     params.key_file = key_file.map(std::path::PathBuf::from);
     params.use_agent = use_agent;
+    params.auto_reconnect = auto_reconnect;
 
     match sftp_volume_wiring::connect_and_register(&display_name, params).await {
         SftpConnection::Connected { volume_id, rung } => SftpConnectResult::Connected(ConnectedSftpVolume {
@@ -265,19 +310,21 @@ fn credential_key(host: &str, port: u16) -> String {
 
 /// Saves the secret for one account on one server.
 ///
+/// ❗ **This command IS the "remember the secret" switch.** Its meaning is exactly
+/// "put this in the Keychain" and ❌ nothing else: `has_sftp_credentials` reads
+/// the switch back and `delete_sftp_credentials` turns it off, so there is no
+/// second flag anywhere that could disagree with the store.
+///
 /// ❗ **One entry per account, whatever the rung uses it for.** The auth ladder
 /// reads this same entry and offers it as the password on the password and
 /// keyboard-interactive rungs, and as the key file's passphrase on the key-file
 /// rung. So a passphrase-protected key needs its passphrase here to connect the
-/// FIRST time; after that, an attended sign-in passes a typed one straight
-/// through without saving.
+/// FIRST time.
 ///
-/// ❗ Saving a passphrase does NOT make that rung reconnect unattended:
-/// `cmdr_sftp::auth::reconnect_policy` gates on the rung, not on whether a
-/// secret exists, so a passphrase-protected key still stops and asks. What it
-/// costs is having the passphrase in the secret store at all, which is a
-/// question for the sign-in UI to put to the user rather than one this command
-/// answers.
+/// ❗ Remembering a secret is what makes unattended reconnects POSSIBLE on the
+/// password and encrypted-key rungs; it doesn't turn them on. That is the other
+/// switch (`update_known_sftp_server`'s `auto_reconnect`), and
+/// `get_sftp_unattended_reconnect` is what says whether the two add up.
 ///
 /// ❗ On a blocking task: the store can put a Keychain prompt in front of this,
 /// and a modal dialog on the async runtime stalls every other volume.
@@ -370,7 +417,16 @@ pub fn update_known_sftp_server(
     remote_root: String,
     key_file: Option<String>,
     use_agent: bool,
+    auto_reconnect: bool,
 ) {
+    // ❗ The live volume too, when there is one: the saved entry is the durable
+    // copy, and a switch that only took effect on the next connect would read as
+    // ignored.
+    let volume_id = cmdr_fs::volume::sftp_volume_id(&host, port, &username);
+    // It answers whether that volume happened to be MOUNTED, and editing a saved server while it isn't is ordinary;
+    // the durable entry written below is what the caller asked for either way.
+    // allowed-discarded-outcome: "no such mounted volume" is the common case here, not a failure to report.
+    sftp_volume_wiring::apply_auto_reconnect(&volume_id, auto_reconnect);
     sftp_known_servers::remember(KnownSftpServer {
         host,
         port,
@@ -379,8 +435,30 @@ pub fn update_known_sftp_server(
         remote_root,
         key_file,
         use_agent,
+        auto_reconnect,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
     });
+}
+
+/// Whether an SFTP volume can actually come back on its own as it stands.
+///
+/// ❗ **Ask this when a banner renders**, the same way `get_volume_sign_in_state`
+/// is asked: the rung is decided per DIAL, so an answer captured at connect goes
+/// stale the moment a reconnect lands on another rung.
+///
+/// `null` when nothing SFTP is registered under that id. That is the honest
+/// answer rather than a guess: without a live session there is no rung, and the
+/// precondition depends on one. A saved server the user hasn't connected to yet
+/// therefore gets no warning, which is right — nothing is known to warn about.
+///
+/// ❗ May read the secret store (on a blocking task, and only for the rungs that
+/// redial out of it), so ❌ don't poll it.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_sftp_unattended_reconnect(volume_id: String) -> Option<SftpUnattendedReconnect> {
+    sftp_volume_wiring::unattended_reconnect(&volume_id)
+        .await
+        .map(SftpUnattendedReconnect::from)
 }
 
 /// Drops a server from the list, answering whether one was there.

@@ -40,8 +40,8 @@ services:
     volumes: ['./.keys/keyonly:/keys']
     ports: ['${SFTP_FIXTURE_KEYONLY_PORT:-12481}:22']
 
-  # A key file with a passphrase on it: the rung that CANNOT reconnect
-  # unattended, because the passphrase isn't held past the session it unlocked.
+  # A key file with a passphrase on it: the rung that reconnects out of the secret
+  # store, one try at a time, exactly like the password rung does.
   sftp-fixture-passphrase:
     <<: *fixture
     environment:

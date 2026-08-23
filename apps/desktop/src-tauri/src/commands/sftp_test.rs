@@ -112,6 +112,7 @@ async fn the_known_servers_trio_round_trips() {
         "/srv/data".to_string(),
         None,
         true,
+        false,
     );
 
     let mine: Vec<_> = get_known_sftp_servers()
@@ -120,6 +121,10 @@ async fn the_known_servers_trio_round_trips() {
         .collect();
     assert_eq!(mine.len(), 1);
     assert_eq!(mine[0].display_name, "Trio");
+    assert!(
+        !mine[0].auto_reconnect,
+        "❗ the switch is the user's, so editing a server has to be able to turn it off"
+    );
 
     assert!(forget_known_sftp_server(host.to_string(), 22, "ada".to_string()));
     assert!(

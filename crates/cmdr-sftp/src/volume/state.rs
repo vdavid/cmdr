@@ -24,8 +24,9 @@ use crate::auth::AuthRungUsed;
 ///
 /// Stored as an `AtomicU8` for lock-free reads from any thread. Four values
 /// rather than SMB's two, because the last two are states this backend RESTS in:
-/// a passphrase-protected key can't come back on its own, and a key that no
-/// longer matches must not come back at all until a human has looked at it.
+/// a rung that redials out of the secret store stops after one refusal, and a key
+/// that no longer matches must not come back at all until a human has looked at
+/// it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum ConnectionState {

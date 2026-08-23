@@ -1,6 +1,6 @@
 /**
  * The SFTP wrappers, whose one real risk is argument order: `connectSftpVolume` and
- * `updateKnownSftpServer` both take seven positional arguments, and swapping two
+ * `updateKnownSftpServer` both take eight positional arguments, and swapping two
  * strings compiles fine and connects to the wrong thing.
  */
 
@@ -19,6 +19,7 @@ vi.mock('$lib/ipc/bindings', () => ({
     getKnownSftpServers: vi.fn(),
     updateKnownSftpServer: vi.fn(),
     forgetKnownSftpServer: vi.fn(),
+    getSftpUnattendedReconnect: vi.fn(),
   },
 }))
 
@@ -31,6 +32,7 @@ import {
   forgetKnownSftpServer,
   forgetSftpHostKey,
   getKnownSftpServers,
+  getSftpUnattendedReconnect,
   hasSftpCredentials,
   listTrustedSftpHostKeys,
   saveSftpCredentials,
@@ -46,6 +48,7 @@ const target: SftpTarget = {
   remoteRoot: '/srv/data',
   keyFile: '/Users/ada/.ssh/id_ed25519',
   useAgent: true,
+  autoReconnect: true,
 }
 
 const ok = { status: 'ok' as const, data: null }
@@ -66,6 +69,7 @@ describe('connecting', () => {
       'ada',
       '/srv/data',
       '/Users/ada/.ssh/id_ed25519',
+      true,
       true,
     )
   })
@@ -152,6 +156,52 @@ describe('the saved-server list', () => {
     expect(await getKnownSftpServers()).toEqual([])
   })
 
+  it('fills in the auto-reconnect switch for a server saved before it existed', async () => {
+    // The stored file may omit the field, so the generated type has it optional.
+    // Reading that `undefined` as "off" would switch auto-reconnect off under
+    // every server anyone already had, which is a regression dressed as a default.
+    const saved = {
+      host: 'naspolya.local',
+      port: 2222,
+      username: 'ada',
+      displayName: 'Naspolya',
+      remoteRoot: '/srv/data',
+      keyFile: null,
+      useAgent: true,
+      lastConnectedAt: '2026-08-22T10:00:00Z',
+    }
+    vi.mocked(commands.getKnownSftpServers).mockResolvedValueOnce([saved])
+
+    const servers = await getKnownSftpServers()
+
+    expect(servers.map((s) => s.autoReconnect)).toEqual([true])
+  })
+
+  it('leaves a switch the user turned off turned off', async () => {
+    const saved = {
+      host: 'naspolya.local',
+      port: 2222,
+      username: 'ada',
+      displayName: 'Naspolya',
+      remoteRoot: '/srv/data',
+      keyFile: null,
+      useAgent: true,
+      autoReconnect: false,
+      lastConnectedAt: '2026-08-22T10:00:00Z',
+    }
+    vi.mocked(commands.getKnownSftpServers).mockResolvedValueOnce([saved])
+
+    const servers = await getKnownSftpServers()
+
+    expect(servers.map((s) => s.autoReconnect)).toEqual([false])
+  })
+
+  it('reads the unattended-reconnect answer straight through, so nothing derives it', async () => {
+    vi.mocked(commands.getSftpUnattendedReconnect).mockResolvedValueOnce('needs_stored_secret')
+    expect(await getSftpUnattendedReconnect('sftp-naspolya-abc')).toBe('needs_stored_secret')
+    expect(commands.getSftpUnattendedReconnect).toHaveBeenCalledWith('sftp-naspolya-abc')
+  })
+
   it('update reorders the target into the argument order the command takes', async () => {
     // ❗ Not the same order as `connectSftpVolume`: the identity triple comes
     // first here, and getting it wrong would silently write a different server.
@@ -164,6 +214,7 @@ describe('the saved-server list', () => {
       'Naspolya',
       '/srv/data',
       '/Users/ada/.ssh/id_ed25519',
+      true,
       true,
     )
   })

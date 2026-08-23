@@ -9,12 +9,13 @@ import type {
   KnownSftpServer,
   SftpConnectResult,
   SftpHostKeyApprovalResult,
+  SftpUnattendedReconnect,
   TrustedHostKey,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 export type { HostKeyPrompt, KnownSftpServer, SftpConnectResult, SftpHostKeyApprovalResult, TrustedHostKey }
-export type { SftpAuthRung, ConnectedSftpVolume, SftpHostKeyIdentity } from '$lib/ipc/bindings'
+export type { SftpAuthRung, ConnectedSftpVolume, SftpHostKeyIdentity, SftpUnattendedReconnect } from '$lib/ipc/bindings'
 
 /** How to reach one SFTP server. No secret: the backend reads those from the secret store itself. */
 export interface SftpTarget {
@@ -32,6 +33,16 @@ export interface SftpTarget {
   keyFile?: string | null
   /** Whether the running ssh-agent may be asked. */
   useAgent: boolean
+  /**
+   * Whether Cmdr may redial this server unattended when the session drops.
+   *
+   * Independent of whether the secret is remembered, which is the other switch
+   * (`hasSftpCredentials` / `saveSftpCredentials` / `deleteSftpCredentials`).
+   * Their combination has a precondition, and `getSftpUnattendedReconnect` is
+   * what says whether it holds. Defaults to on, which is how SFTP has always
+   * behaved.
+   */
+  autoReconnect: boolean
 }
 
 /**
@@ -53,6 +64,7 @@ export async function connectSftpVolume(target: SftpTarget): Promise<SftpConnect
     target.remoteRoot,
     target.keyFile ?? null,
     target.useAgent,
+    target.autoReconnect,
   )
 }
 
@@ -97,10 +109,14 @@ export async function listTrustedSftpHostKeys(): Promise<TrustedHostKey[]> {
 /**
  * Saves the secret for one account on one server, so the next connection is silent.
  *
+ * This call is the "remember the secret" switch: its meaning is exactly "put this in
+ * the Keychain". `hasSftpCredentials` reads the switch back, `deleteSftpCredentials`
+ * turns it off, and there's no second flag that could disagree with the store.
+ *
  * One entry per account, whatever the rung uses it for: the backend offers it as the
  * password on the password and keyboard-interactive rungs, and as the key file's
- * passphrase on the key-file rung. Saving a passphrase doesn't make that rung reconnect
- * unattended — the policy gates on the rung, not on whether a secret exists.
+ * passphrase on the key-file rung. Remembering it makes an unattended reconnect
+ * possible on those rungs; turning one on is the other switch (`autoReconnect`).
  *
  * Throws a `KeychainError` if the store refused.
  */
@@ -125,9 +141,21 @@ export async function deleteSftpCredentials(host: string, port: number, username
   if (res.status === 'error') throwIpcError(res.error)
 }
 
-/** Every SFTP server the user has connected to. */
-export async function getKnownSftpServers(): Promise<KnownSftpServer[]> {
-  return await commands.getKnownSftpServers()
+/** A saved server with every switch spelled out, which is what a picker or an edit form needs. */
+export type SavedSftpServer = KnownSftpServer & { autoReconnect: boolean }
+
+/**
+ * Every SFTP server the user has connected to.
+ *
+ * `autoReconnect` is typed optional on the generated `KnownSftpServer` because a
+ * file written before that switch existed omits it. This is the one place that
+ * gap is closed, and on — SFTP has always reconnected on its own, so reading a
+ * missing field as off would switch it off under every server saved so far.
+ * Nowhere else should be spelling that default.
+ */
+export async function getKnownSftpServers(): Promise<SavedSftpServer[]> {
+  const servers = await commands.getKnownSftpServers()
+  return servers.map((server) => ({ ...server, autoReconnect: server.autoReconnect ?? true }))
 }
 
 /**
@@ -145,6 +173,7 @@ export async function updateKnownSftpServer(target: SftpTarget): Promise<void> {
     target.remoteRoot,
     target.keyFile ?? null,
     target.useAgent,
+    target.autoReconnect,
   )
 }
 
@@ -156,4 +185,21 @@ export async function updateKnownSftpServer(target: SftpTarget): Promise<void> {
  */
 export async function forgetKnownSftpServer(host: string, port: number, username: string): Promise<boolean> {
   return await commands.forgetKnownSftpServer(host, port, username)
+}
+
+/**
+ * Whether a mounted SFTP volume can actually come back on its own as it stands.
+ *
+ * The backend's own answer to "auto-reconnect is on and nothing happens", so no UI
+ * has to derive it from a rung plus a credential check. `needs_stored_secret` is the
+ * one to warn about: the switch is on, this volume signs in from the secret store,
+ * and nothing is stored. `rung_cannot` means the server asks its own questions every
+ * time, so remembering a secret wouldn't help.
+ *
+ * `null` when nothing SFTP is mounted under that id: the answer depends on which
+ * credential proved the live session, and there isn't one. Ask when a banner
+ * renders rather than polling; it can reach the Keychain.
+ */
+export async function getSftpUnattendedReconnect(volumeId: string): Promise<SftpUnattendedReconnect | null> {
+  return await commands.getSftpUnattendedReconnect(volumeId)
 }

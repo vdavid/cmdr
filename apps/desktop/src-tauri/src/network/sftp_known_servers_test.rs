@@ -22,6 +22,7 @@ fn server(host: &str, username: &str) -> KnownSftpServer {
         remote_root: "/srv/data".to_string(),
         key_file: None,
         use_agent: true,
+        auto_reconnect: true,
         last_connected_at: "2026-08-22T10:00:00Z".to_string(),
     }
 }
@@ -118,4 +119,50 @@ fn forgetting_one_account_leaves_the_other_alone() {
     let found = entries_for(&host);
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].username, "grace");
+}
+
+/// ❗ **A server saved before this setting existed still reconnects
+/// automatically.**
+///
+/// SFTP has always come back on its own with a bounded backoff. Reading a missing
+/// field as `false` would switch that off under everyone who already has saved
+/// servers, which is a regression dressed as a migration.
+#[test]
+fn a_server_saved_before_the_setting_existed_still_reconnects_automatically() {
+    let stored = r#"{
+      "knownSftpServers": [
+        {
+          "host": "naspolya",
+          "port": 22,
+          "username": "ada",
+          "displayName": "Naspolya",
+          "remoteRoot": "/srv/data",
+          "keyFile": null,
+          "useAgent": true,
+          "lastConnectedAt": "2026-08-22T10:00:00Z"
+        }
+      ]
+    }"#;
+
+    let store: KnownSftpServersStore = serde_json::from_str(stored).expect("an older file still parses");
+
+    assert!(
+        store.known_sftp_servers[0].auto_reconnect,
+        "the field wasn't in the file, and the default has to be the behavior that was already shipping"
+    );
+}
+
+/// The switch survives a round trip through the file, both ways.
+#[test]
+fn the_switch_round_trips_through_the_stored_file() {
+    let mut off = server("round-trip.sftp-servers.test", "ada");
+    off.auto_reconnect = false;
+    let store = KnownSftpServersStore {
+        known_sftp_servers: vec![off],
+    };
+
+    let written = serde_json::to_string(&store).expect("serializable");
+    let read: KnownSftpServersStore = serde_json::from_str(&written).expect("parseable");
+
+    assert!(!read.known_sftp_servers[0].auto_reconnect);
 }

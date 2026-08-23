@@ -244,7 +244,7 @@ fn prompt(params: &SftpConnectionParams, key: PresentedHostKey, kind: HostKeyPro
 /// The negotiation is pinned exactly as [`dial`] pins it, so the algorithm a
 /// probe sees is the algorithm a dial would see. Without that, a two-key server
 /// could answer one probe with ed25519 and the next dial with rsa.
-pub async fn presented_host_key(
+pub(crate) async fn presented_host_key(
     server: &str,
     port: u16,
     host: &VolumeHost,

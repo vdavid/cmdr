@@ -337,6 +337,19 @@ that is `crates/cmdr-sftp/DETAILS.md` § "Host-key trust".
 `AuthOptions` that can only say guest-or-credentials — which expresses neither a key file nor an ssh-agent. Bending it
 would leave two backends sharing fields that mean different things in each.
 
+**The two per-server switches live in two different places, on purpose.** "Remember the secret" IS the Keychain entry
+(`save_sftp_credentials` writes it, `has_sftp_credentials` reads it, `delete_sftp_credentials` clears it), so there is
+❌ no second flag anywhere that could disagree with the store — a user who deletes the entry through Keychain Access has
+turned the switch off. "Reconnect automatically" is `KnownSftpServer::auto_reconnect`, which is per-server user intent
+rather than a fact about a secret, so the saved-server list is its home. ❗ It reads as `true` when a stored entry
+doesn't name it: SFTP has always come back on its own, and a missing field must not switch that off under servers saved
+before the setting existed.
+
+`update_known_sftp_server` moves both copies: the saved entry, and (through `sftp_volume_wiring::apply_auto_reconnect`)
+a volume that happens to be mounted, so the switch takes effect now rather than on the next connect. What the two mean
+together, what the backend answers when one is on and can't work, and what a UI shows:
+`crates/cmdr-sftp/DETAILS.md` § "The two switches".
+
 `sftp_volume_wiring.rs` is the only path a volume gets registered on, and it does three things in one order: dial
 through `cmdr_sftp::connect_sftp_volume` (which runs the dial in a task, because a connect cancelled mid-handshake
 panics inside the SFTP engine), register while retiring any predecessor with `on_superseded`, and remember the server.

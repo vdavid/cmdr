@@ -3527,6 +3527,7 @@ export const commands = {
     remoteRoot: string,
     keyFile: string | null,
     useAgent: boolean,
+    autoReconnect: boolean,
   ) =>
     __TAURI_INVOKE<SftpConnectResult>('connect_sftp_volume', {
       displayName,
@@ -3536,6 +3537,7 @@ export const commands = {
       remoteRoot,
       keyFile,
       useAgent,
+      autoReconnect,
     }),
   /**
    *  Drops an SFTP volume's session and takes it out of the volume registry.
@@ -3573,19 +3575,21 @@ export const commands = {
   /**
    *  Saves the secret for one account on one server.
    *
+   *  ❗ **This command IS the "remember the secret" switch.** Its meaning is exactly
+   *  "put this in the Keychain" and ❌ nothing else: `has_sftp_credentials` reads
+   *  the switch back and `delete_sftp_credentials` turns it off, so there is no
+   *  second flag anywhere that could disagree with the store.
+   *
    *  ❗ **One entry per account, whatever the rung uses it for.** The auth ladder
    *  reads this same entry and offers it as the password on the password and
    *  keyboard-interactive rungs, and as the key file's passphrase on the key-file
    *  rung. So a passphrase-protected key needs its passphrase here to connect the
-   *  FIRST time; after that, an attended sign-in passes a typed one straight
-   *  through without saving.
+   *  FIRST time.
    *
-   *  ❗ Saving a passphrase does NOT make that rung reconnect unattended:
-   *  `cmdr_sftp::auth::reconnect_policy` gates on the rung, not on whether a
-   *  secret exists, so a passphrase-protected key still stops and asks. What it
-   *  costs is having the passphrase in the secret store at all, which is a
-   *  question for the sign-in UI to put to the user rather than one this command
-   *  answers.
+   *  ❗ Remembering a secret is what makes unattended reconnects POSSIBLE on the
+   *  password and encrypted-key rungs; it doesn't turn them on. That is the other
+   *  switch (`update_known_sftp_server`'s `auto_reconnect`), and
+   *  `get_sftp_unattended_reconnect` is what says whether the two add up.
    *
    *  ❗ On a blocking task: the store can put a Keychain prompt in front of this,
    *  and a modal dialog on the async runtime stalls every other volume.
@@ -3625,6 +3629,7 @@ export const commands = {
     remoteRoot: string,
     keyFile: string | null,
     useAgent: boolean,
+    autoReconnect: boolean,
   ) =>
     __TAURI_INVOKE<void>('update_known_sftp_server', {
       host,
@@ -3634,6 +3639,7 @@ export const commands = {
       remoteRoot,
       keyFile,
       useAgent,
+      autoReconnect,
     }),
   /**
    *  Drops a server from the list, answering whether one was there.
@@ -3644,6 +3650,45 @@ export const commands = {
    */
   forgetKnownSftpServer: (host: string, port: number, username: string) =>
     __TAURI_INVOKE<boolean>('forget_known_sftp_server', { host, port, username }),
+  /**
+   *  Whether an SFTP volume can actually come back on its own as it stands.
+   *
+   *  ❗ **Ask this when a banner renders**, the same way `get_volume_sign_in_state`
+   *  is asked: the rung is decided per DIAL, so an answer captured at connect goes
+   *  stale the moment a reconnect lands on another rung.
+   *
+   *  `null` when nothing SFTP is registered under that id. That is the honest
+   *  answer rather than a guess: without a live session there is no rung, and the
+   *  precondition depends on one. A saved server the user hasn't connected to yet
+   *  therefore gets no warning, which is right — nothing is known to warn about.
+   *
+   *  ❗ May read the secret store (on a blocking task, and only for the rungs that
+   *  redial out of it), so ❌ don't poll it.
+   */
+  getSftpUnattendedReconnect: (volumeId: string) =>
+    __TAURI_INVOKE<
+      /**
+       *  The switch is off. Nothing redials on its own, whatever is remembered. A
+       *  person reconnects by hand, and that is the whole story.
+       */
+      | 'turned_off'
+      // On, and it works. Nothing to show.
+      | 'ready'
+      /**
+       *  ❗ On, and it can't do anything: this volume signs in from the secret store
+       *  and nothing is stored. **This is the state a UI warns about**, and the way
+       *  out is remembering the secret.
+       */
+      | 'needs_stored_secret'
+      /**
+       *  On, but this server asks its own questions at every sign-in
+       *  (keyboard-interactive, which is where 2FA lives), so no stored secret can
+       *  buy an unattended reconnect. ❌ Don't offer "remember the secret" as the
+       *  fix here; it isn't one.
+       */
+      | 'rung_cannot'
+      | null
+    >('get_sftp_unattended_reconnect', { volumeId }),
   /**
    *  Tauri command: returns the current macOS accent color as a hex string.
    *
@@ -6457,6 +6502,24 @@ export type KnownSftpServer = {
   keyFile: string | null
   // Whether the running ssh-agent may be asked.
   useAgent: boolean
+  /**
+   *  Whether Cmdr may redial this server unattended when its session drops.
+   *
+   *  ❗ **Independent of whether a secret is remembered**, which is the OTHER
+   *  switch and lives in the Keychain rather than here (`has_sftp_credentials`
+   *  is how to read it). Their combination has a real precondition:
+   *  `get_sftp_unattended_reconnect` is what says so, per volume.
+   *
+   *  ❗ Defaults to on, ❌ never to off: SFTP has always reconnected on its own,
+   *  and reading a missing field as `false` would switch that off under every
+   *  server saved before the setting existed.
+   *  ⚠️ `serde(default)` makes specta type this `autoReconnect?: boolean`, even
+   *  though every entry this backend WRITES carries it. ❌ Don't let a call site
+   *  infer the default from that `undefined`: `getKnownSftpServers` in
+   *  `tauri-commands/sftp.ts` fills it in one place, and that is the only place
+   *  the default is spelled on the frontend.
+   */
+  autoReconnect?: boolean
   /**
    *  When this server was last connected to, ISO 8601, so a picker can sort by
    *  recency.
@@ -9687,13 +9750,13 @@ export type SftpAuthRung =
   // An unencrypted key file. Comes back on its own.
   | 'key_file'
   /**
-   *  A passphrase-protected key file. ❗ Cannot come back unattended: the
-   *  passphrase isn't held past the session it unlocked.
+   *  A passphrase-protected key file. Comes back from the remembered
+   *  passphrase: one unattended retry, then a person.
    */
   | 'encrypted_key_file'
   // A password from the secret store. One unattended retry, then a person.
   | 'password'
-  // The server drove the prompts. Never unattended.
+  // The server drove the prompts. Never unattended, however full the store is.
   | 'keyboard_interactive'
 
 /**
@@ -9756,6 +9819,39 @@ export type SftpHostKeyIdentity = {
   // Its OpenSSH `SHA256:…` fingerprint.
   fingerprint: string
 }
+
+/**
+ *  Whether an SFTP volume can actually come back on its own as it stands.
+ *
+ *  ❗ **The backend's answer to "the switch is on and nothing happens".** The two
+ *  switches are independent — "remember the secret" is exactly a Keychain entry
+ *  (`has_sftp_credentials` reads it, `save_sftp_credentials` / delete move it),
+ *  and "reconnect automatically" is exactly this one — but their COMBINATION has
+ *  a precondition, and this enum is where it's said out loud. ❌ Never derive it
+ *  in the frontend from a rung plus a credential check: the rung is decided per
+ *  dial and the derivation goes stale the moment one lands elsewhere.
+ */
+export type SftpUnattendedReconnect =
+  /**
+   *  The switch is off. Nothing redials on its own, whatever is remembered. A
+   *  person reconnects by hand, and that is the whole story.
+   */
+  | 'turned_off'
+  // On, and it works. Nothing to show.
+  | 'ready'
+  /**
+   *  ❗ On, and it can't do anything: this volume signs in from the secret store
+   *  and nothing is stored. **This is the state a UI warns about**, and the way
+   *  out is remembering the secret.
+   */
+  | 'needs_stored_secret'
+  /**
+   *  On, but this server asks its own questions at every sign-in
+   *  (keyboard-interactive, which is where 2FA lives), so no stored secret can
+   *  buy an unattended reconnect. ❌ Don't offer "remember the secret" as the
+   *  fix here; it isn't one.
+   */
+  | 'rung_cannot'
 
 // Information about a discovered share.
 export type ShareInfo = {

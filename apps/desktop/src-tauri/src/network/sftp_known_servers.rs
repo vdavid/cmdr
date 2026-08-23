@@ -45,9 +45,31 @@ pub struct KnownSftpServer {
     pub key_file: Option<String>,
     /// Whether the running ssh-agent may be asked.
     pub use_agent: bool,
+    /// Whether Cmdr may redial this server unattended when its session drops.
+    ///
+    /// ❗ **Independent of whether a secret is remembered**, which is the OTHER
+    /// switch and lives in the Keychain rather than here (`has_sftp_credentials`
+    /// is how to read it). Their combination has a real precondition:
+    /// `get_sftp_unattended_reconnect` is what says so, per volume.
+    ///
+    /// ❗ Defaults to on, ❌ never to off: SFTP has always reconnected on its own,
+    /// and reading a missing field as `false` would switch that off under every
+    /// server saved before the setting existed.
+    /// ⚠️ `serde(default)` makes specta type this `autoReconnect?: boolean`, even
+    /// though every entry this backend WRITES carries it. ❌ Don't let a call site
+    /// infer the default from that `undefined`: `getKnownSftpServers` in
+    /// `tauri-commands/sftp.ts` fills it in one place, and that is the only place
+    /// the default is spelled on the frontend.
+    #[serde(default = "reconnects_automatically")]
+    pub auto_reconnect: bool,
     /// When this server was last connected to, ISO 8601, so a picker can sort by
     /// recency.
     pub last_connected_at: String,
+}
+
+/// What `auto_reconnect` is when a stored entry doesn't name it.
+fn reconnects_automatically() -> bool {
+    true
 }
 
 /// The whole store, as it sits on disk.

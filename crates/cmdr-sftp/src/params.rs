@@ -30,10 +30,23 @@ pub struct SftpConnectionParams {
     /// Whether the running ssh-agent may be asked. Off for a fixture that has to
     /// exercise one specific rung.
     pub use_agent: bool,
+    /// Whether Cmdr may redial this server unattended when the session drops.
+    ///
+    /// ❗ The user's own per-server switch, and ❌ independent of whether a secret
+    /// is remembered: off means nothing redials however full the store is, and on
+    /// means the rung's policy decides (`auth::reconnect_policy`). Their
+    /// combination has a real precondition, which `auth::UnattendedReconnect`
+    /// states rather than implies.
+    ///
+    /// The starting value only; a live volume's copy moves with
+    /// `SftpVolume::set_auto_reconnect`, so a settings change doesn't need a
+    /// remount.
+    pub auto_reconnect: bool,
 }
 
 impl SftpConnectionParams {
-    /// Params for the common case: agent first, then whatever the store holds.
+    /// Params for the common case: agent first, then whatever the store holds,
+    /// and a dropped session comes back on its own.
     pub fn new(host: &str, port: u16, username: &str, remote_root: impl Into<PathBuf>) -> Self {
         Self {
             host: host.to_string(),
@@ -42,6 +55,7 @@ impl SftpConnectionParams {
             remote_root: remote_root.into(),
             key_file: None,
             use_agent: true,
+            auto_reconnect: true,
         }
     }
 

@@ -63,8 +63,8 @@ async fn an_unencrypted_key_file_signs_in_where_a_password_is_refused() {
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn a_passphrase_protected_key_unlocks_from_the_secret_store() {
-    // ❗ And the rung it records is what says this session can't rebuild itself
-    // unattended: the passphrase dies with the session it unlocked.
+    // ❗ And the rung it records is what says how a dropped session may rebuild
+    // itself: out of the same store, one try, then a person.
     let params = fixture_params("PASSPHRASE", 12482).with_key_file(fixture_key_path("passphrase"));
     let host = fixture_host(&params, Some(FIXTURE_KEY_PASSPHRASE));
     let volume = connect_fixture(&host, params).await;
@@ -79,7 +79,7 @@ async fn a_passphrase_protected_key_unlocks_from_the_secret_store() {
     );
     assert_eq!(
         crate::auth::reconnect_policy(rung),
-        crate::auth::ReconnectPolicy::NeedsCredentials
+        crate::auth::ReconnectPolicy::RetryOnceFromStore
     );
 }
 

@@ -18,7 +18,7 @@ use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
 use cmdr_fs::volume::{Retirement, VolumeError};
 
-use crate::auth::AuthRungUsed;
+use crate::auth::{AuthRungUsed, UnattendedReconnect};
 use crate::errors::SftpConnectError;
 use crate::params::SftpConnectionParams;
 use crate::transport::{self, DialOutcome, HostKeyPrompt, HostKeyPromptKind, SshConnection};
@@ -105,9 +105,15 @@ struct SftpVolumeInner {
     /// Set by `on_unmount`. A reconnect in flight bails rather than installing a
     /// session into a volume the app has forgotten.
     unmounted: AtomicBool,
-    /// Whether the one unattended password attempt has been spent
-    /// (`reconnect.rs`). ❌ Never a loop: repeated wrong passwords lock accounts.
-    password_attempt_spent: AtomicBool,
+    /// Whether the user's per-server "reconnect automatically" switch is on.
+    ///
+    /// ❗ The FIRST gate on every unattended dial, ahead of the rung, and ❌
+    /// independent of whether a secret is remembered. Live rather than read from
+    /// `params`, so flipping the switch takes effect without a remount.
+    auto_reconnect: AtomicBool,
+    /// Whether the one unattended authentication attempt has been spent
+    /// (`reconnect.rs`). ❌ Never a loop: repeated refusals lock accounts.
+    auth_attempt_spent: AtomicBool,
     /// Everything this backend asks the app around it.
     host: VolumeHost,
 }
@@ -121,6 +127,33 @@ impl SftpVolume {
     /// Which credential built the live session.
     pub fn auth_rung(&self) -> AuthRungUsed {
         self.inner.auth_rung()
+    }
+
+    /// Moves the user's "reconnect automatically" switch, on a volume that is
+    /// already mounted.
+    ///
+    /// ❗ Its meaning is exactly "may Cmdr redial unattended when the session
+    /// drops", and ❌ nothing else: it never stores a secret, never forgets one,
+    /// and never changes what a person can do by hand.
+    ///
+    /// ❗ Switching it ON while the volume sits `Disconnected` starts the backoff
+    /// loop then and there. Without that, the switch would look broken in exactly
+    /// the moment a user flips it to fix a volume that is already down.
+    pub fn set_auto_reconnect(&self, on: bool) {
+        let was = self.inner.auto_reconnect.swap(on, Ordering::Relaxed);
+        if on && !was {
+            self.inner.start_reconnect_loop_if_down();
+        }
+    }
+
+    /// Whether an unattended reconnect can actually happen as this volume stands.
+    ///
+    /// ❗ The backend's answer to "the switch is on but nothing comes back", so
+    /// ❌ no frontend has to derive it from a rung and a `has_credentials` call.
+    /// Reads the secret store only for the rungs that redial out of it, because a
+    /// needless read is a needless Keychain prompt.
+    pub async fn unattended_reconnect(&self) -> UnattendedReconnect {
+        self.inner.unattended_reconnect().await
     }
 
     /// The live transport, cloned out from under a short read guard.
@@ -185,6 +218,7 @@ pub async fn connect_sftp_volume(
     host: VolumeHost,
 ) -> Result<SftpConnectOutcome, SftpConnectError> {
     let root = params.remote_root.clone();
+    let auto_reconnect = params.auto_reconnect;
     let outcome = reconnect::guarded_dial(&host, params.clone(), None).await?;
 
     match outcome {
@@ -206,7 +240,8 @@ pub async fn connect_sftp_volume(
                     me: me.clone(),
                     reconnect_lock: tokio::sync::Mutex::new(()),
                     unmounted: AtomicBool::new(false),
-                    password_attempt_spent: AtomicBool::new(false),
+                    auto_reconnect: AtomicBool::new(auto_reconnect),
+                    auth_attempt_spent: AtomicBool::new(false),
                     host,
                 }),
             }))

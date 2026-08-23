@@ -1,15 +1,16 @@
-//! What a dropped session is allowed to do about itself, rung by rung.
+//! What a dropped session is allowed to do about itself: the per-server toggle
+//! first, then the rung.
 //!
 //! The cells split two ways on purpose:
 //!
-//! - **No server**: the policy gate. A volume built on a rung that may not
-//!   reconnect unattended must answer without touching the wire, and pointing the
-//!   fixture at a CLOSED port is what proves it did: a dial there answers
-//!   "unreachable" and reports `Disconnected`, so an answer of `NeedsCredentials`
-//!   can only have come from the gate.
+//! - **No server**: the two gates. A volume that may not reconnect unattended
+//!   must answer without touching the wire, and pointing the fixture at a CLOSED
+//!   port is what proves it did — a dial there answers "unreachable" and reports
+//!   `Disconnected`, so `PermissionDenied` (the rung gate) and `NotSupported`
+//!   (the toggle gate) each have exactly one possible source.
 //! - **A real server**: everything that turns on an authentication being
 //!   REFUSED. A closed port can't refuse a password, so the one rule that matters
-//!   most — a password is tried once and never again unattended — needs a server
+//!   most — a secret is tried once and never again unattended — needs a server
 //!   that says no.
 
 use std::collections::HashMap;
@@ -26,7 +27,7 @@ use cmdr_fs::volume::{SignInPrompt, Volume};
 use super::super::SftpVolume;
 use super::super::test_support::{TEST_ROOT, make_test_volume_with};
 use super::super::testing::*;
-use crate::auth::AuthRungUsed;
+use crate::auth::{AuthRungUsed, UnattendedReconnect};
 
 const FIXTURE: &str = "sftp-servers/start.sh (sftp-fixture)";
 
@@ -123,8 +124,18 @@ impl CredentialStore for CountingCredentials {
 
 /// A volume on `rung` whose server is a closed port, plus the events it reports.
 fn offline_volume(rung: AuthRungUsed) -> (Arc<RecordingVolumeEvents>, Arc<CountingCredentials>, SftpVolume) {
+    offline_volume_holding(rung, CountingCredentials::holding("127.0.0.1:12599", "ada", "whatever"))
+}
+
+/// The same, on a store of the caller's choosing.
+///
+/// ❗ What the store holds is half of what "remember the secret" MEANS, so the
+/// cells about that toggle need both an empty store and a full one.
+fn offline_volume_holding(
+    rung: AuthRungUsed,
+    credentials: Arc<CountingCredentials>,
+) -> (Arc<RecordingVolumeEvents>, Arc<CountingCredentials>, SftpVolume) {
     let events = Arc::new(RecordingVolumeEvents::new());
-    let credentials = CountingCredentials::holding("127.0.0.1:12599", "ada", "whatever");
     let host = VolumeHost::builder()
         .events(Arc::clone(&events) as Arc<dyn VolumeEventSink>)
         .credentials(Arc::clone(&credentials) as Arc<dyn CredentialStore>)
@@ -138,25 +149,28 @@ fn reported(events: &RecordingVolumeEvents) -> Vec<VolumeConnection> {
     events.transitions().into_iter().map(|(_, state)| state).collect()
 }
 
-/// A passphrase-protected key file cannot come back on its own, and must not try.
+/// A passphrase-protected key file redials from the store, exactly like a
+/// password does.
 ///
-/// The passphrase isn't held past the session it unlocked, so a dial would offer
-/// a key it can't decrypt and get nowhere. ❗ Answering `NeedsCredentials` where
-/// a dial would have answered `Disconnected` is what proves the gate ran.
+/// ❗ The gate that used to stop it was the RUNG, which was the wrong reason for
+/// the right behavior: the passphrase comes out of the same store the password
+/// does, and the store is re-read on every dial. With the toggle on and a
+/// passphrase remembered, refusing to dial is refusing to do what the user
+/// already asked for. Reporting `Disconnected` where the old gate answered
+/// `NeedsCredentials` is what proves the dial was MADE.
 #[tokio::test]
-async fn a_passphrase_protected_key_asks_for_a_person_instead_of_dialing() {
-    let (events, credentials, volume) = offline_volume(AuthRungUsed::KeyFile {
+async fn a_passphrase_protected_key_redials_from_the_store_like_a_password() {
+    let (events, _credentials, volume) = offline_volume(AuthRungUsed::KeyFile {
         passphrase_protected: true,
     });
 
     let refusal = volume.attempt_reconnect().await;
 
     assert!(
-        matches!(refusal, Err(cmdr_fs::volume::VolumeError::PermissionDenied(_))),
-        "only a person moves this forward, got {refusal:?}"
+        matches!(refusal, Err(cmdr_fs::volume::VolumeError::DeviceDisconnected(_))),
+        "the closed port refused a dial that was genuinely attempted, got {refusal:?}"
     );
-    assert_eq!(reported(&events), vec![VolumeConnection::NeedsCredentials]);
-    assert_eq!(credentials.reads(), 0, "❌ no dial, so no secret was even read");
+    assert_eq!(reported(&events), vec![VolumeConnection::Disconnected]);
 }
 
 /// Keyboard-interactive is the server asking the questions, and there is nobody
@@ -485,17 +499,18 @@ async fn sftp_integration_signing_in_with_the_right_password_comes_back_and_is_r
     );
 }
 
-/// ❗ **A key passphrase is used and then forgotten.**
+/// ❗ **An encrypted key whose passphrase is remembered comes back on its own.**
 ///
-/// Putting a passphrase on a key says it isn't to be left lying around. Writing
-/// it to the secret store would quietly turn this rung into one that reconnects
-/// unattended forever after, which is the opposite of what encrypting the key
-/// asked for.
+/// The rung used to refuse this by name, which was the wrong reason for the right
+/// behavior: the passphrase lives in the same store the password does, and a
+/// passphrase-protected key can't make its FIRST connection without one being
+/// there. With the toggle on and the secret remembered, redialing is exactly what
+/// the user asked for twice.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
-async fn sftp_integration_an_attended_reconnect_never_writes_a_key_passphrase_down() {
+async fn sftp_integration_an_encrypted_key_comes_back_when_its_passphrase_is_remembered() {
     let params = fixture_params("PASSPHRASE", 12482).with_key_file(fixture_key_path("passphrase"));
-    let (events, credentials, host) = watched_host(&params, Some(FIXTURE_KEY_PASSPHRASE));
+    let (events, _credentials, host) = watched_host(&params, Some(FIXTURE_KEY_PASSPHRASE));
     let volume = connect_fixture(&host, params.clone()).await;
     assert_eq!(
         volume.auth_rung(),
@@ -503,23 +518,131 @@ async fn sftp_integration_an_attended_reconnect_never_writes_a_key_passphrase_do
             passphrase_protected: true
         }
     );
+    assert_eq!(volume.unattended_reconnect().await, UnattendedReconnect::Ready);
 
-    // The session ends, and the passphrase ends with it.
+    volume.simulate_session_loss().await;
+    volume.attempt_reconnect().await.expect(FIXTURE);
+
+    assert!(
+        volume.exists(std::path::Path::new("hello.txt")).await,
+        "the stored passphrase unlocked the key again, with nobody watching"
+    );
+    assert!(
+        reported(&events).is_empty(),
+        "❗ nothing was reported at all: the volume never left `Connected`, and this backend reports          TRANSITIONS. An unattended recovery this quick is one the user never has to see."
+    );
+}
+
+/// ❗ **The toggle off leaves a perfectly reachable server alone.**
+///
+/// The strongest evidence there is that no dial happens: the fixture is up, the
+/// secret is remembered, and every ingredient of a successful reconnect is
+/// present. The volume stays down anyway, and comes back the moment the toggle
+/// does.
+///
+/// On the password fixture rather than a key one, because the rung is beside the
+/// point here: this cell is about the switch outranking whatever the rung would
+/// have allowed, and the password rung would happily have dialed.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_the_toggle_off_leaves_a_reachable_server_alone() {
+    let params = fixture_params("OPENSSH", 12480);
+    let (_events, _credentials, host) = watched_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params.clone()).await;
+    volume.set_auto_reconnect(false);
+    assert_eq!(volume.unattended_reconnect().await, UnattendedReconnect::TurnedOff);
+
+    volume.simulate_session_loss().await;
+
+    let refusal = volume.attempt_reconnect().await;
+    assert!(
+        matches!(refusal, Err(cmdr_fs::volume::VolumeError::NotSupported)),
+        "❌ no dial, however easy one would have been: {refusal:?}"
+    );
+    assert!(
+        !volume.exists(std::path::Path::new("hello.txt")).await,
+        "and the volume is genuinely still down"
+    );
+
+    volume.set_auto_reconnect(true);
+    volume.attempt_reconnect().await.expect(FIXTURE);
+    assert!(volume.exists(std::path::Path::new("hello.txt")).await);
+}
+
+/// ❗ **Switching the toggle back on brings a volume that is already down back.**
+///
+/// The one moment the switch would look broken if it only took effect on the NEXT
+/// drop: a user flips it on precisely because a volume is sitting there
+/// disconnected. So turning it on starts the backoff loop, and the volume comes
+/// back on its own.
+///
+/// The wait is the first backoff step (2 s) plus room for a handshake; polling
+/// rather than sleeping a fixed amount, so a fast machine finishes fast.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_switching_the_toggle_on_revives_a_volume_that_is_already_down() {
+    let params = fixture_params("OPENSSH", 12480);
+    let (_events, _credentials, host) = watched_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params.clone()).await;
+    volume.set_auto_reconnect(false);
+
+    // The session drops and the volume NOTICES, which is what leaves it in the
+    // `Disconnected` state the switch acts on. With the switch off, no loop was
+    // started and nothing redials.
+    volume.simulate_session_loss().await;
+    assert!(!volume.exists(std::path::Path::new("hello.txt")).await);
+    assert!(matches!(
+        volume.attempt_reconnect().await,
+        Err(cmdr_fs::volume::VolumeError::NotSupported)
+    ));
+
+    volume.set_auto_reconnect(true);
+
+    // ❗ Under nextest's own per-test timeout, so a regression fails with the
+    // message below rather than as an opaque "timed out".
+    let came_back = tokio::time::timeout(std::time::Duration::from_secs(6), async {
+        while !volume.exists(std::path::Path::new("hello.txt")).await {
+            // allowed-test-sleep: the poll interval of a wait-on-a-condition loop, not a fixed wait — the deadline
+            // above is what fails the cell, and this crate has no `wait_until_async` of its own.
+            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        }
+    })
+    .await;
+    assert!(
+        came_back.is_ok(),
+        "❗ turning the switch on has to act now, not at the next drop: {FIXTURE}"
+    );
+}
+
+/// ❗ **An encrypted key with nothing remembered asks a person, and the sign-in
+/// ❌ doesn't start remembering on its own.**
+///
+/// This is the pair to the cell above, and the one that keeps the two toggles
+/// independent: auto-reconnect being on never writes a secret to the Keychain,
+/// because that is the OTHER toggle's meaning and the user may deliberately have
+/// said no to it.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_an_encrypted_key_with_nothing_remembered_asks_and_stays_unremembered() {
+    let params = fixture_params("PASSPHRASE", 12482).with_key_file(fixture_key_path("passphrase"));
+    let (events, credentials, host) = watched_host(&params, Some(FIXTURE_KEY_PASSPHRASE));
+    let volume = connect_fixture(&host, params.clone()).await;
+
+    // The user turned "remember the secret" off while the session was up.
     volume.simulate_session_loss().await;
     credentials.forget(&params.credential_service(), FIXTURE_USER);
-    let reads_before = credentials.reads();
+    assert_eq!(
+        volume.unattended_reconnect().await,
+        UnattendedReconnect::NeedsStoredSecret,
+        "❗ the toggle is on and cannot do anything, which the backend says rather than the UI inferring"
+    );
 
     assert!(
         matches!(
             volume.attempt_reconnect().await,
             Err(cmdr_fs::volume::VolumeError::PermissionDenied(_))
         ),
-        "an encrypted key genuinely cannot come back on its own"
-    );
-    assert_eq!(
-        credentials.reads(),
-        reads_before,
-        "and it doesn't waste a dial finding out"
+        "nothing was offered, so only a person moves this forward"
     );
 
     volume
@@ -534,17 +657,182 @@ async fn sftp_integration_an_attended_reconnect_never_writes_a_key_passphrase_do
     assert_eq!(
         credentials.stored(&params.credential_service(), FIXTURE_USER),
         None,
-        "❌ and it was not written down"
-    );
-    assert_eq!(
-        volume.auth_rung(),
-        AuthRungUsed::KeyFile {
-            passphrase_protected: true
-        },
-        "so the next drop still needs a person, exactly as before"
+        "❌ and it was not written down: remembering is the user's call, not a side effect"
     );
     assert_eq!(
         reported(&events),
         vec![VolumeConnection::NeedsCredentials, VolumeConnection::Connected]
+    );
+}
+
+// ── "Reconnect automatically", off ───────────────────────────────────
+
+/// ❗ **Off means no unattended dial happens AT ALL**, on every rung.
+///
+/// The evidence is the typed refusal rather than a state: this volume's server is
+/// a closed port, so a dial that ran can only ever answer `DeviceDisconnected`.
+/// `NotSupported` has exactly one source, and it is the toggle.
+#[tokio::test]
+async fn the_toggle_off_stops_every_unattended_dial_before_it_starts() {
+    for rung in [
+        AuthRungUsed::Agent,
+        AuthRungUsed::KeyFile {
+            passphrase_protected: false,
+        },
+        AuthRungUsed::KeyFile {
+            passphrase_protected: true,
+        },
+        AuthRungUsed::Password,
+        AuthRungUsed::KeyboardInteractive,
+    ] {
+        let (events, credentials, volume) = offline_volume(rung);
+        volume.set_auto_reconnect(false);
+
+        let refusal = volume.attempt_reconnect().await;
+
+        assert!(
+            matches!(refusal, Err(cmdr_fs::volume::VolumeError::NotSupported)),
+            "{rung:?}: a dial to a closed port answers DeviceDisconnected, so this can only be the gate; got {refusal:?}"
+        );
+        assert_eq!(
+            reported(&events),
+            vec![VolumeConnection::Disconnected],
+            "{rung:?}: ❌ never NeedsCredentials — the credentials are fine, the toggle is off"
+        );
+        assert_eq!(credentials.reads(), 0, "{rung:?}: and no secret was read");
+    }
+}
+
+/// ❗ **Turning the toggle off doesn't change what "remembered" means, and back
+/// on doesn't leave a spent latch behind.**
+///
+/// A user who switches it off and on again gets the rung's own policy, not a
+/// volume stuck on whichever answer the toggle happened to produce.
+#[tokio::test]
+async fn the_toggle_back_on_hands_the_rung_its_policy_again() {
+    let (_events, _credentials, volume) = offline_volume(AuthRungUsed::Agent);
+    volume.set_auto_reconnect(false);
+    assert!(matches!(
+        volume.attempt_reconnect().await,
+        Err(cmdr_fs::volume::VolumeError::NotSupported)
+    ));
+
+    volume.set_auto_reconnect(true);
+
+    assert!(
+        matches!(
+            volume.attempt_reconnect().await,
+            Err(cmdr_fs::volume::VolumeError::DeviceDisconnected(_))
+        ),
+        "the agent rung dials freely again"
+    );
+}
+
+// ── "Remember the secret", and what it means for an attended sign-in ──
+
+/// ❗ **An attended sign-in refreshes a remembered secret and ❌ never starts
+/// remembering one.**
+///
+/// "Remember the secret" means exactly "there is one in the Keychain for this
+/// account", so a store with nothing in it is the user having said no. Writing
+/// the typed secret there anyway would turn the toggle on behind their back.
+///
+/// The dial that follows fails against the closed port, which is beside the
+/// point: the store is written before it, so what the store holds afterwards is
+/// the whole assertion.
+#[tokio::test]
+async fn an_attended_sign_in_never_starts_remembering_a_secret_on_its_own() {
+    for rung in [
+        AuthRungUsed::Password,
+        AuthRungUsed::KeyboardInteractive,
+        AuthRungUsed::KeyFile {
+            passphrase_protected: true,
+        },
+    ] {
+        let (_events, credentials, volume) = offline_volume_holding(rung, CountingCredentials::empty());
+
+        let _ = volume
+            .reconnect_with_credentials("ada".to_string(), "hunter2".to_string())
+            .await;
+
+        assert_eq!(
+            credentials.stored("127.0.0.1:12599", "ada"),
+            None,
+            "{rung:?}: ❌ nothing was remembered, because nobody asked for it to be"
+        );
+    }
+}
+
+/// The other half: a secret that IS remembered is kept current, so the next drop
+/// is silent.
+///
+/// ❗ The passphrase rung is in here too. It's the rung that most needs its
+/// secret stored (a passphrase-protected key can't make its FIRST connection
+/// without one), and leaving a stale passphrase behind after the user typed a new
+/// one is a volume that asks again every single time.
+#[tokio::test]
+async fn an_attended_sign_in_keeps_a_remembered_secret_current() {
+    for rung in [
+        AuthRungUsed::Password,
+        AuthRungUsed::KeyboardInteractive,
+        AuthRungUsed::KeyFile {
+            passphrase_protected: true,
+        },
+    ] {
+        let (_events, credentials, volume) = offline_volume(rung);
+
+        let _ = volume
+            .reconnect_with_credentials("ada".to_string(), "hunter2".to_string())
+            .await;
+
+        assert_eq!(
+            credentials.stored("127.0.0.1:12599", "ada").as_deref(),
+            Some("hunter2"),
+            "{rung:?}: the store held the old one, so it holds the new one"
+        );
+    }
+}
+
+// ── What the frontend reads to warn about an unusable toggle ──────────
+
+/// ❗ **"On, but it can't work" is something the backend SAYS**, so no UI has to
+/// derive it from a rung and a `has_credentials` call.
+#[tokio::test]
+async fn a_toggle_that_is_on_with_nothing_stored_reports_itself_unusable() {
+    for rung in [
+        AuthRungUsed::Password,
+        AuthRungUsed::KeyFile {
+            passphrase_protected: true,
+        },
+    ] {
+        let (_events, _credentials, volume) = offline_volume_holding(rung, CountingCredentials::empty());
+        assert_eq!(
+            volume.unattended_reconnect().await,
+            UnattendedReconnect::NeedsStoredSecret,
+            "{rung:?}"
+        );
+    }
+}
+
+/// The rest of the answers, including the one that costs no Keychain read.
+#[tokio::test]
+async fn the_readiness_answer_follows_the_toggle_the_rung_and_the_store() {
+    let (_events, credentials, volume) = offline_volume(AuthRungUsed::Password);
+    assert_eq!(volume.unattended_reconnect().await, UnattendedReconnect::Ready);
+
+    volume.set_auto_reconnect(false);
+    assert_eq!(volume.unattended_reconnect().await, UnattendedReconnect::TurnedOff);
+    let reads_after_off = credentials.reads();
+
+    volume.inner.set_auth_rung(AuthRungUsed::Agent);
+    volume.set_auto_reconnect(true);
+    assert_eq!(volume.unattended_reconnect().await, UnattendedReconnect::Ready);
+
+    volume.inner.set_auth_rung(AuthRungUsed::KeyboardInteractive);
+    assert_eq!(volume.unattended_reconnect().await, UnattendedReconnect::RungCannot);
+    assert_eq!(
+        credentials.reads(),
+        reads_after_off,
+        "❗ neither answer needs the store, so neither pays for a Keychain prompt"
     );
 }

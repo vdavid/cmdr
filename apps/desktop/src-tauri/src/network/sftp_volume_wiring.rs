@@ -12,6 +12,7 @@
 
 use std::sync::Arc;
 
+use cmdr_sftp::auth::UnattendedReconnect;
 use cmdr_sftp::volume::HostKeyApproval;
 use cmdr_sftp::{SftpConnectError, SftpConnectOutcome, SftpConnectionParams, SftpVolume};
 
@@ -82,6 +83,7 @@ pub async fn connect_and_register(display_name: &str, params: SftpConnectionPara
         remote_root: params.remote_root.to_string_lossy().to_string(),
         key_file: params.key_file.as_ref().map(|p| p.to_string_lossy().to_string()),
         use_agent: params.use_agent,
+        auto_reconnect: params.auto_reconnect,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
     });
     log::info!(target: "volume", "registered SFTP volume {volume_id}");
@@ -125,6 +127,37 @@ async fn register(volume_id: &str, volume: SftpVolume) {
     }
     manager.register(volume_id, volume);
     crate::volume_broadcast::emit_volumes_changed();
+}
+
+/// Moves the "reconnect automatically" switch on a volume that is already
+/// mounted, answering whether there was an SFTP volume under that id.
+///
+/// ❗ The saved-server entry is the durable copy and the volume holds a live one,
+/// so editing a server that happens to be open has to move both. Without this, a
+/// switch the user flipped would take effect on the next connect and not before.
+pub fn apply_auto_reconnect(volume_id: &str, on: bool) -> bool {
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    let Some(volume) = manager.get(volume_id) else {
+        return false;
+    };
+    // Typed rather than a guess at the id's shape, the same way `disconnect` asks.
+    let Some(sftp) = volume.as_any().downcast_ref::<SftpVolume>() else {
+        return false;
+    };
+    sftp.set_auto_reconnect(on);
+    true
+}
+
+/// Whether an unattended reconnect can actually happen for a mounted volume.
+///
+/// `None` when nothing SFTP is registered under that id, which is the honest
+/// answer: the rung is a fact about a live session, and there is no session to
+/// have one.
+pub async fn unattended_reconnect(volume_id: &str) -> Option<UnattendedReconnect> {
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    let volume = manager.get(volume_id)?;
+    let sftp = volume.as_any().downcast_ref::<SftpVolume>()?;
+    Some(sftp.unattended_reconnect().await)
 }
 
 /// Records a host key a human approved, ❗ only if the server still presents it.
