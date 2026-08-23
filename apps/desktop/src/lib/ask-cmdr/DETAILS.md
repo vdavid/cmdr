@@ -470,6 +470,11 @@ fake path — which never sets a real provider — needs the gate to treat the f
     `askCmdr.consent.*`, human-reviewed (principle 6) and shared verbatim with the settings section's disclosure.
     Nothing is sent to a provider until `accepted === true` for the CURRENT copy version. "Not now" closes the rail;
     accepting re-runs `openRail` to bootstrap history + focus the composer.
+  - ⚠️ **`consentState.needsReconsent` is what keeps a copy-version bump from looking like a bug.** A bump revokes
+    everybody, so somebody with a whole thread history lands on the opt-in screen with no explanation, and the settings
+    section would say a bare "off" at them, indistinguishable from never having wanted AI. The flag (`accepted` false
+    but `acceptedVersion` present) adds `askCmdr.consent.whatsNew.*` above the gate and a third settings state, "Ask
+    Cmdr is paused", with the disclosure already open.
 - **Cost footer** (`AskCmdrCostFooter.svelte` + pure `ask-cmdr-cost.ts`): the active thread's cumulative tokens + cost,
   refetched (`ask_cmdr_conversation_cost`) when the thread changes or a turn finishes streaming. Honest miss-path: a
   local-only thread reads "free, on-device", an unpriced model reads "cost unknown", a priced thread shows "about
@@ -477,8 +482,10 @@ fake path — which never sets a real provider — needs the gate to treat the f
 - **Settings section** (`settings/sections/AskCmdrSection.svelte`, top-level `Ask Cmdr`): the enable toggle (drives the
   same consent accept/revoke — enable state is consent, NOT a settings boolean), the "what Ask Cmdr sends" disclosure
   (same copy as the gate), the provider hint (reads `ai.provider`) + the interactive-model row
-  (`askCmdr.interactiveModel`), and the per-day spend rollup (`ask_cmdr_cost_summary`). The interactive slot picks the
-  MODEL only; provider/keys stay in Settings › AI.
+  (`askCmdr.interactiveModel`), the two memory controls, and the per-day spend rollup (`ask_cmdr_cost_summary`). The
+  interactive slot picks the MODEL only; provider/keys stay in Settings › AI. The memory pair (open the folder, forget
+  everything) is documented where the folder is: `apps/desktop/src-tauri/src/agent/memory/DETAILS.md` § The two controls
+  the user gets.
 
 ## i18n
 
