@@ -14,6 +14,12 @@ backend behavior, you MUST add: (a) a Tauri command on the Rust side (see the mi
 setting looks "structural" (like re-opening a TCP connection, rebinding a port, swapping a thread pool), still
 live-apply. Reconnect, rebind, restart the worker, whatever it takes. **MUST.** No exceptions.
 
+⚠️ **"The backend reads it fresh" is not always an escape from this.** Two `askCmdr.*` settings genuinely need no case
+(`interactiveModel` and `chatMemorySize` are read on each send), but the three that drive the proactive loop
+(`proactive`, `wakeDelay`, `wakeToast`) do: there is no send to read them fresh at, only a timer parked on the wake
+loop's own thread. They push `askCmdrWakeSettingsChanged()`, and the loop re-reads. Before deciding a backend setting
+needs no case, ask what re-reads it and when — a sleeping consumer never does.
+
 ## Purpose
 
 The settings system provides user-configurable options for Cmdr through a registry-based architecture. All settings are

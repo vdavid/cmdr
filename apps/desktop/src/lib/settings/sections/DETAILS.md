@@ -487,9 +487,8 @@ old standalone `LoggingSection` carried.
 
 ## Ask Cmdr section (`AskCmdrSection.svelte`)
 
-The `AI › Ask Cmdr` subsection (second card under the AI card-menu), over the read-only chat rail. Its
-`askCmdr.interactiveModel` and `askCmdr.chatMemorySize` registry entries live at `section: ['AI', 'Ask Cmdr']`. Its
-parts:
+The `AI › Ask Cmdr` subsection (second card under the AI card-menu), over the read-only chat rail. Its `askCmdr.*`
+registry entries all live at `section: ['AI', 'Ask Cmdr']`. Its parts:
 
 - **Enable toggle IS consent, not a registry setting.** The on/off state lives in `main.db` (the consent record), driven
   by the consent commands via `lib/ask-cmdr/ask-cmdr-consent.svelte.ts` (`acceptConsent` / `revokeConsent`), not a
@@ -512,6 +511,20 @@ parts:
     `setSetting` reaches `settings.json` up to 500 ms later (`SAVE_DEBOUNCE_MS`), so asking the backend "is my pick too
     big" would warn a beat late; and the picker must warn WITHOUT overruling, since a stale family table is likelier
     than a user wrong about their own model. An unknown window (`null`) shows nothing at all.
+- **"On its own"** is the proactive loop's three rows: `askCmdr.proactive` (whether the agent may start conversations),
+  `askCmdr.wakeDelay` (how soon it looks at a folder that just changed), and `askCmdr.wakeToast` (whether a staged
+  suggestion raises a corner message). The cadence and the notice are disabled while the gate is off, so the group reads
+  as one decision with two refinements.
+  - ⚠️ **All three DO need a `settings-applier` case**, unlike the two rows above. Those are read fresh per send; these
+    drive a timer parked on the wake loop's own thread (`agent::wake`), which never re-reads on its own. Each pushes
+    `askCmdrWakeSettingsChanged()`, and the loop re-reads and re-prices what is already waiting.
+  - **The cadence slider is index-mapped** (`constraints.stopsAreDiscrete`), because its stops run 5 seconds to 2 hours.
+    Mechanics and the three a11y traps: `../components/DETAILS.md` § Index-mapped stops.
+  - **Its description names both waits the setting produces**, which `descriptionKey` can't do (it resolves to a static
+    string). The section passes a computed `tString('settings.askCmdr.wakeDelay.summary', { hot, warm })` as
+    `SettingRow`'s `description`, with both durations preformatted by `formatDuration` from `$lib/units`; the registry
+    keeps its static text for the search index. ⚠️ The warm derivation here mirrors `agent::wake::interest`, which is
+    what actually schedules the wake — change the two together or the row describes a cadence the loop doesn't run.
 - **Spend** is the per-day rollup from `ask_cmdr_cost_summary`, formatted with the same honest miss-path as the rail
   footer (`lib/ask-cmdr/ask-cmdr-cost.ts`): a fully-priced day shows an estimate, a zero-cost fully-priced day is
   local/free, an unpriced day is "cost unknown", never a silent $0.
