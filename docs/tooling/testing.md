@@ -82,8 +82,8 @@ load-bearing, and it's why `lib.rs` carries a `#[cfg(test)] use cmdr_lib as _;` 
 
 For TS, Svelte, and IPC contract tests. Run all: `pnpm check svelte-tests`. Run by name:
 `cd apps/desktop && pnpm vitest run -t "<name>"`. Existing patterns: component tests in `*.test.ts` next to the source,
-tier-3 a11y tests in `*.a11y.test.ts` (often one per directory covering several components, since the lane's cost is
-per FILE: `docs/testing.md` § "What a test actually costs").
+tier-3 a11y tests in `*.a11y.test.ts` (often one per directory covering several components, since the lane's cost is per
+FILE: `docs/testing.md` § "What a test actually costs").
 
 ### `installIpcMock()`: IPC contract test harness
 

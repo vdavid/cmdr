@@ -50,9 +50,9 @@ Consequences for anyone tuning a lane:
 
 ### Merging test files: what it buys, and the trap
 
-The lever above is applied to the tier-3 a11y tests: seven directories went from 106 files to 20 without losing a
-single test. `settings/sections/` alone dropped 24 files to 4, cutting that directory's import CPU from 47.5 s to 9.2 s
-and its total worker CPU from ~98 s to ~18 s (measured 2026-08-23, M-series laptop, three `pnpm exec vitest run` runs).
+The lever above is applied to the tier-3 a11y tests: seven directories went from 106 files to 20 without losing a single
+test. `settings/sections/` alone dropped 24 files to 4, cutting that directory's import CPU from 47.5 s to 9.2 s and its
+total worker CPU from ~98 s to ~18 s (measured 2026-08-23, M-series laptop, three `pnpm exec vitest run` runs).
 `a11y-coverage` accepts any `*.a11y.test.ts` in a component's own directory that imports it, so merging never weakens
 the guarantee (`apps/desktop/src/lib/ui/DETAILS.md` § "Adding a component-level a11y test").
 
@@ -63,17 +63,18 @@ Before merging more, know the two traps:
   `beforeEach`, with `null` meaning "use the real export" for the blocks that never stubbed it. Merging the stubs into
   one value instead is how a test quietly starts auditing a different render. When a directory can't be reconciled,
   split it rather than forcing one file, and say so in the file's doc comment.
-- **Union mocks must spread the real module.** A bare union of two files' stubs hands a third component a missing
-  export it never had, which fails loudly; spreading `importOriginal()` first keeps every un-stubbed member as it was.
+- **Union mocks must spread the real module.** A bare union of two files' stubs hands a third component a missing export
+  it never had, which fails loudly; spreading `importOriginal()` first keeps every un-stubbed member as it was.
 - **Merged files audit a shared jsdom document.** axe resolves ARIA id references document-wide, and components that
-  portal (menus, popovers) audit the whole `document.body`, so a merged file needs `afterEach(() => { document.body
-  .innerHTML = '' })` or one block's leftovers land inside the next block's audit.
+  portal (menus, popovers) audit the whole `document.body`, so a merged file needs
+  `afterEach(() => { document.body .innerHTML = '' })` or one block's leftovers land inside the next block's audit.
 - **Type a mutable stub with an annotation, ❌ never an `as` assertion, and re-run the tests AFTER eslint.**
-  `eslint-typecheck-ts` auto-fixes: `no-unnecessary-type-assertion` strips `(() => undefined) as (id: string) =>
-  unknown` down to `() => undefined`, and `no-confusing-void-expression` then rewrites the delegating
-  `(id) => stubs.getSetting(id)` into `(id) => { stubs.getSetting(id); }`, which silently returns `undefined` from
-  every stub. Tests that passed before the lint run fail after it. Write `(_id: string): unknown => undefined` instead,
-  and always run the lane once more once the auto-fixers have had their pass.
+  `eslint-typecheck-ts` auto-fixes: `no-unnecessary-type-assertion` strips
+  `(() => undefined) as (id: string) => unknown` down to `() => undefined`, and `no-confusing-void-expression` then
+  rewrites the delegating `(id) => stubs.getSetting(id)` into `(id) => { stubs.getSetting(id); }`, which silently
+  returns `undefined` from every stub. Tests that passed before the lint run fail after it. Write
+  `(_id: string): unknown => undefined` instead, and always run the lane once more once the auto-fixers have had their
+  pass.
 
 Also watch the wall-clock: on a contended machine the lane's own runtime swings 55-110 s run to run, which swamps the
 few seconds one directory buys. Measure the directory in isolation and read the CPU totals (`transform`, `import`,
