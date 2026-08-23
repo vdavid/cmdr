@@ -131,6 +131,13 @@ than dropped, and lands on the pass after `WakeFinished`.
 The rail's E2E specs count replies by matching their exact sentence, so one shared script would both break them on any
 change here and make a wake's thread indistinguishable from a chat the user started.
 
+The wake slot has a THIRD script, for the quiet path: `force_agent_wake(folder, quiet: true)` flips
+`test_mode::wake_fake_stays_quiet`, and the fake then calls `nothing_to_suggest` instead of answering. The flag STICKS,
+so a spec wanting an ordinary wake afterwards passes `quiet: false`. ⚠️ A spec asserting that nothing was left behind
+can only do so AFTER the wake finished: the thread is opened before the turn and deleted after it, so a mid-flight poll
+legitimately sees the row. `ask-cmdr-wake.spec.ts` waits, then uses a second (loud) wake as the control that proves the
+lane ran at all — without one, "no thread appeared" passes just as well with the whole loop dead.
+
 ## The digest budget
 
 Enforced against the REAL rendered string, not a sum of per-line estimates: `div_ceil` per line does not add up to the

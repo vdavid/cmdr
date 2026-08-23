@@ -108,8 +108,22 @@ pub fn resolve_agent_llm(
 /// replies by matching "test assistant", so changing that phrasing breaks specs that have
 /// nothing to do with the wake loop. A wake gets its own sentence instead, which is also what
 /// lets a wake spec tell a thread the agent opened apart from one the user did.
+///
+/// The wake slot has a SECOND script, selected by `test_mode::wake_fake_stays_quiet` (which only
+/// the `playwright-e2e` force-wake command sets): it calls `nothing_to_suggest` and signs off,
+/// so a spec can drive the path where a wake deletes its own thread. Nothing else can reach it,
+/// and the ordinary wake reply is unchanged with the flag untouched.
 fn scripted_fake_llm(slot: AgentSlot) -> FakeAgentLlm {
     use crate::agent::llm::fake::ScriptedTurn;
+    if slot == AgentSlot::Wake && crate::test_mode::wake_fake_stays_quiet() {
+        return FakeAgentLlm::script(vec![
+            ScriptedTurn::CallTools(vec![(
+                crate::agent::llm::types::ToolId::NothingToSuggest,
+                serde_json::json!({ "reason": "it was all scripted test churn" }),
+            )]),
+            ScriptedTurn::Say(vec!["Nothing worth raising.".to_string()]),
+        ]);
+    }
     let chunks = match slot {
         AgentSlot::Rail => ["Hi! ", "I'm the ", "test assistant."],
         AgentSlot::Wake => ["I had ", "a look at ", "what changed."],

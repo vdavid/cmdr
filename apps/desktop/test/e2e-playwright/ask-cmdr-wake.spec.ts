@@ -147,4 +147,40 @@ test.describe('Ask Cmdr wakes on its own', () => {
     // together so that changing either one's copy broke the other.
     expect(text).not.toContain('test assistant')
   })
+
+  test('leaves no thread behind when it has nothing to suggest', async ({ tauriPage }) => {
+    const page = tauriPage as TauriPage
+    // Two nonces: the quiet wake's folder, which must never reach the session list, and the
+    // control's, which must. The control is what proves the lane actually ran — without it,
+    // "no thread appeared" would also pass with the whole wake loop dead.
+    const quietFolder = `wake-quiet-${String(Date.now())}`
+    const loudFolder = `wake-loud-${String(Date.now())}`
+
+    await openRail(page)
+    await ensureConsented(page)
+
+    await forceAgentWake(page, `/Users/e2e/${quietFolder}`, true)
+
+    // ⚠️ Absence can only be asserted at the END. A wake opens its thread BEFORE the turn runs
+    // and deletes it after, so a poll mid-flight would legitimately see the row. The settle
+    // also keeps the control below out of the same wake: any wake drains the whole inbox, so a
+    // rollup landing before the first prepare would merge into it. The fake answers instantly,
+    // so a few seconds is generous.
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    await forceAgentWake(page, `/Users/e2e/${loudFolder}`, false)
+    await expect
+      .poll(
+        async () => {
+          await reloadSessions(page)
+          return sessionTitles(page)
+        },
+        { timeout: 20000 },
+      )
+      .toContain(loudFolder)
+
+    // The control landed, so the loop is alive and has been through both wakes. The quiet one
+    // still left nothing.
+    expect(await sessionTitles(page)).not.toContain(quietFolder)
+  })
 })

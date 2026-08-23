@@ -24,7 +24,7 @@
 //! `COPY_THROTTLE_OVERRIDE` static below is the canonical shape, set via the
 //! `set_test_throttle` IPC command from a test, read on every copy loop tick.
 
-use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 
 /// Runtime override for the per-file copy throttle, settable via the
 /// `set_test_throttle` IPC command (feature-gated to `playwright-e2e`).
@@ -88,6 +88,27 @@ pub fn is_e2e_mode() -> bool {
 /// **Strictly additive**: code must keep working with the var unset.
 pub fn ask_cmdr_fake_active() -> bool {
     std::env::var("CMDR_E2E_ASK_CMDR_FAKE").is_ok()
+}
+
+/// Which script the WAKE slot's fake assistant plays, set by the `playwright-e2e`
+/// `force_agent_wake` command. `false` (the default) is the ordinary "I had a look at what
+/// changed" reply; `true` makes it call `nothing_to_suggest` instead, so a spec can drive the
+/// quiet path where the wake deletes its own thread.
+///
+/// **Strictly additive**: it only picks between two scripts of a fake that exists solely under
+/// `CMDR_E2E_ASK_CMDR_FAKE`. With the flag untouched, the wake path is exactly what it was.
+static WAKE_FAKE_STAYS_QUIET: AtomicBool = AtomicBool::new(false);
+
+/// Make the next wake's scripted fake say it has nothing to suggest (or stop doing so).
+pub fn set_wake_fake_stays_quiet(quiet: bool) {
+    WAKE_FAKE_STAYS_QUIET.store(quiet, Ordering::Relaxed);
+}
+
+/// Whether the wake slot's fake should call `nothing_to_suggest`. Always false in production:
+/// only the feature-gated force-wake command ever sets it, and the fake itself is unreachable
+/// without `CMDR_E2E_ASK_CMDR_FAKE`.
+pub fn wake_fake_stays_quiet() -> bool {
+    WAKE_FAKE_STAYS_QUIET.load(Ordering::Relaxed)
 }
 
 /// Whether the app may adopt network mounts that were already on the machine when

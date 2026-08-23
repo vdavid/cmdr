@@ -91,12 +91,20 @@ pub fn set_test_scan_preview_delay(ms: Option<u64>) -> Result<(), String> {
 ///
 /// `folder` names the directory the changes happened IN, absolute; `None` forces a wake
 /// against whatever is already waiting.
+///
+/// `quiet` picks which script the wake's fake assistant plays: `Some(true)` makes it call
+/// `nothing_to_suggest`, which is the path where the wake deletes its own thread and the
+/// session list must end up untouched. It STICKS until changed, so a spec that wants an
+/// ordinary wake afterwards passes `Some(false)`.
 #[cfg(feature = "playwright-e2e")]
 #[tauri::command]
 #[specta::specta]
-pub fn force_agent_wake(folder: Option<String>) -> Result<(), String> {
+pub fn force_agent_wake(folder: Option<String>, quiet: Option<bool>) -> Result<(), String> {
     use crate::agent::wake::{ChangeCounters, FolderActivity, WakeControl, send_control, send_rollup};
 
+    if let Some(quiet) = quiet {
+        crate::test_mode::set_wake_fake_stays_quiet(quiet);
+    }
     if let Some(folder) = folder {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
