@@ -1516,6 +1516,18 @@ export const commands = {
        */
       appFate?: AppFate
       /**
+       *  True once this panic has already gone out in-session, via the error reporter's Flow B.
+       *
+       *  Set only when a Flow B bundle is actually UPLOADED (`error_reporter::auto_dispatcher`), so
+       *  it means "delivered", never "attempted". The next launch deletes a stamped report instead of
+       *  offering it: telling someone about the same panic twice spends trust and buys nothing.
+       *
+       *  `false` is honest as a default here, unlike [`AppFate`]: it claims only that nothing recorded
+       *  a delivery, which for a crash file from an older build is exactly true, and lands on the
+       *  pre-existing behavior of offering the report.
+       */
+      reportedInSession?: boolean
+      /**
        *  `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
        *  `None` only when read from a crash file written by an older app version that
        *  didn't carry this field; new reports always set it.
@@ -5026,6 +5038,18 @@ export type CrashReport = {
    *  field existed.
    */
   appFate?: AppFate
+  /**
+   *  True once this panic has already gone out in-session, via the error reporter's Flow B.
+   *
+   *  Set only when a Flow B bundle is actually UPLOADED (`error_reporter::auto_dispatcher`), so
+   *  it means "delivered", never "attempted". The next launch deletes a stamped report instead of
+   *  offering it: telling someone about the same panic twice spends trust and buys nothing.
+   *
+   *  `false` is honest as a default here, unlike [`AppFate`]: it claims only that nothing recorded
+   *  a delivery, which for a crash file from an older build is exactly true, and lands on the
+   *  pre-existing behavior of offering the report.
+   */
+  reportedInSession?: boolean
   /**
    *  `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
    *  `None` only when read from a crash file written by an older app version that

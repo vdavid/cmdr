@@ -326,6 +326,11 @@ async fn flush(app: AppHandle<Wry>) {
                 "Auto-send: error report uploaded, id={}",
                 result.id,
             );
+            // This bundle carries the session's log tail, so a panic logged before now went out
+            // with it, and the next launch shouldn't offer the same panic a second time. THIS
+            // line, not one higher up: everything above can fail, and only a landed upload means
+            // the user actually heard about it. See `crash_reporter/survival.rs`.
+            crate::crash_reporter::note_in_session_report_delivered();
             if let Err(e) = (ErrorReportAutoSent { id: result.id.clone() }).emit(&app) {
                 log::warn!(
                     target: "cmdr_lib::error_reporter",

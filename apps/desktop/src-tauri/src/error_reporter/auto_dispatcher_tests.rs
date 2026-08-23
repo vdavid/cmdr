@@ -237,3 +237,24 @@ fn crash_loop_safety_note() {
         "post-crash state should be empty (no persistence)"
     );
 }
+
+/// A user with crash reports ON and error reports OFF must still be offered their crash
+/// report at the next launch. `flush` is the only thing that stamps a crash file as already
+/// reported (`crash_reporter::note_in_session_report_delivered`), and this pins the reason it
+/// can never run for that user: with the gate off there is no window to flush.
+#[test]
+fn the_opt_out_gate_means_a_crash_file_can_never_be_stamped_as_reported() {
+    let _guard = lock_and_reset();
+
+    // The panic courier logs through the same entry point as any other error.
+    let scheduled = record_error_for_test("cmdr_lib::crash_reporter::panic", "Panic on thread `mtp-poll`");
+
+    assert!(
+        scheduled.is_none(),
+        "with error reports opted out, a panic must not schedule a flush"
+    );
+    assert!(
+        snapshot_for_test().is_none(),
+        "and no window exists, so nothing can ever reach the upload that stamps the crash file"
+    );
+}

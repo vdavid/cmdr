@@ -28,6 +28,7 @@ fn crash_report_roundtrip() {
         },
         possible_crash_loop: false,
         app_fate: AppFate::Unconfirmed,
+        reported_in_session: false,
         build_mode: Some("release".to_string()),
         short_id: Some("CRASH-A2345".to_string()),
         diag_id: "diag_12345678-1234-1234-1234-1234567890ab".to_string(),
@@ -486,6 +487,7 @@ fn make_test_report() -> CrashReport {
         active_settings: ActiveSettings::default(),
         possible_crash_loop: false,
         app_fate: AppFate::Unconfirmed,
+        reported_in_session: false,
         build_mode: Some("debug".to_string()),
         short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
         diag_id: "diag_00000000-0000-4000-8000-000000000000".to_string(),
@@ -596,4 +598,88 @@ fn an_older_crash_file_stays_unknown_at_the_next_launch() {
     process_pending_crash(&path, &dir.path().join(RAW_CRASH_FILE_NAME));
 
     assert_eq!(read_crash_report(&path).unwrap().app_fate, AppFate::Unknown);
+}
+
+// --- Already delivered in-session: the next launch stays quiet ---
+
+#[test]
+fn a_report_already_delivered_in_session_is_dropped_at_the_next_launch() {
+    // The user was already told about this panic, in the session it happened in. Telling
+    // them again at the next launch spends trust and buys nothing, so the file goes.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+    let report = CrashReport {
+        timestamp: "2026-03-22T10:00:00+00:00".to_string(),
+        app_fate: AppFate::KeptRunning,
+        reported_in_session: true,
+        ..make_test_report()
+    };
+    write_crash_report(&path, &report).unwrap();
+
+    process_pending_crash(&path, &dir.path().join(RAW_CRASH_FILE_NAME));
+
+    assert!(
+        !path.exists(),
+        "a delivered report must be deleted, not left to re-offer itself on every launch"
+    );
+}
+
+#[test]
+fn a_report_that_never_went_out_is_still_offered() {
+    // The mirror case, and the one that must not regress: a panic the app survived whose
+    // in-session delivery never landed (error reports opted out, no network, or the app
+    // died before the 60 s window fired) is the whole reason the next-launch path exists.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+    let report = CrashReport {
+        timestamp: "2026-03-22T10:00:00+00:00".to_string(),
+        app_fate: AppFate::KeptRunning,
+        reported_in_session: false,
+        ..make_test_report()
+    };
+    write_crash_report(&path, &report).unwrap();
+
+    process_pending_crash(&path, &dir.path().join(RAW_CRASH_FILE_NAME));
+
+    let kept = read_crash_report(&path).expect("an undelivered report survives to the next launch");
+    assert_eq!(kept.app_fate, AppFate::KeptRunning);
+}
+
+#[test]
+fn a_crash_file_written_before_the_delivery_stamp_existed_is_still_offered() {
+    // `false` is honest as a default here: it claims only that nothing recorded a delivery,
+    // which is exactly true of an older file, and lands on the behavior it already had.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+
+    let mut json = serde_json::to_value(make_test_report()).unwrap();
+    json.as_object_mut().unwrap().remove("reportedInSession");
+    std::fs::write(&path, serde_json::to_string(&json).unwrap()).unwrap();
+
+    process_pending_crash(&path, &dir.path().join(RAW_CRASH_FILE_NAME));
+
+    let kept = read_crash_report(&path).expect("an older crash file behaves exactly as it did before");
+    assert!(!kept.reported_in_session);
+}
+
+#[test]
+fn recording_a_delivery_stamps_the_report_on_disk() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+    write_crash_report(&path, &make_test_report()).unwrap();
+
+    survival::record_in_session_delivery(&path);
+
+    assert!(read_crash_report(&path).unwrap().reported_in_session);
+}
+
+#[test]
+fn recording_a_delivery_with_no_crash_file_is_a_quiet_no_op() {
+    // Every successful Flow B upload calls this, and almost none of them follow a panic.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(CRASH_FILE_NAME);
+
+    survival::record_in_session_delivery(&path);
+
+    assert!(!path.exists(), "a delivery notice must never conjure a report");
 }

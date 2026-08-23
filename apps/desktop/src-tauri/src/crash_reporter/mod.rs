@@ -138,6 +138,17 @@ pub struct CrashReport {
     /// field existed.
     #[serde(default)]
     pub app_fate: AppFate,
+    /// True once this panic has already gone out in-session, via the error reporter's Flow B.
+    ///
+    /// Set only when a Flow B bundle is actually UPLOADED (`error_reporter::auto_dispatcher`), so
+    /// it means "delivered", never "attempted". The next launch deletes a stamped report instead of
+    /// offering it: telling someone about the same panic twice spends trust and buys nothing.
+    ///
+    /// `false` is honest as a default here, unlike [`AppFate`]: it claims only that nothing recorded
+    /// a delivery, which for a crash file from an older build is exactly true, and lands on the
+    /// pre-existing behavior of offering the report.
+    #[serde(default)]
+    pub reported_in_session: bool,
     /// `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
     /// `None` only when read from a crash file written by an older app version that
     /// didn't carry this field; new reports always set it.
@@ -354,6 +365,7 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         // before unwinding. `survival.rs` upgrades this from a thread that can only run if
         // the process is still here; `process_pending_crash` resolves it if nothing did.
         app_fate: AppFate::Unconfirmed,
+        reported_in_session: false,
         build_mode: Some(current_build_mode().to_string()),
         short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
         // The panic hook runs in normal Rust, so it can read the pre-resolved diag-id
@@ -455,6 +467,25 @@ pub fn note_app_still_running() {
     }
 }
 
+/// Records that a Flow B bundle just landed on the server, so a crash file THIS session wrote has
+/// already been reported and the next launch shouldn't offer it a second time.
+///
+/// Called from `error_reporter::auto_dispatcher` on a successful upload and nowhere else. The
+/// bundle is a log-tail bundle, so a panic logged before the upload rode along in it; the panic's
+/// own courier is what opened the window in the first place. Free unless this session panicked.
+///
+/// ❌ Never move this call above the `updates.errorReports` gate or the upload's `Ok`: a stamp
+/// means DELIVERED, and stamping an attempt would silently swallow the report of a user who
+/// opted out of error reports, or whose upload never made it.
+pub fn note_in_session_report_delivered() {
+    if !SESSION_CRASH_FILE_WRITTEN.load(Ordering::SeqCst) {
+        return;
+    }
+    if let Some(crash_path) = CRASH_PATH.get() {
+        survival::record_in_session_delivery(crash_path);
+    }
+}
+
 // --- Crash file I/O ---
 
 fn write_crash_report(path: &Path, report: &CrashReport) -> Result<(), String> {
@@ -487,6 +518,14 @@ fn read_crash_report(path: &Path) -> Option<CrashReport> {
 fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
     // Check for a JSON crash report with crash loop detection
     if let Some(mut report) = read_crash_report(crash_json_path) {
+        // Already delivered in-session, so the user has heard about this panic once. Saying it
+        // again on the next launch spends trust and adds nothing. Dropped here rather than
+        // hidden in the frontend, so a report nobody will be offered can't linger on disk.
+        if report.reported_in_session {
+            log::info!("Crash reporter: pending report already went out in-session, discarding");
+            let _ = std::fs::remove_file(crash_json_path);
+            return;
+        }
         let mut dirty = false;
         if is_crash_loop(&report.timestamp) {
             report.possible_crash_loop = true;
@@ -556,6 +595,8 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
                 // handler re-raises them, and we're reading the evidence from the NEXT
                 // launch. The app is definitively gone.
                 app_fate: AppFate::Ended,
+                // A signal crash is never delivered in-session: the process died in the handler.
+                reported_in_session: false,
                 build_mode: Some(current_build_mode().to_string()),
                 short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
                 // Signal path: the async-signal-safe handler couldn't touch the diag id (no

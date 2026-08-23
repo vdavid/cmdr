@@ -26,6 +26,7 @@ fn write_report(path: &Path, fate: AppFate) {
         active_settings: super::ActiveSettings::default(),
         possible_crash_loop: false,
         app_fate: fate,
+        reported_in_session: false,
         build_mode: Some("debug".to_string()),
         short_id: Some("CRASH-A2345".to_string()),
         diag_id: "diag_00000000-0000-4000-8000-000000000000".to_string(),

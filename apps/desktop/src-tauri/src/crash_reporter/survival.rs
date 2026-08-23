@@ -1,4 +1,10 @@
-//! Proof that the app outlived the panic its crash file describes.
+//! After the panic: the two things only the LIVE process can record on its own crash file.
+//!
+//! Both are post-hoc amendments to a report the hook already wrote, both are idempotent, and
+//! both are driven from outside this module ([`super::note_app_still_running`] from
+//! `app_lifecycle.rs`, [`super::note_in_session_report_delivered`] from the error reporter).
+//! The first is proof the app outlived the panic, and is what the rest of this doc is about;
+//! the second is proof the user already heard about it, at § Already delivered in-session.
 //!
 //! The panic hook writes `crash-report.json` at panic *initiation*, before unwinding, when
 //! nothing yet knows whether the process will live. Since the lock-poison policy in
@@ -32,7 +38,7 @@
 //! premature mark would call a fatal panic a survival, which is the one direction of
 //! wrongness the next-launch copy can't absorb.
 
-use super::{AppFate, read_crash_report, write_crash_report};
+use super::{AppFate, CrashReport, read_crash_report, write_crash_report};
 use std::path::Path;
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -86,15 +92,50 @@ fn arm_after(crash_path: &Path, delay: Duration) -> Option<JoinHandle<()>> {
 /// dialog some precision and never costs anyone a report. Only [`AppFate::Unconfirmed`] is
 /// upgraded, so a fate a previous launch already settled can't be rewritten.
 pub(super) fn confirm_survival(crash_path: &Path) {
+    amend(crash_path, "the app survived the panic", |report| {
+        if report.app_fate != AppFate::Unconfirmed {
+            return false;
+        }
+        report.app_fate = AppFate::KeptRunning;
+        true
+    });
+}
+
+// --- Already delivered in-session ---
+
+/// Records that the panic in the crash file at `crash_path` has already gone out through the
+/// error reporter's Flow B, so the next launch deletes it instead of offering it again.
+///
+/// Driven from `error_reporter::auto_dispatcher` at the ONE point that means "delivered": a
+/// Flow B bundle came back from `upload` with an `Ok`. Everything that can go wrong before then
+/// (the `updates.errorReports` gate returning early, the bundle failing to build, the upload
+/// being refused) leaves the report unstamped and so still offered, which is the direction that
+/// costs the user nothing.
+pub(super) fn record_in_session_delivery(crash_path: &Path) {
+    amend(crash_path, "the panic was reported in-session", |report| {
+        if report.reported_in_session {
+            return false;
+        }
+        report.reported_in_session = true;
+        true
+    });
+}
+
+/// Reads the pending report, lets `change` amend it, and writes it back only if `change` says it
+/// changed something. `what` names the fact for the log line.
+///
+/// Tolerant of every failure: an amendment only ever makes an existing report MORE accurate, so a
+/// missing file, a corrupt one, or a write that doesn't land costs some precision at the next
+/// launch and never costs anyone a report.
+fn amend(crash_path: &Path, what: &str, change: impl FnOnce(&mut CrashReport) -> bool) {
     let Some(mut report) = read_crash_report(crash_path) else {
         return;
     };
-    if report.app_fate != AppFate::Unconfirmed {
+    if !change(&mut report) {
         return;
     }
-    report.app_fate = AppFate::KeptRunning;
     if let Err(e) = write_crash_report(crash_path, &report) {
-        log::warn!("Crash reporter: couldn't record that the app survived the panic: {e}");
+        log::warn!("Crash reporter: couldn't record that {what}: {e}");
     }
 }
 
