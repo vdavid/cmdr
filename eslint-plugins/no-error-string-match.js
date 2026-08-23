@@ -19,7 +19,7 @@
  * Opt out per-line with the standard ESLint comment when a substring match
  * really is the right tool (third-party SDK with no error code, etc.):
  *
- *   // eslint-disable-next-line custom/no-error-string-match -- <reason>
+ *   // eslint-disable-next-line cmdr/no-error-string-match -- <reason>
  */
 
 const SUSPICIOUS_PROPERTIES = new Set([
