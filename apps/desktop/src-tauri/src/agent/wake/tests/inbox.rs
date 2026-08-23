@@ -481,3 +481,53 @@ fn repricing_there_and_back_changes_nothing() {
 
     assert_eq!(inbox.rows(), before.as_slice());
 }
+
+/// ⚠️ **Consent going away has to take the backlog with it.** Refusing new rows is only half
+/// the gate: rows admitted while the user was consented are a record of what they have been
+/// doing with their files, and the moment the purpose they agreed to is withdrawn (a revoke, or
+/// a consent-copy bump that un-accepts everybody) keeping that record is exactly what
+/// `readiness.rs` says the pipeline must not do.
+#[test]
+fn losing_consent_drops_what_was_already_waiting() {
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit(
+        arrivals("/Users/someone/Desktop", 2, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+
+    let dropped = inbox.purge_if_not_permitted(WakeReadiness::NeedsConsent);
+
+    assert_eq!(dropped, 2, "and it says how many, so the log can be honest about it");
+    assert!(inbox.is_empty());
+    assert_eq!(inbox.next_deadline(), None, "so nothing is left to wake against");
+}
+
+/// The other three states are gaps the user can close, not a purpose they withdrew, so the
+/// backlog waiting for them is theirs and stays put.
+#[test]
+fn a_closable_gap_keeps_the_backlog() {
+    for readiness in [
+        WakeReadiness::Ready,
+        WakeReadiness::NeedsFullDiskAccess,
+        WakeReadiness::NeedsApiKey,
+    ] {
+        let mut inbox = Inbox::default();
+        inbox.admit(
+            arrivals("/Users/someone/Downloads", 3, 100),
+            IMPORTANT,
+            DEFAULT_HOT_DELAY,
+            1_000,
+        );
+
+        assert_eq!(inbox.purge_if_not_permitted(readiness), 0, "{readiness:?} drops nothing");
+        assert_eq!(inbox.len(), 1, "{readiness:?} keeps the row");
+    }
+}

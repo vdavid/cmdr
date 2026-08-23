@@ -146,6 +146,24 @@ impl Inbox {
         true
     }
 
+    /// Drop everything waiting when the gates no longer permit STORING it, and say how many
+    /// rows went.
+    ///
+    /// ⚠️ **Refusing new rows is only half the gate.** Rows admitted while the user was
+    /// consented are a record of what they have been doing with their files, and the moment
+    /// that purpose is withdrawn — a revoke, or a `CONSENT_COPY_VERSION` bump that un-accepts
+    /// everybody at once — keeping the record is the thing this module's own doc comment says
+    /// the pipeline must not do. The other three states are gaps the user can CLOSE rather than
+    /// a purpose they withdrew, so their backlog is theirs and stays.
+    pub fn purge_if_not_permitted(&mut self, readiness: WakeReadiness) -> usize {
+        if readiness.admits_to_inbox() {
+            return 0;
+        }
+        let dropped = self.rows.len();
+        self.rows.clear();
+        dropped
+    }
+
     /// Push a new cadence across every row already waiting.
     ///
     /// ⚠️ **Not optional, and not automatic.** [`admit`](Self::admit) merges min-only on
