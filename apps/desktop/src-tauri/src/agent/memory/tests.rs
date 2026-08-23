@@ -334,3 +334,46 @@ fn an_edit_over_the_folder_cap_is_refused() {
         "got {refusal:?}"
     );
 }
+
+// ── Forgetting everything ─────────────────────────────────────────────────────
+
+/// "Forget everything" has to mean everything, subfolders included: a note the agent tucked
+/// into `people/dora.md` is exactly the kind of thing somebody reaches for this button over.
+#[test]
+fn forgetting_takes_every_note_including_the_nested_ones() {
+    let (_dir, store) = store();
+    store.write(HUB_FILE, "the hub").expect("write hub");
+    store.write("people/dora.md", "a note").expect("write nested");
+
+    let forgotten = store.forget_all().expect("forget");
+
+    assert_eq!(forgotten, 2);
+    assert_eq!(store.read_for_prompt(4_096), None, "and the next turn carries nothing");
+    assert!(!store.root().join("people").join("dora.md").exists());
+}
+
+/// The folder itself survives, so the next write lands without the jail having to recreate it,
+/// and the user is not looking at a pane for a directory that stopped existing under them.
+#[test]
+fn forgetting_leaves_the_folder_itself_and_anything_that_is_not_a_note() {
+    let (_dir, store) = store();
+    store.write(HUB_FILE, "the hub").expect("write hub");
+    std::fs::write(store.root().join("notes.txt"), "not ours").expect("stray file");
+
+    assert_eq!(store.forget_all().expect("forget"), 1);
+
+    assert!(store.root().is_dir());
+    assert!(
+        store.root().join("notes.txt").exists(),
+        "a file the agent could never have written is the user's, not ours to delete"
+    );
+}
+
+/// Nothing to forget is a success, not a failure: the button is there before the agent has
+/// ever written anything.
+#[test]
+fn forgetting_an_empty_folder_reports_nothing_and_succeeds() {
+    let (_dir, store) = store();
+
+    assert_eq!(store.forget_all().expect("forget"), 0);
+}

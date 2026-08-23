@@ -291,6 +291,26 @@ export async function askCmdrModelWindow(): Promise<ModelWindowView> {
 }
 
 /**
+ * Where the agent's notes live, creating the folder if it isn't there yet.
+ *
+ * ⚠️ The path comes from Rust because it moves with `CMDR_DATA_DIR` (prod, plain dev, and
+ * every worktree slug get their own). Building it in the frontend would walk someone into
+ * the production folder from a dev build.
+ */
+export async function askCmdrMemoryFolder(): Promise<string> {
+  const res = await commands.askCmdrMemoryFolder()
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Delete every note the agent has written about the user, and say how many went. */
+export async function askCmdrForgetMemory(): Promise<number> {
+  const res = await commands.askCmdrForgetMemory()
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
  * Tell the proactive loop its settings moved, so it re-reads them and re-arms its timer.
  *
  * ⚠️ The live-apply push behind `askCmdr.proactive`, `askCmdr.wakeDelay`, and

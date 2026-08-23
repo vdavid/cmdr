@@ -82,7 +82,7 @@ use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounte
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
     FocusFileViewer, FocusSettings, ForegroundOperation, McpSettingsClose, OpenFileViewer, OpenSettings,
-    PersistRestrictedSetting, TabContextAction, ViewerWordWrapToggled,
+    PersistRestrictedSetting, RevealPath, TabContextAction, ViewerWordWrapToggled,
 };
 // AI + system/misc events.
 use crate::ai::{
@@ -425,6 +425,8 @@ macro_rules! ipc_command_manifest {
                     crate::commands::agent::ask_cmdr_model_window,
                     crate::commands::agent::ask_cmdr_wake_settings_changed,
                     crate::commands::agent::agent_wake_status,
+                    crate::commands::agent::ask_cmdr_memory_folder,
+                    crate::commands::agent::ask_cmdr_forget_memory,
                     crate::commands::selection::translate_selection_query,
                     crate::commands::selection::get_recent_selections,
                     crate::commands::selection::add_recent_selection,
@@ -1015,8 +1017,10 @@ pub fn builder() -> Builder<tauri::Wry> {
             TabContextAction,
             PersistRestrictedSetting,
             // FE-emitted, like `execute-command`: the queue window asks the main
-            // window to foreground one operation.
+            // window to foreground one operation, and the settings window asks it to show
+            // the agent's memory folder in a pane.
             ForegroundOperation,
+            RevealPath,
         ])
 }
 

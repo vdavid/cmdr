@@ -2796,6 +2796,21 @@ export const commands = {
    */
   agentWakeStatus: () => __TAURI_INVOKE<AgentWakeStatus>('agent_wake_status'),
   /**
+   *  Where the agent's notes live, ready for the main window to open.
+   *
+   *  Creates the folder when it isn't there yet, so the click lands somewhere real even before
+   *  the agent has written its first note. The settings window can't navigate a pane itself, so
+   *  it takes this path and emits `reveal-path` at the main window.
+   */
+  askCmdrMemoryFolder: () => typedError<string, string>(__TAURI_INVOKE('ask_cmdr_memory_folder')),
+  /**
+   *  Throw away every note the agent has written about the user, and say how many went.
+   *
+   *  Chats and files are untouched: this reaches the memory folder and nothing else, which is
+   *  what the confirmation dialog promises.
+   */
+  askCmdrForgetMemory: () => typedError<number, string>(__TAURI_INVOKE('ask_cmdr_forget_memory')),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
@@ -3849,6 +3864,7 @@ export const events = {
   quitRequested: makeEvent<QuitRequested>('quit-requested'),
   reduceTransparencyChanged: makeEvent<ReduceTransparencyChanged>('reduce-transparency-changed'),
   restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
+  revealPath: makeEvent<RevealPath>('reveal-path'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
   scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
   scanPreviewComplete: makeEvent<ScanPreviewCompleteEvent>('scan-preview-complete'),
@@ -8781,6 +8797,20 @@ export type RestrictedWindowSettings = {
    *  pinned Hungarian on an English Mac would get an English viewer.
    */
   appearanceLanguage: string | null
+}
+
+/**
+ *  `reveal-path`: show a folder in the main window's focused pane. Emitted by
+ *  the settings window's "Open memory folder" button, which knows only that it
+ *  wants the folder shown: the path itself comes from Rust
+ *  (`ask_cmdr_memory_folder`), because it moves with `CMDR_DATA_DIR`.
+ *
+ *  ⚠️ The payload is why this isn't `execute-command`, which carries a bare
+ *  `command_id` and nothing else. Rust never emits this one, exactly like
+ *  `execute-command` from the settings window.
+ */
+export type RevealPath = {
+  path: string
 }
 
 /**

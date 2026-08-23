@@ -144,6 +144,42 @@ impl MemoryStore {
         })
     }
 
+    /// Delete every note the agent has written and report how many went. What the settings
+    /// window's "Forget everything" does.
+    ///
+    /// ⚠️ **`.md` files only, and the folders stay.** The same reasoning [`used_bytes`] applies
+    /// to the cap applies here: anything else under the root is something the agent could never
+    /// have written, so it is the user's and not ours to delete. Keeping the root itself means
+    /// the next write lands without the jail having to recreate it, and the user is not left
+    /// looking at a pane for a directory that vanished under them.
+    ///
+    /// [`used_bytes`]: MemoryStore::used_bytes
+    pub fn forget_all(&self) -> Result<usize, MemoryRefusal> {
+        let mut forgotten = 0;
+        let mut folders = vec![self.root.clone()];
+        while let Some(folder) = folders.pop() {
+            let entries = match std::fs::read_dir(&folder) {
+                Ok(entries) => entries,
+                // An absent root is nothing to forget, which is a success: the button exists
+                // before the agent has ever written anything.
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => return Err(MemoryRefusal::Unwritable(e.to_string())),
+            };
+            for entry in entries.flatten() {
+                let Ok(kind) = entry.file_type() else { continue };
+                let path = entry.path();
+                if kind.is_dir() {
+                    folders.push(path);
+                } else if kind.is_file() && is_markdown(&path) {
+                    std::fs::remove_file(&path).map_err(|e| MemoryRefusal::Unwritable(e.to_string()))?;
+                    forgotten += 1;
+                }
+            }
+        }
+        log::info!(target: LOG_TARGET, "the user cleared the agent's memory: {forgotten} note(s) deleted");
+        Ok(forgotten)
+    }
+
     /// What every `.md` under the root adds up to. Anything else in the folder (a stale temp,
     /// something the user dropped in) is deliberately not counted: the cap exists to bound
     /// what the AGENT can write, and counting a stray file would jam it with no way out.

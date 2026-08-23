@@ -18,6 +18,7 @@ import {
   type OpenFileViewer,
   type OpenSettings,
   type PersistRestrictedSetting,
+  type RevealPath,
 } from '$lib/ipc/bindings'
 
 /**
@@ -171,6 +172,24 @@ export function requestForegroundOperation(operationId: string): Promise<void> {
 
 export function onForegroundOperationRequested(handler: (payload: ForegroundOperation) => void): Promise<UnlistenFn> {
   return events.foregroundOperation.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Ask the main window to show a folder in its focused pane. Emitted by the
+ * settings window's "Open memory folder" button; only the main window listens.
+ *
+ * Distinct from `execute-command`, which carries a bare `commandId` and no
+ * payload: the path is resolved in Rust (`askCmdrMemoryFolder`) because it moves
+ * with the data dir, so it has to travel with the request.
+ */
+export function requestRevealPath(path: string): Promise<void> {
+  return events.revealPath.emit({ path })
+}
+
+export function onRevealPath(handler: (payload: RevealPath) => void): Promise<UnlistenFn> {
+  return events.revealPath.listen((event) => {
     handler(event.payload)
   })
 }

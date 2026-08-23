@@ -354,6 +354,8 @@ export {
   askCmdrConversationCost,
   askCmdrCostSummary,
   askCmdrModelWindow,
+  askCmdrMemoryFolder,
+  askCmdrForgetMemory,
   askCmdrWakeSettingsChanged,
   agentWakeStatus,
   onAgentWakeStatus,
@@ -493,6 +495,8 @@ export {
   onMcpSettingsClose,
   onViewerWordWrapToggled,
   onPersistRestrictedSetting,
+  requestRevealPath,
+  onRevealPath,
   requestForegroundOperation,
   onForegroundOperationRequested,
 } from './dialog-events'

@@ -12,6 +12,7 @@
 //! - [`conversations`]: thread history (read, list, search, rename, archive).
 //! - [`consent`]: the opt-in gate's status/accept/revoke surface.
 //! - [`cost`]: the per-thread footer total and the per-day rollup.
+//! - [`memory`]: the settings section's two memory controls (where the notes are, wipe them).
 //! - [`suggested_ops`]: what the Suggested ops dialog reads, and the rejection it records.
 //! - [`wake`]: the live-apply push that tells the proactive loop its settings moved.
 //!
@@ -25,6 +26,7 @@ mod chat;
 mod consent;
 mod conversations;
 mod cost;
+mod memory;
 mod suggested_ops;
 mod views;
 mod wake;
@@ -40,6 +42,7 @@ pub use chat::*;
 pub use consent::*;
 pub use conversations::*;
 pub use cost::*;
+pub use memory::*;
 pub use suggested_ops::*;
 pub use views::*;
 pub use wake::*;

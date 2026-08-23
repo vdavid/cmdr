@@ -33,6 +33,7 @@ import {
   onCloseConfirmation,
   onSettingsChanged,
   onForegroundOperationRequested,
+  onRevealPath,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { markDispatchSource } from './dispatch-dedup'
@@ -45,6 +46,7 @@ import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-wind
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { seedSettingForE2E, setSetting } from '$lib/settings'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
+import { navigateToDirInBestPane, resolveLocationOrToast } from '$lib/file-explorer/navigation/navigate-and-select'
 import { closeDialogById } from '$lib/ui/dialog-close-registry'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { openGalleryDialog } from '$lib/dialog-gallery/gallery-state.svelte'
@@ -209,6 +211,21 @@ async function focusMainWindow() {
   } catch (error) {
     log.warn('Focusing the main window failed: {error}', { error: String(error) })
   }
+}
+
+/**
+ * Point a pane at `path` for a window that has none of its own, bringing this one
+ * forward first: the folder appearing behind the settings window reads as the
+ * button doing nothing. An unreachable path shows the shared navigation toast.
+ */
+async function revealFolderInFocusedPane(explorer: ExplorerAPI | undefined, path: string): Promise<void> {
+  await focusMainWindow()
+  if (!explorer) {
+    log.debug('Nothing to show {path} in: no explorer yet (HMR or pre-mount)', { path })
+    return
+  }
+  const location = await resolveLocationOrToast(path)
+  if (location) await navigateToDirInBestPane(explorer, location)
 }
 
 /** Typed id for the per-pane view command (keeps dispatch off raw literals; A3). */
@@ -430,6 +447,15 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
         return
       }
       getExplorer()?.foregroundOperation(operation)
+    }),
+  )
+
+  // Show a folder another window asked for: today that is the settings window's
+  // "Open memory folder". The path travels with the request because only Rust knows
+  // it (it moves with the data dir), and the main window is the only one with panes.
+  await pushTauri(unlistenFns, () =>
+    onRevealPath((payload) => {
+      void revealFolderInFocusedPane(getExplorer(), payload.path)
     }),
   )
 
