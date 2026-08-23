@@ -5,45 +5,44 @@ app SURVIVES also goes out in the same session, via the error reporter's Flow B.
 
 ## Module map
 
-- **`mod.rs`**: hook install + body, crash file read/write, crash-loop detection. **`panic_courier.rs`**: in-session
-  delivery of a survived panic, off the hook's thread. **`signal_handler.rs`**: the async-signal-safe SIGSEGV/SIGBUS/
-  SIGABRT path and its raw file format. **`symbolicate.rs`**: next-launch symbolication of its addresses.
-- **`tests.rs`** / **`panic_courier_tests.rs`**: crash file I/O, sanitization, signals; courier panic-safety.
+- **`mod.rs`**: hook install + body, crash file I/O, crash-loop detection, `AppFate` resolution. **`panic_courier.rs`**:
+  in-session delivery of a survived panic, off the hook's thread. **`survival.rs`**: the two seams that record the app
+  outliving a panic. **`signal_handler.rs`**: the async-signal-safe SIGSEGV/SIGBUS/SIGABRT path and its raw file format.
+  **`symbolicate.rs`**: next-launch symbolication of its addresses. Tests in `*_tests.rs` siblings.
 - IPC in `commands/crash_reporter.rs` (`check_pending_crash_report`, dismiss, send). Frontend in `src/lib/crash-reporter/`
   (`CrashReportDialog.svelte`, `CrashReportToastContent.svelte`); `(main)/+layout.svelte` calls
   `checkPendingCrashReport` after settings load.
 
 Two capture paths write `crash-report.json` in the app data dir (`resolved_app_data_dir()`): the **panic hook** (full
-stdlib: `Backtrace`, sanitized message, thread + app metadata) and the **signal handler** for SIGSEGV/SIGBUS/SIGABRT
-(async-signal-safe: raw addresses to a pre-opened fd, symbolicated on next launch).
+stdlib: `Backtrace`, sanitized message, metadata) and the **signal handler** (async-signal-safe: raw addresses to a
+pre-opened fd).
 
 ## Must-knows (invariants and guardrails)
 
-- **Opt-in only.** `updates.crashReports` defaults to `false`, since a crash report carries a debug backtrace. It's a
-  separate consent gate from the anonymous beta analytics (heartbeat + PostHog), which default on.
+- **Opt-in only.** `updates.crashReports` defaults to `false` (a crash report carries a debug backtrace). Separate
+  consent gate from the anonymous beta analytics (heartbeat + PostHog), which default on.
 - **No PII, ever.** Panic messages go through `sanitize_panic_message` (shared
   [`crate::redact`](../redact/CLAUDE.md), then a 2,000-char cap) before writing; never route one to disk or the network
-  on a path that skips it. The cap counts chars, not bytes: a byte-index cut would panic inside the panic hook and lose
-  the report. Don't add file paths, usernames, device ids, license keys, env vars, window titles, or register/heap
-  contents to the payload.
+  on a path that skips it. The cap counts chars, not bytes: a byte-index cut would panic inside the hook and lose the
+  report. Don't add paths, usernames, device ids, license keys, env vars, titles, or register/heap contents.
 - **`system_snapshot` is attached in `process_pending_crash` at next launch, NEVER in the hook or signal handler**
   (compromised context: no sysctl/sysinfo/shell-outs). Always the stable form (`live: None`), since live values would
   describe the fresh process. PII-free by construction; `../diagnostics_snapshot.rs`.
 - **Attach the diagnostics id (`diag_`), NEVER the analytics id (`anal_`)**: the two-id split (`analytics/CLAUDE.md`
-  § "Two ids that never meet") keeps a voluntarily-attached email unjoinable to usage history. At assembly time only,
-  never in the signal handler: the panic path reads `install_id::diagnostics_id_snapshot()`, the signal path gets it in
-  `process_pending_crash`.
+  § "Two ids that never meet") keeps a voluntarily-attached email unjoinable to usage history.
 - **`email` is a send-time field**, set only by the dialog when the user ticks the attach box (the crash hits disk
   before any email is known). NEVER read settings or the email in the crash-write path or the signal handler.
-- **Dev mode: capture only, never send.** Files are written (handy for testing); the send path is skipped so dev runs
-  don't pollute production data.
+- **Dev mode: capture only, never send.** Files are written; the send path is skipped.
 - **Crash-loop guard.** A crash file less than `CRASH_LOOP_THRESHOLD_SECS` (5 s) old sets `possible_crash_loop`, and
   the frontend shows the dialog instead of auto-sending.
+- **`app_fate` is what lets the dialog say something TRUE.** The hook writes `Unconfirmed`, `survival.rs` upgrades it
+  to `KeptRunning` (never the reverse), and `process_pending_crash` resolves the rest to `Ended`. ❌ Never a `bool`: a
+  `false` default would claim "the app quit" about every older crash file. DETAILS § App fate.
 - ❌ **Nothing in the panic hook may be able to panic**, and `catch_unwind` there can't help (a panic inside a hook
   aborts before unwinding). Hence the courier thread; DETAILS § Two delivery paths.
 - **The hook installs in `run()`, ahead of every fallible step**; `init` only hands it a path, so an unresolvable data
-  dir costs the crash FILE, never the hook. **Keep-first**: the session's first panic writes the file, later ones don't
-  clobber it and carry no short id in-session.
+  dir costs the crash FILE, never the hook. **Keep-first**: the session's first panic writes the file, later ones
+  don't clobber it.
 
 ## Gotchas
 

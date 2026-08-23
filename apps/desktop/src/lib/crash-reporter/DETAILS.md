@@ -29,6 +29,12 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
 
 `CrashReportDialog` renders one report and returns nothing; it calls the IPC itself and then `onClose()`.
 
+- **Opening sentence**: `crashDialogBodyKey(report)` picks one of `crashReporter.dialog.body.ended` / `.keptRunning` /
+  `.unknown`. `ended` is the old fixed string; `keptRunning` says the app carried on and deliberately says "a report"
+  rather than "a crash report"; `unknown` names no outcome, so it reads true whichever way an older report went. The
+  backend settles the fate before the frontend ever sees it (`src-tauri/src/crash_reporter/DETAILS.md` § App fate), so
+  the `default:` branch here is a safety net, not a case the flow produces. The title, privacy note, and toast are
+  deliberately shared across all three: they describe the artifact and its contents, which don't change with the fate.
 - **Report ID line**: only when `report.shortId` is set. Reports written by older app versions have none.
 - **Details block**: collapsed by default, expands to the pretty-printed report JSON with a Copy button. The JSON is
   already redacted and capped backend-side, which is what makes it safe to show verbatim; `user-select: text` is set so
@@ -43,14 +49,19 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
 
 ## Testing
 
+- `crash-copy.test.ts` covers the fate → key mapping, including the two unsettled inputs (`unconfirmed`, absent) that
+  must land on the `unknown` sentence.
 - `crash-reporter-i18n-parity.test.ts` freezes every en string the dialog and toast render. An intended copy edit lands
-  in `intl/messages/en/crashReporter.json` and here together. The shared attach-email label is frozen once in
+  in `intl/messages/en/crashReporter.json` and here together. The three body goldens carry a second assertion: the
+  `keptRunning` and `unknown` strings must not contain "quit", so a copy edit can't reintroduce the claim they exist to
+  avoid. The shared attach-email label is frozen once in
   `$lib/attach-email/attach-email-i18n-parity.test.ts`, not per dialog.
 - `CrashReportDialog.a11y.test.ts` / `CrashReportToastContent.a11y.test.ts` run axe over the default renders. The dialog
   test mocks `analytics.email` to empty, so it exercises the no-email shape only; the attach-email checkbox's own
   behavior is covered by `$lib/attach-email/attach-email.test.ts` and `ErrorReportDialog.a11y.test.ts`, which render it
   with an email on file and assert the sticky write.
-- Both dialog states are in the dialog gallery (`dialog-gallery/fixtures/crash-report.ts`): `panic` (a modern report
-  with a short id and a long backtrace, to keep the scrollable details block honest at 440px) and `signal-no-report-id`
-  (an older signal crash with no short id, flagged as a possible crash loop). Add a fixture state whenever a new branch
-  appears in the markup.
+- All three dialog states are in the dialog gallery (`dialog-gallery/fixtures/crash-report.ts`), one per fate the
+  frontend can see: `panic` (a modern `ended` report with a short id and a long backtrace, to keep the scrollable
+  details block honest at 440px), `survived-panic` (the same panic with `appFate: 'keptRunning'`), and
+  `signal-no-report-id` (an older signal crash with no short id and no fate, flagged as a possible crash loop). Add a
+  fixture state whenever a new branch appears in the markup.

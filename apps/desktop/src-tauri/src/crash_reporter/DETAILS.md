@@ -73,13 +73,61 @@ The crash file is written before anyone knows the app will live, and nothing del
 when the in-session report goes out. A user with **both** opt-ins on therefore gets an
 error report now and a crash report at the next launch for the same panic. They land in
 different channels (Discord vs the crash email) and carry different payloads (log tail vs
-backtrace), so it's noise rather than a correctness problem, and the alternatives all cost
-more than they're worth: deleting the file loses the backtrace for crash-reports-only
-users, and marking it non-fatal needs next-launch UI copy for a case the dialog doesn't
-describe.
+backtrace), so it's noise rather than a correctness problem, and deleting the file would
+lose the backtrace for crash-reports-only users. The next-launch report now says which
+case it is (§ App fate), so triage can pair the two rather than read the second as a
+separate crash.
 
-Related and pre-existing: the next-launch dialog says "Cmdr quit unexpectedly last time",
-which is untrue for a survived panic. That's a copy question, not a code one.
+## App fate: what the next-launch dialog is allowed to claim
+
+`CrashReport.app_fate` records whether the app outlived what the report describes. Without
+it the dialog opened every pending report with "Cmdr quit unexpectedly last time", which a
+survived background panic makes false: the user quit the app themselves.
+
+Four states, `#[serde(default)]` so an older crash file still parses:
+
+- **`unknown`** (the default): written by a build that didn't record a fate. Claims
+  nothing. This is why it's a tri-state and not a `survived: bool` — a bool's `false`
+  default would assert "the app quit" about every crash file already on disk.
+- **`unconfirmed`**: what the panic hook writes, since it runs at panic *initiation*.
+  Transient and on-disk only; the frontend never sees it.
+- **`ended`**: the app went away. The signal path writes it directly (SIGSEGV/SIGBUS/
+  SIGABRT are unrecoverable and we're reading the raw file from the NEXT launch).
+- **`kept_running`**: the app was seen alive after the panic.
+
+### Two seams record survival, and neither can lie the other way
+
+Both call `survival::confirm_survival`, which only ever moves `unconfirmed` →
+`kept_running`. Recording the same fact twice is the normal case in a session that panics
+and is then quit, so the guard matters more than the ordering.
+
+- **The watchdog's timer.** `survival::arm`, called from the hook, parks a thread for
+  `SURVIVAL_PROOF_DELAY` (10 s). The thread reaching its second line IS the proof: a panic
+  that took the app down took the thread with it. Keep-first means at most one watchdog per
+  session, so this costs one sleeping thread only in a session that actually panicked.
+- **The quit path.** `app_lifecycle.rs`'s `ExitRequested` arm calls
+  `crash_reporter::note_app_still_running()`. An app alive enough to be asked to quit
+  outlived its panic, and this covers the user who quits inside the timer's window. It's
+  two loads and out unless this session wrote a crash file.
+
+`ExitRequested` rather than `RunEvent::Exit` on purpose: it fires only for real quit
+requests (⌘Q, the Dock, `AppHandle::exit`, a restart), never as part of a panic's teardown.
+Marking there is still true when the quit gate holds the exit and the user picks "Keep
+working" — the app is, if anything, even more alive.
+
+### Absence of a mark is what means "ended"
+
+Nothing writes `ended` for a panic. `process_pending_crash` infers it at the next launch
+from a report still sitting at `unconfirmed`, because a living process had ten seconds and
+its whole quit path to say otherwise. That inference is the reason the timer only has to be
+*unambiguous*, not long, and the reason it must never fire early: calling a fatal panic a
+survival is the one direction of wrongness the dialog copy can't absorb. The residual
+false-`ended` window is a survived panic followed within 10 s by a force-quit or power
+loss, where "quit unexpectedly" is literally true anyway.
+
+The frontend maps the settled fate to one of three body strings in
+`src/lib/crash-reporter/crash-copy.ts`, defaulting anything unsettled to the sentence that
+stays true either way.
 
 ### Panics before the hook exists
 
@@ -125,6 +173,9 @@ is logged; everything after `crash_reporter::init` is also written to disk.
   handler; `live` is always `None` for crashes (see the `CLAUDE.md` invariant). PII-free: no hostname, paths, or volume
   names.
 - `imageBase` (optional): the main executable's load address at crash time, as `"0x…"`. See § Image base.
+- `appFate`: `"unknown"` / `"unconfirmed"` / `"ended"` / `"keptRunning"` (§ App fate). PII-free by construction: a
+  four-value enum about the app's own behavior. The api server ignores it today, so it isn't stored server-side; adding
+  a column would let the nightly crash email separate a real crash from a panic the app walked away from.
 
 ## Signal-handler limits we accept
 
