@@ -475,8 +475,8 @@ task ENDED rather than died (`finish_detached` hands its `JoinError` back for ex
 
 ### 2b. Calling a connect off
 
-A dial has three phases and a budget each, so a connect can hold for 30 s with nothing to stop it. `dial` takes a
-`tokio_util::sync::CancellationToken`, and the third phase is unlike the other two.
+A dial has three phases, and left alone it can hold a sign-in dialog for the full 30 s its budgets allow. `dial` takes a
+`tokio_util::sync::CancellationToken` so the user has a way out sooner, and the third phase is unlike the other two.
 
 - **The key exchange, the auth ladder, and the two channel requests** all run through `transport::within`, which races
   the work against the token and **drops** it. `russh` unwinds a dropped future cleanly, so they stop where they stand.
