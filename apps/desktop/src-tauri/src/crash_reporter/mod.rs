@@ -269,9 +269,7 @@ fn handle_panic(info: &std::panic::PanicHookInfo<'_>) {
 
     // Then the survival watchdog, for the same panic. Keep-first means only the panic
     // that owns the crash file arms one, so there's at most one per session.
-    if wrote_crash_file
-        && let Some(crash_path) = CRASH_PATH.get()
-    {
+    if wrote_crash_file && let Some(crash_path) = CRASH_PATH.get() {
         survival::arm(crash_path);
     }
 
