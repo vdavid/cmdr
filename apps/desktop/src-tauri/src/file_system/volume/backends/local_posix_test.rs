@@ -678,4 +678,3 @@ async fn listing_a_local_directory_reports_progress_while_it_reads() {
         ticks.iter().map(ListingProgress::entries).collect::<Vec<_>>()
     );
 }
-
