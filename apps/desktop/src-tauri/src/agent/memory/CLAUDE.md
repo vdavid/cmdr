@@ -5,7 +5,8 @@ it the agent relearns nothing and re-proposes what was already turned down. Dept
 
 ## Module map
 
-- `store.rs`: `MemoryStore` — the caps, the write, the edit, and `read_for_prompt`, the slice a turn carries.
+- `store.rs`: `MemoryStore` — the caps, the write, the edit, `forget_all`, and `read_for_prompt`, the slice a turn
+  carries.
 - `jail.rs`: the one path check both tools call.
 - `refusal.rs`: `MemoryRefusal`. Its own module so the jail and the store can both name it without a module cycle.
 - `mod.rs`: `memory_root` / `store_for` / `read_for_turn`, the only lines that need an `AppHandle`.
@@ -33,5 +34,8 @@ The tool handlers live with the rest of the toolset (`../tools/memory.rs`); the 
   the agent believing it has never remembered anything, so it starts the user over. Both cases are logged.
 - **Writes go through `config::durable_write_json`.** A settings control invites the user into this folder while the
   agent may be writing in it, so a torn file is reachable rather than theoretical.
+- **The user has two controls, and both are the user's reach into an app-managed folder**: Settings › Ask Cmdr opens it
+  in a pane (`reveal-path`, because the path is `CMDR_DATA_DIR`-dependent and only Rust knows it) and wipes it
+  (`forget_all`, `.md` only). `DETAILS.md` § The two controls the user gets.
 - **`~/.cmdr/CMDR.md` is a different thing** and stays where it is: user-authored config, in the user's voice, fed
   AFTER the rules. This folder is app-managed state the agent authors, fed before them.

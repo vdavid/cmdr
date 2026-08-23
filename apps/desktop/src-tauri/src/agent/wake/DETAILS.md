@@ -235,6 +235,14 @@ user has been doing with their files for a purpose they have not agreed to, and 
 hands somebody a backlog of everything they did since installing. With consent but no key, signal accumulates: the gap
 is one the user can close and the backlog is theirs, bounded by the staleness horizon.
 
+⚠️ **Refusing new rows is only half of that, so consent going away takes the backlog with it.**
+`Inbox::purge_if_not_permitted` drops everything waiting, and the writer thread clears `agent_inbox` with it, on two
+occasions: at launch, right after the reconcile and before the write-back (`agent::start` refreshes the gates just
+before the thread comes up, so that is the first moment a launch can tell), and on every `ReadinessChanged`. Both
+matter, and the launch one is what a `CONSENT_COPY_VERSION` bump needs: it un-accepts everybody at once, and their rows
+would otherwise sit on disk until somebody re-accepted. Only `NeedsConsent` purges. The other two are gaps the user can
+close, not a purpose they withdrew.
+
 ## Persistence
 
 `agent_inbox` (migration v6, `deliver_by` made nullable by v7's table rebuild — SQLite cannot drop a `NOT NULL` in

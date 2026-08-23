@@ -55,6 +55,21 @@ snapshot-tested corpus.
 
 The redactor is also used by the crash reporter, so the same rules apply to crash payloads.
 
+### What a bundle never picks up
+
+Neither bundle reaches into the app data dir beyond two named things, so the agent's memory folder
+(`<data-dir>/ai/memory/`, which sits right beside the index databases) can't ride along. Stated here so nobody has to
+re-audit it after each new file we put in that dir (verified against `main` on 2026-08-23 by reading every collector):
+
+- `diagnostics_snapshot.rs`'s `index_db_sizes` does ONE non-recursive `read_dir(data_dir)` and keeps only names starting
+  `index-` and ending `.db`, reading their `len()`. It never recurses into `ai/`, and it never opens a file.
+- The log half takes `logging::list_recent_log_files(log_dir)`, which is the LOG dir (not the data dir) filtered by
+  `is_active_log_file` to `cmdr.log` plus `cmdr.log.<digits>`. Never `llm-logs/`, never anything under `ai/`.
+- The crash reporter touches the data dir for exactly two paths it names itself, the crash file and the raw crash file.
+
+**The residual hole is `cmdr.log` itself**, which does ship: ❌ never log memory content, and never log a wake's reason
+verbatim. The redactor is path-shaped, so it does nothing to prose.
+
 ### What identifies a report
 
 No license key and no analytics id is ever attached. Two handles can be:

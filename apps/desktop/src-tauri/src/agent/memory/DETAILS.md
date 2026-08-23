@@ -85,6 +85,29 @@ Three defences, and all three are load-bearing:
 ⚠️ The tools are callable **from the rail, not only from a wake**. That is intended ("remember this for me") and it is
 also what makes 1–3 necessary rather than theoretical.
 
+## The two controls the user gets
+
+Both live in Settings › Ask Cmdr, under "What Ask Cmdr remembers", and both exist for the same reason: the folder is
+the agent's, the notes in it are about the user.
+
+- **Open memory folder.** `ask_cmdr_memory_folder` (`../../commands/agent/memory.rs`) resolves the root, creating it so
+  the click lands somewhere real before the first note exists, and the settings window emits `reveal-path` at the main
+  window, which points a pane at it. ⚠️ The path can only come from Rust: it moves with `CMDR_DATA_DIR`, so a frontend
+  that built it would walk a dev build into the production folder. `reveal-path` exists because `execute-command`, the
+  only other settings-to-main dispatch, carries a bare `command_id` and no payload.
+- **Forget everything.** `MemoryStore::forget_all` deletes every `.md` under the root, subfolders included, and reports
+  the count behind the `forget-memory` confirmation. It leaves the folders and any non-`.md` file alone, for the same
+  reason `used_bytes` skips them: anything the agent could never have written is the user's. Keeping the root means the
+  next write lands without the jail recreating it.
+
+## What diagnostic bundles do NOT pick up
+
+Verified rather than assumed, and recorded so nobody re-audits it every time something new lands in the data dir
+(against `main`, 2026-08-23): crash and error report bundles never reach this folder. `diagnostics_snapshot.rs` does one
+non-recursive `read_dir` of the data dir and keeps only `index-*.db` names, reading sizes; the log half takes
+`cmdr.log*` out of the LOG dir. The full walk, and the one residual hole (`cmdr.log` itself does ship, so memory content
+must never reach a log line), is in `docs/security.md` § What a bundle never picks up.
+
 ## Testing shape
 
 ⚠️ **This module's split exists because of a testing constraint, not an aesthetic one.** There is no Tauri mock runtime
