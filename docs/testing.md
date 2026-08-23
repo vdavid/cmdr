@@ -538,19 +538,22 @@ usually means a real race to fix, not a budget to enlarge. The rare exception is
 and genuinely not optimizable** — then a generous, loudly-commented timeout is correct. Keep this list short; a new
 entry needs a real "we can't make this faster" justification, not convenience.
 
-- **`smb_integration_volume_id_is_per_mount_not_per_path_shape`** (`src-tauri/src/network/mount.rs`): uses a **16s**
-  NetFS connect timeout (double the usual 8s). It's one of only two SMB tests that do a real macOS NetFS _kernel_ mount
+- **`smb_integration_mount_non_ascii_share`** (`src-tauri/src/network/mount_test.rs`): uses a **16s** NetFS connect
+  timeout (double the usual 8s). It's one of only two SMB tests that do a real macOS NetFS _kernel_ mount
   (`NetFSMountURLSync`); the other ~36 use the userspace `smb2` lib with no OS mount. The kernel mount RTT depends on
   factors we don't control (the OS mount queue, host CPU/lease contention when the full slow suite + both e2e lanes run
-  at once), so the default 8s spuriously timed out under load. The mount is pure setup there (the test asserts on the
-  resolved volume id, not mount speed), so the larger budget only delays how long a genuinely-hung mount waits before
-  nextest's 30s slow-timeout cap fires. Don't copy the 16s to other tests, and don't apply it to
-  `smb_integration_mount_guest_no_dialog`, whose 8s budget IS its assertion.
-- **`smb_integration_mount_non_ascii_share`** (`src-tauri/src/network/mount.rs`): the third and last real NetFS kernel
-  mount, on the same **16s** budget and for the same reason. Only NetFS can answer whether it accepts the escaped URL
-  `build_smb_mount_url` produces, which is why a unit test can't replace it. It mounts exactly ONE share (`café`) even
-  though the `unicode` fixture serves four: the others assert the same mechanism, their URLs are already pinned byte for
-  byte by unit tests, and each extra kernel mount is another one of these budgets in the lane.
+  at once), so the default 8s spuriously timed out under load. The mount is pure setup there, so the larger budget only
+  delays how long a genuinely-hung mount waits before nextest's 30s slow-timeout cap fires. Only NetFS can answer
+  whether it accepts the escaped URL `build_smb_mount_url` produces, which is why a unit test can't replace it. It
+  mounts exactly ONE share (`café`) even though the `unicode` fixture serves four: the others assert the same mechanism,
+  their URLs are already pinned byte for byte by unit tests, and each extra kernel mount is another one of these budgets
+  in the lane. It also carries the volume-ID assertion, which rides that same mount rather than making a second one.
+  Don't copy the 16s to other tests, and don't apply it to `smb_integration_mount_guest_no_dialog`, whose 8s budget IS
+  its assertion.
+- ❌ **Two real-mount tests must never share a share.** Each pre-cleans with `diskutil unmount force` and unmounts on
+  drop, so two of them on one share tear down each other's mount, and the symptom lands somewhere else entirely: a wait
+  expiring against a path that has stopped being a mount. The two kernel-mount tests hold `public` on the guest fixture
+  and `café` on the `unicode` one.
 - **`smb_integration_concurrent_streaming_writes_no_deadlock`** (~2.8-4.3 s, the integration lane's slowest local test):
   don't shrink it to buy suite time. Its shape (200 files, 60 × 1 MB writes forced through the streaming fallback at
   concurrency 8) is deliberately tuned to the production workload that surfaced the deadlock it guards, and no smaller

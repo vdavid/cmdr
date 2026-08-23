@@ -255,109 +255,8 @@ async fn smb_integration_mount_guest_no_dialog() {
     );
 }
 
-/// Regression test for the SMB volume-ID-per-mount fix.
-///
-/// An SMB volume ID must key on `(server, port, share)`, never on the mount
-/// path. A path-derived ID gives two shares with the same case-folded name on
-/// different servers (a NAS sharing `Public`, a Docker container sharing
-/// `public`) one ID, which cross-contaminates `lastUsedPaths` and tab state
-/// and surfaces as wrong-case paths flowing into `SmbVolume::list_directory`,
-/// producing `STATUS_OBJECT_PATH_NOT_FOUND` from the server.
-///
-/// Exercises the real OS-mount → `resolve_path_volume_fast` path against the
-/// Docker guest container, then asserts the resulting volume ID is SMB-shaped
-/// and embeds the port.
-#[cfg(target_os = "macos")]
-#[tokio::test]
-#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-async fn smb_integration_volume_id_is_per_mount_not_per_path_shape() {
-    use std::time::Duration;
-
-    let port: u16 = std::env::var("SMB_CONSUMER_GUEST_PORT")
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(10480);
-    let host = "localhost".to_string();
-
-    // Pre-clean to exercise the cold mount path.
-    let _ = std::process::Command::new("diskutil")
-        .args(["unmount", "force", "/Volumes/public"])
-        .output();
-
-    // RARE, SANCTIONED EXCEPTION: a generous 16s connect timeout (double the usual 8s). This is
-    // one of only two SMB tests that go through the real macOS NetFS *kernel* mount
-    // (`NetFSMountURLSync`); the other ~36 use the userspace `smb2` lib and need no OS mount.
-    // NetFS guest-mount RTT depends on external factors we can't optimize away (the kernel mount
-    // queue, plus host CPU/lease contention when the full slow-check suite and both e2e lanes run
-    // concurrently), so under load the default 8s spuriously timed out. The mount is pure setup
-    // here — this test asserts on the resolved volume id, not mount speed (unlike
-    // `smb_integration_mount_guest_no_dialog`, whose 8s budget IS the assertion) — so a bigger
-    // budget only changes how long a genuinely-hung mount waits before the nextest 30s
-    // slow-timeout cap fires. Don't generalize this number to other tests. See docs/testing.md
-    // § "Sanctioned slow-test exceptions".
-    let mount_result = mount_share(host.clone(), "public".to_string(), None, None, port, Some(16_000))
-        .await
-        .unwrap_or_else(|e| panic!("guest mount against {host}:{port} failed: {e:?}"));
-
-    // Force-unmount on EVERY exit path — assertions passing, a panic in them,
-    // or the settle wait below timing out — so no run leaks the mount into the
-    // next (`Drop` runs on unwind).
-    struct UnmountOnDrop(String);
-    impl Drop for UnmountOnDrop {
-        fn drop(&mut self) {
-            let _ = std::process::Command::new("diskutil")
-                .args(["unmount", "force", &self.0])
-                .output();
-        }
-    }
-    let _unmount = UnmountOnDrop(mount_result.mount_path.clone());
-
-    // Wait for NetFS to register the mount so statfs reports the SMB info. A
-    // fixed sleep here raced the OS settling and flaked in BOTH debug and
-    // release (the magic-timer-wait anti-pattern — see docs/testing.md). We
-    // wait for the settled, SMB-shaped id: an early statfs can briefly report
-    // the path-shape id (`volumespublic`) before the SMB mount info lands.
-    // The ceiling is generous (20s) because NetFS settle time stretches under
-    // the parallel load of the full slow-check suite (Linux tests + both e2e
-    // lanes running concurrently); the wait returns on the first satisfied
-    // poll, so the budget only ever elapses on a genuine failure.
-    let mut volume = None;
-    crate::test_support::wait_until_async(
-        Duration::from_secs(20),
-        "resolve_path_volume_fast to report the settled smb- volume id for a fresh SMB mount",
-        || match crate::volumes::resolve_path_volume_fast(&mount_result.mount_path) {
-            Some(v) if v.id.starts_with("smb-") => {
-                volume = Some(v);
-                true
-            }
-            _ => false,
-        },
-    )
-    .await;
-    let volume = volume.expect("the satisfied wait stores the resolved volume");
-
-    // A path-shape ID for `/Volumes/public` would be `volumespublic`, the exact
-    // value two different shares used to collide on.
-    assert_ne!(
-        volume.id, "volumespublic",
-        "expected SMB-shaped ID, got the path-shape one (regression)"
-    );
-    assert!(
-        volume.id.starts_with("smb-"),
-        "expected SMB-shaped ID (smb-...), got {}",
-        volume.id
-    );
-    // The mount's own coordinates, not the path's. Asserted through the funnel
-    // rather than against a spelled-out ID, so the shape can change without
-    // this test going stale (only the identity it keys on may not).
-    assert_eq!(
-        volume.id,
-        crate::file_system::volume::smb_volume_id(&host, port, "public"),
-        "expected the ID keyed on (server, port, share)"
-    );
-}
-
-/// A share whose name isn't ASCII must mount, and must be found again afterwards.
+/// A share whose name isn't ASCII must mount, must be found again afterwards, and
+/// must key its volume on the share rather than the path.
 ///
 /// The unit tests above pin the URL we build; only NetFS can say whether it
 /// ACCEPTS it, and that half is what regressed: `CFURLCreateWithString` returned
@@ -368,15 +267,19 @@ async fn smb_integration_volume_id_is_per_mount_not_per_path_shape() {
 ///
 /// The second assertion is the other half of the same bug: macOS records the
 /// mount source ESCAPED (`//…/caf%C3%A9`), so a raw compare against the name the
-/// server advertises reports a live mount as missing.
+/// server advertises reports a live mount as missing. The third rides the same
+/// mount to pin the volume-ID funnel; see the comment at it.
 ///
 /// ONE share, deliberately: this is a real NetFS *kernel* mount, and the CJK
 /// cases add another one of those to the lane while asserting the same mechanism
 /// (the unit tests already pin their exact URLs byte for byte). `café` is the one
-/// that also carries a distinct NFD spelling. The 16 s budget is the same
-/// sanctioned exception as `smb_integration_volume_id_is_per_mount_not_per_path_shape`
-/// above — see `docs/testing.md` § "Sanctioned slow-test exceptions"; the mount is
-/// setup here, not the assertion.
+/// that also carries a distinct NFD spelling.
+///
+/// ❌ Don't give this test a share another test also mounts. Two tests mounting and
+/// force-unmounting one share tear down each other's mount, and the symptom is a
+/// wait somewhere else expiring against a path that is no longer a mount at all.
+/// The 16 s budget is the sanctioned exception in `docs/testing.md`
+/// § "Sanctioned slow-test exceptions"; the mount is setup here, not the assertion.
 #[cfg(target_os = "macos")]
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
@@ -416,5 +319,27 @@ async fn smb_integration_mount_non_ascii_share() {
         find_mount_path_for_share(&host, share, port).as_deref(),
         Some(mount.mount_path.as_str()),
         "the live mount for {share:?} must be findable under the name the server advertises"
+    );
+
+    // Third assertion, riding the same mount: the volume id an SMB mount gets
+    // keys on `(server, port, share)`, never on the path shape. A path-derived
+    // id gives two shares with the same case-folded name on different servers
+    // (a NAS sharing `Public`, a container sharing `public`) ONE id, which
+    // cross-contaminates `lastUsedPaths` and tab state and surfaces as
+    // wrong-case paths reaching `SmbVolume::list_directory`.
+    //
+    // The rule itself is pinned on fabricated input in `volumes::ids::tests`,
+    // and the mount-source parse in `volumes::smb::mount_source_tests`. What
+    // only a live kernel mount can say is that `resolve_path_volume_fast` still
+    // funnels through both rather than deriving an id of its own — and it says
+    // it here on the HARDEST input, where the recorded source is escaped
+    // (`//…/caf%C3%A9`) and a decode slip would produce a third id again.
+    let volume = crate::volumes::resolve_path_volume_fast(&mount.mount_path)
+        .unwrap_or_else(|| panic!("a live mount at {} must resolve to a volume", mount.mount_path));
+    assert_eq!(
+        volume.id,
+        crate::file_system::volume::smb_volume_id(&host, port, share),
+        "expected the id keyed on (server, port, share) for {share:?}, got {}",
+        volume.id
     );
 }

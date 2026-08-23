@@ -136,17 +136,6 @@ filter = 'test(smb_integration_many_files_at_full_concurrency_land_intact)'
 slow-timeout = { period = "75s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# The volume-id NetFS test's internal deadlines are 16 s (kernel-mount connect, the
-# sanctioned exception documented at the call site) + 20 s (NetFS settle wait), so the
-# general 30 s `smb_integration_` cap below could SIGKILL it before its own waits
-# report WHICH stage starved. 40 s keeps the in-test deadlines authoritative (their
-# panics name the stage) with the cap as a hang backstop. Precedes the general
-# override so it wins slow-timeout for this test (first matching override per
-# setting wins).
-filter = 'test(smb_integration_volume_id_is_per_mount_not_per_path_shape)'
-slow-timeout = { period = "40s", terminate-after = 1 }
-
-[[profile.default.overrides]]
 # SMB integration tests (`#[ignore]`-gated, only run by the
 # `desktop-rust-integration-tests` check, which boots a real Docker Samba stack).
 # Each test pays the SMB session setup + auth + network round-trip cost; the

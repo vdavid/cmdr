@@ -251,9 +251,11 @@ and hashes the name the server actually advertises.
 
 Left escaped, the mounted `café` never equals the advertised `café`: `mount.rs::find_mount_path_for_share` reports a
 live mount as missing (so the app re-mounts a share it already has), and `smb_volume_id` derives one id from the share
-list and a different one from `statfs` for the same mount — the exact cross-contamination
-`smb_integration_volume_id_is_per_mount_not_per_path_shape` exists to catch. A `%` that isn't a valid escape is a
-character in a name, so a decode failure keeps the source text rather than dropping the mount.
+list and a different one from `statfs` for the same mount. Both halves are caught by
+`smb_integration_mount_non_ascii_share`, which mounts `café` for real and then asserts BOTH that
+`find_mount_path_for_share` finds it and that `resolve_path_volume_fast` derives the `(server, port, share)` id from
+that live mount. A `%` that isn't a valid escape is a character in a name, so a decode failure keeps the source text
+rather than dropping the mount.
 
 The escaping half lives with the mount: `network/mount.rs::build_smb_mount_url`.
 
