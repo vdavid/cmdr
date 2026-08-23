@@ -32,6 +32,13 @@ const LOG_TARGET: &str = "agent::wake";
 /// minute of latency rather than a loop that never wakes again.
 const IDLE_POLL: Duration = Duration::from_secs(60);
 
+/// ⚠️ **How long a declined attempt waits before trying again, and why the loop needs one at
+/// all.** A deadline that has passed stays passed. Without a backoff the park would compute to
+/// zero, `recv_timeout` would return instantly, and the loop would spin a core flat for as long
+/// as an overdue row sits there — which is the DEFAULT state in M1, since `askCmdr.proactive`
+/// ships false. A gate or settings change clears it, so opening the gate is felt at once.
+const DECLINED_WAKE_BACKOFF: Duration = Duration::from_secs(5 * 60);
+
 /// Start the wake loop. Called once, from `agent::start`, after the store handle and the chat
 /// runtime are registered.
 ///
@@ -67,6 +74,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
         importance: ImportanceCache::new(data_dir),
         settings: settings::load(&app),
         wake_in_flight: false,
+        not_before: 0,
         app,
         conn,
     };
@@ -75,7 +83,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
     }
 
     loop {
-        match receiver.recv_timeout(loop_state.until_next_deadline()) {
+        match receiver.recv_timeout(loop_state.park()) {
             Ok(WakeMessage::Rollup(activity)) => {
                 channel::note_rollup_consumed();
                 loop_state.admit(activity);
@@ -120,15 +128,15 @@ struct WakeLoop {
     /// the same conversation lock for a whole model call, holding rows the first one could have
     /// carried.
     wake_in_flight: bool,
+    /// Unix seconds before which no wake is attempted, however overdue the inbox looks. See
+    /// [`DECLINED_WAKE_BACKOFF`].
+    not_before: u64,
 }
 
 impl WakeLoop {
     /// How long to park before the next thing that could need doing.
-    fn until_next_deadline(&self) -> Duration {
-        match self.inbox.next_deadline() {
-            Some(due) => Duration::from_secs(due.saturating_sub(now_secs())).min(IDLE_POLL),
-            None => IDLE_POLL,
-        }
+    fn park(&self) -> Duration {
+        park_for(self.inbox.next_deadline(), self.not_before, now_secs())
     }
 
     /// Fold one rollup into the inbox and write the row it touched.
@@ -170,6 +178,9 @@ impl WakeLoop {
             WakeControl::ReadinessChanged => {}
             WakeControl::WakeFinished => self.wake_in_flight = false,
         }
+        // Every control message is a reason the last decision may no longer hold: the gate the
+        // wake was refused by may have opened, or the wake it was waiting on may have finished.
+        self.not_before = 0;
     }
 
     /// Say how much the bound cost, if anything. Silent when nothing dropped, so a quiet run
@@ -191,11 +202,16 @@ impl WakeLoop {
             return;
         }
         let now = now_secs();
-        if !self.inbox.due_at(now) {
+        if now < self.not_before || !self.inbox.due_at(now) {
             return;
         }
+        // Whatever happens below, don't come straight back: the deadline that brought us here
+        // has passed and will keep having passed, and a zero-length park is a spin.
+        self.not_before = now.saturating_add(DECLINED_WAKE_BACKOFF.as_secs());
+
         // The fourth gate, beside the three in `readiness.rs`. Checked before anything is
-        // resolved, so an opted-out user's inbox costs nothing beyond the rows.
+        // resolved, so an opted-out user's inbox costs nothing beyond the rows. Silent: this is
+        // M1's default state, and one log line every five minutes for it would be noise.
         if !self.settings.proactive {
             return;
         }
@@ -281,9 +297,67 @@ impl PendingSlot {
     }
 }
 
+/// How long to park, given what is waiting and when a wake may next be attempted.
+///
+/// ⚠️ Capped at [`IDLE_POLL`] and floored by `not_before`. The floor is the load-bearing half: a
+/// deadline in the past yields a zero-length park, and a zero-length `recv_timeout` returns
+/// instantly, so without it an overdue row the loop declines to act on spins a core flat.
+fn park_for(next_deadline: Option<u64>, not_before: u64, now: u64) -> Duration {
+    let Some(due) = next_deadline else {
+        return IDLE_POLL;
+    };
+    Duration::from_secs(due.max(not_before).saturating_sub(now)).min(IDLE_POLL)
+}
+
 fn now_secs() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|since| since.as_secs())
         .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// ⚠️ The spin guard. A deadline that has passed keeps having passed, so a park computed
+    /// from it alone is zero-length, and a zero-length `recv_timeout` returns instantly. With
+    /// `askCmdr.proactive` shipping false, an overdue row the loop declines to act on is the
+    /// DEFAULT state in M1 — this is the difference between a parked thread and a hot core.
+    #[test]
+    fn an_overdue_row_the_loop_declined_parks_instead_of_spinning() {
+        let overdue = Some(1_780_000_000);
+        let now = 1_780_000_500;
+
+        assert_eq!(park_for(overdue, 0, now), Duration::ZERO, "the deadline alone says now");
+        assert_eq!(
+            park_for(overdue, now + 30, now),
+            Duration::from_secs(30),
+            "the backoff is what keeps the thread asleep"
+        );
+        assert_eq!(
+            park_for(overdue, now + DECLINED_WAKE_BACKOFF.as_secs(), now),
+            IDLE_POLL,
+            "a longer backoff still re-checks once a minute; `try_wake`'s own guard holds the rest"
+        );
+    }
+
+    /// A deadline still ahead is honoured to the second, so the agent stays as attentive as the
+    /// cadence setting asks.
+    #[test]
+    fn a_future_deadline_is_parked_for_exactly() {
+        assert_eq!(park_for(Some(1_780_000_030), 0, 1_780_000_000), Duration::from_secs(30));
+    }
+
+    /// An empty inbox, or one holding only cold rows, waits out the idle poll rather than
+    /// forever: a clock jump or a missed re-arm then costs a minute, not the rest of the run.
+    #[test]
+    fn nothing_waiting_falls_back_to_the_idle_poll() {
+        assert_eq!(park_for(None, 0, 1_780_000_000), IDLE_POLL);
+        assert_eq!(
+            park_for(Some(1_780_009_999), 0, 1_780_000_000),
+            IDLE_POLL,
+            "and a distant deadline is capped, so the loop re-checks its own arithmetic"
+        );
+    }
 }
