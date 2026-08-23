@@ -40,13 +40,13 @@ Companion tests (colocated):
 
 - **`FilterChips.svelte.test.ts`**: Type toggle render + selection, chip rendering, `×` and Backspace clear, popover
   open/close, scope behavior, ⌥S/⌥M/⌥I openers, ⌥C/⌥V scope shortcuts
-- **`FilterChips.a11y.test.ts`**: Tier-3 axe-core audit across populated chip states
-- **`SizeFilterPopover.a11y.test.ts`**: Tier-3 axe-core audit: closed + open in `between` mode (all columns)
 - **`DateFilterPopover.svelte.test.ts`**: Preset click auto-promote, Custom… cell flow, comparator click, upper-bound
   column gating
-- **`DateFilterPopover.a11y.test.ts`**: Tier-3 axe-core audit: closed, preset mode, and custom-bounds mode
-  (`nested-interactive` disabled there — input inside Custom cell)
-- **`ScopeFilterPopover.a11y.test.ts`**: Tier-3 axe-core audit: closed + open with scope text and toggles
+- **`filter-chips.a11y.test.ts`**: one directory-level tier-3 audit, because `svelte-tests` charges per test FILE
+  (`docs/testing.md` § "What a test actually costs"). Four blocks: the chip strip across populated states, the size
+  popover (closed + `between` with all columns), the date popover (closed, preset mode, custom bounds, with
+  `nested-interactive` disabled there — input inside Custom cell), and the scope popover (closed + open with scope text
+  and toggles)
 - **`filter-chip-state.test.ts`**: Default → configured → cleared rules for each chip's display summary
 - **`filter-popover-helpers.test.ts`**: Size + date preset rules, comparator gating, dynamic Modified preset labels
 

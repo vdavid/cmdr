@@ -350,8 +350,8 @@ index loads, so the re-run still lands.
 ### Test coverage
 
 `QueryDialog.svelte.test.ts` (orchestrator) pins the title rendering, primary + secondary action callbacks, ⌘N / ⌘H, the
-IME guard, and the `lastDialogEvent` ownership. `QueryDialog.a11y.test.ts` runs axe-core across loading / index-ready /
-AI-on against a minimal Search-shaped config. Search's full integration tests live in the
+IME guard, and the `lastDialogEvent` ownership. The `QueryDialog` block of `dialog.a11y.test.ts` runs axe-core across loading /
+index-ready / AI-on against a minimal Search-shaped config. Search's full integration tests live in the
 `lib/search/SearchDialog.<concern>.svelte.test.ts` family (session, shortcuts, ai, auto-apply, open-in-pane, scope,
 images, coverage, handoff) plus `lib/search/SearchDialog.a11y.test.ts`, and they mount QueryDialog through the Search
 wrapper.
@@ -394,8 +394,11 @@ builds on live in `$lib/ui/`. Only the layout facts that none of those carry liv
   `grid-template-columns` string for the same reason. The Path header additionally insets by `--spacing-xxs`, matching
   the horizontal padding on `PathPills`' first pill, so the two left edges line up on TEXT rather than on box edges.
 
-Component tests (`*.svelte.test.ts`) and tier-3 a11y audits (`*.a11y.test.ts`) colocate with what they pin;
-`codegraph_files` lists them. The one non-colocated suite is `queryui-i18n-parity.test.ts`, the en-locale golden net
+Component tests (`*.svelte.test.ts`) colocate with what they pin; `codegraph_files` lists them. The tier-3 a11y audits
+are directory-level, because `svelte-tests` charges per test FILE (`docs/testing.md` § "What a test actually costs"):
+`presentational.a11y.test.ts` covers the five components that mock nothing, and `dialog.a11y.test.ts` covers
+`QueryDialog` + `QueryResults`, whose `$lib/tauri-commands` / `$lib/settings` / `$lib/icon-cache` stubs would otherwise
+apply to the mock-free five too. The one non-colocated suite is `queryui-i18n-parity.test.ts`, the en-locale golden net
 described in § i18n: a copy edit lands in the catalog AND in its goldens, together.
 
 ## Name column shrink-wrap
