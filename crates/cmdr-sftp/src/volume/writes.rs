@@ -120,7 +120,10 @@ impl PositionedWrite for RemoteWrite {
                 message: e.to_string(),
                 raw_os_error: e.raw_os_error(),
             })?;
-        self.file.write(bytes).await.map_err(|e| map_sftp_error(&e, &self.remote))
+        self.file
+            .write(bytes)
+            .await
+            .map_err(|e| map_sftp_error(&e, &self.remote))
     }
 }
 

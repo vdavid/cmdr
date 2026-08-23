@@ -140,7 +140,10 @@ impl SftpVolume {
             let Some(take) = NonZeroU64::new(take) else {
                 break;
             };
-            source.copy_to(dest, take).await.map_err(|e| map_sftp_error(&e, remote_to))?;
+            source
+                .copy_to(dest, take)
+                .await
+                .map_err(|e| map_sftp_error(&e, remote_to))?;
             copied += take.get();
             // ❗ The only cancellation this path has. There is no token here, so a
             // caller that never looked at the callback would be uncancelable.

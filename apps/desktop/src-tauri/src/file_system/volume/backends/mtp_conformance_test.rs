@@ -109,12 +109,8 @@ async fn export_honors_the_shared_handshake_contract() {
     crate::mtp::virtual_device::rescan_virtual_device();
     let (device_id, volume) = connect_primed_volume(&fixture).await;
 
-    cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(
-        &volume,
-        Path::new("/exported.txt"),
-        content,
-    )
-    .await;
+    cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(&volume, Path::new("/exported.txt"), content)
+        .await;
 
     teardown(&device_id, &fixture).await;
 }

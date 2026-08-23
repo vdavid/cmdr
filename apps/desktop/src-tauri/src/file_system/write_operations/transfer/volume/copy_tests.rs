@@ -2158,7 +2158,6 @@ async fn cross_volume_copy_into_existing_dest_is_a_no_op_create() {
     assert!(dest.exists(Path::new("/existing/a.txt")).await);
 }
 
-
 // ========================================
 // The free-space pre-flight, when the destination can't answer
 // ========================================
@@ -2223,7 +2222,10 @@ async fn a_destination_that_does_report_free_space_still_refuses_what_it_cant_ho
     // keeps the check exactly as it was.
     let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(1_000, 4));
-    source.create_file(Path::new("/big.bin"), b"more than four bytes").await.unwrap();
+    source
+        .create_file(Path::new("/big.bin"), b"more than four bytes")
+        .await
+        .unwrap();
 
     let failure = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),

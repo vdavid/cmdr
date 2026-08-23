@@ -151,12 +151,8 @@ async fn smb_integration_export_honors_the_shared_handshake_contract() {
     let content = b"the bytes a copy would move";
     smb_vol.create_file(Path::new(&file), content).await.unwrap();
 
-    cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(
-        smb_vol.as_ref(),
-        Path::new(&file),
-        content,
-    )
-    .await;
+    cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(smb_vol.as_ref(), Path::new(&file), content)
+        .await;
 
     ensure_clean(&smb_vol, &base).await;
 }

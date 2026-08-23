@@ -18,7 +18,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use cmdr_fs::volume::Volume;
-use cmdr_sftp::volume::testing::{FIXTURE_PASSWORD, clean_scratch, connect_fixture, fixture_host, fixture_params, scratch_dir};
+use cmdr_sftp::volume::testing::{
+    FIXTURE_PASSWORD, clean_scratch, connect_fixture, fixture_host, fixture_params, scratch_dir,
+};
 use sha2::{Digest, Sha256};
 
 use super::event_sinks::{CollectorEventSink, OperationEventSink};
@@ -176,7 +178,10 @@ async fn sftp_integration_copying_onto_a_server_lands_every_byte() {
     // ❗ The destination really can't answer the space question, which is the
     // whole point of this cell.
     assert!(
-        matches!(remote.get_space_info().await, Err(cmdr_fs::volume::VolumeError::NotSupported)),
+        matches!(
+            remote.get_space_info().await,
+            Err(cmdr_fs::volume::VolumeError::NotSupported)
+        ),
         "this cell only means something while the server can't report free space"
     );
 

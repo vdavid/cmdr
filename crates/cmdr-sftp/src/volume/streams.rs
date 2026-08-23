@@ -102,7 +102,11 @@ impl RemoteFile {
     /// The handle rather than the path, so the answer describes the bytes this
     /// stream is about to read even if the name is replaced under it.
     async fn len(&mut self) -> Result<u64, VolumeError> {
-        let meta = self.file.metadata().await.map_err(|e| map_sftp_error(&e, &self.remote))?;
+        let meta = self
+            .file
+            .metadata()
+            .await
+            .map_err(|e| map_sftp_error(&e, &self.remote))?;
         Ok(meta.len().unwrap_or(0))
     }
 }
@@ -247,7 +251,11 @@ impl SftpVolume {
     pub(super) async fn read_range_impl(&self, path: &Path, offset: u64, len: usize) -> Result<Vec<u8>, VolumeError> {
         let remote = self.to_remote_path(path)?;
         let session = self.clone_session().await?;
-        let file = session.sftp().open(&remote).await.map_err(|e| map_sftp_error(&e, &remote))?;
+        let file = session
+            .sftp()
+            .open(&remote)
+            .await
+            .map_err(|e| map_sftp_error(&e, &remote))?;
 
         let end = offset.saturating_add(len as u64);
         let handle = RemoteFile::new(file, Arc::from(remote.as_str()));

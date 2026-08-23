@@ -729,8 +729,6 @@ mod approved_op_parity_tests;
 // A real copy in BOTH directions against a live SFTP server, through
 // `copy_between_volumes`. Gated on the Docker fixture, and named for the
 // `sftp_integration_` lane the check runner selects on.
-#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
-mod sftp_transfer_integration_test;
 #[cfg(test)]
 mod journal_capture_tests;
 #[cfg(test)]
@@ -743,6 +741,8 @@ mod scan_preview_oracle_tests;
 mod scan_watchdog_tests;
 #[cfg(test)]
 mod settle_event_tests;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod sftp_transfer_integration_test;
 #[cfg(test)]
 pub(crate) mod test_support;
 #[cfg(test)]
