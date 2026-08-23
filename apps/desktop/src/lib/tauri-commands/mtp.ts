@@ -378,7 +378,10 @@ export interface VolumeCopyScanResult {
   fileCount: number
   dirCount: number
   totalBytes: number
-  destSpace: VolumeSpaceInfoExtended
+  /** What the destination reports it has room for, or `null` when the backend
+   *  genuinely can't answer (SFTP can't reach `statvfs@openssh.com`). `null`
+   *  means "can't tell", never "no room". */
+  destSpace: VolumeSpaceInfoExtended | null
   conflicts: VolumeConflictInfo[]
 }
 

@@ -970,7 +970,10 @@ pub struct VolumeCopyScanResult {
     pub file_count: usize,
     pub dir_count: usize,
     pub total_bytes: u64,
-    pub dest_space: SpaceInfo,
+    /// What the destination reports it has room for, or `None` when the backend
+    /// genuinely can't answer (SFTP: `statvfs@openssh.com` is out of reach). ❗
+    /// `None` is "can't tell", ❌ never "no room" — a preview must still open.
+    pub dest_space: Option<SpaceInfo>,
     pub conflicts: Vec<ScanConflict>,
 }
 

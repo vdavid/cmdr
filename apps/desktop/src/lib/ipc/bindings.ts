@@ -10551,7 +10551,12 @@ export type VolumeCopyScanResult = {
   fileCount: number
   dirCount: number
   totalBytes: number
-  destSpace: SpaceInfo
+  /**
+   *  What the destination reports it has room for, or `None` when the backend
+   *  genuinely can't answer (SFTP: `statvfs@openssh.com` is out of reach). ❗
+   *  `None` is "can't tell", ❌ never "no room" — a preview must still open.
+   */
+  destSpace: SpaceInfo | null
   conflicts: ScanConflict[]
 }
 

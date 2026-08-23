@@ -39,7 +39,7 @@ use super::super::super::types::{
 use super::super::dest_name_index::DestNameIndex;
 use super::super::transfer_driver::build_pre_skip_set;
 use super::preflight::scan_volume_sources;
-use crate::file_system::volume::{DirectoryCreation, SourceItemInfo, Volume, VolumeError};
+use crate::file_system::volume::{DirectoryCreation, SourceItemInfo, SpaceInfo, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
@@ -357,6 +357,32 @@ pub async fn copy_between_volumes(
     })
 }
 
+/// How much room the destination reports, or `None` when the backend genuinely
+/// cannot answer.
+///
+/// ❗ **`NotSupported` means "can't tell", ❌ never "no room".** `get_space_info`
+/// is explicitly allowed to refuse: SFTP is the live case, because
+/// `statvfs@openssh.com` isn't reachable from its crate stack, so the honest
+/// answer is no answer. Reading that refusal as a failure made every copy INTO an
+/// SFTP server die in pre-flight, with a message that named neither the check nor
+/// the reason — two correct decisions (an honest backend, a real check) colliding.
+///
+/// Any OTHER error still propagates: a destination that answered with a dead
+/// mount or a permission refusal has told us something, and a copy that walked
+/// past it would fail later and worse.
+///
+/// Both pre-flights go through here, so the tolerance can't drift between the
+/// dialog's preview and the transfer that follows it.
+/// `a_destination_that_cant_report_free_space_is_still_copyable_into` and its
+/// sibling in `copy_tests.rs` hold both sides.
+async fn dest_space_if_known(dest_volume: &dyn Volume) -> Result<Option<SpaceInfo>, VolumeError> {
+    match dest_volume.get_space_info().await {
+        Ok(info) => Ok(Some(info)),
+        Err(VolumeError::NotSupported) => Ok(None),
+        Err(other) => Err(other),
+    }
+}
+
 /// Performs a pre-flight scan for volume copy without executing.
 ///
 /// This scans the source files and checks destination for conflicts and space.
@@ -403,15 +429,18 @@ pub async fn scan_for_volume_copy(
         }
     }
 
-    // Get destination space info
-    let dest_space = dest_volume.get_space_info().await?;
+    // What the destination has room for, or `None` when it genuinely can't tell.
+    let dest_space = dest_space_if_known(dest_volume).await?;
 
-    // Check if there's enough space
-    if dest_space.available_bytes < total_bytes {
+    // ❗ Only a volume that ANSWERED gets checked. `None` is "can't tell", and a
+    // preview the user can't even open is the wrong way to say that.
+    if let Some(space) = &dest_space
+        && space.available_bytes < total_bytes
+    {
         return Err(VolumeError::IoError {
             message: format!(
                 "Not enough space: need {} bytes, only {} available",
-                total_bytes, dest_space.available_bytes
+                total_bytes, space.available_bytes
             ),
             raw_os_error: None,
         });
@@ -646,15 +675,16 @@ pub(crate) async fn copy_volumes_with_progress(
     let known_directory_paths = preflight.known_directory_paths();
     let mut source_hints = preflight.source_hints;
 
-    // Phase 2: Check destination space
-    let dest_space = dest_volume
-        .get_space_info()
+    // Phase 2: Check destination space, where the destination can report it.
+    let dest_space = dest_space_if_known(&*dest_volume)
         .await
         .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
-    if dest_space.available_bytes < total_bytes {
+    if let Some(space) = dest_space
+        && space.available_bytes < total_bytes
+    {
         return Err(WriteFailure::synthetic(WriteOperationError::InsufficientSpace {
             required: total_bytes,
-            available: dest_space.available_bytes,
+            available: space.available_bytes,
             volume_name: Some(dest_volume.name().to_string()),
         }));
     }

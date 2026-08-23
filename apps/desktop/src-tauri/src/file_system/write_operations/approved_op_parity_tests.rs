@@ -387,16 +387,16 @@ async fn an_approved_copy_settles_as_an_ordinary_copy() {
 // The volume route, end to end
 // ============================================================================
 //
-// ⚠️ **Two `InMemoryVolume` gaps both surface as the SAME generic message**, which is a nasty
-// thing to debug cold: `IoError { message: "Operation not supported by this volume type" }`,
-// naming the destination path and nothing else. A volume-level transfer test needs BOTH of
-// these or it fails that way with no hint which is missing:
+// ⚠️ **A volume-level transfer test must seed the destination FOLDER**: nothing in the copy
+// path creates one on this backend, so a dest of `/incoming` fails unless the test calls
+// `create_directory` for it.
 //
-// - `.with_space_info(total, available)` on the DESTINATION. Without it the pre-flight
-//   free-space check has nothing to ask, and the operation dies before it copies a byte.
-// - `create_directory` for the destination folder. Nothing in the copy path creates one on
-//   this backend, so a dest of `/incoming` fails unless the test seeds it; `/` alone is not
-//   a way around it, because the space check fails first.
+// `.with_space_info(total, available)` is no longer required for the operation to run —
+// a destination that can't report free space is copyable into, and the pre-flight reads
+// `NotSupported` as "can't tell" rather than "no room"
+// (`transfer::volume::copy::dest_space_if_known`). Set it when the test asserts on
+// `dest_space` or wants the InsufficientSpace refusal; leave it off to exercise the
+// SFTP-shaped destination.
 //
 // The failure arrives as a `write-error` through the sink rather than a panic, so a test that
 // only asserts on what landed reports "the file isn't there" and says nothing about why.

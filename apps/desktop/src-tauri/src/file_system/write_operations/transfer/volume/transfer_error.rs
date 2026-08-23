@@ -147,9 +147,21 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
             message: msg,
         },
         VolumeError::AlreadyExists(path) => WriteOperationError::DestinationExists { path },
+        // ❗ Name the ROLE. The bare wording said only "this volume type", so a
+        // transfer that died here left a reader unable to tell which of the two
+        // volumes refused, let alone which call. `role` is the one fact the
+        // caller has and the error doesn't, and it costs nothing to spend it.
+        // (This is a technical-details string for the log and the details panel,
+        // not rendered prose: the FE renders its copy from the typed variant.)
         VolumeError::NotSupported => WriteOperationError::IoError {
             path: context_path.to_string(),
-            message: "Operation not supported by this volume type".to_string(),
+            message: format!(
+                "The {} volume does not support this operation",
+                match role {
+                    PathRole::Source => "source",
+                    PathRole::Destination => "destination",
+                }
+            ),
         },
         VolumeError::DeviceDisconnected(_) => WriteOperationError::DeviceDisconnected {
             path: context_path.to_string(),

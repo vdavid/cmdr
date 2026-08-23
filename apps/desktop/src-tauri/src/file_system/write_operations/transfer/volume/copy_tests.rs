@@ -49,13 +49,31 @@ fn test_format_skipped_suffix_plural() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_scan_for_volume_copy_empty_source_returns_error_without_space_info() {
-    // InMemoryVolume without configured space_info returns NotSupported for get_space_info
-    let source = Arc::new(InMemoryVolume::new("Source"));
-    let dest = Arc::new(InMemoryVolume::new("Dest"));
+async fn a_preview_of_a_destination_that_cant_report_space_still_scans() {
+    // ❗ "Can't tell" is not "no room". A backend answers `NotSupported` here when
+    // the protocol genuinely has no way to ask — SFTP is the live case, since
+    // `statvfs@openssh.com` isn't reachable from its crate stack — and that
+    // honest refusal must not become a preview the user can't open.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(1_000_000, 900_000));
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
+    source.create_file(Path::new("/report.pdf"), b"content").await.unwrap();
 
-    let result = scan_for_volume_copy(source.as_ref(), &[], dest.as_ref(), Path::new("/"), 10).await;
-    assert!(result.is_err());
+    let result = scan_for_volume_copy(
+        source.as_ref(),
+        &[PathBuf::from("/report.pdf")],
+        dest.as_ref(),
+        Path::new("/"),
+        10,
+    )
+    .await
+    .expect("a destination that can't report free space is still previewable");
+
+    assert_eq!(result.file_count, 1);
+    assert!(
+        result.dest_space.is_none(),
+        "a destination that can't tell must say so rather than report a made-up number, got {:?}",
+        result.dest_space,
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -75,7 +93,8 @@ async fn test_scan_for_volume_copy_with_in_memory_volumes() {
     assert_eq!(result.file_count, 2);
     assert_eq!(result.total_bytes, 10); // "Hello" + "World"
     assert!(result.conflicts.is_empty());
-    assert!(result.dest_space.available_bytes >= result.total_bytes);
+    let dest_space = result.dest_space.expect("this destination reports its space");
+    assert!(dest_space.available_bytes >= result.total_bytes);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -348,7 +367,7 @@ async fn test_scan_for_volume_copy_with_local_volumes() {
     assert_eq!(scan.file_count, 2);
     assert_eq!(scan.total_bytes, 10); // "Hello" + "World"
     assert!(scan.conflicts.is_empty());
-    assert!(scan.dest_space.total_bytes > 0);
+    assert!(scan.dest_space.expect("this destination reports its space").total_bytes > 0);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -2137,4 +2156,91 @@ async fn cross_volume_copy_into_existing_dest_is_a_no_op_create() {
     // The pre-existing dest file survived (no wholesale recreate).
     assert!(dest.exists(Path::new("/existing/keep.txt")).await);
     assert!(dest.exists(Path::new("/existing/a.txt")).await);
+}
+
+
+// ========================================
+// The free-space pre-flight, when the destination can't answer
+// ========================================
+//
+// ⚠️ Two correct-looking decisions collided here once and made every copy INTO an
+// SFTP server fail after ~500 ms with `IoError { message: "Operation not supported
+// by this volume type" }`, naming the destination path and nothing else. The
+// backend was right to answer `NotSupported` (its protocol really can't ask), and
+// the check was right to exist; what was missing is that "can't tell" and "no
+// room" are different answers. These cells hold the seam open from both sides.
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_destination_that_cant_report_free_space_is_still_copyable_into() {
+    // ❗ The cross-backend contract, not an SFTP quirk: ANY backend may answer
+    // `NotSupported` to `get_space_info`, and the trait explicitly allows it. A
+    // pre-flight that read the refusal as "no room" would make such a volume a
+    // destination nothing can ever be written to, with an error message that
+    // names neither the check nor the reason.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    // ❗ No `with_space_info`, so `get_space_info` answers `NotSupported` — the
+    // same answer `SftpVolume` gives.
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
+    source.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+    source.create_file(Path::new("/b.txt"), b"bravo").await.unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-space-unknown",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/a.txt"), PathBuf::from("/b.txt")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+
+    let errors: Vec<String> = events
+        .errors
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|e| format!("{:?}", e.error))
+        .collect();
+    assert!(
+        result.is_ok(),
+        "a destination that can't report free space must still be copyable into; errors: {errors:?}",
+    );
+
+    // The bytes, not just the absence of an error.
+    for (name, content) in [("/a.txt", &b"alpha"[..]), ("/b.txt", &b"bravo"[..])] {
+        let landed = dest.read_range(Path::new(name), 0, 64).await.expect("the copy landed");
+        assert_eq!(landed, content, "{name} must arrive byte for byte");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_destination_that_does_report_free_space_still_refuses_what_it_cant_hold() {
+    // ❗ The other half, and the one an over-eager fix breaks: tolerating "can't
+    // tell" must not turn into ignoring a real "no room". A volume that ANSWERS
+    // keeps the check exactly as it was.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(1_000, 4));
+    source.create_file(Path::new("/big.bin"), b"more than four bytes").await.unwrap();
+
+    let failure = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-space-too-small",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/big.bin")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &VolumeCopyConfig::default(),
+    )
+    .await
+    .expect_err("a destination that says it has 4 bytes free must refuse 20 bytes");
+
+    assert!(
+        matches!(&failure.error, WriteOperationError::InsufficientSpace { .. }),
+        "the refusal must stay the typed InsufficientSpace the dialog renders, got {:?}",
+        failure.error,
+    );
 }
