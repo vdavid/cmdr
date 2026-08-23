@@ -50,11 +50,18 @@ Consequences for anyone tuning a lane:
 
 ### Merging test files: what it buys, and the trap
 
-The lever above is applied to the tier-3 a11y tests: seven directories went from 106 files to 20 without losing a single
-test. `settings/sections/` alone dropped 24 files to 4, cutting that directory's import CPU from 47.5 s to 9.2 s and its
-total worker CPU from ~98 s to ~18 s (measured 2026-08-23, M-series laptop, three `pnpm exec vitest run` runs).
-`a11y-coverage` accepts any `*.a11y.test.ts` in a component's own directory that imports it, so merging never weakens
-the guarantee (`apps/desktop/src/lib/ui/DETAILS.md` § "Adding a component-level a11y test").
+The lever above is applied to the tier-3 a11y tests: the tier went from 214 files to 73 without losing a single test
+(696 tests in the a11y set before and after, five of them the parked `it.skip`s). The biggest single wins were
+`settings/sections/` (24 files to 4, import CPU 47.5 s to 9.2 s) and `lib/indexing/` (7 to 2, import CPU ~50 s to
+~4.5 s); measure a directory in isolation and read its import + transform totals, since the whole-set numbers swing by
+~100 s of CPU run to run on a busy machine. (Measured 2026-08-23, M-series laptop, two or three `pnpm exec vitest run`
+runs per directory.) `a11y-coverage` accepts any `*.a11y.test.ts` in a component's own directory that imports it, so
+merging never weakens the guarantee (`apps/desktop/src/lib/ui/DETAILS.md` § "Adding a component-level a11y test").
+
+What's left is a deliberate long tail: nine directories still hold two a11y files each, and merging one saves a single
+file, which is under the measurement noise. Four of those nine are two files on purpose (`lib/indexing/`,
+`lib/query-ui/`, `file-explorer/views/`, and the `settings/` pair), because their blocks stub the same modules with
+values that can't be reconciled without changing what one of them renders.
 
 Before merging more, know the two traps:
 
@@ -65,6 +72,15 @@ Before merging more, know the two traps:
   split it rather than forcing one file, and say so in the file's doc comment.
 - **Union mocks must spread the real module.** A bare union of two files' stubs hands a third component a missing export
   it never had, which fails loudly; spreading `importOriginal()` first keeps every un-stubbed member as it was.
+- **A stub the OTHER blocks never had is the quiet one.** A file-wide `isMacOS: () => true` decides what every other
+  block renders on a Linux runner, and a `getSetting` that answers one key and returns a flag for everything else
+  answers for its neighbours too. Give such a stub a mutable that means "use the real export" when a block hasn't set
+  it, and hold it in a `vi.hoisted` object rather than a module-level `let`: spreading a real module can pull in the
+  command registry, which calls `isMacOS()` while the mocks are still being wired, and a plain `let` is still in its
+  temporal dead zone then (`ReferenceError: Cannot access '...' before initialization`, reported as "There was an error
+  when mocking a module").
+- **Fake timers belong INSIDE the block that needs them.** `vi.useFakeTimers()` in a file-level `beforeEach` stalls
+  every other block's `await`ed render, and axe drives its own timers.
 - **Merged files audit a shared jsdom document.** axe resolves ARIA id references document-wide, and components that
   portal (menus, popovers) audit the whole `document.body`, so a merged file needs
   `afterEach(() => { document.body .innerHTML = '' })` or one block's leftovers land inside the next block's audit.

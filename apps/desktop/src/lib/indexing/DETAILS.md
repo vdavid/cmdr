@@ -378,7 +378,7 @@ The app never clears the one-shot. `resetFirstStaleDialogShown` exists for the d
 The tier-3 a11y tests live in two directory-level files, because `svelte-tests` charges per test FILE (`docs/testing.md`
 § "What a test actually costs"): `presentational.a11y.test.ts` for the components that mock nothing, and
 `stateful.a11y.test.ts` for `IndexingStatusIndicator` + `StaleDriveDialog`. The split is load-bearing: the stubs for
-`./index-state.svelte` and the volume store in the second file would change what `IndexingDriveSummary` renders in the
+`index-state.svelte.ts` and the volume store in the second file would change what `IndexingDriveSummary` renders in the
 first, which reads both for real.
 
 - **`eta.test.ts`**: the pure ETA helpers (thresholds incl. the hour-scale word formats, elapsed + window estimation,
