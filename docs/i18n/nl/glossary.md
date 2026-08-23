@@ -1572,3 +1572,80 @@ draait. Toon: geruststellend, geen foutmelding. De share werkt, hij is alleen tr
   wordt een melding gesloten, geen rij uit een lijst gewist.
 - **Cmdrs bezit → `van Cmdr`** (`de directe verbinding van Cmdr`) · de catalogus gebruikt overwegend `van Cmdr`
   (`de AI van Cmdr`, `de index van Cmdr`); de genitief `Cmdrs` komt maar één keer voor · high.
+
+## De weigerberichten van naam wijzigen, nieuwe map en nieuw bestand (`errors.mutation.*`, `errors.volume.*`, 2026-08-23)
+
+Eenendertig sleutels: de regel onder het naamveld (of in een korte melding) wanneer een naamwijziging of een nieuwe
+map/bestand wordt geweigerd. RAW-familie, dus enkele apostroffen; `{path}` is een ongecontroleerde invoeging en staat in
+de gekrulde `‘…’` van de locale-brede afspraak (het Engels gebruikt rechte `"…"`). Gemijnd in `_ignored/i18n/nl/`,
+2026-08-23.
+
+- **locked (de macOS-vlag op een onderdeel) → `beveiligd`; unlock → `de beveiliging opheffen`** · macOS Finder Tier 1:
+  het aankruisvak in Toon info heet `Beveiligd` (`AXNODE1`, AppKit `AutosaveButton`), `NE17`/`PE13` zeggen "omdat het
+  bestand/onderdeel '^0' beveiligd is", `NE18` "deselecteer 'Beveiligd' en probeer het opnieuw" en `BN43` "de
+  beveiliging van dit onderdeel opheffen" · high. ⚠️ Botst met het oudere `errors.write.fileLocked` ("Het bestand is
+  vergrendeld"): zie de review-vlag hieronder.
+- **Get Info → `Toon info`** · macOS Finder (`NE18` "Kies 'Archief' > 'Toon info'"), al in de catalogus
+  (`commands.fileGetInfo.mac.label`, `menu.file.getInfo`) · high. Staat NIET op de niet-vertalen-lijst.
+- **System Integrity Protection → onvertaald** · macOS Finder `ET6` laat de naam in het Nederlands staan ("... vanwege
+  System Integrity Protection") · high. Apple vertaalt deze naam niet, dus Cmdr ook niet.
+- **"a volume's top folder" → `de hoofdmap van een volume`** · Xfce Thunar nl ("The root folder has no parent" → "De
+  hoofdmap heeft geen bovenliggende map"), KDE Dolphin nl (`hoofdmap`); GNOME Nautilus levert het hele concept
+  ("Toplevel files cannot be renamed" → "Bestanden op het hoogste niveau kunnen niet hernoemd worden") · high op
+  `hoofdmap`. De zinsvorm volgt macOS Finder `RN33` ("De naam van het onderdeel '^0' kan niet worden gewijzigd"), en het
+  werkwoord blijft `naam wijzigen`, nooit `hernoemen`.
+- **"There's nothing at X any more" → `Er staat niets meer op ‘{path}’.`** · macOS Finder `PE131` ("'^0' bestaat niet
+  meer.") geeft de Tier-1-vorm voor het verdwenen onderdeel; `staat ... op` volgt de in-catalogus
+  `errors.listing.alreadyExists.explanation` ("Er bestaat al een bestand of map op `{path}`") · high. De zusterregel
+  `errors.volume.alreadyExists` spiegelt hem: `Er staat al iets op ‘{path}’.`
+- **"isn't available any more" → `is niet meer beschikbaar`** · macOS Finder `NE7` ("omdat de schijf '^0' niet meer
+  beschikbaar is"), `NE61` ("zijn niet meer beschikbaar") · high.
+- **"didn't answer in time" → `reageerde niet op tijd`** · woordelijk de in-catalogus
+  `errors.listing.connectionTimedOutErrno.explanation` ("de verbinding reageerde niet op tijd"); `reageren` is de
+  gevestigde rij voor `respond` (macOS AppKit) · high.
+- **"no room left" → `Er is geen ruimte meer op dit volume.`** · macOS Finder `PE4` ("onvoldoende ruimte beschikbaar")
+  en `PE18` ("de schijf is vol"); `geen ruimte meer` houdt de vlotte, korte toon van het Engels vast · high.
+- **"lost track of" → `kwijtgeraakt`; destination folder → `doelmap`** · macOS Finder vertaalt "destination folder" met
+  `doelmap` (glossariumrij `destination`), en de catalogus gebruikt `doelmap` al vijf keer tegen `bestemmingsmap` één
+  keer · high. Het voornaamwoord bij `map` is `hem` ("Open hem opnieuw"), zoals `Cmdr maakt hem aan`.
+- **"the archive edit" → `de archiefbewerking`** · samenstelling van het gevestigde `archief` + `bewerking` (macOS
+  `bewerking` voor een bestandsbewerking); sluit aan op `Bewerkingenlogboek` en op de wachtrijregel "Bezig met archief
+  bewerken" · high.
+- **"Something went wrong" → `Er ging iets mis`** · al in de catalogus (`onboarding.cloudSetup.status.genericError`) ·
+  high. "mis" staat hier in lopende tekst, niet als label, dus de stemregel tegen `fout`/`mislukt` blijft overeind.
+- **"start up" (de app) → `opstarten`** · Microsoft-terminologie (29 treffers `opstarten`), en de catalogus heeft
+  `opstartschijf` al · high.
+- **"on its way out" (verwijdering in behandeling) → `op weg naar buiten`** · woordelijk de in-catalogus
+  `errors.listing.deletePending.explanation` · high.
+- **"restarted its connection" (MTP-sessie) → `heeft zijn verbinding opnieuw gestart`** · woordelijk de in-catalogus
+  `errors.listing.deviceReconnecting.explanation` ("De verbinding met het apparaat ... is opnieuw gestart. Het apparaat
+  is nog steeds aangesloten") · high. Het apparaat is NIET losgekoppeld: `losgekoppeld` is voorbehouden aan
+  `deviceDisconnected`.
+- **"the change may still land" (time-out, geen weigering) → `de wijziging gaat misschien toch nog door`** · de staart
+  volgt `fileOperations.mkdir.timeoutMessage` ("dus de map is misschien toch aangemaakt") en
+  `fileExplorer.rename.unconfirmed` ("dus de naam is misschien toch gewijzigd") · high. Nergens een woord dat de
+  bewerking als afgelopen of geweigerd voorstelt.
+- **"Pick a different one" → `Kies een andere`** · `naam` is een de-woord, dus `een andere` zonder `-e`-val; de eerste
+  zin hergebruikt `errors.listing.invalidName.explanation` ("een naam die de bestemming niet kan opslaan") · high.
+- **"at your request" → `op je verzoek`** · onbeklemtoond `je` volgens `style.md` (geen contrast met iemand anders);
+  `stoppen` volgt de macOS-rij `quit → Stop` · high.
+- Geen `sameAsSourceJustification` nodig: alle 31 waarden wijken af van het Engels.
+- Stemregel gehaald: geen `fout` en geen `mislukt` in de 31 waarden.
+
+REVIEW FLAGS (mutation/volume-weigerberichten):
+
+- **`beveiligd` vs `vergrendeld` voor _locked_.** De nieuwe `errors.mutation.fileLocked` gebruikt Apples eigen
+  `beveiligd`, omdat de zin de gebruiker naar Toon info stuurt, waar het aankruisvak letterlijk `Beveiligd` heet;
+  `vergrendeld` zou hem naar een label laten zoeken dat er niet staat. De oudere `errors.write.fileLocked.title`/
+  `.message` en `errors.write.permissionDenied.suggestion.deleteMac` zeggen nog `vergrendeld` (en die laatste laat
+  bovendien "Get Info" en "Locked" onvertaald). Een lokale-brede veegbeurt naar `beveiligd` + `Toon info` is de
+  aanbeveling; buiten het bestek van deze pass.
+- **`De archiefbewerking is niet gestart.`** — `bewerking` leest ook als _edit_ én als _operation_; dat is hier precies
+  goed, maar de samenstelling is gemunt en heeft geen bron in de stapel. Alternatief: "Het bewerken van het archief is
+  niet gestart."
+- **`Verplaats het in plaats daarvan.`** — `Verplaats` is de opdrachtnaam uit het glossarium; `in plaats daarvan` is
+  correct maar wat log. Een moedertaalspreker kan `Gebruik daarvoor Verplaats.` prettiger vinden.
+- **`naar het andere brengen`** (`renameAcrossArchives`) — `brengen` vermijdt een tweede `verplaatsen` in dezelfde zin;
+  bevestig dat het niet te vaag leest.
+- **`Er staat niets meer op ‘{path}’.`** — `{path}` kan een bestand of een map zijn, dus de zin noemt bewust geen soort.
+  Apples `'^0' bestaat niet meer.` is korter; de locatievorm is gekozen omdat het Engels de plek noemt ("at").

@@ -35,6 +35,35 @@ Umbrella-level files:
 - `operation-conflict.svelte.ts` + `OperationConflictDialog.svelte`: the main window's conflict prompt for an operation
   no progress dialog is showing; its two rules are pure, in `operation-conflict-rules.ts` (§ below).
 - `RollbackConfirmDialog.svelte`: the question every Rollback goes through (§ below).
+- `mutation-error.ts` + `mutation-error-messages.ts`: the rename / New Folder / New File refusal path (§ below).
+
+## Mutation refusals (rename, New Folder, New File)
+
+The third error path beside listing and transfer (`docs/guides/error-handling.md` is the map). Unlike those two it
+carries no event: `rename_file` / `create_directory` / `create_file` / `check_rename_permission` RETURN a typed
+`MutationError`, and one plain-text line goes inline under the name field or into a toast.
+
+- **`mutation-error.ts` exists because of one flattening bug.** `throwIpcError` turns a value with no `.message` into
+  `new Error(JSON.stringify(...))`, which would put the wire JSON in front of the user. `throwMutationError` throws a
+  `MutationFailure` that keeps the typed value on the error object; `asMutationError` reads it back, and
+  `isMutationTimeout` answers the one question several call sites ask without anybody parsing a sentence.
+- **`mutation-error-messages.ts` owns the words.** `renderMutationError(failure, 'file' | 'folder')` and the exported
+  `renderVolumeError(error)`. Copy comes from `errors.mutation.*` / `errors.volume.*` through `getMessage()` (RAW, no
+  ICU), because the values interpolate uncontrolled filenames whose apostrophes and braces would collide with ICU
+  grammar.
+- **Three cases deliberately reuse the live-validation copy** (`nameEmpty`, `nameHasDisallowedCharacter`,
+  `alreadyExists` → `fileOperations.validation.*`, via ICU `tString()`), so a name the backend turns down reads exactly
+  the way the red border read a moment earlier. That's why `kind` is threaded through: the folder and file branches
+  differ grammatically in most languages.
+- **A `VolumeError::FriendlyGit` keeps speaking git**, routed to `$lib/error-messages/git-error-messages.ts` rather than
+  flattened into a generic "the volume refused".
+- **`technicalDetail(error)` is the ONLY way the backend's own words reach a surface**, and it's for a details
+  disclosure or a log. ❌ Never render it as the message; it's untranslated diagnostic text.
+- **`timedOut` is not a failure.** The backend's deadline detaches rather than cancels, so the write may still land; the
+  copy says so, and `NewFolderDialog` offers Refresh instead of pretending the folder is there.
+- `mutation-error-messages.test.ts` walks every variant of both enums: exhaustiveness is compiler-enforced, so what it
+  catches is a missing catalog key (which renders the key itself) and a message that breaks the error-copy writing
+  rules.
 
 ## Archive edits (`archive_edit`)
 

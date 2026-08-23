@@ -1472,5 +1472,129 @@
   "errors.write.fallback.suggestion": "Versuche es erneut, oder sieh dir die technischen Details unten für weitere Informationen an.",
   "@errors.write.fallback.suggestion": {
     "sourceHash": "23de5a9"
+  },
+  "errors.mutation.notFound": "Unter „{path}“ gibt es nichts mehr.",
+  "@errors.mutation.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.mutation.cantRenameVolumeRoot": "Der oberste Ordner eines Volumes lässt sich hier nicht umbenennen.",
+  "@errors.mutation.cantRenameVolumeRoot": {
+    "sourceHash": "baf4d16"
+  },
+  "errors.mutation.parentNotWritable": "Cmdr kann nicht in „{path}“ schreiben. Prüfe die Zugriffsrechte des Ordners im Finder.",
+  "@errors.mutation.parentNotWritable": {
+    "sourceHash": "902f3a5"
+  },
+  "errors.mutation.fileLocked": "Dieses Objekt ist geschützt. Hebe den Schutz im Finder unter „Informationen“ auf und versuche es dann erneut.",
+  "@errors.mutation.fileLocked": {
+    "sourceHash": "d1d127c"
+  },
+  "errors.mutation.sipProtected": "macOS schützt dieses Objekt mit dem Systemintegritätsschutz, deshalb lässt es sich nicht umbenennen.",
+  "@errors.mutation.sipProtected": {
+    "sourceHash": "1865724"
+  },
+  "errors.mutation.volumeGone": "Dieses Volume ist nicht mehr verfügbar, deshalb hat sich nichts geändert.",
+  "@errors.mutation.volumeGone": {
+    "sourceHash": "604aad5"
+  },
+  "errors.mutation.archiveNotEditable": "Cmdr kann dieses Archiv gerade nicht zum Bearbeiten öffnen.",
+  "@errors.mutation.archiveNotEditable": {
+    "sourceHash": "eedee11"
+  },
+  "errors.mutation.archiveReadOnly": "Nur Zip-Archive lassen sich ändern, und dieses hier ist schreibgeschützt.",
+  "@errors.mutation.archiveReadOnly": {
+    "sourceHash": "a636f2a"
+  },
+  "errors.mutation.renameOutOfArchive": "Beim Umbenennen kann ein Objekt sein Archiv nicht verlassen. Bewege es stattdessen.",
+  "@errors.mutation.renameOutOfArchive": {
+    "sourceHash": "1f852c5"
+  },
+  "errors.mutation.renameAcrossArchives": "Beim Umbenennen kann ein Objekt nicht von einem Archiv in ein anderes wechseln. Bewege es stattdessen.",
+  "@errors.mutation.renameAcrossArchives": {
+    "sourceHash": "5b8f1df"
+  },
+  "errors.mutation.archiveEditNotReady": "Cmdr startet noch, deshalb lassen sich Archive noch nicht bearbeiten.",
+  "@errors.mutation.archiveEditNotReady": {
+    "sourceHash": "21a4fcf"
+  },
+  "errors.mutation.archiveEditCouldntStart": "Die Archivbearbeitung ist nicht gestartet.",
+  "@errors.mutation.archiveEditCouldntStart": {
+    "sourceHash": "3a5322f"
+  },
+  "errors.mutation.timedOut": "Das Volume hat noch nicht geantwortet, die Änderung klappt also womöglich trotzdem noch.",
+  "@errors.mutation.timedOut": {
+    "sourceHash": "27d6a2f"
+  },
+  "errors.mutation.unexpected": "Etwas ist schiefgelaufen, und Cmdr konnte nicht erkennen, was genau.",
+  "@errors.mutation.unexpected": {
+    "sourceHash": "0c9d9f5"
+  },
+  "errors.volume.notFound": "Unter „{path}“ gibt es nichts mehr.",
+  "@errors.volume.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.volume.permissionDenied": "Cmdr hat keinen Zugriff auf „{path}“.",
+  "@errors.volume.permissionDenied": {
+    "sourceHash": "1f63dc1"
+  },
+  "errors.volume.alreadyExists": "Unter „{path}“ gibt es bereits etwas.",
+  "@errors.volume.alreadyExists": {
+    "sourceHash": "e070962"
+  },
+  "errors.volume.notSupported": "Dieses Volume unterstützt das nicht.",
+  "@errors.volume.notSupported": {
+    "sourceHash": "f57ad5a"
+  },
+  "errors.volume.deviceDisconnected": "Das Gerät wurde getrennt, bevor die Änderung abgeschlossen war.",
+  "@errors.volume.deviceDisconnected": {
+    "sourceHash": "50b46bf"
+  },
+  "errors.volume.deviceSessionReset": "Das Gerät hat seine Verbindung neu gestartet. Warte ein paar Sekunden und versuche es dann erneut.",
+  "@errors.volume.deviceSessionReset": {
+    "sourceHash": "e5ad77d"
+  },
+  "errors.volume.readOnly": "Dieses Volume ist schreibgeschützt.",
+  "@errors.volume.readOnly": {
+    "sourceHash": "240b952"
+  },
+  "errors.volume.storageFull": "Auf diesem Volume ist kein Platz mehr.",
+  "@errors.volume.storageFull": {
+    "sourceHash": "f2f33dc"
+  },
+  "errors.volume.connectionTimeout": "Die Verbindung hat nicht rechtzeitig geantwortet.",
+  "@errors.volume.connectionTimeout": {
+    "sourceHash": "857ed01"
+  },
+  "errors.volume.cancelled": "Cmdr hat das auf deinen Wunsch abgebrochen.",
+  "@errors.volume.cancelled": {
+    "sourceHash": "a88c4fc"
+  },
+  "errors.volume.isADirectory": "„{path}“ ist ein Ordner, keine Datei.",
+  "@errors.volume.isADirectory": {
+    "sourceHash": "fe76957"
+  },
+  "errors.volume.invalidName": "Das Ziel kann diesen Namen nicht speichern. Wähle einen anderen.",
+  "@errors.volume.invalidName": {
+    "sourceHash": "ef0f2b8"
+  },
+  "errors.volume.deletePending": "Die Datei ist auf dem Weg hinaus, und etwas hält sie noch geöffnet. Versuche es gleich noch einmal.",
+  "@errors.volume.deletePending": {
+    "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.staleDestinationHandle": "Cmdr hat den Zielordner auf dem Gerät aus den Augen verloren. Öffne ihn noch einmal und versuche es dann erneut.",
+  "@errors.volume.staleDestinationHandle": {
+    "sourceHash": "b31958a"
+  },
+  "errors.volume.ioError": "Das Volume konnte das nicht abschließen.",
+  "@errors.volume.ioError": {
+    "sourceHash": "c82a0e1"
+  },
+  "errors.volume.needsPassword": "Dieses Archiv ist passwortgeschützt.",
+  "@errors.volume.needsPassword": {
+    "sourceHash": "8d9f648"
+  },
+  "errors.volume.passwordRejected": "Das Passwort hat nicht geklappt.",
+  "@errors.volume.passwordRejected": {
+    "sourceHash": "33ba224"
   }
 }

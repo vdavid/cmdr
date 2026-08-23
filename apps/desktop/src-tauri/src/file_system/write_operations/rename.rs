@@ -138,7 +138,15 @@ pub(crate) async fn rename_managed(
                     .ok_or(MutationError::VolumeGone {
                         volume_id: volume_id.clone(),
                     })?;
-                volume.rename(&from, &to, force).await.map_err(MutationError::from)
+                // A taken name is reported by the NAME, matching the local branch and
+                // the live validation the user just saw; everything else rides as the
+                // volume's own typed answer.
+                volume.rename(&from, &to, force).await.map_err(|e| match e {
+                    crate::file_system::VolumeError::AlreadyExists(_) => {
+                        MutationError::AlreadyExists { name: name_of(&to) }
+                    }
+                    other => MutationError::Volume { error: other },
+                })
             } else {
                 // Local filesystem rename on the blocking pool.
                 let from_syscall = from.clone();

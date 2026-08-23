@@ -1472,5 +1472,129 @@
   "errors.write.fallback.suggestion": "Próbáld újra, vagy nézd meg lent a technikai részleteket a további információkért.",
   "@errors.write.fallback.suggestion": {
     "sourceHash": "23de5a9"
+  },
+  "errors.mutation.notFound": "Már nincs semmi itt: „{path}”.",
+  "@errors.mutation.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.mutation.cantRenameVolumeRoot": "Egy kötet legfelső mappája innen nem nevezhető át.",
+  "@errors.mutation.cantRenameVolumeRoot": {
+    "sourceHash": "baf4d16"
+  },
+  "errors.mutation.parentNotWritable": "A Cmdr nem tud ide írni: „{path}”. Ellenőrizd a mappa engedélyeit a Finderben.",
+  "@errors.mutation.parentNotWritable": {
+    "sourceHash": "902f3a5"
+  },
+  "errors.mutation.fileLocked": "Ez az elem zárolva van. Oldd fel a zárolását a Finder Infó megjelenítése ablakában, majd próbáld újra.",
+  "@errors.mutation.fileLocked": {
+    "sourceHash": "d1d127c"
+  },
+  "errors.mutation.sipProtected": "Ez az elem a macOS Rendszerintegritás-védelme alatt áll, ezért nem nevezhető át.",
+  "@errors.mutation.sipProtected": {
+    "sourceHash": "1865724"
+  },
+  "errors.mutation.volumeGone": "A kötet már nem érhető el, ezért semmi nem változott.",
+  "@errors.mutation.volumeGone": {
+    "sourceHash": "604aad5"
+  },
+  "errors.mutation.archiveNotEditable": "A Cmdr most nem tudja szerkesztésre megnyitni ezt az archívumot.",
+  "@errors.mutation.archiveNotEditable": {
+    "sourceHash": "eedee11"
+  },
+  "errors.mutation.archiveReadOnly": "Csak a zip-archívumok módosíthatók, ez pedig csak olvasható.",
+  "@errors.mutation.archiveReadOnly": {
+    "sourceHash": "a636f2a"
+  },
+  "errors.mutation.renameOutOfArchive": "Átnevezéssel nem lehet kivinni egy elemet az archívumból. Helyezd át inkább.",
+  "@errors.mutation.renameOutOfArchive": {
+    "sourceHash": "1f852c5"
+  },
+  "errors.mutation.renameAcrossArchives": "Átnevezéssel nem lehet átvinni egy elemet egyik archívumból a másikba. Helyezd át inkább.",
+  "@errors.mutation.renameAcrossArchives": {
+    "sourceHash": "5b8f1df"
+  },
+  "errors.mutation.archiveEditNotReady": "A Cmdr még indul, ezért az archívumok szerkesztése még nem érhető el.",
+  "@errors.mutation.archiveEditNotReady": {
+    "sourceHash": "21a4fcf"
+  },
+  "errors.mutation.archiveEditCouldntStart": "Az archívum szerkesztése nem indult el.",
+  "@errors.mutation.archiveEditCouldntStart": {
+    "sourceHash": "3a5322f"
+  },
+  "errors.mutation.timedOut": "A kötet még nem válaszolt, így a módosítás attól még végbemehet.",
+  "@errors.mutation.timedOut": {
+    "sourceHash": "27d6a2f"
+  },
+  "errors.mutation.unexpected": "Valami nem sikerült, és a Cmdr nem tudta megállapítani, hogy mi.",
+  "@errors.mutation.unexpected": {
+    "sourceHash": "0c9d9f5"
+  },
+  "errors.volume.notFound": "Már nincs semmi itt: „{path}”.",
+  "@errors.volume.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.volume.permissionDenied": "A Cmdrnek nincs hozzáférése ehhez: „{path}”.",
+  "@errors.volume.permissionDenied": {
+    "sourceHash": "1f63dc1"
+  },
+  "errors.volume.alreadyExists": "Már van valami itt: „{path}”.",
+  "@errors.volume.alreadyExists": {
+    "sourceHash": "e070962"
+  },
+  "errors.volume.notSupported": "Ez a kötet ezt nem támogatja.",
+  "@errors.volume.notSupported": {
+    "sourceHash": "f57ad5a"
+  },
+  "errors.volume.deviceDisconnected": "Megszakadt a kapcsolat az eszközzel, mielőtt a módosítás végbement volna.",
+  "@errors.volume.deviceDisconnected": {
+    "sourceHash": "50b46bf"
+  },
+  "errors.volume.deviceSessionReset": "Az eszköz újraindította a kapcsolatot. Várj néhány másodpercet, majd próbáld újra.",
+  "@errors.volume.deviceSessionReset": {
+    "sourceHash": "e5ad77d"
+  },
+  "errors.volume.readOnly": "Ez a kötet csak olvasható.",
+  "@errors.volume.readOnly": {
+    "sourceHash": "240b952"
+  },
+  "errors.volume.storageFull": "Nincs több szabad hely ezen a köteten.",
+  "@errors.volume.storageFull": {
+    "sourceHash": "f2f33dc"
+  },
+  "errors.volume.connectionTimeout": "A kapcsolat nem válaszolt időben.",
+  "@errors.volume.connectionTimeout": {
+    "sourceHash": "857ed01"
+  },
+  "errors.volume.cancelled": "A Cmdr a kérésedre leállította ezt a műveletet.",
+  "@errors.volume.cancelled": {
+    "sourceHash": "a88c4fc"
+  },
+  "errors.volume.isADirectory": "A(z) „{path}” mappa, nem fájl.",
+  "@errors.volume.isADirectory": {
+    "sourceHash": "fe76957"
+  },
+  "errors.volume.invalidName": "Ez a név nem használható a célhelyen. Válassz másikat.",
+  "@errors.volume.invalidName": {
+    "sourceHash": "ef0f2b8"
+  },
+  "errors.volume.deletePending": "A fájl törlése folyamatban van, de valami még nyitva tartja. Próbáld újra egy pillanat múlva.",
+  "@errors.volume.deletePending": {
+    "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.staleDestinationHandle": "A Cmdr már nem találja a célmappát az eszközön. Nyisd meg még egyszer, majd próbáld újra.",
+  "@errors.volume.staleDestinationHandle": {
+    "sourceHash": "b31958a"
+  },
+  "errors.volume.ioError": "A kötet nem tudta befejezni a műveletet.",
+  "@errors.volume.ioError": {
+    "sourceHash": "c82a0e1"
+  },
+  "errors.volume.needsPassword": "Ez az archívum jelszóval védett.",
+  "@errors.volume.needsPassword": {
+    "sourceHash": "8d9f648"
+  },
+  "errors.volume.passwordRejected": "Ez a jelszó nem jó.",
+  "@errors.volume.passwordRejected": {
+    "sourceHash": "33ba224"
   }
 }

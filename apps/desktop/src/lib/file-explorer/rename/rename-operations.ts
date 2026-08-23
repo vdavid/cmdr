@@ -19,10 +19,11 @@ import {
   checkRenamePermission,
   checkRenameValidity,
   getIpcErrorMessage,
-  isIpcError,
   renameFile,
   type RenameValidityResult,
 } from '$lib/tauri-commands'
+import { asMutationError, isMutationTimeout } from '$lib/file-operations/mutation-error'
+import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
 import type { RenameTarget } from './rename-state.svelte'
 import type { ExtensionChangePolicy } from '$lib/settings'
 
@@ -136,17 +137,30 @@ export async function performRename(
   } catch (e) {
     // The caller words this one: it aggregates a run of them into a single
     // toast, so the sentence depends on how many are waiting to be reported.
-    if (isIpcError(e) && e.timedOut) return { type: 'timeout' }
-    return { type: 'error', message: getIpcErrorMessage(e) }
+    if (isMutationTimeout(e)) return { type: 'timeout' }
+    return { type: 'error', message: renameFailureMessage(e, target.isDirectory) }
   }
 }
 
-/** Checks rename permission and returns an error message, or null if permitted. */
-export async function checkPermission(path: string): Promise<string | null> {
+/**
+ * The one sentence a rename refusal says.
+ *
+ * The backend's answer is typed, so the words come from the catalog in the
+ * user's own language; the `getIpcErrorMessage` fallback covers a value that
+ * never reached the typed path at all (a thrown `Error` from the IPC layer
+ * itself), which no locale can help with anyway.
+ */
+function renameFailureMessage(e: unknown, isDirectory: boolean): string {
+  const failure = asMutationError(e)
+  return failure ? renderMutationError(failure, isDirectory ? 'folder' : 'file') : getIpcErrorMessage(e)
+}
+
+/** Checks rename permission and returns a message to show, or null if permitted. */
+export async function checkPermission(path: string, isDirectory = false): Promise<string | null> {
   try {
     await checkRenamePermission(path)
     return null
   } catch (e) {
-    return getIpcErrorMessage(e)
+    return renameFailureMessage(e, isDirectory)
   }
 }

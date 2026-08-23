@@ -2,6 +2,7 @@
 
 import { commands, type Initiator, type ValidationError } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
+import { throwMutationError } from '$lib/file-operations/mutation-error'
 
 export interface RenameConflictFileInfo {
   name: string
@@ -19,9 +20,10 @@ export interface RenameValidityResult {
   conflict: RenameConflictFileInfo | null
 }
 
+/** Throws a `MutationFailure` carrying the backend's typed refusal. */
 export async function checkRenamePermission(path: string): Promise<void> {
   const res = await commands.checkRenamePermission(path)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwMutationError(res.error)
 }
 
 export async function checkRenameValidity(
@@ -43,7 +45,9 @@ export async function renameFile(
   initiator?: Initiator,
 ): Promise<void> {
   const res = await commands.renameFile(from, to, force, volumeId ?? null, initiator ?? null)
-  if (res.status === 'error') throwIpcError(res.error)
+  // Typed all the way to the surface that words it: `throwIpcError` would flatten
+  // a `MutationError` into a JSON string, which is what this path exists to end.
+  if (res.status === 'error') throwMutationError(res.error)
 }
 
 export async function moveToTrash(path: string): Promise<void> {

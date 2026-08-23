@@ -24,13 +24,19 @@ The consequence that bites: **reason, provider, and git-kind names are an IPC co
 variant, a `Provider` variant, or a `FriendlyGitErrorKind` on one side only and the parity test fails (or, worse, it
 mis-renders at runtime). Change both sides in the same commit.
 
-## Two error paths
+## Three error paths
 
 - **Listing errors** (a pane can't show a folder): the pipeline above, ending in `ErrorPane`.
-- **Write errors** (a copy, move, delete, or compress failed): the backend emits `write-error` carrying a typed
+- **Write errors** (a copy, move, delete, or compress didn't finish): the backend emits `write-error` carrying a typed
   `WriteOperationError`, and the frontend renders it through `file-operations/transfer/transfer-error-messages.ts` into
   `TransferErrorDialog` / `FallbackErrorContent`. Same principle, separate factories; they share the
   `FriendlyErrorMessage` shape so the two can converge later.
+- **Mutation refusals** (a rename, New Folder, or New File didn't happen): the command RETURNS a typed `MutationError`
+  (no event), and the frontend renders one plain-text line through
+  `apps/desktop/src/lib/file-operations/mutation-error-messages.ts`, inline under the name field or in a toast.
+  `MutationError::Volume` carries the WHOLE `VolumeError`, which is itself the wire type (adjacently tagged, structured
+  fields intact), so a backend that grows a variant reaches the frontend without a second vocabulary to keep in step.
+  `renderVolumeError` is exported for any other surface that gets one.
 
 ## Where each piece lives
 
@@ -44,6 +50,10 @@ mis-renders at runtime). Change both sides in the same commit.
 - **The error screen's buttons** (which way out renders, and why each gate exists):
   `apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § The error screen's ways out.
 - **Emitting the event**: `apps/desktop/src-tauri/src/file_system/listing/streaming.rs`.
+- **Mutation refusals**: the enum is `apps/desktop/src-tauri/src/file_system/write_operations/mutation_error.rs`; the
+  words are `apps/desktop/src/lib/file-operations/mutation-error-messages.ts`, and
+  `apps/desktop/src/lib/file-operations/mutation-error.ts` is what keeps the typed value alive across the throw
+  (`throwIpcError` would flatten it into a JSON string).
 
 ## Cross-cutting rules
 
@@ -51,6 +61,15 @@ These sit between the layers, so neither side's doc owns them alone.
 
 - **Never classify by string-matching a message.** Switch on the typed reason, the errno, or `actionKind`. This is a
   project hard rule (`AGENTS.md` § Hard rules), enforced by `error-string-match` and `cmdr/no-error-string-match`.
+- **`VolumeError`'s `Display` is for LOGS AND DEBUG ONLY**, and its doc comment says so. Every user-facing word comes
+  from the typed variant. There is deliberately no `From<std::io::Error> for VolumeError`: the three path-carrying
+  variants are defined to carry the PATH, which a bare `io::Error` doesn't hold, so io errors convert through
+  `VolumeError::from_io_at(&err, path)` (or `from_io_without_path` where none exists).
+  `conformance::assert_not_found_carries_the_path` holds every backend to it.
+- **A typed IPC error needs a typed TIMEOUT too.** `commands/util.rs`'s `timeout_detached_typed` /
+  `blocking_typed_result_with_timeout` mint the caller's own error type on the deadline, so the frontend matches ONE
+  exhaustive union instead of a typed error plus a stringly-typed timeout beside it. A `MutationError::TimedOut` also
+  means the write may STILL LAND (the deadline detaches, it doesn't cancel), and the copy says so.
 - **`category` picks the icon and severity color; it does NOT gate the buttons.** `retryHint` alone decides "Try again",
   and it's deliberately set under all three categories. `actionKind` alone decides "Open System Settings".
 - **Every interpolated runtime value passes through `esc(...)`.** The composed explanation and suggestion are
@@ -101,6 +120,12 @@ Both sides change together, in one commit. The per-side recipes are canonical in
 
 A new provider additionally needs its detection arm in `detect_provider`, its suggestions in
 `provider-error-messages.ts`, and a row in the `volumes/CLAUDE.md` provider table.
+
+A new **mutation refusal** is the same two-sided move in a different pair of files: add the `MutationError` variant with
+its typed fields, return it from `create.rs` / `rename.rs`, add the `errors.mutation.<variant>` key with its `@key`
+description, run `pnpm intl:keys` + `node apps/desktop/scripts/sync-locale-keys.ts`, translate into every locale, and
+add the arm to `MUTATION_MESSAGE` in `mutation-error-messages.ts`. The record type there demands every variant, so the
+frontend can't compile with one missing; `mutation-error-messages.test.ts` catches the catalog key you forgot.
 
 Note for a new reason: it gets **no** golden-fixture entry. The frozen fixture pins pre-existing output, so there's
 nothing for a new reason to be pinned against.

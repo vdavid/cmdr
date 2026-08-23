@@ -1554,3 +1554,66 @@ megosztás működik, csak lassabb.
   a „Közvetlen csatlakozás” menüpontra küldi a felhasználót, de a kötetválasztóban valójában
   `navigation.connectDirectly` = „Közvetlen kapcsolat a gyorsabb hozzáférésért” áll. A két hely egy kulcs átírásával
   összehangolható.
+
+## Átnevezés/létrehozás elutasításai: a `errors.mutation.*` és `errors.volume.*` egysoros üzenetek (2026-08-23)
+
+31 kulcs: a név mező alatt vagy egy rövid buborékban megjelenő EGY mondat, amikor egy átnevezés, Új mappa vagy Új fájl
+nem megy át. RAW család (nincs ICU), tehát egyszeres aposztróf, és a `{path}` szó szerint marad. A `{path}` értéke
+ismeretlen futásidejű útvonal, ezért mindenhol a katalógus bevett kettőspontos, toldalék nélküli helyére kerül
+(`itt: „{path}”`, `ehhez: „{path}”`), vagy `A(z) „{path}”` alanyi helyre; idézőjel mindig `„…”` (style.md).
+
+- **locked (a macOS zárolás-jelzője) → `zárolva van`; feloldása → `Oldd fel a zárolását`** · macOS Finder Tier 1 (`PE13`
+  = „A művelet nem hajtható végre, mert a(z) „^0” elem zárolva van.”, `NE17` ugyanez fájlra, `AXNODE1` = `Zárolva`, a
+  jelölőnégyzet `Zárolt`) · high. A `feloldás` a szótár szava (`archivePassword.unlock`).
+- **Get Info (a Finder infóablaka) → `Infó megjelenítése`** · macOS Finder Tier 1 (`N165`, `TL22`, és futó szövegben
+  `NE18`/`BN43`: „Válassza a Fájl > Infó megjelenítése parancsot…”) · high. Ez a szótárban már szerepel a
+  `commands.json` passzból; itt az ABLAK megnevezéseként használjuk: `a Finder Infó megjelenítése ablakában`. ⚠️ A
+  katalógusban két régebbi érték (`errors.write.permissionDenied.suggestion.deleteMac`, `errors.listing.*.suggestion`)
+  még az angol „Get Info” alakot írja; egy külön passzban érdemes egységesíteni.
+- **System Integrity Protection → `Rendszerintegritás-védelem`** · macOS Finder Tier 1 (`ET6` = „Néhány elem nem
+  törölhető a Kukában a Rendszerintegritás-védelem miatt.”) · high. Az Apple lefordítja ezt a funkciónevet, ezért nem a
+  ne-fordítsd listára tartozik. A mondat a `védelem alatt áll` bevett magyar vonzatot használja
+  (`Ez az elem a macOS Rendszerintegritás-védelme alatt áll…`), így a `véd-` tő nem ismétlődik közvetlenül egymás után.
+- **„can't be renamed” → `nem nevezhető át`** · macOS Finder Tier 1 (`RN33`, `RN37` = „A(z) „^0” elem nem nevezhető
+  át.”, `RN11`) · high.
+- **„isn't available any more” (kötet) → `már nem érhető el`** · macOS Finder Tier 1 (`NE7` = „…mert a(z) „^0” lemez nem
+  érhető el többé.”) · high. A `már nem` az idiomatikusabb sorrend ugyanarra a tőre.
+- **„didn't answer in time” → `nem válaszolt időben`** · macOS AppKit Tier 1 az `időben` határozóra („…nem fejeződött be
+  időben”), a `válasz` tő pedig Total Commander (`Adatküldés, várakozás a válaszra…`) · high. Szándékosan NEM
+  `nem reagál`: az a hibás-működés regisztere (lásd a megtorpant átvitel blokkját).
+- **„no room left” → `nincs több szabad hely`** · a szállított `errors.listing.storageFull.explanation` („Nincs elég
+  szabad hely ezen a köteten…”) és a macOS `PE18` (`a lemez megtelt`) ugyanezt a fogalmat nevezi meg · high. A
+  katalógusbeli alakot folytatjuk, hogy a két üzenet egy hangon szóljon.
+- **„That password didn't work.” → `Ez a jelszó nem jó.`** · a jelszót minősíti, nem a felhasználót; macOS Tier 1 a
+  `helytelen` alakot hozza (`PE77`), a TC/DC pedig a `hibás`/`ROSSZ JELSZÓ` alakot · high a jelentésre, `tentative` a
+  formára. Az angol szándékosan a lágyabb „didn't work”-öt választja a „is incorrect” helyett, ezért a magyar sem a
+  hivatalos `helytelen`; a `hibás` pedig a `hiba` tő miatt esik ki (style.md § Voice and tone).
+- **„The destination can't hold that name.” → `Ez a név nem használható a célhelyen.`** · macOS Finder Tier 1 a névre
+  alkalmazott `nem használható` alakra (`A(z) „^0” név nem használható.`), és pontosan ezt használja a testvér
+  `fileOperations.validation.nameNotUsable` is (`A fájlnév nem használható`) · high. A `célhely` a szótár szava. Így a
+  javítás iránya (másik név, nem újrapróbálkozás) egyértelmű marad.
+- **`errors.mutation.timedOut` NEM kudarcként fogalmaz**:
+  `A kötet még nem válaszolt, így a módosítás attól még végbemehet.` · szó szerint a
+  `fileOperations.mkdir.timeoutMessage` `attól még …-hat` mintája („így a mappa attól még létrejöhetett”) · high. Az
+  `attól még` viszi az angol „may still land” engedékeny jelentését.
+- **`errors.volume.deviceSessionReset` NEM kihúzásról szól**:
+  `Az eszköz újraindította a kapcsolatot. Várj néhány másodpercet, majd próbáld újra.` · a második mondat szó szerint a
+  szállított `errors.listing.deviceReconnecting.suggestion` („Várj néhány másodpercet, majd próbáld újra.”), amely
+  ugyanezt az MTP-munkamenet-újraindulást magyarázza · high. Az eszköz csatlakoztatva marad, ezért
+  `leválasztás`/`kihúzás` szó nem szerepel benne.
+- **`errors.volume.deviceDisconnected` (a kapcsolat magától szakad meg) → `Megszakadt a kapcsolat az eszközzel, …`** · a
+  szótár `megszakad a kapcsolat a meghajtóval` döntése (hálózati meghajtó lecsatlakozása); a felhasználó által kezdett
+  `leválasztás` itt hamis lenne · high.
+- **„archive edit” → `az archívum szerkesztése`** · a szállított `queue.row.label` `archive_edit` ága
+  (`Archívum szerkesztése`) · high. Kisbetűs `zip` formátumnév kötőjeles összetételben: `zip-archívumok` (szótár,
+  helyesírás).
+- **„Move it instead.” → `Helyezd át inkább.`** · a tegező felszólító a katalógus más utasításainak alakja
+  (`próbáld újra`, `Szakítsd meg…`), és az igető ugyanaz, mint az `Áthelyezés` parancsé, tehát a felhasználó tudja,
+  melyik parancsra utal · high.
+- **„Something went wrong, and Cmdr couldn't tell what.” →
+  `Valami nem sikerült, és a Cmdr nem tudta megállapítani, hogy mi.`** · a `Something went wrong → Valami nem sikerült`
+  a katalógus egyeztetett alakja (2026-06-21 passz), a `megállapít` pedig a szótár „work out” igéje · high.
+- **„Cmdr stopped this at your request.” → `A Cmdr a kérésedre leállította ezt a műveletet.`** · semleges, nem
+  mentegetőző; a `leállít` a macOS Tier-1 abbahagyás-igéje (`Másolás leállítása`), a `művelet` a szótár szava · high. A
+  futó átvitel `Megszakítás` gombjától szándékosan eltér: itt nem gombfeliratról van szó.
+- Nem kell `sameAsSourceJustification`: mind a 31 érték eltér az angoltól.

@@ -1336,3 +1336,45 @@ förklarande, aldrig varnande.
 - **Utelämnat `network` i "native SMB network connection"** · `SMB-nätverksanslutning` blir ett tungt trippelkompositum
   utan att tillföra något: SMB ÄR nätverk, och aviseringen visas i nätverksvyn. `macOS inbyggda SMB-anslutning` säger
   samma sak och läses som svenska.
+
+## Namnbyten och volymsvar som inte gick igenom (`errors.mutation.*`, `errors.volume.*`, 2026-08-23)
+
+31 nycklar: enradsmeddelandet under namnfältet (eller i en kort avisering) när ett namnbyte, en ny mapp eller en ny fil
+inte gick igenom. Familjen är RAW, inte ICU, så `{path}` står som en bokstavlig token och apostrofer är vanliga. Tonen
+är den redan etablerade i `errors.write.*`: lugn, aktiv, ingen skuld på personen, inget "fel" som etikett för händelsen.
+
+- **rotmapp (en volyms översta mapp): `rotmapp`** · Xfce Thunar `sv` har exakt begreppet ("The root folder has no
+  parent" → "Rotmappen har ingen förälder") och Total Commander `sv` använder det genomgående ("Gå till rotmappen",
+  "ZIP-filens rotmapp") · `high`. macOS har ingen egen term för en volyms rot ("Top Level Navigator" → "Navigerare på
+  övre nivå" gäller datorns toppnivå, inte en volyms), så tvåpanelslinjen får avgöra.
+- **System Integrity Protection: behålls oöversatt** · Apple själv låter namnet stå kvar på svenska (`sv/macOS/Finder`
+  nyckel `ET6`: "… kan inte raderas på grund av System Integrity Protection", verifierat i pilen 2026-08-23) · `high`.
+  Den står inte i `BRAND_WORDS`, men Apples egen svenska är belägget.
+- **Get Info-fönstret: `Finders fönster Visa info`** · glossarets `Visa info` + macOS egen konstruktion ("Visar fönstret
+  Visa info för ett eller flera objekt", `sv/macOS/Finder/Localizable`) · `high`. `Finder` slutar på konsonant och tar
+  vanlig genitiv (`Finders`), enligt `style.md`.
+- **locked / unlock: `låst` / `lås upp`** · macOS `sv` genomgående ("Objektet ”^0” är låst", kryssrutan "Låst", knappen
+  "Lås upp") och katalogens `errors.write.fileLocked.suggestion.mac` · `high`.
+- **lost track of: `tappade koll på`** · katalogens egen etablerade vändning
+  (`fileExplorer.navigation.driveIndex.tooltipCoalesced`: "macOS tappade koll på ändringar i filsystemet") · `high`.
+  Pilen saknar frasen, så katalogen är källan.
+- **went through / land (att ändringen faktiskt utfördes): `gick igenom` / `gå igenom`** · katalogens
+  `errors.listing.deviceReconnecting.explanation` ("så den här åtgärden gick inte igenom") · `high`. Används både för
+  `deviceDisconnected` (gick inte igenom) och för `timedOut` (kan fortfarande gå igenom).
+- **didn't answer in time: `svarade inte i tid`** · macOS `sv` ("slutfördes inte i tid", "avslutades inte i tid") plus
+  Microsofts `tidsgräns` · `high`. Tidsgränsnycklarna säger alltså inte "tidsgränsen nåddes" här: `svarade inte i tid`
+  är kortare och namnger vem som teg.
+- **lösenordsskyddad om ett arkiv: neutrum `lösenordsskyddat`** · `arkiv` är ett neutrumord (ett arkiv, arkivet), så
+  `errors.volume.needsPassword` blir "Det här arkivet är lösenordsskyddat" · `high`. Den tidigare noteringen om
+  utrumform i § Archive-password dialog gäller `fileOperations.archivePassword.message`, där adjektivet kongruerar med
+  `{name}` (filen), inte med ordet `arkiv`.
+- **stöder inte / kunde inte slutföra: `den åtgärden`** · `errors.volume.notSupported` och `.ioError` säger bara "that"
+  på engelska; svenskan behöver ett huvudord, och beskrivningen namnger den begärda åtgärden. `åtgärd` enligt glossarets
+  operation-post och macOS ("Åtgärden kan inte slutföras eftersom den inte stöds") · `high`.
+- **Ingen skuld på personen i namnbytesspärrarna** · "Renaming can't take an item out of an archive" blir
+  `Ett namnbyte kan inte flytta ut ett objekt ur ett arkiv`, inte "Du kan inte …". `ur` för ut-ur-behållare enligt
+  glossarets arkivpost ("ta bort … ur zip-arkivet") · `high`.
+- **Citattecken runt `{path}`: `”…”`** · engelskan använder raka `"` här, men svenska katalogen har `”…”` genomgående (§
+  Cross-file consistency reconciliation) · `high`. `{path}` är okontrollerad text, så meningarna slutar på den där det
+  går (`Det finns inte längre något på ”{path}”.`).
+- **Inga `sameAsSourceJustification`** · alla 31 värden skiljer sig från engelskan.

@@ -23,6 +23,7 @@ import type {
 } from '$lib/ipc/bindings'
 import type { TimedOut } from './ipc-types'
 import { throwIpcError } from './ipc-types'
+import { throwMutationError } from '$lib/file-operations/mutation-error'
 import type { DirectorySortMode } from '$lib/settings'
 
 export type {
@@ -434,7 +435,7 @@ export async function createDirectory(
   initiator?: Initiator,
 ): Promise<string> {
   const res = await commands.createDirectory(volumeId ?? null, parentPath, name, initiator ?? null)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwMutationError(res.error)
   return res.data
 }
 
@@ -452,7 +453,7 @@ export async function createFile(
   initiator?: Initiator,
 ): Promise<string> {
   const res = await commands.createFile(volumeId ?? null, parentPath, name, initiator ?? null)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwMutationError(res.error)
   return res.data
 }
 

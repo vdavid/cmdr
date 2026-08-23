@@ -1472,5 +1472,129 @@
   "errors.write.fallback.suggestion": "Försök igen, eller kolla de tekniska detaljerna nedan för mer information.",
   "@errors.write.fallback.suggestion": {
     "sourceHash": "23de5a9"
+  },
+  "errors.mutation.notFound": "Det finns inte längre något på ”{path}”.",
+  "@errors.mutation.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.mutation.cantRenameVolumeRoot": "Det går inte att byta namn på en volyms rotmapp härifrån.",
+  "@errors.mutation.cantRenameVolumeRoot": {
+    "sourceHash": "baf4d16"
+  },
+  "errors.mutation.parentNotWritable": "Cmdr kan inte skriva till ”{path}”. Kontrollera mappens behörigheter i Finder.",
+  "@errors.mutation.parentNotWritable": {
+    "sourceHash": "902f3a5"
+  },
+  "errors.mutation.fileLocked": "Det här objektet är låst. Lås upp det i Finders fönster Visa info och försök sedan igen.",
+  "@errors.mutation.fileLocked": {
+    "sourceHash": "d1d127c"
+  },
+  "errors.mutation.sipProtected": "macOS skyddar det här objektet med System Integrity Protection, så det går inte att byta namn på det.",
+  "@errors.mutation.sipProtected": {
+    "sourceHash": "1865724"
+  },
+  "errors.mutation.volumeGone": "Volymen är inte längre tillgänglig, så inget ändrades.",
+  "@errors.mutation.volumeGone": {
+    "sourceHash": "604aad5"
+  },
+  "errors.mutation.archiveNotEditable": "Cmdr kan inte öppna det här arkivet för redigering just nu.",
+  "@errors.mutation.archiveNotEditable": {
+    "sourceHash": "eedee11"
+  },
+  "errors.mutation.archiveReadOnly": "Bara zip-arkiv går att ändra och det här arkivet är skrivskyddat.",
+  "@errors.mutation.archiveReadOnly": {
+    "sourceHash": "a636f2a"
+  },
+  "errors.mutation.renameOutOfArchive": "Ett namnbyte kan inte flytta ut ett objekt ur ett arkiv. Flytta det i stället.",
+  "@errors.mutation.renameOutOfArchive": {
+    "sourceHash": "1f852c5"
+  },
+  "errors.mutation.renameAcrossArchives": "Ett namnbyte kan inte flytta ett objekt från ett arkiv till ett annat. Flytta det i stället.",
+  "@errors.mutation.renameAcrossArchives": {
+    "sourceHash": "5b8f1df"
+  },
+  "errors.mutation.archiveEditNotReady": "Cmdr startar fortfarande, så det går inte att redigera arkiv än.",
+  "@errors.mutation.archiveEditNotReady": {
+    "sourceHash": "21a4fcf"
+  },
+  "errors.mutation.archiveEditCouldntStart": "Redigeringen av arkivet startade inte.",
+  "@errors.mutation.archiveEditCouldntStart": {
+    "sourceHash": "3a5322f"
+  },
+  "errors.mutation.timedOut": "Volymen har inte svarat än, så ändringen kan fortfarande gå igenom.",
+  "@errors.mutation.timedOut": {
+    "sourceHash": "27d6a2f"
+  },
+  "errors.mutation.unexpected": "Något gick fel och Cmdr kunde inte avgöra vad det var.",
+  "@errors.mutation.unexpected": {
+    "sourceHash": "0c9d9f5"
+  },
+  "errors.volume.notFound": "Det finns inte längre något på ”{path}”.",
+  "@errors.volume.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.volume.permissionDenied": "Cmdr har inte åtkomst till ”{path}”.",
+  "@errors.volume.permissionDenied": {
+    "sourceHash": "1f63dc1"
+  },
+  "errors.volume.alreadyExists": "Det finns redan något på ”{path}”.",
+  "@errors.volume.alreadyExists": {
+    "sourceHash": "e070962"
+  },
+  "errors.volume.notSupported": "Den här volymen stöder inte den åtgärden.",
+  "@errors.volume.notSupported": {
+    "sourceHash": "f57ad5a"
+  },
+  "errors.volume.deviceDisconnected": "Enheten kopplades från innan ändringen gick igenom.",
+  "@errors.volume.deviceDisconnected": {
+    "sourceHash": "50b46bf"
+  },
+  "errors.volume.deviceSessionReset": "Enheten startade om sin anslutning. Vänta några sekunder och försök igen.",
+  "@errors.volume.deviceSessionReset": {
+    "sourceHash": "e5ad77d"
+  },
+  "errors.volume.readOnly": "Den här volymen är skrivskyddad.",
+  "@errors.volume.readOnly": {
+    "sourceHash": "240b952"
+  },
+  "errors.volume.storageFull": "Det finns inget utrymme kvar på den här volymen.",
+  "@errors.volume.storageFull": {
+    "sourceHash": "f2f33dc"
+  },
+  "errors.volume.connectionTimeout": "Anslutningen svarade inte i tid.",
+  "@errors.volume.connectionTimeout": {
+    "sourceHash": "857ed01"
+  },
+  "errors.volume.cancelled": "Cmdr stoppade det här på din begäran.",
+  "@errors.volume.cancelled": {
+    "sourceHash": "a88c4fc"
+  },
+  "errors.volume.isADirectory": "”{path}” är en mapp, inte en fil.",
+  "@errors.volume.isADirectory": {
+    "sourceHash": "fe76957"
+  },
+  "errors.volume.invalidName": "Målet kan inte lagra det namnet. Välj ett annat.",
+  "@errors.volume.invalidName": {
+    "sourceHash": "ef0f2b8"
+  },
+  "errors.volume.deletePending": "Filen är på väg bort och något håller den fortfarande öppen. Försök igen om en stund.",
+  "@errors.volume.deletePending": {
+    "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.staleDestinationHandle": "Cmdr tappade koll på målmappen på enheten. Öppna den igen och försök på nytt.",
+  "@errors.volume.staleDestinationHandle": {
+    "sourceHash": "b31958a"
+  },
+  "errors.volume.ioError": "Volymen kunde inte slutföra åtgärden.",
+  "@errors.volume.ioError": {
+    "sourceHash": "c82a0e1"
+  },
+  "errors.volume.needsPassword": "Det här arkivet är lösenordsskyddat.",
+  "@errors.volume.needsPassword": {
+    "sourceHash": "8d9f648"
+  },
+  "errors.volume.passwordRejected": "Det lösenordet fungerade inte.",
+  "@errors.volume.passwordRejected": {
+    "sourceHash": "33ba224"
   }
 }

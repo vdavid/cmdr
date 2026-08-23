@@ -1200,3 +1200,70 @@ erscheinen.
 - **button (Bedienelement auf dem Bildschirm) → `die Taste`** · macOS de („klicke … auf die Taste „+“ (Hinzufügen)“) und
   der bestehende de-Katalog („Klicke unten auf die Taste „+“…“, „klicke einfach auf die Taste unten“) · high. ❌ Nicht
   MS-Terminologies `Schaltfläche`: das ist die Windows-Konvention.
+
+## Umbenennen und Anlegen: die abgewiesenen Mutationen (`errors.mutation.*`, `errors.volume.*`, 2026-08-23)
+
+31 einzeilige Meldungen unter dem Namensfeld von „Umbenennen“ / „Neuer Ordner“ / „Neue Datei“, oder als kurzer Hinweis.
+Rohfamilie (`errors.*`): **einfache Apostrophe**, `{path}` bleibt wörtlich stehen, und `{path}` ist ein unkontrollierter
+Einschub, steht deshalb überall in der eigenen deutschen Anführung „…“ und nie in einem Kasus-Slot.
+
+- **System Integrity Protection → `Systemintegritätsschutz`** · Apple Support DE, „Informationen zum
+  Systemintegritätsschutz auf dem Mac“ (support.apple.com/de-de/102149, geprüft 2026-08-23) · high. ❌ Nicht Apples
+  eigener Finder-String `System-Integrationsschutz` (`Finder/LocalizableMerged` `ET6`, macOS 26.5.2: „Einige Objekte im
+  Papierkorb konnten aufgrund des System-Integrationsschutzes nicht gelöscht werden.“): das ist eine sichtbare
+  Fehlübersetzung (Integration statt Integrität) in genau einem String, und Apples eigene deutsche Dokumentation
+  schreibt den Feature-Namen anders. Beide teilen den Kopf `System…schutz`, die Doku-Form ist die korrekte.
+- **„a volume's top folder“ → `der oberste Ordner eines Volumes`** · GNOME Nautilus `de` liefert genau diese Absage
+  („Toplevel files cannot be renamed“ → „Dateien im obersten Ordner können nicht umbenannt werden“, `nautilus.po`) ·
+  high. MS-Terminologie hat `Stammordner` (Definition „The uppermost directory on a computer, partition or volume“,
+  Term-ID 233488), das ist die Windows-Form; der Finder hat keine Entsprechung, also gewinnt die Explorer-Familie.
+  `volume → Volume` bleibt gesetzt (`style.md`).
+- **„Out of space“ / „no room left“ → `kein Platz mehr`** · macOS Finder `de` (`AXBADGE10` und `NE88.10` = „Out of
+  space“ → „Kein Platz mehr“) · high. Der ausführliche Geschwisterstring bleibt bei „nicht genügend freier Speicher“
+  (`errors.listing.storageFull.explanation`); die Kurzform nimmt Apples eigenes Wort.
+- **„didn''t answer in time“ → `hat nicht rechtzeitig geantwortet`** · macOS AppKit `de` („… did not finish in time“ →
+  „… wurde nicht rechtzeitig beendet“, `AppKitErrors`) plus das gesetzte `respond → antworten` · high.
+- **`timedOut`: kein Misserfolg, sondern eine offene Frage →
+  `Das Volume hat noch nicht geantwortet, die Änderung klappt also womöglich trotzdem noch.`** · `womöglich trotzdem`
+  ist die im Katalog gesetzte Hedge für genau diesen Timeout-Fall (`fileOperations.mkdir.timeoutMessage`,
+  `fileExplorer.rename.unconfirmed`), `klappen` ist die Katalogstimme für einen Cmdr-Ausgang · high. ❌ Nichts mit
+  `Fehler`, `fehlgeschlagen` oder `abgebrochen`: der Vorgang läuft noch und kann noch gelingen.
+- **`deviceSessionReset`: das Gerät steckt weiter →
+  `Das Gerät hat seine Verbindung neu gestartet. Warte ein paar Sekunden und versuche es dann erneut.`** · wortgleich
+  zum schon ausgelieferten Geschwisterpaar `errors.listing.deviceReconnecting.explanation` („… wurde neu gestartet … Das
+  Gerät ist weiterhin angeschlossen“) und `.suggestion` („Warte ein paar Sekunden und versuche es dann erneut.“) · high.
+  ❌ Kein Wort vom Abziehen oder Trennen.
+- **„went through“ / „finish“ (eine Änderung kommt an) → `abgeschlossen`** · gesetztes `complete → abgeschlossen`, macOS
+  Finder („Der Vorgang kann nicht abgeschlossen werden.“) · high. `deviceDisconnected` = „… bevor die Änderung
+  abgeschlossen war.“, `volume.ioError` = „Das Volume konnte das nicht abschließen.“
+- **„at your request“ (selbst abgebrochen) → `auf deinen Wunsch abgebrochen`** · Satzrahmen von macOS Finder `MR5`
+  („„^0“ hat den Kopiervorgang abgebrochen.“), `abbrechen` ist der gesetzte Cancel-Verb · high für den Rahmen,
+  `tentative` für den Baustein `auf deinen Wunsch`: die Referenzsammlung kennt keinen String für „vom Nutzer
+  abgebrochen“, die Wendung ist Standarddeutsch, aber unbelegt. Neutral gehalten, nicht entschuldigend.
+- **„lost track of“ → `aus den Augen verloren`** · idiomatisch für „den Überblick verlieren, obwohl es die Sache noch
+  gibt“ · tentative (kein Beleg in der Sammlung). Wichtig für die Bedeutung: der Zielordner existiert weiter, nur Cmdrs
+  Handle ist veraltet, deshalb ❌ nicht „findet den Ordner nicht mehr“ (das liest sich wie gelöscht).
+- **`deletePending` →
+  `Die Datei ist auf dem Weg hinaus, und etwas hält sie noch geöffnet. Versuche es gleich noch einmal.`** · „auf dem Weg
+  hinaus“ steht schon im Katalog (`errors.listing.deletePending.explanation`), „Versuche es gleich noch einmal“ ist die
+  gesetzte Retry-Wendung · high.
+- **`fileLocked` → `geschützt` + `„Informationen“`** · gesetztes `locked → geschützt` und `Get Info → Informationen`;
+  der Satz kürzt den ausführlichen Geschwisterstring `errors.write.fileLocked.suggestion.mac` („Hebe den Schutz im
+  Finder auf …“) · high.
+- **Archivbearbeitung (das Umschreiben eines Zips) → `Archivbearbeitung`; „edits aren''t ready“ →
+  `lassen sich noch nicht bearbeiten`** · gesetztes `edit → bearbeiten` (§ Archive browsing) als geschlossenes
+  Kompositum wie `Vorgangsprotokoll` · high.
+- **„Renaming can''t take an item out of / from one archive to another“ →
+  `Beim Umbenennen kann ein Objekt sein Archiv nicht verlassen.` / `… nicht von einem Archiv in ein anderes wechseln.`**
+  · `item → Objekt`, `archive → Archiv`; der gemeinsame Kopf `Beim Umbenennen kann ein Objekt …` hält die beiden
+  Geschwister parallel · high. Der Nachsatz `Bewege es stattdessen.` nutzt das gesetzte `move → bewegen` (Finder), damit
+  er auf Cmdrs Befehl `Bewegen` zeigt.
+- **`invalidName` → `Das Ziel kann diesen Namen nicht speichern. Wähle einen anderen.`** · übernimmt die Formulierung
+  des Geschwisterstrings `errors.listing.invalidName.explanation` („einen Namen, den das Ziel nicht speichern kann“);
+  die Lösung ist immer ein anderer Name, nie ein erneuter Versuch, deshalb steht der Imperativ am Ende · high.
+- **`passwordRejected` → `Das Passwort hat nicht geklappt.`** · `fileOperations.archivePassword.retryTitle` = „Das hat
+  nicht geklappt“ · high. Das Passwort ist das Subjekt, nicht die Person.
+- **Existenz-Sätze bleiben beim gesetzten `gibt es`-Idiom**: `Unter „{path}“ gibt es nichts mehr.` /
+  `Unter „{path}“ gibt es bereits etwas.` · dasselbe Idiom wie `conflictExistsFolder` und
+  `errors.write.destinationExists.message` · high. Die Präposition `Unter` hält `{path}` außerhalb jedes Kasus-Slots.
+- Kein `sameAsSourceJustification` nötig: alle 31 Werte unterscheiden sich vom Englischen.

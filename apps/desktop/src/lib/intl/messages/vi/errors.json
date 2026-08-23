@@ -1472,5 +1472,129 @@
   "errors.write.fallback.suggestion": "Thử lại, hoặc xem chi tiết kỹ thuật bên dưới để biết thêm thông tin.",
   "@errors.write.fallback.suggestion": {
     "sourceHash": "23de5a9"
+  },
+  "errors.mutation.notFound": "Không còn gì ở \"{path}\" nữa.",
+  "@errors.mutation.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.mutation.cantRenameVolumeRoot": "Không thể đổi tên thư mục gốc của ổ đĩa từ đây.",
+  "@errors.mutation.cantRenameVolumeRoot": {
+    "sourceHash": "baf4d16"
+  },
+  "errors.mutation.parentNotWritable": "Cmdr không ghi được vào \"{path}\". Hãy kiểm tra quyền của thư mục trong Finder.",
+  "@errors.mutation.parentNotWritable": {
+    "sourceHash": "902f3a5"
+  },
+  "errors.mutation.fileLocked": "Mục này đang bị khóa. Hãy mở khóa nó trong cửa sổ Lấy thông tin của Finder, rồi thử lại.",
+  "@errors.mutation.fileLocked": {
+    "sourceHash": "d1d127c"
+  },
+  "errors.mutation.sipProtected": "macOS bảo vệ mục này bằng tính năng Bảo vệ Toàn vẹn Hệ thống, nên không thể đổi tên.",
+  "@errors.mutation.sipProtected": {
+    "sourceHash": "1865724"
+  },
+  "errors.mutation.volumeGone": "Ổ đĩa đó không còn khả dụng nữa, nên không có gì thay đổi.",
+  "@errors.mutation.volumeGone": {
+    "sourceHash": "604aad5"
+  },
+  "errors.mutation.archiveNotEditable": "Lúc này Cmdr chưa mở được tệp nén này để chỉnh sửa.",
+  "@errors.mutation.archiveNotEditable": {
+    "sourceHash": "eedee11"
+  },
+  "errors.mutation.archiveReadOnly": "Chỉ tệp nén zip mới có thể chỉnh sửa, còn tệp này là chỉ đọc.",
+  "@errors.mutation.archiveReadOnly": {
+    "sourceHash": "a636f2a"
+  },
+  "errors.mutation.renameOutOfArchive": "Việc đổi tên không đưa được một mục ra khỏi tệp nén. Hãy di chuyển nó.",
+  "@errors.mutation.renameOutOfArchive": {
+    "sourceHash": "1f852c5"
+  },
+  "errors.mutation.renameAcrossArchives": "Việc đổi tên không đưa được một mục từ tệp nén này sang tệp nén khác. Hãy di chuyển nó.",
+  "@errors.mutation.renameAcrossArchives": {
+    "sourceHash": "5b8f1df"
+  },
+  "errors.mutation.archiveEditNotReady": "Cmdr vẫn đang khởi động, nên chưa chỉnh sửa được tệp nén.",
+  "@errors.mutation.archiveEditNotReady": {
+    "sourceHash": "21a4fcf"
+  },
+  "errors.mutation.archiveEditCouldntStart": "Việc chỉnh sửa tệp nén chưa bắt đầu được.",
+  "@errors.mutation.archiveEditCouldntStart": {
+    "sourceHash": "3a5322f"
+  },
+  "errors.mutation.timedOut": "Ổ đĩa vẫn chưa phản hồi, nên thay đổi vẫn có thể đã được thực hiện.",
+  "@errors.mutation.timedOut": {
+    "sourceHash": "27d6a2f"
+  },
+  "errors.mutation.unexpected": "Có gì đó không ổn, và Cmdr không rõ là gì.",
+  "@errors.mutation.unexpected": {
+    "sourceHash": "0c9d9f5"
+  },
+  "errors.volume.notFound": "Không còn gì ở \"{path}\" nữa.",
+  "@errors.volume.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.volume.permissionDenied": "Cmdr không có quyền truy cập \"{path}\".",
+  "@errors.volume.permissionDenied": {
+    "sourceHash": "1f63dc1"
+  },
+  "errors.volume.alreadyExists": "Đã có thứ gì đó ở \"{path}\".",
+  "@errors.volume.alreadyExists": {
+    "sourceHash": "e070962"
+  },
+  "errors.volume.notSupported": "Ổ đĩa này không hỗ trợ việc đó.",
+  "@errors.volume.notSupported": {
+    "sourceHash": "f57ad5a"
+  },
+  "errors.volume.deviceDisconnected": "Thiết bị đã ngắt kết nối trước khi thay đổi được thực hiện.",
+  "@errors.volume.deviceDisconnected": {
+    "sourceHash": "50b46bf"
+  },
+  "errors.volume.deviceSessionReset": "Thiết bị đã khởi động lại kết nối. Hãy đợi vài giây rồi thử lại.",
+  "@errors.volume.deviceSessionReset": {
+    "sourceHash": "e5ad77d"
+  },
+  "errors.volume.readOnly": "Ổ đĩa này là chỉ đọc.",
+  "@errors.volume.readOnly": {
+    "sourceHash": "240b952"
+  },
+  "errors.volume.storageFull": "Ổ đĩa này không còn dung lượng trống.",
+  "@errors.volume.storageFull": {
+    "sourceHash": "f2f33dc"
+  },
+  "errors.volume.connectionTimeout": "Kết nối không phản hồi kịp.",
+  "@errors.volume.connectionTimeout": {
+    "sourceHash": "857ed01"
+  },
+  "errors.volume.cancelled": "Cmdr đã dừng việc này theo yêu cầu của bạn.",
+  "@errors.volume.cancelled": {
+    "sourceHash": "a88c4fc"
+  },
+  "errors.volume.isADirectory": "\"{path}\" là thư mục, không phải tệp.",
+  "@errors.volume.isADirectory": {
+    "sourceHash": "fe76957"
+  },
+  "errors.volume.invalidName": "Đích không dùng được tên đó. Hãy chọn một tên khác.",
+  "@errors.volume.invalidName": {
+    "sourceHash": "ef0f2b8"
+  },
+  "errors.volume.deletePending": "Tệp đó sắp bị gỡ bỏ, và có thứ gì đó vẫn đang mở nó. Hãy thử lại sau giây lát.",
+  "@errors.volume.deletePending": {
+    "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.staleDestinationHandle": "Cmdr đã mất dấu thư mục đích trên thiết bị. Hãy mở lại thư mục đó, rồi thử lại.",
+  "@errors.volume.staleDestinationHandle": {
+    "sourceHash": "b31958a"
+  },
+  "errors.volume.ioError": "Ổ đĩa chưa hoàn tất được việc đó.",
+  "@errors.volume.ioError": {
+    "sourceHash": "c82a0e1"
+  },
+  "errors.volume.needsPassword": "Tệp nén này được bảo vệ bằng mật khẩu.",
+  "@errors.volume.needsPassword": {
+    "sourceHash": "8d9f648"
+  },
+  "errors.volume.passwordRejected": "Mật khẩu đó không đúng.",
+  "@errors.volume.passwordRejected": {
+    "sourceHash": "33ba224"
   }
 }

@@ -16,22 +16,22 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2114 / 3049 keys have a screenshot (69%):** 1212 direct (40%) and 902 representative (30%). 803 remain
+**Total: 2145 / 3036 keys have a screenshot (71%):** 1212 direct (40%) and 933 representative (31%). 759 remain
 uncoupled, and 132 are native surfaces a webview capture cannot reach.
 
 | Area           | Direct | Representative | Uncoupled | Native | Total | Any % |
 | -------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
 | ai             |      0 |            102 |         0 |      0 |   102 |  100% |
-| askCmdr        |     73 |              0 |       112 |      0 |   185 |   39% |
+| askCmdr        |     73 |              0 |        82 |      0 |   155 |   47% |
 | commandPalette |      3 |              0 |         3 |      0 |     6 |   50% |
 | commands       |    136 |              0 |        42 |      0 |   178 |   76% |
 | common         |      0 |              0 |         2 |      0 |     2 |    0% |
 | crashReporter  |      9 |              5 |         0 |      0 |    14 |  100% |
 | downloads      |     10 |              0 |        26 |      0 |    36 |   28% |
 | errorReporter  |     10 |              0 |        24 |      0 |    34 |   29% |
-| errors         |     68 |            293 |         0 |      0 |   361 |  100% |
+| errors         |     68 |            324 |         0 |      0 |   392 |  100% |
 | feedback       |      7 |              0 |         6 |      0 |    13 |   54% |
-| fileExplorer   |    117 |             89 |       164 |      0 |   370 |   56% |
+| fileExplorer   |    117 |             89 |       165 |      0 |   371 |   56% |
 | fileOperations |    101 |             45 |        37 |      0 |   183 |   80% |
 | goToPath       |      5 |              0 |         5 |      0 |    10 |   50% |
 | indexing       |     33 |              0 |        31 |      0 |    64 |   52% |
@@ -46,7 +46,7 @@ uncoupled, and 132 are native surfaces a webview capture cannot reach.
 | queryUi        |     44 |            123 |         0 |      0 |   167 |  100% |
 | queue          |     25 |              1 |         6 |      0 |    32 |   81% |
 | search         |      9 |             47 |         0 |      0 |    56 |  100% |
-| settings       |    312 |              0 |       248 |      0 |   560 |   56% |
+| settings       |    312 |              0 |       233 |      0 |   545 |   57% |
 | shortcuts      |     27 |             32 |         0 |      0 |    59 |  100% |
 | suggestedOps   |      0 |              0 |        29 |      0 |    29 |    0% |
 | transfer       |      2 |              0 |        10 |      0 |    12 |   17% |

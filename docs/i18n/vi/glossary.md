@@ -1330,3 +1330,74 @@ Ba khóa: phần thân thông báo, nút thử lại, và tooltip của nút X. 
   trong thông báo đã giải thích lợi ích · high.
 - **Dismiss (tooltip nút X) → `Bỏ qua`** · dùng lại `lowDiskSpace.toast.closeTooltip`; thuật ngữ Microsoft (`dismiss` →
   `bỏ qua`) · high.
+
+## Lỗi khi đổi tên / tạo mới: 31 khóa `errors.mutation.*` + `errors.volume.*` (2026-08-23)
+
+Một dòng hiện ngay dưới ô nhập tên (hoặc trong thông báo nhỏ) khi việc đổi tên, tạo thư mục, hay tạo tệp bị từ chối. Họ
+RAW, không phải ICU: dùng dấu nháy đơn thường, giữ `{path}` nguyên vẹn. `{path}` là phần chèn không kiểm soát được
+(đường dẫn bất kỳ, độ dài bất kỳ), nên câu phải đứng vững với mọi giá trị. Dùng lại từ đã chốt (ổ đĩa, tệp/thư mục, tệp
+nén, chỉnh sửa, thiết bị, ngắt kết nối, quyền, mật khẩu, đích, thử lại, không thể, chưa hoàn tất được). Mọi giá trị đều
+tránh `lỗi`/`thất bại` theo giọng lỗi trong `style.md`. Mới hoặc mới có nguồn:
+
+- **System Integrity Protection → `tính năng Bảo vệ Toàn vẹn Hệ thống`** · macOS Finder Tier 1 dịch nguyên tên tính năng
+  này (`LocalizableMerged` `ET6`: "Some items in the Trash cannot be deleted because of System Integrity Protection." →
+  "Không thể xóa một số mục trong Thùng rác vì tính năng Bảo vệ Toàn vẹn Hệ thống.", kiểm chứng 2026-08-23). Apple CÓ
+  bản địa hóa tên này nên nó không nằm trong danh sách không-dịch (cùng quy tắc với Quick Look). Giữ nguyên cách viết
+  hoa của Apple; `macOS` vẫn nguyên văn · high
+- **Get Info (bảng thông tin của Finder) → `cửa sổ Lấy thông tin`** · macOS Finder ("Get Info" → "Lấy thông tin"; "Shows
+  the Get Info window for an item or items" → "Hiển thị cửa sổ Lấy thông tin cho một hoặc nhiều mục"), khớp luôn với
+  `commands.fileGetInfo.mac.label` mà catalog đã ship (`Lấy thông tin`) · high. ⚠️ Ba khóa cũ hơn trong `errors.write.*`
+  (`fileLocked.suggestion.mac`, `permissionDenied.suggestion.deleteMac`) vẫn để "Get Info" và "Locked" bằng tiếng Anh;
+  đó là chỗ chưa đồng bộ có sẵn, gộp lại ở đợt sau chứ đừng sửa lẻ.
+- **locked / unlock (cờ Locked của macOS) → `bị khóa` / `mở khóa`** · macOS Finder (`NE17` "tệp "^0" đã bị khóa", `NE18`
+  "bỏ chọn "Đã khóa" rồi thử lại", `AXNODE1` "Đã khóa") · high
+- **top folder của một ổ đĩa (root folder) → `thư mục gốc`** · thuật ngữ Microsoft (`root folder` / `top-level folder` /
+  `root directory` → "thư mục gốc") · high. Câu theo khung Tier 1 của Finder (`RN33`: "The item "^0" can't be renamed."
+  → "Không thể đổi tên mục "^0"."): `Không thể đổi tên thư mục gốc của ổ đĩa từ đây.`
+- **"There's nothing at X any more" → `Không còn gì ở "{path}" nữa`** · macOS Finder `PE131` ("^0" doesn't exist
+  anymore. → ""^0" không còn tồn tại nữa.") cho khung `không còn … nữa`; bản vi giữ cách nói tồn tại ("không còn gì")
+  đúng như bản tiếng Anh, thay vì nói về chính đường dẫn · high
+- **"There's already something at X" → `Đã có thứ gì đó ở "{path}"`** · macOS Finder `NE21` ("…vì đã có mục với tên
+  đó."), giữ "thứ gì đó" chung chung như bản tiếng Anh (không đoán là tệp hay thư mục) · high
+- **not supported → `không hỗ trợ`** · macOS Finder `PE96` ("…vì thao tác không được hỗ trợ."). Ở đây chủ ngữ là ổ đĩa
+  nên dùng thể chủ động: `Ổ đĩa này không hỗ trợ việc đó.` · high
+- **"isn't available any more" (ổ đĩa biến mất) → `không còn khả dụng nữa`** · macOS Finder `NE7` ("…vì ổ đĩa "^0" không
+  khả dụng nữa.") · high
+- **"no room left" → `không còn dung lượng trống`** · `dung lượng trống` là từ catalog đã dùng
+  (`errors.listing.storageFull.explanation`), Finder nói "ổ đĩa … đã đầy" (`NE5`) cùng nghĩa · high
+- **"That password didn't work" → `Mật khẩu đó không đúng`** · macOS Finder `PE77` ("…vì tên hoặc mật khẩu không
+  đúng."). Chủ ngữ là mật khẩu, không phải người dùng, đúng yêu cầu của `@key` · high
+- **"lost track of" → `mất dấu`** · chính catalog vi đã dùng (`fileExplorer.navigation.driveIndex.tooltipCoalesced*`:
+  "macOS đã mất dấu các thay đổi của hệ thống tệp") · high (nhất quán catalog)
+- **"on its way out" (tệp đã được đánh dấu xóa) → `sắp bị gỡ bỏ`** · `errors.write.deletePending.message` đã ship đúng
+  cụm này ("Tệp này sắp bị gỡ bỏ.") · high (nhất quán catalog)
+- **"The destination can't hold that name" → `Đích không dùng được tên đó`** · `đích` là danh từ trần đã chốt (Total
+  Commander "Nguồn và đích khác nhau!"), và khung `không thể dùng X` lấy từ `fileOperations.validation.nameNotUsable`
+  ("Không thể dùng tên tệp đó"). ❌ Không dùng `không hợp lệ` (Finder `IN_S13`): nó ám chỉ một quy tắc cụ thể, trong khi
+  chuỗi này bắt tất cả các kiểu từ chối tên · high (nhất quán catalog)
+- **"take an item out of an archive" → `đưa một mục ra khỏi tệp nén`** · `ra khỏi một tệp nén` đã có trong
+  `fileExplorer.archive.useTransferToCopyOut`; "from one archive to another" → `từ tệp nén này sang tệp nén khác`
+  (`sang` là giới từ catalog dành cho việc chuyển đổi, xem mục `vào` vs `sang` ở đợt 2026-08-08) · high
+- **"Something went wrong" → `Có gì đó không ổn`** · catalog đã dùng ba chỗ (`ai.cloud.genericError`,
+  `licensing.error.generic`, `onboarding.cloudSetup.status.genericError`); "and Cmdr couldn't tell what" →
+  `và Cmdr không rõ là gì` (`không rõ` là cách nói "unknown" của catalog: "Không rõ kích cỡ", "chi phí không rõ") · high
+  (nửa đầu); tentative (nửa sau)
+
+Hai chuỗi dễ dịch sai, và cách chốt:
+
+- **`errors.mutation.timedOut` KHÔNG phải là thất bại**: thao tác chưa bị hủy và vẫn có thể thành công. Bản vi đi theo
+  đúng khung của `fileOperations.mkdir.timeoutMessage` ("Ổ đĩa có thể chậm, nên thư mục vẫn có thể đã được tạo."):
+  `Ổ đĩa vẫn chưa phản hồi, nên thay đổi vẫn có thể đã được thực hiện.` `phản hồi` là động từ dành cho máy móc (macOS
+  AppKit "ứng dụng không phản hồi"), `trả lời` chỉ dùng khi người dùng trả lời hộp thoại.
+- **`errors.volume.deviceSessionReset` KHÔNG phải là rút thiết bị ra**: máy vẫn đang cắm, chờ vài giây rồi thử lại là
+  được. Bản vi lấy đúng cặp câu của `errors.listing.deviceReconnecting` ("Thiết bị vẫn đang cắm…" + "Hãy đợi vài giây
+  rồi thử lại."): `Thiết bị đã khởi động lại kết nối. Hãy đợi vài giây rồi thử lại.` ❌ Đừng bao giờ viết `rút`/`tháo` ở
+  khóa này.
+
+Ghi chú khác:
+
+- **Dấu nháy quanh `{path}` giữ nguyên kiểu ASCII thẳng `"…"` như bản tiếng Anh**, giống cách catalog đang làm với
+  `{name}` (`fileExplorer.renameConflict.description`, cặp `rename.chainKeptOriginalName*`). Đổi sang nháy cong `“…"` là
+  việc của một đợt di trú toàn catalog, không sửa lẻ ở đây.
+- `errors.mutation.notFound` và `errors.volume.notFound` có bản tiếng Anh giống hệt nhau nên dùng chung một bản dịch.
+- Không cần `sameAsSourceJustification`: cả 31 giá trị đều khác bản tiếng Anh.

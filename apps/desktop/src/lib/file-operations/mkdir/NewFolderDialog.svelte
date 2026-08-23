@@ -5,7 +5,6 @@
         findFileIndex,
         getAiStatus,
         getFileAt,
-        isIpcError,
         onDirectoryDiff,
         refreshListing,
         streamFolderSuggestions,
@@ -14,6 +13,8 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
+    import { asMutationError } from '$lib/file-operations/mutation-error'
+    import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -194,11 +195,12 @@
             await createDirectory(currentPath, trimmed, volumeId, initiator)
             onCreated(trimmed)
         } catch (e) {
-            if (isIpcError(e) && e.timedOut) {
+            const failure = asMutationError(e)
+            if (failure?.type === 'timedOut') {
                 timeoutError = true
                 errorMessage = ''
             } else {
-                errorMessage = isIpcError(e) ? e.message : String(e)
+                errorMessage = failure ? renderMutationError(failure, 'folder') : String(e)
             }
         }
     }

@@ -1627,3 +1627,76 @@ son bouton de reprise, et l'infobulle de sa croix de fermeture.
 - **`for most connections` → `dans la plupart des cas`** · départ délibéré du littéral : `connexion` apparaît déjà trois
   fois dans la phrase, et `pour la plupart des connexions` en ajoutait une quatrième. `dans la plupart des cas` est la
   tournure française idiomatique et ne perd rien du sens.
+
+## Refus de renommage et de création : les 31 clés `errors.mutation.*` / `errors.volume.*` (2026-08-23)
+
+Une phrase par clé, affichée sous le champ de nom du flux Renommer / Nouveau dossier / Nouveau fichier, ou dans une
+notification brève. Famille RAW (`errors.*`) : apostrophes ASCII simples, `{path}` littéral, aucun ICU. `{path}` est un
+insert non contrôlé, donc il reste toujours dans une position neutre (sujet ou complément entre guillemets), jamais
+devant un participe ou un article qui devrait s'accorder.
+
+- **Guillemets autour de `{path}` → `« {path} »`** · l'anglais met `"{path}"` ; le `fr` passe aux guillemets à espaces
+  ASCII, comme le reste du catalogue (voir style.md § Guillemets, et la passe `unconfirmed*` ci-dessus) · high.
+- **`There's nothing at "{path}" any more` → `« {path} » n'existe plus.`** · macOS Finder Tier 1, mot pour mot
+  (`LocalizableMerged.json` PE131 : « « ^0 » n'existe plus. ») · high. Vaut pour `errors.mutation.notFound` et
+  `errors.volume.notFound`, deux clés au même anglais.
+- **top folder of a volume (racine d'un disque ou d'un partage) → `le dossier racine d'un volume`** · GNOME Nautilus («
+  Toplevel files cannot be renamed » → « Impossible de renommer les fichiers racines »), Xfce Thunar (« The root folder
+  has no parent » → « Le dossier racine n'a pas de parent »), Total Commander / Double Commander (« aller à la racine du
+  lecteur ») · high. La phrase entière reprend le moule `Impossible de …` déjà retenu pour les `Can't X` : « Impossible
+  de renommer ici le dossier racine d'un volume. »
+- **`Check the folder's permissions in Finder` → `Vérifiez les autorisations du dossier dans Finder.`** · réutilisation
+  exacte de `errors.listing.permissionDenied.suggestion` et `.noPermissionErrno.suggestion` du même fichier · high.
+- **`Finder` sans article dans `errors.json`** · le fichier est homogène sur `dans Finder` / `utilisez Finder` (5
+  occurrences, aucune avec article), alors que macOS `fr` dit « le Finder ». On garde la cohérence interne du fichier ;
+  le génitif reste `du Finder` là où il apparaît ailleurs dans le catalogue (« Fenêtre de recherche du Finder ») · high.
+- **`Unlock it in Finder's Get Info panel` → `Déverrouillez-le dans Finder (Lire les informations)`** · calque de
+  `errors.write.fileLocked.suggestion.mac` du même fichier, lui-même issu de macOS Finder NE18 (« Choisissez Fichier >
+  Lire les informations, désélectionnez « Verrouillé », puis réessayez. ») · high. `Get Info` → `Lire les informations`
+  est déjà au glossaire.
+- **System Integrity Protection → `la protection de l'intégrité du système`** · macOS Finder `fr`, mot pour mot («
+  Certains éléments de la corbeille ne peuvent pas être supprimés en raison de la protection de l'intégrité du système.
+  ») · high. Apple LOCALISE ce nom, il ne fait donc pas partie des marques à garder en anglais. La clé reprend aussi le
+  moule `en raison de …` de cette phrase, ce qui évite la répétition « protège … par la protection » : « Cet élément ne
+  peut pas être renommé en raison de la protection de l'intégrité du système de macOS. »
+- **`isn't available any more` (volume) → `n'est plus disponible`** · macOS Finder NE7 (« … car le disque « ^0 » n'est
+  plus disponible. ») · high.
+- **`Only zip archives can be changed` → `Seules les archives zip sont modifiables`** · reprend `editable → modifiable`
+  de la passe `archive-browsing` (adjectif plutôt que passif) · high. `zip` reste verbatim.
+- **Sortir / faire passer un élément d'une archive** · `renameOutOfArchive` → `sortir un élément d'une archive` ;
+  `renameAcrossArchives` → `faire passer un élément d'une archive à une autre` · high (choix rédactionnel). Les deux
+  verbes évitent `déplacer`, réservé à la commande nommée juste après : `Utilisez plutôt Déplacer.` (`move → déplacer`
+  au glossaire, et `Déplacer` est le libellé de la commande Cmdr). Le sujet est le nom `Le renommage`, comme
+  `queue.row.label` (`Renommage`).
+- **`Something went wrong, and Cmdr couldn't tell what` →
+  `Un problème est survenu, et Cmdr n'a pas pu identifier lequel.`** · `problème` est le repli calme déjà retenu pour
+  `error` (voir § Terms) ; ni « erreur » ni « échec » · high.
+- **`The volume couldn't finish that` → `Le volume n'a pas pu terminer cette opération.`** · reprend le repli
+  `Couldn't finish → N'a pas pu se terminer` de la passe `queue` · high.
+- **`The connection didn't answer in time` → `La connexion n'a pas répondu à temps.`** · macOS AppKit atteste
+  `n'a pas répondu` (« L'application « %@ » n'a pas répondu à la demande de service. ») · high. On garde le verbe plutôt
+  que le nom `délai dépassé`, qui reste le terme du STATUT (voir § Terms).
+- **`The destination can't hold that name` → `La destination ne peut pas stocker ce nom.`** · reprend
+  `errors.listing.invalidName.explanation` (« … un nom que la destination ne peut pas stocker ») du même fichier · high.
+  La suite `Choisissez-en un autre.` calque macOS Finder RN17 (« Veuillez choisir un autre nom. »), sans le « Veuillez »
+  que le guide de style écarte.
+- **`password-protected` → `protégé(e) par un mot de passe`** · GNOME Nautilus, mot pour mot (« “%s” is
+  password-protected » → « « %s » est protégé par un mot de passe. ») · high. Accord au féminin avec `archive` : « Cette
+  archive est protégée par un mot de passe. »
+- **`That password didn't work` → `Ce mot de passe n'est pas le bon.`** · tentative. macOS Finder PE77 atteste « le mot
+  de passe est incorrect », mais l'anglais choisit délibérément une formulation plus douce ; `n'est pas le bon` garde le
+  registre chaleureux et impute le refus au mot de passe, pas à la personne. Double Commander écrit « Mot de passe
+  erroné ! », trop sec et exclamatif.
+
+Deux pièges de sens à ne jamais « corriger » :
+
+- **`errors.mutation.timedOut` ne dit PAS un échec.** L'opération n'a pas été annulée et peut encore réussir : « Le
+  volume n'a pas encore répondu, donc la modification peut encore aboutir. » Même famille que
+  `fileOperations.mkdir.timeoutMessage` et `fileExplorer.rename.unconfirmed`, et même discipline : on nomme l'OBJET
+  (`la modification`), on ne pronominalise pas, sinon l'antécédent masculin le plus proche serait `le volume`.
+- **`errors.volume.deviceSessionReset` ne dit PAS un débranchement.** L'appareil (téléphone MTP) est toujours branché et
+  a seulement redémarré sa session : « L'appareil a redémarré sa connexion. Patientez quelques secondes, puis réessayez.
+  » Calque de `errors.listing.deviceReconnecting.explanation` (« La connexion à l'appareil … a redémarré … L'appareil
+  est toujours branché »). Le voisin `errors.volume.deviceDisconnected`, lui, décrit un vrai débranchement.
+
+Aucun `sameAsSourceJustification` nécessaire : les 31 valeurs diffèrent de l'anglais.

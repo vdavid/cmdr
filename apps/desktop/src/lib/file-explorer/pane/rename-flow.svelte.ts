@@ -173,7 +173,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     // Skip the permission check for MTP AND archive-inner paths (see startRename below).
     const currentVolumeId = deps.getVolumeId()
     if (!currentVolumeId.startsWith('mtp-') && !pathInsideArchive(entry.path)) {
-      void checkPermission(entry.path).then((errorMsg) => {
+      void checkPermission(entry.path, entry.isDirectory).then((errorMsg) => {
         if (errorMsg && rename.active && !rename.isSuperseded(sessionId)) {
           rename.cancel()
           addToast(errorMsg, { level: 'error' })

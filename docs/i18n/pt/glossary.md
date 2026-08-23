@@ -1159,3 +1159,81 @@ conexão que o macOS oferece. É tranquilizadora, não alarmante: o compartilham
 - Marcadores brasileiros do lote: **compartilhamento** (nunca "partilha"), **conectado/conectar** (nunca "ligado"),
   gerúndio nenhum a conferir aqui. Varredura pt-PT (ficheiro, `estar a` + infinitivo, consoante, próclise, Rever,
   alterar o nome, você omitido): zero ocorrências. Nenhum valor precisa de `sameAsSourceJustification`.
+
+### Recusas de renomear e criar: as 31 mensagens de uma linha (`errors.mutation.*` + `errors.volume.*`, 2026-08-23)
+
+A mensagem única que aparece sob o campo de nome (ou num aviso rápido) quando um Renomear, Nova pasta ou Novo arquivo é
+recusado. Família RAW: apóstrofos simples, `{path}` é um marcador literal e um insert não controlado (caminho completo,
+qualquer script), então nenhuma frase depende do gênero, do número ou da inicial dele.
+
+- **System Integrity Protection → `Proteção de Integridade do Sistema`** · macOS Finder pt-BR, `LocalizableMerged.json`
+  `ET6`: "Alguns itens no Lixo não podem ser apagados devido à Proteção de Integridade do Sistema." · confirmed. Nome de
+  recurso que a Apple traduz, com artigo ("com a Proteção…"), então não fica na lista de não-traduzir.
+- **volume root / top folder → `a pasta raiz de um volume`** · macOS Finder pt-BR (`SC11` "Nenhuma pasta raiz encontrada
+  para o item especificado.") · high. ❌ Não "pasta superior": esse é o termo da NAVEGAÇÃO para subir um nível
+  (`commands.navParent.label`), e aqui o sentido é o topo do disco, não o pai da pasta atual.
+- **"can't write into X" → `não consegue gravar em X`** · **gravar** é o verbo do catálogo para escrever num destino
+  (`transferProgress.titleFlushing`, `main.quit.body`, `permissionDenied.suggestion.default` "acesso de gravação") ·
+  confirmed.
+- **"Unlock it in Finder's Get Info panel" → `Desbloqueie-o no painel Obter Informações do Finder`** · reusa o valor já
+  publicado em `errors.write.fileLocked.suggestion.mac` ("Desbloqueie-o no Finder (Obter Informações > desmarque
+  Bloqueado)"); a Apple usa a mesma receita em `NE43` · confirmed. Mantém a capitalização da Apple no nome do painel
+  (**Obter Informações**), ao contrário dos itens de menu do próprio Cmdr, que ficam em sentence case.
+- **"This volume is read-only." → `Este volume é somente leitura.`** · macOS Finder pt-BR `FI12` "Esta localização é
+  somente leitura." · confirmed. **"doesn't support that" → `não oferece suporte a isso`**, do irmão já publicado
+  `errors.write.trashNotSupported.message` ("Este volume não oferece suporte ao Lixo.") · confirmed.
+- **"Only zip archives can be changed" → `Só arquivos zip podem ser alterados`** ·
+  `fileExplorer.readOnly.archiveMessage` já publica exatamente essa oposição ("O Cmdr navega e extrai arquivos tar e 7z,
+  mas somente arquivos zip podem ser editados") · confirmed. Aqui **zip** qualifica o formato, então o núcleo é o
+  simples **arquivo zip**; o **arquivo compactado** do glossário fica para quando o formato não é nomeado
+  (`archiveNotEditable`, `needsPassword`, `archiveEditCouldntStart`).
+- **"Renaming can't take an item out of / from one archive to another" →
+  `A renomeação não pode tirar um item de um arquivo compactado` /
+  `… não pode levar um item de um arquivo compactado para outro`** · o substantivo **renomeação** é a linha do
+  glossário; **Use Mover para isso** nomeia o comando (macOS Finder `Mover`) em vez de mandar mover o item, que soaria
+  como uma instrução ambígua dentro de um campo de nome · high.
+- **`timedOut` NÃO é uma falha** · `O volume ainda não respondeu, então a alteração ainda pode ser concluída.` A
+  operação não foi cancelada e ainda pode dar certo, então o **ainda pode ser concluída** é obrigatório; ❌ nunca "não
+  foi possível" nem "não deu certo" aqui. **Concluída** é o termo do Finder para completado.
+- **`deviceSessionReset` NÃO é desconexão** ·
+  `O dispositivo reiniciou a conexão. Espere alguns segundos e tente de novo.` O celular MTP continua conectado. A
+  segunda frase é o valor já publicado em `errors.listing.deviceReconnecting.suggestion` ("Espere alguns segundos e
+  tente de novo."), e a primeira ecoa a explicação do mesmo par ("A conexão com o dispositivo … foi reiniciada") ·
+  confirmed. ❌ Nada de "desconectado" ou "desconecte o cabo": o irmão fecha justamente com "Não é preciso desconectar
+  nada."
+- **"lost track of the destination folder" → `perdeu a referência da pasta de destino`** · o catálogo já descreve um
+  handle morto como **referência** (`errors.listing.staleConnection.explanation` "usando uma referência antiga que o
+  servidor não reconhece mais") · confirmed. ❌ Não "perdeu o controle" (soa como "lost control", alarmante; mesma
+  armadilha registrada na seção do índice de imagens). O fecho "Abra a pasta de novo e tente outra vez" copia
+  `errors.write.destinationNotFound.suggestion`.
+- **"on its way out … has it open" → `está a caminho da saída, e algo ainda o mantém aberto`** · valor irmão já
+  publicado em `errors.write.deletePending.message` / `errors.listing.deletePending.explanation` · confirmed. O
+  "something" do inglês fica em **algo** de propósito: pode ser outro app ou o próprio servidor, e o irmão longo já
+  explica o identificador aberto.
+- **"Something went wrong, and Cmdr couldn't tell what." →
+  `Algo deu errado, e o Cmdr não conseguiu identificar o quê.`** · **Algo deu errado** é a frase já fixada no catálogo
+  em quatro lugares (`ai.cloud.genericError`, `licensing.error.generic`, `onboarding.cloudSetup.status.genericError`,
+  `askCmdr.error.provider`) · confirmed. Não usa o substantivo "erro", então respeita a regra de voz. **o quê** com
+  circunflexo por estar no fim da frase.
+- **"at your request" → `a seu pedido`** · `O Cmdr parou isso a seu pedido.` **Parar** é o verbo do catálogo para
+  interromper trabalho em curso (`queryUi` "Parar a busca", `transferProgress.rollbackTooltip`), e **isso** (não "isto")
+  segue a contagem do catálogo · high. Neutro, sem pedido de desculpas: nada deu errado.
+- **"The destination can't hold that name." → `O destino não consegue armazenar esse nome.`** · reusa o verbo do irmão
+  `errors.write.invalidName.message` ("um nome que o destino não consegue armazenar") · confirmed. O conserto é sempre
+  outro nome, nunca repetir: **Escolha outro.**
+- **"That password didn't work." → `Essa senha não funcionou.`** · `fileExplorer.smbReauth.savedPasswordFailed` ("Sua
+  senha salva não funcionou.") · confirmed. Culpa a senha, não a pessoa. **password-protected → `protegido por senha`**
+  (linha do glossário, diálogo de senha de zip).
+- **"the change" (a renomeação/criação pedida) → `a alteração`** · usado em `timedOut` e em `deviceDisconnected` ("antes
+  de a alteração ser concluída") · high. Distinto de **as mudanças** do sistema de arquivos (`fileExplorer.imageIndex`),
+  que é o outro sentido de "changes" no catálogo.
+- Verificação regional contra a lista de indícios pt-PT do style guide (ficheiro, `estar a` + infinitivo, consoante,
+  próclise antes de infinitivo, Rever, alterar o nome, **você** omitido), mais varredura de U+2019, apóstrofo duplo e
+  espaço duplo: zero ocorrências nos 31 valores. Marcas brasileiras: **arquivo** (nunca "ficheiro"), a ênclise
+  **Desbloqueie-o**, **tente de novo**.
+- Nenhum `sameAsSourceJustification` necessário: os 31 valores diferem do inglês.
+- ⚠️ Duas inconsistências vizinhas, fora do escopo deste lote: `fileOperations.transferDialog.compressLevelCaption`
+  ainda traz o progressivo pt-PT **"demoram mais tempo a comprimir"** (o irmão
+  `settings.archives.compressionLevel.description` já foi corrigido para "demoram mais para comprimir"); e o bolsão de
+  **"drive de rede / drive externo / drive interno"** em `errors.json`, já sinalizado na seção do interruptor mestre de
+  indexação, continua aberto.

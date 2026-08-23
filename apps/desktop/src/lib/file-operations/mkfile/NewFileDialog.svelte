@@ -4,12 +4,13 @@
         createFile,
         findFileIndex,
         getFileAt,
-        isIpcError,
         onDirectoryDiff,
         type Initiator,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
+    import { asMutationError } from '$lib/file-operations/mutation-error'
+    import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -133,7 +134,8 @@
             await createFile(currentPath, trimmed, volumeId, initiator)
             onCreated(trimmed)
         } catch (e) {
-            errorMessage = isIpcError(e) ? e.message : String(e)
+            const failure = asMutationError(e)
+            errorMessage = failure ? renderMutationError(failure, 'file') : String(e)
         }
     }
 

@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import NewFolderDialog from './NewFolderDialog.svelte'
 import { createDirectory, refreshListing } from '$lib/tauri-commands'
+import { MutationFailure } from '$lib/file-operations/mutation-error'
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -23,8 +24,6 @@ vi.mock('$lib/tauri-commands', () => ({
   getFileAt: vi.fn(() => Promise.resolve(null)),
   getFolderSuggestions: vi.fn(() => Promise.resolve([])),
   streamFolderSuggestions: vi.fn(() => ({ promise: Promise.resolve(), cancel: () => Promise.resolve() })),
-  // The dialog only branches on `timedOut`, and the rejection below carries it.
-  isIpcError: vi.fn(() => true),
   onDirectoryDiff: vi.fn(() => Promise.resolve(() => {})),
   refreshListing: vi.fn(() => Promise.resolve({ data: null, timedOut: false })),
 }))
@@ -58,7 +57,8 @@ async function settle(): Promise<void> {
 
 describe('NewFolderDialog timeout recovery', () => {
   it('refreshes the listing WITHOUT forcing when the user takes the timeout way out', async () => {
-    vi.mocked(createDirectory).mockRejectedValueOnce({ message: 'still working on it', timedOut: true })
+    // The typed refusal the backend ships: `timedOut` is a variant now, not a flag.
+    vi.mocked(createDirectory).mockRejectedValueOnce(new MutationFailure({ type: 'timedOut' }))
     const onCancel = vi.fn()
     const target = mountDialog(onCancel)
     await settle()

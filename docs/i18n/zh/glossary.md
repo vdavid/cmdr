@@ -1233,3 +1233,58 @@ Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时�
 - **Dismiss（关闭通知的 X 的悬停提示）→ `关闭`** · 与 `lowDiskSpace.toast.closeTooltip` 完全同一个控件、同一个
   `sourceHash`，直接复用 · `confirmed`。注意与 `queue.row.dismiss*` 的 `忽略` 区分：`忽略`
   是写在按钮上的「不再管它」，X 的提示是 `关闭`。
+
+## 重命名/新建被拒绝时的一行提示（`errors.mutation.*`、`errors.volume.*`，2026-08-23）
+
+重命名、新建文件夹、新建文件被拒绝时，在名称输入框下方或提示条里显示的一句话。RAW 家族：**用单个撇号**，`{path}`
+原样保留。这一批几乎全部复用目录里 `errors.listing.*` / `errors.write.*`
+已定的说法，让同一件事在浏览路径和写入路径上说得一样。
+
+- **top folder（宗卷最上面的那层文件夹）→ `顶层文件夹`** · Microsoft 术语库 `zh-Hans`（`root folder` / `root directory`
+  / `top-level folder` 都给 `顶层文件夹`）；macOS Finder 只有 `TL_HELP_COMP`「前往电脑的最上一层」，没有名词。整句写
+  `宗卷的顶层文件夹无法在这里重命名。`，`无法在这里…` 沿用同一场景的
+  `fileExplorer.readOnly.renameMessage`（`这是一个只读宗卷。无法在这里重命名。`）· `high`
+- **System Integrity Protection → `“系统完整性保护”`** · macOS Finder zh-CN `ET6`
+  （`Some items in the Trash cannot be deleted because of System Integrity Protection.` →
+  `由于“系统完整性保护”，无法删除废纸篓中的部分项目。`）·
+  `confirmed`。Apple 的原句不给这个词配动词，直接用「因为…，无法…」，中文因此写
+  `因为 macOS 的“系统完整性保护”，这个项目无法重命名。`：既避开 `保护…保护` 的重复，也保持平静。连词用
+  `因为`（目录里 8 处）而不是 Apple 的 `由于`（目录里仅 1 处）· `high`
+- **locked / Get Info（已锁定的项目）→ `已锁定` / `“显示简介”`** · macOS Finder `AXNODE1`（`Locked` → `已锁定`）与
+  `NE18`（`Choose File > Get Info, deselect "Locked," and then try again.` →
+  `选取“文件”>“显示简介”，取消选择“锁定”，然后重试。`）；目录里 `errors.write.fileLocked.suggestion.mac` 已经是
+  `在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。` · `confirmed`
+- **"lost track of"（MTP 设备重编号后目标文件夹句柄失效）→ `跟丢了`** · 目录里 `lost track of file system changes`
+  已写作 `没能跟上文件系统的改动`（`fileExplorer.navigation.driveIndex.tooltipCoalesced`），同一个 `跟` 词根；`跟丢`
+  是口语里现成的说法，比 `句柄失效` 这类术语更贴 style.md 的声音。后半句 "Open it again" 指重新进入这个文件夹，写
+  `请再次进入这个文件夹`，沿用 `errors.listing.*` 的 `再次进入这里` · `high`
+- **"didn''t work"（密码被拒）→ `不起作用`** · 目录里 `fileExplorer.smbReauth.savedPasswordFailed` 就是
+  `保存的密码不起作用了。`；`fileOperations.archivePassword.retryMessage` 的 `这个密码没能解锁…`
+  是同一件事的长版本。❌ 不写 `密码错误` · `confirmed`
+- **"couldn''t tell what"（说不出具体原因的兜底）→ `也说不清是什么`** · `出了点问题`
+  是目录里已定的兜底说法（5 处，`ai.cloud.genericError`、`updates.checkToast.errorPrefix` 等），`说不清`
+  是日常口语，承接英文有意的谦虚语气 · `high`
+- **"may still land"（超时但操作可能仍会成功）→ `也许仍会生效`** · `生效` 目录里已用（6 处，如
+  `onboarding.stepFda.postAction.intro`）；`还没有响应` 沿用停滞传输那一批定下的
+  `响应`。⚠️ 这条**不是失败**：句子必须保持「还在等」的语气，不能写成没做成 · `high`
+- **"restarted its connection"（MTP 会话重置，设备并没有拔掉）→ `设备的连接已重启`** · 逐字复用
+  `errors.listing.deviceReconnecting.explanation` 的 `连接已重启` 与其 suggestion 的
+  `请等待几秒钟，然后重试。`。⚠️ 主语必须是**连接**，不能写成设备重启，也不能提拔线 · `high`
+- **"on its way out" / "something still has it open"（删除挂起）→ `正在退场` / `还有东西占着它`** · 两者都来自
+  `errors.write.deletePending.message`（`这个文件正在退场。服务器已标记它待删除，但另一个打开的句柄一直占着它…`）；一行版把
+  `句柄` 收成英文同样含糊的 `东西` · `high`
+- **"the destination can''t hold that name" → `目标位置存不下这个名称`** · 逐字来自
+  `errors.listing.invalidName.explanation`（`…的名称是目标位置存不下的`）；`目标位置` 是已定的 destination 词 · `high`
+- **"Move it instead."（压缩文件内外的重命名要改用移动命令）→ `请改用“移动”。`** · `移动`
+  是已定的 Move 命令名，加全角引号标明它指的是那个命令。动词对：移出压缩文件 `移出` / 进另一个压缩文件
+  `移入`。❌ 不用 Finder 的 `移到`，那是 `移到废纸篓` 的固定搭配 · `high`
+- **"archive edit"（改写 zip 条目的那次操作）→ `压缩文件编辑`** · 沿用已定的 `压缩文件` 与队列臂
+  `正在编辑压缩文件`；`The archive edit didn''t start.` 写作 `这次压缩文件编辑没能开始。`，`没能`
+  是目录里常用的平静说法（18 处）· `high`
+- **"There''s nothing at X any more" / "There''s already something at X"** → `“{path}”已经不存在了。` /
+  `“{path}”那里已经有东西了。` · 前者用目录里已定的 `已经不存在了`（6 处，`errors.write.sourceNotFound.message.*`
+  一族）；后者对应 `errors.listing.alreadyExists.explanation` 的
+  `{path} 处已经有一个文件或文件夹`，但英文有意含糊成 "something"，中文照样收成 `东西` · `high`
+- **`{path}` 用全角 `“…”` 包起来** · 英文用的是 ASCII 双引号；简体中文按 macOS
+  Finder 的习惯（`拷贝“^2”`、`无法移除“^0”`）改全角，路径可能是汉字也可能是拉丁字母，全角引号两种都分得干净 · `high`
+- 无需 `sameAsSourceJustification`：31 条全部与英文不同。

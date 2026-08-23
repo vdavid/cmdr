@@ -1472,5 +1472,129 @@
   "errors.write.fallback.suggestion": "Probeer het opnieuw, of bekijk de technische details hieronder voor meer informatie.",
   "@errors.write.fallback.suggestion": {
     "sourceHash": "23de5a9"
+  },
+  "errors.mutation.notFound": "Er staat niets meer op ‘{path}’.",
+  "@errors.mutation.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.mutation.cantRenameVolumeRoot": "De naam van de hoofdmap van een volume kan hier niet worden gewijzigd.",
+  "@errors.mutation.cantRenameVolumeRoot": {
+    "sourceHash": "baf4d16"
+  },
+  "errors.mutation.parentNotWritable": "Cmdr kan niet schrijven in ‘{path}’. Controleer de bevoegdheden van de map in Finder.",
+  "@errors.mutation.parentNotWritable": {
+    "sourceHash": "902f3a5"
+  },
+  "errors.mutation.fileLocked": "Dit onderdeel is beveiligd. Hef de beveiliging op via ‘Toon info’ in Finder en probeer het opnieuw.",
+  "@errors.mutation.fileLocked": {
+    "sourceHash": "d1d127c"
+  },
+  "errors.mutation.sipProtected": "macOS beschermt dit onderdeel met System Integrity Protection, dus de naam kan niet worden gewijzigd.",
+  "@errors.mutation.sipProtected": {
+    "sourceHash": "1865724"
+  },
+  "errors.mutation.volumeGone": "Dat volume is niet meer beschikbaar, dus er is niets veranderd.",
+  "@errors.mutation.volumeGone": {
+    "sourceHash": "604aad5"
+  },
+  "errors.mutation.archiveNotEditable": "Cmdr kan dit archief nu niet openen om te bewerken.",
+  "@errors.mutation.archiveNotEditable": {
+    "sourceHash": "eedee11"
+  },
+  "errors.mutation.archiveReadOnly": "Alleen zip-archieven kunnen worden gewijzigd, en dit archief is alleen-lezen.",
+  "@errors.mutation.archiveReadOnly": {
+    "sourceHash": "a636f2a"
+  },
+  "errors.mutation.renameOutOfArchive": "Met een naamwijziging kun je een onderdeel niet uit een archief halen. Verplaats het in plaats daarvan.",
+  "@errors.mutation.renameOutOfArchive": {
+    "sourceHash": "1f852c5"
+  },
+  "errors.mutation.renameAcrossArchives": "Met een naamwijziging kun je een onderdeel niet van het ene archief naar het andere brengen. Verplaats het in plaats daarvan.",
+  "@errors.mutation.renameAcrossArchives": {
+    "sourceHash": "5b8f1df"
+  },
+  "errors.mutation.archiveEditNotReady": "Cmdr start nog op, dus archieven bewerken kan nog niet.",
+  "@errors.mutation.archiveEditNotReady": {
+    "sourceHash": "21a4fcf"
+  },
+  "errors.mutation.archiveEditCouldntStart": "De archiefbewerking is niet gestart.",
+  "@errors.mutation.archiveEditCouldntStart": {
+    "sourceHash": "3a5322f"
+  },
+  "errors.mutation.timedOut": "Het volume heeft nog niet gereageerd, dus de wijziging gaat misschien toch nog door.",
+  "@errors.mutation.timedOut": {
+    "sourceHash": "27d6a2f"
+  },
+  "errors.mutation.unexpected": "Er ging iets mis, en Cmdr kon niet achterhalen wat.",
+  "@errors.mutation.unexpected": {
+    "sourceHash": "0c9d9f5"
+  },
+  "errors.volume.notFound": "Er staat niets meer op ‘{path}’.",
+  "@errors.volume.notFound": {
+    "sourceHash": "9a7d554"
+  },
+  "errors.volume.permissionDenied": "Cmdr heeft geen toegang tot ‘{path}’.",
+  "@errors.volume.permissionDenied": {
+    "sourceHash": "1f63dc1"
+  },
+  "errors.volume.alreadyExists": "Er staat al iets op ‘{path}’.",
+  "@errors.volume.alreadyExists": {
+    "sourceHash": "e070962"
+  },
+  "errors.volume.notSupported": "Dit volume ondersteunt dat niet.",
+  "@errors.volume.notSupported": {
+    "sourceHash": "f57ad5a"
+  },
+  "errors.volume.deviceDisconnected": "Het apparaat werd losgekoppeld voordat de wijziging kon doorgaan.",
+  "@errors.volume.deviceDisconnected": {
+    "sourceHash": "50b46bf"
+  },
+  "errors.volume.deviceSessionReset": "Het apparaat heeft zijn verbinding opnieuw gestart. Geef het een paar seconden en probeer het opnieuw.",
+  "@errors.volume.deviceSessionReset": {
+    "sourceHash": "e5ad77d"
+  },
+  "errors.volume.readOnly": "Dit volume is alleen-lezen.",
+  "@errors.volume.readOnly": {
+    "sourceHash": "240b952"
+  },
+  "errors.volume.storageFull": "Er is geen ruimte meer op dit volume.",
+  "@errors.volume.storageFull": {
+    "sourceHash": "f2f33dc"
+  },
+  "errors.volume.connectionTimeout": "De verbinding reageerde niet op tijd.",
+  "@errors.volume.connectionTimeout": {
+    "sourceHash": "857ed01"
+  },
+  "errors.volume.cancelled": "Cmdr heeft dit op je verzoek gestopt.",
+  "@errors.volume.cancelled": {
+    "sourceHash": "a88c4fc"
+  },
+  "errors.volume.isADirectory": "‘{path}’ is een map, geen bestand.",
+  "@errors.volume.isADirectory": {
+    "sourceHash": "fe76957"
+  },
+  "errors.volume.invalidName": "De bestemming kan die naam niet opslaan. Kies een andere.",
+  "@errors.volume.invalidName": {
+    "sourceHash": "ef0f2b8"
+  },
+  "errors.volume.deletePending": "Dat bestand is op weg naar buiten, en iets houdt het nog open. Probeer het zo meteen opnieuw.",
+  "@errors.volume.deletePending": {
+    "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.staleDestinationHandle": "Cmdr is de doelmap op het apparaat kwijtgeraakt. Open hem opnieuw en probeer het dan nog eens.",
+  "@errors.volume.staleDestinationHandle": {
+    "sourceHash": "b31958a"
+  },
+  "errors.volume.ioError": "Het volume kon dat niet voltooien.",
+  "@errors.volume.ioError": {
+    "sourceHash": "c82a0e1"
+  },
+  "errors.volume.needsPassword": "Dit archief is beveiligd met een wachtwoord.",
+  "@errors.volume.needsPassword": {
+    "sourceHash": "8d9f648"
+  },
+  "errors.volume.passwordRejected": "Dat wachtwoord werkte niet.",
+  "@errors.volume.passwordRejected": {
+    "sourceHash": "33ba224"
   }
 }

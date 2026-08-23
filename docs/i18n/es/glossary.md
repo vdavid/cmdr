@@ -1318,3 +1318,60 @@ este funciona con la que da macOS, el botón que reintenta, y el tooltip de la X
   `lowDiskSpace.toast.closeTooltip`, que ya dice `Descartar`; reafirma la entrada de la guía de estilo · high
   (consistency-settled)
 - Sin `sameAsSourceJustification`: los tres valores difieren del inglés.
+
+## Los avisos de una línea de renombrar / crear (`errors.mutation.*`, `errors.volume.*`, 2026-08-23)
+
+31 claves nuevas: la línea que aparece bajo el campo del nombre (o en un aviso breve) cuando se rechaza un renombrado,
+una carpeta nueva o un archivo nuevo. Familia RAW, así que apóstrofos simples y `{path}` literal. Casi todas tienen ya
+un hermano largo en este mismo archivo (`errors.listing.*` / `errors.write.*`), así que la regla de este bloque es
+**citar al hermano, no reinventar la frase**: el aviso corto y la explicación larga del mismo fallo tienen que decir lo
+mismo con las mismas palabras.
+
+- **Comillas alrededor de `{path}`: `“…”` (curvas)** · el inglés escribe `"{path}"` con comillas rectas, pero la regla
+  ya asentada del catálogo es la curva (§ La cadena de renombrados; macOS `es` "^0" siempre entre `“…”`). Los hermanos
+  largos usan backticks porque se renderizan como markdown; estas claves son texto plano, así que van con comillas ·
+  high
+- **`{path}` es un inserto incontrolado**: ninguna frase concuerda con él (nunca "la ruta {path} está…"), así que las
+  seis claves con marcador lo dejan como sujeto entrecomillado o detrás de una preposición · high
+- **root folder (of a volume) → `carpeta raíz`** · terminología de Microsoft, con la definición exacta de nuestro caso
+  ("The uppermost directory on a computer, partition or volume" → `carpeta raíz` / `directorio raíz` /
+  `carpeta de nivel superior`) · high. ❌ NO `carpeta superior`, que en este catálogo es "parent folder" (§ navegación
+  con doble clic): usarla aquí diría que lo que no se puede renombrar es la carpeta de arriba. `cantRenameVolumeRoot` =
+  "No se puede cambiar el nombre de la carpeta raíz de un volumen desde aquí.", con la forma de prosa de macOS Finder
+  (RN11 "No se puede cambiar el nombre de “^0” en estos momentos porque…").
+- **System Integrity Protection → `la protección de la integridad del sistema`** · macOS Finder Tier 1, verbatim y en
+  minúsculas dentro de la frase: ET6 "Some items in the Trash cannot be deleted because of System Integrity Protection."
+  → "Algunos ítems de la papelera no se pueden eliminar debido a la protección de la integridad del sistema" · high. Se
+  reordena la frase inglesa ("macOS protects this item with…") para no decir "protege … con la protección": el valor es
+  "No se puede cambiar el nombre de este elemento debido a la protección de la integridad del sistema de macOS."
+- **rename en prosa → `cambiar el nombre`** (el verbo de botón sigue siendo `renombrar`) · macOS Finder escribe estas
+  frases así (RN11, RN33 "No puede cambiarse el nombre del ítem “^0”."), y el sustantivo asentado es `cambio de nombre`.
+  Las tres claves de este bloque que hablan de renombrar usan la perífrasis · high
+- **"is on its way out" → `está de salida`**, **"the destination can't store that name" →
+  `el destino no puede guardar ese nombre`**, **"no longer available" → `ya no está disponible`**, **"didn't respond in
+  time" → `no respondió a tiempo`**, **"is locked" → `está bloqueado`**, **"Get Info" → `Obtener información`** · todos
+  citados literalmente de los hermanos largos del propio `errors.json` (`listing.deletePending`, `write.invalidName`,
+  `listing.notFound`, `listing.connectionTimedOut`, `write.fileLocked`) y de macOS Finder (NE7, NE17, NE18) · high
+  (consistencia)
+- **`timedOut` no es un fallo** · la operación puede aún completarse, así que se copia la fórmula ya asentada para el
+  renombrado sin confirmar: "así que es posible que el cambio sí se aplique" (`fileExplorer.rename.unconfirmed`,
+  `fileOperations.mkdir.timeoutMessage`). El `sí` enfático es lo que carga el "may still" del inglés · high
+- **`deviceSessionReset` no es una desconexión** · el teléfono (MTP) sigue enchufado. Se cita el hermano
+  `errors.listing.deviceReconnecting`: "El dispositivo sigue conectado…" + "Espera unos segundos y vuelve a intentarlo."
+  El valor dice "El dispositivo reinició su conexión.", nunca nada que suene a desenchufar · high
+- **"Move it instead" → `Usa Mover.`** · nombra el comando de Cmdr (F6 `Mover`), como ya hace el catálogo con "Usa
+  {deletePermanentlyKey}…" y "usa Finder para esta operación". Las dos claves hermanas (`renameOutOfArchive` /
+  `renameAcrossArchives`) quedan en paralelo palabra por palabra · high
+- **"Only zip archives can be changed" → `Solo se pueden modificar los archivos zip`** · aquí `zip` desambigua por sí
+  solo, así que no hace falta el `archivo comprimido` completo; el catálogo ya dice "el zip" a secas (aviso de borrado
+  dentro de un comprimido). El resto de claves del bloque sí usan `archivo comprimido` · high
+- **"Cmdr stopped this at your request" → `Cmdr detuvo esto porque se lo pediste.`** · `detener` es el verbo de macOS
+  para parar una operación ("Detener copia"), distinto de `Cancelar`; el "at your request" se resuelve con la segunda
+  persona en vez del formal "a petición tuya" · high (el verbo), tentative (el giro)
+- **"Something went wrong, and Cmdr couldn't tell what." → `Algo salió mal y Cmdr no pudo saber qué.`** ·
+  `Algo salió mal` ya está en el catálogo (`ai.cloud.genericError`, `licensing.error.generic`) y esquiva la prohibición
+  de "error"/"fallo" · high
+- **"The volume couldn't finish that" → `El volumen no pudo completarlo.`** · reutiliza el patrón tranquilo "No se pudo
+  completar" con el volumen como sujeto explícito, que es lo que hace el inglés · high
+- Ningún valor lleva apóstrofo, así que no hay nada que doblar (y en esta familia RAW tampoco se debe).
+- No hace falta `sameAsSourceJustification`: los 31 valores difieren del inglés.

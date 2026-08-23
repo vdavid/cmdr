@@ -19,6 +19,29 @@ export interface RepresentativeMapping {
 
 export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
   {
+    // The rename / New Folder / New File refusal family, which does NOT use the
+    // error pane below: it renders as one plain-text line under the name field
+    // (or in a toast), exactly where the live validation messages appear. Listed
+    // BEFORE the blanket `errors.` mapping, which would otherwise hand these
+    // keys the error-pane note and mislead a translator about their surface.
+    prefix: 'errors.mutation.',
+    screenshot: 'mkdir-confirmation-too-long.png',
+    note:
+      'This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / ' +
+      'New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One ' +
+      'sentence, plain text, no markdown, and it has to fit a narrow dialog.',
+  },
+  {
+    // Same surface as `errors.mutation.*`: a volume's refusal is rendered by the
+    // same one-line factory when a mutation carries it.
+    prefix: 'errors.volume.',
+    screenshot: 'mkdir-confirmation-too-long.png',
+    note:
+      'This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / ' +
+      'New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One ' +
+      'sentence, plain text, no markdown, and it has to fit a narrow dialog.',
+  },
+  {
     // The whole friendly-error family (listing / write / provider / git) shares
     // one presentation: an error pane (or, for write ops, the same title +
     // explanation + suggestion layout in a dialog). The example shows a DIFFERENT
