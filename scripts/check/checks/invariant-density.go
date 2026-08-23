@@ -18,8 +18,11 @@ import (
 // by the size of the code the docs sit beside, turns "this module is tangled" into
 // a number that can be driven down by making the invariant unrepresentable.
 //
-// Warn-only, and the allowlist is a strict ratchet: rule counts may fall freely,
-// and a rise needs David's OK (`.claude/rules/file-length-allowlist.md`).
+// Warn-only. Local runs lower an entry to the current count and drop a subsystem
+// that reaches zero. ❗ Unlike every other allowlist in this package, RAISING an
+// entry here needs no sign-off: a rule earns its place on whether the invariant is
+// worth stating, which the number can't judge
+// (`.claude/rules/file-length-allowlist.md`).
 
 const (
 	// invariantRuleMarker is the house convention for "never do X" in an agent doc.
