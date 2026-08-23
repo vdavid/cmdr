@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::{
-    INDEX_REGISTRY, IndexPhase, PersistDisable, TeardownClaim, all_registered_volume_ids, resolved_index_db_path,
+    INDEX_REGISTRY, IndexPhase, PersistDisable, Registry, TeardownClaim, all_registered_volume_ids,
+    resolved_index_db_path,
 };
 use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::read::enrichment::uninstall_read_pool;
@@ -242,8 +243,14 @@ pub fn disable_drive_index_persist_intent(volume_id: &str) -> Result<(), String>
 /// BEFORE they touch the registry and are safe for the mirror-image reason: the key
 /// still exists while they withdraw, so no competing start can reserve yet.
 pub(super) fn remove_instance_and_handles(volume_id: &str) {
+    remove_instance_and_handles_on(&INDEX_REGISTRY, volume_id);
+}
+
+/// [`remove_instance_and_handles`] against a registry passed in, so a test can
+/// drive the removal through a poisoned lock of its own.
+pub(super) fn remove_instance_and_handles_on(registry: &Registry, volume_id: &str) {
     let pool = {
-        let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
+        let mut reg = registry.lock_ignore_poison();
         reg.remove(volume_id);
         let pool = uninstall_read_pool(volume_id);
         uninstall_pending_sizes(volume_id);

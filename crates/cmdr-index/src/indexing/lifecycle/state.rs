@@ -284,6 +284,15 @@ pub(crate) struct IndexInstance {
     pub(crate) signals: VolumeSignals,
 }
 
+/// The registry as the jobs take it: a mutex over the per-volume map.
+///
+/// Named so a job can take `&Registry` as a parameter instead of reaching for
+/// [`INDEX_REGISTRY`], which is what lets a test drive it against a poisoned lock
+/// of its own: the process-global static can never be poisoned in a test without
+/// breaking every sibling test in the binary. See `DETAILS.md` § "Poisoning the
+/// registry lock" for why every acquisition here recovers.
+pub(crate) type Registry = std::sync::Mutex<HashMap<VolumeId, IndexInstance>>;
+
 /// The per-volume index registry: the authority for which volumes are indexed
 /// and their lifecycle. Keyed by volume id so each volume's `(absent) ->
 /// Initializing -> Running` machine is independent and two volumes can't race
@@ -292,8 +301,15 @@ pub(crate) struct IndexInstance {
 /// An *absent* key means "no index registered for this volume" — the read path
 /// uses exactly that to decide skip-vs-route (`get_read_pool_for` returns
 /// `None`, so enrichment skips before any DB work).
-pub(crate) static INDEX_REGISTRY: LazyLock<std::sync::Mutex<HashMap<VolumeId, IndexInstance>>> =
-    LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
+///
+/// ❌ Exactly ONE line inserts into this map (`reservation.rs`), and every
+/// `remove` is final: nothing takes a key out meaning to put it back. That's what
+/// makes the one-writer-per-DB gate safe to run through a poisoned lock, and it
+/// has to stay true. A transient removal would let a panic in the window leave a
+/// key wrongly absent, and the next start would stand a SECOND writer up on the
+/// same database. Publish a transitional [`IndexPhase`] instead (that's what
+/// `ShuttingDown` and `Detached` are for).
+pub(crate) static INDEX_REGISTRY: LazyLock<Registry> = LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
 
 // ── Initialization ───────────────────────────────────────────────────
 
@@ -441,5 +457,7 @@ fn with_running_manager(volume_id: &str, f: impl FnOnce(&mut IndexManager)) {
     }
 }
 
+#[cfg(test)]
+mod poison_tests;
 #[cfg(test)]
 mod tests;

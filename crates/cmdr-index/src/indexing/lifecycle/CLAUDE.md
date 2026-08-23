@@ -10,7 +10,9 @@ the first index, each with its own `CLAUDE.md`. Other leaves are one job each (`
 
 - **`INDEX_REGISTRY` guards lifecycle ONLY; disabled is the ABSENCE of a key.** Present ≠ indexed: ask
   `awaits_its_first_scan`. Read handles are PUSHED down into `../read/handles.rs` and withdrawn before any drain or DB
-  removal, since withdrawal IS the read-skip. ❌ Nothing below `lifecycle` imports `lifecycle::state`.
+  removal, since withdrawal IS the read-skip. ❌ Nothing below `lifecycle` imports `lifecycle::state`. ONE line inserts
+  a key and every `remove` is final, which is what lets every acquisition RECOVER from poison (`DETAILS.md` § Poisoning
+  the registry lock).
 - **Never hold the registry across a blocking or re-entrant manager call.** `start_indexing` reserves lock-first,
   teardown drops the guard before the drain, and a scan start hands the manager out under `IndexPhase::Detached` through
   the one door `state::off_the_registry`; a teardown meeting that window CLAIMS it rather than bouncing.

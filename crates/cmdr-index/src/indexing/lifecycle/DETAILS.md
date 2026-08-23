@@ -424,6 +424,40 @@ walked nothing in ~2 ms, wrote `volume_path=/` (a local-scanner-only marker), an
 regression-locked by `manager::tests::force_rescan_routes_smb_and_mtp_to_the_trait_scanner_not_the_local_walker`.
 Classify by the typed `kind`, never a volume-id substring.
 
+### Poisoning the registry lock
+
+Every acquisition of `INDEX_REGISTRY` RECOVERS (`lock_ignore_poison()`), or hands the caller an `Err` where it already
+had a `Result` to fill. None abort. That's the value-store branch of the project-wide policy in
+`crates/cmdr-fs/src/ignore_poison.rs`, and it's the data that decides it, so here is what the data says.
+
+**The map cannot be torn by a panic.** The registry is a `HashMap<VolumeId, IndexInstance>` where every present key
+carries a whole instance. Exactly ONE line inserts (`reservation.rs`), and every `remove` is final: no path takes a key
+out meaning to put it back. So a panic can never leave a key wrongly ABSENT, and that's the one tear that would matter:
+it would defeat the `contains_key` gate and let the next start put a SECOND writer thread on a live database. That
+guarantee is what makes the reservation safe to run through a poisoned lock, and `state.rs` carries the `❌` that keeps
+it true. Everything else under a guard here is an infallible hash operation over leaf locks that recover in turn
+(`read/handles.rs`, `watch/branches.rs`, `cover`, `completion_retry`), so no critical section can panic partway and
+leave a caller half-done.
+
+**The one state a panic CAN strand is a phase, and it stays legal.** `stop_the_volume`, `clear_index`, and
+`DetachedManager::take` each `mem::replace` a phase out and put something back; `take` runs caller code (`prepare`) in
+that window. A panic there leaves the volume parked in `ShuttingDown` or `Detached` forever. That degrades ONE volume
+into a phase every reader already has an arm for; it doesn't corrupt the map, and no reader propagates it. Recovering is
+right for the same reason it's right everywhere else here.
+
+**Aborting would cost what the policy says it costs.** The realistic trigger is a panic on a background indexing thread,
+so an abort lands on the next unrelated thing that touches the registry (a drive badge refreshing, a scheduler sweep, a
+user starting an index), and turns a fault the app survived into a crash. Regression-locked by `state/poison_tests.rs`,
+which drives each job against a poisoned registry of its own; ❌ never poison the `INDEX_REGISTRY` static in a test,
+since poison is permanent for the process and every sibling test in the binary shares it. That's why those jobs take
+`&Registry` as a parameter rather than reaching for the static, the same seam `verifier::release_in_flight_slot` uses.
+
+**A recovered panic is still reported, but only at the next launch.** The crash reporter's panic hook
+(`apps/desktop/src-tauri/src/crash_reporter/`) is process-global, so it fires for a spawned indexing thread exactly as
+it does for the main one, and writes the report to disk immediately. Delivery is deferred: `process_pending_crash` reads
+the file at the NEXT startup. So recovering means the app keeps running and we hear about the panic on the user's next
+launch, and a second panic overwrites the file before then. Recovering never SWALLOWS the panic; it delays the news.
+
 ## Two ownership designs that were considered and rejected
 
 Both come back around every time somebody reads the `❌` count in this crate and concludes that one authority would

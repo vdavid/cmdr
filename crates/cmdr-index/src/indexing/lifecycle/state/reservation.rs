@@ -6,9 +6,10 @@
 //! one-writer-per-DB concurrency contract, and it reads better without 300 lines
 //! of bootstrap around it.
 
+use cmdr_fs::ignore_poison::IgnorePoison;
 use std::sync::Arc;
 
-use super::{INDEX_REGISTRY, IndexInstance, IndexPhase, VolumeSignals};
+use super::{INDEX_REGISTRY, IndexInstance, IndexPhase, Registry, VolumeSignals};
 #[cfg(any(test, feature = "testing"))]
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::read::enrichment::{ReadPool, install_read_pool};
@@ -60,7 +61,30 @@ pub(crate) fn try_reserve_initializing_phase(
     pending_sizes: Arc<PendingSizes>,
     signals: VolumeSignals,
 ) -> Result<(), Box<IndexStore>> {
-    let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
+    try_reserve_initializing_phase_on(
+        &INDEX_REGISTRY,
+        volume_id,
+        kind,
+        store,
+        read_pool,
+        pending_sizes,
+        signals,
+    )
+}
+
+/// [`try_reserve_initializing_phase`] against a registry passed in, so a test can
+/// drive the check-and-set through a poisoned lock of its own and prove the
+/// one-writer-per-DB gate still refuses a volume that is already registered.
+pub(super) fn try_reserve_initializing_phase_on(
+    registry: &Registry,
+    volume_id: &str,
+    kind: IndexVolumeKind,
+    store: IndexStore,
+    read_pool: Arc<ReadPool>,
+    pending_sizes: Arc<PendingSizes>,
+    signals: VolumeSignals,
+) -> Result<(), Box<IndexStore>> {
+    let mut reg = registry.lock_ignore_poison();
     if reg.contains_key(volume_id) {
         return Err(Box::new(store));
     }

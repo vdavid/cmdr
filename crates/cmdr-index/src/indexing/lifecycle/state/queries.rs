@@ -9,7 +9,7 @@ use std::sync::atomic::Ordering;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
-use super::{INDEX_REGISTRY, IndexPhase};
+use super::{INDEX_REGISTRY, IndexPhase, Registry};
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::store::{IndexFailure, IndexStore};
 use crate::indexing::volume::{IndexVolumeKind, VolumeId};
@@ -34,25 +34,31 @@ use crate::indexing::volume::{IndexVolumeKind, VolumeId};
 /// again — a relaunch mid-coverage would wire nothing for a home-covered volume,
 /// and the signal it publishes would have no subscriber.
 pub(crate) fn ready_volumes_with_kind() -> Vec<(VolumeId, IndexVolumeKind)> {
-    // Snapshot under the lock, decide off it: reading a marker is SQLite work, and
-    // nothing that touches a database belongs under the lifecycle lock.
-    let candidates: Vec<(VolumeId, IndexVolumeKind, bool)> = {
-        let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
-        reg.iter()
-            .map(|(vid, instance)| {
-                let fresh = instance
-                    .signals
-                    .freshness
-                    .lock_ignore_poison()
-                    .is_some_and(|f| f == Freshness::Fresh);
-                (vid.clone(), instance.kind, fresh)
-            })
-            .collect()
-    };
-    candidates
+    ready_candidates_on(&INDEX_REGISTRY)
         .into_iter()
         .filter(|(vid, _, fresh)| *fresh || has_covered_home(vid))
         .map(|(vid, kind, _)| (vid, kind))
+        .collect()
+}
+
+/// The under-the-lock half of [`ready_volumes_with_kind`]: every registered
+/// volume with its kind and whether its freshness reads `Fresh`.
+///
+/// Split out for two reasons. The decision needs SQLite (`has_covered_home`), and
+/// nothing that touches a database belongs under the lifecycle lock. And taking
+/// the registry as a parameter rather than reaching for the static is what lets a
+/// test drive it against a poisoned lock of its own.
+pub(super) fn ready_candidates_on(reg: &Registry) -> Vec<(VolumeId, IndexVolumeKind, bool)> {
+    reg.lock_ignore_poison()
+        .iter()
+        .map(|(vid, instance)| {
+            let fresh = instance
+                .signals
+                .freshness
+                .lock_ignore_poison()
+                .is_some_and(|f| f == Freshness::Fresh);
+            (vid.clone(), instance.kind, fresh)
+        })
         .collect()
 }
 
@@ -92,8 +98,15 @@ pub(crate) fn volume_kind(volume_id: &str) -> Option<IndexVolumeKind> {
 /// prefix — `mtp-AA` must not match `mtp-AAB:1`.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) fn registered_mtp_volume_ids_for_device(device_id: &str) -> Vec<String> {
-    let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
-    reg.keys()
+    mtp_volume_ids_on(&INDEX_REGISTRY, device_id)
+}
+
+/// [`registered_mtp_volume_ids_for_device`] against a registry passed in, so a
+/// test can drive it through a poisoned lock of its own.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(super) fn mtp_volume_ids_on(reg: &Registry, device_id: &str) -> Vec<String> {
+    reg.lock_ignore_poison()
+        .keys()
         .filter(|vid| cmdr_fs::volume::mtp_ids::device_id_of_volume(vid) == Some(device_id))
         .cloned()
         .collect()
