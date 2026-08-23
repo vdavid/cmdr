@@ -4,7 +4,7 @@
 keeps that spec alive for years. These are the calls that gate work but are not themselves work. Most take a minute.
 
 Decisions that gate exactly one effort live in that effort's spec instead: the reconcile-governor shape is in
-`idle-cost.md`, and the module-cycle ratchet metric and FTP's concurrency knob are in `backend-as-a-crate.md`.
+`idle-cost.md`.
 
 ## Human-facing copy shipped as agent drafts
 

@@ -9,9 +9,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 "did this get slower?" re-measurement compares against, and they record what a crate boundary did and didn't buy.
 
 - `index-extraction-baseline.md` — the `cmdr-index` extraction.
-- `archive-extraction-baseline.md` — the `cmdr-archive` extraction, the measurement gate
-  `docs/specs/backend-as-a-crate.md` ends at. **Its numbers are provisional**: the machine was contended and the volume
-  near-full throughout, so most readings are withdrawn and the note carries the procedure for re-taking them.
+- `archive-extraction-baseline.md` — the `cmdr-archive` extraction, the pilot the backend-crate boundary was measured
+  on. **Its numbers are provisional**: the machine was contended and the volume near-full throughout, so most readings
+  are withdrawn and the note carries the procedure for re-taking them.
 
 **Load-bearing for a decision that hasn't been made yet:**
 

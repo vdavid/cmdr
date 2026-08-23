@@ -18,14 +18,6 @@ that lives beside the code, and git holds the history.
       rescan walk may read the shipped `SYSTEM_DIR_EXCLUDES`). **About a day of build work, plus a week of passive
       observation before the second item can be ranked.** Read `docs/notes/idle-cpu-attribution-2026-08-03.md` first:
       four hypotheses here were refuted by measurement.
-- [ ] 2026-08-21 `backend-as-a-crate.md` - **S3, FTP(S), SFTP, WebDAV, and NFS are the top planned feature, and there's
-      no boundary to write them behind.** The SMB extraction and the module-cycle ratchet both shipped:
-      `crates/cmdr-smb` holds the backend and its protocol layer, and `cargo check -p cmdr-smb --all-targets` is a
-      complete loop with none of the app in it. **What's left is FTP**, the milestone that proves the seams survive a
-      backend that isn't SMB, and it's blocked on one product decision: FTP's concurrency knob (global versus
-      per-server, its default, and whether it's exposed at all). Read `crates/cmdr-fs/src/volume/host/DETAILS.md` for
-      the seam set and the nine-step recipe, then `crates/cmdr-smb/DETAILS.md` for what a finished extraction looks
-      like.
 - [ ] 2026-08-21 `indexing-loose-ends.md` - **The coverage machine works; these are the threads left hanging.** Phased
       indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled: a rename that
       closes one plan outright, the verifier mark with its abandoned-ground trigger, Spotlight recency for a true first

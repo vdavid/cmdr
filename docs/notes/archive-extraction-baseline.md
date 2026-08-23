@@ -1,8 +1,8 @@
 # Archive-extraction: the measurement gate, and why it is still open
 
 The build-time before-and-after for moving `backends/archive/**` (8,352 lines, 2.5% of `src-tauri/src`) into the
-standalone `cmdr-archive` crate. This is the measurement gate the backend-crate extraction ends at; the plan is
-`docs/specs/backend-as-a-crate.md`, and the seam rationale is `crates/cmdr-fs/src/volume/host/DETAILS.md`.
+standalone `cmdr-archive` crate. This is the measurement gate the backend-crate extraction ended at; the seam rationale,
+and what a crate boundary does and doesn't buy, is `crates/cmdr-fs/src/volume/host/DETAILS.md`.
 
 > **⚠️ The gate has NOT been measured cleanly, and nothing here should be acted on as if it had.** Every timing below
 > was taken on a machine running several concurrent workspace builds (load average 27–125) on a data volume that was
