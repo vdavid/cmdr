@@ -1681,10 +1681,9 @@ le, tehát egyikük sem állíthatja, hogy leállt.
 - **A `.unknown` a hátteret sem nevezi meg**: régi Cmdr-verzió jelentése áll mögötte, amely nem rögzítette, hogy az app
   tovább futott-e, ezért a mondatnak mindkét kimenetelre igaznak kell lennie.
 - `sameAsSourceJustification` egyik kulcsnál sem kell: mindkét érték eltér az angoltól.
-- ⚠️ Angol oldali ellentmondás, NEM itt javítható: a párbeszéd címe mindhárom törzsváltozat alatt ugyanaz
-  (`crashReporter.dialog.title` = „Send crash report?” = `Elküldöd az összeomlási jelentést?`), tehát a `keptRunning`
-  ágon a cím összeomlást állít, miközben a törzs éppen ezt tagadja. A magyar hűen követi az angolt; a feloldás az `en`
-  kulcs dolga.
+- A cím ugyanezt a hasítást követi: `crashReporter.dialog.title.crash` = `Elküldöd az összeomlási jelentést?` marad,
+  `.title.report` = `Elküldöd a jelentést?` az a két eset, amelyik nem állíthat összeomlást. Ugyanez a művelet a
+  visszajelző pirítósnál (`sentToast.message.crash` / `.message.report`): csak az `összeomlási` jelző esik ki.
 
 ## A jelentésküldés beállításszövege már mindkét kimenetelre igaz (`settings.updates.crashReports.description`)
 
