@@ -74,6 +74,15 @@ pub enum MutationError {
         /// The name the user asked for, which is what the message quotes.
         name: String,
     },
+    /// This volume has no Trash to move anything into (a network mount, a FAT
+    /// stick). Permanent delete is the only way through.
+    TrashNotSupported,
+    /// The OS refused the move to the Trash.
+    TrashRefused {
+        /// What `NSFileManager` (or the Linux `trash` crate) reported, for the
+        /// technical-details disclosure.
+        detail: String,
+    },
     /// The volume refused, and said why in its own vocabulary.
     Volume {
         /// The backend's typed answer, rendered by the frontend's volume factory.
@@ -113,6 +122,8 @@ impl std::fmt::Display for MutationError {
             Self::ArchiveEditNotReady => f.write_str("archive-edit driver not ready"),
             Self::ArchiveEditCouldntStart { detail } => write!(f, "archive edit didn't start: {detail}"),
             Self::AlreadyExists { name } => write!(f, "already exists: {name}"),
+            Self::TrashNotSupported => f.write_str("this platform has no Trash"),
+            Self::TrashRefused { detail } => write!(f, "the Trash refused it: {detail}"),
             Self::Volume { error } => write!(f, "volume: {error}"),
             Self::TimedOut => f.write_str("timed out"),
             Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),

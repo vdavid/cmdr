@@ -84,6 +84,9 @@ const MUTATION_MESSAGE: {
   nameHasDisallowedCharacter: (_e, kind) => tString('fileOperations.validation.disallowedChars', { kind }),
   alreadyExists: (e) => tString('fileOperations.validation.conflict', { name: e.name }),
 
+  trashNotSupported: () => raw('errors.mutation.trashNotSupported'),
+  trashRefused: () => raw('errors.mutation.trashRefused'),
+
   notFound: (e) => raw('errors.mutation.notFound', { path: e.path }),
   cantRenameVolumeRoot: () => raw('errors.mutation.cantRenameVolumeRoot'),
   parentNotWritable: (e) => raw('errors.mutation.parentNotWritable', { path: e.path }),
@@ -123,16 +126,13 @@ export function renderMutationError(error: MutationError, kind: NamedKind = 'fil
 }
 
 /**
- * The backend's own words for this refusal, for a technical-details disclosure
- * or a log line. `null` when the variant carries nothing technical.
+ * The technical half of a `VolumeError`, or `null` when it carries none.
  *
- * ❌ Never render this as the message: it's untranslated diagnostic text.
+ * The variants listed first are the ones whose payload IS the backend's
+ * diagnostic string; the path-carrying ones are absent because the message
+ * already names their payload, so repeating it adds nothing.
  */
-export function technicalDetail(error: MutationError): string | null {
-  if (error.type === 'unexpected') return error.detail
-  if (error.type === 'archiveEditCouldntStart') return error.detail
-  if (error.type !== 'volume') return null
-  const volume = error.error
+function volumeDetail(volume: VolumeError): string | null {
   switch (volume.type) {
     case 'deviceDisconnected':
     case 'deviceSessionReset':
@@ -143,13 +143,31 @@ export function technicalDetail(error: MutationError): string | null {
       return volume.data
     case 'storageFull':
       return volume.data.message
+    case 'friendlyGit':
+      return volume.data.raw ?? null
     case 'ioError':
       return volume.data.rawOsError === null
         ? volume.data.message
         : `${volume.data.message} (errno ${String(volume.data.rawOsError)})`
-    case 'friendlyGit':
-      return volume.data.raw ?? null
     default:
       return null
   }
+}
+
+/** `MutationError` variants that carry their own free-text `detail` field. */
+const DETAIL_BEARING_VARIANTS = new Set<MutationError['type']>([
+  'unexpected',
+  'archiveEditCouldntStart',
+  'trashRefused',
+])
+
+/**
+ * The backend's own words for this refusal, for a technical-details disclosure
+ * or a log line. `null` when the variant carries nothing technical.
+ *
+ * ❌ Never render this as the message: it's untranslated diagnostic text.
+ */
+export function technicalDetail(error: MutationError): string | null {
+  if (DETAIL_BEARING_VARIANTS.has(error.type)) return (error as { detail: string }).detail
+  return error.type === 'volume' ? volumeDetail(error.error) : null
 }

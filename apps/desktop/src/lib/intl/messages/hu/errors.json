@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "Ez a jelszó nem jó.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "Ezen a köteten nincs Kuka, ezért csak a végleges törlés marad.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "A macOS nem engedte ezt a Kukába helyezni.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }

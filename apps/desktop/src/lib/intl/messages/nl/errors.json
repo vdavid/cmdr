@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "Dat wachtwoord werkte niet.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "Dit volume heeft geen prullenmand, dus definitief verwijderen is de enige manier.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS wilde dit niet naar de prullenmand verplaatsen.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }

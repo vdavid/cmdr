@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
+use super::super::mutation_error::MutationError;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::types::{
     OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
@@ -35,12 +36,14 @@ use super::super::types::{
 /// 2026-07-10). NSFileManager may de-duplicate the name (`file 2.txt`) if the
 /// Trash already holds one, so the returned location is the authoritative one.
 #[cfg(target_os = "macos")]
-pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
+pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, MutationError> {
     use objc2::rc::{Retained, autoreleasepool};
     use objc2_foundation::{NSFileManager, NSString, NSURL};
 
     if fs::symlink_metadata(path).is_err() {
-        return Err(format!("'{}' doesn't exist", path.display()));
+        return Err(MutationError::NotFound {
+            path: path.display().to_string(),
+        });
     }
 
     // Drain autoreleased ObjC objects (NSURL, NSString, NSFileManager internals).
@@ -56,30 +59,29 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
         let mut resulting: Option<Retained<NSURL>> = None;
         file_manager
             .trashItemAtURL_resultingItemURL_error(&url, Some(&mut resulting))
-            .map_err(|e| format!("Failed to move to trash: {}", e))?;
+            .map_err(|e| MutationError::TrashRefused { detail: e.to_string() })?;
         let in_trash = resulting.and_then(|u| u.path()).map(|p| PathBuf::from(p.to_string()));
         Ok(in_trash)
     })
 }
 
 #[cfg(target_os = "linux")]
-pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
+pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, MutationError> {
     if fs::symlink_metadata(path).is_err() {
-        return Err(format!("'{}' doesn't exist", path.display()));
+        return Err(MutationError::NotFound {
+            path: path.display().to_string(),
+        });
     }
 
-    trash::delete(path).map_err(|e| format!("Failed to move to trash: {}", e))?;
+    trash::delete(path).map_err(|e| MutationError::TrashRefused { detail: e.to_string() })?;
     // The `trash` crate doesn't surface the in-trash location, so no restore
     // location is recorded (trash rollback is then unavailable on Linux).
     Ok(None)
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
-    Err(format!(
-        "Moving to trash is not supported on this platform for '{}'",
-        path.display()
-    ))
+pub fn move_to_trash_sync(_path: &Path) -> Result<Option<PathBuf>, MutationError> {
+    Err(MutationError::TrashNotSupported)
 }
 
 /// Trash ONE item and journal it as a one-item trash operation — the single-trash
@@ -93,10 +95,12 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
 pub fn trash_single_journaled(
     source: &Path,
     initiator: crate::operation_log::types::Initiator,
-) -> Result<Option<PathBuf>, String> {
+) -> Result<Option<PathBuf>, MutationError> {
     use crate::operation_log::types::{EntryType, ExecutionStatus, ItemOutcome, OpKind};
 
-    let source_meta = fs::symlink_metadata(source).map_err(|_| format!("'{}' doesn't exist", source.display()))?;
+    let source_meta = fs::symlink_metadata(source).map_err(|_| MutationError::NotFound {
+        path: source.display().to_string(),
+    })?;
 
     // Enumerate BEFORE the move (buffered, persisted only on success).
     let buffered = if source_meta.is_dir() {
@@ -307,7 +311,10 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
             Err(e) => {
                 errors.push(TrashItemError {
                     path: source.clone(),
-                    message: e,
+                    // The batch path reports through `WriteOperationError`, whose
+                    // own typed variant carries the words; this string is the
+                    // technical detail beside it, so `Display` is right here.
+                    message: e.to_string(),
                 });
                 // `trashItemAtURL` is atomic per item, so a failure left this one
                 // exactly where it was.
@@ -482,7 +489,7 @@ mod tests {
     fn test_move_to_trash_sync_nonexistent() {
         let result = move_to_trash_sync(Path::new("/nonexistent_12345/file.txt"));
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("doesn't exist"));
+        assert!(matches!(result.unwrap_err(), MutationError::NotFound { .. }));
     }
 
     #[cfg(target_os = "macos")]

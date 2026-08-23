@@ -2329,5 +2329,17 @@
     "description": "Shown when the password supplied for an encrypted archive was rejected. Word it as the password being wrong, not as the person being wrong. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.mutation.trashNotSupported": "This volume has no Trash, so the only way is to delete permanently.",
+  "@errors.mutation.trashNotSupported": {
+    "description": "Shown when someone tries to move an item to the Trash from a drive or share that has none (a network mount, a FAT stick). \"Trash\" is the macOS name for the bin; use Apple's own wording for your locale. \"Volume\" means a drive, disk, or network share. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.mutation.trashRefused": "macOS wouldn't move this to the Trash.",
+  "@errors.mutation.trashRefused": {
+    "description": "Shown when the operating system turned down a move to the Trash and Cmdr can't say more. Deliberately short: the technical reason appears separately under \"Technical details\". \"macOS\" is Apple's OS name and \"Trash\" is its bin; use Apple's own wording for your locale. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   }
 }

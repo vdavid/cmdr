@@ -52,5 +52,5 @@ export async function renameFile(
 
 export async function moveToTrash(path: string): Promise<void> {
   const res = await commands.moveToTrash(path)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwMutationError(res.error)
 }

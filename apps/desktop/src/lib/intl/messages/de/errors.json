@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "Das Passwort hat nicht geklappt.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "Dieses Volume hat keinen Papierkorb, deshalb kannst du hier nur endgültig löschen.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS wollte das nicht in den Papierkorb bewegen.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }

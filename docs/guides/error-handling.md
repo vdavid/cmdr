@@ -31,8 +31,8 @@ mis-renders at runtime). Change both sides in the same commit.
   `WriteOperationError`, and the frontend renders it through `file-operations/transfer/transfer-error-messages.ts` into
   `TransferErrorDialog` / `FallbackErrorContent`. Same principle, separate factories; they share the
   `FriendlyErrorMessage` shape so the two can converge later.
-- **Mutation refusals** (a rename, New Folder, or New File didn't happen): the command RETURNS a typed `MutationError`
-  (no event), and the frontend renders one plain-text line through
+- **Mutation refusals** (a rename, New Folder, New File, or single move to the Trash didn't happen): the command RETURNS
+  a typed `MutationError` (no event), and the frontend renders one plain-text line through
   `apps/desktop/src/lib/file-operations/mutation-error-messages.ts`, inline under the name field or in a toast.
   `MutationError::Volume` carries the WHOLE `VolumeError`, which is itself the wire type (adjacently tagged, structured
   fields intact), so a backend that grows a variant reaches the frontend without a second vocabulary to keep in step.

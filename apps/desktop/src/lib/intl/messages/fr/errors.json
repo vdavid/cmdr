@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "Ce mot de passe n'est pas le bon.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "Ce volume n'a pas de corbeille : la seule option est de supprimer définitivement.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS a refusé de placer cet élément dans la corbeille.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }

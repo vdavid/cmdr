@@ -3,7 +3,9 @@
 //! Thin pass-throughs: the rename validation + the managed rename mutation live
 //! in `file_system::write_operations::rename`. These commands expand tilde,
 //! resolve the `volume_id`, apply the IPC timeout tiers (2 s validity/permission,
-//! 5 s rename), and map errors to `IpcError`.
+//! 5 s rename), and ship the typed `MutationError` the frontend words itself
+//! (`check_rename_validity` still answers with a typed `RenameValidityResult`, so
+//! its `IpcError` only ever carries the deadline).
 
 use std::path::PathBuf;
 use tokio::time::Duration;
@@ -22,7 +24,7 @@ use crate::file_system::write_operations::{
 /// Moves a file or directory to the macOS Trash via NSFileManager.
 #[tauri::command]
 #[specta::specta]
-pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
+pub async fn move_to_trash(path: String) -> Result<(), MutationError> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
 
@@ -33,17 +35,20 @@ pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
     // Journal as a one-item trash op (captures the in-trash location + the
     // subtree's search leaves), mirroring the batch trash path. Initiator
     // threading through this command lands with the provenance-completion pass.
-    tokio::time::timeout(
+    match tokio::time::timeout(
         Duration::from_secs(15),
         tokio::task::spawn_blocking(move || {
             trash_single_journaled(&path_buf, crate::operation_log::types::Initiator::User)
         }),
     )
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
-    .map_err(IpcError::from_err)
-    .map(|_in_trash| ())
+    {
+        Ok(Ok(result)) => result.map(|_in_trash| ()),
+        Ok(Err(join_err)) => Err(MutationError::Unexpected {
+            detail: format!("the trash task didn't finish: {join_err}"),
+        }),
+        Err(_) => Err(MutationError::TimedOut),
+    }
 }
 
 /// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not
@@ -339,7 +344,6 @@ mod tests {
     async fn test_move_to_trash_nonexistent() {
         let result = move_to_trash("/nonexistent_12345/trash_me.txt".to_string()).await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct; message is the signal
-        assert!(result.unwrap_err().message.contains("doesn't exist"));
+        assert!(matches!(result.unwrap_err(), MutationError::NotFound { .. }));
     }
 }

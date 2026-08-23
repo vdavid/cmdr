@@ -1116,7 +1116,7 @@ export const commands = {
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) => typedError<null, MutationError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
   // Moves a file or directory to the macOS Trash via NSFileManager.
-  moveToTrash: (path: string) => typedError<null, IpcError>(__TAURI_INVOKE('move_to_trash', { path })),
+  moveToTrash: (path: string) => typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path })),
   // Returns the current restricted-paths snapshot (sorted, absolute paths).
   getRestrictedPaths: () => __TAURI_INVOKE<string[]>('get_restricted_paths'),
   /**
@@ -7946,6 +7946,20 @@ export type MutationError =
       type: 'alreadyExists'
       // The name the user asked for, which is what the message quotes.
       name: string
+    }
+  /**
+   *  This volume has no Trash to move anything into (a network mount, a FAT
+   *  stick). Permanent delete is the only way through.
+   */
+  | { type: 'trashNotSupported' }
+  // The OS refused the move to the Trash.
+  | {
+      type: 'trashRefused'
+      /**
+       *  What `NSFileManager` (or the Linux `trash` crate) reported, for the
+       *  technical-details disclosure.
+       */
+      detail: string
     }
   // The volume refused, and said why in its own vocabulary.
   | {

@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "Mật khẩu đó không đúng.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "Ổ đĩa này không có Thùng rác, nên cách duy nhất là xóa vĩnh viễn.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS đã từ chối chuyển mục này vào Thùng rác.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }

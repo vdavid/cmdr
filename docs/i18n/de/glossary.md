@@ -1267,3 +1267,25 @@ Einschub, steht deshalb überall in der eigenen deutschen Anführung „…“ u
   `Unter „{path}“ gibt es bereits etwas.` · dasselbe Idiom wie `conflictExistsFolder` und
   `errors.write.destinationExists.message` · high. Die Präposition `Unter` hält `{path}` außerhalb jedes Kasus-Slots.
 - Kein `sameAsSourceJustification` nötig: alle 31 Werte unterscheiden sich vom Englischen.
+
+### Nachtrag: die beiden Papierkorb-Absagen (`errors.mutation.trashNotSupported`/`.trashRefused`, 2026-08-23)
+
+- **`trashNotSupported` → `Dieses Volume hat keinen Papierkorb, deshalb kannst du hier nur endgültig löschen.`** ·
+  gesetztes `trash → Papierkorb` (§ Terms, macOS Finder durchgängig) und `volume → Volume` (`style.md`); der
+  `…, deshalb …`-Rahmen hält den String parallel zu seinen Geschwistern `volumeGone` und `sipProtected` · high. Der
+  Geschwisterstring `errors.write.trashNotSupported.message` („Dieses Volume unterstützt keinen Papierkorb.“) sagt
+  dasselbe für den Dialog; die Zeile hier nennt zusätzlich den Ausweg.
+- **„delete permanently“ als Aktionsname → `endgültig löschen`, nicht `dauerhaft löschen`** · der Katalog nennt den
+  Befehl überall `Endgültig löschen` (`commands.fileDeletePermanently.label`, `menu.file.deletePermanently`,
+  `fileExplorer.functionKeyBar.deletePermanentlyAction`, und `errors.write.trashNotSupported.suggestion` zeigt mit „… um
+  stattdessen endgültig zu löschen“ auf genau ihn) · high. Der Eintrag `permanently (delete) → dauerhaft` in § Terms
+  gilt weiter für die adverbiale Prosa („Dateien werden dauerhaft gelöscht.“,
+  `fileOperations.delete.noTrashWarningRest`); wo der Text auf den sichtbaren Befehl zeigt, gewinnt `endgültig`. Wert
+  für David: die beiden Formen nebeneinander sind Absicht, keine Inkonsistenz.
+- **`trashRefused` → `macOS wollte das nicht in den Papierkorb bewegen.`** · `in den Papierkorb bewegen` ist der
+  gesetzte Baustein (macOS Finder „Trash ${entities}“ → „${entities} in den Papierkorb bewegen“, AppKit „could not be
+  moved to the trash“ → „konnten nicht in den Papierkorb bewegt werden“) · high für den Baustein, `tentative` für
+  `wollte nicht`: die Referenzsammlung kennt für „wouldn''t“ nur unpersönliche Passiv-Absagen, `wollte nicht` ist
+  Standarddeutsch und trägt denselben trockenen Ton wie das Englische. Bewusst kurz: der technische Grund steht separat
+  unter „Technische Details“. ❌ Nicht `Die Datei ließ sich nicht …` (so lautet schon
+  `errors.write.ioError.message.trash`, und macOS als Absender geht dabei verloren).

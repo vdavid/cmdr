@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "Essa senha não funcionou.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "Este volume não tem Lixo, então a única opção é apagar permanentemente.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "O macOS se recusou a mover este item para o Lixo.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }

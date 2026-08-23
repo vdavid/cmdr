@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "Det lösenordet fungerade inte.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "Den här volymen har ingen papperskorg, så det går bara att radera permanent.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS nekade flytten till papperskorgen.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }

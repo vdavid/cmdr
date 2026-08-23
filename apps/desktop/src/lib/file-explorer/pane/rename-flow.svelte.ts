@@ -1,5 +1,7 @@
 import { getFileBeside, refreshListing } from '$lib/tauri-commands'
-import { getIpcErrorMessage, isIpcError, moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
+import { getIpcErrorMessage, moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
+import { asMutationError } from '$lib/file-operations/mutation-error'
+import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
 import { validateFilename, getExtension } from '$lib/utils/filename-validation'
 import { cancelClickToRename } from '../rename/rename-activation'
 import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
@@ -605,7 +607,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
               handleRenameResult(result, target, trimmedName, sessionId)
             })
             .catch((e: unknown) => {
-              if (isIpcError(e) && e.timedOut) {
+              const failure = asMutationError(e)
+              if (failure?.type === 'timedOut') {
                 addToast(tString('fileExplorer.pane.trashUnconfirmedToast'), {
                   level: 'warn',
                   dismissal: 'persistent',
@@ -613,7 +616,16 @@ export function createRenameFlow(deps: RenameFlowDeps) {
                 // Unforced: a top-up after an unconfirmed rename.
                 void refreshListing(deps.getListingId(), false)
               } else {
-                addToast(getIpcErrorMessage(e), { level: 'error' })
+                // The typed refusal is worded in the user's language; a value that
+                // never reached the typed path falls back to whatever it carried.
+                addToast(
+                  failure
+                    ? renderMutationError(failure, target.isDirectory ? 'folder' : 'file')
+                    : getIpcErrorMessage(e),
+                  {
+                    level: 'error',
+                  },
+                )
               }
               if (rename.isSuperseded(sessionId)) return
               rename.cancel()

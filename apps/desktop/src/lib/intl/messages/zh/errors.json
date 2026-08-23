@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "这个密码不起作用。",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "这个宗卷没有废纸篓，只能彻底删除。",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS 拒绝把这个项目移到废纸篓。",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }

@@ -1700,3 +1700,24 @@ Deux pièges de sens à ne jamais « corriger » :
   est toujours branché »). Le voisin `errors.volume.deviceDisconnected`, lui, décrit un vrai débranchement.
 
 Aucun `sameAsSourceJustification` nécessaire : les 31 valeurs diffèrent de l'anglais.
+
+## Refus de mise à la corbeille : `errors.mutation.trashNotSupported` / `trashRefused` (2026-08-23)
+
+Deux clés ajoutées après les 31 ci-dessus, même surface (une ligne sous le champ de nom, ou une notification brève),
+même famille RAW.
+
+- **`This volume has no Trash` → `Ce volume n'a pas de corbeille`** · `trash → corbeille` est déjà au guide de style
+  (macOS Finder « Corbeille », « Vider la corbeille ») · high. On écarte « ne prend pas en charge la corbeille »
+  (`errors.write.trashNotSupported.message` du même fichier) : l'anglais dit ici « has no Trash », plus direct, et la
+  ligne doit tenir dans une boîte de dialogue étroite.
+- **`delete permanently` → `supprimer définitivement`** · macOS Finder, mot pour mot (« Voulez-vous vraiment supprimer
+  définitivement cette version du document « %@ » ? ») ; identique à `errors.write.trashNotSupported.suggestion` du
+  catalogue `fr` · high. La phrase entière : « Ce volume n'a pas de corbeille : la seule option est de supprimer
+  définitivement. » Le deux-points remplace le `so` anglais, et on garde le verbe plutôt que le nom « la suppression
+  définitive », que le guide de style écarte.
+- **`macOS wouldn't move this to the Trash` → `macOS a refusé de placer cet élément dans la corbeille.`** ·
+  `move to trash → placer dans la corbeille` vient du guide de style et de macOS Finder (« Placer dans la corbeille », «
+  Le Finder souhaite placer « ^1 » dans la corbeille ») · high. `a refusé` reste factuel et non alarmiste, et le
+  catalogue `fr` s'en sert déjà (« Connexion refusée », « Authentification refusée ») ; ni « erreur » ni « échec ».
+  `this` devient `cet élément`, le nom générique du catalogue, plutôt qu'un pronom sans antécédent. La phrase reste
+  courte à dessein : la raison technique s'affiche à part sous « Détails techniques ».

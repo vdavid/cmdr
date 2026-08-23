@@ -1287,4 +1287,15 @@ Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时�
   `{path} 处已经有一个文件或文件夹`，但英文有意含糊成 "something"，中文照样收成 `东西` · `high`
 - **`{path}` 用全角 `“…”` 包起来** · 英文用的是 ASCII 双引号；简体中文按 macOS
   Finder 的习惯（`拷贝“^2”`、`无法移除“^0”`）改全角，路径可能是汉字也可能是拉丁字母，全角引号两种都分得干净 · `high`
-- 无需 `sameAsSourceJustification`：31 条全部与英文不同。
+- **"has no Trash" / "delete permanently"（第二批，`errors.mutation.trashNotSupported`）→
+  `这个宗卷没有废纸篓，只能彻底删除。`** · `废纸篓` 是 Trash 的简体名（style.md），`彻底删除`
+  是目录里已定的「永久删除」命令名（功能键栏
+  `fileExplorer.functionKeyBar.deletePermanentlyAction`、`menu.file.deletePermanently`、`commands.fileDeletePermanently.label`、`fileExplorer.renameConflict.overwriteDelete`，共 4 处），所以这句话里的说法正好等于用户要去按的那个命令；最近的同义句
+  `fileOperations.delete.noTrashWarningStrong/Rest`（`这个宗卷不支持废纸篓。文件将被彻底删除。`）也是这么写的。目录里另有一处
+  `永久删除`（`errors.write.trashNotSupported.suggestion`），以后向 `彻底删除` 收敛 · `high`
+- **"macOS wouldn't …"（系统拒绝了这次操作）→ `macOS 拒绝把这个项目移到废纸篓。`** · 动词 `拒绝` 来自 macOS Finder zh-CN
+  `MR100`（`“^0”已拒绝你的请求。`），是「系统/服务器不肯照做」这个意思的现成说法；`移到废纸篓`
+  是已定的固定搭配（`errors.write.*.trash`
+  一族）。英文有意写得短，因为具体原因另在“技术详情”里显示，所以中文也不补原因；宾语用 `这个项目`（同
+  `errors.mutation.fileLocked` 的 `这个项目`），因为提示显示在名称输入框下方，光写 `它` 没有先行词 · `high`
+- 无需 `sameAsSourceJustification`：这一批 33 条全部与英文不同。

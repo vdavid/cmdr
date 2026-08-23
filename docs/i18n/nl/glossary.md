@@ -1649,3 +1649,39 @@ REVIEW FLAGS (mutation/volume-weigerberichten):
   bevestig dat het niet te vaag leest.
 - **`Er staat niets meer op ‘{path}’.`** — `{path}` kan een bestand of een map zijn, dus de zin noemt bewust geen soort.
   Apples `'^0' bestaat niet meer.` is korter; de locatievorm is gekozen omdat het Engels de plek noemt ("at").
+
+## De twee prullenmandweigeringen (`errors.mutation.trash*`, 2026-08-23)
+
+Twee sleutels die na de pass hierboven zijn toegevoegd, met dezelfde vorm: één platte regel onder het naamveld of in een
+korte melding, RAW-familie, enkele apostroffen. Gemijnd in `_ignored/i18n/nl/`, 2026-08-23.
+
+- **"This volume has no Trash" → `Dit volume heeft geen prullenmand`** · `prullenmand` is de gevestigde rij (macOS
+  Finder Tier 1) en `volume` de gevestigde rij; `dit volume` sluit aan op de zusterregel `errors.volume.noRoom` ("Er is
+  geen ruimte meer op dit volume.") · high. Bewust anders dan het oudere `errors.write.trashNotSupported.message` ("Dit
+  volume ondersteunt de prullenmand niet."), want het Engels zegt hier ook `has no`, niet `doesn't support`.
+- **"the only way is to delete permanently" → `dus definitief verwijderen is de enige manier`** ·
+  `definitief verwijderen` is de gevestigde rij (macOS "definitief"), woordelijk gelijk aan de knop
+  `fileExplorer.functionKeyBar.deletePermanentlyAction` waar de zin de gebruiker naartoe stuurt · high op de term,
+  compositioneel op `de enige manier` (de stapel heeft geen zin met "the only way"). Het genominaliseerde infinitief als
+  onderwerp vermijdt een lijdend voorwerp, en dus een voornaamwoord dat het geslacht van het onderdeel zou moeten raden
+  (`het bestand` vs `de map`).
+- **"macOS wouldn't move this to the Trash." → `macOS wilde dit niet naar de prullenmand verplaatsen.`** · de
+  woordvolgorde volgt macOS AppKit ("The file could not be moved to the trash." → "Het bestand '%@' kon niet naar de
+  prullenmand worden verplaatst") en Finder `MT2_V1` ("kan niet naar de prullenmand worden verplaatst"), maar in de
+  bedrijvende vorm met `macOS` als onderwerp, zoals `errors.listing.notPermitted.explanation` ("macOS blokkeerde de
+  toegang van Cmdr tot ...") · high. `wilde ... niet` is de gewone Nederlandse weergave van het Engelse `wouldn't` en
+  houdt de kalme toon vast; het kale `dit` (geen `dit bestand` / `deze map`) blijft neutraal over wat er geweigerd is.
+- Geen `sameAsSourceJustification` nodig: beide waarden wijken af van het Engels.
+- Stemregel gehaald: geen `fout` en geen `mislukt` in de twee waarden.
+
+REVIEW FLAGS (prullenmandweigeringen):
+
+- **`wilde ... niet` vs `weigerde`.** De catalogus gebruikt `weigerde` al voor een afwijzing door macOS zelf
+  (`ai.secretError.keychainTitle`: "de macOS-sleutelhanger weigerde toegang"), en de sleutel heet `trashRefused`.
+  `macOS weigerde dit naar de prullenmand te verplaatsen.` is dus verdedigbaar, maar klinkt harder dan het Engelse
+  `wouldn't`. Bevestig welke van de twee in een melding beter valt.
+- **`Verwijder permanent` vs `Definitief verwijderen` in de catalogus.** `menu.file.deletePermanently` en
+  `commands.fileDeletePermanently.label` zeggen `Verwijder permanent`, terwijl
+  `fileExplorer.functionKeyBar.deletePermanentlyAction` en het glossarium `definitief verwijderen` aanhouden (macOS Tier
+  1). Deze nieuwe regel volgt het glossarium. Een locale-brede veegbeurt naar `definitief` is de aanbeveling; buiten het
+  bestek van deze pass.

@@ -1617,3 +1617,21 @@ ismeretlen futásidejű útvonal, ezért mindenhol a katalógus bevett kettőspo
   mentegetőző; a `leállít` a macOS Tier-1 abbahagyás-igéje (`Másolás leállítása`), a `művelet` a szótár szava · high. A
   futó átvitel `Megszakítás` gombjától szándékosan eltér: itt nem gombfeliratról van szó.
 - Nem kell `sameAsSourceJustification`: mind a 31 érték eltér az angoltól.
+
+Két további kulcs ugyanebbe a családba (Kukába helyezés elutasításai):
+
+- **Trash (a macOS kukája) → `Kuka`, nagybetűvel, a funkció neveként** · macOS Finder/AppKit Tier 1 (`Trash` = `Kuka`,
+  „Moves items to the Trash” = „Elemeket helyez át a Kukába”), és a katalógus már settled alakja (`delete.trashSwitch` =
+  `Áthelyezés a Kukába`, `errors.write.*.trash` ág) · high. A Windows-os `Lomtár` itt nem jön szóba (macOS-app).
+- **„This volume has no Trash, so the only way is to delete permanently.” →
+  `Ezen a köteten nincs Kuka, ezért csak a végleges törlés marad.`** · a `kötet` a szótár szava; az `ezen a köteten`
+  helyhatározós alak a szállított `errors.volume.storageFull` mintája („Nincs több szabad hely ezen a köteten.”), a
+  `végleges törlés` pedig szó szerint a parancs neve (`commands.fileDeletePermanently.label` = `Végleges törlés`), így a
+  felhasználó tudja, melyik parancsot keresse · high. A `csak … marad` viszi az angol „the only way is” jelentését
+  anélkül, hogy kudarcnak nevezné a helyzetet.
+- **„macOS wouldn't move this to the Trash.” → `A macOS nem engedte ezt a Kukába helyezni.`** · a „wouldn't” elutasítás,
+  nem kudarc, ezért NEM `nem sikerült` (a style.md tiltja a `hiba`/`sikertelen` címkét); a `nem engedte …` az AppKit
+  jogosultsági mondatainak igéjéhez („nincs jogosultsága a fájlt a kukába helyezni”) áll a legközelebb, de általánosabb
+  · high. Szándékosan rövid: a technikai ok külön, a „Technikai részletek” alatt jelenik meg. Az `A macOS` névelője a
+  kiejtés szerinti („makOS”), ahogy a katalógus máshol is (`errors.mutation.sipProtected`).
+- Ennél a két kulcsnál sem kell `sameAsSourceJustification`: mindkét érték eltér az angoltól.

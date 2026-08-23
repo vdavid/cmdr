@@ -1378,3 +1378,20 @@ inte gick igenom. Familjen är RAW, inte ICU, så `{path}` står som en bokstavl
   Cross-file consistency reconciliation) · `high`. `{path}` är okontrollerad text, så meningarna slutar på den där det
   går (`Det finns inte längre något på ”{path}”.`).
 - **Inga `sameAsSourceJustification`** · alla 31 värden skiljer sig från engelskan.
+
+## Papperskorgen i namnbytesspärrarna (`errors.mutation.trashNotSupported`/`.trashRefused`, 2026-08-23)
+
+Två nycklar till i `errors.mutation.*`-familjen (RAW, ingen ICU), samma enradsyta under namnfältet.
+
+- **"has no Trash" → obestämd form `har ingen papperskorg`** · glossarets arkivpost säger redan "Det finns ingen
+  papperskorg i ett arkiv." för samma sorts påstående, och `style.md` sätter `papperskorgen` som termen · `high`.
+  Bestämd form bär namnet på funktionen, obestämd bär "det finns ingen sådan här".
+- **"the only way is to delete permanently" → `så det går bara att radera permanent`** · `radera` är den satta termen
+  för permanent radering (`style.md`) och katalogens `errors.write.trashNotSupported.suggestion` säger redan "radera
+  permanent" · `high`.
+- **"macOS wouldn't move this to the Trash." → `macOS nekade flytten till papperskorgen.`** · macOS Finder `sv` har
+  exakt mönstret "namngiven part nekar" (`”^0” nekade din begäran.`, verifierat i pilen 2026-08-23), och
+  `flytten till papperskorgen` är katalogens egen vändning (`errors.write.cancelled.message.trash`) · `high`. Engelskan
+  är avsiktligt kort eftersom den tekniska orsaken visas separat, så svenskan lägger inte till något skäl. ❌ Inte det
+  opersonliga `Det gick inte att flytta till papperskorgen` som `errors.write.*`-rubrikerna använder: här namnger
+  engelskan `macOS` som den som sa nej.

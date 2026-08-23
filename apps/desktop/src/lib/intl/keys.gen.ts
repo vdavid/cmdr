@@ -783,6 +783,8 @@ export type MessageKey =
   | 'errors.mutation.renameOutOfArchive'
   | 'errors.mutation.sipProtected'
   | 'errors.mutation.timedOut'
+  | 'errors.mutation.trashNotSupported'
+  | 'errors.mutation.trashRefused'
   | 'errors.mutation.unexpected'
   | 'errors.mutation.volumeGone'
   | 'errors.provider.appBased.needsAction'

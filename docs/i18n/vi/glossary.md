@@ -1401,3 +1401,24 @@ Ghi chú khác:
   việc của một đợt di trú toàn catalog, không sửa lẻ ở đây.
 - `errors.mutation.notFound` và `errors.volume.notFound` có bản tiếng Anh giống hệt nhau nên dùng chung một bản dịch.
 - Không cần `sameAsSourceJustification`: cả 31 giá trị đều khác bản tiếng Anh.
+
+## Lỗi khi đổi tên / tạo mới, đợt 2: hai khóa `errors.mutation.trash*` (2026-08-23)
+
+Hai khóa thêm sau đợt 31 khóa ở trên, cùng bề mặt (một dòng dưới ô nhập tên hoặc trong thông báo nhỏ), cùng họ RAW, cùng
+luật giọng (không `lỗi`/`thất bại`). Dùng lại từ đã chốt: ổ đĩa (volume), mục (item), `macOS` nguyên văn.
+
+- **Trash (tên vị trí, viết hoa trong bản tiếng Anh) → `Thùng rác`** · macOS Finder Tier 1 ("Trash" → "Thùng rác",
+  "Moves items to the Trash" → "Di chuyển các mục vào Thùng rác"), AppKit `Common` ("Trash" → "Thùng rác"), kiểm chứng
+  2026-08-23. Theo đúng luật viết hoa đã ghi ở đợt 2026-07-23: viết hoa `Thùng rác` khi câu gọi tên chính vị trí đó (như
+  hai khóa này), để thường `thùng rác` khi nó là một phần của hành động (`Chuyển vào thùng rác`). Giới từ là `vào`,
+  không phải `sang`/`tới` · high
+- **"the only way is to delete permanently" → `cách duy nhất là xóa vĩnh viễn`** · `xóa vĩnh viễn` là từ đã chốt cho
+  permanently delete (macOS AppKit `Document`: "permanently delete" → "xóa vĩnh viễn"), catalog cũng đã ship đúng cụm
+  này ở `errors.write.trashNotSupported.suggestion`. Cả câu:
+  `Ổ đĩa này không có Thùng rác, nên cách duy nhất là xóa vĩnh viễn.` ❌ Đừng dùng `không hỗ trợ` ở đây: bản tiếng Anh
+  nói ổ đĩa KHÔNG CÓ Thùng rác, khác với `errors.volume.notSupported` · high
+- **"macOS wouldn't move this" (hệ điều hành từ chối) → `macOS đã từ chối chuyển mục này`** · `từ chối` là từ Apple dùng
+  cho việc khước từ (macOS Finder ""^0" đã từ chối yêu cầu của bạn.", "Yêu cầu bị từ chối"; AirDrop "Decline" → "Từ
+  chối"), và catalog đã chốt `Từ chối` cho deny/reject ở đợt phê duyệt theo dòng. `mục này` = "this item" giống
+  `errors.mutation.fileLocked` ("Mục này đang bị khóa."). Chuỗi cố ý ngắn vì lý do kỹ thuật hiện riêng dưới "Chi tiết kỹ
+  thuật", nên đừng thêm gợi ý khắc phục · high

@@ -1375,3 +1375,36 @@ mismo con las mismas palabras.
   completar" con el volumen como sujeto explícito, que es lo que hace el inglés · high
 - Ningún valor lleva apóstrofo, así que no hay nada que doblar (y en esta familia RAW tampoco se debe).
 - No hace falta `sameAsSourceJustification`: los 31 valores difieren del inglés.
+
+### Segunda tanda: las dos claves de papelera (`errors.mutation.trashNotSupported`/`trashRefused`, 2026-08-23)
+
+Mismo aviso de una línea, misma familia RAW. Las dos hablan de la papelera de macOS, así que la regla del bloque sigue
+siendo citar a los hermanos largos del catálogo.
+
+- **Trash (la papelera de macOS) → `papelera`, en minúsculas dentro de la frase** · macOS AppKit escribe "could not be
+  moved to the trash" → "no han podido trasladarse a la papelera" y Finder PE60.2 "No se puede trasladar “^0” a la
+  papelera porque tiene una ruta demasiado larga."; todo el catálogo (`errors.write.*.trash`,
+  `fileOperations.delete.trashSwitch`) ya dice `papelera` en minúscula · high (ya asentado, se reafirma)
+- **El verbo sigue siendo `mover`, no `trasladar`** · Finder dice "Trasladar a la papelera", pero el catálogo tiene
+  asentado `move → mover` en toda la familia ("Mover a la papelera", "No se pudo mover a la papelera"), y las dos frases
+  se leen juntas · high (consistencia)
+- **"has no Trash" → `no tiene papelera`** · el inglés varía a propósito entre el diálogo largo ("doesn't support trash"
+  → `Este volumen no admite papelera.`, `fileOperations.delete.noTrashWarningStrong`) y este aviso corto; el giro
+  `no hay papelera` ya está en el catálogo (`fileOperations.delete.archiveWarningStrong`, "Dentro de un archivo
+  comprimido no hay papelera."), así que `no tiene papelera` es el mismo idioma del catálogo y además es más directo que
+  el técnico `no admite` · high
+- **"the only way is to delete permanently" → `solo se puede eliminar permanentemente`** · el impersonal con `se` evita
+  el infinitivo sin objeto (`eliminar permanentemente` a secas suena cojo en español) y también el clítico
+  `eliminarlo`/`eliminarla`, que generaría concordancia con un ítem cuyo género y número no conocemos. `permanentemente`
+  repite literalmente la etiqueta del comando (`commands.fileDeletePermanently.label` = "Eliminar permanentemente"), que
+  es justo lo que la persona tiene que usar · high. Valor: "Este volumen no tiene papelera, así que solo se puede
+  eliminar permanentemente."
+- **"macOS wouldn't move this to the Trash." → `macOS no permitió mover esto a la papelera.`** · el inglés
+  antropomorfiza el sistema ("wouldn't"), y en español el giro tranquilo y natural para eso es `no permitió`, calcado de
+  macOS AppKit ("The permission settings … don't allow it to be modified." → "Los ajustes de permisos … no permiten
+  modificarlo.") · high. ❌ No `rechazó mover`: `rechazar` pide objeto nominal (Finder: "“^0” ha rechazado tu
+  solicitud."), y `no quiso` es demasiado coloquial. `esto` mantiene la frase sin género, igual que
+  `errors.volume.cancelled` ("Cmdr detuvo esto…"); la clave es corta a propósito porque la razón técnica sale aparte en
+  `Detalles técnicos`
+- Ninguno de los dos valores lleva apóstrofo ni marcador, y los dos difieren del inglés, así que no hace falta
+  `sameAsSourceJustification`.

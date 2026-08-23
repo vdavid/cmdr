@@ -37,11 +37,13 @@ Umbrella-level files:
 - `RollbackConfirmDialog.svelte`: the question every Rollback goes through (§ below).
 - `mutation-error.ts` + `mutation-error-messages.ts`: the rename / New Folder / New File refusal path (§ below).
 
-## Mutation refusals (rename, New Folder, New File)
+## Mutation refusals (rename, New Folder, New File, single trash)
 
 The third error path beside listing and transfer (`docs/guides/error-handling.md` is the map). Unlike those two it
-carries no event: `rename_file` / `create_directory` / `create_file` / `check_rename_permission` RETURN a typed
-`MutationError`, and one plain-text line goes inline under the name field or into a toast.
+carries no event: `rename_file` / `create_directory` / `create_file` / `check_rename_permission` / `move_to_trash`
+RETURN a typed `MutationError`, and one plain-text line goes inline under the name field or into a toast. (The BATCH
+trash is a managed operation, so it keeps reporting through `WriteOperationError`; `MutationError`'s `Display` is the
+technical detail beside it there.)
 
 - **`mutation-error.ts` exists because of one flattening bug.** `throwIpcError` turns a value with no `.message` into
   `new Error(JSON.stringify(...))`, which would put the wire JSON in front of the user. `throwMutationError` throws a

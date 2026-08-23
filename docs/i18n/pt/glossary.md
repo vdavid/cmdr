@@ -1237,3 +1237,26 @@ qualquer script), então nenhuma frase depende do gênero, do número ou da inic
   `settings.archives.compressionLevel.description` já foi corrigido para "demoram mais para comprimir"); e o bolsão de
   **"drive de rede / drive externo / drive interno"** em `errors.json`, já sinalizado na seção do interruptor mestre de
   indexação, continua aberto.
+
+### Recusas de mover para o Lixo: as duas mensagens de uma linha (`errors.mutation.trash*`, 2026-08-23)
+
+Mesma superfície das 31 recusas acima (linha única sob o campo de nome ou num aviso rápido), família RAW, sem ICU.
+
+- **"This volume has no Trash." → `Este volume não tem Lixo`** · **Lixo** é o valor Tier-1 do Finder pt-BR e já está
+  fixado neste glossário; o irmão publicado `errors.write.trashNotSupported.message` diz "Este volume não oferece
+  suporte ao Lixo", mas o inglês novo trocou "doesn't support" pelo **has no**, mais simples, e o **não tem** acompanha
+  esse registro · high. **"the only way is to delete permanently" → `então a única opção é apagar permanentemente`** ·
+  **apagar permanentemente** é a linha do glossário (verbo do Finder), idêntico ao fecho já publicado em
+  `errors.write.trashNotSupported.suggestion` ("para apagar permanentemente") · confirmed. O **então** liga as duas
+  orações como no resto da família `errors.mutation.*`.
+- **"macOS wouldn't move this to the Trash." → `O macOS se recusou a mover este item para o Lixo.`** · **recusar** é o
+  verbo do pile para uma recusa do sistema/servidor (Nautilus pt-BR "O servidor recusou a conexão", Double Commander
+  "Download recusado"), e é o sentido exato do "wouldn't" (o sistema negou, não é uma falha do Cmdr) · high. Próclise
+  **se recusou** (pt-BR), não a ênclise "recusou-se". **mover … para o Lixo** é o verbo do Finder pt-BR ("Mover para o
+  Lixo", "não pode ser movido para o Lixo"). O "this" vira **este item**, o substantivo que o Finder usa nessas frases
+  ("O item '^1' não pode ser movido para o Lixo porque…"), em vez do pronome solto. ❌ Não "não permitiu": isso soa a
+  falta de permissão, que é outra família de mensagens. A frase fica curta de propósito, porque o motivo técnico aparece
+  em "Detalhes técnicos".
+- Varredura pt-PT (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o nome),
+  mais U+2019, apóstrofo duplo e espaço duplo: zero ocorrências nos dois valores. Nenhum `sameAsSourceJustification`
+  necessário.

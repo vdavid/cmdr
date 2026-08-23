@@ -1596,5 +1596,13 @@
   "errors.volume.passwordRejected": "Esa contraseña no funcionó.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
+  },
+  "errors.mutation.trashNotSupported": "Este volumen no tiene papelera, así que solo se puede eliminar permanentemente.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS no permitió mover esto a la papelera.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }
