@@ -135,8 +135,8 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   per-crate `-p` lane question for good: the app depends on every crate, so `--workspace` is already minimal, and a `-p`
   lane compiles `cmdr-fs` without the `testing` feature the workspace build unifies in. Read it before proposing
   per-package cargo lanes or dependency-aware invalidation. The win it pointed at next (`scripts/check/**` in
-  `GlobalInputs`, 205 commits that re-ran everything for nothing) has since landed:
-  `scripts/check/DETAILS.md` § "The runner's own source".
+  `GlobalInputs`, 205 commits that re-ran everything for nothing) has since landed: `scripts/check/DETAILS.md` § "The
+  runner's own source".
 - `frontend-lane-cache-partitioning.md` — what the 21 checks on `svelteInputs` cost (59.6 h of a 24-day window), what
   excluding the colocated agent docs bought (41.3% → 35.0% of commits), the isolated Vitest timings behind it, and the
   three independent reasons a per-area split of `svelte-tests` was rejected.

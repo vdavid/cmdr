@@ -1,13 +1,13 @@
 # Check runner
 
-Go CLI running the monorepo's ~50 checks in parallel with dependency ordering, via `pnpm check` at the repo root.
-Check authoring: `checks/CLAUDE.md`.
+Go CLI running the monorepo's ~50 checks in parallel with dependency ordering, via `pnpm check` at the repo root. Check
+authoring: `checks/CLAUDE.md`.
 
 ## Module map
 
 - `main.go` (entry point), `runner.go` (parallel executor: weighted admission, exclusive resources, dependency graph,
-  fail-fast, TTY status line), `plan.go` + `checks/fingerprint.go` + `checks/cache.go` +
-  `checks/runner-sources.go` (the input-fingerprint cache).
+  fail-fast, TTY status line), `plan.go` + `checks/fingerprint.go` + `checks/cache.go` + `checks/runner-sources.go` (the
+  input-fingerprint cache).
 - `checks/inputs.go` (shared `Inputs` blocks), `checks/cargo-workspace.go` (the geometry every Rust check scopes from),
   `stack_orchestrator.go` + `stacklease/` (each Docker fixture stack behind a machine-wide lease).
 - `freestyle.go` (remote-VM runs), `graph.go` / `docs_graph_render.go` (the `--graph` / `--docs-graph` renderers),

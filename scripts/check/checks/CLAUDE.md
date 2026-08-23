@@ -9,8 +9,8 @@ One Go file per check, registered in `registry.go`'s `AllChecks`. Runner: `../CL
   (the `NeedsContainers` vocabulary), `allowlist.go` / `directives.go` (shrink-wrap and opt-out tracking).
 - One `{app}-{name}.go` per check. `test-log.go` and its parsers hold the per-test record vocabulary; `e2e-build.go`
   produces the Playwright lane's binary.
-- Warn-only scanners keep a JSON allowlist beside them (`file-length.go`, `claude-md-length.go`,
-  `invariant-density.go`, `e2e-durations.go`, `desktop-rust-module-cycles.go`, `lock-poison.go`, plus the pairs sharing
+- Warn-only scanners keep a JSON allowlist beside them (`file-length.go`, `claude-md-length.go`, `invariant-density.go`,
+  `e2e-durations.go`, `desktop-rust-module-cycles.go`, `lock-poison.go`, plus the pairs sharing
   `bundle-size-baseline.go` / `jscpd.go`). Doc-graph checks: `docs-reachable.go` (+ `docs_graph.go`),
   `docs-dead-links.go`, `docs-link-text.go`.
 
@@ -19,9 +19,9 @@ One Go file per check, registered in `registry.go`'s `AllChecks`. Runner: `../CL
 - **Every check MUST declare `Inputs`** (the path globs it reads), or `TestEveryCheckDeclaresInputs` fails. Reuse a set
   from `inputs.go`; too-wide costs cache speed, too-narrow costs correctness. Code lanes inherit `agentDocExclusions`,
   so a check READING a `CLAUDE.md` / `DETAILS.md` needs `wholeRepoInputs`.
-- **Your check's own source is fingerprinted for you** (`runner-sources.go` follows `Run` through the package). It
-  can't see a DATA file (name a new allowlist JSON via `runnerDataInputs`) or an `init()` that registers rather than
-  assigns (which drops every check back to the whole tree). `../DETAILS.md` § "The runner's own source".
+- **Your check's own source is fingerprinted for you** (`runner-sources.go` follows `Run` through the package). It can't
+  see a DATA file (name a new allowlist JSON via `runnerDataInputs`) or an `init()` that registers rather than assigns
+  (which drops every check back to the whole tree). `../DETAILS.md` § "The runner's own source".
 - **Wire every check into CI** (a step in `ci.yml` / `slow-checks.yml`, or a `NotInCI` reason); `ci-coverage` enforces
   both ways.
 - **Length-based truncation is forbidden.** If 200 tests fail, all 200 panic bodies pass through. Filter by structure
@@ -36,8 +36,8 @@ One Go file per check, registered in `registry.go`'s `AllChecks`. Runner: `../CL
   take roots from `ScannerRoots` / `ScannerMemberKinds` and inputs from `rustScanInputs(<same kinds>)` or
   `rustAppTreeInputs`. ❌ No `tools/**`. A lane asking something else makes the others rebuild `cmdr` (20-100 s a flip);
   `workspace-member-coverage` fails on an unclassified check or unreached member.
-- **A new cargo check that COMPILES declares `Exclusive: ResourceCargoBuildDir`** (`common.go`), or it blocks on
-  cargo's build-directory lock while holding CPU weight. Metadata-only commands skip that lock.
+- **A new cargo check that COMPILES declares `Exclusive: ResourceCargoBuildDir`** (`common.go`), or it blocks on cargo's
+  build-directory lock while holding CPU weight. Metadata-only commands skip that lock.
 - **Wire allowlist staleness from day one**: dead entries auto-remove or fail, orphaned opt-out comments fail. Reuse
   `directiveTracker` / `writeJSONAllowlist`, put the file in the check's `Inputs`, and get David's OK before adding or
   raising an entry (`.claude/rules/file-length-allowlist.md`).

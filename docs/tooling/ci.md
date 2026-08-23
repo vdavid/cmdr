@@ -61,11 +61,11 @@ server).
    can't go stale.
 3. Every concrete path in `ci.yml`'s filter block exists (glob entries are checked via their static directory prefix).
 4. Every static path prefix in a registry check's `Inputs` (and in `GlobalInputs`, which now names the runner core file
-   by file) exists. A dead `Inputs` glob would
-   silently make the input-fingerprint cache skip a check whose real (renamed) sources changed. Same robust
-   file-existence shape as rule 3; it deliberately does NOT reconcile `Inputs` against the filter sets (the filter ↔ app
-   ↔ check mapping isn't 1:1, so a strict reconciliation would be flaky). The cache's real correctness backstop is that
-   `--ci` always runs fresh. See the input-fingerprint cache section in `scripts/check/CLAUDE.md`.
+   by file) exists. A dead `Inputs` glob would silently make the input-fingerprint cache skip a check whose real
+   (renamed) sources changed. Same robust file-existence shape as rule 3; it deliberately does NOT reconcile `Inputs`
+   against the filter sets (the filter ↔ app ↔ check mapping isn't 1:1, so a strict reconciliation would be flaky). The
+   cache's real correctness backstop is that `--ci` always runs fresh. See the input-fingerprint cache section in
+   `scripts/check/CLAUDE.md`.
 
 Practical consequence: **when you add a check, CI fails until you either add a workflow step for it or set `NotInCI`
 with a reason.** When you rename one, CI fails until every workflow catches up. That's the point.

@@ -459,8 +459,8 @@ package and package-level analysis buys nothing. Two rules, no type information:
 - A declaration reaches every package-level NAME it mentions as an identifier. Selector names (`x.Foo`) are deliberately
   not resolved by name: half the package has a `String` method, and matching on the method name alone made every check
   reach every file.
-- Reaching a TYPE reaches every method declared on it, wherever those live. That stands in for the type information:
-  a value can only exist if something in the closure names its type, and its behavior then travels with it. Not
+- Reaching a TYPE reaches every method declared on it, wherever those live. That stands in for the type information: a
+  value can only exist if something in the closure names its type, and its behavior then travels with it. Not
   theoretical: `invariant-density` reaches `docs-dead-links.go` ONLY through a method, and drops it the moment that rule
   is removed.
 
@@ -468,10 +468,10 @@ An `init()` is attributed to the package-level variables it assigns, so a check 
 file. An `init()` that does anything else (registering into somebody else's table, the shape file-level analysis cannot
 see) makes the analysis give up rather than answer.
 
-❗ **It fails closed.** A parse error, an unreadable `AllChecks`, a `Run` it can't resolve, or an unattributable `init()`
-drops EVERY check back to `scripts/check/**` — the pre-attribution behavior. A too-wide input set costs cache speed; a
-too-narrow one reports a green describing code it never ran, which is the failure mode that has shipped here twice
-(`CHANGELOG.md` missing from the shared Rust set, then from `desktopAppInputs()`). A synthetic definition with no
+❗ **It fails closed.** A parse error, an unreadable `AllChecks`, a `Run` it can't resolve, or an unattributable
+`init()` drops EVERY check back to `scripts/check/**` — the pre-attribution behavior. A too-wide input set costs cache
+speed; a too-narrow one reports a green describing code it never ran, which is the failure mode that has shipped here
+twice (`CHANGELOG.md` missing from the shared Rust set, then from `desktopAppInputs()`). A synthetic definition with no
 registered ID (the E2E build's) gets the same wide answer.
 
 The allowlists and baselines beside the checks are DATA, read through a path built at runtime, so no source analysis
