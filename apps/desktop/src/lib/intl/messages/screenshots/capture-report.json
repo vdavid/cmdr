@@ -7009,7 +7009,7 @@
       "commands.sortByName.label",
       "commands.sortBySize.label",
       "crashReporter.dialog.alwaysSend",
-      "crashReporter.dialog.body",
+      "crashReporter.dialog.body.ended",
       "crashReporter.dialog.dismiss",
       "crashReporter.dialog.privacyNote",
       "crashReporter.dialog.reportIdHelp",

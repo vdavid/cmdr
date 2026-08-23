@@ -123,8 +123,8 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     prefix: 'crashReporter.',
     screenshot: 'error-report.png',
     note:
-      'The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report ' +
-      'dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons.',
+      'The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the ' +
+      'error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons.',
   },
   {
     // Every query surface (search, select, filter) is the same `QueryDialog`: a

@@ -552,8 +552,9 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     status: 'ready',
     note: 'Send uploads nothing in a dev build (the Rust command skips the POST), but it still writes the sticky “always send” / attach-email settings and deletes any real pending crash file. The attach-email row only appears when this machine has a beta contact email on file.',
     states: [
-      { id: 'panic', label: 'Panic, with report id' },
-      { id: 'signal-no-report-id', label: 'Signal crash, no report id' },
+      { id: 'panic', label: 'Panic the app died of' },
+      { id: 'survived-panic', label: 'Panic the app kept running through' },
+      { id: 'signal-no-report-id', label: 'Older report, no fate and no report id' },
     ],
   },
 

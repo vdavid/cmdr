@@ -9,6 +9,7 @@
     import { setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
+    import { crashDialogBodyKey } from './crash-copy'
 
     const log = getAppLogger('crashReportDialog')
 
@@ -27,6 +28,8 @@
     const attachEmail = createAttachEmail()
 
     const reportJson = $derived(JSON.stringify(report, null, 2))
+    // Not every crash report describes a crash the app died of; `./crash-copy.ts` says why.
+    const bodyKey = $derived(crashDialogBodyKey(report))
 
     async function handleCopy() {
         await navigator.clipboard.writeText(reportJson)
@@ -82,7 +85,7 @@
 
     <div>
         <p id="crash-report-body" class="description">
-            {tString('crashReporter.dialog.body')}
+            {tString(bodyKey)}
         </p>
         <p class="description privacy-note">
             {tString('crashReporter.dialog.privacyNote')}

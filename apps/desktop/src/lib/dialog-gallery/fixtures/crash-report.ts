@@ -1,10 +1,10 @@
 /**
  * Fixtures for `crash-report` (`$lib/crash-reporter/CrashReportDialog.svelte`).
  *
- * The dialog's only branching content is the report id line and the expandable
- * JSON, so the two states are "a modern report with a short id" and "an older
- * report without one". The JSON is deliberately long: the details block has to
- * stay readable and scrollable inside a 440px dialog.
+ * The dialog branches on the report id line, the expandable JSON, and `appFate`,
+ * which picks the opening sentence ($lib/crash-reporter/crash-copy.ts) — hence one
+ * state per fate the frontend can see. The JSON is deliberately long: the details
+ * block has to stay readable and scrollable inside a 440px dialog.
  *
  * Raw copy on purpose: this module is dev-only and sits outside the i18n-enforced
  * areas, so fixture strings never reach the message catalog.
@@ -51,13 +51,37 @@ export const crashReportFixtures: Record<string, CrashReport | undefined> = {
     uptimeSecs: 4_812,
     activeSettings: ACTIVE_SETTINGS,
     possibleCrashLoop: false,
+    appFate: 'ended',
     buildMode: 'release',
     shortId: 'CRASH-7QK2M',
     diagId: 'diag_5f1c9a2e-8d34-4b17-9c60-2ab7e05d4813',
   },
+  // The same panic, on a background thread the app walked away from: the survival
+  // watchdog confirmed it was still up, so the dialog must not say it quit.
+  'survived-panic': {
+    version: 1,
+    timestamp: '2026-07-21T22:14:07Z',
+    signal: 'panic',
+    panicMessage:
+      'called `Option::unwrap()` on a `None` value: no cached listing for smb://naspolya.local/media/photos/2026',
+    backtraceFrames: BACKTRACE_FRAMES,
+    threadName: 'tokio-runtime-worker',
+    threadCount: 24,
+    appVersion: '0.9.4',
+    osVersion: 'macOS 26.1 (25B78)',
+    arch: 'aarch64',
+    uptimeSecs: 4_812,
+    activeSettings: ACTIVE_SETTINGS,
+    possibleCrashLoop: false,
+    appFate: 'keptRunning',
+    buildMode: 'release',
+    shortId: 'CRASH-9WD4T',
+    diagId: 'diag_5f1c9a2e-8d34-4b17-9c60-2ab7e05d4813',
+  },
   // A report written by an older app version: no `shortId`, so the report-id line
-  // is absent. Also a signal crash rather than a panic, and flagged as a possible
-  // crash loop.
+  // is absent, and no `appFate`, so the dialog opens with the sentence that stays
+  // true either way. Also a signal crash rather than a panic, and flagged as a
+  // possible crash loop.
   'signal-no-report-id': {
     version: 1,
     timestamp: '2026-07-22T06:03:41Z',
