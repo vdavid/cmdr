@@ -16,10 +16,10 @@
 //! ## The event seam (what the IPC layer subscribes to)
 //!
 //! Progress is emitted as typed [`AgentChatEvent`]s through a plain
-//! `UnboundedSender` ([`ChatEventSink`]). The Tauri command is a thin adapter: it makes
-//! a channel, spawns a task forwarding each [`AgentChatEvent`] onto a
-//! `tauri::ipc::Channel` (mapping to the wire `AskCmdrStreamEvent`), and passes the
-//! sender here. Nothing in this module knows about Tauri IPC.
+//! `UnboundedSender` ([`ChatEventSink`]). Each caller — the rail's command and a wake —
+//! makes the channel, forwards what comes out onto the conversation's stream
+//! (`agent::chat::stream`), and passes the sender here. Nothing in this module knows
+//! about Tauri IPC.
 //!
 //! ## Crash / mid-stream persistence (spec §2.3)
 //!

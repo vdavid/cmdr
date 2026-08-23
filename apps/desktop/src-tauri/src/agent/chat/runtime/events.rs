@@ -2,9 +2,9 @@
 //! without an answer.
 //!
 //! Progress is emitted as typed [`AgentChatEvent`]s through a plain `UnboundedSender`
-//! ([`ChatEventSink`]). The Tauri command is a thin adapter: it makes a channel, spawns a
-//! task forwarding each event onto a `tauri::ipc::Channel` (mapping to the wire
-//! `AskCmdrStreamEvent`), and passes the sender in. Nothing here knows about Tauri IPC.
+//! ([`ChatEventSink`]). Each caller makes the channel, forwards what comes out onto the
+//! conversation's stream (`agent::chat::stream`), and passes the sender in. Nothing here
+//! knows about Tauri IPC.
 
 use tokio::sync::mpsc::UnboundedSender;
 
