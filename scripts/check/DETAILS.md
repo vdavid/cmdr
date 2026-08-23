@@ -478,10 +478,16 @@ The analysis runs once per `pnpm check`, inside `CollectRepoFingerprintData`: ~3
 files), against a planning budget already spending two git forks (measured 2026-08-23, `LoadRunnerSources` timed on this
 worktree).
 
-The allowlists and baselines beside the checks are DATA, read through a path built at runtime, so no source analysis
-attributes them: the eight checks that own one name it in `Inputs` through `runnerDataInputs`, and
-`TestAllowlistFilesAreFingerprintedByTheirCheck` fails both on an allowlist its check doesn't fingerprint and on one
-nothing watches at all.
+Two things live outside what any source analysis here can reach, so the check that uses one names it in `Inputs`:
+
+- The allowlists and baselines beside the checks are DATA, read through a path built at runtime. The eight checks that
+  own one name it through `runnerDataInputs`, and `TestAllowlistFilesAreFingerprintedByTheirCheck` fails both on an
+  allowlist its check doesn't fingerprint and on one nothing watches at all.
+- Three checks shell out to a helper program BESIDE the runner (`scripts/check-css-unused`, `check-a11y-contrast`,
+  `check-btn-restyle`), whose rules are in a different Go module. `siblingToolInputs` names those dirs, and
+  `TestSiblingToolDirsAreFingerprintedByTheirCheck` is what found all three cache-skipping their own rule engines: a
+  `scripts/check/**` global never matched `scripts/check-css-unused/**`, so editing a rule left the lane it governs on a
+  cached pass.
 
 **Measured, 2026-08-23**, on this worktree with a warm cache (110 default lanes, 80 in `--fast`):
 

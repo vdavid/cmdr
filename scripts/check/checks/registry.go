@@ -742,7 +742,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-stylelint"},
 		IsFast:      true,
-		Inputs:      svelteInputs,
+		Inputs:      inputs(svelteInputs, siblingToolInputs("check-css-unused")),
 		Run:         RunCSSUnused,
 	},
 	{
@@ -753,7 +753,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-stylelint"},
 		IsFast:      true,
-		Inputs:      svelteInputs,
+		Inputs:      inputs(svelteInputs, siblingToolInputs("check-a11y-contrast")),
 		Run:         RunA11yContrast,
 	},
 	{
@@ -764,7 +764,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-stylelint"},
 		IsFast:      true,
-		Inputs:      svelteInputs,
+		Inputs:      inputs(svelteInputs, siblingToolInputs("check-btn-restyle")),
 		Run:         RunBtnRestyle,
 	},
 	{

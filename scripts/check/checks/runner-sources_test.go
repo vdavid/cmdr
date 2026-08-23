@@ -334,6 +334,44 @@ func allowlistFilesOnDisk(t *testing.T, checksDir string) []string {
 	return out
 }
 
+// siblingToolRE catches a check shelling out to a helper program that lives
+// beside the runner (`filepath.Join(ctx.RootDir, "scripts", "check-css-unused")`).
+var siblingToolRE = regexp.MustCompile(`"scripts",\s*"([A-Za-z0-9._-]+)"`)
+
+// TestSiblingToolDirsAreFingerprintedByTheirCheck covers the third thing no
+// source analysis inside this package can see: a check that runs a SEPARATE Go
+// program under `scripts/`. Its rules live outside the runner module entirely, so
+// editing them changes the check's verdict while its fingerprint sits still.
+func TestSiblingToolDirsAreFingerprintedByTheirCheck(t *testing.T) {
+	root := repoRootForTest(t)
+	data, err := CollectRepoFingerprintData(root)
+	if err != nil {
+		t.Fatalf("CollectRepoFingerprintData: %v", err)
+	}
+
+	for i := range AllChecks {
+		def := &AllChecks[i]
+		own := runFileOf(t, def)
+		source, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(own)))
+		if err != nil {
+			t.Fatalf("reading %s: %v", own, err)
+		}
+		for _, match := range siblingToolRE.FindAllStringSubmatch(string(source), -1) {
+			dir := "scripts/" + match[1]
+			if dir == "scripts/check" {
+				continue // the runner itself, covered by `GlobalInputs`
+			}
+			if info, err := os.Stat(filepath.Join(root, filepath.FromSlash(dir))); err != nil || !info.IsDir() {
+				continue // not a directory this check runs out of
+			}
+			if !matchesAny(dir+"/main.go", data.PatternsFor(def)) {
+				t.Errorf("check %q runs the program in %s but doesn't fingerprint it: editing its rules would cache-skip the check that enforces them. Add `siblingToolInputs(%q)` to its `Inputs`.",
+					def.ID, dir, match[1])
+			}
+		}
+	}
+}
+
 // TestRunnerSourceAnalysisFailsClosed is the safety net under every narrow answer
 // above. The analysis runs on the working tree at plan time, so it meets
 // half-written files and unfamiliar shapes; when it does, every check has to fall

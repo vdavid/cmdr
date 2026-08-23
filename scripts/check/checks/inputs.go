@@ -288,6 +288,21 @@ func runnerDataInputs(names ...string) []string {
 	return out
 }
 
+// siblingToolInputs names a helper program that lives BESIDE the runner
+// (`scripts/check-css-unused`, …) and that a check shells out to. Its rules are
+// outside the runner module, so neither `GlobalInputs` nor the per-check runner
+// sources reach it, and the check that runs it has to say so.
+// `TestSiblingToolDirsAreFingerprintedByTheirCheck` fails on a check that runs one
+// without fingerprinting it, which is how these three were found cache-skipping
+// their own rule engines.
+func siblingToolInputs(dirs ...string) []string {
+	out := make([]string, 0, len(dirs))
+	for _, dir := range dirs {
+		out = append(out, "scripts/"+dir+"/**")
+	}
+	return out
+}
+
 // wholeRepoInputs is for checks that walk the entire tree (file-length,
 // claude-md-reminder, claude-md-length). `**` matches every path, so these
 // re-run on any change.
