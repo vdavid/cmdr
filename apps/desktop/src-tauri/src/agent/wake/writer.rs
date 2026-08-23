@@ -137,7 +137,9 @@ impl WakeLoop {
     /// cache, and the live loop may touch neither.
     fn admit(&mut self, activity: FolderActivity) {
         let now = now_secs();
-        let importance = self.importance.lookup(&activity.volume_id, &activity.folder, Instant::now());
+        let importance = self
+            .importance
+            .lookup(&activity.volume_id, &activity.folder, Instant::now());
         let bundle = activity.into_bundle();
         let folder = bundle.folder.clone();
         let window_start = bundle.window_start;

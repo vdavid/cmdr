@@ -427,7 +427,9 @@ async fn the_llm_and_the_dispatcher_are_built_for_the_thread_the_wake_creates() 
     let outcome = run_wake(
         &|id| {
             seen.lock().expect("not poisoned").push(id);
-            Box::new(FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["Four files.".into()])]))
+            Box::new(FakeAgentLlm::script(vec![ScriptedTurn::Say(vec![
+                "Four files.".into(),
+            ])]))
         },
         &|id| {
             seen.lock().expect("not poisoned").push(id);

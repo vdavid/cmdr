@@ -59,7 +59,13 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
     // ⚠️ Captured exactly as the rail captures it. With no main window (a routine-launched app
     // on macOS) `PaneStateStore` is absent and the pane fields come back empty, which is the
     // honest answer rather than a reason to skip the capture.
-    let envelope = capture_envelope(&app, Vec::new(), Vec::new(), budget::files_per_batch(slot.prompt_budget)).await;
+    let envelope = capture_envelope(
+        &app,
+        Vec::new(),
+        Vec::new(),
+        budget::files_per_batch(slot.prompt_budget),
+    )
+    .await;
     let tools = crate::agent::tools::agent_tool_declarations();
     let params = RunWakeParams {
         now_secs: crate::agent::chat::runtime::now_secs(),

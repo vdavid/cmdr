@@ -68,7 +68,11 @@ impl ImportanceCache {
 /// degrades its signal set, and reading it with the full mask would redistribute the weights
 /// differently from the recompute that wrote them.
 fn read_importance(data_dir: &std::path::Path, volume_id: &str, folder: &str) -> FolderImportance {
-    let index = ImportanceIndex::open(data_dir, volume_id, crate::mcp::resources::importance::available_for(volume_id));
+    let index = ImportanceIndex::open(
+        data_dir,
+        volume_id,
+        crate::mcp::resources::importance::available_for(volume_id),
+    );
     match index.lookup(folder) {
         Ok(lookup) => from_weight_lookup(&lookup),
         Err(e) => {

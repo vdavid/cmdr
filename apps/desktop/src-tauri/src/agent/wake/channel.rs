@@ -255,7 +255,11 @@ mod tests {
 
         channel.send_rollup(activity("/Users/someone/Downloads", 1_781_000_000));
 
-        assert_eq!(channel.dropped_rollups.load(Ordering::Relaxed), 0, "nothing was dropped");
+        assert_eq!(
+            channel.dropped_rollups.load(Ordering::Relaxed),
+            0,
+            "nothing was dropped"
+        );
     }
 
     /// The newest change survives the crossing untouched — it is what a deadline is measured
