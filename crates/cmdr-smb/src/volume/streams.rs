@@ -115,6 +115,9 @@ impl SmbVolume {
         let volume_id = self.inner.volume_id.clone();
         let share_name = self.inner.share_name.clone();
         let smb_path_owned = smb_path.to_string();
+        // Computed here rather than in the task: `to_display_path` needs `&self`,
+        // which the spawned producer deliberately doesn't capture.
+        let display_path = self.to_display_path(smb_path);
         // The producer outlives this call and reports a mid-stream session loss,
         // so it carries its own clone of the host.
         let host = self.inner.host().clone();
@@ -133,7 +136,7 @@ impl SmbVolume {
                         "SmbVolume::download(share={}, path={}): {}",
                         share_name, smb_path_owned, e
                     );
-                    let _ = size_tx.send(Err(map_smb_error(e)));
+                    let _ = size_tx.send(Err(map_smb_error(e, &display_path)));
                     return;
                 }
             };
@@ -169,7 +172,7 @@ impl SmbVolume {
                                 "SmbVolume::download(share={}, path={}): chunk error: {}",
                                 share_name, smb_path_owned, e
                             );
-                            let _ = chunk_tx.send(Err(map_smb_error(e))).await;
+                            let _ = chunk_tx.send(Err(map_smb_error(e, &display_path))).await;
                             break;
                         }
                         None => break, // download complete
@@ -330,7 +333,7 @@ impl SmbVolume {
                             // data loss.
                             delete_partial().await;
                         }
-                        break 'write self.handle_smb_result("write_from_stream(compound)", write_result)?;
+                        break 'write self.handle_smb_result("write_from_stream(compound)", &smb_path, write_result)?;
                     }
                     // The source yielded MORE than one WRITE can carry (it
                     // reported a smaller size than it had). Feed the drained
@@ -342,10 +345,12 @@ impl SmbVolume {
                         size
                     );
                     let writer_result = tree.create_file_writer(conn, &smb_path).await;
-                    let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
+                    let mut writer = self.handle_smb_result("write_from_stream(open)", &smb_path, writer_result)?;
                     if !buffer.is_empty() {
                         let write_result = writer.write_chunk(&buffer).await;
-                        if let Err(ve) = self.handle_smb_result("write_from_stream(write_chunk)", write_result) {
+                        if let Err(ve) =
+                            self.handle_smb_result("write_from_stream(write_chunk)", &smb_path, write_result)
+                        {
                             // Writer still owned: abort (closes the leaked
                             // handle) then delete the partial, mirroring the
                             // cancel branch, then propagate the original error.
@@ -359,7 +364,7 @@ impl SmbVolume {
                     // `finish()` consumes the writer, so on failure the
                     // handle is already gone (best-effort delete only).
                     let finish_result = writer.finish().await;
-                    if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", finish_result) {
+                    if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", &smb_path, finish_result) {
                         delete_partial().await;
                         return Err(ve);
                     }
@@ -371,7 +376,7 @@ impl SmbVolume {
                 // no client mutex is held while WRITEs are in flight, so N
                 // concurrent large copies pipeline over one SMB session.
                 let writer_result = tree.create_file_writer(conn, &smb_path).await;
-                let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
+                let mut writer = self.handle_smb_result("write_from_stream(open)", &smb_path, writer_result)?;
 
                 let mut bytes_read = 0u64;
 
@@ -393,7 +398,7 @@ impl SmbVolume {
                     }
 
                     let write_result = writer.write_chunk(&chunk).await;
-                    if let Err(ve) = self.handle_smb_result("write_from_stream(write_chunk)", write_result) {
+                    if let Err(ve) = self.handle_smb_result("write_from_stream(write_chunk)", &smb_path, write_result) {
                         let _ = writer.abort().await;
                         delete_partial().await;
                         return Err(ve);
@@ -418,7 +423,7 @@ impl SmbVolume {
                 // `finish()` consumes the writer; on failure the handle is
                 // already gone, so we can only best-effort delete the partial.
                 let finish_result = writer.finish().await;
-                if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", finish_result) {
+                if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", &smb_path, finish_result) {
                     delete_partial().await;
                     return Err(ve);
                 }

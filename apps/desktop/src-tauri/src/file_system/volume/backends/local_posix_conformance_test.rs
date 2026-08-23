@@ -116,24 +116,10 @@ async fn export_honors_the_shared_handshake_contract() {
 /// The shared `NotFound`-payload assertion: the string the frontend renders as
 /// the missing file's name really is its path.
 ///
-/// ⚠️ **Ignored because LocalPosix does NOT keep this contract today, and the
-/// cell is here to say so rather than to pass.** It reports
-/// `NotFound("No such file or directory (os error 2)")`, and
-/// `transfer_error.rs::map_volume_error` forwards that into
-/// `SourceNotFound { path }` — so a local file that vanished under a
-/// local↔remote copy names the errno where the frontend renders a filename.
-/// Exactly the leak `cmdr-sftp` was fixed for.
-///
-/// The cause is shared, not local: `cmdr-fs/src/volume/types.rs`'s
-/// `impl From<std::io::Error> for VolumeError` fills all three path-carrying
-/// variants with `err.to_string()`, and a bare `std::io::Error` has no path in
-/// it to do better with. Honoring the contract means either applying the path at
-/// each of `local_posix.rs`'s ~23 `?` sites or retiring the blanket conversion
-/// workspace-wide — a call for David, not a side effect of the SFTP fix.
-///
-/// ❌ Don't relax the assertion to make this green; the assertion is right.
-/// Un-ignore it when the conversion carries a path.
-#[ignore = "known gap: LocalPosix reports NotFound(errno string), not the path — see the doc comment above"]
+/// LocalPosix earns it from `VolumeError::from_io_at`, applied at every site that
+/// touches the filesystem. There is deliberately no `From<std::io::Error>` to
+/// reach for, so a new `?` site can't quietly go back to putting the errno's
+/// sentence where the frontend renders a filename.
 #[tokio::test]
 async fn not_found_honors_the_shared_path_payload_contract() {
     let test_dir = TestDir::new("not_found_payload_conformance_test");

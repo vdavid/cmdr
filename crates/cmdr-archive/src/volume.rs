@@ -288,7 +288,9 @@ impl ArchiveVolume {
                     let index = cache
                         .index_for_local(&archive_path, format, password.as_deref().map(String::as_str))
                         .map_err(to_volume_error)?;
-                    let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(&archive_path)?);
+                    let source: Arc<dyn ArchiveByteSource> = Arc::new(
+                        LocalFileSource::open(&archive_path).map_err(|e| VolumeError::from_io_at(&e, &archive_path))?,
+                    );
                     Ok((index, source))
                 },
             )

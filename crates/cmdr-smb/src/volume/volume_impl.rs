@@ -382,7 +382,8 @@ impl Volume for SmbVolume {
                             );
                         }
                         read_result => {
-                            let data = self.handle_smb_result("open_read_stream_with_hint(compound)", read_result)?;
+                            let data =
+                                self.handle_smb_result("open_read_stream_with_hint(compound)", &smb_path, read_result)?;
                             if data.len() as u64 == size {
                                 return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
                             }
@@ -439,7 +440,11 @@ impl Volume for SmbVolume {
             // central-directory parse to ~1). Caching an open `FileReader` per path
             // is the future optimization; see the archive backend DETAILS.
             let (tree, conn) = self.clone_session().await?;
-            let reader = self.handle_smb_result("read_range(open)", tree.open_file_reader(conn, &smb_path).await)?;
+            let reader = self.handle_smb_result(
+                "read_range(open)",
+                &smb_path,
+                tree.open_file_reader(conn, &smb_path).await,
+            )?;
 
             let read_result = reader.read_at(offset, len as u64).await;
             // Close the handle regardless of the read outcome. Relying on `Drop`
@@ -447,8 +452,8 @@ impl Volume for SmbVolume {
             // close explicitly on both the success and error paths.
             let close_result = reader.close().await;
 
-            let data = self.handle_smb_result("read_range", read_result)?;
-            self.handle_smb_result("read_range(close)", close_result)?;
+            let data = self.handle_smb_result("read_range", &smb_path, read_result)?;
+            self.handle_smb_result("read_range(close)", &smb_path, close_result)?;
             Ok(data)
         })
     }

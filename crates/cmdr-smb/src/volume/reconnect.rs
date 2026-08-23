@@ -6,6 +6,7 @@ use super::mapping::map_smb_error;
 use super::session::{build_session, refresh_credentials_from_store};
 use super::state::ConnectionState;
 use super::{SmbConnectionParams, SmbVolumeInner};
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::SelfHandle;
 use cmdr_fs::volume::VolumeError;
 use cmdr_fs::volume::host::credentials::StoredCredentials;
@@ -129,6 +130,15 @@ impl SmbVolumeInner {
             return Ok(());
         }
 
+        // The whole share is what a reconnect refusal is about, so its mount root
+        // is the path a path-carrying variant would name. (Connect failures
+        // classify as connection or auth kinds, which carry a diagnostic instead.)
+        let share_root = self
+            .active_mount_path
+            .read_ignore_poison()
+            .to_string_lossy()
+            .into_owned();
+
         // First try: stored credentials (the ones that worked at original connect).
         let params_snapshot = { self.params.read().await.clone() };
         info!(
@@ -167,7 +177,7 @@ impl SmbVolumeInner {
                                 // saved no longer works. Tell the FE so it shows a
                                 // "Sign in" prompt instead of the generic "unreachable".
                                 self.emit_state_change_for_id(VolumeConnection::NeedsCredentials);
-                                return Err(map_smb_error(e2));
+                                return Err(map_smb_error(e2, &share_root));
                             }
                         }
                     }
@@ -178,7 +188,7 @@ impl SmbVolumeInner {
                             self.share_name
                         );
                         self.emit_state_change_for_id(VolumeConnection::NeedsCredentials);
-                        return Err(map_smb_error(err));
+                        return Err(map_smb_error(err, &share_root));
                     }
                 }
             }
@@ -187,7 +197,7 @@ impl SmbVolumeInner {
                     "SmbVolumeInner::attempt_reconnect(share={}): connect failed: {}",
                     self.share_name, e
                 );
-                return Err(map_smb_error(e));
+                return Err(map_smb_error(e, &share_root));
             }
         };
 

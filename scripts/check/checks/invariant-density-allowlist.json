@@ -12,6 +12,6 @@
     "crates/cmdr-fs": 14,
     "crates/cmdr-index": 374,
     "crates/cmdr-sftp": 59,
-    "crates/cmdr-smb": 19
+    "crates/cmdr-smb": 18
   }
 }

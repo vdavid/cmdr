@@ -40,7 +40,7 @@ impl SmbVolume {
         let result = {
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.list_directory(&mut conn, &smb_path).await;
-            self.handle_smb_result("list_directory", r)?
+            self.handle_smb_result("list_directory", &smb_path, r)?
         };
 
         let entries: Vec<FileEntry> = result
@@ -108,7 +108,7 @@ impl SmbVolume {
         let info = {
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.stat(&mut conn, &smb_path).await;
-            self.handle_smb_result("get_metadata", r)?
+            self.handle_smb_result("get_metadata", &smb_path, r)?
         };
 
         let name = Path::new(&smb_path)
@@ -152,7 +152,7 @@ impl SmbVolume {
         let info = {
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.stat(&mut conn, &smb_path).await;
-            self.handle_smb_result("is_directory", r)?
+            self.handle_smb_result("is_directory", &smb_path, r)?
         };
 
         Ok(info.is_directory)
@@ -181,7 +181,8 @@ impl SmbVolume {
         let info = {
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.fs_info(&mut conn).await;
-            self.handle_smb_result("get_space_info", r)?
+            // The share root: the question is about the share, not any one file.
+            self.handle_smb_result("get_space_info", "", r)?
         };
 
         Ok(fs_info_to_space_info(&info))

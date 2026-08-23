@@ -516,27 +516,25 @@ skips its `.cmdr-tmp-*` staging on the strength of that answer. What the backend
 the compound path, a post-CREATE failure cleans up after itself): `write_operations/transfer/DETAILS.md` § "The
 single-shot exemption".
 
-## The `NotFound` payload gap
+## What a `VolumeError` payload carries
 
-`VolumeError::NotFound` and `PermissionDenied` are DEFINED to carry the PATH (`cmdr-fs/src/volume/types.rs`), and the
-transfer layer takes that literally: `transfer_error.rs::map_volume_error` forwards the payload straight into
-`SourceNotFound { path }` / `DestinationNotFound { path }`, which the frontend renders as the name of the file the user
-is missing.
+`VolumeError::NotFound`, `PermissionDenied`, `AlreadyExists`, `IsADirectory`, and `DeletePending` are DEFINED to carry
+the PATH (`cmdr-fs/src/volume/types.rs`), and the transfer layer takes that literally:
+`transfer_error.rs::map_volume_error` forwards the payload straight into `SourceNotFound { path }` /
+`DestinationNotFound { path }`, which the frontend renders as the name of the file the user is missing.
 
-`mapping.rs::map_smb_error` puts the smb2 error's own wording there instead, so a share file that vanished under a copy
-surfaces as `source_not_found` with a path of `Protocol error: STATUS_OBJECT_NAME_NOT_FOUND during Create` — an NTSTATUS
-where a filename belongs. `AlreadyExists` in the same `match` has it too.
+So `mapping.rs::map_smb_error` takes the path it is mapping a failure for, and `session.rs::handle_smb_result` takes the
+share-relative path beside its `op_name` and hands `map_smb_error` the display form. The server's own NTSTATUS wording
+goes to the log line in `handle_smb_result`, never into the payload. The variants that carry a DIAGNOSTIC rather than a
+path (`DeviceDisconnected`, `ConnectionTimeout`, `StorageFull`, `InvalidName`, `IoError`) still get `err.to_string()`:
+that string is the technical-details text, not something the frontend reads a filename out of.
 
-- **Found by** `cmdr_fs::volume::conformance::assert_not_found_carries_the_path`, which is deliberately NOT wired into
-  this crate's `conformance_test.rs`: the integration lane runs `--run-ignored only`, so an `#[ignore]`d cell recording
-  the gap would still run and fail. ❌ Don't add the cell before the fix.
-- **The fix shape is `cmdr-sftp`'s**, which had the identical leak: give the mapper the path it is mapping a failure
-  for, so a pathless `NotFound` stops being constructible. Here that means `map_smb_error` (8 direct call sites) plus
-  `session.rs::handle_smb_result`, which every query and mutation funnels through (~32 sites); it already takes an
-  `op_name`, so a `path` beside it is the natural shape.
-- **Not done as a side effect of the SFTP work** — it's ~40 sites across a shipping backend's whole error surface, so it
-  wants its own change. `LocalPosixVolume` has the same class of gap from a different cause (the blanket
-  `From<std::io::Error>`), tracked as an `#[ignore]`d cell in `local_posix_conformance_test.rs`.
+- **Held to it by** `cmdr_fs::volume::conformance::assert_not_found_carries_the_path`, wired into
+  `conformance_test.rs`'s `smb_integration_not_found_honors_the_shared_path_payload_contract` (Docker-gated like the
+  rest of the lane), plus the payload assertions in `mapping_test.rs`.
+- **Which path, for the two-path operations.** A `rename` refusal names the DESTINATION on `AlreadyExists` and the
+  SOURCE on everything else, the same split `local_posix.rs::rename_error` makes. `get_space_info` is about the share,
+  so it names the share root.
 
 ## Gotchas
 

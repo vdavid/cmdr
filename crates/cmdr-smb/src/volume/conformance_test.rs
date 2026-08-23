@@ -156,3 +156,21 @@ async fn smb_integration_export_honors_the_shared_handshake_contract() {
 
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// The shared `NotFound`-payload assertion, against a real SMB server: what the
+/// frontend renders as the missing file's name really is its path, not the
+/// server's NTSTATUS sentence.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_not_found_honors_the_shared_path_payload_contract() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    let missing = format!("{base}/no-such-file.txt");
+
+    cmdr_fs::volume::conformance::assert_not_found_carries_the_path(smb_vol.as_ref(), Path::new(&missing)).await;
+
+    ensure_clean(&smb_vol, &base).await;
+}

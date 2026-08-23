@@ -16,7 +16,7 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 ## Key files
 
 - **`mod.rs`**: `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`) plus the `VolumeReadStream` and `SequentialExtract` sub-traits. Re-exports `types::*` and `ids::*`
-- **`types.rs`**: the data types the trait exchanges (`VolumeError` + its `Display`/`Error`/`From<io::Error>` impls, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`, `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `SmbConnectionState`)
+- **`types.rs`**: the data types the trait exchanges (`VolumeError` + its `Display`/`Error` impls and its `from_io_at` / `from_io_without_path` constructors, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`, `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `SmbConnectionState`)
 - **`ids.rs`** (in `cmdr-fs`): the funnel every volume ID is built through (`local_volume_id`, `path_volume_id`,
   `smb_volume_id`, `mtp_device_id`, `is_legacy_volume_id`). Which constructor a macOS mount goes through is
   `crate::volumes::ids`; the Linux twin is `volumes_linux::volume_id_for_mount`
@@ -179,7 +179,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] Return `supports_streaming() = true` and implement `open_read_stream` + `write_from_stream`. These are the byte path for every cross-volume copy. The Copy dialog uses them for "this volume ↔ anywhere" transfers.
 - [ ] Return `supports_export() = true` if the volume should appear as a copy source in the UI.
 - [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight. `scan_for_conflicts` takes a `SourceItemInfo` per source and emits a `ScanConflict` per collision; see "Conflict classification fields" above for the `is_directory` flags it must populate.
-- [ ] Map your backend's errors through a `map_*_error` function that returns `VolumeError`. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
+- [ ] Map your backend's errors through a `map_*_error` function that takes the PATH the failure was about and returns `VolumeError`. The path-carrying variants (`NotFound`, `PermissionDenied`, `AlreadyExists`, `IsADirectory`, `DeletePending`) must get the path, never your layer's wording; `assert_not_found_carries_the_path` holds you to it. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
 - [ ] **No full-file buffering in per-file transfer paths.** Don't drain the incoming `VolumeReadStream` into a `Vec<u8>` before writing, and don't collect the remote file into a `Vec<u8>` before yielding. An 8 GB copy would allocate 8 GB of RAM. See the "Streaming requirement" section on each trait method's doc comment: `open_read_stream`, `write_from_stream`.
 
 ### Tier 3: integrate with the wider app (optional, but mostly expected)
@@ -451,6 +451,9 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 
 **Decision**: `VolumeError` stores `String` messages, not the original `std::io::Error`
 **Why**: `std::io::Error` is not `Clone`, but `VolumeError` needs to be `Clone` for ergonomic error propagation across thread boundaries and for serialization to the frontend. Storing the formatted message loses the original error type but keeps the information that matters for user-facing error messages. The `IoError` variant also carries `raw_os_error: Option<i32>` so the friendly error mapper can match on platform-specific errno codes.
+
+**Decision**: there is no `From<std::io::Error> for VolumeError`; io errors convert through `VolumeError::from_io_at(&err, path)`
+**Why**: `NotFound`, `PermissionDenied`, and `AlreadyExists` are defined to carry the PATH, and `transfer_error.rs::map_volume_error` forwards that payload into `SourceNotFound { path }`, which the frontend renders as the name of the file the user is missing. A bare `io::Error` has no path inside it, so a blanket `From` could only put the errno's own sentence there, and every `?` on an io error silently did. Removing the impl makes the compiler ask "which path?" at each site; `from_io_without_path` is the explicit escape for a pipe, socket, or already-open handle, where the three path-carrying variants have nothing honest to carry. Held by `cmdr_fs::volume::conformance::assert_not_found_carries_the_path`, now wired into every backend.
 
 **Decision**: `LocalPosixVolume` uses `symlink_metadata` for `exists()` instead of `Path::exists()`
 **Why**: `Path::exists()` follows symlinks. A dangling symlink returns `false`, which would make the volume claim a file doesn't exist when it visibly does in a directory listing. `symlink_metadata` detects the symlink itself, matching what the user sees.

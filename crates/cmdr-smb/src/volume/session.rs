@@ -89,7 +89,17 @@ impl SmbVolume {
     }
 
     /// Maps an smb2 result, handling connection state transitions on error.
-    pub(super) fn handle_smb_result<T>(&self, op_name: &str, result: Result<T, smb2::Error>) -> Result<T, VolumeError> {
+    ///
+    /// `smb_path` is the share-relative path the operation ran on; it becomes the
+    /// PAYLOAD of the path-carrying `VolumeError` variants (as its display form),
+    /// which is what the frontend renders as the file's name. The server's own
+    /// NTSTATUS wording goes to the log line here, never into the payload.
+    pub(super) fn handle_smb_result<T>(
+        &self,
+        op_name: &str,
+        smb_path: &str,
+        result: Result<T, smb2::Error>,
+    ) -> Result<T, VolumeError> {
         match result {
             Ok(val) => Ok(val),
             Err(e) => {
@@ -118,7 +128,7 @@ impl SmbVolume {
                     warn!("SmbVolume::{}(share={}): {}", op_name, self.inner.share_name, e);
                 }
 
-                Err(map_smb_error(e))
+                Err(map_smb_error(e, &self.to_display_path(smb_path)))
             }
         }
     }

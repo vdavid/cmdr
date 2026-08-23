@@ -43,7 +43,7 @@ impl SmbVolume {
                 let info = {
                     let (tree, mut conn) = self.clone_session().await?;
                     let r = tree.stat(&mut conn, smb_path).await;
-                    self.handle_smb_result("scan_for_copy(stat)", r)?
+                    self.handle_smb_result("scan_for_copy(stat)", smb_path, r)?
                 };
 
                 if !info.is_directory {
@@ -272,7 +272,10 @@ impl SmbVolume {
                 Entry(smb2::client::tree::FileInfo),
             }
 
-            type StatFuture = Pin<Box<dyn Future<Output = (usize, Result<StatOutcome, smb2::Error>)> + Send>>;
+            // The path rides along with the result: a refusal has to name the path
+            // it was about, and `map_smb_error` puts that name in the payload the
+            // frontend renders.
+            type StatFuture = Pin<Box<dyn Future<Output = (usize, String, Result<StatOutcome, smb2::Error>)> + Send>>;
             let mut stat_futs: FuturesUnordered<StatFuture> = FuturesUnordered::new();
 
             for (idx, smb_path) in &smb_paths {
@@ -280,7 +283,11 @@ impl SmbVolume {
                 if smb_path.is_empty() {
                     // Root: no stat needed. Inline a ready future so the
                     // ordering logic below still sees a slot for this index.
-                    stat_futs.push(Box::pin(std::future::ready((idx, Ok(StatOutcome::Root)))));
+                    stat_futs.push(Box::pin(std::future::ready((
+                        idx,
+                        String::new(),
+                        Ok(StatOutcome::Root),
+                    ))));
                     continue;
                 }
                 // Briefly lock client to clone a Connection per path, then
@@ -297,7 +304,7 @@ impl SmbVolume {
                 stat_futs.push(Box::pin(async move {
                     let mut conn = conn;
                     let r = tree.stat(&mut conn, &path_owned).await;
-                    (idx, r.map(StatOutcome::Entry))
+                    (idx, path_owned, r.map(StatOutcome::Entry))
                 }));
             }
 
@@ -307,7 +314,7 @@ impl SmbVolume {
             // Indices to recurse into after the stat batch finishes.
             let mut dirs_to_recurse: Vec<usize> = Vec::new();
 
-            while let Some((idx, result)) = stat_futs.next().await {
+            while let Some((idx, smb_path, result)) = stat_futs.next().await {
                 match result {
                     Ok(StatOutcome::Root) => {
                         // Root path → always a directory, recurse later.
@@ -340,7 +347,7 @@ impl SmbVolume {
                         } else {
                             warn!("SmbVolume::scan_for_copy_batch(share={}): {}", self.inner.share_name, e);
                         }
-                        return Err(map_smb_error(e));
+                        return Err(map_smb_error(e, &self.to_display_path(&smb_path)));
                     }
                 }
             }

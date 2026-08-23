@@ -479,16 +479,40 @@ impl std::fmt::Display for VolumeError {
 
 impl std::error::Error for VolumeError {}
 
-impl From<std::io::Error> for VolumeError {
-    fn from(err: std::io::Error) -> Self {
+impl VolumeError {
+    /// Classifies a [`std::io::Error`] that happened at a KNOWN path.
+    ///
+    /// ❗ **The path is the payload, not context.** [`NotFound`](Self::NotFound),
+    /// [`PermissionDenied`](Self::PermissionDenied), and
+    /// [`AlreadyExists`](Self::AlreadyExists) are defined to carry the path, and
+    /// the transfer layer takes that literally: `map_volume_error` forwards the
+    /// string straight into `SourceNotFound { path }`, which the frontend renders
+    /// as the name of the file the user is missing. A bare `io::Error` has no path
+    /// inside it, so there is deliberately no `From<io::Error>` to reach for; use
+    /// this at every site that knows which path it was touching, and
+    /// [`from_io_without_path`](Self::from_io_without_path) only where none exists.
+    ///
+    /// `assert_not_found_carries_the_path` holds every backend to it.
+    pub fn from_io_at(err: &std::io::Error, path: impl AsRef<std::path::Path>) -> Self {
+        let located = || path.as_ref().to_string_lossy().into_owned();
         match err.kind() {
-            std::io::ErrorKind::NotFound => Self::NotFound(err.to_string()),
-            std::io::ErrorKind::PermissionDenied => Self::PermissionDenied(err.to_string()),
-            std::io::ErrorKind::AlreadyExists => Self::AlreadyExists(err.to_string()),
-            _ => Self::IoError {
-                message: err.to_string(),
-                raw_os_error: err.raw_os_error(),
-            },
+            std::io::ErrorKind::NotFound => Self::NotFound(located()),
+            std::io::ErrorKind::PermissionDenied => Self::PermissionDenied(located()),
+            std::io::ErrorKind::AlreadyExists => Self::AlreadyExists(located()),
+            _ => Self::from_io_without_path(err),
+        }
+    }
+
+    /// Classifies a [`std::io::Error`] with no path behind it: a pipe, a socket, a
+    /// channel, a subprocess.
+    ///
+    /// Always [`IoError`](Self::IoError), because the three path-carrying variants
+    /// would have nothing honest to carry. Prefer
+    /// [`from_io_at`](Self::from_io_at) wherever a path is in scope.
+    pub fn from_io_without_path(err: &std::io::Error) -> Self {
+        Self::IoError {
+            message: err.to_string(),
+            raw_os_error: err.raw_os_error(),
         }
     }
 }

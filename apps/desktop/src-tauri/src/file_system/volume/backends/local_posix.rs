@@ -27,6 +27,19 @@ const PROGRESS_SAMPLE_INTERVAL: Duration = Duration::from_millis(200);
 #[cfg(test)]
 const PROGRESS_SAMPLE_INTERVAL: Duration = Duration::from_millis(1);
 
+/// Which of a rename's two paths an `io::Error` is talking about.
+///
+/// `ENOENT` is the SOURCE that isn't there; `EEXIST` and `ENOTEMPTY` are the
+/// DESTINATION that already is. Handing both to the same path would name the
+/// wrong file in "there's already something called that", which is the one
+/// sentence in the rename flow the user acts on.
+fn rename_error(err: &io::Error, from: &Path, to: &Path) -> VolumeError {
+    match err.kind() {
+        io::ErrorKind::AlreadyExists | io::ErrorKind::DirectoryNotEmpty => VolumeError::from_io_at(err, to),
+        _ => VolumeError::from_io_at(err, from),
+    }
+}
+
 /// Atomically renames a local path only when `destination` is unoccupied.
 #[cfg(target_os = "macos")]
 pub(crate) fn rename_local_exclusive(source: &Path, destination: &Path) -> io::Result<()> {
@@ -174,7 +187,8 @@ impl Volume for LocalPosixVolume {
                 if let Some(routed) = git::try_route_listing(&abs_path) {
                     return routed;
                 }
-                list_directory_core_with_tally(&abs_path, &tally_for_listing).map_err(VolumeError::from)
+                list_directory_core_with_tally(&abs_path, &tally_for_listing)
+                    .map_err(|e| VolumeError::from_io_at(&e, &abs_path))
             });
 
             let Some(on_progress) = on_progress else {
@@ -221,7 +235,7 @@ impl Volume for LocalPosixVolume {
                 if let Some(routed) = git::try_route_metadata(&abs_path) {
                     return routed;
                 }
-                get_single_entry(&abs_path).map_err(VolumeError::from)
+                get_single_entry(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))
             })
             .await
             .expect("spawn_blocking metadata closure doesn't panic and the task is uncancelable")
@@ -246,7 +260,8 @@ impl Volume for LocalPosixVolume {
         let abs_path = self.resolve(path);
         Box::pin(async move {
             spawn_blocking(move || {
-                let metadata = std::fs::symlink_metadata(&abs_path)?;
+                let metadata =
+                    std::fs::symlink_metadata(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
                 Ok(metadata.is_dir())
             })
             .await
@@ -327,8 +342,10 @@ impl Volume for LocalPosixVolume {
                 let mut file = std::fs::OpenOptions::new()
                     .write(true)
                     .create_new(true)
-                    .open(&abs_path)?;
-                file.write_all(&content)?;
+                    .open(&abs_path)
+                    .map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
+                file.write_all(&content)
+                    .map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
                 Ok(())
             })
             .await
@@ -346,7 +363,7 @@ impl Volume for LocalPosixVolume {
         }
         Box::pin(async move {
             spawn_blocking(move || {
-                std::fs::create_dir(&abs_path)?;
+                std::fs::create_dir(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
                 Ok(())
             })
             .await
@@ -370,7 +387,7 @@ impl Volume for LocalPosixVolume {
                         e.kind(),
                         e.raw_os_error()
                     );
-                    e
+                    VolumeError::from_io_at(&e, &abs_path)
                 })?;
                 let result = if metadata.is_dir() {
                     std::fs::remove_dir(&abs_path)
@@ -387,7 +404,7 @@ impl Volume for LocalPosixVolume {
                         e.kind(),
                         e.raw_os_error()
                     );
-                    e
+                    VolumeError::from_io_at(&e, &abs_path)
                 })?;
                 Ok(())
             })
@@ -410,9 +427,9 @@ impl Volume for LocalPosixVolume {
         Box::pin(async move {
             spawn_blocking(move || {
                 if !force && from_abs != to_abs {
-                    rename_local_exclusive(&from_abs, &to_abs)?;
+                    rename_local_exclusive(&from_abs, &to_abs).map_err(|e| rename_error(&e, &from_abs, &to_abs))?;
                 } else {
-                    std::fs::rename(&from_abs, &to_abs)?;
+                    std::fs::rename(&from_abs, &to_abs).map_err(|e| rename_error(&e, &from_abs, &to_abs))?;
                 }
                 Ok(())
             })
@@ -541,7 +558,7 @@ impl Volume for LocalPosixVolume {
                 if let Some(routed) = git::try_open_blob_stream(&abs_path) {
                     return routed;
                 }
-                let metadata = std::fs::metadata(&abs_path)?;
+                let metadata = std::fs::metadata(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
                 if metadata.is_dir() {
                     return Err(VolumeError::IoError {
                         message: "Cannot stream a directory".into(),
@@ -549,7 +566,7 @@ impl Volume for LocalPosixVolume {
                     });
                 }
                 let total_size = metadata.len();
-                let file = std::fs::File::open(&abs_path)?;
+                let file = std::fs::File::open(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
                 Ok(Box::new(LocalPosixReadStream {
                     file: Some(file),
                     total_size,
@@ -571,13 +588,15 @@ impl Volume for LocalPosixVolume {
         Box::pin(async move {
             spawn_blocking(move || {
                 use std::os::unix::fs::FileExt;
-                let file = std::fs::File::open(&abs_path)?;
+                let file = std::fs::File::open(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
                 let mut buf = vec![0u8; len];
                 let mut filled = 0usize;
                 // `read_at` is a `pread`; it may short-read, so loop until the
                 // window is full or the file ends (a read at/past EOF returns 0).
                 while filled < len {
-                    let n = file.read_at(&mut buf[filled..], offset + filled as u64)?;
+                    let n = file
+                        .read_at(&mut buf[filled..], offset + filled as u64)
+                        .map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
                     if n == 0 {
                         break;
                     }
@@ -606,10 +625,11 @@ impl Volume for LocalPosixVolume {
             // Ensure parent directory exists
             if let Some(parent) = dest_abs.parent() {
                 let parent = parent.to_path_buf();
+                let parent_for_error = parent.clone();
                 spawn_blocking(move || std::fs::create_dir_all(&parent))
                     .await
                     .expect("spawn_blocking create_dir_all closure doesn't panic and the task is uncancelable")
-                    .map_err(VolumeError::from)?;
+                    .map_err(|e| VolumeError::from_io_at(&e, &parent_for_error))?;
             }
 
             // Open destination file on the blocking pool.
@@ -617,7 +637,7 @@ impl Volume for LocalPosixVolume {
             let mut file = spawn_blocking(move || std::fs::File::create(&dest_for_open))
                 .await
                 .expect("spawn_blocking File::create closure doesn't panic and the task is uncancelable")
-                .map_err(VolumeError::from)?;
+                .map_err(|e| VolumeError::from_io_at(&e, &dest_abs))?;
 
             let mut bytes_written = 0u64;
             while let Some(chunk_result) = stream.next_chunk().await {
@@ -636,7 +656,7 @@ impl Volume for LocalPosixVolume {
                 .await
                 .expect("spawn_blocking write_all closure doesn't panic and the task is uncancelable");
                 file = file_ret;
-                write_res.map_err(VolumeError::from)?;
+                write_res.map_err(|e| VolumeError::from_io_at(&e, &dest_abs))?;
 
                 bytes_written += chunk_len;
 
@@ -787,7 +807,9 @@ impl VolumeReadStream for LocalPosixReadStream {
                 let mut buf = vec![0u8; LOCAL_STREAM_CHUNK_SIZE];
                 let n = match file.read(&mut buf) {
                     Ok(n) => n,
-                    Err(e) => return (file, Err(VolumeError::from(e))),
+                    // No path: the handle is already open, so `ENOENT` and `EACCES`
+                    // can't reach here; a mid-stream read failure is an `IoError`.
+                    Err(e) => return (file, Err(VolumeError::from_io_without_path(&e))),
                 };
                 buf.truncate(n);
                 (file, Ok(buf))

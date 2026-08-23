@@ -34,13 +34,13 @@ impl SmbVolume {
             // stat-then-write workaround left a microsecond TOCTOU
             // window; this closes it atomically at the protocol layer.
             let writer_result = tree.create_file_writer_exclusive(conn, &smb_path).await;
-            let mut writer = self.handle_smb_result("create_file(open)", writer_result)?;
+            let mut writer = self.handle_smb_result("create_file(open)", &smb_path, writer_result)?;
             if !data.is_empty() {
                 let write_result = writer.write_chunk(&data).await;
-                self.handle_smb_result("create_file(write_chunk)", write_result)?;
+                self.handle_smb_result("create_file(write_chunk)", &smb_path, write_result)?;
             }
             let finish_result = writer.finish().await;
-            self.handle_smb_result("create_file(finish)", finish_result)?;
+            self.handle_smb_result("create_file(finish)", &smb_path, finish_result)?;
         }
 
         self.notify_created(path).await;
@@ -59,7 +59,7 @@ impl SmbVolume {
         {
             let (tree, mut conn) = self.clone_session().await?;
             let result = tree.create_directory(&mut conn, &smb_path).await;
-            self.handle_smb_result("create_directory", result)?;
+            self.handle_smb_result("create_directory", &smb_path, result)?;
         }
 
         self.notify_created(path).await;
@@ -81,7 +81,7 @@ impl SmbVolume {
         let file_result = {
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.delete_file(&mut conn, &smb_path).await;
-            self.handle_smb_result("delete_file", r)
+            self.handle_smb_result("delete_file", &smb_path, r)
         };
 
         match file_result {
@@ -90,7 +90,7 @@ impl SmbVolume {
                 // Expected fall-through: path is a directory, retry with delete_directory.
                 let (tree, mut conn) = self.clone_session().await?;
                 let r = tree.delete_directory(&mut conn, &smb_path).await;
-                self.handle_smb_result("delete_directory", r)?;
+                self.handle_smb_result("delete_directory", &smb_path, r)?;
             }
             Err(e) => return Err(e),
         }
@@ -135,7 +135,14 @@ impl SmbVolume {
         {
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.rename(&mut conn, &smb_from, &smb_to).await;
-            self.handle_smb_result("rename", r)?;
+            // `AlreadyExists` is about the DESTINATION, everything else about the
+            // source, the same split `local_posix.rs::rename_error` makes.
+            let path_at_fault = if matches!(r, Err(ref e) if e.kind() == smb2::ErrorKind::AlreadyExists) {
+                &smb_to
+            } else {
+                &smb_from
+            };
+            self.handle_smb_result("rename", path_at_fault, r)?;
         }
 
         self.notify_renamed(from, to).await;
@@ -159,14 +166,14 @@ impl SmbVolume {
         let file_result = {
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.delete_file(&mut conn, smb_to).await;
-            self.handle_smb_result("rename(delete_dest_file)", r)
+            self.handle_smb_result("rename(delete_dest_file)", smb_to, r)
         };
         match file_result {
             Ok(()) => Ok(()),
             Err(VolumeError::IsADirectory(_)) => {
                 let (tree, mut conn) = self.clone_session().await?;
                 let r = tree.delete_directory(&mut conn, smb_to).await;
-                self.handle_smb_result("rename(delete_dest_dir)", r)?;
+                self.handle_smb_result("rename(delete_dest_dir)", smb_to, r)?;
                 Ok(())
             }
             Err(e) => Err(e),

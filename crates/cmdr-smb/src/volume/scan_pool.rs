@@ -474,7 +474,7 @@ impl SmbVolume {
                     // same on any connection, so surface it exactly like the main
                     // path. Don't transition the main session's state — this wasn't
                     // its connection.
-                    Err(e) => return Err(map_smb_error(e)),
+                    Err(e) => return Err(map_smb_error(e, &display_path)),
                 }
             }
             // Every member is momentarily dead: fall through to the main session,
@@ -508,6 +508,7 @@ impl SmbVolume {
             let pool = { self.inner.scan_pool.read().await.clone() };
             if let Some(pool) = pool {
                 let smb_path = self.to_smb_path(path)?;
+                let display_path = self.to_display_path(&smb_path);
                 for _ in 0..pool.member_count() {
                     let Some((idx, tree, mut conn)) = pool.acquire().await else {
                         break; // every member momentarily dead ⇒ main session
@@ -532,7 +533,7 @@ impl SmbVolume {
                         // A real per-file error (permission, not-found, …): the same
                         // on any connection; surface it typed, don't touch the main
                         // session's state (this wasn't its connection).
-                        Err(e) => return Err(map_smb_error(e)),
+                        Err(e) => return Err(map_smb_error(e, &display_path)),
                     }
                 }
             }

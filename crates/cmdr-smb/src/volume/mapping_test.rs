@@ -81,8 +81,11 @@ fn map_smb_error_not_found() {
         status: smb2::types::status::NtStatus::OBJECT_NAME_NOT_FOUND,
         command: smb2::types::Command::Create,
     };
-    let ve = map_smb_error(err);
-    assert!(matches!(ve, VolumeError::NotFound(_)));
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
+    assert!(
+        matches!(&ve, VolumeError::NotFound(path) if path == "/Volumes/share/holiday.raw"),
+        "NotFound must carry the path the frontend renders as the file's name, got: {ve:?}",
+    );
 }
 
 #[test]
@@ -97,9 +100,9 @@ fn map_smb_error_delete_pending() {
         status: smb2::types::status::NtStatus::DELETE_PENDING,
         command: smb2::types::Command::Create,
     };
-    let ve = map_smb_error(err);
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
     assert!(
-        matches!(ve, VolumeError::DeletePending(_)),
+        matches!(&ve, VolumeError::DeletePending(path) if path == "/Volumes/share/holiday.raw"),
         "STATUS_DELETE_PENDING should map to VolumeError::DeletePending, got: {:?}",
         ve,
     );
@@ -118,7 +121,7 @@ fn map_smb_error_invalid_name() {
         status: smb2::types::status::NtStatus::OBJECT_NAME_INVALID,
         command: smb2::types::Command::Create,
     };
-    let ve = map_smb_error(err);
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
     assert!(
         matches!(ve, VolumeError::InvalidName(_)),
         "STATUS_OBJECT_NAME_INVALID should map to VolumeError::InvalidName, got: {:?}",
@@ -132,21 +135,24 @@ fn map_smb_error_access_denied() {
         status: smb2::types::status::NtStatus::ACCESS_DENIED,
         command: smb2::types::Command::Create,
     };
-    let ve = map_smb_error(err);
-    assert!(matches!(ve, VolumeError::PermissionDenied(_)));
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
+    assert!(
+        matches!(&ve, VolumeError::PermissionDenied(path) if path == "/Volumes/share/holiday.raw"),
+        "PermissionDenied must carry the path, got: {ve:?}",
+    );
 }
 
 #[test]
 fn map_smb_error_disconnected() {
     let err = smb2::Error::Disconnected;
-    let ve = map_smb_error(err);
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
     assert!(matches!(ve, VolumeError::DeviceDisconnected(_)));
 }
 
 #[test]
 fn map_smb_error_timeout() {
     let err = smb2::Error::Timeout;
-    let ve = map_smb_error(err);
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
     assert!(matches!(ve, VolumeError::ConnectionTimeout(_)));
 }
 
@@ -156,14 +162,14 @@ fn map_smb_error_disk_full() {
         status: smb2::types::status::NtStatus::DISK_FULL,
         command: smb2::types::Command::Write,
     };
-    let ve = map_smb_error(err);
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
     assert!(matches!(ve, VolumeError::StorageFull { .. }));
 }
 
 #[test]
 fn map_smb_error_session_expired() {
     let err = smb2::Error::SessionExpired;
-    let ve = map_smb_error(err);
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
     assert!(matches!(ve, VolumeError::DeviceDisconnected(_)));
 }
 
@@ -172,14 +178,17 @@ fn map_smb_error_auth_required() {
     let err = smb2::Error::Auth {
         message: "Authentication failed".to_string(),
     };
-    let ve = map_smb_error(err);
-    assert!(matches!(ve, VolumeError::PermissionDenied(_)));
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
+    assert!(
+        matches!(&ve, VolumeError::PermissionDenied(path) if path == "/Volumes/share/holiday.raw"),
+        "PermissionDenied must carry the path, got: {ve:?}",
+    );
 }
 
 #[test]
 fn map_smb_error_io() {
     let err = smb2::Error::Io(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "pipe broke"));
-    let ve = map_smb_error(err);
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
     // IO errors (callback errors, etc.) are not connection losses; they map to IoError.
     // Real connection losses come through Error::Disconnected → ConnectionLost.
     assert!(matches!(ve, VolumeError::IoError { .. }));
@@ -194,8 +203,11 @@ fn map_smb_error_already_exists() {
         status: smb2::types::status::NtStatus::OBJECT_NAME_COLLISION,
         command: smb2::types::Command::Create,
     };
-    let ve = map_smb_error(err);
-    assert!(matches!(ve, VolumeError::AlreadyExists(_)));
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
+    assert!(
+        matches!(&ve, VolumeError::AlreadyExists(path) if path == "/Volumes/share/holiday.raw"),
+        "AlreadyExists must carry the path, got: {ve:?}",
+    );
 }
 
 #[test]
@@ -208,8 +220,11 @@ fn map_smb_error_file_is_a_directory() {
         status: smb2::types::status::NtStatus::FILE_IS_A_DIRECTORY,
         command: smb2::types::Command::Create,
     };
-    let ve = map_smb_error(err);
-    assert!(matches!(ve, VolumeError::IsADirectory(_)));
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
+    assert!(
+        matches!(&ve, VolumeError::IsADirectory(path) if path == "/Volumes/share/holiday.raw"),
+        "IsADirectory must carry the path, got: {ve:?}",
+    );
 }
 
 #[test]
@@ -219,6 +234,9 @@ fn map_smb_error_access_denied_is_not_misclassified() {
         status: smb2::types::status::NtStatus::ACCESS_DENIED,
         command: smb2::types::Command::Create,
     };
-    let ve = map_smb_error(err);
-    assert!(matches!(ve, VolumeError::PermissionDenied(_)));
+    let ve = map_smb_error(err, "/Volumes/share/holiday.raw");
+    assert!(
+        matches!(&ve, VolumeError::PermissionDenied(path) if path == "/Volumes/share/holiday.raw"),
+        "PermissionDenied must carry the path, got: {ve:?}",
+    );
 }

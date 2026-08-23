@@ -304,13 +304,14 @@ async fn populate_directory(volume: &dyn Volume, source_path: &Path, dest_path: 
 /// made doesn't error.
 async fn create_local_dir(dest_path: &Path) -> Result<(), VolumeError> {
     let dest = dest_path.to_path_buf();
+    let dest_for_error = dest.clone();
     tokio::task::spawn_blocking(move || std::fs::create_dir_all(&dest))
         .await
         .map_err(|e| VolumeError::IoError {
             message: e.to_string(),
             raw_os_error: None,
         })?
-        .map_err(VolumeError::from)
+        .map_err(|e| VolumeError::from_io_at(&e, &dest_for_error))
 }
 
 /// Best-effort removal of a partial destination file. Never fails the caller.
