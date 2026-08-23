@@ -18,7 +18,7 @@
 use serde_json::{Value, json};
 use tauri::{AppHandle, Runtime};
 
-use crate::agent::memory::{MEMORY_DIR_MAX_BYTES, MemoryRefusal, MemoryWritten};
+use crate::agent::memory::{MemoryRefusal, MemoryWritten};
 use crate::mcp::{ToolError, ToolResult};
 
 /// `memory_write`'s arguments. Terse on purpose: every schema rides in the cached prefix of
@@ -108,8 +108,11 @@ fn detail_of(refusal: &MemoryRefusal) -> String {
         }
         MemoryRefusal::NotMarkdown => "Memory holds Markdown only, so the name has to end in .md.".to_string(),
         MemoryRefusal::NoPath => "No file name was given.".to_string(),
-        MemoryRefusal::DirectoryFull { used, wanted, .. } => format!(
-            "Memory is full: {used} bytes of {MEMORY_DIR_MAX_BYTES} used, and this write wants {wanted}. \
+        // The refusal's own `cap`, ❌ never the folder constant: a tool write is priced against
+        // what the tools may claim, which is the folder minus the decision ring's reserve, and
+        // quoting the bigger number would send the model pruning to a ceiling it can't reach.
+        MemoryRefusal::DirectoryFull { used, cap, wanted } => format!(
+            "Memory is full: {used} bytes of {cap} used, and this write wants {wanted}. \
              Prune what has gone stale with memory_edit, then write again."
         ),
         MemoryRefusal::NoSuchFile => "There is no such memory file yet. Use memory_write to start it.".to_string(),

@@ -23,6 +23,20 @@ pub const HUB_FILE: &str = "AGENTS.md";
 /// up sized for a 16k window and starving a 60k one, or the other way round.
 pub const MEMORY_DIR_MAX_BYTES: u64 = 64 * 1024;
 
+/// What the two TOOLS may claim of [`MEMORY_DIR_MAX_BYTES`]: whatever the decision ring
+/// reserves is held back from them.
+///
+/// ⚠️ **A reserve, not just a second cap.** `outcomes.md` is written mechanically, once per
+/// decided proposal, with no model turn to hand a [`MemoryRefusal::DirectoryFull`] to
+/// (`outcomes.rs`). If the model's own notes could fill the folder, the first thing to stop
+/// working would be the channel that teaches it what the user actually wants — silently, and
+/// worst for the user who uses the agent most.
+pub const MEMORY_MODEL_MAX_BYTES: u64 = MEMORY_DIR_MAX_BYTES - super::outcomes::OUTCOMES_MAX_BYTES as u64;
+
+/// How much of a turn's memory slice the decision ring may claim, as a divisor. The rest is the
+/// hub's: what the agent worked out about the person outranks the raw log of what they clicked.
+const OUTCOMES_PROMPT_SHARE: usize = 4;
+
 /// What a cut slice says about itself, so the model knows it is reading the head of a file
 /// rather than the whole of what it once wrote.
 const TRUNCATION_NOTE: &str =
@@ -36,7 +50,7 @@ pub struct MemoryWritten {
     pub path: String,
     /// What the file holds now.
     pub bytes: usize,
-    /// What the folder has left against [`MEMORY_DIR_MAX_BYTES`].
+    /// What the folder has left against [`MEMORY_MODEL_MAX_BYTES`].
     pub remaining_bytes: u64,
 }
 
@@ -55,6 +69,22 @@ impl MemoryStore {
         &self.root
     }
 
+    /// What one turn carries of memory: the hub file and the decision ring, each cut to its
+    /// own share of `max_bytes`. `None` when there is nothing worth prefixing a turn with.
+    ///
+    /// The ring takes its bounded share FIRST and the hub gets everything left, so a busy week
+    /// of approvals can never displace what the agent worked out about the person.
+    pub fn read_for_prompt(&self, max_bytes: usize) -> Option<String> {
+        let outcomes = self.read_outcomes_for_prompt(max_bytes / OUTCOMES_PROMPT_SHARE);
+        let spent = outcomes.as_deref().map_or(0, str::len);
+        match (self.read_hub_for_prompt(max_bytes.saturating_sub(spent)), outcomes) {
+            (None, None) => None,
+            (Some(hub), None) => Some(hub),
+            (None, Some(outcomes)) => Some(outcomes),
+            (Some(hub), Some(outcomes)) => Some(format!("{hub}\n\n{outcomes}")),
+        }
+    }
+
     /// The hub file's text for a turn's prefix, cut to `max_bytes` with a note when it had to
     /// be. `None` when there is nothing worth prefixing a turn with.
     ///
@@ -62,7 +92,7 @@ impl MemoryStore {
     /// non-UTF8 or permission-denied file leaves the agent believing it has never remembered
     /// anything, so it starts the user over with no sign that anything went wrong. Both cases
     /// are logged.
-    pub fn read_for_prompt(&self, max_bytes: usize) -> Option<String> {
+    fn read_hub_for_prompt(&self, max_bytes: usize) -> Option<String> {
         let path = self.root.join(HUB_FILE);
         let mut text = match std::fs::read_to_string(&path) {
             Ok(text) => text,
@@ -98,6 +128,19 @@ impl MemoryStore {
         self.store(requested, &path, content)
     }
 
+    /// Land a file priced against a cap of the caller's choosing, jailed exactly as a tool
+    /// write is. Only the decision ring passes anything but [`MEMORY_MODEL_MAX_BYTES`], and
+    /// only because it is what reserved the difference.
+    pub(super) fn store_capped(
+        &self,
+        requested: &str,
+        content: &str,
+        cap: u64,
+    ) -> Result<MemoryWritten, MemoryRefusal> {
+        let path = jail::resolve(&self.root, requested)?;
+        self.store_against(requested, &path, content, cap)
+    }
+
     /// Replace one exact, unique occurrence inside one memory file.
     pub fn edit(&self, requested: &str, old: &str, new: &str) -> Result<MemoryWritten, MemoryRefusal> {
         let path = jail::resolve(&self.root, requested)?;
@@ -118,15 +161,21 @@ impl MemoryStore {
     /// The shared tail of both tools: price the write against the folder cap, then land it
     /// durably.
     fn store(&self, requested: &str, path: &Path, content: &str) -> Result<MemoryWritten, MemoryRefusal> {
+        self.store_against(requested, path, content, MEMORY_MODEL_MAX_BYTES)
+    }
+
+    fn store_against(
+        &self,
+        requested: &str,
+        path: &Path,
+        content: &str,
+        cap: u64,
+    ) -> Result<MemoryWritten, MemoryRefusal> {
         let used = self.used_bytes();
         let replaced = std::fs::metadata(path).map(|meta| meta.len()).unwrap_or(0);
         let wanted = used.saturating_sub(replaced).saturating_add(content.len() as u64);
-        if wanted > MEMORY_DIR_MAX_BYTES {
-            return Err(MemoryRefusal::DirectoryFull {
-                used,
-                cap: MEMORY_DIR_MAX_BYTES,
-                wanted,
-            });
+        if wanted > cap {
+            return Err(MemoryRefusal::DirectoryFull { used, cap, wanted });
         }
 
         // ⚠️ Durably. The user is invited into this folder by a settings control while the
@@ -140,7 +189,7 @@ impl MemoryStore {
         Ok(MemoryWritten {
             path: requested.to_string(),
             bytes: content.len(),
-            remaining_bytes: MEMORY_DIR_MAX_BYTES.saturating_sub(wanted),
+            remaining_bytes: cap.saturating_sub(wanted),
         })
     }
 

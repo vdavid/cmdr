@@ -8,6 +8,7 @@
 //! Depth, the two caps, and the injection surface: `DETAILS.md`.
 
 mod jail;
+mod outcomes;
 mod refusal;
 mod store;
 
@@ -18,8 +19,9 @@ use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, Runtime};
 
+pub use outcomes::{OUTCOMES_FILE, OUTCOMES_MAX_BYTES, OUTCOMES_MAX_ENTRIES};
 pub use refusal::MemoryRefusal;
-pub use store::{HUB_FILE, MEMORY_DIR_MAX_BYTES, MemoryStore, MemoryWritten};
+pub use store::{HUB_FILE, MEMORY_DIR_MAX_BYTES, MEMORY_MODEL_MAX_BYTES, MemoryStore, MemoryWritten};
 
 /// Where memory lives under the app data dir.
 ///

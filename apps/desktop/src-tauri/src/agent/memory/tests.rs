@@ -142,12 +142,12 @@ fn a_write_over_the_folder_cap_is_refused_with_the_numbers() {
     let (_dir, store) = store();
 
     let refusal = store
-        .write(HUB_FILE, &"x".repeat(MEMORY_DIR_MAX_BYTES as usize + 1))
+        .write(HUB_FILE, &"x".repeat(MEMORY_MODEL_MAX_BYTES as usize + 1))
         .expect_err("over the cap");
 
     match refusal {
         MemoryRefusal::DirectoryFull { used, cap, wanted } => {
-            assert_eq!(cap, MEMORY_DIR_MAX_BYTES);
+            assert_eq!(cap, MEMORY_MODEL_MAX_BYTES);
             assert_eq!(used, 0);
             assert!(wanted > cap, "the refusal has to say how far over it went");
         }
@@ -320,7 +320,7 @@ fn an_edit_is_jailed_the_same_way_a_write_is() {
 #[test]
 fn an_edit_over_the_folder_cap_is_refused() {
     let (_dir, store) = store();
-    let most = (MEMORY_DIR_MAX_BYTES - 16) as usize;
+    let most = (MEMORY_MODEL_MAX_BYTES - 16) as usize;
     store
         .write(HUB_FILE, &format!("{}SEED", "a".repeat(most - 4)))
         .expect("write");
@@ -376,4 +376,69 @@ fn forgetting_an_empty_folder_reports_nothing_and_succeeds() {
     let (_dir, store) = store();
 
     assert_eq!(store.forget_all().expect("forget"), 0);
+}
+
+/// "Forget everything" means everything: the decision log is about the user too.
+#[test]
+fn forgetting_takes_the_decision_log_with_it() {
+    let (_dir, store) = store();
+    store.record_outcome("2026-08-23 rejected: move 12 files under /Users/x/Downloads");
+
+    store.forget_all().expect("forget");
+
+    assert!(!store.root().join(OUTCOMES_FILE).exists());
+}
+
+// ── The decision ring ─────────────────────────────────────────────────────────
+
+/// ⚠️ **The reserve is the whole safety property of the mechanical path.** A decision is
+/// recorded with no model turn to hand a `DirectoryFull` refusal to, so the model filling its
+/// own notes must never be able to silence the channel that teaches it what the user wants.
+#[test]
+fn a_full_memory_folder_still_takes_a_decision() {
+    let (_dir, store) = store();
+    store
+        .write(HUB_FILE, &"a".repeat(MEMORY_MODEL_MAX_BYTES as usize))
+        .expect("the model fills everything it is allowed");
+    assert!(
+        store.write("more.md", "one more byte").is_err(),
+        "the model has no room left"
+    );
+
+    store.record_outcome("2026-08-23 rejected: move 12 files under /Users/x/Downloads");
+
+    let log = std::fs::read_to_string(store.root().join(OUTCOMES_FILE)).expect("the ring landed anyway");
+    assert!(log.contains("rejected: move 12 files"));
+}
+
+/// The ring is capped like everything else here, so a decade of decisions cannot walk the
+/// folder past its disk cap.
+#[test]
+fn the_decision_ring_stays_inside_its_reserve() {
+    let (_dir, store) = store();
+
+    for n in 0..300 {
+        store.record_outcome(&format!(
+            "2026-08-23 approved: trash {n} files under /Users/x/Downloads"
+        ));
+    }
+
+    let log = std::fs::read_to_string(store.root().join(OUTCOMES_FILE)).expect("the ring");
+    assert!(log.len() <= OUTCOMES_MAX_BYTES, "the ring reached {} bytes", log.len());
+    assert!(log.contains("trash 299 files"), "the newest decision survived");
+}
+
+/// Both files ride the prefix, so the agent reads what it worked out about the person AND what
+/// they did with its last suggestions. Feeding only the hub is how M4's lesson would be
+/// written and never read.
+#[test]
+fn a_turn_carries_the_hub_and_the_decisions_together() {
+    let (_dir, store) = store();
+    store.write(HUB_FILE, "Prefers ISO dates.").expect("the hub");
+    store.record_outcome("2026-08-23 rejected: move 12 files under /Users/x/Downloads");
+
+    let carried = store.read_for_prompt(4_096).expect("something to carry");
+
+    assert!(carried.contains("Prefers ISO dates."));
+    assert!(carried.contains("rejected: move 12 files"));
 }
