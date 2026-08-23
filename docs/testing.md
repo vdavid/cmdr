@@ -615,7 +615,9 @@ E2E test hooks split along two axes:
 
 - **Hard hooks** (binary shape) live behind Cargo features:
   - `playwright-e2e`: feature-gated Tauri commands (`inject_listing_error`, `set_test_throttle`,
-    `set_test_scan_preview_delay`, `flush_file_watcher`) and the tauri-plugin-playwright socket bridge.
+    `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake`) and the tauri-plugin-playwright socket
+    bridge. `force_agent_wake` is the worked example of why the split exists: it REPLACES the proactive loop's timer,
+    which a soft hook may never do.
   - `virtual-mtp`: virtual MTP device with deterministic fixtures.
   - `smb-e2e`: virtual SMB hosts injected into mDNS discovery.
 

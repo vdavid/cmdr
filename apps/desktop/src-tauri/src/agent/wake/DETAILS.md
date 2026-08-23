@@ -108,6 +108,29 @@ being woken on the old schedule by everything already queued. `Inbox::reprice` s
 tier's delta, so the row keeps the moment it arrived and moving the slider there and back is a no-op. A cold row stays
 without a deadline at every cadence.
 
+## Forcing a wake, for a test
+
+`force_agent_wake` (`commands/e2e.rs`, `playwright-e2e` only) stages one folder's activity through the real
+`send_rollup` lane and then sends `WakeControl::ForceWake`. Verifying the loop otherwise means sitting out a cadence
+that runs up to half an hour, and hoping the fixture tree is somewhere the indexer walks.
+
+⚠️ **A Cargo feature, ❌ not an env-var hook.** `test_mode.rs` draws the line at soft hooks being "strictly additive",
+and forcing a wake REPLACES the timer.
+
+What the force skips is exactly two things: the timer (`not_before` and `Inbox::due_at`, via
+`PrepareParams::ignore_deadlines`) and the `askCmdr.proactive` toggle. ❌ It skips no GATE: consent, disk access, and a
+configured provider are all still checked, so a forced wake on an unconsented profile stores nothing and runs nothing.
+An empty inbox still renders an empty digest and opens no thread. A force arriving while a wake runs is held rather
+than dropped, and lands on the pass after `WakeFinished`.
+
+⚠️ **The E2E fake counts as a configured provider** (`snapshot.rs::has_api_key`), because `resolve_agent_llm` answers
+`Ok` under `CMDR_E2E_ASK_CMDR_FAKE` with `ai.provider` still off. Without that branch the gate would report
+`NeedsApiKey` for a slot that resolves fine, and no wake could run under the harness at all.
+
+⚠️ **A wake's scripted fake says something different from the rail's** (`chat/session.rs`, selected by `AgentSlot`).
+The rail's E2E specs count replies by matching their exact sentence, so one shared script would both break them on any
+change here and make a wake's thread indistinguishable from a chat the user started.
+
 ## The digest budget
 
 Enforced against the REAL rendered string, not a sum of per-line estimates: `div_ceil` per line does not add up to the

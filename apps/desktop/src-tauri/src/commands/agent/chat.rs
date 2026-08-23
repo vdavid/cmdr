@@ -45,7 +45,7 @@ use crate::agent::AgentDb;
 use crate::agent::chat::budget;
 use crate::agent::chat::runtime::{AgentChatEvent, ChatRuntime};
 use crate::agent::chat::session::{
-    capture_envelope, local_offset, provider_and_model, resolve_agent_llm, resolve_prompt_budget,
+    AgentSlot, capture_envelope, local_offset, provider_and_model, resolve_agent_llm, resolve_prompt_budget,
 };
 use crate::agent::consent::has_current_consent;
 use crate::agent::llm::AgentLlm;
@@ -192,7 +192,7 @@ pub async fn ask_cmdr_send_message(
 
     // Resolve the LLM only after the consent gate: if AI is off/unconfigured, say so and add
     // no thread.
-    let (llm_kind, provider, model) = match resolve_agent_llm(&app) {
+    let (llm_kind, provider, model) = match resolve_agent_llm(&app, AgentSlot::Rail) {
         Ok(resolved) => resolved,
         Err(kind) => {
             let _ = on_event.send(AskCmdrStreamEvent::Failed {

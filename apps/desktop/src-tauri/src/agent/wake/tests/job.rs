@@ -263,6 +263,7 @@ fn a_prepare_that_cannot_render_a_digest_keeps_the_backlog() {
             now_secs: due_at as i64,
             // Not enough for a single line, so nothing can be said.
             digest_budget_tokens: 0,
+            ignore_deadlines: false,
         },
     );
 
@@ -273,6 +274,96 @@ fn a_prepare_that_cannot_render_a_digest_keeps_the_backlog() {
         .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
         .expect("count");
     assert_eq!(threads, 0, "nothing was opened");
+}
+
+/// The dev-only force skips the CLOCK and nothing else, so verifying the loop doesn't mean
+/// sitting out a cadence that runs up to half an hour.
+#[test]
+fn a_forced_prepare_acts_on_rows_that_are_not_due_yet() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    save_all(&conn, &inbox).expect("write");
+    assert!(!inbox.due_at(1_000), "nothing has come due at the admit instant");
+
+    let outcome = prepare_wake(
+        &conn,
+        &mut inbox,
+        &PrepareParams {
+            readiness: WakeReadiness::Ready,
+            now_secs: 1_000,
+            digest_budget_tokens: 2_000,
+            ignore_deadlines: true,
+        },
+    );
+
+    assert!(matches!(outcome, PrepareOutcome::Ready(_)), "{outcome:?}");
+    assert_eq!(inbox.len(), 0, "and it committed, so the rows are out");
+}
+
+/// ⚠️ The force skips the timer, ❌ never a gate. A forced wake on an unconsented profile has
+/// to spend nothing, or the E2E hook would be a way around the one thing the user agreed to.
+#[test]
+fn a_forced_prepare_still_obeys_the_gates() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/someone/Downloads", 4, 100),
+        FolderImportance::Scored(0.9),
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    save_all(&conn, &inbox).expect("write");
+
+    let outcome = prepare_wake(
+        &conn,
+        &mut inbox,
+        &PrepareParams {
+            readiness: WakeReadiness::NeedsConsent,
+            now_secs: 1_000,
+            digest_budget_tokens: 2_000,
+            ignore_deadlines: true,
+        },
+    );
+
+    assert!(
+        matches!(outcome, PrepareOutcome::NotReady(WakeReadiness::NeedsConsent)),
+        "{outcome:?}"
+    );
+    let threads: i64 = conn
+        .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
+        .expect("count");
+    assert_eq!(threads, 0, "nothing was opened");
+}
+
+/// An empty inbox has nothing to say however hard it is pushed: a force must not open a
+/// thread that reports silence.
+#[test]
+fn a_forced_prepare_on_an_empty_inbox_opens_nothing() {
+    let conn = migrated_conn();
+    let mut inbox = Inbox::default();
+
+    let outcome = prepare_wake(
+        &conn,
+        &mut inbox,
+        &PrepareParams {
+            readiness: WakeReadiness::Ready,
+            now_secs: 1_000,
+            digest_budget_tokens: 2_000,
+            ignore_deadlines: true,
+        },
+    );
+
+    assert!(matches!(outcome, PrepareOutcome::NothingDue), "{outcome:?}");
+    let threads: i64 = conn
+        .query_row("SELECT COUNT(*) FROM conversations", [], |row| row.get(0))
+        .expect("count");
+    assert_eq!(threads, 0);
 }
 
 /// A closed gate declines before the thread, before the drain, and before the table is
@@ -296,6 +387,7 @@ fn a_prepare_behind_a_closed_gate_spends_nothing() {
             readiness: WakeReadiness::NeedsApiKey,
             now_secs: 9_000,
             digest_budget_tokens: 2_000,
+            ignore_deadlines: false,
         },
     );
 
@@ -330,6 +422,7 @@ fn a_committed_prepare_opens_a_thread_and_empties_the_inbox() {
             readiness: WakeReadiness::Ready,
             now_secs: due_at as i64,
             digest_budget_tokens: 2_000,
+            ignore_deadlines: false,
         },
     );
 
@@ -374,6 +467,7 @@ async fn a_prepared_wake_runs_its_turn_in_the_thread_prepare_opened() {
             readiness: WakeReadiness::Ready,
             now_secs: due_at as i64,
             digest_budget_tokens: 2_000,
+            ignore_deadlines: false,
         },
     ) else {
         panic!("expected a prepared wake");

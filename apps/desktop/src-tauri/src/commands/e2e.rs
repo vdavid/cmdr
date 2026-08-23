@@ -76,6 +76,49 @@ pub fn set_test_scan_preview_delay(ms: Option<u64>) -> Result<(), String> {
     Ok(())
 }
 
+/// Stages one folder's activity for the proactive agent, then makes it act NOW.
+///
+/// Verifying the wake loop otherwise means sitting out a deadline (five seconds at the
+/// attentive end of the cadence slider, half an hour at the calm one) and hoping the fixture
+/// tree is somewhere the indexer walks. This drives the real lane end to end instead: the
+/// rollup goes through `send_rollup` like the tap's, the writer thread does the importance
+/// lookup and the admit, and `ForceWake` skips the timer and the proactive toggle.
+///
+/// ⚠️ **A Cargo feature, ❌ not an env-var hook.** `test_mode.rs` draws the line at soft hooks
+/// being "strictly additive", and forcing a wake REPLACES the timer. The three gates that
+/// protect the user (consent, Full Disk Access, a configured provider) are untouched, so a
+/// forced wake on an unconsented profile still stores nothing and runs nothing.
+///
+/// `folder` names the directory the changes happened IN, absolute; `None` forces a wake
+/// against whatever is already waiting.
+#[cfg(feature = "playwright-e2e")]
+#[tauri::command]
+#[specta::specta]
+pub fn force_agent_wake(folder: Option<String>) -> Result<(), String> {
+    use crate::agent::wake::{ChangeCounters, FolderActivity, WakeControl, send_control, send_rollup};
+
+    if let Some(folder) = folder {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|since| since.as_secs())
+            .unwrap_or(0);
+        send_rollup(FolderActivity {
+            volume_id: "root".to_string(),
+            folder,
+            // Arrivals, so the bundle scores on intent rather than on sheer volume: that is
+            // the flagship "something landed in a folder you care about" shape.
+            counters: ChangeCounters {
+                created: 5,
+                ..ChangeCounters::default()
+            },
+            observed_at: now,
+            last_event_at: now,
+        });
+    }
+    send_control(WakeControl::ForceWake);
+    Ok(())
+}
+
 /// Flushes any pending file-watcher events for E2E synchronization.
 ///
 /// The notify-debouncer-full crate buffers events for `DEBOUNCE_MS` (200 ms by

@@ -51,6 +51,20 @@ impl ResolvedAgentLlm {
     }
 }
 
+/// Who is asking for an LLM. The two slots share one provider, one key, and one model, so
+/// this changes NOTHING on the real path.
+///
+/// ⚠️ It exists for the E2E fake, which must not answer a wake the way it answers the rail: the
+/// rail's specs assert on the scripted reply's exact text, so one shared script would make a
+/// wake's thread indistinguishable from a rail thread and would tie the two suites together.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AgentSlot {
+    /// A message the user sent in the chat rail.
+    Rail,
+    /// A turn the wake loop started on its own.
+    Wake,
+}
+
 /// Resolve the Ask Cmdr interactive slot into a ready LLM. The slot layers a dedicated
 /// model choice (`askCmdr.interactiveModel`, read fresh) OVER the shared `ai/` provider
 /// config (agent-spec D43): provider on/off, keys, and base URLs stay single-sourced in
@@ -58,13 +72,16 @@ impl ResolvedAgentLlm {
 /// migration (D49). An empty override uses the model the `ai/` provider is configured with.
 /// Returns the backend plus the provider/model the cost meter records, or a typed error
 /// when AI is off/unconfigured.
-pub fn resolve_agent_llm(app: &AppHandle) -> Result<(ResolvedAgentLlm, ProviderTag, String), AgentErrorKind> {
+pub fn resolve_agent_llm(
+    app: &AppHandle,
+    slot: AgentSlot,
+) -> Result<(ResolvedAgentLlm, ProviderTag, String), AgentErrorKind> {
     // E2E harness path: drive a deterministic scripted assistant with zero network, so the
     // rail's send-and-render can be tested without a provider. Guarded by an explicit env
     // flag so it never activates in a normal run.
     if crate::test_mode::ask_cmdr_fake_active() {
         return Ok((
-            ResolvedAgentLlm::Fake(scripted_fake_llm()),
+            ResolvedAgentLlm::Fake(scripted_fake_llm(slot)),
             ProviderTag::Local,
             "fake".to_string(),
         ));
@@ -86,13 +103,20 @@ pub fn resolve_agent_llm(app: &AppHandle) -> Result<(ResolvedAgentLlm, ProviderT
 
 /// The scripted turn the E2E fake streams: a short multi-chunk reply, so the test sees
 /// streamed text land and a `Done`. Kept trivially deterministic.
-fn scripted_fake_llm() -> FakeAgentLlm {
+///
+/// ⚠️ **One script per slot, and the RAIL's is load-bearing.** `ask-cmdr.spec.ts` counts
+/// replies by matching "test assistant", so changing that phrasing breaks specs that have
+/// nothing to do with the wake loop. A wake gets its own sentence instead, which is also what
+/// lets a wake spec tell a thread the agent opened apart from one the user did.
+fn scripted_fake_llm(slot: AgentSlot) -> FakeAgentLlm {
     use crate::agent::llm::fake::ScriptedTurn;
-    FakeAgentLlm::script(vec![ScriptedTurn::Say(vec![
-        "Hi! ".to_string(),
-        "I'm the ".to_string(),
-        "test assistant.".to_string(),
-    ])])
+    let chunks = match slot {
+        AgentSlot::Rail => ["Hi! ", "I'm the ", "test assistant."],
+        AgentSlot::Wake => ["I had ", "a look at ", "what changed."],
+    };
+    FakeAgentLlm::script(vec![ScriptedTurn::Say(
+        chunks.iter().map(|chunk| (*chunk).to_string()).collect(),
+    )])
 }
 
 /// The provider tag + effective model label for cost metering. The model is the

@@ -36,6 +36,12 @@ pub struct PrepareParams {
     pub now_secs: i64,
     /// What the digest may spend.
     pub digest_budget_tokens: usize,
+    /// Act on whatever is waiting even if nothing has come due yet.
+    ///
+    /// ⚠️ Set ONLY by the `playwright-e2e` force-wake command, so a test doesn't have to sit
+    /// out a deadline. It skips the clock and nothing else: the gates, the empty-digest bail,
+    /// and the drain-only-when-committed order all still apply.
+    pub ignore_deadlines: bool,
 }
 
 /// A wake that is going to happen: the thread is open, the rows are out of the inbox, and the
@@ -129,7 +135,7 @@ pub fn prepare_wake(conn: &Connection, inbox: &mut Inbox, params: &PrepareParams
         return PrepareOutcome::NotReady(params.readiness);
     }
     let now = params.now_secs.max(0) as u64;
-    if !inbox.due_at(now) {
+    if !params.ignore_deadlines && !inbox.due_at(now) {
         return PrepareOutcome::NothingDue;
     }
 
@@ -235,6 +241,7 @@ pub async fn run_wake(
             readiness: params.readiness,
             now_secs: params.now_secs,
             digest_budget_tokens: params.digest_budget_tokens,
+            ignore_deadlines: false,
         },
     ) {
         PrepareOutcome::Ready(prepared) => prepared,

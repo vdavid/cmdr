@@ -192,13 +192,16 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   via `#[cfg]` on the function itself (not the module).
 - **`e2e.rs`**: E2E/test-support hooks, always compiled in (reading an unset env var is a no-op in production):
   `get_e2e_start_path`, `is_e2e_mode`, `ask_cmdr_fake_active`, `is_force_onboarding`, `set_test_throttle`,
-  `set_test_scan_preview_delay`, `flush_file_watcher`.
+  `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake` (stages one folder's activity on the wake
+  loop's real channel and makes it act now; it skips the timer and the proactive toggle, never a gate —
+  `agent/wake/DETAILS.md` § Forcing a wake).
 
 ## Decisions
 
 `agent/` is the one command domain split into a directory, because it carries five unrelated command families plus the
 wire DTOs they share: `views.rs` (the stream event enum, the specta display projections, and the pure mappings),
-`chat.rs` (send + cancel), `attachments.rs`, `bulk_rename.rs`, `conversations.rs`, `consent.rs`, `cost.rs`. `mod.rs`
+`chat.rs` (send + cancel), `attachments.rs`, `bulk_rename.rs`, `conversations.rs`, `consent.rs`, `cost.rs`,
+`wake.rs` (the live-apply push for the proactive loop's three settings). `mod.rs`
 glob-re-exports each submodule, which is load-bearing: `#[tauri::command]` generates companion items next to the
 function, and the `ipc.rs` manifest registers by the `crate::commands::agent::<name>` path, so a NAMED re-export
 would leave those hidden items behind and fail to compile. `mod.rs` also owns the two shared `main.db` connection

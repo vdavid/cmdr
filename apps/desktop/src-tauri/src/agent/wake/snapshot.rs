@@ -95,7 +95,15 @@ fn consented<R: Runtime>(app: &AppHandle<R>) -> bool {
 
 /// Whether a usable provider is configured for the interactive slot — the same resolution a
 /// send performs, so the indicator can never say "ready" for a slot that would refuse.
+///
+/// ⚠️ That includes the E2E fake's short-circuit. `resolve_agent_llm` answers `Ok` under
+/// `CMDR_E2E_ASK_CMDR_FAKE` with `ai.provider` still off, so without the same branch here the
+/// gate would report `NeedsApiKey` for a slot that resolves fine, and no wake could ever run
+/// under the harness.
 fn has_api_key<R: Runtime>(app: &AppHandle<R>) -> bool {
+    if crate::test_mode::ask_cmdr_fake_active() {
+        return true;
+    }
     use crate::ai::manager::BackendResolution;
     let model_override = crate::settings::load_ask_cmdr_interactive_model(app);
     matches!(

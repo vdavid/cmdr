@@ -87,6 +87,13 @@ pub enum WakeControl {
     SettingsChanged,
     /// The wake thread finished, so another may be prepared.
     WakeFinished,
+    /// Act on whatever is in the inbox NOW, ignoring the timer and the proactive toggle.
+    ///
+    /// ⚠️ Only the `playwright-e2e` command `force_agent_wake` sends this. It is a hard hook
+    /// behind a Cargo feature rather than a soft env-var one, because it REPLACES the timer
+    /// instead of adding to it, and `test_mode.rs` draws the line there. The gates that
+    /// protect the user (consent, disk access, a provider) are NOT bypassed.
+    ForceWake,
 }
 
 /// The endpoint: one sender, the receiver waiting to be claimed, and the rollup accounting the

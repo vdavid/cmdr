@@ -418,6 +418,27 @@ export async function flushFileWatcher(tauriPage: PageLike): Promise<void> {
 }
 
 /**
+ * Stages one folder's activity for the proactive agent and makes it act immediately.
+ *
+ * Waiting for a wake the honest way means sitting out the cadence (five seconds at the
+ * attentive end of the slider, half an hour at the calm one) and hoping the fixture tree is
+ * somewhere the indexer walks. This drives the real lane instead: the rollup travels the same
+ * channel the indexer's tap uses, and the force skips the timer and the proactive toggle. The
+ * gates that protect the user (consent above all) still apply, so accept consent first.
+ *
+ * Compiled only with the `playwright-e2e` Cargo feature; not in typed bindings, so we call it
+ * via raw `__TAURI_INTERNALS__.invoke`. See `commands/e2e.rs::force_agent_wake`.
+ *
+ * @param folder absolute path of the folder the changes happened in; the wake thread is named
+ *   after its last segment
+ */
+export async function forceAgentWake(tauriPage: PageLike, folder: string): Promise<void> {
+  await tauriPage.evaluate(
+    `window.__TAURI_INTERNALS__.invoke('force_agent_wake', { folder: ${JSON.stringify(folder)} })`,
+  )
+}
+
+/**
  * The paths the app handed to an external launcher (`open_path` default-open, and
  * `open_in_editor` for the `file.edit` / new-file flows), oldest first. Both are
  * mocked in the `playwright-e2e` build: nothing launches, the requests just land in

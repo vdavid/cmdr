@@ -22,7 +22,7 @@ use super::settings::{self, WakeSettings};
 use super::snapshot::readiness_snapshot;
 use super::{Inbox, PrepareOutcome, PrepareParams, persist, prepare_wake};
 use crate::agent::chat::budget;
-use crate::agent::chat::session::{resolve_agent_llm, resolve_prompt_budget};
+use crate::agent::chat::session::{AgentSlot, resolve_agent_llm, resolve_prompt_budget};
 use crate::agent::store;
 
 const LOG_TARGET: &str = "agent::wake";
@@ -75,6 +75,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
         settings: settings::load(&app),
         wake_in_flight: false,
         not_before: 0,
+        forced: false,
         app,
         conn,
     };
@@ -129,6 +130,10 @@ struct WakeLoop {
     /// Unix seconds before which no wake is attempted, however overdue the inbox looks. See
     /// [`DECLINED_WAKE_BACKOFF`].
     not_before: u64,
+    /// A [`WakeControl::ForceWake`] is outstanding: act on the inbox now, whatever the timer
+    /// and the proactive toggle say. Cleared once the attempt is actually made, so a force
+    /// arriving while a wake runs lands on the next pass rather than being swallowed.
+    forced: bool,
 }
 
 impl WakeLoop {
@@ -173,6 +178,7 @@ impl WakeLoop {
             WakeControl::SettingsChanged => self.reload_settings(),
             WakeControl::ReadinessChanged => {}
             WakeControl::WakeFinished => self.wake_in_flight = false,
+            WakeControl::ForceWake => self.forced = true,
         }
         // Every control message is a reason the last decision may no longer hold: the gate the
         // wake was refused by may have opened, or the wake it was waiting on may have finished.
@@ -214,7 +220,8 @@ impl WakeLoop {
     /// Prepare a wake if one is due, and hand it to its own thread.
     fn try_wake(&mut self) {
         let now = now_secs();
-        if now < self.not_before || !self.inbox.due_at(now) {
+        let forced = self.forced;
+        if !forced && (now < self.not_before || !self.inbox.due_at(now)) {
             return;
         }
         // ⚠️ Whatever happens below, don't come straight back: the deadline that brought us here
@@ -225,15 +232,19 @@ impl WakeLoop {
         // At most one wake in flight. A second prepared while the first runs would queue behind
         // the same conversation lock for a whole model call, holding rows the first could have
         // carried. `WakeFinished` clears the stamp above, so the next one starts as soon as this
-        // one ends rather than waiting out the backoff.
+        // one ends rather than waiting out the backoff. A force outlives the wait: the flag
+        // stays set so the request lands once the running wake reports finished.
         if self.wake_in_flight {
             return;
         }
+        self.forced = false;
 
         // The fourth gate, beside the three in `readiness.rs`. Checked before anything is
         // resolved, so an opted-out user's inbox costs nothing beyond the rows. Silent: this is
-        // M1's default state, and one log line every five minutes for it would be noise.
-        if !self.settings.proactive {
+        // the shipped default, and one log line every five minutes for it would be noise. A
+        // forced wake is a developer asking for one, so it is the one thing that skips it — the
+        // three gates that protect the USER are still checked below.
+        if !forced && !self.settings.proactive {
             return;
         }
         let readiness = readiness_snapshot();
@@ -256,6 +267,7 @@ impl WakeLoop {
                 readiness,
                 now_secs: now as i64,
                 digest_budget_tokens: budget::wake_digest_budget(slot.prompt_budget),
+                ignore_deadlines: forced,
             },
         ) {
             PrepareOutcome::Ready(prepared) => {
@@ -275,7 +287,7 @@ impl WakeLoop {
     /// way a rail send resolves them, and read FRESH, so a wake never thinks with a different
     /// window than the rail would.
     fn resolve_slot(&self) -> Option<PendingSlot> {
-        let (llm, provider, model) = match resolve_agent_llm(&self.app) {
+        let (llm, provider, model) = match resolve_agent_llm(&self.app, AgentSlot::Wake) {
             Ok(resolved) => resolved,
             Err(kind) => {
                 log::debug!(target: LOG_TARGET, "a wake came due with no provider configured: {kind:?}");
