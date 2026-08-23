@@ -149,9 +149,7 @@ test.describe('Ask Cmdr rail', () => {
   // what the settings "Turn off" button does, so the test starts from a state a user reaches.
   test('gates on consent, and accepting unlocks the chat', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
-    await page.evaluate(
-      `(async function(){ await window.__TAURI_INTERNALS__.invoke('ask_cmdr_revoke_consent'); })()`,
-    )
+    await page.evaluate(`(async function(){ await window.__TAURI_INTERNALS__.invoke('ask_cmdr_revoke_consent'); })()`)
     await openRailViaMenu(page)
     // The gate is shown; the composer is not reachable yet.
     await expect.poll(() => consentShown(page), { timeout: 3000 }).toBe(true)
