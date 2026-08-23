@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -36,6 +37,14 @@ import (
 // nothing here: a test only one platform compiles, named so the override is
 // ready wherever it does. It carries a reason after the colon, or it isn't an
 // opt-out. An orphaned one fails, like every other opt-out in this package.
+//
+// A reason may OPEN with a platform scope (`macos-only`, `linux-only`,
+// `windows-only`), and that scope is what makes the opt-out safe: the filter is
+// excused everywhere except the platform it names, so the lane where the test
+// actually compiles still fails if a rename rots the filter. Without the scope
+// an opt-out would silence the check on every platform, which is the whole
+// failure this check exists to catch. A scoped opt-out is never an orphan: it
+// works for the OTHER platform's lane.
 const AllowUnmatchedNextestFilterComment = "# allowed-unmatched-nextest-filter:"
 
 // nextestTestAtomPattern pulls the argument out of every `test(...)` atom in a
@@ -63,7 +72,7 @@ type nextestFilterFinding struct {
 func scanNextestFilters(config string, testNames []string) []nextestFilterFinding {
 	var findings []nextestFilterFinding
 	seen := map[string]bool{}
-	for _, match := range nextestTestAtomPattern.FindAllStringSubmatch(config, -1) {
+	for _, match := range nextestTestAtomPattern.FindAllStringSubmatch(filterDeclarationsIn(config), -1) {
 		atom := strings.TrimSpace(match[1])
 		if atom == "" || seen[atom] {
 			continue
@@ -75,6 +84,49 @@ func scanNextestFilters(config string, testNames []string) []nextestFilterFindin
 		findings = append(findings, nextestFilterFinding{atom: atom, movedTo: leafHome(atom, testNames)})
 	}
 	return findings
+}
+
+// nextestFilterDeclarationStart matches the opening of a `filter = '...'` line,
+// which is the only place an atom is DECLARED.
+var nextestFilterDeclarationStart = regexp.MustCompile(`^\s*filter\s*=`)
+
+// filterDeclarationsIn returns only the config's filter declarations, so the
+// atom scan can't read one out of a comment.
+//
+// This file's own prose explains the substring trap by writing `test(x)`, and
+// comments quote filters while discussing them. Scanning those invented atoms
+// that answer to nobody — harmless only because a one-letter atom matches
+// something by luck, and a phantom `test(y)` in a future comment would fail the
+// check with nothing to fix. A declaration's value can span lines, so it runs
+// until its quote closes.
+func filterDeclarationsIn(config string) string {
+	var kept []string
+	inDeclaration := false
+	for _, line := range strings.Split(config, "\n") {
+		if !inDeclaration {
+			if strings.HasPrefix(strings.TrimLeft(line, " \t"), "#") {
+				continue
+			}
+			if !nextestFilterDeclarationStart.MatchString(line) {
+				continue
+			}
+			// TOML's multi-line literal opens with three quotes and runs to the
+			// next three; the single-quoted shape opens and closes on its own line.
+			value := line[strings.Index(line, "=")+1:]
+			if strings.Contains(value, "'''") {
+				inDeclaration = strings.Count(value, "'''") == 1
+			} else {
+				inDeclaration = strings.Count(value, "'") < 2
+			}
+			kept = append(kept, line)
+			continue
+		}
+		kept = append(kept, line)
+		if strings.Contains(line, "'''") {
+			inDeclaration = false
+		}
+	}
+	return strings.Join(kept, "\n")
 }
 
 // anyContains reports whether any name carries `needle` as a substring, which is
@@ -155,20 +207,7 @@ func RunNextestFilterCoverage(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("`cargo nextest list` named no tests, so nothing here can be judged")
 	}
 
-	tracker := newDirectiveTracker(AllowUnmatchedNextestFilterComment, "#")
-	for i, line := range strings.Split(config, "\n") {
-		tracker.observe(i+1, line)
-	}
-
-	findings := scanNextestFilters(config, names)
-	var unexcused []nextestFilterFinding
-	for _, f := range findings {
-		if at, found := nextestFilterOptOutFor(config, f.atom); found {
-			tracker.markLineUsed(at)
-			continue
-		}
-		unexcused = append(unexcused, f)
-	}
+	unexcused, orphanDirectives := excuseNextestFindings(config, names, runtime.GOOS)
 
 	if len(unexcused) > 0 {
 		lines := make([]string, len(unexcused))
@@ -187,7 +226,7 @@ func RunNextestFilterCoverage(ctx *CheckContext) (CheckResult, error) {
 			len(unexcused), Pluralize(len(unexcused), "filter", "filters"), strings.Join(lines, "\n  "),
 			AllowUnmatchedNextestFilterComment)
 	}
-	if orphans := tracker.orphans(".config/nextest.toml"); len(orphans) > 0 {
+	if orphans := orphanDirectives; len(orphans) > 0 {
 		return CheckResult{}, fmt.Errorf("%s", formatOrphanDirectives(AllowUnmatchedNextestFilterComment, orphans))
 	}
 
@@ -196,10 +235,72 @@ func RunNextestFilterCoverage(ctx *CheckContext) (CheckResult, error) {
 		atoms, Pluralize(atoms, "filter", "filters"), formatThousands(len(names)))), nil
 }
 
+// nextestFilterPlatformScopes maps the scope token an opt-out reason may open
+// with to the `runtime.GOOS` it names. A scoped opt-out excuses the filter
+// everywhere EXCEPT that platform, because that platform is the one where the
+// test compiles, the override does its work, and a rename can rot the filter.
+var nextestFilterPlatformScopes = map[string]string{
+	"macos-only":   "darwin",
+	"linux-only":   "linux",
+	"windows-only": "windows",
+}
+
+// nextestFilterScopeOf returns the `runtime.GOOS` an opt-out reason scopes
+// itself to, or "" when it is unconditional. The token opens the reason, so
+// `macos-only, hdiutil has no Linux counterpart` scopes and a reason merely
+// mentioning macOS in prose does not.
+func nextestFilterScopeOf(reason string) string {
+	for token, goos := range nextestFilterPlatformScopes {
+		if strings.HasPrefix(reason, token) {
+			return goos
+		}
+	}
+	return ""
+}
+
+// excuseNextestFindings decides, for the platform named by goos, which stale
+// filters are real rot and which opt-out comments are orphans.
+//
+// Split out of [RunNextestFilterCoverage] and pure so the OTHER platform's
+// behaviour is testable from this one: the Linux lane is where a macOS-only
+// filter looks deleted, and that lane can't be reached from a macOS test run.
+func excuseNextestFindings(config string, names []string, goos string) ([]nextestFilterFinding, []orphanDirective) {
+	tracker := newDirectiveTracker(AllowUnmatchedNextestFilterComment, "#")
+	for i, line := range strings.Split(config, "\n") {
+		tracker.observe(i+1, line)
+		// A scoped opt-out exists for the OTHER platform's lane, so it is never an
+		// orphan on this one: on the platform it names the filter matches (no
+		// finding to excuse), and everywhere else it does the excusing. Reporting
+		// it unused on either side would mean deleting the reason on one OS and
+		// re-adding it on the other, which is how an opt-out ends up with no
+		// reason at all. The cost is that a scoped opt-out outlives its filter;
+		// the atom itself still has to name a real test on its own platform.
+		if marker := strings.Index(line, AllowUnmatchedNextestFilterComment); marker >= 0 {
+			reason := strings.TrimSpace(line[marker+len(AllowUnmatchedNextestFilterComment):])
+			if nextestFilterScopeOf(reason) != "" {
+				tracker.markLineUsed(i + 1)
+			}
+		}
+	}
+
+	var unexcused []nextestFilterFinding
+	for _, f := range scanNextestFilters(config, names) {
+		at, reason, found := nextestFilterOptOutFor(config, f.atom)
+		// On the platform a scope names, the test is supposed to be here, so the
+		// opt-out does not apply and a filter selecting nothing is genuine rot.
+		if found && nextestFilterScopeOf(reason) != goos {
+			tracker.markLineUsed(at)
+			continue
+		}
+		unexcused = append(unexcused, f)
+	}
+	return unexcused, tracker.orphans(".config/nextest.toml")
+}
+
 // nextestFilterOptOutFor finds the reasoned opt-out for an atom, looked for on
 // the ten comment lines above the `filter =` line that carries it. Returns the
-// opt-out's 1-based line.
-func nextestFilterOptOutFor(config, atom string) (int, bool) {
+// opt-out's 1-based line and its reason text.
+func nextestFilterOptOutFor(config, atom string) (int, string, bool) {
 	lines := strings.Split(config, "\n")
 	for i, line := range lines {
 		if !strings.Contains(line, "test("+atom+")") {
@@ -210,10 +311,10 @@ func nextestFilterOptOutFor(config, atom string) (int, bool) {
 			if marker < 0 {
 				continue
 			}
-			if strings.TrimSpace(lines[j][marker+len(AllowUnmatchedNextestFilterComment):]) != "" {
-				return j + 1, true
+			if reason := strings.TrimSpace(lines[j][marker+len(AllowUnmatchedNextestFilterComment):]); reason != "" {
+				return j + 1, reason, true
 			}
 		}
 	}
-	return 0, false
+	return 0, "", false
 }

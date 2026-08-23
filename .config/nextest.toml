@@ -79,6 +79,7 @@ sftp-bench = { max-threads = 1 }
 # cap. 30 s matches the fixture's own `HDIUTIL_TIMEOUT` SIGKILL guard, so a
 # genuinely wedged FSKit service is caught by the fixture first and the cap
 # stays a backstop. Serialized via the `disk-image` group above.
+# allowed-unmatched-nextest-filter: macos-only, hdiutil and FSKit `msdos` have no Linux counterpart
 filter = 'test(indexing::tests::external_drive_fixture::)'
 test-group = 'disk-image'
 slow-timeout = { period = "30s", terminate-after = 1 }
@@ -176,6 +177,7 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # starved — with nextest as the hang backstop. Don't read it as a runtime:
 # measured 0.9 s on an idle machine; it only elapses if the watcher stops
 # delivering entirely.
+# allowed-unmatched-nextest-filter: macos-only, the replaced-watch-root case is FSEvents-specific
 filter = 'test(file_system::watcher_test::entries_that_went_with_a_replaced_watch_root_leave_the_listing)'
 test-group = 'real-notify'
 slow-timeout = { period = "90s", terminate-after = 1 }
@@ -289,6 +291,7 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 # `crates/fsevent-stream/` is a vendored fork of a third-party crate where diff-vs-upstream
 # is load-bearing (it's how a rebase onto upstream stays reviewable), so the structural
 # divergence costs more than the override does.
+# allowed-unmatched-nextest-filter: macos-only, `cmdr-fsevent-stream` builds on macOS alone
 filter = 'package(cmdr-fsevent-stream) & test(tests::must_receive_fs_events)'
 test-group = 'real-notify'
 slow-timeout = { period = "30s", terminate-after = 1 }

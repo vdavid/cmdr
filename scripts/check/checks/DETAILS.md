@@ -1167,7 +1167,11 @@ doubles as production code.
   each index number means, the crate's own entry in `index-crate-isolation.go` for the archive ones, and why raising
   either needs David's say-so), nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects
   a live test, so a per-test cap or `test-group` can't be silently detached by a module move; it lists the workspace's
-  tests with `cargo nextest list --run-ignored all` and names where a stale atom's leaf went). The crates' code is also
+  tests with `cargo nextest list --run-ignored all` and names where a stale atom's leaf went. It judges the HOST
+  platform, so a filter for a macOS-only test looks deleted on the Linux lane: those carry
+  `# allowed-unmatched-nextest-filter: macos-only, <why>`, which excuses the filter everywhere except the platform it
+  names, so the lane that does compile the test still catches a rename. Atoms are read from `filter =` declarations
+  only, never from comments quoting one). The crates' code is also
   covered by the desktop Rust lanes above, which all run workspace-wide; this scope is for checks about the crate
   boundary itself.
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
