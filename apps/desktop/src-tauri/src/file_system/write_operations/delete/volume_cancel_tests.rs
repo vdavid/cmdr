@@ -19,9 +19,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+use super::super::event_sinks::CollectorEventSink;
 use super::super::state::{OperationIntent, WriteOperationState, cancel_write_operation, load_intent};
 use super::super::test_support::TestOperationGuard;
-use super::super::types::{CollectorEventSink, WriteOperationConfig};
+use super::super::types::WriteOperationConfig;
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
@@ -328,8 +329,9 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
 /// The collector captures the relative order on the sink.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn volume_cancel_emits_write_settled_event() {
+    use crate::file_system::write_operations::event_sinks::OperationEventSink;
     use crate::file_system::write_operations::state::WriteSettledGuard;
-    use crate::file_system::write_operations::types::{OperationEventSink, WriteOperationType, WriteSettledEvent};
+    use crate::file_system::write_operations::types::{WriteOperationType, WriteSettledEvent};
 
     /// Test sink that records both terminal events AND settled in arrival order.
     struct OrderedSink {
@@ -492,8 +494,9 @@ async fn volume_complete_emits_write_settled_event() {
     let config = WriteOperationConfig::default();
 
     {
-        let sink_for_guard: Arc<dyn crate::file_system::write_operations::types::OperationEventSink> =
-            Arc::clone(&inner_collector) as Arc<dyn crate::file_system::write_operations::types::OperationEventSink>;
+        let sink_for_guard: Arc<dyn crate::file_system::write_operations::event_sinks::OperationEventSink> =
+            Arc::clone(&inner_collector)
+                as Arc<dyn crate::file_system::write_operations::event_sinks::OperationEventSink>;
         let _settled_guard = WriteSettledGuard::new(
             sink_for_guard,
             op_id.clone(),
@@ -614,8 +617,9 @@ async fn volume_error_emits_write_settled_event() {
     let config = WriteOperationConfig::default();
 
     {
-        let sink_for_guard: Arc<dyn crate::file_system::write_operations::types::OperationEventSink> =
-            Arc::clone(&inner_collector) as Arc<dyn crate::file_system::write_operations::types::OperationEventSink>;
+        let sink_for_guard: Arc<dyn crate::file_system::write_operations::event_sinks::OperationEventSink> =
+            Arc::clone(&inner_collector)
+                as Arc<dyn crate::file_system::write_operations::event_sinks::OperationEventSink>;
         let _settled_guard = WriteSettledGuard::new(
             sink_for_guard,
             op_id.clone(),

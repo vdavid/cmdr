@@ -21,8 +21,9 @@ use std::time::Duration;
 
 use super::move_same::move_within_same_volume_with_progress;
 use crate::file_system::volume::{MtpVolume, Volume};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::WriteOperationState;
-use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution, VolumeCopyConfig};
+use crate::file_system::write_operations::types::{ConflictResolution, VolumeCopyConfig};
 use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
 use crate::mtp::virtual_device::{
     rescan_virtual_device, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,

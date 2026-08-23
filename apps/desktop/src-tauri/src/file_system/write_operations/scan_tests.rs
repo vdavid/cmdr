@@ -398,7 +398,7 @@ fn a_dry_run_of_a_same_folder_copy_reports_no_conflicts() {
     fs::create_dir(dir.path().join("docs")).expect("create dir");
     fs::write(dir.path().join("docs/a.txt"), b"notes").expect("write nested file");
 
-    let events = crate::file_system::write_operations::types::CollectorEventSink::new();
+    let events = crate::file_system::write_operations::event_sinks::CollectorEventSink::new();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
     let result = dry_run_scan(
         &[dir.path().join("photo.jpg"), dir.path().join("docs")],
@@ -427,7 +427,7 @@ fn a_dry_run_of_a_copy_onto_a_different_file_still_reports_the_conflict() {
     fs::write(source_dir.path().join("photo.jpg"), b"mine").expect("write source");
     fs::write(dest_dir.path().join("photo.jpg"), b"theirs").expect("write dest");
 
-    let events = crate::file_system::write_operations::types::CollectorEventSink::new();
+    let events = crate::file_system::write_operations::event_sinks::CollectorEventSink::new();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
     let result = dry_run_scan(
         &[source_dir.path().join("photo.jpg")],

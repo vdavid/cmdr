@@ -8,8 +8,9 @@
 //! deliberate decision. See transfer/DETAILS.md § "Pause and the concurrent copy
 //! path".
 
+use super::super::super::event_sinks::CollectorEventSink;
 use super::super::super::state::{register_operation_status, unregister_operation_status};
-use super::super::super::types::{CollectorEventSink, WriteOperationType};
+use super::super::super::types::WriteOperationType;
 use super::test_support::{install_state, make_state, unique_op_id};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -29,7 +30,7 @@ async fn concurrent_per_file_callback_is_cancel_only_not_pause_aware() {
     let state = make_state();
     let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
-    let sink: Arc<dyn super::super::super::types::OperationEventSink> = Arc::new(CollectorEventSink::new());
+    let sink: Arc<dyn super::super::super::event_sinks::OperationEventSink> = Arc::new(CollectorEventSink::new());
 
     let cb = make_concurrent_per_file_progress(
         Arc::clone(&sink),

@@ -29,7 +29,7 @@ pub(in crate::file_system::write_operations) use walker::{
 pub(crate) async fn delete_volume_files_for_test(
     volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
     volume_id: &str,
-    events: &dyn super::types::OperationEventSink,
+    events: &dyn super::event_sinks::OperationEventSink,
     operation_id: &str,
     state: &std::sync::Arc<super::state::WriteOperationState>,
     sources: &[std::path::PathBuf],

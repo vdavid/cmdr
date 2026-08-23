@@ -10,10 +10,11 @@ use std::time::{Duration, Instant};
 
 use super::cancellable::run_cancellable_scoped;
 use super::conflict::{calculate_dest_path, create_conflict_info, sample_conflicts};
+use super::error_classification::IoResultExt;
+use super::event_sinks::OperationEventSink;
 use super::state::{FileInfo, ScanResult, WriteOperationState, update_operation_status};
 use super::types::{
-    ConflictInfo, IoResultExt, OperationEventSink, ScanProgressEvent, WriteOperationError, WriteOperationPhase,
-    WriteOperationType, WriteProgressEvent,
+    ConflictInfo, ScanProgressEvent, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
 use super::validation::is_symlink_loop;
 use crate::file_system::listing::caching::try_get_authoritative_listing;

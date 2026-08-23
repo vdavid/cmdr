@@ -115,10 +115,10 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use super::super::event_sinks::OperationEventSink;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::types::{
-    ConflictResolution, OperationEventSink, WriteOperationError, WriteOperationPhase, WriteOperationType,
-    WriteProgressEvent,
+    ConflictResolution, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
 
 mod async_driver;

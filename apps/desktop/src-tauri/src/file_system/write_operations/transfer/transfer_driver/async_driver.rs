@@ -7,8 +7,9 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Instant;
 
+use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent};
-use crate::file_system::write_operations::types::{OperationEventSink, WriteOperationError};
+use crate::file_system::write_operations::types::WriteOperationError;
 
 use super::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferLoopOutcome,

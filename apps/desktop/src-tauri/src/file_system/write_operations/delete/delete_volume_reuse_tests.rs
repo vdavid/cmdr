@@ -14,8 +14,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::Duration;
 
+use super::super::event_sinks::CollectorEventSink;
 use super::super::state::{CachedScanResult, OperationIntent, WriteOperationState, insert_scan_result};
-use super::super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationError};
+use super::super::types::{WriteOperationConfig, WriteOperationError};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;

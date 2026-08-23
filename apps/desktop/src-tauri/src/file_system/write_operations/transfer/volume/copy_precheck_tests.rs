@@ -25,8 +25,9 @@ use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{
     CopyScanResult, DirectoryCreation, InMemoryVolume, ListingProgress, SpaceInfo, VolumeReadStream,
 };
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
-use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
+use crate::file_system::write_operations::types::ConflictResolution;
 use crate::ignore_poison::IgnorePoison;
 use std::ops::ControlFlow;
 use unicode_normalization::UnicodeNormalization;

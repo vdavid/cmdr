@@ -5,14 +5,15 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use super::super::error_classification::IoResultExt;
+use super::super::event_sinks::OperationEventSink;
 use super::super::scan::{SourceItemTracker, scan_sources};
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::transfer::volume::{PathRole, map_volume_error};
 use super::super::types::{
-    DryRunResult, IoResultExt, OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    DryRunResult, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::volume::{Volume, VolumeError};

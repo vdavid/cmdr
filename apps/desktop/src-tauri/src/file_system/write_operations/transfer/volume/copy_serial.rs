@@ -25,11 +25,10 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use super::super::super::conflict::ApplyToAll;
+use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::journal;
 use super::super::super::state::WriteOperationState;
-use super::super::super::types::{
-    OperationEventSink, VolumeCopyConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
-};
+use super::super::super::types::{VolumeCopyConfig, WriteOperationError, WriteOperationPhase, WriteOperationType};
 use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, drive_transfer_serial_async,

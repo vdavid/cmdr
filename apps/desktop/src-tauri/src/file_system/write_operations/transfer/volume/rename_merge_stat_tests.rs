@@ -14,10 +14,9 @@
 use super::move_same::move_within_same_volume_with_progress;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::WriteOperationState;
-use crate::file_system::write_operations::types::{
-    CollectorEventSink, ConflictResolution, VolumeCopyConfig, WriteOperationError,
-};
+use crate::file_system::write_operations::types::{ConflictResolution, VolumeCopyConfig, WriteOperationError};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;

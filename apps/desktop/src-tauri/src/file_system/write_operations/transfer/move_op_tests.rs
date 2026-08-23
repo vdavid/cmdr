@@ -7,7 +7,8 @@
 //! without needing two real mount points.
 
 use super::*;
-use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::types::ConflictResolution;
 use crate::ignore_poison::IgnorePoison;
 
 fn make_state(progress_interval_ms: u64) -> Arc<WriteOperationState> {

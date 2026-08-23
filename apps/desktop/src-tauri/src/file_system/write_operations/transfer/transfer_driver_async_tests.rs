@@ -23,9 +23,10 @@
 //! - **Pause gate**: the async driver parks between files while paused, resumes
 //!   to completion, and a cancel while paused unblocks and ends as Cancelled.
 
+use super::super::super::event_sinks::CollectorEventSink;
 use super::super::super::state::{OperationIntent, register_operation_status, unregister_operation_status};
 use super::super::super::test_support::park_holds_at;
-use super::super::super::types::{CollectorEventSink, WriteOperationError, WriteOperationType};
+use super::super::super::types::{WriteOperationError, WriteOperationType};
 use super::test_support::{CallLog, copy_config, install_state, make_state, paths, unique_op_id};
 use super::{
     ConflictDecision, ConflictDecisionInput, PostLoopIntent, TransferContext, TransferOutcome,

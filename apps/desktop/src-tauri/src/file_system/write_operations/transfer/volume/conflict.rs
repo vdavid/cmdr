@@ -15,10 +15,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
+use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
-    ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent,
-    WriteOperationError,
+    ConflictResolution, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationError,
 };
 use super::super::super::unique_name::ClaimedNames;
 use super::super::dest_name_index::fold;

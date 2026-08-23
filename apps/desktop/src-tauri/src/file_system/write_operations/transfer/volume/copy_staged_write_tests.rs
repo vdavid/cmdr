@@ -15,7 +15,8 @@
 use super::tests::make_state;
 use super::wedge_test_support::*;
 use super::*;
-use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::types::ConflictResolution;
 use cmdr_fs::testing::wait_until_async;
 use std::sync::atomic::Ordering;
 

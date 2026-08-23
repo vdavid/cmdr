@@ -13,11 +13,12 @@
 //! that answers inside `emit_conflict`) finds the sender already present.
 
 use super::*;
+use crate::file_system::write_operations::event_sinks::{CollectorEventSink, OperationEventSink};
 use crate::file_system::write_operations::state::{ConflictResolutionResponse, WriteOperationState};
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, ConflictInfo, ConflictResolution, DryRunResult, OperationEventSink, ScanProgressEvent,
-    TransferWaitReason, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent,
-    WriteOperationConfig, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    ConflictInfo, ConflictResolution, DryRunResult, ScanProgressEvent, TransferWaitReason, WriteCancelledEvent,
+    WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationPhase,
+    WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::ignore_poison::IgnorePoison;
 use std::sync::Arc;

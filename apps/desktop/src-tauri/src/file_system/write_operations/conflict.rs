@@ -13,11 +13,12 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::durability::lookup_indexed_size;
+use super::event_sinks::OperationEventSink;
 use super::overwrite::ResolvedDestination;
 use super::state::WriteOperationState;
 use super::types::{
-    ConflictId, ConflictInfo, ConflictResolution, OperationEventSink, WriteConflictEvent, WriteConflictResolvedEvent,
-    WriteOperationConfig, WriteOperationError,
+    ConflictId, ConflictInfo, ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationConfig,
+    WriteOperationError,
 };
 use super::unique_name::find_unique_name;
 

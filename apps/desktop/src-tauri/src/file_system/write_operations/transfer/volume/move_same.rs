@@ -15,12 +15,13 @@ use std::time::Duration;
 use uuid::Uuid;
 
 use super::super::super::conflict::ApplyToAll;
+use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::journal;
 use super::super::super::manager;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
-    OperationEventSink, SourceItemOutcome, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteSourceItemDoneEvent,
+    SourceItemOutcome, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
+    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,

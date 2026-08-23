@@ -13,9 +13,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use super::super::event_sinks::CollectorEventSink;
 use super::super::state::{CachedScanResult, FileInfo, WriteOperationState, insert_scan_result};
 use super::super::test_support::TestOperationGuard;
-use super::super::types::{CollectorEventSink, WriteOperationConfig};
+use super::super::types::WriteOperationConfig;
 use super::walker::{delete_files_with_progress_inner, delete_volume_files_with_progress_inner};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, Volume};

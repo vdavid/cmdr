@@ -74,31 +74,7 @@ use super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, forget_operation, register_operation_status,
     unregister_operation_status,
 };
-use super::types::{WriteOperationError, WriteOperationType};
-
-/// Lifecycle status of a managed operation, as shown in the queue window.
-/// `Paused` is set only by the pause/resume path (`set_paused`); the rest flow
-/// from admission and settle. Distinct from `WriteOperationPhase` (the progress
-/// phase: Scanning/Copying/Flushing) and from `OperationIntent` (the
-/// cancel/rollback machine) — a paused op is still `Running`-intent and may be
-/// mid-`Copying`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(rename_all = "snake_case")]
-pub enum LifecycleStatus {
-    /// Registered, waiting for its lanes to free.
-    Queued,
-    /// Admitted; its deferred start has spawned the real work.
-    Running,
-    /// Running but pause-gated: the op is parked between files and still holds
-    /// its lane slots. Set by the pause/resume path.
-    Paused,
-    /// Finished successfully.
-    Done,
-    /// Cancelled by the user (keep-partials).
-    Cancelled,
-    /// Could not complete.
-    Failed,
-}
+use super::types::{LifecycleStatus, WriteOperationError, WriteOperationType};
 
 /// What a pause or resume request actually did, so every caller can say so
 /// instead of assuming it worked. Pause and resume share it: the three outcomes

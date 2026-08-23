@@ -36,10 +36,10 @@ use super::linux_copy::copy_single_file_linux;
 #[cfg(target_os = "macos")]
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+use super::super::error_classification::IoResultExt;
 use super::super::overwrite::stage_and_land_file;
 use super::super::state::WriteOperationState;
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-use super::super::types::IoResultExt;
 use super::super::types::WriteOperationError;
 use super::chunked_copy::ChunkedCopyProgressFn;
 #[cfg(any(target_os = "macos", target_os = "linux"))]

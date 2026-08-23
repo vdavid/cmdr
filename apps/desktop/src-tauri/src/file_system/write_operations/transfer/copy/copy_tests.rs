@@ -5,7 +5,7 @@
 //! `InMemoryVolume`.
 
 use super::*;
-use crate::file_system::write_operations::types::CollectorEventSink;
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 
 fn make_state(progress_interval_ms: u64) -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)))

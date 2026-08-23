@@ -57,8 +57,9 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use super::super::super::conflict::ApplyToAll;
+use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::state::{WriteOperationState, is_cancelled};
-use super::super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
+use super::super::super::types::{VolumeCopyConfig, WriteOperationError};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::listing::FileEntry;

@@ -8,6 +8,8 @@ use std::sync::Arc;
 use super::super::cancellable::remove_dir_all_in_background;
 use super::super::conflict::{ApplyToAll, resolve_conflict};
 use super::super::durability::flush_created_destinations;
+use super::super::error_classification::IoResultExt;
+use super::super::event_sinks::OperationEventSink;
 use super::super::overwrite::safe_overwrite_dir;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
 use super::super::scan_cache::take_cached_scan_result;
@@ -15,9 +17,8 @@ use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use super::super::types::{
-    IoResultExt, OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use super::super::validation::{
     is_same_file, is_same_filesystem, path_exists_or_is_symlink, validate_file_sizes_for_filesystem,

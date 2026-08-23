@@ -22,12 +22,13 @@
 //! Both events keep firing. A pre-confirm dialog may still be watching the same
 //! preview by `previewId`, and it has no operation to watch instead.
 
+use super::event_sinks::OperationEventSink;
 use super::manager;
 use super::scan_cache::{PREVIEW_SETTLED, ScanOutcome, abandon_claim, finish_claim, poll_claim};
 use super::state::WriteOperationState;
 use super::types::{
-    OperationEventSink, WriteCancelledEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase,
-    WriteOperationType, WriteProgressEvent,
+    WriteCancelledEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent,
 };
 
 /// What the wait concluded, in the operation's own vocabulary.

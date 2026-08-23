@@ -30,11 +30,10 @@ use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
 use super::super::super::conflict::ApplyToAll;
+use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::journal;
 use super::super::super::state::{WriteOperationState, is_cancelled, load_intent, update_operation_status};
-use super::super::super::types::{
-    OperationEventSink, VolumeCopyConfig, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-};
+use super::super::super::types::{VolumeCopyConfig, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::super::dest_name_index::{DestLookup, DestNameIndex};
 use super::super::transfer_driver::make_concurrent_per_file_progress;
 use super::super::transfer_probe::OperationProbe;

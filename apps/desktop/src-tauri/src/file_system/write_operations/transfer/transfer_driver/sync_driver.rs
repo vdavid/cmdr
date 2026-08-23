@@ -4,8 +4,9 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled};
-use crate::file_system::write_operations::types::{OperationEventSink, WriteOperationError};
+use crate::file_system::write_operations::types::WriteOperationError;
 
 use super::{
     DriverConfig, PostLoopIntent, TransferContext, TransferLoopOutcome, TransferOutcome, emit_progress_and_status,

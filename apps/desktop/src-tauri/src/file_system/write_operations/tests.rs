@@ -412,7 +412,7 @@ fn safe_overwrite_file(source: &std::path::Path, dest: &std::path::Path) -> Resu
         }
         #[cfg(not(target_os = "macos"))]
         {
-            use super::types::IoResultExt;
+            use super::error_classification::IoResultExt;
             fs::copy(source, target).with_path(source)
         }
     })

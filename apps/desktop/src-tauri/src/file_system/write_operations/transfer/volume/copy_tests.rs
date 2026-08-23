@@ -4,9 +4,9 @@ use super::super::transfer_error::{PathRole, map_volume_error};
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress, LocalPosixVolume};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
-    WriteSourceItemDoneEvent,
+    ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
 };
 use crate::test_support::TestDir;
 use std::sync::atomic::AtomicU8;

@@ -22,11 +22,12 @@
 
 use std::sync::Arc;
 
+use super::super::event_sinks::{CollectorEventSink, OperationEventSink};
 use super::super::state::{ConflictResolutionResponse, WriteOperationState};
 use super::super::types::{
-    CollectorEventSink, ConflictId, ConflictInfo, ConflictResolution, DryRunResult, OperationEventSink,
-    ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent,
-    WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
+    ConflictId, ConflictInfo, ConflictResolution, DryRunResult, ScanProgressEvent, WriteCancelledEvent,
+    WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent,
+    WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use crate::ignore_poison::IgnorePoison;
 

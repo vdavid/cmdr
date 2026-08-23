@@ -12,9 +12,9 @@
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
-    WriteSourceItemDoneEvent,
+    ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::AtomicU8;
 

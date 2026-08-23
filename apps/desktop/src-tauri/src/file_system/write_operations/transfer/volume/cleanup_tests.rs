@@ -7,7 +7,7 @@
 
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::write_operations::types::CollectorEventSink;
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 
 fn make_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(50)))

@@ -7,8 +7,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use super::event_sinks::OperationEventSink;
 use super::state::WriteOperationState;
-use super::types::OperationEventSink;
 
 /// Emits a `Flushing`-phase progress event, then `fdatasync`s every freshly
 /// created destination so "complete" means "durable on disk", not "buffered in

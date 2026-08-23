@@ -15,7 +15,8 @@
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::types::ConflictResolution;
 
 // ========================================================================
 // Cross-volume file→file Overwrite safe-replace (data-loss regression)

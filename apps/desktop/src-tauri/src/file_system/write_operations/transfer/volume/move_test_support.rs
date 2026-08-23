@@ -10,9 +10,9 @@
 
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, VolumeError};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::{AtomicU8, Ordering};
 

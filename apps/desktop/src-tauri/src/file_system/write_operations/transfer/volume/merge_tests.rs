@@ -16,11 +16,12 @@ use super::super::safety_oracle::{SafetySpec, assert_operation_was_safe};
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::Volume;
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::cancel_write_operation;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
-    WriteConflictResolvedEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
+    ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent,
+    WriteErrorEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::AtomicU8;
 

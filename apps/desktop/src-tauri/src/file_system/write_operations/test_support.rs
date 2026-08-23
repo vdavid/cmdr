@@ -11,9 +11,9 @@ use std::time::Duration;
 
 use tokio::sync::oneshot;
 
-use super::manager::{LifecycleStatus, OperationDescriptor, OperationSummaryText, manager};
+use super::manager::{OperationDescriptor, OperationSummaryText, manager};
 use super::state::{WRITE_OPERATION_STATE, WriteOperationState};
-use super::types::{ConflictId, WriteConflictEvent, WriteOperationType};
+use super::types::{ConflictId, LifecycleStatus, WriteConflictEvent, WriteOperationType};
 use crate::file_system::volume::LaneKey;
 
 /// A stand-in `write-conflict` event for a test that arms the conflict slot only

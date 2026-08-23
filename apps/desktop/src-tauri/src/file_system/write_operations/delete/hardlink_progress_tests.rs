@@ -13,9 +13,10 @@ use std::fs;
 use std::sync::Arc;
 use std::time::Duration;
 
+use super::super::event_sinks::CollectorEventSink;
 use super::super::state::WriteOperationState;
 use super::super::test_support::TestOperationGuard;
-use super::super::types::{CollectorEventSink, WriteOperationConfig};
+use super::super::types::WriteOperationConfig;
 use super::walker::delete_files_with_progress_inner;
 use crate::test_support::TestDir;
 

@@ -4,12 +4,11 @@ use std::fs;
 use std::sync::Arc;
 use std::time::Instant;
 
+use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
-use crate::file_system::write_operations::types::{
-    OperationEventSink, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-};
+use crate::file_system::write_operations::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 
 /// Rolls back created files with progress events, checking for cancellation between deletions.
 ///

@@ -29,8 +29,9 @@ use std::fs;
 use std::sync::Arc;
 use std::time::Duration;
 
+use super::super::event_sinks::CollectorEventSink;
 use super::super::state::WriteOperationState;
-use super::super::types::{CollectorEventSink, ConflictResolution, WriteOperationConfig};
+use super::super::types::{ConflictResolution, WriteOperationConfig};
 use super::copy::copy_files_with_progress_inner;
 use super::move_op::move_files_with_progress_inner;
 use crate::test_support::TestDir;

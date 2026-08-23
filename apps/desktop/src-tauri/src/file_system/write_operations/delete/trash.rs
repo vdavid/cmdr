@@ -8,11 +8,12 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
+use super::super::event_sinks::OperationEventSink;
 use super::super::mutation_error::MutationError;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::types::{
-    OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
+    WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -518,7 +519,7 @@ mod tests {
     // trash_files_with_progress tests (via CollectorEventSink)
     // ========================================================================
 
-    use crate::file_system::write_operations::types::CollectorEventSink;
+    use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 
     /// Empty source list short-circuits: no destructive work, but a
     /// `write-complete` event still fires so the FE dialog closes cleanly.

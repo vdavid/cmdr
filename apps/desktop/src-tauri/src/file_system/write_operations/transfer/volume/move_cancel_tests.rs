@@ -16,7 +16,7 @@ use super::test_support::{
 };
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::write_operations::types::CollectorEventSink;
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 
 /// Cancellation between sources stops further transfers and emits `write-cancelled`.
 /// This was a latent bug pre-M1-step-4: the cancel path returned `Err(Cancelled)`

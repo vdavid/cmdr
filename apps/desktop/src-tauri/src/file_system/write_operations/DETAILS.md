@@ -48,12 +48,12 @@ and the compressed-size estimate in § "Key patterns and gotchas"; durability an
 decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "Settle contract"; journaling in
 `../../operation_log/DETAILS.md` § Capture. Only the layout facts that none of those carry live here:
 
-- **Four re-export facades are deliberate, not collapsible** (§ "Key decisions" has the why): `mod.rs` re-exports
-  `transfer::*` + `delete::*` so callers keep their `crate::file_system::write_operations::<symbol>` paths, `state.rs`
-  re-exports the `operation_intent` + `scan_cache` types, and `types.rs` re-exports the `event_sinks` types +
-  `error_classification::IoResultExt`. **`TauriEventSink` is the exception**: it's re-exported at the
-  `write_operations` module root (and up through `file_system`) for the IPC edge, NOT from `types.rs`, because the
-  pipeline layer only ever names the trait.
+- **Two re-export facades are deliberate, not collapsible** (§ "Key decisions" has the why): `mod.rs` re-exports
+  `transfer::*` + `delete::*` so callers keep their `crate::file_system::write_operations::<symbol>` paths, and
+  `state.rs` re-exports the `operation_intent` + `scan_cache` + `status_cache` names. `types.rs` has none: it is the
+  vocabulary floor (§ "Why `types` imports nothing"), so a sink, a classifier, or a lifecycle name is imported from the
+  module that DEFINES it. `OperationEventSink` and `TauriEventSink` are re-exported at the `write_operations` module
+  root (and up through `file_system`) for the IPC edge.
 - **Event structs and their builders live apart on purpose**: the struct definitions in `types.rs`, the
   `WriteProgressEvent` (`new` / `with_scan_meta`) and `WriteErrorEvent` (`new`) impls in `event_sinks.rs` beside the
   sinks that emit them.
@@ -136,6 +136,43 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   affects slow network volumes. If it ever matters, route paste-as-file through the managed transfer engine for
   cancellation + no-partial guarantees. Pasteboard read + flavor precedence:
   `apps/desktop/src-tauri/src/clipboard/DETAILS.md` § Paste clipboard content as a file.
+
+## Why `types` imports nothing
+
+`types.rs` is the vocabulary floor: every other module here speaks its enums, event structs, error types, and
+configuration, and it speaks nobody else's. Nothing in it may `use` a sibling (the `CLAUDE.md` rule).
+
+**Why the rule is absolute.** The dependency graph under `write_operations` is a fan-in: 30-odd modules point at
+`types`, and `types` is the sink. A single upward import from the sink closes a circle through everything that fans in
+behind it. Three of them (`event_sinks::OperationEventSink`, `error_classification::IoResultExt`, and
+`manager::LifecycleStatus`) welded eleven siblings — `analytics`, `conflict_slot`, `error_classification`, `eta`,
+`event_sinks`, `manager`, `state`, `status_cache`, `types`, `unique_name`, `validation` — into one strongly-connected
+component in which no module could be read, tested, or moved alone. It was the app crate's largest module tangle, and
+the whole of it hung on those three lines. Cutting them dropped the crate from 121 modules in some cycle to 110 and its
+largest raw component from 11 to 10, with no other change to the graph (measured with cargo-modules 0.27.0,
+`pnpm check module-cycles`, 2026-08-23).
+
+**What the cut looks like in practice.** Two of the three were re-export facades that let callers write
+`types::OperationEventSink` and `types::IoResultExt`; those names now come from `event_sinks` and
+`error_classification`, the modules that define them, which is where a reader looks anyway and what a third of the call
+sites already did. The third was `LifecycleStatus`, defined in `manager.rs` but carried on `types::OperationStatus`
+and re-exported to the frontend as a wire enum — vocabulary living one layer too high. It now sits in `types.rs` beside
+`WriteOperationType` and `WriteOperationPhase`; `manager` imports it like everyone else.
+
+**How it stays cut.** `module-cycles` re-measures this home on every slow run, and its allowlist for
+`cmdr::file_system::write_operations` is ratcheted to the remaining tangle. A new upward import from `types` fails the
+check with the whole eleven back. `scripts/check/checks/DETAILS.md` § "Rust module cycles" documents how to read its
+output, including the ways `cargo-modules` misattributes an edge.
+
+**What's left, and why it stays.** One 2-tangle remains at this home: `archive_edit::engine` ↔ `archive_remote_edit`.
+It is the `From`-impl shape trap 4 in `scripts/check/checks/DETAILS.md` describes. `archive_remote_edit.rs` imports
+nothing from `archive_edit` — only `engine.rs` knows both types — but it holds BOTH conversions between the twin error
+enums (`PlanError` and `RemoteEditError`), and `cargo-modules` files each impl under the module defining the type it
+PRODUCES, so one prints as an edge in each direction. Both conversions are live:
+`pull_apply_upload_swap` takes `E: Into<RemoteEditError>` and hands back a `RemoteEditError` the engine turns into a
+`PlanError` (removing either one fails to compile, verified 2026-08-23). Moving one impl next to the type it produces
+would turn a reported cycle into a real one; merging the twin enums is a behavior question for the archive engine, not
+a graph cleanup. So it stays, and the allowlist keeps it at 2.
 
 ## Architecture / data flow
 
@@ -733,8 +770,8 @@ add a second feed site (see `../../priority/CLAUDE.md`).
 **Decision**: Copy and move are durable before they report complete: per-file `sync_data` (fdatasync) in chunked copy, plus an end-of-op targeted `fdatasync` pass over the transaction's recorded destinations for the strategies that don't flush themselves. Delete and trash don't sync at all.
 **Why**: "Complete" must mean "durable on disk," not "buffered in the OS page cache." Without it, a user who copies to a USB stick / SD card and ejects (or the machine sleeps) right after "Copy finished" loses the file — and on a move it's gone from both source and dest. The flush is targeted, not a whole-machine `libc::sync()`: that global sync also stalled unrelated apps (AGENTS.md principle #5). The mechanism: (1) `transfer/chunked_copy.rs` calls `dst_file.sync_data()` per file, so each file is durable as it completes — a crash mid-batch on a long transfer leaves earlier files safe. (2) Before emitting `write-complete`, `durability::flush_created_destinations` emits a `Flushing`-phase progress event, then `fdatasync`s every recorded destination that wasn't already flushed, plus a best-effort `fsync` of each distinct parent directory so the rename-into-place (temp+rename / cross-FS staging) is durable too. It reuses `CopyTransaction.created_files` (no parallel dest-tracking) and skips an `already_synced: HashSet` of paths the strategy already made durable: chunked-synced files and APFS-clonefile / reflink dests (those share copy-on-write extents with the source, so a flush is moot). On macOS every produced-bytes path is either clonefile (moot) or chunked (already synced), so the end-of-op pass does no extra `fdatasync` there — its job on macOS is purely the honest `Flushing` UI state; on Linux it's the real flush for `copy_file_range` dests. Cross-FS move flushes the FINAL paths (Phase 3 renames staging → destination, so the staging entries in `created_files` are remapped to their final prefix before the pass — this also covers the Phase-3 `throwaway_tx` renames that aren't in the real transaction). Same-FS move (pure rename) writes no data, so its flush just `fdatasync`s the moved files (cheap) and their parent dirs to make the new directory entries durable. The flush is best-effort on error: a failed `sync_data` is logged (`target: "write_durability"`), not propagated — the bytes are written either way and failing the whole op at the final flush is worse UX. Pinned by `transfer/copy_tests.rs::local_copy_emits_flushing_phase_before_complete` and `transfer/move_op_tests.rs::cross_fs_local_move_emits_flushing_phase_before_complete`; FE label by `TransferProgressDialog.flushing.test.ts`. **Cross-volume copy/move landing on a local disk** (MTP → Local, SMB → Local, USB import) doesn't go through this local-FS engine — it flows through `LocalPosixVolume::write_from_stream`, which keeps the same promise by `sync_data`-ing each file (plus a best-effort parent-dir fsync for the directory entry) before it returns, so each file is durable as it completes. That path doesn't yet emit the `Flushing` UI phase (the volume copy/move handlers don't call `flush_created_destinations`); a follow-up could route them through the end-of-op pass for UI consistency, but the per-file `sync_data` already makes them durable.
 
-**Decision**: `state.rs` re-exports the `operation_intent` + `scan_cache` + `status_cache` names and `types.rs` re-exports the `event_sinks` types + `error_classification::IoResultExt`, so `state::…` / `types::…` paths resolve for callers. These re-export facades are kept deliberately, not collapsed into direct `scan_cache::…` / `error_classification::…` imports.
-**Why**: Every one of the four re-exported groups has a broad consumer surface once grouped `use` blocks are counted: `operation_intent` at ~35 sites across ~20 files (every cancellation check), `event_sinks` at ~11 sites (every progress emit), `IoResultExt` across seven copy/scan/delete backends, and the `scan_cache` types across `scan.rs`, `scan_preview.rs`, `validation.rs`, and two test files. Collapsing any of them is a touch-many-files churn (~12 files for the two smaller ones alone) with no behavior or clarity payoff — a facade fronting a high-traffic name surface is a legitimate shape here, so leave them. If a future split genuinely narrows one group's consumers, revisit then.
+**Decision**: `types.rs` is the floor of `write_operations` and imports no sibling. `state.rs` keeps its `operation_intent` + `scan_cache` + `status_cache` re-export facade, and `mod.rs` keeps its `transfer::*` + `delete::*` one.
+**Why**: See § "Why `types` imports nothing" for the floor. The two surviving facades sit ABOVE the floor and point down, so neither can close a circle: `state` and `mod.rs` already depend on everything they re-export. Both front a broad name surface (`operation_intent` at ~35 sites across ~20 files, every cancellation check; the `scan_cache` types across `scan.rs`, `scan_preview.rs`, `validation.rs`, and two test files), which is a legitimate shape for a facade that costs nothing structurally.
 
 ## Shared gotchas
 

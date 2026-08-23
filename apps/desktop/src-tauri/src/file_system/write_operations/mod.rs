@@ -107,14 +107,14 @@ pub use state::{
 pub use state::abort_all_write_operations;
 // Operation manager: the single scheduler + registry every write op flows
 // through. `OperationsChanged` / `OperationSnapshot` are the thin
-// `operations-changed` event payload (the queue window consumes them; `LifecycleStatus` rides
-// along as a snapshot field and is reached via `manager::LifecycleStatus`).
+// `operations-changed` event payload (the queue window consumes them). The
+// `LifecycleStatus` they carry is vocabulary and lives in `types`.
 // `init_operation_event_emitter` wires the emitter at startup; the command
 // helpers back the new `list_operations` / `cancel_operation(s)` IPC.
 pub use manager::{
-    LifecycleStatus, OperationSnapshot, OperationSummaryText, OperationsChanged, PauseAllOutcome, PauseOutcome,
-    cancel_operation, cancel_operations, dismiss_all_failed_operations, dismiss_failed_operation,
-    init_operation_event_emitter, list_operations, pause_all, pause_operation, resume_all, resume_operation,
+    OperationSnapshot, OperationSummaryText, OperationsChanged, PauseAllOutcome, PauseOutcome, cancel_operation,
+    cancel_operations, dismiss_all_failed_operations, dismiss_failed_operation, init_operation_event_emitter,
+    list_operations, pause_all, pause_operation, resume_all, resume_operation,
 };
 // Managed instant mutations (rename / mkdir / mkfile) + rename validation. The
 // thin IPC commands (`commands/rename.rs`, `commands/file_system/write_ops.rs`)
@@ -152,8 +152,8 @@ pub(crate) use source_binding::retain_bound_sources;
 pub(crate) use state::{register_external_volume_op, release_external_volume_op};
 #[allow(unused_imports, reason = "Public API re-exports for consumers of this module")]
 pub use types::{
-    ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, OperationStatus,
-    OperationSummary, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
+    ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, LifecycleStatus,
+    OperationStatus, OperationSummary, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder,
     SourceItemOutcome, TransferActivity, TransferWaitReason, WriteCancelledEvent, WriteCompleteEvent,
     WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
@@ -175,14 +175,14 @@ pub(crate) use validation::{
 // `file_system::volume::smb`) that drive `copy_volumes_with_progress`
 // directly against a real SMB backend instead of the full Tauri path.
 #[cfg(test)]
+#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
+pub(crate) use event_sinks::CollectorEventSink;
+#[cfg(test)]
 #[allow(unused_imports, reason = "Used by the volume-journal capture tests")]
 pub(crate) use transfer::volume::move_volumes_with_progress;
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
 pub(crate) use transfer::volume::move_within_same_volume_with_progress;
-#[cfg(test)]
-#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
-pub(crate) use types::CollectorEventSink;
 // The four real-SMB safety cells drive the same axes the in-memory grid does:
 // a cache entry that counted files but recorded no per-source result, and a
 // volume that stops answering partway through.

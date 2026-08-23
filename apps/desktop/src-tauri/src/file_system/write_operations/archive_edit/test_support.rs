@@ -13,10 +13,9 @@ pub(super) use std::sync::Arc;
 pub(super) use std::time::Duration;
 
 pub(super) use super::super::OperationEventSink;
+pub(super) use super::super::event_sinks::CollectorEventSink;
 pub(super) use super::super::manager::OperationSummaryText;
-pub(super) use super::super::types::{
-    CollectorEventSink, ConflictId, ConflictResolution, WriteOperationError, WriteOperationType,
-};
+pub(super) use super::super::types::{ConflictId, ConflictResolution, WriteOperationError, WriteOperationType};
 pub(super) use crate::file_system::volume::Volume;
 pub(super) use crate::file_system::volume::backends::archive::mutator::Changeset;
 pub(super) use crate::file_system::volume::manager::get_volume_manager;

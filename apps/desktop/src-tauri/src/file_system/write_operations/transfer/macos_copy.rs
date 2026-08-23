@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use crate::file_system::write_operations::WriteOperationError;
-use crate::file_system::write_operations::types::IoResultExt;
+use crate::file_system::write_operations::error_classification::IoResultExt;
 
 // ============================================================================
 // Type aliases for progress callbacks

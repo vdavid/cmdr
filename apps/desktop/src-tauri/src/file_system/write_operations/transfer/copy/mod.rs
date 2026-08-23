@@ -14,15 +14,16 @@ use std::time::Duration;
 use super::super::cancellable::run_cancellable;
 use super::super::conflict::ApplyToAll;
 use super::super::durability::flush_created_destinations;
+use super::super::event_sinks::OperationEventSink;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use super::super::types::{
-    ConflictResolution, OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent,
-    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
-    WriteProgressEvent, WriteSourceItemDoneEvent,
+    ConflictResolution, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 };
 use super::super::unique_name::{create_unique_dir, next_available_name};
 use super::super::validation::{is_same_file, validate_disk_space, validate_file_sizes_for_filesystem};

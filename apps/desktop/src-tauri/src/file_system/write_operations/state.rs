@@ -11,10 +11,11 @@ use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
 use super::eta::{EtaEstimator, EtaSample};
+use super::event_sinks::OperationEventSink;
 use super::human_wait::HumanWaitClock;
 use super::types::{
-    ConflictId, ConflictResolution, ConflictResolutionOutcome, OperationEventSink, TransferActivity,
-    TransferWaitReason, WriteConflictEvent, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, TransferActivity, TransferWaitReason,
+    WriteConflictEvent, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
 };
 
 // The conflict slot lives in its own module: arbitrating one answer per conflict

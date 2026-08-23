@@ -15,7 +15,8 @@ use super::super::strategy::test_support::{FlakyDest, UndeletableSource};
 use super::test_support::{MoveRenameFailsDestVolume, config_default, make_state};
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, VolumeError};
-use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::types::ConflictResolution;
 
 /// Cross-volume MOVE, file→file Overwrite, streaming write SUCCEEDS but the
 /// finalize rename FAILS. The move path has no dest partial-cleanup, so the

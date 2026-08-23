@@ -13,12 +13,12 @@ use std::time::Duration;
 
 use uuid::Uuid;
 
+use super::super::event_sinks::OperationEventSink;
 use super::super::manager::{self, OperationDescriptor};
 use super::super::source_binding::{ExpectedSources, retain_bound_sources_on};
 use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::types::{
-    OperationEventSink, WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
-    WriteOperationType,
+    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationStartResult, WriteOperationType,
 };
 use super::super::{journal, path_summary, scan_bridge};
 use super::delete_volume_files_with_progress_inner;

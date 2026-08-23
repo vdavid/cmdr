@@ -17,8 +17,9 @@ use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress, SpaceInfo, VolumeReadStream};
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::scan_cache::seed_incoherent_scan_result_for_test;
-use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution, WriteConflictEvent};
+use crate::file_system::write_operations::types::{ConflictResolution, WriteConflictEvent};
 use crate::ignore_poison::IgnorePoison;
 
 /// Seeds the scan-preview cache with a COMPLETED preview that carries no

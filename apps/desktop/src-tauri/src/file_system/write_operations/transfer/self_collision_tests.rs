@@ -18,15 +18,13 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use super::super::event_sinks::{CollectorEventSink, OperationEventSink};
 use super::super::state::WriteOperationState;
-use super::super::types::{
-    CollectorEventSink, ConflictResolution, OperationEventSink, SourceItemOutcome, WriteOperationConfig,
-    WriteSourceItemDoneEvent,
-};
 use super::super::types::{
     ConflictInfo, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent, WriteSettledEvent,
 };
+use super::super::types::{ConflictResolution, SourceItemOutcome, WriteOperationConfig, WriteSourceItemDoneEvent};
 use super::conflict_responder_test_support::ConflictResponderSink;
 use super::copy::copy_files_with_progress_inner;
 use super::move_op::move_files_with_progress_inner;

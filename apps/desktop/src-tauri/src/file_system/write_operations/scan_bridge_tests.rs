@@ -11,13 +11,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::manager::{LifecycleStatus, PauseOutcome, list_operations, manager, pause_operation, resume_operation};
+use super::event_sinks::CollectorEventSink;
+use super::manager::{PauseOutcome, list_operations, manager, pause_operation, resume_operation};
 use super::scan_bridge::observed_scan_ticks;
 use super::scan_cache::{
     CachedScanResult, ScanOutcome, ScanPreviewState, claim_preview, register_preview, settle_preview,
     take_cached_scan_result,
 };
-use super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationError, WriteOperationType};
+use super::types::{LifecycleStatus, WriteOperationConfig, WriteOperationError, WriteOperationType};
 use super::{OperationEventSink, copy_files_start};
 use crate::file_system::volume::CopyScanResult;
 use crate::operation_log::types::Initiator;

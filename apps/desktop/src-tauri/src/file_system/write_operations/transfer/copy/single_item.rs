@@ -16,13 +16,14 @@ use super::super::chunked_copy::ChunkedCopyProgressFn;
 use super::super::copy_strategy::copy_file_with_strategy;
 
 use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
+use crate::file_system::write_operations::error_classification::IoResultExt;
+use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::overwrite::safe_overwrite_dir;
 use crate::file_system::write_operations::state::{
     CopyTransaction, WriteOperationState, is_cancelled, update_operation_status,
 };
 use crate::file_system::write_operations::types::{
-    IoResultExt, OperationEventSink, WriteOperationConfig, WriteOperationError, WriteOperationPhase,
-    WriteOperationType, WriteProgressEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
 use crate::file_system::write_operations::validation::{is_same_file, path_exists_or_is_symlink, validate_path_length};
 

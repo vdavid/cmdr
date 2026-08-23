@@ -16,8 +16,9 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use super::super::super::conflict::ApplyToAll;
+use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::state::WriteOperationState;
-use super::super::super::types::{OperationEventSink, VolumeCopyConfig};
+use super::super::super::types::VolumeCopyConfig;
 use super::super::checkpoint_stream::CheckpointStream;
 use super::super::staged_write::StagedWrite;
 // Re-exported so the sibling test modules (and any future caller reached through

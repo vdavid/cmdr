@@ -1,6 +1,9 @@
-//! Type definitions for write operations.
+//! The write-operation vocabulary: the enums, event structs, error types, and
+//! configuration every other module here speaks in.
 //!
-//! Contains enums, event structs, error types, and configuration.
+//! ❌ Nothing in this module may `use` a sibling. It is the floor of
+//! `write_operations`, and a single upward import welds eleven modules into
+//! one cycle. `DETAILS.md` § "Why `types` imports nothing".
 
 use serde::{Deserialize, Serialize};
 use tauri_specta::Event;
@@ -9,18 +12,6 @@ use crate::file_system::volume::{ScanConflict, SpaceInfo};
 
 // Re-export sort types from sorting module
 pub use crate::file_system::listing::{SortColumn, SortOrder};
-
-// Behavior that used to live here now lives in sibling modules. These re-exports
-// keep every existing `types::…` path valid so callers don't change. The event
-// sinks (`event_sinks`), analytics (`analytics`), and IO-error classification
-// (`error_classification`) all depend on the DTOs below, never the reverse.
-pub(super) use super::error_classification::IoResultExt;
-#[cfg(test)]
-pub(crate) use super::event_sinks::CollectorEventSink;
-pub use super::event_sinks::OperationEventSink;
-// The lifecycle vocabulary is the manager's, and `OperationStatus` carries it
-// rather than growing a second answer to the same question.
-use super::manager::LifecycleStatus;
 
 // ============================================================================
 // Operation types
@@ -72,6 +63,30 @@ pub enum WriteOperationPhase {
     /// piece…" so the bar doesn't sit frozen at 100% pretending the work is
     /// done. See `transfer/CLAUDE.md` § "Durability".
     Flushing,
+}
+
+/// Lifecycle status of a managed operation, as shown in the queue window.
+/// `Paused` is set only by the pause/resume path (`set_paused`); the rest flow
+/// from admission and settle. Distinct from `WriteOperationPhase` (the progress
+/// phase: Scanning/Copying/Flushing) and from `OperationIntent` (the
+/// cancel/rollback machine) — a paused op is still `Running`-intent and may be
+/// mid-`Copying`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum LifecycleStatus {
+    /// Registered, waiting for its lanes to free.
+    Queued,
+    /// Admitted; its deferred start has spawned the real work.
+    Running,
+    /// Running but pause-gated: the op is parked between files and still holds
+    /// its lane slots. Set by the pause/resume path.
+    Paused,
+    /// Finished successfully.
+    Done,
+    /// Cancelled by the user (keep-partials).
+    Cancelled,
+    /// Could not complete.
+    Failed,
 }
 
 // ============================================================================
