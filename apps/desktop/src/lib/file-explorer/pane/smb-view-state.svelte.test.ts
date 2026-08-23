@@ -22,7 +22,6 @@ const { ipc, manager, resolveValidPathSpy, requestVolumeRefreshSpy, addToastSpy 
   ipc: {
     disconnectSmbVolume: vi.fn().mockResolvedValue(undefined),
     upgradeToSmbVolumeWithCredentials: vi.fn(),
-    getIpcErrorMessage: vi.fn((e: unknown) => String(e)),
   },
   manager: {
     getState: vi.fn(),
@@ -40,7 +39,6 @@ vi.mock('$lib/tauri-commands', () => ({
   disconnectSmbVolume: ipc.disconnectSmbVolume,
   upgradeToSmbVolumeWithCredentials: ipc.upgradeToSmbVolumeWithCredentials,
 }))
-vi.mock('$lib/tauri-commands/ipc-types', () => ({ getIpcErrorMessage: ipc.getIpcErrorMessage }))
 vi.mock('../network/smb-reconnect-manager.svelte', () => ({ smbReconnectManager: manager }))
 vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: resolveValidPathSpy }))
 vi.mock('$lib/stores/volume-store.svelte', () => ({ requestVolumeRefresh: requestVolumeRefreshSpy }))

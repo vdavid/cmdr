@@ -152,11 +152,8 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
         cb(event.payload)
       }),
     openInEditor: vi.fn().mockResolvedValue(undefined),
-    getIpcErrorMessage: (e: unknown) => String(e),
   }
 })
-
-vi.mock('$lib/tauri-commands/ipc-types', () => ({ getIpcErrorMessage: (e: unknown) => String(e) }))
 
 vi.mock('$lib/settings', () => ({
   initializeSettings: vi.fn().mockResolvedValue(undefined),

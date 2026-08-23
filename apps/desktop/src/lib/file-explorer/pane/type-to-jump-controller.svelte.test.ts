@@ -13,14 +13,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { ipc } = vi.hoisted(() => ({
-  ipc: { findFirstFuzzyMatch: vi.fn(), getFileAt: vi.fn(), getIpcErrorMessage: vi.fn((e: unknown) => String(e)) },
+  ipc: { findFirstFuzzyMatch: vi.fn(), getFileAt: vi.fn() },
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
   findFirstFuzzyMatch: ipc.findFirstFuzzyMatch,
   getFileAt: ipc.getFileAt,
 }))
-vi.mock('$lib/tauri-commands/ipc-types', () => ({ getIpcErrorMessage: ipc.getIpcErrorMessage }))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
