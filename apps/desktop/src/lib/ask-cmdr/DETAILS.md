@@ -126,6 +126,11 @@ many decisions are in the list.
 behind a fingerprint mismatch, and the outcome the store records is what SETTLED, not what was claimed. Hiding a partial
 run would leave the user believing their files moved.
 
+**Live, a decision arrives on the next load**, the same limitation the digest above has and for the same reason: the
+line is a persisted row, and nothing streams it. `SuggestionsChanged` does fire on every approve and reject, so a rail
+that wanted the line to appear under an open thread could refetch on it; it deliberately doesn't yet, because the fetch
+would run for every decision whether or not it concerns the thread on screen.
+
 The seven verb names are a spelled-out `Record`, ❌ not a key built from the verb token at runtime:
 `desktop-message-keys-unused` reads a runtime-built key as dead translation work unless it is on that check's closed
 dynamic-prefix allowlist, and seven literals are cheaper than an allowlist entry. Widening that event to carry the block

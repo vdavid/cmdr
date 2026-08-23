@@ -10,16 +10,12 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-08-22 `agent-wake-loop.md` - **Ask Cmdr can suggest things, but never notices anything on its own.** The
-      whole proactive half is built (store, executors covering move/copy/trash/delete/rename/compress/extract, dialog,
-      approval bridge, indicator, ten locales, and all of `agent/wake/` under 54 tests) and nothing drives it:
-      `run_wake` and `Inbox::admit_if_permitted` have no production caller outside `wake/tests/`. Four milestones: the
-      loop (tap, scheduler, inbox ownership, `nothing_to_suggest`, three settings), the surfaces (wake indicator, thread
-      icon, toast, readiness states, cancel), agent memory under an `Access::Memory` jail with a consent re-prompt, and
-      the approve/reject feedback loop. **Five to seven days**, hardened over four review rounds. ⚠️ **Blocked on one
-      thing**: four ratcheted budgets move, and `index-crate-isolation` is error-level, so M1 cannot land until David
-      consents to the bumps listed at the top of the plan. The highest ratio of user-visible payoff to effort in the
-      folder.
+- [x] 2026-08-22 `agent-wake-loop.md` - **Shipped, all four milestones.** The agent notices, speaks, remembers, and
+      hears what you did with what it suggested. Every design decision now lives beside the code (`agent/wake/`,
+      `agent/memory/`, `agent/suggested_ops/`, and the rail's docs), so what is left here is process narration. **Ready
+      to wipe** per `DETAILS.md` § "Wiping a shipped spec"; that is a one-way door, so it waits for David. The three
+      items its "Deliberately deferred" list parks (reading file contents, the two interest tuning knobs, and per-rule
+      approval for a long job's tail) want a home under `later/` when it goes.
 - [ ] 2026-08-21 `idle-cost.md` - **Cmdr costs too much while you're not using it.** An idle prod build burned 110
       minutes of CPU over 9.1 hours at a 1.78 GB footprint. Two items left, and both wait on a measurement rather than
       on effort: the CLIP towers (an enrichment pass holds 251.5 MB of text tower it never calls, gated on one
