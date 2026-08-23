@@ -1788,8 +1788,8 @@ Trois décisions prises sur preuves de la pile de référence, dont une correcti
 - **CORRECTION — « quit unexpectedly » → `a quitté inopinément`** · `fr/macOS/AppKit/AppKitErrors.json` : « Lors de sa
   précédente ouverture, %@ a quitté inopinément pendant la réouverture des fenêtres. » · high. La valeur livrée
   auparavant, `s''est fermé de façon inattendue`, n'a **aucune attestation** dans toute la pile ; c'est une paraphrase.
-  Apple a créé le concept et l'utilisateur francophone lit cette formule dans les dialogues de plantage du système,
-  donc c'est elle qui fait autorité. Seule la locution verbale change ; `la dernière fois` reste où elle était.
+  Apple a créé le concept et l'utilisateur francophone lit cette formule dans les dialogues de plantage du système, donc
+  c'est elle qui fait autorité. Seule la locution verbale change ; `la dernière fois` reste où elle était.
 - **« kept running » → `a continué son exécution`** · `fr/macOS/AppKit/NSExceptionAlert.json` `69.title` : « … pour
   continuer l'exécution de l'application dans un état instable … » · high. C'est le dialogue d'exception d'Apple
   lui-même, c'est-à-dire exactement notre surface. Le catalogue confirme le champ lexical avec `en cours` :
@@ -1799,14 +1799,14 @@ Trois décisions prises sur preuves de la pile de référence, dont une correcti
   la pile (macOS `LA20`/`LA35`, Thunar, Double Commander), jamais « rester en marche ». ❌ Pas `est resté ouvert` :
   décrit une fenêtre, pas un processus.
 - **`la dernière fois` se place EN FIN de proposition, jamais en tête** · les trois seules occurrences de la pile la
-  placent en fin (`AppKit/Document.json` « … ouvert ou enregistré pour la dernière fois. », Thunar `:2659`,
-  Dolphin `:4744`), et les cinq occurrences du catalogue livré font pareil · high. Quand Apple veut l'antéposer, elle
-  change de construction (`Lors de sa précédente ouverture, …`), elle ne déplace pas `la dernière fois`. Les trois
-  variantes du corps partagent donc la même charpente, `Cmdr <verbe> … la dernière fois.`
+  placent en fin (`AppKit/Document.json` « … ouvert ou enregistré pour la dernière fois. », Thunar `:2659`, Dolphin
+  `:4744`), et les cinq occurrences du catalogue livré font pareil · high. Quand Apple veut l'antéposer, elle change de
+  construction (`Lors de sa précédente ouverture, …`), elle ne déplace pas `la dernière fois`. Les trois variantes du
+  corps partagent donc la même charpente, `Cmdr <verbe> … la dernière fois.`
 - **`continuer à` + infinitif, pas `continuer de`** · macOS `PE79`/`PE80`/`PE81` (« continuer à copier les autres »),
-  Thunar `:3174`. `continuer de` n'apparaît qu'une fois dans toute la pile (Thunar `:3161`), sur la même chaîne
-  anglaise qu'une variante en `à`. Noté ici parce que la question revient à chaque phrase de continuité, même si la
-  valeur retenue ci-dessus emploie `continuer` + complément de nom.
+  Thunar `:3174`. `continuer de` n'apparaît qu'une fois dans toute la pile (Thunar `:3161`), sur la même chaîne anglaise
+  qu'une variante en `à`. Noté ici parce que la question revient à chaque phrase de continuité, même si la valeur
+  retenue ci-dessus emploie `continuer` + complément de nom.
 - **« a report » sans « crash » → `un rapport`** · la seconde phrase reprend celle de `.ended` sans `d''incident`, et
   `rapport d''incident` reste réservé au vrai plantage. Titre et confirmation suivent la même coupe :
   `Envoyer le rapport d''incident ?` / `Envoyer le rapport ?`, `Rapport d''incident envoyé. …` / `Rapport envoyé. …` ·

@@ -1465,8 +1465,8 @@ Giá trị đã chốt:
 ## Bổ sung: `thoát bất ngờ`, `ở chế độ nền`, và hai hướng đã loại
 
 - **SỬA — "quit unexpectedly" → `thoát bất ngờ`** · `macOS/AppKit/AppKitErrors.json:90` ("ứng dụng thoát bất ngờ") ·
-  high. Đây là lần duy nhất `bất ngờ` xuất hiện trong toàn bộ kho tham chiếu tiếng Việt ngoài Total Commander, và nó
-  nằm đúng khái niệm của chúng ta. Giá trị cũ `thoát đột ngột` không có nguồn nào chứng thực, nên `.ended` đã đổi theo
+  high. Đây là lần duy nhất `bất ngờ` xuất hiện trong toàn bộ kho tham chiếu tiếng Việt ngoài Total Commander, và nó nằm
+  đúng khái niệm của chúng ta. Giá trị cũ `thoát đột ngột` không có nguồn nào chứng thực, nên `.ended` đã đổi theo
   Apple. Phần còn lại của câu giữ nguyên.
 - **"in the background" → `ở chế độ nền`, GIỮ NGUYÊN** · thuật ngữ Microsoft chốt phần đầu `nền` (`background task` →
   `tác vụ nền`, id=19019; `background` tính từ → `nền`, id=18758; `background printing` → `in dưới nền`, id=18908), và
@@ -1488,6 +1488,5 @@ Giá trị đã chốt:
   thống của bạn"), AppKit ("Đã có sự cố khi truy xuất thông tin dịch vụ") — cả hai đều nói về vấn đề mà ứng dụng vượt
   qua được. Vì thế `crashReporter.dialog.privacyNote` giữ nguyên `đã gặp sự cố` dù tiếng Anh đã đổi từ "crashed" sang
   "ran into the problem": bản tiếng Việt vốn đã trung tính. Chỉ làm mới dấu vân nguồn.
-- **`báo cáo sự cố` mới là "crash report"** · nên "a report" (không có "crash") phải là `báo cáo` trần. Tiêu đề và
-  thông báo xác nhận cắt y hệt: `Gửi báo cáo sự cố?` / `Gửi báo cáo?`, `Đã gửi báo cáo sự cố. …` /
-  `Đã gửi báo cáo. …` · high.
+- **`báo cáo sự cố` mới là "crash report"** · nên "a report" (không có "crash") phải là `báo cáo` trần. Tiêu đề và thông
+  báo xác nhận cắt y hệt: `Gửi báo cáo sự cố?` / `Gửi báo cáo?`, `Đã gửi báo cáo sự cố. …` / `Đã gửi báo cáo. …` · high.

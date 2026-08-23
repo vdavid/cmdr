@@ -1331,11 +1331,12 @@ ist nicht passiert.
   deutscher Styleguide führt `ist ein Problem aufgetreten` ausdrücklich als Negativbeispiel; macOS benutzt genau diese
   Form überall; unser `auf ein Problem gestoßen` ist eine dritte Form, die Apple ebenfalls ausliefert und die Cmdr im
   Nominativ hält. Wer künftig mit dem MS-Styleguide in der Hand „korrigieren“ will, findet hier die Antwort.
-- **`.ended` bleibt unangetastet**: macOS Problem Reporter gibt `%@ quit unexpectedly.` als `%@ wurde unerwartet
-  beendet.` wieder, wortgleich mit unserer ausgelieferten Zeile in der tragenden Hälfte. `confirmed`.
-- **Zur Entscheidung offen (bei David)**: `…, ist aber weitergelaufen` statt der schlichten Reihung `und
-  weitergelaufen`. Deutsch will an dieser Stelle normalerweise eine adversative Partikel, und die `aber`-Variante liest
-  sich wärmer; die schlichte Reihung spiegelt dafür das Englische. Ein Einzeiler-Tausch, falls er sie vorzieht.
+- **`.ended` bleibt unangetastet**: macOS Problem Reporter gibt `%@ quit unexpectedly.` als
+  `%@ wurde unerwartet beendet.` wieder, wortgleich mit unserer ausgelieferten Zeile in der tragenden Hälfte.
+  `confirmed`.
+- **Zur Entscheidung offen (bei David)**: `…, ist aber weitergelaufen` statt der schlichten Reihung
+  `und weitergelaufen`. Deutsch will an dieser Stelle normalerweise eine adversative Partikel, und die `aber`-Variante
+  liest sich wärmer; die schlichte Reihung spiegelt dafür das Englische. Ein Einzeiler-Tausch, falls er sie vorzieht.
 
 ### Datenschutzhinweis: `auf das Problem gestoßen`, nicht `abgestürzt`
 
@@ -1351,7 +1352,7 @@ Der Katalog trennt `Absturzbericht` und schlichten `Bericht` schon konsequent, u
 - `crashReporter.sentToast.message.crash` → `Absturzbericht gesendet. …` (unverändert), `.message.report` →
   `Bericht gesendet. …`
 
-Beides ist dieselbe Operation wie im Englischen: das Absturz-Wortglied entfällt, sonst ändert sich nichts · high.
-❌ `crashReporter.dialog.alwaysSend` bleibt `Absturzberichte immer senden`: das Kästchen schaltet die Einstellung
+Beides ist dieselbe Operation wie im Englischen: das Absturz-Wortglied entfällt, sonst ändert sich nichts · high. ❌
+`crashReporter.dialog.alwaysSend` bleibt `Absturzberichte immer senden`: das Kästchen schaltet die Einstellung
 `updates.crashReports`, deren kanonisches Label in Einstellungen > Updates `Absturzberichte senden` heißt. Neutral
 formuliert würde es so klingen, als schlösse es auch Fehlerberichte ein, was es nicht tut.
