@@ -358,7 +358,7 @@ pub async fn assert_export_matches_the_bytes_offered(volume: &dyn Volume, path: 
 ///   `impl From<std::io::Error> for VolumeError` fills all three path-carrying
 ///   variants with `err.to_string()`, and a bare `std::io::Error` has no path to
 ///   do better with. Its cell exists and is `#[ignore]`d with the details
-///   (`local_posix_test.rs`).
+///   (`local_posix_conformance_test.rs`).
 /// - **`SmbVolume`** reports `NotFound("Protocol error:
 ///   STATUS_OBJECT_NAME_NOT_FOUND during Create")`, and `AlreadyExists` beside
 ///   it has the same leak. Carried as prose rather than an ignored cell because

@@ -41,6 +41,11 @@ pub(crate) use super::{
 
 #[cfg(test)]
 mod local_posix_test;
+// The shared `volume::conformance` assertions LocalPosix runs, split out the way
+// every other backend keeps its own (SMB's and SFTP's `volume::conformance_test`,
+// MTP's `mtp_conformance_test`).
+#[cfg(test)]
+mod local_posix_conformance_test;
 // `mtp_test` is gated on the same platforms as the `mtp` module it tests (the
 // other two backends are cross-platform, so their test mods aren't gated).
 // `mtp_archive_test` also needs the `virtual-mtp` feature (every test in it runs
