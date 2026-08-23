@@ -11,7 +11,8 @@ in the section or registry, not here. Parent: `../CLAUDE.md` (registry, store, s
 - Registry-driven rows: `SettingRow` (label + description + control + reset pip + restart badge) wrapping
   `SettingSwitch` / `Checkbox` / `Select` / `ToggleGroup` / `RadioGroup` / `Slider` / `NumberInput` / `PasswordInput` /
   `ColorSwatchPicker`. Which one to reach for: DETAILS § Picking a control.
-- Every `.svelte` here ships a `*.a11y.test.ts` (axe tier-3 audit).
+- Every `.svelte` here is axe-audited (tier 3) from one directory-level file, `setting-components.a11y.test.ts`. Adding
+  a primitive means adding a `describe` block there, not a new file; `a11y-coverage` fails if it can't see the import.
 
 ## Conventions
 
