@@ -36,23 +36,24 @@ func repoRootForTest(t *testing.T) string {
 // would report paths that don't exist.
 var embeddedPathRE = regexp.MustCompile(`include_(?:str|bytes)!\s*\(\s*"([^"]+)"`)
 
-// TestRustInputsCoverEveryEmbeddedFile is the guardrail behind `rustInputs`'
-// exclusions. A file pulled into the binary with `include_str!` is a compile-time
-// input just as much as a `.rs` file: change it and the tests can change verdict.
-// If such a file falls outside `rustInputs`, every Rust lane cache-skips the edit
-// and reports a green that describes the previous content.
-//
-// This is not hypothetical. `whats_new` embeds the repo-root `CHANGELOG.md`, which
-// `rustInputs` didn't list at all, so a changelog edit never re-ran the Rust tests.
-func TestRustInputsCoverEveryEmbeddedFile(t *testing.T) {
-	root := repoRootForTest(t)
+// embeddedFile is one compile-time input a Rust source pulls in with
+// `include_str!` / `include_bytes!`: which member's tree the embedding source
+// lives in, the source itself, and the embedded path. Both paths are
+// repo-relative slash paths, ready to match against an `Inputs` set.
+type embeddedFile struct {
+	source   string
+	embedded string
+}
+
+// collectEmbeddedFiles walks every workspace member's sources and returns each
+// literal `include_str!` / `include_bytes!` target inside the repo.
+func collectEmbeddedFiles(t *testing.T, root string) []embeddedFile {
+	t.Helper()
 	members, err := WorkspaceMembers(root)
 	if err != nil {
 		t.Fatalf("WorkspaceMembers: %v", err)
 	}
-	patterns := inputs(rustInputs, GlobalInputs)
-
-	checked := 0
+	var found []embeddedFile
 	for _, m := range members {
 		walkErr := filepath.WalkDir(m.SrcDir, func(path string, entry os.DirEntry, err error) error {
 			if err != nil {
@@ -71,11 +72,10 @@ func TestRustInputsCoverEveryEmbeddedFile(t *testing.T) {
 				if relErr != nil || strings.HasPrefix(rel, "..") {
 					continue // outside the repo; not something Inputs can express
 				}
-				checked++
-				if !matchesAny(filepath.ToSlash(rel), patterns) {
-					t.Errorf("%s embeds %s, which `rustInputs` doesn't cover: editing it would be invisible to every Rust lane",
-						mustRel(t, root, path), filepath.ToSlash(rel))
-				}
+				found = append(found, embeddedFile{
+					source:   mustRel(t, root, path),
+					embedded: filepath.ToSlash(rel),
+				})
 			}
 			return nil
 		})
@@ -83,9 +83,133 @@ func TestRustInputsCoverEveryEmbeddedFile(t *testing.T) {
 			t.Fatalf("walking %s: %v", m.SrcDir, walkErr)
 		}
 	}
-	if checked == 0 {
+	return found
+}
+
+// TestRustInputsCoverEveryEmbeddedFile is the guardrail behind every narrowed
+// Rust input set. A file pulled into the binary with `include_str!` is a
+// compile-time input just as much as a `.rs` file: change it and the tests can
+// change verdict. If such a file falls outside a lane's `Inputs` while the source
+// that embeds it stays inside, that lane cache-skips the edit and reports a green
+// that describes the previous content.
+//
+// This is not hypothetical. `whats_new` embeds the repo-root `CHANGELOG.md`, which
+// the one shared Rust input set didn't list at all, so a changelog edit never
+// re-ran the Rust tests.
+//
+// It walks the WHOLE REGISTRY rather than one set, and pairs each check against
+// each embedding source individually. That's what makes it safe to narrow a lane
+// to one member's tree: a lane that stops covering `crates/cmdr-index/**` also
+// stops owing whatever that crate embeds, while a lane that still covers the app
+// tree still owes `CHANGELOG.md`. A per-set test could only ever prove the global
+// case, which is the case that stops being the interesting one the moment the sets
+// differ.
+func TestRustInputsCoverEveryEmbeddedFile(t *testing.T) {
+	root := repoRootForTest(t)
+	embeds := collectEmbeddedFiles(t, root)
+	if len(embeds) == 0 {
 		t.Fatal("found no `include_str!`/`include_bytes!` call at all; the scan is broken, not the tree")
 	}
+
+	for _, def := range AllChecks {
+		patterns := inputs(def.Inputs, GlobalInputs)
+		for _, e := range embeds {
+			if !matchesAny(e.source, patterns) {
+				continue // the lane can't see the embedding source, so a stale embed can't reach it either
+			}
+			if !matchesAny(e.embedded, patterns) {
+				t.Errorf("check %q covers %s but not %s, which that source embeds: editing %s would be invisible to the lane",
+					def.ID, e.source, e.embedded, e.embedded)
+			}
+		}
+	}
+}
+
+// TestRustMemberTreesMatchTheWorkspace pins `rustMemberTrees` to the real cargo
+// workspace, in both directions. The table is hand-written because `Inputs` is
+// static registry data with no repo root in hand, and a hand-written mirror of a
+// manifest is exactly the thing that rots: a new crate that never reaches the
+// table would sit outside every narrowed Rust lane's view and cache-skip forever,
+// which is silent.
+func TestRustMemberTreesMatchTheWorkspace(t *testing.T) {
+	root := repoRootForTest(t)
+	members, err := WorkspaceMembers(root)
+	if err != nil {
+		t.Fatalf("WorkspaceMembers: %v", err)
+	}
+
+	tabled := make(map[string]rustMemberTree, len(rustMemberTrees))
+	for _, m := range rustMemberTrees {
+		tabled[m.Pkg] = m
+	}
+	real := make(map[string]bool, len(members))
+	for _, m := range members {
+		real[m.Name] = true
+		entry, ok := tabled[m.Name]
+		if !ok {
+			t.Errorf("workspace member %q has no `rustMemberTrees` entry; every narrowed Rust lane would ignore its tree", m.Name)
+			continue
+		}
+		if entry.Kind != m.Kind {
+			t.Errorf("`rustMemberTrees` calls %q a %q; its manifest says %q", m.Name, entry.Kind, m.Kind)
+		}
+		if want := m.RelDir(root) + "/**"; entry.Glob != want {
+			t.Errorf("`rustMemberTrees` globs %q as %q; the member lives at %q", m.Name, entry.Glob, want)
+		}
+	}
+	for _, m := range rustMemberTrees {
+		if !real[m.Pkg] {
+			t.Errorf("`rustMemberTrees` names %q, which is no longer a workspace member", m.Pkg)
+		}
+	}
+}
+
+// TestScannerInputsMatchTheirJurisdiction ties each Rust source scanner's cache
+// key to the trees it actually walks. `rustScannerJurisdictions` already declares
+// which members a scanner governs, and `rustScanInputs` takes the same kinds — but
+// nothing stops a registry entry from passing different ones. Too wide and the
+// scanner re-runs over trees it can't see; too narrow and it cache-skips the tree
+// that moved, which is the silent half.
+func TestScannerInputsMatchTheirJurisdiction(t *testing.T) {
+	byID := make(map[string]CheckDefinition, len(AllChecks))
+	for _, def := range AllChecks {
+		byID[def.ID] = def
+	}
+
+	for id, jurisdiction := range rustScannerJurisdictions {
+		def, ok := byID[id]
+		if !ok {
+			t.Errorf("`rustScannerJurisdictions` names %q, which is not a registered check", id)
+			continue
+		}
+		patterns := inputs(def.Inputs, GlobalInputs)
+		for _, m := range rustMemberTrees {
+			probe := strings.TrimSuffix(m.Glob, "**") + "src/lib.rs"
+			covered := matchesAny(probe, patterns)
+			want := jurisdictionGoverns(jurisdiction, m)
+			if covered && !want {
+				t.Errorf("check %q fingerprints %s, but its jurisdiction doesn't govern that member: it re-runs over a tree it can't see",
+					id, probe)
+			}
+			if !covered && want {
+				t.Errorf("check %q scans %s but doesn't fingerprint it: an edit there would cache-skip the lane that guards it",
+					id, probe)
+			}
+		}
+	}
+}
+
+// jurisdictionGoverns reports whether a jurisdiction reaches the given member.
+func jurisdictionGoverns(j ScannerJurisdiction, m rustMemberTree) bool {
+	if j.AppTreeOnly {
+		return m.Pkg == "cmdr"
+	}
+	for _, k := range j.Kinds {
+		if m.Kind == k {
+			return true
+		}
+	}
+	return false
 }
 
 // TestInputSetsExcludeOnlyAgentDocs keeps the exclusions honest: a shared set may
@@ -99,16 +223,23 @@ func TestInputSetsExcludeOnlyAgentDocs(t *testing.T) {
 		allowed[pattern] = true
 	}
 	for name, set := range map[string][]string{
-		"rustInputs":      rustInputs,
-		"svelteInputs":    svelteInputs,
-		"websiteInputs":   websiteInputs,
-		"apiServerInputs": apiServerInputs,
-		"dashboardInputs": dashboardInputs,
-		"goScriptsInputs": goScriptsInputs,
-		"workflowsInputs": workflowsInputs,
-		"wholeRepoInputs": wholeRepoInputs,
-		"desktopApp":      desktopAppInputs(),
-		"GlobalInputs":    GlobalInputs,
+		"rustCompileInputs":   rustCompileInputs,
+		"rustAppTreeInputs":   rustAppTreeInputs,
+		"rustScanApp":         rustScanInputs(KindApp),
+		"rustScanAppTool":     rustScanInputs(KindApp, KindTool),
+		"rustScanEveryKind":   rustScanInputs(KindApp, KindTool, KindVendored),
+		"rustWorkspaceConfig": rustWorkspaceConfigInputs,
+		"rustEmbeddedInputs":  rustEmbeddedInputs,
+		"rustFixtureServers":  rustFixtureServerInputs,
+		"svelteInputs":        svelteInputs,
+		"websiteInputs":       websiteInputs,
+		"apiServerInputs":     apiServerInputs,
+		"dashboardInputs":     dashboardInputs,
+		"goScriptsInputs":     goScriptsInputs,
+		"workflowsInputs":     workflowsInputs,
+		"wholeRepoInputs":     wholeRepoInputs,
+		"desktopApp":          desktopAppInputs(),
+		"GlobalInputs":        GlobalInputs,
 	} {
 		for _, pattern := range set {
 			if strings.HasPrefix(pattern, "!") && !allowed[pattern] {

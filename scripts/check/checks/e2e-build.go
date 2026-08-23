@@ -42,7 +42,9 @@ const e2eBuildStampSuffix = ".build-fingerprint"
 // Deliberately NOT `apps/desktop/test/**`. Playwright's specs, its config, and the
 // shared fixture helpers are read from disk when the suite runs; editing one changes
 // what the suite ASSERTS, never what it asserts against. `apps/desktop/test/smb-servers/**`
-// is the same: container configs the running suite talks to.
+// is the same: container configs the running suite talks to. `tools/**` is out for a
+// different reason: it holds the IntelliJ plugin and a standalone proof-of-concept, and
+// neither is a cargo workspace member, so nothing the binary is built from lives there.
 //
 // Conservative everywhere else, on the cache's usual policy — too wide only costs a
 // rebuild, too narrow runs the whole suite against a binary that no longer matches
@@ -61,7 +63,6 @@ func e2eBinaryInputs() []string {
 		// Cargo's side.
 		"apps/desktop/src-tauri/**",
 		"crates/**",
-		"tools/**",
 		"Cargo.toml",
 		"Cargo.lock",
 		"rust-toolchain.toml",

@@ -399,7 +399,7 @@ include, so appending a pattern can never quietly re-include something an exclus
 that can make an input set too NARROW, which is the failure mode that ships a regression, so each one names files
 nothing in the check's pipeline reads and carries the reasoning where it's declared.
 
-The only exclusion is `agentDocExclusions` (`!**/CLAUDE.md` / `!**/DETAILS.md`), carried by `rustInputs` and
+The only exclusion is `agentDocExclusions` (`!**/CLAUDE.md` / `!**/DETAILS.md`), carried by the Rust blocks and
 `svelteInputs`. Roughly 400 agent docs sit inside those trees and get edited on nearly every session by house rule, and
 no code lane reads one: `TestRustInputsCoverEveryEmbeddedFile` proves no `include_str!` reaches a `.md`, nextest runs no
 doctests, and `TestNoFrontendSourceLoadsAgentDocs` proves no frontend module imports one (Vite's `./X.md?raw` is the
@@ -432,6 +432,42 @@ degrades to "run everything" — never an error.
 renamed dir can't silently leave a check fingerprinting nothing (and thus cache-skipping real changes). It does NOT try
 to reconcile `Inputs` against the ci.yml filter sets — that mapping isn't 1:1 and a strict reconciliation would be
 flaky; CI-runs-fresh is the real correctness backstop.
+
+### The Rust input blocks
+
+The Rust lanes don't share one set. `inputs.go` declares blocks, and each lane names the ones its own verdict depends
+on:
+
+- `rustMemberTrees` is one entry per cargo workspace member: package name, `MemberKind`, and the glob covering its tree.
+  It's hand-written because `Inputs` is static registry data with no repo root in hand;
+  `TestRustMemberTreesMatchTheWorkspace` pins it to the real manifests in both directions, so a new crate can't land
+  outside every lane's view.
+- `rustCompileInputs` — every member's tree plus `Cargo.toml` / `Cargo.lock` / `rust-toolchain.toml` plus
+  `rustEmbeddedInputs`. What a lane that runs cargo over the whole workspace reads. Lanes add their own tool config on
+  top (`clippy.toml` for clippy, `rustfmt.toml` for rustfmt, `deny.toml` for cargo-deny, `pnpm-lock.yaml` for
+  `bindings-fresh`, the fixture-server dirs for `rust-integration-tests`).
+- `rustScanInputs(kinds…)` — the member trees of those kinds, for a source scanner. A scanner passes the SAME kinds it
+  declares in `rustScannerJurisdictions`, so its cache key and the trees it walks come from one decision;
+  `TestScannerInputsMatchTheirJurisdiction` fails when they disagree either way.
+- `rustAppTreeInputs` — for the scanners whose jurisdiction is `AppTreeOnly`. A crate edit can't change their verdict.
+- `rustWorkspaceConfigInputs` alone is enough for `cargo-audit` and `cargo-deny`: both answer a question about the
+  lockfile, not about anybody's sources.
+
+❌ `tools/**` is not in any of them. `tools/intellij-plugin` and `tools/privatesize-poc` are outside the cargo
+workspace, so no Rust lane compiles or scans either one; carrying them cost 22 commits a full Rust battery plus both E2E
+suites for nothing.
+
+**`TestRustInputsCoverEveryEmbeddedFile` is what makes narrowing safe.** It walks the WHOLE registry and pairs each
+check against each `include_str!` / `include_bytes!` site individually: a lane that covers the embedding source must
+cover the embedded file. So a lane narrowed to one crate stops owing what other crates embed, while any lane still
+covering the app tree still owes `CHANGELOG.md`. Generalizing it from one set to the registry caught a live hole in the
+two E2E lanes on the first run.
+
+❗ **The cargo lanes stay on `--workspace`, and per-package `-p` lanes are closed.** The app crate depends on all five
+library crates, so a crate edit legitimately invalidates the app and cargo's incrementality already limits the rebuild;
+a `-p` lane resolves features differently from the workspace build it shares `target/` with, and would compile `cmdr-fs`
+without the `testing` feature every other crate's tests are built on. Numbers, and the one place a real win is still
+sitting: `docs/notes/rust-lane-input-narrowing-2026-08-23.md`.
 
 ## Output format
 

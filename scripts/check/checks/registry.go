@@ -28,7 +28,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            inputs(rustCompileInputs, []string{"rustfmt.toml"}),
 		Run:               RunRustfmt,
 	},
 	{
@@ -41,7 +41,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         []string{"desktop-rust-rustfmt"},
-		Inputs:            rustInputs,
+		Inputs:            inputs(rustCompileInputs, []string{"clippy.toml"}),
 		Run:               RunClippy,
 	},
 	{
@@ -53,7 +53,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         []string{"desktop-rust-rustfmt"},
-		Inputs:            rustInputs,
+		Inputs:            rustCompileInputs,
 		Run:               RunRustdoc,
 	},
 	{
@@ -65,8 +65,11 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
-		Inputs:            rustInputs,
-		Run:               RunCargoAudit,
+		// The lockfile is the whole question: it audits resolved versions against an
+		// advisory database, and reads no source. A manifest edit that doesn't move
+		// `Cargo.lock` can't change the answer.
+		Inputs: rustWorkspaceConfigInputs,
+		Run:    RunCargoAudit,
 	},
 	{
 		ID:                "desktop-rust-cargo-deny",
@@ -77,8 +80,10 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
-		Inputs:            rustInputs,
-		Run:               RunCargoDeny,
+		// Same as cargo-audit: a question about the resolved graph and the policy
+		// file, never about anybody's source.
+		Inputs: inputs(rustWorkspaceConfigInputs, []string{"deny.toml"}),
+		Run:    RunCargoDeny,
 	},
 	{
 		ID:                "desktop-rust-cargo-machete",
@@ -89,7 +94,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustCompileInputs,
 		Run:               RunCargoMachete,
 	},
 	{
@@ -103,7 +108,7 @@ var AllChecks = []CheckDefinition{
 		CIOnly:            true,
 		FreestyleIncompat: true,
 		DependsOn:         nil,
-		Inputs:            rustInputs,
+		Inputs:            rustCompileInputs,
 		Run:               RunCargoUdeps,
 	},
 	{
@@ -130,7 +135,7 @@ var AllChecks = []CheckDefinition{
 		IsSlow:            true,
 		FreestyleIncompat: true,
 		DependsOn:         nil,
-		Inputs:            rustInputs,
+		Inputs:            rustCompileInputs,
 		Run:               RunRustModuleCycles,
 	},
 	{
@@ -148,7 +153,7 @@ var AllChecks = []CheckDefinition{
 		// one thing in 837 local runs, which is what got it demoted to CI-only.
 		FreestyleIncompat: true,
 		DependsOn:         nil,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp, KindTool),
 		Run:               RunJscpdRust,
 	},
 	{
@@ -160,7 +165,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp, KindTool, KindVendored),
 		Run:               RunCfgGate,
 	},
 	{
@@ -172,7 +177,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustAppTreeInputs,
 		Run:               RunLogErrorMacro,
 	},
 	{
@@ -184,7 +189,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp),
 		Run:               RunSqliteOpenDirect,
 	},
 	{
@@ -196,7 +201,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustAppTreeInputs,
 		Run:               RunDiscardedOutcome,
 	},
 	{
@@ -208,7 +213,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustAppTreeInputs,
 		Run:               RunWriteOpsAgentIsolation,
 	},
 	{
@@ -220,7 +225,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp, KindTool),
 		Run:               RunErrorStringMatch,
 	},
 	{
@@ -232,7 +237,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp, KindTool),
 		Run:               RunTestSleep,
 	},
 	{
@@ -244,7 +249,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp, KindTool),
 		Run:               RunFixedTempDir,
 	},
 	{
@@ -256,7 +261,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp, KindTool),
 		Run:               RunNoHandRolledFixture,
 	},
 	{
@@ -268,7 +273,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp),
 		Run:               RunDeriveDefaultJustified,
 	},
 	{
@@ -280,7 +285,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp),
 		Run:               RunProbeUnwrapJustified,
 	},
 	{
@@ -292,7 +297,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp, KindTool),
 		Run:               RunLockPoison,
 	},
 	{
@@ -304,7 +309,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustAppTreeInputs,
 		Run:               RunMtpDroppingTimeout,
 	},
 	{
@@ -316,7 +321,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustAppTreeInputs,
 		Run:               RunMtpNoTransportReset,
 	},
 	{
@@ -328,11 +333,12 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		// Its own list rather than `rustInputs`: it scans TypeScript and Svelte too.
-		// `crates/**` is in here because the scan follows the workspace members, so
-		// a change confined to a crate is a change to this check's own inputs — the
-		// cache would otherwise skip it over exactly the tree that moved.
-		Inputs: inputs([]string{"apps/desktop/src/**", "apps/desktop/src-tauri/**", "crates/**", "tools/**"}),
+		// Its own list rather than a shared Rust set: it scans TypeScript and Svelte
+		// too. The Rust half is `rustScanInputs(KindApp)`, matching the jurisdiction
+		// it declares — the scan follows the workspace members, so a change confined
+		// to one of them is a change to this check's own inputs and the cache would
+		// otherwise skip it over exactly the tree that moved.
+		Inputs: inputs([]string{"apps/desktop/src/**"}, rustScanInputs(KindApp)),
 		Run:    RunPluralizeNoun,
 	},
 	{
@@ -353,7 +359,7 @@ var AllChecks = []CheckDefinition{
 		// fundamentally can't validate macOS bindings.
 		NotInCI:   "regen is platform-specific; the committed bindings.ts is the macOS surface, which a Linux CI runner can't reproduce",
 		DependsOn: nil,
-		Inputs:    rustInputs,
+		Inputs:    inputs(rustCompileInputs, []string{"pnpm-lock.yaml"}),
 		Run:       RunDesktopBindingsFresh,
 	},
 	{
@@ -365,7 +371,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            rustInputs,
+		Inputs:            rustScanInputs(KindApp, KindTool),
 		Run:               RunIpcEnumCamelCase,
 	},
 	{
@@ -593,7 +599,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         []string{"desktop-rust-clippy"},
-		Inputs:            rustInputs,
+		Inputs:            rustCompileInputs,
 		Run:               RunRustTests,
 	},
 	{
@@ -607,7 +613,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true, // Needs Docker, which isn't available on freestyle.sh VMs
 		NeedsContainers:   []StackMode{SmbCore, SftpCore},
 		DependsOn:         []string{"desktop-rust-clippy"},
-		Inputs:            rustInputs,
+		Inputs:            inputs(rustCompileInputs, rustFixtureServerInputs),
 		Run:               RunRustIntegrationTests,
 	},
 	{
@@ -621,6 +627,7 @@ var AllChecks = []CheckDefinition{
 		// the fast lane in front of the integration lane it guards.
 		Inputs: inputs(
 			[]string{"apps/desktop/src-tauri/src/**"},
+			rustEmbeddedInputs,
 		),
 		Run: RunFixtureLaneCoverage,
 	},
@@ -635,7 +642,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		NotInCI:           "CI's desktop-rust job already runs the same tests natively on a Linux runner; this check exists to run them from a Mac",
 		DependsOn:         []string{"desktop-rust-clippy"},
-		Inputs:            rustInputs,
+		Inputs:            rustCompileInputs,
 		Run:               RunRustTestsLinux,
 	},
 	{
@@ -659,7 +666,7 @@ var AllChecks = []CheckDefinition{
 		// neither, so mark incompat (it would only ever self-skip there).
 		FreestyleIncompat: true,
 		DependsOn:         []string{"desktop-rust-clippy"},
-		Inputs:            rustInputs,
+		Inputs:            rustCompileInputs,
 		Run:               RunGroqSmoke,
 	},
 

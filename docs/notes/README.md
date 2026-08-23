@@ -130,6 +130,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `cargo-lane-feature-thrash.md` — what it cost when the cargo check lanes asked cargo different questions about one
   `target/` (20-100 s of rebuild per flip), the before/after of aligning them, and the two measurements that ruled out
   splitting the Rust test lane per package.
+- `rust-lane-input-narrowing-2026-08-23.md` — what splitting the one `rustInputs` set into per-lane, per-member blocks
+  bought (a `tools/` edit went from 44 lanes to 12, a crate edit from 46 to 39), and the re-measurement that closed the
+  per-crate `-p` lane question for good: the app depends on every crate, so `--workspace` is already minimal, and a `-p`
+  lane compiles `cmdr-fs` without the `testing` feature the workspace build unifies in. Read it before proposing
+  per-package cargo lanes or dependency-aware invalidation. It also names where the next win actually is
+  (`scripts/check/**` in `GlobalInputs`, 205 commits that re-run everything for nothing).
 - `frontend-lane-cache-partitioning.md` — what the 21 checks on `svelteInputs` cost (59.6 h of a 24-day window), what
   excluding the colocated agent docs bought (41.3% → 35.0% of commits), the isolated Vitest timings behind it, and the
   three independent reasons a per-area split of `svelte-tests` was rejected.

@@ -84,13 +84,15 @@ CheckDefinition{
   (`pnpm check` skips a check when its inputs are unchanged since its last pass). **Every check MUST declare Inputs**
   (`TestEveryCheckDeclaresInputs` fails the suite otherwise): an empty list fingerprints on the global inputs alone, so
   the check would be cache-skipped even when its own files change — a correctness hole. Reuse a shared set from
-  `inputs.go` (`rustInputs`, `svelteInputs`, `websiteInputs`, `apiServerInputs`, `goScriptsInputs`, `workflowsInputs`,
-  `desktopAppInputs()`), or `wholeRepoInputs` (`**`) for a whole-tree scanner. **Be conservative: when unsure whether
-  the check reads a path, include it.** A too-wide list only costs cache speed; a too-narrow one costs correctness. The
-  global inputs (`.mise.toml`, `scripts/check/**`) are added automatically — don't list them. `ci-coverage` rule 4 fails
-  if any static path prefix in your Inputs doesn't exist on disk. A `!`-prefixed entry EXCLUDES matching paths from the
-  set (including from the globals); it's the only way to make a set too narrow, so read `../DETAILS.md` § "Exclusions"
-  before adding one, and give it a test.
+  `inputs.go` (`rustCompileInputs`, `rustScanInputs(kinds…)`, `rustAppTreeInputs`, `svelteInputs`, `websiteInputs`,
+  `apiServerInputs`, `goScriptsInputs`, `workflowsInputs`, `desktopAppInputs()`), or `wholeRepoInputs` (`**`) for a
+  whole-tree scanner. A Rust source scanner passes the SAME member kinds it declares in `rustScannerJurisdictions`;
+  `TestScannerInputsMatchTheirJurisdiction` fails when the two disagree in either direction. **Be conservative: when
+  unsure whether the check reads a path, include it.** A too-wide list only costs cache speed; a too-narrow one costs
+  correctness. The global inputs (`.mise.toml`, `scripts/check/**`) are added automatically — don't list them.
+  `ci-coverage` rule 4 fails if any static path prefix in your Inputs doesn't exist on disk. A `!`-prefixed entry
+  EXCLUDES matching paths from the set (including from the globals); it's the only way to make a set too narrow, so read
+  `../DETAILS.md` § "Exclusions" before adding one, and give it a test.
 
 ### ⚠️ A fresh worktree inherits the cache, so a green check can be a stale answer
 

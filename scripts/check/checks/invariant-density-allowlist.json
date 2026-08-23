@@ -1,7 +1,7 @@
 {
   "$comment": "Accepted ❌ rule count per subsystem, seeded from the state at the check's introduction. Local runs lower an entry to the current count and drop a subsystem that reaches zero. Raising one is FINE without asking, unlike every other allowlist here: a rule earns its place on whether the invariant is worth stating, which the number can't judge (.claude/rules/file-length-allowlist.md). Encoding the invariant in a type is still better than writing a rule about it.",
   "subsystems": {
-    ".": 12,
+    ".": 14,
     "apps/api-server": 17,
     "apps/desktop": 2,
     "apps/desktop/src": 262,
