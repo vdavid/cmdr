@@ -216,18 +216,97 @@ impl ProposalDecision {
 }
 
 impl ProposalOutcomes {
-    /// The sweep as the MODEL reads it, one line per group. Empty renders empty, never a
-    /// header saying nothing happened: that would spend budget to say nothing.
+    /// The sweep as the MODEL reads it: what the user answered, and what to do about it. Empty
+    /// renders empty, never a header saying nothing happened: that would spend budget to say
+    /// nothing.
+    ///
+    /// ⚠️ **The instruction lives HERE, not in `SYSTEM_PROMPT`.** This block opens exactly one
+    /// kind of turn, and the system prompt rides the cached prefix of every turn the rail and
+    /// every wake ever run. A permanent tax on all of them, to steer one, is the wrong trade.
+    ///
+    /// ❌ Never render this into the UI. It is deliberately English and deliberately shaped for
+    /// a prompt; the rail says the same numbers in the user's own language.
     pub fn render(&self) -> String {
-        self.decisions
-            .iter()
-            .map(|decision| format!("{}\n", decision.render()))
-            .collect()
+        if self.decisions.is_empty() {
+            return String::new();
+        }
+        let mut out = String::from("The user has answered suggestions you made:\n");
+        for decision in &self.decisions {
+            out.push_str(&format!("{}\n", decision.render()));
+        }
+        out.push_str(
+            "Save what you should do differently next time with memory_write or memory_edit. \
+             Then reply in one or two sentences, and ask a single short question only if their \
+             reason would change what you suggest next.\n",
+        );
+        out
     }
 
     /// Every path the block mentions, in order. The follow-up message's FTS text: the display
     /// names are the user's own data rather than authored copy.
     pub fn paths(&self) -> Vec<&str> {
         self.decisions.iter().map(|decision| decision.what.as_str()).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn decision(outcome: ProposalOutcomeKind) -> ProposalDecision {
+        ProposalDecision {
+            verb: ProposalVerb::Trash,
+            what: "/Users/dana/Downloads/*.dmg".to_string(),
+            ops: 12,
+            outcome,
+        }
+    }
+
+    /// The one line that goes into the agent's memory ring. It has to name the verb, the size,
+    /// and the place, because "the user said no" on its own teaches nothing actionable.
+    #[test]
+    fn a_decision_line_names_the_verb_the_count_and_the_place() {
+        let line = decision(ProposalOutcomeKind::Rejected).render();
+
+        assert!(line.contains("turned down"), "{line}");
+        assert!(line.contains("trash"), "{line}");
+        assert!(line.contains("12"), "{line}");
+        assert!(line.contains("/Users/dana/Downloads/*.dmg"), "{line}");
+    }
+
+    /// ⚠️ An approval's line carries what RAN, not what was claimed. Without the tallies the
+    /// agent would learn that the user got what they approved, which a fingerprint mismatch can
+    /// make false for every file in the group.
+    #[test]
+    fn an_approval_line_carries_what_actually_ran() {
+        let line = decision(ProposalOutcomeKind::Ran {
+            done: 10,
+            skipped: 2,
+            failed: 0,
+        })
+        .render();
+
+        assert!(line.contains("approved"), "{line}");
+        assert!(line.contains("10 done, 2 skipped, 0 failed"), "{line}");
+    }
+
+    /// The follow-up turn's opener says what happened AND what to do about it: the instruction
+    /// lives here rather than in `SYSTEM_PROMPT`, which every other turn would pay for.
+    #[test]
+    fn the_follow_up_prompt_asks_for_a_lesson_rather_than_only_reporting() {
+        let rendered = ProposalOutcomes {
+            decisions: vec![decision(ProposalOutcomeKind::Rejected)],
+        }
+        .render();
+
+        assert!(rendered.contains("turned down: trash"), "{rendered}");
+        assert!(rendered.contains("memory_write"), "{rendered}");
+    }
+
+    /// An empty block renders empty, never a header saying nothing happened: a turn that spent
+    /// budget to report silence is exactly what the wake path already refuses to do.
+    #[test]
+    fn an_empty_block_says_nothing_at_all() {
+        assert_eq!(ProposalOutcomes { decisions: Vec::new() }.render(), "");
     }
 }

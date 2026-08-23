@@ -155,11 +155,11 @@ impl WakeLoop {
     /// something unrelated woke the loop.
     fn park(&self) -> Duration {
         let now = now_secs();
-        let wake = park_for(self.inbox.next_deadline(), self.not_before, now);
-        match self.follow_ups.next_due() {
-            Some(due) => wake.min(Duration::from_secs(due.saturating_sub(now))),
-            None => wake,
-        }
+        park_with_follow_up(
+            park_for(self.inbox.next_deadline(), self.not_before, now),
+            self.follow_ups.next_due(),
+            now,
+        )
     }
 
     /// Note that a group in this sweep was turned down, so the agent can ask about it.
@@ -430,6 +430,21 @@ impl PendingSlot {
 /// ⚠️ Capped at [`IDLE_POLL`] and floored by `not_before`. The floor is the load-bearing half: a
 /// deadline in the past yields a zero-length park, and a zero-length `recv_timeout` returns
 /// instantly, so without it an overdue row the loop declines to act on spins a core flat.
+/// Fold a waiting follow-up's coalescing window into the park the inbox asked for.
+///
+/// ⚠️ **An OVERDUE follow-up must not shorten the park**, which is the same spin trap
+/// [`park_for`] guards for the inbox and it bites for a different reason. A window that has
+/// closed and is still waiting means this pass declined to act on it, and the only reason it
+/// can is that a background turn is already running. That turn takes minutes, and a
+/// zero-length `recv_timeout` for its whole duration would spin a core flat. The
+/// `WakeFinished` control message wakes the loop the moment it can be acted on.
+fn park_with_follow_up(wake: Duration, next_follow_up: Option<u64>, now: u64) -> Duration {
+    match next_follow_up {
+        Some(due) if due > now => wake.min(Duration::from_secs(due - now)),
+        _ => wake,
+    }
+}
+
 fn park_for(next_deadline: Option<u64>, not_before: u64, now: u64) -> Duration {
     let Some(due) = next_deadline else {
         return IDLE_POLL;
@@ -487,5 +502,35 @@ mod tests {
             IDLE_POLL,
             "and a distant deadline is capped, so the loop re-checks its own arithmetic"
         );
+    }
+
+    /// A rejection's coalescing window is the second clock the loop parks against, so a window
+    /// closing soon has to shorten the wait: otherwise the ask sits until something unrelated
+    /// wakes the loop.
+    #[test]
+    fn a_coalescing_window_closing_soon_shortens_the_park() {
+        let now = 1_780_000_000;
+
+        assert_eq!(
+            park_with_follow_up(IDLE_POLL, Some(now + 5), now),
+            Duration::from_secs(5)
+        );
+        assert_eq!(
+            park_with_follow_up(Duration::from_secs(2), Some(now + 5), now),
+            Duration::from_secs(2),
+            "and the shorter of the two clocks wins"
+        );
+    }
+
+    /// ⚠️ The follow-up half of the spin guard. A window that closed and is STILL waiting means
+    /// a background turn is running, and that turn takes minutes: a zero-length park for its
+    /// whole duration would spin a core flat. `WakeFinished` is what wakes the loop instead.
+    #[test]
+    fn an_overdue_follow_up_the_loop_declined_parks_instead_of_spinning() {
+        let now = 1_780_000_000;
+
+        assert_eq!(park_with_follow_up(IDLE_POLL, Some(now - 300), now), IDLE_POLL);
+        assert_eq!(park_with_follow_up(IDLE_POLL, Some(now), now), IDLE_POLL);
+        assert_eq!(park_with_follow_up(IDLE_POLL, None, now), IDLE_POLL);
     }
 }
