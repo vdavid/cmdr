@@ -231,13 +231,28 @@ fn test_map_volume_error_already_exists() {
 }
 
 #[test]
-fn test_map_volume_error_not_supported() {
-    let err = map_volume_error("/ctx", PathRole::Source, VolumeError::NotSupported);
-    assert!(
-        // allowed-error-string-match: testing Display impl of WriteOperationError; no typed sub-variant for "not
-        // supported"
-        matches!(err, WriteOperationError::IoError { path, message } if message.contains("not supported") && path == "/ctx")
-    );
+fn test_map_volume_error_not_supported_names_which_volume_refused() {
+    // `NotSupported` has no typed sub-variant, so it lands in `IoError` with a
+    // technical-details message. ❗ That message must name the ROLE: the bare
+    // "Operation not supported by this volume type" it used to carry left a
+    // reader unable to tell which of the two volumes refused, and a comment in
+    // `approved_op_parity_tests.rs` called it out as the worst message in the
+    // suite to debug cold. `role` is the one fact the caller has and the error
+    // doesn't.
+    for (role, expected) in [
+        (PathRole::Source, "The source volume does not support this operation"),
+        (PathRole::Destination, "The destination volume does not support this operation"),
+    ] {
+        let err = map_volume_error("/ctx", role, VolumeError::NotSupported);
+        // allowed-error-string-match: asserting the technical-details STRING this
+        // variant carries, not recovering a classification from it. The typed
+        // variant is matched on separately, right here.
+        let WriteOperationError::IoError { path, message } = err else {
+            panic!("NotSupported must map to IoError, got {err:?}");
+        };
+        assert_eq!(path, "/ctx");
+        assert_eq!(message, expected);
+    }
 }
 
 #[test]
