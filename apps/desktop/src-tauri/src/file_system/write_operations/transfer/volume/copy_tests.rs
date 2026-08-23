@@ -241,7 +241,10 @@ fn test_map_volume_error_not_supported_names_which_volume_refused() {
     // doesn't.
     for (role, expected) in [
         (PathRole::Source, "The source volume does not support this operation"),
-        (PathRole::Destination, "The destination volume does not support this operation"),
+        (
+            PathRole::Destination,
+            "The destination volume does not support this operation",
+        ),
     ] {
         let err = map_volume_error("/ctx", role, VolumeError::NotSupported);
         // allowed-error-string-match: asserting the technical-details STRING this
