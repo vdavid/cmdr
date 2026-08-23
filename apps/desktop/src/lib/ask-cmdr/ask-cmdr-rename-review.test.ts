@@ -6,19 +6,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AskCmdrStreamEvent } from '$lib/tauri-commands'
+import type { AskCmdrSendOutcome, AskCmdrStreamEvent } from '$lib/tauri-commands'
 
 const sendMock =
-  vi.fn<
-    (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>
-  >()
+  vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
 const preflightRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const reviseRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const applyRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 
 vi.mock('$lib/tauri-commands', () => ({
-  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) =>
-    sendMock(c, t, a, d, o),
+  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[]) => sendMock(c, t, a, d),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   getAskCmdrConversation: vi.fn(() => Promise.resolve(null)),
@@ -53,27 +50,29 @@ import {
   reviseRenameRow,
   sendMessage,
 } from './ask-cmdr-trigger.svelte'
+import { handleTurnEvent, resetStoppedTurns } from './ask-cmdr-stream.svelte'
 
-/** Capture the onEvent callback the last send handed us, to drive the stream by hand. */
-let lastOnEvent: ((e: AskCmdrStreamEvent) => void) | null = null
+/** The thread a fired event belongs to when the test doesn't name one. */
+const THREAD_ID = 1
 
-function fire(event: AskCmdrStreamEvent): void {
-  if (!lastOnEvent) throw new Error('no active send to fire an event into')
-  lastOnEvent(event)
+/** Feed one stream event in as the backend emits it, for the thread the rail is on. A rail with
+ * no thread yet is put on the named one first: production gets there through `started`, which
+ * `adopts a new thread's id from its own started event` covers on its own. */
+function fire(event: AskCmdrStreamEvent, conversationId: number = askCmdrState.conversationId ?? THREAD_ID): void {
+  askCmdrState.conversationId = conversationId
+  handleTurnEvent({ conversationId, event })
 }
 
 beforeEach(() => {
   sendMock.mockReset()
-  sendMock.mockImplementation((c, _t, _a, _d, o) => {
-    lastOnEvent = o
-    return Promise.resolve(c ?? 1)
-  })
+  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID }))
   preflightRenameMock.mockReset()
   preflightRenameMock.mockResolvedValue({ status: 'ready', rows: [] })
   reviseRenameMock.mockReset()
   applyRenameMock.mockReset()
   applyRenameMock.mockResolvedValue({ operationId: 'op-1' })
   newChat()
+  resetStoppedTurns()
   askCmdrState.messages = []
   askCmdrState.conversationId = null
 })
@@ -132,13 +131,12 @@ describe('carrying denials into the next batch', () => {
       'try again',
       [],
       ['klarna-receipt.png'],
-      expect.any(Function),
     )
 
     // And they are feedback on one decision, not a permanent denylist.
     finishTurn()
     sendMessage('and again')
-    expect(sendMock).toHaveBeenLastCalledWith(expect.anything(), 'and again', [], [], expect.any(Function))
+    expect(sendMock).toHaveBeenLastCalledWith(expect.anything(), 'and again', [], [])
   })
 
   it('treats cancelling the whole review as turning every name down', async () => {
@@ -153,7 +151,6 @@ describe('carrying denials into the next batch', () => {
       'different style please',
       [],
       ['klarna-invoice.png', 'klarna-receipt.png'],
-      expect.any(Function),
     )
   })
 
@@ -164,7 +161,7 @@ describe('carrying denials into the next batch', () => {
 
     sendMessage('now the rest')
 
-    expect(sendMock).toHaveBeenLastCalledWith(expect.anything(), 'now the rest', [], [], expect.any(Function))
+    expect(sendMock).toHaveBeenLastCalledWith(expect.anything(), 'now the rest', [], [])
   })
 })
 

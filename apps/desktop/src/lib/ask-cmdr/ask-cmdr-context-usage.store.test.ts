@@ -5,18 +5,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AskCmdrStreamEvent, ConversationDetailView } from '$lib/tauri-commands'
+import type { AskCmdrSendOutcome, AskCmdrStreamEvent, ConversationDetailView } from '$lib/tauri-commands'
 
 const sendMock =
-  vi.fn<
-    (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>
-  >()
+  vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
 const getConversationMock =
   vi.fn<(id: number, limit: number, offset: number) => Promise<ConversationDetailView | null>>()
 
 vi.mock('$lib/tauri-commands', () => ({
-  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) =>
-    sendMock(c, t, a, d, o),
+  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[]) => sendMock(c, t, a, d),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   getAskCmdrConversation: (id: number, limit: number, offset: number) => getConversationMock(id, limit, offset),
@@ -43,22 +40,25 @@ vi.mock('./ask-cmdr-consent.svelte', () => ({
 }))
 
 import { askCmdrState, newChat, sendMessage, switchToThread } from './ask-cmdr-trigger.svelte'
+import { handleTurnEvent, resetStoppedTurns } from './ask-cmdr-stream.svelte'
 
-let lastOnEvent: ((e: AskCmdrStreamEvent) => void) | null = null
+/** The thread a fired event belongs to when the test doesn't name one. */
+const THREAD_ID = 1
 
-function fire(event: AskCmdrStreamEvent): void {
-  if (!lastOnEvent) throw new Error('no active send to fire an event into')
-  lastOnEvent(event)
+/** Feed one stream event in as the backend emits it, for the thread the rail is on. A rail with
+ * no thread yet is put on the named one first: production gets there through `started`, which
+ * `adopts a new thread's id from its own started event` covers on its own. */
+function fire(event: AskCmdrStreamEvent, conversationId: number = askCmdrState.conversationId ?? THREAD_ID): void {
+  askCmdrState.conversationId = conversationId
+  handleTurnEvent({ conversationId, event })
 }
 
 beforeEach(() => {
   sendMock.mockReset()
-  sendMock.mockImplementation((c, _t, _a, _d, o) => {
-    lastOnEvent = o
-    return Promise.resolve(c ?? 1)
-  })
+  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID }))
   getConversationMock.mockReset()
   newChat()
+  resetStoppedTurns()
   askCmdrState.messages = []
   askCmdrState.conversationId = null
 })

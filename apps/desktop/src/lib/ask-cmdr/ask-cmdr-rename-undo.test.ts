@@ -14,7 +14,7 @@ const applyRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const undoOperationsMock = vi.fn<(ids: string[]) => Promise<UndoReport>>()
 
 vi.mock('$lib/tauri-commands', () => ({
-  sendAskCmdrMessage: vi.fn(() => Promise.resolve(1)),
+  sendAskCmdrMessage: vi.fn(() => Promise.resolve({ accepted: true, conversationId: 1 })),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   getAskCmdrConversation: vi.fn(() => Promise.resolve(null)),

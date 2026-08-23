@@ -89,7 +89,7 @@ pub struct RenameProposalRow {
     pub coverage: Option<EvidenceCoverage>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RenameProposalSnapshot {
     pub proposal_id: String,

@@ -26,6 +26,10 @@
     import AskCmdrRail from '$lib/ask-cmdr/AskCmdrRail.svelte'
     import BulkRenameReviewDialog from '$lib/ask-cmdr/BulkRenameReviewDialog.svelte'
     import { askCmdrState } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
+    import {
+        startAskCmdrTurnStream,
+        stopAskCmdrTurnStream,
+    } from '$lib/ask-cmdr/ask-cmdr-turn-stream.svelte'
     import { goToPath } from '$lib/go-to-path/go-to-path'
     import {
         getFocusedPanePath,
@@ -342,6 +346,11 @@
         // is already waiting before anything emits.
         void startSuggestedOpsBadge()
 
+        // Subscribe to every Ask Cmdr turn, this window only. It is what keeps the rail
+        // rendering a turn it wasn't watching from the start (a reload, or a wake), and what
+        // tells the session list a wake just opened a thread.
+        void startAskCmdrTurnStream()
+
         // Load license status from cache (fast, no network)
         try {
             const licenseStatus = await loadLicenseStatus()
@@ -508,6 +517,7 @@
     onDestroy(() => {
         destroyShortcutDispatch()
         stopSuggestedOpsBadge()
+        stopAskCmdrTurnStream()
         destroyIndexState()
         destroyMediaEnrichState()
         stopOperationFailureWatch()

@@ -1,14 +1,17 @@
 // Ask Cmdr: the read-only chat rail's IPC surface.
 //
-// Three thin wrappers over the typed `commands.*` bindings (list/get/cancel), plus the
-// streaming `sendAskCmdrMessage`. Send rides a Tauri `Channel<T>` (not specta-friendly
-// yet), so it uses raw `invoke` with the documented opt-out, exactly like
-// `streamFolderSuggestions`. The wire event type is hand-mirrored from the Rust
-// `AskCmdrStreamEvent` (a `Channel`-only enum, absent from the generated bindings).
+// Thin wrappers over the typed `commands.*` bindings, plus `onAskCmdrTurn`, the subscription
+// every turn's progress arrives on. Nothing here is hand-mirrored and nothing rides raw
+// `invoke`: the stream is a specta event keyed by conversation, so a reload re-subscribes and
+// drift between the Rust enum and this file is a compile error rather than a silent bug.
 
-import { Channel, invoke } from '@tauri-apps/api/core'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import {
   commands,
+  events,
+  type AgentErrorKindView,
+  type AskCmdrStreamEvent,
+  type AskCmdrTurn,
   type ConversationRow,
   type ConversationDetailView,
   type ConversationSearchHit,
@@ -24,10 +27,14 @@ import {
   type ModelWindowView,
   type RenameEvidence,
   type RenameProposalRowSnapshot,
+  type StopReasonView,
+  type UsageView,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 export type {
+  AskCmdrStreamEvent,
+  AskCmdrTurn,
   ConversationRow,
   ConversationDetailView,
   ConversationSearchHit,
@@ -42,28 +49,14 @@ export type {
   RenameEvidence,
 }
 
-/** Why an assistant turn ended, on the wire (mirrors Rust `StopReasonView`). */
-export type StopReason = 'completed' | 'toolCall' | 'maxTokens' | 'contentFilter' | 'stopSequence' | 'other'
+/** Why an assistant turn ended, on the wire (the generated `StopReasonView`). */
+export type StopReason = StopReasonView
 
-/** Per-turn token usage (mirrors Rust `UsageView`). */
-export interface AskCmdrUsage {
-  promptTokens: number
-  completionTokens: number
-}
+/** Per-turn token usage (the generated `UsageView`). */
+export type AskCmdrUsage = UsageView
 
-/** The typed reasons a turn ends without an answer (mirrors Rust `AgentErrorKindView`). */
-export type AskCmdrErrorKind =
-  | 'noKey'
-  | 'notConfigured'
-  | 'noConsent'
-  | 'localWindowTooSmall'
-  | 'unavailable'
-  | 'timeout'
-  | 'authFailed'
-  | 'rateLimited'
-  | 'budgetExhausted'
-  | 'unfinishedReply'
-  | 'provider'
+/** The typed reasons a turn ends without an answer (the generated `AgentErrorKindView`). */
+export type AskCmdrErrorKind = AgentErrorKindView
 
 /**
  * Where a proposed rename name came from (the generated `EvidenceSource`, under the name the
@@ -88,68 +81,45 @@ export type RenameEvidenceCoverage = EvidenceCoverage
 /** One review row as the backend owns it (the generated `RenameProposalRowSnapshot`). */
 export type RenameProposalRow = RenameProposalRowSnapshot
 
-/**
- * A streamed progress event for the rail. Hand-mirrors the Rust `AskCmdrStreamEvent`
- * (a `Channel`-only enum). Never carries a reasoning blob or provider state.
- */
-export type AskCmdrStreamEvent =
-  | { type: 'started'; conversationId: number }
-  | { type: 'queued' }
-  | { type: 'userPersisted'; messageId: number; seq: number }
-  | { type: 'assistantStarted' }
-  | { type: 'textDelta'; text: string }
-  | { type: 'reasoningTick' }
-  | { type: 'toolCallStarted'; callId: string; tool: string }
-  | { type: 'toolCallFinished'; callId: string; ok: boolean }
-  /** The staged rename proposal, as the review dialog receives it. The rows are the generated
-   *  `RenameProposalRowSnapshot`: `sourcePath` / `volumeId` are display data for the thumbnail
-   *  and the viewer, since apply resolves every path server-side from the opaque row id. */
-  | { type: 'proposalReady'; proposal: { proposalId: string; rows: RenameProposalRow[] } }
-  | { type: 'done'; messageId: number; seq: number; stop: StopReason; usage: AskCmdrUsage }
-  /** `detail` is the source error's own wording for display under the typed headline
-   * (a retired model slug, a quota reset time); never branch on it. */
-  | { type: 'failed'; kind: AskCmdrErrorKind; detail: string | null }
-  /** The thread's effective model changed since its previous turn; the persisted event
-   * row's identity rides along. Render the line BEFORE this turn's user bubble. */
-  | { type: 'modelChanged'; messageId: number; seq: number; model: string }
-  /** The prompt budget pushed earlier tool results out of this turn's context, so the reply
-   * was written with less than the whole thread in view. At most one per turn. */
-  | { type: 'contextTrimmed'; elidedResults: number; approxTokens: number }
-  /** What this turn's prompt cost against its budget, once per answered turn, for the rail's
-   * usage gauge. Both figures are `chars/4` estimates, never a tokenizer's count. */
-  | { type: 'contextUsage'; estimatedTokens: number; budgetTokens: number; elidedResults: number }
+/** What a send answered: the thread it landed in, or why it never started. */
+export type AskCmdrSendOutcome =
+  | { accepted: true; conversationId: number }
+  /** Decided before the turn existed (no consent, no slot, a window too small), so it can't
+   * arrive as a stream event — some of these happen before there IS a thread to key one on. */
+  | { accepted: false; kind: AskCmdrErrorKind; detail: string | null }
 
 /**
- * Send one message and stream the answer. `conversationId` is `null` to start a fresh
- * thread; the resolved id arrives both in the first `started` event and as the promise's
- * value. All progress rides `onEvent`. Cancel via [`cancelAskCmdr`] once the id is known
- * (the `started` event) — Tauri's `Channel::send` is fire-and-forget, so abandonment isn't
- * detectable without the explicit cancel command.
+ * Send one message. `conversationId` is `null` to start a fresh thread; the resolved id comes
+ * back here, and the answer streams over [`onAskCmdrTurn`] keyed on it. Cancel via
+ * [`cancelAskCmdr`] once the id is known.
  *
  * `deniedNames` are destination names the user turned down in this thread's last rename review.
  * They ride the turn envelope so the next batch doesn't re-propose a style the user rejected.
  * Names only, never a reason: a model-authored "why" would come back as a rationalization.
  */
-export function sendAskCmdrMessage(
+export async function sendAskCmdrMessage(
   conversationId: number | null,
   text: string,
   attachments: AttachmentRef[],
   deniedNames: string[],
-  onEvent: (event: AskCmdrStreamEvent) => void,
-): Promise<number> {
-  const channel = new Channel<AskCmdrStreamEvent>()
-  channel.onmessage = onEvent
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- streaming Channel<T> not specta-friendly yet; tracked for follow-up
-  return invoke<number>('ask_cmdr_send_message', {
-    conversationId,
-    text,
-    attachments,
-    deniedNames,
-    onEvent: channel,
-  }).then(
-    (id) => id,
-    () => conversationId ?? 0, // contracted Ok(i64); webview teardown can reject — fall back to the known id
-  )
+): Promise<AskCmdrSendOutcome> {
+  const res = await commands.askCmdrSendMessage(conversationId, text, attachments, deniedNames)
+  if (res.status === 'error') return { accepted: false, kind: res.error.kind, detail: res.error.detail }
+  return { accepted: true, conversationId: res.data }
+}
+
+/**
+ * Every Ask Cmdr turn's progress, whoever started it: a rail send or a wake the user never
+ * asked for. Each event names the thread it belongs to, so a subscriber filters rather than
+ * owning a stream — which is what lets a reloaded webview, or a rail opened onto a wake
+ * already in flight, pick the turn up mid-answer.
+ *
+ * ⚠️ It reaches EVERY window. Subscribe from the main window only.
+ */
+export function onAskCmdrTurn(callback: (payload: AskCmdrTurn) => void): Promise<UnlistenFn> {
+  return events.askCmdrTurn.listen((event) => {
+    callback(event.payload)
+  })
 }
 
 /** Stop the in-flight turn for a thread. Idempotent; safe after natural completion. */

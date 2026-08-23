@@ -174,6 +174,31 @@ export function startNewChat(): void {
   closeSessions()
 }
 
+// ── What the turn stream tells the list ──────────────────────────────────────
+
+/**
+ * A turn started in a thread the list doesn't know, so a thread was created since it loaded.
+ * That is how a WAKE shows up: the agent opens its own thread and nothing else announces it
+ * (`suggestions-changed` fires on proposals, not on thread creation).
+ *
+ * Only while the panel is open, because opening it reloads from the top anyway. A search is
+ * left alone: the list isn't what's on screen then.
+ */
+export function noteThreadStarted(conversationId: number): void {
+  if (!sessionsState.open || isSearching()) return
+  if (sessionsState.conversations.some((row) => row.id === conversationId)) return
+  void loadSessions()
+}
+
+/**
+ * A thread the list may be showing is gone: a quiet wake takes its own thread away seconds
+ * after opening it. Drop the row rather than leaving one that opens onto nothing.
+ */
+export function noteThreadDiscarded(conversationId: number): void {
+  sessionsState.conversations = sessionsState.conversations.filter((row) => row.id !== conversationId)
+  sessionsState.hits = sessionsState.hits.filter((hit) => hit.conversationId !== conversationId)
+}
+
 /** Rename a thread and reflect the new title in the list (and any matching search hit). */
 export async function renameConversation(id: number, title: string): Promise<void> {
   const trimmed = title.trim()

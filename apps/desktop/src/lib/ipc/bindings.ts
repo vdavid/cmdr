@@ -2568,6 +2568,29 @@ export const commands = {
   undoOperations: (operationIds: string[]) =>
     typedError<UndoReport, string>(__TAURI_INVOKE('undo_operations', { operationIds })),
   /**
+   *  Send one user message to a thread and stream the answer. `conversation_id` is `None`
+   *  to start a fresh thread; the resolved id comes back here, and every event the turn
+   *  produces rides `agent::chat::stream` keyed on it.
+   *
+   *  An `Err` is a refusal decided before the turn existed (no store, no consent, no slot, a
+   *  local window too small, a store that wouldn't take a thread). Those can't be streamed:
+   *  half of them happen before there IS a conversation to key an event on.
+   *
+   *  The turn runs on a dedicated thread with its own current-thread runtime: the chat
+   *  runtime holds a rusqlite `Connection` (not `Send`) across awaits, so its future can't
+   *  live on the Tauri command future or a multi-thread tokio task. The command answers the
+   *  conversation id at once; streaming keeps flowing on that thread.
+   */
+  askCmdrSendMessage: (
+    conversationId: number | null,
+    text: string,
+    attachments: AttachmentRef[],
+    deniedNames: string[],
+  ) =>
+    typedError<number, AskCmdrSendRefusal>(
+      __TAURI_INVOKE('ask_cmdr_send_message', { conversationId, text, attachments, deniedNames }),
+    ),
+  /**
    *  Stop the in-flight turn for a thread. Idempotent: an unknown id (already finished) is a
    *  no-op. A clean stop at the next tool boundary or stream chunk, not a hard abort.
    */
@@ -3737,6 +3760,7 @@ export const events = {
   aiServerReady: makeEvent<AiServerReady>('ai-server-ready'),
   aiStarting: makeEvent<AiStarting>('ai-starting'),
   aiVerifying: makeEvent<AiVerifying>('ai-verifying'),
+  askCmdrTurn: makeEvent<AskCmdrTurn>('ask-cmdr-turn'),
   closeAbout: makeEvent<CloseAbout>('close-about'),
   closeAllFileViewers: makeEvent<CloseAllFileViewers>('close-all-file-viewers'),
   closeConfirmation: makeEvent<CloseConfirmation>('close-confirmation'),
@@ -3885,6 +3909,31 @@ export type ActivityPhase =
    *  phase until the user rebuilds it. The terminal, unhappy sibling of `Idle`.
    */
   | 'failed'
+
+// The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
+export type AgentErrorKindView =
+  | 'noKey'
+  | 'notConfigured'
+  /**
+   *  The user hasn't accepted the current consent copy — the backend refuses the send
+   *  before touching a provider (the privacy line, enforced structurally, not just in the
+   *  rail UI). Distinct from `NotConfigured` so the copy can say so honestly.
+   */
+  | 'noConsent'
+  /**
+   *  The local server runs with a context window too small to hold one prompt, so the send
+   *  was refused before it could be assembled against
+   *  (`budget::BudgetRefusal::LocalWindowBelowFloor`). View-only: the runtime never produces
+   *  it, the command layer refuses ahead of the turn. The copy names the setting to change.
+   */
+  | 'localWindowTooSmall'
+  | 'unavailable'
+  | 'timeout'
+  | 'authFailed'
+  | 'rateLimited'
+  | 'budgetExhausted'
+  | 'unfinishedReply'
+  | 'provider'
 
 // A writer's aggregation pass moved through one of its phases.
 export type AggregationProgressEvent = {
@@ -4088,6 +4137,107 @@ export type AskCmdrConsentStatus = {
   acceptedVersion: number | null
   // When the user last accepted (unix secs), or `None` if never.
   acceptedAt: number | null
+}
+
+/**
+ *  Why a send never started.
+ *
+ *  Returned rather than streamed, because every one of these is decided before a turn
+ *  exists and some before a conversation id does, leaving no thread to key an event on. It
+ *  carries the same typed kinds a mid-turn failure does, so the rail renders one set of
+ *  honest copy either way.
+ */
+export type AskCmdrSendRefusal = {
+  kind: AgentErrorKindView
+  /**
+   *  The source problem's own wording, when there is one worth showing (a store that
+   *  wouldn't open). Display only: the frontend branches on `kind`, never on this.
+   */
+  detail: string | null
+}
+
+/**
+ *  A streamed progress event for the rail. `type`-tagged camelCase, mirroring the
+ *  runtime's [`AgentChatEvent`] minus anything backend-only.
+ */
+export type AskCmdrStreamEvent =
+  /**
+   *  First event of a turn: the thread it runs in exists and is about to be worked on. A
+   *  wake emits it too, which is how the session list learns a thread was created with
+   *  nobody having typed anything.
+   */
+  | { type: 'started' }
+  // The send queued behind this thread's running turn (drives "working… stop?").
+  | { type: 'queued' }
+  // The user's message was persisted (on the first `respond` `End`).
+  | { type: 'userPersisted'; messageId: number; seq: number }
+  // A new assistant turn began streaming (no id yet — the row lands on `Done`).
+  | { type: 'assistantStarted' }
+  // A chunk of assistant text.
+  | { type: 'textDelta'; text: string }
+  // Opaque reasoning progressed; the UI shows "thinking…", content never surfaced.
+  | { type: 'reasoningTick' }
+  /**
+   *  The model started a tool call (a collapsible "looked at X" line; the label is
+   *  built frontend-side from `tool`, never a backend string).
+   */
+  | { type: 'toolCallStarted'; callId: string; tool: string }
+  // A tool call finished dispatching (`ok = false` for a refusal or handler problem).
+  | { type: 'toolCallFinished'; callId: string; ok: boolean }
+  /**
+   *  Display-only rename rows for the review surface. The frontend must send
+   *  only opaque ids back when a later user action approves them.
+   */
+  | { type: 'proposalReady'; proposal: RenameProposalSnapshot }
+  // The turn produced its final answer, carrying the persisted assistant id.
+  | { type: 'done'; messageId: number; seq: number; stop: StopReasonView; usage: UsageView }
+  /**
+   *  The turn ended without an answer, typed and honest (rendered without the words
+   *  "error"/"failed" — the frontend owns the copy). `detail` is the source error's own
+   *  wording, shown verbatim under the typed headline so the user sees what to fix;
+   *  display only — the frontend branches on `kind`, never on this string.
+   */
+  | { type: 'failed'; kind: AgentErrorKindView; detail: string | null }
+  /**
+   *  The conversation's effective model changed since its previous turn; the persisted
+   *  event row's identity rides along. The rail inserts the line BEFORE this turn's
+   *  user bubble (the change happened between the turns).
+   */
+  | { type: 'modelChanged'; messageId: number; seq: number; model: string }
+  /**
+   *  The prompt budget pushed earlier tool results out of this turn's context, so the
+   *  reply was written with less than the full thread in view. One per turn; the rail
+   *  shows it as a timeline line.
+   */
+  | { type: 'contextTrimmed'; elidedResults: number; approxTokens: number }
+  /**
+   *  What this turn's prompt cost against its budget, once per answered turn, for the rail's
+   *  usage gauge. Both figures are `chars/4` estimates and the UI labels them so.
+   */
+  | { type: 'contextUsage'; estimatedTokens: number; budgetTokens: number; elidedResults: number }
+  /**
+   *  The thread this turn ran in is GONE: a wake looked, found nothing worth raising, and
+   *  took its thread with it (`agent/wake/quiet.rs`).
+   *
+   *  ⚠️ Terminal, and the one event a subscriber can't answer by re-reading the thread —
+   *  there is nothing left to read. Whoever is showing that conversation drops it.
+   */
+  | { type: 'discarded' }
+
+/**
+ *  One turn event, and the thread it happened in.
+ *
+ *  ⚠️ `Serialize` only beside the derive: `tauri_specta::Event` wants `DeserializeOwned`
+ *  solely for its Rust-side `listen`, which nothing here does, and requiring it would drag
+ *  `Deserialize` onto the whole rename-proposal snapshot chain for no caller.
+ */
+export type AskCmdrTurn = {
+  /**
+   *  The thread this event belongs to. A subscriber not showing this thread ignores the
+   *  event; one that is applies it, whenever it started listening.
+   */
+  conversationId: number
+  event: AskCmdrStreamEvent
 }
 
 // Whether an attachment references a file or a folder, on the wire.
@@ -8426,6 +8576,11 @@ export type RenameProposalRowSnapshot = {
   coverage: EvidenceCoverage | null
 }
 
+export type RenameProposalSnapshot = {
+  proposalId: string
+  rows: RenameProposalRowSnapshot[]
+}
+
 // Result of a rename validity check.
 export type RenameValidityResult = {
   // Whether the new name is valid (passes filename validation).
@@ -9810,6 +9965,12 @@ export type SqlitePageCache = {
   liveReadConnections: number
 }
 
+/**
+ *  The wire form of [`AgentStopReason`], collapsed to unit variants (the provider's raw
+ *  `Other` string is not surfaced).
+ */
+export type StopReasonView = 'completed' | 'toolCall' | 'maxTokens' | 'contentFilter' | 'stopSequence' | 'other'
+
 // Result of starting a streaming directory listing
 export type StreamingListingStartResult = {
   listingId: string
@@ -10290,6 +10451,12 @@ export type UpgradeResult =
       // Friendly server name for the frontend to name in its copy.
       displayName: string
     }
+
+// Per-turn token usage, camelCase for the wire.
+export type UsageView = {
+  promptTokens: number
+  completionTokens: number
+}
 
 // Negotiated USB link speed (slowest of host port, cable, device).
 export type UsbSpeed =

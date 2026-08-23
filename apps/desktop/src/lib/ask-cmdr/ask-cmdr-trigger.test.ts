@@ -6,12 +6,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AskCmdrStreamEvent } from '$lib/tauri-commands'
+import type { AskCmdrSendOutcome, AskCmdrStreamEvent } from '$lib/tauri-commands'
 
 const sendMock =
-  vi.fn<
-    (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>
-  >()
+  vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
 const cancelMock = vi.fn<(id: number) => Promise<void>>()
 const listMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const getMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
@@ -24,8 +22,7 @@ const reviseRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const applyRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 
 vi.mock('$lib/tauri-commands', () => ({
-  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) =>
-    sendMock(c, t, a, d, o),
+  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[]) => sendMock(c, t, a, d),
   cancelAskCmdr: (id: number) => cancelMock(id),
   listAskCmdrConversations: (...a: unknown[]) => listMock(...a),
   getAskCmdrConversation: (...a: unknown[]) => getMock(...a),
@@ -80,14 +77,17 @@ import {
   THREAD_SOFT_CAP_MESSAGES,
   type RailMessage,
 } from './ask-cmdr-trigger.svelte'
+import { handleTurnEvent, resetStoppedTurns } from './ask-cmdr-stream.svelte'
 
-/** Capture the onEvent callback the last send handed us, to drive the stream by hand. */
-let lastOnEvent: ((e: AskCmdrStreamEvent) => void) | null = null
+/** The thread a fired event belongs to when the test doesn't name one. */
+const THREAD_ID = 1
 
-/** Feed one stream event through the captured callback (fails loudly if no send is live). */
-function fire(event: AskCmdrStreamEvent): void {
-  if (!lastOnEvent) throw new Error('no active send to fire an event into')
-  lastOnEvent(event)
+/** Feed one stream event in as the backend emits it, for the thread the rail is on. A rail with
+ * no thread yet is put on the named one first: production gets there through `started`, which
+ * `adopts a new thread's id from its own started event` covers on its own. */
+function fire(event: AskCmdrStreamEvent, conversationId: number = askCmdrState.conversationId ?? THREAD_ID): void {
+  askCmdrState.conversationId = conversationId
+  handleTurnEvent({ conversationId, event })
 }
 
 beforeEach(() => {
@@ -107,11 +107,9 @@ beforeEach(() => {
   growWindowMock.mockResolvedValue()
   shrinkWindowMock.mockResolvedValue()
   listMock.mockResolvedValue([])
-  sendMock.mockImplementation((c, _t, _a, _d, o) => {
-    lastOnEvent = o
-    return Promise.resolve(c ?? 1)
-  })
+  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID }))
   newChat()
+  resetStoppedTurns()
   askCmdrState.messages = []
   askCmdrState.conversationId = null
   askCmdrState.open = false
@@ -132,9 +130,9 @@ describe('sendMessage + streaming', () => {
     sendMessage('hello')
     expect(askCmdrState.messages[0]).toEqual({ kind: 'user', id: null, text: 'hello', attachments: [] })
     expect(askCmdrState.streaming).toBe(true)
-    expect(sendMock).toHaveBeenCalledWith(null, 'hello', [], [], expect.any(Function))
+    expect(sendMock).toHaveBeenCalledWith(null, 'hello', [], [])
 
-    fire({ type: 'started', conversationId: 7 })
+    fire({ type: 'started' }, 7)
     fire({ type: 'assistantStarted' })
     fire({ type: 'textDelta', text: 'Hi ' })
     fire({ type: 'textDelta', text: 'there' })
@@ -340,7 +338,7 @@ describe('model settings changes', () => {
 describe('stopStreaming', () => {
   it('cancels the active turn and finalizes locally (no terminal event arrives)', () => {
     sendMessage('long one')
-    fire({ type: 'started', conversationId: 3 })
+    fire({ type: 'started' }, 3)
     fire({ type: 'assistantStarted' })
     fire({ type: 'textDelta', text: 'partial' })
     stopStreaming()
@@ -352,7 +350,7 @@ describe('stopStreaming', () => {
 
   it('removes unfinished tool activity when the user cancels', () => {
     sendMessage('long one')
-    fire({ type: 'started', conversationId: 3 })
+    fire({ type: 'started' }, 3)
     fire({ type: 'assistantStarted' })
     fire({ type: 'textDelta', text: 'partial' })
     fire({ type: 'toolCallStarted', callId: 'c1', tool: 'list_dir' })
@@ -367,7 +365,7 @@ describe('stopStreaming', () => {
     vi.useFakeTimers()
     try {
       sendMessage('long one')
-      fire({ type: 'started', conversationId: 3 })
+      fire({ type: 'started' }, 3)
       fire({ type: 'assistantStarted' })
       fire({ type: 'textDelta', text: 'partial' })
       fire({ type: 'toolCallStarted', callId: 'c1', tool: 'list_dir' })
@@ -620,7 +618,7 @@ describe('attachments', () => {
   it('send passes staged attachments, echoes them on the user bubble, then clears them', () => {
     addAttachments([{ path: '/a', kind: 'file' }])
     sendMessage('about this')
-    expect(sendMock).toHaveBeenCalledWith(null, 'about this', [{ path: '/a', kind: 'file' }], [], expect.any(Function))
+    expect(sendMock).toHaveBeenCalledWith(null, 'about this', [{ path: '/a', kind: 'file' }], [])
     const first = askCmdrState.messages[0]
     expect(first.kind === 'user' && first.attachments).toEqual([{ path: '/a', kind: 'file' }])
     // Staged attachments are cleared after the send.

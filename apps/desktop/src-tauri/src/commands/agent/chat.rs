@@ -1,45 +1,44 @@
 //! Sending one message and streaming its answer: the slot resolution, the consent gate,
-//! the snapshot-at-send envelope, the cancel registry, and the `Channel` bridge.
+//! the snapshot-at-send envelope, and the cancel registry.
 //!
 //! ## Streaming
 //!
-//! [`ask_cmdr_send_message`] carries a Tauri [`Channel<AskCmdrStreamEvent>`], the same
-//! shape `stream_folder_suggestions` uses: `Channel<T>` is not specta-friendly yet, so the
-//! command rides raw `invoke` on the frontend (with the documented eslint opt-out), and its
-//! wire event enum derives only `Serialize`.
+//! Progress does NOT come back through this command. It rides `agent::chat::stream`, the one
+//! conversation-keyed event a wake's turn uses too, so a reload re-subscribes instead of
+//! losing the turn and the whole surface stays specta-typed. This command only bridges the
+//! runtime's [`AgentChatEvent`] seam onto it (`forward_to_windows`).
 //!
-//! It adapts the runtime's [`AgentChatEvent`] seam: an `unbounded_channel` of runtime
-//! events is forwarded onto the `Channel`, mapped to the wire enum. **No reasoning blob or
-//! provider state ever crosses** — the runtime events already exclude them, and
-//! [`MessageView`] carries display parts only.
+//! ## What does come back through the command
+//!
+//! The two answers a stream can't carry: the resolved conversation id, and a refusal decided
+//! BEFORE a turn exists. Half of those happen before there IS a conversation to key an event
+//! on, so they are the command's `Err`, not an event.
 //!
 //! ## LLM resolution
 //!
 //! The slot, the budget, and the envelope all resolve in `agent::chat::session`, which a wake
 //! shares: `agent/` sits BELOW this layer, so a wake could not import them from here. This
-//! command only calls down and maps the typed refusal onto a `Failed` event.
+//! command only calls down and maps the typed refusal onto its own.
 //!
 //! ## Cancellation
 //!
 //! Cancel is keyed by `conversation_id` (single-flight means at most one active turn per
 //! thread; the frontend disables the composer while a turn streams, so a thread never has
 //! two concurrent sends). The command resolves/creates the conversation id up front, emits
-//! `Started { conversationId }` first, and registers the turn's [`CancellationToken`] under
-//! that id; [`ask_cmdr_cancel`] trips it.
+//! `Started` on it, and registers the turn's [`CancellationToken`] under that id;
+//! [`ask_cmdr_cancel`] trips it.
 
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 
-use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_util::sync::CancellationToken;
 
-use super::views::to_wire_event;
 use super::{
-    AgentErrorKindView, AskCmdrStreamEvent, AttachmentRef, LOG_TARGET, MessageBlock, MessageRoleView, MessageView,
-    ModelWindowView, now_secs,
+    AskCmdrSendRefusal, AttachmentRef, LOG_TARGET, MessageBlock, MessageRoleView, MessageView, ModelWindowView,
+    now_secs,
 };
 use crate::agent::AgentDb;
 use crate::agent::chat::budget;
@@ -47,6 +46,7 @@ use crate::agent::chat::runtime::{AgentChatEvent, ChatRuntime};
 use crate::agent::chat::session::{
     AgentSlot, capture_envelope, local_offset, provider_and_model, resolve_agent_llm, resolve_prompt_budget,
 };
+use crate::agent::chat::stream::{AgentErrorKindView, AskCmdrStreamEvent, emit_turn_event, forward_to_windows};
 use crate::agent::consent::has_current_consent;
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::ProviderTag;
@@ -142,16 +142,19 @@ pub async fn ask_cmdr_record_model_change(app: AppHandle, conversation_id: i64) 
 // ── Commands ───────────────────────────────────────────────────────────────────
 
 /// Send one user message to a thread and stream the answer. `conversation_id` is `None`
-/// to start a fresh thread (its id arrives in the first `Started` event and as the
-/// resolved return value). All progress rides `on_event`; the `Result` exists only
-/// because `#[tauri::command]` requires one, and always resolves `Ok` (failures surface as
-/// a typed `Failed` event, per the streaming pattern).
+/// to start a fresh thread; the resolved id comes back here, and every event the turn
+/// produces rides `agent::chat::stream` keyed on it.
+///
+/// An `Err` is a refusal decided before the turn existed (no store, no consent, no slot, a
+/// local window too small, a store that wouldn't take a thread). Those can't be streamed:
+/// half of them happen before there IS a conversation to key an event on.
 ///
 /// The turn runs on a dedicated thread with its own current-thread runtime: the chat
 /// runtime holds a rusqlite `Connection` (not `Send`) across awaits, so its future can't
-/// live on the Tauri command future or a multi-thread tokio task. The command returns the
-/// conversation id at once; streaming keeps flowing over `on_event` on that thread.
+/// live on the Tauri command future or a multi-thread tokio task. The command answers the
+/// conversation id at once; streaming keeps flowing on that thread.
 #[tauri::command]
+#[specta::specta]
 pub async fn ask_cmdr_send_message(
     app: AppHandle,
     conversation_id: Option<i64>,
@@ -161,14 +164,9 @@ pub async fn ask_cmdr_send_message(
     // first. Names only: a reason would be model-authored, and the next batch would inherit
     // the rationalization instead of the fact.
     denied_names: Vec<String>,
-    on_event: Channel<AskCmdrStreamEvent>,
-) -> Result<i64, String> {
+) -> Result<i64, AskCmdrSendRefusal> {
     let Some(db_path) = app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()) else {
-        let _ = on_event.send(AskCmdrStreamEvent::Failed {
-            kind: AgentErrorKindView::NotConfigured,
-            detail: None,
-        });
-        return Ok(conversation_id.unwrap_or(0));
+        return Err(AskCmdrSendRefusal::of(AgentErrorKindView::NotConfigured));
     };
 
     // The consent gate, enforced structurally: refuse BEFORE creating a thread or resolving
@@ -183,24 +181,14 @@ pub async fn ask_cmdr_send_message(
         }
     };
     if !consented {
-        let _ = on_event.send(AskCmdrStreamEvent::Failed {
-            kind: AgentErrorKindView::NoConsent,
-            detail: None,
-        });
-        return Ok(conversation_id.unwrap_or(0));
+        return Err(AskCmdrSendRefusal::of(AgentErrorKindView::NoConsent));
     }
 
     // Resolve the LLM only after the consent gate: if AI is off/unconfigured, say so and add
     // no thread.
     let (llm_kind, provider, model) = match resolve_agent_llm(&app, AgentSlot::Rail) {
         Ok(resolved) => resolved,
-        Err(kind) => {
-            let _ = on_event.send(AskCmdrStreamEvent::Failed {
-                kind: kind.into(),
-                detail: None,
-            });
-            return Ok(conversation_id.unwrap_or(0));
-        }
+        Err(kind) => return Err(AskCmdrSendRefusal::of(kind.into())),
     };
 
     // Resolve the budget before a thread exists, so a local server too small to hold one
@@ -216,11 +204,7 @@ pub async fn ask_cmdr_send_message(
                 "refusing the send: the local server runs with a {window_tokens}-token window, \
                  under the {floor_tokens}-token floor one turn needs"
             );
-            let _ = on_event.send(AskCmdrStreamEvent::Failed {
-                kind: AgentErrorKindView::LocalWindowTooSmall,
-                detail: None,
-            });
-            return Ok(conversation_id.unwrap_or(0));
+            return Err(AskCmdrSendRefusal::of(AgentErrorKindView::LocalWindowTooSmall));
         }
     };
 
@@ -231,15 +215,14 @@ pub async fn ask_cmdr_send_message(
             Ok(id) => id,
             Err(e) => {
                 log::warn!(target: LOG_TARGET, "creating a conversation failed: {e}");
-                let _ = on_event.send(AskCmdrStreamEvent::Failed {
+                return Err(AskCmdrSendRefusal {
                     kind: AgentErrorKindView::Provider,
                     detail: Some(e.to_string()),
                 });
-                return Ok(0);
             }
         },
     };
-    let _ = on_event.send(AskCmdrStreamEvent::Started { conversation_id });
+    emit_turn_event(conversation_id, AskCmdrStreamEvent::Started);
 
     // Now that the conversation id is known, build the LLM so the real backend logs under
     // this thread's `llm-logs/thread-{id}/` directory.
@@ -253,10 +236,13 @@ pub async fn ask_cmdr_send_message(
             Ok(rt) => rt,
             Err(e) => {
                 crate::log_error!(target: LOG_TARGET, "building the chat turn runtime failed: {e}");
-                let _ = on_event.send(AskCmdrStreamEvent::Failed {
-                    kind: AgentErrorKindView::Provider,
-                    detail: Some(e.to_string()),
-                });
+                emit_turn_event(
+                    conversation_id,
+                    AskCmdrStreamEvent::Failed {
+                        kind: AgentErrorKindView::Provider,
+                        detail: Some(e.to_string()),
+                    },
+                );
                 unregister_cancel(conversation_id);
                 return;
             }
@@ -271,7 +257,6 @@ pub async fn ask_cmdr_send_message(
             text,
             attachments,
             denied_names,
-            on_event,
             cancel,
         ));
     });
@@ -279,9 +264,9 @@ pub async fn ask_cmdr_send_message(
     Ok(conversation_id)
 }
 
-/// Run one turn to completion on the current-thread runtime: capture the envelope, bridge
-/// the runtime's events onto the `Channel`, drive the chat runtime, and unregister the
-/// cancel token when done.
+/// Run one turn to completion on the current-thread runtime: capture the envelope, forward
+/// the runtime's events onto the conversation's stream, drive the chat runtime, and
+/// unregister the cancel token when done.
 #[allow(
     clippy::too_many_arguments,
     reason = "the turn's full input set, moved onto a worker thread"
@@ -298,7 +283,6 @@ async fn drive_turn(
     text: String,
     attachments: Vec<AttachmentRef>,
     denied_names: Vec<String>,
-    on_event: Channel<AskCmdrStreamEvent>,
     cancel: CancellationToken,
 ) {
     // RAII: drop the registry entry when the turn ends, even on an early return/panic.
@@ -320,23 +304,22 @@ async fn drive_turn(
     let offset = local_offset();
 
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
-        let _ = on_event.send(AskCmdrStreamEvent::Failed {
-            kind: AgentErrorKindView::Provider,
-            detail: None,
-        });
+        emit_turn_event(
+            conversation_id,
+            AskCmdrStreamEvent::Failed {
+                kind: AgentErrorKindView::Provider,
+                detail: None,
+            },
+        );
         return;
     };
 
-    // Bridge the runtime's unbounded event channel onto the Tauri `Channel`. The forwarder
-    // drains until the runtime drops its sender (the turn finished).
+    // Forward the runtime's unbounded event channel onto the conversation's stream, until the
+    // runtime drops its sender (the turn finished). ⚠️ There is deliberately no "the listener
+    // went away" exit: a reload takes the webview, not the thread, and the whole point of a
+    // conversation-keyed event is that the reloaded rail picks the same stream back up.
     let (tx, mut rx) = unbounded_channel::<AgentChatEvent>();
-    let forward = async {
-        while let Some(event) = rx.recv().await {
-            if on_event.send(to_wire_event(event)).is_err() {
-                break; // the webview is gone; the turn keeps running to persist its state
-            }
-        }
-    };
+    let forward = forward_to_windows(conversation_id, &mut rx);
     let drive = runtime.send_message(
         &app,
         llm.as_ref(),
@@ -353,10 +336,13 @@ async fn drive_turn(
     let (_, result) = tokio::join!(forward, drive);
     if let Err(e) = result {
         log::warn!(target: LOG_TARGET, "chat turn failed: {e}");
-        let _ = on_event.send(AskCmdrStreamEvent::Failed {
-            kind: AgentErrorKindView::Provider,
-            detail: Some(e.to_string()),
-        });
+        emit_turn_event(
+            conversation_id,
+            AskCmdrStreamEvent::Failed {
+                kind: AgentErrorKindView::Provider,
+                detail: Some(e.to_string()),
+            },
+        );
     }
 }
 

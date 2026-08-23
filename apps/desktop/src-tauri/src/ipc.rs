@@ -45,6 +45,7 @@
 
 use tauri_specta::{Builder, collect_events};
 
+use crate::agent::chat::stream::AskCmdrTurn;
 use crate::agent::suggested_ops::SuggestionsChanged;
 use crate::commands::search::SearchIndexReadyEvent;
 use crate::events::index_mapping::{
@@ -397,7 +398,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::operation_log::get_recent_operation_log_entries,
                     crate::commands::operation_log::get_operation_log_detail,
                     crate::commands::operation_log::undo_operations,
-                    // ask_cmdr_send_message is Channel-based (not specta); registered only in ipc.rs.
+                    crate::commands::agent::ask_cmdr_send_message,
                     crate::commands::agent::ask_cmdr_cancel,
                     crate::commands::agent::preflight_bulk_rename,
                     crate::commands::agent::apply_bulk_rename,
@@ -470,7 +471,6 @@ macro_rules! ipc_command_manifest {
                     // calls these on raw invoke with the documented eslint opt-out.
                     crate::ai::suggestions::stream_folder_suggestions,
                     crate::ai::suggestions::cancel_folder_suggestions,
-                    crate::commands::agent::ask_cmdr_send_message,
                     // Carry a `serde_json::Value` (a free-form breadcrumb payload, and a bundle
                     // manifest holding one), which specta can't represent.
                     crate::commands::error_reporter::prepare_error_report_preview,
@@ -861,6 +861,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             // Operation manager registry snapshot (write_operations/manager.rs).
             OperationsChanged,
             SuggestionsChanged,
+            // Every Ask Cmdr turn's progress, keyed by conversation: rail sends and wakes
+            // alike (agent/chat/stream.rs).
+            AskCmdrTurn,
             // The quit gate holding an exit while operations run (quit/).
             QuitRequested,
             // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).

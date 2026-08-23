@@ -1,83 +1,39 @@
-//! The wire shapes the rail sees, and the pure mappings that produce them.
-//!
-//! Two directions meet here: the streamed [`AskCmdrStreamEvent`] (a `Channel` enum,
-//! `Serialize` only) and the specta-typed projections a query command returns
-//! ([`MessageView`], [`ConversationDetailView`], [`AttachmentRef`]). Everything is a
-//! projection that DROPS backend-only material — no reasoning blob, no provider state, no
+//! The specta-typed projections a query command returns ([`MessageView`],
+//! [`ConversationDetailView`], [`AttachmentRef`]) and the pure mappings that produce them.
+//! Everything here DROPS backend-only material — no reasoning blob, no provider state, no
 //! raw tool-result content ever crosses.
+//!
+//! A turn's live progress travels the other way and does not live here: it is one
+//! conversation-keyed event, `agent::chat::stream`.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::agent::chat::context::{AttachmentKind, EnvelopeAttachment};
-use crate::agent::chat::runtime::{AgentChatEvent, AgentErrorKind};
-use crate::agent::llm::types::{AgentPart, AgentRole, AgentStopReason, AgentUsage};
+use crate::agent::chat::stream::AgentErrorKindView;
+use crate::agent::llm::types::{AgentPart, AgentRole};
 use crate::agent::store::{self, ConversationRow, StoredMessage};
 
-// ── The wire event enum (Channel; Serialize only, not specta) ──────────────────
+/// Why a send never started.
+///
+/// Returned rather than streamed, because every one of these is decided before a turn
+/// exists and some before a conversation id does, leaving no thread to key an event on. It
+/// carries the same typed kinds a mid-turn failure does, so the rail renders one set of
+/// honest copy either way.
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AskCmdrSendRefusal {
+    pub kind: AgentErrorKindView,
+    /// The source problem's own wording, when there is one worth showing (a store that
+    /// wouldn't open). Display only: the frontend branches on `kind`, never on this.
+    pub detail: Option<String>,
+}
 
-/// A streamed progress event for the rail. `type`-tagged camelCase, mirroring the
-/// runtime's [`AgentChatEvent`] minus anything backend-only. Never carries a reasoning
-/// blob or provider state.
-#[derive(Clone, Serialize)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum AskCmdrStreamEvent {
-    /// First event: the resolved (possibly newly created) conversation id, so the
-    /// frontend can key the stop button and bootstrap the active thread immediately.
-    Started { conversation_id: i64 },
-    /// The send queued behind this thread's running turn (drives "working… stop?").
-    Queued,
-    /// The user's message was persisted (on the first `respond` `End`).
-    UserPersisted { message_id: i64, seq: i64 },
-    /// A new assistant turn began streaming (no id yet — the row lands on `Done`).
-    AssistantStarted,
-    /// A chunk of assistant text.
-    TextDelta { text: String },
-    /// Opaque reasoning progressed; the UI shows "thinking…", content never surfaced.
-    ReasoningTick,
-    /// The model started a tool call (a collapsible "looked at X" line; the label is
-    /// built frontend-side from `tool`, never a backend string).
-    ToolCallStarted { call_id: String, tool: String },
-    /// A tool call finished dispatching (`ok = false` for a refusal or handler problem).
-    ToolCallFinished { call_id: String, ok: bool },
-    /// Display-only rename rows for the review surface. The frontend must send
-    /// only opaque ids back when a later user action approves them.
-    ProposalReady {
-        proposal: crate::agent::tools::propose::rename::RenameProposalSnapshot,
-    },
-    /// The turn produced its final answer, carrying the persisted assistant id.
-    Done {
-        message_id: i64,
-        seq: i64,
-        stop: StopReasonView,
-        usage: UsageView,
-    },
-    /// The turn ended without an answer, typed and honest (rendered without the words
-    /// "error"/"failed" — the frontend owns the copy). `detail` is the source error's own
-    /// wording, shown verbatim under the typed headline so the user sees what to fix;
-    /// display only — the frontend branches on `kind`, never on this string.
-    Failed {
-        kind: AgentErrorKindView,
-        detail: Option<String>,
-    },
-    /// The conversation's effective model changed since its previous turn; the persisted
-    /// event row's identity rides along. The rail inserts the line BEFORE this turn's
-    /// user bubble (the change happened between the turns).
-    ModelChanged { message_id: i64, seq: i64, model: String },
-    /// The prompt budget pushed earlier tool results out of this turn's context, so the
-    /// reply was written with less than the full thread in view. One per turn; the rail
-    /// shows it as a timeline line.
-    ContextTrimmed {
-        elided_results: usize,
-        approx_tokens: usize,
-    },
-    /// What this turn's prompt cost against its budget, once per answered turn, for the rail's
-    /// usage gauge. Both figures are `chars/4` estimates and the UI labels them so.
-    ContextUsage {
-        estimated_tokens: usize,
-        budget_tokens: usize,
-        elided_results: usize,
-    },
+impl AskCmdrSendRefusal {
+    /// A refusal the kind says everything about.
+    pub(super) fn of(kind: AgentErrorKindView) -> Self {
+        Self { kind, detail: None }
+    }
 }
 
 /// What the chat-memory setting needs to warn honestly: the model the next turn would use,
@@ -94,140 +50,6 @@ pub struct ModelWindowView {
     /// That model's window in tokens: the local server's configured window, else the family
     /// table. `None` when nothing here knows it, so the UI stays quiet instead of guessing.
     pub known_window_tokens: Option<u32>,
-}
-
-/// The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
-#[derive(Clone, Copy, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum AgentErrorKindView {
-    NoKey,
-    NotConfigured,
-    /// The user hasn't accepted the current consent copy — the backend refuses the send
-    /// before touching a provider (the privacy line, enforced structurally, not just in the
-    /// rail UI). Distinct from `NotConfigured` so the copy can say so honestly.
-    NoConsent,
-    /// The local server runs with a context window too small to hold one prompt, so the send
-    /// was refused before it could be assembled against
-    /// (`budget::BudgetRefusal::LocalWindowBelowFloor`). View-only: the runtime never produces
-    /// it, the command layer refuses ahead of the turn. The copy names the setting to change.
-    LocalWindowTooSmall,
-    Unavailable,
-    Timeout,
-    AuthFailed,
-    RateLimited,
-    BudgetExhausted,
-    UnfinishedReply,
-    Provider,
-}
-
-impl From<AgentErrorKind> for AgentErrorKindView {
-    fn from(kind: AgentErrorKind) -> Self {
-        match kind {
-            AgentErrorKind::NoKey => Self::NoKey,
-            AgentErrorKind::NotConfigured => Self::NotConfigured,
-            AgentErrorKind::Unavailable => Self::Unavailable,
-            AgentErrorKind::Timeout => Self::Timeout,
-            AgentErrorKind::AuthFailed => Self::AuthFailed,
-            AgentErrorKind::RateLimited => Self::RateLimited,
-            AgentErrorKind::BudgetExhausted => Self::BudgetExhausted,
-            AgentErrorKind::UnfinishedReply => Self::UnfinishedReply,
-            AgentErrorKind::Provider => Self::Provider,
-        }
-    }
-}
-
-/// The wire form of [`AgentStopReason`], collapsed to unit variants (the provider's raw
-/// `Other` string is not surfaced).
-#[derive(Clone, Copy, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum StopReasonView {
-    Completed,
-    ToolCall,
-    MaxTokens,
-    ContentFilter,
-    StopSequence,
-    Other,
-}
-
-impl From<AgentStopReason> for StopReasonView {
-    fn from(stop: AgentStopReason) -> Self {
-        match stop {
-            AgentStopReason::Completed => Self::Completed,
-            AgentStopReason::ToolCall => Self::ToolCall,
-            AgentStopReason::MaxTokens => Self::MaxTokens,
-            AgentStopReason::ContentFilter => Self::ContentFilter,
-            AgentStopReason::StopSequence => Self::StopSequence,
-            AgentStopReason::Other(_) => Self::Other,
-        }
-    }
-}
-
-/// Per-turn token usage, camelCase for the wire.
-#[derive(Clone, Copy, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct UsageView {
-    pub prompt_tokens: u32,
-    pub completion_tokens: u32,
-}
-
-impl From<AgentUsage> for UsageView {
-    fn from(usage: AgentUsage) -> Self {
-        Self {
-            prompt_tokens: usage.prompt_tokens,
-            completion_tokens: usage.completion_tokens,
-        }
-    }
-}
-
-/// Map a runtime event to its wire form.
-pub(super) fn to_wire_event(event: AgentChatEvent) -> AskCmdrStreamEvent {
-    match event {
-        AgentChatEvent::Queued => AskCmdrStreamEvent::Queued,
-        AgentChatEvent::UserPersisted { message_id, seq } => AskCmdrStreamEvent::UserPersisted { message_id, seq },
-        AgentChatEvent::AssistantStarted => AskCmdrStreamEvent::AssistantStarted,
-        AgentChatEvent::TextDelta { text } => AskCmdrStreamEvent::TextDelta { text },
-        AgentChatEvent::ReasoningTick => AskCmdrStreamEvent::ReasoningTick,
-        AgentChatEvent::ToolCallStarted { call_id, tool } => AskCmdrStreamEvent::ToolCallStarted {
-            call_id,
-            tool: tool.as_wire_name().to_string(),
-        },
-        AgentChatEvent::ToolCallFinished { call_id, ok } => AskCmdrStreamEvent::ToolCallFinished { call_id, ok },
-        AgentChatEvent::ProposalReady { proposal } => AskCmdrStreamEvent::ProposalReady { proposal },
-        AgentChatEvent::Done {
-            message_id,
-            seq,
-            stop,
-            usage,
-        } => AskCmdrStreamEvent::Done {
-            message_id,
-            seq,
-            stop: stop.into(),
-            usage: usage.into(),
-        },
-        AgentChatEvent::Failed { kind, detail } => AskCmdrStreamEvent::Failed {
-            kind: kind.into(),
-            detail,
-        },
-        AgentChatEvent::ModelChanged { message_id, seq, model } => {
-            AskCmdrStreamEvent::ModelChanged { message_id, seq, model }
-        }
-        AgentChatEvent::ContextTrimmed {
-            elided_results,
-            approx_tokens,
-        } => AskCmdrStreamEvent::ContextTrimmed {
-            elided_results,
-            approx_tokens,
-        },
-        AgentChatEvent::ContextUsage {
-            estimated_tokens,
-            budget_tokens,
-            elided_results,
-        } => AskCmdrStreamEvent::ContextUsage {
-            estimated_tokens,
-            budget_tokens,
-            elided_results,
-        },
-    }
 }
 
 // ── Display-only message projection (specta) ───────────────────────────────────

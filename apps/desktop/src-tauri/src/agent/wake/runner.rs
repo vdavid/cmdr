@@ -18,6 +18,7 @@ use super::{PreparedWake, RunWakeParams, WakeTier, wake_turn_params};
 use crate::agent::chat::budget;
 use crate::agent::chat::runtime::{AgentChatEvent, AppHandleDispatcher, ChatRuntime, TurnResult};
 use crate::agent::chat::session::{capture_envelope, local_offset};
+use crate::agent::chat::stream::{AskCmdrStreamEvent, emit_turn_event, forward_to_windows};
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::ProviderTag;
 
@@ -57,6 +58,10 @@ pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) 
 }
 
 async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
+    // The thread already exists (prepare opened it), so say so before anything slow: this is
+    // what puts a wake's thread in the session list as it is created rather than on next load.
+    emit_turn_event(prepared.conversation_id, AskCmdrStreamEvent::Started);
+
     // ⚠️ Captured exactly as the rail captures it. With no main window (a routine-launched app
     // on macOS) `PaneStateStore` is absent and the pane fields come back empty, which is the
     // honest answer rather than a reason to skip the capture.
@@ -85,20 +90,12 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
         return;
     };
 
-    // ⚠️ A wake owns a plain `UnboundedSender<AgentChatEvent>` and drains it itself. In M1 the
-    // drain DISCARDS: nobody is watching a rail during a wake, and M2 replaces this with the
-    // `tauri_specta::Event` bridge that makes the turn visible live. It counts proposals on the
-    // way past, which is the one number the log line needs.
+    // ⚠️ A wake owns a plain `UnboundedSender<AgentChatEvent>` and drains it itself, onto the
+    // SAME conversation-keyed stream a rail send uses. That is what makes a wake's thread
+    // readable while it is still being written, and it counts proposals on the way past, which
+    // is the one number the log line needs.
     let (sink, mut events) = unbounded_channel::<AgentChatEvent>();
-    let draining = async move {
-        let mut proposals = 0usize;
-        while let Some(event) = events.recv().await {
-            if matches!(event, AgentChatEvent::ProposalReady { .. }) {
-                proposals += 1;
-            }
-        }
-        proposals
-    };
+    let draining = forward_to_windows(prepared.conversation_id, &mut events);
     // The watch wraps the wake's dispatcher and nothing else's: `nothing_to_suggest` is a pure
     // read whose handler changes nothing, so acting on the call belongs here, not in the tool.
     let watch = QuietWatch::new(&dispatcher);
@@ -126,6 +123,9 @@ async fn run(app: AppHandle, slot: ResolvedSlot, prepared: PreparedWake) {
         if let Err(e) = runtime.discard_quiet_wake(prepared.conversation_id).await {
             log::warn!(target: LOG_TARGET, "a quiet wake's thread stayed behind: {e}");
         }
+        // ⚠️ Anything subscribed to this conversation is now watching a thread that no longer
+        // exists, and re-reading it can't tell them so (there is nothing to read). Say it.
+        emit_turn_event(prepared.conversation_id, AskCmdrStreamEvent::Discarded);
         record_outcome("quiet", Some(prepared.tier), prepared.rows.len(), proposals);
         return;
     }

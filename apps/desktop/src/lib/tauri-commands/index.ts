@@ -336,6 +336,7 @@ export type {
 // Ask Cmdr chat rail
 export {
   sendAskCmdrMessage,
+  onAskCmdrTurn,
   cancelAskCmdr,
   applyBulkRename,
   preflightBulkRename,
@@ -360,6 +361,8 @@ export {
 } from './ask-cmdr'
 export type {
   AskCmdrStreamEvent,
+  AskCmdrTurn,
+  AskCmdrSendOutcome,
   AskCmdrErrorKind,
   AskCmdrUsage,
   StopReason,

@@ -458,6 +458,9 @@ pub fn run() {
             file_system::init_operation_event_emitter(app.handle());
             // The status-corner indicator subscribes to this rather than polling `main.db`.
             agent::suggested_ops::init_suggestions_event_emitter(app.handle());
+            // Every Ask Cmdr turn — a rail send or a wake — streams over this one event, keyed
+            // by conversation. Before the agent starts, since a wake can fire from launch replay.
+            agent::chat::stream::init_turn_event_emitter(app.handle());
 
             // Restricted-paths tracker (TCC-gated paths the user has been
             // denied access to). Installs an NSApplicationDidBecomeActive
