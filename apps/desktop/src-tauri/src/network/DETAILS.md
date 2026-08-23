@@ -351,10 +351,32 @@ together, what the backend answers when one is on and can't work, and what a UI 
 `crates/cmdr-sftp/DETAILS.md` § "The two switches".
 
 `sftp_volume_wiring.rs` is the only path a volume gets registered on, and it does three things in one order: dial
-through `cmdr_sftp::connect_sftp_volume` (which runs the dial in a task, because a connect cancelled mid-handshake
-panics inside the SFTP engine), register while retiring any predecessor with `on_superseded`, and remember the server.
-`disconnect` downcasts through `Volume::as_any` rather than guessing at the id's shape, then DROPS the session — ❌
-never `Sftp::close()`, which hangs forever over an SSH channel.
+through `cmdr_sftp::connect_sftp_volume` (which runs the dial in a task, because an ABANDONED connect panics inside the
+SFTP engine), register while retiring any predecessor with `on_superseded`, and remember the server. `disconnect`
+downcasts through `Volume::as_any` rather than guessing at the id's shape, then DROPS the session — ❌ never
+`Sftp::close()`, which hangs forever over an SSH channel.
+
+### The attempt table, and why the id is the caller's
+
+`connect_and_register` takes an `attempt_id`, files a `CancellationToken` under it in the module's `ATTEMPTS` map, and
+`cancel_connect(attempt_id)` is what a dialog's cancel button reaches. What the token then does inside the dial is the
+backend's, and `crates/cmdr-sftp/DETAILS.md` § "2b. Calling a connect off" owns it.
+
+❗ **The id comes from the caller, and there is no version where the backend hands one back.** `connect_sftp_volume`
+doesn't answer until the connect is over — up to 30 s — so an id it returned would arrive at exactly the moment a
+cancel stopped being useful. A second command to allocate one first would be a round trip plus a state to leak whenever
+the connect never followed.
+
+Two details keep the table honest:
+
+- **An RAII `AttemptGuard` removes the entry**, however the connect ends. A connect leaves through eight arms, and the
+  one that forgot would be a token nobody ever collects.
+- **A serial beside each token**, so a repeated id can't strand one: the guard only takes its OWN entry out, and a
+  second connect under the same id stays cancelable.
+
+❗ **`cancel_connect` on an id nobody is running answers `false`** rather than raising: a click landing just after a
+connect finished is ordinary. And a `Cancelled` outcome never reaches `register` or `remember`, so a cancelled connect
+leaves no volume, no saved server, and no secret.
 
 ## The one edge that must not come back
 

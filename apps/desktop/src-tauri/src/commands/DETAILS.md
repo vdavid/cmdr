@@ -55,7 +55,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `volumes_linux` module.
 - **`mtp.rs`**: full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan).
 - **`sftp.rs`**: the SFTP surface and the wire vocabulary it speaks — `connect_sftp_volume` (a tagged
-  `SftpConnectResult`, never a string), `disconnect_sftp_volume`, `approve_sftp_host_key` / `forget_sftp_host_key` /
+  `SftpConnectResult`, never a string), `cancel_sftp_connect`, `disconnect_sftp_volume`, `approve_sftp_host_key` / `forget_sftp_host_key` /
   `list_trusted_sftp_host_keys`, the credential trio (`save` / `has` / `delete`, keyed `host:port` + username, each on a
   blocking task because the Keychain can prompt), and the known-servers trio (`get` / `update` / `forget`). ❗ There is
   deliberately no command that returns a stored secret. The flow behind the commands is
@@ -67,6 +67,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     rather than something SFTP does on its own.
   - ❗ **`connect_sftp_volume`'s result carries `rung` and ❌ nothing about a later sign-in.** The rung is a fact about
     that dial; what a sign-in would ask for is decided per dial too, so it is a query, not a payload.
+  - ❗ **`connect_sftp_volume`'s `attempt_id` is the CALLER's, made before the call**, and `cancel_sftp_connect` takes
+    the same one. The command doesn't answer for up to 30 s, so an id it returned would be useless for arming a cancel
+    button. The table behind it: `network/DETAILS.md` § "The attempt table, and why the id is the caller's".
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   in-place reconnect (`reconnect_smb_volume`: backend single-flighted via `Volume::attempt_reconnect`;
   `reconnect_smb_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via

@@ -17,8 +17,9 @@ resolution has to agree with it.
 
 **Why it isn't specced here**: David designs and builds this, and the build guide already exists as one file —
 `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend" carries every command, the connect outcomes a sign-in UI
-branches on, the three-round first connection, the two-phase host-key approval, and what the banner shows per auth rung.
-The open questions are design ones (which sidebar section, what icon, what an eject means), not protocol ones.
+branches on, the three-round first connection, the two-phase host-key approval, the four lines that wire the cancel
+button, and what the banner shows per auth rung. The open questions are design ones (which sidebar section, what icon,
+what an eject means), not protocol ones.
 
 **Cost**: the UI work. What a sign-in may ask for is already answered live by `getVolumeSignInState(volumeId)`, and the
 reconnect manager already stores it per volume; the banner reads it rather than deriving anything from the connect

@@ -16,8 +16,12 @@ user-facing words.
 - **❌ Never call `Sftp::close()`** — it hangs forever over a `russh` channel; dropping the session IS the shutdown.
 - **❗ `File::close()` is the opposite: awaited, and only by its LAST clone.** A surviving clone makes it a silent no-op
   and the upload reports success on bytes nobody committed.
-- **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE: a cancelled connect panics
-  inside the engine. ❌ Never time out `Sftp::new`.
+- **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE: an ABANDONED `Sftp::new` panics
+  inside the engine. ❌ Never time out or `abort()` it.
+- **❗ A connect is called off with a `CancellationToken`, ❌ never by dropping the dial.** Kex and auth stop on the
+  spot; a cancel in the SFTP hello leaves the engine finishing on a detached task that discards it, which is deliberate
+  rather than a leak. A cancelled connect registers, remembers, and stores nothing. `DETAILS.md` § "2b. Calling a
+  connect off".
 - **Host-key trust keys on `(host, port, algorithm)` AND pins negotiation to it** — ❌ never one without the other. ❌
   Never record a fingerprint without re-asking the server (`volume::approve_host_key`).
 - **❌ Never anchor an out-of-root path; refuse it.** `root_anchored` turns `/etc/passwd` into `/srv/data/etc/passwd`.

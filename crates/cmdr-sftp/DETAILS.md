@@ -452,7 +452,7 @@ there hangs the test rather than failing it, which is its own kind of loud.
 a detached task and discards the result; `File::close()` awaits it and returns the error, which for a staged write is
 where a server reports a write it could not commit. ❌ Don't read "never `close()`" as covering both.
 
-### 2. A cancelled connect panics the engine's spawned task
+### 2. An abandoned `Sftp::new` panics the engine's spawned task
 
 The engine's connect task does `tx.send(extensions).unwrap()`, which panics if the `Sftp::new` future was dropped before
 the server's hello arrived — that is, on any timed-out or abandoned connect. (Upstream issue #153 is the same `unwrap`,
@@ -460,14 +460,60 @@ filed 2026-03-19 and unreproduced there.)
 
 The shape that avoids it, in two layers:
 
-- `connect_sftp_volume` spawns the whole dial on `host.runtime()` and awaits the **join handle**. Dropping the caller's
-  future drops the handle, which detaches the task rather than cancelling it.
-- `open_sftp_subsystem` does the same again for `Sftp::new` itself, so the subsystem timeout drops a join handle and
-  never the future.
+- `reconnect::guarded_dial` spawns the whole dial on `host.runtime()` and awaits the **join handle**. Dropping the
+  caller's future drops the handle, which detaches the task rather than cancelling it. ❗ Still needed even though a
+  connect is now called off through a token: a cancel can lose the race with a caller that simply goes away.
+- `transport::await_hello` does the same again for `Sftp::new` itself, racing only the JOIN HANDLE, so giving up drops a
+  handle and never the future.
 
-❌ Never wrap `Sftp::new` in `tokio::time::timeout` directly. A regression here surfaces as a panic in a spawned task,
-which reads as an unrelated test binary crash rather than as a failing assertion —
-`abandoning_a_connect_does_not_panic_the_engines_task` is what turns it back into a finding.
+❌ Never wrap `Sftp::new` in `tokio::time::timeout` directly, and ❌ never `abort()` its task — an abort ends the future
+just as a drop does, and reproduces the panic exactly. A regression here surfaces as a panic in a spawned task, which
+reads as an unrelated test binary crash rather than as a failing assertion. Two cells turn it back into a finding:
+`abandoning_a_connect_does_not_panic_the_engines_task` for the drop, and
+`a_cancel_inside_the_hello_window_leaves_no_live_session_and_no_panic` for the cancel, which asserts the engine's own
+task ENDED rather than died (`finish_detached` hands its `JoinError` back for exactly that).
+
+### 2b. Calling a connect off
+
+A dial has three phases and a budget each, so a connect can hold for 30 s with nothing to stop it. `dial` takes a
+`tokio_util::sync::CancellationToken`, and the third phase is unlike the other two.
+
+- **The key exchange, the auth ladder, and the two channel requests** all run through `transport::within`, which races
+  the work against the token and **drops** it. `russh` unwinds a dropped future cleanly, so they stop where they stand.
+  The select is `biased`, so a token already cancelled when a step starts wins before the work is polled at all: a
+  connect the user called off never puts a packet on the wire, never spends an authentication attempt, and never reads
+  the secret store.
+- **The SFTP hello can't be dropped**, per hazard 2 above. A cancel there ends the USER's wait immediately and hands the
+  still-running engine to `finish_detached`, which waits it out on a task of its own (bounded by `SUBSYSTEM_TIMEOUT`,
+  the same window a live connect gets) and then drops both the engine and the session. ❗ **Deliberate rather than a
+  leak.** The alternative is the `unwrap` panic, and the alternative to _that_ is making the user wait out a hello they
+  already walked away from. The task is what closes the socket, so the server sees the connection go as soon as the
+  engine is done.
+- **The timeout path is NOT handed to `finish_detached`**, and the asymmetry is on purpose: a window that elapsed with
+  no hello means the server is broken rather than slow, so holding its socket open for another one buys nothing.
+  Dropping the session errors the engine's read task out before its `unwrap`, which is safe.
+- **`hello` is two halves** so a cell can reach the second one: `start_engine` does the droppable channel work,
+  `await_hello` does the part that can't be dropped, and `dial_cancelling_inside_the_hello` runs the first on a live
+  token and the second on a cancelled one. Against a local server the real window is about a millisecond wide, so no
+  amount of timing gets a cell into it.
+
+❗ **A cancelled connect leaves nothing behind.** `volume::connect_sftp_volume` re-reads the token after the dial lands,
+so a cancel racing a session home still answers `Cancelled` and lets the session go: no volume registered, no host key
+approved, no secret written. The app-side half of that promise is `sftp_volume_wiring::connect_and_register`, which
+never reaches its `register` / `remember` calls on a `Cancelled`.
+
+❗ **A reconnect passes a token nobody holds** (`reconnect.rs`). Nobody is watching an unattended redial, so there is no
+one to call it off, and the phase budgets stay its only backstop.
+
+**The budgets: three windows of 10 s, and no more.** `HANDSHAKE_TIMEOUT` is 10 s and applies to the key exchange and the
+auth ladder separately. `SUBSYSTEM_TIMEOUT` is 10 s and covers the whole subsystem phase as ONE deadline — opening the
+channel, asking for `sftp`, and the hello — because a stalling server picks whichever of the three it likes, and a
+budget each would make the worst case 50 s rather than 30 s. 30 s is therefore what a user can sit through untouched,
+and cancelling ends it sooner at any point.
+
+10 s is generous against what a real handshake costs: a full local connect measures 20 ms against `sftp-fixture-openssh`
+and 65 ms against `sftp-fixture-kbdint`'s PAM round trips (5 runs each, 2026-08-23), and a phase is a handful of round
+trips, so even a satellite link has room many times over.
 
 ### 3. `File::read`'s offset bookkeeping holes a file
 
@@ -755,8 +801,9 @@ is that a sign-in UI genuinely branches on all of it.
 
 ### The commands
 
-- `connectSftpVolume({ displayName, host, port, username, remoteRoot, keyFile, useAgent, autoReconnect })` →
+- `connectSftpVolume({ displayName, host, port, username, remoteRoot, keyFile, useAgent, autoReconnect }, attemptId)` →
   `SftpConnectResult`. On `connected` the volume is already registered and the server is already in the saved list.
+- `cancelSftpConnect(attemptId)` → `boolean`, the dialog's cancel button. See § "Wiring the cancel button" below.
 - `disconnectSftpVolume(volumeId)` → `boolean` (whether there was an SFTP volume under that id). Drops the session and
   unregisters the volume.
 - `approveSftpHostKey({ host, port, algorithm, fingerprint })` → `SftpHostKeyApprovalResult`.
@@ -798,6 +845,32 @@ wrapped in `apps/desktop/src/lib/tauri-commands/networking.ts`.
 - `needs_credentials` → nothing was ever offered (no agent, no readable key file, no stored secret). ❗ Also a sign-in
   form, but ❌ never worded as "wrong password": the user may never have entered one.
 - `timed_out`, `unreachable` → the network or the address. Retrying is the only move.
+- `cancelled` → the user pressed the cancel button. ❗ Nothing to report and nothing to retry: close the dialog (or go
+  back to the form) and say nothing. ❌ Never worded as a failure — the user already knows what happened.
+
+### Wiring the cancel button
+
+A dial can hold for 30 s across its three phases (`crates/cmdr-sftp/DETAILS.md` § "2b. Calling a connect off"), so the
+sign-in dialog owes the user a way out. Four lines:
+
+1. Before calling, make an id: `const attemptId = newSftpAttemptId()`. Keep it in the dialog's state.
+2. `connectSftpVolume(target, attemptId)`.
+3. The cancel button calls `cancelSftpConnect(attemptId)`.
+4. The `connectSftpVolume` promise settles with `{ outcome: 'cancelled' }`. Close the dialog; there is nothing to say.
+
+❗ **The id is the CALLER's, and it has to exist before the call.** `connectSftpVolume` doesn't answer until the connect
+is over, so an id the backend handed back would arrive at exactly the moment a cancel stopped being useful. ❗ A fresh
+id per attempt (`newSftpAttemptId` wraps `crypto.randomUUID`), or two open dialogs cancel each other.
+
+`cancelSftpConnect` answering `false` means nobody was connecting under that id — a click landing just after the connect
+finished. That is not an error and there is nothing to show for it: whatever `connectSftpVolume` settled with is the
+real answer.
+
+❗ **A cancelled connect leaves nothing behind**: no volume, no saved server, no stored secret, and no approved host
+key. There is nothing to clean up after one.
+
+The same three phases also bound a connect nobody cancels, at 10 s each. `timed_out` is that backstop, and ❗ it means a
+genuinely unreachable server rather than a slow one.
 
 ### The first connection, end to end
 
@@ -943,8 +1016,9 @@ technical one.
 
 A cell lives with whatever it **asserts**, never with whatever it connects to.
 
-- **Here**: the contract, the trust table, path translation, the auth ladder, the reading and writing surfaces, and the
-  crate hazards. These are white-box tests — several build a volume with no session behind it.
+- **Here**: the contract, the trust table, path translation, the auth ladder, the reading and writing surfaces, the
+  crate hazards, and calling a connect off (`volume/cancel_test.rs`, plus the `phase` cells in `transport_test.rs`).
+  These are white-box tests — several build a volume with no session behind it.
 - ❗ **A write cell picks the server that could let its bug through.** `conformance_test.rs` runs on
   `sftp-fixture-openssh` because it HAS `posix-rename@openssh.com`; the same cells against `sftp-fixture-noposixrename`
   pass while a clobbering rename ships. The byte-exactness cell that matters runs on `sftp-fixture-smalllimits`, because
