@@ -30,7 +30,7 @@ per-lane fixed work**, not in the number of tests, so deleting assertions buys c
   bodies (103.9 s) and 89% is per-file fixed work: module import 603.8 s, environment 167.1 s, transform 57.9 s, setup
   files 20.7 s, over 826 files and 9,209 tests. A slice of 97 one-and-two-test files measured the same shape: 9.3 s of
   the lane's 66 s wall clock to run 1.6% of the suite. (Measured 2026-08-19, M-series laptop, `pnpm exec vitest run`
-  reporter totals.)
+  reporter totals.) The shape still held at 830 files / 9,434 tests on 2026-08-23.
 - **`rust-tests`**: all 6,166 tests EXECUTE in 23.3 s wall clock; the check's ~54 s is mostly cargo's freshness and link
   work, which no test change touches. The slowest single test (5.5 s) sets a floor nothing below it can lower. (Measured
   2026-08-19, `cargo nextest run --workspace`.)
@@ -47,6 +47,37 @@ Consequences for anyone tuning a lane:
   SQLite's real 5 s `busy_timeout` and `a_slow_first_attempt_spends_the_retry_budget` (2.1 s) waits out the real
   `CONNECT_RETRY_BUDGET`; the duration IS the assertion. Only a sleep the TEST invented (a fake slow closure) is fair
   game, and then keep a loud margin over the timeout it has to outlast.
+
+### Merging test files: what it buys, and the trap
+
+The lever above is applied to the tier-3 a11y tests: seven directories went from 106 files to 20 without losing a
+single test. `settings/sections/` alone dropped 24 files to 4, cutting that directory's import CPU from 47.5 s to 9.2 s
+and its total worker CPU from ~98 s to ~18 s (measured 2026-08-23, M-series laptop, three `pnpm exec vitest run` runs).
+`a11y-coverage` accepts any `*.a11y.test.ts` in a component's own directory that imports it, so merging never weakens
+the guarantee (`apps/desktop/src/lib/ui/DETAILS.md` § "Adding a component-level a11y test").
+
+Before merging more, know the two traps:
+
+- **`vi.mock` hoists per MODULE, per file.** Two files that mock the same module differently cannot become one file
+  without changing what one of them exercises. The fix is a mutable stub each `describe` installs in its own
+  `beforeEach`, with `null` meaning "use the real export" for the blocks that never stubbed it. Merging the stubs into
+  one value instead is how a test quietly starts auditing a different render. When a directory can't be reconciled,
+  split it rather than forcing one file, and say so in the file's doc comment.
+- **Union mocks must spread the real module.** A bare union of two files' stubs hands a third component a missing
+  export it never had, which fails loudly; spreading `importOriginal()` first keeps every un-stubbed member as it was.
+- **Merged files audit a shared jsdom document.** axe resolves ARIA id references document-wide, and components that
+  portal (menus, popovers) audit the whole `document.body`, so a merged file needs `afterEach(() => { document.body
+  .innerHTML = '' })` or one block's leftovers land inside the next block's audit.
+- **Type a mutable stub with an annotation, ❌ never an `as` assertion, and re-run the tests AFTER eslint.**
+  `eslint-typecheck-ts` auto-fixes: `no-unnecessary-type-assertion` strips `(() => undefined) as (id: string) =>
+  unknown` down to `() => undefined`, and `no-confusing-void-expression` then rewrites the delegating
+  `(id) => stubs.getSetting(id)` into `(id) => { stubs.getSetting(id); }`, which silently returns `undefined` from
+  every stub. Tests that passed before the lint run fail after it. Write `(_id: string): unknown => undefined` instead,
+  and always run the lane once more once the auto-fixers have had their pass.
+
+Also watch the wall-clock: on a contended machine the lane's own runtime swings 55-110 s run to run, which swamps the
+few seconds one directory buys. Measure the directory in isolation and read the CPU totals (`transform`, `import`,
+`environment`), not the lane's wall clock.
 
 ## Decision table: what tool for what test
 
