@@ -441,10 +441,25 @@ case: both relevant `CLAUDE.md`s are within 15 words of the 600 warn.
 **Checks**: `pnpm check rust` while iterating, then `pnpm check` at the milestone. Named: `index-isolation`,
 `error-string-match`, `clippy`, `bindings-fresh`, `invariant-density`, `claude-md-length`.
 
-## M2: the surfaces
+## M2: the surfaces — DONE
 
 **Intent**: make the agent's noticing visible and interruptible, and flip `askCmdr.proactive` on. Everything here meets
 human eyes.
+
+Landed. What the six items below became, and the three places this section guessed wrong:
+
+- **The digest (item 2) needed an `AgentPart` variant, not just a `MessageBlock` one.** A wake's opener is persisted as
+  the thread's user-role message, so keeping the rendered English out of `main.db` meant the TRANSCRIPT part had to be
+  structured too: `AgentPart::WakeDigest(WakeDigest)` (`agent/llm/types.rs`), `TurnParams.user_text` widened to
+  `TurnParams.user: Option<UserTurn>`, and `genai_impl.rs` is the one place it becomes English on the way out.
+- **The thread icon (item 3) needed no `icon-map.ts` entry.** Item 6 had already registered `bot`, and reusing the glyph
+  the status corner wears while a wake thinks is what makes the two read as one feature.
+- **The toast's proposal count could not come off the turn stream.** Only `propose_rename_plan` emits a `ProposalReady`;
+  the whole `propose_suggestions` half streams nothing, so the count read zero for most of what a wake stages.
+  `WakeToolWatch` (`agent/wake/watch.rs`) counts the typed tool CALLS instead, and only ones that landed.
+
+Also here: `force_agent_wake`'s `quiet: bool` became `script: 'reply' | 'quiet' | 'propose'`, because the toast is only
+reachable through a fake that actually proposes something.
 
 ⚠️ **"Interruptible" needs a cancel, and nothing owns one today.** `run_wake` takes a `CancellationToken` and no caller
 trips it. A wake is a multi-second background action spending the user's money, which `docs/design-principles.md`
@@ -771,8 +786,8 @@ That order is deliberate twice over. The inbox's signature settles before the ta
 `nothing_to_suggest` (item 6) lands last because it carries most of M1's non-tap surface while adding nothing to the
 milestone's observable behavior.
 
-⚠️ **`askCmdr.proactive` ships false in M1 and flips in M2**, so a release landing between them can't hand beta users
-threads they can't see.
+⚠️ **`askCmdr.proactive` shipped false in M1 and flipped in M2**, so no release between them could hand beta users
+threads they can't see. It is TRUE now.
 
 ❌ Don't parallelize M1's steps across agents. The tap, the writer thread, and the runner meet at one channel and one
 event variant, and three agents converging on `process_live_batch`'s signature is how you get a merge that compiles and
