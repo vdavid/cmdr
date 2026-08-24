@@ -199,10 +199,10 @@ pub async fn ask_cmdr_send_message(
             Ok(id) => id,
             Err(e) => {
                 log::warn!(target: LOG_TARGET, "creating a conversation failed: {e}");
-                return Err(AskCmdrSendRefusal {
-                    kind: AgentErrorKindView::Provider,
-                    detail: Some(e.to_string()),
-                });
+                return Err(AskCmdrSendRefusal::detailed(
+                    AgentErrorKindView::Provider,
+                    e.to_string(),
+                ));
             }
         },
     };

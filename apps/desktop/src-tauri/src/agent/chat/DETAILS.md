@@ -361,9 +361,24 @@ path is broken" all read as the same empty chart. With it they are three differe
 no `ask_cmdr_turn` at all, `ask_cmdr_turn` with `proposals: "0"`, or `proposals` above zero
 with no `suggestion_group_proposed` behind it (that last one is the only one that is a bug).
 
+**The funnel's top is a second reporter.** Four gates in `../../commands/agent/chat.rs` refuse a
+send BEFORE `run_turn` exists: no agent store, consent not accepted, no resolvable provider, and
+a local window under the one-turn floor. None of them reach `drive`, so `AskCmdrSendRefusal`'s
+two constructors report the same event with `outcome: "refused"` and the gate as `failure`.
+Without that half, "AI is off" and "nobody opened the rail" are both no events at all, which is
+the exact ambiguity this event exists to remove. ⚠️ Build a refusal through `of` or `detailed`,
+never as a struct literal, or that gate goes unreported.
+
+Both enums that can land in `failure` (`AgentErrorKind` here, `AgentErrorKindView` in
+`stream.rs`) tokenize the shared variants identically, pinned by a test. One gate reporting
+under two names would make the funnel's top and middle unaddable.
+
 `origin` splits the surfaces: `text` (the rail), `wake` (the proactive loop), `outcomes` (the
 follow-up turn a rejection opens), `resume` (a post-crash replay, which has no opener and
-would otherwise inflate whichever it was folded into). ⚠️ **`origin: "wake"` is not the same
+would otherwise inflate whichever it was folded into). A refusal is always `text`; a wake never
+reaches that path. `provider` reads `unresolved` on a refusal, since three of the four gates
+fire before the slot resolves and naming the settings value would claim a provider was chosen
+for a send that never chose one. ⚠️ **`origin: "wake"` is not the same
 population as `agent_wake`** (`../wake/runner.rs`): that event counts every wake OUTCOME,
 including the ones that never reached a turn. Comparing the two is the point; merging them
 would lose it.

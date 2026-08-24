@@ -174,10 +174,12 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   Both connection events go through the `AnalyticsSink` seam rather than `capture` directly, since the backend crates
   can't see `tauri` (`volume_sink.rs`).
 - `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`): no device/product props.
-- `ask_cmdr_turn` (backend, `agent/chat/runtime/analytics.rs`, at `run_turn`'s single exit): `origin`
-  (`text` / `wake` / `outcomes` / `resume`), `outcome` (`answered` / `cancelled` / `failed`), `failure` (the
-  `AgentErrorKind` token, or `none`), `provider` (the `ProviderTag` token), `tool_turns` + `proposals` buckets; never a
-  prompt, a reply, or anything a tool read. This is the agent funnel's DENOMINATOR: the three `suggestion_group_*`
+- `ask_cmdr_turn` (backend, `agent/chat/runtime/analytics.rs`, at `run_turn`'s single exit AND on the pre-turn
+  refusal path): `origin` (`text` / `wake` / `outcomes` / `resume`), `outcome` (`answered` / `cancelled` / `failed` /
+  `refused`), `failure` (the `AgentErrorKind` / `AgentErrorKindView` token, or `none`), `provider` (the `ProviderTag`
+  token, or `unresolved` on a refusal), `tool_turns` + `proposals` buckets; never a prompt, a reply, or anything a tool
+  read. `refused` covers the four gates that answer before a turn exists (no store, no consent, no resolvable provider,
+  a local window under the floor), so the funnel has a top as well as a middle. This is the agent funnel's DENOMINATOR: the three `suggestion_group_*`
   events below only become readable against it, because a zero on them otherwise can't be told apart from a feature
   nobody uses. `agent/chat/DETAILS.md` § The turn event.
 - `agent_wake` (backend, `agent/wake/runner.rs` `record_outcome`): `outcome` + `tier` tokens, `folders` + `proposals`

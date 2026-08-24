@@ -13,6 +13,7 @@
 use serde_json::{Value, json};
 
 use super::turn::{TurnParams, TurnResult, UserTurn};
+use crate::agent::chat::stream::AgentErrorKindView;
 use crate::analytics::item_count_bucket;
 
 /// What one turn did, counted as it runs so every early return reports the numbers it
@@ -60,6 +61,31 @@ fn origin_token(user: Option<&UserTurn<'_>>) -> &'static str {
         Some(UserTurn::Outcomes(_)) => "outcomes",
         None => "resume",
     }
+}
+
+/// Reports a send refused before a turn ever started.
+///
+/// The four gates in `commands/agent/chat.rs` (no store, no consent, no resolvable provider,
+/// a local window under the floor) return before `run_turn`, so without this the TOP of the
+/// funnel is invisible and "nobody configured a provider" looks identical to "nobody opened
+/// the rail". Same event and same prop names as a turn, so one insight covers both.
+pub(crate) fn send_refused(kind: AgentErrorKindView) {
+    crate::analytics::posthog::capture("ask_cmdr_turn", refusal_props(kind));
+}
+
+/// The refusal's properties. Pure, for the same reason [`turn_props`] is.
+fn refusal_props(kind: AgentErrorKindView) -> Value {
+    json!({
+        // A refusal can only come from the composer; a wake never reaches this path.
+        "origin": "text",
+        "outcome": "refused",
+        "failure": kind.as_token(),
+        // Three of the four gates fire before the slot resolves, and reporting the settings
+        // value instead would claim a provider was chosen for a send that never chose one.
+        "provider": "unresolved",
+        "tool_turns": item_count_bucket(0),
+        "proposals": item_count_bucket(0),
+    })
 }
 
 #[cfg(test)]
@@ -192,6 +218,72 @@ mod tests {
                 "prop '{key}' carries a non-categorical value: {s}"
             );
         }
+    }
+
+    #[test]
+    fn a_refused_send_reports_the_gate_that_stopped_it() {
+        // A send refused before `run_turn` (AI off, consent not accepted) never reaches the
+        // loop, so without this the top of the funnel is invisible: "nobody has a provider"
+        // and "nobody opened the rail" would both read as no events at all.
+        let props = refusal_props(AgentErrorKindView::NoConsent);
+
+        assert_eq!(props["origin"], json!("text"));
+        assert_eq!(props["outcome"], json!("refused"));
+        assert_eq!(props["failure"], json!("no_consent"));
+        // Most refusals fire before the slot resolves, so there is no honest provider to name.
+        assert_eq!(props["provider"], json!("unresolved"));
+        assert_eq!(props["tool_turns"], json!("0"));
+        assert_eq!(props["proposals"], json!("0"));
+    }
+
+    #[test]
+    fn a_refusal_and_a_turn_report_the_same_prop_names() {
+        // One event, one schema: a refusal must not invent a key a turn doesn't have, or a
+        // PostHog insight over `ask_cmdr_turn` breaks the moment it includes refusals.
+        let envelope = envelope();
+        let p = params(Some(UserTurn::Text("hi")), ProviderTag::Anthropic, &envelope);
+        let turn = turn_props(&p, &TurnResult::Cancelled, &TurnTally::default());
+        let refusal = refusal_props(AgentErrorKindView::NotConfigured);
+
+        let turn_keys: std::collections::BTreeSet<&String> = turn.as_object().expect("object").keys().collect();
+        let refusal_keys: std::collections::BTreeSet<&String> = refusal.as_object().expect("object").keys().collect();
+        assert_eq!(turn_keys, refusal_keys);
+    }
+
+    /// The runtime enum and the view the frontend sees are authored separately, and both
+    /// tokenize into the SAME `failure` prop. If they drifted, one gate would report under
+    /// two names and the funnel's top and middle could no longer be added up.
+    #[test]
+    fn the_two_error_vocabularies_cannot_drift() {
+        for kind in [
+            AgentErrorKind::NoKey,
+            AgentErrorKind::NotConfigured,
+            AgentErrorKind::Unavailable,
+            AgentErrorKind::Timeout,
+            AgentErrorKind::AuthFailed,
+            AgentErrorKind::RateLimited,
+            AgentErrorKind::BudgetExhausted,
+            AgentErrorKind::UnfinishedReply,
+            AgentErrorKind::Provider,
+        ] {
+            let view: AgentErrorKindView = kind.into();
+            assert_eq!(
+                kind.as_token(),
+                view.as_token(),
+                "{kind:?} tokenizes differently on the runtime and view enums"
+            );
+        }
+    }
+
+    /// The view carries two gates the runtime enum has no variant for. They're the whole
+    /// reason the refusal event exists, so they need tokens of their own.
+    #[test]
+    fn the_pre_turn_only_gates_have_their_own_tokens() {
+        assert_eq!(AgentErrorKindView::NoConsent.as_token(), "no_consent");
+        assert_eq!(
+            AgentErrorKindView::LocalWindowTooSmall.as_token(),
+            "local_window_too_small"
+        );
     }
 
     /// Every `AgentErrorKind` needs a distinct token, or two different failure modes merge

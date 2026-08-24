@@ -143,6 +143,30 @@ pub enum AgentErrorKindView {
     Provider,
 }
 
+impl AgentErrorKindView {
+    /// The stable snake_case token this kind reports as in analytics, shared with
+    /// [`AgentErrorKind::as_token`] for every variant the two enums have in common (a test
+    /// pins that). Both feed the SAME `failure` prop on `ask_cmdr_turn`, so a gate that
+    /// tokenized differently either side of the turn boundary would be two numbers for one
+    /// thing. `NoConsent` and `LocalWindowTooSmall` are view-only: the runtime has no variant
+    /// for either, because the command layer refuses ahead of the turn.
+    pub fn as_token(self) -> &'static str {
+        match self {
+            AgentErrorKindView::NoKey => "no_key",
+            AgentErrorKindView::NotConfigured => "not_configured",
+            AgentErrorKindView::NoConsent => "no_consent",
+            AgentErrorKindView::LocalWindowTooSmall => "local_window_too_small",
+            AgentErrorKindView::Unavailable => "unavailable",
+            AgentErrorKindView::Timeout => "timeout",
+            AgentErrorKindView::AuthFailed => "auth_failed",
+            AgentErrorKindView::RateLimited => "rate_limited",
+            AgentErrorKindView::BudgetExhausted => "budget_exhausted",
+            AgentErrorKindView::UnfinishedReply => "unfinished_reply",
+            AgentErrorKindView::Provider => "provider",
+        }
+    }
+}
+
 impl From<AgentErrorKind> for AgentErrorKindView {
     fn from(kind: AgentErrorKind) -> Self {
         match kind {

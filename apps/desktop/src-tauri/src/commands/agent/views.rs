@@ -21,6 +21,12 @@ use crate::agent::types::ProposalDecision;
 /// exists and some before a conversation id does, leaving no thread to key an event on. It
 /// carries the same typed kinds a mid-turn failure does, so the rail renders one set of
 /// honest copy either way.
+///
+/// **Build one through [`AskCmdrSendRefusal::of`] or [`AskCmdrSendRefusal::detailed`], never
+/// as a struct literal.** Both constructors report the anonymous `ask_cmdr_turn` refusal, and
+/// these gates are the only account of the funnel's top: a send refused here never reaches
+/// `run_turn`, so a literal that skipped the report would make "AI is off" and "nobody opened
+/// the rail" the same empty chart. The fields stay public only because `specta` reads them.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AskCmdrSendRefusal {
@@ -33,7 +39,17 @@ pub struct AskCmdrSendRefusal {
 impl AskCmdrSendRefusal {
     /// A refusal the kind says everything about.
     pub(super) fn of(kind: AgentErrorKindView) -> Self {
+        crate::agent::chat::runtime::send_refused(kind);
         Self { kind, detail: None }
+    }
+
+    /// A refusal carrying the source problem's own wording for display.
+    pub(super) fn detailed(kind: AgentErrorKindView, detail: String) -> Self {
+        crate::agent::chat::runtime::send_refused(kind);
+        Self {
+            kind,
+            detail: Some(detail),
+        }
     }
 }
 

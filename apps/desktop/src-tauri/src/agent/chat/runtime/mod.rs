@@ -59,6 +59,7 @@ mod dispatch;
 mod events;
 mod turn;
 
+pub(crate) use analytics::send_refused;
 pub use dispatch::{AppHandleDispatcher, ToolDispatchOutcome, ToolDispatcher, dispatch_ok};
 pub use events::{AgentChatEvent, AgentErrorKind, ChatEventSink};
 pub use turn::{TurnParams, TurnResult, UserTurn, run_turn};

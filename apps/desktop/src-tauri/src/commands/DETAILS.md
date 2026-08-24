@@ -219,7 +219,12 @@ would leave those hidden items behind and fail to compile. `mod.rs` also owns th
 helpers.
 
 `chat.rs` adapts Ask Cmdr's channel-only stream events. Its `ProposalReady` snapshot is display-only; rename review
-commands accept only opaque proposal and row ids. `apply_bulk_rename` consumes an exact accepted preflight then delegates
+commands accept only opaque proposal and row ids.
+
+Its four pre-turn gates (no agent store, consent not accepted, no resolvable provider, a local context window under the
+one-turn floor) are also the ONLY account of the Ask Cmdr funnel's top, because none of them reach `run_turn`. That's
+why `AskCmdrSendRefusal` has two constructors and no struct literal: `of` and `detailed` both report the anonymous
+`ask_cmdr_turn` refusal, and a literal would silently lose the gate. `agent/chat/DETAILS.md` § The turn event. `apply_bulk_rename` consumes an exact accepted preflight then delegates
 the batch to `write_operations::start_bulk_rename`; it never accepts frontend paths or model approval.
 
 **One commands file per domain, no business logic in commands.** Tauri command functions are the IPC boundary
