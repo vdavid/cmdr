@@ -295,6 +295,18 @@ check `iss`, `aud`, `exp`, and `nbf` (60s clock skew). Keys are cached for an ho
 exactly one refetch, so a Cloudflare key rotation doesn't lock everyone out and a bogus `kid` can't drive unbounded
 fetches at the certs endpoint.
 
+**Two kinds of caller, one gate.** Access mints a user token on a browser login and a `type: 'app'` token for a service
+token (the `CF-Access-Client-Id` / `CF-Access-Client-Secret` pair the agent-readable `/api/report` recipe uses, see
+`docs/tooling/analytics-dashboard.md`). Both are signed by the same keys and go through the identical checks; only the
+last step differs, mapping a verified payload to an identity. A machine token has no `email` claim at all and an empty
+`sub`, and is named by `common_name`, so `verifyAccessJwt` returns a discriminated union:
+`{ kind: 'user', email, sub } | { kind: 'service', commonName }`, landing on `event.locals.identity`. The union is the
+point: a bare email string would have to be empty or synthetic for a machine, and a route wanting a real person could
+then read it as one by accident. `type` is checked first, so a machine token can never come back as a user whatever else
+it carries; each branch then needs its own identifying claim, and a payload with neither is refused. That mapping step
+is the last place a payload can still be rejected, so it fails closed both ways: a `type: 'app'` token with no
+`common_name` is refused, as is a user token with no `email`.
+
 **Constants, not env vars.** The team domain and audience tag live in `access-jwt.ts` as constants. Both are public (the
 audience tag appears in Access's own login-redirect URL), and a missing env var would fail _open_ on a deploy slip,
 which is the one direction an auth gate must never fail. Reading the audience from config would trade a real risk for no
@@ -308,7 +320,9 @@ works with no token. `wrangler pages dev` serves a built bundle, so it enforces 
 **No hand-rolled crypto beyond this.** Verification is ~60 lines of WebCrypto against a pinned algorithm, which is what
 Cloudflare's own guidance describes. `src/lib/server/access-jwt.test.ts` covers the attack cases directly: `alg: none`,
 HS256 confusion, foreign signing key, tampered payload, wrong audience, wrong issuer, expired, not-yet-valid, malformed,
-and certs-endpoint failure (must reject, never fail open).
+and certs-endpoint failure (must reject, never fail open). The service-token path carries the same set: a self-minted
+`type: 'app'` payload spliced onto a real signature, an unsigned one, and one minted for another Access application all
+have to be refused, or the machine path would be a way around the gate rather than a way through it.
 
 ## Key decisions
 

@@ -49,7 +49,7 @@ describe('handle', () => {
   })
 
   it('runs the route and records the identity when the JWT verifies', async () => {
-    verifyAccessJwt.mockResolvedValue({ email: 'veszelovszki@gmail.com', sub: 'user-123' })
+    verifyAccessJwt.mockResolvedValue({ kind: 'user', email: 'veszelovszki@gmail.com', sub: 'user-123' })
     const resolve = vi.fn(() => Promise.resolve(new Response('ok', { status: 200 })))
     const event = eventFor('/product')
 
@@ -57,7 +57,18 @@ describe('handle', () => {
 
     expect(response.status).toBe(200)
     expect(resolve).toHaveBeenCalledOnce()
-    expect(event.locals.email).toBe('veszelovszki@gmail.com')
+    expect(event.locals.identity).toEqual({ kind: 'user', email: 'veszelovszki@gmail.com', sub: 'user-123' })
+  })
+
+  it('lets a service token through and records it as a machine caller, never as a person', async () => {
+    verifyAccessJwt.mockResolvedValue({ kind: 'service', commonName: 'agent.access' })
+    const resolve = vi.fn(() => Promise.resolve(new Response('ok', { status: 200 })))
+    const event = eventFor('/api/report')
+
+    const response = await handle({ event, resolve })
+
+    expect(response.status).toBe(200)
+    expect(event.locals.identity).toEqual({ kind: 'service', commonName: 'agent.access' })
   })
 
   it('refuses rather than failing open when verification throws', async () => {

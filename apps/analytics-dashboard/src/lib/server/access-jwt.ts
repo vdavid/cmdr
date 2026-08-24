@@ -10,6 +10,10 @@
  * ❌ Never gate on the `cf-access-authenticated-user-email` header instead: any client can send it.
  * Only the signature over the JWT proves Access actually vouched for the caller.
  *
+ * People and machines both arrive this way. A browser login carries a user token; a script sending
+ * the Access service-token headers gets a `type: 'app'` token that has no `email` claim at all. Both
+ * are signed by the same keys and checked identically; only the identity they map to differs.
+ *
  * Both constants below are public (the audience tag appears in Access's own login-redirect URL), so
  * they live in code rather than in env vars: a missing env var would fail *open* on a deploy slip,
  * which is the one direction an auth gate must never fail.
@@ -35,10 +39,13 @@ const KEY_CACHE_TTL_MS = 60 * 60 * 1000
 /** The only signature algorithm Access issues, and the only one we accept. */
 const ALGORITHM = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' } as const
 
-export interface AccessIdentity {
-  email: string
-  sub: string
-}
+/**
+ * Who Access vouched for. A discriminated union rather than a bare email, because Access mints two
+ * different kinds of token and a machine must never read as a person downstream: a login gives a
+ * `email`-carrying user token, while a service token gives `type: 'app'` with an empty `sub`, no
+ * `email` at all, and the token named by `common_name`.
+ */
+export type AccessIdentity = { kind: 'user'; email: string; sub: string } | { kind: 'service'; commonName: string }
 
 interface CachedKeys {
   keys: Map<string, CryptoKey>
@@ -160,6 +167,12 @@ function audienceMatches(aud: unknown): boolean {
 /**
  * Checks the registered claims on an already signature-verified payload and returns the caller's
  * identity, or `null` to reject. Only reached once the signature checks out.
+ *
+ * The two token kinds are told apart by `type`, before either is asked for its own claims: a
+ * machine token is a machine token whatever else it carries, so `type: 'app'` can never come back
+ * as a person. Each branch then needs its own identifying claim (`common_name` for a service token,
+ * `email` for a user), and a payload that has neither is refused: this is the mapping step, and it
+ * is the last place a payload can still be rejected.
  */
 function identityFromPayload(payload: Record<string, unknown>): AccessIdentity | null {
   if (payload.iss !== ISSUER) return null
@@ -169,11 +182,16 @@ function identityFromPayload(payload: Record<string, unknown>): AccessIdentity |
   if (typeof payload.exp !== 'number' || payload.exp + CLOCK_SKEW_S < now) return null
   if (typeof payload.nbf === 'number' && payload.nbf - CLOCK_SKEW_S > now) return null
 
-  const email = typeof payload.email === 'string' ? payload.email : ''
-  const sub = typeof payload.sub === 'string' ? payload.sub : ''
-  if (!email) return null
+  if (payload.type === 'app') {
+    const commonName = typeof payload.common_name === 'string' ? payload.common_name.trim() : ''
+    return commonName ? { kind: 'service', commonName } : null
+  }
 
-  return { email, sub }
+  const email = typeof payload.email === 'string' ? payload.email.trim() : ''
+  if (!email) return null
+  const sub = typeof payload.sub === 'string' ? payload.sub : ''
+
+  return { kind: 'user', email, sub }
 }
 
 /**

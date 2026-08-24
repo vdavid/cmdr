@@ -79,6 +79,7 @@ describe('verifyAccessJwt', () => {
   it('accepts a token signed by a published Access key', async () => {
     const token = await makeToken(keys.privateKey)
     await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toEqual({
+      kind: 'user',
       email: 'veszelovszki@gmail.com',
       sub: 'user-123',
     })
@@ -89,7 +90,68 @@ describe('verifyAccessJwt', () => {
     const request = new Request('https://cmdr-analytics-dashboard.pages.dev/', {
       headers: { cookie: `other=x; ${ACCESS_JWT_COOKIE}=${token}; trailing=y` },
     })
-    await expect(verifyAccessJwt(request)).resolves.toMatchObject({ email: 'veszelovszki@gmail.com' })
+    await expect(verifyAccessJwt(request)).resolves.toMatchObject({
+      kind: 'user',
+      email: 'veszelovszki@gmail.com',
+    })
+  })
+
+  it('accepts a service token, the machine caller Access mints for `type: app`', async () => {
+    // A real service-token payload: no `email`, an empty `sub`, and the token named by `common_name`.
+    const token = await makeToken(keys.privateKey, {
+      payload: {
+        type: 'app',
+        email: undefined,
+        sub: '',
+        common_name: 'f3e5a7332fc14564d58faf13d5ead798.access',
+      },
+    })
+    await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toEqual({
+      kind: 'service',
+      commonName: 'f3e5a7332fc14564d58faf13d5ead798.access',
+    })
+  })
+
+  it('rejects a payload with neither an email nor a service-token identity', async () => {
+    const token = await makeToken(keys.privateKey, { payload: { email: undefined } })
+    await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toBeNull()
+  })
+
+  it('rejects a machine token that names no service token', async () => {
+    const token = await makeToken(keys.privateKey, {
+      payload: { type: 'app', email: undefined, sub: '', common_name: undefined },
+    })
+    await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toBeNull()
+  })
+
+  it('rejects a service token minted for a different Access application', async () => {
+    const token = await makeToken(keys.privateKey, {
+      payload: { type: 'app', email: undefined, common_name: 'other.access', aud: ['some-other-app-aud'] },
+    })
+    await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toBeNull()
+  })
+
+  it('rejects a self-minted service-token payload spliced onto a real signature', async () => {
+    const token = await makeToken(keys.privateKey)
+    const [header, , sig] = token.split('.')
+    const forged = {
+      iss: ISSUER,
+      aud: [AUDIENCE],
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      type: 'app',
+      common_name: 'attacker.access',
+    }
+    await expect(
+      verifyAccessJwt(requestWithHeader(`${header}.${b64url(JSON.stringify(forged))}.${sig}`)),
+    ).resolves.toBeNull()
+  })
+
+  it('rejects an unsigned service token (alg: none)', async () => {
+    const token = await makeToken(keys.privateKey, {
+      header: { alg: 'none' },
+      payload: { type: 'app', email: undefined, common_name: 'attacker.access' },
+    })
+    await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toBeNull()
   })
 
   it('rejects a request with no token at all', async () => {
@@ -185,12 +247,14 @@ describe('verifyAccessJwt', () => {
     // Warm the cache with the pre-rotation key set.
     const oldToken = await makeToken(oldPair.privateKey, { header: { kid: 'old-kid' } })
     await expect(verifyAccessJwt(requestWithHeader(oldToken))).resolves.toMatchObject({
+      kind: 'user',
       email: 'veszelovszki@gmail.com',
     })
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     // Cloudflare rotates: the unseen kid triggers exactly one refresh, and then verifies.
     await expect(verifyAccessJwt(requestWithHeader(await makeToken(keys.privateKey)))).resolves.toMatchObject({
+      kind: 'user',
       email: 'veszelovszki@gmail.com',
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
