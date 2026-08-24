@@ -3,9 +3,9 @@
 Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form creates
 and modifies a listing (search the app name at the top to modify).
 
-Status: submitted 2026-07-29 for v0.36.2. The fields below are refreshed for v0.38.0 and ready to paste; that refresh is
-not submitted yet. Edit them here first when refreshing, then paste. Because the 0.37.0 refresh was prepared but never
-submitted, "Version changes" below covers both 0.37.0 and 0.38.0.
+Status: submitted 2026-07-29 for v0.36.2. The fields below are refreshed for v0.40.0 and ready to paste; that refresh is
+not submitted yet. Edit them here first when refreshing, then paste. Because the 0.37.0 and 0.38.0 refreshes were
+prepared but never submitted, "Version changes" below covers everything from 0.37.0 through 0.40.0.
 
 Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
@@ -20,12 +20,12 @@ the Price field and the note to the review team instead.
 - **Download URL**: `https://getcmdr.com/download/latest/universal?ref=macupdate.com`
   - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
     in the dashboard. Plain fallback if they reject redirects:
-    `https://github.com/vdavid/cmdr/releases/download/v0.38.0/Cmdr_0.38.0_universal.dmg` (version-pinned, so it would
+    `https://github.com/vdavid/cmdr/releases/download/v0.40.0/Cmdr_0.40.0_universal.dmg` (version-pinned, so it would
     need bumping per release).
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
-- **Version number**: `0.38.0`
+- **Version number**: `0.40.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
 
@@ -105,7 +105,13 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
     <em>suggest</em> write operations like renames, you are in charge of reviewing and applying them. If you change your
     mind, you can always roll back any past operations.
   </li>
-  <li>Auto-organization is on the way.</li>
+  <li>
+    File organization: "Clean up my Downloads folder" and the agent proposes each move for you to approve or reject.
+  </li>
+  <li>
+    It can also watch your folders and raise things on its own: "How about moving that vet invoice to your medical
+    papers?" It only ever suggests, you decide, and it stops on one click.
+  </li>
   <li>
     The model runs on your Mac by default, so your files and data stay 100% private. You can choose to bring your own
     OpenAI, Claude, Gemini, etc. key, or point Cmdr at any OpenAI-compatible endpoint to use more powerful models.
@@ -117,11 +123,44 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 ### Version changes
 
 Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers 0.37.0
-and 0.38.0, since the 0.37.0 refresh was never submitted; the 0.36 line went in with the previous submission.
+through 0.40.0, since none of those refreshes was ever submitted; the 0.36 line went in with the previous submission.
 
 ```html
 <h5>New</h5>
 <ul>
+  <li>
+    The agent watches your folders and suggests moves, renames, and cleanups on its own, which you review and approve or
+    reject one by one. It can only ever suggest.
+  </li>
+  <li>
+    Three settings for how it behaves on its own: whether it watches at all, how calm it is (five seconds to two hours),
+    and whether it announces itself. A wake shows in the status corner with a way in and a way to stop it.
+  </li>
+  <li>
+    The agent keeps notes on what it learns about you and on what you decided about its suggestions, in a folder you can
+    open and wipe whenever you like.
+  </li>
+  <li>
+    Suggested ops: ask for something and Ask Cmdr proposes the file operations, each reviewable beside what Cmdr knows
+    about the file.
+  </li>
+  <li>
+    The native menu bar, the right-click menus, and the startup alerts in all nine shipped languages. Cmdr switches the
+    moment you switch your Mac's language, no restart, and follows your region for dates, times, and number grouping.
+  </li>
+  <li>
+    Drive indexing goes folder by folder in the order you care about, starting where you last were, and keeps every
+    second of it across a quit.
+  </li>
+  <li>Duplicate with ⌘D, in the command palette, the right-click menu, and the File menu, on phones and shares too.</li>
+  <li>Rename a run of files in one keyboard flow: ArrowUp and ArrowDown carry the editor to the next file.</li>
+  <li>⌘R re-reads the folder you're looking at, phones and network shares included.</li>
+  <li>A notice when a share drops to the slow macOS mount, with a "Try connecting directly" button.</li>
+  <li>Escalate an F8 trash to a permanent delete by holding Shift.</li>
+  <li>
+    Ways out of every error screen: "Go to home folder", "Go back", ⌘D for technical details, and a Home command (⌘⇧H).
+  </li>
+  <li>"Show hidden files" in Settings &gt; Appearance.</li>
   <li>
     Search reaches folders Cmdr hasn't indexed yet: it walks them live and streams matches as it finds them, and offers
     the permission for a folder macOS refused.
@@ -154,6 +193,20 @@ and 0.38.0, since the 0.37.0 refresh was never submitted; the 0.36 line went in 
 </ul>
 <h5>Improved</h5>
 <ul>
+  <li>
+    A huge folder no longer stalls the pane: rows, watcher events, and Finder tags stop re-walking the whole listing.
+  </li>
+  <li>
+    An idle Mac costs less: far fewer cloud-provider checks, lighter indexing ticks, and a memory ceiling that actually
+    holds.
+  </li>
+  <li>Every refusal in the app speaks your language, instead of quoting a system error in English.</li>
+  <li>The app is 2.8 MB smaller.</li>
+  <li>Resuming a half-covered drive is seven times faster: 185 seconds down to 26 on the benchmark tree.</li>
+  <li>
+    A privacy policy rewritten to match what Cmdr actually collects, keeps, and shares, with personal data expiring on a
+    schedule instead of being kept forever.
+  </li>
   <li>
     A new terms of service: a third shorter, accurate about what Cmdr actually does, and each release now converts to
     open source three years after it ships rather than every version on one shared date.
@@ -191,6 +244,20 @@ and 0.38.0, since the 0.37.0 refresh was never submitted; the 0.36 line went in 
 </ul>
 <h5>Fixed</h5>
 <ul>
+  <li>A rename that blinked mid-copy could delete the file it was landing next to.</li>
+  <li>The crash dialog could tell you Cmdr quit unexpectedly when it hadn't, and tell you twice.</li>
+  <li>A share mounted twice broke the panes and the volume switcher, and froze the app on F6.</li>
+  <li>A dead NAS mount hung every operation instead of handing over to the mount that still answers.</li>
+  <li>The panes and the volume picker froze during a big transfer.</li>
+  <li>Shares named "café" or "公開" refused to mount.</li>
+  <li>A failed mount trapped the pane, with every key dead.</li>
+  <li>The cursor and selection could land on a neighbouring file when a listing reordered itself mid-delete.</li>
+  <li>A panic on a background indexing thread crashed the app at the next drive start.</li>
+  <li>Copying, moving, or compressing into a subfolder of a network share failed outright.</li>
+  <li>A crash mid bulk-rename left renamed files with no undo.</li>
+  <li>A rescan blanked the index underneath a search that was still writing to it.</li>
+  <li>One purchase could mint more than one set of license keys.</li>
+  <li>The macOS app menu said "cmdr" instead of "Cmdr".</li>
   <li>
     A folder move to a phone or a NAS could destroy the files you chose to keep or skip, and a folder copy that failed
     could wipe the destination folder.
