@@ -17,12 +17,7 @@ import {
   MAX_TABS_PER_PANE,
   type TabManager,
 } from '../tabs/tab-state-manager.svelte'
-import {
-  reportTabClosed,
-  reportTabOpened,
-  reportTabPinToggled,
-  reportTabSwitched,
-} from '../tabs/tab-analytics'
+import { reportTabClosed, reportTabOpened, reportTabPinToggled, reportTabSwitched } from '../tabs/tab-analytics'
 import type { TabState, TabId, PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
 import { createHistory } from '../navigation/navigation-history'
 import { DEFAULT_SORT_BY, defaultSortOrders, type SortColumn } from '../types'

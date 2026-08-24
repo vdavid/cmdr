@@ -1045,3 +1045,19 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
   resumes. `Configure…` deep-links to `openSettingsWindow('enter-menu', ['Behavior', 'Archives'])`.
 - **Settings** live in `settings/sections/ArchivesSection.svelte` (a custom section: two `ToggleGroup` cards over the
   one JSON setting, so the format list extends without a registry entry per format).
+
+## Analytics emitted from this directory
+
+Three of this directory's modules are analytics chokepoints, and they're chokepoints on purpose — a per-call-site event
+drifts the moment a fourth trigger appears.
+
+- `tab-operations.ts` emits the four `tab_*` events. It's the layer every trigger funnels through (the tab bar, the File
+  menu, the keyboard, the palette, the MCP `tab` tool), and the pure `tabs/tab-state-manager.svelte.ts` beneath it is
+  deliberately left alone: unit tests drive it directly, so emitting there would fire events from the test suite.
+- `drag-drop-controller.svelte.ts::handleDrop` emits `drop_received` on EVERY arm, refusals included.
+- `volume-selection.ts` emits `favorite_opened` from its `category === 'favorite'` branch, matching
+  `VolumeBreadcrumb.handleVolumeSelect`. There's no lower chokepoint: both fold onto
+  `navigate({ to: { selectVolume } })`, which by then holds the containing volume's id and can't tell a favorite from a
+  drive.
+
+Vocabulary and props: `src-tauri/src/analytics/DETAILS.md` § "Starter event set".

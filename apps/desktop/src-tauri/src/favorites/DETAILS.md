@@ -131,3 +131,11 @@ complexity). The store doesn't enforce this; the add surfaces in the frontend ga
 
 The MCP `favorites` tool wraps the `commands::favorites` pass-throughs (add / rename / remove / reorder), and
 `cmdr://state` `favorites:` reads `store::list()` for id discovery. See `mcp/DETAILS.md`.
+
+## Analytics
+
+`mutate_and_persist` reports `favorite_changed` past its no-op guard, with a required `FavoriteAction` and the list's
+size after the change. The action is a PARAMETER rather than something inferred from the closure, so a fifth mutation
+can't be added without deciding what it reports. The other half of the story, `favorite_opened`, is the frontend's
+(`src/lib/file-explorer/navigation/favorites-analytics.ts`): this store can't see a navigation. Props and rationale:
+`src-tauri/src/analytics/DETAILS.md` § "Starter event set".

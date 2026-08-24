@@ -23,3 +23,16 @@ The core silently no-ops these after the preamble.
 shortcuts editor uses to render those rows read-only, so each "who owns this key" fact lives in exactly one place. The
 `DispatchExemptId` union still lists the literals (a type can't spread a runtime tuple); `command-registry.test.ts` pins
 the union and the tuple in sync.
+
+## Analytics from the file arms
+
+`file-handlers.ts` emits two events, both because nothing downstream can.
+
+- `quick_look_used` on all four arms of the `file.quickLook` toggle, the refusals included, so the inner-archive gate
+  has a number of its own. The double fire of one Shift+Space (AppKit's menu accelerator plus the webview keydown) is
+  swallowed by `quickLookDispatchGuardJustFired()` BEFORE the emit — moving the emit above that guard would double every
+  number this event produces.
+- `editor_opened` on `file.edit`, with no props: F4 hands the file to the OS's text editor (`open -t`), and the file's
+  name and extension are exactly what must never cross.
+
+Props and rationale: `apps/desktop/src-tauri/src/analytics/DETAILS.md` § "Starter event set".

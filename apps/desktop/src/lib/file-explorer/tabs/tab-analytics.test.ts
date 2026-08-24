@@ -34,10 +34,7 @@ describe('tab analytics', () => {
 
   it('reports a close with the pin state of the tab that was targeted', () => {
     reportTabClosed('single', 'cancelled', 3, true)
-    expect(sent()).toEqual([
-      'tab_closed',
-      { source: 'single', outcome: 'cancelled', open_tabs: 3, pinned: true },
-    ])
+    expect(sent()).toEqual(['tab_closed', { source: 'single', outcome: 'cancelled', open_tabs: 3, pinned: true }])
   })
 
   it('names the gesture that moved the active tab', () => {

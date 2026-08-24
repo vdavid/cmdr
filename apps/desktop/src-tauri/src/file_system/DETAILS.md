@@ -224,3 +224,12 @@ the listing, and, when the directory is genuinely gone, emits `directory-deleted
 **Gotcha**: `Modify(Metadata(_))` on the root is deliberately not a trigger. Every ordinary child create or remove bumps
 the directory's own mtime and produces one, so counting it would route every change through the full re-read and cost
 the incremental path its entire reason to exist.
+
+## Tag analytics
+
+`toggle_color` reports `tag_toggled` at its single exit, so all three triggers (the seven keyboard commands, the
+context-menu circles, and the MCP `tag` tool) are covered without any of them having to remember. The trade is that
+the event can't say WHICH trigger fired; a `surface` parameter would have meant threading one through every caller and
+every test for a question none of them asks yet. ❌ The `color` prop is the Finder palette's canonical name (a closed
+set of seven), never a tag's own text, which is user-authored content. Props: `src-tauri/src/analytics/DETAILS.md` §
+"Starter event set".
