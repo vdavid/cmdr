@@ -131,10 +131,20 @@ Authoritative files: `apps/desktop/scripts/tauri-wrapper.ts`, `apps/desktop/vite
 
 ### Updater endpoint
 
-Non-prod gets `https://localhost.invalid/no-updater` in the generated config so dev or E2E never phones home
-accidentally.
+Two separate mechanisms, because two updaters ship.
 
-Authoritative file: `apps/desktop/scripts/instance-id.ts`.
+Off macOS, the Tauri updater plugin reads its endpoint from the generated config, and non-prod gets
+`https://localhost.invalid/no-updater` there so dev or E2E never phones home accidentally.
+
+On macOS the custom updater builds `https://api.getcmdr.com/update-check/{version}` in Rust and never consults that
+config, so the config trick can't reach it. It gates in code instead (`updater::skip_reason`): the exe must sit inside a
+`.app` bundle, and none of `prod_instance::NON_PROD_ENV_VARS` may be set. Both conditions matter, and the env one is the
+load-bearing half now that a check is not free: `/update-check` writes an `update_checks` row before it redirects, and
+that table is the CEILING of the dashboard's bounded active-install figure. The bundle condition alone happens to cover
+every launcher today (they all run the bare `target/<triple>/release/Cmdr`), which is exactly why it shouldn't be the
+only one.
+
+Authoritative files: `apps/desktop/scripts/instance-id.ts`, `apps/desktop/src-tauri/src/updater/mod.rs`.
 
 ### Production analytics
 
@@ -145,12 +155,16 @@ dir has no `install-ids.json`, so it mints a fresh `anal_` id and the instance r
 launch. Isolating a tooling instance harder makes the pollution worse, not better.
 
 `CMDR_ANALYTICS_FORCE=1` overrides every condition, for the integration test that drives the loop against a localhost
-Worker. Prod sets none of the five, and `every_tooling_launcher_is_suppressed` pins the exact env each launcher stamps
+Worker. Prod sets none of the five, and `every_tooling_launcher_is_recognized` pins the exact env each launcher stamps
 (E2E checker, i18n capture, marketing shots, dev wrapper), so a launcher that stops tripping the gate fails a test
 rather than quietly minting installs.
 
-Authoritative file: `apps/desktop/src-tauri/src/analytics/mod.rs`. Depth (including what the leak cost and how the
-stored rows were corrected): `apps/desktop/src-tauri/src/analytics/DETAILS.md`.
+Those five live in `apps/desktop/src-tauri/src/prod_instance.rs`, not in either consumer: the macOS updater's gate reads
+the same list, so the `update_checks` ceiling and the `heartbeat` floor can't end up counting different populations.
+
+Authoritative files: `apps/desktop/src-tauri/src/prod_instance.rs` (the list),
+`apps/desktop/src-tauri/src/analytics/mod.rs` (the analytics gate around it). Depth (including what the leak cost and
+how the stored rows were corrected): `apps/desktop/src-tauri/src/analytics/DETAILS.md`.
 
 ### Clipboard (NSPasteboard)
 
