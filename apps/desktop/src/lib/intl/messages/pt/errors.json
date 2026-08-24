@@ -123,7 +123,7 @@
   "@errors.listing.staleConnection.title": {
     "sourceHash": "f03c43c"
   },
-  "errors.listing.staleConnection.explanation": "O Cmdr está tentando acessar esta pasta usando uma referência antiga que o servidor não reconhece mais. Isso costuma acontecer com drives de rede (NFS, SMB) depois que o servidor reinicia, o compartilhamento é remontado, ou a conexão foi interrompida.",
+  "errors.listing.staleConnection.explanation": "O Cmdr está tentando acessar esta pasta usando uma referência antiga que o servidor não reconhece mais. Isso costuma acontecer com discos de rede (NFS, SMB) depois que o servidor reinicia, o compartilhamento é remontado, ou a conexão foi interrompida.",
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
@@ -207,7 +207,7 @@
   "@errors.listing.crossDeviceOperation.title": {
     "sourceHash": "a50dc58"
   },
-  "errors.listing.crossDeviceOperation.explanation": "O Cmdr não pode mover este item diretamente porque a origem e o destino estão em volumes diferentes (por exemplo, um drive interno e um pendrive USB). Mover entre volumes exige copiar os dados e depois remover o original.",
+  "errors.listing.crossDeviceOperation.explanation": "O Cmdr não pode mover este item diretamente porque a origem e o destino estão em volumes diferentes (por exemplo, um disco interno e um pendrive USB). Mover entre volumes exige copiar os dados e depois remover o original.",
   "@errors.listing.crossDeviceOperation.explanation": {
     "sourceHash": "4762369"
   },
@@ -271,7 +271,7 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "198aa15"
   },
-  "errors.listing.notSupportedErrno.suggestion": "Tente uma abordagem diferente, ou use o Finder para esta operação. Se estiver trabalhando com um drive externo, ele pode estar formatado com um sistema de arquivos que tem limitações (por exemplo, o FAT32 não armazena arquivos maiores que 4 GB).",
+  "errors.listing.notSupportedErrno.suggestion": "Tente uma abordagem diferente, ou use o Finder para esta operação. Se estiver trabalhando com um disco externo, ele pode estar formatado com um sistema de arquivos que tem limitações (por exemplo, o FAT32 não armazena arquivos maiores que 4 GB).",
   "@errors.listing.notSupportedErrno.suggestion": {
     "sourceHash": "169d5cf"
   },
@@ -351,7 +351,7 @@
   "@errors.listing.quotaExceeded.title": {
     "sourceHash": "a940827"
   },
-  "errors.listing.quotaExceeded.explanation": "Você atingiu sua cota de disco (o máximo de espaço alocado à sua conta de usuário) neste volume. Isso é comum em servidores compartilhados e drives de rede, onde um administrador define limites por usuário.",
+  "errors.listing.quotaExceeded.explanation": "Você atingiu sua cota de disco (o máximo de espaço alocado à sua conta de usuário) neste volume. Isso é comum em servidores compartilhados e discos de rede, onde um administrador define limites por usuário.",
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "6fa75c0"
   },
@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee5c696"
   },
-  "errors.listing.attributeNotFound.suggestion": "Este sistema de arquivos pode não oferecer suporte aos metadados de que o Cmdr precisa. Tente a operação em outro volume, ou copie o arquivo para o drive interno do seu Mac primeiro.",
+  "errors.listing.attributeNotFound.suggestion": "Este sistema de arquivos pode não oferecer suporte aos metadados de que o Cmdr precisa. Tente a operação em outro volume, ou copie o arquivo para o disco interno do seu Mac primeiro.",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "3c357ac"
   },
@@ -439,7 +439,7 @@
   "@errors.listing.deviceProblem.explanation": {
     "sourceHash": "a809613"
   },
-  "errors.listing.deviceProblem.suggestion": "Veja o que tentar:\n- Desconecte e reconecte o dispositivo\n- Tente outra porta USB ou outro cabo\n- Se for um drive externo, tente conectá-lo a outro computador para ver se o problema acompanha o dispositivo\n- Se isso continuar acontecendo, o dispositivo pode precisar de reparo ou substituição",
+  "errors.listing.deviceProblem.suggestion": "Veja o que tentar:\n- Desconecte e reconecte o dispositivo\n- Tente outra porta USB ou outro cabo\n- Se for um disco externo, tente conectá-lo a outro computador para ver se o problema acompanha o dispositivo\n- Se isso continuar acontecendo, o dispositivo pode precisar de reparo ou substituição",
   "@errors.listing.deviceProblem.suggestion": {
     "sourceHash": "2cbb1cf"
   },
@@ -591,7 +591,7 @@
   "@errors.listing.notSupported.title": {
     "sourceHash": "74e8477"
   },
-  "errors.listing.notSupported.explanation": "Esta operação não tem suporte neste tipo de volume. Alguns volumes (como o armazenamento de celulares ou certos drives de rede) não oferecem suporte a todas as operações.",
+  "errors.listing.notSupported.explanation": "Esta operação não tem suporte neste tipo de volume. Alguns volumes (como o armazenamento de celulares ou certos discos de rede) não oferecem suporte a todas as operações.",
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "9ecb575"
   },
@@ -997,15 +997,15 @@
   "@errors.provider.macFuse.serious": {
     "sourceHash": "71d42da"
   },
-  "errors.provider.pCloudFuse.transient": "Esta pasta está no drive virtual do **pCloud**. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Confirme que o app do pCloud está em execução\n- Navegue até aqui de novo para tentar outra vez",
+  "errors.provider.pCloudFuse.transient": "Esta pasta está no disco virtual do **pCloud**. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Confirme que o app do pCloud está em execução\n- Navegue até aqui de novo para tentar outra vez",
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Esta pasta está no drive virtual do **pCloud**. Veja o que tentar:\n- Confirme que o app do pCloud está em execução e que você está conectado\n- Verifique sua conexão com a internet\n- Após uma atualização do macOS, reaprove a extensão de sistema do pCloud em **Ajustes do Sistema > Geral > Itens de Início e Extensões**",
+  "errors.provider.pCloudFuse.needsAction": "Esta pasta está no disco virtual do **pCloud**. Veja o que tentar:\n- Confirme que o app do pCloud está em execução e que você está conectado\n- Verifique sua conexão com a internet\n- Após uma atualização do macOS, reaprove a extensão de sistema do pCloud em **Ajustes do Sistema > Geral > Itens de Início e Extensões**",
   "@errors.provider.pCloudFuse.needsAction": {
     "sourceHash": "afea03d"
   },
-  "errors.provider.pCloudFuse.serious": "Esta pasta está no drive virtual do **pCloud**. O processo FUSE do pCloud pode ter travado. Veja o que tentar:\n- Saia e reabra o app do pCloud\n- Se o drive não reaparecer, force a desmontagem dele: execute `umount -f /Volumes/pCloudDrive` no Terminal\n- Após uma atualização do macOS, reaprove a extensão de sistema do pCloud em **Ajustes do Sistema > Geral > Itens de Início e Extensões**",
+  "errors.provider.pCloudFuse.serious": "Esta pasta está no disco virtual do **pCloud**. O processo FUSE do pCloud pode ter travado. Veja o que tentar:\n- Saia e reabra o app do pCloud\n- Se o disco não reaparecer, force a desmontagem dele: execute `umount -f /Volumes/pCloudDrive` no Terminal\n- Após uma atualização do macOS, reaprove a extensão de sistema do pCloud em **Ajustes do Sistema > Geral > Itens de Início e Extensões**",
   "@errors.provider.pCloudFuse.serious": {
     "sourceHash": "d7e6926"
   },

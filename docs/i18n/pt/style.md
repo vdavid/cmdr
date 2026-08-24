@@ -138,9 +138,10 @@ Two mechanics that bite in Portuguese specifically:
   hardcode.
 - See the template's ICU mechanics note (double apostrophes, keep `{placeholder}`/`<tag>` verbatim).
 - **network drive fica `disco de rede`, nunca "drive de rede".** O termo do disco é **disco** (Finder) em todos os
-  sentidos, e o `errors.json` já foi alinhado nas quatro chaves de rede; o bolsão de `drive externo / interno / virtual`
-  continua aberto em outras chaves. Evidência, as chaves alinhadas e as que faltam: `glossary.md` § "drive de rede"
-  reconciliado.
+  sentidos, e o catálogo inteiro já está alinhado: as chaves de rede, o bolsão de `drive externo / interno / virtual` do
+  `errors.json`, e `fileExplorer.unreachable.detailTimeout`. Sobram só marcas (iCloud Drive), o placeholder `{drive}` e
+  os nomes de chave `driveIndex.*`. Evidência: `glossary.md` § "drive de rede" reconciliado e § O bolsão de `drive`
+  fechado.
 - **Os nove avisos de ejetar/desconectar entram depois de dois pontos** (`fileExplorer.pane.ejectFailedToast` /
   `disconnectFailedToast`), então cada valor é uma oração completa, começa com maiúscula e cabe em uma ou duas frases
   curtas. `timedOut` não pode soar como falha. Evidência: `glossary.md` § Recusas de ejetar e desconectar.

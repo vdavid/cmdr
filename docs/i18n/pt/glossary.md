@@ -642,9 +642,10 @@ per-file badge.
   term-choice principle 2 puts Finder first · confirmed. Catalog frequency backs it: **disco 158 hits vs drive 38**, and
   every one of those 38 is a brand name (Google/Proton/iCloud Drive), an `errors.json` "drive de rede / externo /
   interno" collocation, or the `driveIndex.*` family. ❌ Never "unidade" for a disk in Cmdr.
-- ⚠️ **`errors.json` still says "drive de rede / drive externo / drive interno" in 10 explanation/suggestion strings.**
-  That's the last unreconciled pocket, and it contradicts the settled `disco de rede` from the network-image-indexing
-  row. Left alone here (out of that batch's scope); worth a dedicated `errors.json` pass.
+- **The `errors.json` pocket is closed** (2026-08-24): the ten "drive de rede / externo / interno / virtual" strings now
+  say `disco`, and so does `fileExplorer.unreachable.detailTimeout`. See § O bolsão de `drive` fechado at the end of
+  this file. The remaining `drive` hits in the catalog are brand names, the `{drive}` placeholder, and the
+  `driveIndex.*` key names.
 - Feature on/off, the ADJECTIVE · **ativado** / **desativado** · the whole catalog's settled pair
   (`settings.askCmdr. status.on/off`, `ai.translateError.off.title`, `settings.ai.provider.opt.off` = "Desativado",
   `fileExplorer.imageIndex.drive.off`, `shortcuts.list.disabledTooltip`) · confirmed. **ligado / desligado is reserved
@@ -1232,11 +1233,9 @@ qualquer script), então nenhuma frase depende do gênero, do número ou da inic
   espaço duplo: zero ocorrências nos 31 valores. Marcas brasileiras: **arquivo** (nunca "ficheiro"), a ênclise
   **Desbloqueie-o**, **tente de novo**.
 - Nenhum `sameAsSourceJustification` necessário: os 31 valores diferem do inglês.
-- ⚠️ Duas inconsistências vizinhas, fora do escopo deste lote: `fileOperations.transferDialog.compressLevelCaption`
-  ainda traz o progressivo pt-PT **"demoram mais tempo a comprimir"** (o irmão
-  `settings.archives.compressionLevel.description` já foi corrigido para "demoram mais para comprimir"); e o bolsão de
-  **"drive de rede / drive externo / drive interno"** em `errors.json`, já sinalizado na seção do interruptor mestre de
-  indexação, continua aberto.
+- Duas inconsistências vizinhas, sinalizadas aqui e **corrigidas em 2026-08-24**:
+  `fileOperations.transferDialog.compressLevelCaption` e o bolsão de **"drive"** em `errors.json`. Ver § O bolsão de
+  `drive` fechado, no fim deste arquivo.
 
 ### Recusas de mover para o Lixo: as duas mensagens de uma linha (`errors.mutation.trash*`, 2026-08-23)
 
@@ -1378,8 +1377,31 @@ ainda diziam **drive de rede**, contra o **disco de rede** fixado na seção do 
 - Chaves alinhadas: `errors.listing.staleConnection.suggestion`, `errors.listing.pathNotFoundErrno.suggestion`,
   `errors.listing.notFound.suggestion`, `errors.listing.deviceDisconnected.explanation`. O inglês não mudou, então o
   `@key.sourceHash` das quatro fica intacto.
-- ⚠️ **O bolsão continua aberto em outras dez chaves**, fora do escopo deste lote: `staleConnection.explanation`
-  ("drives de rede (NFS, SMB)"), `quotaExceeded.explanation` ("drives de rede"), `notSupported.explanation` ("certos
-  drives de rede"), mais o **drive externo** de `notSupportedErrno.suggestion` e `deviceProblem.suggestion`, o **drive
-  interno** de `crossDeviceOperation.explanation` e `attributeNotFound.suggestion`, e o **drive virtual** do **pCloud**
-  em `errors.provider.pCloudFuse.*`. Todos merecem o mesmo `disco`.
+- **O bolsão foi fechado em 2026-08-24**; as chaves estão listadas na seção seguinte.
+
+## O bolsão de `drive` fechado, e o último progressivo pt-PT (2026-08-24)
+
+Nenhum termo novo: só a aplicação do `drive → disco` já assentado (§ Master drive-indexing switch terms) às chaves que
+tinham ficado de fora dos lotes anteriores. `disco` é masculino como o `drive` que substitui, então nenhuma concordância
+muda.
+
+- `errors.listing.staleConnection.explanation` · "drives de rede (NFS, SMB)" → **discos de rede (NFS, SMB)**
+- `errors.listing.quotaExceeded.explanation` · "e drives de rede" → **e discos de rede**
+- `errors.listing.notSupported.explanation` · "certos drives de rede" → **certos discos de rede**
+- `errors.listing.notSupportedErrno.suggestion` · "um drive externo" → **um disco externo**
+- `errors.listing.deviceProblem.suggestion` · "Se for um drive externo" → **Se for um disco externo**
+- `errors.listing.crossDeviceOperation.explanation` · "um drive interno" → **um disco interno**
+- `errors.listing.attributeNotFound.suggestion` · "o drive interno do seu Mac" → **o disco interno do seu Mac**
+- `errors.provider.pCloudFuse.transient` / `.needsAction` / `.serious` · "no drive virtual do **pCloud**" → **no disco
+  virtual do pCloud**, e em `.serious` "Se o drive não reaparecer" → **Se o disco não reaparecer**. O inglês diz
+  "pCloud's virtual drive", substantivo comum depois da marca, não o nome do produto; a marca `pCloud` e o caminho
+  `/Volumes/pCloudDrive` ficam intactos.
+- `fileExplorer.unreachable.detailTimeout` · "um drive de rede" → **um disco de rede** (fora do `errors.json`, mesmo
+  bolsão)
+- `fileOperations.transferDialog.compressLevelCaption` · "demoram mais tempo **a** comprimir" (progressivo pt-PT) →
+  **"demoram mais para comprimir"**, idêntico ao fecho do irmão já corrigido
+  `settings.archives.compressionLevel.description`. Mesma causa-raiz registrada em § pt-PT leak found and fixed
+  (2026-07-25): o pile `_ignored/i18n/pt/` é EUROPEU; o brasileiro é `_ignored/i18n/pt-BR/`.
+- Varredura pt-PT completa depois da correção (ficheiro, `estar a` + infinitivo, `tempo a` + infinitivo): zero
+  ocorrências no catálogo `pt`.
+- Nenhum `@key.sourceHash` muda: só os valores foram editados.

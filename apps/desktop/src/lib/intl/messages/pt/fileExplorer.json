@@ -726,7 +726,7 @@
   "@fileExplorer.unreachable.detailSmbGaveUp": {
     "sourceHash": "7d8c5fc"
   },
-  "fileExplorer.unreachable.detailTimeout": "O volume deste caminho não respondeu a tempo. Pode ser um drive de rede que está indisponível no momento.",
+  "fileExplorer.unreachable.detailTimeout": "O volume deste caminho não respondeu a tempo. Pode ser um disco de rede que está indisponível no momento.",
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
