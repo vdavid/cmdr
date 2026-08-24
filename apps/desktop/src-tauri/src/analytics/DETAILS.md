@@ -149,6 +149,12 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   Both connection events go through the `AnalyticsSink` seam rather than `capture` directly, since the backend crates
   can't see `tauri` (`volume_sink.rs`).
 - `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`): no device/product props.
+- `ask_cmdr_turn` (backend, `agent/chat/runtime/analytics.rs`, at `run_turn`'s single exit): `origin`
+  (`text` / `wake` / `outcomes` / `resume`), `outcome` (`answered` / `cancelled` / `failed`), `failure` (the
+  `AgentErrorKind` token, or `none`), `provider` (the `ProviderTag` token), `tool_turns` + `proposals` buckets; never a
+  prompt, a reply, or anything a tool read. This is the agent funnel's DENOMINATOR: the three `suggestion_group_*`
+  events below only become readable against it, because a zero on them otherwise can't be told apart from a feature
+  nobody uses. `agent/chat/DETAILS.md` § The turn event.
 - `suggestion_group_proposed` / `suggestion_group_approved` / `suggestion_group_rejected` (backend,
   `agent/suggested_ops/analytics.rs`): `verb` (the `ProposalVerb` token) + `op_count` bucket. Acceptance rate is the
   agent's north-star metric, which is why the proposal and both outcomes are all counted; never a path, file name,

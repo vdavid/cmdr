@@ -10,6 +10,7 @@ use futures_util::StreamExt;
 use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
+use super::analytics::{self, TurnTally};
 use super::cost::meter_cost;
 use super::dispatch::{ToolDispatcher, dispatch_ok};
 use super::events::{AgentChatEvent, AgentErrorKind, ChatEventSink, emit};
@@ -100,6 +101,11 @@ pub enum TurnResult {
 /// Drive one turn to completion, persisting crash-safely and staying within budget.
 /// Pure of Tauri: it needs only the seams (`llm`, `dispatcher`), a write `Connection`,
 /// and the params — so it is fully unit-testable with a temp DB and fakes.
+///
+/// The anonymous `ask_cmdr_turn` event is reported here rather than in either caller,
+/// because `drive` has a dozen early returns and this is the ONE place all of them meet.
+/// Without it the agent's funnel starts at the proposal layer, where a zero can't be told
+/// apart from an unused feature (`analytics.rs`).
 pub async fn run_turn(
     llm: &dyn AgentLlm,
     dispatcher: &dyn ToolDispatcher,
@@ -108,6 +114,29 @@ pub async fn run_turn(
     params: &TurnParams<'_>,
     sink: &ChatEventSink,
     cancel: &CancellationToken,
+) -> TurnResult {
+    let mut tally = TurnTally::default();
+    let result = drive(llm, dispatcher, conn, tools, params, sink, cancel, &mut tally).await;
+    analytics::turn_finished(params, &result, &tally);
+    result
+}
+
+/// The loop itself. `tally` counts as it goes, so an early return still reports the
+/// numbers the turn actually reached.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the seams, the store, the params, and the tally are each a separate concern; bundling them \
+              into a struct would only move the list"
+)]
+async fn drive(
+    llm: &dyn AgentLlm,
+    dispatcher: &dyn ToolDispatcher,
+    conn: &rusqlite::Connection,
+    tools: &[ToolDeclaration],
+    params: &TurnParams<'_>,
+    sink: &ChatEventSink,
+    cancel: &CancellationToken,
+    tally: &mut TurnTally,
 ) -> TurnResult {
     // The working transcript mirrors the durable rows; assembly reads it, persistence
     // writes the DB. Load the persisted history, then (for a new turn) the pending user
@@ -138,7 +167,6 @@ pub async fn run_turn(
     }
 
     let started = Instant::now();
-    let mut tool_turns = 0usize;
     let mut model_recorded = false;
     let mut trim_announced = false;
 
@@ -148,7 +176,7 @@ pub async fn run_turn(
         if cancel.is_cancelled() {
             return TurnResult::Cancelled;
         }
-        if started.elapsed() >= MAX_WALL_TIME || tool_turns >= MAX_TOOL_TURNS {
+        if started.elapsed() >= MAX_WALL_TIME || tally.tool_turns >= MAX_TOOL_TURNS {
             emit(
                 sink,
                 AgentChatEvent::Failed {
@@ -283,7 +311,7 @@ pub async fn run_turn(
         }
 
         // Dispatch each tool call, persisting its result on its own row, then loop.
-        tool_turns += 1;
+        tally.tool_turns += 1;
         for part in &message.parts {
             let AgentPart::ToolCall(call) = part else { continue };
             let dispatch = dispatcher.dispatch(call).await;
@@ -313,6 +341,7 @@ pub async fn run_turn(
                 return persist_failed(sink, e);
             }
             if let Some(proposal) = dispatch.proposal {
+                tally.proposals += 1;
                 emit(sink, AgentChatEvent::ProposalReady { proposal });
             }
             transcript.push(tool_message);

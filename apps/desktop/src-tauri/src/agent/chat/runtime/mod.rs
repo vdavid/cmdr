@@ -52,6 +52,7 @@ use crate::ignore_poison::IgnorePoison;
 use super::context::{self, ContextEnvelope};
 use cmdr_md::read_cmdr_md;
 
+mod analytics;
 mod cmdr_md;
 mod cost;
 mod dispatch;

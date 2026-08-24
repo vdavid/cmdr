@@ -111,6 +111,25 @@ pub enum AgentErrorKind {
     Provider,
 }
 
+impl AgentErrorKind {
+    /// The stable snake_case token this kind reports as in analytics. Separate from the
+    /// serde wire form the frontend renders, so a copy or wire change can't silently
+    /// rename a metric that a saved PostHog insight groups by.
+    pub fn as_token(self) -> &'static str {
+        match self {
+            AgentErrorKind::NoKey => "no_key",
+            AgentErrorKind::NotConfigured => "not_configured",
+            AgentErrorKind::Unavailable => "unavailable",
+            AgentErrorKind::Timeout => "timeout",
+            AgentErrorKind::AuthFailed => "auth_failed",
+            AgentErrorKind::RateLimited => "rate_limited",
+            AgentErrorKind::BudgetExhausted => "budget_exhausted",
+            AgentErrorKind::UnfinishedReply => "unfinished_reply",
+            AgentErrorKind::Provider => "provider",
+        }
+    }
+}
+
 impl From<crate::agent::llm::types::AgentLlmError> for AgentErrorKind {
     fn from(error: crate::agent::llm::types::AgentLlmError) -> Self {
         use crate::agent::llm::types::AgentLlmError;

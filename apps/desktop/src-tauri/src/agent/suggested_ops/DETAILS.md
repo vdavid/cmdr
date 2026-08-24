@@ -61,6 +61,12 @@ is worse than none. `analytics.rs` emits `suggestion_group_proposed`, `suggestio
 The events land in M1, before the dialog exists, deliberately: David's own QA pass then produces real numbers before
 launch rather than after.
 
+**A zero here is only readable against a denominator.** `ask_cmdr_turn`
+(`../chat/runtime/analytics.rs`) counts turns and how many of them staged a proposal, which is
+what separates "the feature is unused" from "the feature is used and the model never
+proposes" from "these events stopped firing". Read the two together; neither answers the
+question alone.
+
 An approval is only reported when a claim actually went through — a refused claim is not an approval. A rejection reads
 the group's verb and live op count BEFORE the transition, because that's the group the user was looking at when they
 said no.

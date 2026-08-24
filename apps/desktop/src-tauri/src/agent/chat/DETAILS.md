@@ -326,11 +326,12 @@ the test and this section together.
 
 ## The runtime (`runtime/`)
 
-Five files plus `ChatRuntime` in `mod.rs`: `events.rs` (the `AgentChatEvent` seam and the
+Six files plus `ChatRuntime` in `mod.rs`: `events.rs` (the `AgentChatEvent` seam and the
 typed `AgentErrorKind`), `dispatch.rs` (the `ToolDispatcher` seam and `AppHandleDispatcher`),
 `turn.rs` (`run_turn` and everything it drives), `cost.rs` (metering one completed
-`respond`), `cmdr_md.rs` (which `CMDR.md`, and how much of it). `mod.rs` re-exports all of
-it, so callers keep saying `chat::runtime::X`.
+`respond`), `cmdr_md.rs` (which `CMDR.md`, and how much of it), `analytics.rs` (the anonymous
+`ask_cmdr_turn` event). `mod.rs` re-exports all of it, so callers keep saying
+`chat::runtime::X`.
 
 `ChatRuntime` has two entry points and they differ only in what they already know.
 `send_message` may create the thread and derives its title from the user's text; `wake` is
@@ -340,6 +341,36 @@ single-flight guard. ⚠️ **A wake must not bypass this**: a wake thread is a 
 user can reply to, so calling `run_turn` directly would let the reply and the wake's own turn
 run concurrently in one thread. It also means TWO write connections to `main.db` during a wake,
 this one and the wake loop's; WAL makes that fine (`wake/DETAILS.md` says why).
+
+### The turn event (`analytics.rs`), and why it is the funnel's denominator
+
+`run_turn` is a thin wrapper: it makes a `TurnTally`, calls `drive` (the loop, with every
+early return it always had), and reports one `ask_cmdr_turn` on the way out. The wrapper
+exists because `drive` returns from a dozen places and this is the only point all of them
+meet; scattering a capture across those returns is how one gets missed.
+
+The tally is a `&mut` the loop increments as it goes (`tool_turns`, and `proposals` for tool
+calls that staged something to review), so a turn that fails on its fourth tool round still
+reports four, not zero.
+
+**Why the event has to exist at all.** The proposal events downstream
+(`../suggested_ops/analytics.rs`) carry the agent's north-star acceptance rate, and a zero on
+a north-star is only actionable if you can tell WHICH zero it is. Without a turn event,
+"nobody configured a provider", "people chat but the model never proposes", and "the capture
+path is broken" all read as the same empty chart. With it they are three different shapes:
+no `ask_cmdr_turn` at all, `ask_cmdr_turn` with `proposals: "0"`, or `proposals` above zero
+with no `suggestion_group_proposed` behind it (that last one is the only one that is a bug).
+
+`origin` splits the surfaces: `text` (the rail), `wake` (the proactive loop), `outcomes` (the
+follow-up turn a rejection opens), `resume` (a post-crash replay, which has no opener and
+would otherwise inflate whichever it was folded into). ⚠️ **`origin: "wake"` is not the same
+population as `agent_wake`** (`../wake/runner.rs`): that event counts every wake OUTCOME,
+including the ones that never reached a turn. Comparing the two is the point; merging them
+would lose it.
+
+`AgentErrorKind::as_token` is deliberately separate from the enum's serde wire form. The
+frontend's form follows the copy and the bindings; a metric a saved PostHog insight groups by
+must not move when either changes.
 
 ### What a turn resolves from live app state (`session.rs`)
 
