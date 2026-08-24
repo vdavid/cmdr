@@ -3838,9 +3838,12 @@ export const commands = {
    *  if a newer version is available.
    *
    *  Returns `None` when:
-   *  - The `CI` env var is set (CI guard: avoids network calls in tests)
-   *  - The current executable isn't inside a `.app` bundle (dev builds: install can't possibly
-   *    succeed, so there's no point checking and no point letting the user click "Update")
+   *  - This isn't a real user's production install ([`skip_reason`]): the executable isn't inside a
+   *    `.app` bundle (dev builds: install can't possibly succeed, so there's no point checking and
+   *    no point letting the user click "Update"), or one of
+   *    [`crate::prod_instance::NON_PROD_ENV_VARS`] is set. Every check reaches
+   *    `api.getcmdr.com/update-check`, which writes an `update_checks` row that the dashboard counts
+   *    as an active install, so Cmdr's own runs must never call it.
    *  - The remote version is not newer than the current version
    *  - The manifest doesn't contain an entry for this platform
    */

@@ -36,11 +36,11 @@ live in the neutral [`crate::install_id`] module, reused by the crash and error 
   `CATEGORICAL_STRING_KEYS`; NEVER loosen the bool/number rule to "include all strings."
   `excludes_pii_shaped_strings` is the invariant. Hard nevers pipeline-wide: file names, contents, paths, search
   queries, AI prompts, keystrokes, screenshots.
-- **Only a real user's install may send.** `suppression_reason()` is the ONE gate for both pipelines: debug builds,
-  plus any environment carrying `CI`, `CMDR_INSTANCE_ID`, `CMDR_DATA_DIR`, `CMDR_E2E_MODE`, or `CMDR_MOCK_FDA`
-  (presence, not value). An isolated data dir mints a fresh `anal_` id, so a tooling instance that slips through
-  registers as a brand-new user on every launch. ❌ Never shrink that list. `CMDR_ANALYTICS_FORCE=1` overrides
-  everything, for the localhost-Worker integration test.
+- **Only a real user's install may send.** `suppression_reason()` is the ONE gate for both pipelines: debug builds, plus
+  any environment carrying one of `crate::prod_instance::NON_PROD_ENV_VARS` (canonical there because the updater gates
+  on it too; ❌ never shrink or restate it). An isolated data dir mints a fresh `anal_` id, so a tooling instance
+  slipping through registers as a new user every launch. `CMDR_ANALYTICS_FORCE=1` overrides everything, for the
+  localhost-Worker test.
 - **One backend path.** Backend events call `posthog::capture` directly; frontend events go through the `track_event`
   IPC (`commands/analytics.rs`), a thin pass-through.
 - **`source`, `app_version`, `os_version`, and `arch` ride EVERY event's `properties`**, injected first so no caller

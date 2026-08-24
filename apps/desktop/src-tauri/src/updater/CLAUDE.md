@@ -23,10 +23,12 @@ use the Tauri updater plugin and the frontend calls the plugin API directly.
 - **Staging dir is per-instance: `<tmp>/cmdr-update-staging-{CMDR_INSTANCE_ID}`** (`installer::staging_dir`; production
   with no env var lands at `…-default`). Don't make it shared: concurrent `Cmdr` processes (main + a worktree) race on
   one path and trip `ENOTEMPTY`.
-- **Dev-build guard:** `check_for_update` returns `None` when the exe isn't inside a `.app` bundle
-  (`installer::is_running_from_app_bundle`). Don't loosen it: outside a bundle the updater can't work and would spam
-  noisy errors into the auto error reporter.
-- **CI guard:** `check_for_update` returns `None` when `CI` is set, so no network calls in tests.
+- **Only a real user's production install may check** (`skip_reason`). Two conditions: the exe must sit inside a `.app`
+  bundle (`installer::is_running_from_app_bundle`), and none of `crate::prod_instance::NON_PROD_ENV_VARS` may be set.
+  Outside a bundle the updater can't work and would spam noisy errors into the auto error reporter; a tooling instance
+  that slips through writes an `update_checks` row the dashboard counts as an active install. Don't loosen either, and
+  ❌ never keep a second copy of the env-var list here: `crate::prod_instance` is the one definition, shared with the
+  analytics gate so the two can't disagree about what a real install is.
 - **Manifest fetch is bounded** (`connect_timeout` 10 s, overall `timeout` 30 s); download/install paths are
   intentionally NOT timed out (they run with user attention). Don't add timeouts there.
 - **Manifest URL routes through the API server** (`https://api.getcmdr.com/update-check/{version}?arch={arch}`), which

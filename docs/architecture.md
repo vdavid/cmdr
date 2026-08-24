@@ -156,6 +156,8 @@ All under `apps/desktop/src-tauri/src/`.
   built by allowlist), tri-state consent gate, dev/CI suppression. PostHog feature events ride the same gate
 - `install_id.rs`: Two Rust-owned per-install random ids (`anal_` for analytics, `diag_` for diagnostics) that never
   meet by construction. AppHandle-free accessors, one `install-ids.json`
+- `prod_instance.rs`: The one definition of "this process is not a real user's production install" (the env vars every
+  dev, E2E, and capture launcher sets). Read by the analytics gate and the updater's update-check gate
 - `platform.rs`: Shared platform-identity helpers (`os_version()`), used by crash + error reports and the heartbeat
 - `licensing/`: Ed25519 license verification, server validation
 - `settings/`: Settings persistence (tauri-plugin-store)

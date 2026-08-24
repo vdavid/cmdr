@@ -100,37 +100,13 @@ pub fn analytics_consent_granted(analytics_enabled: Option<bool>) -> bool {
     analytics_enabled != Some(false)
 }
 
-/// Env vars whose mere PRESENCE proves this process is not a real user's production install, and
-/// so must never reach production analytics. A production launch (Finder, Dock, Spotlight, the
-/// updater's relaunch) sets NONE of them; every dev, E2E, and capture launcher sets at least one.
-///
-/// Presence, not value: `CMDR_E2E_MODE=0` still means a harness composed this environment, and
-/// failing closed costs nothing. Sources for each, all per `docs/tooling/instance-isolation.md`:
-///
-/// - `CI`: any CI runner.
-/// - `CMDR_INSTANCE_ID`: dev, per-worktree dev, and every E2E shard. Prod leaves it unset by
-///   definition, which makes it the single strongest signal.
-/// - `CMDR_DATA_DIR`: an isolated data dir. Prod resolves `app_data_dir()` instead, and an
-///   isolated dir is exactly what mints a fresh install id. It also covers
-///   `scripts/marketing-shots.ts`, which deliberately sets no other hook.
-/// - `CMDR_E2E_MODE`: the Playwright and Linux Docker E2E lanes, plus `scripts/i18n-capture.ts`.
-/// - `CMDR_MOCK_FDA`: the FDA mock. Only a harness ever sets it, and it's what made 1,550 phantom
-///   installs report `fdaGranted: true` on their first-ever launch.
-const NON_PROD_ENV_VARS: &[&str] = &[
-    "CI",
-    "CMDR_INSTANCE_ID",
-    "CMDR_DATA_DIR",
-    "CMDR_E2E_MODE",
-    "CMDR_MOCK_FDA",
-];
-
 /// Why this process must not send analytics. Carried (rather than collapsed to a bool) so the
 /// debug log names the exact condition that fired.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SuppressionReason {
     /// Not a release build.
     DebugBuild,
-    /// One of [`NON_PROD_ENV_VARS`] is set in this process's environment.
+    /// One of [`crate::prod_instance::NON_PROD_ENV_VARS`] is set in this process's environment.
     NonProdEnv(&'static str),
 }
 
@@ -157,11 +133,7 @@ fn suppression_reason_for(
     if is_debug_build {
         return Some(SuppressionReason::DebugBuild);
     }
-    NON_PROD_ENV_VARS
-        .iter()
-        .copied()
-        .find(|name| env_is_set(name))
-        .map(SuppressionReason::NonProdEnv)
+    crate::prod_instance::non_prod_env_var_in(env_is_set).map(SuppressionReason::NonProdEnv)
 }
 
 /// The ONE analytics gate: `Some(reason)` when this process must not send, `None` when it may.
@@ -282,7 +254,7 @@ mod suppression_tests {
     /// Every var in the list suppresses on its own, in a release build with nothing else set.
     #[test]
     fn each_non_prod_env_var_suppresses_alone() {
-        for name in NON_PROD_ENV_VARS {
+        for name in crate::prod_instance::NON_PROD_ENV_VARS {
             assert_eq!(
                 reason(false, false, &[name]),
                 Some(SuppressionReason::NonProdEnv(name)),
@@ -291,55 +263,15 @@ mod suppression_tests {
         }
     }
 
-    /// The vars a real production install can never have set. Pinned by name so shrinking the
-    /// list is a deliberate, visible act: every one of them was a live pollution source.
-    #[test]
-    fn the_non_prod_env_var_list_covers_every_isolation_signal() {
-        for name in [
-            "CI",
-            "CMDR_INSTANCE_ID",
-            "CMDR_DATA_DIR",
-            "CMDR_E2E_MODE",
-            "CMDR_MOCK_FDA",
-        ] {
-            assert!(
-                NON_PROD_ENV_VARS.contains(&name),
-                "{name} must stay in the suppression list"
-            );
-        }
-    }
-
-    /// The env each tooling launcher actually stamps. If a launcher's env stops tripping the gate,
-    /// that harness starts minting phantom production installs again, so pin all of them here.
-    #[test]
-    fn every_tooling_launcher_is_suppressed() {
-        // `scripts/check/checks/desktop-svelte-e2e-playwright.go` and `e2e-playwright-app.go`.
-        let e2e_checker = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR", "CMDR_E2E_MODE", "CMDR_MOCK_FDA"];
-        // `apps/desktop/scripts/i18n-capture.ts`.
-        let i18n_capture = ["CMDR_E2E_MODE", "CMDR_DATA_DIR", "CMDR_MOCK_FDA"];
-        // `apps/desktop/scripts/marketing-shots.ts` deliberately leaves `CMDR_E2E_MODE` unset.
-        let marketing_shots = ["CMDR_DATA_DIR"];
-        // `apps/desktop/scripts/tauri-wrapper.ts` (dev and per-worktree dev).
-        let dev_wrapper = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR"];
-
-        for (label, vars) in [
-            ("e2e checker", &e2e_checker[..]),
-            ("i18n capture", &i18n_capture[..]),
-            ("marketing shots", &marketing_shots[..]),
-            ("dev wrapper", &dev_wrapper[..]),
-        ] {
-            assert!(
-                reason(false, false, vars).is_some(),
-                "{label} must not reach production analytics"
-            );
-        }
-    }
+    // The list's own contract (which vars it holds, and that every tooling launcher's env trips
+    // it) is pinned beside the list in `crate::prod_instance`, so it holds for the updater gate
+    // too. What's left here is what's specific to the analytics gate.
 
     /// The force override still wins over every condition, so the localhost-Worker integration
     /// test can drive the loop.
     #[test]
     fn force_override_beats_every_condition() {
-        assert_eq!(reason(true, true, NON_PROD_ENV_VARS), None);
+        assert_eq!(reason(true, true, crate::prod_instance::NON_PROD_ENV_VARS), None);
     }
 
     /// The debug log has to name the condition, or the next pollution incident is undiagnosable.

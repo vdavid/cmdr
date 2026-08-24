@@ -139,6 +139,7 @@ mod permissions;
 mod permissions_linux;
 mod platform;
 pub mod priority;
+mod prod_instance;
 mod quick_look;
 mod quit;
 pub mod recents;

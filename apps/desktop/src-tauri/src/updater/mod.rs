@@ -61,24 +61,61 @@ impl UpdateState {
     }
 }
 
+/// Why this process must not run an update check. Carried (rather than collapsed to a bool) so
+/// the log names the exact condition that fired.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SkipReason {
+    /// The executable isn't inside a `.app` bundle, so the install can't possibly succeed.
+    NotAnAppBundle,
+    /// One of [`crate::prod_instance::NON_PROD_ENV_VARS`] is set in this process's environment.
+    NonProdEnv(&'static str),
+}
+
+impl std::fmt::Display for SkipReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotAnAppBundle => f.write_str("not running from a .app bundle"),
+            Self::NonProdEnv(name) => write!(f, "{name} is set"),
+        }
+    }
+}
+
+/// Pure core of the gate, with `in_app_bundle` and `env_is_set` injected so the matrix is
+/// unit-testable without mutating the process environment or faking a bundle on disk.
+///
+/// The bundle condition is checked first: it's the one that makes an update impossible rather
+/// than merely unwanted, so it's the more useful thing to see in a log.
+fn skip_reason_for(in_app_bundle: bool, env_is_set: &dyn Fn(&str) -> bool) -> Option<SkipReason> {
+    if !in_app_bundle {
+        return Some(SkipReason::NotAnAppBundle);
+    }
+    crate::prod_instance::non_prod_env_var_in(env_is_set).map(SkipReason::NonProdEnv)
+}
+
+/// The gate against this process's real environment and executable location.
+fn skip_reason() -> Option<SkipReason> {
+    skip_reason_for(installer::is_running_from_app_bundle(), &|name| {
+        std::env::var_os(name).is_some()
+    })
+}
+
 /// Fetches `latest.json` (via the update check proxy for analytics) and returns update info
 /// if a newer version is available.
 ///
 /// Returns `None` when:
-/// - The `CI` env var is set (CI guard: avoids network calls in tests)
-/// - The current executable isn't inside a `.app` bundle (dev builds: install can't possibly
-///   succeed, so there's no point checking and no point letting the user click "Update")
+/// - This isn't a real user's production install ([`skip_reason`]): the executable isn't inside a
+///   `.app` bundle (dev builds: install can't possibly succeed, so there's no point checking and
+///   no point letting the user click "Update"), or one of
+///   [`crate::prod_instance::NON_PROD_ENV_VARS`] is set. Every check reaches
+///   `api.getcmdr.com/update-check`, which writes an `update_checks` row that the dashboard counts
+///   as an active install, so Cmdr's own runs must never call it.
 /// - The remote version is not newer than the current version
 /// - The manifest doesn't contain an entry for this platform
 #[tauri::command]
 #[specta::specta]
 pub async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
-    if std::env::var("CI").is_ok() {
-        log::debug!("Skipping update check in CI");
-        return Ok(None);
-    }
-    if !installer::is_running_from_app_bundle() {
-        log::info!("Skipping update check: not running from a .app bundle (dev build)");
+    if let Some(reason) = skip_reason() {
+        log::info!("Skipping update check: {reason}");
         return Ok(None);
     }
 
@@ -178,8 +215,82 @@ pub async fn install_update(state: State<'_, UpdateState>) -> Result<(), String>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use std::error::Error;
     use std::fmt;
+
+    /// Asks the gate about a process running from `in_app_bundle` whose environment holds exactly
+    /// `vars` and nothing else.
+    fn skip(in_app_bundle: bool, vars: &[&str]) -> Option<SkipReason> {
+        let set: HashSet<&str> = vars.iter().copied().collect();
+        skip_reason_for(in_app_bundle, &|name| set.contains(name))
+    }
+
+    #[test]
+    fn a_bundled_release_with_clean_env_may_check() {
+        assert_eq!(skip(true, &[]), None);
+    }
+
+    #[test]
+    fn an_unbundled_build_never_checks() {
+        assert_eq!(skip(false, &[]), Some(SkipReason::NotAnAppBundle));
+    }
+
+    /// Every non-prod signal suppresses on its own, even from a properly bundled app. A bundled
+    /// harness run is exactly the case the old `CI`-only gate let through.
+    #[test]
+    fn each_non_prod_env_var_suppresses_a_bundled_app() {
+        for name in crate::prod_instance::NON_PROD_ENV_VARS {
+            assert_eq!(
+                skip(true, &[name]),
+                Some(SkipReason::NonProdEnv(name)),
+                "{name} alone must keep a bundled app off the update-check endpoint"
+            );
+        }
+    }
+
+    /// The gate and the analytics gate must agree about what a real install is, or the dashboard's
+    /// `update_checks` ceiling and its heartbeat floor start counting different populations.
+    #[test]
+    fn every_tooling_launcher_is_suppressed_even_when_bundled() {
+        // `scripts/check/checks/e2e-playwright-app.go`.
+        let e2e_checker = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR", "CMDR_E2E_MODE", "CMDR_MOCK_FDA"];
+        // `apps/desktop/scripts/i18n-capture.ts`.
+        let i18n_capture = ["CMDR_E2E_MODE", "CMDR_DATA_DIR", "CMDR_MOCK_FDA"];
+        // `apps/desktop/scripts/marketing-shots.ts` deliberately leaves `CMDR_E2E_MODE` unset.
+        let marketing_shots = ["CMDR_DATA_DIR"];
+        // `apps/desktop/scripts/tauri-wrapper.ts` (dev and per-worktree dev).
+        let dev_wrapper = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR"];
+
+        for (label, vars) in [
+            ("e2e checker", &e2e_checker[..]),
+            ("i18n capture", &i18n_capture[..]),
+            ("marketing shots", &marketing_shots[..]),
+            ("dev wrapper", &dev_wrapper[..]),
+        ] {
+            assert!(
+                skip(true, vars).is_some(),
+                "{label} must not reach the update-check endpoint"
+            );
+        }
+    }
+
+    /// The bundle condition wins, so the log names the thing that makes an update impossible
+    /// rather than one that merely makes it unwanted.
+    #[test]
+    fn the_bundle_condition_is_reported_first() {
+        assert_eq!(skip(false, &["CMDR_E2E_MODE"]), Some(SkipReason::NotAnAppBundle));
+    }
+
+    /// The log has to name the condition, or the next pollution incident is undiagnosable.
+    #[test]
+    fn reasons_name_the_condition() {
+        assert_eq!(SkipReason::NotAnAppBundle.to_string(), "not running from a .app bundle");
+        assert_eq!(
+            SkipReason::NonProdEnv("CMDR_DATA_DIR").to_string(),
+            "CMDR_DATA_DIR is set"
+        );
+    }
 
     #[derive(Debug)]
     struct ChainErr {

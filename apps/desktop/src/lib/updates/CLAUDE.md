@@ -33,7 +33,10 @@ Frontend auto-update checker, restart toast, and manual "Check for updates" affo
 - **State machine guards re-checking.** `checkForUpdates()` returns early when `status` is `downloading` or `ready`;
   removing the guard lets an interval tick clobber a pending update.
 - **The update manifest endpoint is hardcoded in Rust** (via the API server), not in TypeScript.
-- **CI guard:** `check_for_update` returns `None` when `CI` is set, so no network calls in CI.
+- **Non-production guard:** `check_for_update` returns `None` unless the process is a real user's production install
+  (inside a `.app` bundle, with none of `prod_instance::NON_PROD_ENV_VARS` set), so no dev, CI, E2E, or capture run
+  reaches the update-check endpoint. The whole loop still runs in those instances; only the Rust command no-ops. See
+  `src-tauri/src/updater/CLAUDE.md`.
 - Test-only hooks `_resetUpdaterStateForTest` / `_setUpdateStatusForTest` exist for `updater.test.ts`; production must
   not call them.
 
