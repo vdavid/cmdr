@@ -5,6 +5,92 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+The built-in agent now watches the file system and can suggest actions on its own, like "Hey, how about we move
+`~/Downloads/puppy-eye-exam-result.pdf` to `~/papers/doggy/medical/`, looks like all similar papers live there". The
+agent can only suggest, you approve/reject everything.
+
+Also a bunch of performance and correctness fixes.
+
+### Added
+
+- Ask Cmdr watches your folders by default, waking on real disk activity and leaving no thread behind when it finds
+  nothing (3c44e22f, ff25394b, 4a6a2650, d1e92c7f, 7c391ec9, 657e68c2, f1babc51, 432e438c, 05b69ec8, b026f762)
+- Add three "On its own" settings for Ask Cmdr: whether it watches, how calm it is (5 seconds to 2 hours), and whether
+  it toasts (297fbbc6, e863bd3b)
+- Show a wake in the status corner while it thinks, with a way in and a way to stop it (2bd74f95, 1c873ee9)
+- Mark a thread Ask Cmdr opened for itself in the chat list and in search, and open it in your own language (ffbb0a85,
+  7d46af4c)
+- Toast a wake that staged a change for you to review (df4a34e6)
+- Let Ask Cmdr keep notes about you in a memory folder it can't write its way out of, which you can open and wipe
+  (6269d96c, 271764ac, d8093f6a, e3e77760, 2da00041, 8f8328bb, ee0f3bf3, 8de87681)
+- Tell Ask Cmdr what you decided about each suggestion, so it asks about the ones you turned down (7ed4e059, 81d77271,
+  9d5cd27d)
+- Add ⌘R to re-read the folder you're looking at, phones and network shares included (34c01dea, ca6aef1c, 0efa1e6a)
+- Say when a share drops to the slow macOS mount, with a "Try connecting directly" button (187212e0, 0041834a, 0c5e2769)
+
+### Changed
+
+- Cut 2.8 MB off the app by leaving translator notes out of the bundle (183024dd)
+- Keep an Ask Cmdr answer through a reload, and let a wake's thread read live (a0b44afd)
+- Stop an idle Mac asking the cloud providers 43 times a minute about a folder that isn't a cloud folder (338963f8)
+- Stop an idle indexing tick re-reading 90,308 folder scores and walking directories it can never use (56e60c4a)
+- Keep the file index's page cache inside the 64 MB it always promised, instead of 132 connections each claiming 8 MB
+  (4d071982)
+
+### Fixed
+
+- Fix a big folder stalling the pane: rows, watcher events, and Finder tags stop re-walking the whole listing (e39f05aa,
+  290a23a5, af1b56a2, ca5c8ab4, b53a0115)
+- Fix the cursor and selection landing on a neighbour when a listing reorders itself mid-delete (55cbb2d5, 8287e99f,
+  9937293a)
+- Fix a rename that blinked mid-copy deleting the file it was landing next to (6bc4fb86)
+- Fix an errno sentence or a `diskutil` message reaching a toast in English, in every flow that can refuse (6397681c,
+  147faf94, 2867fb52, 7358c3c6)
+- Fix a missing file being reported as "No such file or directory (os error 2)" instead of its own name (f1a59724)
+- Fix the crash dialog claiming Cmdr quit unexpectedly when it didn't, and saying it twice (3fce6eba, 8bf17df7,
+  148d08ec, 141c0767, 9214251f, 77ec42fb, 91e1b8d7)
+- Fix the Settings crash-report toggle promising something it no longer does (2d0aadf7)
+- Fix a panic on a background indexing thread crashing the app at the next drive start (457ddb23)
+- Fix turning a drive's indexing off and straight back on leaving it dark for the rest of the session (4b04e1ac)
+- Fix a failed mount trapping the pane with every key dead (1426ae59, d7f03ecd)
+- Fix shares named `café` or `公開` refusing to mount (07a9f1ca)
+- Fix ⌘R in the network browser running two full share rounds per keypress (d36dae04)
+- Fix the macOS app menu saying "cmdr" instead of "Cmdr" (ff7ca084)
+- Fix the viewer, queue, Keyboard shortcuts, and Settings windows showing English chrome and the wrong number format
+  (b559c1df, aa417b71, 1f54d8e9, 1b859da4)
+- Fix the window title and the macOS panel names Cmdr quotes staying in the old language after a live switch (deebdb60,
+  5c61e687)
+- Fix the German status bar declining folders into the dative, and Hungarian and Vietnamese pointing at Finder panels
+  that don't exist (714abfc4, 8e8e01c2)
+- Fix the Brazilian catalog calling a disk two different things, and its last European-Portuguese sentence (dd4dfa50)
+- Fix an overdue wake spinning a CPU core flat (8067f08f, 2f4a1f8f, 560ed47d)
+
+### Non-app
+
+- Add the SFTP backend: sign-in with a four-rung auth ladder, host-key trust, reads seven times faster than a sequential
+  one on a high-latency link, clobber-free writes, and server-side copy, over eleven Docker servers (403b77b9, 6395f694,
+  243e0c8c, 183aaad8, ec5887e5, ca85f7a2, 9afd9223, b911c800, a1911dbf, ceacd1e3, f19abb5b, d8cf82e3, e4f68e6c,
+  c8f37d12)
+- Split the SMB backend and its protocol layer into their own crates, so a check is `cargo check -p cmdr-smb` instead of
+  332k lines (22edeeb4, 4f436ce4, f02febb3, da0d4b11, ba71876a, c9ee1a91)
+- Measure what the app holds at rest, and find the CLIP text tower costing 251.5 MB that enrichment never calls
+  (ecc78c83, 0f58a7e2, cd27791e, 0857b5f1, abedcd65)
+- Report which release, OS, and CPU produced each event, and cover the routine gestures that were analytics blind spots
+  (3301818c, e9c1402a, 9e191bab, 2510eaed, 57d06c01, 7b1482bb)
+- Stop Cmdr's own test and tooling runs registering as real users in DAU, installs, and the version split (c2e8f791,
+  346b1748, 7b2b90c9)
+- Fail a check when an event fires undocumented or a documented event nothing sends (28ba4ac2)
+- Re-run only the check whose file changed, instead of all 116 lanes (0caef223, 0b829639, aa011290, 588286f7)
+- Catch a subsystem re-welding itself to another one, and ratchet the desktop bundle's size (9868eebd, 3cce961b)
+- Cut 133 test files from the `svelte-tests` lane for the same a11y coverage (fbad0b46, d242f179, 3a275625, fde17ac5,
+  638c3814, 98a2b43d, 233129c9, 1978e384, e6252d6a, 1fdb36f2, 72c02686, dbd0324a, ee9c2b91, c8df2962)
+- Fix seven per-test nextest overrides silently selecting nothing, leaving eleven flake-prone tests unserialized
+  (9d7fbaf6)
+- Wipe 21 shipped specs, moving their durable intent beside the code (3cb15944, 2ff670aa, e15f55bd, 7e5f4377, 54c834cc,
+  bdd7a739, 3d5cf997)
+
 ## [0.39.0] - 2026-08-19
 
 Besides bug fixes, here are the three most important changes:

@@ -563,6 +563,12 @@ export const roadmapSections: RoadmapSection[] = [
             description: 'Clean up Downloads, with 100% human oversight.',
             done: true,
           },
+          {
+            date: '(Aug 23)',
+            title: 'Built-in proactive agent',
+            description: 'Suggests actions based on file system changes.',
+            done: true,
+          },
         ],
       },
     ],
