@@ -136,6 +136,22 @@ accidentally.
 
 Authoritative file: `apps/desktop/scripts/instance-id.ts`.
 
+### Production analytics
+
+The heartbeat and PostHog pipelines are suppressed outright for any instance that carries `CMDR_INSTANCE_ID`,
+`CMDR_DATA_DIR`, `CMDR_E2E_MODE`, `CMDR_MOCK_FDA`, or `CI` (presence, not value), on top of the debug-build rule. That
+belongs in this doc's derivation story because it's the one resource where isolation ALONE is the bug: an isolated data
+dir has no `install-ids.json`, so it mints a fresh `anal_` id and the instance registers as a brand-new user on every
+launch. Isolating a tooling instance harder makes the pollution worse, not better.
+
+`CMDR_ANALYTICS_FORCE=1` overrides every condition, for the integration test that drives the loop against a localhost
+Worker. Prod sets none of the five, and `every_tooling_launcher_is_suppressed` pins the exact env each launcher stamps
+(E2E checker, i18n capture, marketing shots, dev wrapper), so a launcher that stops tripping the gate fails a test
+rather than quietly minting installs.
+
+Authoritative file: `apps/desktop/src-tauri/src/analytics/mod.rs`. Depth (including what the leak cost and how the
+stored rows were corrected): `apps/desktop/src-tauri/src/analytics/DETAILS.md`.
+
 ### Clipboard (NSPasteboard)
 
 Compiled out for E2E via `#[cfg(feature = "playwright-e2e")]`: mock module replaces the real one. Process-local store,

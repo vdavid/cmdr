@@ -374,12 +374,10 @@ async function main(): Promise<void> {
       // The chat shot runs off a seeded thread, so no provider is ever called. This
       // keeps the composer from rendering its "provider off" hint over the shot.
       CMDR_E2E_ASK_CMDR_FAKE: '1',
-      // Suppresses analytics in a RELEASE build (`analytics/mod.rs:88-90`), which
-      // otherwise points at the production PostHog project and would register this
-      // data dir as a phantom install. The seeded `analytics.enabled: false` is the
-      // belt to this suspenders: the env var is a coincidence of the suppression
-      // list, not a contract.
-      CI: '1',
+      // No analytics hook is needed here: `CMDR_DATA_DIR` above IS the contract.
+      // `analytics::suppression_reason` reads an isolated data dir as proof this isn't a
+      // real install, and `every_tooling_launcher_is_suppressed` pins this launcher's
+      // exact env. The seeded `analytics.enabled: false` is the belt to that suspenders.
       // ❗ Deliberately absent: CMDR_E2E_MODE (would make the window permanently
       // unfocusable and paint the blue title bar) and CMDR_E2E_START_PATH (would arm
       // the fixture guard against real folders). See this file's header.
