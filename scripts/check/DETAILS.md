@@ -496,19 +496,31 @@ Two things live outside what any source analysis here can reach, so the check th
   `scripts/check/**` global never matched `scripts/check-css-unused/**`, so editing a rule left the lane it governs on a
   cached pass.
 
-**Measured, 2026-08-23**, on this worktree with a warm cache (110 default lanes, 80 in `--fast`):
+**Measured on this worktree with a warm cache** (110 default lanes, 80 in `--fast`), by lanes whose fingerprint changes;
+`docs/notes/rust-lane-input-narrowing-2026-08-23.md` § "Closing the runner's own residue" has the wall clock and the
+harness that reproduces the counts.
 
-- Editing one leaf check implementation (`checks/lock-poison.go`): 28 of 110 lanes re-ran, 1m24s. Of those 28, 10 are
-  the Go lanes that lint the runner (`scripts/**`), 12 are whole-repo doc and metric lanes (`**`), 2 are the registry
-  readers (`ci-coverage`, `member-coverage`), 2 were already red and never cache, and 2 are the real attribution:
-  `lock-poison` itself and `mtp-dropping-timeout`, which shares its scanner. The Rust battery, every frontend lane, the
-  website, and the dashboard all stayed cached. In `--fast`: 23 of 80, 17.9s.
-- Editing a core runner file (`runner.go`): 110 of 110, 3m33s. In `--fast`: 80 of 80, 19.2s.
-- Editing `.mise.toml`: 80 of 80 in `--fast`, 14.0s. Same by construction: it's a global input.
+| Edit                                       | Lanes | What they are                                                             |
+| ------------------------------------------ | ----: | ------------------------------------------------------------------------- |
+| one leaf check implementation (`.go`)      |    26 | 10 Go + 12 whole-repo doc/metric + 2 registry readers + the 2 real owners |
+| one core runner file (`runner.go`)         |   110 | a `GlobalInput`, by construction                                          |
+| `.mise.toml`                               |   110 | same                                                                      |
+| a sibling tool (`check-a11y-contrast/`)    |    23 | 10 Go + 12 doc/metric + the one lane that runs it                         |
+| a JSON allowlist beside the checks         |    14 | 12 doc/metric + `misspell` + `go-tests`                                   |
+| a `CLAUDE.md` / `DETAILS.md` in `scripts/` |    14 | same                                                                      |
 
-So the leaf case, which is what 105 of the last six months' 509 runner-touching commits did, went from 110 lanes to 28
-and from 3m33s to 1m24s, and 76s of that 84s was the two lanes that were already failing (a failure never caches, so
-they re-run in every case). 315 of those 509 commits touched no core file at all.
+**The leaf `.go` case is where it stops, and that's the honest answer.** All 26 lanes read the edited file:
+
+- The **10 Go lanes** lint and test the runner. Editing a runner source is exactly their business. The narrowing still
+  available here was the other direction, an edit to a NON-Go file in those trees, which is what `goSourceInputs` closed
+  (`checks/DETAILS.md` § "The Go lanes split three ways"): 22 lanes down to 14.
+- The **12 whole-repo lanes** (`file-length`, `oxfmt`, the five `docs-*`, the three `claude-md-*`, `invariant-density`,
+  `resident-doc-budget`) take `wholeRepoInputs` because their domain IS the whole repo: a `.go` edit changes a line
+  count, and `docs-dead-links` resolves doc links against real paths, so an add or a remove anywhere can flip it. They
+  total ~11 s of mean runtime across 12 parallel lanes; ❌ don't reach for a "paths-but-not-contents" input kind to
+  shave that, the mechanism would cost more than the lanes do.
+- The **2 registry readers** (`ci-coverage`, `workspace-member-coverage`) reach every check file because `AllChecks`
+  names every `Run` function, and the closure can't tell "reads the registry as data" from "calls it". Both are ~0.01 s.
 
 ### The Rust input blocks
 

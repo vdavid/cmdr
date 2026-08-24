@@ -1150,7 +1150,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            goScriptsInputs,
+		Inputs:            goSourceInputs,
 		Run:               RunGoFmt,
 	},
 	{
@@ -1161,7 +1161,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
 		IsFast:      true,
-		Inputs:      goScriptsInputs,
+		Inputs:      goSourceInputs,
 		Run:         RunGoVet,
 	},
 	{
@@ -1172,7 +1172,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
 		IsFast:      true,
-		Inputs:      goScriptsInputs,
+		Inputs:      goSourceInputs,
 		Run:         RunStaticcheck,
 	},
 	{
@@ -1183,7 +1183,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
 		IsFast:      true,
-		Inputs:      goScriptsInputs,
+		Inputs:      goSourceInputs,
 		Run:         RunIneffassign,
 	},
 	{
@@ -1194,8 +1194,10 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   nil,
 		IsFast:      true,
-		Inputs:      goScriptsInputs,
-		Run:         RunMisspell,
+		// The one Go lane on the WHOLE tree: misspell spell-checks every text file
+		// it walks, so a typo in a `.sh` or a `.json` there is its business.
+		Inputs: goScriptsInputs,
+		Run:    RunMisspell,
 	},
 	{
 		ID:          "scripts-go-gocyclo",
@@ -1205,7 +1207,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
 		IsFast:      true,
-		Inputs:      goScriptsInputs,
+		Inputs:      goSourceInputs,
 		Run:         RunGocyclo,
 	},
 	{
@@ -1216,7 +1218,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-vet"},
-		Inputs:      goScriptsInputs,
+		Inputs:      goSourceInputs,
 		Run:         RunNilaway,
 	},
 	{
@@ -1227,7 +1229,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-vet"},
-		Inputs:      goScriptsInputs,
+		Inputs:      goSourceInputs,
 		Run:         RunDeadcode,
 	},
 	{
@@ -1249,7 +1251,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   nil,
-		Inputs:      goScriptsInputs,
+		Inputs:      goSourceInputs,
 		Run:         RunGovulncheck,
 	},
 

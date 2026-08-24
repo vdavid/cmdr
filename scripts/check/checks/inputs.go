@@ -199,15 +199,22 @@ var rustFixtureServerInputs = []string{
 	"apps/desktop/test/smb-servers/**",
 }
 
+// frontendSourceRoots are the directories inside `svelteInputs` that hold code
+// (as opposed to config or static assets). `TestNoFrontendSourceLoadsAgentDocs`
+// walks exactly these, which is what makes `agentDocExclusions` safe for the
+// frontend lanes, and `goTestsInputs` covers them because that test does.
+var frontendSourceRoots = []string{
+	"apps/desktop/src",
+	"apps/desktop/test",
+	"apps/desktop/scripts",
+	"apps/desktop/eslint-plugins",
+	"eslint-plugins", // the two custom rules shared with the dashboard
+}
+
 // svelteInputs mirrors ci.yml's `svelte` filter: the desktop frontend plus the
 // configs and shared test/plugin dirs ESLint, Vitest, and svelte-check read.
-var svelteInputs = inputs([]string{
-	"apps/desktop/src/**",
+var svelteInputs = inputs(treeGlobs(frontendSourceRoots...), []string{
 	"apps/desktop/static/**",
-	"apps/desktop/test/**",
-	"apps/desktop/eslint-plugins/**",
-	"eslint-plugins/**", // the two custom rules shared with the dashboard
-	"apps/desktop/scripts/**",
 	"apps/desktop/package.json",
 	"apps/desktop/svelte.config.js",
 	"apps/desktop/vite.config.js",
@@ -258,13 +265,37 @@ var dashboardInputs = []string{
 	"pnpm-lock.yaml",
 }
 
-// goScriptsInputs covers the Go directories the scripts-go-* checks scan
-// (GetGoDirectories: scripts/ and apps/desktop/scripts/). scripts/check/** is
-// already a GlobalInput, but scripts/** (the wider set: check-css-unused, etc.)
-// and apps/desktop/scripts/** are not, so they're listed explicitly.
-var goScriptsInputs = []string{
-	"scripts/**",
-	"apps/desktop/scripts/**",
+// goScriptsInputs covers the Go directories the scripts-go-* checks scan, whole.
+// `scripts/check/**` is already a GlobalInput, but the wider `scripts/**` (the
+// sibling tools, the shell and Node helpers) and `apps/desktop/scripts/**` are
+// not. Derived from `GetGoDirectories()`, the same list the checks walk, so a
+// third Go tree can't land inside the walk and outside the fingerprint.
+//
+// Only `misspell` takes it: misspell spell-checks every text file it walks, not
+// just the Go ones.
+var goScriptsInputs = treeGlobs(GetGoDirectories()...)
+
+// goSourceInputs is what a lane that COMPILES the Go trees reads: the Go sources
+// and the module files that decide how they resolve. Nothing else in those trees
+// reaches the compiler — no `//go:embed`, no assembly or cgo sources, which is
+// what `TestGoCompileLanesReadOnlyGoSources` checks on the real tree.
+//
+// The narrowing is the point. `scripts/**` also holds the JSON allowlists the
+// warn-only checks shrink-wrap on nearly every local run, the colocated agent
+// docs, and a pile of `.sh` / `.ts` / `.py` helpers. Over the 5,584 commits of
+// 2026-02-21..2026-08-24, 357 touched a Go tree without touching one `.go` file
+// there, and each re-ran ~70 s of Go linting that couldn't change verdict.
+var goSourceInputs = goTreeGlobs("/**/*.go", "/**/go.mod", "/**/go.sum")
+
+// goTreeGlobs suffixes every Go directory with each of the given patterns.
+func goTreeGlobs(suffixes ...string) []string {
+	var out []string
+	for _, dir := range GetGoDirectories() {
+		for _, suffix := range suffixes {
+			out = append(out, dir+suffix)
+		}
+	}
+	return out
 }
 
 // The SFTP fixture stack declares its machine-wide keys dir and its host ports
@@ -278,10 +309,37 @@ const (
 	sftpTestingRel = "crates/cmdr-sftp/src/volume/testing.rs"
 )
 
-// goTestsInputs is goScriptsInputs plus the files a Go TEST reads from outside
-// the Go tree. ❗ Without them a drift in one of those files is a cache hit, and
-// the guard never runs on the very change it exists to catch.
-var goTestsInputs = append([]string{sftpComposeRel, sftpStartRel, sftpTestingRel}, goScriptsInputs...)
+// goTestsInputs is what `scripts-go-tests` reads, which is far more than the Go
+// trees. Fifteen tests in this package assert something about the REAL repo
+// rather than a fixture, and each can change verdict on a file no Go linter ever
+// opens. ❗ Without them the guard is a cache hit on the very change it exists to
+// catch: adding a crate, adding an `include_str!`, or importing a `.md` from a
+// Svelte module would all have gone green from cache.
+//
+//   - the cargo manifests and every member's sources (`TestRustMemberTreesMatchTheWorkspace`,
+//     `TestModuleCyclesPackagesAreTheLibraryMembers`, and `TestRustInputsCoverEveryEmbeddedFile`,
+//     which scans every `src/` for `include_str!` — the guard that caught the
+//     `CHANGELOG.md` hole, and it was blind to the tree it scans),
+//   - the frontend source roots (`TestNoFrontendSourceLoadsAgentDocs`, which is
+//     what makes `agentDocExclusions` safe),
+//   - `apps/desktop/package.json` (`TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes`),
+//   - the SFTP fixture trio the fixture-path tests compare.
+//
+// ❗ No `agentDocExclusions` here. An exclusion vetoes across the whole union, so
+// borrowing one from `rustCompileInputs` would take `scripts/check/CLAUDE.md`
+// back out of a lane that walks the scripts tree.
+//
+// `TestGoTestsInputsCoverTheRealTreeItsTestsRead` keeps the list honest: it finds
+// every test that reaches the real tree and fails on one that doesn't declare
+// what it reads, or declares a path this set doesn't cover.
+var goTestsInputs = inputs(
+	goScriptsInputs,
+	rustMemberGlobs(KindApp, KindTool, KindVendored),
+	rustWorkspaceConfigInputs,
+	rustEmbeddedInputs,
+	treeGlobs(frontendSourceRoots...),
+	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel},
+)
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks
 // read.
@@ -314,7 +372,17 @@ func runnerDataInputs(names ...string) []string {
 func siblingToolInputs(dirs ...string) []string {
 	out := make([]string, 0, len(dirs))
 	for _, dir := range dirs {
-		out = append(out, "scripts/"+dir+"/**")
+		out = append(out, "scripts/"+dir)
+	}
+	return treeGlobs(out...)
+}
+
+// treeGlobs turns directory paths into the `dir/**` globs an input set is
+// written in.
+func treeGlobs(dirs ...string) []string {
+	out := make([]string, 0, len(dirs))
+	for _, dir := range dirs {
+		out = append(out, dir+"/**")
 	}
 	return out
 }

@@ -1,9 +1,13 @@
 package checks
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -236,6 +240,8 @@ func TestInputSetsExcludeOnlyAgentDocs(t *testing.T) {
 		"apiServerInputs":     apiServerInputs,
 		"dashboardInputs":     dashboardInputs,
 		"goScriptsInputs":     goScriptsInputs,
+		"goSourceInputs":      goSourceInputs,
+		"goTestsInputs":       goTestsInputs,
 		"workflowsInputs":     workflowsInputs,
 		"wholeRepoInputs":     wholeRepoInputs,
 		"desktopApp":          desktopAppInputs(),
@@ -257,15 +263,6 @@ var (
 	frontendDocImportRE = regexp.MustCompile("\\b(?:from|import|require|glob)\\s*\\(?\\s*['\"`][^'\"`]*\\.md(?:\\?[a-z]+)?['\"`]")
 	mdReadRE            = regexp.MustCompile(`\breadFile(?:Sync)?\s*\([^)]*\.md['"` + "`" + `]`)
 )
-
-// frontendSourceRoots are the directories inside `svelteInputs` that hold code.
-var frontendSourceRoots = []string{
-	"apps/desktop/src",
-	"apps/desktop/test",
-	"apps/desktop/scripts",
-	"apps/desktop/eslint-plugins",
-	"eslint-plugins",
-}
 
 // TestNoFrontendSourceLoadsAgentDocs is the guardrail behind `svelteInputs`'
 // share of `agentDocExclusions`, and the frontend's answer to
@@ -395,6 +392,281 @@ func TestSvelteInputsSkipAgentDocs(t *testing.T) {
 	} {
 		if !matchesAny(src, patterns) {
 			t.Errorf("`svelteInputs` no longer covers %s; the frontend lanes would cache-skip a real change", src)
+		}
+	}
+}
+
+// realTreeReadingTests declares, for every test in this package that reads the
+// REAL repo rather than a fixture, the paths it reads that live outside the
+// `scripts-go-tests` lane's own Go trees, or that pin the lane's set to a tree it
+// walks. A directory entry stands for everything under it.
+//
+// The declaration is what makes `goTestsInputs` explainable: the lane looks
+// absurdly wide for a Go lint, and this is the list of guards that make it right.
+// A guard that runs only when its own source changes isn't a guard: it goes green
+// from cache on the very edit it exists to catch.
+var realTreeReadingTests = map[string][]string{
+	"TestAllowlistFilesAreFingerprintedByTheirCheck":           {"scripts/check/checks/registry.go", "scripts/check/checks/file-length-allowlist.json"},
+	"TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes": {"apps/desktop/package.json", "Cargo.toml", "apps/desktop/src-tauri/Cargo.toml"},
+	"TestEveryCheckGetsItsOwnRunnerSources":                    {"scripts/check/checks/registry.go"},
+	"TestGlobalInputsCoverWhatNoCheckCanReach":                 {"scripts/check/checks"},
+	"TestGoCompileLanesReadOnlyGoSources":                      {"scripts", "apps/desktop/scripts"},
+	"TestGoTestsInputsCoverTheRealTreeItsTestsRead":            {"scripts/check/checks"},
+	"TestModuleCyclesAllowlistMatchesPinnedVersion":            {"scripts/check/checks/module-cycles-allowlist.json"},
+	"TestModuleCyclesPackagesAreTheLibraryMembers":             {"Cargo.toml", "crates/cmdr-fs/Cargo.toml"},
+	"TestNoFrontendSourceLoadsAgentDocs":                       {"apps/desktop/src", "apps/desktop/test", "apps/desktop/scripts", "apps/desktop/eslint-plugins", "eslint-plugins"},
+	"TestRunnerCoreCoversWhatTheExecutorReaches":               {"scripts/check", "scripts/check/checks"},
+	"TestRunnerSourcesReachSharedHelpers":                      {"scripts/check/checks/common.go"},
+	"TestRunnerSourcesStayInTheirLane":                         {"scripts/check/checks/lock-poison.go"},
+	"TestRustInputsCoverEveryEmbeddedFile":                     {"Cargo.toml", "apps/desktop/src-tauri/src", "crates/cmdr-fs/src", "crates/fsevent-stream/src", "CHANGELOG.md"},
+	"TestRustMemberTreesMatchTheWorkspace":                     {"Cargo.toml", "crates/cmdr-sftp/Cargo.toml", "apps/desktop/src-tauri/Cargo.toml"},
+	"TestSftpFixturePathsAgree":                                {sftpComposeRel, sftpStartRel, sftpTestingRel},
+	"TestSftpFixturePortsMatchComposeDefaults":                 {sftpComposeRel, sftpTestingRel},
+	"TestSiblingToolDirsAreFingerprintedByTheirCheck":          {"scripts/check-a11y-contrast", "scripts/check-css-unused", "scripts/check-btn-restyle"},
+}
+
+// TestGoTestsInputsCoverTheRealTreeItsTestsRead is the guard behind
+// `goTestsInputs`, and it goes red in both directions: a new test that reads the
+// real tree without declaring what it reads, a declaration for a test that no
+// longer exists, and a declared path the `scripts-go-tests` lane doesn't
+// fingerprint.
+//
+// The third case is the one that bites. It found the lane cache-skipping the
+// cargo manifests, `apps/desktop/package.json`, and every crate and frontend
+// tree its own guards walk: adding a crate, adding an `include_str!`, or
+// importing a `.md` from a Svelte module all reported a cached green from a run
+// that predated them.
+func TestGoTestsInputsCoverTheRealTreeItsTestsRead(t *testing.T) {
+	root := repoRootForTest(t)
+	reaching := testsReachingRealTree(t, filepath.Join(root, filepath.Join(runnerChecksDirParts...)))
+	if len(reaching) == 0 {
+		t.Fatal("found no test reaching `repoRootForTest`; the scan is broken, not the tree")
+	}
+
+	def := GetCheckByID("scripts-go-tests")
+	if def == nil {
+		t.Fatal("no `scripts-go-tests` check in the registry")
+	}
+	data, err := CollectRepoFingerprintData(root)
+	if err != nil {
+		t.Fatalf("CollectRepoFingerprintData: %v", err)
+	}
+	patterns := data.PatternsFor(def)
+
+	for _, name := range reaching {
+		declared, ok := realTreeReadingTests[name]
+		if !ok {
+			t.Errorf("%s reads the real repo but isn't in `realTreeReadingTests`: say what it reads, so `goTestsInputs` can cover it", name)
+			continue
+		}
+		if len(declared) == 0 {
+			t.Errorf("%s declares no path; a real-tree test reads something", name)
+		}
+	}
+	reachingSet := make(map[string]bool, len(reaching))
+	for _, name := range reaching {
+		reachingSet[name] = true
+	}
+
+	for name, paths := range realTreeReadingTests {
+		if !reachingSet[name] {
+			t.Errorf("`realTreeReadingTests` lists %s, which no longer reads the real repo; drop the entry", name)
+		}
+		for _, path := range paths {
+			info, statErr := os.Stat(filepath.Join(root, filepath.FromSlash(path)))
+			if statErr != nil {
+				t.Errorf("%s declares %s, which doesn't exist (renamed?)", name, path)
+				continue
+			}
+			probe := path
+			if info.IsDir() {
+				probe = path + "/probe.txt"
+			}
+			if !matchesAny(probe, patterns) {
+				t.Errorf("`scripts-go-tests` doesn't fingerprint %s, which %s reads: editing it would leave the guard on a cached green. Widen `goTestsInputs`.",
+					path, name)
+			}
+		}
+	}
+}
+
+// packageFuncRefs maps every plain function in the checks package (tests
+// included) to the package-level names its body mentions.
+func packageFuncRefs(t *testing.T, checksDir string) map[string]map[string]bool {
+	t.Helper()
+	entries, err := os.ReadDir(checksDir)
+	if err != nil {
+		t.Fatalf("reading %s: %v", checksDir, err)
+	}
+	fset := token.NewFileSet()
+	refs := map[string]map[string]bool{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
+			continue
+		}
+		file, parseErr := parser.ParseFile(fset, filepath.Join(checksDir, entry.Name()), nil, 0)
+		if parseErr != nil {
+			t.Fatalf("parsing %s: %v", entry.Name(), parseErr)
+		}
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Recv != nil || fn.Body == nil {
+				continue
+			}
+			named := refs[fn.Name.Name]
+			if named == nil {
+				named = map[string]bool{}
+				refs[fn.Name.Name] = named
+			}
+			collectIdents(fn.Body, named)
+		}
+	}
+	return refs
+}
+
+// collectIdents records the bare identifiers a node mentions. A selector
+// contributes only its left-hand side, the same call `runner-sources.go` makes:
+// resolving `x.Foo` by method name alone makes everything reach everything.
+func collectIdents(node ast.Node, into map[string]bool) {
+	ast.Inspect(node, func(n ast.Node) bool {
+		switch n := n.(type) {
+		case *ast.SelectorExpr:
+			collectIdents(n.X, into)
+			return false
+		case *ast.Ident:
+			into[n.Name] = true
+		}
+		return true
+	})
+}
+
+// testsReachingRealTree returns the `Test*` functions in the checks package that
+// reach `repoRootForTest`, directly or through a helper. Same rule as
+// `runner-sources.go`: a declaration reaches the package-level names it mentions
+// as a bare identifier.
+func testsReachingRealTree(t *testing.T, checksDir string) []string {
+	t.Helper()
+	refs := packageFuncRefs(t, checksDir)
+
+	var out []string
+	for name := range refs {
+		if !strings.HasPrefix(name, "Test") {
+			continue
+		}
+		seen := map[string]bool{}
+		queue := []string{name}
+		for len(queue) > 0 {
+			current := queue[0]
+			queue = queue[1:]
+			if seen[current] {
+				continue
+			}
+			seen[current] = true
+			for ref := range refs[current] {
+				queue = append(queue, ref)
+			}
+		}
+		if seen["repoRootForTest"] {
+			out = append(out, name)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// goEmbedDirectiveRE catches a real `go:embed` directive: it sits alone on its
+// own line, ahead of the var it fills. Prose mentioning one mid-comment (this
+// file does, twice) is not one.
+var goEmbedDirectiveRE = regexp.MustCompile(`(?m)^[ \t]*//go:embed[ \t]`)
+
+// TestGoCompileLanesReadOnlyGoSources is the guard behind `goSourceInputs`: the
+// eight Go lanes that COMPILE the scripts trees fingerprint the `.go` files and
+// the module files, and nothing else in those trees. That's only true while
+// nothing there is a compile input the glob can't see, so this walks the real
+// tree for the two shapes that would break it: a `//go:embed` (which turns any
+// file into a compile-time input) and a non-Go source the toolchain builds.
+//
+// It also pins the narrowing itself: a JSON allowlist edit must NOT re-run these
+// lanes, which is the ~70 s of linting the narrowing bought back on the 357
+// commits in six months that touched a Go tree without touching a `.go` file.
+func TestGoCompileLanesReadOnlyGoSources(t *testing.T) {
+	root := repoRootForTest(t)
+	// Go builds these alongside `.go` files; none exist in the scripts trees today,
+	// and one landing there would sit outside `goSourceInputs`.
+	compiledButNotGo := map[string]bool{".s": true, ".c": true, ".h": true, ".cc": true, ".cpp": true, ".m": true, ".syso": true}
+	scanned := 0
+	for _, goDir := range GetGoDirectories() {
+		walkErr := filepath.WalkDir(filepath.Join(root, goDir), func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() {
+				return skipDirIf(entry.Name() == "node_modules")
+			}
+			rel := mustRel(t, root, path)
+			name := entry.Name()
+			switch {
+			case strings.HasSuffix(name, ".go"), name == "go.mod", name == "go.sum":
+				if !matchesAny(rel, goSourceInputs) {
+					t.Errorf("`goSourceInputs` doesn't cover %s, so the Go lanes would cache-skip it", rel)
+				}
+			case compiledButNotGo[filepath.Ext(name)]:
+				t.Errorf("%s is a source the Go toolchain compiles, but `goSourceInputs` only names `.go` and the module files", rel)
+			}
+			if !strings.HasSuffix(name, ".go") {
+				return nil
+			}
+			source, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+			scanned++
+			if goEmbedDirectiveRE.Match(source) {
+				t.Errorf("%s embeds a file with `//go:embed`, which makes that file a compile input `goSourceInputs` can't see; add it to the set", rel)
+			}
+			return nil
+		})
+		if walkErr != nil {
+			t.Fatalf("walking %s: %v", goDir, walkErr)
+		}
+	}
+	if scanned == 0 {
+		t.Fatal("scanned no Go source at all; the walk is broken, not the tree")
+	}
+	assertGoCompileLaneSeesOnlySources(t, root)
+}
+
+// assertGoCompileLaneSeesOnlySources checks the narrowing where it counts: on a
+// real lane's real pattern set, which is `Inputs` plus `GlobalInputs` plus the
+// runner sources it reaches. The narrowing has to bite, and it has to stop where
+// the Go sources do.
+func assertGoCompileLaneSeesOnlySources(t *testing.T, root string) {
+	t.Helper()
+	gofmt := GetCheckByID("scripts-go-gofmt")
+	if gofmt == nil {
+		t.Fatal("no `scripts-go-gofmt` check in the registry")
+	}
+	data, err := CollectRepoFingerprintData(root)
+	if err != nil {
+		t.Fatalf("CollectRepoFingerprintData: %v", err)
+	}
+	patterns := data.PatternsFor(gofmt)
+	for _, quiet := range []string{
+		"scripts/check/checks/file-length-allowlist.json",
+		"scripts/check/CLAUDE.md",
+		"apps/desktop/scripts/screenshots/take.ts",
+	} {
+		if matchesAny(quiet, patterns) {
+			t.Errorf("the Go compile lanes still fingerprint %s, which no Go tool reads", quiet)
+		}
+	}
+	for _, loud := range []string{
+		"scripts/check/checks/lock-poison.go",
+		"scripts/check-a11y-contrast/main.go",
+		"scripts/check/go.mod",
+	} {
+		if !matchesAny(loud, patterns) {
+			t.Errorf("the Go compile lanes no longer fingerprint %s; a real change there would cache-skip", loud)
 		}
 	}
 }

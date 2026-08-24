@@ -85,8 +85,8 @@ CheckDefinition{
   (`TestEveryCheckDeclaresInputs` fails the suite otherwise): an empty list fingerprints on the global inputs alone, so
   the check would be cache-skipped even when its own files change — a correctness hole. Reuse a shared set from
   `inputs.go` (`rustCompileInputs`, `rustScanInputs(kinds…)`, `rustAppTreeInputs`, `svelteInputs`, `websiteInputs`,
-  `apiServerInputs`, `goScriptsInputs`, `goTestsInputs`, `workflowsInputs`, `desktopAppInputs()`), or `wholeRepoInputs`
-  (`**`) for a whole-tree scanner. A Rust source scanner passes the SAME member kinds it declares in
+  `apiServerInputs`, `goSourceInputs`, `goScriptsInputs`, `goTestsInputs`, `workflowsInputs`, `desktopAppInputs()`), or
+  `wholeRepoInputs` (`**`) for a whole-tree scanner. A Rust source scanner passes the SAME member kinds it declares in
   `rustScannerJurisdictions`; `TestScannerInputsMatchTheirJurisdiction` fails when the two disagree in either direction.
   **Be conservative: when unsure whether the check reads a path, include it.** A too-wide list only costs cache speed; a
   too-narrow one costs correctness. The global inputs (`.mise.toml`, `scripts/check/**`) are added automatically — don't
@@ -94,15 +94,34 @@ CheckDefinition{
   entry EXCLUDES matching paths from the set (including from the globals); it's the only way to make a set too narrow,
   so read `../DETAILS.md` § "Exclusions" before adding one, and give it a test.
 
-### A Go TEST that reads outside the Go tree widens the lane's Inputs
+### The Go lanes split three ways
 
-`scripts-go-tests` runs the check runner's own `go test`, so its Inputs are the fingerprint for every Go test in the
-repo, ❗ including the ones that assert about files elsewhere in the tree. `TestSftpFixturePathsAgree` and
-`TestSftpFixturePortsMatchComposeDefaults` compare the SFTP fixture stack's keys dir and host ports across four copies:
-the Go value in `stacklease/registry.go` and `sftp_ports.go`, the `${…:-default}` in the compose file and in `start.sh`,
-and the fallback in `crates/cmdr-sftp/src/volume/testing.rs`. With only `scripts/**` fingerprinted, editing any of the
-three non-Go copies is a cache hit and the guard never runs on the change it exists to catch. `goTestsInputs` names them
-for that reason. A future cross-tree Go test does the same, or its guard is decorative.
+The ten `scripts-go-*` lanes all walk the same two trees (`GetGoDirectories()`: `scripts/` and `apps/desktop/scripts/`),
+and read wildly different amounts of them. Three input sets, all derived from that one directory list so a third Go tree
+can't land inside the walk and outside a fingerprint:
+
+- **`goSourceInputs`**: the eight lanes that COMPILE (`gofmt`, `vet`, `staticcheck`, `ineffassign`, `gocyclo`,
+  `nilaway`, `deadcode`, `govulncheck`). Only `**/*.go`, `**/go.mod`, `**/go.sum` reach the Go toolchain.
+  `TestGoCompileLanesReadOnlyGoSources` walks the real tree for the two shapes that would break that: a `//go:embed`
+  (which makes any file a compile input) and a non-Go source the toolchain builds (`.s`, `.c`, …). Worth the narrowing:
+  `scripts/**` also holds the JSON allowlists the warn-only checks rewrite on nearly every local run, ~11 agent docs,
+  and the `.sh` / `.ts` / `.py` helpers. Of the 5,584 commits in 2026-02-21..2026-08-24, 357 touched a Go tree without
+  touching one `.go` file there, and each paid ~70 s of Go linting that could not change verdict.
+- **`goScriptsInputs`** (`scripts/**`, `apps/desktop/scripts/**`): `misspell` alone. It spell-checks every text file it
+  walks, so a typo in a `.sh` or a `.json` there is its business.
+- **`goTestsInputs`**: `scripts-go-tests`, and far wider than the Go trees, because ❗ the lane's Inputs are the
+  fingerprint for every Go TEST in the repo, including the fifteen that assert about the REAL tree rather than a
+  fixture. `TestRustMemberTreesMatchTheWorkspace` reads the cargo manifests; `TestRustInputsCoverEveryEmbeddedFile`
+  scans every member's `src/` for `include_str!`; `TestNoFrontendSourceLoadsAgentDocs` walks the frontend source roots;
+  `TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes` reads `apps/desktop/package.json`; the two SFTP
+  fixture-path tests compare the keys dir and host ports across the compose file, `start.sh`, and
+  `crates/cmdr-sftp/src/volume/testing.rs`. **A guard that runs only when its own source changes isn't a guard**: with
+  only `scripts/**` fingerprinted, adding a crate, adding an `include_str!`, or importing a `.md` from a Svelte module
+  all reported a cached green from a run that predated them. `realTreeReadingTests` declares what each of the fifteen
+  reads, and `TestGoTestsInputsCoverTheRealTreeItsTestsRead` fails on a new real-tree test that doesn't declare, a stale
+  declaration, and a declared path the lane doesn't fingerprint. ❌ No `agentDocExclusions` on this set: an exclusion
+  vetoes across the whole union, and would take `scripts/check/CLAUDE.md` back out of a lane that walks the scripts
+  tree.
 
 ### ⚠️ A fresh worktree inherits the cache, so a green check can be a stale answer
 
