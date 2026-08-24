@@ -747,6 +747,9 @@ jobs:
       - name: Check every CLAUDE.md has a sibling DETAILS.md
         run: ./scripts/check/check --check claude-md-details-sibling --ci
 
+      - name: Check PostHog events match their catalog
+        run: ./scripts/check/check --check analytics-event-catalog --ci
+
       - name: Check workflow hardening
         run: ./scripts/check/check --check workflows-hardening --ci
 

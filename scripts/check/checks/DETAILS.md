@@ -516,6 +516,27 @@ No allowlist: a missing `DETAILS.md` is always fixable by creating the file (the
 down), so there's nothing to exempt. Reuses `findClaudeMdFiles` (the same walk as `claude-md-length` and
 `claude-md-reminder`).
 
+## Analytics event catalog
+
+`analytics-event-catalog` (`IsFast`, an **error** in both directions) pins the PostHog event vocabulary to its one
+catalog, `apps/desktop/src-tauri/src/analytics/DETAILS.md` § "Starter event set": every event name emitted anywhere
+under `apps/desktop/src`, `apps/desktop/src-tauri/src`, or `crates/` must have a bullet, and every bullet must have a
+live emitter.
+
+An event is written once and read months later off a dashboard, where nothing about the code says whether a metric
+reading zero is a feature nobody uses or an emitter that never shipped. The catalog is the only place that question gets
+answered, and it only answers it while it's complete: three events were firing undocumented before this check existed,
+including the three carrying the agent's north-star acceptance rate. Both directions are one bullet to fix, so neither
+gets an allowlist.
+
+Four emitter shapes are recognized, matching the ones `analytics/DETAILS.md` § "How to add an event" prescribes:
+`posthog::capture("…")`, `analytics().record("…")` (the `AnalyticsSink` seam the tauri-free crates use), the frontend's
+`trackEvent('…')`, and a bare `capture("…")` inside a file named `analytics.rs` (where an area's event wrappers live by
+convention; the same call elsewhere is some other function). Test files are skipped by name, since a fake event name in
+a test never ships. Coverage is honest rather than total: an event smuggled through a helper taking a runtime `&str` is
+invisible to the scan, and the answer to that is not to write one. A renamed heading that empties the parsed list is an
+error too, so the check can't quietly become a rubber stamp.
+
 ## Resident doc budget
 
 `resident-doc-budget` (warn-only, `IsFast`) caps the unconditionally-resident agent-doc bundle: the repo-root
@@ -1250,7 +1271,8 @@ doubles as production code.
   (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md), docs-dead-links (errors on a
   doc link, or a bare backtick path naming a doc, whose local target doesn't exist), docs-link-text (errors on a
   Markdown link whose text is its own target path), claude-md-details-sibling (errors when a non-root CLAUDE.md
-  lacks/doesn't reference a sibling DETAILS.md), docs-table-hygiene (errors on any 2-column table or any table column
+  lacks/doesn't reference a sibling DETAILS.md), analytics-event-catalog (errors when an emitted PostHog event has no
+  catalog bullet, or a bullet has no emitter), docs-table-hygiene (errors on any 2-column table or any table column
   wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids
   `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract)
 - **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)

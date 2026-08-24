@@ -1379,6 +1379,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDocsLinkText,
 	},
 	{
+		ID:          "analytics-event-catalog",
+		Nickname:    "event-catalog",
+		DisplayName: "PostHog events match their catalog",
+		App:         AppOther,
+		Tech:        "📝 Docs",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // walks the desktop + crate sources and reads the analytics catalog
+		Run:         RunAnalyticsEventCatalog,
+	},
+	{
 		ID:          "claude-md-details-sibling",
 		Nickname:    "details-sibling",
 		DisplayName: "CLAUDE.md has a sibling DETAILS.md",

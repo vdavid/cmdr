@@ -121,6 +121,31 @@ Open set, no enum, no schema:
 - **Frontend event**: `import { trackEvent } from '$lib/tauri-commands'`, then `void trackEvent('my_event', { kind: someEnum })`.
 - Name internals after the UI; keep props categorical.
 
+## Reading a zero (before calling it a bug)
+
+An event with no data in PostHog is the normal way an instrumentation bug shows up, and also the normal way an unused
+feature shows up. Walk these in order; each one is cheap and rules out a whole class.
+
+1. **Did it ship?** An event only fires from a released binary. Compare the emitter's commit date against
+   `git for-each-ref --sort=-creatordate refs/tags`, and confirm directly against the shipped app by looking for the
+   event name in `strings -a /Applications/Cmdr.app/Contents/MacOS/Cmdr`. That reads the RUST binary only: a frontend
+   event's name lives in the embedded webview bundle and won't appear there, so a hit proves presence and a miss only
+   means something for a backend event. `properties.app_version` rides every event, so PostHog can also answer "has
+   this ever fired from a build at or after X".
+2. **Is the feature reachable at all for most installs?** Anything under `agent/` needs a configured AI provider, and
+   the person-property split (`person.properties['ai.provider']`, `off` / `local` / `cloud` / unset) is a small
+   denominator. A tiny population plus a short window explains a lot of zeros honestly.
+3. **Is there a denominator event above it?** A feature whose funnel starts at its LAST step can't distinguish "unused"
+   from "broken". That's why `ask_cmdr_turn` exists above the three `suggestion_group_*` events. If the layer you're
+   looking at has no such event, the missing event is the finding.
+4. **Only then look for a swallowed call.** Read every direct caller of the store or sink the wrapper wraps, and check
+   that nothing bypasses the instrumented function. A local reproduction can't confirm the capture:
+   `suppression_reason()` suppresses debug builds and every isolated data dir, so `capture` is a no-op in dev unless
+   `CMDR_ANALYTICS_FORCE=1` is set.
+
+The one check that catches this class before it costs a day is `analytics-event-catalog`, which pins the list below
+against every emitter in the tree, in both directions (`scripts/check/checks/DETAILS.md`).
+
 ## Starter event set (PII-free; grows over time)
 
 Backend events fire at success chokepoints; frontend events ride `track_event`.
@@ -155,6 +180,9 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   prompt, a reply, or anything a tool read. This is the agent funnel's DENOMINATOR: the three `suggestion_group_*`
   events below only become readable against it, because a zero on them otherwise can't be told apart from a feature
   nobody uses. `agent/chat/DETAILS.md` § The turn event.
+- `agent_wake` (backend, `agent/wake/runner.rs` `record_outcome`): `outcome` + `tier` tokens, `folders` + `proposals`
+  buckets. Counts every wake OUTCOME, including wakes that never opened a turn, so it is a WIDER population than
+  `ask_cmdr_turn`'s `origin: "wake"`; the gap between them is the point.
 - `suggestion_group_proposed` / `suggestion_group_approved` / `suggestion_group_rejected` (backend,
   `agent/suggested_ops/analytics.rs`): `verb` (the `ProposalVerb` token) + `op_count` bucket. Acceptance rate is the
   agent's north-star metric, which is why the proposal and both outcomes are all counted; never a path, file name,
