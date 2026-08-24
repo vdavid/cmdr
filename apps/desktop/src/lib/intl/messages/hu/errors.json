@@ -187,7 +187,7 @@
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.noPermissionErrno.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd a Get Info menüt, és nézd meg a Sharing & Permissions részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminálban add ki az `ls -la` parancsot ezen az útvonalon a jelenlegi engedélyek megtekintéséhez",
+  "errors.listing.noPermissionErrno.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminálban add ki az `ls -la` parancsot ezen az útvonalon a jelenlegi engedélyek megtekintéséhez",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "ea316e7"
   },
@@ -487,7 +487,7 @@
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.permissionDenied.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd a Get Info menüt, és nézd meg a Sharing & Permissions részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminálban add ki az `ls -la` parancsot az útvonalon a jelenlegi engedélyek megtekintéséhez",
+  "errors.listing.permissionDenied.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminálban add ki az `ls -la` parancsot az útvonalon a jelenlegi engedélyek megtekintéséhez",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },

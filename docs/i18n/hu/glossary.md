@@ -1770,8 +1770,14 @@ hagyta a két panelnevet („Get Info”, „Locked”) egyébként magyar monda
 - **A regiszter marad Cmdr-es, csak a CÍMKÉK az Apple-éi.** Az Apple mondata önöz és hivatalos („szüntesse meg a …
   kijelöltségét”); a miénk tegez és köznyelvi: `vedd ki a „Zárolt” pipát`. A menüutat az Apple sem teszi idézőjelbe, a
   jelölőnégyzet nevét igen; ezt követjük.
-- ⚠️ **Két kulcs MÉG angolul hagyja** (nem ehhez a passzhoz tartoznak, ezért érintetlenek):
-  `errors.listing.noPermissionErrno.suggestion` és `errors.listing.permissionDenied.suggestion` a „válaszd a Get Info
-  menüt, és nézd meg a Sharing & Permissions részt” fordulatot írja. A kész magyar alak mindkettőhöz:
-  `Infó megjelenítése`, illetve `Megosztás és jogok` (macOS Tier 1, `N30`/`N32`/`NE43`: „válassza a Fájl > Infó
-  megjelenítése parancsot, majd kattintson a Megosztás és jogok részre”).
+- **A két `errors.listing.*` kulcs is magyar** (`noPermissionErrno.suggestion`, `permissionDenied.suggestion`): a
+  „válaszd a Get Info menüt, és nézd meg a Sharing & Permissions részt” helyén most
+  `válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt` áll.
+- **Sharing & Permissions → `Megosztás és jogok`** · macOS Finder Tier 1, kulcs-egyeztetéssel:
+  `InfoWindowPermissionsView.strings` `6.title` (en_GB `Sharing & Permissions:` → hu `Megosztási jogok:`, ez a panel
+  FEJLÉCE), futó szövegben pedig `LocalizableMerged` `N30`/`N32`/`NE43` (en „check the Sharing & Permissions section” →
+  hu „kattintson a Megosztás és jogok részre”). Ellenőrizve macOS 26.5.2, 2026-08-24 · high. A futó szöveges alakot
+  választjuk, mert a mi mondatunk is futó szöveg; a panel fejlécében az Apple maga is rövidít.
+- **`parancsot`, nem `menüt`** · az Apple futó szövege a menüelemre `parancs`-ként hivatkozik („válassza a Fájl > Infó
+  megjelenítése parancsot”); a korábbi „a Get Info menüt” tárgyilag is téves volt (menüelem, nem menü). A névelő `az`,
+  mert az `Infó` magánhangzóval kezdődik.

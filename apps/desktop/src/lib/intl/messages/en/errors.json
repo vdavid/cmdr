@@ -281,7 +281,7 @@
     "screenshot": "error-message-example.png"
   },
   "@errors.listing.noPermissionErrno.suggestion": {
-    "description": "Recovery suggestion for a no-permission read (errno path). Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Finder\", \"Get Info\", \"Sharing & Permissions\", \"Terminal\", and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for a no-permission read (errno path). Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Get Info\" and \"Sharing & Permissions\" are Finder labels that Apple localizes, so use your locale's Finder wording for both. Same for the app names \"Finder\" and \"Terminal\": use whatever your locale's macOS calls them (most keep the English name; zh-Hans does not). The backtick command is literal; do NOT translate it.",
     "screenshot": "error-message-example.png"
   },
   "errors.listing.alreadyExistsErrno.title": "Already exists",
@@ -730,7 +730,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.permissionDenied.suggestion": {
-    "description": "Recovery suggestion for a no-permission read (typed variant). Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Finder\", \"Get Info\", \"Sharing & Permissions\", \"Terminal\", and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for a no-permission read (typed variant). Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Get Info\" and \"Sharing & Permissions\" are Finder labels that Apple localizes, so use your locale's Finder wording for both. Same for the app names \"Finder\" and \"Terminal\": use whatever your locale's macOS calls them (most keep the English name; zh-Hans does not). The backtick command is literal; do NOT translate it.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1949,7 +1949,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.permissionDenied.suggestion.deleteMac": {
-    "description": "Recovery suggestion for a permission failure during delete/trash on macOS. Plain text. \"Finder\" and \"Get Info\" are macOS feature names; the menu path \"Get Info > uncheck Locked\" is literal; do NOT translate them.",
+    "description": "Recovery suggestion for a permission failure during delete/trash on macOS. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write the menu path with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
     "screenshot": "transfer-error-permission_denied.png"
   },
   "@errors.write.permissionDenied.suggestion.deleteOther": {
@@ -2052,7 +2052,7 @@
     "screenshot": "transfer-error-file_locked.png"
   },
   "@errors.write.fileLocked.suggestion.mac": {
-    "description": "Recovery suggestion for a locked file on macOS. Plain text. \"Finder\" and \"Get Info\" are macOS feature names; the menu path \"Get Info > uncheck Locked\" is literal; do NOT translate them.",
+    "description": "Recovery suggestion for a locked file on macOS. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write the menu path with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
     "screenshot": "transfer-error-file_locked.png"
   },
   "@errors.write.fileLocked.suggestion.other": {

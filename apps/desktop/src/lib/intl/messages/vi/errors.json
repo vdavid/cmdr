@@ -187,7 +187,7 @@
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.noPermissionErrno.suggestion": "Đây là những cách để thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải, chọn Get Info, và xem mục Sharing & Permissions\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại",
+  "errors.listing.noPermissionErrno.suggestion": "Đây là những cách để thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải, chọn Lấy thông tin, và xem phần Chia sẻ & quyền\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "ea316e7"
   },
@@ -487,7 +487,7 @@
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.permissionDenied.suggestion": "Đây là những cách để thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải vào thư mục, chọn Get Info, và xem mục Sharing & Permissions\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại",
+  "errors.listing.permissionDenied.suggestion": "Đây là những cách để thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải vào thư mục, chọn Lấy thông tin, và xem phần Chia sẻ & quyền\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },

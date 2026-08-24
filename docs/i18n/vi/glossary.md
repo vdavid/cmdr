@@ -78,9 +78,10 @@ UI/section phrasings settled here (for consistency in other files):
   the bullet list. `tentative`.
 - **Terminal, Disk Utility, First Aid, Activity Monitor, Spotlight, Finder, System Settings** · macOS feature/app names
   Cmdr's error copy references as proper names alongside literal commands.
-- ⚠️ **Get Info is NOT one of them: Apple localizes it as `Lấy thông tin`** (and the Locked checkbox as `Đã khóa`). See
-  § Lỗi khi tháo ổ đĩa / ngắt kết nối, 2026-08-23, for the Tier-1 keys. The other names above are still owed a per-name
-  check against `_ignored/i18n/vi/macOS/` rather than a blanket keep-English rule.
+- ⚠️ **Get Info is NOT one of them: Apple localizes it as `Lấy thông tin`**, the Locked checkbox as `Đã khóa`, and the
+  Sharing & Permissions section as `Chia sẻ & quyền`. See § Lỗi khi tháo ổ đĩa / ngắt kết nối, 2026-08-23, and § Hai
+  khóa `errors.listing.*`, 2026-08-24, for the Tier-1 keys. The other names above are still owed a per-name check
+  against `_ignored/i18n/vi/macOS/` rather than a blanket keep-English rule.
 
 Added during the `settings.json` pass (2026-06-21). Reuses the prior-pass terms above (eject → `tháo`, tab → `thẻ`, pane
 → `khung`, share → `chia sẻ`, mount → `gắn kết`, index → `chỉ mục`/`lập chỉ mục`, drive/volume → `ổ đĩa`); new terms
@@ -1562,7 +1563,19 @@ ra sẽ không thấy chữ nào khớp.
   2026-08-23 · high.
 - Giữ dấu nháy cong `“…”` quanh `Đã khóa` đúng như Apple viết. Ghi chú "dùng nháy thẳng ASCII" ở đợt trước chỉ áp dụng
   cho dấu nháy quanh `{path}`/`{name}`, không áp dụng cho tên một thành phần giao diện được trích dẫn.
-- ⚠️ **`@key.description` bên `en` của HAI khóa này vẫn ghi "do NOT translate them"**, mâu thuẫn với chính
-  `errors.mutation.fileLocked` (mô tả ở đó ghi "Apple localizes it, so use your locale's Finder wording") và với bằng
-  chứng Tier 1 ở trên. Bản `vi` đi theo bằng chứng. Cần một đợt sửa mô tả bên `en`; đây là việc của nguồn, không phải
-  của bản dịch.
+- **`@key.description` bên `en` đã được sửa** (2026-08-24): bốn mô tả từng ghi "do NOT translate" nay nói rõ Apple có
+  dịch `Get Info`, `Locked` và `Sharing & Permissions`, nên hãy dùng cách viết trong Finder của ngôn ngữ mình.
+
+## Hai khóa `errors.listing.*`: `Get Info` và `Sharing & Permissions` (2026-08-24)
+
+`errors.listing.noPermissionErrno.suggestion` và `errors.listing.permissionDenied.suggestion` là ổ tiếng Anh còn sót lại
+sau đợt trên; chúng viết `chọn Get Info, và xem mục Sharing & Permissions`. Nay là
+`chọn Lấy thông tin, và xem phần Chia sẻ & quyền`.
+
+- **Sharing & Permissions → `Chia sẻ & quyền`** · macOS Finder Tier 1, đối chiếu trực tiếp theo khóa:
+  `InfoWindowPermissionsView.strings` `6.title` (en_GB `Sharing & Permissions:` → vi `Chia sẻ & quyền:`) và trong câu
+  chạy `LocalizableMerged` `N30`/`N32`/`NE43` ("check the Sharing & Permissions section" →
+  `kiểm tra phần Chia sẻ & quyền`). Kiểm chứng macOS 26.5.2 (`sw_vers`), 2026-08-24 · high. Giữ nguyên dấu `&` như Apple
+  viết.
+- **`phần`, không phải `mục`** · Apple dùng `phần` cho đúng chỗ này trong đúng câu này (`N30`/`N32`/`NE43`); `mục` là từ
+  catalog dùng cho một hạng mục trong danh sách · high.
