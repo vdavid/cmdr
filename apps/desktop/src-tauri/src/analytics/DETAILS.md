@@ -8,6 +8,42 @@ Depth behind the must-knows in `CLAUDE.md`.
 stores the app handle, `start` spawns the loop (one beat on launch, then hourly). `install_id::init()` runs earlier in
 setup (before the crash reporter) so it can snapshot the diag id for the panic hook.
 
+## The suppression gate: what counts as a real install
+
+`suppression_reason()` in `mod.rs` is the ONE gate; the heartbeat loop and `posthog::capture` both call it, so the two
+pipelines can never disagree about whether an install is real. It returns `Some(reason)` (a named condition, logged at
+debug) when this process must not send, `None` when it may. `CMDR_ANALYTICS_FORCE=1` overrides every condition, which
+is what lets an integration test drive the loop against a localhost Worker.
+
+Suppressed when the build is a debug build, OR when any of `NON_PROD_ENV_VARS` is present in the environment: `CI`,
+`CMDR_INSTANCE_ID`, `CMDR_DATA_DIR`, `CMDR_E2E_MODE`, `CMDR_MOCK_FDA`.
+
+Presence, not value: `CMDR_E2E_MODE=0` still means a harness composed this environment, and failing closed costs
+nothing.
+
+### Why an isolated instance must never send
+
+**The constraint the code has to defend: a fresh data dir mints a fresh `anal_` install id, so any tooling-launched
+instance that reaches production analytics registers as a brand-new user, every single launch.** Judging "is this
+real?" by build mode alone missed that entirely: the E2E, i18n-capture, and marketing-shot lanes all drive
+release-mode binaries. Between 2026-06-10 and 2026-08-24 that produced 1,786 phantom installs against 303 real ones,
+inflating installs by 6x and daily actives by roughly 24 a day. `CI` was set only on the CI runners, and the macOS
+Playwright lane runs locally.
+
+So the gate asks "is this environment one a real user's launch could produce?" rather than "is this a dev build?".
+A production launch (Finder, Dock, Spotlight, the updater's relaunch) sets none of the five; every launcher in
+`docs/tooling/instance-isolation.md` sets at least one. `CMDR_INSTANCE_ID` and `CMDR_DATA_DIR` carry the weight, since
+they're precisely the vars that redirect the data dir that mints the id.
+
+`every_tooling_launcher_is_suppressed` pins the exact env each launcher stamps (E2E checker, i18n capture, marketing
+shots, dev wrapper). A launcher that stops tripping the gate fails that test rather than quietly minting installs
+again.
+
+### Cleaning up the rows that already landed
+
+The stored history is corrected server-side by a daily D1 sweep that deletes the beats of installs which never
+persisted a setting. Canonical: `apps/api-server/DETAILS.md` § Synthetic heartbeats.
+
 ## Install-id storage and signal-safe read
 
 The ids resolve their data dir without an `AppHandle` (mirroring `settings/loader.rs`'s `early_load_*`), so the no-arg

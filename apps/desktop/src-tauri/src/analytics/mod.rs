@@ -2,8 +2,9 @@
 //!
 //! See `analytics/CLAUDE.md` for the full model. In short: a background loop posts a `/heartbeat`
 //! on launch and then hourly, carrying the random `anal_` install id, app/OS/arch identity, and a
-//! PII-free config-shape snapshot. Everything is gated on consent (tri-state, default-on) and
-//! suppressed in dev/CI builds unless explicitly forced for integration tests.
+//! PII-free config-shape snapshot. Everything is gated on consent (tri-state, default-on) and on
+//! [`suppression_reason`], which keeps every dev, CI, E2E, and capture instance out of production
+//! analytics unless explicitly forced for integration tests.
 
 mod config_shape;
 pub(crate) mod first_index;
@@ -28,9 +29,9 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 /// Network timeout for one fire-and-forget beat. Mirrors the crash/error reporters.
 const HEARTBEAT_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// Override env var that forces beats even in a debug/CI build, so an integration test can drive
-/// the loop against a localhost Worker. Without it, dev and CI never beat (so test runs and local
-/// dev don't pollute production analytics).
+/// Override env var that forces beats from an otherwise-suppressed instance, so an integration
+/// test can drive the loop against a localhost Worker. Without it, no dev, CI, E2E, or capture
+/// instance ever beats, so a test run can't pollute production analytics.
 const FORCE_ENV: &str = "CMDR_ANALYTICS_FORCE";
 
 /// Bundle id from `tauri.conf.json`, mirrored so the raw-settings read works without an
@@ -98,17 +99,85 @@ pub fn analytics_consent_granted(analytics_enabled: Option<bool>) -> bool {
     analytics_enabled != Some(false)
 }
 
-/// `true` when this build must not send (dev or CI), unless the force override is set.
-fn suppressed() -> bool {
-    if std::env::var(FORCE_ENV).is_ok() {
-        return false;
+/// Env vars whose mere PRESENCE proves this process is not a real user's production install, and
+/// so must never reach production analytics. A production launch (Finder, Dock, Spotlight, the
+/// updater's relaunch) sets NONE of them; every dev, E2E, and capture launcher sets at least one.
+///
+/// Presence, not value: `CMDR_E2E_MODE=0` still means a harness composed this environment, and
+/// failing closed costs nothing. Sources for each, all per `docs/tooling/instance-isolation.md`:
+///
+/// - `CI`: any CI runner.
+/// - `CMDR_INSTANCE_ID`: dev, per-worktree dev, and every E2E shard. Prod leaves it unset by
+///   definition, which makes it the single strongest signal.
+/// - `CMDR_DATA_DIR`: an isolated data dir. Prod resolves `app_data_dir()` instead, and an
+///   isolated dir is exactly what mints a fresh install id. It also covers
+///   `scripts/marketing-shots.ts`, which deliberately sets no other hook.
+/// - `CMDR_E2E_MODE`: the Playwright and Linux Docker E2E lanes, plus `scripts/i18n-capture.ts`.
+/// - `CMDR_MOCK_FDA`: the FDA mock. Only a harness ever sets it, and it's what made 1,550 phantom
+///   installs report `fdaGranted: true` on their first-ever launch.
+const NON_PROD_ENV_VARS: &[&str] = &[
+    "CI",
+    "CMDR_INSTANCE_ID",
+    "CMDR_DATA_DIR",
+    "CMDR_E2E_MODE",
+    "CMDR_MOCK_FDA",
+];
+
+/// Why this process must not send analytics. Carried (rather than collapsed to a bool) so the
+/// debug log names the exact condition that fired.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SuppressionReason {
+    /// Not a release build.
+    DebugBuild,
+    /// One of [`NON_PROD_ENV_VARS`] is set in this process's environment.
+    NonProdEnv(&'static str),
+}
+
+impl std::fmt::Display for SuppressionReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DebugBuild => f.write_str("debug build"),
+            Self::NonProdEnv(name) => write!(f, "{name} is set"),
+        }
     }
-    cfg!(debug_assertions) || std::env::var("CI").is_ok()
+}
+
+/// Pure core of the gate: the whole matrix is decided here, with `is_debug_build`, `forced`, and
+/// `env_is_set` injected so it's unit-testable without mutating the process environment (which a
+/// parallel test runner can't do safely).
+fn suppression_reason_for(
+    is_debug_build: bool,
+    forced: bool,
+    env_is_set: &dyn Fn(&str) -> bool,
+) -> Option<SuppressionReason> {
+    if forced {
+        return None;
+    }
+    if is_debug_build {
+        return Some(SuppressionReason::DebugBuild);
+    }
+    NON_PROD_ENV_VARS
+        .iter()
+        .copied()
+        .find(|name| env_is_set(name))
+        .map(SuppressionReason::NonProdEnv)
+}
+
+/// The ONE analytics gate: `Some(reason)` when this process must not send, `None` when it may.
+/// Both the heartbeat loop and `posthog::capture` call it, so the heartbeat and the event stream
+/// can never disagree about whether an install is real.
+///
+/// `CMDR_ANALYTICS_FORCE=1` overrides every condition, which is what lets an integration test
+/// drive the loop against a localhost Worker.
+fn suppression_reason() -> Option<SuppressionReason> {
+    suppression_reason_for(cfg!(debug_assertions), std::env::var_os(FORCE_ENV).is_some(), &|name| {
+        std::env::var_os(name).is_some()
+    })
 }
 
 async fn send_beat_if_allowed() {
-    if suppressed() {
-        log::debug!(target: "analytics", "Heartbeat suppressed (dev or CI, no force override)");
+    if let Some(reason) = suppression_reason() {
+        log::debug!(target: "analytics", "Heartbeat suppressed ({reason}, no force override)");
         return;
     }
 
@@ -185,6 +254,101 @@ async fn send_payload(payload: HeartbeatPayload) {
             // Fire-and-forget: a failed beat is fine, the next hourly tick retries.
             log::debug!(target: "analytics", "Heartbeat send failed: {e}");
         }
+    }
+}
+
+#[cfg(test)]
+mod suppression_tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    /// Asks the gate about a process whose environment holds exactly `vars` and nothing else.
+    fn reason(is_debug: bool, forced: bool, vars: &[&str]) -> Option<SuppressionReason> {
+        let set: HashSet<&str> = vars.iter().copied().collect();
+        suppression_reason_for(is_debug, forced, &|name| set.contains(name))
+    }
+
+    #[test]
+    fn release_build_with_clean_env_may_send() {
+        assert_eq!(reason(false, false, &[]), None);
+    }
+
+    #[test]
+    fn debug_build_is_suppressed() {
+        assert_eq!(reason(true, false, &[]), Some(SuppressionReason::DebugBuild));
+    }
+
+    /// Every var in the list suppresses on its own, in a release build with nothing else set.
+    #[test]
+    fn each_non_prod_env_var_suppresses_alone() {
+        for name in NON_PROD_ENV_VARS {
+            assert_eq!(
+                reason(false, false, &[name]),
+                Some(SuppressionReason::NonProdEnv(name)),
+                "{name} alone must suppress analytics"
+            );
+        }
+    }
+
+    /// The vars a real production install can never have set. Pinned by name so shrinking the
+    /// list is a deliberate, visible act: every one of them was a live pollution source.
+    #[test]
+    fn the_non_prod_env_var_list_covers_every_isolation_signal() {
+        for name in [
+            "CI",
+            "CMDR_INSTANCE_ID",
+            "CMDR_DATA_DIR",
+            "CMDR_E2E_MODE",
+            "CMDR_MOCK_FDA",
+        ] {
+            assert!(
+                NON_PROD_ENV_VARS.contains(&name),
+                "{name} must stay in the suppression list"
+            );
+        }
+    }
+
+    /// The env each tooling launcher actually stamps. If a launcher's env stops tripping the gate,
+    /// that harness starts minting phantom production installs again, so pin all of them here.
+    #[test]
+    fn every_tooling_launcher_is_suppressed() {
+        // `scripts/check/checks/desktop-svelte-e2e-playwright.go` and `e2e-playwright-app.go`.
+        let e2e_checker = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR", "CMDR_E2E_MODE", "CMDR_MOCK_FDA"];
+        // `apps/desktop/scripts/i18n-capture.ts`.
+        let i18n_capture = ["CMDR_E2E_MODE", "CMDR_DATA_DIR", "CMDR_MOCK_FDA"];
+        // `apps/desktop/scripts/marketing-shots.ts` deliberately leaves `CMDR_E2E_MODE` unset.
+        let marketing_shots = ["CMDR_DATA_DIR"];
+        // `apps/desktop/scripts/tauri-wrapper.ts` (dev and per-worktree dev).
+        let dev_wrapper = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR"];
+
+        for (label, vars) in [
+            ("e2e checker", &e2e_checker[..]),
+            ("i18n capture", &i18n_capture[..]),
+            ("marketing shots", &marketing_shots[..]),
+            ("dev wrapper", &dev_wrapper[..]),
+        ] {
+            assert!(
+                reason(false, false, vars).is_some(),
+                "{label} must not reach production analytics"
+            );
+        }
+    }
+
+    /// The force override still wins over every condition, so the localhost-Worker integration
+    /// test can drive the loop.
+    #[test]
+    fn force_override_beats_every_condition() {
+        assert_eq!(reason(true, true, NON_PROD_ENV_VARS), None);
+    }
+
+    /// The debug log has to name the condition, or the next pollution incident is undiagnosable.
+    #[test]
+    fn reasons_name_the_condition() {
+        assert_eq!(SuppressionReason::DebugBuild.to_string(), "debug build");
+        assert_eq!(
+            SuppressionReason::NonProdEnv("CMDR_DATA_DIR").to_string(),
+            "CMDR_DATA_DIR is set"
+        );
     }
 }
 

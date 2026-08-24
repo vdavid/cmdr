@@ -2,7 +2,7 @@
 //!
 //! See `analytics/CLAUDE.md` § "PostHog feature events" for the full model. In short: backend code
 //! calls [`capture`] directly, frontend code calls the `track_event` IPC command (which calls
-//! [`capture`]). Both ride the SAME consent gate and dev/CI suppression as the heartbeat, attach the
+//! [`capture`]). Both ride the SAME consent gate and non-prod suppression as the heartbeat, attach the
 //! `anal_` install id as the PostHog `distinct_id`, and mirror the PII-free config-shape as `$set`
 //! person properties.
 //!
@@ -28,13 +28,14 @@ const POSTHOG_KEY: Option<&str> = option_env!("CMDR_POSTHOG_KEY");
 /// Captures one PostHog feature event. Fire-and-forget: builds the payload and spawns the POST, then
 /// returns immediately so no call site ever blocks on the network.
 ///
-/// Gated identically to the heartbeat: a no-op in dev/CI builds (unless `CMDR_ANALYTICS_FORCE=1`),
+/// Gated identically to the heartbeat: a no-op in any non-production instance (debug build, CI, an
+/// E2E shard, any isolated data dir; unless `CMDR_ANALYTICS_FORCE=1`),
 /// a no-op when the user opted out (`analytics.enabled == Some(false)`), and a no-op when no
 /// `CMDR_POSTHOG_KEY` was baked in (local dev). `props` is an arbitrary PII-free object; pass
 /// `serde_json::json!({})` for an event with no properties.
 pub fn capture(event: &str, props: Value) {
-    if super::suppressed() {
-        log::debug!(target: "analytics", "PostHog event '{event}' suppressed (dev or CI, no force override)");
+    if let Some(reason) = super::suppression_reason() {
+        log::debug!(target: "analytics", "PostHog event '{event}' suppressed ({reason}, no force override)");
         return;
     }
 
