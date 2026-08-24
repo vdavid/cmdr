@@ -11,8 +11,9 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **`admin.ts`**: `/admin/stats` (activation + device counts), `/admin/downloads` (by day/version/arch/country/source,
   raw `count` plus deduped `uniqueCount`), `/admin/active-users`, `/admin/update-activity` (per-day distinct
   update-enabled installs, the retained aggregate ∪ today's raw), `/admin/crashes` (by day/crash site/signal),
-  `/admin/heartbeat-dau`, `/admin/feedback` (full text + reply-to email, newest first), `/admin/error-reports`
-  (per-bundle R2 metadata via `list` + custom metadata, newest first).
+  `/admin/heartbeat-dau`, `/admin/config-shape` (settings values per app version, § below), `/admin/feedback` (full
+  text + reply-to email, newest first), `/admin/error-reports` (per-bundle R2 metadata via `list` + custom metadata,
+  newest first).
 - **`funnel.ts`**: `/admin/funnel`, plus the pure `buildDateList` / `assembleFunnel` / `aggregateUaFamilies` helpers.
 - Tests: `admin-stats.test.ts`, `admin-endpoints.test.ts`, `funnel.test.ts` (route auth/validation plus the pure date
   math, zero-fill, and D7-knowability rules).
@@ -74,6 +75,25 @@ Per-day columns and how each is derived:
 `buildDateList` and `assembleFunnel` are pure and exported so the date math, zero-fill, and D7-knowability logic are
 unit-tested without a live D1 (`funnel.test.ts`); the SQL semantics are verified against a real local D1 with
 `../../scripts/seed-funnel-local.sql` (hand-computed expectations are in that file's header).
+
+## Config shape (`GET /admin/config-shape`)
+
+Two queries over one CTE that reduces the window to each install's LATEST heartbeat
+(`ROW_NUMBER() OVER (PARTITION BY anal_id ORDER BY created_at DESC, id DESC)`), so an install that beat hourly for a
+week weighs exactly as much as one that ran for an afternoon, and a setting changed mid-window reads at its current
+value. `config_json IS NOT NULL` filters inside the CTE, keeping `json_each` off a NULL from a release that predates the
+config shape.
+
+- `installs`: `[{ appVersion, installs }]`, the per-version denominator.
+- `values`: `[{ appVersion, key, type, value, installs }]`, one row per distinct value of each key.
+
+`type` is SQLite's `json_each.type` (`true` / `false` / `integer` / `real` / `text`) and travels beside `value` because
+D1 flattens a JSON boolean to `1` / `0`; the dashboard rebuilds the real type from the pair.
+
+**Why `appVersion` can't be summed away.** The config shape is sparse (the app persists only settings a user explicitly
+CHANGED), so a key absent from an install's row means "on the default" OR "the setting didn't exist in that build". Only
+the per-version defaults manifest on the dashboard separates those, and it needs the version to do it. Collapsing
+versions here would make every adoption number silently wrong for older installs.
 
 ## Rollup-versus-live union
 

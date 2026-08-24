@@ -9,7 +9,7 @@ Three routes share `routes/+layout.svelte` (sticky header: brand, page nav, rang
 `?range=` / `?day=` and is hidden on `/links`.
 
 - `/` (Acquisition, `routes/+page.svelte`): daily funnel + channels, awareness, interest, download.
-- `/product` (`routes/product/`): active use, payment, retention, feedback & errors.
+- `/product` (`routes/product/`): active use, settings adoption, payment, retention, feedback & errors.
 - `/links` (`routes/links/`): CRUD for the `?r=` short codes, proxied to the api-server admin endpoints.
 
 Each section is a component under `src/lib/components/sections/`; shared bits in `src/lib/components/`. Data sources

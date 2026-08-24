@@ -8,6 +8,7 @@ import type { PostHogData } from './sources/posthog.js'
 import type { LicenseData } from './sources/license.js'
 import type { FeedbackAndErrorsData } from './sources/feedback-and-errors.js'
 import type { FunnelData } from './sources/funnel.js'
+import type { SettingsAdoption } from './settings-defaults.js'
 import { fetchUmamiData } from './sources/umami.js'
 import { fetchCloudflareData } from './sources/cloudflare.js'
 import { fetchPaddleData } from './sources/paddle.js'
@@ -16,6 +17,7 @@ import { fetchPostHogData } from './sources/posthog.js'
 import { fetchLicenseData } from './sources/license.js'
 import { fetchFeedbackAndErrorsData } from './sources/feedback-and-errors.js'
 import { fetchFunnelData } from './sources/funnel.js'
+import { fetchSettingsAdoptionData } from './sources/settings-adoption.js'
 
 /** The shared time selection + freshness stamp every page load carries (resolved in `+layout.server.ts`). */
 export interface SelectionEnvelope {
@@ -50,12 +52,13 @@ export interface AcquisitionData extends SelectionEnvelope {
   posthog: SourceResult<PostHogData>
 }
 
-/** The Product page's sources: active use, payment, retention, and feedback & errors. */
+/** The Product page's sources: active use, settings adoption, payment, retention, and feedback & errors. */
 export interface ProductData extends SelectionEnvelope {
   cloudflare: SourceResult<CloudflareData>
   paddle: SourceResult<PaddleData>
   license: SourceResult<LicenseData>
   feedbackAndErrors: SourceResult<FeedbackAndErrorsData>
+  settingsAdoption: SourceResult<SettingsAdoption>
 }
 
 /** Every source, used by the agent-readable report endpoint (which dumps all sections at once). */
@@ -70,6 +73,7 @@ export interface DashboardData extends SelectionEnvelope {
   posthog: SourceResult<PostHogData>
   license: SourceResult<LicenseData>
   feedbackAndErrors: SourceResult<FeedbackAndErrorsData>
+  settingsAdoption: SourceResult<SettingsAdoption>
 }
 
 const sourceTimeoutMs = 20_000
@@ -251,6 +255,18 @@ export function fetchLicenseSource(env: DashboardEnv): Promise<SourceResult<Lice
   )
 }
 
+export function fetchSettingsAdoptionSource(
+  env: DashboardEnv,
+  selection: DashboardSelection,
+): Promise<SourceResult<SettingsAdoption>> {
+  return guardedFetch(env.LICENSE_SERVER_ADMIN_TOKEN, 'Settings adoption', () =>
+    fetchSettingsAdoptionData(
+      { LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN, WORKER_BASE_URL: env.WORKER_BASE_URL },
+      selection,
+    ),
+  )
+}
+
 export function fetchFeedbackAndErrorsSource(
   env: DashboardEnv,
   selection: DashboardSelection,
@@ -298,13 +314,22 @@ export async function fetchProductData(
   selection: DashboardSelection,
 ): Promise<ProductData> {
   const env = await resolveEnv(platform)
-  const [cloudflare, paddle, license, feedbackAndErrors] = await Promise.all([
+  const [cloudflare, paddle, license, feedbackAndErrors, settingsAdoption] = await Promise.all([
     fetchCloudflareSource(env, selection),
     fetchPaddleSource(env, selection),
     fetchLicenseSource(env),
     fetchFeedbackAndErrorsSource(env, selection),
+    fetchSettingsAdoptionSource(env, selection),
   ])
-  return { selection, updatedAt: new Date().toISOString(), cloudflare, paddle, license, feedbackAndErrors }
+  return {
+    selection,
+    updatedAt: new Date().toISOString(),
+    cloudflare,
+    paddle,
+    license,
+    feedbackAndErrors,
+    settingsAdoption,
+  }
 }
 
 /** Fetches all dashboard data sources in parallel. Used by the agent-readable report API. */
@@ -316,18 +341,29 @@ export async function fetchDashboardData(
   const selection = resolveSelection(rangeParam, dayParam)
   const env = await resolveEnv(platform)
 
-  const [funnel, umami, cloudflare, paddle, github, githubStars, posthog, license, feedbackAndErrors] =
-    await Promise.all([
-      fetchFunnelSource(env),
-      fetchUmamiSource(env, selection),
-      fetchCloudflareSource(env, selection),
-      fetchPaddleSource(env, selection),
-      fetchGitHubSource(env),
-      fetchGitHubStarsSource(env),
-      fetchPostHogSource(env, selection),
-      fetchLicenseSource(env),
-      fetchFeedbackAndErrorsSource(env, selection),
-    ])
+  const [
+    funnel,
+    umami,
+    cloudflare,
+    paddle,
+    github,
+    githubStars,
+    posthog,
+    license,
+    feedbackAndErrors,
+    settingsAdoption,
+  ] = await Promise.all([
+    fetchFunnelSource(env),
+    fetchUmamiSource(env, selection),
+    fetchCloudflareSource(env, selection),
+    fetchPaddleSource(env, selection),
+    fetchGitHubSource(env),
+    fetchGitHubStarsSource(env),
+    fetchPostHogSource(env, selection),
+    fetchLicenseSource(env),
+    fetchFeedbackAndErrorsSource(env, selection),
+    fetchSettingsAdoptionSource(env, selection),
+  ])
 
   return {
     selection,
@@ -341,5 +377,6 @@ export async function fetchDashboardData(
     posthog,
     license,
     feedbackAndErrors,
+    settingsAdoption,
   }
 }

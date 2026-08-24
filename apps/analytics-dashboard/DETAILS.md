@@ -39,9 +39,10 @@ data page is active; absent on `/links`).
 1. **Per-source loaders** (`fetchFunnelSource`, `fetchUmamiSource`, `fetchCloudflareSource`, …): each wraps one source
    with its env-var guard (`guardedFetch`) and the 20s `withTimeout` cap. One place per source.
 2. **Per-page composers**: `fetchAcquisitionData` runs funnel + Umami + Cloudflare + GitHub + GitHub-stars + PostHog in
-   parallel; `fetchProductData` runs Cloudflare + Paddle + license + feedback-and-errors. Each page's `+page.server.ts`
-   re-resolves the selection from the URL and calls its composer, so a page fetches only what it renders.
-3. **`fetchDashboardData`**: all nine sources, used by the report endpoint (`api/report/+server.ts`) which dumps every
+   parallel; `fetchProductData` runs Cloudflare + Paddle + license + feedback-and-errors + settings-adoption. Each
+   page's `+page.server.ts` re-resolves the selection from the URL and calls its composer, so a page fetches only what
+   it renders.
+3. **`fetchDashboardData`**: all ten sources, used by the report endpoint (`api/report/+server.ts`) which dumps every
    section at once. Unchanged contract.
 
 The funnel is always 30 days (`fetchFunnelData` ignores the selection); it's still gated on the worker admin token, with
@@ -161,7 +162,33 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
 - `funnel.ts` (Bearer + Umami + Paddle): feeds the top "Daily funnel" table (per-UTC-day, last 30 days, always 30 days
   independent of the picker), joining `/admin/funnel` with Umami per-day visitors/clicks and Paddle purchases. Per-day
   `downloadsByRef` feeds the "Channels" breakdown (rolled up by `aggregateChannels` in `$lib/funnel.ts`).
-- `worker-endpoint.ts` (shared helper): `fetchWorkerEndpoint(token, path)`, used by the three worker-backed sources.
+- `settings-adoption.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): per-setting adoption from `/admin/config-shape`,
+  resolved against the per-version defaults manifest before it leaves the server (§ Settings adoption).
+- `worker-endpoint.ts` (shared helper): `fetchWorkerEndpoint(token, path)`, used by the worker-backed sources.
+
+## Settings adoption
+
+The heartbeat's config shape carries only what a user CHANGED (`settings.json` is sparse by design), so on its own it
+measures deviation and never adoption: an absent key means EITHER "still on the default" OR "the setting didn't exist in
+that build". Sending every default with every beat would answer that and was rejected as wasteful, so the answer is
+resolved here instead, joined on the `app_version` every heartbeat already carries:
+
+    effective = override ?? defaults[newest manifest entry at or below the install's app version][key]
+
+- **The manifest** is `src/lib/server/settings-defaults.gen.json`, generated from the desktop settings registry by
+  `apps/desktop/scripts/gen-analytics-defaults.ts` and pinned to it by the `settings-defaults` check. ❌ Never hand-edit
+  it. Entries are sparse along the version axis (written only where a default moved) but COMPLETE within an entry, which
+  is what lets an absent key mean something.
+- **A key missing from the resolved entry means the setting did not exist in that build**, so that install drops OUT of
+  that setting's denominator instead of counting as a default. Get this wrong and every newly added setting silently
+  corrupts its own adoption number for every older install still running. `settings-defaults.test.ts` pins it.
+- **An install on a version older than the manifest's first entry can't be resolved at all.** Those are counted in
+  `unresolvedInstalls` and surfaced in the UI, ❌ never folded into a denominator.
+- **Resolution runs server-side** (`src/lib/server/settings-defaults.ts`), so the manifest never reaches the browser
+  bundle; the client gets the aggregate plus the client-safe views in `$lib/settings-adoption.ts`.
+- **A value someone set back to the default counts as being on the default.** Persistence is structural, not a value
+  compare, so a deliberate choice equal to the default is persisted explicitly; what adoption asks about is what the app
+  runs with.
 
 ## Local QA against a local worker
 

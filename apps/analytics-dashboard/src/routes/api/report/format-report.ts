@@ -20,6 +20,7 @@ import type { PostHogData } from '../../../lib/server/sources/posthog.js'
 import type { PaddleData } from '../../../lib/server/sources/paddle.js'
 import type { LicenseData } from '../../../lib/server/sources/license.js'
 import type { FunnelData, FunnelRow } from '../../../lib/server/sources/funnel.js'
+import type { SettingAdoption, SettingsAdoption } from '../../../lib/server/settings-defaults.js'
 import type { FeedbackAndErrorsData } from '../../../lib/server/sources/feedback-and-errors.js'
 import type { FeedbackRow, ErrorReportRow } from '../../../lib/feedback-and-errors.js'
 import {
@@ -28,6 +29,16 @@ import {
   errorReportsByDay,
 } from '../../../lib/feedback-and-errors.js'
 import { aggregateChannels, aggregateReferers, aggregateUaFamilies } from '../../../lib/funnel.js'
+import {
+  formatShare,
+  formatShareUnlike,
+  formatValueShare,
+  mostChanged,
+  settingByKey,
+  shareOnDefault,
+  topOverride,
+  unchangedNote,
+} from '../../../lib/settings-adoption.js'
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
 
@@ -512,7 +523,63 @@ function writeActiveUseSection(
   writeLicenseTotals(w, license)
 }
 
-// ── 5. Payment ───────────────────────────────────────────────────────────────────────────────────
+// ── 5. Settings adoption ─────────────────────────────────────────────────────────────────────────
+
+/** One line per setting somebody has moved, most-moved first. */
+function writeChangedSettings(w: ReportWriter, settings: SettingAdoption[]): void {
+  const changed = mostChanged(settings)
+  w.blank()
+  if (changed.length === 0) {
+    w.line('Nobody has moved a setting off its default yet.')
+    return
+  }
+  w.line(`Settings people change (most-moved first; the other ${unchangedNote(settings.length - changed.length)}):`)
+  for (const setting of changed) {
+    const share = shareOnDefault(setting)
+    const override = topOverride(setting)
+    const parts = [
+      `default ${setting.defaultLabel ?? '(moved between versions)'}`,
+      `${num(setting.eligible)} installs`,
+      `${share === null ? 'n/a' : formatShare(share)} on default`,
+    ]
+    if (override) parts.push(`most common change: ${override.label} (${num(override.installs)})`)
+    w.line(`  ${setting.key}: ${parts.join(', ')}`)
+  }
+}
+
+/**
+ * Adoption, which the raw config shape can't give: the app saves only settings someone changed, so
+ * an absent key is resolved against the defaults that shipped in that install's version.
+ */
+function writeSettingsAdoptionSection(w: ReportWriter, settingsAdoption: SourceResult<SettingsAdoption>): void {
+  w.section('Settings adoption: what do people actually turn on?')
+  if (!settingsAdoption.ok) {
+    w.line(`Couldn't load: ${settingsAdoption.error}`)
+    return
+  }
+  const data = settingsAdoption.data
+  const readable = data.totalInstalls - data.unresolvedInstalls
+  if (readable === 0) {
+    w.line('- No installs to read yet (settings adoption fills as beta testers run a build that reports a config).')
+    return
+  }
+
+  w.line(`- Installs we can read: ${num(readable)}`)
+  if (data.unresolvedInstalls > 0) {
+    w.line(`- Not counted: ${num(data.unresolvedInstalls)} on a version older than the settings history goes back`)
+  }
+  w.line(`- Drive indexing on: ${formatValueShare(settingByKey(data.settings, 'indexing.enabled'), 'on')}`)
+  w.line(`- Image search on: ${formatValueShare(settingByKey(data.settings, 'mediaIndex.enabled'), 'on')}`)
+  w.line(`- AI switched on: ${formatShareUnlike(settingByKey(data.settings, 'ai.provider'), 'off')}`)
+  w.blank()
+  w.line(
+    'Each install counts once, at its latest heartbeat. A setting is scored only against installs whose build ' +
+      'actually had it, so a young setting shows a smaller total than an old one.',
+  )
+  writeChangedSettings(w, data.settings)
+}
+
+// ── 6. Payment ───────────────────────────────────────────────────────────────────────────────────
 
 function writePaymentSection(w: ReportWriter, paddle: SourceResult<PaddleData>): void {
   w.section('Payment: how many pay?')
@@ -537,7 +604,7 @@ function writePaymentSection(w: ReportWriter, paddle: SourceResult<PaddleData>):
   )
 }
 
-// ── 6. Retention ─────────────────────────────────────────────────────────────────────────────────
+// ── 7. Retention ─────────────────────────────────────────────────────────────────────────────────
 
 function writeRetentionSection(w: ReportWriter, paddle: SourceResult<PaddleData>): void {
   w.section('Retention: do they stay?')
@@ -564,7 +631,7 @@ function writeRetentionSection(w: ReportWriter, paddle: SourceResult<PaddleData>
   )
 }
 
-// ── 7. Feedback & errors ─────────────────────────────────────────────────────────────────────────
+// ── 8. Feedback & errors ─────────────────────────────────────────────────────────────────────────
 
 function writeErrorReportBreakdowns(w: ReportWriter, errorReports: ErrorReportRow[]): void {
   if (errorReports.length === 0) return
@@ -617,6 +684,7 @@ export function formatReport(data: DashboardData): string {
   writeInterestSection(w, data.umami, data.posthog)
   writeDownloadSection(w, data.cloudflare, data.github)
   writeActiveUseSection(w, data.cloudflare, data.license)
+  writeSettingsAdoptionSection(w, data.settingsAdoption)
   writePaymentSection(w, data.paddle)
   writeRetentionSection(w, data.paddle)
   writeFeedbackSection(w, data.feedbackAndErrors)

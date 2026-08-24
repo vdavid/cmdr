@@ -439,3 +439,78 @@ describe('GET /admin/error-reports', () => {
     }
   })
 })
+
+describe('GET /admin/config-shape', () => {
+  it('returns 401 without auth', async () => {
+    const res = await app.request('/admin/config-shape', {}, baseBindings)
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 for invalid range', async () => {
+    const res = await app.request('/admin/config-shape?range=24h', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns per-version install totals beside the per-key value counts', async () => {
+    // The totals are the denominator the dashboard needs: an install that reports no value for a
+    // key is on that version's default, and it can only know that if it knows how many there were.
+    const bindings = {
+      ...baseBindings,
+      TELEMETRY_DB: createMockD1({
+        json_each: [{ appVersion: '0.40.0', key: 'indexing.enabled', type: 'false', value: 0, installs: 2 }],
+        'FROM latest WHERE rn = 1': [{ appVersion: '0.40.0', installs: 30 }],
+      }),
+    }
+
+    const res = await app.request('/admin/config-shape?range=30d', { headers: authHeaders }, bindings)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      installs: [{ appVersion: '0.40.0', installs: 30 }],
+      values: [{ appVersion: '0.40.0', key: 'indexing.enabled', type: 'false', value: 0, installs: 2 }],
+    })
+  })
+
+  it('counts only the latest heartbeat per install, and never a null config', async () => {
+    const captured: string[] = []
+    const db = {
+      prepare: vi.fn((sql: string) => {
+        captured.push(sql)
+        return {
+          bind: vi.fn().mockReturnThis(),
+          all: vi.fn(() => Promise.resolve({ results: [] })),
+          run: vi.fn(() => Promise.resolve({ success: true })),
+        }
+      }),
+    } as unknown as D1Database
+
+    await app.request('/admin/config-shape?range=30d', { headers: authHeaders }, { ...baseBindings, TELEMETRY_DB: db })
+
+    for (const sql of captured) {
+      // Without the row-number filter a chatty install would outvote a quiet one; without the null
+      // guard `json_each` would be handed a NULL from a pre-config-shape release.
+      expect(sql).toContain('ROW_NUMBER() OVER (PARTITION BY anal_id ORDER BY created_at DESC')
+      expect(sql).toContain('config_json IS NOT NULL')
+      expect(sql).toContain('rn = 1')
+    }
+  })
+
+  it('keeps the app version on every row, since defaults resolve per version', async () => {
+    const captured: string[] = []
+    const db = {
+      prepare: vi.fn((sql: string) => {
+        captured.push(sql)
+        return {
+          bind: vi.fn().mockReturnThis(),
+          all: vi.fn(() => Promise.resolve({ results: [] })),
+          run: vi.fn(() => Promise.resolve({ success: true })),
+        }
+      }),
+    } as unknown as D1Database
+
+    await app.request('/admin/config-shape?range=all', { headers: authHeaders }, { ...baseBindings, TELEMETRY_DB: db })
+
+    for (const sql of captured) expect(sql).toContain('app_version AS appVersion')
+    // `range=all` drops the window rather than inventing an interval.
+    expect(captured.every((sql) => !sql.includes("datetime('now'"))).toBe(true)
+  })
+})

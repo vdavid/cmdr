@@ -256,6 +256,59 @@ admin.get('/admin/heartbeat-dau', async (c) => {
   return c.json(results)
 })
 
+// Admin config shape: how many installs report each value of each setting, split by app version.
+//
+// Only each install's LATEST heartbeat counts, so an install that beats hourly weighs the same as one
+// that ran for an afternoon, and a setting someone changed mid-window reads at its current value.
+//
+// The app version has to ride along and can't be summed away here: the config shape is sparse (the
+// app persists only settings a user explicitly changed), so an absent key means "on the default" OR
+// "this setting didn't exist in that build", and only the per-version defaults manifest on the
+// dashboard can tell those apart. `value` comes back beside its SQLite `type` because a JSON `true`
+// arrives as `1` over D1; the dashboard rebuilds the real type from the pair.
+admin.get('/admin/config-shape', async (c) => {
+  const authError = verifyAdminAuth(c)
+  if (authError) return authError
+
+  const range = c.req.query('range') ?? '30d'
+  if (!validHeartbeatRanges.has(range)) {
+    return c.json({ error: 'Invalid range. Use 7d, 30d, 90d, or all' }, 400)
+  }
+
+  const interval = rangeToSqliteInterval[range]
+  const window = interval ? `AND created_at >= datetime('now', '${interval}')` : ''
+  // `config_json` is nullable (releases before the config shape shipped sent none), and `json_each`
+  // over a NULL is not something to find out about in production, so those rows never enter the CTE.
+  // They'd be useless in a denominator anyway: an install with no config reports no settings.
+  const latest = `WITH latest AS (
+           SELECT anal_id, app_version, config_json,
+                  ROW_NUMBER() OVER (PARTITION BY anal_id ORDER BY created_at DESC, id DESC) AS rn
+               FROM heartbeat
+               WHERE config_json IS NOT NULL ${window}
+         )`
+
+  const [installs, values] = await Promise.all([
+    c.env.TELEMETRY_DB.prepare(
+      `${latest}
+         SELECT app_version AS appVersion, COUNT(*) AS installs
+             FROM latest WHERE rn = 1
+             GROUP BY appVersion
+             ORDER BY appVersion`,
+    ).all<{ appVersion: string; installs: number }>(),
+    c.env.TELEMETRY_DB.prepare(
+      `${latest}
+         SELECT l.app_version AS appVersion, je.key AS key, je.type AS type,
+                je.value AS value, COUNT(*) AS installs
+             FROM latest l, json_each(l.config_json) je
+             WHERE l.rn = 1
+             GROUP BY appVersion, key, type, value
+             ORDER BY appVersion, key`,
+    ).all<{ appVersion: string; key: string; type: string; value: string | number; installs: number }>(),
+  ])
+
+  return c.json({ installs: installs.results, values: values.results })
+})
+
 // Admin feedback: in-app "Send feedback" messages from D1, newest first. The dashboard is private
 // (Cloudflare Access), so the full message text and any reply-to email are returned for triage.
 // No install id is stored alongside feedback, so there's nothing to join it to.

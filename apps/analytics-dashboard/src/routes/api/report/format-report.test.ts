@@ -205,6 +205,53 @@ const richData: DashboardData = {
     },
   },
   license: { ok: true, data: { totalActivations: 42, activeDevices: 7 } },
+  settingsAdoption: {
+    ok: true,
+    data: {
+      totalInstalls: 30,
+      unresolvedInstalls: 4,
+      settings: [
+        {
+          key: 'ai.provider',
+          eligible: 26,
+          onDefault: 20,
+          defaultLabel: 'off',
+          values: [
+            { label: 'off', installs: 20, isDefault: true },
+            { label: 'cloud', installs: 6, isDefault: false },
+          ],
+        },
+        {
+          key: 'indexing.enabled',
+          eligible: 26,
+          onDefault: 24,
+          defaultLabel: 'on',
+          values: [
+            { label: 'on', installs: 24, isDefault: true },
+            { label: 'off', installs: 2, isDefault: false },
+          ],
+        },
+        {
+          // Younger than the fleet, so its total is smaller on purpose.
+          key: 'mediaIndex.enabled',
+          eligible: 10,
+          onDefault: 8,
+          defaultLabel: 'off',
+          values: [
+            { label: 'off', installs: 8, isDefault: true },
+            { label: 'on', installs: 2, isDefault: false },
+          ],
+        },
+        {
+          key: 'theme.mode',
+          eligible: 26,
+          onDefault: 26,
+          defaultLabel: 'system',
+          values: [{ label: 'system', installs: 26, isDefault: true }],
+        },
+      ],
+    },
+  },
   feedbackAndErrors: {
     ok: true,
     data: {
@@ -275,6 +322,7 @@ const allFailedData: DashboardData = {
   posthog: { ok: false, error: 'PostHog: not configured (missing env vars)' },
   license: { ok: false, error: 'License server: not configured (missing env vars)' },
   feedbackAndErrors: { ok: false, error: 'Feedback & errors: timed out after 20s' },
+  settingsAdoption: { ok: false, error: 'Settings adoption: timed out after 20s' },
 }
 
 /** Every source loaded, every collection empty: the "present but nothing in it" shape. */
@@ -303,6 +351,7 @@ const emptyData: DashboardData = {
   posthog: { ok: true, data: { totalPageviews: 0, dailyPageviews: [] } },
   license: { ok: true, data: { totalActivations: 0, activeDevices: null } },
   feedbackAndErrors: { ok: true, data: { feedback: [], errorReports: [] } },
+  settingsAdoption: { ok: true, data: { settings: [], totalInstalls: 0, unresolvedInstalls: 0 } },
 }
 
 /** Half the sources down: the sections that read two sources have to degrade one at a time. */
@@ -324,6 +373,7 @@ const mixedData: DashboardData = {
       errorReports: richData.feedbackAndErrors.ok ? richData.feedbackAndErrors.data.errorReports : [],
     },
   },
+  settingsAdoption: { ok: false, error: 'Settings adoption: offline' },
 }
 
 const richReport = `# Cmdr analytics report (2026-08-01)
@@ -463,6 +513,21 @@ Got the latest release per day (update-enabled installs that checked, deduped, b
 - Total activations: 42
 - Active devices: 7
 
+## Settings adoption: what do people actually turn on?
+
+- Installs we can read: 26
+- Not counted: 4 on a version older than the settings history goes back
+- Drive indexing on: 92%
+- Image search on: 20%
+- AI switched on: 23%
+
+Each install counts once, at its latest heartbeat. A setting is scored only against installs whose build actually had it, so a young setting shows a smaller total than an old one.
+
+Settings people change (most-moved first; the other 1 setting sits at its default everywhere):
+  ai.provider: default off, 26 installs, 77% on default, most common change: cloud (6)
+  mediaIndex.enabled: default off, 10 installs, 80% on default, most common change: on (2)
+  indexing.enabled: default on, 26 installs, 92% on default, most common change: off (2)
+
 ## Payment: how many pay?
 
 - Revenue: $128.00
@@ -529,6 +594,10 @@ Couldn't load: Cloudflare: timed out after 20s; GitHub: offline
 
 Couldn't load: Cloudflare: timed out after 20s
 
+## Settings adoption: what do people actually turn on?
+
+Couldn't load: Settings adoption: timed out after 20s
+
 ## Payment: how many pay?
 
 Couldn't load: Paddle: not configured (missing env vars)
@@ -580,6 +649,10 @@ GitHub stars: 0 total
 
 - Total activations: 0
 
+## Settings adoption: what do people actually turn on?
+
+- No installs to read yet (settings adoption fills as beta testers run a build that reports a config).
+
 ## Payment: how many pay?
 
 - Revenue: $0.00
@@ -628,6 +701,10 @@ GitHub releases (all-time):
 ## Active use: how many run the app?
 
 Couldn't load: Cloudflare: offline
+
+## Settings adoption: what do people actually turn on?
+
+Couldn't load: Settings adoption: offline
 
 ## Payment: how many pay?
 
