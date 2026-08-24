@@ -35,9 +35,13 @@ A production launch (Finder, Dock, Spotlight, the updater's relaunch) sets none 
 `docs/tooling/instance-isolation.md` sets at least one. `CMDR_INSTANCE_ID` and `CMDR_DATA_DIR` carry the weight, since
 they're precisely the vars that redirect the data dir that mints the id.
 
-`every_tooling_launcher_is_suppressed` pins the exact env each launcher stamps (E2E checker, i18n capture, marketing
+`every_tooling_launcher_is_recognized` pins the exact env each launcher stamps (E2E checker, i18n capture, marketing
 shots, dev wrapper). A launcher that stops tripping the gate fails that test rather than quietly minting installs
 again.
+
+The five live in `apps/desktop/src-tauri/src/prod_instance.rs` rather than here, because the macOS updater's
+update-check gate reads the same list (`updater::skip_reason`). Keeping one definition is what stops the
+`update_checks` ceiling and the `heartbeat` floor on the dashboard from counting different populations.
 
 ### Cleaning up the rows that already landed
 

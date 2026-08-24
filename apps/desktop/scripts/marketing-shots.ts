@@ -376,8 +376,10 @@ async function main(): Promise<void> {
       CMDR_E2E_ASK_CMDR_FAKE: '1',
       // No analytics hook is needed here: `CMDR_DATA_DIR` above IS the contract.
       // `analytics::suppression_reason` reads an isolated data dir as proof this isn't a
-      // real install, and `every_tooling_launcher_is_suppressed` pins this launcher's
+      // real install, and `every_tooling_launcher_is_recognized` pins this launcher's
       // exact env. The seeded `analytics.enabled: false` is the belt to that suspenders.
+      // The same list gates the macOS update check, so this launcher stays out of
+      // `update_checks` too, whether or not it seeds `updates.autoCheck: false`.
       // ❗ Deliberately absent: CMDR_E2E_MODE (would make the window permanently
       // unfocusable and paint the blue title bar) and CMDR_E2E_START_PATH (would arm
       // the fixture guard against real folders). See this file's header.
