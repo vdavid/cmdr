@@ -32,10 +32,9 @@ Root holds only the assembly and the shared leaves: `index.ts` (Hono mounting + 
 - **Rate limits are per data center, not global** (`enforceIpRateLimit` is the one gate every intake route calls), so
   they bound a single abusive client, never a distributed flood. `/error-report` carries a global ceiling on top.
 - **A heartbeat install id is not proof of a person.** A fresh data dir mints a fresh `anal_` id, so tooling-launched
-  app instances registered as new installs and left the table 6x over-counted. The daily
-  `handleSyntheticHeartbeatSweep` deletes ids that never persisted a setting and have been quiet a week; ❌ never
-  shorten that grace period, a brand-new real user looks identical for their first minutes. DETAILS § Synthetic
-  heartbeats.
+  app instances registered as new installs and left the table 6x over-counted. The daily `handleSyntheticHeartbeatSweep`
+  deletes ids that never persisted a setting and have been quiet a week; ❌ never shorten that grace period, a brand-new
+  real user looks identical for their first minutes. DETAILS § Synthetic heartbeats.
 - **Deploy rails**: apply D1 migrations first (`wrangler d1 migrations apply cmdr-telemetry`); the default export must
   stay the object form (`{ fetch, scheduled }`) or cron breaks (`app` is also named-exported for tests).
 
