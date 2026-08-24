@@ -131,3 +131,10 @@ text only (`../ask-cmdr/DETAILS.md` § The "Why this name" column).
 - `listen` and `UnlistenFn` from `@tauri-apps/api/event` are re-exported through `write-operations.ts`.
 - `getSyncStatus` and font metrics (`storeFontMetrics`, `hasFontMetrics`) live in `file-listing.ts` because they
   directly support file list rendering.
+- `analytics.ts` is the one exception to "IPC wrappers only": alongside `trackEvent` it holds `itemCountBucket`, a
+  deliberate MIRROR of the backend's `analytics::item_count_bucket`. A frontend event never crosses the Rust helper on
+  its way out, and one product with two ideas of what "a lot" means makes the dashboard unreadable, so the copy lives
+  next to the IPC every frontend event goes through. `analytics.test.ts` pins its boundaries against the Rust twin's
+  own test; change one side and it tells you about the other. ❌ Don't invent a per-feature bucketing next to a call to
+  it — the one documented exception is a count with a hard low cap of its own (open tabs cap at ten, where this ladder
+  has two values across the whole range), and those say so at the call site.

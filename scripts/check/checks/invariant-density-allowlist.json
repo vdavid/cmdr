@@ -4,7 +4,7 @@
     ".": 15,
     "apps/api-server": 19,
     "apps/desktop": 2,
-    "apps/desktop/src": 272,
+    "apps/desktop/src": 273,
     "apps/desktop/src-tauri": 397,
     "apps/desktop/test": 21,
     "apps/website": 1,
