@@ -117,8 +117,8 @@ without a deadline at every cadence.
 ## Forcing a wake, for a test
 
 `force_agent_wake` (`commands/e2e.rs`, `playwright-e2e` only) stages one folder's activity through the real
-`send_rollup` lane and then sends `WakeControl::ForceWake`. Verifying the loop otherwise means sitting out a cadence
-that runs up to half an hour, and hoping the fixture tree is somewhere the indexer walks.
+`send_rollup` lane and then sends `WakeControl::ForceWake(ForcedWake { only_folder })`. Verifying the loop otherwise
+means sitting out a cadence that runs up to half an hour, and hoping the fixture tree is somewhere the indexer walks.
 
 ⚠️ **A Cargo feature, ❌ not an env-var hook.** `test_mode.rs` draws the line at soft hooks being "strictly additive",
 and forcing a wake REPLACES the timer.
@@ -128,6 +128,29 @@ What the force skips is exactly two things: the timer (`not_before` and `Inbox::
 configured provider are all still checked, so a forced wake on an unconsented profile stores nothing and runs nothing.
 An empty inbox still renders an empty digest and opens no thread. A force arriving while a wake runs is held rather
 than dropped, and lands on the pass after `WakeFinished`.
+
+### The force reports on ITS folder and nothing else
+
+⚠️ **The inbox is not empty under a test run, and a wake reports on everything waiting.** The indexer's tap feeds the
+same inbox from whatever files the rest of the suite churns, so a spec staging one folder and asserting
+"What changed in 1 folder" was reading a number nobody controlled: measured on the Linux lane, one forced wake covered
+3 folders, the next 11, and a quiet wake 40. The digest's tally was wrong, and `thread_title` names the thread after
+the TOP-RANKED folder, so the thread a spec went looking for was titled after somebody else's directory.
+
+So `ForcedWake::only_folder` carries the staged folder, and `WakeLoop::isolate_inbox_to` cuts the inbox down to it
+(`Inbox::retain_folder`) as the wake is prepared. The dropped rows go from disk too, via `persist::save_all`.
+
+- **The narrowing happens at the WAKE, ❌ never where the rollup was staged.** A force arriving while another wake runs
+  waits out that whole model call (`wake_in_flight`), and the tap keeps filling the inbox for all of it, so clearing at
+  staging time would leave a seconds-wide hole.
+- **One message carries the whole request**, so no caller can order the clear and the staging wrongly. The command
+  stages and names the folder from one binding; a second spelling could name a folder nobody staged, and the wake would
+  find an empty inbox.
+- `folder: None` still wakes on everything waiting and narrows nothing.
+- `stage_agent_rollup` (same file, same feature) is the other half: it puts a folder in the inbox WITHOUT waking, so
+  `ask-cmdr-wake.spec.ts` stands that noise up on purpose rather than waiting for CI to supply it on some unlucky run.
+  ❌ Don't drop those decoys as redundant: without them the narrowing is untested and the premise silently returns to
+  luck.
 
 ⚠️ **The E2E fake counts as a configured provider** (`snapshot.rs::has_api_key`), because `resolve_agent_llm` answers
 `Ok` under `CMDR_E2E_ASK_CMDR_FAKE` with `ai.provider` still off. Without that branch the gate would report

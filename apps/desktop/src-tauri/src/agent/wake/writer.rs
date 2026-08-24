@@ -15,7 +15,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use tauri::AppHandle;
 
-use super::channel::{self, FolderActivity, WakeControl, WakeMessage};
+use super::channel::{self, FolderActivity, ForcedWake, WakeControl, WakeMessage};
 use super::followup::{self, FollowUpQueue};
 use super::importance::ImportanceCache;
 use super::runner::{self, BackgroundTurn, ResolvedSlot};
@@ -76,7 +76,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
         settings: settings::load(&app),
         wake_in_flight: false,
         not_before: 0,
-        forced: false,
+        forced: None,
         follow_ups: FollowUpQueue::default(),
         app,
         conn,
@@ -139,9 +139,10 @@ struct WakeLoop {
     /// [`DECLINED_WAKE_BACKOFF`].
     not_before: u64,
     /// A [`WakeControl::ForceWake`] is outstanding: act on the inbox now, whatever the timer
-    /// and the proactive toggle say. Cleared once the attempt is actually made, so a force
-    /// arriving while a wake runs lands on the next pass rather than being swallowed.
-    forced: bool,
+    /// and the proactive toggle say, and on whatever the request narrows it to. Cleared once
+    /// the attempt is actually made, so a force arriving while a wake runs lands on the next
+    /// pass rather than being swallowed.
+    forced: Option<ForcedWake>,
     /// Sweeps the user turned something down in, waiting out their coalescing window. One
     /// entry per sweep, which is what makes "reject all" one model call.
     follow_ups: FollowUpQueue,
@@ -211,7 +212,7 @@ impl WakeLoop {
             WakeControl::SettingsChanged => self.reload_settings(),
             WakeControl::ReadinessChanged => self.purge_inbox_if_not_permitted(),
             WakeControl::WakeFinished => self.wake_in_flight = false,
-            WakeControl::ForceWake => self.forced = true,
+            WakeControl::ForceWake(request) => self.forced = Some(request),
             WakeControl::SweepRejected { set_id } => self.note_rejection(set_id),
         }
         // Every control message is a reason the last decision may no longer hold: the gate the
@@ -275,7 +276,7 @@ impl WakeLoop {
     /// Prepare a wake if one is due, and hand it to its own thread.
     fn try_wake(&mut self) {
         let now = now_secs();
-        let forced = self.forced;
+        let forced = self.forced.is_some();
         if !forced && (now < self.not_before || !self.inbox.due_at(now)) {
             return;
         }
@@ -292,7 +293,7 @@ impl WakeLoop {
         if self.wake_in_flight {
             return;
         }
-        self.forced = false;
+        let request = self.forced.take();
 
         // The fourth gate, beside the three in `readiness.rs`. Checked before anything is
         // resolved, so an opted-out user's inbox costs nothing beyond the rows. Silent: this is
@@ -314,6 +315,12 @@ impl WakeLoop {
             runner::record_outcome("unavailable", None, self.inbox.len(), 0);
             return;
         };
+
+        // Here rather than where the force arrived: a force held behind a running wake waits
+        // out a whole model call, and the inbox keeps filling for all of it.
+        if let Some(only_folder) = request.as_ref().and_then(|request| request.only_folder.as_deref()) {
+            self.isolate_inbox_to(only_folder);
+        }
 
         match prepare_wake(
             &self.conn,
@@ -339,6 +346,23 @@ impl WakeLoop {
             }
             PrepareOutcome::NothingDue => runner::record_outcome("nothing_due", None, self.inbox.len(), 0),
             PrepareOutcome::Unavailable => runner::record_outcome("unavailable", None, self.inbox.len(), 0),
+        }
+    }
+
+    /// Cut the inbox down to the one folder a forced wake staged, on disk as well as in memory.
+    ///
+    /// ⚠️ **Reachable only from a `playwright-e2e` force** (`ForcedWake::only_folder`), which is
+    /// the one caller that can say what the wake is supposed to cover. A test's premise is "the
+    /// digest reports what I staged", and the indexer's tap feeds this same inbox from whatever
+    /// else the suite is doing, so the rows it put there are dropped rather than reported on.
+    fn isolate_inbox_to(&mut self, folder: &str) {
+        let dropped = self.inbox.retain_folder(folder);
+        if dropped == 0 {
+            return;
+        }
+        log::debug!(target: LOG_TARGET, "a forced wake dropped {dropped} inbox row(s) it did not stage");
+        if let Err(e) = persist::save_all(&self.conn, &self.inbox) {
+            log::warn!(target: LOG_TARGET, "the rows a forced wake dropped are still on disk: {e}");
         }
     }
 

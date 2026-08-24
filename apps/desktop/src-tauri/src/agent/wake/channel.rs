@@ -77,9 +77,29 @@ pub enum WakeMessage {
     Control(WakeControl),
 }
 
+/// What a forced wake asks for beyond "now".
+///
+/// ⚠️ Only the `playwright-e2e` command `force_agent_wake` builds one, and it is the whole
+/// request: a force names its folder here as well as staging it on the rollup lane, so the
+/// isolation below cannot be handed a folder nobody staged.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ForcedWake {
+    /// The one folder this force staged, if it staged one.
+    ///
+    /// ⚠️ **The inbox is CUT DOWN to this folder the moment the force is acted on**, so a spec
+    /// sees exactly what it put there. The real indexer feeds the same inbox all run long, and
+    /// a wake reports on everything waiting, so without this a spec staging one folder gets a
+    /// digest tallying however many the rest of the suite happened to churn. Applied at the
+    /// wake, ❌ never at the staging: a force arriving while another wake runs waits for it,
+    /// and the inbox keeps filling for the length of a model call.
+    ///
+    /// `None` wakes on whatever is already waiting, and cuts nothing.
+    pub only_folder: Option<String>,
+}
+
 /// A message that must NEVER be dropped: each one changes what the loop does next, so losing
 /// one is a bug rather than degraded signal.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WakeControl {
     /// Consent, disk access, or the API key moved. Re-read the snapshot and re-arm.
     ReadinessChanged,
@@ -89,13 +109,14 @@ pub enum WakeControl {
     /// rejection's follow-up share one in-flight flag, so they share this message too: at most
     /// one background turn at a time, whichever kind.
     WakeFinished,
-    /// Act on whatever is in the inbox NOW, ignoring the timer and the proactive toggle.
+    /// Act on the inbox NOW, ignoring the timer and the proactive toggle, and on the one
+    /// folder the request names if it names one.
     ///
     /// ⚠️ Only the `playwright-e2e` command `force_agent_wake` sends this. It is a hard hook
     /// behind a Cargo feature rather than a soft env-var one, because it REPLACES the timer
     /// instead of adding to it, and `test_mode.rs` draws the line there. The gates that
     /// protect the user (consent, disk access, a provider) are NOT bypassed.
-    ForceWake,
+    ForceWake(ForcedWake),
     /// The user turned down a group in this sweep, so the agent has something to ask about.
     ///
     /// ⚠️ **One message per REJECTED GROUP, one turn per SWEEP.** The loop coalesces: "reject

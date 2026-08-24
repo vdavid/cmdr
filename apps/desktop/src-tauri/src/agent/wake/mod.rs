@@ -61,7 +61,7 @@ mod writer;
 #[cfg(test)]
 mod tests;
 
-pub use channel::{FolderActivity, MAX_QUEUED_ROLLUPS, WakeControl, send_control, send_rollup};
+pub use channel::{FolderActivity, ForcedWake, MAX_QUEUED_ROLLUPS, WakeControl, send_control, send_rollup};
 pub use coalesce::{coalesce, merge_bundles};
 pub use compact::{Digest, DigestLine, Rollup, ScoredBundle, compact};
 pub use inbox::{Inbox, InboxRow, ReconcileReport, SETTLE_AFTER_LAUNCH, STALE_AFTER};

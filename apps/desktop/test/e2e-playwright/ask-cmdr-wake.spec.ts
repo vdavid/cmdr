@@ -18,7 +18,7 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { dismissAllToasts, dispatchMenuCommand, ensureAppReady, forceAgentWake } from './helpers.js'
+import { dismissAllToasts, dispatchMenuCommand, ensureAppReady, forceAgentWake, stageAgentRollup } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /** What the wake's scripted fake says, distinct from the rail's reply on purpose. */
@@ -105,6 +105,25 @@ function stagedToastText(page: TauriPage): Promise<string> {
   return page.evaluate<string>(`window.__wakeToast || ''`)
 }
 
+/**
+ * Puts two folders in the agent's inbox that the caller did NOT stage for its own wake.
+ *
+ * ⚠️ **The inbox is never empty in a real run.** The indexer's tap feeds it whatever the specs
+ * before this one churned, and a wake acts on everything waiting: it tallies every folder in
+ * the digest and titles its thread after the top-ranked one. Every test here rests on "the wake
+ * reports on the folder I staged", which `forceAgentWake` now guarantees by narrowing the wake
+ * to what it staged. Standing the noise up on purpose is what keeps that guarantee tested rather
+ * than assumed: left to CI, a run staging one folder saw a digest counting seven.
+ *
+ * ❗ Nonces sharing no prefix with any folder under test: a decoy whose name contained one would
+ * satisfy a session-title poll and hide exactly what these tests pin.
+ */
+async function stageInboxNoise(page: TauriPage): Promise<void> {
+  const nonce = String(Date.now())
+  await stageAgentRollup(page, `/Users/e2e/other-work-${nonce}`)
+  await stageAgentRollup(page, `/Users/e2e/elsewhere-${nonce}`)
+}
+
 /** Waits for the wake armed by `watchForWake` to have run and finished. */
 async function awaitWakeFinished(page: TauriPage): Promise<void> {
   await expect.poll(() => page.evaluate<boolean>(`window.__wakeSeen?.idle === true`), { timeout: 20000 }).toBe(true)
@@ -172,6 +191,8 @@ test.describe('Ask Cmdr wakes on its own', () => {
     await openRail(page)
     await ensureConsented(page)
 
+    await stageInboxNoise(page)
+
     await forceAgentWake(page, `/Users/e2e/${folderName}`)
 
     // The wake opens its thread before the turn runs, so the row shows up first.
@@ -223,14 +244,17 @@ test.describe('Ask Cmdr wakes on its own', () => {
     await ensureConsented(page)
 
     await watchForWake(page)
+    await stageInboxNoise(page)
     await forceAgentWake(page, `/Users/e2e/${quietFolder}`, 'quiet')
 
     // ⚠️ Absence can only be asserted at the END. A wake opens its thread BEFORE the turn runs
     // and deletes it after, so a poll mid-flight would legitimately see the row. Waiting for the
-    // quiet wake to FINISH is also what keeps the control below out of it: any wake drains the
-    // whole inbox, so a rollup landing before the first prepare would merge into the same one.
+    // quiet wake to FINISH is also what keeps the control below out of it: the quiet wake takes
+    // the inbox with it, so a rollup landing before its prepare is gone by the time the control
+    // forces its own wake, which would then have nothing to open a thread about.
     await awaitWakeFinished(page)
 
+    await stageInboxNoise(page)
     await forceAgentWake(page, `/Users/e2e/${loudFolder}`, 'reply')
     await expect
       .poll(
@@ -258,6 +282,7 @@ test.describe('Ask Cmdr wakes on its own', () => {
     // the whole turn takes milliseconds against the fake.
     await watchForStagedToast(page)
     await watchForWake(page)
+    await stageInboxNoise(page)
     await forceAgentWake(page, `/Users/e2e/${folderName}`, 'propose')
     await awaitWakeFinished(page)
 

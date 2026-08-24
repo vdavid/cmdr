@@ -756,6 +756,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::e2e::set_test_scan_preview_delay,
                     crate::commands::e2e::flush_file_watcher,
                     crate::commands::e2e::force_agent_wake,
+                    crate::commands::e2e::stage_agent_rollup,
                 ]
                 dispatch_only: [
                     // The specs read these two through raw `__TAURI_INTERNALS__.invoke`

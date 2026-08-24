@@ -631,11 +631,13 @@ E2E test hooks split along two axes:
 
 - **Hard hooks** (binary shape) live behind Cargo features:
   - `playwright-e2e`: feature-gated Tauri commands (`inject_listing_error`, `set_test_throttle`,
-    `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake`) and the tauri-plugin-playwright socket
-    bridge. `force_agent_wake` is the worked example of why the split exists: it REPLACES the proactive loop's timer,
-    which a soft hook may never do. Its `quiet` argument picks which script the wake's fake assistant plays (the
-    ordinary reply, or the `nothing_to_suggest` call that makes a wake delete its own thread); the flag is sticky, so a
-    spec wanting an ordinary wake afterwards passes it explicitly.
+    `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake`, `stage_agent_rollup`) and the
+    tauri-plugin-playwright socket bridge. `force_agent_wake` is the worked example of why the split exists: it
+    REPLACES the proactive loop's timer, which a soft hook may never do. It also narrows the wake to the folder it
+    staged, so the indexer's own rollups can't join the digest; `stage_agent_rollup` stages one without waking, which is
+    how a spec proves that. Its `quiet` argument picks which script the wake's fake assistant plays (the ordinary reply,
+    or the `nothing_to_suggest` call that makes a wake delete its own thread); the flag is sticky, so a spec wanting an
+    ordinary wake afterwards passes it explicitly.
   - `virtual-mtp`: virtual MTP device with deterministic fixtures.
   - `smb-e2e`: virtual SMB hosts injected into mDNS discovery.
 

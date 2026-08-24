@@ -89,8 +89,10 @@ pub fn set_test_scan_preview_delay(ms: Option<u64>) -> Result<(), String> {
 /// protect the user (consent, Full Disk Access, a configured provider) are untouched, so a
 /// forced wake on an unconsented profile still stores nothing and runs nothing.
 ///
-/// `folder` names the directory the changes happened IN, absolute; `None` forces a wake
-/// against whatever is already waiting.
+/// `folder` names the directory the changes happened IN, absolute, and it is the ONLY folder
+/// the wake reports on: the inbox is cut down to it as the wake is prepared, so a spec sees
+/// what it staged rather than that plus whatever the indexer's tap picked up from the rest of
+/// the suite. `None` forces a wake against everything already waiting and cuts nothing.
 ///
 /// `script` picks which of the three scripts the wake's fake assistant plays: `"reply"` (the
 /// ordinary answer), `"quiet"` (it calls `nothing_to_suggest`, deletes its own thread, and the
@@ -101,7 +103,7 @@ pub fn set_test_scan_preview_delay(ms: Option<u64>) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub fn force_agent_wake(folder: Option<String>, script: Option<String>) -> Result<(), String> {
-    use crate::agent::wake::{ChangeCounters, FolderActivity, WakeControl, send_control, send_rollup};
+    use crate::agent::wake::{ForcedWake, WakeControl, send_control};
     use crate::test_mode::WakeFakeScript;
 
     if let Some(script) = script {
@@ -111,26 +113,53 @@ pub fn force_agent_wake(folder: Option<String>, script: Option<String>) -> Resul
             _ => WakeFakeScript::Reply,
         });
     }
-    if let Some(folder) = folder {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|since| since.as_secs())
-            .unwrap_or(0);
-        send_rollup(FolderActivity {
-            volume_id: "root".to_string(),
-            folder,
-            // Arrivals, so the bundle scores on intent rather than on sheer volume: that is
-            // the flagship "something landed in a folder you care about" shape.
-            counters: ChangeCounters {
-                created: 5,
-                ..ChangeCounters::default()
-            },
-            observed_at: now,
-            last_event_at: now,
-        });
+    // Staged and named from ONE binding: the force tells the loop which folder it may report
+    // on, and a second spelling could name one nobody staged.
+    if let Some(folder) = folder.as_deref() {
+        stage_rollup(folder);
     }
-    send_control(WakeControl::ForceWake);
+    send_control(WakeControl::ForceWake(ForcedWake { only_folder: folder }));
     Ok(())
+}
+
+/// Stages one folder's activity for the proactive agent WITHOUT waking it.
+///
+/// What the indexer's tap does all run long, on demand. A spec uses it to put something in the
+/// inbox that it did NOT stage for its own wake, which is the one premise `force_agent_wake`'s
+/// isolation exists to defend and the one a test otherwise cannot reproduce on purpose: on CI
+/// it depends on how many files the specs before it happened to churn.
+///
+/// Feature-gated to `playwright-e2e`, like every other hook here.
+#[cfg(feature = "playwright-e2e")]
+#[tauri::command]
+#[specta::specta]
+pub fn stage_agent_rollup(folder: String) -> Result<(), String> {
+    stage_rollup(&folder);
+    Ok(())
+}
+
+/// Hand one folder's activity to the wake loop the way the indexer's tap does: through
+/// `send_rollup`, so the writer thread does the importance lookup and the admit.
+#[cfg(feature = "playwright-e2e")]
+fn stage_rollup(folder: &str) {
+    use crate::agent::wake::{ChangeCounters, FolderActivity, send_rollup};
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|since| since.as_secs())
+        .unwrap_or(0);
+    send_rollup(FolderActivity {
+        volume_id: "root".to_string(),
+        folder: folder.to_string(),
+        // Arrivals, so the bundle scores on intent rather than on sheer volume: that is
+        // the flagship "something landed in a folder you care about" shape.
+        counters: ChangeCounters {
+            created: 5,
+            ..ChangeCounters::default()
+        },
+        observed_at: now,
+        last_event_at: now,
+    });
 }
 
 /// Flushes any pending file-watcher events for E2E synchronization.

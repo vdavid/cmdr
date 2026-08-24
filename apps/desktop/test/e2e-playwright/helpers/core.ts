@@ -447,6 +447,25 @@ export async function forceAgentWake(
 }
 
 /**
+ * Puts one folder's activity in the agent's inbox without waking it: exactly what the indexer's
+ * tap does whenever a spec elsewhere in the run touches files.
+ *
+ * A spec uses this to prove the wake it forces afterwards reports on what IT staged and nothing
+ * else. That premise held by luck for a long time, and only because indexing was wedged partway
+ * through the suite; with the inbox genuinely filling, a digest asserting "1 folder" saw seven.
+ *
+ * Compiled only with the `playwright-e2e` Cargo feature, so it goes through raw
+ * `__TAURI_INTERNALS__.invoke` like its neighbours. See `commands/e2e.rs::stage_agent_rollup`.
+ *
+ * @param folder absolute path of the folder the changes happened in
+ */
+export async function stageAgentRollup(tauriPage: PageLike, folder: string): Promise<void> {
+  await tauriPage.evaluate(
+    `window.__TAURI_INTERNALS__.invoke('stage_agent_rollup', { folder: ${JSON.stringify(folder)} })`,
+  )
+}
+
+/**
  * The paths the app handed to an external launcher (`open_path` default-open, and
  * `open_in_editor` for the `file.edit` / new-file flows), oldest first. Both are
  * mocked in the `playwright-e2e` build: nothing launches, the requests just land in

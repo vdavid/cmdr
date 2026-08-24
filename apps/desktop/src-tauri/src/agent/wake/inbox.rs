@@ -164,6 +164,18 @@ impl Inbox {
         dropped
     }
 
+    /// Throw away every row that is not this folder's, and say how many went.
+    ///
+    /// ⚠️ **Only a FORCED wake asks for this** (`ForcedWake::only_folder`), and the wake that
+    /// follows reports on what is left. Nothing on the user's path narrows the inbox: a wake
+    /// covers everything waiting, which is what lets a cold folder ride along on a hot one's
+    /// deadline for free.
+    pub fn retain_folder(&mut self, folder: &str) -> usize {
+        let before = self.rows.len();
+        self.rows.retain(|row| row.bundle.folder == folder);
+        before - self.rows.len()
+    }
+
     /// Push a new cadence across every row already waiting.
     ///
     /// ⚠️ **Not optional, and not automatic.** [`admit`](Self::admit) merges min-only on

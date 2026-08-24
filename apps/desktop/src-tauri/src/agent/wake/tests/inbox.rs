@@ -276,6 +276,67 @@ fn a_wake_drains_everything_including_the_cold_rows() {
     assert_eq!(inbox.next_deadline(), None);
 }
 
+/// Narrowing to one folder leaves that folder's rows alone and takes every other row with it,
+/// windows included.
+///
+/// This is what a FORCED wake stands on. An E2E spec's premise is "the digest covers the folder
+/// I staged", and the indexer's tap feeds the same inbox from whatever else the suite is doing:
+/// a spec staging one folder got a digest tallying seven, and the thread it opened was named
+/// after somebody else's.
+#[test]
+fn narrowing_to_one_folder_keeps_its_rows_and_drops_the_rest() {
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/e2e/staged", 5, 60),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit(
+        arrivals("/Users/e2e/staged", 3, 120),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit(
+        arrivals("/Users/e2e/elsewhere", 5, 60),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit(
+        arrivals("/tmp/whatever-the-indexer-saw", 9, 60),
+        FolderImportance::Unknown,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+
+    let dropped = inbox.retain_folder("/Users/e2e/staged");
+
+    assert_eq!(dropped, 2, "the two rows nobody staged");
+    assert_eq!(inbox.len(), 2, "both of the staged folder's windows stay");
+    assert!(
+        inbox.drain().iter().all(|row| row.bundle.folder == "/Users/e2e/staged"),
+        "and the wake can only report on what was staged"
+    );
+}
+
+/// Narrowing to a folder nothing is waiting for empties the inbox rather than leaving the
+/// backlog to be reported on: a forced wake covers what it staged or nothing at all.
+#[test]
+fn narrowing_to_a_folder_with_nothing_waiting_leaves_an_empty_inbox() {
+    let mut inbox = Inbox::default();
+    inbox.admit(
+        arrivals("/Users/e2e/elsewhere", 5, 60),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+
+    assert_eq!(inbox.retain_folder("/Users/e2e/staged"), 1);
+    assert!(inbox.is_empty());
+}
+
 /// Draining hands the bundles over already scored, so the compactor can rank them without
 /// re-deriving anything the inbox already knew.
 #[test]

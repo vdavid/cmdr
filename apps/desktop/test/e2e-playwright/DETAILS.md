@@ -770,6 +770,14 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
 
 ## Gotchas
 
+**Gotcha**: the proactive agent's inbox is SHARED with the running indexer, so "the wake reports what I staged" is not
+free. **Why**: the indexer's tap rolls up every folder the rest of the suite churns, and a wake covers everything
+waiting, tallying it in the digest and naming its thread after the top-ranked folder. `forceAgentWake` narrows the wake
+to the folder it stages (`agent/wake/DETAILS.md` § Forcing a wake), and `ask-cmdr-wake.spec.ts` stages decoys through
+`stageAgentRollup` first so the narrowing is proven rather than assumed. Measured on the Linux lane without it: forced
+wakes covered 3, 11, and 30 folders, and every thread was titled after a decoy. ❌ Don't answer a count mismatch here by
+loosening the assertion; the exact count is the thing worth pinning.
+
 **Gotcha**: an OCCLUDED app window suspends `requestAnimationFrame`, so anything positioned on a rAF looks broken.
 **Why**: WKWebView reports `document.hidden === true` and stops firing rAF when the window is behind another (a manual
 run with the terminal in front is the normal case). Ark/zag position every dropdown through
