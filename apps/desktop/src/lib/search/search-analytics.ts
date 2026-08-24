@@ -12,6 +12,7 @@
  */
 
 import type { SearchRunCoverage } from '$lib/tauri-commands'
+import type { SearchMode } from '$lib/query-ui/query-filter-state.svelte'
 
 /** What started the run. The two have different costs and different endings. */
 export type SearchTrigger =
@@ -35,7 +36,12 @@ export type SearchCoverage = SearchRunCoverage['kind'] | 'unknown'
 export type SearchCta = 'indexDrive' | 'fullDiskAccess' | 'none'
 
 export interface SearchRunFacts {
-  mode: string
+  /**
+   * The dialog's own mode. Typed as the `SearchMode` union rather than `string`, so the
+   * documented vocabulary and the emitted one can't drift: a new mode is a compile error
+   * in every reader of this prop, and the docs get updated with it.
+   */
+  mode: SearchMode
   trigger: SearchTrigger
   ending: SearchEnding
   coverage: SearchCoverage

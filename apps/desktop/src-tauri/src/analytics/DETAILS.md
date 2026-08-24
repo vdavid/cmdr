@@ -126,18 +126,33 @@ Open set, no enum, no schema:
 Backend events fire at success chokepoints; frontend events ride `track_event`.
 
 - `app_launched` (backend, `lib.rs` setup): no props.
-- `pane_navigated` (frontend, `FilePane.svelte` `handleListingComplete`): `volume_kind` enum
-  (`local`/`smb`/`mtp`/`network`/`search-results`); never the path.
-- `search_used` (frontend, `SearchDialog.svelte`, once per run when the run ENDS): `mode`, `trigger`, `ending`,
-  `coverage`, `duration_bucket`, `abandoned_ground`, `capped`; never the query. See below.
+- `pane_navigated` (frontend, `file-explorer/pane/listing-loader.ts`, at the end of a successful load): `volume_kind`,
+  the pane's `VolumeKind`; never the path. In practice it's `local` / `smb` / `mtp` / `archive`. The union has two more
+  members, `network` (the SMB-browser virtual volume) and `search-results` (the snapshot virtual volume), and this
+  event can NEVER carry either: `FilePane.svelte` skips `loader.loadDirectory` for both, so a virtual pane never
+  reaches the emit. They're live kinds elsewhere (they drive capabilities), just not reachable here. If a virtual pane
+  ever gains a real listing pipeline, this line is the one to revisit.
+- `search_used` (frontend, `$lib/search/search-run-tracking.ts`, once per run when the run ENDS): `mode`
+  (`filename` / `regex` / `ai`, the `SearchMode` union), `trigger`, `ending`, `coverage`, `duration_bucket`,
+  `abandoned_ground`, `capped`; never the query. See below.
 - `search_cta_offered` / `search_cta_used` (frontend, same file): `cta` enum. See below.
-- `select_files_used` (frontend, `SelectionDialog.svelte` `commitMatches`): `mode` + `action` (add/remove); never the
-  pattern.
-- `file_transfer_completed` (backend, `write_operations/types.rs` `TauriEventSink::emit_complete`): `op` (copy/move),
+- `select_files_used` (frontend, `SelectionDialog.svelte` `commitMatches`): `mode` (the same `SearchMode` union:
+  `filename` / `regex` / `ai`) + `action` (add/remove); never the pattern.
+- `file_transfer_completed` (backend, `write_operations/analytics.rs` `emit_completion_analytics`): `op` (copy/move),
   `item_count` bucket, `had_conflicts` bool (proxied from `files_skipped > 0`); never names/paths.
-- `delete_used` (backend, same sink): `trashed` bool, `item_count` bucket.
+- `delete_used` (backend, same function): `trashed` bool, `item_count` bucket.
+- `archive_edit_completed` (backend, same function): `item_count` bucket. The remaining `WriteOperationType`s (rename,
+  create folder, create file) are instant metadata ops with no completion event, so they emit nothing; the match arms
+  are explicit so a new op type can't skip analytics silently.
 - `smb_connected` (backend, `crates/cmdr-smb/src/volume/mod.rs` `connect_smb_volume`): no host/share/credential props.
+- `sftp_connected` (backend, `crates/cmdr-sftp/src/volume/mod.rs`): no host/account/port/path props.
+  Both connection events go through the `AnalyticsSink` seam rather than `capture` directly, since the backend crates
+  can't see `tauri` (`volume_sink.rs`).
 - `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`): no device/product props.
+- `suggestion_group_proposed` / `suggestion_group_approved` / `suggestion_group_rejected` (backend,
+  `agent/suggested_ops/analytics.rs`): `verb` (the `ProposalVerb` token) + `op_count` bucket. Acceptance rate is the
+  agent's north-star metric, which is why the proposal and both outcomes are all counted; never a path, file name,
+  rationale, or selector pattern.
 - `settings_opened` (frontend, `$lib/settings/settings-window.ts` `openSettingsWindow`): `surface` enum (`command` /
   `ipc` / `crash-toast` / `error-toast` / `wake-indicator` / `paste-toast` / `enter-menu` / `volume-breadcrumb` /
   `downloads-toast` / `low-disk-toast` / `shortcut-chip` / `quick-look-toast`); never the section. It sits in the
@@ -197,7 +212,8 @@ that cannot see a query, a pattern, or a path.
 **`search_used` fires ONCE per run, when the run ends.** Firing at the start would leave every one of those questions
 unanswerable. The props:
 
-- `mode` — the dialog's own mode enum (`filename` / `ai`).
+- `mode` — the dialog's own mode enum (`filename` / `regex` / `ai`). Typed as `SearchMode` on `SearchRunFacts`, not
+  `string`, so adding a mode is a compile error rather than a silent new value in the data.
 - `trigger` — `run` (Enter or the run button, the path that walks) or `autoApply` (the debounce, which answers from the
   index alone, Decision 7). ❌ Don't fold them together: auto-apply fires on every typing pause, so it would drown the
   deliberate searches in the denominator.
