@@ -19,13 +19,20 @@ use crate::indexing::store::IndexStore;
 use crate::indexing::volume::IndexVolumeKind;
 
 /// Phase classifier used by `start_indexing`'s post-`resume_or_scan` branch.
-/// Returns true only while the phase carries the temporary init store. If
-/// `stop_indexing` swapped the state out from under us during `resume_or_scan`,
-/// the phase is `ShuttingDown` (or the instance was removed) and this returns
-/// false. The caller treats that as "phase changed, shut the manager down".
+/// Returns true only while the phase carries the temporary init store. A
+/// `stop_indexing` / `clear_index` that swapped the state out from under us during
+/// `resume_or_scan` removed the instance, so this answers false and the caller
+/// treats it as "phase changed, shut the manager down".
+///
+/// ⚠️ **It is HALF the check, and ❌ not enough on its own.** The slot a teardown
+/// frees can be reserved by a fresh start before we re-lock, and that start's
+/// instance is `Initializing` too — so the caller pairs this with "is MY
+/// reservation's stop signal still uncancelled" (the teardown cancels it on the way
+/// out). Without that half, an old start installs its manager over the newcomer's
+/// and two writer threads end up on one database.
 ///
 /// Extracted as a pure helper so the state-machine race fragment is testable
-/// without standing up an `AppHandle` / `IndexManager`.
+/// without standing up an `IndexManager`.
 pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
     matches!(phase, IndexPhase::Initializing { .. })
 }
