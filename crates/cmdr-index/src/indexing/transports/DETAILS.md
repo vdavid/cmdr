@@ -35,6 +35,13 @@ reconnect/registry lock), a no-op if already active, and gated on the PERSISTED 
 registry) via `smb_index_was_enabled`, which delegates to `lifecycle::master::drive_index_should_run`. Three facts must
 hold, and the master switch outranks both per-drive ones:
 
+⚠️ It also BAILS while a teardown is running on the share (`state::is_being_torn_down`), and that is the one place an
+autonomous resume differs from a user's own enable. A disable writes its sticky veto on the FAR side of the up-to-5 s
+drain, so the persisted intent read here is stale for exactly that window — and a start landing in it is RECORDED and
+carried out (`../lifecycle/DETAILS.md` § The shutting-down window), which would turn a NAS back on seconds after
+somebody turned it off. A reconnect recurs on its own, so dropping one costs nothing; a person's click does not, which
+is why the three per-drive ENABLE gates ask `is_active_and_staying` and record instead.
+
 - **The master drive-indexing switch is on** (`indexing.enabled`). Canonical model: `../lifecycle/DETAILS.md` § The two
   indexing switches. Missing this check is what let a NAS re-index itself at every launch despite the setting being off.
 - **The user turned this share ON** — the sticky `user_enabled` meta marker, read off a short-lived READ-ONLY connection

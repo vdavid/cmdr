@@ -181,7 +181,11 @@ parent). A grant of "one item" for such a type is `RootPromises` moving by one a
   `Index::start_volume`.** The app's `enable_drive_index` command was doing the index's routing: classify the volume id,
   try the local-external probe, fall through to the share gate, and rebuild a failed index on the way. All of that is
   decided from the volume's own facts, which the index has. What stayed app-side is the mDNS kick, which is the app's
-  network layer.
+  network layer. ⚠️ `start_volume`'s "already indexing" short-circuit asks `is_active_and_staying`, ❌ never
+  `is_active`: a volume with a teardown claimed on it reads active right up to the moment it stops, so the plain
+  question answers "already indexing" to the very request that has to bring it back (`../lifecycle/DETAILS.md` § The
+  shutting-down window).
+
 - **`is_active` + `force_scan` ⇒ `Index::rescan_volume`.** "Rescan now" on a drive that isn't indexing yet means "start
   it", and the caller shouldn't have to know that.
 - **`registered_mtp_volume_ids_for_device` + `buffer_mtp_handle_if_scanning` + `apply_mtp_added_or_changed` +
