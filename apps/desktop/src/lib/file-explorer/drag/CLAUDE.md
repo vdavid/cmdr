@@ -10,9 +10,7 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
   source/descendant blocking, and move-vs-copy resolution.
 - `drag-auto-scroll.ts`, `DragOverlay.svelte` + `drag-overlay.svelte.ts`, `drag-image-renderer.ts`: scroll bands, cursor
   label, canvas drag preview.
-- `drag-analytics.ts`: the `drop_received` / `drag_out_completed` vocabulary. `drop_received` reports on EVERY arm of
-  `handleDrop`, refusals included: a drop that lands nowhere feels identical to one that works, and its `origin` is
-  what makes drag readable as an input path against `file_transfer_completed`.
+- `drag-analytics.ts`: `drop_received` (every `handleDrop` arm, refusals too), `drag_out_completed`.
 - Backend: `native_drag.rs` (+ `native_drag/type_plan.rs`), `commands/file_system/drag.rs`, `drag_image_detection.rs`,
   `drag_image_swap.rs`. Self-drag consumption lives in `pane/drag-drop-controller.svelte.ts`.
 

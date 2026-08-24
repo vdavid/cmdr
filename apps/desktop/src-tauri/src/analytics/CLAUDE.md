@@ -9,8 +9,7 @@ live in the neutral [`crate::install_id`] module, reused by the crash and error 
 - `mod.rs`: heartbeat loop, consent gate, payload struct, fire-and-forget send, the shared `item_count_bucket`, and the
   helpers `posthog` reuses.
 - `first_index.rs`: what a phased first index delivers, off the event stream.
-- `session.rs`: the session-length ladder. There is NO `app_quit` (a crash has no moment left to report in); length is
-  read off the rungs a launch REACHES. `DETAILS.md` § Session length.
+- `session.rs`: the session-length ladder; ❌ no `app_quit` (a crash can't report).
 - `posthog.rs`: the `capture` path, the debug-build PII net, the build-time key.
 - `volume_sink.rs`: `PostHogVolumeAnalytics`, the storage backends' counter seam, feeding `capture`.
 - `config_shape.rs`: the config-shape builder and `CATEGORICAL_STRING_KEYS` allowlist (the ONE place the PII-free rule

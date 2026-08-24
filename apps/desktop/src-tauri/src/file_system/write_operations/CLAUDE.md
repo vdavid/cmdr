@@ -13,10 +13,8 @@ Copy, move, delete, trash, and zip edits as managed background ops.
 
 - **`spawn_managed` for copy/move/delete/trash, `run_instant` for rename/mkdir/mkfile**; blocking work inside
   `spawn_blocking`, so a starter returns an id before any I/O. Zip edits: `archive_edit/`.
-- **The two op families report analytics from two different places** (`analytics.rs`). A spawned op settles through
-  `emit_completion_analytics` with a `WriteCompleteEvent`; an instant one never produces that event at all, so
-  `rename_managed` / `create_*_managed` are WRAPPED and emit from the wrapper. ❌ Don't emit inside either driver: the
-  in-archive route is an early return, so a per-branch emit counts the filesystem ops and misses every in-zip one.
+- **An instant op produces no `WriteCompleteEvent`**, so its driver is WRAPPED to report analytics (`analytics.rs`).
+  ❌ Never emit inside one: the in-archive early return would drop every in-zip op.
 - **An instant mutation refuses with a typed `MutationError` (`mutation_error.rs`), ❌ never a sentence.** The frontend
   words it in ten locales; the `Volume` variant carries the whole `VolumeError`, and only `Unexpected` holds free
   text. `docs/guides/error-handling.md`.
