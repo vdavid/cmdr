@@ -15,6 +15,7 @@ use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::read::enrichment::{ReadPool, install_read_pool};
 use crate::indexing::read::pending_sizes::{PendingSizes, install_pending_sizes};
 use crate::indexing::store::IndexStore;
+#[cfg(any(test, feature = "testing"))]
 use crate::indexing::volume::IndexVolumeKind;
 
 /// Phase classifier used by `start_indexing`'s post-`resume_or_scan` branch.
