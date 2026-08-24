@@ -79,13 +79,28 @@ cloud, project `136072`). Shape:
 
 ```json
 { "api_key": "phc_...", "event": "<name>", "distinct_id": "anal_<uuid>",
-  "properties": { "source": "desktop", ...props }, "$set": <config-shape> }
+  "properties": { "source": "desktop", "app_version": "0.39.0", "os_version": "macOS 26.0",
+                  "arch": "aarch64", ...props },
+  "$set": <config-shape> }
 ```
 
 - **`$set` is the config-shape verbatim**: person properties reuse `config_shape::build_config_shape` (same allowlisted
   object the heartbeat ships), so there's one source of truth and no second PII surface.
 - **`source: "desktop"`** is injected first and can't be shadowed by a caller `source` prop, so the dashboard always
   splits desktop events from website events.
+- **The `EventIdentity` trio rides every event**: `app_version` (`CARGO_PKG_VERSION`, the same string the heartbeat
+  ships), `os_version` (`crate::platform::os_version()`), and `arch` (`std::env::consts::ARCH`), injected alongside
+  `source` and equally unshadowable (`injected_identity_cannot_be_shadowed_by_props`).
+
+  **Why on the event and not only in `$set`.** PostHog person properties are last-write-wins, so the config-shape and
+  the heartbeat's per-install identity both answer "what is true now", never "what was true when this event fired". An
+  event without its own `app_version` is therefore uninterpretable the moment a release changes what an event means: of
+  406 `search_used` events over 90 days, 265 carried only `mode` and none of the richer props, almost certainly from
+  builds predating the richer event, and nothing in the data could say so. `os_version` and `arch` are there for the
+  same reason at the same cost (three low-cardinality strings): a platform-specific regression shows up as a version
+  mix otherwise.
+
+  All three are categorical and PII-free, so they need no exemption from the prop rule.
 - **The key is `option_env!("CMDR_POSTHOG_KEY")`**, baked at build time (a GitHub secret on the `tauri-action` step in
   `release.yml`; `build.rs` has a `rerun-if-env-changed` for it). `None` locally → `capture` is a no-op (logged once at
   debug). The key is public by design (PostHog ingest keys are safe in client code).

@@ -59,9 +59,36 @@ pub fn capture(event: &str, props: Value) {
 
     let fda_granted = !crate::fda_gate::is_fda_pending_runtime();
     let config = config_shape::build_config_shape(&super::read_raw_settings(), fda_granted);
-    let body = build_capture_body(api_key, event, props, &crate::install_id::analytics_id(), config);
+    let body = build_capture_body(api_key, event, props, &EventIdentity::current(), config);
 
     send_capture(body);
+}
+
+/// Who sent an event: the install id plus the build and platform it ran on. Every field is
+/// low-cardinality and PII-free, and all of them land on EVERY event's `properties` (not only on
+/// `$set`), because person properties are last-write-wins and so can't answer "what was true when
+/// this event fired".
+struct EventIdentity {
+    /// The `anal_` install id, PostHog's `distinct_id`.
+    distinct_id: String,
+    /// Semver `x.y.z` from `CARGO_PKG_VERSION`, the same string the heartbeat ships.
+    app_version: &'static str,
+    /// `crate::platform::os_version()`, for example `macOS 26.0`.
+    os_version: String,
+    /// `aarch64` / `x86_64`.
+    arch: &'static str,
+}
+
+impl EventIdentity {
+    /// The identity of this running install.
+    fn current() -> Self {
+        Self {
+            distinct_id: crate::install_id::analytics_id(),
+            app_version: env!("CARGO_PKG_VERSION"),
+            os_version: crate::platform::os_version(),
+            arch: std::env::consts::ARCH,
+        }
+    }
 }
 
 /// Builds the PostHog `/capture/` request body. Pure (no I/O, no gating), so it's directly
@@ -72,21 +99,29 @@ pub fn capture(event: &str, props: Value) {
 ///   "api_key": "phc_...",
 ///   "event": "<name>",
 ///   "distinct_id": "anal_<uuid>",
-///   "properties": { "source": "desktop", ...props },
+///   "properties": {
+///     "source": "desktop", "app_version": "0.39.0", "os_version": "macOS 26.0", "arch": "aarch64",
+///     ...props
+///   },
 ///   "$set": <config-shape>
 /// }
 /// ```
 ///
-/// `source: "desktop"` is injected first so a stray `source` in `props` can't shadow it (and so the
-/// dashboard can always split desktop events from the website's). The config-shape is the SAME
-/// allowlisted object the heartbeat ships, so there's exactly one source of truth for person
-/// properties.
-fn build_capture_body(api_key: &str, event: &str, props: Value, distinct_id: &str, config: Value) -> Value {
+/// `source` plus the three [`EventIdentity`] props are injected FIRST, so a stray same-named prop
+/// from a caller can't shadow any of them. The config-shape is the SAME allowlisted object the
+/// heartbeat ships, so there's exactly one source of truth for person properties.
+fn build_capture_body(api_key: &str, event: &str, props: Value, identity: &EventIdentity, config: Value) -> Value {
     let mut properties = Map::new();
     properties.insert("source".to_string(), Value::String("desktop".to_string()));
+    properties.insert(
+        "app_version".to_string(),
+        Value::String(identity.app_version.to_string()),
+    );
+    properties.insert("os_version".to_string(), Value::String(identity.os_version.clone()));
+    properties.insert("arch".to_string(), Value::String(identity.arch.to_string()));
     if let Value::Object(prop_map) = sanitize_props(event, props) {
         for (key, value) in prop_map {
-            // `source` injected above wins: skip any caller-supplied `source`.
+            // The props injected above win: skip any caller-supplied key of the same name.
             properties.entry(key).or_insert(value);
         }
     }
@@ -94,7 +129,7 @@ fn build_capture_body(api_key: &str, event: &str, props: Value, distinct_id: &st
     Value::Object(Map::from_iter([
         ("api_key".to_string(), Value::String(api_key.to_string())),
         ("event".to_string(), Value::String(event.to_string())),
-        ("distinct_id".to_string(), Value::String(distinct_id.to_string())),
+        ("distinct_id".to_string(), Value::String(identity.distinct_id.clone())),
         ("properties".to_string(), Value::Object(properties)),
         ("$set".to_string(), config),
     ]))
@@ -176,6 +211,16 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    /// A fixed identity, so a test asserts against known values rather than the host's.
+    fn test_identity(distinct_id: &str) -> EventIdentity {
+        EventIdentity {
+            distinct_id: distinct_id.to_string(),
+            app_version: "1.2.3",
+            os_version: "macOS 26.0".to_string(),
+            arch: "aarch64",
+        }
+    }
+
     #[test]
     fn capture_body_has_expected_shape() {
         let config = json!({ "theme.mode": "dark", "fdaGranted": true });
@@ -183,7 +228,7 @@ mod tests {
             "phc_test",
             "pane_navigated",
             json!({ "volume_kind": "local" }),
-            "anal_178c8e27-511f-4f0e-a1fc-6a44f2ab7341",
+            &test_identity("anal_178c8e27-511f-4f0e-a1fc-6a44f2ab7341"),
             config.clone(),
         );
 
@@ -200,7 +245,13 @@ mod tests {
 
     #[test]
     fn distinct_id_is_the_anal_id() {
-        let body = build_capture_body("phc_test", "app_launched", json!({}), "anal_abc", json!({}));
+        let body = build_capture_body(
+            "phc_test",
+            "app_launched",
+            json!({}),
+            &test_identity("anal_abc"),
+            json!({}),
+        );
         let distinct = body["distinct_id"].as_str().expect("string");
         assert!(
             distinct.starts_with("anal_"),
@@ -211,8 +262,53 @@ mod tests {
     #[test]
     fn injected_source_cannot_be_shadowed_by_props() {
         // A caller passing `source: "sneaky"` must not override the injected `desktop` value.
-        let body = build_capture_body("phc_test", "e", json!({ "source": "sneaky" }), "anal_x", json!({}));
+        let body = build_capture_body(
+            "phc_test",
+            "e",
+            json!({ "source": "sneaky" }),
+            &test_identity("anal_x"),
+            json!({}),
+        );
         assert_eq!(body["properties"]["source"], json!("desktop"));
+    }
+
+    #[test]
+    fn every_event_carries_the_build_and_platform_identity() {
+        // Person properties are last-write-wins, so the release and platform an event fired on have
+        // to ride the event itself for any metric to be segmentable by version.
+        let body = build_capture_body(
+            "phc_test",
+            "app_launched",
+            json!({}),
+            &test_identity("anal_x"),
+            json!({}),
+        );
+        assert_eq!(body["properties"]["app_version"], json!("1.2.3"));
+        assert_eq!(body["properties"]["os_version"], json!("macOS 26.0"));
+        assert_eq!(body["properties"]["arch"], json!("aarch64"));
+    }
+
+    #[test]
+    fn injected_identity_cannot_be_shadowed_by_props() {
+        // Same guarantee `source` has: a caller can never rewrite which build an event came from.
+        let body = build_capture_body(
+            "phc_test",
+            "e",
+            json!({ "app_version": "9.9.9", "os_version": "Windows 12", "arch": "sparc" }),
+            &test_identity("anal_x"),
+            json!({}),
+        );
+        assert_eq!(body["properties"]["app_version"], json!("1.2.3"));
+        assert_eq!(body["properties"]["os_version"], json!("macOS 26.0"));
+        assert_eq!(body["properties"]["arch"], json!("aarch64"));
+    }
+
+    #[test]
+    fn current_identity_reads_the_running_build() {
+        let identity = EventIdentity::current();
+        assert_eq!(identity.app_version, env!("CARGO_PKG_VERSION"));
+        assert_eq!(identity.arch, std::env::consts::ARCH);
+        assert!(!identity.os_version.is_empty(), "os_version is always non-empty");
     }
 
     #[test]
@@ -222,7 +318,7 @@ mod tests {
             "phc_test",
             "file_transfer_completed",
             json!({ "op": "copy", "item_count": "11-100", "had_conflicts": false }),
-            "anal_x",
+            &test_identity("anal_x"),
             json!({}),
         );
         assert_eq!(body["properties"]["op"], json!("copy"));
