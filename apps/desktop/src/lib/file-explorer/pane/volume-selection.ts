@@ -15,6 +15,7 @@
 
 import { resolvePathVolume } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { reportFavoriteOpened } from '../navigation/favorites-analytics'
 import type { VolumeInfo } from '../types'
 import type { NavigateIntent, NavigateResult } from './navigate'
 
@@ -44,6 +45,7 @@ export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelectio
 
     // Handle favorites differently from actual volumes (same as VolumeBreadcrumb).
     if (volume.category === 'favorite') {
+      reportFavoriteOpened('command')
       // For favorites, navigate to the favorite's path on its containing volume.
       const { volume: containingVolume } = await resolvePathVolume(volume.path)
       const volumeId = containingVolume?.id ?? 'root'

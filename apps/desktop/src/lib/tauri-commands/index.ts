@@ -311,7 +311,7 @@ export type {
 } from './write-operations'
 
 // Analytics (PostHog feature events through the single backend path)
-export { trackEvent } from './analytics'
+export { trackEvent, itemCountBucket } from './analytics'
 // Beta-tester signup (subscribes the contact email; sends NO install id)
 export { betaSignup } from './beta-signup'
 export type { BetaSignupResult } from './beta-signup'

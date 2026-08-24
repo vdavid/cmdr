@@ -10,6 +10,8 @@ tabs.
   closed-tab stack
 - **`TabBar.svelte`**: Tab bar UI (always visible, Chrome-style shrinking tabs, pins, close buttons, context menu)
 - **`tab-label.ts`**: `deriveTabLabel(path)`, the tab title
+- **`tab-analytics.ts`**: the PII-free event vocabulary. Emitted from `pane/tab-operations.ts` (every trigger funnels
+  through its exports), ❌ never from the pure state manager, which unit tests drive directly.
 
 Architecture, decision rationale, persistence, and closed-tab-history detail: `DETAILS.md`.
 

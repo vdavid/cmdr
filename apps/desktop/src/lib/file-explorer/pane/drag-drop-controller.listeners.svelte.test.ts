@@ -73,6 +73,10 @@ const {
 
 vi.mock('$lib/tauri-commands', () => ({
   DEFAULT_VOLUME_ID: 'root',
+  // The drop path reports one PII-free event per drop; the emitter is fire-and-forget
+  // so a stub is all it needs (`drag/drag-analytics.ts`).
+  trackEvent: vi.fn(() => Promise.resolve()),
+  itemCountBucket: (n: number) => String(n),
   setSelfDragResolvedOperation: setSelfDragResolvedOperationSpy,
   statPathsKinds: statPathsKindsSpy,
   // `resolvePathVolume` is the controller's default fallback. Tests that want it

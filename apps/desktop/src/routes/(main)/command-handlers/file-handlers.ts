@@ -27,6 +27,7 @@ import CopiedPathToastContent from '$lib/file-explorer/CopiedPathToastContent.sv
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
 import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
 import { tString } from '$lib/intl/messages.svelte'
+import { trackEvent } from '$lib/tauri-commands'
 import type { CommandArgs } from '$lib/commands'
 import type { CommandHandlerContext, CommandHandlerRecord } from './types'
 
@@ -91,7 +92,15 @@ export const fileHandlers = {
     explorerRef?.startRename(renameArgs)
   },
 
-  'file.edit': (hctx) => withEntryUnderCursor(hctx, (entry) => openInEditor(entry.path)),
+  'file.edit': (hctx) =>
+    withEntryUnderCursor(hctx, (entry) => {
+      // F4 hands the file to the OS's text editor (`open -t`), so there's nothing
+      // downstream of this to count it. No props: the only honest thing this
+      // knows is that somebody pressed it, and the file's name and extension are
+      // exactly what must never cross.
+      void trackEvent('editor_opened', {})
+      return openInEditor(entry.path)
+    }),
 
   'file.copy': ({ explorerRef, dispatchArgs }) => {
     // Arg-less from the F-bar / palette / keyboard (open the dialog with no
@@ -201,28 +210,41 @@ export const fileHandlers = {
     // also covers the panel-key Shift+Space-from-listener path (which arms
     // it before flipping `isOpen`).
     if (quickLookDispatchGuardJustFired()) {
+      // The duplicate fire of ONE keypress. Counting it would double every
+      // number this event produces.
       return
     }
     armQuickLookDispatchGuard()
     if (quickLookState.isOpen) {
       quickLookState.isOpen = false
       await quickLookClose()
+      void trackEvent('quick_look_used', { outcome: 'closed' })
       return
     }
     const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
-    if (!entryUnderCursor) return
+    if (!entryUnderCursor) {
+      void trackEvent('quick_look_used', { outcome: 'noTarget' })
+      return
+    }
     // Quick Look can't preview a file INSIDE an archive: the inner path isn't a
     // real file on disk, so the panel would open blank. No-op — consistent with
     // how Quick Look already skips non-local volumes; F3 (viewer temp-extract) is
     // the preview path inside a zip. Return BEFORE flipping `isOpen` so state stays
     // consistent (no panel opened).
-    if (pathInsideArchive(entryUnderCursor.path)) return
+    if (pathInsideArchive(entryUnderCursor.path)) {
+      // The one gate in front of Quick Look. Counted so a low `opened` number can
+      // be told apart from people reaching for it where it can't work; without
+      // the refusal, a zero is unreadable (`analytics/DETAILS.md` § Reading a zero).
+      void trackEvent('quick_look_used', { outcome: 'insideArchive' })
+      return
+    }
     const volumeId = getFocusedPaneVolumeId()
     // Optimistically flip `isOpen` before the IPC: AppKit returns from
     // `makeKeyAndOrderFront:` synchronously and the panel is up by the time
     // the IPC resolves, but the optimistic flip means a second Shift+Space
     // press immediately after the first reads the right state.
     quickLookState.isOpen = true
+    void trackEvent('quick_look_used', { outcome: 'opened' })
     await quickLookOpen(entryUnderCursor.path, volumeId)
   },
 

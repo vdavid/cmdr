@@ -16,6 +16,7 @@ import {
 import { resolveDropTarget } from '../drag/drop-target-hit-testing'
 import { isInvalidSelfDescendantDrop } from '../drag/drop-target-validation'
 import { isForcedCopyDrag, pickDropOperation, type ModifierState } from '../drag/drop-operation'
+import { reportDropReceived, type DropOutcome } from '../drag/drag-analytics'
 import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag/drag-overlay.svelte.js'
 import { getCachedIcon } from '$lib/icon-cache'
 import {
@@ -479,16 +480,36 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     hideOverlay()
     stopModifierTracking()
 
-    if (!resolved) return
+    // Every arm below reports, refusals included. A drop that lands nowhere feels
+    // identical to one that works, so a transfer-only count would show a smoothly
+    // working feature while people keep missing the target. `origin` is what makes
+    // drag readable as an INPUT PATH: `file_transfer_completed` can't say how an
+    // operation was started, because by the time it settles nothing remembers.
+    const origin = recordedIdentity ? 'self' : 'external'
+    const report = (outcome: DropOutcome) => {
+      reportDropReceived(origin, outcome, operation, paths.length)
+    }
+
+    if (!resolved) {
+      report('noTarget')
+      return
+    }
     const targetPane = resolved.paneId
-    if (isSamePaneNoOpDrop(resolved, modifiers)) return
+    if (isSamePaneNoOpDrop(resolved, modifiers)) {
+      report('samePane')
+      return
+    }
 
     // Guard against drops onto the source itself or into its descendants. Uses
     // the recorded source paths for a self-drag (the pasteboard paths may be
     // volume-relative), else the dropped paths.
     const guardPaths = recordedIdentity?.sourcePaths ?? paths
-    if (effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, guardPaths)) return
+    if (effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, guardPaths)) {
+      report('selfDescendant')
+      return
+    }
 
+    report('transfer')
     void handleFileDrop(
       paths,
       targetPane,

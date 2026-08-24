@@ -26,6 +26,7 @@ import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import { onDragOutSessionComplete, onDragOutSessionStarted } from '$lib/tauri-commands'
 import { composeDragOutCompleteToast, type DragOutSessionComplete } from './drag-out-toast'
+import { reportDragOutCompleted } from './drag-analytics'
 
 const log = getAppLogger('drag-out')
 
@@ -84,6 +85,16 @@ function handleSessionStarted(payload: DragOutSessionStarted): void {
 function handleSessionComplete(payload: DragOutSessionComplete): void {
   const { sessionKey } = payload
   const { message, level } = composeDragOutCompleteToast(payload)
+
+  // Counted here rather than at the drag's start: a promise-backed drag (MTP, a
+  // NAS) can be abandoned before anything fulfills, and this is the one moment
+  // that knows how much actually left. Per SESSION, matching the toast — one
+  // gesture is one drag however many files it carried. ❌ `payload.failures` holds
+  // leaf NAMES; only its length crosses.
+  reportDragOutCompleted(
+    payload.filesSucceeded + payload.foldersSucceeded + payload.failures.length,
+    payload.failures.length,
+  )
   log.debug('Drag-out session {sessionKey} complete: {message}', { sessionKey, message })
 
   // Replace the in-progress toast in place (same id). Transient so it

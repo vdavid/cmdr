@@ -10,6 +10,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 - `VolumeBreadcrumb.svelte` + `volume-grouping.ts` / `volume-space-manager.svelte.ts` /
   `volume-breadcrumb-handlers.svelte.ts` / `favorites-controller.svelte.ts` / `eject-predicate.ts`: the volume selector,
   its disk-space state machine, and the favorites interaction layer.
+- `favorites-analytics.ts`: `favorite_opened`, reported from the two places that branch on `category === 'favorite'`
+  (here and `pane/volume-selection.ts`). No lower chokepoint exists: `navigate()` sees only the CONTAINING volume's id
+  by then.
 
 ## Must-knows
 

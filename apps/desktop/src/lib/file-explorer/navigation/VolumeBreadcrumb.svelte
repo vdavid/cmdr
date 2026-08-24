@@ -76,6 +76,7 @@
     import { silenceDrive } from '$lib/indexing/drive-index-prefs'
     import { setSetting } from '$lib/settings'
     import { createFavoritesController } from './favorites-controller.svelte'
+    import { reportFavoriteOpened } from './favorites-analytics'
     import {
         createBreadcrumbPopupController,
         createKeyboardModeTracker,
@@ -298,6 +299,7 @@
 
         // Check if this is a favorite (shortcut) or an actual volume
         if (volume.category === 'favorite') {
+            reportFavoriteOpened('breadcrumb')
             // For favorites, find the actual containing volume
             const { volume: containingVolume } = await resolvePathVolume(volume.path)
             if (containingVolume) {

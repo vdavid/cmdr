@@ -6,7 +6,11 @@ const { resolvePathVolumeSpy } = vi.hoisted(() => ({
   resolvePathVolumeSpy: vi.fn<() => Promise<{ volume: { id: string } | null }>>(),
 }))
 
-vi.mock('$lib/tauri-commands', () => ({ resolvePathVolume: resolvePathVolumeSpy }))
+vi.mock('$lib/tauri-commands', () => ({
+  resolvePathVolume: resolvePathVolumeSpy,
+  // Picking a favorite reports `favorite_opened`; fire-and-forget, so a stub suffices.
+  trackEvent: vi.fn(() => Promise.resolve()),
+}))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))

@@ -17,6 +17,12 @@ import {
   MAX_TABS_PER_PANE,
   type TabManager,
 } from '../tabs/tab-state-manager.svelte'
+import {
+  reportTabClosed,
+  reportTabOpened,
+  reportTabPinToggled,
+  reportTabSwitched,
+} from '../tabs/tab-analytics'
 import type { TabState, TabId, PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
 import { createHistory } from '../navigation/navigation-history'
 import { DEFAULT_SORT_BY, defaultSortOrders, type SortColumn } from '../types'
@@ -100,14 +106,19 @@ export async function handleTabClose(
 ) {
   const mgr = getTabMgr(pane)
   const tab = getAllTabs(mgr).find((t) => t.id === tabId)
+  const wasPinned = tab?.pinned ?? false
   if (tab?.pinned) {
     const ok = await confirmDialog(
       tString('fileExplorer.tabs.closePinnedConfirm'),
       tString('fileExplorer.tabs.closePinnedTitle'),
     )
-    if (!ok) return
+    if (!ok) {
+      reportTabClosed('single', 'cancelled', getTabCount(mgr), wasPinned)
+      return
+    }
   }
-  closeTabRecording(mgr, tabId, getClosedTabsCap())
+  const result = closeTabRecording(mgr, tabId, getClosedTabsCap())
+  reportTabClosed('single', result.closed ? 'closed' : 'lastTab', getTabCount(mgr), wasPinned)
   saveTabsForPane(pane, getTabMgr)
   if (pane === focusedPane) syncPinTabMenu()
 }
@@ -193,11 +204,13 @@ export async function handleTabContextMenu(
       } else {
         pinTab(mgr, tabId)
       }
+      reportTabPinToggled(!currentTab.pinned)
       saveTabsForPane(pane, getTabMgr)
       if (pane === focusedPane && tabId === mgr.activeTabId) syncPinTabMenu()
       break
     case 'tab_close_others':
       closeOtherTabsRecording(mgr, tabId, getClosedTabsCap())
+      reportTabClosed('others', 'closed', getTabCount(mgr), false)
       saveTabsForPane(pane, getTabMgr)
       break
     case 'tab_close': {
@@ -245,6 +258,7 @@ export function newTab(
   if (success) {
     saveTabsForPane(focusedPane, getTabMgr)
   }
+  reportTabOpened('new', success ? 'opened' : 'atCap', getTabCount(mgr))
   return success
 }
 
@@ -259,6 +273,7 @@ export async function closeActiveTabWithConfirmation(
 
   // Last tab: close window without confirmation (even if pinned)
   if (getTabCount(mgr) <= 1) {
+    reportTabClosed('single', 'lastTab', getTabCount(mgr), activeTab.pinned)
     return 'last-tab'
   }
 
@@ -268,10 +283,14 @@ export async function closeActiveTabWithConfirmation(
       tString('fileExplorer.tabs.closePinnedConfirm'),
       tString('fileExplorer.tabs.closePinnedTitle'),
     )
-    if (!ok) return 'cancelled'
+    if (!ok) {
+      reportTabClosed('single', 'cancelled', getTabCount(mgr), activeTab.pinned)
+      return 'cancelled'
+    }
   }
 
   const result = closeTabRecording(mgr, mgr.activeTabId, getClosedTabsCap())
+  reportTabClosed('single', result.closed ? 'closed' : 'lastTab', getTabCount(mgr), activeTab.pinned)
   if (result.closed) {
     saveTabsForPane(focusedPane, getTabMgr)
     return 'closed'
@@ -287,6 +306,7 @@ export function closeOtherTabsInFocusedPane(
 ) {
   const mgr = getTabMgr(focusedPane)
   closeOtherTabsRecording(mgr, mgr.activeTabId, getClosedTabsCap())
+  reportTabClosed('others', 'closed', getTabCount(mgr), false)
   saveTabsForPane(focusedPane, getTabMgr)
 }
 
@@ -299,8 +319,10 @@ export function reopenLastClosedTabInPane(
   const result = reopenLastClosedTabInMgr(mgr, MAX_TABS_PER_PANE)
   if ('reopened' in result) {
     saveTabsForPane(focusedPane, getTabMgr)
+    reportTabOpened('reopened', 'opened', getTabCount(mgr))
     return 'reopened'
   }
+  reportTabOpened('reopened', result.reason === 'cap' ? 'atCap' : 'nothingToReopen', getTabCount(mgr))
   return result.reason
 }
 
@@ -313,6 +335,7 @@ export function togglePinActiveTab(focusedPane: 'left' | 'right', getTabMgr: (pa
   } else {
     pinTab(mgr, activeTab.id)
   }
+  reportTabPinToggled(activeTab.pinned)
   saveTabsForPane(focusedPane, getTabMgr)
   syncPinTabMenuForPane(focusedPane, getTabMgr)
 }
@@ -338,6 +361,7 @@ export function cycleTab(
   const paneRef = getPaneRef(focusedPane)
   const cursorFilename = paneRef?.getFilenameUnderCursor() ?? null
   cycleTabInManager(mgr, direction, cursorFilename)
+  reportTabSwitched('cycle')
   saveTabsForPane(focusedPane, getTabMgr)
   syncPinTabMenuForPane(focusedPane, getTabMgr)
 }
@@ -358,6 +382,7 @@ export function switchToTab(
     log.warn(`MCP tab activate: tab ${tabId} not found in ${pane} pane`)
     return false
   }
+  reportTabSwitched('pick')
   saveTabsForPane(pane, getTabMgr)
   if (pane === focusedPane) syncPinTabMenuForPane(focusedPane, getTabMgr)
   return true

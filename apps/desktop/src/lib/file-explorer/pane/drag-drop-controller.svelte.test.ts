@@ -55,6 +55,7 @@ const {
   statPathsKindsSpy,
   addToastSpy,
   operationStartIsBlockedSpy,
+  trackEventSpy,
   listenHandlers,
   dragDropHandlerRef,
 } = vi.hoisted(() => ({
@@ -74,6 +75,7 @@ const {
   getModifierStateSpy: vi.fn<() => { altHeld: boolean; cmdHeld: boolean; shiftHeld: boolean }>(),
   addToastSpy: vi.fn(),
   operationStartIsBlockedSpy: vi.fn<() => boolean>(),
+  trackEventSpy: vi.fn<(name: string, props: Record<string, unknown>) => Promise<void>>(() => Promise.resolve()),
   // Captured event-name → handler map, for driving the native listeners in `init()`.
   listenHandlers: new Map<string, (event: { payload: unknown }) => void>(),
   dragDropHandlerRef: { current: null as ((event: { payload: DragDropPayload }) => void) | null },
@@ -81,6 +83,9 @@ const {
 
 vi.mock('$lib/tauri-commands', () => ({
   DEFAULT_VOLUME_ID: 'root',
+  // The drop path reports one PII-free event per drop (`drag/drag-analytics.ts`).
+  trackEvent: trackEventSpy,
+  itemCountBucket: (n: number) => String(n),
   setSelfDragResolvedOperation: setSelfDragResolvedOperationSpy,
   statPathsKinds: statPathsKindsSpy,
   // `resolvePathVolume` is the controller's default fallback. Tests that want it
@@ -423,6 +428,54 @@ describe('drag-drop-controller', () => {
       controller.pushSelfDragOpIfChanged('copy')
       expect(setSelfDragResolvedOperationSpy).toHaveBeenCalledTimes(2)
       expect(setSelfDragResolvedOperationSpy).toHaveBeenLastCalledWith('copy')
+    })
+  })
+
+  // A drop that lands nowhere feels identical to one that works, so a
+  // transfer-only metric would report a smoothly working feature while people
+  // keep missing the target. These pin that every arm of the chain reports.
+  describe('every drop reports, refusals included', () => {
+    /** The props of the single `drop_received` event this drop produced. */
+    function dropEventProps(): Record<string, unknown> {
+      const calls = trackEventSpy.mock.calls.filter(([name]) => name === 'drop_received')
+      expect(calls).toHaveLength(1)
+      return calls[0][1]
+    }
+
+    it('reports noTarget when the drop resolves to nothing', () => {
+      resolveDropTargetSpy.mockReturnValue(null)
+      const { controller } = create()
+      controller.handleDrop(['/a/file'], { x: 1, y: 1 })
+      expect(dropEventProps()).toMatchObject({ outcome: 'noTarget', origin: 'external' })
+    })
+
+    it('reports selfDescendant when the target sits inside the source', () => {
+      resolveDropTargetSpy.mockReturnValue(folderTarget(`${SAME_VOL_PATH_A}/inner`, 'right'))
+      const { controller } = create({ volumes: [ROOT_VOLUME] })
+      controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      expect(dropEventProps()).toMatchObject({ outcome: 'selfDescendant' })
+    })
+
+    it('reports transfer with the resolved operation when the drop lands', async () => {
+      resolveDropTargetSpy.mockReturnValue(folderTarget(EXT_VOL_PATH, 'right'))
+      const { controller, showTransfer } = create({ volumes: [ROOT_VOLUME, EXT_VOLUME] })
+      controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      await flushDrop()
+      expect(showTransfer).toHaveBeenCalled()
+      expect(dropEventProps()).toMatchObject({ outcome: 'transfer', op: 'copy' })
+    })
+
+    it('calls a self-drag self, so drag is readable as an input path', () => {
+      resolveDropTargetSpy.mockReturnValue(folderTarget(EXT_VOL_PATH, 'right'))
+      getIsDraggingFromSelfSpy.mockReturnValue(true)
+      getSelfDragIdentitySpy.mockReturnValue({
+        sourceVolumeId: 'root',
+        sourcePaths: [SAME_VOL_PATH_A],
+        startedAt: 1,
+      })
+      const { controller } = create({ volumes: [ROOT_VOLUME, EXT_VOLUME] })
+      controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      expect(dropEventProps()).toMatchObject({ origin: 'self' })
     })
   })
 

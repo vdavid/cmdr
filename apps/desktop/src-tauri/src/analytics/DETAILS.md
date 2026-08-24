@@ -216,6 +216,40 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `agent/suggested_ops/analytics.rs`): `verb` (the `ProposalVerb` token) + `op_count` bucket. Acceptance rate is the
   agent's north-star metric, which is why the proposal and both outcomes are all counted; never a path, file name,
   rationale, or selector pattern.
+- `tab_opened` / `tab_closed` / `tab_switched` / `tab_pin_toggled` (frontend, `file-explorer/tabs/tab-analytics.ts`,
+  called from `file-explorer/pane/tab-operations.ts`): `source` (`new` / `reopened`, or `single` / `others` on a
+  close), `outcome` (`opened` / `atCap` / `nothingToReopen`; `closed` / `cancelled` / `lastTab`), `open_tabs`, a
+  `pinned` bool on the close and the pin toggle, and `method` (`cycle` / `pick`) on the switch. Never a path, which is
+  a tab's whole identity.
+  **`open_tabs` is a RAW count, the one documented exception to `item_count_bucket`**: a pane caps at ten tabs, and
+  that ladder has two values (`1`, `2-10`) across the entire range, so bucketing would throw the answer away for no
+  privacy gain. Ten possible integers identifies nobody.
+  `tab-operations.ts` is the emit layer because every trigger funnels through its exports (the tab bar, the File menu,
+  the keyboard, the palette, and the MCP `tab` tool); the pure `tab-state-manager.svelte.ts` beneath it is deliberately
+  left alone, since it's exercised directly by unit tests. The refusals are counted for the same reason
+  `search_cta_offered` is: a success-only count can't tell "nobody reopens tabs" from "everybody hits the cap trying".
+- `quick_look_used` (frontend, `command-handlers/file-handlers.ts` `file.quickLook`): `outcome` (`opened` / `closed` /
+  `noTarget` / `insideArchive`). One event for the whole toggle, with its gate counted: a preview inside a `.zip` is
+  refused (the inner path isn't a real file), and without that arm a low `opened` number can't be told from people
+  reaching for it where it can't work. The duplicate fire of one Shift+Space — AppKit's menu accelerator plus the
+  webview keydown — is swallowed by the dispatch guard BEFORE the emit, so it can't double every number here.
+- `editor_opened` (frontend, same file, `file.edit`): no props. F4 hands the file to the OS's text editor (`open -t`),
+  so nothing downstream can count it, and the file's name and extension are exactly what must never cross.
+- `drop_received` (frontend, `file-explorer/drag/drag-analytics.ts`, from `pane/drag-drop-controller.svelte.ts`
+  `handleDrop`): `origin` (`self` / `external`), `outcome` (`transfer` / `noTarget` / `samePane` / `selfDescendant`),
+  `op` (`move` / `copy`), `item_count` bucket. **This is what makes drag readable as an INPUT PATH**:
+  `file_transfer_completed` can't say how an operation was started, because by the time it settles nothing remembers,
+  so `drop_received{outcome: transfer}` against the transfer total is the split between dragging and the keyboard.
+  All three refusals report, because a drop that lands nowhere feels identical to one that works.
+- `drag_out_completed` (frontend, same module, from `drag/drag-out-event-bridge.ts`): `item_count` bucket + `outcome`
+  (`done` / `partial`). Per drag SESSION, matching the toast — one gesture is one drag however many files it carried.
+  Counted at the drain rather than at the start, because a promise-backed drag (MTP, a NAS) can be abandoned before
+  anything fulfills. ❌ The payload's `failures` holds leaf NAMES; only its length crosses.
+- `favorite_opened` (frontend, `file-explorer/navigation/favorites-analytics.ts`): `surface` (`breadcrumb` /
+  `command`). The payoff half of favorites — `favorite_changed` counts the list being edited and can't say whether
+  anybody ever goes anywhere with it. Two call sites rather than one, and there's no lower chokepoint: both fold onto
+  `navigate({ to: { selectVolume } })`, which by then holds the CONTAINING volume's id and can't tell a favorite from
+  a drive.
 - `settings_opened` (frontend, `$lib/settings/settings-window.ts` `openSettingsWindow`): `surface` enum (`command` /
   `ipc` / `crash-toast` / `error-toast` / `wake-indicator` / `paste-toast` / `enter-menu` / `volume-breadcrumb` /
   `downloads-toast` / `low-disk-toast` / `shortcut-chip` / `quick-look-toast`); never the section. It sits in the
