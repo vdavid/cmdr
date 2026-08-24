@@ -71,7 +71,7 @@ function requireResolved(result: SnapshotResult, label: string): DefaultsSnapsho
   if (result.unresolved.length > 0) {
     const lines = result.unresolved.map((u) => `  - ${u.id} (${u.file}): default: ${u.expression}`)
     throw new Error(
-      `Can't read ${result.unresolved.length} setting default(s) in ${label}:\n${lines.join('\n')}\n` +
+      `Can't read ${String(result.unresolved.length)} setting default(s) in ${label}:\n${lines.join('\n')}\n` +
         'These settings reach the analytics config shape, so leaving them out would make their adoption\n' +
         'unmeasurable. Either give the registry a literal default, or teach `evaluateDefault` the shape.',
     )
@@ -131,8 +131,8 @@ function main(): void {
   const manifest = readManifest()
 
   if (args[0] === '--promote') {
-    const version = args[1]
-    if (version === undefined || !/^\d+\.\d+\.\d+$/.test(version)) {
+    const version = args[1] ?? ''
+    if (!/^\d+\.\d+\.\d+$/.test(version)) {
       console.error('Usage: node scripts/gen-analytics-defaults.ts --promote <major.minor.patch>')
       process.exit(1)
     }

@@ -298,12 +298,14 @@ export function snapshotsEqual(a: DefaultsSnapshot, b: DefaultsSnapshot): boolea
  */
 export function promote(manifest: DefaultsManifest, version: string, snapshot: DefaultsSnapshot): DefaultsManifest {
   const previous = resolveEntry(manifest.versions, version, { excludeSelf: true })
-  const versions = { ...manifest.versions }
-  if (previous !== null && snapshotsEqual(previous, snapshot)) {
-    delete versions[version]
-  } else {
-    versions[version] = sortKeys(snapshot)
+  const unchanged = previous !== null && snapshotsEqual(previous, snapshot)
+  const versions: Record<string, DefaultsSnapshot> = {}
+  for (const [existing, entry] of Object.entries(manifest.versions)) {
+    // A release that changed nothing gets no entry, even if a previous run wrote one: the
+    // predecessor already describes it, and a duplicate entry is noise the next diff has to read.
+    if (existing !== version) versions[existing] = entry
   }
+  if (!unchanged) versions[version] = sortKeys(snapshot)
   return { ...manifest, versions: sortVersions(versions), next: sortKeys(snapshot) }
 }
 
