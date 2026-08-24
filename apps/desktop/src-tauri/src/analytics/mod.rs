@@ -9,6 +9,7 @@
 mod config_shape;
 pub(crate) mod first_index;
 pub mod posthog;
+pub mod session;
 pub mod volume_sink;
 
 use serde::Serialize;

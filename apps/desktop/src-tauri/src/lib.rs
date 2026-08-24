@@ -668,6 +668,9 @@ pub fn run() {
             analytics::start();
             // One PostHog `app_launched` event per startup, through the same consent gate.
             analytics::posthog::capture("app_launched", serde_json::json!({}));
+            // The session-length ladder, anchored HERE rather than at quit: a crash or a
+            // force-quit leaves no moment to report in. See `analytics/session.rs`.
+            analytics::session::start();
 
             // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking).
             // No `firstTriggerDone` gate here: the function is a no-op when there are no SMB

@@ -61,6 +61,22 @@ pub(crate) async fn create_directory_managed(
     name: String,
     initiator: crate::operation_log::types::Initiator,
 ) -> Result<String, MutationError> {
+    // Wrapped, not emitted per branch: the archive route is an early return and
+    // the instant path has three `?`s after it, so any in-body emit would count a
+    // biased subset. See `rename_managed`, which is wrapped for the same reason.
+    let (result, target) = create_directory_managed_inner(volume_id, parent_path, name, initiator).await;
+    super::analytics::emit_create_analytics(WriteOperationType::CreateFolder, initiator, target, &result);
+    result
+}
+
+/// The create itself. Returns where the new entry landed alongside its result, so
+/// the wrapper above can label the event without re-deriving the route.
+async fn create_directory_managed_inner(
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+    initiator: crate::operation_log::types::Initiator,
+) -> (Result<String, MutationError>, super::analytics::InstantTarget) {
     // A parent that crosses into a `.zip` means the new folder lands INSIDE the
     // archive: route to the managed archive-edit driver (an O(archive) rewrite
     // with a real progress bar), not the instant path. Returns the operation id
@@ -68,7 +84,10 @@ pub(crate) async fn create_directory_managed(
     // (not the `std::fs`-only sync predicate) so creating inside a REMOTE zip
     // (direct SMB / MTP) routes too.
     if parent_crosses_archive_boundary(volume_id.as_deref(), &parent_path).await {
-        return route_archive_create(&parent_path, &name, ArchiveEntryKind::Dir, volume_id).await;
+        return (
+            route_archive_create(&parent_path, &name, ArchiveEntryKind::Dir, volume_id).await,
+            super::analytics::InstantTarget::Archive,
+        );
     }
 
     let volume_id_for_diff = volume_id.clone();
@@ -99,14 +118,22 @@ pub(crate) async fn create_directory_managed(
         &journal_volume_id,
         result.as_ref().ok().map(|(new_path, _)| new_path.as_path()),
     );
-    let (new_path, expanded_path) = result?;
+    let (new_path, expanded_path) = match result {
+        Ok(paths) => paths,
+        // A create that never landed is still a create the user asked for, so it
+        // leaves through the same exit and the wrapper labels it `failed`.
+        Err(e) => return (Err(e), super::analytics::InstantTarget::Volume),
+    };
 
     // Synthetic diff only works for volumes backed by the local filesystem.
     // Protocol-only volumes (MTP) handle UI updates through their own event systems.
     if should_emit_synthetic_diff(volume_id_for_diff.as_deref()) {
         emit_synthetic_entry_diff(volume_id_for_diff.as_deref(), &new_path, &PathBuf::from(&expanded_path));
     }
-    Ok(new_path.to_string_lossy().to_string())
+    (
+        Ok(new_path.to_string_lossy().to_string()),
+        super::analytics::InstantTarget::Volume,
+    )
 }
 
 /// Creates an empty file as a managed instant op and returns its new path.
@@ -117,11 +144,30 @@ pub(crate) async fn create_file_managed(
     name: String,
     initiator: crate::operation_log::types::Initiator,
 ) -> Result<String, MutationError> {
+    // Wrapped, not emitted per branch: the archive route is an early return and
+    // the instant path has three `?`s after it, so any in-body emit would count a
+    // biased subset. See `rename_managed`, which is wrapped for the same reason.
+    let (result, target) = create_file_managed_inner(volume_id, parent_path, name, initiator).await;
+    super::analytics::emit_create_analytics(WriteOperationType::CreateFile, initiator, target, &result);
+    result
+}
+
+/// The create itself. Returns where the new entry landed alongside its result, so
+/// the wrapper above can label the event without re-deriving the route.
+async fn create_file_managed_inner(
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+    initiator: crate::operation_log::types::Initiator,
+) -> (Result<String, MutationError>, super::analytics::InstantTarget) {
     // See `create_directory_managed`: a `.zip`-crossing parent routes the new
     // (empty) file into the archive via the managed edit driver (parent-aware, so
     // a REMOTE zip routes too).
     if parent_crosses_archive_boundary(volume_id.as_deref(), &parent_path).await {
-        return route_archive_create(&parent_path, &name, ArchiveEntryKind::File, volume_id).await;
+        return (
+            route_archive_create(&parent_path, &name, ArchiveEntryKind::File, volume_id).await,
+            super::analytics::InstantTarget::Archive,
+        );
     }
 
     let volume_id_for_diff = volume_id.clone();
@@ -150,12 +196,18 @@ pub(crate) async fn create_file_managed(
         &journal_volume_id,
         result.as_ref().ok().map(|(new_path, _)| new_path.as_path()),
     );
-    let (new_path, expanded_path) = result?;
+    let (new_path, expanded_path) = match result {
+        Ok(paths) => paths,
+        Err(e) => return (Err(e), super::analytics::InstantTarget::Volume),
+    };
 
     if should_emit_synthetic_diff(volume_id_for_diff.as_deref()) {
         emit_synthetic_entry_diff(volume_id_for_diff.as_deref(), &new_path, &PathBuf::from(&expanded_path));
     }
-    Ok(new_path.to_string_lossy().to_string())
+    (
+        Ok(new_path.to_string_lossy().to_string()),
+        super::analytics::InstantTarget::Volume,
+    )
 }
 
 /// Routes an in-archive mkdir/mkfile to the managed archive-edit driver. Builds

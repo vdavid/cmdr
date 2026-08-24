@@ -16,6 +16,8 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   `media_backend.rs`, `media_session.rs`. See `DETAILS.md` § "Media rendering".
 - `archive_extract.rs`: preview-in-zip (streams an archive-inner entry to a bounded temp). See
   `DETAILS.md` § "Preview inside an archive".
+- `analytics.rs`: the PII-free `viewer_opened` event. A three-way content class and a size bucket, ❌ never a file
+  name or an extension.
 
 ## Must-knows
 

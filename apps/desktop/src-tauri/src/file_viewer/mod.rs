@@ -5,6 +5,7 @@
 //! - `LineIndexBackend`: sparse line-offset index, O(lines/256) memory
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
+pub(crate) mod analytics;
 mod archive_extract;
 mod byte_seek;
 pub mod content_kind;
@@ -20,6 +21,8 @@ mod search_matcher;
 pub mod session;
 pub mod watcher;
 
+#[cfg(test)]
+mod analytics_test;
 #[cfg(test)]
 mod archive_extract_test;
 #[cfg(test)]

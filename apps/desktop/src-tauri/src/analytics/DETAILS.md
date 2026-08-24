@@ -166,14 +166,41 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `file_transfer_completed` (backend, `write_operations/analytics.rs` `emit_completion_analytics`): `op` (copy/move),
   `item_count` bucket, `had_conflicts` bool (proxied from `files_skipped > 0`); never names/paths.
 - `delete_used` (backend, same function): `trashed` bool, `item_count` bucket.
-- `archive_edit_completed` (backend, same function): `item_count` bucket. The remaining `WriteOperationType`s (rename,
-  create folder, create file) are instant metadata ops with no completion event, so they emit nothing; the match arms
-  are explicit so a new op type can't skip analytics silently.
+- `archive_edit_completed` (backend, same function): `item_count` bucket.
+- `rename_used` / `folder_created` / `file_created` (backend, `write_operations/analytics.rs`, emitted from the
+  `rename_managed` / `create_directory_managed` / `create_file_managed` wrappers): `initiator` (the `Initiator` token:
+  `user` / `ai_client` / `agent` / `agent_edited`), `target` (`volume` / `archive`), `outcome` (`done` / `failed`);
+  never a name or a path. These three are INSTANT metadata ops (`manager::run_instant`) that return their `Result`
+  inline and produce no `WriteCompleteEvent` at all, so they can't ride `emit_completion_analytics` — its arms for them
+  are unreachable, and stay explicit only so a future PROGRESSED op type fails to compile rather than skipping
+  analytics. Each driver is WRAPPED rather than emitted inside, because the in-archive route is an early return: a
+  per-branch emit would count the filesystem renames and miss every in-zip one. On the `archive` target, `done` means
+  the managed edit STARTED (its completion rides `archive_edit_completed`).
 - `smb_connected` (backend, `crates/cmdr-smb/src/volume/mod.rs` `connect_smb_volume`): no host/share/credential props.
 - `sftp_connected` (backend, `crates/cmdr-sftp/src/volume/mod.rs`): no host/account/port/path props.
   Both connection events go through the `AnalyticsSink` seam rather than `capture` directly, since the backend crates
   can't see `tauri` (`volume_sink.rs`).
 - `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`): no device/product props.
+- `tag_toggled` (backend, `file_system/tags.rs` `toggle_color`, at its single exit): `action` (`applied` / `removed`),
+  `color` (the Finder palette's canonical name, lowercased: a closed set of seven), `item_count` bucket, `succeeded`
+  bool; NEVER a tag's own text, which is user-authored content. `toggle_color` is the one op behind all three triggers
+  (the seven keyboard commands, the context-menu circles, and the MCP `tag` tool), so instrumenting it covers them
+  without any caller having to remember; the cost, accepted deliberately, is that the event can't say which trigger
+  fired. macOS-only, like Finder tags themselves. `succeeded` covers the partial-write case, where an earlier file kept
+  its new tags and a later one didn't.
+- `favorite_changed` (backend, `favorites/store.rs` `mutate_and_persist`): `action` (`added` / `removed` / `renamed` /
+  `reordered`) + `favorites`, the list's size AFTER the change as an `item_count_bucket`; never a path or a label. It
+  sits past the no-op guard, so removing an id that isn't there doesn't inflate the count. The `action` is a required
+  parameter rather than an inferred one, so a fifth favorites mutation can't be added without deciding what it reports.
+- `viewer_opened` (backend, `file_viewer/analytics.rs`, from `session::open_session_inner`): `content` (`text` /
+  `image` / `pdf`, or `unknown` on a failure), `size_bucket` (`<1MB` / `1-10MB` / `10-100MB` / `100MB-1GB` / `1GB+`,
+  stepping where the viewer's own backends step), `outcome` (`opened` / `failed`), `failure` (the `ViewerError`
+  variant's token, or `none`), `from_archive` and `forced_text` bools. ❌ NEVER a file name, an extension, or a byte
+  count: an extension list fingerprints a person's work in a population of a few hundred installs. Every open passes
+  `open_session_inner` (F3, the "View as text" override, preview-inside-a-zip), and it's wrapped rather than emitted
+  inline because the media path is an early return and the text path has a dozen `?`s.
+- `session_reached` (backend, `analytics/session.rs`): `milestone` (`1m` / `5m` / `15m` / `1h` / `4h` / `12h` / `24h`).
+  The session-length signal, and the reason there is no `app_quit`. See below.
 - `ask_cmdr_turn` (backend, `agent/chat/runtime/analytics.rs`, at `run_turn`'s single exit AND on the pre-turn
   refusal path): `origin` (`text` / `wake` / `outcomes` / `resume`), `outcome` (`answered` / `cancelled` / `failed` /
   `refused`), `failure` (the `AgentErrorKind` / `AgentErrorKindView` token, or `none`), `provider` (the `ProviderTag`
@@ -203,6 +230,28 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `covering` bool. See below for its population.
 - `language_resolved` / `language_changed` (frontend, `$lib/intl/language-analytics.ts`): base language subtags only.
   See below.
+
+## Session length, in detail
+
+**There is no `app_quit` event, on purpose.** A quit event is unreliable exactly when it matters: a crash, a
+force-quit, a power cut, and a `SIGKILL` all end a session with no moment left to report in. A length counted at the
+end therefore drops its most interesting cases and reads back longer than the truth. It's the same trap the
+first-index interruption rate documents below, and it gets the same answer: count what a session REACHES, and let the
+absence of the next rung be the ending.
+
+`session_reached` is that ladder. One task per launch sleeps to each rung in turn (1m, 5m, 15m, 1h, 4h, 12h, 24h) and
+fires, then exits at the top; the task dies with the process, so an ending needs no code and can't be missed. Each rung
+is monotone — once sent, nothing retracts it — so the distribution of the TOP rung per launch is a survival curve, with
+`app_launched` as its zeroth rung and denominator. Seven events per launch is the whole cost, and a session parked for
+a week costs nothing after the first day.
+
+**It measures the app being OPEN, not the person being at the keyboard.** A Cmdr left running overnight climbs the
+whole ladder. Telling "using" from "open" needs input or focus tracking, and watching when someone touches their
+keyboard is a bigger intrusion than the question is worth, so the top rungs read as "leaves it running", never as
+"worked for twelve hours".
+
+❌ Adding a rung in the middle later is a schema change, not a free one: it shows up in the data as a behavior change
+in the survival curve rather than a schema one. Say so here if it happens.
 
 ## The language events, in detail
 

@@ -362,7 +362,29 @@ fn load_or_seed() -> Vec<Favorite> {
 
 /// Applies a mutation to the cached store and persists it. The `mutate` closure runs under the cache
 /// lock and returns whether the change is worth persisting (so a no-op skips the disk write).
-fn mutate_and_persist<F>(mutate: F)
+/// Which favorites gesture a [`mutate_and_persist`] call is, for analytics. The
+/// parameter is required rather than optional so a fifth mutation can't be added
+/// without deciding what it reports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FavoriteAction {
+    Added,
+    Removed,
+    Renamed,
+    Reordered,
+}
+
+impl FavoriteAction {
+    fn as_token(self) -> &'static str {
+        match self {
+            FavoriteAction::Added => "added",
+            FavoriteAction::Removed => "removed",
+            FavoriteAction::Renamed => "renamed",
+            FavoriteAction::Reordered => "reordered",
+        }
+    }
+}
+
+fn mutate_and_persist<F>(action: FavoriteAction, mutate: F)
 where
     F: FnOnce(&mut FavoritesStore) -> bool,
 {
@@ -379,6 +401,19 @@ where
         }
         store.clone()
     };
+
+    // Reported from here, past the no-op guard, so a remove of an id that isn't
+    // there (or a rename to the name it already has) doesn't inflate the count.
+    // The list SIZE rides along bucketed, because "do people keep favorites?" is
+    // answered by how many they end up with, not by how often they touch the list.
+    // Never a path or a label: both are the user's own text.
+    crate::analytics::posthog::capture(
+        "favorite_changed",
+        serde_json::json!({
+            "action": action.as_token(),
+            "favorites": crate::analytics::item_count_bucket(snapshot.favorites.len()),
+        }),
+    );
 
     let path = favorites_path();
     let _disk_guard = disk_lock().lock_ignore_poison();
@@ -399,7 +434,7 @@ pub fn list() -> Vec<Favorite> {
 /// Adds a favorite for `path`, deduping by normalized path (a re-add moves the existing entry to the
 /// end). When `name` is `None`, the label defaults to the path's file name.
 pub fn add(path: &str, name: Option<String>) {
-    mutate_and_persist(|store| {
+    mutate_and_persist(FavoriteAction::Added, |store| {
         // allowed-discarded-outcome: nobody consumes the new id; both callers answer with `()`.
         add_to_store(store, path, name);
         true
@@ -408,18 +443,18 @@ pub fn add(path: &str, name: Option<String>) {
 
 /// Removes a favorite by id. No-op when the id isn't present.
 pub fn remove(id: &str) {
-    mutate_and_persist(|store| remove_from_store(store, id));
+    mutate_and_persist(FavoriteAction::Removed, |store| remove_from_store(store, id));
 }
 
 /// Renames a favorite by id. No-op when the id isn't present.
 pub fn rename(id: &str, name: &str) {
-    mutate_and_persist(|store| rename_in_store(store, id, name));
+    mutate_and_persist(FavoriteAction::Renamed, |store| rename_in_store(store, id, name));
 }
 
 /// Reorders the favorites to match `ordered_ids`. Unknown ids are ignored; favorites missing from the
 /// list are appended in their current order.
 pub fn reorder(ordered_ids: &[String]) {
-    mutate_and_persist(|store| {
+    mutate_and_persist(FavoriteAction::Reordered, |store| {
         reorder_store(store, ordered_ids);
         true
     });

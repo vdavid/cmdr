@@ -196,7 +196,9 @@ pub fn toggle_color(paths: &[String], color: u8) -> std::io::Result<Vec<(String,
     let all_have = !current.is_empty() && current.iter().all(|(_, tags)| tags.iter().any(|t| t.color == color));
     let add = !all_have;
 
-    let mut results = Vec::with_capacity(current.len());
+    let path_count = current.len();
+    let mut results = Vec::with_capacity(path_count);
+    let mut write_error = None;
     for (path, original) in current {
         let mut tags = original.clone();
         if add {
@@ -211,12 +213,45 @@ pub fn toggle_color(paths: &[String], color: u8) -> std::io::Result<Vec<(String,
         }
         // Only write the files that actually change, so re-toggling a mixed selection
         // doesn't needlessly rewrite (and re-mtime) the already-correct ones.
-        if tags != original {
-            set_tags(Path::new(&path), &tags)?;
+        if tags != original
+            && let Err(e) = set_tags(Path::new(&path), &tags)
+        {
+            write_error = Some(e);
+            break;
         }
         results.push((path, tags));
     }
-    Ok(results)
+
+    emit_tag_analytics(add, color_name, path_count, write_error.is_none());
+    match write_error {
+        Some(e) => Err(e),
+        None => Ok(results),
+    }
+}
+
+/// Reports one tag toggle, PII-free. Called from `toggle_color`'s single exit, so
+/// it covers all three triggers (the keyboard commands, the context-menu circles,
+/// and the MCP `tag` tool) without any of them having to remember.
+///
+/// `color` is the Finder palette index's canonical name, a closed set of seven —
+/// never a tag's own text, which is user-authored content and stays inside the
+/// process. `applied` distinguishes the two halves of a toggle; without it, an
+/// undo-happy user and an enthusiastic tagger produce the same number.
+///
+/// The `succeeded` bool covers the partial-write case, where an earlier file kept
+/// its new tags and a later one didn't: a tagging feature that keeps bouncing off
+/// permissions reads as "unused" otherwise.
+#[cfg(target_os = "macos")]
+fn emit_tag_analytics(applied: bool, color: &str, item_count: usize, succeeded: bool) {
+    crate::analytics::posthog::capture(
+        "tag_toggled",
+        serde_json::json!({
+            "action": if applied { "applied" } else { "removed" },
+            "color": color.to_ascii_lowercase(),
+            "item_count": crate::analytics::item_count_bucket(item_count),
+            "succeeded": succeeded,
+        }),
+    );
 }
 
 /// Non-macOS: no Finder tags, so nothing to toggle.

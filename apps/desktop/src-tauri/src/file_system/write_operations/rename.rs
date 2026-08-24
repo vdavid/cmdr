@@ -78,6 +78,23 @@ pub(crate) async fn rename_managed(
     volume_id: String,
     initiator: Initiator,
 ) -> Result<(), MutationError> {
+    // The emit wraps the whole driver rather than sitting at its ends: the archive
+    // route is an early return, so a per-branch emit would count the filesystem
+    // renames and quietly miss every in-zip one.
+    let (result, target) = rename_managed_inner(from, to, force, volume_id, initiator).await;
+    super::analytics::emit_rename_analytics(initiator, target, &result);
+    result
+}
+
+/// The rename itself. Returns where it landed alongside its result so the wrapper
+/// above can label the event without re-deriving the route.
+async fn rename_managed_inner(
+    from: PathBuf,
+    to: PathBuf,
+    force: bool,
+    volume_id: String,
+    initiator: Initiator,
+) -> (Result<(), MutationError>, super::analytics::InstantTarget) {
     // Renaming a path INSIDE an archive is a zip mutation: route it to the
     // managed archive-edit driver. The `.zip` file itself is a regular file —
     // renaming it must work like any other file — so only a genuinely-inner path
@@ -86,7 +103,10 @@ pub(crate) async fn rename_managed(
     let manager = crate::file_system::volume::manager::get_volume_manager();
     if manager.path_is_inside_archive(&volume_id, &from).await || manager.path_is_inside_archive(&volume_id, &to).await
     {
-        return route_archive_rename(&from, &to, &volume_id).await;
+        return (
+            route_archive_rename(&from, &to, &volume_id).await,
+            super::analytics::InstantTarget::Archive,
+        );
     }
 
     let is_root = volume_id == "root";
@@ -206,7 +226,7 @@ pub(crate) async fn rename_managed(
             Err(_) => super::journal::finalize_op(&op_id, OpKind::Rename, ExecutionStatus::Failed),
         }
     }
-    result
+    (result, super::analytics::InstantTarget::Volume)
 }
 
 /// Routes an in-archive rename to the managed archive-edit driver. Both `from`
