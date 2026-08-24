@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.40.0] - 2026-08-24
 
 The built-in agent now watches the file system and can suggest actions on its own, like "Hey, how about we move
 `~/Downloads/puppy-eye-exam-result.pdf` to `~/papers/doggy/medical/`, looks like all similar papers live there". The
