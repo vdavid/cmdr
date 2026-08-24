@@ -58,11 +58,13 @@ mod cost;
 mod dispatch;
 mod events;
 mod turn;
+mod types;
 
 pub(crate) use analytics::send_refused;
 pub use dispatch::{AppHandleDispatcher, ToolDispatchOutcome, ToolDispatcher, dispatch_ok};
 pub use events::{AgentChatEvent, AgentErrorKind, ChatEventSink};
-pub use turn::{TurnParams, TurnResult, UserTurn, run_turn};
+pub use turn::run_turn;
+pub use types::{TurnParams, TurnResult, UserTurn};
 
 const LOG_TARGET: &str = "agent::chat";
 

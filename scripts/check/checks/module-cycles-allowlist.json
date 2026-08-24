@@ -8,7 +8,6 @@
     "cmdr-index::importance::scheduler": [2],
     "cmdr-index::indexing::lifecycle": [5],
     "cmdr-index::indexing::writer": [2],
-    "cmdr::agent::chat::runtime": [2],
     "cmdr::file_system": [2],
     "cmdr::file_system::write_operations": [2],
     "cmdr::file_system::write_operations::transfer::volume": [2, 2],

@@ -13,10 +13,11 @@ crash cases: `DETAILS.md`.
 - `system_prompt.rs`: the identity + rules string (part of the cached prefix).
 - `runtime/`: the I/O-and-time half — `turn.rs` (`run_turn`), `mod.rs` (`ChatRuntime`:
   `send_message` and `wake`, both single-flight), `events.rs` + `dispatch.rs` (the two seams),
-  `cost.rs`, `analytics.rs`. File by file: `DETAILS.md` § The runtime.
-- `session.rs`: what a turn needs from live app state — the LLM slot, the budget, the envelope.
-- `cancel.rs`: the one in-flight-turn registry, keyed by conversation. Here, not in `commands/`, so
-  a WAKE can register too.
+  `cost.rs`, `analytics.rs`, `types.rs` (the leaf both reporters read instead of the driver).
+  File by file: `DETAILS.md` § The runtime.
+- `session.rs`: what a turn needs from live app state — the LLM slot, budget, envelope.
+- `cancel.rs`: the one in-flight-turn registry, keyed by conversation. Here, not `commands/`, so a
+  WAKE can register too.
 - `stream.rs`: the one transport a turn's progress leaves on (`AskCmdrTurn`), its wire enum, and its
   projection from `AgentChatEvent`. Shared by the rail and a wake.
 
@@ -26,8 +27,8 @@ crash cases: `DETAILS.md`.
   (fenced memory, the prompt, then `CMDR.md`) and the tool declarations never vary.
 - **⚠️ Memory LEADS the system string and is fenced; ❌ never append it like `CMDR.md`.** It's the one
   part of the prefix an attacker can reach (the write path sees `image_facts` OCR and file names off
-  disk), so it precedes the rules, in a fence its own content can't close, under a line saying it is
-  data. `DETAILS.md` § The memory block; `../memory/DETAILS.md`.
+  disk), so it precedes the rules, fenced, under a line calling it data. `DETAILS.md` § The memory
+  block; `../memory/DETAILS.md`.
 - **The envelope rides the latest user turn only, snapshot-at-send** (tests pin both), so ground truth
   can't shift mid-turn.
 - **Content is written only on `End`; the user row on the FIRST `End`** (crash cases (a)–(d),

@@ -326,12 +326,21 @@ the test and this section together.
 
 ## The runtime (`runtime/`)
 
-Six files plus `ChatRuntime` in `mod.rs`: `events.rs` (the `AgentChatEvent` seam and the
-typed `AgentErrorKind`), `dispatch.rs` (the `ToolDispatcher` seam and `AppHandleDispatcher`),
-`turn.rs` (`run_turn` and everything it drives), `cost.rs` (metering one completed
-`respond`), `cmdr_md.rs` (which `CMDR.md`, and how much of it), `analytics.rs` (the anonymous
-`ask_cmdr_turn` event). `mod.rs` re-exports all of it, so callers keep saying
-`chat::runtime::X`.
+Seven files plus `ChatRuntime` in `mod.rs`: `types.rs` (what a turn IS as data), `events.rs`
+(the `AgentChatEvent` seam and the typed `AgentErrorKind`), `dispatch.rs` (the
+`ToolDispatcher` seam and `AppHandleDispatcher`), `turn.rs` (`run_turn` and everything it
+drives), `cost.rs` (metering one completed `respond`), `cmdr_md.rs` (which `CMDR.md`, and how
+much of it), `analytics.rs` (the anonymous `ask_cmdr_turn` event). `mod.rs` re-exports all of
+it, so callers keep saying `chat::runtime::X`.
+
+**`types.rs` is a leaf, and that is load-bearing.** `UserTurn`, `TurnParams`, `TurnResult`,
+and `TurnTally` live there rather than in `turn.rs` because THREE modules need that
+vocabulary (`turn` drives a turn, `cost` and `analytics` each report on one afterwards) and
+only one implements the driver. With the types in `turn.rs`, both reporters imported the
+driver's module and the driver imported theirs, which `module-cycles` correctly read as a
+circle among `analytics`, `cost`, and `turn` for no design reason: nothing in the vocabulary
+calls anything. It takes no `super` import beyond `events::AgentErrorKind`, which is what
+keeps the arrows pointing one way; the module's own doc carries the rule that holds it.
 
 `ChatRuntime` has two entry points and they differ only in what they already know.
 `send_message` may create the thread and derives its title from the user's text; `wake` is

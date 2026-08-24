@@ -5,98 +5,23 @@
 //! The crash / mid-stream persistence contract it implements is in the module docs
 //! (`runtime/mod.rs`, cases (a)–(d)).
 
-use chrono::FixedOffset;
 use futures_util::StreamExt;
 use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
-use super::analytics::{self, TurnTally};
+use super::analytics;
 use super::cost::meter_cost;
 use super::dispatch::{ToolDispatcher, dispatch_ok};
 use super::events::{AgentChatEvent, AgentErrorKind, ChatEventSink, emit};
+use super::types::{TurnParams, TurnResult, TurnTally};
 use super::{LOG_TARGET, context};
-use crate::agent::chat::context::{ContextEnvelope, ElisionFacts, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
+use crate::agent::chat::context::{ElisionFacts, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
 use crate::agent::chat::system_prompt::SYSTEM_PROMPT;
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::{
-    AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentUsage, ProviderTag,
-    ToolDeclaration, WakeDigest,
+    AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentUsage, ToolDeclaration,
 };
 use crate::agent::store::{self, AgentStoreError};
-use crate::agent::types::ProposalOutcomes;
-
-/// What opens a turn: what the person typed, or what a wake noticed.
-///
-/// ⚠️ **A wake's opener is DATA, not prose.** It is persisted as the thread's user-role
-/// message, so a rendered English sentence would freeze one locale's copy in `main.db`
-/// where no later locale pass can reach it. The rail localizes the numbers instead, and
-/// the provider gets [`WakeDigest::render`] on its way out.
-#[derive(Debug, Clone, Copy)]
-pub enum UserTurn<'a> {
-    /// What the person typed into the composer.
-    Text(&'a str),
-    /// What a wake found waiting for it.
-    Wake(&'a WakeDigest),
-    /// What the user did with a sweep the agent proposed. Opens the follow-up turn a rejection
-    /// asks for, and carries the same "data, never prose" contract as a digest.
-    Outcomes(&'a ProposalOutcomes),
-}
-
-impl UserTurn<'_> {
-    /// The part this opener is persisted and replayed as.
-    fn part(&self) -> AgentPart {
-        match self {
-            UserTurn::Text(text) => AgentPart::Text((*text).to_string()),
-            UserTurn::Wake(digest) => AgentPart::WakeDigest((*digest).clone()),
-            UserTurn::Outcomes(outcomes) => AgentPart::ProposalOutcomes((*outcomes).clone()),
-        }
-    }
-
-    /// The FTS text for the row. A wake indexes the PATHS it named: they are the user's own
-    /// data, and they are what somebody searching their threads would type.
-    fn search_text(&self) -> String {
-        match self {
-            UserTurn::Text(text) => (*text).to_string(),
-            UserTurn::Wake(digest) => digest.paths().join(" "),
-            UserTurn::Outcomes(outcomes) => outcomes.paths().join(" "),
-        }
-    }
-}
-
-/// Everything one turn needs beyond the seams. `user` is `Some` for a new user
-/// message (appended + persisted on the first `End`) and `None` to RESUME a persisted
-/// thread after a crash (fresh `respond` from the persisted transcript — crash case c).
-pub struct TurnParams<'a> {
-    pub conversation_id: i64,
-    pub user: Option<UserTurn<'a>>,
-    pub cmdr_md: Option<&'a str>,
-    /// What the agent wrote about the user, already cut to this turn's share of the budget
-    /// (`agent::memory`). A separate field from `cmdr_md` on purpose — see [`PrefixInputs`].
-    pub memory: Option<&'a str>,
-    pub envelope: &'a ContextEnvelope,
-    pub offset: FixedOffset,
-    /// Wall-clock secs stamped on rows written this turn; also the envelope's clock.
-    pub now_secs: i64,
-    /// The resolved interactive-slot provider + model, for cost metering. Real slot
-    /// resolution happens in the command layer; the runtime just records what it was told.
-    pub provider: ProviderTag,
-    pub model: String,
-    /// The resolved model's assembled-prompt token budget (`super::budget`). Resolved in the
-    /// command layer alongside the model, because a local server's window is a user setting.
-    pub prompt_budget: usize,
-}
-
-/// How a turn ended, for the caller's bookkeeping. The events already told the
-/// frontend everything; this is for logging and the single-flight wrapper.
-#[derive(Debug, Clone, PartialEq)]
-pub enum TurnResult {
-    /// A final answer was produced and persisted.
-    Answered { assistant_message_id: i64 },
-    /// The turn stopped without an answer, for this typed reason.
-    Failed(AgentErrorKind),
-    /// The user cancelled at a tool boundary; nothing further was attempted.
-    Cancelled,
-}
 
 /// Drive one turn to completion, persisting crash-safely and staying within budget.
 /// Pure of Tauri: it needs only the seams (`llm`, `dispatcher`), a write `Connection`,

@@ -12,21 +12,9 @@
 
 use serde_json::{Value, json};
 
-use super::turn::{TurnParams, TurnResult, UserTurn};
+use super::types::{TurnParams, TurnResult, TurnTally, UserTurn};
 use crate::agent::chat::stream::AgentErrorKindView;
 use crate::analytics::item_count_bucket;
-
-/// What one turn did, counted as it runs so every early return reports the numbers it
-/// actually reached rather than zeros.
-#[derive(Debug, Default, Clone, Copy)]
-pub(super) struct TurnTally {
-    /// How many times the loop went back to the provider carrying tool results.
-    pub tool_turns: usize,
-    /// How many tool calls staged a proposal for the user to review. The funnel's join to
-    /// `suggestion_group_proposed`: turns with proposals but no proposal events downstream
-    /// would be a real instrumentation bug, and nothing else could tell us.
-    pub proposals: usize,
-}
 
 /// Reports one finished turn.
 pub(super) fn turn_finished(params: &TurnParams<'_>, result: &TurnResult, tally: &TurnTally) {

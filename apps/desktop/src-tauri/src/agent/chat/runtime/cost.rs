@@ -5,7 +5,8 @@
 
 use chrono::{FixedOffset, TimeZone, Utc};
 
-use super::{LOG_TARGET, TurnParams};
+use super::LOG_TARGET;
+use super::types::TurnParams;
 use crate::agent::llm::types::AgentUsage;
 use crate::agent::store::{self, CostRecord};
 
