@@ -118,3 +118,130 @@ uncertain. Editing `checks/lock-poison.go` went from 110 lanes and 3m33s to 28 l
 
 The mechanism, the core list and why each file is on it, what the analysis cannot prove, and the measurements:
 `scripts/check/DETAILS.md` § "The runner's own source".
+
+## Closing the runner's own residue (2026-08-24)
+
+The pass above named the runner's own source as the next win and landed it. This is the follow-up that measured what was
+LEFT, and it is mostly a report that little was: the leaf-check case is already at its floor, and the recoverable
+residue turned out to sit next door, in edits to the NON-Go files under `scripts/`.
+
+### Method
+
+Same worktree, warm `target/`, cache settled with a no-edit run between every row (a settled run is 3 ms). A row is one
+comment line appended to one file, `pnpm check` timed end to end, then the file reverted and the cache re-settled. The
+lanes that ran come from `~/cmdr-check-log.csv` (rows whose `result` is not `cached`), not from the terminal. "Before"
+rows are the same procedure with `checks/inputs.go`, `registry.go`, and `inputs_test.go` checked out from the parent
+commit. Commit statistics are the 5,584 commits of 2026-02-21..2026-08-24.
+
+Lane counts alone are cheap to get without running anything, which is how the search was steered. Drop this into
+`scripts/check/checks/` as `zz_measure_test.go`, run
+`CMDR_MEASURE_PATHS=a,b,c go test ./checks -run TestMeasureInvalidation -v`, and delete it:
+
+```go
+package checks
+
+import ("os"; "path/filepath"; "sort"; "strings"; "testing")
+
+func TestMeasureInvalidation(t *testing.T) {
+	root, _ := filepath.Abs("../../..")
+	idx := LoadRunnerSources(root)
+	if idx.Err != nil { t.Fatalf("analysis gave up: %v", idx.Err) }
+	defs := FilterCIOnlyChecks(FilterSlowChecks(AllChecks, false), false, nil)
+	for _, path := range strings.Split(os.Getenv("CMDR_MEASURE_PATHS"), ",") {
+		var hit []string
+		for i := range defs {
+			def := &defs[i]
+			patterns := append(append(append([]string{}, def.Inputs...), GlobalInputs...), idx.For(def.ID)...)
+			if matchesAny(strings.TrimSpace(path), patterns) { hit = append(hit, def.ID) }
+		}
+		sort.Strings(hit)
+		t.Logf("== %s: %d/%d lanes\n%s", path, len(hit), len(defs), strings.Join(hit, "\n"))
+	}
+}
+```
+
+### Before and after, six edit cases
+
+| Edit                                         | Lanes before | Wall before | Lanes after | Wall after |
+| -------------------------------------------- | -----------: | ----------: | ----------: | ---------: |
+| leaf check file (`checks/lock-poison.go`)    |           26 |       24.3s |          26 |      24.3s |
+| core runner file (`runner.go`)               |          110 |      197.7s |         110 |     197.7s |
+| `.mise.toml`                                 |          110 |      198.0s |         110 |     198.0s |
+| sibling tool (`check-a11y-contrast/main.go`) |           23 |       23.1s |          23 |      23.1s |
+| JSON allowlist beside the checks             |           22 |       22.5s |      **14** |  **15.9s** |
+| agent doc under `scripts/`                   |           22 |       22.3s |      **14** |  **16.0s** |
+| one crate source (`crates/cmdr-fs/`)         |           34 |      124.9s |          35 |     124.5s |
+| one Svelte source (`src/lib/ui/`)            |           37 |       81.6s |          38 |      83.5s |
+
+The first four rows are unchanged by construction and were re-measured to confirm it.
+
+### What the 26 lanes on a leaf-check edit are, and why 24 of them can't move
+
+Re-measured, and the breakdown holds: 10 Go lanes, 12 whole-repo doc/metric lanes, 2 registry readers, 2 real
+attributions. (The earlier "28" counted two lanes that were red at the time; a failure never caches, so it re-runs in
+every case regardless of inputs.)
+
+- **The 10 Go lanes read the edited file.** `nilaway` 16.4s, `go-tests` 17.7s, `govulncheck` 10.9s, `deadcode` 6.5s,
+  `staticcheck` 5.8s, `vet` 3.5s, `ineffassign` 1.6s, `gocyclo` 0.3s, `misspell` 0.1s, `gofmt` 0.2s. A `.go` file in the
+  runner IS their subject matter. Nothing here is recoverable, and the whole 24.3s of this case is those lanes running
+  in parallel behind `go-tests`.
+- **The 12 whole-repo lanes** (`file-length`, `oxfmt`, five `docs-*`, three `claude-md-*`, `invariant-density`,
+  `resident-doc-budget`) take `wholeRepoInputs` legitimately: a `.go` edit changes a line count, and the doc-graph lanes
+  resolve links against real paths, so an add or a remove anywhere can flip them. ~11s of mean runtime across 12
+  parallel lanes, entirely in `go-tests`' shadow. Shaving them would need a "paths matter, contents don't" input kind;
+  that mechanism would cost more than the lanes do.
+- **The 2 registry readers** (`ci-coverage` 0.01s, `workspace-member-coverage` 0.01s) reach every check file because
+  `AllChecks` names every `Run` function and the AST closure can't distinguish "reads the registry as data" from "calls
+  it". Free.
+
+So the leaf-check case is at its floor. **What was still on the table was the other direction**: an edit to a file under
+`scripts/` that is not Go at all.
+
+### The recoverable residue: non-Go files in the Go trees
+
+All ten Go lanes shared `scripts/**` + `apps/desktop/scripts/**`, but only two of them read anything but `.go`. That
+tree also holds 13 JSON allowlists (the warn-only checks shrink-wrap them on nearly every local run), ~11 agent docs,
+and the `.sh` / `.ts` / `.py` helpers.
+
+- **357 of 5,584 commits** touched a Go tree without touching one `.go` file there: 180 touched a JSON allowlist, 131 a
+  `.md`, 77 a `.js`, 44 a `.ts`, 43 a `.sh`. 162 touched an allowlist with no Go change at all.
+- `goSourceInputs` (`**/*.go`, `**/go.mod`, `**/go.sum`, derived from `GetGoDirectories()`) now serves the eight lanes
+  that compile. `misspell` keeps the wide set because it spell-checks every text file it walks; `scripts-go-tests` keeps
+  its own, wider still.
+
+**Say the win plainly: 22 lanes and 22.5s become 14 lanes and 15.9s, a 6.6s wall-clock cut, not a 55s one.** The eight
+lanes dropped are ~55s of CPU, but they were running in parallel behind `go-tests` (16.5s), which stays in both cases.
+The wall win is the tail beyond `go-tests`; the CPU win is real and shows up when an allowlist edit rides along with a
+Rust or frontend battery competing for the same admission slots (`nilaway` alone holds `CpuWeight` 7).
+
+### The correctness hole the pass found, and what it cost to close
+
+`scripts-go-tests`' `Inputs` are the fingerprint for every Go TEST in the repo, and fifteen of those assert about the
+REAL tree rather than a fixture. The set was `scripts/**` plus three SFTP fixture files, so:
+
+- `TestRustMemberTreesMatchTheWorkspace` reads the cargo manifests. Adding a crate was a cache hit.
+- `TestRustInputsCoverEveryEmbeddedFile` scans every member's `src/` for `include_str!`. Adding an embed was a cache
+  hit. **This is the guard that caught the `CHANGELOG.md` hole in the pass above, and it was blind to the tree it
+  scans.**
+- `TestNoFrontendSourceLoadsAgentDocs` walks the frontend source roots, and is the whole reason `agentDocExclusions` is
+  safe. A Svelte module importing a `.md` was a cache hit.
+- `TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes` reads `apps/desktop/package.json`.
+
+A guard that only re-runs when its own source changes isn't a guard. `goTestsInputs` now covers those trees, and
+`realTreeReadingTests` + `TestGoTestsInputsCoverTheRealTreeItsTestsRead` fail on an undeclared real-tree test, a stale
+declaration, and a declared path the lane doesn't fingerprint (17 uncovered paths on the pre-fix set).
+
+**It cost nothing measurable.** `scripts-go-tests` joins Rust and frontend runs, and it is nowhere near the long pole in
+either: 18.5s against `rust-tests`' 43.9s, 16.9s against `svelte-tests`' 62.5s. Crate edit 124.9s → 124.5s, Svelte edit
+81.6s → 83.5s. Both within run-to-run noise.
+
+### What was considered and dropped
+
+- **Narrowing `oxfmt` to the extensions it formats** (5.9s mean, currently `**`). It would need a hand-kept extension
+  list that goes silently wrong the day oxfmt gains a language, and oxfmt is never the long pole in any case measured
+  here.
+- **A path-literal scan as the guard for `goTestsInputs`** (walk the test sources, cover every existing repo path they
+  name). Prototyped and rejected: it surfaced 73 candidates, most of them fixture path fragments written against
+  `t.TempDir()` roots, and would have forced `docs/**`, `apps/website/**`, and `brand/**` into a Go lint's fingerprint.
+  The AST reachability scan over `repoRootForTest` finds exactly 15 tests and is the honest question.
+- **A "paths but not contents" input kind** for the doc-graph lanes. See the 12-lane bullet above.
