@@ -35,6 +35,48 @@
 //!   not try region fallbacks beyond that (a user on `pt-MZ` won't get `pt-PT`
 //!   if only `pt` exists, which is fine, since `pt` does exist).
 //!
+//! ## Finder labels: why they're catalog strings, not OS-sourced
+//!
+//! Some error copy also quotes Finder labels (`Get Info`, the `Locked`
+//! checkbox, `Sharing & Permissions`). Apple localizes all three, so they are
+//! TRANSLATED in the message catalogs rather than resolved here. That is the
+//! right answer for the common case and the wrong one for a user running Cmdr
+//! in one language on a Mac set to another: the catalog follows the app
+//! language, Finder follows the system language, and only the labels resolved
+//! by this module follow the system language the way System Settings pane names
+//! must.
+//!
+//! Moving them here is a real change, not a one-liner, which is why it hasn't
+//! happened yet. What it would take:
+//!
+//! - **A second source shape.** Finder has no `Localizable.loctable`; it ships
+//!   per-language `<lang>.lproj/*.strings` (binary plists), so the language
+//!   comes from the PATH, not from an outer dict key. `StringSource` and
+//!   `build_snapshot` would need a variant that probes
+//!   `<bundle>/<candidate>.lproj/<file>.strings` over `candidate_lang_codes`.
+//! - **Shakier keys.** The values live under nib object IDs, not names:
+//!   `MenuBar.strings` `300801.title` (Get Info), `InfoWindowGeneralView`
+//!   `1073.title` (Locked), `InfoWindowPermissionsView` `6.title` (Sharing &
+//!   Permissions), plus `LocalizableMerged` `N30`/`N32`/`NE43` for the
+//!   running-text forms. Loctable keys at least read like names; these are
+//!   renumberable. (Verified on macOS 26.5.2, `plutil -convert json`,
+//!   2026-08-24.)
+//! - **No English row to fall back to.** `en.lproj` carries no `MenuBar.strings`
+//!   (English lives in the compiled `Base.lproj` nibs), so `lookup_in_table`'s
+//!   `en`-last fallback finds nothing and every miss lands on
+//!   `english_defaults`. Workable, but it means the fallback is untested by the
+//!   OS itself.
+//! - **Grammar at the seam.** Unlike the pane names, which only ever appear
+//!   inside an inert bold path (`**{a} > {b} > {c}**`), these sit mid-sentence
+//!   with articles and quoting attached (hu `az Infó megjelenítése parancsot`,
+//!   de `Häkchen bei „Geschützt“ entfernen`). Nine locales would each need
+//!   their sentence reshaped so an OS-supplied noun drops in without agreement.
+//! - **Reach.** Six keys across ten catalogs, plus new `{get_info}` /
+//!   `{locked}` / `{sharing_and_permissions}` entries in `SYSTEM_TOKENS`
+//!   (`scripts/i18n-catalog-lib.ts`), `ENGLISH_DEFAULTS`
+//!   (`src/lib/system-strings.svelte.ts`), `expandSystemStrings`, and
+//!   regenerated `bindings.ts`.
+//!
 //! ## When to refresh
 //!
 //! The snapshot is built once at first access and cached, then dropped whenever

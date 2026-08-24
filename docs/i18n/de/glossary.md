@@ -1212,7 +1212,10 @@ Einschub, steht deshalb überall in der eigenen deutschen Anführung „…“ u
   eigener Finder-String `System-Integrationsschutz` (`Finder/LocalizableMerged` `ET6`, macOS 26.5.2: „Einige Objekte im
   Papierkorb konnten aufgrund des System-Integrationsschutzes nicht gelöscht werden.“): das ist eine sichtbare
   Fehlübersetzung (Integration statt Integrität) in genau einem String, und Apples eigene deutsche Dokumentation
-  schreibt den Feature-Namen anders. Beide teilen den Kopf `System…schutz`, die Doku-Form ist die korrekte.
+  schreibt den Feature-Namen anders. Beide teilen den Kopf `System…schutz`, die Doku-Form ist die korrekte. Nachgeprüft
+  am 2026-08-24 auf macOS 26.5.2: `ET6` steht en/de Schlüssel an Schlüssel gegenüber, der Befund stimmt. Weil das eine
+  Produktstimmen-Entscheidung ist (Apples Bildschirmwort kopieren oder Apples korrektes Doku-Wort nehmen), steht sie
+  jetzt zusätzlich in `style.md` § Decisions to confirm with David; bis dahin bleibt `Systemintegritätsschutz` stehen.
 - **„a volume's top folder“ → `der oberste Ordner eines Volumes`** · GNOME Nautilus `de` liefert genau diese Absage
   („Toplevel files cannot be renamed“ → „Dateien im obersten Ordner können nicht umbenannt werden“, `nautilus.po`) ·
   high. MS-Terminologie hat `Stammordner` (Definition „The uppermost directory on a computer, partition or volume“,

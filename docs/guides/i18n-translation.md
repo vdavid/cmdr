@@ -62,7 +62,12 @@ it can, but the judgment is yours.
    Control, AirDrop, Siri, Time Machine, Finder). To decide, check `<tag>/macOS/` in the reference pile: if Apple's
    localized macOS uses a translated term, use it; if it keeps the English name, keep it. Match what the user actually
    sees in their Finder. (This is why `BRAND_WORDS` in `apps/desktop/scripts/i18n-catalog-lib.ts` lists the kept-English
-   names but NOT Quick Look — a translated Quick Look must not read as a dropped brand.)
+   names but NOT Quick Look — a translated Quick Look must not read as a dropped brand.) It's decided per LABEL, not per
+   app: Apple keeps `Finder` and `Terminal` English almost everywhere yet localizes `Get Info`, `Locked`, and
+   `Sharing & Permissions` in every locale. A `@key.description` telling you to keep such a label English is not
+   authority; verify it against the OS, and fix the `en` description when it's wrong. The direct key-match recipe
+   against the shipped Finder bundle, plus the caveat that these labels follow the SYSTEM language while our catalog
+   follows the APP language, are in `../i18n/translation-learnings.md` § "Quoting a macOS UI label".
 2. **Prefer the macOS Finder term when macOS and Windows/Microsoft differ.** Cmdr is a macOS app, so the native-OS term
    wins over the Windows convention. For example, pt-BR delete = "Apagar" (Finder), not "Excluir" (Windows); German move
    = "Bewegen" (Finder), not "Verschieben" (Microsoft). The Microsoft terminology entry is the Windows wording, not ours

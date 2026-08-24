@@ -54,6 +54,12 @@ Suggestions that name localized macOS panes (e.g. "Full Disk Access") use placeh
 templates; `expandSystemStrings` substitutes the live localized labels from `lib/system-strings.svelte.ts` (the
 `get_localized_system_strings` backend snapshot). This mirrors the Rust `system_strings::expand`.
 
+Finder labels the same copy quotes (`Get Info`, the `Locked` checkbox, `Sharing & Permissions`) do NOT go through this
+seam: Apple localizes them too, but they're translated in the message catalogs instead. That's right whenever the app
+language matches the system language and wrong when it doesn't, since Finder follows the system. Why they aren't
+OS-sourced and what moving them would cost is in the `system_strings.rs` module doc, section "Finder labels: why they're
+catalog strings, not OS-sourced".
+
 ## Message-catalog boundary (`getMessage`, not ICU `t()`)
 
 The literal English lives in `../intl/messages/en/errors.json` under `errors.*`, and the factories resolve it via

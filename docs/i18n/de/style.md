@@ -220,6 +220,18 @@ The formality and move calls are now settled from the sources (see above); the o
   constructions. Details and the runners-up: `glossary.md` § Stalled transfer. Also worth an eye during the overflow
   check: the queue row's German is noticeably wider than the ETA text it replaces ("Kein Fortschritt seit 2 Min. 30 s"
   vs "noch 2 Min. 30 s").
+- **`Systemintegritätsschutz` vs Apple's on-screen `System-Integrationsschutz`** (product-voice call, currently shipping
+  the first). `errors.mutation.sipProtected` uses Apple's German DOCUMENTATION name for System Integrity Protection.
+  Apple's German Finder shows a different word in exactly one string, and it's a visible mistranslation (Integration
+  instead of Integrität): `LocalizableMerged` `ET6`, "Einige Objekte im Papierkorb konnten aufgrund des
+  **System-Integrationsschutzes** nicht gelöscht werden." (en `ET6` = "Some items in the Trash cannot be deleted because
+  of System Integrity Protection."; re-verified on macOS 26.5.2, 2026-08-24). Term-choice principle 1 says match what
+  the user sees in their Finder, which here would mean shipping Apple's typo. The recommendation is to keep
+  `Systemintegritätsschutz`: Apple's string only ever appears when emptying the Trash (not Cmdr's surface, which is a
+  rename refusal), both share the head `System…schutz` so a user who did see Apple's wording still recognizes ours, and
+  Apple's own German support page (support.apple.com/de-de/102149) uses our form, so a user who searches for help lands
+  in the right place. The counter-argument is real though, so David decides. Full evidence: `glossary.md` § the
+  `Systemintegritätsschutz` row.
 
 ## Glossary
 

@@ -130,6 +130,44 @@ style guide and a human-shaped review are the only defense:
   their own catalog for `%` before finishing; these slip in one key at a time.
 - **An elided verb in an uninflected language.** vi rendered "may or may not be covered" as "may have or not" and it
   still read as fluent text. Only bites on transparency surfaces, where the elided word was the whole point.
+- **A WRONG `@key.description` propagates as a defect and looks deliberate.** Four `errors.*` descriptions said "\"Get
+  Info\", \"Sharing & Permissions\" ... are literal; do NOT translate", which is false: Apple localizes both. Seven
+  locales ignored the instruction and localized; hu and vi obeyed it and shipped English words inside otherwise
+  translated prose. Nothing structural can see this, and the residue reads as a considered do-not-translate call rather
+  than a bug. Two habits fall out of it: when a description tells you to keep a macOS label English, verify it against
+  the OS before obeying, and when you find it wrong, fix the `en` description in the same pass so the next locale
+  doesn't inherit it.
+
+## Quoting a macOS UI label
+
+Any label Cmdr quotes so a user can go find it (a Finder menu command, a checkbox, a pane heading) has to read the way
+that user's own Mac reads. The decision is per LABEL, not per app: Apple keeps `Finder`, `Terminal`, `Spotlight`,
+`AirDrop`, and `Time Machine` English in nearly every locale (zh-Hans is the exception: `访达`, `终端`), and localizes
+`Get Info`, `Locked`, `Sharing & Permissions`, and `Quick Look` everywhere.
+
+The fastest way to settle one, with no guessing, is a direct key match inside the shipped Finder bundle. English lives
+in the compiled `Base.lproj` nibs, so use `en_GB.lproj` as the English side; every localization is a sibling `.lproj`:
+
+```sh
+cd "/System/Library/CoreServices/Finder.app/Contents/Resources"
+plutil -convert json -o - en_GB.lproj/MenuBar.strings              # 300801.title = "Get Info"
+plutil -convert json -o - hu.lproj/MenuBar.strings                 # 300801.title = "Infó megjelenítése"
+plutil -convert json -o - <tag>.lproj/InfoWindowGeneralView.strings # 1073.title  = the Locked checkbox
+plutil -convert json -o - <tag>.lproj/InfoWindowPermissionsView.strings # 6.title = Sharing & Permissions
+plutil -convert json -o - <tag>.lproj/LocalizableMerged.strings     # N30/N32/NE43/NE18 = running-text sentences
+```
+
+Prefer the RUNNING-TEXT form (`LocalizableMerged`) when our string is a sentence, and the widget form when ours is a
+label: Apple itself shortens headings (hu `Megosztási jogok:` in the panel vs `Megosztás és jogok` in prose). The nib
+object IDs above are undocumented and could be renumbered by a macOS release, so record the macOS version with the term
+(verified on macOS 26.5.2, 2026-08-24).
+
+⚠️ **These labels follow the SYSTEM language, our catalog follows the APP language, and the two can differ.** A user
+running Cmdr in Spanish on a Hungarian Mac gets Spanish copy quoting a Spanish `Obtener información` that their Finder
+calls `Infó megjelenítése`. Translating the label in the catalog is right for the common case (app language = system
+language) and is what ships today; the architecturally correct fix is to source these from the OS the way the System
+Settings pane names already are. See `apps/desktop/src-tauri/src/system_strings.rs` § "Finder labels: why they're
+catalog strings, not OS-sourced" for what that would take.
 
 ## Copy-shape contracts worth stating once
 
