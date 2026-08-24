@@ -147,9 +147,11 @@ const richData: DashboardData = {
         { date: '2026-08-01', dau: 55, beats: 500 },
       ],
       updateActivity: [
+        // 2026-08-01 reaches past that day's 55 heartbeats, so the bound reads as a range; 2026-07-31
+        // lands under its 40, so that day falls back to a lower bound. Both shapes are real.
         { day: '2026-07-31', version: '1.2.0', updaters: 30 },
-        { day: '2026-08-01', version: '1.10.0', updaters: 25 },
-        { day: '2026-08-01', version: '1.2.0', updaters: 5 },
+        { day: '2026-08-01', version: '1.10.0', updaters: 50 },
+        { day: '2026-08-01', version: '1.2.0', updaters: 12 },
       ],
     },
   },
@@ -498,16 +500,23 @@ GitHub releases (all-time):
 
 ## Active use: how many run the app?
 
-- Daily active installs (latest day): 55
-- Peak daily active: 55
+- Active installs (latest day): 55–62
+- Peak confirmed running: 55
 - Beats per active install: 8.6
+- Widest blind spot: 11% of the high end never sent a heartbeat
 
-Daily active installs (by day):
-  2026-08-01: 55 active, 500 beats
-  2026-07-31: 40 active, 320 beats
+The low end counts install ids we heard from on the hourly heartbeat, so those installs definitely ran
+Cmdr. The high end counts distinct addresses that checked for updates, a separate consent that installs
+with analytics off still ride. The high end is a rough reach, not a ceiling: addresses are not installs,
+a shared connection counts an office or household once, a changing home address counts one install more
+than once across days, and anyone with automatic update checks off never appears at all.
+
+Active installs (by day, heard from / checked for updates):
+  2026-08-01: 55 heard from, 62 checked, 500 beats
+  2026-07-31: 40 heard from, 30 checked, 320 beats
 
 Got the latest release per day (update-enabled installs that checked, deduped, by version):
-  2026-08-01: 30 total (v1.10.0: 25, v1.2.0: 5)
+  2026-08-01: 62 total (v1.10.0: 50, v1.2.0: 12)
   2026-07-31: 30 total (v1.2.0: 30)
 
 - Total activations: 42
@@ -645,7 +654,7 @@ GitHub stars: 0 total
 
 ## Active use: how many run the app?
 
-- Daily active installs: none yet (heartbeat fills as beta testers update and run the new build)
+- Active installs: none yet (the heartbeat fills as beta testers update and run the new build)
 
 - Total activations: 0
 

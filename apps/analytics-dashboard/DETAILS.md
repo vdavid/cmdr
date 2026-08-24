@@ -166,6 +166,26 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
   resolved against the per-version defaults manifest before it leaves the server (§ Settings adoption).
 - `worker-endpoint.ts` (shared helper): `fetchWorkerEndpoint(token, path)`, used by the worker-backed sources.
 
+## Active installs as a range
+
+The opt-out rate is deliberately unmeasurable: an install that opts out of analytics sends nothing at all, not even an
+"I opted out" bit, and that rule stays. So heartbeat DAU undercounts by an unknown amount, and printing it as one number
+claims a precision we don't have. Two independent signals bracket it instead (`$lib/active-installs.ts`, from data
+`cloudflare.ts` already fetches, so no new endpoint):
+
+- **Low end**: distinct install ids on that day's heartbeats (`/admin/heartbeat-dau`). Every one definitely ran the app.
+- **High end**: distinct update-checking addresses that day (`/admin/update-activity`, summed across versions). Update
+  checks ride a SEPARATE consent, so installs with analytics off appear here.
+
+**The high end is a reach, not a mathematical upper bound, and the UI says so.** Addresses aren't installs: a shared
+connection counts a household or office once, a changing home address counts one install more than once across days, and
+an install with `updates.autoCheck` off never appears at all.
+
+- **The high end can land BELOW the low end** (NAT, or an update check that didn't fire). `formatBound` then reports
+  `N+` rather than an inverted range. ❌ It never means the fleet shrank below what the heartbeat already proved.
+- **A day the update endpoint doesn't cover gets a null reach, never a zero.** The two endpoints answer different ranges
+  (the heartbeat one maps 24h up to 7d), and a zero would read as "nobody checked".
+
 ## Settings adoption
 
 The heartbeat's config shape carries only what a user CHANGED (`settings.json` is sparse by design), so on its own it

@@ -29,6 +29,7 @@ import {
   errorReportsByDay,
 } from '../../../lib/feedback-and-errors.js'
 import { aggregateChannels, aggregateReferers, aggregateUaFamilies } from '../../../lib/funnel.js'
+import { boundsByDay, formatBound, largestUnseenShare, latestBound } from '../../../lib/active-installs.js'
 import {
   formatShare,
   formatShareUnlike,
@@ -461,21 +462,41 @@ function writeDownloadSection(
 
 // ── 4. Active use ────────────────────────────────────────────────────────────────────────────────
 
-function writeHeartbeatDau(w: ReportWriter, dau: HeartbeatDauRow[]): void {
-  const latestDau = dau[dau.length - 1].dau
+/**
+ * Active installs as a range. The low end is what the heartbeat proves ran; the high end is how far
+ * the update checks reach, which catches opted-out installs. Neither alone is the answer, and the
+ * gap between them is the size of the blind spot.
+ */
+function writeHeartbeatDau(w: ReportWriter, dau: HeartbeatDauRow[], updateActivity: UpdateActivityRow[]): void {
+  const bounds = boundsByDay(dau, updateActivity)
   const peakDau = dau.reduce((max, r) => Math.max(max, r.dau), 0)
   const totalBeats = dau.reduce((s, r) => s + r.beats, 0)
   const totalDau = dau.reduce((s, r) => s + r.dau, 0)
   const beatsPerActive = totalDau > 0 ? (totalBeats / totalDau).toFixed(1) : '0'
+  const unseen = largestUnseenShare(bounds)
 
-  w.line(`- Daily active installs (latest day): ${num(latestDau)}`)
-  w.line(`- Peak daily active: ${num(peakDau)}`)
+  w.line(`- Active installs (latest day): ${formatBound(latestBound(bounds))}`)
+  w.line(`- Peak confirmed running: ${num(peakDau)}`)
   w.line(`- Beats per active install: ${beatsPerActive}`)
+  if (unseen !== null) {
+    w.line(`- Widest blind spot: ${String(Math.round(unseen * 100))}% of the high end never sent a heartbeat`)
+  }
 
   w.blank()
-  w.line('Daily active installs (by day):')
+  w.line('The low end counts install ids we heard from on the hourly heartbeat, so those installs definitely ran')
+  w.line('Cmdr. The high end counts distinct addresses that checked for updates, a separate consent that installs')
+  w.line('with analytics off still ride. The high end is a rough reach, not a ceiling: addresses are not installs,')
+  w.line('a shared connection counts an office or household once, a changing home address counts one install more')
+  w.line('than once across days, and anyone with automatic update checks off never appears at all.')
+
+  w.blank()
+  w.line('Active installs (by day, heard from / checked for updates):')
   for (const row of [...dau].sort((a, b) => b.date.localeCompare(a.date))) {
-    w.line(`  ${row.date}: ${num(row.dau)} active, ${num(row.beats)} beats`)
+    const bound = bounds.find((b) => b.day === row.date)
+    const reach = bound?.reach ?? null
+    w.line(
+      `  ${row.date}: ${num(row.dau)} heard from, ${reach === null ? 'no update data' : `${num(reach)} checked`}, ${num(row.beats)} beats`,
+    )
   }
 }
 
@@ -515,10 +536,10 @@ function writeActiveUseSection(
   }
   const cf = cloudflare.data
   if (cf.heartbeatDau.length > 0) {
-    writeHeartbeatDau(w, cf.heartbeatDau)
+    writeHeartbeatDau(w, cf.heartbeatDau, cf.updateActivity)
     writeUpdateActivity(w, cf.updateActivity)
   } else {
-    w.line('- Daily active installs: none yet (heartbeat fills as beta testers update and run the new build)')
+    w.line('- Active installs: none yet (the heartbeat fills as beta testers update and run the new build)')
   }
   writeLicenseTotals(w, license)
 }

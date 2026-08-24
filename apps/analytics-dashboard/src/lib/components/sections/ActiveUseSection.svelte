@@ -1,6 +1,7 @@
 <!--
-  Product § Active use: true daily active installs from the heartbeat, the per-day "got the latest
-  release" stacked bars (by the version each install was on), and license activation counts.
+  Product § Active use: daily active installs as a RANGE (heartbeat floor, update-check reach), the
+  per-day "got the latest release" stacked bars (by the version each install was on), and license
+  activation counts.
 -->
 <script lang="ts">
     import type { SourceResult, DashboardSelection } from '$lib/server/types.js'
@@ -8,7 +9,8 @@
     import type { LicenseData } from '$lib/server/sources/license.js'
     import { uniqueDays, updateVersionSeries } from '$lib/chart-helpers.js'
     import { formatNumber } from '$lib/format.js'
-    import { COLOR_GOLD } from '$lib/colors.js'
+    import { boundsByDay, formatBound, largestUnseenShare, latestBound } from '$lib/active-installs.js'
+    import { COLOR_GOLD, COLOR_PURPLE } from '$lib/colors.js'
     import Chart from '$lib/components/Chart.svelte'
     import StackedBarChart from '$lib/components/StackedBarChart.svelte'
     import ErrorState from '$lib/components/ErrorState.svelte'
@@ -35,16 +37,17 @@
         <p class="text-sm text-text-tertiary">How many run the app?</p>
     </div>
     <SectionDescription
-        insight="Use this for true daily active installs and how fast the fleet rolls onto each new release."
-        caveat={'DAU here comes from the hourly heartbeat (distinct install ids per day), the trustworthy active-use number. ' +
-            'The older update-check count is a weaker proxy (it only fires when the updater runs). Debug builds and ' +
-            'anyone who opts out of analytics are excluded.'}
+        insight="Use this for how many people run Cmdr, and how fast the fleet rolls onto each new release."
+        caveat={'Active installs read as a range on purpose. Anyone who opts out of analytics sends nothing at all, ' +
+            "not even an 'I opted out' bit, so a single number would claim a precision we don't have."}
     />
 
     {#if cloudflare.ok}
         {@const cf = cloudflare.data}
         {@const dau = cf.heartbeatDau}
-        {@const latestDau = dau.length > 0 ? dau[dau.length - 1].dau : 0}
+        {@const bounds = boundsByDay(dau, cf.updateActivity)}
+        {@const latest = latestBound(bounds)}
+        {@const unseen = largestUnseenShare(bounds)}
         {@const peakDau = dau.reduce((max, r) => Math.max(max, r.dau), 0)}
         {@const totalBeats = dau.reduce((sum, r) => sum + r.beats, 0)}
         {@const totalDau = dau.reduce((sum, r) => sum + r.dau, 0)}
@@ -53,19 +56,39 @@
         {#if dau.length > 0}
             <MetricRow
                 metrics={[
-                    { label: 'Daily active installs (latest day)', value: formatNumber(latestDau), color: COLOR_GOLD },
-                    { label: 'Peak daily active', value: formatNumber(peakDau) },
+                    { label: 'Active installs (latest day)', value: formatBound(latest), color: COLOR_GOLD },
+                    { label: 'Peak confirmed running', value: formatNumber(peakDau) },
                     { label: 'Beats per active install', value: beatsPerActive.toFixed(1) },
                 ]}
             />
 
+            <p class="mt-3 text-xs leading-relaxed text-text-tertiary">
+                The low end counts install ids we heard from, so those installs definitely ran Cmdr. The high end counts
+                the separate addresses that checked for updates, which catches people who turned analytics off.
+                {#if unseen !== null}
+                    At the widest, {Math.round(unseen * 100)}% of the high end never sent a heartbeat.
+                {/if}
+            </p>
+
             <div class="mt-4">
-                <h3 class="mb-2 text-sm font-medium text-text-secondary">Daily active installs</h3>
+                <h3 class="mb-2 text-sm font-medium text-text-secondary">Active installs per day</h3>
                 <Chart
-                    data={[dau.map((r) => new Date(r.date).getTime() / 1000), dau.map((r) => r.dau)]}
-                    labels={['Active installs']}
-                    colors={[COLOR_GOLD]}
+                    data={[
+                        bounds.map((b) => new Date(b.day).getTime() / 1000),
+                        bounds.map((b) => b.floor),
+                        bounds.map((b) => b.reach),
+                    ]}
+                    labels={['Heard from', 'Checked for updates']}
+                    colors={[COLOR_GOLD, COLOR_PURPLE]}
                     height={180}
+                />
+                <Methodology
+                    text={'Heard from: distinct install ids on the hourly heartbeat, everyone who consented to ' +
+                        'analytics. Checked for updates: distinct addresses that asked our server for the latest ' +
+                        'version, a separate consent that opted-out installs still ride. Treat the high end as a ' +
+                        'rough reach, not a ceiling: addresses are not installs, one office or household behind a ' +
+                        'shared connection counts once, a changing home address counts a single install more than ' +
+                        'once across days, and anyone who turned automatic update checks off never appears at all.'}
                 />
             </div>
         {:else}
