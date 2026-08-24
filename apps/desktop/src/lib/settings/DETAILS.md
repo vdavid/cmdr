@@ -108,6 +108,12 @@ with the full registry-default map, and `migrateSettings()`'s save flushed that 
 `mcp/config.rs` (MCP silently dead in dev). Sparse persistence also means a changed registry default in a future release
 reaches every user who never touched that setting.
 
+**Analytics reads the registry because of this.** Sparse persistence means the heartbeat's config shape carries only
+what a user CHANGED, so it can measure deviation but never adoption. The dashboard closes the gap by resolving an absent
+key against the defaults that shipped in that install's app version, from a manifest generated out of this registry
+(`apps/desktop/scripts/gen-analytics-defaults-lib.ts`, enforced by the `settings-defaults` check). Nothing here has to
+change for it, but a default flip now also moves an analytics artifact.
+
 Mechanics (`settings-store.ts`):
 
 - **"Explicit" is structural, never a value compare.** An `explicitlySet` ledger (`Set<SettingId>`) records which ids a

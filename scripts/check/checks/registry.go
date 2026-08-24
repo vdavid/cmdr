@@ -1390,6 +1390,25 @@ var AllChecks = []CheckDefinition{
 		Run:         RunAnalyticsEventCatalog,
 	},
 	{
+		ID:          "analytics-settings-defaults",
+		Nickname:    "settings-defaults",
+		DisplayName: "settings defaults manifest matches the registry",
+		// Filed under the dashboard: the registry is the input, but what goes stale is the manifest
+		// the dashboard resolves absent heartbeat config keys against.
+		App:       AppDashboard,
+		Tech:      "🎨 Svelte",
+		DependsOn: nil,
+		IsFast:    true,
+		Inputs: inputs([]string{
+			"apps/desktop/src/lib/settings/**",
+			"apps/desktop/src-tauri/src/analytics/config_shape.rs",
+			"apps/desktop/scripts/gen-analytics-defaults*.ts",
+			"apps/desktop/package.json",
+			settingsDefaultsManifest,
+		}),
+		Run: RunAnalyticsSettingsDefaults,
+	},
+	{
 		ID:          "claude-md-details-sibling",
 		Nickname:    "details-sibling",
 		DisplayName: "CLAUDE.md has a sibling DETAILS.md",

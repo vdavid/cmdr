@@ -65,6 +65,24 @@ any catalog key's `@key.screenshot` names that PNG (`grep` the `en/` catalogs), 
 does, so the key falls back to the next surface it appeared on rather than pointing at an image nobody will capture
 again.
 
+## The defaults manifest
+
+`gen-analytics-defaults.ts` writes `apps/analytics-dashboard/src/lib/server/settings-defaults.gen.json`: what a fresh
+install runs with, per released app version, for exactly the keys the heartbeat's config shape can carry. The dashboard
+joins it on `app_version` to tell "the user is on the default" apart from "the setting didn't exist in that build".
+
+Two things about it are load-bearing:
+
+- **The registry is PARSED, not imported.** `definitions/appearance.ts` pulls in `$lib/intl`, whose `messages.svelte.ts`
+  is rune-compiled, so a bare `node` import can't evaluate the registry. Reading the definition objects off the
+  TypeScript AST needs no Svelte toolchain, and it works against a `git show` of a release tag, which is what makes
+  `--backfill` able to reconstruct the history from the tags.
+- **`next` is not a version.** Between releases `package.json` still holds the LAST shipped version, so keying the
+  working tree's snapshot by it would rewrite an entry that describes a release already in the field. `next` holds the
+  unreleased state, is never resolved against, and `scripts/release.sh` promotes it under the real version number.
+
+The two locale generators emit `#[rustfmt::skip]`, so they own their layout and need no Rust toolchain.
+
 ## Key decisions
 
 - **Pure helpers in `instance-id.ts`, side effects in `tauri-wrapper.ts`.** The sanitizer, identifier composer,

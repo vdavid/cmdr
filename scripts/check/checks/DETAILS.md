@@ -537,6 +537,26 @@ a test never ships. Coverage is honest rather than total: an event smuggled thro
 invisible to the scan, and the answer to that is not to write one. A renamed heading that empties the parsed list is an
 error too, so the check can't quietly become a rubber stamp.
 
+## Settings defaults manifest
+
+`analytics-settings-defaults` (`IsFast`, an **error**) keeps
+`apps/analytics-dashboard/src/lib/server/settings-defaults.gen.json` pinned to the desktop settings registry. Same
+regenerate-and-diff shape as `native-strings-fresh`: it runs `node scripts/gen-analytics-defaults.ts` in
+`apps/desktop/`, keeps the rewrite outside `--ci` so the fix arrives already applied, and restores the original and
+fails in `--ci`.
+
+Why it's an error rather than a warn. `settings.json` persists only what a user explicitly changed, so the heartbeat's
+config shape carries deviation and never adoption. The dashboard closes that gap by resolving an absent key against the
+defaults that shipped in the reporting install's `app_version`, which holds only while the manifest still describes the
+registry. A stale manifest breaks nothing loudly: every "how many people use X" number quietly turns wrong, including
+the ones already screenshotted into a decision.
+
+It also guards the history. Entries describe SHIPPED releases, so the check rejects an entry newer than the version in
+`apps/desktop/package.json`, and rejects the reverse hazard: `next` (the unreleased working-tree snapshot) having moved
+past a newest entry that is older than the last release, which means a release shipped defaults nobody recorded and its
+installs are being resolved against a predecessor's values. `scripts/release.sh` runs `--promote <version>` as part of
+the version bump, so the normal path can't drift.
+
 ## Resident doc budget
 
 `resident-doc-budget` (warn-only, `IsFast`) caps the unconditionally-resident agent-doc bundle: the repo-root
@@ -1256,14 +1276,15 @@ doubles as production code.
 - **Website / Astro**: prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, eslint, typecheck, tests
-- **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check, import-cycles, knip, tests, build.
-  Stylelint, knip, and import-cycles run through the same `runStylelintCheck` / `runKnipCheck` / `runImportCyclesCheck`
-  helpers the desktop lanes use, parameterized by app dir. `dashboard-build` is NOT redundant with
-  `dashboard-svelte-check`: the `$lib/server` boundary guard trips only at build time, so it's the only check standing
-  between a stray runtime import and shipping a server-side API key into the browser bundle. The dashboard deliberately
-  has no css-unused (Tailwind supplies every utility class, so "undefined class" would fire on all of them), no
-  a11y-contrast (that tool models desktop's accent matrix and light/dark token pairs; the dashboard is dark-only), no
-  type-drift (no Rust), and no bare-poll (no Playwright helpers).
+- **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check, import-cycles, knip, tests, build,
+  settings-defaults (regenerates the defaults manifest from the desktop settings registry and diffs it). Stylelint,
+  knip, and import-cycles run through the same `runStylelintCheck` / `runKnipCheck` / `runImportCyclesCheck` helpers the
+  desktop lanes use, parameterized by app dir. `dashboard-build` is NOT redundant with `dashboard-svelte-check`: the
+  `$lib/server` boundary guard trips only at build time, so it's the only check standing between a stray runtime import
+  and shipping a server-side API key into the browser bundle. The dashboard deliberately has no css-unused (Tailwind
+  supplies every utility class, so "undefined class" would fire on all of them), no a11y-contrast (that tool models
+  desktop's accent matrix and light/dark token pairs; the dashboard is dark-only), no type-drift (no Rust), and no
+  bare-poll (no Playwright helpers).
 - **Scripts / Go**: gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck
 - **Other / Metrics**: file-length (warn-only), CLAUDE.md-reminder (warn-only), claude-md-length (warn-only),
   invariant-density (warn-only; `❌` rules per subsystem, absolute and per 1,000 source lines, on a strict ratchet),

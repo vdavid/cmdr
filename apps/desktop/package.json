@@ -41,6 +41,7 @@
     "i18n:check-plural": "node scripts/i18n-check-plural.ts",
     "i18n:check-coverage": "node scripts/i18n-check-coverage.ts",
     "i18n:check-dont-translate": "node scripts/i18n-check-dont-translate.ts",
+    "analytics:defaults": "node scripts/gen-analytics-defaults.ts",
     "i18n:capture": "node scripts/i18n-capture.ts",
     "marketing:shots": "node scripts/marketing-shots.ts",
     "i18n:couple": "node scripts/couple-screenshots.ts",

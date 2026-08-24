@@ -68,6 +68,13 @@ cd apps/desktop
 npm pkg set version="$VERSION"
 cd ../..
 
+# Record the settings defaults THIS release ships with, so the analytics dashboard can tell
+# "the user is on the default" from "the setting didn't exist yet" for installs on it. The
+# manifest only gains an entry when a default actually moved, so most releases are a no-op
+# here. Skipping it would leave this release's installs resolved against a predecessor's
+# defaults; `analytics-settings-defaults` fails the next check run if that ever happens.
+(cd apps/desktop && node scripts/gen-analytics-defaults.ts --promote "$VERSION")
+
 # Update version in tauri.conf.json
 cd apps/desktop/src-tauri
 jq ".version = \"$VERSION\"" tauri.conf.json > tauri.conf.json.tmp

@@ -14,13 +14,14 @@ launch boundary, plus the llama-server fetch and the type-drift check.
 - **`download-llama-server.go`**: build-time llama-server downloader, invoked from `src-tauri/build.rs`
 - **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`
 - **`gen-shipped-locales.ts`** (+ `-lib.ts`): the Rust locale resolver's table of shipped catalogs and their CLDR
-  scripts (`pnpm intl:shipped-locales`, guarded by `shipped-locales-fresh`). Both generators emit `#[rustfmt::skip]`, so
-  they own their layout and need no Rust toolchain
+  scripts (`pnpm intl:shipped-locales`, guarded by `shipped-locales-fresh`)
 - **`gen-native-strings.ts`** (+ `-lib.ts`): the catalog subset Rust draws itself (`menu.`, the window title, the
   already-running alert), read by `menu_t`. `pnpm intl:native-strings`, guarded by `native-strings-fresh`
+- **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves
+  absent config keys against (`pnpm analytics:defaults`, guarded by `settings-defaults`); DETAILS § "The defaults
+  manifest"
 - **`marketing-shots.ts`** (+ `-thread.ts`): reshoots the brand masters (`pnpm marketing:shots`); guide in
-  `docs/guides/screenshots.md`. Needs ImageMagick (lossless WebP masters), checked up front so a missing `magick` fails
-  before the app launches rather than 30 s in
+  `docs/guides/screenshots.md`. Needs ImageMagick; a missing `magick` fails up front
 - **`capture-runtime.ts`**: launch primitives shared by the two capture orchestrators, plus `createTrackedArtifactGuard`
   (only a green run keeps its rewrite of tracked artifacts; DETAILS § "The capture guard")
 - **`e2e-linux.sh`**: Linux Docker E2E launcher (`playwright-e2e,virtual-mtp`, single shard, legacy fixture path)

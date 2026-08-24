@@ -750,6 +750,12 @@ jobs:
       - name: Check PostHog events match their catalog
         run: ./scripts/check/check --check analytics-event-catalog --ci
 
+      # Lives here rather than in the dashboard job: its inputs span the desktop settings
+      # registry AND the dashboard manifest, so an app-gated job would skip it exactly when a
+      # desktop-only change is what made the manifest stale.
+      - name: Check the settings-defaults manifest matches the registry
+        run: ./scripts/check/check --check analytics-settings-defaults --ci
+
       - name: Check workflow hardening
         run: ./scripts/check/check --check workflows-hardening --ci
 
