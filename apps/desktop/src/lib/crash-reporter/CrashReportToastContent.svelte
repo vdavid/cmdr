@@ -12,7 +12,7 @@
 
     function handleOpenSettings() {
         dismissToast('crash-report-sent')
-        void openSettingsWindow()
+        void openSettingsWindow('crash-toast')
     }
 </script>
 

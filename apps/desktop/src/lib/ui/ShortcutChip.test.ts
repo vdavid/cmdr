@@ -103,7 +103,7 @@ describe('ShortcutChip', () => {
     button?.click()
     // The dynamic import resolves on a microtask; let the event loop drain.
     await vi.waitFor(() => {
-      expect(openShortcutCustomization).toHaveBeenCalledWith('downloads.goToLatest')
+      expect(openShortcutCustomization).toHaveBeenCalledWith('shortcut-chip', 'downloads.goToLatest')
     })
   })
 

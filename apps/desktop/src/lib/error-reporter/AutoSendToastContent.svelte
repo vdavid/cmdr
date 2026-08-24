@@ -18,7 +18,7 @@
 
     function handleChangeSettings() {
         dismissToast(TOAST_ID)
-        void openSettingsWindow()
+        void openSettingsWindow('error-toast')
     }
 </script>
 

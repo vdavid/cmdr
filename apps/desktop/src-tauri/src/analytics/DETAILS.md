@@ -138,7 +138,12 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `delete_used` (backend, same sink): `trashed` bool, `item_count` bucket.
 - `smb_connected` (backend, `crates/cmdr-smb/src/volume/mod.rs` `connect_smb_volume`): no host/share/credential props.
 - `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`): no device/product props.
-- `settings_opened` (frontend, `command-handlers/app-dialog-handlers.ts` `app.settings`): no props.
+- `settings_opened` (frontend, `$lib/settings/settings-window.ts` `openSettingsWindow`): `surface` enum (`command` /
+  `ipc` / `crash-toast` / `error-toast` / `wake-indicator` / `paste-toast` / `enter-menu` / `volume-breadcrumb` /
+  `downloads-toast` / `low-disk-toast` / `shortcut-chip` / `quick-look-toast`); never the section. It sits in the
+  window helper every entry point funnels through, so it counts all dozen of them and covers a new one for free. Why
+  `surface` is a required first param and why `section` stays out: `apps/desktop/src/lib/settings/DETAILS.md` § "Every
+  open funnels through `openSettingsWindow`".
 - `error_encountered` (backend, `listing/streaming.rs` `TauriListingEventSink::emit_error`): `category` enum (from the
   ListingError); never the path/message/provider.
 - `first_index_started` / `first_index_home_covered` / `first_index_completed` (backend, `first_index.rs`): no props on

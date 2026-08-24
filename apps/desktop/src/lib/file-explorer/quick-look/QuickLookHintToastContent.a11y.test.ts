@@ -69,7 +69,7 @@ describe('QuickLookHintToastContent', () => {
     if (!settingsButton) throw new Error('Settings link missing')
     settingsButton.click()
     expect(dismissToast).toHaveBeenCalledWith('quick-look-hint')
-    expect(openShortcutCustomization).toHaveBeenCalledWith('file.quickLook')
+    expect(openShortcutCustomization).toHaveBeenCalledWith('quick-look-toast', 'file.quickLook')
     expect(setSetting).not.toHaveBeenCalled()
   })
 

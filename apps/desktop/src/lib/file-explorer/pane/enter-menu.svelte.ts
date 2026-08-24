@@ -92,7 +92,7 @@ export function createEnterMenu(deps: EnterMenuDeps): EnterMenuController {
     if (!entry) return
     if (value === 'browse') deps.browse(entry)
     else if (value === 'open') deps.open(entry)
-    else if (value === 'configure') void openSettingsWindow(['Behavior', 'Archives'])
+    else if (value === 'configure') void openSettingsWindow('enter-menu', ['Behavior', 'Archives'])
   }
 
   const controller: EnterMenuController = {

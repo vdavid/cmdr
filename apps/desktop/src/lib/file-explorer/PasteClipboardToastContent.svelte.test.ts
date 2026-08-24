@@ -66,7 +66,7 @@ describe('PasteClipboardToastContent', () => {
     btn?.click()
     await tick()
     expect(dismissToast).toHaveBeenCalledWith('t-3')
-    expect(openSettingsWindow).toHaveBeenCalledWith(['Behavior', 'Navigation & file ops'])
+    expect(openSettingsWindow).toHaveBeenCalledWith('paste-toast', ['Behavior', 'Navigation & file ops'])
     target.remove()
   })
 })

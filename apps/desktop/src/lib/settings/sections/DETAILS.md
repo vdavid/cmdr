@@ -425,9 +425,9 @@ pill or `+` on another row dismisses the banner (those handlers reset `conflictW
 ## Deep-link arrival into a shortcut row
 
 A clickable `ShortcutChip` (and the Quick Look toast's "Settings > Keyboard shortcuts" link) deep-links to a command's
-row via `openShortcutCustomization(commandId)` (`../settings-window.ts`), which opens
-`openSettingsWindow(['Keyboard shortcuts'], shortcutAnchorId(commandId))`. The arrival behavior lives across three
-files; the pieces are load-bearing in this order:
+row via `openShortcutCustomization(surface, commandId)` (`../settings-window.ts`), which opens
+`openSettingsWindow(surface, ['Keyboard shortcuts'], shortcutAnchorId(commandId))`. The arrival behavior lives across
+three files; the pieces are load-bearing in this order:
 
 1. **Row id**: each `.command-row` carries `id={shortcutAnchorId(command.id)}` (i.e. `shortcut-<commandId>`) on the
    keyed element, so the id survives the `shortcutChangeCounter` re-keying. `GlobalShortcutRow` (the `(global)`
@@ -464,7 +464,7 @@ the section title, so its single card renders unlabeled to avoid a duplicate hea
 The Downloads card carries `id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID}` (on `SectionCard`'s own `<section>`, value
 `settings-downloads-notifications`) so the downloads-toast "Stop showing these" deep-link lands on the card instead of
 the section top; the Low disk space card carries `LOW_DISK_SPACE_ANCHOR_ID` the same way for its warn-toast link.
-`openSettingsWindow(section, anchor)` accepts an optional `anchor` arg that the settings page
+`openSettingsWindow(surface, section, anchor)` accepts an optional `anchor` arg that the settings page
 (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section` event on
 already-open windows, then `scrollIntoView`s the matching element.
 

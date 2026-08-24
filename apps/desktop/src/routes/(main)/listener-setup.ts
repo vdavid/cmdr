@@ -360,7 +360,7 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   await pushTauri(unlistenFns, () =>
     onOpenSettings((payload) => {
       const section = payload.section || undefined
-      void openSettingsWindow(section ? [section] : undefined)
+      void openSettingsWindow('ipc', section ? [section] : undefined)
     }),
   )
 

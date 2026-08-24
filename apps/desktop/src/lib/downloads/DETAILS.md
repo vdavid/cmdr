@@ -140,10 +140,11 @@ queue duplicates. Buttons: "Keep it on" (dismiss) and "Turn it off" (`enabled = 
 ## Deep-link target
 
 `openSettingsToDownloadsNotifications` calls
-`openSettingsWindow(['Behavior', 'Notifications'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)`. The settings page reads the
-optional anchor from the URL on cold-open and from the `navigate-to-section` event on already-open windows, then scrolls
-the matching DOM id into view. The anchor id is the source-of-truth `DOWNLOADS_NOTIFICATIONS_ANCHOR_ID` from
-`notifications-mode.ts`; the section component imports the same constant for its `<div id={…}>`.
+`openSettingsWindow('downloads-toast', ['Behavior', 'Notifications'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)`. The settings
+page reads the optional anchor from the URL on cold-open and from the `navigate-to-section` event on already-open
+windows, then scrolls the matching DOM id into view. The anchor id is the source-of-truth
+`DOWNLOADS_NOTIFICATIONS_ANCHOR_ID` from `notifications-mode.ts`; the section component imports the same constant for
+its `<div id={…}>`.
 
 ## Settings registry note
 

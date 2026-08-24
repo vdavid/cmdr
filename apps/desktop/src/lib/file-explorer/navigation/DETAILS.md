@@ -496,7 +496,7 @@ heading or the Network entry's name, edit the catalog, not this file.
    name flips from the `networkVolume` catalog key to `networkVolumeDisabled` ("Network (disabled)") when
    `options.networkEnabled === false`. `VolumeBreadcrumb` reads `getNetworkEnabled()` from reactive settings to set the
    option, and intercepts clicks on the disabled entry to open Settings → File systems → SMB/Network shares (via
-   `openSettingsWindow(['File systems', 'SMB/Network shares'])`) instead of navigating.
+   `openSettingsWindow('volume-breadcrumb', ['File systems', 'SMB/Network shares'])`) instead of navigating.
 
 `getIconForVolume(volume)`: returns the appropriate icon path for a volume based on its category.
 

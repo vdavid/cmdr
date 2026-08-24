@@ -34,7 +34,7 @@
             return
         }
         const { openSettingsWindow } = await import('$lib/settings/settings-window')
-        await openSettingsWindow(['AI', 'Provider'])
+        await openSettingsWindow('wake-indicator', ['AI', 'Provider'])
     }
 
     function warn(what: string): (error: unknown) => void {

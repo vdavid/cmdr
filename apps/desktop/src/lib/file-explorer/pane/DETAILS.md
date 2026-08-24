@@ -1042,6 +1042,6 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
   the cursor-row anchor. The menu (`lib/ui/Menu`) is **portaled to `document.body`** so the explorer's `onfocusin` focus
   guard (`key-dispatch.ts`, which only exempts `[role="dialog"]`) doesn't yank focus off the `role="menu"`; on close the
   controller calls `restoreFocus` (`onRequestFocus`), which re-focuses the explorer container so keyboard routing
-  resumes. `Configure…` deep-links to `openSettingsWindow(['Behavior', 'Archives'])`.
+  resumes. `Configure…` deep-links to `openSettingsWindow('enter-menu', ['Behavior', 'Archives'])`.
 - **Settings** live in `settings/sections/ArchivesSection.svelte` (a custom section: two `ToggleGroup` cards over the
   one JSON setting, so the format list extends without a registry entry per format).

@@ -69,7 +69,7 @@
         if (commandId === undefined) return
         // Lazy import keeps the Tauri window-creation surface out of the viewer bundle.
         const { openShortcutCustomization } = await import('$lib/settings/settings-window')
-        await openShortcutCustomization(commandId)
+        await openShortcutCustomization('shortcut-chip', commandId)
     }
 </script>
 

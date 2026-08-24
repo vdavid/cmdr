@@ -317,19 +317,20 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
   (one-time lift of pre-launch `apiKey` strings from `settings.json` into the OS secret store). Lives here rather than
   under `sections/` so it isn't tied to a UI subcomponent path.
 - **network-settings.ts**: Network-specific setting helpers (proxy config, SMB auth defaults)
-- **settings-window.ts**: Logic for opening/focusing/closing the settings window (Tauri window management). Accepts an
-  optional `section` array (e.g. `['File systems', 'SMB/Network shares']`) to deep-link a specific section. Two delivery
-  paths: (a) new-window: JSON-encoded array on the URL as `?section=...` (JSON because section names can contain `/`,
-  e.g. "SMB/Network shares"); (b) already-open window: emits a `navigate-to-section` Tauri event the settings page
-  listens for. The settings page also reads the URL param at mount, so reloads or fresh-opens land on the same section.
+- **settings-window.ts**: Logic for opening/focusing/closing the settings window (Tauri window management). Takes a
+  required `SettingsSurface` first (see § "Every open funnels through `openSettingsWindow`" below) plus an optional
+  `section` array (e.g. `['File systems', 'SMB/Network shares']`) to deep-link a specific section. Two delivery paths:
+  (a) new-window: JSON-encoded array on the URL as `?section=...` (JSON because section names can contain `/`, e.g.
+  "SMB/Network shares"); (b) already-open window: emits a `navigate-to-section` Tauri event the settings page listens
+  for. The settings page also reads the URL param at mount, so reloads or fresh-opens land on the same section.
   Position: opens centered on the main window on first open of the session (via `lib/window-positioning.ts`). After
   that, the position+size persists in-memory (via the `get_child_window_rect` / `set_child_window_rect` Tauri commands)
   so reopening lands in the same spot. On app start the cache is empty again. Saved rects that no longer fit any monitor
   (display disconnected, etc.) are clamped to the nearest monitor. Also exports the keyboard-shortcut deep-link pair:
   `shortcutAnchorId(commandId)` / `commandIdFromShortcutAnchor(anchorId)` (the `shortcut-<commandId>` DOM-id convention,
-  one definition so writer and readers can't drift) and `openShortcutCustomization(commandId)` (the in-app entry point
-  clickable `ShortcutChip`s call to deep-link to a row). See § "Deep-link arrival into a shortcut row" below and
-  `sections/CLAUDE.md`.
+  one definition so writer and readers can't drift) and `openShortcutCustomization(surface, commandId)` (the in-app
+  entry point clickable `ShortcutChip`s call to deep-link to a row). See § "Deep-link arrival into a shortcut row" below
+  and `sections/CLAUDE.md`.
 - **pending-shortcut-highlight.svelte.ts**: shared module-level `$state` seam for the deep-link arrival flash. The
   settings page writes the target command id (`setPendingShortcutHighlight`) after scrolling its row into view; the
   `KeyboardShortcutsSection` reads it (`getPendingShortcutHighlight`) to apply a `class:flash`, then clears it
@@ -346,6 +347,30 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
 - **mcp-main-bridge.ts**: MCP bridge for settings; handles `mcp-get-all-settings` and `mcp-set-setting` round-trip
   events in the main window (always alive), enabling AI agents to query and modify settings without the settings window
   open
+
+### Every open funnels through `openSettingsWindow`
+
+Settings has a dozen entry points (the `app.settings` command, the `open-settings` IPC event, five toasts, the pane
+Enter menu, the volume breadcrumb, and the two `openShortcutCustomization` callers). All of them call
+`openSettingsWindow(surface, section?, anchor?)`, which is what lets the `settings_opened` analytics event fire in
+exactly ONE place and cover a future call site automatically. Canonical event doc:
+`apps/desktop/src-tauri/src/analytics/DETAILS.md`.
+
+`surface` is a closed `SettingsSurface` union and the FIRST parameter with no default, so a new call site has to name
+itself rather than inherit somebody else's bucket, and the type keeps the value out of free-form text. Adding an entry
+point means adding a variant.
+
+Two properties worth keeping:
+
+- **It counts the request, not the window creation.** The event fires above the "already open → focus it" early return,
+  because asking for Settings while it's up is still a visit.
+- **`section` is deliberately NOT a prop.** Every deep-linking surface has exactly one section, so it would be a weaker
+  duplicate of `surface`: the parameter is a bare `string[]`, the names are UI-derived (English structural keys, but
+  rename-able), and the `ipc` path's section arrives from an MCP caller as free-form text.
+
+The E2E `openSettingsWindowViaProd` helper emits the same `open-settings` event the MCP path uses, so it lands on the
+`ipc` surface through the one listener and can't double-count. E2E runs are suppressed backend-side anyway
+(`analytics::suppression_reason`).
 
 ### Shortcuts (separate subsystem)
 

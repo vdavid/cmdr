@@ -17,7 +17,7 @@
 
     function handleOpenSettings() {
         dismissToast(toastId)
-        void openSettingsWindow(['Behavior', 'Navigation & file ops'])
+        void openSettingsWindow('paste-toast', ['Behavior', 'Navigation & file ops'])
     }
 </script>
 

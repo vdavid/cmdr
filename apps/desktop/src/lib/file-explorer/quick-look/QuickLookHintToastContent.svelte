@@ -37,7 +37,7 @@
         dismissToast(QUICK_LOOK_HINT_TOAST_ID)
         // Deep-link straight to the Quick Look command's row in Keyboard shortcuts
         // (scrolled into view + flashed), the first consumer of the deep-link path.
-        void openShortcutCustomization('file.quickLook')
+        void openShortcutCustomization('quick-look-toast', 'file.quickLook')
     }
 
     function handleDontShowAgain() {

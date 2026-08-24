@@ -21,7 +21,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emitTo } from '@tauri-apps/api/event'
 import { Effect, EffectState } from '@tauri-apps/api/window'
-import { getShouldReduceTransparency } from '$lib/tauri-commands'
+import { getShouldReduceTransparency, trackEvent } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '$lib/app-mode'
@@ -53,6 +53,40 @@ export const settingsMaxWidth = (scale: number): number =>
   SETTINGS_CHROME_WIDTH + SETTINGS_CONTENT_BASE_MAX_WIDTH * scale
 
 /**
+ * Which part of the UI asked for Settings. Closed and categorical: it's the only prop on
+ * the `settings_opened` event, so the open mix stays readable.
+ *
+ * It's `openSettingsWindow`'s FIRST parameter and has no default, so a new call site has
+ * to name itself instead of quietly joining someone else's bucket, and the union keeps
+ * the value out of free-form text.
+ */
+export type SettingsSurface =
+  /** The `app.settings` command (menu, command palette, keyboard shortcut). */
+  | 'command'
+  /** The `open-settings` event: the MCP `dialog open settings` tool, and the read-only Keyboard shortcuts window. */
+  | 'ipc'
+  /** "A previous run crashed" toast. */
+  | 'crash-toast'
+  /** The auto-send-error-reports toast. */
+  | 'error-toast'
+  /** Ask Cmdr's wake indicator, deep-linking to the AI provider. */
+  | 'wake-indicator'
+  /** The paste-from-clipboard toast. */
+  | 'paste-toast'
+  /** A pane's Enter menu ("Configure…" on an archive). */
+  | 'enter-menu'
+  /** The volume breadcrumb's SMB/network-shares entry. */
+  | 'volume-breadcrumb'
+  /** The downloads "Stop showing these" notification toast. */
+  | 'downloads-toast'
+  /** The low-disk-space "Stop showing these" notification toast. */
+  | 'low-disk-toast'
+  /** A clickable `ShortcutChip`, deep-linking to that command's row. */
+  | 'shortcut-chip'
+  /** The Quick Look hint toast, deep-linking to the Quick Look shortcut row. */
+  | 'quick-look-toast'
+
+/**
  * Opens the settings window, or focuses it if already open. When `section` is provided,
  * the settings window listens for the `navigate-to-section` event and scrolls/highlights
  * the matching section path (e.g., `['File systems', 'SMB/Network shares']`).
@@ -60,8 +94,22 @@ export const settingsMaxWidth = (scale: number): number =>
  * When `anchor` is provided alongside `section`, the settings page also scrolls the
  * element with that DOM id into view after the section has rendered. Use for sub-group
  * deep-links (the "Stop showing these" toast → `'settings-downloads-notifications'`).
+ *
+ * `surface` names the caller, for the `settings_opened` analytics event below.
  */
-export async function openSettingsWindow(section?: string[], anchor?: string): Promise<void> {
+export async function openSettingsWindow(surface: SettingsSurface, section?: string[], anchor?: string): Promise<void> {
+  // Every path into Settings funnels through here, so this is the ONE place the event
+  // can fire exactly once per open and cover future call sites for free.
+  //
+  // It counts the REQUEST, not the window creation: asking for Settings while it's
+  // already up is still a visit, and the early return below would otherwise drop it.
+  //
+  // `section` deliberately does NOT ride along. Every deep-linking surface has exactly
+  // one section, so it would be a weaker duplicate of `surface`: the parameter is a bare
+  // `string[]`, the names are UI-derived and rename-able, and the `ipc` path's section
+  // comes straight from an MCP caller as free-form text.
+  void trackEvent('settings_opened', { surface })
+
   // E2E suites re-open Settings many times; stealing OS focus each time
   // makes the host machine unusable while tests run. The plugin reaches the
   // webview over a Unix socket, so it doesn't need OS focus to drive the DOM.
@@ -216,6 +264,6 @@ export function commandIdFromShortcutAnchor(anchorId: string): string | null {
  * @public consumed via a dynamic `import()` from `ShortcutChip.svelte`; knip's Svelte
  * parser doesn't trace dynamic imports, so it'd flag this as unused otherwise.
  */
-export function openShortcutCustomization(commandId: string): Promise<void> {
-  return openSettingsWindow(['Keyboard shortcuts'], shortcutAnchorId(commandId))
+export function openShortcutCustomization(surface: SettingsSurface, commandId: string): Promise<void> {
+  return openSettingsWindow(surface, ['Keyboard shortcuts'], shortcutAnchorId(commandId))
 }

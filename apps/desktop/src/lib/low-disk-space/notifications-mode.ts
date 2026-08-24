@@ -102,5 +102,5 @@ export async function pushLowDiskSpaceConfigToBackend(): Promise<void> {
  * calls this after flipping the setting to `'off'`.
  */
 export async function openSettingsToLowDiskSpace(): Promise<void> {
-  await openSettingsWindow(['Behavior', 'Notifications'], LOW_DISK_SPACE_ANCHOR_ID)
+  await openSettingsWindow('low-disk-toast', ['Behavior', 'Notifications'], LOW_DISK_SPACE_ANCHOR_ID)
 }

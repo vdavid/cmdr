@@ -1,20 +1,27 @@
 /**
  * Unit tests for the pure anchor-id helpers shared between
  * `openShortcutCustomization` (deep-link writer) and `KeyboardShortcutsSection`
- * (the row that renders the anchor) / the settings page (the arrival reader).
+ * (the row that renders the anchor) / the settings page (the arrival reader),
+ * plus the `settings_opened` analytics every open path funnels through.
  *
  * `settings-window.ts` statically imports Tauri window APIs at module scope, so
- * those are mocked here; the functions under test touch none of them.
+ * those are mocked here; the anchor helpers touch none of them.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: vi.fn() }))
+const { getByLabel, trackEvent } = vi.hoisted(() => ({
+  getByLabel: vi.fn<(label: string) => Promise<unknown>>(),
+  trackEvent: vi.fn(() => Promise.resolve()),
+}))
+
+vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: Object.assign(vi.fn(), { getByLabel }) }))
 vi.mock('@tauri-apps/api/dpi', () => ({ LogicalPosition: vi.fn() }))
 vi.mock('@tauri-apps/api/event', () => ({ emitTo: () => Promise.resolve() }))
 vi.mock('@tauri-apps/api/window', () => ({ Effect: {}, EffectState: {} }))
+vi.mock('$lib/tauri-commands', () => ({ getShouldReduceTransparency: () => Promise.resolve(false), trackEvent }))
 
-import { shortcutAnchorId, commandIdFromShortcutAnchor } from './settings-window'
+import { shortcutAnchorId, commandIdFromShortcutAnchor, openSettingsWindow } from './settings-window'
 
 describe('shortcutAnchorId / commandIdFromShortcutAnchor', () => {
   it('builds the `shortcut-<id>` anchor convention', () => {
@@ -43,5 +50,34 @@ describe('shortcutAnchorId / commandIdFromShortcutAnchor', () => {
     // builds anchors only via `shortcutAnchorId` never produces this, but the
     // contract is "prefix present → not null".
     expect(commandIdFromShortcutAnchor('shortcut-')).toBe('')
+  })
+})
+
+describe('openSettingsWindow analytics', () => {
+  beforeEach(() => {
+    trackEvent.mockClear()
+    // Pretend Settings is already open: `openSettingsWindow` takes its early
+    // return and never reaches the window-creation path (which needs far more
+    // of Tauri than this suite mocks).
+    getByLabel.mockResolvedValue({})
+  })
+
+  it('reports `settings_opened` once, tagged with the surface that asked', async () => {
+    await openSettingsWindow('crash-toast')
+    expect(trackEvent).toHaveBeenCalledTimes(1)
+    expect(trackEvent).toHaveBeenCalledWith('settings_opened', { surface: 'crash-toast' })
+  })
+
+  it('fires for a deep-link open too, and never leaks the section into the props', async () => {
+    await openSettingsWindow('paste-toast', ['Behavior', 'Navigation & file ops'])
+    expect(trackEvent).toHaveBeenCalledWith('settings_opened', { surface: 'paste-toast' })
+  })
+
+  it('counts a re-open of an already-open Settings window', async () => {
+    // The event answers "how often does someone go to Settings, and from where",
+    // so a second visit in one session is a second data point.
+    await openSettingsWindow('command')
+    await openSettingsWindow('enter-menu')
+    expect(trackEvent).toHaveBeenCalledTimes(2)
   })
 })

@@ -115,8 +115,8 @@ was created with.
 ### Deep link to a command's row (`../settings/settings-window.ts`)
 
 A clickable `ShortcutChip` (and any other "customize this shortcut" affordance) deep-links to the command's row in
-Settings > Keyboard shortcuts via `openShortcutCustomization(commandId)`. That helper calls
-`openSettingsWindow(['Keyboard shortcuts'], shortcutAnchorId(commandId))`. The anchor-id convention
+Settings > Keyboard shortcuts via `openShortcutCustomization(surface, commandId)`. That helper calls
+`openSettingsWindow(surface, ['Keyboard shortcuts'], shortcutAnchorId(commandId))`. The anchor-id convention
 `shortcut-<commandId>` lives as the paired `shortcutAnchorId` / `commandIdFromShortcutAnchor` functions in
 `settings-window.ts` so the writer (the helper) and the readers (the section's row id, the settings page's arrival
 handler) can't drift. The settings side scrolls the row into its nested list and flashes it — see

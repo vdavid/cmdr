@@ -69,5 +69,5 @@ export function setDownloadsNotificationsMode(value: DownloadsNotificationsMode)
  * button calls this after flipping the setting to `'neither'`.
  */
 export async function openSettingsToDownloadsNotifications(): Promise<void> {
-  await openSettingsWindow(['Behavior', 'Notifications'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)
+  await openSettingsWindow('downloads-toast', ['Behavior', 'Notifications'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)
 }

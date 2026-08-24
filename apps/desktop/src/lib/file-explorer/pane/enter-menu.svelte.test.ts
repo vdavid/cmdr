@@ -3,7 +3,7 @@ import { createEnterMenu } from './enter-menu.svelte'
 import type { FileEntry } from '$lib/file-explorer/types'
 
 const { openSettingsWindowMock } = vi.hoisted(() => ({
-  openSettingsWindowMock: vi.fn<(section?: string[]) => Promise<void>>(),
+  openSettingsWindowMock: vi.fn<(surface: string, section?: string[]) => Promise<void>>(),
 }))
 vi.mock('$lib/settings/settings-window', () => ({
   openSettingsWindow: openSettingsWindowMock,
@@ -69,7 +69,7 @@ describe('createEnterMenu', () => {
     const menu = createEnterMenu(makeDeps())
     menu.openFor(makeEntry('a.zip'), 'ask')
     menu.onSelect('configure')
-    expect(openSettingsWindowMock).toHaveBeenCalledWith(['Behavior', 'Archives'])
+    expect(openSettingsWindowMock).toHaveBeenCalledWith('enter-menu', ['Behavior', 'Archives'])
   })
 
   it('onOpenChange(false) restores focus only on a real close transition', () => {

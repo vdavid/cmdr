@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { getSettingMock, setSettingMock, openSettingsWindowMock } = vi.hoisted(() => ({
   getSettingMock: vi.fn(),
   setSettingMock: vi.fn(),
-  openSettingsWindowMock: vi.fn<(section?: string[], anchor?: string) => Promise<void>>(),
+  openSettingsWindowMock: vi.fn<(surface: string, section?: string[], anchor?: string) => Promise<void>>(),
 }))
 
 vi.mock('$lib/settings', () => ({
@@ -68,7 +68,8 @@ describe('openSettingsToDownloadsNotifications', () => {
   it('navigates to the Notifications section path and the sub-group anchor', async () => {
     await openSettingsToDownloadsNotifications()
     expect(openSettingsWindowMock).toHaveBeenCalledTimes(1)
-    const [section, anchor] = openSettingsWindowMock.mock.calls[0]
+    const [surface, section, anchor] = openSettingsWindowMock.mock.calls[0]
+    expect(surface).toBe('downloads-toast')
     expect(section).toEqual(['Behavior', 'Notifications'])
     expect(anchor).toBe('settings-downloads-notifications')
   })

@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { getSettingMock, setSettingMock, openSettingsWindowMock, setLowDiskSpaceConfigMock } = vi.hoisted(() => ({
   getSettingMock: vi.fn(),
   setSettingMock: vi.fn(),
-  openSettingsWindowMock: vi.fn<(section?: string[], anchor?: string) => Promise<void>>(),
+  openSettingsWindowMock: vi.fn<(surface: string, section?: string[], anchor?: string) => Promise<void>>(),
   setLowDiskSpaceConfigMock: vi.fn<(enabled: boolean, thresholdPercent: number) => Promise<void>>(),
 }))
 
@@ -132,7 +132,8 @@ describe('openSettingsToLowDiskSpace', () => {
   it('navigates to the section path and the sub-group anchor', async () => {
     await openSettingsToLowDiskSpace()
     expect(openSettingsWindowMock).toHaveBeenCalledTimes(1)
-    const [section, anchor] = openSettingsWindowMock.mock.calls[0]
+    const [surface, section, anchor] = openSettingsWindowMock.mock.calls[0]
+    expect(surface).toBe('low-disk-toast')
     expect(section).toEqual(['Behavior', 'Notifications'])
     expect(anchor).toBe('settings-low-disk-space')
   })
