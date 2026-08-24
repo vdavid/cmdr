@@ -1,5 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep, handleRetentionSweep } from './index'
+import {
+  handleDailyAggregation,
+  handleDbSizeCheck,
+  handleDailyEvictionSweep,
+  handleRetentionSweep,
+  handleSyntheticHeartbeatSweep,
+} from './index'
+import { syntheticHeartbeatGraceDays } from './scheduled'
 import { ERROR_REPORT_PREFIX, EVICTION_MIN_AGE_DAYS, TOTAL_BYTES_KEY } from './telemetry/error-report-eviction'
 import { INTAKE_PAUSED_KEY } from './telemetry/error-report-intake'
 import { createBaseEnv, createMockD1 } from './cron-test-helpers'
@@ -54,6 +61,25 @@ describe('handleDailyAggregation', () => {
     expect(sqlStatements.some((s) => s.includes('SELECT 1 FROM daily_active_users'))).toBe(true)
     expect(sqlStatements.some((s) => s.includes('INSERT OR IGNORE INTO daily_active_users'))).toBe(false)
     expect(sqlStatements.some((s) => s.includes('DELETE FROM update_checks'))).toBe(false)
+  })
+})
+
+describe('handleSyntheticHeartbeatSweep', () => {
+  it('deletes only heartbeats, bounded by the grace-period cutoff', async () => {
+    const { db, calls } = createMockD1()
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleSyntheticHeartbeatSweep(env as never)
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0].sql).toContain('DELETE FROM heartbeat')
+    // The cutoff has to be BOUND, never inlined: an unbounded delete would take the brand-new
+    // installs that have not saved a setting yet. What the predicate does with it is proved
+    // against a real SQLite in `synthetic-heartbeats.test.ts`.
+    expect(calls[0].bindings).toHaveLength(1)
+    const cutoffMs = Date.parse(`${String(calls[0].bindings[0])}Z`)
+    const expectedMs = Date.now() - syntheticHeartbeatGraceDays * 86_400_000
+    expect(Math.abs(cutoffMs - expectedMs)).toBeLessThan(86_400_000)
   })
 })
 

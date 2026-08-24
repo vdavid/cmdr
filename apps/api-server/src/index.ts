@@ -15,6 +15,7 @@ import {
   handleDbSizeCheck,
   handleDailyEvictionSweep,
   handleRetentionSweep,
+  handleSyntheticHeartbeatSweep,
 } from './scheduled'
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -72,6 +73,12 @@ export default {
       } catch (e) {
         console.error('Retention sweep failed:', e)
       }
+
+      try {
+        await handleSyntheticHeartbeatSweep(env)
+      } catch (e) {
+        console.error('Synthetic heartbeat sweep failed:', e)
+      }
     }
   },
 }
@@ -83,4 +90,5 @@ export {
   handleDbSizeCheck,
   handleDailyEvictionSweep,
   handleRetentionSweep,
+  handleSyntheticHeartbeatSweep,
 }

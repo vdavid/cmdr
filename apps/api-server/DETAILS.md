@@ -254,7 +254,9 @@ failure doesn't block the others:
    `INSERT OR IGNORE ... GROUP BY`, then prunes raw update checks older than 7 days. Idempotent via existence check.
 3. **DB size check** (00:00 UTC only): queries the D1 pragma for total database size, alerting by email over 100 MB.
 4. **Retention sweep** (00:00 UTC only): `handleRetentionSweep` enforces the per-table retention promises below.
-5. **Daily eviction sweep** (00:00 UTC only): `handleDailyEvictionSweep` recomputes `total_bytes` from R2 ground truth
+5. **Synthetic heartbeat sweep** (00:00 UTC only): `handleSyntheticHeartbeatSweep` deletes the beats of installs that
+   were never a person. See § Synthetic heartbeats below.
+6. **Daily eviction sweep** (00:00 UTC only): `handleDailyEvictionSweep` recomputes `total_bytes` from R2 ground truth
    (the per-upload KV counter is racy and drifts), clears `intake_paused` if the bucket is back under the LOW watermark,
    then triggers `tryEvict` if still over 8 GB. Idempotent, and it catches drift from concurrent uploads or a Worker
    dying mid-eviction.
@@ -300,6 +302,41 @@ Two invariants the sweep must keep, both pinned by tests in `src/scheduled.test.
   (`T`/`Z` versus a space) only differ within a second of the boundary, which midnight-snapping puts out of reach.
 
 Every statement is idempotent: each `WHERE` excludes what it already cleared, so re-running after an outage is free.
+
+## Synthetic heartbeats
+
+`handleSyntheticHeartbeatSweep` deletes every beat belonging to an install that has NEVER persisted a setting and has
+been silent for `syntheticHeartbeatGraceDays` (seven days). It's a data-INTEGRITY sweep, not a retention one, so it sits
+outside `handleRetentionSweep` and outside the privacy-policy contract (it only ever deletes earlier than promised).
+
+**What it corrects.** A fresh data dir mints a fresh `anal_` install id, so every instance Cmdr's own tooling launches
+(E2E shards, i18n captures, marketing shots) registered as a brand-new user, on every launch. Through the beta that put
+1,786 phantom installs in the table against 303 real ones: installs over-counted 6x, and roughly 24 phantom daily
+actives a day on `/admin/heartbeat-dau`, which is what the analytics dashboard plots. The app-side fix is the real one
+(`apps/desktop/src-tauri/src/analytics/DETAILS.md` § "Why an isolated instance must never send"); this sweep is what
+makes the STORED history honest, since the Worker can't tell a robot from a person at intake, only across an install's
+history.
+
+**The classifier** (`deleteSyntheticHeartbeatsSql`), decided per install rather than per row:
+
+- Never sent a beat whose `config_json` contains `"_schemaVersion"`. The frontend settings store stamps that key on
+  every save, and the heartbeat's config snapshot carries every number-valued key, so one such beat proves a person
+  changed something. Independently validated: filtering the table to ids that ever carried it gives 303 installs, and
+  PostHog, a wholly separate pipeline, reported 302 distinct desktop installs over the same window.
+- AND its LAST beat is older than the cutoff.
+
+One qualifying beat vouches for that id's whole history, so a real user's launch beats from before their first settings
+save survive. `instr`, never `LIKE`: SQLite's `_` is a single-character wildcard, so `LIKE '%"_schemaVersion"%'` would
+let an unrelated `"xschemaVersion"` key vouch for a synthetic install.
+
+**Why the grace period is the delicate part.** A genuinely brand-new user has no `settings.json` either, so for their
+first minutes they look exactly like a test shard. Deleting on the classifier alone would erase real first-day installs.
+Measured over the beta, 293 of 303 real installs stamped `_schemaVersion` within their first HOUR and exactly one took
+longer than 48 hours, so a week is far past the observed spread while still converging. ❌ Don't shorten it to make the
+numbers settle sooner.
+
+The predicate is proved against a real SQLite (`node:sqlite`, no dependency) in `src/synthetic-heartbeats.test.ts`; the
+statement-shape mock in `src/scheduled.test.ts` can only prove which statements ran.
 
 ## Local development
 

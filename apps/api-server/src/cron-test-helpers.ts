@@ -26,7 +26,7 @@ export function createMockD1(responses: Map<string, unknown> = new Map()) {
             }
             return Promise.resolve(null)
           }),
-          run: vi.fn(() => Promise.resolve({ success: true })),
+          run: vi.fn(() => Promise.resolve({ success: true, meta: { changes: 0 } })),
         }
       }),
       all: vi.fn(() => {
@@ -45,7 +45,7 @@ export function createMockD1(responses: Map<string, unknown> = new Map()) {
       }),
       run: vi.fn(() => {
         calls.push({ sql, bindings: [] })
-        return Promise.resolve({ success: true })
+        return Promise.resolve({ success: true, meta: { changes: 0 } })
       }),
     })),
   } as unknown as D1Database

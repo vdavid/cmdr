@@ -138,6 +138,40 @@ const feedbackEmailRetentionDays = 730
 const heartbeatRetentionDays = 730
 
 /**
+ * How long an install may go silent without ever having persisted a single setting before its
+ * beats are read as a tooling instance rather than a person.
+ *
+ * The signal: the frontend settings store stamps `_schemaVersion` into `settings.json` on every
+ * save, and the heartbeat's config snapshot carries every number-valued key, so one beat carrying
+ * `_schemaVersion` proves a person changed something. Measured over the beta, 293 of 303 real
+ * installs stamped it within their first HOUR and only one took longer than 48 hours, while 1,786
+ * ids never stamped it at all.
+ *
+ * The grace period is what protects the case that makes this delicate: a genuinely brand-new user
+ * has no `settings.json` either, so for their first minutes they are indistinguishable from a test
+ * shard. A week is far past the observed spread and still converges.
+ */
+const syntheticHeartbeatGraceDays = 7
+
+/**
+ * Deletes every beat belonging to an install that has NEVER persisted a setting and has been
+ * silent since `?1`. Exported so `synthetic-heartbeats.test.ts` can run it against a real SQLite.
+ *
+ * Decided per INSTALL, not per row: one `_schemaVersion` beat vouches for that id's whole history,
+ * so a real user's launch beats from before their first settings save survive.
+ *
+ * `instr` rather than `LIKE`: in SQLite `_` is a single-character wildcard, so
+ * `LIKE '%"_schemaVersion"%'` would let a config with an unrelated `"xschemaVersion"` key vouch
+ * for a synthetic install.
+ */
+const deleteSyntheticHeartbeatsSql = `DELETE FROM heartbeat WHERE anal_id IN (
+       SELECT anal_id FROM heartbeat
+       GROUP BY anal_id
+       HAVING MAX(CASE WHEN instr(COALESCE(config_json, ''), '"_schemaVersion"') > 0 THEN 1 ELSE 0 END) = 0
+          AND MAX(created_at) < ?1
+     )`
+
+/**
  * The `created_at` cutoff `days` back, snapped to MIDNIGHT UTC so a day is always swept whole.
  * That matters for `downloads`: the rollup captures a day's distinct-downloader count and the clear
  * then erases the hashes it came from, so a cutoff mid-day would roll up half a day, clear that half,
@@ -209,6 +243,33 @@ async function handleRetentionSweep(env: Bindings): Promise<void> {
   await db.prepare(`DELETE FROM heartbeat WHERE created_at < ?1`).bind(cutoff(heartbeatRetentionDays)).run()
 }
 
+/**
+ * Daily integrity sweep: removes the beats of installs that were never a person.
+ *
+ * A fresh data dir mints a fresh `anal_` id, so any instance the app's own tooling launches
+ * registers as a brand-new user on every launch. That went unnoticed through the beta and left the
+ * table 6x over-counted (2,089 ids against 303 real ones), which is what
+ * `analytics/DETAILS.md` § "Why an isolated instance must never send" now guards against at the
+ * source.
+ *
+ * This is the second half of that fix, and it stays because it also ANSWERS a question: with the
+ * app-side gate in place this should delete nothing, so anything it does delete means a new tooling
+ * path started leaking. Cleaning at write time isn't available: the Worker can't tell a robot from
+ * a person at intake, only over an install's history.
+ *
+ * Idempotent and bounded by the same predicate every day, so re-running it after an outage is free.
+ */
+async function handleSyntheticHeartbeatSweep(env: Bindings): Promise<void> {
+  const result = await env.TELEMETRY_DB.prepare(deleteSyntheticHeartbeatsSql)
+    .bind(cutoff(syntheticHeartbeatGraceDays))
+    .run()
+
+  if (result.meta.changes > 0) {
+    const deleted = result.meta.changes.toString()
+    console.log(`Synthetic heartbeat sweep: deleted ${deleted} beats from installs that never saved a setting`)
+  }
+}
+
 async function handleDbSizeCheck(env: Bindings): Promise<void> {
   if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
 
@@ -274,6 +335,9 @@ export {
   handleDbSizeCheck,
   handleDailyEvictionSweep,
   handleRetentionSweep,
+  handleSyntheticHeartbeatSweep,
+  deleteSyntheticHeartbeatsSql,
+  syntheticHeartbeatGraceDays,
   downloadIdentifierRetentionDays,
   crashIdentifierRetentionDays,
   feedbackEmailRetentionDays,
