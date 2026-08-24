@@ -132,10 +132,10 @@ than dropped, and lands on the pass after `WakeFinished`.
 ### The force reports on ITS folder and nothing else
 
 ⚠️ **The inbox is not empty under a test run, and a wake reports on everything waiting.** The indexer's tap feeds the
-same inbox from whatever files the rest of the suite churns, so a spec staging one folder and asserting
-"What changed in 1 folder" was reading a number nobody controlled: measured on the Linux lane, one forced wake covered
-3 folders, the next 11, and a quiet wake 40. The digest's tally was wrong, and `thread_title` names the thread after
-the TOP-RANKED folder, so the thread a spec went looking for was titled after somebody else's directory.
+same inbox from whatever files the rest of the suite churns. Left alone, a spec staging one folder and asserting
+"What changed in 1 folder" reads a number nobody controls: measured on the Linux lane, forced wakes covered 3, 11, and
+30 folders, and a quiet one looked at 40. `thread_title` names the thread after the TOP-RANKED folder, so the thread
+the spec goes looking for ends up titled after somebody else's directory.
 
 So `ForcedWake::only_folder` carries the staged folder, and `WakeLoop::isolate_inbox_to` cuts the inbox down to it
 (`Inbox::retain_folder`) as the wake is prepared. The dropped rows go from disk too, via `persist::save_all`.
