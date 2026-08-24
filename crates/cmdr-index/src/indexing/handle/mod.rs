@@ -203,7 +203,10 @@ impl Index {
     /// user asked for this drive" and nothing else. `state::record_drive_index_enabled`
     /// says why it's written before the start rather than after it.
     pub async fn start_volume(&self, volume_id: &str) -> Result<StartOutcome, IndexError> {
-        if state::is_active(volume_id) {
+        // ❌ Not `is_active`: a volume with a teardown claimed on it reads active
+        // right up to the moment it stops, and short-circuiting there answers
+        // "already indexing" to the very request that has to bring it back.
+        if state::is_active_and_staying(volume_id) {
             // Active isn't the same as indexed: a search-driven walk leaves a
             // writer with no scan and no watcher behind it, and so does a first
             // scan somebody stopped. Returning `Started` there would swallow the

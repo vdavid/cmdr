@@ -58,7 +58,7 @@ impl TestInstanceGuard {
         INDEX_REGISTRY.lock().unwrap_or_else(|e| e.into_inner()).insert(
             volume_id.clone(),
             IndexInstance {
-                phase: IndexPhase::ShuttingDown,
+                phase: IndexPhase::ShuttingDown { restart: None },
                 kind,
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), crate::NoopEventSink::shared()),
             },

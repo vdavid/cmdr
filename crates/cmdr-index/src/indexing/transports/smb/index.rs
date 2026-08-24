@@ -145,7 +145,9 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
 /// on refusal so the caller (and the per-drive UX) can show an honest, non-string-matched
 /// status. A no-op if the volume's index is already active.
 pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), SmbIndexGateReason> {
-    if state::is_active(&volume_id) {
+    // ❌ Not `is_active`: a volume with a teardown claimed on it is active right up
+    // to the moment it stops, and this is the enable that has to bring it back.
+    if state::is_active_and_staying(&volume_id) {
         log::info!("start_indexing_for_smb: '{volume_id}' already active, no-op");
         return Ok(());
     }
@@ -246,6 +248,14 @@ pub(crate) fn smb_index_was_enabled(volume_id: &str) -> bool {
 /// agree on.
 pub(crate) fn resume_smb_index_if_enabled(volume_id: String) {
     if state::is_active(&volume_id) {
+        return;
+    }
+    // ⚠️ And ❌ never while a teardown is still running on this share. The disable
+    // that opened that window writes its sticky veto on the far side of the drain,
+    // so the persisted intent read below is stale for the length of it, and a
+    // reconnect landing in there would turn a NAS back on seconds after the user
+    // turned it off. A reconnect recurs on its own; dropping one costs nothing.
+    if state::is_being_torn_down(&volume_id) {
         return;
     }
     if !smb_index_was_enabled(&volume_id) {
@@ -409,7 +419,7 @@ mod tests {
         assert!(
             try_reserve_initializing_phase(
                 vid,
-                IndexVolumeKind::Smb,
+                state::StartRequest::for_test(IndexVolumeKind::Smb),
                 store,
                 pool,
                 pending,

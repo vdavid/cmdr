@@ -169,6 +169,42 @@ pub fn is_active(volume_id: &str) -> bool {
     )
 }
 
+/// Whether a volume's index is active and STAYING active.
+///
+/// The question a START has to ask, and ❌ not [`is_active`]. That one answers what
+/// the badge needs, so a `Detached` volume counts: its manager is momentarily out
+/// for a scan start and it is fully alive. A start reading the same answer
+/// short-circuits on "already indexing" even when a teardown has CLAIMED that
+/// window — and then the volume it was told about stops a millisecond later, with
+/// the request that would have brought it back reported as done. The claim is the
+/// whole difference between the two questions.
+pub(crate) fn is_active_and_staying(volume_id: &str) -> bool {
+    match INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase) {
+        Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_)) => true,
+        Some(IndexPhase::Detached { teardown, .. }) => teardown.is_none(),
+        Some(IndexPhase::ShuttingDown { .. } | IndexPhase::Failed { .. }) | None => false,
+    }
+}
+
+/// Whether a volume is in the middle of a teardown right now: draining, or
+/// detached with a teardown claimed on it.
+///
+/// The question an AUTONOMOUS resume asks before it acts on persisted per-drive
+/// intent. A disable writes its sticky veto on the FAR side of the drain (a live
+/// writer thread plus a second write connection on one database is what that
+/// contract forbids), so for the length of that window the marker still reads
+/// "enabled" — and a resume acting on it would turn a share back on seconds after
+/// somebody turned it off, which is the exact thing the veto exists to prevent. A
+/// user's own flip is a different matter: theirs is the newer word, so it is
+/// recorded and carried out.
+pub(crate) fn is_being_torn_down(volume_id: &str) -> bool {
+    match INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase) {
+        Some(IndexPhase::ShuttingDown { .. }) => true,
+        Some(IndexPhase::Detached { teardown, .. }) => teardown.is_some(),
+        Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_) | IndexPhase::Failed { .. }) | None => false,
+    }
+}
+
 /// Whether a volume's index is in the `Failed` phase (its DB died with a fatal
 /// storage error). Distinct from disabled/absent: a failed volume is still
 /// registered so the badge is honest. Used by the recovery commands to rebuild

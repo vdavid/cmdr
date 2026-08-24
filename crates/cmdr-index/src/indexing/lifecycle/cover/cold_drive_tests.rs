@@ -217,3 +217,6 @@ mod walkable;
 
 /// The rescan a live walk defers, and the walk that fires it.
 mod rescans;
+
+/// Turning a drive's indexing off and back on faster than a teardown finishes.
+mod toggles;

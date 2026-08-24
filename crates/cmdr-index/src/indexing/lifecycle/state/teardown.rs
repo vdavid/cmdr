@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::{
-    INDEX_REGISTRY, IndexPhase, PersistDisable, Registry, TeardownClaim, all_registered_volume_ids,
+    INDEX_REGISTRY, IndexPhase, PersistDisable, Registry, StartRequest, TeardownClaim, all_registered_volume_ids,
     resolved_index_db_path,
 };
 use crate::indexing::lifecycle::manager::IndexManager;
@@ -126,9 +126,20 @@ fn stop_the_volume(volume_id: &str, persist: PersistDisable) -> Result<(), Strin
             log::info!("Indexing stop for '{volume_id}' lands as its scan start hands the manager back");
             StopTarget::Claimed
         } else {
-            match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+            // Publishing a FRESH `ShuttingDown` here also drops whatever start a
+            // drain already in flight was carrying, which is the point: the user's
+            // last word is off.
+            match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown { restart: None }) {
                 IndexPhase::Running(mgr) => StopTarget::Drain(mgr),
                 IndexPhase::Initializing { .. } => {
+                    // Cancel this start's root stop signal FIRST: it stops the walks
+                    // `resume_or_scan` already launched, and it's how that start
+                    // learns at its re-lock that the slot it reserved is no longer
+                    // its own. Without it, a fresh start that reserves the freed slot
+                    // in the window gets its instance overwritten by the old start's
+                    // manager — two writer threads on one database, which is exactly
+                    // what the reservation exists to prevent.
+                    instance.signals.cancel.cancel();
                     // An in-flight start observes the removal and shuts its
                     // half-built manager down. Removing the whole instance is
                     // correct: it's disabled now.
@@ -169,10 +180,72 @@ fn finish_stopping(volume_id: &str, mut mgr: Box<IndexManager>, persist: Persist
     withdraw_from_the_read_path(volume_id);
     // Guard released: run the blocking drain without holding the registry lock.
     mgr.shutdown();
-    // Re-lock only to remove the now-disabled instance.
-    INDEX_REGISTRY.lock_ignore_poison().remove(volume_id);
+    let restart = retire_the_instance(volume_id);
     log::info!("Indexing stopped for '{volume_id}' (DB preserved on disk)");
-    record_the_disable(volume_id, persist);
+    match restart {
+        // ⚠️ The veto is SKIPPED, and that is not a tidy-up. `record_drive_index_enabled`
+        // already wrote the enable when this start was asked for, so a veto written
+        // here would be the last word on the drive's own database: the drive would
+        // come back off at the next launch, having been turned on a moment ago.
+        Some(request) => start_again(volume_id, request),
+        None => record_the_disable(volume_id, persist),
+    }
+}
+
+/// Take a drained volume's instance out of the registry and hand back the start
+/// that landed while the drain ran, if one did.
+///
+/// ⚠️ **Freeing the slot and reading the request are ONE step, and ❌ never a bare
+/// `remove`.** A start that met the drain was told the request was recorded, and
+/// this is the only moment anything looks at it: the slot has to be free before it
+/// can be reserved, and nothing else is watching for the moment it becomes free.
+fn retire_the_instance(volume_id: &str) -> Option<StartRequest> {
+    INDEX_REGISTRY
+        .lock_ignore_poison()
+        .remove(volume_id)
+        .and_then(|instance| match instance.phase {
+            IndexPhase::ShuttingDown { restart } => restart,
+            _ => None,
+        })
+}
+
+/// Carry out a start that was recorded while the volume was being torn down.
+///
+/// Off the registry lock, on the thread that freed the slot. It goes back through
+/// the full `start_indexing_for`, so the master switch and every transport gate get
+/// their say again.
+fn start_again(volume_id: &str, request: StartRequest) {
+    log::info!("Indexing for '{volume_id}' was asked for again while it stopped; starting it now");
+    if let Err(e) = request.start(volume_id) {
+        log::warn!("Starting '{volume_id}' again after its teardown failed: {e}");
+    }
+}
+
+/// Run `f` with the volume held in the `ShuttingDown` window a user's disable
+/// opens, then finish that stop exactly as [`stop_indexing`] does.
+///
+/// The window is the blocking drain, up to five seconds wide (`mgr.shutdown()`
+/// waits on the live-event task), and it is where a second toggle lands when
+/// somebody flips a drive off and straight back on. A test can't get inside a
+/// real one without racing it, so this opens the same one deliberately: the same
+/// phase, the same `finish_stopping` on the far side, the same
+/// [`PersistDisable::Yes`] the disable command carries.
+#[cfg(test)]
+pub(crate) fn while_stopping_for_test(volume_id: &str, f: impl FnOnce()) {
+    withdraw_from_the_read_path(volume_id);
+    let mgr = {
+        let mut reg = INDEX_REGISTRY.lock_ignore_poison();
+        let instance = reg.get_mut(volume_id).expect("a registered volume to stop");
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown { restart: None }) {
+            IndexPhase::Running(mgr) => mgr,
+            other => {
+                instance.phase = other;
+                panic!("'{volume_id}' has no running manager to stop");
+            }
+        }
+    };
+    f();
+    finish_stopping(volume_id, mgr, PersistDisable::Yes);
 }
 
 /// Write the sticky veto, if this stop was the user asking for one.
@@ -319,9 +392,12 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
             log::info!("Drive index clear for '{volume_id}' lands as its scan start hands the manager back");
             return Ok(());
         }
-        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown { restart: None }) {
             IndexPhase::Running(mgr) => ClearTarget::Running { mgr },
             IndexPhase::Initializing { store } => {
+                // Same as the stop: cancel this start's stop signal so it can tell
+                // the freed slot from a successor's reservation.
+                instance.signals.cancel.cancel();
                 // No live writer thread to drain (still in resume_or_scan), but
                 // an in-flight start may be mid-`resume_or_scan`: publishing
                 // `ShuttingDown` makes it observe the change and shut its
@@ -338,12 +414,13 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
                 reg.remove(volume_id);
                 ClearTarget::NoWriter { db_path }
             }
-            IndexPhase::ShuttingDown | IndexPhase::Detached { .. } => {
+            IndexPhase::ShuttingDown { .. } | IndexPhase::Detached { .. } => {
                 // Another teardown is already draining this volume. It will
                 // remove the instance and (for clear) delete the DB; don't race
-                // a second delete. Put the marker back and bail. (`Detached` is
-                // unreachable: `claim_the_teardown` above took it.)
-                instance.phase = IndexPhase::ShuttingDown;
+                // a second delete. Bail on the fresh marker published above, which
+                // also drops any start that drain was carrying: forgetting a drive
+                // is the user's last word. (`Detached` is unreachable:
+                // `claim_the_teardown` above took it.)
                 log::info!("Drive index clear requested but '{volume_id}' is already shutting down");
                 return Ok(());
             }
@@ -368,11 +445,15 @@ fn finish_clearing(volume_id: &str, mut mgr: Box<IndexManager>) -> Result<(), St
     withdraw_from_the_read_path(volume_id);
     let db_path = mgr.db_path().to_path_buf();
     mgr.shutdown();
-    // Re-lock only to remove the now-disabled instance.
-    INDEX_REGISTRY.lock_ignore_poison().remove(volume_id);
-    delete_index_db_files(&db_path)?;
+    let restart = retire_the_instance(volume_id);
+    let deleted = delete_index_db_files(&db_path);
     log::info!("Drive index cleared for '{volume_id}' (DB deleted)");
-    Ok(())
+    // A start that landed mid-clear runs even if the files wouldn't go: it asked for
+    // this drive to be indexed, and a locked database file is not an answer to that.
+    if let Some(request) = restart {
+        start_again(volume_id, request);
+    }
+    deleted
 }
 
 /// Delete an index database and its WAL/SHM sidecars. Every caller has already

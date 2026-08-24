@@ -256,7 +256,7 @@ impl<'a> DetachedManager<'a> {
     fn take(volume_id: &'a str, prepare: impl FnOnce(&mut IndexManager)) -> Result<Self, String> {
         let mut reg = INDEX_REGISTRY.lock_ignore_poison();
         let instance = reg.get_mut(volume_id).ok_or("Indexing not initialized")?;
-        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown { restart: None }) {
             IndexPhase::Running(mut mgr) => {
                 prepare(&mut mgr);
                 instance.phase = IndexPhase::Detached {
@@ -343,13 +343,17 @@ fn hand_the_manager_back(volume_id: &str, mgr: Box<IndexManager>, start_phases: 
                         instance.phase = IndexPhase::Running(mgr.take().expect("the manager we are holding"));
                         Next::Restored
                     }
-                    Some(Some(claim)) => {
+                    Some(Some(claimed)) => {
                         // A real teardown owns this volume now. Publish the real
                         // `ShuttingDown` so a second one bails instead of racing
-                        // us, and finish the job off the lock.
-                        instance.phase = IndexPhase::ShuttingDown;
+                        // us, and finish the job off the lock. The start that landed
+                        // after the claim rides into that phase, so the drain's far
+                        // side carries it out like any other.
+                        instance.phase = IndexPhase::ShuttingDown {
+                            restart: claimed.restart,
+                        };
                         Next::Claimed(
-                            claim,
+                            claimed.claim,
                             Arc::clone(&instance.signals.events),
                             mgr.take().expect("the manager we are holding"),
                         )

@@ -31,7 +31,7 @@ use crate::indexing::writer::WriteMessage;
 /// exactly the difference between indexing a drive and being able to write to
 /// its index.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::indexing::lifecycle) enum Activation {
+pub(crate) enum Activation {
     /// Index the volume: replay its journal or walk it whole, then keep watching
     /// it. What turning indexing on for a drive means.
     IndexTheVolume,
@@ -40,6 +40,65 @@ pub(in crate::indexing::lifecycle) enum Activation {
     /// scan of the drive is precisely what someone searching one folder did not
     /// ask for.
     WriterOnly,
+}
+
+/// Everything [`start_indexing_for`] routes on, as ONE value, so a start that
+/// arrives while the volume is on its way out of the registry can be WRITTEN DOWN
+/// and replayed exactly as it was asked for.
+///
+/// ❌ Never a bare "somebody asked" flag: none of these four can be re-derived
+/// from an instance that is being torn down (the manager that knew the root and
+/// the inode fact is being drained), and getting `activation` wrong would either
+/// index a drive nobody asked to index or leave a search's walk without its
+/// writer.
+#[derive(Debug, Clone)]
+pub(crate) struct StartRequest {
+    /// Where the volume is mounted.
+    volume_root: PathBuf,
+    /// What kind of storage it is, which picks its scanner and its capabilities.
+    kind: IndexVolumeKind,
+    /// Whether this filesystem's inode identity can be trusted.
+    inodes_trustworthy: bool,
+    /// Index the volume, or stand its writer up for a search walk and stop there.
+    activation: Activation,
+}
+
+impl StartRequest {
+    /// Run this start now.
+    ///
+    /// Goes back through [`start_indexing_for`], the one choke point, so a replayed
+    /// start passes the master switch, the `Failed`-index rebuild, and the lock-first
+    /// reservation exactly like the first attempt. ❌ Don't shortcut it into the
+    /// reservation: the master switch is a HARD gate on background indexing, and a
+    /// start recorded before the switch went off must not slip past it on the way
+    /// back.
+    pub(in crate::indexing::lifecycle) fn start(self, volume_id: &str) -> Result<(), String> {
+        start_indexing_for(
+            volume_id,
+            self.volume_root,
+            self.kind,
+            self.inodes_trustworthy,
+            self.activation,
+        )
+    }
+
+    /// The shape a bare registry reservation asks for in a test: index this kind of
+    /// volume, from the root. Tests that reserve are exercising the registry, not
+    /// starting anything, so nothing ever replays these.
+    #[cfg(any(test, feature = "testing"))]
+    pub(crate) fn for_test(kind: IndexVolumeKind) -> Self {
+        Self {
+            volume_root: PathBuf::from("/"),
+            kind,
+            inodes_trustworthy: true,
+            activation: Activation::IndexTheVolume,
+        }
+    }
+
+    /// The volume kind this start names, for the instance it reserves.
+    pub(super) fn kind(&self) -> IndexVolumeKind {
+        self.kind
+    }
 }
 
 /// Record that the user turned drive indexing ON for this volume, on the volume's
@@ -136,6 +195,27 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
         return Ok(());
     }
     log::info!("start_indexing: begin for '{volume_id}' ({kind:?})");
+    // A `Failed` volume stays registered so the badge can be honest about it, and
+    // its database is dead: the documented recovery is a rebuild, so a start CLEARS
+    // it out of the way rather than bouncing off the key it holds. ❌ Not a no-op —
+    // a start is somebody asking for this drive, and answering nothing would leave
+    // the red badge sitting there with no way back but a relaunch. The
+    // user-initiated path already rebuilds one call earlier (`Index::start_volume`
+    // forgets the volume before it records the enable, so the marker isn't written
+    // into a database it's about to delete); this catches the automatic starts — a
+    // launch, a reconnect, and a start recorded while the volume was still dying.
+    if super::is_failed(volume_id) {
+        log::info!("start_indexing: '{volume_id}' has a dead index; clearing it so this start can rebuild");
+        if let Err(e) = super::clear_index(volume_id) {
+            log::warn!("start_indexing: clearing the failed index for '{volume_id}' failed: {e}");
+        }
+    }
+    let request = StartRequest {
+        volume_root: volume_root.clone(),
+        kind,
+        inodes_trustworthy,
+        activation,
+    };
     // The sink the host installed at startup. Everything below this line reports
     // through the trait, so no indexing code names Tauri to say something.
     let events = crate::indexing::host::events::current();
@@ -210,10 +290,16 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     // (no registry re-lock), so a held-registry caller (`force_scan`, the
     // journal-gap fallback) can drive a scan without self-deadlocking.
     let signals = VolumeSignals::new(Arc::new(std::sync::Mutex::new(initial_freshness)), Arc::clone(&events));
+    // THIS start's stop signal, kept behind while `signals` moves on into the
+    // manager. It is what tells us, at the re-lock below, whether the slot we
+    // reserved is still ours: a teardown that meets `Initializing` cancels it and
+    // frees the slot, and without the check we would install our manager over a
+    // FRESH start's instance and leave two writer threads on one database.
+    let reservation = signals.cancel.clone();
 
     if try_reserve_initializing_phase(
         volume_id,
-        kind,
+        request,
         init_store,
         Arc::clone(&pool),
         Arc::clone(&pending),
@@ -221,7 +307,6 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     )
     .is_err()
     {
-        log::info!("start_indexing: '{volume_id}' already Initializing/Running/ShuttingDown, no-op");
         return Ok(());
     }
 
@@ -279,7 +364,8 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     let mut reg = INDEX_REGISTRY
         .lock()
         .map_err(|e| format!("Failed to lock registry: {e}"))?;
-    let still_initializing = reg.get(volume_id).is_some_and(|i| is_initializing_phase(&i.phase));
+    let still_initializing =
+        !reservation.is_cancelled() && reg.get(volume_id).is_some_and(|i| is_initializing_phase(&i.phase));
     match (still_initializing, scan_result) {
         (true, Ok(())) => {
             if let Some(instance) = reg.get_mut(volume_id) {

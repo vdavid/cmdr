@@ -301,13 +301,31 @@ captured up front cancels correctly in that case.
 
 ## The `IndexPhase` machine (and where the pipeline-phase EVENT lives)
 
-`IndexPhase` (state.rs) is the LIFECYCLE state: `Initializing { store }` → `Running` → `ShuttingDown` (transient) →
-absent, plus the terminal `Failed { reason, db_path }` and the transient `Detached { writer, teardown }` a scan start
-publishes (§ "The detached window"). This is distinct from the pipeline-phase (`ActivityPhase`:
-Replaying/Scanning/Aggregating/Reconciling/Live/Idle) that drives the FE step checklist — that lives in
-`../events/CLAUDE.md` as the `index-phase-changed` event. Fire every pipeline-phase transition through
-`events::set_phase_for(app, volume_id, phase, trigger)` (it does the global debug ring AND the per-volume emit in one
-call so they can't drift); the lifecycle-phase transitions here are the `IndexPhase` swaps under the registry lock.
+`IndexPhase` (state.rs) is the LIFECYCLE state: `Initializing { store }` → `Running` → `ShuttingDown { restart }`
+(transient) → absent, plus the terminal `Failed { reason, db_path }` and the transient `Detached { writer, teardown }` a
+scan start publishes (§ "The detached window").
+
+Five phases, and what each one does with a request that arrives while it holds the volume's key:
+
+- **`Initializing { store }`** — a start is already in flight and will land `Running`. A START is refused, and rightly:
+  the volume the caller wants is on its way. A TEARDOWN cancels the volume's stop signal, then removes the instance; the
+  in-flight start sees its own token cancelled at its re-lock and shuts its half-built manager down. ⚠️ The cancel is
+  what makes the removal safe — without it, a fresh start that reserves the freed slot in that window gets its instance
+  overwritten by the old start's manager, and two writer threads end up on one database.
+- **`Running(mgr)`** — live. A start is refused (a no-op, which is what a second click on an indexed drive should be); a
+  teardown drains it.
+- **`Detached { writer, teardown }`** — transient, § "The detached window". A teardown CLAIMS it. A start does nothing
+  unless a teardown has already claimed it, in which case it rides that claim.
+- **`ShuttingDown { restart }`** — transient, § "The shutting-down window". A start is RECORDED and carried out by the
+  drain; a further teardown DROPS what was recorded.
+- **`Failed { reason, db_path }`** — the database died, § "The Failed state". A start CLEARS it and rebuilds, at the
+  choke point, before it ever reserves.
+
+This is distinct from the pipeline-phase (`ActivityPhase`: Replaying/Scanning/Aggregating/Reconciling/Live/Idle) that
+drives the FE step checklist — that lives in `../events/CLAUDE.md` as the `index-phase-changed` event. Fire every
+pipeline-phase transition through `events::set_phase_for(app, volume_id, phase, trigger)` (it does the global debug ring
+AND the per-volume emit in one call so they can't drift); the lifecycle-phase transitions here are the `IndexPhase`
+swaps under the registry lock.
 
 ## The detached window (`IndexPhase::Detached`)
 
@@ -358,6 +376,51 @@ every path, deferred ones included. Anchor:
 - `cover_context_for` still answers `None` — a scan is starting, which is one of the three cases it already refuses. The
   claim table refuses the walk one line later anyway (`claim_the_volume` takes the volume `Exclusive`ly before every
   blocking call in `start_scan`), so the phase check is belt over braces.
+
+## The shutting-down window (`IndexPhase::ShuttingDown { restart }`)
+
+The mirror of the detached window, pointing the other way: a volume is on its way OUT, its key is still in the registry,
+and a START lands. The window is the blocking drain, up to **five seconds** wide (`mgr.shutdown()` waits on the
+live-event task), which is wide enough for a person to click a switch twice.
+
+**The user-visible consequence, which is why this can't be simplified back.** The reservation used to ask
+`contains_key`, so a start meeting the drain was refused, and `start_indexing_for` treats a refusal as a silent no-op.
+Turning a drive's indexing off and straight back on therefore left it OFF for the rest of the session — and worse, the
+disable's sticky veto lands on the far side of the drain, so `user_disabled` overwrote the enable the second click had
+just written and the drive stayed off across launches too. It reproduced about half the time on CI and never on a fast
+machine, which is exactly what a timing window looks like from the outside.
+
+**So the start is RECORDED, not bounced.** `IndexPhase::claim_the_restart(StartRequest)` puts it in the `Option` the
+phase carries, and `retire_the_instance` — the one place a drained instance leaves the registry — takes it out as it
+frees the slot and hands it to `start_again`. That replay goes back through `start_indexing_for`, the whole choke point,
+so the master switch, the `Failed` rebuild, and the lock-first reservation all get their say again: ❌ a recorded start
+must never shortcut into the reservation, or one recorded before the master switch went off would slip past a hard gate.
+
+**Why the request and not a flag.** `StartRequest` carries the volume root, kind, inode trust, and `Activation`. None of
+those survive in an instance being torn down (the manager that knew them is being drained), and `Activation` in
+particular decides between indexing a drive and standing a writer up for a search walk.
+
+**Toggles collapse rather than queue.** Everything after the first toggle lands in the same window, so N clicks cost one
+drain and one index: each start overwrites the `Option`, each teardown clears it (`stop_the_volume` and `clear_index`
+both publish a FRESH `ShuttingDown { restart: None }`), and the far side acts on whatever is left. The `Stopped` path
+also SKIPS `record_the_disable` when a restart is pending — the enable is already on disk from the start that superseded
+it, so writing the veto after it would make "off" the last word on a drive that was just turned on.
+
+**A start riding a claim.** A start meeting `Detached` with a teardown claimed on it goes into `ClaimedTeardown.restart`
+rather than a second `Option` of its own, so "restart a volume nothing is tearing down" is unrepresentable; the claim
+carries it into the `ShuttingDown` that `hand_the_manager_back` publishes, where it joins the one honoring path. A
+teardown arriving after a start drops it either way: the user's last word is off.
+
+**`is_active` is not the question a start asks.** A `Detached` volume with a claim on it reads active right up to the
+moment it stops, so the four "already indexing, no-op" gates (`Index::start_volume` and the three transport enables) ask
+`is_active_and_staying` instead. The autonomous SMB reconnect resume is the deliberate exception: it asks
+`is_being_torn_down` and BAILS, because the disable that opened the window writes its veto after the drain, so the
+persisted intent it reads is stale for exactly that long — a reconnect acting on it would turn a NAS back on seconds
+after somebody turned it off. A reconnect recurs on its own; a user's click does not.
+
+Anchors: `cover::cold_drive_tests::toggles` (all five phases end to end) and
+`state::tests::a_start_answers_every_phase_it_can_meet` (the three that need no manager, placed rather than raced).
+
 - `stop_scan` and `trigger_verification` still refuse / no-op, which stays correct for a volume whose scan is starting.
 
 **The honest end state, recorded and not taken.** The window exists only because `start_scan`'s prelude blocks under
@@ -580,6 +643,12 @@ the supervisor (later fatal errors suppressed — that's what stops the 12,700-l
 **The representation choice (why `Failed` lives in BOTH the lifecycle phase and freshness).** A dead index must be
 DISTINCT from "absent = disabled" so the badge is honest, yet its writer/watcher must be torn down. So:
 
+- **A start meeting `Failed` CLEARS it and rebuilds**, at the choke point (`start_indexing_for`), before it reserves.
+  Bouncing off the key a failed volume holds would answer a person's switch with silence and leave the red badge there
+  until the next launch. `Index::start_volume` does the same one call earlier, and has to: its
+  `record_drive_index_enabled` would otherwise write the enable into the database the rebuild is about to delete. The
+  choke-point clear is what covers the AUTOMATIC starts (a launch, a reconnect, a start recorded while the volume was
+  still dying).
 - `IndexPhase::Failed { reason: IndexFailure, db_path }`: the instance STAYS registered (discoverable for the badge +
   recovery) but carries no live manager. `get_status`/`get_debug_status` treat it like disabled; `is_active` is `false`;
   its read handles were withdrawn before the phase flipped, so reads SKIP cleanly (no per-navigation flood on a dead

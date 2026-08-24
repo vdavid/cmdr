@@ -86,7 +86,7 @@ fn fail_index(events: &dyn crate::EventSink, volume_id: &str, reason: IndexFailu
             );
             return;
         }
-        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown { restart: None }) {
             IndexPhase::Running(mgr) => mgr,
             other => {
                 // Not `Running` (already stopped, cleared, or failed elsewhere):
@@ -130,18 +130,21 @@ pub(super) fn finish_failing(
     // Re-lock and install `Failed` — but only if the instance is still the
     // `ShuttingDown` marker we published (a concurrent stop/clear may have removed
     // it while we drained; respect that).
-    {
+    let restart = {
         let mut reg = INDEX_REGISTRY.lock_ignore_poison();
         match reg.get_mut(volume_id) {
-            Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
-                instance.phase = IndexPhase::Failed { reason, db_path };
+            Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown { .. }) => {
+                match std::mem::replace(&mut instance.phase, IndexPhase::Failed { reason, db_path }) {
+                    IndexPhase::ShuttingDown { restart } => restart,
+                    _ => None,
+                }
             }
             _ => {
                 log::info!("fail_index('{volume_id}'): instance changed during drain, not marking Failed");
                 return;
             }
         }
-    }
+    };
 
     // Fire the phase + freshness transitions through the canonical paths (never
     // raw), so the debug timeline, the per-volume phase event, and the badge all
@@ -160,4 +163,15 @@ pub(super) fn finish_failing(
         reason.code,
         reason.extended_code,
     );
+
+    // Somebody asked for this volume back while its database was dying. The start
+    // does the documented recovery for a `Failed` index — clear the dead one out of
+    // the way, then rebuild — so a person who flipped the switch on gets an answer
+    // rather than a badge that never changes.
+    if let Some(request) = restart {
+        log::info!("fail_index('{volume_id}'): a start landed while it failed; rebuilding the index for it");
+        if let Err(e) = request.start(volume_id) {
+            log::warn!("fail_index('{volume_id}'): rebuilding after the failure didn't take: {e}");
+        }
+    }
 }

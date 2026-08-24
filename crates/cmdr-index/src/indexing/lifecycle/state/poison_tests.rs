@@ -18,6 +18,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::queries::ready_candidates_on;
 use super::reservation::try_reserve_initializing_phase_on;
+use super::startup::StartRequest;
 use super::teardown::remove_instance_and_handles_on;
 use super::{IndexInstance, IndexPhase, Registry, VolumeSignals};
 use crate::indexing::lifecycle::freshness::Freshness;
@@ -36,7 +37,7 @@ fn registry_of(volumes: &[(&str, IndexVolumeKind, Option<Freshness>)]) -> Regist
         map.insert(
             (*volume_id).to_string(),
             IndexInstance {
-                phase: IndexPhase::ShuttingDown,
+                phase: IndexPhase::ShuttingDown { restart: None },
                 kind: *kind,
                 signals: VolumeSignals::new(Arc::new(Mutex::new(*freshness)), crate::NoopEventSink::shared()),
             },
@@ -140,7 +141,7 @@ fn a_reservation_lands_through_a_poisoned_registry() {
     try_reserve_initializing_phase_on(
         &registry,
         volume_id,
-        IndexVolumeKind::Local,
+        StartRequest::for_test(IndexVolumeKind::Local),
         store,
         pool,
         pending,
@@ -175,7 +176,7 @@ fn a_poisoned_registry_still_refuses_a_second_reservation() {
     let refused = try_reserve_initializing_phase_on(
         &registry,
         volume_id,
-        IndexVolumeKind::Local,
+        StartRequest::for_test(IndexVolumeKind::Local),
         store,
         pool,
         pending,

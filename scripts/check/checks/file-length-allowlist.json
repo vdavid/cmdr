@@ -79,6 +79,7 @@
     "crates/cmdr-index/src/indexing/aggregator/mod.rs": 810,
     "crates/cmdr-index/src/indexing/lifecycle/phased_bench.rs": 1415,
     "crates/cmdr-index/src/indexing/lifecycle/phases/mod.rs": 866,
+    "crates/cmdr-index/src/indexing/lifecycle/state/tests.rs": 857,
     "crates/cmdr-index/src/indexing/reconcile/local_reconcile/tests.rs": 817,
     "crates/cmdr-index/src/indexing/reconcile/reconciler.rs": 1634,
     "crates/cmdr-index/src/indexing/scanner/mod.rs": 935,

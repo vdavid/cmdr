@@ -15,7 +15,12 @@ the first index, each with its own `CLAUDE.md`. Other leaves are one job each (`
   the registry lock).
 - **Never hold the registry across a blocking or re-entrant manager call.** `start_indexing` reserves lock-first,
   teardown drops the guard before the drain, and a scan start hands the manager out under `IndexPhase::Detached` through
-  the one door `state::off_the_registry`; a teardown meeting that window CLAIMS it rather than bouncing.
+  the one door `state::off_the_registry`.
+- **❌ Nothing bounces off a TRANSIENT phase; it RECORDS its request there.** A teardown meeting `Detached` claims it; a
+  start meeting `ShuttingDown` (a drain, up to 5 s) or a claimed `Detached` rides the same `Option`, and whoever ends
+  the window carries it out through `start_indexing_for` (so the master switch still gates it). Refusing instead is a
+  SILENT no-op, and it left "turn this drive's indexing off and back on" with the drive off for the session and vetoed
+  on disk. A start asks `is_active_and_staying`, ❌ never `is_active`, which counts a volume that is about to stop.
 - **Route by the TYPED `IndexVolumeKind` capability, never the variant or the volume id.** `has_event_journal()` gates
   journal replay; `rescan_scanner_for_kind` picks the scanner, so a trait-scanned volume never reaches `start_scan`,
   which walks nothing and falsely completes.

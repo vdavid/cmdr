@@ -118,7 +118,9 @@ async fn classify(volume_id: &str) -> Classified {
 /// if the volume's index is already active. Errors (a plain string for the IPC
 /// surface) only on an internal start failure (DB open, manager spawn).
 pub(crate) async fn start_indexing_for_local_external(volume_id: String) -> Result<LocalExternalEnable, String> {
-    if state::is_active(&volume_id) {
+    // ❌ Not `is_active`: a volume with a teardown claimed on it is active right up
+    // to the moment it stops, and this is the enable that has to bring it back.
+    if state::is_active_and_staying(&volume_id) {
         log::info!("start_indexing_for_local_external: '{volume_id}' already active, no-op");
         return Ok(LocalExternalEnable::Started);
     }

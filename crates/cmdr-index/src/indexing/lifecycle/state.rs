@@ -65,7 +65,8 @@ pub(crate) use queries::is_watching_for_test;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use queries::registered_mtp_volume_ids_for_device;
 pub(crate) use queries::{
-    all_registered_volume_ids, awaits_its_first_scan, index_failure, ready_volumes_with_kind, volume_kind,
+    all_registered_volume_ids, awaits_its_first_scan, index_failure, is_active_and_staying, is_being_torn_down,
+    ready_volumes_with_kind, volume_kind,
 };
 pub use queries::{is_active, is_failed};
 #[cfg(any(test, feature = "testing"))]
@@ -77,7 +78,8 @@ pub use scan_control::{force_scan, stop_scan, trigger_verification};
 pub(crate) use scan_control::{rescan_with_phases_owed_for_test, set_scanning_for_test, while_detached_for_test};
 pub(crate) use startup::record_drive_index_enabled;
 pub use startup::start_indexing;
-pub(in crate::indexing::lifecycle) use startup::{Activation, start_indexing_for};
+pub(in crate::indexing::lifecycle) use startup::start_indexing_for;
+pub(crate) use startup::{Activation, StartRequest};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use startup::{
     start_indexing_for_local_external_inner, start_indexing_for_mtp_inner, start_indexing_for_smb_inner,
@@ -87,6 +89,8 @@ pub(crate) use supervisor::fail_index_for_test;
 pub(crate) use supervisor::spawn_failure_supervisor;
 pub(crate) use teardown::reset_to_not_indexed;
 pub(crate) use teardown::stop_all_indexing;
+#[cfg(test)]
+pub(crate) use teardown::while_stopping_for_test;
 pub use teardown::{clear_every_index, clear_index, disable_drive_index_persist_intent, stop_indexing};
 
 // ── Indexing state machine ────────────────────────────────────────────
@@ -128,12 +132,24 @@ pub(crate) enum IndexPhase {
         /// lets an SMB or MTP change land in the buffer instead of the floor while
         /// the manager is away.
         writer: crate::indexing::writer::IndexWriter,
-        /// What a teardown asked for while the manager was out, if anything.
-        teardown: Option<TeardownClaim>,
+        /// What a teardown asked for while the manager was out, if anything, and
+        /// what a start that arrived after it asked for.
+        teardown: Option<ClaimedTeardown>,
     },
     /// Shutdown in progress (transitional, cleanup running). The instance is
     /// removed from the registry once the drain completes.
-    ShuttingDown,
+    ///
+    /// ⚠️ **A start that meets this phase is RECORDED, ❌ never bounced**, for the
+    /// same reason a teardown meeting [`Detached`](IndexPhase::Detached) is. The
+    /// drain blocks for up to five seconds, so "turn this drive off and straight
+    /// back on" puts a start right here — and a refusal reported as done left the
+    /// drive dark for the rest of the session, with the disable's sticky veto
+    /// landing on the far side of the drain so the next launch skipped it too.
+    ShuttingDown {
+        /// What a start asked for while the drain runs, if anything. Whoever ends
+        /// the drain frees the slot and carries it out.
+        restart: Option<StartRequest>,
+    },
     /// The index DB died with a FATAL storage error (`SQLITE_IOERR`, corruption, a
     /// full or read-only disk, …), so indexing STOPPED for this volume. Unlike
     /// every other non-running state, a `Failed` instance STAYS registered — that
@@ -202,6 +218,21 @@ pub(crate) enum PersistDisable {
     No,
 }
 
+/// A teardown that landed while a volume's manager was detached, plus the start
+/// that landed after it, if one did.
+///
+/// ⚠️ **Pairing them is what makes the meaningless half unrepresentable.** A start
+/// meeting a detached volume that nothing is tearing down has nothing to ask for:
+/// the manager is coming back `Running`, which is exactly what it wanted. So a
+/// restart only ever exists ON a claim, and `Detached` cannot carry one without.
+#[derive(Debug, Clone)]
+pub(crate) struct ClaimedTeardown {
+    /// What the teardown asked for.
+    claim: TeardownClaim,
+    /// What a start asked for after it, carried out once the teardown has been.
+    restart: Option<StartRequest>,
+}
+
 impl IndexPhase {
     /// Ask a phase to CARRY a teardown request instead of bouncing it, reporting
     /// whether it took it.
@@ -210,14 +241,49 @@ impl IndexPhase {
     /// manager is coming back, so it's the one phase with somebody to hand the
     /// request to. Every other phase answers `false` and the caller acts on it
     /// directly, exactly as it always did.
+    ///
+    /// A teardown arriving after a start DROPS that start: the user's last word is
+    /// off, whichever of the two claims ends up holding the window.
     pub(super) fn claim_the_teardown(&mut self, claim: TeardownClaim) -> bool {
         let IndexPhase::Detached { teardown, .. } = self else {
             return false;
         };
-        if teardown.is_none_or(|held| held.reach() < claim.reach()) {
-            *teardown = Some(claim);
+        match teardown {
+            Some(held) if held.claim.reach() >= claim.reach() => held.restart = None,
+            _ => *teardown = Some(ClaimedTeardown { claim, restart: None }),
         }
         true
+    }
+
+    /// Ask a phase to CARRY a start request instead of bouncing it, reporting
+    /// whether the volume's next state is now somebody else's job.
+    ///
+    /// The mirror of [`claim_the_teardown`](IndexPhase::claim_the_teardown), and it
+    /// exists for the same reason: a refusal that reads as "already handled" is
+    /// indistinguishable from one that silently drops what the user asked for. The
+    /// two transient phases take it; the three settled ones answer `false`, and
+    /// their caller is right to no-op (the volume is already live) or to act
+    /// (`Failed` is cleared out of the way before a start ever reserves).
+    pub(super) fn claim_the_restart(&mut self, request: StartRequest) -> bool {
+        match self {
+            // The drain frees the slot on its way out, and starts the volume again
+            // while it's there. Overwriting is the collapse: however many toggles
+            // land in one window, the last one is what happens.
+            IndexPhase::ShuttingDown { restart } => {
+                *restart = Some(request);
+                true
+            }
+            // With nothing tearing this volume down, the manager comes back
+            // `Running` — already what the start wanted. With a teardown claimed,
+            // the request rides that claim into the drain it opens.
+            IndexPhase::Detached { teardown, .. } => {
+                if let Some(claimed) = teardown {
+                    claimed.restart = Some(request);
+                }
+                true
+            }
+            IndexPhase::Initializing { .. } | IndexPhase::Running(_) | IndexPhase::Failed { .. } => false,
+        }
     }
 }
 

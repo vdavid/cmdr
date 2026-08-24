@@ -9,7 +9,7 @@
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::sync::Arc;
 
-use super::{INDEX_REGISTRY, IndexInstance, IndexPhase, Registry, VolumeSignals};
+use super::{INDEX_REGISTRY, IndexInstance, IndexPhase, Registry, StartRequest, VolumeSignals};
 #[cfg(any(test, feature = "testing"))]
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::read::enrichment::{ReadPool, install_read_pool};
@@ -34,6 +34,14 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
 /// start); returns `Err(store)` otherwise so the caller can drop the unused
 /// store without constructing the heavy `IndexManager`.
 ///
+/// ⚠️ **A refusal is not always a no-op.** A volume that is on its way OUT of the
+/// registry still holds its key, and `request` is RECORDED on the transient phase
+/// so whoever ends that window starts the volume again
+/// ([`IndexPhase::claim_the_restart`]). Bouncing off it instead is what made
+/// "turn this drive's indexing off and straight back on" leave the drive dark for
+/// the rest of the session. The two live phases (`Initializing`, `Running`) are
+/// the real no-op: a start is already in flight, or already finished.
+///
 /// This is the lock-first guard for `start_indexing`, now per volume id. Two
 /// writer threads racing on the same DB share neither their `Arc<AtomicI64>` ID
 /// counter nor their `AccumulatorMaps`, which produces PK collisions and
@@ -55,7 +63,7 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
 /// registry never disagree about freshness.
 pub(crate) fn try_reserve_initializing_phase(
     volume_id: &str,
-    kind: IndexVolumeKind,
+    request: StartRequest,
     store: IndexStore,
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
@@ -64,7 +72,7 @@ pub(crate) fn try_reserve_initializing_phase(
     try_reserve_initializing_phase_on(
         &INDEX_REGISTRY,
         volume_id,
-        kind,
+        request,
         store,
         read_pool,
         pending_sizes,
@@ -78,14 +86,20 @@ pub(crate) fn try_reserve_initializing_phase(
 pub(super) fn try_reserve_initializing_phase_on(
     registry: &Registry,
     volume_id: &str,
-    kind: IndexVolumeKind,
+    request: StartRequest,
     store: IndexStore,
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
     signals: VolumeSignals,
 ) -> Result<(), Box<IndexStore>> {
+    let kind = request.kind();
     let mut reg = registry.lock_ignore_poison();
-    if reg.contains_key(volume_id) {
+    if let Some(instance) = reg.get_mut(volume_id) {
+        if instance.phase.claim_the_restart(request) {
+            log::info!("start_indexing: '{volume_id}' is on its way out; this start runs as that finishes");
+        } else {
+            log::info!("start_indexing: '{volume_id}' is already initializing or running, no-op");
+        }
         return Err(Box::new(store));
     }
     install_read_pool(volume_id, read_pool);
@@ -116,7 +130,7 @@ pub fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVolumeKin
     let pending = Arc::new(PendingSizes::new());
     try_reserve_initializing_phase(
         volume_id,
-        kind,
+        StartRequest::for_test(kind),
         store,
         pool,
         pending,

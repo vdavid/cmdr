@@ -16,7 +16,8 @@ use crate::indexing::*;
 use crate::{NoopEventSink, ReadPool};
 use cmdr_fs::entry::FileEntry;
 use lifecycle::state::{
-    INDEX_REGISTRY, IndexInstance, IndexPhase, VolumeSignals, is_initializing_phase, try_reserve_initializing_phase,
+    INDEX_REGISTRY, IndexInstance, IndexPhase, StartRequest, VolumeSignals, is_initializing_phase,
+    try_reserve_initializing_phase,
 };
 use read::enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONNS, enrich_via_individual_paths_on, enrich_via_parent_id_on};
 use rusqlite::Connection;
@@ -1040,7 +1041,7 @@ fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
     let pending = Arc::new(read::pending_sizes::PendingSizes::new());
     try_reserve_initializing_phase(
         volume_id,
-        IndexVolumeKind::Local,
+        StartRequest::for_test(IndexVolumeKind::Local),
         store,
         pool,
         pending,
@@ -1059,7 +1060,7 @@ fn is_initializing_phase_matches_only_initializing_variant() {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = IndexStore::open(&dir.path().join("classifier.db")).expect("open store");
     // ShuttingDown classified as not-initializing.
-    assert!(!is_initializing_phase(&IndexPhase::ShuttingDown));
+    assert!(!is_initializing_phase(&IndexPhase::ShuttingDown { restart: None }));
     // Initializing classified as initializing.
     assert!(is_initializing_phase(&IndexPhase::Initializing { store }));
 }
@@ -1086,7 +1087,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let pending2 = Arc::new(read::pending_sizes::PendingSizes::new());
     let res = try_reserve_initializing_phase(
         ROOT_VOLUME_ID,
-        IndexVolumeKind::Local,
+        StartRequest::for_test(IndexVolumeKind::Local),
         store2,
         pool2,
         pending2,
@@ -1113,7 +1114,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
         INDEX_REGISTRY.lock().unwrap().insert(
             ROOT_VOLUME_ID.to_string(),
             IndexInstance {
-                phase: IndexPhase::ShuttingDown,
+                phase: IndexPhase::ShuttingDown { restart: None },
                 kind: IndexVolumeKind::Local,
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
             },
@@ -1128,7 +1129,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let pending4 = Arc::new(read::pending_sizes::PendingSizes::new());
     let res = try_reserve_initializing_phase(
         ROOT_VOLUME_ID,
-        IndexVolumeKind::Local,
+        StartRequest::for_test(IndexVolumeKind::Local),
         store4,
         pool4,
         pending4,
@@ -1138,7 +1139,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     assert!(
         matches!(
             INDEX_REGISTRY.lock().unwrap().get(ROOT_VOLUME_ID).map(|i| &i.phase),
-            Some(IndexPhase::ShuttingDown)
+            Some(IndexPhase::ShuttingDown { .. })
         ),
         "failed reservation must leave ShuttingDown intact"
     );
@@ -1241,7 +1242,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
         INDEX_REGISTRY.lock().expect("registry poisoned").insert(
             ROOT_VOLUME_ID.to_string(),
             IndexInstance {
-                phase: IndexPhase::ShuttingDown,
+                phase: IndexPhase::ShuttingDown { restart: None },
                 kind: IndexVolumeKind::Local,
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
             },

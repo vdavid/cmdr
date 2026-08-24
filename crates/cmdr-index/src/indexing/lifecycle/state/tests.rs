@@ -1,3 +1,4 @@
+use super::reservation::try_reserve_initializing_phase_on;
 use super::*;
 use crate::NoopEventSink;
 use crate::indexing::lifecycle::freshness::FreshnessEvent;
@@ -32,7 +33,7 @@ fn read_pool_routing_tracks_registration() {
         assert!(
             try_reserve_initializing_phase(
                 name,
-                IndexVolumeKind::Local,
+                StartRequest::for_test(IndexVolumeKind::Local),
                 store,
                 pool,
                 pending,
@@ -87,7 +88,7 @@ fn reservations_are_independent_across_volumes() {
     assert!(
         try_reserve_initializing_phase(
             "vol-a",
-            IndexVolumeKind::Local,
+            StartRequest::for_test(IndexVolumeKind::Local),
             s1,
             p1,
             pe1,
@@ -98,7 +99,7 @@ fn reservations_are_independent_across_volumes() {
     assert!(
         try_reserve_initializing_phase(
             "vol-b",
-            IndexVolumeKind::Local,
+            StartRequest::for_test(IndexVolumeKind::Local),
             s2,
             p2,
             pe2,
@@ -117,7 +118,7 @@ fn reservations_are_independent_across_volumes() {
     assert!(
         try_reserve_initializing_phase(
             "vol-a",
-            IndexVolumeKind::Local,
+            StartRequest::for_test(IndexVolumeKind::Local),
             s1b,
             p1b,
             pe1b,
@@ -174,7 +175,7 @@ fn scan_start_freshness_firing_does_not_relock_the_registry() {
     assert!(
         try_reserve_initializing_phase(
             "deadlock-test",
-            IndexVolumeKind::Local,
+            StartRequest::for_test(IndexVolumeKind::Local),
             store,
             pool,
             pending,
@@ -244,7 +245,7 @@ fn freshness_transitions_through_the_registry() {
     assert!(
         try_reserve_initializing_phase(
             "smb-fresh-test",
-            IndexVolumeKind::Smb,
+            StartRequest::for_test(IndexVolumeKind::Smb),
             store,
             pool,
             pending,
@@ -305,7 +306,7 @@ fn disconnect_keeps_instance_stale_user_cancel_resets_to_gray() {
     assert!(
         try_reserve_initializing_phase(
             "smb-disco-test",
-            IndexVolumeKind::Smb,
+            StartRequest::for_test(IndexVolumeKind::Smb),
             store,
             pool,
             pending,
@@ -376,7 +377,7 @@ fn forget_stale_index_transitions_to_gray_and_deletes_db() {
     assert!(
         try_reserve_initializing_phase(
             "smb-forget-test",
-            IndexVolumeKind::Smb,
+            StartRequest::for_test(IndexVolumeKind::Smb),
             store,
             pool,
             pending,
@@ -445,7 +446,7 @@ fn disconnect_storm_two_volumes_never_wedges_the_registry() {
         assert!(
             try_reserve_initializing_phase(
                 vid,
-                IndexVolumeKind::Smb,
+                StartRequest::for_test(IndexVolumeKind::Smb),
                 store,
                 pool,
                 pending,
@@ -539,7 +540,7 @@ fn ready_volumes_with_kind_surfaces_a_fresh_at_launch_volume() {
         assert!(
             try_reserve_initializing_phase(
                 vid,
-                IndexVolumeKind::Local,
+                StartRequest::for_test(IndexVolumeKind::Local),
                 store,
                 pool,
                 pending,
@@ -724,7 +725,7 @@ fn clearing_everything_takes_the_registered_and_the_forgotten_alike() {
     assert!(
         try_reserve_initializing_phase(
             "smb-nas",
-            IndexVolumeKind::Smb,
+            StartRequest::for_test(IndexVolumeKind::Smb),
             store,
             pool,
             Arc::new(PendingSizes::new()),
@@ -745,5 +746,112 @@ fn clearing_everything_takes_the_registered_and_the_forgotten_alike() {
         crate::indexing::resources::retention::total_index_db_bytes(),
         0,
         "nothing is left to report"
+    );
+}
+
+/// **Every phase a start can meet, and what it does about each.** The bug this
+/// pins existed because one of the five was never considered: the reservation
+/// asked `contains_key`, which conflates "already live, correctly refuse" with "on
+/// its way out, must not refuse".
+///
+/// Driven against a registry of its own, so the phases can be placed rather than
+/// raced. Three of the five need no manager and are placed here; the two that do
+/// are pinned end-to-end next door in `cover::cold_drive_tests`:
+/// - `Running` — `activation::turning_indexing_on_after_a_walk_covers_the_drive_without_truncating_it`
+///   ("an indexed drive is left alone": a start on a live volume walks nothing again).
+/// - `Detached`, both shapes — `toggles::a_start_on_a_detached_drive_lets_its_manager_come_back`
+///   and `toggles::two_teardowns_and_a_start_in_one_window_end_with_a_rebuilt_index`.
+#[test]
+fn a_start_answers_every_phase_it_can_meet() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let mut nth = 0;
+    // A registry holding one volume in `phase`, plus a reservation attempt against
+    // it. Answers what the reservation returned and what the phase became.
+    let mut reserve_over = |phase: IndexPhase| {
+        nth += 1;
+        let registry: Registry = std::sync::Mutex::new(HashMap::new());
+        registry.lock_ignore_poison().insert(
+            "phase-table".to_string(),
+            IndexInstance {
+                phase,
+                kind: IndexVolumeKind::Local,
+                signals: VolumeSignals::new(fresh(None), NoopEventSink::shared()),
+            },
+        );
+        let db_path = dir.path().join(format!("phase-table-{nth}.db"));
+        let store = IndexStore::open(&db_path).expect("store");
+        let refused = try_reserve_initializing_phase_on(
+            &registry,
+            "phase-table",
+            StartRequest::for_test(IndexVolumeKind::Local),
+            store,
+            Arc::new(ReadPool::new(db_path.clone()).expect("pool")),
+            Arc::new(PendingSizes::new()),
+            VolumeSignals::new(fresh(None), NoopEventSink::shared()),
+        )
+        .is_err();
+        let recorded = matches!(
+            registry.lock_ignore_poison().get("phase-table").map(|i| &i.phase),
+            Some(IndexPhase::ShuttingDown { restart: Some(_) })
+        );
+        // The pool went into the process-wide table under a name no other test uses.
+        uninstall_read_pool("phase-table");
+        uninstall_pending_sizes("phase-table");
+        (refused, recorded)
+    };
+
+    // ABSENT: the only legitimate start. Proven by the reservations above; here we
+    // only need it to not be one of the refusals below.
+    let absent: Registry = std::sync::Mutex::new(HashMap::new());
+    let db_path = dir.path().join("phase-table-absent.db");
+    assert!(
+        try_reserve_initializing_phase_on(
+            &absent,
+            "phase-table-absent",
+            StartRequest::for_test(IndexVolumeKind::Local),
+            IndexStore::open(&db_path).expect("store"),
+            Arc::new(ReadPool::new(db_path.clone()).expect("pool")),
+            Arc::new(PendingSizes::new()),
+            VolumeSignals::new(fresh(None), NoopEventSink::shared()),
+        )
+        .is_ok(),
+        "an absent key is the one shape a start may take",
+    );
+    uninstall_read_pool("phase-table-absent");
+    uninstall_pending_sizes("phase-table-absent");
+
+    // INITIALIZING: a start for this volume is already in flight and will land
+    // `Running`. Refusing is idempotence, and there is nothing to record — the
+    // volume the caller wants is on its way.
+    let init_store = IndexStore::open(&dir.path().join("phase-table-init.db")).expect("store");
+    assert_eq!(
+        reserve_over(IndexPhase::Initializing { store: init_store }),
+        (true, false),
+        "a start already in flight needs no second one",
+    );
+
+    // SHUTTING DOWN: the volume is on its way OUT, so the start is RECORDED and the
+    // drain carries it out. ❗ This is the whole bug: refusing here silently drops
+    // what the user asked for, and the disable's veto then lands on top of it.
+    assert_eq!(
+        reserve_over(IndexPhase::ShuttingDown { restart: None }),
+        (true, true),
+        "a start meeting a drain has to be recorded, never bounced",
+    );
+
+    // FAILED: refused here, and rightly — `start_indexing_for` clears a dead index
+    // out of the way BEFORE it ever reserves, so a start only reaches this arm if
+    // the volume re-failed in the window. Recording a restart on an instance
+    // nothing is draining would strand it.
+    assert_eq!(
+        reserve_over(IndexPhase::Failed {
+            reason: IndexFailure {
+                code: 10,
+                extended_code: 778,
+            },
+            db_path: dir.path().join("dead.db"),
+        }),
+        (true, false),
+        "a dead index is cleared by the choke point, not recorded against",
     );
 }

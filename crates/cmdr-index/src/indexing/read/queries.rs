@@ -178,7 +178,7 @@ pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
         // A `Failed` volume reports the same not-scanning shape as disabled — its
         // distinct state rides `freshness: Failed` + `failure` on
         // `VolumeIndexStatus`, not this scan-progress response.
-        None | Some(IndexPhase::ShuttingDown | IndexPhase::Failed { .. }) => Ok(disabled_status_response()),
+        None | Some(IndexPhase::ShuttingDown { .. } | IndexPhase::Failed { .. }) => Ok(disabled_status_response()),
         // A scan is being started on this volume right now, with its manager out of
         // the registry for the blocking prelude. Say so: the phase exists FOR a scan
         // start, so reporting disabled here blanked the hourglass at the exact moment
@@ -220,7 +220,7 @@ pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
 pub fn get_debug_status(volume_id: &str) -> Result<IndexDebugStatusResponse, String> {
     let reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
     match reg.get(volume_id).map(|i| &i.phase) {
-        None | Some(IndexPhase::ShuttingDown | IndexPhase::Failed { .. } | IndexPhase::Detached { .. }) => {
+        None | Some(IndexPhase::ShuttingDown { .. } | IndexPhase::Failed { .. } | IndexPhase::Detached { .. }) => {
             // `Detached` reports the same shape as `get_status` gives it: a scan
             // starting, with none of the manager-held debug counters available.
             let base = if matches!(reg.get(volume_id).map(|i| &i.phase), Some(IndexPhase::Detached { .. })) {

@@ -31,7 +31,9 @@ use crate::indexing::lifecycle::state;
 /// on an internal start failure or an unregistered volume — there's no typed
 /// gate reason because MTP has no connection-upgrade step to refuse.
 pub(crate) fn start_indexing_for_mtp(volume_id: String) -> Result<(), String> {
-    if state::is_active(&volume_id) {
+    // ❌ Not `is_active`: a volume with a teardown claimed on it is active right up
+    // to the moment it stops, and this is the enable that has to bring it back.
+    if state::is_active_and_staying(&volume_id) {
         log::info!("start_indexing_for_mtp: '{volume_id}' already active, no-op");
         return Ok(());
     }
@@ -109,7 +111,7 @@ mod tests {
         assert!(
             try_reserve_initializing_phase(
                 vid,
-                IndexVolumeKind::Mtp,
+                state::StartRequest::for_test(IndexVolumeKind::Mtp),
                 store,
                 pool,
                 pending,
