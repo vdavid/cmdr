@@ -17,5 +17,6 @@ in `(main)/+layout.svelte` next to `ErrorReportDialog` (same pattern), which kee
 
 ## Shared with the error reporter
 
-The text caps, the attach-email checkbox semantics, and the typed-result pattern mirror the error reporter (see its
-`error-report-flow`). `feedback-flow.svelte.ts` is the feedback analog of `error-report-flow`.
+The text caps and the typed-result pattern mirror the error reporter (see its `error-report-flow`); the attach-email
+control is literally the same one, documented in `apps/desktop/src/lib/attach-email/DETAILS.md`.
+`feedback-flow.svelte.ts` is the feedback analog of `error-report-flow`.

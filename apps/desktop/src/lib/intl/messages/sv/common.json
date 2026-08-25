@@ -3,6 +3,22 @@
   "@common.attachEmail": {
     "sourceHash": "5ab834c"
   },
+  "common.attachEmailInputLabel": "Din e-postadress",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "Det där ser inte ut som en e-postadress",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "515c7cf"
+  },
+  "common.attachEmailPlaceholder": "du@example.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "common.attachEmailPrompt": "Bifoga min e-postadress så vi kan svara",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "dcac141"
+  },
   "common.downloadsFdaHint": "Cmdr behöver fullständig åtkomst till skivan för att bevaka mappen Hämtade filer. <settingsLink>Öppna Systeminställningar</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

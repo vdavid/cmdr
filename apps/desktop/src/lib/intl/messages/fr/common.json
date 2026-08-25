@@ -3,6 +3,22 @@
   "@common.attachEmail": {
     "sourceHash": "5ab834c"
   },
+  "common.attachEmailInputLabel": "Votre adresse e-mail",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "Cela ne ressemble pas à une adresse e-mail",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "515c7cf"
+  },
+  "common.attachEmailPlaceholder": "vous@exemple.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "common.attachEmailPrompt": "Joindre mon adresse e-mail pour qu''on puisse vous répondre",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "dcac141"
+  },
   "common.downloadsFdaHint": "Cmdr a besoin de l''accès complet au disque pour surveiller votre dossier Téléchargements. <settingsLink>Ouvrir les Réglages Système</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

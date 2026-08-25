@@ -3,6 +3,23 @@
   "@common.attachEmail": {
     "sourceHash": "5ab834c"
   },
+  "common.attachEmailInputLabel": "Az e-mail-címed",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "Ez nem úgy néz ki, mint egy e-mail-cím",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "515c7cf"
+  },
+  "common.attachEmailPlaceholder": "you@example.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "'you@example.com' is a literal example-email placeholder, kept verbatim everywhere per the cross-file reconciliation (style.md) - 'te@pelda.hu' broke parity and was reverted."
+  },
+  "common.attachEmailPrompt": "Csatold az e-mail-címemet, hogy válaszolhassunk",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "dcac141"
+  },
   "common.downloadsFdaHint": "A Cmdrnek teljes lemezhozzáférésre van szüksége a Letöltések mappád figyeléséhez. <settingsLink>Rendszerbeállítások megnyitása</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

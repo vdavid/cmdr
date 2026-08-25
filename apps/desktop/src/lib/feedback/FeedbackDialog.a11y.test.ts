@@ -54,6 +54,28 @@ function findButton(target: HTMLElement, text: string): HTMLButtonElement | unde
   return Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === text)
 }
 
+function attachEmailCheckbox(target: HTMLElement): HTMLInputElement | null {
+  const label = Array.from(target.querySelectorAll('label')).find((l) => l.textContent.includes('Attach my email'))
+  return label?.querySelector('input[type="checkbox"]') ?? null
+}
+
+/**
+ * Tick the attach-email box the way a user does: the Checkbox primitive syncs off the
+ * input's real click, not a manually assigned `.checked` plus a dispatched change.
+ */
+async function tickAttachEmail(target: HTMLElement): Promise<void> {
+  attachEmailCheckbox(target)?.click()
+  await tick()
+}
+
+async function typeEmail(target: HTMLElement, value: string): Promise<void> {
+  const input = target.querySelector<HTMLInputElement>('input[type="email"]')
+  if (!input) throw new Error('email input missing')
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  await tick()
+}
+
 async function typeFeedback(target: HTMLElement, text: string): Promise<HTMLTextAreaElement> {
   const textarea = target.querySelector('textarea')
   if (!textarea) throw new Error('textarea missing')
@@ -142,20 +164,85 @@ describe('FeedbackDialog', () => {
     expect(target.querySelector('textarea')?.value).toBe('hello')
   })
 
-  it('hides the attach-email checkbox when no beta email is on file', async () => {
+  it('still offers the attach-email checkbox when no beta email is on file', async () => {
     mockEmail = ''
     const target = await mountDialog()
-    expect(target.textContent).not.toContain('Attach my email')
+    expect(target.textContent).toContain('Attach my email so we can reply')
+    expect(attachEmailCheckbox(target)?.checked).toBe(false)
+    // The field is the tick's reward, so an untouched dialog asks nothing extra.
+    expect(target.querySelector('input[type="email"]')).toBeNull()
+  })
+
+  it('collects an address, sends it, and files it for next time', async () => {
+    mockEmail = ''
+    const target = await mountDialog()
+    feedbackFlow.open = true
+    await typeFeedback(target, 'hi')
+    await tickAttachEmail(target)
+    await typeEmail(target, 'tester@example.com')
+
+    findButton(target, 'Send feedback')?.click()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(sendFeedbackMock).toHaveBeenCalledWith('hi', 'tester@example.com')
+    expect(setSettingMock).toHaveBeenCalledWith('analytics.email', 'tester@example.com')
+  })
+
+  it('files nothing until the send actually goes through', async () => {
+    sendFeedbackMock.mockResolvedValue({ kind: 'softFailure' })
+    mockEmail = ''
+    const target = await mountDialog()
+    feedbackFlow.open = true
+    await typeFeedback(target, 'hi')
+    await tickAttachEmail(target)
+    await typeEmail(target, 'tester@example.com')
+    // Typing alone must not reach settings; onboarding persists per keystroke, this
+    // control deliberately doesn't.
+    expect(setSettingMock).not.toHaveBeenCalled()
+
+    findButton(target, 'Send feedback')?.click()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(setSettingMock).not.toHaveBeenCalled()
+  })
+
+  it('holds the send back while the typed address cannot be one', async () => {
+    mockEmail = ''
+    const target = await mountDialog()
+    feedbackFlow.open = true
+    await typeFeedback(target, 'hi')
+    await tickAttachEmail(target)
+    await typeEmail(target, 'tester')
+
+    expect(findButton(target, 'Send feedback')?.disabled).toBe(true)
+    expect(target.textContent).toContain("doesn't look like an email address")
+  })
+
+  it('sends without an address when the field is left empty', async () => {
+    mockEmail = ''
+    const target = await mountDialog()
+    feedbackFlow.open = true
+    await typeFeedback(target, 'hi')
+    await tickAttachEmail(target)
+
+    expect(findButton(target, 'Send feedback')?.disabled).toBe(false)
+    findButton(target, 'Send feedback')?.click()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(sendFeedbackMock).toHaveBeenCalledWith('hi', undefined)
+    expect(setSettingMock).not.toHaveBeenCalledWith('analytics.email', expect.anything())
   })
 
   it('shows the attach-email checkbox, unticked, when an email is on file (sticky default off)', async () => {
     mockEmail = 'tester@example.com'
     mockAttachDefault = false
     const target = await mountDialog()
-    const label = Array.from(target.querySelectorAll('label')).find((l) => l.textContent.includes('Attach my email'))
-    const checkbox = label?.querySelector('input[type="checkbox"]')
+    const checkbox = attachEmailCheckbox(target)
     expect(checkbox).not.toBeNull()
-    expect((checkbox as HTMLInputElement).checked).toBe(false)
+    expect(checkbox?.checked).toBe(false)
     expect(target.textContent).toContain('tester@example.com')
   })
 
@@ -166,12 +253,7 @@ describe('FeedbackDialog', () => {
     feedbackFlow.open = true
     await typeFeedback(target, 'hi')
 
-    const label = Array.from(target.querySelectorAll('label')).find((l) => l.textContent.includes('Attach my email'))
-    const checkbox = label?.querySelector('input[type="checkbox"]') as HTMLInputElement
-    // The Checkbox primitive syncs state off the input's real click, not a manually
-    // assigned `.checked` + dispatched change, so drive it the way a user would.
-    checkbox.click()
-    await tick()
+    await tickAttachEmail(target)
 
     findButton(target, 'Send feedback')?.click()
     await tick()

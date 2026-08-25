@@ -38,18 +38,21 @@
         setTimeout(() => (copied = false), 2000)
     }
 
+    const canSend = $derived(!sending && !attachEmail.blocksSend)
+
     async function handleSend() {
+        if (!canSend) return
         sending = true
         try {
             if (alwaysSend) {
                 setSetting('updates.crashReports', true)
             }
-            // Remember the attach-email choice (sticky); the email rides along only when
-            // the box is checked AND one is on file.
-            attachEmail.persist()
             const email = attachEmail.emailToAttach
             const reportToSend: CrashReport = email ? { ...report, email } : report
             await sendCrashReport(reportToSend)
+            // Sticky choice and a newly typed address are remembered only now: a
+            // half-typed one shouldn't become the reply channel for every report.
+            attachEmail.persist()
             log.info('Crash report sent')
         } catch (e) {
             log.warn('Crash report send attempt returned an error: {error}', { error: String(e) })
@@ -67,7 +70,7 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter' && !sending) {
+        if (event.key === 'Enter' && canSend) {
             void handleSend()
         }
     }
@@ -120,8 +123,7 @@
             <Checkbox bind:checked={alwaysSend}>{tString('crashReporter.dialog.alwaysSend')}</Checkbox>
         </div>
 
-        <!-- Renders itself only when a beta contact email is on file. The wider gap
-             matches the always-send checkbox above it. -->
+        <!-- The wider gap matches the always-send checkbox above it. -->
         <AttachEmailCheckbox email={attachEmail} containerStyle="margin-bottom: var(--spacing-lg)" />
     </div>
 
@@ -129,7 +131,7 @@
         <Button variant="secondary" onclick={handleDismiss} disabled={sending}
             >{tString('crashReporter.dialog.dismiss')}</Button
         >
-        <Button variant="primary" onclick={() => void handleSend()} disabled={sending}>
+        <Button variant="primary" onclick={() => void handleSend()} disabled={!canSend}>
             {sending ? tString('crashReporter.dialog.sending') : tString('crashReporter.dialog.send')}
         </Button>
     {/snippet}

@@ -14,10 +14,10 @@ behavior detail: `DETAILS.md`.
 - **Text caps must stay byte-agreed across three layers.** Soft warn at 50 000, hard cap at 100 000, counted in Unicode
   code points: frontend `Array.from(text).length`, Rust `.chars().count()`, server `Array.from(text).length`. They must
   agree, or emoji-heavy text bypasses the cap on one layer.
-- **The attach-email checkbox comes from `$lib/attach-email`**, shared with the error- and crash-report dialogs:
-  `createAttachEmail()` for the state (+ `persist()` on send) and `<AttachEmailCheckbox>` for the control, which hides
-  itself when no `analytics.email` is on file. Don't hand-roll it or give feedback its own setting key or label; the
-  sticky `updates.attachEmailToReports` choice and the `common.attachEmail` copy are shared across all three.
+- **The attach-email checkbox comes from `$lib/attach-email`**, shared with the error- and crash-report dialogs.
+  `attachEmail.blocksSend` is folded into this dialog's `canSend`, and `persist()` runs in the `sent` branch, never
+  before the send. Don't hand-roll the control or give feedback its own setting key or label; everything else about it
+  lives in `apps/desktop/src/lib/attach-email/CLAUDE.md`.
 - **Branch on the typed `SendFeedbackResult.kind`** (`sent` / `invalid` / `softFailure`), never on message substrings.
   `sendFeedback` in `tauri-commands/feedback.ts` returns it.
 - **External links go through `openExternalUrl`** (opener plugin), never a raw `<a>` navigation, which Tauri blocks.

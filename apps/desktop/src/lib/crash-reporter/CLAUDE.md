@@ -27,9 +27,9 @@ The flow lives in `routes/(main)/+layout.svelte` (`checkForPendingCrashReport`),
   to the setting alone.
 - **The dialog owns the send, the layout owns the auto-send.** Both call `sendCrashReport`, and only the dialog path can
   attach an email or flip `updates.crashReports` on. Adding a send path means deciding both again.
-- **Attach-email comes from `$lib/attach-email`** (`createAttachEmail()` + `<AttachEmailCheckbox>`), shared with the
-  error-report and feedback dialogs; `persist()` writes the sticky `updates.attachEmailToReports` back on send. Don't
-  hand-roll the checkbox or add a crash-specific copy of the label.
+- **Attach-email comes from `$lib/attach-email`**, shared with the error-report and feedback dialogs; `persist()` runs
+  only after `sendCrashReport` resolves. Don't hand-roll the checkbox or add a crash-specific copy of the label. The
+  control's own rules: `apps/desktop/src/lib/attach-email/CLAUDE.md`.
 - **Dismiss must reach the backend.** `dismissCrashReport` deletes the crash file; closing the dialog any other way
   (Escape, the × button) routes through `handleDismiss` for exactly that reason. Skip it and the same report re-offers
   itself on every launch.

@@ -108,12 +108,17 @@
         return Array.from(s).length
     }
 
+    /** Blocks the Send button, the ⌘Enter combo, and `handleSend` itself, from one place. */
+    const canSend = $derived(!sending && !noteOverLimit && !preparing && !attachEmail.blocksSend)
+
     async function handleSend() {
-        if (sending || noteOverLimit) return
+        if (!canSend) return
         sending = true
         try {
-            attachEmail.persist()
             const result = await sendErrorReport(userNote || undefined, attachEmail.emailToAttach)
+            // Sticky choice and a newly typed address are remembered only now: a
+            // half-typed one shouldn't become the reply channel for every report.
+            attachEmail.persist()
             setLastSentReportId(result.id)
             addToast(ErrorReportToastContent, {
                 id: 'error-report-sent',
@@ -170,7 +175,7 @@
 
     function handleKeydown(event: KeyboardEvent) {
         // Cmd/Ctrl+Enter sends. Plain Enter is consumed by the textarea.
-        if (isSendCombo(event) && !sending && !noteOverLimit) {
+        if (isSendCombo(event) && canSend) {
             event.preventDefault()
             void handleSend()
         }
@@ -292,7 +297,7 @@
             <Button
                 variant="primary"
                 onclick={() => void handleSend()}
-                disabled={sending || noteOverLimit || preparing}
+                disabled={!canSend}
             >
                 {sending ? tString('errorReporter.dialog.sending') : tString('errorReporter.dialog.send')}
             </Button>

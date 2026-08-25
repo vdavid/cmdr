@@ -73,8 +73,9 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
   a user can grab part of it.
 - **Always send**: on send, writes `updates.crashReports = true`. Only ever flips the setting ON, and only from an
   explicit tick; there's no path here that turns it off (that's Settings > Updates).
-- **Attach my email**: `$lib/attach-email`. Hidden when no `analytics.email` is on file, never pre-ticked on first use,
-  sticky across the error-report and feedback dialogs.
+- **Attach my email**: `$lib/attach-email`. Always shown, never pre-ticked, sticky across the error-report and feedback
+  dialogs, and able to collect an address when none is on file. Rules and rationale:
+  `apps/desktop/src/lib/attach-email/DETAILS.md`.
 - **Enter** sends (the dialog has no text input to swallow it). **Dismiss**, Escape, and the × all route through
   `handleDismiss` → `dismissCrashReport()`, which deletes the crash file backend-side. Without that call the same report
   is pending again on the next launch, so any new close affordance has to go through the same function.
@@ -90,11 +91,11 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
   dialog.
 - `CrashReportDialog.a11y.test.ts` / `CrashReportToastContent.a11y.test.ts` run axe over the default renders. The
   toast's report only picks which sentence it renders, so one state covers its markup. The dialog test mocks
-  `analytics.email` to empty, so it exercises the no-email shape only; the attach-email checkbox's own behavior is
-  covered by `$lib/attach-email/attach-email.test.ts` and by the error reporter's a11y coverage, which renders it with
-  an email on file and asserts the sticky write. An a11y test doesn't have to sit beside its component: a
-  DIRECTORY-LEVEL `<area>.a11y.test.ts` importing several of them satisfies `a11y-coverage` just as well, and much of
-  the frontend is consolidated that way. Don't assume a colocated file when looking for a component's coverage.
+  `analytics.email` to empty, so it exercises the collect shape only; the attach-email control's own behavior is covered
+  by `$lib/attach-email/attach-email.test.ts` and by the error reporter's a11y coverage, which renders it with an email
+  on file and asserts the sticky write. An a11y test doesn't have to sit beside its component: a DIRECTORY-LEVEL
+  `<area>.a11y.test.ts` importing several of them satisfies `a11y-coverage` just as well, and much of the frontend is
+  consolidated that way. Don't assume a colocated file when looking for a component's coverage.
 - All three dialog states are in the dialog gallery (`dialog-gallery/fixtures/crash-report.ts`), one per fate the
   frontend can see: `panic` (a modern `ended` report with a short id and a long backtrace, to keep the scrollable
   details block honest at 440px), `survived-panic` (the same panic with `appFate: 'keptRunning'`), and

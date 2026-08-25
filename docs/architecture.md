@@ -67,8 +67,8 @@ All under `apps/desktop/src/lib/`.
   `lib/beta-links.ts`
 - `crash-reporter/`: Frontend half of the crash pipeline: detects the persisted crash file, picks the dialog sentence
   that's true for it (`crash-copy.ts`), and offers to send it
-- `attach-email/`: The "Attach my email" opt-in (state + checkbox) shared by the crash-report, error-report, and
-  feedback dialogs
+- `attach-email/`: The "Attach my email" opt-in shared by the crash-report, error-report, and feedback dialogs: reuses
+  the address on file or collects one. See `apps/desktop/src/lib/attach-email/CLAUDE.md`
 - `ai/`: Local LLM features (folder suggestions), download flow. Runtime states only; first-launch consent owned by
   `onboarding/`
 - `indexing/`: Drive index state, events, priority triggers, scan status overlay

@@ -42,14 +42,18 @@
     const showCounter = $derived(textLength > SOFT_WARN_AT)
     const isEmpty = $derived(feedbackText.trim().length === 0)
 
+    const canSend = $derived(!sending && !isEmpty && !overLimit && !attachEmail.blocksSend)
+
     async function handleSend() {
-        if (sending || isEmpty || overLimit) return
+        if (!canSend) return
         sending = true
         sendFailedMessage = null
         try {
-            attachEmail.persist()
             const result = await sendFeedback(feedbackText, attachEmail.emailToAttach)
             if (result.kind === 'sent') {
+                // Sticky choice and a newly typed address are remembered only now: a
+                // half-typed one shouldn't become the reply channel for every report.
+                attachEmail.persist()
                 addToast(tString('feedback.sentToast'), { level: 'success' })
                 feedbackText = ''
                 closeFeedbackDialog()
@@ -175,7 +179,7 @@
 
     {#snippet footer()}
         <Button variant="secondary" onclick={handleClose} disabled={sending}>{tString('feedback.dialog.cancel')}</Button>
-        <Button variant="primary" onclick={() => void handleSend()} disabled={sending || isEmpty || overLimit}>
+        <Button variant="primary" onclick={() => void handleSend()} disabled={!canSend}>
             {sending ? tString('feedback.dialog.sending') : tString('feedback.dialog.send')}
         </Button>
     {/snippet}

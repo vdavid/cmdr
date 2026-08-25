@@ -3,6 +3,22 @@
   "@common.attachEmail": {
     "sourceHash": "5ab834c"
   },
+  "common.attachEmailInputLabel": "Seu e-mail",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "Isso não parece um e-mail",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "515c7cf"
+  },
+  "common.attachEmailPlaceholder": "voce@exemplo.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "common.attachEmailPrompt": "Anexar meu e-mail para podermos responder",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "dcac141"
+  },
   "common.downloadsFdaHint": "O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads. <settingsLink>Abrir os Ajustes do Sistema</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

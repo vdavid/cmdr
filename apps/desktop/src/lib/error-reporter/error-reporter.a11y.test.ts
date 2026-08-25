@@ -455,10 +455,32 @@ describe('ErrorReportDialog', () => {
     return target
   }
 
-  it('hides the attach-email checkbox when no beta email is on file', async () => {
+  it('still offers the attach-email checkbox when no beta email is on file', async () => {
     mockEmail = ''
     const target = await mountSettled()
-    expect(findAttachEmailCheckbox(target)).toBeNull()
+    expect(findAttachEmailCheckbox(target)?.checked).toBe(false)
+    expect(target.textContent).toContain('Attach my email so we can reply')
+    // The field is the tick's reward, so an untouched dialog asks nothing extra.
+    expect(target.querySelector('input[type="email"]')).toBeNull()
+  })
+
+  it('reveals a field for a reply address, and holds the send back until it can be one', async () => {
+    mockEmail = ''
+    const target = await mountSettled()
+    findAttachEmailCheckbox(target)?.click()
+    await tick()
+
+    const input = target.querySelector<HTMLInputElement>('input[type="email"]')
+    if (!input) throw new Error('email input missing')
+    input.value = 'tester'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+
+    const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
+      b.textContent.trim().startsWith('Send report'),
+    )
+    expect(sendButton?.disabled).toBe(true)
+    expect(target.textContent).toContain("doesn't look like an email address")
   })
 
   it('shows the attach-email checkbox, unticked, when an email is on file (sticky default off)', async () => {

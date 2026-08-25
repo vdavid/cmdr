@@ -537,7 +537,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     hostWindow: 'main',
     status: 'ready',
     openedBy: 'store-seeded',
-    note: 'ONE state: the dialog holds its text, its character count, and its sending / sent / failed states internally, so only the empty form is reachable from outside. Send really posts — in a dev build to localhost:8787, so with no local api-server running you get the send-failed state rather than a message in Discord. The attach-email row only appears when this machine has a beta contact email on file, and sending writes the shared updates.attachEmailToReports setting.',
+    note: 'ONE state: the dialog holds its text, its character count, and its sending / sent / failed states internally, so only the empty form is reachable from outside. Send really posts — in a dev build to localhost:8787, so with no local api-server running you get the send-failed state rather than a message in Discord. The attach-email row always shows: it names the beta contact email when this machine has one on file, and otherwise offers a field to type one in. A successful send writes the shared updates.attachEmailToReports setting, plus analytics.email when an address was typed.',
     states: [{ id: 'default', label: 'Open' }],
   },
   {
@@ -561,7 +561,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     label: 'Crash report',
     hostWindow: 'main',
     status: 'ready',
-    note: 'Send uploads nothing in a dev build (the Rust command skips the POST), but it still writes the sticky “always send” / attach-email settings and deletes any real pending crash file. The attach-email row only appears when this machine has a beta contact email on file.',
+    note: 'Send uploads nothing in a dev build (the Rust command skips the POST), but it still writes the sticky “always send” / attach-email settings and deletes any real pending crash file. The attach-email row always shows: it names the beta contact email when this machine has one on file, and otherwise offers a field to type one in.',
     states: [
       { id: 'panic', label: 'Panic the app died of' },
       { id: 'survived-panic', label: 'Panic the app kept running through' },

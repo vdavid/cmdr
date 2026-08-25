@@ -3,6 +3,23 @@
   "@common.attachEmail": {
     "sourceHash": "5ab834c"
   },
+  "common.attachEmailInputLabel": "Email của bạn",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "Cái này trông không giống địa chỉ email",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "515c7cf"
+  },
+  "common.attachEmailPlaceholder": "you@example.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Literal example email address 'you@example.com'; kept exactly as a recognizable placeholder address (locale-neutral)."
+  },
+  "common.attachEmailPrompt": "Đính kèm email của tôi để chúng tôi trả lời",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "dcac141"
+  },
   "common.downloadsFdaHint": "Cmdr cần quyền Truy cập toàn bộ đĩa để theo dõi thư mục Tải về của bạn. <settingsLink>Mở Cài đặt hệ thống</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

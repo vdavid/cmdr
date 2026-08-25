@@ -1,12 +1,32 @@
 {
   "common.attachEmail": "Attach my email ({email}) so we can reply",
   "@common.attachEmail": {
-    "description": "Label for an opt-in checkbox to include the user's email so the team can reply. Shared verbatim by the crash-report, error-report, and feedback dialogs. Shown only when the user has an email on file; their actual address is shown in the parentheses.",
+    "description": "Label for an opt-in checkbox to include the user's email so the team can reply. Shared verbatim by the crash-report, error-report, and feedback dialogs. This variant appears when the app already has an address on file, which is shown in the parentheses; when it doesn't, common.attachEmailPrompt takes its place. Keep the two wordings parallel.",
     "placeholders": {
       "email": "the user's email address on file (e.g. alex@example.com)"
     },
     "screenshot": "error-report.png",
     "screenshotNote": "Pictured in the error-report dialog; the crash-report and feedback dialogs place the same checkbox above their Send button."
+  },
+
+  "common.attachEmailInputLabel": "Your email address",
+  "@common.attachEmailInputLabel": {
+    "description": "Accessible name of the email field that appears under the attach-email checkbox in the crash-report, error-report, and feedback dialogs once the user ticks it with no address on file. It has no visible label (the checkbox above it carries the wording), so this is what a screen reader announces. Keep it short."
+  },
+
+  "common.attachEmailInvalid": "That doesn''t look like an email address",
+  "@common.attachEmailInvalid": {
+    "description": "Inline validation message under the email field in the crash-report, error-report, and feedback dialogs, shown while what the user typed can't be an address (no @, or a space in it). The Send button stays disabled until it's fixed. Gentle and non-blaming, never accusing the user of a mistake; avoid the words \"error\" and \"invalid\"."
+  },
+
+  "common.attachEmailPlaceholder": "you@example.com",
+  "@common.attachEmailPlaceholder": {
+    "description": "Placeholder inside the email field in the crash-report, error-report, and feedback dialogs, showing the expected shape. A standard example address; keep it as a recognizable placeholder address, matching whatever onboarding.stepBeta.emailPlaceholder uses in this language."
+  },
+
+  "common.attachEmailPrompt": "Attach my email so we can reply",
+  "@common.attachEmailPrompt": {
+    "description": "Label for the same opt-in checkbox as common.attachEmail, used when the app has no address on file yet: ticking it reveals a field to type one in. Shared by the crash-report, error-report, and feedback dialogs. Keep it parallel to common.attachEmail, minus the parenthesized address."
   },
 
   "common.downloadsFdaHint": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",

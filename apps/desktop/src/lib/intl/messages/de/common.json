@@ -3,6 +3,22 @@
   "@common.attachEmail": {
     "sourceHash": "5ab834c"
   },
+  "common.attachEmailInputLabel": "Deine E-Mail-Adresse",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "Das sieht nicht nach einer E-Mail-Adresse aus",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "515c7cf"
+  },
+  "common.attachEmailPlaceholder": "du@example.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "common.attachEmailPrompt": "Meine E-Mail-Adresse anhängen, damit wir antworten können",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "dcac141"
+  },
   "common.downloadsFdaHint": "Cmdr braucht vollständigen Festplattenzugriff, um deinen Downloads-Ordner zu überwachen. <settingsLink>Systemeinstellungen öffnen</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

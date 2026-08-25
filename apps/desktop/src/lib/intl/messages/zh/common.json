@@ -3,6 +3,23 @@
   "@common.attachEmail": {
     "sourceHash": "5ab834c"
   },
+  "common.attachEmailInputLabel": "你的邮箱",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "这看起来不像邮箱地址",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "515c7cf"
+  },
+  "common.attachEmailPlaceholder": "you@example.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Example email address \"you@example.com\": a recognizable placeholder format, kept literal so the @-pattern still reads as an email hint. Apple/Microsoft zh keep example addresses in this Latin form."
+  },
+  "common.attachEmailPrompt": "附上我的邮箱以便回复",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "dcac141"
+  },
   "common.downloadsFdaHint": "Cmdr 需要完全磁盘访问权限才能监视你的下载文件夹。<settingsLink>打开系统设置</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
