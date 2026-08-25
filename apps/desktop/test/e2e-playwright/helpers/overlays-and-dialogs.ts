@@ -91,12 +91,60 @@ export async function dismissOverlay(tauriPage: PageLike): Promise<void> {
         `if not, drop the dismissOverlay() call.`,
     )
   }
+  await escapeOverlay(tauriPage, selector)
+  await expect.poll(async () => (await tauriPage.count(selector)) === 0, { timeout: 3000 }).toBeTruthy()
+}
+
+/**
+ * One synthetic Escape at the element under `selector`, with no wait and no assertion.
+ *
+ * The dispatch half of {@link dismissOverlay}, split out for the callers that name their
+ * own overlay rather than taking the topmost one, and for the ones that have to press more
+ * than once. A no-op when nothing matches, so a caller may press again freely.
+ *
+ * Same `bubbles: true` dispatch as `dismissOverlay` and for the same reasons — read its
+ * doc comment for why this is never `keyboard.press('Escape')` and never a `document`
+ * dispatch.
+ */
+export async function escapeOverlay(tauriPage: PageLike, selector: string): Promise<void> {
   const sel = JSON.stringify(selector)
   await tauriPage.evaluate(`(function(){
         var el = document.querySelector(${sel});
         if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     })()`)
-  await expect.poll(async () => (await tauriPage.count(selector)) === 0, { timeout: 3000 }).toBeTruthy()
+}
+
+/**
+ * Escape ONE named overlay closed, re-pressing until it unmounts.
+ *
+ * Two overlay kinds answer the first Escape with something other than a close, so a
+ * single press is not a close request, it is one step of one:
+ *
+ * - A query dialog (`.search-overlay`) stops a live run on the first press and closes on
+ *   the second (`lib/query-ui/DETAILS.md` § "Escape means two things"). Under a loaded
+ *   machine the run is still going when a spec wants the dialog gone, which is exactly
+ *   when one press leaves it standing.
+ * - A popover open ON a dialog takes the first press for itself (`resolveEscape`'s
+ *   `defer`), and the dialog only starts hearing Escape once it is gone.
+ *
+ * Re-pressing resolves both without knowing which one is in play, and it still fails a
+ * genuinely stuck overlay: nothing here waits out the clock when the press works, and an
+ * overlay that never unmounts throws at `timeoutMs` however many presses it swallowed.
+ *
+ * ❗ Only for overlays where a repeated Escape means the same thing every time. ❌ Not for
+ * a dialog that answers Escape by opening a second one (a confirmation), where press two
+ * would answer a question press one asked.
+ */
+export async function escapeOverlayUntilGone(tauriPage: PageLike, selector: string, timeoutMs = 10000): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        await escapeOverlay(tauriPage, selector)
+        return await tauriPage.count(selector)
+      },
+      { timeout: timeoutMs },
+    )
+    .toBe(0)
 }
 
 /**

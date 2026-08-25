@@ -9,7 +9,7 @@
  */
 
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
-import { dismissOverlay, dispatchMenuCommand, pollUntil, pressKey } from './helpers.js'
+import { dismissOverlay, dispatchMenuCommand, escapeOverlayUntilGone, pollUntil, pressKey } from './helpers.js'
 
 export type PageLike = TauriPage | BrowserPageAdapter
 
@@ -64,11 +64,15 @@ export async function resetSearchDialog(tauriPage: PageLike): Promise<void> {
   if (!quiet) throw new Error('search dialog still had a run going 10s after ⌘N')
 }
 
-/** Closes the dialog with Escape (the canonical close path) and waits for it to unmount. */
+/**
+ * Closes the dialog with Escape (the canonical close path) and waits for it to unmount.
+ *
+ * ❗ Named overlay, and re-pressed: a query dialog spends its first Escape stopping a live
+ * run or handing the press to an open popover, so "one press, then wait" closes it only
+ * when neither is in play. `escapeOverlayUntilGone` carries the full reasoning.
+ */
 export async function closeSearchDialog(tauriPage: PageLike): Promise<void> {
-  await pressKey(tauriPage, 'Escape')
-  const gone = await pollUntil(tauriPage, async () => (await tauriPage.count(SEARCH_OVERLAY)) === 0, 3000)
-  if (!gone) throw new Error('search overlay still mounted 3s after Escape')
+  await escapeOverlayUntilGone(tauriPage, SEARCH_OVERLAY)
 }
 
 /**

@@ -18,7 +18,7 @@
 
 import os from 'node:os'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, isStateClean, pollUntil } from './helpers.js'
+import { ensureAppReady, escapeOverlayUntilGone, isStateClean, pollUntil } from './helpers.js'
 import { initMcpClient, mcpCall, mcpReadResource } from '../e2e-shared/mcp-client.js'
 
 // Volume name for "Macintosh HD" on macOS / "Root" on Linux. We force both panes back to
@@ -65,8 +65,10 @@ async function openVolumePicker(tauriPage: Parameters<typeof pollUntil>[0]): Pro
 
 async function closeVolumePicker(tauriPage: Parameters<typeof pollUntil>[0]): Promise<void> {
   if (!(await tauriPage.isVisible(PICKER_DROPDOWN))) return
-  await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`)
-  await expect.poll(async () => !(await tauriPage.isVisible(PICKER_DROPDOWN)), { timeout: 3000 }).toBeTruthy()
+  // Dispatched at the dropdown, ❗ never at `document`: a document-level dispatch bubbles to
+  // `window` and never descends into an element-bound handler, so it closes this dropdown by
+  // luck of where the listener happens to sit.
+  await escapeOverlayUntilGone(tauriPage, PICKER_DROPDOWN)
 }
 
 test.describe('Network toggle in volume picker', () => {

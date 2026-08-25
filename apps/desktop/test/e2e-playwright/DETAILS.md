@@ -601,6 +601,7 @@ bug ("a helper reports success it never achieved"), opposite side of the asserti
 tests. Use the two-helper API in `helpers.ts`:
 
 - **`dismissOverlay(tauriPage)`** — close the topmost open overlay.
+- **`escapeOverlayUntilGone(tauriPage, selector)`** — close ONE named overlay, re-pressing Escape until it unmounts.
 - **`expectAndDismissToast(tauriPage, substring)`** — assert a toast containing `substring` appeared, then dismiss it.
 
 There is no separate "just dismiss toasts" helper on purpose: tests that trigger a user-facing toast should care that it
@@ -641,6 +642,17 @@ import { dismissOverlay, expectAndDismissToast } from './helpers.js'
 await dismissOverlay(tauriPage) // closes whichever overlay is on top
 await expectAndDismissToast(tauriPage, 'Copy complete') // asserts + cleans up
 ```
+
+**One press is not always a close, which is what `escapeOverlayUntilGone(tauriPage, selector)` exists for.** A query
+dialog answers Escape in two steps: press one stops a live run or hands the press to an open popover, press two closes
+(`lib/query-ui/DETAILS.md` § "Escape means two things"). So "press, then wait" is waiting on a close nobody asked for,
+and it is the loaded machine — the one whose run is still going — that pays. Under 24 spinners on a 16-core Mac that
+cost `search-modes.spec.ts` one run in five, reported as `search overlay still mounted 3s after Escape` and then as a
+leaked `.search-overlay` failing whichever spec came next (measured 2026-08-25, fresh app per run). The helper presses
+again each poll and gives the dialog a 10 s budget, which is also why it stays honest: a wedged overlay still throws, it
+just swallows more presses on the way. `closeSearchDialog` and `network-toggle.spec.ts`'s `closeVolumePicker` are its
+two callers. ❌ Not for a dialog that answers Escape by opening a confirmation, where press two would answer press one's
+question. The `afterEach` safety net presses twice for the same reason.
 
 ### The safety net
 
