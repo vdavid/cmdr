@@ -15,7 +15,7 @@ import (
 // Most of cmdr's Go modules are dep-free tooling scripts; for those,
 // govulncheck still checks reachable stdlib calls against the Go vuln DB.
 func RunGovulncheck(ctx *CheckContext) (CheckResult, error) {
-	govulnBin, err := EnsureGoTool("govulncheck", "golang.org/x/vuln/cmd/govulncheck@v1.3.0")
+	govulnBin, err := EnsureGoTool("govulncheck", "golang.org/x/vuln/cmd/govulncheck@v1.7.0")
 	if err != nil {
 		return CheckResult{}, err
 	}
