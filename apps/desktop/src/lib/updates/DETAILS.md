@@ -40,6 +40,37 @@ phases); the non-macOS path uses the plugin's fused `downloadAndInstall()` (stay
 `src-tauri/src/updater/` syncs files into the existing `.app` bundle, preserving the inode and TCC/Full Disk Access
 permissions.
 
+## Re-checking while staged
+
+`ready` means the new build is already synced INTO the bundle (macOS) or installed by the plugin (elsewhere), and only a
+restart is missing. That state can last as long as the session does, so the poll keeps running through it.
+
+What makes that safe is `supersedesStagedUpdate(offered, staged)`: the update server compares against the version the
+process is RUNNING, not the one staged, so a check made while `0.29.0` waits for a restart keeps offering `0.29.0`
+forever. Only a strictly newer release passes the predicate and reaches the download; an equal or older offer takes
+`keepStagedUpdate()`, which touches nothing but the nudge clock. The bundle is therefore never rewritten with bytes
+identical to the ones in it, which is the clobber hazard the old blanket `ready` guard was defending against.
+
+The other three statuses still return early. `checking` / `downloading` / `installing` each own an operation in flight,
+and a second tick landing on one would race the same fetch, temp file, or bundle sync.
+
+Two consequences worth knowing:
+
+- **A staged build survives a failed re-check.** The download writes to a temp dir, so a check or download failure
+  leaves the staged bytes untouched: `finishCheckWithFailure` puts the state machine back on `ready` with the staged
+  version, logs, and says nothing to the user. They already have something worth restarting for.
+- **A failed re-INSTALL is the one case the state can flatter.** `install_update` syncs into the live bundle, so a
+  failure partway leaves a mixed bundle that we report as `ready` on the previously staged version. That hazard is the
+  first install's too, and the alternative (never re-staging) means shipping people a build weeks out of date.
+
+**The restart prompt re-raises itself.** `showUpdateToast()` stamps `lastRestartToastAt`, and every check that finds a
+staged update calls `renudgeRestartIfDue()`, which re-adds the toast once `RESTART_NUDGE_INTERVAL_MS` (24 h) has passed.
+Staging a NEWER build clears the stamp so it prompts immediately. Before this, `showUpdateToast()` was reachable only
+from the download-complete branch and the two onboarding hooks, so one click of "Later" removed the last prompt for the
+rest of the session; the measured cost was installs 25-38 days stale with a newer version already downloaded, and one
+that restarted from 0.28.0 onto the staged 0.29.0 the day after 0.33.0 shipped. A day is the slowest cadence that still
+fixes it, and since the toast is persistent, a user who leaves it on screen is never re-prompted.
+
 When `status` becomes `'ready'`, the updater funnels through `showUpdateToast()`, which consults the pure, unit-tested
 `shouldShowUpdateToast({ onboarded, onboardingShowing, status })` and only fires
 `addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })` when all three hold.
@@ -87,7 +118,11 @@ When a gate opens, the helper re-attempts the toast; if the download finished du
 - No retry or backoff on error; the next interval fires a fresh attempt.
 - Default interval 60 minutes; configurable 5 minutes to 24 hours.
 - Unit tests (`updater.test.ts`) cover the gating logic via `shouldShowUpdateToast` plus the `notifyOnboardingComplete`
-  and `setOnboardingShowing` triggers. The download-and-install path stays untested (hard Tauri/network deps).
+  and `setOnboardingShowing` triggers, and the staged re-check matrix through the mocked plugin flow (same build, newer
+  build, failed check, failed download, in-flight statuses, the nudge cadence under fake timers). The macOS
+  download-and-install path stays untested (hard Tauri/network deps).
+- Version ordering comes from `compareVersions` (`$lib/utils/version.ts`), shared with `$lib/whats-new`. Don't re-roll
+  it here: two comparators that disagree would let the updater call a release newer while What's New calls it older.
 - The `warn`-not-`error` logging convention is documented in `src-tauri/src/error_reporter/DETAILS.md` § convention.
 
 ## Dependencies

@@ -20,8 +20,9 @@ The onboarded flag is the `onboarding.completed` setting. The trigger still take
 it: the decision stays pure, so the truth table above is unit-testable without a store. `startup-gates.ts` reads it and
 passes it in.
 
-`compareVersions` compares numerically per component: a string compare would order `0.10.0` before `0.9.0` and misread
-an upgrade as a downgrade.
+Version ordering comes from `compareVersions` (`$lib/utils/version.ts`), shared with the updater's "is the offered build
+newer than the staged one" question. It compares numerically per component: a string compare would order `0.10.0` before
+`0.9.0` and misread an upgrade as a downgrade.
 
 ## Reading shape (highlights first, details on demand)
 

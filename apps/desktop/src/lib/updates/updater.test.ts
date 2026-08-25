@@ -69,13 +69,16 @@ vi.mock('$lib/logging/logger', () => ({
 
 // Now safe to import.
 import {
+  RESTART_NUDGE_INTERVAL_MS,
   _resetUpdaterStateForTest,
   _setUpdateStatusForTest,
   applyAutoCheckEnabled,
+  checkForUpdates,
   notifyOnboardingComplete,
   runMenuTriggeredCheck,
   setOnboardingShowing,
   shouldShowUpdateToast,
+  supersedesStagedUpdate,
   updateState,
 } from './updater.svelte'
 import { formatUpdateStatus } from './update-status-text'
@@ -302,5 +305,146 @@ describe('runMenuTriggeredCheck', () => {
     expect(updateState.error).toBe('network down')
     expect(updateState.status).toBe('idle')
     expect(dismissToastMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('supersedesStagedUpdate', () => {
+  it('accepts anything when nothing is staged yet', () => {
+    expect(supersedesStagedUpdate('0.29.0', null)).toBe(true)
+  })
+
+  it('rejects the build already staged, so a tick never re-syncs identical bytes', () => {
+    expect(supersedesStagedUpdate('0.29.0', '0.29.0')).toBe(false)
+  })
+
+  it('rejects an older offer than the staged build', () => {
+    expect(supersedesStagedUpdate('0.28.0', '0.29.0')).toBe(false)
+  })
+
+  it('accepts a release that shipped after the staged one', () => {
+    expect(supersedesStagedUpdate('0.33.0', '0.29.0')).toBe(true)
+  })
+})
+
+describe('checking again while an update is staged', () => {
+  /** One offer from the update server, with a download that succeeds. */
+  function offer(version: string) {
+    return { version, downloadAndInstall: vi.fn(async () => {}) }
+  }
+
+  /** Gets the module to `ready` with `version` synced into the bundle, onboarding done. */
+  async function stage(version: string): Promise<void> {
+    await notifyOnboardingComplete()
+    pluginCheckMock.mockResolvedValueOnce(offer(version))
+    await checkForUpdates()
+    expect(updateState.status).toBe('ready')
+  }
+
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+    addToastMock.mockClear()
+    dismissToastMock.mockClear()
+    getVersionMock.mockClear()
+    pluginCheckMock.mockReset()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    _resetUpdaterStateForTest()
+  })
+
+  it('still asks the update server once a build is staged', async () => {
+    await stage('0.29.0')
+    pluginCheckMock.mockResolvedValueOnce(offer('0.29.0'))
+
+    await checkForUpdates()
+
+    // Pre-fix the `ready` guard returned here, so the hourly poll went silent for the rest of the
+    // session and the install sat on whatever was staged however long that session ran.
+    expect(pluginCheckMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('leaves the staged bytes alone when the server offers the same build', async () => {
+    await stage('0.29.0')
+    const repeat = offer('0.29.0')
+    pluginCheckMock.mockResolvedValueOnce(repeat)
+
+    await checkForUpdates()
+
+    expect(repeat.downloadAndInstall).not.toHaveBeenCalled()
+    expect(updateState.status).toBe('ready')
+    expect(updateState.update?.version).toBe('0.29.0')
+  })
+
+  it('re-stages when a newer release ships, and prompts for it again', async () => {
+    await stage('0.29.0')
+    addToastMock.mockClear()
+    const newer = offer('0.33.0')
+    pluginCheckMock.mockResolvedValueOnce(newer)
+
+    await checkForUpdates()
+
+    expect(newer.downloadAndInstall).toHaveBeenCalledTimes(1)
+    expect(updateState.status).toBe('ready')
+    expect(updateState.update?.version).toBe('0.33.0')
+    expect(updateState.nextVersion).toBe('0.33.0')
+    // A newer build earns its own prompt, even if the previous one was dismissed with "Later".
+    expect(addToastMock).toHaveBeenCalledTimes(1)
+    expect(addToastMock.mock.calls[0][1]).toMatchObject({ id: 'update', dismissal: 'persistent' })
+  })
+
+  it('keeps the staged update ready when the re-check fails', async () => {
+    await stage('0.29.0')
+    pluginCheckMock.mockRejectedValueOnce(new Error('network down'))
+
+    await checkForUpdates()
+
+    // The staged build is still in the bundle and still worth restarting for, so a transient
+    // network blip must not downgrade the state machine or raise a message at the user.
+    expect(updateState.status).toBe('ready')
+    expect(updateState.update?.version).toBe('0.29.0')
+    expect(updateState.error).toBeNull()
+  })
+
+  it('keeps the staged update ready when downloading the newer build fails', async () => {
+    await stage('0.29.0')
+    pluginCheckMock.mockResolvedValueOnce({
+      version: '0.33.0',
+      downloadAndInstall: vi.fn(() => Promise.reject(new Error('signature mismatch'))),
+    })
+
+    await checkForUpdates()
+
+    expect(updateState.status).toBe('ready')
+    expect(updateState.update?.version).toBe('0.29.0')
+    expect(updateState.nextVersion).toBe('0.29.0')
+  })
+
+  it.each(['downloading', 'installing', 'checking'] as const)('does not interrupt an in-flight %s', async (status) => {
+    _setUpdateStatusForTest(status)
+
+    await checkForUpdates()
+
+    expect(pluginCheckMock).not.toHaveBeenCalled()
+  })
+
+  it('brings the restart prompt back after a day, not on every tick', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-25T09:00:00Z'))
+    await stage('0.29.0')
+    addToastMock.mockClear()
+
+    // An hour later: the poll runs, the answer is unchanged, and the user is left alone.
+    vi.setSystemTime(Date.now() + 60 * 60 * 1000)
+    pluginCheckMock.mockResolvedValueOnce(offer('0.29.0'))
+    await checkForUpdates()
+    expect(addToastMock).not.toHaveBeenCalled()
+
+    // A full nudge interval on: the prompt comes back, so "Later" can't silence it for good.
+    vi.setSystemTime(Date.now() + RESTART_NUDGE_INTERVAL_MS)
+    pluginCheckMock.mockResolvedValueOnce(offer('0.29.0'))
+    await checkForUpdates()
+    expect(addToastMock).toHaveBeenCalledTimes(1)
+    expect(addToastMock.mock.calls[0][1]).toMatchObject({ id: 'update', dismissal: 'persistent' })
   })
 })

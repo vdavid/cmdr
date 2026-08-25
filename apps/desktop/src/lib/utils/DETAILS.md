@@ -67,6 +67,17 @@ up. The two compose.
 carries two predicates: `isTextInputFocused()` reads `document.activeElement` (keyboard events), and
 `isTextInputTarget(target)` inspects an event target (mouse, where a right-click can land on an unfocused field).
 
+## version.ts
+
+`compareVersions(a, b)` orders two release strings by their numeric `major.minor.patch` core (negative / zero /
+positive, `Array.sort`-shaped). A leading `v` and any pre-release or build suffix are ignored, so `v0.26.0-beta.1` and
+`0.26.0` compare equal; we only ever order released versions.
+
+Two callers, which is why it isn't private to either: `$lib/whats-new` asks whether this launch is an upgrade over the
+version it last showed, and `$lib/updates` asks whether the build the manifest offers is newer than the one already
+staged in the bundle. A comparator that disagreed with itself would let one surface call a release an upgrade while the
+other called it a downgrade.
+
 ## shorten-middle.ts
 
 `shortenMiddle()` truncates text in the middle with an ellipsis, using pixel-accurate width measurement via an injected

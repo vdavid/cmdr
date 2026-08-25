@@ -30,8 +30,14 @@ Frontend auto-update checker, restart toast, and manual "Check for updates" affo
   re-attempts the toast, so a download finished during onboarding still surfaces.
 - **The error catch logs `warn`, not `error`,** so transient background-check network failures don't trip the auto error
   reporter (Flow B). Don't raise it to `error`. Settings still shows the message via `updateState.error`.
-- **State machine guards re-checking.** `checkForUpdates()` returns early when `status` is `downloading` or `ready`;
-  removing the guard lets an interval tick clobber a pending update.
+- **The poll keeps running while an update is staged, and only `supersedesStagedUpdate` may write.** `checkForUpdates()`
+  returns early on `checking` / `downloading` / `installing` (in-flight work owns the state machine), ❌ never on
+  `ready`: guarding `ready` is what let installs sit 25-38 days on a build newer releases had passed. A re-check from
+  `ready` leaves `updateState` untouched unless the server offers a strictly NEWER version, so an identical offer never
+  rewrites the bundle. `DETAILS.md` § Re-checking while staged.
+- **"Later" can't silence the prompt for good.** A staged update re-raises its toast every `RESTART_NUDGE_INTERVAL_MS`
+  (24 h) off the poll, and a newly staged NEWER build resets the clock for a fresh prompt. ❌ Don't shorten the interval
+  into nagging; the toast is persistent, so leaving it up costs the user nothing.
 - **The update manifest endpoint is hardcoded in Rust** (via the API server), not in TypeScript.
 - **Non-production guard:** `check_for_update` returns `None` unless the process is a real user's production install
   (inside a `.app` bundle, with none of `prod_instance::NON_PROD_ENV_VARS` set), so no dev, CI, E2E, or capture run

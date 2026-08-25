@@ -6,8 +6,8 @@ into a typed model; this frontend decides when to show it and renders it.
 
 ## Module map
 
-- `whats-new.ts`: PURE decision logic. `decideWhatsNew(...)` → `show` / `stamp` / `wait` / `none`, plus numeric
-  `compareVersions`. No `$state`, no IPC; unit-tested in `whats-new.test.ts`.
+- `whats-new.ts`: PURE decision logic. `decideWhatsNew(...)` → `show` / `stamp` / `wait` / `none`, ordering versions
+  with `compareVersions` from `$lib/utils/version`. No `$state`, no IPC; unit-tested in `whats-new.test.ts`.
 - `whats-new-trigger.svelte.ts`: the effectful layer. Owns `whatsNewState` (`$state`), reads/writes settings, fetches
   the slice over IPC, opens the dialog. Exports `runWhatsNewStartupTrigger` (auto), `openWhatsNew` (manual reopen),
   `closeWhatsNew`.

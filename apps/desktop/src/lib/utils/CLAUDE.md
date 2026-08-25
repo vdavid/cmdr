@@ -7,7 +7,8 @@ Small stateless helpers. Pure, no Svelte state, safe to import from plain `.ts` 
 `filename-validation.ts` (client-side name and path validation), `timing.ts` (`withTimeout`, `createDebounce`,
 `createThrottle`, `createCoalesced`, `waitForNextPaint`), `shorten-middle.ts` + `shorten-middle-action.ts`
 (mid-truncation and its Svelte action), `srgb-mix.ts` + `webkit-compat.ts` (sRGB color math, `color-mix()` detection),
-`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`. Per-file export catalogs: `DETAILS.md`.
+`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`, `version.ts` (semver `major.minor.patch` ordering). Per-file
+export catalogs: `DETAILS.md`.
 
 ## Must-knows
 

@@ -3,6 +3,7 @@ import { getVersion } from '@tauri-apps/api/app'
 import { forceSave, getSetting, onSpecificSettingChange, setSetting } from '$lib/settings/settings-store'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
+import { compareVersions } from '$lib/utils/version'
 import UpdateToastContent from './UpdateToastContent.svelte'
 import UpdateCheckToastContent from './UpdateCheckToastContent.svelte'
 import { addToast, dismissToast } from '$lib/ui/toast'
@@ -41,6 +42,21 @@ export function shouldShowUpdateToast(args: {
 }
 
 /**
+ * How long a staged-but-unapplied update stays quiet after the last restart prompt before that
+ * prompt comes back.
+ *
+ * "Later" used to be permanent: the toast was reachable only from the download-complete branch,
+ * so one dismissal took away the last prompt for the rest of the session, and installs sat 25-38
+ * days on a version they had already downloaded past. A day is the slowest cadence that still
+ * fixes that, and the toast is persistent, so someone who simply leaves it up is never
+ * re-prompted at all.
+ */
+export const RESTART_NUDGE_INTERVAL_MS = 24 * 60 * 60 * 1000
+
+/** When the restart toast last actually rendered, driving the re-nudge cadence. `null` = never. */
+let lastRestartToastAt: number | null = null
+
+/**
  * Show the update-ready toast, but only if gating allows. Called from the download-complete branches
  * and from the onboarding/FDA hooks below. When suppressed, we leave `updateState.status === 'ready'`
  * so the download stays applied; the toast just doesn't render until the gate opens.
@@ -50,6 +66,20 @@ function showUpdateToast(): void {
     return
   }
   addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })
+  lastRestartToastAt = Date.now()
+}
+
+/**
+ * Bring the restart prompt back when a staged update has gone unapplied for a whole nudge
+ * interval. Driven from the check loop, so it rides the poll cadence the user already chose
+ * rather than a timer of its own. `addToast` dedupes by id, so a toast the user never dismissed
+ * is refreshed in place instead of stacking.
+ */
+function renudgeRestartIfDue(): void {
+  if (lastRestartToastAt !== null && Date.now() - lastRestartToastAt < RESTART_NUDGE_INTERVAL_MS) {
+    return
+  }
+  showUpdateToast()
 }
 
 /**
@@ -81,16 +111,56 @@ export function setOnboardingShowing(value: boolean): void {
   }
 }
 
+/**
+ * Statuses that own the state machine for as long as they last. A tick landing on one of these
+ * would race the fetch, the download, or the bundle sync already under way, so it turns around.
+ *
+ * `ready` is deliberately absent: a build already synced into the bundle is finished work, and
+ * blocking the poll on it is what let an install sit for weeks on a version newer releases had
+ * long since passed. Re-checking from `ready` is safe because `supersedesStagedUpdate` decides
+ * whether anything gets written; see `DETAILS.md` § Re-checking while staged.
+ */
+const IN_FLIGHT_STATUSES: readonly UpdateState['status'][] = ['checking', 'downloading', 'installing']
+
+/**
+ * The version already synced into the bundle and waiting for a restart, or `null` when nothing is
+ * staged. Every branch of a re-check reads this: a staged install keeps its state, and its bytes,
+ * unless the server offers something strictly newer.
+ */
+function stagedVersion(): string | null {
+  return updateState.status === 'ready' ? (updateState.update?.version ?? null) : null
+}
+
+/**
+ * Whether an offered build is worth writing over what's already staged. Pure, so the one rule that
+ * keeps a re-check from clobbering a pending update is unit-testable on its own.
+ *
+ * The server compares against the version we're RUNNING, not the one we staged, so a check made
+ * while `0.29.0` waits for a restart keeps offering `0.29.0`. Re-syncing that would rewrite the
+ * bundle with bytes identical to the ones in it, for nothing; only a genuinely newer release earns
+ * another install.
+ */
+export function supersedesStagedUpdate(offered: string, staged: string | null): boolean {
+  return staged === null || compareVersions(offered, staged) > 0
+}
+
 export async function checkForUpdates(): Promise<void> {
-  if (updateState.status === 'downloading' || updateState.status === 'installing' || updateState.status === 'ready') {
-    return // Don't interrupt ongoing download/install or ready state
+  if (IN_FLIGHT_STATUSES.includes(updateState.status)) {
+    return // Don't interrupt an ongoing check, download, or install
   }
 
+  const staged = stagedVersion()
   const currentVersion = await getVersion()
-  updateState.previousVersion = currentVersion
-  updateState.nextVersion = null
-  updateState.status = 'checking'
-  updateState.error = null
+
+  // A re-check made on top of a staged update must not disturb the state machine on its way
+  // through: Settings would flash "Checking…" over a standing "restart to apply", and a failure
+  // partway would land on `idle` while a perfectly good build sits in the bundle.
+  if (staged === null) {
+    updateState.previousVersion = currentVersion
+    updateState.nextVersion = null
+    updateState.status = 'checking'
+    updateState.error = null
+  }
 
   log.debug('Checking for updates (current: v{version})...', { version: currentVersion })
 
@@ -98,9 +168,9 @@ export async function checkForUpdates(): Promise<void> {
   // install phases, preserves TCC), non-macOS uses the Tauri plugin's fused `downloadAndInstall`.
   // The two-phase error handling (warn on check, error on download/install) lives inside each.
   if (isMacOS()) {
-    await runMacUpdateFlow(currentVersion)
+    await runMacUpdateFlow(currentVersion, staged)
   } else {
-    await runPluginUpdateFlow(currentVersion)
+    await runPluginUpdateFlow(currentVersion, staged)
   }
 }
 
@@ -109,17 +179,22 @@ export async function checkForUpdates(): Promise<void> {
  * into the existing `.app` bundle. Three Tauri commands; download and install are distinct
  * phases so the UI can show separate `downloading` and `installing` states.
  */
-async function runMacUpdateFlow(currentVersion: string): Promise<void> {
+async function runMacUpdateFlow(currentVersion: string, staged: string | null): Promise<void> {
   let update: UpdateInfo | null
   try {
     update = await checkForUpdate()
   } catch (error) {
-    finishCheckWithFailure(error, 'check')
+    finishCheckWithFailure(error, 'check', staged)
     return
   }
 
   if (update === null) {
-    finishCheckWithNoUpdate(currentVersion)
+    finishCheckWithNoUpdate(currentVersion, staged)
+    return
+  }
+
+  if (!supersedesStagedUpdate(update.version, staged)) {
+    keepStagedUpdate(update.version)
     return
   }
 
@@ -132,32 +207,34 @@ async function runMacUpdateFlow(currentVersion: string): Promise<void> {
     updateState.status = 'installing'
     await installUpdate()
   } catch (error) {
-    finishCheckWithFailure(error, 'download-install')
+    finishCheckWithFailure(error, 'download-install', staged)
     return
   }
 
-  log.info('v{version} installed, restart to apply', { version: update.version })
-  updateState.status = 'ready'
-  updateState.update = update
-  showUpdateToast()
+  finishCheckWithStagedUpdate(update)
 }
 
 /**
  * Non-macOS path: Tauri updater plugin. `downloadAndInstall()` is fused so we stay in
  * `downloading` throughout the second phase (no separate `installing` state).
  */
-async function runPluginUpdateFlow(currentVersion: string): Promise<void> {
+async function runPluginUpdateFlow(currentVersion: string, staged: string | null): Promise<void> {
   let update: Awaited<ReturnType<typeof import('@tauri-apps/plugin-updater').check>>
   try {
     const { check } = await import('@tauri-apps/plugin-updater')
     update = await check()
   } catch (error) {
-    finishCheckWithFailure(error, 'check')
+    finishCheckWithFailure(error, 'check', staged)
     return
   }
 
   if (!update) {
-    finishCheckWithNoUpdate(currentVersion)
+    finishCheckWithNoUpdate(currentVersion, staged)
+    return
+  }
+
+  if (!supersedesStagedUpdate(update.version, staged)) {
+    keepStagedUpdate(update.version)
     return
   }
 
@@ -168,17 +245,43 @@ async function runPluginUpdateFlow(currentVersion: string): Promise<void> {
   try {
     await update.downloadAndInstall()
   } catch (error) {
-    finishCheckWithFailure(error, 'download-install')
+    finishCheckWithFailure(error, 'download-install', staged)
     return
   }
 
+  finishCheckWithStagedUpdate({ version: update.version, url: '', signature: '' })
+}
+
+/**
+ * A build is now synced into the bundle and only a restart away. A newer one earns a fresh prompt
+ * even when the previous version's was dismissed, so the nudge clock resets here.
+ */
+function finishCheckWithStagedUpdate(update: UpdateInfo): void {
   log.info('v{version} installed, restart to apply', { version: update.version })
   updateState.status = 'ready'
-  updateState.update = { version: update.version, url: '', signature: '' }
+  updateState.update = update
+  updateState.nextVersion = update.version
+  updateState.error = null
+  lastRestartToastAt = null
   showUpdateToast()
 }
 
-function finishCheckWithNoUpdate(currentVersion: string): void {
+/**
+ * A check that ran while a build was already staged, and found nothing that beats it. The state
+ * machine stays exactly where it was: moving it would either rewrite the bundle with the bytes
+ * already in it, or make Settings claim the app is up to date while a restart is still pending.
+ * All that's left is keeping the restart prompt reachable.
+ */
+function keepStagedUpdate(staged: string): void {
+  log.debug('v{version} is still the newest build staged for restart', { version: staged })
+  renudgeRestartIfDue()
+}
+
+function finishCheckWithNoUpdate(currentVersion: string, staged: string | null): void {
+  if (staged !== null) {
+    keepStagedUpdate(staged)
+    return
+  }
   log.debug('v{version} is up to date', { version: currentVersion })
   updateState.status = 'idle'
   updateState.nextVersion = null
@@ -194,16 +297,31 @@ function finishCheckWithNoUpdate(currentVersion: string): void {
  *   UI surfaces both via `updateState.error` regardless of log level.
  *
  * See `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` § convention.
+ *
+ * `staged` is the version already synced into the bundle, if any. A build waiting for a restart
+ * outlives a failed attempt at a newer one: the download writes to a temp dir, so a failure there
+ * leaves the staged bytes untouched, and the user still has something worth restarting for. So the
+ * state machine returns to `ready` and no message reaches them; the failure is in the log and in
+ * the `update_check` event instead.
  */
-function finishCheckWithFailure(error: unknown, phase: 'check' | 'download-install'): void {
+function finishCheckWithFailure(error: unknown, phase: 'check' | 'download-install', staged: string | null): void {
+  const message = error instanceof Error ? error.message : String(error)
+  if (phase === 'check') {
+    log.warn('Check failed: {error}', { error: message })
+  } else {
+    log.error('Download/install failed: {error}', { error: message })
+  }
+
+  if (staged !== null) {
+    updateState.status = 'ready'
+    updateState.nextVersion = staged
+    renudgeRestartIfDue()
+    return
+  }
+
   updateState.status = 'idle'
   updateState.nextVersion = null
-  updateState.error = error instanceof Error ? error.message : String(error)
-  if (phase === 'check') {
-    log.warn('Check failed: {error}', { error: updateState.error })
-  } else {
-    log.error('Download/install failed: {error}', { error: updateState.error })
-  }
+  updateState.error = message
 }
 
 /**
@@ -314,6 +432,7 @@ export function startUpdateChecker(): () => void {
 export function _resetUpdaterStateForTest(): void {
   onboarded = false
   onboardingShowing = false
+  lastRestartToastAt = null
   updateState.status = 'idle'
   updateState.update = null
   updateState.error = null
