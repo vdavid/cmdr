@@ -6,7 +6,25 @@
   "automerge": true,
   "platformAutomerge": true,
   "minimumReleaseAge": "3 days",
+  "customManagers": [
+    {
+      "description": "The Go analyzers the check runner shells out to are pinned as `@vX.Y.Z` string literals inside `EnsureGoTool(...)` calls, so no manager sees them. They went stale silently until a Go 1.27 bump broke CI: staticcheck 2026.1 can't decode Go 1.27 export data, and the toolchain PR had no way to know the pin needed to move with it. `packageName` captures the module root (`honnef.co/go/tools`) because the goproxy 404s on a package path (`honnef.co/go/tools/cmd/staticcheck`), while `depName` keeps the full install path so `autoReplaceStringTemplate` can write the line back verbatim.",
+      "customType": "regex",
+      "managerFilePatterns": ["scripts/check/checks/*.go"],
+      "matchStrings": [
+        "EnsureGoTool\\(\\s*\"[^\"]*\",\\s*\"(?<depName>(?<packageName>[^\"@]+?)(?:/cmd/[^\"@/]+)?)@(?<currentValue>v[^\"]+)\""
+      ],
+      "autoReplaceStringTemplate": "{{{depName}}}@{{{newValue}}}",
+      "datasourceTemplate": "go",
+      "depTypeTemplate": "go-check-tool"
+    }
+  ],
   "packageRules": [
+    {
+      "description": "The check runner's Go analyzers land on their own, for the same reason the linters below do: an analyzer bump re-flags tracked source across every Go module, which is noise to review mixed in with dependency changes. `go.uber.org/nilaway` publishes no tags, so its pseudo-version pin gets no PRs; move it by hand when it matters.",
+      "matchDepTypes": ["go-check-tool"],
+      "groupName": "Go check tools"
+    },
     {
       "description": "Default lane for non-major updates. Split per app below, because one repo-wide batch pooled five unrelated breakages (a genai field, a new stylelint rule, an oxfmt reformat, two typecheck breaks) into a single 2,300-line PR that couldn't be reviewed or bisected. Per-app groups stay small enough to fix in one sitting.",
       "groupName": "non-major updates",

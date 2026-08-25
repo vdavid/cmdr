@@ -1314,7 +1314,11 @@ to lock the tool's own dep tree.
 **Decision**: every tool install pins `--version` and `--locked` (cargo) or `@vX.Y.Z` (Go). **Why**: an unpinned tool
 install (`cargo install cargo-audit` or `EnsureGoTool(..., "@latest")`) means each fresh checkout pulls whatever's
 latest. A wave-1-2-class compromise of any of these tool repositories would auto-propagate. Pinning is the Go-side
-equivalent of the pnpm `minimum-release-age` defense (a fresh version can't land without a deliberate bump).
+equivalent of the pnpm `minimum-release-age` defense (a fresh version can't land without a deliberate bump). The
+`EnsureGoTool` pins are string literals no manager can see, so a `customManagers` regex entry in `renovate.json` reads
+them and opens PRs in the "Go check tools" group; it captures the module root as `packageName` because the goproxy 404s
+on a package path. `go.uber.org/nilaway` publishes no tags, so its pseudo-version pin still moves by hand. The
+`cargo install` pins are NOT tracked; bump those deliberately.
 
 **Decision**: `third-party-notices` pins the license file for crates that ship more than one, and verifies the pin
 landed. **Why**: cargo-about reads whichever candidate file the filesystem enumerates first, and APFS and ext4 don't
