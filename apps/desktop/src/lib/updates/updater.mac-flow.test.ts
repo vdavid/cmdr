@@ -16,6 +16,7 @@ const {
   downloadUpdateMock,
   installUpdateMock,
   updateWriteBlockerMock,
+  trackEventMock,
   getVersionMock,
 } = vi.hoisted(() => ({
   addToastMock: vi.fn(),
@@ -23,6 +24,7 @@ const {
   downloadUpdateMock: vi.fn(() => Promise.resolve()),
   installUpdateMock: vi.fn(() => Promise.resolve()),
   updateWriteBlockerMock: vi.fn<() => Promise<'translocated' | 'readOnlyVolume' | null>>(() => Promise.resolve(null)),
+  trackEventMock: vi.fn(),
   getVersionMock: vi.fn(() => Promise.resolve('0.28.0')),
 }))
 
@@ -31,6 +33,7 @@ vi.mock('$lib/tauri-commands', () => ({
   downloadUpdate: downloadUpdateMock,
   installUpdate: installUpdateMock,
   updateWriteBlocker: updateWriteBlockerMock,
+  trackEvent: trackEventMock,
 }))
 
 // The whole point of this file: take the macOS branch, where the three custom commands live.
@@ -72,6 +75,7 @@ describe('an update found on an install that can’t write its own bundle', () =
     installUpdateMock.mockClear()
     updateWriteBlockerMock.mockReset()
     updateWriteBlockerMock.mockResolvedValue(null)
+    trackEventMock.mockClear()
   })
 
   afterEach(() => {
@@ -88,6 +92,11 @@ describe('an update found on an install that can’t write its own bundle', () =
     expect(installUpdateMock).toHaveBeenCalledTimes(1)
     expect(updateState.status).toBe('ready')
     expect(updateBlockerNotice.blocker).toBeNull()
+    expect(trackEventMock).toHaveBeenCalledWith('update_check', {
+      outcome: 'staged',
+      failure: 'none',
+      staged_version: '0.33.0',
+    })
   })
 
   it('skips the download entirely and raises the nudge instead', async () => {
@@ -102,6 +111,12 @@ describe('an update found on an install that can’t write its own bundle', () =
     expect(installUpdateMock).not.toHaveBeenCalled()
     expect(updateBlockerNotice.blocker).toBe('translocated')
     expect(updateState.status).toBe('idle')
+    // The dashboard is how David finds out this population exists at all.
+    expect(trackEventMock).toHaveBeenCalledWith('update_check', {
+      outcome: 'blocked',
+      failure: 'translocated',
+      staged_version: 'none',
+    })
   })
 
   it('raises the nudge once, not once per poll', async () => {
@@ -132,6 +147,20 @@ describe('an update found on an install that can’t write its own bundle', () =
     await notifyOnboardingComplete()
     setOnboardingShowing(false)
     expect(updateBlockerNotice.blocker).toBe('translocated')
+  })
+
+  it('reports which phase a failed install stopped at, without carrying its message', async () => {
+    await notifyOnboardingComplete()
+    checkForUpdateMock.mockResolvedValueOnce(anUpdate)
+    installUpdateMock.mockRejectedValueOnce(new Error('/Users/dave/Applications/Cmdr.app is not writable'))
+
+    await checkForUpdates()
+
+    expect(trackEventMock).toHaveBeenCalledWith('update_check', {
+      outcome: 'failed',
+      failure: 'install',
+      staged_version: 'none',
+    })
   })
 
   it('updates anyway when the classification itself is unavailable', async () => {

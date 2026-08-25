@@ -78,6 +78,25 @@ When `status` becomes `'ready'`, the updater funnels through `showUpdateToast()`
 action, and dismisses via `dismissToast('update')` for "Later". There's no local dismissed flag; the toast
 infrastructure manages dismissal.
 
+## What a check reports
+
+Every exit of `checkForUpdates()` fires one `update_check` event through `update-analytics.ts`. The catalog entry (the
+prop vocabulary and why each value exists) is `src-tauri/src/analytics/DETAILS.md` § Starter event set; what belongs
+here is where each one is raised:
+
+- `finishCheckWithNoUpdate` → `up_to_date`
+- `keepStagedUpdate` → `already_staged`, carrying the version sitting in the bundle
+- `finishCheckWithStagedUpdate` → `staged`, carrying the version just written
+- `finishCheckWithUnwritableBundle` → `blocked`, with the arrangement as `failure`
+- `finishCheckWithFailure` → `failed`, with the phase as `failure`
+
+The phase comes off `updateState.status`, read BEFORE the finisher moves it: macOS runs the download and the install
+inside one `try`, and the status is the typed record of which was in flight. ❌ Never ask the error message, here or
+anywhere (`error-string-match`).
+
+The event rides the analytics consent (`analytics.enabled`, default-on), NOT the crash/error-report consent. It carries
+no URL, no bundle path, and no failure text.
+
 ## When the bundle can't be written
 
 macOS only. Once a check finds a build worth installing, `runMacUpdateFlow` asks `update_write_blocker` whether this

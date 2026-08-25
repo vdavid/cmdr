@@ -5,6 +5,7 @@ import { forceSave, getSetting, onSpecificSettingChange, setSetting } from '$lib
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import { compareVersions } from '$lib/utils/version'
+import { blockerFailure, reportUpdateCheck, type UpdateCheckFailure } from './update-analytics'
 import UpdateToastContent from './UpdateToastContent.svelte'
 import UpdateCheckToastContent from './UpdateCheckToastContent.svelte'
 import { addToast, dismissToast } from '$lib/ui/toast'
@@ -323,6 +324,7 @@ function finishCheckWithUnwritableBundle(blocker: BundleWriteBlocker, staged: st
   log.warn("An update is out, but this install can't write its own bundle ({blocker}); asking the user to move Cmdr", {
     blocker,
   })
+  reportUpdateCheck({ outcome: 'blocked', failure: blockerFailure(blocker), stagedVersion: staged })
   showMoveToApplicationsNudge(blocker)
 
   if (staged !== null) {
@@ -345,6 +347,7 @@ function finishCheckWithStagedUpdate(update: UpdateInfo): void {
   updateState.nextVersion = update.version
   updateState.error = null
   lastRestartToastAt = null
+  reportUpdateCheck({ outcome: 'staged', stagedVersion: update.version })
   showUpdateToast()
 }
 
@@ -356,6 +359,7 @@ function finishCheckWithStagedUpdate(update: UpdateInfo): void {
  */
 function keepStagedUpdate(staged: string): void {
   log.debug('v{version} is still the newest build staged for restart', { version: staged })
+  reportUpdateCheck({ outcome: 'already_staged', stagedVersion: staged })
   renudgeRestartIfDue()
 }
 
@@ -365,6 +369,7 @@ function finishCheckWithNoUpdate(currentVersion: string, staged: string | null):
     return
   }
   log.debug('v{version} is up to date', { version: currentVersion })
+  reportUpdateCheck({ outcome: 'up_to_date' })
   updateState.status = 'idle'
   updateState.nextVersion = null
 }
@@ -388,6 +393,13 @@ function finishCheckWithNoUpdate(currentVersion: string, staged: string | null):
  */
 function finishCheckWithFailure(error: unknown, phase: 'check' | 'download-install', staged: string | null): void {
   const message = error instanceof Error ? error.message : String(error)
+  // Read the phase off the state machine BEFORE moving it. macOS runs the download and the install
+  // in one try block, and `status` is the typed record of which one was in flight; the message
+  // that came back is never asked, here or anywhere.
+  const failure: UpdateCheckFailure =
+    phase === 'check' ? 'check' : updateState.status === 'installing' ? 'install' : 'download'
+  reportUpdateCheck({ outcome: 'failed', failure, stagedVersion: staged })
+
   if (phase === 'check') {
     log.warn('Check failed: {error}', { error: message })
   } else {

@@ -9,6 +9,7 @@ Frontend auto-update checker, restart toast, and manual "Check for updates" affo
 - `update-state.svelte.ts`: the module-level `updateState` `$state` singleton (`status`, `error`, version snapshots),
   re-exported from `updater.svelte.ts`.
 - `update-status-text.ts`: pure `formatUpdateStatus()` (state → user-facing string), shared by Settings and toasts.
+- `update-analytics.ts`: the `update_check` event's vocabulary and its one emitter.
 - `UpdateToastContent.svelte` (`id: 'update'`, persistent): restart prompt. `UpdateCheckToastContent.svelte`
   (`id: 'update-check'`, 10 s): menu-triggered phase status.
 - `MoveToApplicationsDialog.svelte` (`dialogId: 'move-to-applications'`): the nudge for an install that can't write its
@@ -41,6 +42,9 @@ Frontend auto-update checker, restart toast, and manual "Check for updates" affo
   Translocation or a read-only volume is in the way, and a blocker raises the move-to-Applications dialog (once a
   session) instead of ~63 MB the install could never apply. ❌ Don't treat a FAILED classification as a blocker: it
   saves a doomed download, it isn't permission to update. `DETAILS.md` § When the bundle can't be written.
+- **Every exit of `checkForUpdates()` fires one `update_check` event** (`update-analytics.ts`), and the failing phase is
+  read off `updateState.status`, ❌ never off the error message. A new exit without an event is a hole in the one view
+  of the update path there is. Catalog: `src-tauri/src/analytics/DETAILS.md`.
 - **The update manifest endpoint is hardcoded in Rust** (via the API server), not in TypeScript.
 - **Non-production guard:** `check_for_update` returns `None` unless the process is a real user's production install
   (inside a `.app` bundle, none of `prod_instance::NON_PROD_ENV_VARS` set), so no dev, CI, E2E, or capture run reaches
