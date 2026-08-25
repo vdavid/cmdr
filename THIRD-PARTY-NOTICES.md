@@ -773,7 +773,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **@tauri-apps/plugin-updater** 2.10.1, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
 - **@types/estree** 1.0.9, MIT, <https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/estree>
 - **@types/trusted-types** 2.0.7, MIT, <https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/trusted-types>
-- **@typescript-eslint/types** 8.66.0, MIT, <https://typescript-eslint.io>
+- **@typescript-eslint/types** 8.67.0, MIT, <https://typescript-eslint.io>
 - **@zag-js/accordion** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
 - **@zag-js/anatomy** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
 - **@zag-js/angle-slider** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
