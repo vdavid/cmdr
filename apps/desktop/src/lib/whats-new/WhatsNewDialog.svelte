@@ -190,6 +190,9 @@
         /* The marker column: bullets need barely more than the glyph, a numbered lead needs
            room for "10.". Both keep wrapped lines aligned with the first line's text. */
         --spacing-whats-new-marker: 1.15em;
+        /* How much bigger the bullet glyph is than the text it marks. Named rather than
+           inlined because the marker's own box has to divide it back out (see below). */
+        --font-whats-new-marker-scale: 1.35;
 
         display: flex;
         flex-direction: column;
@@ -266,13 +269,16 @@
         list-style: none;
     }
 
+    /* A hanging indent, ❌ never a two-column grid. An entry is rendered markdown, and a
+       grid makes every inline element (<code>, <strong>, a link) its own ITEM: the text
+       splits across cells and the markup auto-places into the marker column, where the
+       `overflow-wrap: anywhere` inherited from the dialog body breaks it one character per
+       line. Padding plus a negative margin on the marker keeps the whole entry in one
+       inline flow, wrapped lines still hanging under the first. `whats-new-markup.spec.ts`
+       measures it. */
     .lead :global(li),
     .entries li {
-        display: grid;
-        grid-template-columns: var(--spacing-whats-new-marker) 1fr;
-        /* Baseline, not stretch: the oversized marker glyph sits on the text's first-line
-           baseline instead of pushing the row taller. */
-        align-items: baseline;
+        padding-left: var(--spacing-whats-new-marker);
     }
 
     .lead :global(li + li),
@@ -280,8 +286,15 @@
         margin-top: var(--spacing-xs);
     }
 
+    /* Inline-block for a box the negative margin can act on; the glyph's own baseline
+       keeps it on the text's first-line baseline. The indent is an `em` of the ITEM's font
+       size, but inside the marker `em` resolves against the marker's enlarged size, so the
+       scale divides back out to land on the same width. */
     .lead :global(li)::before,
     .entries li::before {
+        display: inline-block;
+        width: calc(var(--spacing-whats-new-marker) / var(--font-whats-new-marker-scale));
+        margin-left: calc(-1 * var(--spacing-whats-new-marker) / var(--font-whats-new-marker-scale));
         color: var(--color-text-tertiary);
     }
 
@@ -296,12 +309,15 @@
     }
 
     .lead :global(ol) > :global(li) {
-        grid-template-columns: 1.6em 1fr;
+        padding-left: 1.6em;
     }
 
+    /* A text-size marker, so its own `em` needs no scale divided out. */
     .lead :global(ol) > :global(li)::before {
         counter-increment: lead-item;
         content: counter(lead-item) '.';
+        width: 1.6em;
+        margin-left: -1.6em;
     }
 
     /* Same two-column grid as a list item, at the same font size: the chevron lands where a
@@ -335,7 +351,7 @@
     .toggle-marker,
     .lead :global(ul) > :global(li)::before,
     .entries li::before {
-        font-size: 1.35em;
+        font-size: calc(1em * var(--font-whats-new-marker-scale));
         line-height: var(--font-line-height-flat);
     }
 

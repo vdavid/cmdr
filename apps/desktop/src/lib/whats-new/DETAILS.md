@@ -43,9 +43,18 @@ How the pieces hold together:
   stays vertically centered while it grows, so the toggle moves under the cursor; accepted deliberately over pinning the
   top edge (`growDownward`), which drops the panel off-center.
 - **Markers are typographic, not `<Icon>`s.** Bullets and the `▸` / `▾` disclosure triangle are text glyphs in a
-  fixed-width grid column, so they align with each other by the same font metrics and wrapped lines hang under the first
-  line's text. An SVG icon carries transparent padding that reads as misalignment, and a ROTATED glyph pivots around its
-  box rather than its ink, so the marker swaps instead of rotating.
+  fixed-width marker column, so they align with each other by the same font metrics and wrapped lines hang under the
+  first line's text. An SVG icon carries transparent padding that reads as misalignment, and a ROTATED glyph pivots
+  around its box rather than its ink, so the marker swaps instead of rotating.
+- **An entry's marker column is a hanging indent, never a grid.** An entry is rendered markdown, so it arrives as text
+  runs plus inline elements (`<code>`, `<strong>`, a link). A two-column grid on the `<li>` makes each of those its own
+  grid ITEM, and auto-placement drops one into the 1.15em marker column, where the `overflow-wrap: anywhere` inherited
+  from `ModalDialog`'s body breaks it one character per line. So the `<li>` pays `padding-left` and the `::before`
+  marker is an `inline-block` pulled back over it by a negative margin: same geometry, one inline flow. The marker's
+  own `em` resolves against its enlarged font size, which is why its width divides `--font-whats-new-marker-scale` back out.
+  `test/e2e-playwright/whats-new-markup.spec.ts` measures it off the gallery's `several-releases` fixture (jsdom
+  computes no layout, so this can only be caught in a real webview). The disclosure toggle keeps its grid: its two
+  children are a marker span and a label, never markdown.
 
 ## Lead rendering
 

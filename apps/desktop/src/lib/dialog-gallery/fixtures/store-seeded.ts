@@ -298,7 +298,7 @@ export const whatsNewFixtures: Record<string, Patch<typeof whatsNewState>> = {
       {
         version: '0.31.0',
         date: '2026-07-20',
-        lead: '**Two big ones this time:**\n\n1. Ask Cmdr can rename in bulk, with a review step.\n2. The file viewer opens 4 GB logs without breaking a sweat.',
+        lead: '**Two big ones this time:**\n\n1. Ask Cmdr can rename in bulk, with a review step.\n2. The file viewer opens 4 GB logs without breaking a sweat, and `⌘F` searches inside them.',
         sections: [
           {
             title: 'Added',
@@ -314,7 +314,17 @@ export const whatsNewFixtures: Record<string, Patch<typeof whatsNewState>> = {
               'The transfer dialog shows real throughput and an honest ETA, and both keep updating while the scan is still running.',
             ],
           },
-          { title: 'Fixed', entries: ['Copying to a disconnected network share explains itself instead of stalling.'] },
+          {
+            title: 'Fixed',
+            // Inline markdown on purpose. Roughly one changelog entry in twelve carries a
+            // `code` span, and an entry's markup has to stay in the text flow instead of
+            // wrapping into the bullet column; `whats-new-markup.spec.ts` measures these.
+            entries: [
+              'Copying to a disconnected network share explains itself instead of stalling.',
+              'Shares named `café` or `公開` mount again, and a `diskutil` message stops reaching a toast in English.',
+              'The crash dialog stops claiming Cmdr quit **unexpectedly** when it didn’t, and stops saying it twice.',
+            ],
+          },
         ],
       },
       {
