@@ -50,8 +50,8 @@ How the pieces hold together:
   runs plus inline elements (`<code>`, `<strong>`, a link). A two-column grid on the `<li>` makes each of those its own
   grid ITEM, and auto-placement drops one into the 1.15em marker column, where the `overflow-wrap: anywhere` inherited
   from `ModalDialog`'s body breaks it one character per line. So the `<li>` pays `padding-left` and the `::before`
-  marker is an `inline-block` pulled back over it by a negative margin: same geometry, one inline flow. The marker's
-  own `em` resolves against its enlarged font size, which is why its width divides `--font-whats-new-marker-scale` back out.
+  marker is an `inline-block` pulled back over it by a negative margin: same geometry, one inline flow. The marker's own
+  `em` resolves against its enlarged font size, which is why its width divides `--font-whats-new-marker-scale` back out.
   `test/e2e-playwright/whats-new-markup.spec.ts` measures it off the gallery's `several-releases` fixture (jsdom
   computes no layout, so this can only be caught in a real webview). The disclosure toggle keeps its grid: its two
   children are a marker span and a label, never markdown.
