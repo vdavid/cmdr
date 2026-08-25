@@ -28,7 +28,7 @@ Error report: POST /error-report → rate-limit by IP (ERROR_REPORT_LIMITER, 429
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → validate payload (size + required fields + analId/version shape + config-size cap) → write to D1 heartbeat (fire-and-forget via waitUntil), no IP stored → 204
 
-Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → Discord ping in waitUntil (DISCORD_FEEDBACK_WEBHOOK_URL, falls back to DISCORD_WEBHOOK_URL) → 204
+Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → Discord ping in waitUntil (DISCORD_FEEDBACK_WEBHOOK_URL, falls back to DISCORD_WEBHOOK_URL) → 204 → the 3-hourly cron mails the row in the feedback digest (`../../DETAILS.md` § Cron handler)
 
 Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget) → 302 to GitHub Releases
 
@@ -218,6 +218,11 @@ durable sink, so unlike the other telemetry writes this one is AWAITED: a D1 fai
 surfaces as a gentle retry. The Discord ping (truncated preview, `[DEV]`/`[PROD]` title prefix from `buildMode`) rides
 `waitUntil` after the 204. No install id of any kind is read or stored, so feedback can't be joined to the analytics
 stream. Rate-limited at 5/min/IP via `FEEDBACK_LIMITER` (the IP is never stored).
+
+Three sinks read the row: the `/admin/feedback` endpoint, the Discord `#feedback` channel, and the 3-hourly feedback
+digest email, which is the one that reaches David unprompted. The digest tracks what it has sent in
+`feedback.notified_at` (NULL means unsent); the intake path never writes that column. How the digest renders and when it
+stamps: `../../DETAILS.md` § Cron handler.
 
 Frontend counterpart: `apps/desktop/src/lib/feedback/CLAUDE.md`.
 

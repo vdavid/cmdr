@@ -1,4 +1,11 @@
-import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashEmailRow, type CrashFate } from './email'
+import {
+  sendCrashNotificationEmail,
+  sendDbSizeAlert,
+  sendFeedbackNotificationEmail,
+  type CrashEmailRow,
+  type CrashFate,
+  type FeedbackEmailRow,
+} from './email'
 import type { Bindings } from './types'
 import {
   recomputeTotal,
@@ -83,6 +90,58 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
     to: env.CRASH_NOTIFICATION_EMAIL,
     resendApiKey: env.RESEND_API_KEY,
   })
+}
+
+/**
+ * Mails every in-app feedback message that hasn't been mailed yet. D1 and Discord already hold
+ * feedback, but neither is a surface David reads on a schedule, so without this the messages sit
+ * unread.
+ *
+ * Recipient falls back to `CRASH_NOTIFICATION_EMAIL`, so this ships with no new secret;
+ * `FEEDBACK_NOTIFICATION_EMAIL` splits it off later without a code change.
+ */
+async function handleFeedbackNotifications(env: Bindings): Promise<void> {
+  const to = env.FEEDBACK_NOTIFICATION_EMAIL ?? env.CRASH_NOTIFICATION_EMAIL
+  if (!to || !env.RESEND_API_KEY) return
+
+  const { results } = await env.TELEMETRY_DB.prepare(
+    `SELECT id, created_at, feedback, email, app_version, os_version, build_mode
+         FROM feedback
+         WHERE notified_at IS NULL
+         ORDER BY created_at DESC`,
+  ).all<{
+    id: number
+    created_at: string
+    feedback: string
+    email: string | null
+    app_version: string
+    os_version: string
+    build_mode: string | null
+  }>()
+
+  if (results.length === 0) return
+
+  const entries: FeedbackEmailRow[] = results.map((row) => ({
+    when: row.created_at,
+    env: buildModeToEnv(row.build_mode),
+    version: row.app_version,
+    osVersion: row.os_version,
+    message: row.feedback,
+    email: row.email,
+  }))
+
+  // Stamp AFTER the send, the opposite of `handleCrashNotifications`. `sendViaResend` throws on a
+  // rejected send, so a failure leaves every row NULL and the next tick retries. The two jobs
+  // differ because the cost of being wrong differs: a crash is one signal among many and its row
+  // persists either way, but feedback is a person talking to us and this email is the only surface
+  // it gets read on. A duplicate costs seconds; a drop costs a conversation.
+  await sendFeedbackNotificationEmail({ entries, to, resendApiKey: env.RESEND_API_KEY })
+
+  const ids = results.map((r) => r.id)
+  const placeholders = ids.map(() => '?').join(', ')
+  await env.TELEMETRY_DB.prepare(`UPDATE feedback SET notified_at = ? WHERE id IN (${placeholders})`)
+    .bind(new Date().toISOString(), ...ids)
+    .run()
 }
 
 async function handleDailyAggregation(env: Bindings): Promise<void> {
@@ -331,6 +390,7 @@ async function handleDailyEvictionSweep(env: Bindings): Promise<void> {
 
 export {
   handleCrashNotifications,
+  handleFeedbackNotifications,
   handleDailyAggregation,
   handleDbSizeCheck,
   handleDailyEvictionSweep,

@@ -11,6 +11,7 @@ import { betaSignup } from './website/beta-signup'
 import { linkCodes } from './website/link-codes'
 import {
   handleCrashNotifications,
+  handleFeedbackNotifications,
   handleDailyAggregation,
   handleDbSizeCheck,
   handleDailyEvictionSweep,
@@ -45,6 +46,12 @@ export default {
       await handleCrashNotifications(env)
     } catch (e) {
       console.error('Crash notifications failed:', e)
+    }
+
+    try {
+      await handleFeedbackNotifications(env)
+    } catch (e) {
+      console.error('Feedback notifications failed:', e)
     }
 
     // Daily jobs: only run on the 00:00 UTC invocation
@@ -86,6 +93,7 @@ export default {
 // Export handler functions for testing
 export {
   handleCrashNotifications,
+  handleFeedbackNotifications,
   handleDailyAggregation,
   handleDbSizeCheck,
   handleDailyEvictionSweep,

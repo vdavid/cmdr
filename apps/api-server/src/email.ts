@@ -145,6 +145,112 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
   )
 }
 
+/** The friendly build-mode label a feedback card shows, same vocabulary as the crash email's env column. */
+export type FeedbackEnv = 'prod' | 'dev' | '?'
+
+/** Chip colors per env: green for a shipped build, amber for a local one, gray for a row that says nothing. */
+const envChipColors: Record<FeedbackEnv, { background: string; text: string }> = {
+  prod: { background: '#ecfdf5', text: '#047857' },
+  dev: { background: '#fff7ed', text: '#c2410c' },
+  '?': { background: '#f3f4f6', text: '#6b7280' },
+}
+
+/**
+ * One in-app feedback message, as the digest email renders it. Every field here is either written
+ * by a person or copied from their machine, so every one of them is escaped at render time.
+ */
+export interface FeedbackEmailRow {
+  /** `created_at`, in the SQLite `datetime('now')` shape (`YYYY-MM-DD HH:MM:SS`, UTC). */
+  when: string
+  /** Friendly env (`'prod'` for release, `'dev'` for debug, `'?'` for unknown). */
+  env: FeedbackEnv
+  /** `app_version`. */
+  version: string
+  /** `os_version`. */
+  osVersion: string
+  /** What the person wrote, verbatim. Untrusted text; line breaks are theirs and are preserved. */
+  message: string
+  /** The reply-to address the sender chose to attach, or `null` when they attached none. */
+  email: string | null
+}
+
+/** The subject line, which is the whole email for anyone who doesn't open it. */
+function feedbackSubject(count: number): string {
+  return `Cmdr: ${String(count)} new feedback message${count === 1 ? '' : 's'}`
+}
+
+/**
+ * One card per message, stacked. Feedback is prose, so it gets a readable measure and its own
+ * block rather than a table cell: a table column shreds a paragraph into a ribbon.
+ */
+function renderFeedbackCard(entry: FeedbackEmailRow): string {
+  const chip = envChipColors[entry.env]
+  const replyLine = entry.email
+    ? `Reply to <a href="mailto:${escapeHtml(entry.email)}" style="color: #2563eb;">${escapeHtml(entry.email)}</a>`
+    : 'No reply-to address'
+
+  return `
+    <div style="border: 1px solid #e5e7eb; border-radius: 8px; margin: 0 0 20px; background: #ffffff;">
+        <div style="padding: 10px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; border-radius: 8px 8px 0 0; font-size: 13px; color: #6b7280;">
+            ${escapeHtml(entry.when)} UTC &middot; app ${escapeHtml(entry.version)} &middot; OS ${escapeHtml(entry.osVersion)}
+            <span style="display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; font-size: 12px; background: ${chip.background}; color: ${chip.text};">${escapeHtml(entry.env)}</span>
+        </div>
+        <div style="padding: 16px; max-width: 600px; font-size: 15px; line-height: 1.6; color: #1f2937; white-space: pre-wrap; word-break: break-word;">${escapeHtml(entry.message)}</div>
+        <div style="padding: 10px 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">${replyLine}</div>
+    </div>`
+}
+
+interface FeedbackNotificationParams {
+  entries: FeedbackEmailRow[]
+  to: string
+  resendApiKey: string
+}
+
+/**
+ * The feedback digest: every message that hasn't been mailed yet, newest first.
+ *
+ * When exactly one message in the batch carries a reply-to address, that address becomes the
+ * email's `replyTo`, so answering the person is a plain reply. With none or several there's no
+ * single right answer, so the header stays off and the per-card `mailto:` links carry it instead.
+ */
+export async function sendFeedbackNotificationEmail(params: FeedbackNotificationParams): Promise<void> {
+  const resend = new Resend(params.resendApiKey)
+  const subject = feedbackSubject(params.entries.length)
+
+  const addresses = params.entries.map((entry) => entry.email).filter((email): email is string => email !== null)
+  const soleReplyTo = addresses.length === 1 ? addresses[0] : undefined
+
+  const cards = params.entries.map(renderFeedbackCard).join('\n')
+
+  await sendViaResend(
+    resend,
+    {
+      from: 'Cmdr Feedback <noreply@getcmdr.com>',
+      to: params.to,
+      subject,
+      ...(soleReplyTo ? { replyTo: soleReplyTo } : {}),
+      html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; max-width: 680px; margin: 0 auto; padding: 20px; background: #ffffff;">
+    <h2 style="color: #111827;">${escapeHtml(subject)}</h2>
+
+    ${cards}
+
+    <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
+        The Cmdr API server sends this digest whenever new in-app feedback arrives.
+    </p>
+</body>
+</html>
+        `.trim(),
+    },
+    'feedback notification',
+  )
+}
+
 interface DbSizeAlertParams {
   sizeMb: number
   tableCounts: Record<string, number>

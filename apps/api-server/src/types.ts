@@ -56,6 +56,9 @@ export type Bindings = {
   ADMIN_API_TOKEN?: string
   // Crash notification email recipient (for cron-based crash alerts)
   CRASH_NOTIFICATION_EMAIL?: string
+  // Optional dedicated recipient for the in-app feedback digest. When unset, the cron job falls
+  // back to CRASH_NOTIFICATION_EMAIL, so feedback email works with no new secret.
+  FEEDBACK_NOTIFICATION_EMAIL?: string
   // R2 bucket for error report bundles (zips of redacted logs + manifest)
   ERROR_REPORTS_BUCKET: R2Bucket
   // KV namespace for error report bookkeeping (total bytes counter, eviction lock flag)

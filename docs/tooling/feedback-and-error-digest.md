@@ -35,6 +35,18 @@ npx wrangler d1 execute cmdr-telemetry --remote --json \
 `--json` returns `[{ "results": [ ...rows... ], "success": true, ... }]`. A row with a non-null `email` is someone
 awaiting a reply, treat that as an action item, not just a data point.
 
+The table also carries `notified_at`: the timestamp of the digest email that shipped that message, NULL while it's still
+waiting for one. It's bookkeeping for the email channel, so ignore it when reading feedback, and leave it alone when
+writing: clearing it re-sends the message, and setting it drops one.
+
+### The digest email
+
+Every three hours the API server's cron mails David whatever is still un-notified, one card per message, with a
+`mailto:` link per card and a `Reply-To` header when the batch holds exactly one address. That's the channel that
+reaches him without being asked; D1 and Discord both need someone to go looking. Recipient is
+`FEEDBACK_NOTIFICATION_EMAIL`, falling back to `CRASH_NOTIFICATION_EMAIL`. Rendering, the reply-to rule, and why the job
+stamps `notified_at` after the send rather than before: `apps/api-server/DETAILS.md` § Cron handler.
+
 ## Error reports (R2 bucket `cmdr-error-reports`)
 
 Bundles are keyed `error-reports/{prod|dev}/YYYY-MM-DD/{ERR-XXXXX}-{uuid}.zip`. Default to the `prod` prefix only; `dev`

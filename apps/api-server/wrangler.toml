@@ -168,6 +168,9 @@ LISTMONK_NEWSLETTER_LIST_ID = 3
 # - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for $199 perpetual)
 # - ADMIN_API_TOKEN                (dedicated token for /admin/stats)
 # - CRASH_NOTIFICATION_EMAIL      (recipient for crash alert emails)
+# - FEEDBACK_NOTIFICATION_EMAIL    (optional: recipient for the in-app feedback digest; the cron job
+#                                   falls back to CRASH_NOTIFICATION_EMAIL when unset, so feedback
+#                                   email needs no new secret)
 # - DISCORD_WEBHOOK_URL            (Discord webhook for #error-reports)
 # - DISCORD_FEEDBACK_WEBHOOK_URL   (optional: dedicated webhook for in-app feedback;
 #                                   POST /feedback falls back to DISCORD_WEBHOOK_URL when unset)

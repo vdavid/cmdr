@@ -17,9 +17,10 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   `enforceIpRateLimit`, `callerIp`, `hashCallerIp`, `isValidEmail`, `redactEmail`, `activationCountKey`.
 - **`email.ts`**: Resend delivery (HTML + plain text, multi-seat), behind the single `sendViaResend` wrapper.
 - **`discord.ts`**: Discord webhook client (single retry on 429, drop-on-failure).
-- **`scheduled.ts`**: the cron jobs (crash notifications, daily aggregation, DB size, retention sweep, eviction sweep).
-  Tests split by axis: `crash-notification-email.test.ts` covers the one job whose output is a document (query → row →
-  rendered HTML and subject), `scheduled.test.ts` the DB-writing jobs, with the D1/env fakes in `cron-test-helpers.ts`.
+- **`scheduled.ts`**: the cron jobs (crash notifications, feedback digest, daily aggregation, DB size, retention sweep,
+  eviction sweep). Tests split by axis: `crash-notification-email.test.ts` and `feedback-notification-email.test.ts`
+  cover the two jobs whose output is a document (query → row → rendered HTML and subject), `scheduled.test.ts` the
+  DB-writing jobs, with the D1/env fakes in `cron-test-helpers.ts`.
 - **`user-agent.ts`**: `classifyUaFamily` / `resolveUaFamily`, shared by the download write path and the funnel read
   path so neither area imports the other.
 - **`scripts/generate-keys.js`**: Ed25519 key pair generation (run once at setup).
@@ -82,6 +83,7 @@ Decisions.
 | `ED25519_PRIVATE_KEY`              | DEV private key hex              | PRODUCTION private key hex         |
 | `RESEND_API_KEY`                   | Resend key                       | Same Resend key                    |
 | `CRASH_NOTIFICATION_EMAIL`         | `david@getcmdr.com`              | Recipient email for crash alerts   |
+| `FEEDBACK_NOTIFICATION_EMAIL`      | unset (falls back)               | Optional feedback digest recipient |
 | `DISCORD_WEBHOOK_URL`              | Same webhook URL                 | Discord webhook for error reports  |
 | `DISCORD_BETA_SIGNUP_WEBHOOK_URL`  | Optional (falls back)            | Optional `#beta-signups` webhook   |
 | `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs      |
@@ -215,13 +217,14 @@ back to the OAuth login).
 
 **D1 for telemetry and fulfillment:** crash reports, downloads, update checks, heartbeats, feedback, and the
 `license_issuance` record all live in D1 (binding `TELEMETRY_DB`, database `cmdr-telemetry`). Migrations live in
-`migrations/` (latest: `0015_crash_app_fate.sql`, the nullable `app_fate` column the crash email ranks rows by;
-`0014_downloads_daily_unique.sql` is the distinct-downloader rollup the retention sweep writes;
-`0013_minimize_stored_identifiers.sql` adds `downloads.ua_family` and erases the crash-table IP hashes;
-`0012_license_issuance.sql` is the fulfillment record; `0011_crash_panic_message.sql` adds the nullable `panic_message`
-column; `0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email`
-columns; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with `wrangler d1 migrations apply cmdr-telemetry`
-before deploying changes that add tables or columns.
+`migrations/` (latest: `0016_feedback_notified_at.sql`, the `feedback.notified_at` column the feedback digest reads,
+which also stamps the pre-existing rows so the first tick doesn't mail the backlog; `0015_crash_app_fate.sql` adds the
+nullable `app_fate` column the crash email ranks rows by; `0014_downloads_daily_unique.sql` is the distinct-downloader
+rollup the retention sweep writes; `0013_minimize_stored_identifiers.sql` adds `downloads.ua_family` and erases the
+crash-table IP hashes; `0012_license_issuance.sql` is the fulfillment record; `0011_crash_panic_message.sql` adds the
+nullable `panic_message` column; `0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the
+nullable `diag_id` + `email` columns; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with
+`wrangler d1 migrations apply cmdr-telemetry` before deploying changes that add tables or columns.
 
 `license_issuance` is the one money-critical table in an otherwise telemetry-shaped database: it shares the binding
 because a second D1 buys nothing at a few hundred rows a year, and nothing prunes it (the daily aggregation job only
@@ -250,13 +253,26 @@ failure doesn't block the others:
      and one didn't. The subject carries it too, since that's all you see without opening: the plain count when nothing
      survived, `, the app kept running` when every report did, and `(N kept running)` for a mix. Only survivors are
      counted there — a NULL fate is never tallied as a crash.
-2. **Daily aggregation** (00:00 UTC only): aggregates yesterday's `update_checks` into `daily_active_users` via
+2. **Feedback digest** (every invocation): queries `feedback WHERE notified_at IS NULL`, sorted newest-first, and sends
+   one email with a card per message (header strip with the UTC timestamp, app version, OS version, and a `prod`/`dev`
+   chip; then the message body with `white-space: pre-wrap` so the sender's line breaks survive; then the reply-to
+   line). Recipient is `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL`, so it ships with no new secret.
+   - **Stamps `notified_at` AFTER the send**, the opposite of the crash job, and deliberately so: `sendViaResend` throws
+     on a rejected send, so a failure leaves the rows NULL and the next tick retries them. A crash is one signal among
+     many and its row persists either way, but feedback is a person talking to us and this email is the only surface it
+     gets read on, so a duplicate costs seconds while a drop costs a conversation. Don't "fix" it back to match crashes.
+   - **`replyTo` is set only when exactly one message in the batch carries an address**, which makes answering that
+     person a plain reply. With none or several there's no single right answer, so the header stays off and the per-card
+     `mailto:` links carry it.
+   - `0016_feedback_notified_at.sql` stamps the pre-existing rows as notified, so the first tick after the migration
+     doesn't mail the whole backlog.
+3. **Daily aggregation** (00:00 UTC only): aggregates yesterday's `update_checks` into `daily_active_users` via
    `INSERT OR IGNORE ... GROUP BY`, then prunes raw update checks older than 7 days. Idempotent via existence check.
-3. **DB size check** (00:00 UTC only): queries the D1 pragma for total database size, alerting by email over 100 MB.
-4. **Retention sweep** (00:00 UTC only): `handleRetentionSweep` enforces the per-table retention promises below.
-5. **Synthetic heartbeat sweep** (00:00 UTC only): `handleSyntheticHeartbeatSweep` deletes the beats of installs that
+4. **DB size check** (00:00 UTC only): queries the D1 pragma for total database size, alerting by email over 100 MB.
+5. **Retention sweep** (00:00 UTC only): `handleRetentionSweep` enforces the per-table retention promises below.
+6. **Synthetic heartbeat sweep** (00:00 UTC only): `handleSyntheticHeartbeatSweep` deletes the beats of installs that
    were never a person. See § Synthetic heartbeats below.
-6. **Daily eviction sweep** (00:00 UTC only): `handleDailyEvictionSweep` recomputes `total_bytes` from R2 ground truth
+7. **Daily eviction sweep** (00:00 UTC only): `handleDailyEvictionSweep` recomputes `total_bytes` from R2 ground truth
    (the per-upload KV counter is racy and drifts), clears `intake_paused` if the bucket is back under the LOW watermark,
    then triggers `tryEvict` if still over 8 GB. Idempotent, and it catches drift from concurrent uploads or a Worker
    dying mid-eviction.
