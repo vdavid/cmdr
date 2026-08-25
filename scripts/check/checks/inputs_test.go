@@ -421,6 +421,7 @@ var realTreeReadingTests = map[string][]string{
 	"TestRustInputsCoverEveryEmbeddedFile":                     {"Cargo.toml", "apps/desktop/src-tauri/src", "crates/cmdr-fs/src", "crates/fsevent-stream/src", "CHANGELOG.md"},
 	"TestRustMemberTreesMatchTheWorkspace":                     {"Cargo.toml", "crates/cmdr-sftp/Cargo.toml", "apps/desktop/src-tauri/Cargo.toml"},
 	"TestSftpFixturePathsAgree":                                {sftpComposeRel, sftpStartRel, sftpTestingRel},
+	"TestSftpFixturePortsBindToLoopback":                       {sftpComposeRel},
 	"TestSftpFixturePortsMatchComposeDefaults":                 {sftpComposeRel, sftpTestingRel},
 	"TestSiblingToolDirsAreFingerprintedByTheirCheck":          {"scripts/check-a11y-contrast", "scripts/check-css-unused", "scripts/check-btn-restyle"},
 }

@@ -723,6 +723,10 @@ teardown are one implementation over that value.
   not the other shows up as a cell with no server, which reads as a backend bug rather than as a fixture one. Adding a
   server means editing both, plus `sftpServiceHostPorts` (`checks/sftp_ports.go`), which the lane's readiness guard
   derives its expected-service list from.
+- **SFTP publishes to `127.0.0.1` for the same reason SMB does** (the decision above), through a
+  `${SFTP_BIND_ADDR:-127.0.0.1}` prefix on each `ports:` entry. Its compose file is first-party, so the prefix lives
+  there directly rather than surviving a re-vendor, and `TestSftpFixturePortsBindToLoopback` fails the run if a mapping
+  loses it. The credentials are in a public repo, which makes a LAN-reachable sshd worse here than an anonymous share.
 - **`servicesWithoutHealthcheck` is empty for SFTP** because its one image bakes a healthcheck that reads the listening
   socket out of `netstat`. ❗ Not `nc -z`, which SMB's vendored images use and busybox does not implement: it answers 1
   unconditionally, which reads as a container that never comes up.

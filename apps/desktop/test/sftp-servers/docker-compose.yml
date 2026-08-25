@@ -11,6 +11,15 @@
 # stacks sharing a range made them mutually exclusive on one machine. The check
 # runner exports every `SFTP_FIXTURE_*_PORT` before bring-up (`ApplySftpPortEnv`).
 #
+# ❗ Every port publishes to 127.0.0.1 via the `${SFTP_BIND_ADDR:-127.0.0.1}`
+# prefix. ❌ Never a bare `port:22` mapping: Docker then binds all interfaces, and
+# twelve sshd servers whose credentials this repo documents in public (`ada` /
+# `openthedoor`, `KEY_PASSPHRASE: letmein`) land on the LAN and the tailnet of
+# whoever runs the suite. These containers routinely outlive the run that started
+# them. `TestSftpFixturePortsBindToLoopback` fails the run if a mapping loses it.
+# Set `SFTP_BIND_ADDR=0.0.0.0` to reach the fixtures from a NAT'd VM or a second
+# machine, which hit the host by gateway IP and can't see loopback.
+#
 # ❗ The two key-auth services bind-mount `${CMDR_SFTP_KEYS_DIR:-/tmp/cmdr-sftp-keys}`,
 # a MACHINE-WIDE path like the lease dir, ❌ never one relative to this file.
 # Compose resolves a relative bind source against this file's own directory, so a
@@ -36,7 +45,7 @@ services:
   # quirk.
   sftp-fixture-openssh:
     <<: *fixture
-    ports: ['${SFTP_FIXTURE_OPENSSH_PORT:-12480}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_OPENSSH_PORT:-12480}:22']
 
   # Key-only: `PasswordAuthentication no`, so the ladder has to reach its second
   # rung. The private half lands in the shared `keys` volume at start.
@@ -45,7 +54,7 @@ services:
     environment:
       AUTH: key
     volumes: ['${CMDR_SFTP_KEYS_DIR:-/tmp/cmdr-sftp-keys}/keyonly:/keys']
-    ports: ['${SFTP_FIXTURE_KEYONLY_PORT:-12481}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_KEYONLY_PORT:-12481}:22']
 
   # A key file with a passphrase on it: the rung that reconnects out of the secret
   # store, one try at a time, exactly like the password rung does.
@@ -55,7 +64,7 @@ services:
       AUTH: passphrase
       KEY_PASSPHRASE: letmein
     volumes: ['${CMDR_SFTP_KEYS_DIR:-/tmp/cmdr-sftp-keys}/passphrase:/keys']
-    ports: ['${SFTP_FIXTURE_PASSPHRASE_PORT:-12482}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_PASSPHRASE_PORT:-12482}:22']
 
   # `PasswordAuthentication no` + `KbdInteractiveAuthentication yes`: the
   # hardened-without-2FA shape, where PAM asks one hidden question.
@@ -63,7 +72,7 @@ services:
     <<: *fixture
     environment:
       AUTH: keyboard-interactive
-    ports: ['${SFTP_FIXTURE_KBDINT_PORT:-12483}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_KBDINT_PORT:-12483}:22']
 
   # Two host key types on one server, which is a perfectly healthy thing to be.
   # ❗ The cell that matters here asserts this does NOT read as a changed key:
@@ -72,7 +81,7 @@ services:
     <<: *fixture
     environment:
       HOST_KEYS: ed25519,rsa
-    ports: ['${SFTP_FIXTURE_TWOKEYS_PORT:-12484}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_TWOKEYS_PORT:-12484}:22']
 
   # A DIFFERENT identity from `sftp-fixture-openssh`, deliberately. A cell seeds
   # the trust store with this server's real fingerprint against the stock
@@ -80,7 +89,7 @@ services:
   # rather than a first-seen one.
   sftp-fixture-changedkey:
     <<: *fixture
-    ports: ['${SFTP_FIXTURE_CHANGEDKEY_PORT:-12485}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_CHANGEDKEY_PORT:-12485}:22']
 
   # No `posix-rename@openssh.com` and no `copy-data`: proprietary NAS firmware is
   # full of servers like this, and every extension needs an honest fallback.
@@ -93,7 +102,7 @@ services:
     <<: *fixture
     environment:
       QUIRK_DROP_EXTENSIONS: posix-rename@openssh.com,copy-data
-    ports: ['${SFTP_FIXTURE_NOPOSIXRENAME_PORT:-12486}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_NOPOSIXRENAME_PORT:-12486}:22']
 
   # Truncates every SSH_FXP_DATA to 4 KiB, which SFTP explicitly allows. A reader
   # that advances its offset by the REQUESTED length rather than the returned one
@@ -103,7 +112,7 @@ services:
     <<: *fixture
     environment:
       QUIRK_SHORT_READ_BYTES: '4096'
-    ports: ['${SFTP_FIXTURE_SHORTREADS_PORT:-12487}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_SHORTREADS_PORT:-12487}:22']
 
   # A server far stingier than OpenSSH's defaults, for the paths that have to
   # respect a negotiated limit instead of assuming 255 KiB.
@@ -111,7 +120,7 @@ services:
     <<: *fixture
     environment:
       QUIRK_LIMITS: max-packet:16384,max-read:8192,max-write:8192,max-handles:16
-    ports: ['${SFTP_FIXTURE_SMALLLIMITS_PORT:-12488}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_SMALLLIMITS_PORT:-12488}:22']
 
   # 5 000 entries in one directory and a 40-level nest: a listing that is many
   # round trips, and a depth where a per-level `exists()` walk is visibly the
@@ -120,7 +129,7 @@ services:
     <<: *fixture
     environment:
       SEED: big
-    ports: ['${SFTP_FIXTURE_BIGDIR_PORT:-12489}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_BIGDIR_PORT:-12489}:22']
 
   # Names that aren't valid UTF-8, which SFTP v3 permits and SMB never could.
   # `openssh-sftp-client` fails the WHOLE readdir on one, loudly, which is the
@@ -129,7 +138,7 @@ services:
     <<: *fixture
     environment:
       SEED: oddnames
-    ports: ['${SFTP_FIXTURE_ODDNAMES_PORT:-12490}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_ODDNAMES_PORT:-12490}:22']
 
   # The bench server, and the only one nothing in CI talks to.
   #
@@ -147,4 +156,4 @@ services:
     environment:
       LARGE_MB: '${SFTP_FIXTURE_BENCH_LARGE_MB:-128}'
     cap_add: ['NET_ADMIN']
-    ports: ['${SFTP_FIXTURE_BENCH_PORT:-12491}:22']
+    ports: ['${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_BENCH_PORT:-12491}:22']

@@ -67,6 +67,17 @@ docker exec sftp-fixture-sftp-fixture-bench-1 tc qdisc replace dev eth0 root net
 
 The measurements, the method, and what they set: `crates/cmdr-sftp/DETAILS.md` § "The read window".
 
+## Where the ports bind
+
+Every mapping carries a `${SFTP_BIND_ADDR:-127.0.0.1}` prefix, so the stack answers on loopback and nowhere else.
+Docker's default is `0.0.0.0`, which would put twelve sshd servers on the LAN and the tailnet of whoever runs the suite
+— and the credentials above are in a public repo, so anyone who can reach the port can sign in. The lease model makes
+these containers outlive the run that started them, which is what turns a few seconds of exposure into hours of it.
+
+Set `SFTP_BIND_ADDR=0.0.0.0` to reach the fixtures from a NAT'd VM or a second machine, which hit the host by gateway IP
+and can't see loopback. Nothing in the check runner sets the variable; `TestSftpFixturePortsBindToLoopback` fails the
+run if a `ports:` entry loses the prefix.
+
 ## One image, env-driven
 
 `image/` builds all eleven. What differs is environment, so a quirk is a compose line rather than a second Dockerfile to
@@ -123,9 +134,11 @@ reads one server's real fingerprint and offers it against another's address.
 
 ## Adding a server
 
-1. Add the service here, prefixed `sftp-fixture-`, on the next free port. ❗ The prefix is load-bearing:
-   `desktop-fixture-lane-coverage` identifies an SFTP cell by an `#[ignore]` reason naming `sftp-servers/start.sh` or
-   `sftp-fixture`.
+1. Add the service here, prefixed `sftp-fixture-`, on the next free port, publishing it as
+   `'${SFTP_BIND_ADDR:-127.0.0.1}:${SFTP_FIXTURE_<NAME>_PORT:-<port>}:22'`. ❗ Two load-bearing parts: the service
+   prefix, because `desktop-fixture-lane-coverage` identifies an SFTP cell by an `#[ignore]` reason naming
+   `sftp-servers/start.sh` or `sftp-fixture`; and the bind prefix, without which Docker publishes on every interface
+   (see § Where the ports bind).
 2. Add it to `start.sh`'s `core` list **and** to `modeServices` in `scripts/check/stacklease/registry.go`. Those two
    lists have to agree, or a cell ends up with no server.
 3. Add its port to `smbServiceHostPorts`' sibling, `sftpServiceHostPorts` in `scripts/check/checks/sftp_ports.go`, and

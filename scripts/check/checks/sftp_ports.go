@@ -23,6 +23,14 @@ var sftpServiceHostPorts = map[string]int{
 	"SHORTREADS": 12487, "SMALLLIMITS": 12488, "BIGDIR": 12489, "ODDNAMES": 12490,
 }
 
+// sftpBindAddrEnv names the interface every fixture port publishes on. The
+// compose file defaults it to 127.0.0.1 so the stack is invisible to the LAN and
+// the tailnet; nothing here sets it, and setting it to 0.0.0.0 is the deliberate
+// escape hatch for a NAT'd VM or a second machine, which reach the host by
+// gateway IP and can't see loopback. `TestSftpFixturePortsBindToLoopback` fails
+// the run if a `ports:` entry loses the prefix.
+const sftpBindAddrEnv = "SFTP_BIND_ADDR"
+
 // ApplySftpPortEnv pins the SFTP stack to its dedicated host-port range in the
 // current process environment, so every child (compose via the lease helper,
 // cargo nextest) inherits it. Call once before bringing the stack up. Idempotent.

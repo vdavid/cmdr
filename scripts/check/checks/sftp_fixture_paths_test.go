@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"cmdr/scripts/check/stacklease"
@@ -191,4 +192,25 @@ func sameStringSet(a, b map[string]bool) bool {
 		}
 	}
 	return true
+}
+
+// sftpComposePortsRE captures one `ports: ['…']` value.
+var sftpComposePortsRE = regexp.MustCompile(`ports:\s*\['([^']*)'\]`)
+
+func TestSftpFixturePortsBindToLoopback(t *testing.T) {
+	root := repoRootForTest(t)
+	compose := readRepoFile(t, root, sftpComposeRel)
+
+	const wantPrefix = "${" + sftpBindAddrEnv + ":-127.0.0.1}:"
+
+	matches := sftpComposePortsRE.FindAllStringSubmatch(compose, -1)
+	if len(matches) != len(sftpServiceHostPorts)+1 {
+		t.Fatalf("%s declares %d `ports:` entries; %d services are in sftpServiceHostPorts plus the bench server. A service publishing no port, or a second publish on one, means this guard is reading the wrong set", sftpComposeRel, len(matches), len(sftpServiceHostPorts))
+	}
+
+	for _, m := range matches {
+		if !strings.HasPrefix(m[1], wantPrefix) {
+			t.Errorf("%s publishes `%s` with no %q prefix, so Docker binds it on 0.0.0.0 and puts an sshd whose credentials this repo documents in public on the LAN and the tailnet of whoever runs the suite", sftpComposeRel, m[1], wantPrefix)
+		}
+	}
 }
