@@ -147,6 +147,12 @@ So `ForcedWake::only_folder` carries the staged folder, and `WakeLoop::isolate_i
   stages and names the folder from one binding; a second spelling could name a folder nobody staged, and the wake would
   find an empty inbox.
 - `folder: None` still wakes on everything waiting and narrows nothing.
+- ⚠️ **A spec that READS the thread waits for the wake to FINISH, ❌ never merely for its row to appear.** The thread
+  exists from `prepare`, but its digest is the turn's user-role message and is written only when the first reply lands
+  (`agent/chat/runtime/turn.rs`), so a thread opened in between loads empty and fills in from the live stream, which
+  carries the answer and no digest (`src/lib/ask-cmdr/DETAILS.md` § "What a wake's thread opens with"). A narrowed
+  forced wake answers in ~200 ms, so that gap is the ordinary case rather than a rare race: `ask-cmdr-wake.spec.ts`
+  arms `watchForWake` before every force and waits it out.
 - `stage_agent_rollup` (same file, same feature) is the other half: it puts a folder in the inbox WITHOUT waking, so
   `ask-cmdr-wake.spec.ts` stands that noise up on purpose rather than waiting for CI to supply it on some unlucky run.
   ❌ Don't drop those decoys as redundant: without them the narrowing is untested and the premise silently returns to

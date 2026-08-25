@@ -191,11 +191,18 @@ test.describe('Ask Cmdr wakes on its own', () => {
     await openRail(page)
     await ensureConsented(page)
 
+    await watchForWake(page)
     await stageInboxNoise(page)
-
     await forceAgentWake(page, `/Users/e2e/${folderName}`)
 
-    // The wake opens its thread before the turn runs, so the row shows up first.
+    // ⚠️ Wait for the whole wake, not merely for its thread ROW. The row appears before the
+    // turn runs, but the digest is that turn's user-role message and is written only once the
+    // first reply lands (`agent/chat/runtime/turn.rs`). A thread opened before then loads
+    // empty and fills in from the live stream, which carries the answer and NOT the digest
+    // (`src/lib/ask-cmdr/DETAILS.md` § "What a wake's thread opens with"), so every assertion
+    // below would be reading a half-built thread.
+    await awaitWakeFinished(page)
+
     await expect
       .poll(
         async () => {
