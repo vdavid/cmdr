@@ -339,6 +339,10 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
+  "onboarding.stepBeta.crashReportsNote": "Az összeomlás-jelentések is be vannak kapcsolva: ha a Cmdr összeomlik, elküldi az app verzióját, a macOS-verziódat és azt a pontot a kódban, ahol megállt. A fájljaidat soha. Mindkettőt kikapcsolhatod a Beállításokban, amikor csak akarod.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
   "onboarding.stepBeta.emailTitle": "Maradjunk kapcsolatban (választható)",
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"

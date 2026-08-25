@@ -5,6 +5,22 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Crash reports are now on by default. If Cmdr goes down, it sends the app version, your macOS version, and where the
+  code stopped, never your files or anything about them. Crashes are invisible to me otherwise, so this one helps a lot.
+  To turn it off, head to Settings > Updates & privacy. Sending your logs stays off unless you ask for it.
+- Clicking "Later" on an update no longer ends the conversation: Cmdr keeps looking, picks up anything newer than what
+  it already downloaded, and asks again about once a day until you restart
+
+### Fixed
+
+- Tell you to move Cmdr to your Applications folder when it's running from a spot it can't update itself from, like your
+  Downloads folder or a mounted disk image, instead of quietly getting stuck on an old version
+- Stop downloading a 63 MB update once an hour on an install that can never apply it
+
 ## [0.40.0] - 2026-08-24
 
 The built-in agent now watches the file system and can suggest actions on its own, like "Hey, how about we move

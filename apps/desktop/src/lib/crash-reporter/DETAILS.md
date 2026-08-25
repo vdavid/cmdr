@@ -18,6 +18,26 @@ auto-send branch reads `updates.crashReports`, so running earlier would read the
 Send failures are logged and swallowed at every step. A crash report is best-effort; a failed upload must never produce
 a second error surface on top of the crash the user already lived through.
 
+## The three report consents
+
+`updates.crashReports` defaults to ON. `updates.errorReports` and `updates.attachEmailToReports` default to OFF, and
+that split is a privacy position rather than a preference: a crash report is narrow and stack-shaped (app version, macOS
+version, where the code stopped) and everything in it passes `sanitize_panic_message`, while the error report uploads an
+unbounded log bundle and the email attaches a person's identity. `settings-registry.test.ts` pins all three, so the next
+"let's be consistent" pass has to argue with a test.
+
+Where each population hears about the ON default:
+
+- **A new install**: the open-beta onboarding step, in the caption under the usage-stats disclosure
+  (`$lib/onboarding/StepBeta.svelte`). That's the only place a first launch is told anything ships by default, so the
+  caption is load-bearing rather than decorative; `$lib/onboarding/DETAILS.md` § Step 3.
+- **An existing install**: the CHANGELOG entry for the release that flips it. The settings store persists only what
+  someone explicitly set, so an install that never touched the switch carries no key and picks the new default up on
+  update. There is deliberately no in-app notice for that: one was built and dropped as too heavy for a beta population
+  the changelog already reaches.
+
+Someone who explicitly turned crash reports off keeps them off, since their stored `false` outranks the default.
+
 ### Why the flow isn't in this directory
 
 The layout owns it because it's launch sequencing (ordered after settings load, alongside the other post-load checks),

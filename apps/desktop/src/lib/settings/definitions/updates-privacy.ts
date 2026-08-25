@@ -77,7 +77,11 @@ export const updatesPrivacySettings: SettingDefinitionSource[] = [
     descriptionKey: 'settings.updates.crashReports.description',
     keywords: ['crash', 'report', 'privacy', 'telemetry', 'bug', 'error'],
     type: 'boolean',
-    default: false,
+    // Default ON, unlike `updates.errorReports` right below. A crash report is narrow and
+    // stack-shaped (app version, macOS version, where it stopped) and goes through
+    // `sanitize_panic_message`; the error report is an unbounded log bundle. That difference is
+    // the whole reason only one of the two defaults on. ❌ Don't fold them into one default.
+    default: true,
     component: 'switch',
   },
   {

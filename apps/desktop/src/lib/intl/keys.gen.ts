@@ -1955,6 +1955,7 @@ export type MessageKey =
   | 'onboarding.stepBeta.analyticsCaption'
   | 'onboarding.stepBeta.analyticsLede'
   | 'onboarding.stepBeta.analyticsTitle'
+  | 'onboarding.stepBeta.crashReportsNote'
   | 'onboarding.stepBeta.emailNote'
   | 'onboarding.stepBeta.emailPlaceholder'
   | 'onboarding.stepBeta.emailTitle'

@@ -314,6 +314,11 @@
         </header>
     </section>
 
+    <!-- Crash reports default on too, and a default that sends something has to be disclosed
+         where the analytics one is, not only in Settings. No toggle: the switch lives in
+         Settings > Updates & privacy, and this step already asks enough of a first launch. -->
+    <p class="lede crash-reports-note">{tString('onboarding.stepBeta.crashReportsNote')}</p>
+
     <section class="email-block" aria-labelledby="beta-email-title">
         <h3 id="beta-email-title" class="toggle-title">{tString('onboarding.stepBeta.emailTitle')}</h3>
         <TextInput
@@ -371,6 +376,11 @@
     }
 
     .analytics-lede {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .crash-reports-note {
+        margin-top: var(--spacing-lg);
         margin-bottom: var(--spacing-lg);
     }
 

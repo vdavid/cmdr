@@ -18,6 +18,10 @@ The flow lives in `routes/(main)/+layout.svelte` (`checkForPendingCrashReport`),
 
 ## Must-knows
 
+- **Crash reports default ON.** ❌ That default is `updates.crashReports` alone: `updates.errorReports` (an unbounded
+  log bundle) and `updates.attachEmailToReports` (a person's identity) stay opt-in, pinned by
+  `settings-registry.test.ts`. Why the three differ, and where each population hears about the default: `DETAILS.md` §
+  The three report consents.
 - **A crash loop overrides the opt-in.** Auto-send needs `updates.crashReports` AND `!report.possibleCrashLoop`;
   otherwise the dialog shows. A crashing app must never silently fire a report per launch. Don't simplify that condition
   to the setting alone.

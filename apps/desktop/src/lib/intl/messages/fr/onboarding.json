@@ -339,6 +339,10 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
+  "onboarding.stepBeta.crashReportsNote": "Les rapports de plantage sont eux aussi activés : si Cmdr s''arrête brutalement, il envoie la version de l''app, votre version de macOS et l''endroit où le code s''est arrêté. Jamais vos fichiers. Vous pouvez désactiver les deux dans les réglages quand vous voulez.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
   "onboarding.stepBeta.emailTitle": "Restons en contact (facultatif)",
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"

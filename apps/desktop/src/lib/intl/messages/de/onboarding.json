@@ -339,6 +339,10 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
+  "onboarding.stepBeta.crashReportsNote": "Absturzberichte sind ebenfalls aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine macOS-Version und die Stelle im Code, an der es aufgehört hat. Nie deine Dateien. Beides kannst du jederzeit in den Einstellungen ausschalten.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
   "onboarding.stepBeta.emailTitle": "In Kontakt bleiben (optional)",
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"

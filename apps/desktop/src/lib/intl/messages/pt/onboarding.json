@@ -339,6 +339,10 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
+  "onboarding.stepBeta.crashReportsNote": "Os relatórios de falha também estão ligados: se o Cmdr cair, ele envia a versão do app, a sua versão do macOS e o ponto do código onde parou. Nunca os seus arquivos. Você pode desligar os dois nos Ajustes quando quiser.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
   "onboarding.stepBeta.emailTitle": "Mantenha contato (opcional)",
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"

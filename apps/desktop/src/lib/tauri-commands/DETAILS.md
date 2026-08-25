@@ -89,8 +89,8 @@ commands, and notable non-obvious placements.
   `addRecentPath`, `removeRecentPath`).
 - **`tags.ts`**: macOS Finder color tags: `toggleTags` (toggle a color across paths) and `enrichTags` (patch fresh tag
   data into a cached listing).
-- **`updates.ts`**: macOS custom updater: `checkForUpdate` / `downloadUpdate` / `installUpdate` (see
-  `$lib/updates/updater.svelte.ts` for the full flow and the non-macOS Tauri-plugin fallback).
+- **`updates.ts`**: macOS custom updater: `checkForUpdate` / `updateWriteBlocker` / `downloadUpdate` / `installUpdate`
+  (see `$lib/updates/updater.svelte.ts` for the full flow and the non-macOS Tauri-plugin fallback).
 - **`debug.ts`**: dev/benchmark IPC: `benchmarkLog` (join a frontend timing into the Rust benchmark timeline).
 
 ## Where to put new commands

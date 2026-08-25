@@ -28,9 +28,10 @@ finishes onboarding.
   auto-check + model combobox. Providers with editable OpenAI-compatible endpoints, including Custom, still require a
   stored API key before the endpoint check runs.
 - **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub,
-  Discord, book-a-call) + usage-stats disclosure + `analytics.enabled` opt-out switch + optional `analytics.email`
-  contact field + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) + "One more optional setup
-  step" (continue), both gated on the terms. Reuses the Settings `UpdatesSection` email/`betaSignup` wiring.
+  Discord, book-a-call) + usage-stats disclosure + `analytics.enabled` opt-out switch + the crash-report disclosure +
+  optional `analytics.email` contact field + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) +
+  "One more optional setup step" (continue), both gated on the terms. Reuses the Settings `UpdatesSection`
+  email/`betaSignup` wiring.
 - **`StepOptional.svelte`**: Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry
   settings.
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
@@ -239,6 +240,13 @@ required terms acceptance. Four blocks:
 3. **Optional contact email**: an email field bound to `analytics.email`. It persists locally on every keystroke and, on
    commit (blur / Enter) of a valid address, calls the typed `betaSignup` wrapper (which POSTs only the email, never an
    install id) and renders a gentle inline result.
+
+Between 2 and 3 sits the **crash-report disclosure**, a caption with no switch of its own. `updates.crashReports`
+defaults ON, and a default that sends something has to be disclosed where the analytics one is rather than only in
+Settings. It carries no toggle deliberately: the switch lives in Settings > Updates & privacy, and this step already
+asks enough of a first launch. It IS, though, the only place a first launch hears about that default at all (an existing
+install gets the CHANGELOG instead, and there's no in-app notice), so ❌ don't drop the caption without giving new users
+that disclosure somewhere else.
 
 The analytics and email blocks reuse `settings/sections/UpdatesSection.svelte`'s exact wiring (the same `betaSignup`
 call, the same email-pattern + `lastSubmittedEmail` resend guard, the same success/failure copy), so the onboarding page

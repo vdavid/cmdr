@@ -339,6 +339,10 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
+  "onboarding.stepBeta.crashReportsNote": "Kraschrapporter är också på: om Cmdr går ner skickar appen appversionen, din macOS-version och stället i koden där det stannade. Aldrig dina filer. Du kan stänga av båda i inställningarna när du vill.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
   "onboarding.stepBeta.emailTitle": "Håll kontakten (valfritt)",
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"

@@ -30,6 +30,24 @@ describe('settingsRegistry', () => {
   })
 })
 
+/**
+ * The three report-related consents are deliberately NOT one decision, and what separates them is
+ * a privacy promise rather than a preference. A crash report is narrow and stack-shaped (app
+ * version, macOS version, where the code stopped) and goes through `sanitize_panic_message`, so it
+ * defaults ON. The log bundle is unbounded free text and an email is a person's identity, so both
+ * stay OFF until someone asks for them. Folding the three together is the mistake this guards.
+ */
+describe('report consent defaults', () => {
+  it('sends crash reports by default', () => {
+    expect(getDefaultValue('updates.crashReports')).toBe(true)
+  })
+
+  it('keeps the log bundle and the attached email off', () => {
+    expect(getDefaultValue('updates.errorReports')).toBe(false)
+    expect(getDefaultValue('updates.attachEmailToReports')).toBe(false)
+  })
+})
+
 describe('getSettingDefinition', () => {
   it('should return definition for existing setting', () => {
     const def = getSettingDefinition('appearance.uiDensity')

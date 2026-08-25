@@ -339,6 +339,10 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
+  "onboarding.stepBeta.crashReportsNote": "Los informes de fallo también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo. Nunca tus archivos. Puedes desactivar ambas cosas en Ajustes cuando quieras.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
   "onboarding.stepBeta.emailTitle": "Sigamos en contacto (opcional)",
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"

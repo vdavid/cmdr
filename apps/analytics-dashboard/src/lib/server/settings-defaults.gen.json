@@ -1129,7 +1129,7 @@
     "theme.mode": "system",
     "updates.attachEmailToReports": false,
     "updates.autoCheck": true,
-    "updates.crashReports": false,
+    "updates.crashReports": true,
     "updates.errorReports": false,
     "viewer.wordWrap": false,
     "whatsNew.showOnUpdate": true

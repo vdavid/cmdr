@@ -341,6 +341,10 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
+  "onboarding.stepBeta.crashReportsNote": "Crashrapporten staan ook aan: als Cmdr onderuitgaat, stuurt het de appversie, je macOS-versie en de plek in de code waar het stopte. Nooit je bestanden. Je kunt allebei uitzetten in de instellingen wanneer je wilt.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
   "onboarding.stepBeta.emailTitle": "Blijf in contact (optioneel)",
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"

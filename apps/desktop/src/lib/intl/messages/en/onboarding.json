@@ -531,6 +531,12 @@
     "screenshot": "onboarding-beta.png"
   },
 
+  "onboarding.stepBeta.crashReportsNote": "Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped. Never your files. You can turn both of these off in Settings whenever you like.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "description": "Caption on the open-beta onboarding step, right after the usage-stats disclosure, telling a new user that crash reports are also on by default and what one carries. Transparent and calm. \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Settings\" is the app's settings screen.",
+    "screenshot": "onboarding-beta.png"
+  },
+
   "onboarding.stepBeta.emailTitle": "Stay in touch (optional)",
   "@onboarding.stepBeta.emailTitle": {
     "description": "Heading above the optional email field, and also the field's accessible label. Makes clear giving an email is optional.",

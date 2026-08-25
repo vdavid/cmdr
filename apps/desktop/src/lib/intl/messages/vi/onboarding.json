@@ -339,6 +339,10 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
+  "onboarding.stepBeta.crashReportsNote": "Báo cáo sự cố cũng đang bật: nếu Cmdr sập, ứng dụng gửi phiên bản ứng dụng, phiên bản macOS của bạn và chỗ mã dừng lại. Không bao giờ gồm tệp của bạn. Bạn có thể tắt cả hai trong Cài đặt bất cứ lúc nào.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
   "onboarding.stepBeta.emailTitle": "Giữ liên lạc (tùy chọn)",
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"
