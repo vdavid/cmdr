@@ -445,7 +445,8 @@
   },
   "askCmdr.forget.confirm": "Forget everything",
   "@askCmdr.forget.confirm": {
-    "description": "Destructive confirm button in the \"Forget everything\" dialog, and the label of the button in Settings > Ask Cmdr that opens it. Starts with a verb, sentence case."
+    "description": "Destructive confirm button in the \"Forget everything\" dialog, and the label of the button in Settings > Ask Cmdr that opens it. Starts with a verb, sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.forget.cancel": "Cancel",
   "@askCmdr.forget.cancel": {
@@ -952,7 +953,8 @@
   },
   "askCmdr.wake.needsApiKey": "Ask Cmdr is watching, but it needs an API key to think. Open settings.",
   "@askCmdr.wake.needsApiKey": {
-    "description": "Tooltip and spoken label on the status-corner indicator shown when the user let Ask Cmdr watch their folders but no AI provider is configured, so nothing can be sent anywhere. Pressing it opens Cmdr's AI settings. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case."
+    "description": "Tooltip and spoken label on the status-corner indicator shown when the user let Ask Cmdr watch their folders but no AI provider is configured, so nothing can be sent anywhere. Pressing it opens Cmdr's AI settings. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case.",
+    "screenshot": "about-commercial.png"
   },
   "askCmdr.wakeDigest.summary": "What changed in {foldersText} {folders, plural, one {folder} other {folders}}",
   "@askCmdr.wakeDigest.summary": {

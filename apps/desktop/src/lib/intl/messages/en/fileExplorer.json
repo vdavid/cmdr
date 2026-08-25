@@ -75,7 +75,8 @@
       "freeText": "the space still free, already formatted, like \"91.02 GB\"",
       "totalText": "the drive's total size, already formatted, like \"926.35 GB\"",
       "percentText": "the free space as a whole number of percent, already formatted, like \"10\""
-    }
+    },
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.diskSpace.freeShort": "{freeText} free of {totalText}",
@@ -84,7 +85,8 @@
     "placeholders": {
       "freeText": "the space still free, already formatted, like \"91.02 GB\"",
       "totalText": "the drive's total size, already formatted, like \"926.35 GB\""
-    }
+    },
+    "screenshot": "pane-volume-chooser.png"
   },
 
   "fileExplorer.diskSpace.lowNote": "This bar is red to indicate that the volume is low on space.",
@@ -104,7 +106,8 @@
       "hasNotes": "\"yes\" when there are sentences to append, \"no\" otherwise",
       "sizes": "the already-translated free-space figure (fileExplorer.diskSpace.free)",
       "notes": "one or two already-translated sentences, space-joined: the low-space note, the phone-storage note, or both"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.pane.resizePanesAriaLabel": "Resize panes",
   "@fileExplorer.pane.resizePanesAriaLabel": {
@@ -418,17 +421,20 @@
     "placeholders": {
       "share": "the name of the network share, for example archive or Photos"
     },
-    "screenshot": "about-commercial.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
   "fileExplorer.network.osMountFallback.retry": "Try connecting directly",
   "@fileExplorer.network.osMountFallback.retry": {
     "description": "Button inside that notification. Pressing it retries Cmdr''s own faster connection to the share. Matches the \"connectDirectly\" wording used in the volume menu; keep the two consistent in your language.",
-    "screenshot": "about-commercial.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
   "fileExplorer.network.osMountFallback.closeTooltip": "Dismiss",
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "description": "Hover tooltip on the X that closes that notification. Named separately from the retry button so it''s clear which control does what.",
-    "screenshot": "about-commercial.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
   "fileExplorer.network.connectDialog.title": "Connect to server",
   "@fileExplorer.network.connectDialog.title": {
@@ -479,8 +485,7 @@
   "fileExplorer.network.browser.fetching": "fetching...",
   "@fileExplorer.network.browser.fetching": {
     "description": "Placeholder shown in the network host list''s IP or hostname cell while that value is still being resolved. Lowercase, matching the quiet inline style.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.unknown": "(unknown)",
   "@fileExplorer.network.browser.unknown": {
@@ -490,8 +495,7 @@
   "fileExplorer.network.browser.searching": "Searching...",
   "@fileExplorer.network.browser.searching": {
     "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.connectToServerRow": "Connect to server...",
   "@fileExplorer.network.browser.connectToServerRow": {
@@ -501,20 +505,17 @@
   "fileExplorer.network.browser.noHostsTitle": "No network hosts found",
   "@fileExplorer.network.browser.noHostsTitle": {
     "description": "Empty-state title in the network browser when no SMB hosts were discovered on the network.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.noHostsMessage": "Make sure you''re on a network with SMB-capable devices.",
   "@fileExplorer.network.browser.noHostsMessage": {
     "description": "Empty-state body in the network browser advising the user to check their network. \"SMB\" is the file-sharing protocol name; do not translate it.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.refresh": "Refresh",
   "@fileExplorer.network.browser.refresh": {
     "description": "Button in the empty network browser that re-scans the network for hosts.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.refreshAriaLabel": "Refresh network hosts",
   "@fileExplorer.network.browser.refreshAriaLabel": {
@@ -541,8 +542,7 @@
   "fileExplorer.network.browser.status.resolving": "Resolving...",
   "@fileExplorer.network.browser.status.resolving": {
     "description": "Status cell in the network host list while the host''s name and IP are still being resolved.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network...",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
@@ -553,8 +553,7 @@
   "fileExplorer.network.browser.status.notChecked": "Not checked",
   "@fileExplorer.network.browser.status.notChecked": {
     "description": "Status cell for a host that has not been contacted yet (the user has not tried connecting).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.loggedIn": "Logged in",
   "@fileExplorer.network.browser.status.loggedIn": {
@@ -571,7 +570,8 @@
   "fileExplorer.network.browser.status.loginNeeded": "Login needed",
   "@fileExplorer.network.browser.status.loginNeeded": {
     "description": "Status cell when the host requires login and no credentials are stored.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.timeout": "Timeout",
   "@fileExplorer.network.browser.status.timeout": {
@@ -606,13 +606,13 @@
   "fileExplorer.network.browser.status.connected": "Connected",
   "@fileExplorer.network.browser.status.connected": {
     "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest).",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
   "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Waiting for network name resolution",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -623,8 +623,7 @@
   "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Double-click to connect and view shares",
   "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
     "description": "Hover tooltip on a not-yet-contacted host row inviting the user to double-click to connect.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.credsStored": "Credentials stored. Double-click to connect.",
   "@fileExplorer.network.browser.tooltip.credsStored": {
@@ -641,7 +640,8 @@
   "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
     "description": "Hover tooltip on a host row that needs login and has no stored credentials.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
   "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
   "@fileExplorer.network.browser.tooltip.authFailed": {
@@ -1401,12 +1401,12 @@
   "fileExplorer.dirSize.lowerBoundLine": "At least this much: some subfolders weren''t scanned yet, so the real total may be larger.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "description": "Line in a folder''s size tooltip when the shown size is a lower bound (displayed with a ≥ prefix) because part of the subtree hasn''t been scanned. Explains the number is a floor: the real total is at least this much and may be larger (not necessarily larger — the unscanned parts could be empty).",
-    "screenshot": "operation-failure.png"
+    "screenshot": "operation-chip.png"
   },
   "fileExplorer.dirSize.unknownTooltip": "Size unknown: this folder hasn''t been scanned yet.",
   "@fileExplorer.dirSize.unknownTooltip": {
     "description": "Hover tooltip on a folder whose recursive size is unknown (shown as an em dash —) because nothing in its subtree has been scanned. Distinct from a genuinely-empty folder, which shows 0 bytes.",
-    "screenshot": "operation-failure.png"
+    "screenshot": "operation-chip.png"
   },
   "fileExplorer.dirSize.staleLine": "These sizes are from an earlier scan and may be out of date.",
   "@fileExplorer.dirSize.staleLine": {

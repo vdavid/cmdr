@@ -1,7 +1,8 @@
 {
   "licensing.windowTitle.personalUse": "Cmdr – Personal use only",
   "@licensing.windowTitle.personalUse": {
-    "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. The main window's TITLE BAR text while Cmdr runs under the free personal licence, which is what most users see. Rust sets it before the frontend loads. \"Cmdr\" is the product name and must stay verbatim; the separator is an en dash (–, U+2013) with a space on each side. \"Personal use\" is the licence tier's name and matches the wording on the website and in the licence dialogs, so keep the two consistent. A licensed commercial user sees just \"Cmdr\" instead, with no key of its own. Window titles get truncated in the middle by the system, so shorter is better."
+    "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. The main window's TITLE BAR text while Cmdr runs under the free personal licence, which is what most users see. Rust sets it before the frontend loads. \"Cmdr\" is the product name and must stay verbatim; the separator is an en dash (–, U+2013) with a space on each side. \"Personal use\" is the licence tier's name and matches the wording on the website and in the licence dialogs, so keep the two consistent. A licensed commercial user sees just \"Cmdr\" instead, with no key of its own. Window titles get truncated in the middle by the system, so shorter is better.",
+    "screenshot": "main-window.png"
   },
 
   "licensing.acknowledgements.srTitle": "Acknowledgements",
