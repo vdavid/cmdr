@@ -193,7 +193,10 @@ below for the section-aware patterns to follow.
 - **`CommandExists(name)`** — checks `PATH` before invoking.
 - **`EnsureGoTool(name, installPath)`** — checks `PATH` first, then `go install`s; returns the full binary path. Used
   for staticcheck, nilaway, etc. `installPath` MUST pin a specific version (`@vX.Y.Z` or a pseudo-version), never
-  `@latest`. Same rule applies to `cargo install` calls inside checks: pin both `--version` and `--locked`.
+  `@latest`. Same rule applies to `cargo install` calls inside checks: pin both `--version` and `--locked`. **Gotcha**:
+  PATH wins, so on a machine that already has the tool the pin binds nothing and a green local run may have exercised a
+  completely different version than CI will. After bumping a pin, `go install <the pinned path>` yourself and confirm
+  with `<tool> -version` before believing the check.
 - **`runPrettierCheck(ctx, ...)`** / **`runESLintCheck(ctx, ...)`** — auto-fix locally, check-only under `--ci`.
   Centralizes the dual-mode behavior so individual checks don't reinvent it.
 - **`indentOutput(s)`** — indents captured stdout/stderr for error messages.
