@@ -25,6 +25,34 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   only prints the outermost layer, hiding the real cause (DNS, TCP connect timeout, TLS). Walking the source chain
   surfaces the underlying class without pulling in `anyhow`.
 
+## A bundle that can't be written
+
+Two macOS arrangements make the running `.app` unwritable, and the app can't fix either from inside:
+
+- **App Translocation.** Opening Cmdr straight from where it was downloaded makes Gatekeeper run it from a randomized
+  read-only mount under `/private/var/folders/…/AppTranslocation/`, rather than from its real path.
+- **A mounted disk image.** The `.dmg` is still open and the app was launched from inside it.
+
+Both fail writes with `EROFS`, which is `io::ErrorKind::ReadOnlyFilesystem`, NOT `PermissionDenied`. That matters twice
+over: the escalate-to-admin arm never fired for them (so the install hard-failed with nothing said), and escalating
+would not have helped anyway, since a read-only mount refuses root too. The signature is an install that keeps sending
+update checks and never changes version, which is exactly the straggler shape the update dashboard couldn't explain.
+
+`bundle_location::classify` answers with a `BundleWriteBlocker`, using two probes:
+
+- `SecTranslocateIsTranslocatedURL` (Security.framework, macOS 10.12+) for the translocation case. The alternative,
+  testing the path for `/AppTranslocation/`, is a private layout Apple never promised and whose break we'd never notice.
+- `statfs`'s `MNT_RDONLY` as the catch-all, which covers a disk image, a read-only share, and translocation itself.
+
+Translocation is reported in preference to the read-only volume it implies, so the log names the outer cause. Every
+failure path answers "no blocker": a false negative costs a doomed download, while a false positive would stop updates
+that would have worked.
+
+Two callers gate on it. The frontend asks (`update_write_blocker`) once a check finds an update and before the
+download, which is what stops an install pulling ~63 MB it can't apply once per poll interval forever, and raises the
+"move Cmdr to Applications" dialog instead. `installer::install` asks again before extracting, so a direct caller can't
+skip the gate; and `sync_bundle`'s `ReadOnlyFilesystem` arm answers the nested case without raising an admin prompt.
+
 ## Dependencies
 
 - `reqwest`: HTTP client for manifest + tarball download.

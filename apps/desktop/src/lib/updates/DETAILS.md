@@ -78,6 +78,33 @@ When `status` becomes `'ready'`, the updater funnels through `showUpdateToast()`
 action, and dismisses via `dismissToast('update')` for "Later". There's no local dismissed flag; the toast
 infrastructure manages dismissal.
 
+## When the bundle can't be written
+
+macOS only. Once a check finds a build worth installing, `runMacUpdateFlow` asks `update_write_blocker` whether this
+install can write into its own `.app`. Two arrangements say no: App Translocation (Cmdr opened straight from where it
+was downloaded) and a read-only volume (a `.dmg` still mounted). The classification and its rationale live next to the
+code that does it, `src-tauri/src/updater/DETAILS.md` § A bundle that can't be written.
+
+A blocker takes `finishCheckWithUnwritableBundle`, which skips the download and raises `MoveToApplicationsDialog`
+through the `updateBlockerNotice` singleton. The manifest check itself keeps running on the poll: it's what keeps the
+install counted as active on the dashboard, and it costs a few hundred bytes rather than ~63 MB.
+
+Three rules shape the nudge:
+
+- **A failed classification is not a blocker.** `readWriteBlocker()` swallows the IPC failure and answers `null`.
+  Treating a hiccup as "can't update" would stop updates that would have worked; the worst a false negative costs is one
+  doomed download.
+- **Once per session.** The answer can't change until the user moves the app, so a modal per poll interval would be its
+  own problem. `moveNudgeShown` latches; the next launch asks again.
+- **It waits out onboarding rather than stacking on it.** A fresh download opened from `~/Downloads` is exactly what
+  macOS translocates, so this population meets the nudge on their FIRST launch. `pendingMoveNudge` holds it, and
+  `notifyOnboardingComplete` / `setOnboardingShowing(false)` flush it, the same way the restart toast is re-attempted.
+
+**Cmdr does not move itself.** Doing the move would mean relocating a running app and relaunching it from the new path,
+and under translocation the thing that has to move isn't even the bundle we're running from
+(`SecTranslocateCreateOriginalPathForURL` would be needed to find it). A half-finished self-move leaves someone with no
+app at all, which is a worse outcome than a clear instruction. Revisit only with a plan for the failure modes.
+
 ## Menu-triggered "Check for updates"
 
 - **Settings > Updates**: a "Check for updates" button at the top of the section, disabled while

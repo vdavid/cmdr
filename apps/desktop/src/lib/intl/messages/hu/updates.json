@@ -19,6 +19,26 @@
   "@updates.toast.restart": {
     "sourceHash": "6b983a8"
   },
+  "updates.moveToApplicationsDialog.title": "Helyezd át a Cmdr appot a Programok mappádba",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "Kész egy új verzió, de a macOS a Cmdr appot egy ideiglenes, írásvédett másolatból futtatja. Ez akkor történik, ha egy appot közvetlenül a letöltés helyéről nyitsz meg, így a frissítéseknek nincs hova települniük.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "510a3a6"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Kész egy új verzió, de a Cmdr írásvédett helyről fut, jellemzően egy még csatolt lemezképről. Így a frissítéseknek nincs hova települniük.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "94edc89"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Lépj ki a Cmdr appból, húzd át a Programok mappádba, és onnan indítsd el. Utána már minden frissítés magától megérkezik.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Értem",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "updates.status.noUpdates": "Nincs elérhető frissítés. Jelenlegi verzió: v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"

@@ -742,6 +742,7 @@ macro_rules! ipc_command_manifest {
             cfg(target_os = "macos") {
                 typed: [
                     crate::updater::check_for_update,
+                    crate::updater::update_write_blocker,
                     crate::updater::download_update,
                     crate::updater::install_update,
                 ]

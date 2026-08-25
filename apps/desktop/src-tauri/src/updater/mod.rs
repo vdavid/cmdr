@@ -9,10 +9,12 @@
 //! - `download_update`: downloads tarball, verifies minisign signature
 //! - `install_update`: extracts and syncs into the running `.app` bundle
 
+mod bundle_location;
 mod installer;
 mod manifest;
 mod signature;
 
+pub use bundle_location::BundleWriteBlocker;
 use manifest::UpdateInfo;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -143,6 +145,33 @@ pub async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
         .map_err(|e| format!("Couldn't parse update manifest: {}", describe_error_chain(&e)))?;
 
     Ok(manifest::check_manifest(&manifest, current_version))
+}
+
+/// Reports whether the running bundle sits somewhere an update can be written into, or `None`
+/// when nothing is in the way.
+///
+/// The frontend asks after a check finds an update and before the download starts. Skipping the
+/// download is the point: an install that can't write its own bundle would otherwise pull ~63 MB
+/// and rewrite nothing, once per poll interval, for as long as the app runs. It also gives the
+/// user a reason for a failure they'd otherwise never see, since neither arrangement can be fixed
+/// from inside the app.
+///
+/// Returns `None` outside a `.app` bundle too: there's no bundle to classify, and the check gate
+/// (`skip_reason`) has already stopped that process from getting here.
+#[tauri::command]
+#[specta::specta]
+pub async fn update_write_blocker() -> Result<Option<BundleWriteBlocker>, String> {
+    let Ok(bundle) = installer::running_bundle() else {
+        return Ok(None);
+    };
+    let blocker = bundle_location::classify(&bundle);
+    if let Some(reason) = blocker {
+        log::warn!(
+            "Can't install updates into {}: {reason}. The user needs to move Cmdr to Applications.",
+            bundle.display()
+        );
+    }
+    Ok(blocker)
 }
 
 /// Downloads the update tarball and verifies its minisign signature.

@@ -19,6 +19,26 @@
   "@updates.toast.restart": {
     "sourceHash": "6b983a8"
   },
+  "updates.moveToApplicationsDialog.title": "Chuyển Cmdr vào thư mục Ứng dụng",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "Đã có phiên bản mới, nhưng macOS đang chạy Cmdr từ một bản sao tạm chỉ đọc. Điều này xảy ra khi bạn mở ứng dụng ngay tại nơi đã tải về, nên bản cập nhật không có chỗ để cài.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "510a3a6"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Đã có phiên bản mới, nhưng Cmdr đang chạy từ một nơi chỉ đọc, thường là ảnh đĩa vẫn còn gắn kết. Bản cập nhật không có chỗ để cài.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "94edc89"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Thoát Cmdr, kéo nó vào thư mục Ứng dụng của bạn, rồi mở từ đó. Sau đó mọi bản cập nhật sẽ tự đến.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Đã hiểu",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "updates.status.noUpdates": "Không tìm thấy cập nhật. Phiên bản hiện tại: v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"

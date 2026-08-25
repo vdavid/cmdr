@@ -3,14 +3,27 @@
 // `$lib/updates/updater.svelte.ts` for the full flow, including the non-macOS
 // Tauri-plugin fallback).
 
-import { commands } from '$lib/ipc/bindings'
+import { commands, type BundleWriteBlocker } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
+
+export type { BundleWriteBlocker }
 
 /** Metadata for an available update. */
 export interface UpdateCheckResult {
   version: string
   url: string
   signature: string
+}
+
+/**
+ * Whether the running bundle sits somewhere an update can be written into, or `null` when nothing
+ * is in the way. Asked once an update is found and before the download starts: an install that
+ * can't write its own bundle would otherwise pull ~63 MB and rewrite nothing, every poll interval.
+ */
+export async function updateWriteBlocker(): Promise<BundleWriteBlocker | null> {
+  const res = await commands.updateWriteBlocker()
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Fetches `latest.json` and returns update info if a newer version is available, else `null`. */

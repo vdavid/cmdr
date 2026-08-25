@@ -1,4 +1,5 @@
-import { checkForUpdate, downloadUpdate, installUpdate } from '$lib/tauri-commands'
+import { checkForUpdate, downloadUpdate, installUpdate, updateWriteBlocker } from '$lib/tauri-commands'
+import type { BundleWriteBlocker } from '$lib/tauri-commands'
 import { getVersion } from '@tauri-apps/api/app'
 import { forceSave, getSetting, onSpecificSettingChange, setSetting } from '$lib/settings/settings-store'
 import { getAppLogger } from '$lib/logging/logger'
@@ -11,8 +12,8 @@ import { isMacOS } from '$lib/shortcuts/key-capture'
 // `updateState` lives in its own module to avoid an import cycle: toast components read it directly,
 // and this module also imports those toast components. Re-exported here so existing consumers
 // (Settings section, command-dispatch, tests) keep using the old import path.
-import { updateState, type UpdateInfo, type UpdateState } from './update-state.svelte'
-export { updateState }
+import { updateBlockerNotice, updateState, type UpdateInfo, type UpdateState } from './update-state.svelte'
+export { updateBlockerNotice, updateState }
 export type { UpdateState }
 
 const log = getAppLogger('updater')
@@ -70,6 +71,38 @@ function showUpdateToast(): void {
 }
 
 /**
+ * The "move Cmdr to Applications" nudge is raised at most once per session: a modal reappearing
+ * every poll interval would be its own problem, and the answer doesn't change until the user does
+ * something about it. `pendingMoveNudge` holds one that arrived while onboarding owned the screen,
+ * which is exactly the population this nudge is for (a download opened straight from `~/Downloads`
+ * is what makes macOS translocate it), so it's remembered rather than dropped.
+ */
+let moveNudgeShown = false
+let pendingMoveNudge: BundleWriteBlocker | null = null
+
+function showMoveToApplicationsNudge(blocker: BundleWriteBlocker): void {
+  if (moveNudgeShown) return
+  if (!onboarded || onboardingShowing) {
+    pendingMoveNudge = blocker
+    return
+  }
+  moveNudgeShown = true
+  pendingMoveNudge = null
+  updateBlockerNotice.blocker = blocker
+}
+
+function flushPendingMoveNudge(): void {
+  if (pendingMoveNudge !== null) {
+    showMoveToApplicationsNudge(pendingMoveNudge)
+  }
+}
+
+/** Closes the nudge. It doesn't come back this session; the next launch asks again. */
+export function dismissMoveToApplicationsNudge(): void {
+  updateBlockerNotice.blocker = null
+}
+
+/**
  * Bring the restart prompt back when a staged update has gone unapplied for a whole nudge
  * interval. Driven from the check loop, so it rides the poll cadence the user already chose
  * rather than a timer of its own. `addToast` dedupes by id, so a toast the user never dismissed
@@ -94,6 +127,7 @@ export async function notifyOnboardingComplete(): Promise<void> {
     log.warn('Could not persist onboarding.completed=true; onboarding may re-run on next launch')
   }
   showUpdateToast()
+  flushPendingMoveNudge()
 }
 
 /**
@@ -108,6 +142,7 @@ export function setOnboardingShowing(value: boolean): void {
   onboardingShowing = value
   if (wasShowing && !value) {
     showUpdateToast()
+    flushPendingMoveNudge()
   }
 }
 
@@ -198,6 +233,12 @@ async function runMacUpdateFlow(currentVersion: string, staged: string | null): 
     return
   }
 
+  const blocker = await readWriteBlocker()
+  if (blocker !== null) {
+    finishCheckWithUnwritableBundle(blocker, staged)
+    return
+  }
+
   log.info('Update available: v{current} -> v{next}', { current: currentVersion, next: update.version })
   updateState.nextVersion = update.version
   updateState.status = 'downloading'
@@ -250,6 +291,47 @@ async function runPluginUpdateFlow(currentVersion: string, staged: string | null
   }
 
   finishCheckWithStagedUpdate({ version: update.version, url: '', signature: '' })
+}
+
+/**
+ * Asks the backend whether this install can write its own bundle.
+ *
+ * A failure to ANSWER is not a blocker. The classification is a courtesy that saves a doomed
+ * download; treating an IPC hiccup as "can't update" would stop updates that would have worked.
+ * macOS-only, like the rest of `runMacUpdateFlow`: the Tauri plugin owns the install elsewhere.
+ */
+async function readWriteBlocker(): Promise<BundleWriteBlocker | null> {
+  try {
+    return await updateWriteBlocker()
+  } catch (error) {
+    log.warn("Couldn't classify where the bundle lives: {error}", {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return null
+  }
+}
+
+/**
+ * An update exists, but this install can't write it into its own bundle: it's translocated, or on
+ * a read-only volume. Downloading ~63 MB it could never apply, once an hour, forever, is the thing
+ * to avoid, so the flow stops here and asks the user to move Cmdr to Applications instead.
+ *
+ * The manifest check itself keeps running on the poll: it's what keeps the install counted as
+ * active, and it costs a few hundred bytes.
+ */
+function finishCheckWithUnwritableBundle(blocker: BundleWriteBlocker, staged: string | null): void {
+  log.warn("An update is out, but this install can't write its own bundle ({blocker}); asking the user to move Cmdr", {
+    blocker,
+  })
+  showMoveToApplicationsNudge(blocker)
+
+  if (staged !== null) {
+    updateState.status = 'ready'
+    updateState.nextVersion = staged
+    return
+  }
+  updateState.status = 'idle'
+  updateState.nextVersion = null
 }
 
 /**
@@ -433,6 +515,9 @@ export function _resetUpdaterStateForTest(): void {
   onboarded = false
   onboardingShowing = false
   lastRestartToastAt = null
+  moveNudgeShown = false
+  pendingMoveNudge = null
+  updateBlockerNotice.blocker = null
   updateState.status = 'idle'
   updateState.update = null
   updateState.error = null

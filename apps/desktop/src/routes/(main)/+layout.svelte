@@ -4,7 +4,12 @@
      * Only used for the main file manager window.
      */
     import { onMount, onDestroy } from 'svelte'
-    import { startUpdateChecker } from '$lib/updates/updater.svelte'
+    import {
+        dismissMoveToApplicationsNudge,
+        startUpdateChecker,
+        updateBlockerNotice,
+    } from '$lib/updates/updater.svelte'
+    import MoveToApplicationsDialog from '$lib/updates/MoveToApplicationsDialog.svelte'
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initVolumeTints, cleanupVolumeTints } from '$lib/file-explorer/pane/volume-tint.svelte'
@@ -339,6 +344,9 @@
 {/if}
 {#if showPermissionDialog}
     <MtpPermissionDialog onClose={closePermissionDialog} onRetry={retryPermissionConnection} />
+{/if}
+{#if updateBlockerNotice.blocker}
+    <MoveToApplicationsDialog blocker={updateBlockerNotice.blocker} onClose={dismissMoveToApplicationsNudge} />
 {/if}
 {#if import.meta.env.DEV || __CMDR_DIALOG_GALLERY__}
     <DialogGallery />

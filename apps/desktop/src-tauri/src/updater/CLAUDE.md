@@ -6,7 +6,9 @@ use the Tauri updater plugin and the frontend calls the plugin API directly.
 
 ## File map
 
-- `mod.rs`: the three Tauri commands (`check_for_update`, `download_update`, `install_update`) and shared `UpdateState`.
+- `mod.rs`: the four Tauri commands (`check_for_update`, `update_write_blocker`, `download_update`, `install_update`)
+  and shared `UpdateState`.
+- `bundle_location.rs`: whether the running bundle can be written into at all (`BundleWriteBlocker`).
 - `manifest.rs`: parses `latest.json`, compares versions, resolves the platform key.
 - `signature.rs`: minisign signature verification (base64-wrapped, matching Tauri's format).
 - `installer.rs`: tarball extraction, sync into the running bundle, privilege escalation.
@@ -29,6 +31,11 @@ use the Tauri updater plugin and the frontend calls the plugin API directly.
   that slips through writes an `update_checks` row the dashboard counts as an active install. Don't loosen either, and
   ❌ never keep a second copy of the env-var list here: `crate::prod_instance` is the one definition, shared with the
   analytics gate so the two can't disagree about what a real install is.
+- **A read-only bundle is EROFS, not EPERM, and no amount of admin fixes it.** App Translocation (Cmdr opened from
+  `~/Downloads`) and a mounted `.dmg` both put the bundle on a read-only mount, which refuses root as flatly as the
+  user. `installer::install` and the frontend both gate on `bundle_location::classify` BEFORE the download, ❌ never by
+  escalating: escalating buys an auth dialog the user can only cancel. The `PermissionDenied` arm is for a root-owned
+  `/Applications`, a different thing. `DETAILS.md` § A bundle that can't be written.
 - **Manifest fetch is bounded** (`connect_timeout` 10 s, overall `timeout` 30 s); download/install paths are
   intentionally NOT timed out (they run with user attention). Don't add timeouts there.
 - **Manifest URL routes through the API server** (`https://api.getcmdr.com/update-check/{version}?arch={arch}`), which

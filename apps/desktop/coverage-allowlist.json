@@ -290,7 +290,7 @@
       "reason": "Thin IPC pass-through wrappers (toggleTags, enrichTags); exercised via pane-commands.ts, tag-sweep.ts, file-list-utils.ts (which mock the wrapper layer)"
     },
     "tauri-commands/updates.ts": {
-      "reason": "Thin IPC wrappers (checkForUpdate, downloadUpdate, installUpdate); exercised via updater.svelte.ts (which mocks the wrapper layer)"
+      "reason": "Thin IPC wrappers (checkForUpdate, updateWriteBlocker, downloadUpdate, installUpdate); exercised via updater.svelte.ts (which mocks the wrapper layer)"
     },
     "tauri-commands/write-operations.ts": {
       "reason": "Tauri command wrappers, tested via integration"
@@ -306,9 +306,6 @@
     },
     "updates/UpdateToastContent.svelte": {
       "reason": "UI component, toast content for update prompt"
-    },
-    "updates/updater.svelte.ts": {
-      "reason": "Depends on Tauri updater APIs"
     },
     "utils/confirm-dialog.ts": {
       "reason": "Thin wrapper over Tauri dialog API"

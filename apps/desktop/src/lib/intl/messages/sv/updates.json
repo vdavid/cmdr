@@ -19,6 +19,26 @@
   "@updates.toast.restart": {
     "sourceHash": "6b983a8"
   },
+  "updates.moveToApplicationsDialog.title": "Flytta Cmdr till din mapp Program",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "En ny version är klar, men macOS kör Cmdr från en tillfällig skrivskyddad kopia. Det händer när du öppnar en app direkt där du laddade ner den, och då har uppdateringar ingenstans att ta vägen.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "510a3a6"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "En ny version är klar, men Cmdr körs från en skrivskyddad plats, oftast en diskavbild som fortfarande är monterad. Uppdateringar har ingenstans att ta vägen.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "94edc89"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Avsluta Cmdr, dra appen till din mapp Program och öppna den därifrån. Varje uppdatering efter det kommer av sig själv.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Uppfattat",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "updates.status.noUpdates": "Inga uppdateringar hittades. Nuvarande version: v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"

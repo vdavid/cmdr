@@ -58,6 +58,7 @@
     import NewFileDialog from '$lib/file-operations/mkfile/NewFileDialog.svelte'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
+    import MoveToApplicationsDialog from '$lib/updates/MoveToApplicationsDialog.svelte'
     import QuitConfirmationDialog from '$lib/quit/QuitConfirmationDialog.svelte'
     import DeleteAiModelDialog from '$lib/settings/sections/DeleteAiModelDialog.svelte'
     import ForgetMemoryDialog from '$lib/settings/sections/ForgetMemoryDialog.svelte'
@@ -79,6 +80,7 @@
     import type { ArchivePasswordFixture } from './fixtures/archive-password'
     import type { TransferErrorFixture } from './fixtures/transfer-error'
     import type { PtpcameradFixture } from './fixtures/devices'
+    import type { MoveToApplicationsFixture } from './fixtures/updates'
     import type { QuitFixture } from './fixtures/quit'
     import type { SelectionFixture } from './fixtures/selection'
 
@@ -100,6 +102,7 @@
         | { kind: 'connect-to-server' }
         | { kind: 'mtp-permission' }
         | { kind: 'ptpcamerad'; props: PtpcameradFixture }
+        | { kind: 'move-to-applications'; props: MoveToApplicationsFixture }
         | { kind: 'crash-report'; props: { report: CrashReport } }
         | { kind: 'viewer-copy'; props: { confirmBytes: number | null; refuseBytes: number | null } }
         | { kind: 'selection'; props: SelectionFixture & { mode: 'add' | 'remove' } }
@@ -177,6 +180,8 @@
         'transfer-error': (id) =>
             withFixture(fixtureRecords['transfer-error'][id], (f) => ({ kind: 'transfer-error', props: f })),
         ptpcamerad: (id) => withFixture(fixtureRecords.ptpcamerad[id], (f) => ({ kind: 'ptpcamerad', props: f })),
+        'move-to-applications': (id) =>
+            withFixture(fixtureRecords['move-to-applications'][id], (f) => ({ kind: 'move-to-applications', props: f })),
         'quit-confirmation': (id) =>
             withFixture(fixtureRecords['quit-confirmation'][id], (f) => ({ kind: 'quit-confirmation', props: f })),
         'crash-report': (id) =>
@@ -321,6 +326,8 @@
         <MtpPermissionDialog onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
     {:else if plan?.kind === 'ptpcamerad'}
         <PtpcameradDialog {...plan.props} onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
+    {:else if plan?.kind === 'move-to-applications'}
+        <MoveToApplicationsDialog {...plan.props} onClose={closeGalleryDialog} />
     {:else if plan?.kind === 'quit-confirmation'}
         <QuitConfirmationDialog {...plan.props} onQuit={closeGalleryDialog} onKeepWorking={closeGalleryDialog} />
     {:else if plan?.kind === 'crash-report'}

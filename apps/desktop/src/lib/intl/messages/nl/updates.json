@@ -20,6 +20,26 @@
   "@updates.toast.restart": {
     "sourceHash": "6b983a8"
   },
+  "updates.moveToApplicationsDialog.title": "Verplaats Cmdr naar je map Programma''s",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "Er staat een nieuwe versie klaar, maar macOS draait Cmdr vanuit een tijdelijke, alleen-lezen kopie. Dat gebeurt als je een app rechtstreeks opent vanaf de plek waar je hem hebt gedownload, en updates kunnen dan nergens terecht.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "510a3a6"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Er staat een nieuwe versie klaar, maar Cmdr draait vanaf een alleen-lezen plek, meestal een schijfkopie die nog gekoppeld is. Updates kunnen daar nergens terecht.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "94edc89"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Sluit Cmdr af, sleep het naar je map Programma''s en open het daarvandaan. Elke update daarna komt vanzelf binnen.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Duidelijk",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "updates.status.noUpdates": "Geen updates gevonden. Huidige versie: v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"

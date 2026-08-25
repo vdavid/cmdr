@@ -19,6 +19,26 @@
   "@updates.toast.restart": {
     "sourceHash": "6b983a8"
   },
+  "updates.moveToApplicationsDialog.title": "Verschiebe Cmdr in deinen Ordner „Programme“",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "Eine neue Version ist bereit, aber macOS führt Cmdr aus einer temporären, schreibgeschützten Kopie aus. Das passiert, wenn du eine App direkt an ihrem Download-Ort öffnest, und Updates haben dann keinen Platz zum Landen.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "510a3a6"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Eine neue Version ist bereit, aber Cmdr läuft von einem schreibgeschützten Ort, meist einem noch geöffneten Image. Updates haben dort keinen Platz zum Landen.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "94edc89"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Beende Cmdr, zieh es in deinen Ordner „Programme“ und öffne es von dort. Jedes weitere Update kommt dann von allein an.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Alles klar",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "updates.status.noUpdates": "Keine Updates gefunden. Aktuelle Version: v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"

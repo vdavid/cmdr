@@ -5,6 +5,8 @@
  * one-way.
  */
 
+import type { BundleWriteBlocker } from '$lib/tauri-commands'
+
 /** Metadata returned by the `check_for_update` Tauri command */
 export interface UpdateInfo {
   version: string
@@ -29,3 +31,12 @@ export const updateState = $state<UpdateState>({
   previousVersion: null,
   nextVersion: null,
 })
+
+/**
+ * The "move Cmdr to Applications" nudge. `blocker` is non-null exactly while the dialog is up.
+ *
+ * Lives beside `updateState` rather than inside it: it isn't a phase of the update state machine,
+ * it's the one thing we can do for an install that will never finish one. `+layout.svelte` mounts
+ * the dialog off this, and `updater.svelte.ts` raises it.
+ */
+export const updateBlockerNotice = $state<{ blocker: BundleWriteBlocker | null }>({ blocker: null })

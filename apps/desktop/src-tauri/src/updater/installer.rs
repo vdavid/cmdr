@@ -45,6 +45,14 @@ impl SyncError {
     fn is_permission_denied(&self) -> bool {
         matches!(self.kind, io::ErrorKind::PermissionDenied)
     }
+
+    /// A read-only mount refuses root as flatly as it refuses the user, so this is the one write
+    /// failure where escalating to admin is guaranteed to buy nothing. Kept apart from
+    /// [`Self::is_permission_denied`] so the caller can say so instead of raising a prompt the
+    /// user can only cancel.
+    fn is_read_only(&self) -> bool {
+        matches!(self.kind, io::ErrorKind::ReadOnlyFilesystem)
+    }
 }
 
 impl std::fmt::Display for SyncError {
@@ -72,13 +80,24 @@ fn staging_dir() -> PathBuf {
 /// succeed. Calling `check_for_update`/`install_update` from such a build only produced
 /// noisy auto-error-reports without any chance of installing anything.
 pub fn is_running_from_app_bundle() -> bool {
-    find_running_bundle().is_ok()
+    running_bundle().is_ok()
 }
 
 /// Extracts the tarball at `tarball_path` and syncs its contents into the running app bundle.
 ///
 /// The tarball is expected to contain a `Cmdr.app/` root directory (as produced by `tauri-action`).
 pub fn install(tarball_path: &Path) -> Result<(), String> {
+    // Resolved (and vetted) before extraction: unpacking ~63 MB into staging only to find the
+    // destination unwritable is work nobody gets anything for. The frontend gates on the same
+    // classification one step earlier; this arm is what keeps a direct caller honest.
+    let bundle_path = running_bundle()?;
+    if let Some(blocker) = super::bundle_location::classify(&bundle_path) {
+        return Err(format!(
+            "Cmdr is {blocker}, so it can't write the update into {}. It needs to be moved to Applications.",
+            bundle_path.display()
+        ));
+    }
+
     let staging_owned = staging_dir();
     let staging = staging_owned.as_path();
     let staged_app = staging.join("Cmdr.app");
@@ -98,7 +117,6 @@ pub fn install(tarball_path: &Path) -> Result<(), String> {
         ));
     }
 
-    let bundle_path = find_running_bundle()?;
     log::info!("Installing update into bundle: {}", bundle_path.display());
 
     let staged_contents = staged_app.join("Contents");
@@ -111,6 +129,14 @@ pub fn install(tarball_path: &Path) -> Result<(), String> {
     // Try direct sync first; escalate to admin privileges if permission denied
     match sync_bundle(&staged_contents, &bundle_contents) {
         Ok(()) => {}
+        Err(e) if e.is_read_only() => {
+            // The pre-flight classification missed it (a read-only mount nested inside the bundle,
+            // say). Escalating would only cost the user an admin prompt they can't win.
+            return Err(format!(
+                "Cmdr is running from a read-only spot, so it can't write the update into {}. It needs to be moved to Applications. ({e})",
+                bundle_path.display()
+            ));
+        }
         Err(e) if e.is_permission_denied() => {
             log::info!("Direct write denied, escalating with admin privileges");
             sync_with_admin_privileges(&staged_contents, &bundle_contents)?;
@@ -141,13 +167,13 @@ fn extract_tarball(tarball_path: &Path, dest_dir: &Path) -> Result<(), String> {
 }
 
 /// Finds the running app's `.app` bundle path by walking up from `current_exe()`.
-fn find_running_bundle() -> Result<PathBuf, String> {
+pub(super) fn running_bundle() -> Result<PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| format!("Couldn't get current exe: {e}"))?;
     find_app_bundle_above(&exe).ok_or_else(|| format!("Couldn't find .app bundle in path: {}", exe.display()))
 }
 
 /// Pure walk: returns the closest ancestor of `start` whose own segment ends in `.app`,
-/// or `None` if no such ancestor exists. Split out from [`find_running_bundle`] so it can
+/// or `None` if no such ancestor exists. Split out from [`running_bundle`] so it can
 /// be unit-tested without touching `current_exe()`.
 fn find_app_bundle_above(start: &Path) -> Option<PathBuf> {
     let mut path = start;

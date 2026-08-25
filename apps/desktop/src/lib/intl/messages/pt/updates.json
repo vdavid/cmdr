@@ -19,6 +19,26 @@
   "@updates.toast.restart": {
     "sourceHash": "6b983a8"
   },
+  "updates.moveToApplicationsDialog.title": "Mova o Cmdr para a sua pasta Aplicativos",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "Uma nova versão está pronta, mas o macOS está executando o Cmdr a partir de uma cópia temporária somente leitura. Isso acontece quando você abre um app direto de onde ele foi baixado, e as atualizações ficam sem lugar para chegar.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "510a3a6"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Uma nova versão está pronta, mas o Cmdr está sendo executado de um lugar somente leitura, normalmente uma imagem de disco ainda montada. As atualizações ficam sem lugar para chegar.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "94edc89"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Feche o Cmdr, arraste-o para a sua pasta Aplicativos e abra-o de lá. Daí em diante, cada atualização chega sozinha.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Entendi",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "updates.status.noUpdates": "Nenhuma atualização encontrada. Versão atual: v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"

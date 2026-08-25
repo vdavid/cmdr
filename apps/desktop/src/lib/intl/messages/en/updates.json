@@ -14,7 +14,6 @@
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
-
   "updates.toast.available": "New version available. Restart to update.",
   "@updates.toast.available": {
     "description": "Body of the persistent toast prompting the user to restart and apply a downloaded update.",
@@ -33,7 +32,36 @@
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
-
+  "updates.moveToApplicationsDialog.title": "Move Cmdr to your Applications folder",
+  "@updates.moveToApplicationsDialog.title": {
+    "description": "Title of the dialog shown when a new version is available but Cmdr is running from somewhere it can't update itself. Sentence case. \"Applications\" is the macOS folder name, which Apple localizes per system language.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
+  },
+  "updates.moveToApplicationsDialog.translocated": "A new version is ready, but macOS is running Cmdr from a temporary read-only copy of itself. That''s what happens when you open an app straight from where you downloaded it, and it means updates have nowhere to land.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "description": "First paragraph of the move-to-Applications dialog, for the macOS App Translocation case (the app was opened from the Downloads folder). Explains why the update can't be applied. Conversational.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "A new version is ready, but Cmdr is running from a read-only spot, usually a disk image that''s still mounted. That means updates have nowhere to land.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "description": "First paragraph of the move-to-Applications dialog, for the case where the app runs from a read-only volume such as a mounted .dmg disk image. Conversational.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
+  },
+  "updates.moveToApplicationsDialog.howTo": "Quit Cmdr, drag it into your Applications folder, and open it from there. Every update after that arrives on its own.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "description": "Second paragraph of the move-to-Applications dialog: the instruction the user should follow. \"Applications\" is the macOS folder name, which Apple localizes per system language.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Got it",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "description": "The only button in the move-to-Applications dialog; closes it. Short, friendly acknowledgement.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
+  },
   "updates.status.noUpdates": "No updates found. Current version: v{version}",
   "@updates.status.noUpdates": {
     "description": "Status line after a successful update check that found nothing newer, reporting the current version. The v prefix before the version number is literal.",

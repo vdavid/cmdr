@@ -375,6 +375,17 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     states: [{ id: 'idle', label: 'Open' }],
   },
   {
+    dialogId: 'move-to-applications',
+    label: 'Move Cmdr to Applications',
+    hostWindow: 'main',
+    status: 'ready',
+    note: 'Shipping trigger is an update found while the bundle sits somewhere read-only; the gallery passes the same prop directly.',
+    states: [
+      { id: 'translocated', label: 'Opened from Downloads' },
+      { id: 'read-only-volume', label: 'Running from a disk image' },
+    ],
+  },
+  {
     dialogId: 'mtp-permission',
     label: 'MTP permission (Linux)',
     hostWindow: 'main',

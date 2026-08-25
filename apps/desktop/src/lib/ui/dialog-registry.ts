@@ -96,6 +96,11 @@ export const SOFT_DIALOG_REGISTRY = [
     description: 'Opened by the new-file tool, not directly',
     whileOpen: BLOCKS_OPERATIONS,
   },
+  {
+    id: 'move-to-applications',
+    description: "Asks the user to move Cmdr to Applications when it's running somewhere it can't update itself",
+    whileOpen: BLOCKS_OPERATIONS,
+  },
   { id: 'mtp-permission', description: 'Linux MTP USB permission troubleshooting', whileOpen: BLOCKS_OPERATIONS },
   { id: 'ptpcamerad', description: 'MTP device connection troubleshooting', whileOpen: BLOCKS_OPERATIONS },
   {

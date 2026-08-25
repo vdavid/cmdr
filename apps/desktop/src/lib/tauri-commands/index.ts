@@ -800,8 +800,8 @@ export { resolveGoToPath, getRecentPaths, addRecentPath, removeRecentPath } from
 export { toggleTags, enrichTags } from './tags'
 
 // macOS custom updater (check / download / install)
-export { checkForUpdate, downloadUpdate, installUpdate } from './updates'
-export type { UpdateCheckResult } from './updates'
+export { checkForUpdate, downloadUpdate, installUpdate, updateWriteBlocker } from './updates'
+export type { BundleWriteBlocker, UpdateCheckResult } from './updates'
 
 // Dev/benchmark IPC
 export { benchmarkLog } from './debug'

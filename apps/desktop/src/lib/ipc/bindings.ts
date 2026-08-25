@@ -3857,6 +3857,31 @@ export const commands = {
       string
     >(__TAURI_INVOKE('check_for_update')),
   /**
+   *  Reports whether the running bundle sits somewhere an update can be written into, or `None`
+   *  when nothing is in the way.
+   *
+   *  The frontend asks after a check finds an update and before the download starts. Skipping the
+   *  download is the point: an install that can't write its own bundle would otherwise pull ~63 MB
+   *  and rewrite nothing, once per poll interval, for as long as the app runs. It also gives the
+   *  user a reason for a failure they'd otherwise never see, since neither arrangement can be fixed
+   *  from inside the app.
+   *
+   *  Returns `None` outside a `.app` bundle too: there's no bundle to classify, and the check gate
+   *  (`skip_reason`) has already stopped that process from getting here.
+   */
+  updateWriteBlocker: () =>
+    typedError<
+      /**
+       *  macOS App Translocation: Cmdr was opened from where it was downloaded, so it's running
+       *  from a randomized read-only mount under `/private/var/folders/…/AppTranslocation/`.
+       */
+      | 'translocated'
+      // The bundle lives on a read-only volume, which in practice means a `.dmg` still mounted.
+      | 'readOnlyVolume'
+      | null,
+      string
+    >(__TAURI_INVOKE('update_write_blocker')),
+  /**
    *  Downloads the update tarball and verifies its minisign signature.
    *
    *  On success, stores the tarball path in `UpdateState` for `install_update` to consume.
@@ -4639,6 +4664,22 @@ export type BulkRenamePreflightStatus = 'ready' | 'blocked' | 'expired'
 export type BulkRenameRowStatus = 'ready' | 'blocked'
 
 export type BulkRenameWarning = 'extensionChanged' | 'cycle'
+
+/**
+ *  Why this install can't apply an update, when the reason is where the bundle SITS rather than
+ *  anything about the update itself.
+ *
+ *  Both variants ask the same thing of the user (move Cmdr into Applications), and they're kept
+ *  apart so the log and the `update_check` event can say which arrangement produced the number.
+ */
+export type BundleWriteBlocker =
+  /**
+   *  macOS App Translocation: Cmdr was opened from where it was downloaded, so it's running
+   *  from a randomized read-only mount under `/private/var/folders/…/AppTranslocation/`.
+   */
+  | 'translocated'
+  // The bundle lives on a read-only volume, which in practice means a `.dmg` still mounted.
+  | 'readOnlyVolume'
 
 /**
  *  Logical-pixel rectangle. `f64` mirrors what Tauri's `LogicalPosition` /

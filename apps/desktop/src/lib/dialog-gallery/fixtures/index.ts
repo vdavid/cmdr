@@ -43,6 +43,7 @@ import {
   whatsNewFixtures,
 } from './store-seeded'
 import { transferErrorFixtures } from './transfer-error'
+import { moveToApplicationsFixtures } from './updates'
 import { viewerCopyConfirmFixtures, viewerCopyRefuseFixtures } from './viewer-copy'
 
 export const fixtureRecords = {
@@ -60,6 +61,7 @@ export const fixtureRecords = {
   'forget-memory': forgetMemoryFixtures,
   'go-to-path': goToPathFixtures,
   'mkdir-confirmation': mkdirFixtures,
+  'move-to-applications': moveToApplicationsFixtures,
   'new-file-confirmation': newFileFixtures,
   onboarding: onboardingFixtures,
   'operation-log': operationLogFixtures,
