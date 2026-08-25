@@ -139,6 +139,17 @@ pub async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
         .await
         .map_err(|e| format!("Couldn't fetch update manifest: {}", describe_error_chain(&e)))?;
 
+    // Check the status before parsing. A 5xx or an HTML maintenance page deserializes into a
+    // parse failure, which reads as "the manifest is malformed" and sends whoever is looking at
+    // the log to the wrong layer entirely: the manifest is fine, the server didn't serve it.
+    let status = response.status();
+    if !status.is_success() {
+        log::warn!("Update check got HTTP {status} from {url}; no manifest to read");
+        return Err(format!(
+            "The update server answered {status} instead of a manifest, so this check found nothing"
+        ));
+    }
+
     let manifest: manifest::UpdateManifest = response
         .json()
         .await

@@ -21,6 +21,9 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **Bounded manifest-fetch timeouts.** `reqwest::get`'s default client has no overall timeout; a stuck TCP handshake to
   the redirect target was observed hanging ~2.5 min, which made transient network blips look like a hung app and tripped
   the auto error reporter. Download/install stay untimed (user attention; can legitimately take a while).
+- **Check the HTTP status before parsing the manifest.** `response.json()` on a 5xx or an HTML maintenance page
+  deserializes into a parse failure, which reads as "the manifest is malformed" and sends the reader to the wrong
+  layer: the manifest is fine, the server didn't serve it. The status arm says so in its own words and names the code.
 - **Walk `reqwest::Error::source()` for log-friendly messages (`describe_error_chain`).** `reqwest::Error`'s `Display`
   only prints the outermost layer, hiding the real cause (DNS, TCP connect timeout, TLS). Walking the source chain
   surfaces the underlying class without pulling in `anyhow`.
