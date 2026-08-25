@@ -90,6 +90,15 @@ here is where each one is raised:
 - `finishCheckWithUnwritableBundle` → `blocked`, with the arrangement as `failure`
 - `finishCheckWithFailure` → `failed`, with the phase as `failure`
 
+`trigger` names the entry point instead, and comes in as `checkForUpdates()`'s required first parameter so the finishers
+never have to guess:
+
+- `startUpdateChecker()`'s immediate launch check → `startup`
+- a `startPollLoop()` tick → `poll`
+- `applyAutoCheckEnabled(true)`, the `updates.autoCheck` switch or the onboarding wizard's step 3 → `auto_check_on`
+- `runMenuTriggeredCheck()`, the `app.checkForUpdates` command from the menu, the palette, or a shortcut → `command`
+- the "Check for updates" button on Settings > Updates → `settings`
+
 The phase comes off `updateState.status`, read BEFORE the finisher moves it: macOS runs the download and the install
 inside one `try`, and the status is the typed record of which was in flight. ❌ Never ask the error message, here or
 anywhere (`error-string-match`).

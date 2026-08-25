@@ -5,7 +5,7 @@ import { forceSave, getSetting, onSpecificSettingChange, setSetting } from '$lib
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import { compareVersions } from '$lib/utils/version'
-import { blockerFailure, reportUpdateCheck, type UpdateCheckFailure } from './update-analytics'
+import { blockerFailure, reportUpdateCheck, type UpdateCheckFailure, type UpdateCheckTrigger } from './update-analytics'
 import UpdateToastContent from './UpdateToastContent.svelte'
 import UpdateCheckToastContent from './UpdateCheckToastContent.svelte'
 import { addToast, dismissToast } from '$lib/ui/toast'
@@ -180,7 +180,12 @@ export function supersedesStagedUpdate(offered: string, staged: string | null): 
   return staged === null || compareVersions(offered, staged) > 0
 }
 
-export async function checkForUpdates(): Promise<void> {
+/**
+ * Runs one update check. `trigger` names the entry point that asked and rides the `update_check`
+ * event; it has no default so a new caller has to decide what it reports rather than landing in
+ * whichever bucket happened to be first.
+ */
+export async function checkForUpdates(trigger: UpdateCheckTrigger): Promise<void> {
   if (IN_FLIGHT_STATUSES.includes(updateState.status)) {
     return // Don't interrupt an ongoing check, download, or install
   }
@@ -204,9 +209,9 @@ export async function checkForUpdates(): Promise<void> {
   // install phases, preserves TCC), non-macOS uses the Tauri plugin's fused `downloadAndInstall`.
   // The two-phase error handling (warn on check, error on download/install) lives inside each.
   if (isMacOS()) {
-    await runMacUpdateFlow(currentVersion, staged)
+    await runMacUpdateFlow(trigger, currentVersion, staged)
   } else {
-    await runPluginUpdateFlow(currentVersion, staged)
+    await runPluginUpdateFlow(trigger, currentVersion, staged)
   }
 }
 
@@ -215,28 +220,32 @@ export async function checkForUpdates(): Promise<void> {
  * into the existing `.app` bundle. Three Tauri commands; download and install are distinct
  * phases so the UI can show separate `downloading` and `installing` states.
  */
-async function runMacUpdateFlow(currentVersion: string, staged: string | null): Promise<void> {
+async function runMacUpdateFlow(
+  trigger: UpdateCheckTrigger,
+  currentVersion: string,
+  staged: string | null,
+): Promise<void> {
   let update: UpdateInfo | null
   try {
     update = await checkForUpdate()
   } catch (error) {
-    finishCheckWithFailure(error, 'check', staged)
+    finishCheckWithFailure(trigger, error, 'check', staged)
     return
   }
 
   if (update === null) {
-    finishCheckWithNoUpdate(currentVersion, staged)
+    finishCheckWithNoUpdate(trigger, currentVersion, staged)
     return
   }
 
   if (!supersedesStagedUpdate(update.version, staged)) {
-    keepStagedUpdate(update.version)
+    keepStagedUpdate(trigger, update.version)
     return
   }
 
   const blocker = await readWriteBlocker()
   if (blocker !== null) {
-    finishCheckWithUnwritableBundle(blocker, staged)
+    finishCheckWithUnwritableBundle(trigger, blocker, staged)
     return
   }
 
@@ -249,34 +258,38 @@ async function runMacUpdateFlow(currentVersion: string, staged: string | null): 
     updateState.status = 'installing'
     await installUpdate()
   } catch (error) {
-    finishCheckWithFailure(error, 'download-install', staged)
+    finishCheckWithFailure(trigger, error, 'download-install', staged)
     return
   }
 
-  finishCheckWithStagedUpdate(update)
+  finishCheckWithStagedUpdate(trigger, update)
 }
 
 /**
  * Non-macOS path: Tauri updater plugin. `downloadAndInstall()` is fused so we stay in
  * `downloading` throughout the second phase (no separate `installing` state).
  */
-async function runPluginUpdateFlow(currentVersion: string, staged: string | null): Promise<void> {
+async function runPluginUpdateFlow(
+  trigger: UpdateCheckTrigger,
+  currentVersion: string,
+  staged: string | null,
+): Promise<void> {
   let update: Awaited<ReturnType<typeof import('@tauri-apps/plugin-updater').check>>
   try {
     const { check } = await import('@tauri-apps/plugin-updater')
     update = await check()
   } catch (error) {
-    finishCheckWithFailure(error, 'check', staged)
+    finishCheckWithFailure(trigger, error, 'check', staged)
     return
   }
 
   if (!update) {
-    finishCheckWithNoUpdate(currentVersion, staged)
+    finishCheckWithNoUpdate(trigger, currentVersion, staged)
     return
   }
 
   if (!supersedesStagedUpdate(update.version, staged)) {
-    keepStagedUpdate(update.version)
+    keepStagedUpdate(trigger, update.version)
     return
   }
 
@@ -287,11 +300,11 @@ async function runPluginUpdateFlow(currentVersion: string, staged: string | null
   try {
     await update.downloadAndInstall()
   } catch (error) {
-    finishCheckWithFailure(error, 'download-install', staged)
+    finishCheckWithFailure(trigger, error, 'download-install', staged)
     return
   }
 
-  finishCheckWithStagedUpdate({ version: update.version, url: '', signature: '' })
+  finishCheckWithStagedUpdate(trigger, { version: update.version, url: '', signature: '' })
 }
 
 /**
@@ -320,11 +333,15 @@ async function readWriteBlocker(): Promise<BundleWriteBlocker | null> {
  * The manifest check itself keeps running on the poll: it's what keeps the install counted as
  * active, and it costs a few hundred bytes.
  */
-function finishCheckWithUnwritableBundle(blocker: BundleWriteBlocker, staged: string | null): void {
+function finishCheckWithUnwritableBundle(
+  trigger: UpdateCheckTrigger,
+  blocker: BundleWriteBlocker,
+  staged: string | null,
+): void {
   log.warn("An update is out, but this install can't write its own bundle ({blocker}); asking the user to move Cmdr", {
     blocker,
   })
-  reportUpdateCheck({ outcome: 'blocked', failure: blockerFailure(blocker), stagedVersion: staged })
+  reportUpdateCheck({ trigger, outcome: 'blocked', failure: blockerFailure(blocker), stagedVersion: staged })
   showMoveToApplicationsNudge(blocker)
 
   if (staged !== null) {
@@ -340,14 +357,14 @@ function finishCheckWithUnwritableBundle(blocker: BundleWriteBlocker, staged: st
  * A build is now synced into the bundle and only a restart away. A newer one earns a fresh prompt
  * even when the previous version's was dismissed, so the nudge clock resets here.
  */
-function finishCheckWithStagedUpdate(update: UpdateInfo): void {
+function finishCheckWithStagedUpdate(trigger: UpdateCheckTrigger, update: UpdateInfo): void {
   log.info('v{version} installed, restart to apply', { version: update.version })
   updateState.status = 'ready'
   updateState.update = update
   updateState.nextVersion = update.version
   updateState.error = null
   lastRestartToastAt = null
-  reportUpdateCheck({ outcome: 'staged', stagedVersion: update.version })
+  reportUpdateCheck({ trigger, outcome: 'staged', stagedVersion: update.version })
   showUpdateToast()
 }
 
@@ -357,19 +374,19 @@ function finishCheckWithStagedUpdate(update: UpdateInfo): void {
  * already in it, or make Settings claim the app is up to date while a restart is still pending.
  * All that's left is keeping the restart prompt reachable.
  */
-function keepStagedUpdate(staged: string): void {
+function keepStagedUpdate(trigger: UpdateCheckTrigger, staged: string): void {
   log.debug('v{version} is still the newest build staged for restart', { version: staged })
-  reportUpdateCheck({ outcome: 'already_staged', stagedVersion: staged })
+  reportUpdateCheck({ trigger, outcome: 'already_staged', stagedVersion: staged })
   renudgeRestartIfDue()
 }
 
-function finishCheckWithNoUpdate(currentVersion: string, staged: string | null): void {
+function finishCheckWithNoUpdate(trigger: UpdateCheckTrigger, currentVersion: string, staged: string | null): void {
   if (staged !== null) {
-    keepStagedUpdate(staged)
+    keepStagedUpdate(trigger, staged)
     return
   }
   log.debug('v{version} is up to date', { version: currentVersion })
-  reportUpdateCheck({ outcome: 'up_to_date' })
+  reportUpdateCheck({ trigger, outcome: 'up_to_date' })
   updateState.status = 'idle'
   updateState.nextVersion = null
 }
@@ -391,14 +408,19 @@ function finishCheckWithNoUpdate(currentVersion: string, staged: string | null):
  * state machine returns to `ready` and no message reaches them; the failure is in the log and in
  * the `update_check` event instead.
  */
-function finishCheckWithFailure(error: unknown, phase: 'check' | 'download-install', staged: string | null): void {
+function finishCheckWithFailure(
+  trigger: UpdateCheckTrigger,
+  error: unknown,
+  phase: 'check' | 'download-install',
+  staged: string | null,
+): void {
   const message = error instanceof Error ? error.message : String(error)
   // Read the phase off the state machine BEFORE moving it. macOS runs the download and the install
   // in one try block, and `status` is the typed record of which one was in flight; the message
   // that came back is never asked, here or anywhere.
   const failure: UpdateCheckFailure =
     phase === 'check' ? 'check' : updateState.status === 'installing' ? 'install' : 'download'
-  reportUpdateCheck({ outcome: 'failed', failure, stagedVersion: staged })
+  reportUpdateCheck({ trigger, outcome: 'failed', failure, stagedVersion: staged })
 
   if (phase === 'check') {
     log.warn('Check failed: {error}', { error: message })
@@ -426,7 +448,9 @@ function finishCheckWithFailure(error: unknown, phase: 'check' | 'download-insta
 export async function runMenuTriggeredCheck(): Promise<void> {
   addToast(UpdateCheckToastContent, { id: 'update-check', timeoutMs: 10000 })
   try {
-    await checkForUpdates()
+    // The one caller is the `app.checkForUpdates` command handler, and the status toast is what
+    // makes this wrapper the command's own path, so the trigger is fixed here rather than passed in.
+    await checkForUpdates('command')
   } finally {
     if (updateState.status === 'ready') {
       dismissToast('update-check')
@@ -446,7 +470,7 @@ let pollIntervalId: ReturnType<typeof setInterval> | undefined
 function startPollLoop(): void {
   if (pollIntervalId !== undefined) return
   pollIntervalId = setInterval(() => {
-    void checkForUpdates()
+    void checkForUpdates('poll')
   }, getCheckIntervalMs())
 }
 
@@ -471,7 +495,7 @@ function stopPollLoop(): void {
 export function applyAutoCheckEnabled(enabled: boolean): void {
   if (enabled) {
     startPollLoop()
-    void checkForUpdates()
+    void checkForUpdates('auto_check_on')
   } else {
     stopPollLoop()
   }
@@ -489,7 +513,7 @@ export function startUpdateChecker(): () => void {
 
   if (autoCheckEnabled) {
     // Check immediately on start
-    void checkForUpdates()
+    void checkForUpdates('startup')
     startPollLoop()
   } else {
     log.debug('Auto-check disabled; skipping initial check and poll loop')

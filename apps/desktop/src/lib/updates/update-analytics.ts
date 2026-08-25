@@ -7,8 +7,9 @@
  * "the install fails on every one of them" all look the same from the outside, which is exactly
  * the ambiguity that let two real defects sit unnoticed for weeks.
  *
- * ❌ Every property is categorical: an outcome token, a typed failure kind, and a version number
- * from our own release list. Never a URL, a path, a bundle location, or the text of a failure.
+ * ❌ Every property is categorical: a trigger token, an outcome token, a typed failure kind, and a
+ * version number from our own release list. Never a URL, a path, a bundle location, or the text of
+ * a failure.
  */
 
 import { trackEvent } from '$lib/tauri-commands'
@@ -47,7 +48,28 @@ export type UpdateCheckFailure =
   /** The bundle sits on a read-only volume, in practice a mounted disk image. */
   | 'read_only_volume'
 
+/**
+ * What set this check going.
+ *
+ * Without it a burst of manual "Check for updates…" clicks and ordinary poll activity are the same
+ * number, so "people are hunting for a fix" and "the loop is ticking" read alike. It's
+ * `checkForUpdates()`'s first parameter and has no default, so a sixth entry point has to name
+ * itself rather than quietly joining someone else's bucket.
+ */
+export type UpdateCheckTrigger =
+  /** The one check `startUpdateChecker()` fires as the app comes up. */
+  | 'startup'
+  /** A background tick of the poll loop. */
+  | 'poll'
+  /** `updates.autoCheck` going from off to on (Settings switch, or the onboarding wizard's step 3). */
+  | 'auto_check_on'
+  /** The `app.checkForUpdates` command (menu, command palette, keyboard shortcut). */
+  | 'command'
+  /** The "Check for updates" button on Settings > Updates. */
+  | 'settings'
+
 export interface UpdateCheckReport {
+  trigger: UpdateCheckTrigger
   outcome: UpdateCheckOutcome
   failure?: UpdateCheckFailure
   /** The version sitting in the bundle waiting for a restart, if any. */
@@ -60,6 +82,7 @@ export interface UpdateCheckReport {
  */
 export function updateCheckProps(report: UpdateCheckReport): Record<string, string> {
   return {
+    trigger: report.trigger,
     outcome: report.outcome,
     failure: report.failure ?? 'none',
     staged_version: report.stagedVersion ?? 'none',

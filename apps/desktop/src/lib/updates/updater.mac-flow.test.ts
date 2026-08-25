@@ -42,7 +42,11 @@ vi.mock('$lib/shortcuts/key-capture', () => ({ isMacOS: () => true }))
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastMock, dismissToast: vi.fn() }))
 
 vi.mock('$lib/settings/settings-store', () => ({
-  getSetting: vi.fn((id: string) => (id === 'onboarding.completed' ? false : 60 * 60 * 1000)),
+  getSetting: vi.fn((id: string) => {
+    if (id === 'onboarding.completed') return false
+    if (id === 'updates.autoCheck') return true
+    return 60 * 60 * 1000
+  }),
   setSetting: vi.fn(),
   forceSave: vi.fn(() => Promise.resolve(true)),
   onSpecificSettingChange: vi.fn(() => () => {}),
@@ -56,10 +60,13 @@ vi.mock('$lib/logging/logger', () => ({
 
 import {
   _resetUpdaterStateForTest,
+  applyAutoCheckEnabled,
   checkForUpdates,
   dismissMoveToApplicationsNudge,
   notifyOnboardingComplete,
+  runMenuTriggeredCheck,
   setOnboardingShowing,
+  startUpdateChecker,
   updateBlockerNotice,
   updateState,
 } from './updater.svelte'
@@ -86,13 +93,14 @@ describe('an update found on an install that can’t write its own bundle', () =
     await notifyOnboardingComplete()
     checkForUpdateMock.mockResolvedValueOnce(anUpdate)
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     expect(downloadUpdateMock).toHaveBeenCalledWith(anUpdate.url, anUpdate.signature)
     expect(installUpdateMock).toHaveBeenCalledTimes(1)
     expect(updateState.status).toBe('ready')
     expect(updateBlockerNotice.blocker).toBeNull()
     expect(trackEventMock).toHaveBeenCalledWith('update_check', {
+      trigger: 'poll',
       outcome: 'staged',
       failure: 'none',
       staged_version: '0.33.0',
@@ -104,7 +112,7 @@ describe('an update found on an install that can’t write its own bundle', () =
     checkForUpdateMock.mockResolvedValueOnce(anUpdate)
     updateWriteBlockerMock.mockResolvedValueOnce('translocated')
 
-    await checkForUpdates()
+    await checkForUpdates('startup')
 
     // ~63 MB pulled once an hour for an install that can never apply it is the thing to avoid.
     expect(downloadUpdateMock).not.toHaveBeenCalled()
@@ -113,6 +121,7 @@ describe('an update found on an install that can’t write its own bundle', () =
     expect(updateState.status).toBe('idle')
     // The dashboard is how David finds out this population exists at all.
     expect(trackEventMock).toHaveBeenCalledWith('update_check', {
+      trigger: 'startup',
       outcome: 'blocked',
       failure: 'translocated',
       staged_version: 'none',
@@ -124,9 +133,9 @@ describe('an update found on an install that can’t write its own bundle', () =
     checkForUpdateMock.mockResolvedValue(anUpdate)
     updateWriteBlockerMock.mockResolvedValue('readOnlyVolume')
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
     dismissMoveToApplicationsNudge()
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     // The check itself keeps running (it's what keeps the install counted as active); the modal
     // doesn't come back, because the answer can't change until the user moves the app.
@@ -141,7 +150,7 @@ describe('an update found on an install that can’t write its own bundle', () =
     checkForUpdateMock.mockResolvedValueOnce(anUpdate)
     updateWriteBlockerMock.mockResolvedValueOnce('translocated')
 
-    await checkForUpdates()
+    await checkForUpdates('startup')
     expect(updateBlockerNotice.blocker).toBeNull()
 
     await notifyOnboardingComplete()
@@ -154,13 +163,29 @@ describe('an update found on an install that can’t write its own bundle', () =
     checkForUpdateMock.mockResolvedValueOnce(anUpdate)
     installUpdateMock.mockRejectedValueOnce(new Error('/Users/dave/Applications/Cmdr.app is not writable'))
 
-    await checkForUpdates()
+    await checkForUpdates('settings')
 
     expect(trackEventMock).toHaveBeenCalledWith('update_check', {
+      trigger: 'settings',
       outcome: 'failed',
       failure: 'install',
       staged_version: 'none',
     })
+  })
+
+  it('tells a manual check apart from the background loop on an otherwise identical outcome', async () => {
+    // Same install, same answer, two entry points. Without `trigger` a run of manual checks (a
+    // user hunting for a fix) and the loop ticking are one indistinguishable number.
+    await notifyOnboardingComplete()
+    checkForUpdateMock.mockResolvedValue(null)
+
+    await checkForUpdates('poll')
+    await checkForUpdates('command')
+
+    const triggers = trackEventMock.mock.calls
+      .filter(([name]) => name === 'update_check')
+      .map(([, props]) => (props as Record<string, string>).trigger)
+    expect(triggers).toEqual(['poll', 'command'])
   })
 
   it('updates anyway when the classification itself is unavailable', async () => {
@@ -168,11 +193,73 @@ describe('an update found on an install that can’t write its own bundle', () =
     checkForUpdateMock.mockResolvedValueOnce(anUpdate)
     updateWriteBlockerMock.mockRejectedValueOnce(new Error('IPC went missing'))
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     // The classification saves a doomed download; it isn't permission to update. Treating a
     // hiccup as "can't update" would stop updates that would have worked.
     expect(downloadUpdateMock).toHaveBeenCalledTimes(1)
     expect(updateState.status).toBe('ready')
+  })
+})
+
+/**
+ * `trigger` is what keeps five entry points from collapsing into one number. Each is driven the
+ * way production drives it, so a new call site that forgets to name itself doesn't compile, and one
+ * wired to the wrong token shows up here rather than months later on a dashboard.
+ */
+describe('what set a check going', () => {
+  /** The `trigger` on every `update_check` fired so far, oldest first. */
+  function reportedTriggers(): string[] {
+    return trackEventMock.mock.calls
+      .filter(([name]) => name === 'update_check')
+      .map(([, props]) => (props as Record<string, string>).trigger)
+  }
+
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+    checkForUpdateMock.mockReset()
+    checkForUpdateMock.mockResolvedValue(null)
+    updateWriteBlockerMock.mockReset()
+    updateWriteBlockerMock.mockResolvedValue(null)
+    trackEventMock.mockClear()
+    addToastMock.mockClear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    _resetUpdaterStateForTest()
+  })
+
+  it('names the launch check `startup` and every later tick `poll`', async () => {
+    vi.useFakeTimers()
+    const stop = startUpdateChecker()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(reportedTriggers()).toEqual(['startup'])
+
+    // One poll interval on. The launch check and the loop are different questions about the
+    // population: one says how many installs came up, the other how long they stay up.
+    await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+    expect(reportedTriggers()).toEqual(['startup', 'poll'])
+    stop()
+  })
+
+  it('names the check that follows turning auto-check back on', async () => {
+    applyAutoCheckEnabled(true)
+    await vi.waitFor(() => {
+      expect(reportedTriggers()).toEqual(['auto_check_on'])
+    })
+  })
+
+  it('names the `app.checkForUpdates` command', async () => {
+    await runMenuTriggeredCheck()
+    expect(reportedTriggers()).toEqual(['command'])
+  })
+
+  it('names the Settings > Updates button apart from the command', async () => {
+    // Both are a person asking on purpose, but only one of them costs a trip into Settings, so
+    // they answer different questions about where the affordance is worth having.
+    await checkForUpdates('settings')
+    await checkForUpdates('command')
+    expect(reportedTriggers()).toEqual(['settings', 'command'])
   })
 })

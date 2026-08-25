@@ -208,11 +208,14 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `open_session_inner` (F3, the "View as text" override, preview-inside-a-zip), and it's wrapped rather than emitted
   inline because the media path is an early return and the text path has a dozen `?`s.
 - `update_check` (frontend, `$lib/updates/update-analytics.ts`, once per finished check, from every exit of
-  `checkForUpdates()`): `outcome` (`up_to_date` / `staged` / `already_staged` / `blocked` / `failed`), `failure` (the
+  `checkForUpdates()`): `trigger` (what set it going: `startup` / `poll` / `auto_check_on` / `command` / `settings`),
+  `outcome` (`up_to_date` / `staged` / `already_staged` / `blocked` / `failed`), `failure` (the
   typed kind, or `none`: `check` / `download` / `install` for a phase that didn't get there, `translocated` /
   `read_only_volume` for a bundle that can't be written), and `staged_version`, the release sitting in the bundle
   waiting for a restart (one of our own release numbers, or `none`). ❌ Never a URL, a bundle path, or the text of a
-  failure. Without this the update path is invisible between "the install asked" (the `update_checks` row the manifest
+  failure. `trigger` is `checkForUpdates()`'s required first parameter, with no default, so a sixth entry point has to
+  decide what it reports; without it a run of manual checks (someone hunting for a fix) and the background loop ticking
+  are one number. Without this the update path is invisible between "the install asked" (the `update_checks` row the manifest
   proxy writes) and "the install reports a version", so "everyone is current", "everyone has a build staged they never
   restart into", and "the install fails on every one of them" all read the same. `already_staged` is the one that
   answers the middle case directly: a rising count of it against a flat `staged` IS the stuck population.

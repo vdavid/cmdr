@@ -89,7 +89,7 @@
     }
 
     function handleCheckForUpdates() {
-        void checkForUpdates()
+        void checkForUpdates('settings')
     }
 
     function handleSendErrorReport() {

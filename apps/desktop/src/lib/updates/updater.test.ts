@@ -336,7 +336,7 @@ describe('checking again while an update is staged', () => {
   async function stage(version: string): Promise<void> {
     await notifyOnboardingComplete()
     pluginCheckMock.mockResolvedValueOnce(offer(version))
-    await checkForUpdates()
+    await checkForUpdates('poll')
     expect(updateState.status).toBe('ready')
   }
 
@@ -357,7 +357,7 @@ describe('checking again while an update is staged', () => {
     await stage('0.29.0')
     pluginCheckMock.mockResolvedValueOnce(offer('0.29.0'))
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     // Pre-fix the `ready` guard returned here, so the hourly poll went silent for the rest of the
     // session and the install sat on whatever was staged however long that session ran.
@@ -369,7 +369,7 @@ describe('checking again while an update is staged', () => {
     const repeat = offer('0.29.0')
     pluginCheckMock.mockResolvedValueOnce(repeat)
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     expect(repeat.downloadAndInstall).not.toHaveBeenCalled()
     expect(updateState.status).toBe('ready')
@@ -382,7 +382,7 @@ describe('checking again while an update is staged', () => {
     const newer = offer('0.33.0')
     pluginCheckMock.mockResolvedValueOnce(newer)
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     expect(newer.downloadAndInstall).toHaveBeenCalledTimes(1)
     expect(updateState.status).toBe('ready')
@@ -397,7 +397,7 @@ describe('checking again while an update is staged', () => {
     await stage('0.29.0')
     pluginCheckMock.mockRejectedValueOnce(new Error('network down'))
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     // The staged build is still in the bundle and still worth restarting for, so a transient
     // network blip must not downgrade the state machine or raise a message at the user.
@@ -413,7 +413,7 @@ describe('checking again while an update is staged', () => {
       downloadAndInstall: vi.fn(() => Promise.reject(new Error('signature mismatch'))),
     })
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     expect(updateState.status).toBe('ready')
     expect(updateState.update?.version).toBe('0.29.0')
@@ -423,7 +423,7 @@ describe('checking again while an update is staged', () => {
   it.each(['downloading', 'installing', 'checking'] as const)('does not interrupt an in-flight %s', async (status) => {
     _setUpdateStatusForTest(status)
 
-    await checkForUpdates()
+    await checkForUpdates('poll')
 
     expect(pluginCheckMock).not.toHaveBeenCalled()
   })
@@ -437,13 +437,13 @@ describe('checking again while an update is staged', () => {
     // An hour later: the poll runs, the answer is unchanged, and the user is left alone.
     vi.setSystemTime(Date.now() + 60 * 60 * 1000)
     pluginCheckMock.mockResolvedValueOnce(offer('0.29.0'))
-    await checkForUpdates()
+    await checkForUpdates('poll')
     expect(addToastMock).not.toHaveBeenCalled()
 
     // A full nudge interval on: the prompt comes back, so "Later" can't silence it for good.
     vi.setSystemTime(Date.now() + RESTART_NUDGE_INTERVAL_MS)
     pluginCheckMock.mockResolvedValueOnce(offer('0.29.0'))
-    await checkForUpdates()
+    await checkForUpdates('poll')
     expect(addToastMock).toHaveBeenCalledTimes(1)
     expect(addToastMock.mock.calls[0][1]).toMatchObject({ id: 'update', dismissal: 'persistent' })
   })
