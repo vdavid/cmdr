@@ -128,10 +128,20 @@ Three rules shape the nudge:
   macOS translocates, so this population meets the nudge on their FIRST launch. `pendingMoveNudge` holds it, and
   `notifyOnboardingComplete` / `setOnboardingShowing(false)` flush it, the same way the restart toast is re-attempted.
 
-**Cmdr does not move itself.** Doing the move would mean relocating a running app and relaunching it from the new path,
-and under translocation the thing that has to move isn't even the bundle we're running from
-(`SecTranslocateCreateOriginalPathForURL` would be needed to find it). A half-finished self-move leaves someone with no
-app at all, which is a worse outcome than a clear instruction. Revisit only with a plan for the failure modes.
+**Cmdr does not move itself**, and the reason is cost, not risk. Every step of a self-move was measured on macOS 26.5.2
+and each one works: `docs/notes/self-move-to-applications-2026-08-25.md`. Two results are worth carrying here because
+they contradict what the code around them might suggest:
+
+- **A move does NOT cost the user their FDA grant.** No TCC table has a path column, and the requirement stored in
+  Cmdr's own FDA row is bundle id plus Developer ID team, which a code requirement can satisfy from anywhere. A moved
+  bundle reuses its row rather than growing a second one.
+- **Copying the bundle is not enough.** The copy inherits `com.apple.quarantine`, and a quarantined bundle is
+  translocated again even from `/Applications`, so the move would buy nothing until the xattr is stripped.
+
+What holds the feature back is what it costs: a detached relaunch helper, an already-installed-in-`/Applications`
+branch, copy in ten locales, a capture run for the new dialog state, and an assembled flow that can only be exercised
+against a notarized build. The failure modes themselves are handled by ordering: copy, verify, dequarantine, relaunch,
+and only then trash the original, so a helper dying at any point leaves two copies rather than none.
 
 ## Menu-triggered "Check for updates"
 

@@ -15,6 +15,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing for a decision that hasn't been made yet:**
 
+- `self-move-to-applications-2026-08-25.md` — whether Cmdr could move itself to Applications instead of only telling the
+  user to, measured on macOS 26.5.2 rather than reasoned. **The FDA worry is answered: nothing in TCC records a path**,
+  so a moved bundle keeps its grant, and the note carries the four measurements plus the one 30-second check that closes
+  the last gap. It also carries the verified move recipe and the step everyone gets wrong (a copied bundle keeps its
+  quarantine xattr and is translocated again **even from `/Applications`** until the xattr is stripped). Read it before
+  anyone reopens the auto-move question, or repeats the claim that changing the `.app` inode costs FDA.
 - `rust-test-flake-analysis-2026-08-23.md` — what actually makes the Rust lanes go red, measured rather than assumed,
   and the numbers `docs/specs/open-decisions.md` item 12 needed. **The recommendation is to budget a test's MARGIN
   (per-test cap ÷ idle runtime), not its duration**: every test two saturated full-suite runs killed sits at the thin
