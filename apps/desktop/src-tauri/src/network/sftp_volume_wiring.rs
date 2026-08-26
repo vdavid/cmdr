@@ -145,8 +145,8 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// a task and awaits the join handle, so a connect the caller walks away from
 /// detaches rather than dropping mid-handshake. Calling one OFF goes through the
 /// token instead, which stops the dial where it stands in every phase.
-/// `crates/cmdr-sftp/DETAILS.md` § "Crate hazards" has why that split is shaped
-/// the way it is.
+/// `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`" has why that
+/// split is shaped the way it is, and what a dropped dial would leave behind.
 pub async fn connect_and_register(
     display_name: &str,
     params: SftpConnectionParams,

@@ -75,12 +75,14 @@ const RECONNECT_BACKOFF: [Duration; 6] = [
 /// a caller who goes away detaches the task instead of dropping the dial
 /// mid-handshake. ❌ Never call [`transport::dial`] directly.
 ///
-/// The panic that forced this spawn is fixed in `openssh-sftp-client` 0.15.8, so
-/// the indirection is now a choice about what an abandoned dial does rather than
-/// a requirement. `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`"
-/// carries the terms.
+/// ❗ That detaching IS what the spawn is for. The panic it once routed around is
+/// fixed in `openssh-sftp-client` 0.15.8, but a dial dropped inside the SFTP
+/// hello detaches the ENGINE instead and leaves the server's session open for the
+/// life of the process, and the phase deadline can't end it because nothing is
+/// left polling the dial. `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned
+/// `Sftp::new`" carries the measurement, and what retiring this would take.
 ///
-/// ❗ That spawn costs no cancellation, because calling a connect OFF goes
+/// ❗ The spawn costs no cancellation, because calling a connect OFF goes
 /// through `cancel` rather than through dropping this future: the token reaches
 /// into the task, the dial answers `Cancelled`, and the join handle comes back
 /// at once. A caller with nobody to cancel for it passes a token nothing holds.

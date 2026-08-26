@@ -476,11 +476,22 @@ engine's own tasks out with it (russh 0.62.7's client session loop, read 2026-08
 ❗ Only the unanswered-hello path needs the disconnect. A session that reached `SshConnection` is shut down by dropping
 the ENGINE, whose own drop orders its tasks to stop and releases the channel (§ 1).
 
-**`reconnect::guarded_dial` is the one shape still routing around the old panic.** It spawns the whole dial on
-`host.runtime()` and awaits the **join handle**, so a caller who goes away detaches the dial instead of dropping it
-mid-handshake. ❗ Nothing else rides on that spawn: the token and the deadline are arguments the dial already carries,
-so removing it costs no cancellation. What it changes is what an ABANDONED dial does, which on the 0.15.8 floor is a
-free choice rather than a forced one.
+**`reconnect::guarded_dial` is what keeps a dial polled to its end.** It spawns the whole dial on `host.runtime()` and
+awaits the **join handle**, so a caller who goes away detaches the dial instead of dropping it mid-handshake. Dropping
+one parked in the hello would let go of the engine's join handle, which DETACHES that task rather than aborting it, and
+of the `russh` `Handle`, whose `Drop` only logs: both conditions above at once, and the socket then stays open for the
+life of the process. ❗ `SUBSYSTEM_TIMEOUT` is no answer to that, because a deadline the dial CARRIES only fires while
+something polls the dial, which is exactly what an abandoned one lacks.
+
+Measured on the far end, where the claim lives (`HelloPeer::Stalling` against `sftp-fixture-openssh`, 2026-08-26): a
+dial dropped inside the hello leaves the server's session open at every probe out to 15 s, while the same dial left to
+run answers `TimedOut` at 9.9 s with the session gone 60 ms after that. So removing the spawn costs no CANCELLATION,
+which the token and the deadline carry on their own; what it costs is the abandon path, which is why `CLAUDE.md` keeps a
+guardrail against unwinding it.
+
+❗ **The way to earn that collapse is to make the hello drop-safe**, rather than to keep callers from dropping a dial: a
+guard over the engine's join handle and the session, running `stop_engine` from its own `Drop`, would close the far end
+AT the abandon instead of at the phase budget, and leave the spawn nothing left to do. Nothing does that yet.
 
 Two cells keep the whole hazard honest, and they pin OUTCOMES rather than a workaround:
 `abandoning_a_connect_does_not_panic_the_engines_task` for the drop, and

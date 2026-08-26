@@ -215,8 +215,8 @@ impl SftpVolume {
 ///
 /// ❗ The dial runs inside a task on `host.runtime()` and this function awaits
 /// the join handle, so dropping THIS future abandons the handle and never the
-/// dial. `transport.rs` has the detail, including why that indirection outlived
-/// the `openssh-sftp-client` panic that forced it.
+/// dial. That indirection is load-bearing rather than leftover: `DETAILS.md`
+/// § "2. An abandoned `Sftp::new`" has what a dropped dial leaves on the server.
 pub async fn connect_sftp_volume(
     name: &str,
     volume_id: &str,

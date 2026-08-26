@@ -16,11 +16,12 @@ user-facing words.
 - **❌ Never call `Sftp::close()`** — it hangs forever over a `russh` channel; dropping the session IS the shutdown.
 - **❗ `File::close()` is the opposite: awaited, and only by its LAST clone.** A surviving clone makes it a silent no-op
   and the upload reports success on bytes nobody committed.
+- **❗ A hello that never arrives ends in `transport::stop_engine`, ❌ never a bare `drop(session)`**: the engine's
+  tasks hold the channel and a sender the session lives on, so the socket would stay open for the life of the process.
+  `DETAILS.md` § "2. An abandoned `Sftp::new`".
 - **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE so an abandoned dial detaches
-  rather than drops. The panic that forced it is fixed in 0.15.8; the shape stays until someone unwinds it on purpose.
-- **❗ A hello that never arrives ends in `transport::stop_engine`, ❌ never a bare `drop(session)`**: the engine's own
-  tasks hold the channel, and a sender the session lives on with it, so the socket would stay open for the life of the
-  process. `DETAILS.md` § "2. An abandoned `Sftp::new`".
+  rather than drops. ❌ Never unwind it: a DROPPED dial parks an engine on that hello, nothing left polling its
+  deadline.
 - **❗ A connect is called off with a `CancellationToken`, ❌ never by dropping the dial.** Every phase stops where it
   stands, the hello included, and a cancelled connect registers, remembers, and stores nothing.
 - **Host-key trust keys on `(host, port, algorithm)` AND pins negotiation to it** — ❌ never one without the other. ❌

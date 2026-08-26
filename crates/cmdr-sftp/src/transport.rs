@@ -180,9 +180,12 @@ pub enum DialOutcome {
 /// uses. ❗ A cancelled dial leaves nothing behind: no session, no approval, no
 /// stored secret.
 ///
-/// ❗ Dropping this future rather than cancelling the token still has to be safe,
-/// because a cancel can lose a race with one. `crate::volume::connect_sftp_volume`
-/// is what makes it safe, by running the whole thing inside a task.
+/// ❌ Never drop this future instead of cancelling the token: a drop inside the
+/// SFTP hello detaches the engine and leaves the server's session open for the
+/// life of the process (`crates/cmdr-sftp/DETAILS.md` § "2. An abandoned
+/// `Sftp::new`"). [`crate::volume::connect_sftp_volume`] is what guarantees
+/// nothing does, by
+/// running the whole dial inside a task.
 pub async fn dial(
     params: SftpConnectionParams,
     host: VolumeHost,
@@ -364,8 +367,9 @@ async fn await_hello(
         biased;
         () = cancel.cancelled() => Err(SftpConnectError::Cancelled),
         // ❗ `&mut`, so the handle survives either ending and can still be
-        // aborted. Dropping it would DETACH the task instead, leaving the engine
-        // to hold the socket until it gave up on its own.
+        // aborted. Dropping it would DETACH the task instead, and an engine
+        // parked on a hello that never comes holds the socket for the life of
+        // the process rather than giving up on its own.
         joined = tokio::time::timeout_at(deadline, &mut starting) => joined.map_err(|_elapsed| SftpConnectError::TimedOut),
     };
     let joined = match waited {
