@@ -1,5 +1,8 @@
 packages:
   - apps/*
+  # The ESLint rules shared across apps. A package (not a loose folder) so it can carry the
+  # `eslint` devDependency its RuleTester unit tests import.
+  - eslint-plugins
 
 # Don't prompt before wiping node_modules when pnpm decides it's stale;
 # our checker runs pnpm non-interactively and there's no human to answer.

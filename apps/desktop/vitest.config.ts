@@ -21,6 +21,10 @@ export default defineConfig({
       'src/**/*.test.ts',
       'scripts/**/*.test.{js,ts}',
       'eslint-plugins/**/*.test.js',
+      // The repo-root `eslint-plugins/` holds the rules shared with the other apps. It's not a
+      // workspace package and has no runner of its own, so its tests ride along here; without
+      // this line they'd silently never run.
+      '../../eslint-plugins/**/*.test.js',
       'test/e2e-shared/**/*.test.ts',
       // The Playwright suite's specs are `*.spec.ts` and never run here; only its
       // PURE helper modules carry `*.test.ts` unit tests (the screenshot

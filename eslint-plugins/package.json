@@ -1,5 +1,10 @@
 {
   "name": "@cmdr/eslint-plugins",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "eslint": "^10.7.0",
+    "svelte-eslint-parser": "^1.8.0",
+    "typescript-eslint": "^8.64.0"
+  }
 }

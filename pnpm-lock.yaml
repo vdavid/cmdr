@@ -391,6 +391,18 @@ importers:
         specifier: 23.0.1
         version: 23.0.1(svelte@5.56.8(@typescript-eslint/types@8.67.0))
 
+  eslint-plugins:
+    devDependencies:
+      eslint:
+        specifier: ^10.7.0
+        version: 10.8.1(jiti@2.7.0)(supports-color@10.2.2)
+      svelte-eslint-parser:
+        specifier: ^1.8.0
+        version: 1.8.1(svelte@5.56.8(@typescript-eslint/types@8.67.0))
+      typescript-eslint:
+        specifier: ^8.64.0
+        version: 8.67.0(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+
 packages:
 
   '@antfu/install-pkg@1.1.0':
