@@ -9,7 +9,7 @@ import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/qui
 import type { FileEntry, FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
 import type { AdoptedOperationData, ForegroundOperationVerdict } from '$lib/file-explorer/pane/dialog-props'
 import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
-import type { StartRenameOptions } from '$lib/file-explorer/pane/types'
+import type { CopyPathBetweenPanesArgs, StartRenameOptions } from '$lib/file-explorer/pane/types'
 import type { Initiator } from '$lib/tauri-commands'
 
 /**
@@ -35,7 +35,7 @@ export interface ExplorerAPI {
   refocus: () => void
   switchPane: () => void
   swapPanes: () => void
-  copyPathBetweenPanes: (source: 'left' | 'right', target: 'left' | 'right') => void
+  copyPathBetweenPanes: (args: CopyPathBetweenPanesArgs) => void
   toggleVolumeChooser: (pane: 'left' | 'right') => void
   openVolumeChooser: () => void
   closeVolumeChooser: () => void

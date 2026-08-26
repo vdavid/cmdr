@@ -23,11 +23,11 @@ export const paneHandlers = {
   },
 
   'pane.copyPathLeftToRight': ({ explorerRef }) => {
-    explorerRef?.copyPathBetweenPanes('left', 'right')
+    explorerRef?.copyPathBetweenPanes({ source: 'left', target: 'right' })
   },
 
   'pane.copyPathRightToLeft': ({ explorerRef }) => {
-    explorerRef?.copyPathBetweenPanes('right', 'left')
+    explorerRef?.copyPathBetweenPanes({ source: 'right', target: 'left' })
   },
 
   'pane.refresh': async ({ explorerRef }) => {

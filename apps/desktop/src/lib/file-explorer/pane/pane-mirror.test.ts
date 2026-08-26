@@ -56,7 +56,7 @@ describe('createPaneMirror', () => {
 
   it('is a no-op when source and target are the same pane', () => {
     const { mirror, navigate } = setup({ refs: { left: makePaneRef(), right: makePaneRef() } })
-    mirror.copyPathBetweenPanes('left', 'left')
+    mirror.copyPathBetweenPanes({ source: 'left', target: 'left' })
     expect(navigate).not.toHaveBeenCalled()
   })
 
@@ -71,7 +71,7 @@ describe('createPaneMirror', () => {
       focused: 'right', // source (left) not focused → no cursor refine
     })
 
-    mirror.copyPathBetweenPanes('left', 'right')
+    mirror.copyPathBetweenPanes({ source: 'left', target: 'right' })
 
     expect(navigate).toHaveBeenCalledWith({
       pane: 'right',
@@ -93,7 +93,7 @@ describe('createPaneMirror', () => {
       focused: 'left',
     })
 
-    mirror.copyPathBetweenPanes('left', 'right')
+    mirror.copyPathBetweenPanes({ source: 'left', target: 'right' })
 
     expect(navigate).toHaveBeenCalledWith({
       pane: 'right',
@@ -111,7 +111,7 @@ describe('createPaneMirror', () => {
       focused: 'right',
     })
 
-    mirror.copyPathBetweenPanes('left', 'right')
+    mirror.copyPathBetweenPanes({ source: 'left', target: 'right' })
 
     expect(navigate).not.toHaveBeenCalled()
     // Focus was already on 'right' (the original), so no restore write is needed.
@@ -130,7 +130,7 @@ describe('createPaneMirror', () => {
       focused: 'left',
     })
 
-    mirror.copyPathBetweenPanes('left', 'right')
+    mirror.copyPathBetweenPanes({ source: 'left', target: 'right' })
 
     expect(right.setNetworkHost).toHaveBeenCalledWith({ name: 'pickedHost' })
     expect(setPaneHistory).toHaveBeenCalled()

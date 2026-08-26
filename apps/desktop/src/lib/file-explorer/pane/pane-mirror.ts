@@ -17,7 +17,7 @@ import { pushHistoryEntry } from '../tabs/tab-state-manager.svelte'
 import type { NavigationHistory } from '../navigation/navigation-history'
 import type { NetworkHost } from '../types'
 import type { NavigateIntent, NavigateResult } from './navigate'
-import type { FilePaneAPI } from './types'
+import type { CopyPathBetweenPanesArgs, FilePaneAPI } from './types'
 
 export interface PaneMirrorDeps {
   navigate: (intent: NavigateIntent) => NavigateResult
@@ -31,7 +31,7 @@ export interface PaneMirrorDeps {
 }
 
 export interface PaneMirror {
-  copyPathBetweenPanes: (source: 'left' | 'right', target: 'left' | 'right') => void
+  copyPathBetweenPanes: (args: CopyPathBetweenPanesArgs) => void
 }
 
 export function createPaneMirror(deps: PaneMirrorDeps): PaneMirror {
@@ -87,7 +87,7 @@ export function createPaneMirror(deps: PaneMirrorDeps): PaneMirror {
     restoreFocus(originalFocused)
   }
 
-  function copyPathBetweenPanes(source: 'left' | 'right', target: 'left' | 'right'): void {
+  function copyPathBetweenPanes({ source, target }: CopyPathBetweenPanesArgs): void {
     if (source === target) return
     const sourcePaneRef = deps.getPaneRef(source)
     if (!sourcePaneRef) return

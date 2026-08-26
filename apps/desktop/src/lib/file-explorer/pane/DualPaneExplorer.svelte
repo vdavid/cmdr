@@ -1,7 +1,13 @@
 <script lang="ts">
     import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
-    import type { CancelLoadingPayload, FilePaneAPI, StartRenameOptions, VolumeChangePayload } from './types'
+    import type {
+        CancelLoadingPayload,
+        CopyPathBetweenPanesArgs,
+        FilePaneAPI,
+        StartRenameOptions,
+        VolumeChangePayload,
+    } from './types'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
@@ -1130,8 +1136,8 @@
      * cursor-on-server (network browser) sets the target's selected host;
      * cursor-on-share (share browser) queues auto-mount on the target.
      */
-    export function copyPathBetweenPanes(source: 'left' | 'right', target: 'left' | 'right'): void {
-        paneMirror.copyPathBetweenPanes(source, target)
+    export function copyPathBetweenPanes(args: CopyPathBetweenPanesArgs): void {
+        paneMirror.copyPathBetweenPanes(args)
     }
 
     export async function refreshPane(): Promise<void> {

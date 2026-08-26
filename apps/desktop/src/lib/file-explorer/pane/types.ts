@@ -62,6 +62,17 @@ export interface CancelLoadingPayload {
   selectName?: string
 }
 
+/**
+ * A pane-to-pane copy: the path comes from `source` and lands in `target`.
+ * Shared by `PaneMirror.copyPathBetweenPanes` and its `ExplorerAPI` re-declaration:
+ * both took `(source, target)`, two same-typed `'left' | 'right'` values a caller
+ * could swap.
+ */
+export interface CopyPathBetweenPanesArgs {
+  source: 'left' | 'right'
+  target: 'left' | 'right'
+}
+
 /** State snapshot for swapping panes without backend calls. */
 export interface SwapState {
   currentPath: string

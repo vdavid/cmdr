@@ -234,13 +234,13 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'pane.copyPathLeftToRight',
     expect: (e) => {
-      expect(e.copyPathBetweenPanes).toHaveBeenCalledExactlyOnceWith('left', 'right')
+      expect(e.copyPathBetweenPanes).toHaveBeenCalledExactlyOnceWith({ source: 'left', target: 'right' })
     },
   },
   {
     id: 'pane.copyPathRightToLeft',
     expect: (e) => {
-      expect(e.copyPathBetweenPanes).toHaveBeenCalledExactlyOnceWith('right', 'left')
+      expect(e.copyPathBetweenPanes).toHaveBeenCalledExactlyOnceWith({ source: 'right', target: 'left' })
     },
   },
   {
