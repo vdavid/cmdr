@@ -17,6 +17,7 @@ import svelte from 'eslint-plugin-svelte'
 import svelteParser from 'svelte-eslint-parser'
 import globals from 'globals'
 import noErrorStringMatch from '../../eslint-plugins/no-error-string-match.js'
+import noConfusableCallbackParams from '../../eslint-plugins/no-confusable-callback-params.js'
 import noIsolatedTests from '../../eslint-plugins/no-isolated-tests.js'
 
 // Underscore-prefixed names are an intentional "deliberately unused" marker, same as desktop.
@@ -83,10 +84,17 @@ export default tseslint.config(
     },
   },
   {
-    // Shared with the desktop app, which registers the same rule under the same name.
+    // Shared with the desktop app, which registers the same rules under the same names.
     files: ['src/**/*.{ts,svelte}'],
-    plugins: { cmdr: { rules: { 'no-error-string-match': noErrorStringMatch } } },
-    rules: { 'cmdr/no-error-string-match': 'error' },
+    plugins: {
+      cmdr: {
+        rules: {
+          'no-error-string-match': noErrorStringMatch,
+          'no-confusable-callback-params': noConfusableCallbackParams,
+        },
+      },
+    },
+    rules: { 'cmdr/no-error-string-match': 'error', 'cmdr/no-confusable-callback-params': 'error' },
   },
   {
     files: ['src/**/*.test.ts'],

@@ -10,14 +10,6 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-08-26 `confusable-callback-params-violations.md` - **A whole bug class (mismatched positional callback
-      params) is now made unrepresentable by a new lint rule, but it isn't turned on yet.**
-      `cmdr/no-confusable-callback-params` (`eslint-plugins/`) flags a callback type whose non-rest params share a type
-      or carry an unresolved generic; it's written, unit-tested, and deliberately left OFF everywhere so this branch
-      stays green. 105 flagged locations across `apps/desktop` and `apps/api-server` (53 production, 52 test), grouped
-      into 27 shared-callback fix units plus independent singles, with two likely false positives called out. **Turning
-      the rule on is the fix-up work; no design decision left**, just working the checklist and wiring the rule to
-      `error` in the four `eslint.config.js` files once clean.
 - [ ] 2026-08-21 `idle-cost.md` - **Cmdr costs too much while you're not using it.** An idle prod build burned 110
       minutes of CPU over 9.1 hours at a 1.78 GB footprint. Two items left, and both wait on a measurement rather than
       on effort: the CLIP towers (an enrichment pass holds 251.5 MB of text tower it never calls, gated on one

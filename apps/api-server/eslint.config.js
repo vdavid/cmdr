@@ -7,6 +7,7 @@ import js from '@eslint/js'
 import prettierConfig from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 import globals from 'globals'
+import noConfusableCallbackParams from '../../eslint-plugins/no-confusable-callback-params.js'
 
 export default tseslint.config(
   {
@@ -66,5 +67,12 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-dynamic-delete': 'off',
     },
+  },
+  {
+    // Shared with the desktop app and analytics dashboard, which register the same rule
+    // under the same name.
+    files: ['src/**/*.ts'],
+    plugins: { cmdr: { rules: { 'no-confusable-callback-params': noConfusableCallbackParams } } },
+    rules: { 'cmdr/no-confusable-callback-params': 'error' },
   },
 )

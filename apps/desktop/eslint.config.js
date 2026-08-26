@@ -29,6 +29,7 @@ import svelteParser from 'svelte-eslint-parser'
 import globals from 'globals'
 import noIsolatedTests from '../../eslint-plugins/no-isolated-tests.js'
 import noErrorStringMatch from '../../eslint-plugins/no-error-string-match.js'
+import noConfusableCallbackParams from '../../eslint-plugins/no-confusable-callback-params.js'
 import noRawTauriInvoke from './eslint-plugins/no-raw-tauri-invoke.js'
 import noRawBindingsImport from './eslint-plugins/no-raw-bindings-import.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
@@ -263,6 +264,7 @@ export default tseslint.config(
       cmdr: {
         rules: {
           'no-error-string-match': noErrorStringMatch,
+          'no-confusable-callback-params': noConfusableCallbackParams,
           'no-raw-tauri-invoke': noRawTauriInvoke,
           'no-raw-bindings-import': noRawBindingsImport,
           'no-explorer-state-writes': noExplorerStateWrites,
@@ -280,6 +282,10 @@ export default tseslint.config(
     },
     rules: {
       'cmdr/no-error-string-match': 'error',
+      // A callback type with two or more confusable positional parameters (same type, or an
+      // unresolved generic) is banned: use a single named object payload instead. Both a
+      // dropped-parameter mismatch and a swapped-argument mismatch have shipped as real bugs.
+      'cmdr/no-confusable-callback-params': 'error',
       'cmdr/no-raw-tauri-invoke': 'error',
       // Feature code imports typed wrappers from `$lib/tauri-commands`, never the
       // raw `commands`/`events` bindings (type imports from bindings stay fine).

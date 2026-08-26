@@ -75,7 +75,7 @@ function toPublicMap(map: LinkCodeMap): PublicLinkCodeMap {
 // page loads off KV. A new code is live within the TTL without a deploy.
 const publicCacheControl = 'public, max-age=300'
 
-// Mirrors Hono's own `Context.header(name, value)` signature; not ours to reshape.
+// eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors Hono's own `Context.header(name, value)` signature; not ours to reshape
 function publicCors(c: { header: (name: string, value: string) => void }) {
   c.header('Access-Control-Allow-Origin', '*')
   c.header('Access-Control-Allow-Methods', 'GET, OPTIONS')

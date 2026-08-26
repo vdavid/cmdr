@@ -57,7 +57,7 @@ vi.mock('$lib/settings/settings-store', () => settingsApi)
 
 vi.mock('$lib/settings/settings-search', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
-  // Mirrors the real (unconverted) production signature, `(query, settingId) => number[]`.
+  // eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors the real (unconverted) production signature, `(query, settingId) => number[]` in `settings-search.ts`, consumed positionally by `SettingRow.svelte` and `AdvancedSection.svelte`
   const realIndices = actual.getMatchIndicesForLabel as (query: string, settingId: string) => number[]
   const realHighlight = actual.highlightMatches as (label: string, indices: number[]) => unknown
   return {

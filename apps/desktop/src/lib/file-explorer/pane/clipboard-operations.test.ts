@@ -133,11 +133,7 @@ const dialogsStub = {
   // an object payload would misrepresent it: `clipboard-operations.ts` (untouched, out
   // of scope here) calls `dialogs.showAlert(title, message)` positionally, so the mock
   // must keep matching that shape.
-  // cmdr/no-confusable-callback-params: fixed, well-known pair mirroring real showAlert(title, message),
-  // never reordered; see comment above. NOT a real `eslint-disable-next-line` yet: the rule isn't
-  // registered in `eslint.config.js`, and ESLint treats an unknown rule id in a disable comment as a
-  // hard error, which would break `pnpm check` today. Swap this for a real disable directive when it's
-  // wired up.
+  // eslint-disable-next-line cmdr/no-confusable-callback-params -- fixed, well-known pair mirroring real showAlert(title, message), never reordered; see comment above
   showAlert: vi.fn<(title: string, message: string) => void>(),
 }
 

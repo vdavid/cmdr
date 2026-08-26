@@ -8,6 +8,7 @@ import prettierConfig from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 import astro from 'eslint-plugin-astro'
 import globals from 'globals'
+import noConfusableCallbackParams from '../../eslint-plugins/no-confusable-callback-params.js'
 
 export default tseslint.config(
   {
@@ -118,5 +119,12 @@ export default tseslint.config(
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
     },
+  },
+  {
+    // Shared with the desktop app, api-server, and analytics dashboard, which register the
+    // same rule under the same name.
+    files: ['**/*.ts'],
+    plugins: { cmdr: { rules: { 'no-confusable-callback-params': noConfusableCallbackParams } } },
+    rules: { 'cmdr/no-confusable-callback-params': 'error' },
   },
 )

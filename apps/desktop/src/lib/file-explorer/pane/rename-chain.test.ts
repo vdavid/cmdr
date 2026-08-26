@@ -24,11 +24,7 @@ const {
   // positionally. An object payload here would misrepresent that positional shape.
   executeRenameSaveSpy:
     vi.fn<
-      // cmdr/no-confusable-callback-params: mirrors real, unconverted executeRenameSave(target,
-      // trimmedName, extensionPolicy, skipExtensionCheck?, volumeId?); see comment above. NOT a real
-      // `eslint-disable-next-line` yet: the rule isn't registered in `eslint.config.js`, and ESLint
-      // treats an unknown rule id in a disable comment as a hard error, which would break `pnpm check`
-      // today. Swap this for a real disable directive when it's wired up.
+      // eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors real, unconverted executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck?, volumeId?); see comment above
       (
         target: { path: string; originalName: string },
         trimmedName: string,
