@@ -163,7 +163,14 @@ describe('the refusal an MCP agent receives', () => {
     dialogs.startTransferProgress(copyProps())
     dialogs.showTransfer(transferConfirmationProps('req-7'))
 
-    dialogs.handleTransferConfirm('/Users/me/elsewhere', 'root', null, 'skip', 'copy', [])
+    dialogs.handleTransferConfirm({
+      destination: '/Users/me/elsewhere',
+      volumeId: 'root',
+      previewId: null,
+      conflictResolution: 'skip',
+      operationType: 'copy',
+      preKnownConflicts: [],
+    })
 
     expect(emit).toHaveBeenCalledWith(
       'mcp-response',
@@ -176,7 +183,14 @@ describe('the refusal an MCP agent receives', () => {
     dialogs.startTransferProgress(copyProps())
     dialogs.showTransfer(transferConfirmationProps('req-7'))
 
-    dialogs.handleTransferConfirm('/Users/me/elsewhere', 'root', null, 'skip', 'copy', [])
+    dialogs.handleTransferConfirm({
+      destination: '/Users/me/elsewhere',
+      volumeId: 'root',
+      previewId: null,
+      conflictResolution: 'skip',
+      operationType: 'copy',
+      preKnownConflicts: [],
+    })
 
     const payload = vi.mocked(emit).mock.calls.find(([name]) => name === 'mcp-response')?.[1] as {
       error?: string
@@ -189,7 +203,14 @@ describe('the refusal an MCP agent receives', () => {
     dialogs.startTransferProgress(copyProps())
     dialogs.showTransfer(transferConfirmationProps())
 
-    dialogs.handleTransferConfirm('/Users/me/elsewhere', 'root', null, 'skip', 'copy', [])
+    dialogs.handleTransferConfirm({
+      destination: '/Users/me/elsewhere',
+      volumeId: 'root',
+      previewId: null,
+      conflictResolution: 'skip',
+      operationType: 'copy',
+      preKnownConflicts: [],
+    })
 
     expect(emit).not.toHaveBeenCalledWith('mcp-response', expect.anything())
   })

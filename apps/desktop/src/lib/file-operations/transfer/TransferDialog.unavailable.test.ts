@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import TransferDialog from './TransferDialog.svelte'
 import * as commands from '$lib/tauri-commands'
+import type { TransferConfirmPayload } from '$lib/file-explorer/pane/dialog-props'
 
 const startScanPreviewMock = vi.mocked(commands.startScanPreview)
 
@@ -73,7 +74,7 @@ async function flushMicrotasks(rounds = 8): Promise<void> {
   }
 }
 
-function mountDialog(onConfirm: (...args: unknown[]) => void = () => {}): HTMLDivElement {
+function mountDialog(onConfirm: (payload: TransferConfirmPayload) => void = () => {}): HTMLDivElement {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(TransferDialog, {
@@ -158,7 +159,7 @@ describe('a conflict check that gives up', () => {
 
   it('still lets the transfer start, since the backend asks about each clash it meets', async () => {
     scanVolumeForConflictsMock.mockRejectedValue(new Error('Operation timed out'))
-    const confirmed = vi.fn()
+    const confirmed = vi.fn<(payload: TransferConfirmPayload) => void>()
     const target = mountDialog(confirmed)
     await flushMicrotasks()
 
@@ -168,8 +169,8 @@ describe('a conflict check that gives up', () => {
     expect(confirmed).toHaveBeenCalledTimes(1)
     // An unknown check contributes NO names: the bulk pre-skip list is a perf
     // hint, and inventing entries for it would skip files nobody checked.
-    expect(confirmed.mock.calls[0]?.[5]).toEqual([])
+    expect(confirmed.mock.calls[0]?.[0]?.preKnownConflicts).toEqual([])
     // And the policy it dispatches with is still "ask me about each one".
-    expect(confirmed.mock.calls[0]?.[3]).toBe('stop')
+    expect(confirmed.mock.calls[0]?.[0]?.conflictResolution).toBe('stop')
   })
 })

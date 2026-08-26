@@ -4,6 +4,7 @@
     import { homeDir } from '@tauri-apps/api/path'
     import { getVolumeSpace, DEFAULT_VOLUME_ID, type VolumeSpaceInfo } from '$lib/tauri-commands'
     import type { SortColumn, SortOrder, ConflictResolution, TransferOperationType } from '$lib/file-explorer/types'
+    import type { TransferConfirmPayload } from '$lib/file-explorer/pane/dialog-props'
     import { validateDirectoryPath } from '$lib/utils/filename-validation'
     import { createTransferDestExistsCheck } from './transfer-dest-exists.svelte'
     import { conflictPolicyFromMcpName } from './conflict-policy'
@@ -64,17 +65,7 @@
          *  open): the FE then acks the round-trip WITHOUT an operationId, since no
          *  op spawned. The normal spawn reply happens in the progress state. */
         mcpRequestId?: string
-        onConfirm: (
-            destination: string,
-            volumeId: string,
-            previewId: string | null,
-            conflictResolution: ConflictResolution,
-            operationType: TransferOperationType,
-            /** Source filenames known to conflict at dest, for the BE to bulk-skip
-             *  under `Skip all`. Empty when no conflicts were found or the pre-flight
-             *  scan failed. */
-            preKnownConflicts: string[],
-        ) => void
+        onConfirm: (payload: TransferConfirmPayload) => void
         onCancel: () => void
     }
 
@@ -488,7 +479,14 @@
         if (isSameVolumeMove) {
             scan.cancelPreview()
             if (needsConflictNames()) await conflictCheckPromise
-            onConfirm(editedPath, selectedVolumeId, null, conflictPolicy, activeOperationType, conflicts.conflictNames)
+            onConfirm({
+                destination: editedPath,
+                volumeId: selectedVolumeId,
+                previewId: null,
+                conflictResolution: conflictPolicy,
+                operationType: activeOperationType,
+                preKnownConflicts: conflicts.conflictNames,
+            })
             return
         }
         // Wait for `startScanPreview` so `previewId` is non-null on a fast
@@ -506,14 +504,14 @@
         // names.
         await scan.scanStarted
         if (needsConflictNames()) await conflictCheckPromise
-        onConfirm(
-            editedPath,
-            selectedVolumeId,
-            scan.previewId,
-            conflictPolicy,
-            activeOperationType,
-            conflicts.conflictNames,
-        )
+        onConfirm({
+            destination: editedPath,
+            volumeId: selectedVolumeId,
+            previewId: scan.previewId,
+            conflictResolution: conflictPolicy,
+            operationType: activeOperationType,
+            preKnownConflicts: conflicts.conflictNames,
+        })
     }
 
     function handleCancel() {

@@ -47,6 +47,7 @@ import type {
   NewFileDialogPropsData,
   NewFolderDialogPropsData,
   OperationStartVerdict,
+  TransferConfirmPayload,
   TransferErrorPropsData,
   TransferProgressPropsData,
 } from './dialog-props'
@@ -323,14 +324,14 @@ export function createDialogState(deps: DialogStateDeps) {
 
     // --- Handler functions (passed to DialogManager) ---
 
-    handleTransferConfirm(
-      destination: string,
-      volumeId: string,
-      previewId: string | null,
-      conflictResolution: ConflictResolution,
-      operationType: TransferOperationType,
-      preKnownConflicts: string[],
-    ) {
+    handleTransferConfirm({
+      destination,
+      volumeId,
+      previewId,
+      conflictResolution,
+      operationType,
+      preKnownConflicts,
+    }: TransferConfirmPayload) {
       if (!transferDialogProps) return
 
       // A refusal still takes this dialog down (below): the user answered it, and
@@ -737,14 +738,14 @@ export function createDialogState(deps: DialogStateDeps) {
           })
         }
         const resolution: ConflictResolution = mapped ?? 'skip'
-        this.handleTransferConfirm(
-          transferDialogProps.destinationPath,
-          transferDialogProps.destVolumeId,
-          null, // previewId not available when confirming programmatically
-          resolution,
-          transferDialogProps.operationType,
-          [], // pre-known conflicts not available when confirming programmatically
-        )
+        this.handleTransferConfirm({
+          destination: transferDialogProps.destinationPath,
+          volumeId: transferDialogProps.destVolumeId,
+          previewId: null, // not available when confirming programmatically
+          conflictResolution: resolution,
+          operationType: transferDialogProps.operationType,
+          preKnownConflicts: [], // not available when confirming programmatically
+        })
       } else if (dialogType === 'delete-confirmation' && showDeleteDialog && deleteDialogProps) {
         // previewId not available when confirming programmatically.
         // For MCP auto-confirm, honor whatever the props initialized with.

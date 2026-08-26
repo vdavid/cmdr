@@ -14,6 +14,7 @@ import TransferDialog from './TransferDialog.svelte'
 import * as commands from '$lib/tauri-commands'
 import type { VolumeConflictInfo } from '$lib/tauri-commands'
 import type { ConflictResolution } from '$lib/file-explorer/types'
+import type { TransferConfirmPayload } from '$lib/file-explorer/pane/dialog-props'
 
 const startScanPreviewMock = vi.mocked(commands.startScanPreview)
 const cancelScanPreviewMock = vi.mocked(commands.cancelScanPreview)
@@ -156,14 +157,7 @@ interface MountOpts {
   destinationPath?: string
 }
 
-type ConfirmFn = (
-  destination: string,
-  volumeId: string,
-  previewId: string | null,
-  conflictResolution: ConflictResolution,
-  operationType: string,
-  preKnownConflicts: string[],
-) => void
+type ConfirmFn = (payload: TransferConfirmPayload) => void
 
 function mountDialog(opts: MountOpts = {}): HTMLDivElement {
   const target = document.createElement('div')
@@ -367,7 +361,7 @@ describe('TransferDialog bulk-skip name forwarding', () => {
     ])
 
     const captured: { preKnown: string[] | null } = { preKnown: null }
-    const onConfirm: ConfirmFn = (_d, _v, _p, _r, _o, preKnownConflicts) => {
+    const onConfirm: ConfirmFn = ({ preKnownConflicts }) => {
       captured.preKnown = preKnownConflicts
     }
 
@@ -435,7 +429,7 @@ describe('TransferDialog auto-confirm payload', () => {
       preKnown: null,
       resolution: null,
     }
-    const onConfirm: ConfirmFn = (_d, _v, _p, conflictResolution, _o, preKnownConflicts) => {
+    const onConfirm: ConfirmFn = ({ conflictResolution, preKnownConflicts }) => {
       captured.preKnown = preKnownConflicts
       captured.resolution = conflictResolution
     }
@@ -478,7 +472,7 @@ describe('TransferDialog same-volume move scan gating', () => {
       previewId: 'unset',
       op: null,
     }
-    const onConfirm: ConfirmFn = (_d, _v, previewId, _r, operationType) => {
+    const onConfirm: ConfirmFn = ({ previewId, operationType }) => {
       captured.previewId = previewId
       captured.op = operationType
     }
@@ -582,7 +576,7 @@ describe('TransferDialog local→local move scan gating', () => {
       previewId: 'unset',
       op: null,
     }
-    const onConfirm: ConfirmFn = (_d, _v, previewId, _r, operationType) => {
+    const onConfirm: ConfirmFn = ({ previewId, operationType }) => {
       captured.previewId = previewId
       captured.op = operationType
     }
@@ -837,7 +831,7 @@ describe('TransferDialog compress mode', () => {
     // Auto-confirm (MCP) with the target zip already present: the dialog must NOT
     // dispatch — it stays open so the user decides.
     pathExistsCheckedMock.mockResolvedValue({ data: true, timedOut: false })
-    const onConfirm = vi.fn()
+    const onConfirm = vi.fn<ConfirmFn>()
     mountDialog({ operationType: 'compress', autoConfirm: true, onConfirm })
     await flushMicrotasks()
     expect(onConfirm).not.toHaveBeenCalled()
@@ -845,12 +839,12 @@ describe('TransferDialog compress mode', () => {
 
   it('auto-confirm proceeds when the target archive does not exist', async () => {
     pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: false })
-    const onConfirm = vi.fn()
+    const onConfirm = vi.fn<ConfirmFn>()
     mountDialog({ operationType: 'compress', autoConfirm: true, onConfirm })
     await flushMicrotasks()
     expect(onConfirm).toHaveBeenCalledTimes(1)
     // Compress dispatches with an empty conflict list (no multi-file conflicts).
-    expect(onConfirm.mock.calls[0][5]).toEqual([])
+    expect(onConfirm.mock.calls[0][0].preKnownConflicts).toEqual([])
   })
 })
 
@@ -865,7 +859,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     const pendingCheck = deferred<VolumeConflictInfo[]>()
     scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
 
-    const onConfirm = vi.fn()
+    const onConfirm = vi.fn<ConfirmFn>()
     const target = mountDialog({ onConfirm })
     await flushMicrotasks()
 
@@ -875,15 +869,15 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     expect(onConfirm, 'the confirm must not wait on the dest listing').toHaveBeenCalledTimes(1)
     // `stop` asks per clash at runtime, and the backend ignores `pre_known_conflicts`
     // outside `Skip`, so dispatching with an empty list loses information, not safety.
-    expect(onConfirm.mock.calls[0][3]).toBe('stop')
-    expect(onConfirm.mock.calls[0][5]).toEqual([])
+    expect(onConfirm.mock.calls[0][0].conflictResolution).toBe('stop')
+    expect(onConfirm.mock.calls[0][0].preKnownConflicts).toEqual([])
   })
 
   it('dispatches a same-volume move while the conflict check is still pending', async () => {
     const pendingCheck = deferred<VolumeConflictInfo[]>()
     scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
 
-    const onConfirm = vi.fn()
+    const onConfirm = vi.fn<ConfirmFn>()
     const target = mountDialog({
       operationType: 'move',
       sourceVolumeId: 'ext',
@@ -896,7 +890,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     await flushMicrotasks()
 
     expect(onConfirm, 'the rename fast path must not wait either').toHaveBeenCalledTimes(1)
-    expect(onConfirm.mock.calls[0][5]).toEqual([])
+    expect(onConfirm.mock.calls[0][0].preKnownConflicts).toEqual([])
   })
 
   it('still waits for the conflict names under the Skip policy (the bulk-skip perf win)', async () => {
@@ -906,7 +900,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     const pendingCheck = deferred<VolumeConflictInfo[]>()
     scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
 
-    const onConfirm = vi.fn()
+    const onConfirm = vi.fn<ConfirmFn>()
     mountDialog({ autoConfirm: true, autoConfirmOnConflict: 'skip_all', onConfirm })
     await flushMicrotasks()
 
@@ -916,7 +910,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     await flushMicrotasks()
 
     expect(onConfirm).toHaveBeenCalledTimes(1)
-    expect(onConfirm.mock.calls[0][5]).toEqual(['notes.txt'])
+    expect(onConfirm.mock.calls[0][0].preKnownConflicts).toEqual(['notes.txt'])
   })
 
   it('disables the confirm button and shows a spinner while a confirm is genuinely pending', async () => {
@@ -926,7 +920,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     const pendingScan = deferred<{ previewId: string }>()
     startScanPreviewMock.mockReturnValue(pendingScan.promise)
 
-    const onConfirm = vi.fn()
+    const onConfirm = vi.fn<ConfirmFn>()
     const target = mountDialog({ onConfirm })
     await flushMicrotasks()
 
@@ -949,7 +943,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     const pendingCheck = deferred<VolumeConflictInfo[]>()
     scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
 
-    const onConfirm = vi.fn()
+    const onConfirm = vi.fn<ConfirmFn>()
     const onCancel = vi.fn()
     const target = mountDialog({
       autoConfirm: true,

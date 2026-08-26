@@ -20,15 +20,7 @@
         onVolumeContextAction,
         onVolumeUnmounted,
     } from '$lib/tauri-commands'
-    import type {
-        SortColumn,
-        SortOrder,
-        NetworkHost,
-        ConflictResolution,
-        WriteOperationError,
-        FriendlyError,
-        FileEntry,
-    } from '../types'
+    import type { SortColumn, SortOrder, NetworkHost, WriteOperationError, FriendlyError, FileEntry } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
 
@@ -69,7 +61,7 @@
     import type { TransferOperationType } from '../types'
     import type { Initiator } from '$lib/tauri-commands'
     import { createDialogState } from './dialog-state.svelte'
-    import type { AdoptedOperationData, ForegroundOperationVerdict } from './dialog-props'
+    import type { AdoptedOperationData, ForegroundOperationVerdict, TransferConfirmPayload } from './dialog-props'
     import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
     import { createClipboardOperations } from './clipboard-operations'
@@ -1433,15 +1425,8 @@
     transferErrorProps={dialogs.transferErrorProps}
     showArchivePasswordDialog={dialogs.showArchivePasswordDialog}
     archivePasswordProps={dialogs.archivePasswordProps}
-    onTransferConfirm={(
-        dest: string,
-        volId: string,
-        prevId: string | null,
-        resolution: ConflictResolution,
-        opType: TransferOperationType,
-        preKnownConflicts: string[],
-    ) => {
-        dialogs.handleTransferConfirm(dest, volId, prevId, resolution, opType, preKnownConflicts)
+    onTransferConfirm={(payload: TransferConfirmPayload) => {
+        dialogs.handleTransferConfirm(payload)
     }}
     onTransferCancel={() => {
         dialogs.handleTransferCancel()

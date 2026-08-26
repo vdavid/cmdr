@@ -17,8 +17,9 @@
         TransferErrorPropsData,
         ArchivePasswordPropsData,
         DeleteDialogPropsData,
+        TransferConfirmPayload,
     } from './dialog-props'
-    import type { ConflictResolution, FriendlyError, TransferOperationType, WriteOperationError } from '../types'
+    import type { FriendlyError, WriteOperationError } from '../types'
 
     const {
         onDialogRenderError,
@@ -79,14 +80,7 @@
         archivePasswordProps: ArchivePasswordPropsData | null
         showDeleteDialog: boolean
         deleteDialogProps: DeleteDialogPropsData | null
-        onTransferConfirm: (
-            destination: string,
-            volumeId: string,
-            previewId: string | null,
-            conflictResolution: ConflictResolution,
-            operationType: TransferOperationType,
-            preKnownConflicts: string[],
-        ) => void
+        onTransferConfirm: (payload: TransferConfirmPayload) => void
         onTransferCancel: () => void
         onTransferComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
         onTransferCancelled: (filesProcessed: number) => void

@@ -16,6 +16,24 @@ import type { DuplicateFollowUp } from './duplicate-rename'
 import type { FilePaneAPI } from './types'
 
 /**
+ * `TransferDialog`'s confirm payload: everything the user (or an MCP
+ * auto-confirm) decided about one transfer. Shared by `TransferDialog`'s
+ * `onConfirm`, `DialogManager`'s `onTransferConfirm`, and
+ * `dialog-state.svelte.ts`'s `handleTransferConfirm`.
+ */
+export interface TransferConfirmPayload {
+  destination: string
+  volumeId: string
+  previewId: string | null
+  conflictResolution: ConflictResolution
+  operationType: TransferOperationType
+  /** Source filenames known to conflict at dest, for the BE to bulk-skip
+   *  under `Skip all`. Empty when no conflicts were found or the pre-flight
+   *  scan failed. */
+  preKnownConflicts: string[]
+}
+
+/**
  * BIRTH CONTEXT: what this window started, and therefore what it may do to its
  * panes afterwards. Also the input the archive-password submit re-dispatches
  * from, which is why it lives in a slot of its own. `DETAILS.md` § "Birth
