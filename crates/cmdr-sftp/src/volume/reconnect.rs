@@ -27,18 +27,17 @@
 //!   latched by [`SftpVolumeInner::auth_attempt_spent`], and only a human clears
 //!   it.
 //! - ❗ **A secret dies with the dial it built.** An attended reconnect passes
-//!   what the user typed straight to [`guarded_dial`]; the store is only ever
+//!   what the user typed straight to [`transport::dial`]; the store is only ever
 //!   REFRESHED, never seeded.
 //! - ❗ **No reconnect on this path can be called off**, because nobody is
-//!   watching an unattended redial: [`guarded_dial`] gets a token nothing holds,
-//!   and the phase budgets are the only backstop. Abandoning one is safe on its
-//!   own terms (`transport::PendingEngine`).
+//!   watching an unattended redial: the dial gets a token nothing holds, and the
+//!   phase budgets are the only backstop. Abandoning one is safe on its own
+//!   terms (`transport::PendingEngine`).
 
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::StoredCredentials;
 use cmdr_fs::volume::{SelfHandle, VolumeError};
 use log::{debug, info, warn};
@@ -50,7 +49,6 @@ use crate::auth::{
     AuthRungUsed, ReconnectPolicy, UnattendedReconnect, reconnect_policy, redials_from_the_store, unattended_reconnect,
 };
 use crate::errors::SftpConnectError;
-use crate::params::SftpConnectionParams;
 use crate::transport::{self, DialOutcome};
 
 /// How long the backend waits between its own reconnect attempts.
@@ -67,23 +65,6 @@ const RECONNECT_BACKOFF: [Duration; 6] = [
     Duration::from_secs(60),
     Duration::from_secs(120),
 ];
-
-/// The one way this module dials. ❌ Never call [`transport::dial`] directly.
-///
-/// ❗ Awaiting the dial itself is safe at every phase, abandoning included:
-/// `transport::PendingEngine`'s `Drop` runs the hello's teardown whether or not
-/// anyone is still polling, so a caller who walks away leaves the far end
-/// nothing (`crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`").
-/// Calling a connect OFF is a different thing and goes through `cancel`, which
-/// is what makes it answer `Cancelled`.
-pub(super) async fn guarded_dial(
-    host: &VolumeHost,
-    params: SftpConnectionParams,
-    offered_secret: Option<String>,
-    cancel: CancellationToken,
-) -> Result<DialOutcome, SftpConnectError> {
-    transport::dial(params, host.clone(), offered_secret, cancel).await
-}
 
 /// Why an attempt didn't leave a live session, in the terms the loop acts on.
 #[derive(Debug)]
@@ -226,7 +207,14 @@ impl SftpVolumeInner {
         // ❗ A token nobody else holds, so nothing can call this off: a reconnect
         // has no user watching it, and the backoff loop's own gates
         // (`check_unattended_policy`, `unmounted`) are what stop it.
-        match guarded_dial(&self.host, self.params.clone(), offered, CancellationToken::new()).await {
+        match transport::dial(
+            self.params.clone(),
+            self.host.clone(),
+            offered,
+            CancellationToken::new(),
+        )
+        .await
+        {
             Ok(DialOutcome::Connected { connection, rung }) => {
                 // Between the dial starting and the session landing, the user may
                 // have ejected the volume. Installing here would leave a live SSH

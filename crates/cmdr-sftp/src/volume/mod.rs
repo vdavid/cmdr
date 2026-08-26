@@ -226,7 +226,7 @@ pub async fn connect_sftp_volume(
 ) -> Result<SftpConnectOutcome, SftpConnectError> {
     let root = params.remote_root.clone();
     let auto_reconnect = params.auto_reconnect;
-    let outcome = reconnect::guarded_dial(&host, params.clone(), None, cancel.clone()).await?;
+    let outcome = transport::dial(params.clone(), host.clone(), None, cancel.clone()).await?;
 
     // ❗ A cancel that lands as the session does still ends the user's connect.
     // Answering here is what makes "cancelled" and "registered" mutually
