@@ -34,8 +34,8 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
   source, and the retained `SourceNotFound` poisons the next one.
 - **"Rows appeared" doesn't prove a WALK**: the instance indexes its tree at launch, so a spec needing one takes the
   index away first (`search-walk-ground.ts`).
-- **Downloads is redirected** to `$CMDR_DATA_DIR/downloads`, ❌ never your real `~/Downloads`: a download mid-run
-  would toast into whatever spec is in flight. DETAILS § Decision.
+- **Downloads is redirected** to `$CMDR_DATA_DIR/downloads`, ❌ never your real `~/Downloads`: a download mid-run would
+  toast into whatever spec is in flight. DETAILS § Decision.
 - **Two fakes**: the clipboard is mocked (a Rust `Mutex`, not `NSPasteboard`), and `tauri-plugin-store` reads your REAL
   store files unless redirected, so a locally flipped setting becomes a CI-only failure.
 - **Every harness pins BOTH locale halves before launch**: `appearance.language`, plus `-AppleLocale` args for the
