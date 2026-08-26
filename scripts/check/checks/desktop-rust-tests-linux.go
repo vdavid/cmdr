@@ -13,12 +13,6 @@ import (
 	"time"
 )
 
-// goVersion must match `.mise.toml`'s `go` entry. The container provisioning script
-// below downloads this exact tarball so build.rs can invoke
-// `go run scripts/download-llama-server.go` (which Tauri's beforeBuildCommand needs).
-// Debian's `golang-go` apt package lags too far behind to track mise reliably.
-const goVersion = "1.25.7"
-
 // containerNextestVersion pins the container's cargo-nextest to the same version the host
 // lanes install. Two reasons it can't be `latest`: the "pin every tool install" rule, and
 // the contention re-run, whose profile semantics (a per-test override beating a
@@ -90,9 +84,20 @@ NEXTEST_URL=https://get.nexte.st/%[2]s/${NEXTEST_PLATFORM}
 curl -fsSL https://go.dev/dl/go%[1]s.linux-${ARCH}.tar.gz | tar -xz -C /usr/local
 curl -LsSf "$NEXTEST_URL" | tar zxf - -C /usr/local/bin`
 
-// buildProvisionScript fills in the pinned Go and nextest versions.
-func buildProvisionScript() string {
-	return fmt.Sprintf(provisionScriptTemplate, goVersion, containerNextestVersion)
+// buildProvisionScript fills in the Go and nextest versions the container installs.
+//
+// Go comes from `.mise.toml` rather than a const here, so the container always
+// provisions the same toolchain the host and CI use. The script downloads that
+// exact tarball because build.rs invokes
+// `go run scripts/download-llama-server.go` (which Tauri's beforeBuildCommand
+// needs), and Debian's `golang-go` apt package lags too far behind to track mise.
+// `go-version-single-source` is what keeps a literal from creeping back in.
+func buildProvisionScript(rootDir string) (string, error) {
+	goVersion, err := MiseGoVersion(rootDir)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(provisionScriptTemplate, goVersion, containerNextestVersion), nil
 }
 
 // linuxSelectionArgs computes the cargo package selection for `linux`, NOT for this
@@ -167,7 +172,11 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 	}
 	defer removeTestContainer(container)
 
-	if out, err := dockerExec(container, buildProvisionScript()); err != nil {
+	provisionScript, err := buildProvisionScript(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
+	if out, err := dockerExec(container, provisionScript); err != nil {
 		return CheckResult{}, fmt.Errorf("provisioning the Linux test container failed (provision log: %s)\n%s",
 			provisionLog, indentOutput(out))
 	}

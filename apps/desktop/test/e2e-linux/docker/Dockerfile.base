@@ -67,7 +67,12 @@ RUN apt-get update && apt-get install -y \
     libatk-bridge2.0-0 \
     libasound2t64 \
     libxcb1 \
-    # Go (needed by beforeBuildCommand for llama-server placeholder)
+    # Go (needed by beforeBuildCommand for llama-server placeholder). Deliberately
+    # whatever apt ships rather than the `.mise.toml` toolchain: the placeholder
+    # generator is not version-sensitive, and matching mise here would mean a
+    # tarball download plus a build arg for no gain. This is the one Go in the repo
+    # that doesn't track the single source, and it names no version, so
+    # `go-version-single-source` stays green over it.
     golang-go \
     # VNC for interactive debugging (--vnc mode)
     x11vnc \

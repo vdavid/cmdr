@@ -756,6 +756,9 @@ jobs:
       - name: Check the settings-defaults manifest matches the registry
         run: ./scripts/check/check --check analytics-settings-defaults --ci
 
+      - name: Check .mise.toml is the only Go version
+        run: ./scripts/check/check --check go-version-single-source --ci
+
       - name: Check workflow hardening
         run: ./scripts/check/check --check workflows-hardening --ci
 

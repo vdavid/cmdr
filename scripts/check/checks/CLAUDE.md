@@ -30,6 +30,7 @@ One Go file per check, registered in `registry.go`'s `AllChecks`. Runner: `../CL
   WHICH test failed.
 - **Pin every tool install** (❌ never `@latest`), or a compromised tool repo reaches every fresh checkout. Versions,
   sha256s, and the dated nightly: DETAILS § "Key decisions".
+- **Need a Go version? Call `MiseGoVersion(rootDir)`** — ❌ never a literal. `go-version-single-source` enforces it.
 - **A Rust check never hardcodes a source path, its own features, its `Inputs`, or a `cmd.Dir`.** Cargo lanes take both
   from `HostCargoLaneArgs` + `rustCompileInputs`; scanners take `ScannerRoots` / `ScannerMemberKinds` +
   `rustScanInputs(<same kinds>)`. ❌ No `tools/**`. Asking something else makes the others rebuild `cmdr` (20-100 s);

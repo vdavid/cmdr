@@ -1299,7 +1299,34 @@ doubles as production code.
   catalog bullet, or a bullet has no emitter), docs-table-hygiene (errors on any 2-column table or any table column
   wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids
   `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract)
+- **Other / Go**: go-version-single-source (errors when anything but `.mise.toml` names a Go toolchain version, when the
+  `go.mod` floors disagree with each other, or when a floor exceeds the pinned toolchain)
 - **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)
+
+## The single source for the Go version
+
+`.mise.toml`'s `go` entry is the only place the repo names a Go toolchain. Renovate bumps it weekly, every CI job runs
+`mise install`, and `MiseGoVersion(rootDir)` (in `go-version-single-source.go`) is how code reads it. The Linux Rust
+test container provisions from that call, so its Go can't drift from the host's.
+
+It used to drift. `desktop-rust-tests-linux.go` carried `const goVersion = "1.25.7"` under a comment saying it must
+match `.mise.toml`, nothing enforced that, and a Renovate bump to 1.27 left the container two minors behind, testing
+against a Go the repo no longer used.
+
+Three things called "the Go version" live here, and the check treats them differently:
+
+- **The toolchain** (`.mise.toml`): one number, bot-maintained. Nothing else may name it.
+- **The language floors** (13 `go.mod` `go` directives): the oldest Go that can build each module, compared as versions
+  so `go mod tidy` canonicalizing `1.25` to `1.25.0` isn't a violation. They lag the toolchain on purpose, and the check
+  only requires that they agree with each other and stay at or below it. A floor ABOVE the toolchain is the genuinely
+  broken state: `GOTOOLCHAIN=auto` would silently download a Go mise never pinned.
+- **The E2E container's Go** (`apps/desktop/test/e2e-linux/docker/Dockerfile.base`): Debian's `golang-go`, deliberately
+  unpinned. It only runs the llama-server placeholder generator, which no Go version affects. It names no version, so
+  the check stays green over it.
+
+The floor rule is one-directional so a toolchain bump can never turn the check red, which is what keeps Renovate's
+automerge working. Making the floors track mise exactly would break automerge on every Go bump, the same shape as the
+CI-red afternoon when the `EnsureGoTool` analyzer pins had to move in lockstep with the 1.27 bump.
 
 ## Key decisions
 

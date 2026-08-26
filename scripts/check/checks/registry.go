@@ -1255,6 +1255,20 @@ var AllChecks = []CheckDefinition{
 		Run:         RunGovulncheck,
 	},
 
+	{
+		ID:          "go-version-single-source",
+		Nickname:    "go-version",
+		DisplayName: "Go version single source",
+		App:         AppOther,
+		Tech:        "🐹 Go",
+		DependsOn:   nil,
+		IsFast:      true,
+		// Reads .mise.toml, every go.mod, and any file a Go version could hide
+		// in, so it takes the whole tree.
+		Inputs: wholeRepoInputs,
+		Run:    RunGoVersionSingleSource,
+	},
+
 	// Monorepo-wide metrics (informational, never fails)
 	{
 		ID:          "file-length",

@@ -368,13 +368,15 @@ func TestShellQuoteEscapesEmbeddedQuotes(t *testing.T) {
 // separate execs into the SAME container, which is what makes re-running a failure alone
 // cost seconds instead of a fresh provision plus a full workspace rebuild.
 func TestProvisionScriptStopsBeforeRunningTests(t *testing.T) {
-	script := buildProvisionScript()
+	script, err := buildProvisionScript(repoRootForTest(t))
+	if err != nil {
+		t.Fatalf("buildProvisionScript: %v", err)
+	}
 	if strings.Contains(script, "cargo nextest run") {
 		t.Errorf("provisioning must not run the suite; that's a separate exec:\n%s", script)
 	}
-	if !strings.Contains(script, "go"+goVersion+".linux-") {
-		t.Errorf("the Go toolchain download must pin %s, got:\n%s", goVersion, script)
-	}
+	// The Go tarball assertion lives in TestLinuxContainerProvisionsTheMisePinnedGo,
+	// which owns the "container Go == .mise.toml" invariant.
 	if !strings.Contains(script, "get.nexte.st/"+containerNextestVersion+"/") {
 		t.Errorf("the container's nextest must be pinned to %s, got:\n%s", containerNextestVersion, script)
 	}
