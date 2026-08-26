@@ -159,3 +159,17 @@ adding redo attempts: the loop already gets ~14 tries and none of them are seen.
 watch, and whether that belongs in the test or in `DownloadsWatcher` itself is an open question, not a cleanup.
 Retries in `.config/nextest.toml` are the other option, and that file's own notes explain why adding them is a policy
 decision (they downgrade a run to WARN and are meant to read as a flake-rate meter).
+
+## Decision: E2E redirects the watched root
+
+`resolved_downloads_dir()` returns the run's isolated dir under `CMDR_E2E_MODE` (`CMDR_E2E_DOWNLOADS_DIR`, else
+`$CMDR_DATA_DIR/downloads`) instead of `dirs::download_dir()`.
+
+**Why**: the watcher is the one thing the app watches outside `CMDR_DATA_DIR`, so an E2E run otherwise sees the
+developer's real `~/Downloads`. A real download during a run emits `download-detected`, the toast lands in whichever
+spec happens to be mid-flight, and the overlay-leak guard fails that spec naming a file it never touched. Measured: one
+serial run failed `viewer.spec.ts` on a `CleanShot` screenshot saved while the suite ran.
+
+**Guardrail**: under E2E the resolver never returns `None`, because `None` sends the caller on to the real Downloads.
+With nothing configured it still yields a throwaway path (`test_mode::e2e_downloads_dir_from`, pinned by
+`e2e_downloads_dir_is_isolated_and_never_falls_back`).

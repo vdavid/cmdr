@@ -24,6 +24,7 @@
 //! `COPY_THROTTLE_OVERRIDE` static below is the canonical shape, set via the
 //! `set_test_throttle` IPC command from a test, read on every copy loop tick.
 
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicI64, AtomicU8, Ordering};
 
 /// Runtime override for the per-file copy throttle, settable via the
@@ -182,6 +183,44 @@ pub fn guard_e2e_requires_data_dir() {
     }
 }
 
+/// Pure core of [`e2e_downloads_dir`]. Under E2E this ALWAYS resolves to some
+/// isolated path and never to `None`, because `None` is what sends the caller
+/// back to the developer's real `~/Downloads`.
+fn e2e_downloads_dir_from(is_e2e: bool, override_dir: Option<&str>, data_dir: Option<&str>) -> Option<PathBuf> {
+    if !is_e2e {
+        return None;
+    }
+    // A spec that needs to place its own files picks the dir explicitly.
+    if let Some(dir) = override_dir.filter(|s| !s.is_empty()) {
+        return Some(PathBuf::from(dir));
+    }
+    // Otherwise nest it under the run's throwaway data dir, so it's created and
+    // discarded with the run and can't collide with a concurrent one.
+    if let Some(dir) = data_dir.filter(|s| !s.is_empty()) {
+        return Some(PathBuf::from(dir).join("downloads"));
+    }
+    // Unreachable while `guard_e2e_requires_data_dir` runs at startup, kept
+    // because the safe answer here is a throwaway path, not the real Downloads.
+    Some(PathBuf::from("/tmp/cmdr-e2e-downloads"))
+}
+
+/// The Downloads root an E2E run watches instead of the developer's real
+/// `~/Downloads`, or `None` in production.
+///
+/// Set `CMDR_E2E_DOWNLOADS_DIR` to steer it explicitly; otherwise it lands at
+/// `$CMDR_DATA_DIR/downloads`. Without this the E2E app watches the real
+/// Downloads folder, so any browser download during a run emits a
+/// `download-detected` toast into whatever spec happens to be mid-flight, and
+/// the overlay-leak guard fails that spec with a message about a file the test
+/// never touched.
+pub fn e2e_downloads_dir() -> Option<PathBuf> {
+    e2e_downloads_dir_from(
+        is_e2e_mode(),
+        std::env::var("CMDR_E2E_DOWNLOADS_DIR").ok().as_deref(),
+        std::env::var("CMDR_DATA_DIR").ok().as_deref(),
+    )
+}
+
 /// Parses `CMDR_E2E_COPY_THROTTLE_MS` into milliseconds, or `None` when unset
 /// or invalid. The copy loop calls this once per file (between committing one
 /// and starting the next) to give E2E specs a deterministic window in which
@@ -289,6 +328,48 @@ mod tests {
         // E2E on with unset or empty: the violation we guard against.
         assert!(e2e_data_dir_missing(true, None));
         assert!(e2e_data_dir_missing(true, Some("")));
+    }
+
+    /// Under E2E the Downloads root is ALWAYS an isolated path, never `None`.
+    /// `None` is the answer that sends `resolved_downloads_dir` on to
+    /// `dirs::download_dir()`, i.e. the developer's real `~/Downloads` — which
+    /// is how a real browser download once failed an unrelated viewer spec by
+    /// leaking a toast into it. Production (E2E off) must still get `None`.
+    #[test]
+    fn e2e_downloads_dir_is_isolated_and_never_falls_back() {
+        // Production: always None, whatever the vars say.
+        assert_eq!(e2e_downloads_dir_from(false, None, None), None);
+        assert_eq!(e2e_downloads_dir_from(false, Some("/tmp/x"), Some("/tmp/data")), None);
+
+        // E2E with an explicit override wins.
+        assert_eq!(
+            e2e_downloads_dir_from(true, Some("/tmp/spec-downloads"), Some("/tmp/data")),
+            Some(PathBuf::from("/tmp/spec-downloads"))
+        );
+
+        // E2E with only a data dir: nested under it, so it dies with the run.
+        assert_eq!(
+            e2e_downloads_dir_from(true, None, Some("/tmp/cmdr-e2e-data")),
+            Some(PathBuf::from("/tmp/cmdr-e2e-data/downloads"))
+        );
+
+        // Empty strings count as unset, matching `e2e_data_dir_missing`.
+        assert_eq!(
+            e2e_downloads_dir_from(true, Some(""), Some("/tmp/cmdr-e2e-data")),
+            Some(PathBuf::from("/tmp/cmdr-e2e-data/downloads"))
+        );
+
+        // The invariant that matters: E2E on with nothing configured still
+        // yields an isolated path rather than `None`. The startup guard should
+        // make this unreachable, but if it ever regresses, the failure mode
+        // must not be "watch the developer's real Downloads".
+        let bare = e2e_downloads_dir_from(true, None, None);
+        assert!(bare.is_some(), "E2E must never resolve Downloads to None");
+        assert_ne!(
+            bare,
+            dirs::download_dir(),
+            "E2E must never resolve to the real Downloads"
+        );
     }
 
     /// Same shape: `e2e_copy_throttle_ms` should return `None` for unset,

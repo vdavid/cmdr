@@ -100,7 +100,17 @@ impl std::error::Error for WatcherError {}
 /// Resolve the Downloads directory: `dirs::download_dir()` with a `$HOME/Downloads` fallback.
 ///
 /// Returns `None` if neither lookup succeeds (no `HOME`, no XDG dir, etc.).
+///
+/// Under `CMDR_E2E_MODE` this resolves to the run's isolated Downloads dir
+/// instead. Watching the real `~/Downloads` during a test run means any browser
+/// download lands a `download-detected` toast in whatever spec is mid-flight,
+/// which the overlay-leak guard then reports against a test that never touched
+/// it. `CMDR_DATA_DIR` already isolates persisted state; this closes the same
+/// hole for the one directory the app watches outside it.
 pub fn resolved_downloads_dir() -> Option<PathBuf> {
+    if let Some(isolated) = crate::test_mode::e2e_downloads_dir() {
+        return Some(isolated);
+    }
     dirs::download_dir().or_else(|| dirs::home_dir().map(|h| h.join("Downloads")))
 }
 
@@ -270,6 +280,11 @@ impl DownloadsWatcher {
     /// attach (missing dir, permission denied, etc.).
     pub fn start(app: &AppHandle) -> Result<Self, WatcherError> {
         let root = resolved_downloads_dir().unwrap_or_else(|| PathBuf::from("/tmp/cmdr-downloads-missing"));
+        // The E2E root is a throwaway path that nothing else creates, and
+        // `notify` can't attach to a directory that doesn't exist yet.
+        if crate::test_mode::is_e2e_mode() {
+            let _ = std::fs::create_dir_all(&root);
+        }
         let sink: Arc<dyn EventSink> = Arc::new(AppHandleSink::new(app.clone()));
         Self::start_at(root, sink)
     }
