@@ -25,7 +25,7 @@ const goVersion = "1.25.7"
 // profile-level `slow-timeout`) were verified against this exact version. A container
 // silently drifting to a newer nextest would classify starvation differently from the host
 // lanes with nothing to say it had.
-const containerNextestVersion = "0.9.136"
+const containerNextestVersion = NextestVersion
 
 // containerKeepAlive bounds the idle container's lifetime. The container outlives the test
 // exec on purpose (the contention re-run execs back into it, warm), so PID 1 is a sleep

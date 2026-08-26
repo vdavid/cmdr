@@ -186,6 +186,13 @@ func RunNextestFilterCoverage(ctx *CheckContext) (CheckResult, error) {
 	}
 	config := string(raw)
 
+	// This check LISTS tests rather than running them, but listing is still
+	// `cargo nextest`, and CI reaches this step before any lane that runs tests.
+	// Without this it passes only while the Rust cache carries the binary.
+	if err := EnsureCargoNextest(); err != nil {
+		return CheckResult{}, err
+	}
+
 	laneArgs, err := HostCargoLaneArgs(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, err

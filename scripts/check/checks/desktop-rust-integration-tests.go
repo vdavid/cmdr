@@ -77,12 +77,8 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
-	// Make sure cargo-nextest is available (mirrors desktop-rust-tests.go).
-	if !CommandExists("cargo-nextest") {
-		installCmd := exec.Command("cargo", "install", "cargo-nextest", "--version", "0.9.136", "--locked")
-		if _, err := RunCommand(installCmd, true); err != nil {
-			return CheckResult{}, fmt.Errorf("failed to install cargo-nextest: %w", err)
-		}
+	if err := EnsureCargoNextest(); err != nil {
+		return CheckResult{}, err
 	}
 
 	// Run in debug (the default profile) so this reuses the warm test build from

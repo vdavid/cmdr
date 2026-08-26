@@ -415,6 +415,33 @@ func installExecutable(binary []byte, destination string) error {
 	return nil
 }
 
+// NextestVersion pins `cargo-nextest` for every lane that shells out to it, host and
+// container alike. Pinned rather than `latest` because the parsers in this package are
+// written against this exact output, and because the contention re-run's profile
+// semantics (a per-test override beating a profile-level `slow-timeout`) were verified
+// against it.
+const NextestVersion = "0.9.136"
+
+// EnsureCargoNextest installs `cargo-nextest` at NextestVersion unless it's already on
+// PATH.
+//
+// ❗ Every check that shells out to `cargo nextest` must call this first, even one that
+// only *lists* tests. CI runs `nextest-filter-coverage` before the lanes that run tests,
+// so a lane relying on a sibling check to install nextest passes only while the Rust
+// cache happens to carry the binary. When that cache misses, the check dies on
+// `error: no such command: nextest`, which reads as broken tooling rather than a missing
+// install.
+func EnsureCargoNextest() error {
+	if CommandExists("cargo-nextest") {
+		return nil
+	}
+	installCmd := exec.Command("cargo", "install", "cargo-nextest", "--version", NextestVersion, "--locked")
+	if _, err := RunCommand(installCmd, true); err != nil {
+		return fmt.Errorf("failed to install cargo-nextest: %w", err)
+	}
+	return nil
+}
+
 // EnsureGoTool ensures a Go tool is installed and returns the path to the binary.
 // If the tool is already in PATH, returns just the name. Otherwise installs it
 // and returns the full path to the installed binary.
