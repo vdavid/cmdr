@@ -121,7 +121,11 @@ export function createFullListCache(deps: FullListCacheDeps): FullListCache {
   let prevTotalCount = 0
   let prevSoftTick = 0
 
-  async function fetch({ startIndex, endIndex, force = false }: VisibleWindowRange & { force?: boolean }): Promise<void> {
+  async function fetch({
+    startIndex,
+    endIndex,
+    force = false,
+  }: VisibleWindowRange & { force?: boolean }): Promise<void> {
     // Static-entries branch (search-results pane): the array is already in
     // memory, no IPC needed. `syncStaticEntries` mirrors it into `entries`.
     if (deps.staticEntries() !== undefined) return

@@ -99,7 +99,12 @@ export interface CursorNavKeys {
 export function createCursorNavKeys(deps: CursorNavKeysDeps): CursorNavKeys {
   function applyNavigation({ newIndex, listRef, shiftKey = false, overflow = false }: ApplyNavigationArgs): void {
     if (shiftKey) {
-      deps.extendSelection({ fromIndex: deps.getCursorIndex(), toIndex: newIndex, overflow, hasParent: deps.getHasParent() })
+      deps.extendSelection({
+        fromIndex: deps.getCursorIndex(),
+        toIndex: newIndex,
+        overflow,
+        hasParent: deps.getHasParent(),
+      })
     }
     deps.applyCursor(newIndex)
     listRef?.scrollToIndex(newIndex)
@@ -112,7 +117,12 @@ export function createCursorNavKeys(deps: CursorNavKeysDeps): CursorNavKeys {
     const result = briefListRef?.handleKeyNavigation?.(e.key, e)
     if (result !== undefined) {
       e.preventDefault()
-      applyNavigation({ newIndex: result.newIndex, listRef: briefListRef, shiftKey: e.shiftKey, overflow: result.overflow })
+      applyNavigation({
+        newIndex: result.newIndex,
+        listRef: briefListRef,
+        shiftKey: e.shiftKey,
+        overflow: result.overflow,
+      })
       return true
     }
     return false

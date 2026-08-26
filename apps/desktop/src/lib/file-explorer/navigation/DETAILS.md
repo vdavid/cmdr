@@ -73,8 +73,7 @@ deleted → navigate to parent) doesn't push via this callback; it relies on the
 ## `path-navigation.ts`
 
 `determineNavigationPath({ volumeId, volumePath, targetPath, otherPane })`: picks best initial path when switching
-volumes.
-Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
+volumes. Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
 
 1. Favorite path (when `targetPath !== volumePath`)
 2. Other pane's path (if same volume and path exists)

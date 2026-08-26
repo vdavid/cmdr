@@ -9,10 +9,7 @@ import { mount, tick, unmount, flushSync } from 'svelte'
 import CloudProviderSetup from './CloudProviderSetup.svelte'
 
 const checkAiConnection = vi.fn<
-  (payload: {
-    baseUrl: string
-    providerId: string
-  }) => Promise<{
+  (payload: { baseUrl: string; providerId: string }) => Promise<{
     connected: boolean
     authError: boolean
     models: string[]

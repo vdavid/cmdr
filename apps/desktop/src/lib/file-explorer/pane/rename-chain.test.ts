@@ -22,17 +22,16 @@ const {
   // `trimmedName` and `volumeId` are both `string` in production too, and its one real
   // call site (`rename-flow.svelte.ts`, untouched, out of scope here) invokes it
   // positionally. An object payload here would misrepresent that positional shape.
-  executeRenameSaveSpy:
-    vi.fn<
-      // eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors real, unconverted executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck?, volumeId?); see comment above
-      (
-        target: { path: string; originalName: string },
-        trimmedName: string,
-        extensionPolicy: ExtensionChangePolicy,
-        skipExtensionCheck?: boolean,
-        volumeId?: string,
-      ) => Promise<unknown>
-    >(),
+  executeRenameSaveSpy: vi.fn<
+    // eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors real, unconverted executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck?, volumeId?); see comment above
+    (
+      target: { path: string; originalName: string },
+      trimmedName: string,
+      extensionPolicy: ExtensionChangePolicy,
+      skipExtensionCheck?: boolean,
+      volumeId?: string,
+    ) => Promise<unknown>
+  >(),
   checkPermissionSpy: vi.fn<() => Promise<string | null>>(),
   getSettingSpy: vi.fn<(id: string) => unknown>(),
   validateFilenameSpy: vi.fn(),

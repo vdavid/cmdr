@@ -424,7 +424,9 @@ describe('scenario 5: cancel-during-load', () => {
     tab.path = '/Users/me/deep'
     await tick()
 
-    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({ cancelledPath: '/Users/me/deep' })
+    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({
+      cancelledPath: '/Users/me/deep',
+    })
     await settle()
 
     // Went back to /Users/me.
@@ -439,7 +441,9 @@ describe('scenario 5: cancel-during-load', () => {
     tab.history = { stack: [{ volumeId: 'network', path: 'smb://server/share' }], currentIndex: 0 }
     await tick()
 
-    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({ cancelledPath: 'smb://server/share/sub' })
+    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({
+      cancelledPath: 'smb://server/share/sub',
+    })
     await settle()
 
     expect(leftTab().volumeId).toBe('network')
@@ -458,7 +462,9 @@ describe('scenario 5: cancel-during-load', () => {
     tab.path = '/Users/me/deep'
     await tick()
 
-    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({ cancelledPath: '/Users/me/deep' })
+    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({
+      cancelledPath: '/Users/me/deep',
+    })
     await settle()
 
     expect(leftTab().path).toBe('/Users')

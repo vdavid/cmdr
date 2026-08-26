@@ -37,10 +37,7 @@ const checkFullDiskAccess = vi.fn<() => Promise<boolean>>(() => Promise.resolve(
 const startAiDownload = vi.fn<() => Promise<void>>(() => Promise.resolve())
 const cancelAiDownload = vi.fn<() => Promise<void>>(() => Promise.resolve())
 const checkAiConnection = vi.fn<
-  (payload: {
-    baseUrl: string
-    providerId: string
-  }) => Promise<{
+  (payload: { baseUrl: string; providerId: string }) => Promise<{
     connected: boolean
     authError: boolean
     models: string[]

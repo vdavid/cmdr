@@ -9,8 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SuggestedOpPage, SuggestedSweepView, SuggestionsChanged } from '$lib/tauri-commands'
 
 const listMock = vi.fn<() => Promise<SuggestedSweepView[]>>()
-const pageMock =
-  vi.fn<(payload: { groupId: number; offset: number; limit: number }) => Promise<SuggestedOpPage>>()
+const pageMock = vi.fn<(payload: { groupId: number; offset: number; limit: number }) => Promise<SuggestedOpPage>>()
 const rejectMock = vi.fn<(g: number) => Promise<{ kind: string }>>()
 const approveMock = vi.fn<(g: number, deselected: number[]) => Promise<{ kind: string }>>()
 

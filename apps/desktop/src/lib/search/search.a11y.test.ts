@@ -29,8 +29,7 @@ import type { CoverageNote as Note } from './coverage-note'
 import type { MediaIndexVolumeState, OcrHit, SimilarImage } from '$lib/ipc/bindings'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-const searchOcr =
-  vi.fn<(payload: { volumeId: string; query: string; limit: number | null }) => Promise<OcrHit[]>>()
+const searchOcr = vi.fn<(payload: { volumeId: string; query: string; limit: number | null }) => Promise<OcrHit[]>>()
 const searchSemantic =
   vi.fn<
     (payload: { volumeId: string; query: string; limit: number | null }) => Promise<{ path: string; score: number }[]>
@@ -51,8 +50,7 @@ let settingsStub: ((key: string) => unknown) | null = null
 // spread first so a call outside the union behaves as it does un-merged.
 vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  mediaIndexSearchOcr: (volumeId: string, query: string, limit: number | null) =>
-    searchOcr({ volumeId, query, limit }),
+  mediaIndexSearchOcr: (volumeId: string, query: string, limit: number | null) => searchOcr({ volumeId, query, limit }),
   mediaIndexSearchSemantic: (volumeId: string, query: string, limit: number | null) =>
     searchSemantic({ volumeId, query, limit }),
   mediaIndexVolumeState: (v: string) => volumeState(v),
