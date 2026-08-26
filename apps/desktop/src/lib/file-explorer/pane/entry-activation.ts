@@ -27,6 +27,7 @@ import { pathInsideArchive } from './volume-capabilities'
 import { resolveEnterPolicy, parseEnterBehaviorOverrides } from './archive-enter-policy'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { resolveLocationOrToast } from '../navigation/navigate-and-select'
+import type { LoadDirectoryArgs } from './types'
 
 export interface EntryActivationDeps {
   getCurrentPath: () => string
@@ -36,7 +37,7 @@ export interface EntryActivationDeps {
   /** The pane's DRIVE volume id (an archive pane keeps its parent drive's id). */
   getVolumeId: () => string
   getIsSearchResultsView: () => boolean
-  loadDirectory: (path: string, selectName?: string) => Promise<void> | void
+  loadDirectory: (args: LoadDirectoryArgs) => Promise<void> | void
   /** Show the Browse | Open | Configure popup for an entry set to Ask. */
   openEnterMenu: (entry: FileEntry) => void
   /** Bubble a resolved location so the parent's `navigate()` switches volumes. */
@@ -63,7 +64,7 @@ export function createEntryActivation(deps: EntryActivationDeps): EntryActivatio
     const currentFolderName = isGoingUp && canonical ? basenameOf(canonical) : undefined
     deps.setCurrentPath(entry.path)
     // Note: onPathChange is called in the listing-complete handler after a successful load.
-    await deps.loadDirectory(entry.path, currentFolderName)
+    await deps.loadDirectory({ path: entry.path, selectName: currentFolderName })
   }
 
   /**
@@ -100,7 +101,7 @@ export function createEntryActivation(deps: EntryActivationDeps): EntryActivatio
         return
       }
       deps.setCurrentPath(entry.redirectToPath)
-      await deps.loadDirectory(entry.redirectToPath)
+      await deps.loadDirectory({ path: entry.redirectToPath })
       return
     }
     // Enter-behavior policy for archives (`.zip`) and macOS bundles (`.app`

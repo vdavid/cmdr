@@ -42,6 +42,26 @@ export interface VolumeChangePayload {
   targetPath: string
 }
 
+/**
+ * A directory to load, with the entry name (if any) that should land under the
+ * cursor once the listing settles. Shared by the loader's `loadDirectory` /
+ * `navigateToPath` and `EntryActivationDeps.loadDirectory`: both took
+ * `(path, selectName?)`, two same-typed strings a caller could drop or swap.
+ */
+export interface LoadDirectoryArgs {
+  path: string
+  selectName?: string
+}
+
+/**
+ * The path (and the entry to reselect) a cancelled load leaves behind, bubbled
+ * from the loader up through `FilePane`'s `onCancelLoading` prop.
+ */
+export interface CancelLoadingPayload {
+  cancelledPath: string
+  selectName?: string
+}
+
 /** State snapshot for swapping panes without backend calls. */
 export interface SwapState {
   currentPath: string

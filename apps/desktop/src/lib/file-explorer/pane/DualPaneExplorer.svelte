@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
-    import type { FilePaneAPI, StartRenameOptions, VolumeChangePayload } from './types'
+    import type { CancelLoadingPayload, FilePaneAPI, StartRenameOptions, VolumeChangePayload } from './types'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
@@ -1363,8 +1363,8 @@
                 onNetworkHostChange={(host: NetworkHost | null) => {
                     handleNetworkHostChange(paneId, host)
                 }}
-                onCancelLoading={(cancelledPath: string, selectName?: string) => {
-                    edgeFlow.handleCancelLoading(paneId, cancelledPath, selectName)
+                onCancelLoading={(cancelled: CancelLoadingPayload) => {
+                    edgeFlow.handleCancelLoading(paneId, cancelled)
                 }}
                 onMtpFatalError={(msg: string) => edgeFlow.handleMtpFatalError(paneId, msg)}
                 onArchiveNeedsPassword={(info: {

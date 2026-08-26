@@ -46,7 +46,7 @@
     import SmbReauthView from './SmbReauthView.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import SearchResultsView from './SearchResultsView.svelte'
-    import type { SearchResultsViewAPI, VolumeChangePayload } from './types'
+    import type { CancelLoadingPayload, SearchResultsViewAPI, VolumeChangePayload } from './types'
     import { getSnapshot } from '$lib/search/snapshot-store.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
     import SmbReconnectingView from './SmbReconnectingView.svelte'
@@ -122,7 +122,7 @@
         /** Called when active network host changes (for history tracking) */
         onNetworkHostChange?: (host: NetworkHost | null) => void
         /** Called when user cancels loading (ESC key) - parent navigates back to previous folder */
-        onCancelLoading?: (cancelledPath: string, selectName?: string) => void
+        onCancelLoading?: (cancelled: CancelLoadingPayload) => void
         /** Called when MTP connection fails fatally (device disconnected, timeout) - parent should fall back to previous volume */
         onMtpFatalError?: (error: string) => void
         /**
@@ -329,7 +329,7 @@
         onPathChange: (path) => onPathChange?.(path),
         onVolumeChange: (change) => onVolumeChange?.(change),
         onMtpFatalError: (message) => onMtpFatalError?.(message),
-        onCancelLoading: (cancelledPath, selectName) => onCancelLoading?.(cancelledPath, selectName),
+        onCancelLoading: (cancelled) => onCancelLoading?.(cancelled),
         onArchiveNeedsPassword: (info) => onArchiveNeedsPassword?.(info),
     })
 
@@ -560,7 +560,7 @@
         getCurrentPath: () => currentPath,
         getVolumePath: () => volumePath,
         getCurrentVolumeInfo: () => currentVolumeInfo,
-        loadDirectory: (path: string) => void loader.loadDirectory(path),
+        loadDirectory: (path: string) => void loader.loadDirectory({ path }),
         navigateToFallback: loader.navigateToFallback,
     })
 
@@ -1178,7 +1178,7 @@
     // Returns a Promise that resolves when the directory listing completes, or rejects on error.
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function navigateToPath(path: string, selectName?: string): Promise<void> {
-        return loader.navigateToPath(path, selectName)
+        return loader.navigateToPath({ path, selectName })
     }
 
     // Mouse handling: row select (plain / Shift / Cmd), the context menu's
@@ -1218,7 +1218,7 @@
         getCanonicalPath: () => canonicalPath,
         getVolumeId: () => volumeId,
         getIsSearchResultsView: () => isSearchResultsView,
-        loadDirectory: (path, selectName) => loader.loadDirectory(path, selectName),
+        loadDirectory: (args) => loader.loadDirectory(args),
         // The popup exists only for the `ask` policy, so the highlight starts there.
         openEnterMenu: (entry) => {
             enterMenu.openFor(entry, 'ask')
@@ -1237,7 +1237,7 @@
         },
         onVolumeChange: (change) => onVolumeChange?.(change),
         onRequestFocus: () => onRequestFocus?.(),
-        loadDirectory: (path) => void loader.loadDirectory(path),
+        loadDirectory: (path) => void loader.loadDirectory({ path }),
         refreshSpace: () => void diskSpace.refresh(),
         watchSpace: (id, path) => {
             diskSpace.watch(id, path)
@@ -1418,7 +1418,7 @@
             currentPath: untrack(() => currentPath),
         })) {
             log.info('Tab became reachable (retry succeeded), loading directory: {path}', { path: initialPath })
-            void loader.loadDirectory(initialPath)
+            void loader.loadDirectory({ path: initialPath })
             void refreshVolumeSpace()
         }
         prevUnreachable = unreachable
@@ -1446,7 +1446,7 @@
             case 'mtp-connected':
                 log.info('MTP volume connected, loading directory: {path}', { path: action.path })
                 currentPath = action.path
-                void loader.loadDirectory(action.path)
+                void loader.loadDirectory({ path: action.path })
                 break
             case 'load':
                 log.debug('[FilePane] initialPath effect: triggering loadDirectory, paneId={paneId}, newPath={newPath}', {
@@ -1454,7 +1454,7 @@
                     newPath: action.path,
                 })
                 currentPath = action.path
-                void loader.loadDirectory(action.path)
+                void loader.loadDirectory({ path: action.path })
                 break
             case 'sync-path':
                 currentPath = action.path
@@ -1575,7 +1575,7 @@
             loading = false
         } else if (!isNetworkView && !isMtpDeviceOnly && !isSearchResultsView) {
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
-            void loader.loadDirectory(currentPath)
+            void loader.loadDirectory({ path: currentPath })
             // Disk images have no meaningful free space: no poll, no bar, no SelectionInfo text.
             if (!isDiskImageVolume) {
                 void diskSpace.refresh()

@@ -270,7 +270,7 @@ beforeEach(() => {
 describe('createListingLoader — generation / drop-foreign token model', () => {
   it('accepts the current load’s complete event and commits its listing', async () => {
     const { loader, state, spies } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     const idA = state.listingId
 
     completeCb(0)({ listingId: idA, totalCount: 5, volumeRoot: '/' })
@@ -283,11 +283,11 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
 
   it('drops a foreign complete event once a newer load has advanced the generation', async () => {
     const { loader, state, spies } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     const idA = state.listingId
     const cbA = completeCb(0)
 
-    await loader.loadDirectory('/b')
+    await loader.loadDirectory({ path: '/b' })
     const idB = state.listingId
     expect(idB).not.toBe(idA)
     spies.onPathChange.mockClear()
@@ -309,7 +309,7 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
 
   it('drops a complete event tagged with a foreign listingId even at the current generation', async () => {
     const { loader, state, spies } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     completeCb(0)({ listingId: 'not-the-current-id', totalCount: 999, volumeRoot: '/' })
     await Promise.resolve()
     await Promise.resolve()
@@ -319,7 +319,7 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
 
   it('drops foreign opening / progress / read-complete / error / cancelled events after a newer load', async () => {
     const { loader, state, spies } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     const idA = state.listingId
     const opening = h.listeners.opening[0]
     const progress = h.listeners.progress[0]
@@ -327,7 +327,7 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
     const error = h.listeners.error[0]
     const cancelled = h.listeners.cancelled[0]
 
-    await loader.loadDirectory('/b')
+    await loader.loadDirectory({ path: '/b' })
     // Reset the state fields these would touch, so a leak is visible.
     state.openingFolder = false
     state.loadingCount = undefined
@@ -352,7 +352,7 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
     const startA = deferred<{ listingId: string; status: unknown }>()
     h.listDirectoryStart.mockImplementationOnce(() => startA.promise)
 
-    const loadA = loader.loadDirectory('/a')
+    const loadA = loader.loadDirectory({ path: '/a' })
     // Load A is parked at `await listDirectoryStart`. Grab its listingId from the call.
     await vi.waitFor(() => {
       expect(h.listDirectoryStart).toHaveBeenCalled()
@@ -387,7 +387,7 @@ describe('createListingLoader — async-tail behavior lock (deliberately unguard
     const existsA = deferred<{ data: boolean; timedOut: boolean }>()
     h.pathExistsChecked.mockReturnValueOnce(existsA.promise)
 
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     const idA = state.listingId
     const errorCbA = h.listeners.error[0]
 
@@ -396,7 +396,7 @@ describe('createListingLoader — async-tail behavior lock (deliberately unguard
     await Promise.resolve()
 
     // A newer load supersedes A.
-    await loader.loadDirectory('/b')
+    await loader.loadDirectory({ path: '/b' })
     spies.onPathChange.mockClear()
 
     // The path "exists", so the tail shows the original error + pushes history — unguarded.
@@ -410,7 +410,7 @@ describe('createListingLoader — async-tail behavior lock (deliberately unguard
 describe('createListingLoader — error / MTP / cancel handling', () => {
   it('routes MTP listing errors to onMtpFatalError and resets loading', async () => {
     const { loader, state, spies } = makeHarness({ isMtpView: true, volumeId: 'mtp-1:2' })
-    await loader.loadDirectory('/DCIM')
+    await loader.loadDirectory({ path: '/DCIM' })
     const idA = state.listingId
     h.listeners.error[0]({ listingId: idA, message: 'device gone' })
     await Promise.resolve()
@@ -424,7 +424,7 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     const { loader, state } = makeHarness()
     h.pathExistsChecked.mockResolvedValueOnce({ data: false, timedOut: false })
     h.resolveValidPath.mockResolvedValueOnce('/a')
-    await loader.loadDirectory('/a/gone')
+    await loader.loadDirectory({ path: '/a/gone' })
     const idA = state.listingId
     h.listeners.error[0]({ listingId: idA, message: 'no such dir' })
     await vi.waitFor(() => {
@@ -437,7 +437,7 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
 
   it('shows the friendly error (and pushes history) when the path still exists', async () => {
     const { loader, state, spies } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     const idA = state.listingId
     h.listeners.error[0]({ listingId: idA, message: 'permission denied', error: { code: 'EACCES' } })
     await vi.waitFor(() => {
@@ -449,7 +449,7 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
 
   it('a cancelled event resets loading but preserves the count', async () => {
     const { loader, state } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     const idA = state.listingId
     state.totalCount = 12
     h.listeners.cancelled[0]({ listingId: idA })
@@ -462,12 +462,12 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
 describe('createListingLoader — pendingLoad / navigateToPath / whenLoadSettles', () => {
   it('navigateToPath rejects a prior pending load and resolves on complete', async () => {
     const { loader, state } = makeHarness()
-    const first = loader.navigateToPath('/a')
+    const first = loader.navigateToPath({ path: '/a' })
     const firstRejected = vi.fn()
     first.catch(firstRejected)
 
     // A second navigation supersedes the first: loadDirectory rejects the prior pending load.
-    const second = loader.navigateToPath('/b')
+    const second = loader.navigateToPath({ path: '/b' })
     await vi.waitFor(() => {
       expect(firstRejected).toHaveBeenCalled()
     })
@@ -484,7 +484,7 @@ describe('createListingLoader — pendingLoad / navigateToPath / whenLoadSettles
 
   it('resetLoadingState rejects the pending load with its message', async () => {
     const { loader } = makeHarness()
-    const p = loader.navigateToPath('/a')
+    const p = loader.navigateToPath({ path: '/a' })
     const rejected = vi.fn()
     p.catch(rejected)
     await Promise.resolve()
@@ -503,7 +503,7 @@ describe('createListingLoader — pendingLoad / navigateToPath / whenLoadSettles
 
   it('whenLoadSettles chains onto a pending navigateToPath without disturbing it', async () => {
     const { loader, state } = makeHarness({ loading: true })
-    const nav = loader.navigateToPath('/a')
+    const nav = loader.navigateToPath({ path: '/a' })
     await vi.waitFor(() => {
       expect(h.listeners.complete.length).toBeGreaterThan(0)
     })
@@ -584,7 +584,7 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
     h.pathExistsChecked.mockResolvedValueOnce({ data: false, timedOut: false })
     h.resolveValidPath.mockResolvedValueOnce('/Volumes')
     h.resolvePathVolume.mockResolvedValueOnce({ volume: { id: 'root', path: '/' }, timedOut: false })
-    await loader.loadDirectory('/Volumes/naspi/gone')
+    await loader.loadDirectory({ path: '/Volumes/naspi/gone' })
     h.listeners.error[0]({ listingId: state.listingId, message: 'no such dir' })
     await vi.waitFor(() => {
       expect(spies.onVolumeChange).toHaveBeenCalledWith({ volumeId: 'root', volumePath: '/', targetPath: '/Volumes' })
@@ -602,7 +602,7 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
     const { loader, spies } = makeHarness({ loading: true, listingId: 'abc', currentPath: '/a/sub' })
     loader.handleCancelLoading()
     expect(h.cancelListing).toHaveBeenCalledWith('abc')
-    expect(spies.onCancelLoading).toHaveBeenCalledWith('/a/sub', 'sub')
+    expect(spies.onCancelLoading).toHaveBeenCalledWith({ cancelledPath: '/a/sub', selectName: 'sub' })
   })
 
   it('navigateToParent returns false at the volume root', async () => {
@@ -628,7 +628,7 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
 describe('createListingLoader — swap state + cleanup', () => {
   it('getSwapState captures the live pane state', async () => {
     const { loader, state } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     state.totalCount = 9
     state.cursorIndex = 3
     state.lastSequence = 4
@@ -647,7 +647,7 @@ describe('createListingLoader — swap state + cleanup', () => {
   it('adoptListing installs the swapped listing and advances the generation', async () => {
     const { loader, state, spies } = makeHarness()
     // A load is in flight; its complete must be dropped after adoption bumps the generation.
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     const cbA = completeCb(0)
     const idA = state.listingId
 
@@ -678,29 +678,29 @@ describe('createListingLoader — swap state + cleanup', () => {
 
   it('leaves a chain’s running reports behind with the directory they name', async () => {
     const { loader, spies } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     spies.renameForgetChainReports.mockClear()
 
-    await loader.loadDirectory('/b')
+    await loader.loadDirectory({ path: '/b' })
 
     expect(spies.renameForgetChainReports).toHaveBeenCalled()
   })
 
   it('keeps them through a re-list of the same directory', async () => {
     const { loader, spies } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     spies.renameForgetChainReports.mockClear()
 
     // An SMB reconnect, a retry after an error: the files the reports name are
     // still the ones on screen.
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
 
     expect(spies.renameForgetChainReports).not.toHaveBeenCalled()
   })
 
   it('cleanup cancels the active listing and unlistens', async () => {
     const { loader, state } = makeHarness()
-    await loader.loadDirectory('/a')
+    await loader.loadDirectory({ path: '/a' })
     const idA = state.listingId
     loader.cleanup()
     expect(h.cancelListing).toHaveBeenCalledWith(idA)

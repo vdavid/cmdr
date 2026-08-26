@@ -92,7 +92,7 @@ describe('createEdgeFlowHandlers', () => {
       const paneRef = makePaneRef()
       const { handlers, navigate, focusContainer } = setup({ paneRef })
 
-      handlers.handleCancelLoading('left', '/whatever')
+      handlers.handleCancelLoading('left', { cancelledPath: '/whatever' })
 
       expect(navigate).toHaveBeenCalledWith({
         pane: 'left',
@@ -109,7 +109,7 @@ describe('createEdgeFlowHandlers', () => {
       canGoBackSpy.mockReturnValue(true)
       const { handlers, navigate } = setup({ paneRef: makePaneRef() })
 
-      handlers.handleCancelLoading('right', '/a/b')
+      handlers.handleCancelLoading('right', { cancelledPath: '/a/b' })
 
       expect(navigate).toHaveBeenCalledWith({ pane: 'right', to: { history: 'back' }, source: 'cancel' })
     })
@@ -123,7 +123,7 @@ describe('createEdgeFlowHandlers', () => {
         volumeIdByPane: { left: 'root', right: 'root' },
       })
 
-      handlers.handleCancelLoading('left', '/a/b')
+      handlers.handleCancelLoading('left', { cancelledPath: '/a/b' })
       await vi.waitFor(() => {
         expect(navigate).toHaveBeenCalled()
       })
@@ -141,7 +141,7 @@ describe('createEdgeFlowHandlers', () => {
       const paneRef = makePaneRef()
       const { handlers, navigate } = setup({ paneRef })
 
-      handlers.handleCancelLoading('left', '/different', 'pick.txt')
+      handlers.handleCancelLoading('left', { cancelledPath: '/different', selectName: 'pick.txt' })
 
       expect(paneRef.navigateToPath).toHaveBeenCalledWith('/prev', 'pick.txt')
       expect(navigate).not.toHaveBeenCalled()

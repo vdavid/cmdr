@@ -27,7 +27,7 @@
  */
 import { tick } from 'svelte'
 import type { FriendlyError } from '../types'
-import type { SwapState, VolumeChangePayload } from './types'
+import type { CancelLoadingPayload, LoadDirectoryArgs, SwapState, VolumeChangePayload } from './types'
 import {
   cancelListing,
   findFileIndex,
@@ -128,7 +128,7 @@ export interface ListingLoaderDeps {
   onPathChange?: (path: string) => void
   onVolumeChange?: (change: VolumeChangePayload) => void
   onMtpFatalError?: (error: string) => void
-  onCancelLoading?: (cancelledPath: string, selectName?: string) => void
+  onCancelLoading?: (cancelled: CancelLoadingPayload) => void
   /**
    * A header-encrypted archive (a `-mhe=on` 7z) needs its password even to LIST
    * it: the whole metadata is encrypted. Fired instead of leaving only the
@@ -145,9 +145,9 @@ export interface ListingLoaderDeps {
 }
 
 export interface ListingLoader {
-  loadDirectory: (path: string, selectName?: string) => Promise<void>
+  loadDirectory: (args: LoadDirectoryArgs) => Promise<void>
   navigateToParent: () => Promise<boolean>
-  navigateToPath: (path: string, selectName?: string) => Promise<void>
+  navigateToPath: (args: LoadDirectoryArgs) => Promise<void>
   navigateToFallback: (validPath: string | null) => void
   handleCancelLoading: () => void
   whenLoadSettles: () => Promise<void>
@@ -254,10 +254,10 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
 
   function landOnFallback(target: string) {
     deps.setCurrentPath(target)
-    void loadDirectory(target)
+    void loadDirectory({ path: target })
   }
 
-  async function loadDirectory(path: string, selectName?: string) {
+  async function loadDirectory({ path, selectName }: LoadDirectoryArgs) {
     // Cancel any active rename when navigating
     deps.renameCancel()
     cancelClickToRename()
@@ -421,7 +421,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
                       archivePath: loadPath,
                       wrongAttempt: reason.wrongAttempt,
                       retry: () => {
-                        void loadDirectory(loadPath)
+                        void loadDirectory({ path: loadPath })
                       },
                     })
                   }
@@ -549,15 +549,15 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     const folderName = currentPath.split('/').pop()
 
     // Tell parent to navigate back (passes the path we were loading so parent can decide where to go)
-    deps.onCancelLoading?.(currentPath, folderName)
+    deps.onCancelLoading?.({ cancelledPath: currentPath, selectName: folderName })
   }
 
   // Navigate to a specific path with optional item selection (used when cancelling navigation).
   // Returns a Promise that resolves when the directory listing completes, or rejects on error.
-  function navigateToPath(path: string, selectName?: string): Promise<void> {
+  function navigateToPath({ path, selectName }: LoadDirectoryArgs): Promise<void> {
     deps.setCurrentPath(path)
     // Start loadDirectory first: it rejects any previous pending load
-    void loadDirectory(path, selectName)
+    void loadDirectory({ path, selectName })
     // Then set up our promise (after the previous one was rejected)
     return new Promise<void>((resolve, reject) => {
       pendingLoadResolve = resolve
@@ -579,7 +579,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
 
     deps.setCurrentPath(parentPath)
     // Note: onPathChange is called in listing-complete handler after successful load
-    await loadDirectory(parentPath, currentFolderName)
+    await loadDirectory({ path: parentPath, selectName: currentFolderName })
     return true
   }
 

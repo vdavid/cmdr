@@ -105,7 +105,7 @@ describe('createEntryActivation', () => {
     it('browses to the redirect target', async () => {
       await createEntryActivation(deps).handleNavigate(entryOf({ name: 'worktree', redirectToPath: '/elsewhere' }))
       expect(calls.setCurrentPath).toHaveBeenCalledWith('/elsewhere')
-      expect(calls.loadDirectory).toHaveBeenCalledWith('/elsewhere')
+      expect(calls.loadDirectory).toHaveBeenCalledWith({ path: '/elsewhere' })
     })
 
     it('leaves the snapshot volume first on a search-results pane', async () => {
@@ -139,7 +139,7 @@ describe('createEntryActivation', () => {
     it('falls through to the browse arm for `browse`', async () => {
       policy.resolveEnterPolicy.mockReturnValue('browse')
       await createEntryActivation(deps).handleNavigate(entryOf({ name: 'a.zip', path: '/dir/a.zip', isArchive: true }))
-      expect(calls.loadDirectory).toHaveBeenCalledWith('/dir/a.zip', undefined)
+      expect(calls.loadDirectory).toHaveBeenCalledWith({ path: '/dir/a.zip', selectName: undefined })
     })
 
     it('skips the policy entirely once the PANE is inside an archive', async () => {
@@ -165,18 +165,18 @@ describe('createEntryActivation', () => {
     it('browses into a directory', async () => {
       await createEntryActivation(deps).handleNavigate(entryOf({ name: 'sub', path: '/dir/sub', isDirectory: true }))
       expect(calls.setCurrentPath).toHaveBeenCalledWith('/dir/sub')
-      expect(calls.loadDirectory).toHaveBeenCalledWith('/dir/sub', undefined)
+      expect(calls.loadDirectory).toHaveBeenCalledWith({ path: '/dir/sub', selectName: undefined })
     })
 
     it('browses into an archive file in place', async () => {
       await createEntryActivation(deps).handleNavigate(entryOf({ name: 'a.zip', path: '/dir/a.zip', isArchive: true }))
-      expect(calls.loadDirectory).toHaveBeenCalledWith('/dir/a.zip', undefined)
+      expect(calls.loadDirectory).toHaveBeenCalledWith({ path: '/dir/a.zip', selectName: undefined })
     })
 
     it('remembers the folder we came from when going up', async () => {
       paneState.currentPath = '/dir/sub'
       await createEntryActivation(deps).handleNavigate(entryOf({ name: '..', path: '/dir', isDirectory: true }))
-      expect(calls.loadDirectory).toHaveBeenCalledWith('/dir', 'sub')
+      expect(calls.loadDirectory).toHaveBeenCalledWith({ path: '/dir', selectName: 'sub' })
     })
 
     it('routes a file inside an archive to the viewer with the pane drive volume', async () => {
@@ -208,7 +208,7 @@ describe('createEntryActivation', () => {
   describe('the popup choices', () => {
     it('browse steps into the entry', async () => {
       await createEntryActivation(deps).browseIntoEntry(entryOf({ name: 'a.zip', path: '/dir/a.zip', isArchive: true }))
-      expect(calls.loadDirectory).toHaveBeenCalledWith('/dir/a.zip', undefined)
+      expect(calls.loadDirectory).toHaveBeenCalledWith({ path: '/dir/a.zip', selectName: undefined })
     })
 
     it('open hands the entry to LaunchServices', async () => {

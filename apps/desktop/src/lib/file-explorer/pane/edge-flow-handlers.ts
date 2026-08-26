@@ -27,7 +27,7 @@ import { resolveValidPath } from '../navigation/path-resolution'
 import { getAppLogger } from '$lib/logging/logger'
 import type { VolumeInfo } from '../types'
 import type { NavigateIntent, NavigateResult } from './navigate'
-import type { FilePaneAPI } from './types'
+import type { CancelLoadingPayload, FilePaneAPI } from './types'
 
 const log = getAppLogger('fileExplorer')
 
@@ -42,7 +42,7 @@ export interface EdgeFlowHandlersDeps {
 }
 
 export interface EdgeFlowHandlers {
-  handleCancelLoading: (pane: 'left' | 'right', cancelledPath: string, selectName?: string) => void
+  handleCancelLoading: (pane: 'left' | 'right', cancelled: CancelLoadingPayload) => void
   handleMtpFatalError: (pane: 'left' | 'right', errorMessage: string) => Promise<void>
   handleRetryUnreachable: (pane: 'left' | 'right') => Promise<void>
   handleOpenHome: (pane: 'left' | 'right') => Promise<void>
@@ -50,7 +50,7 @@ export interface EdgeFlowHandlers {
 }
 
 export function createEdgeFlowHandlers(deps: EdgeFlowHandlersDeps): EdgeFlowHandlers {
-  function handleCancelLoading(pane: 'left' | 'right', cancelledPath: string, selectName?: string): void {
+  function handleCancelLoading(pane: 'left' | 'right', { cancelledPath, selectName }: CancelLoadingPayload): void {
     const history = deps.getPaneHistory(pane)
     const entry = getCurrentEntry(history)
     const paneRef = deps.getPaneRef(pane)
