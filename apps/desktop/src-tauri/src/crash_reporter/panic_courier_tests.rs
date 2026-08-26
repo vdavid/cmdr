@@ -12,7 +12,13 @@ use super::panic_courier::{
     spawn_courier_for_test,
 };
 use crate::error_reporter::auto_dispatcher::{TEST_LOCK, reset_for_test, set_enabled, snapshot_for_test};
+use crate::test_support::wait_until;
 use std::sync::{Mutex, MutexGuard, mpsc};
+use std::time::Duration;
+
+/// Long enough that a loaded CI container never trips it, short enough that a courier that
+/// genuinely wedged fails the test instead of hanging the suite.
+const COURIER_PATIENCE: Duration = Duration::from_secs(10);
 
 /// Serializes the tests that spawn real couriers. `COURIER_RUNNING` is process-global, so
 /// two of them in parallel would each see the other's courier and refuse to spawn.
@@ -33,16 +39,16 @@ fn notice() -> PanicNotice {
     }
 }
 
-/// Waits for the courier to release the flag. Called only after a `join()`, so the store
-/// has already happened; this just spins out any store-visibility lag rather than sleeping.
+/// Waits for the courier to release the flag.
+///
+/// Waits on a deadline rather than an iteration count, because `notify` DETACHES its courier:
+/// after it there is no `join()` to lean on, so this has to outlast a real thread being
+/// scheduled and running `deliver` through the logger. A spin of N yields is a bet on how fast
+/// the machine is, and it loses that bet inside the Linux test container.
 fn wait_for_courier_to_finish() {
-    for _ in 0..1_000 {
-        if !courier_running_for_test() {
-            return;
-        }
-        std::thread::yield_now();
-    }
-    panic!("courier never released COURIER_RUNNING");
+    wait_until(COURIER_PATIENCE, "the courier to release COURIER_RUNNING", || {
+        !courier_running_for_test()
+    });
 }
 
 #[test]
@@ -98,7 +104,7 @@ fn notify_returns_quietly_whether_or_not_a_courier_slot_is_free() {
     let _guard = lock_couriers();
 
     notify(notice());
-    notify(notice()); // slot taken by the first: a no-op, still no panic
+    notify(notice()); // a no-op if the first still holds the slot, a second courier if not; neither may panic
     wait_for_courier_to_finish();
 
     assert!(
