@@ -51,12 +51,20 @@ export interface ScrollTarget {
   scrollToIndex: (index: number) => void
 }
 
+/** Toggle-and-fill keyboard selection args, across a jump from `fromIndex` to `toIndex`. */
+export interface ExtendSelectionArgs {
+  fromIndex: number
+  toIndex: number
+  overflow: boolean
+  hasParent: boolean
+}
+
 export interface CursorNavKeysDeps {
   getCursorIndex: () => number
   /** Commit a new cursor index (the component owns the `cursorIndex` $state). */
   applyCursor: (index: number) => void
   /** Toggle-and-fill keyboard selection across a jump. */
-  extendSelection: (fromIndex: number, toIndex: number, overflow: boolean, hasParent: boolean) => void
+  extendSelection: (args: ExtendSelectionArgs) => void
   getHasParent: () => boolean
   /** Total cursor-addressable rows (includes the `..` row). */
   getEffectiveTotalCount: () => number
@@ -64,13 +72,24 @@ export interface CursorNavKeysDeps {
   getFullListRef: () => ListViewAPI | undefined
 }
 
+/**
+ * Args for `applyNavigation`: land the cursor on `newIndex`. `overflow` (intended
+ * jump clamped at a boundary) decides whether the landing item is included in the
+ * Shift range fill.
+ */
+export interface ApplyNavigationArgs {
+  newIndex: number
+  listRef: ScrollTarget | undefined
+  shiftKey?: boolean
+  overflow?: boolean
+}
+
 export interface CursorNavKeys {
   /**
    * Land the cursor on `newIndex`: fill the selection on Shift, commit the index,
-   * and scroll it into view. `overflow` (intended jump clamped at a boundary)
-   * decides whether the landing item is included in the range fill.
+   * and scroll it into view.
    */
-  applyNavigation: (newIndex: number, listRef: ScrollTarget | undefined, shiftKey?: boolean, overflow?: boolean) => void
+  applyNavigation: (args: ApplyNavigationArgs) => void
   /** Handle a keydown in Brief mode. Returns true if the key moved the cursor. */
   handleBriefModeKeys: (e: KeyboardEvent) => boolean
   /** Handle a keydown in Full mode. Returns true if the key moved the cursor. */
@@ -78,14 +97,9 @@ export interface CursorNavKeys {
 }
 
 export function createCursorNavKeys(deps: CursorNavKeysDeps): CursorNavKeys {
-  function applyNavigation(
-    newIndex: number,
-    listRef: ScrollTarget | undefined,
-    shiftKey = false,
-    overflow = false,
-  ): void {
+  function applyNavigation({ newIndex, listRef, shiftKey = false, overflow = false }: ApplyNavigationArgs): void {
     if (shiftKey) {
-      deps.extendSelection(deps.getCursorIndex(), newIndex, overflow, deps.getHasParent())
+      deps.extendSelection({ fromIndex: deps.getCursorIndex(), toIndex: newIndex, overflow, hasParent: deps.getHasParent() })
     }
     deps.applyCursor(newIndex)
     listRef?.scrollToIndex(newIndex)
@@ -98,7 +112,7 @@ export function createCursorNavKeys(deps: CursorNavKeysDeps): CursorNavKeys {
     const result = briefListRef?.handleKeyNavigation?.(e.key, e)
     if (result !== undefined) {
       e.preventDefault()
-      applyNavigation(result.newIndex, briefListRef, e.shiftKey, result.overflow)
+      applyNavigation({ newIndex: result.newIndex, listRef: briefListRef, shiftKey: e.shiftKey, overflow: result.overflow })
       return true
     }
     return false
@@ -117,7 +131,12 @@ export function createCursorNavKeys(deps: CursorNavKeysDeps): CursorNavKeys {
     })
     if (shortcutResult) {
       e.preventDefault()
-      applyNavigation(shortcutResult.newIndex, fullListRef, e.shiftKey, shortcutResult.overflow)
+      applyNavigation({
+        newIndex: shortcutResult.newIndex,
+        listRef: fullListRef,
+        shiftKey: e.shiftKey,
+        overflow: shortcutResult.overflow,
+      })
       return true
     }
 
@@ -125,25 +144,25 @@ export function createCursorNavKeys(deps: CursorNavKeysDeps): CursorNavKeys {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       const newIndex = Math.min(cursorIndex + 1, effectiveTotalCount - 1)
-      applyNavigation(newIndex, fullListRef, e.shiftKey, newIndex === cursorIndex)
+      applyNavigation({ newIndex, listRef: fullListRef, shiftKey: e.shiftKey, overflow: newIndex === cursorIndex })
       return true
     }
     if (e.key === 'ArrowUp') {
       e.preventDefault()
       const newIndex = Math.max(cursorIndex - 1, 0)
-      applyNavigation(newIndex, fullListRef, e.shiftKey, newIndex === cursorIndex)
+      applyNavigation({ newIndex, listRef: fullListRef, shiftKey: e.shiftKey, overflow: newIndex === cursorIndex })
       return true
     }
     // Left/Right arrows jump to first/last (same as Brief mode at boundaries).
     // These always overflow: intended distance = infinity.
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
-      applyNavigation(0, fullListRef, e.shiftKey, true)
+      applyNavigation({ newIndex: 0, listRef: fullListRef, shiftKey: e.shiftKey, overflow: true })
       return true
     }
     if (e.key === 'ArrowRight') {
       e.preventDefault()
-      applyNavigation(effectiveTotalCount - 1, fullListRef, e.shiftKey, true)
+      applyNavigation({ newIndex: effectiveTotalCount - 1, listRef: fullListRef, shiftKey: e.shiftKey, overflow: true })
       return true
     }
     return false

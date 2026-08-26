@@ -119,7 +119,7 @@ describe('createSearchPaneKeys', () => {
     computeSpy.mockReturnValue({ kind: 'move-cursor', index: 7, overflow: false, shiftKey: true })
     const { keys, spies } = setup({ getCursorIndex: () => 3 })
     keys.handleSearchResultsKeyDown(fakeEvent().e)
-    expect(spies.extendSelection).toHaveBeenCalledWith(3, 7, false)
+    expect(spies.extendSelection).toHaveBeenCalledWith({ fromIndex: 3, toIndex: 7, overflow: false })
     expect(spies.setCursorIndex).toHaveBeenCalledWith(7)
   })
 

@@ -14,6 +14,13 @@ import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { openInEditor } from '$lib/tauri-commands'
 import { computeSearchPaneKeyAction } from './search-results-keys'
 
+/** Toggle-and-fill keyboard selection args, snapshot-pane semantics (no `hasParent`: no `..` row). */
+export interface SearchPaneExtendSelectionArgs {
+  fromIndex: number
+  toIndex: number
+  overflow: boolean
+}
+
 export interface SearchPaneKeysDeps {
   getCursorIndex: () => number
   /** Move the cursor (scrolls + syncs MCP). */
@@ -25,7 +32,7 @@ export interface SearchPaneKeysDeps {
   /** The snapshot entry at an index (for F3/F4 open), or undefined when out of range. */
   getSnapshotEntryAt: (index: number) => { path: string; isDirectory: boolean } | undefined
   /** Extend selection across a keyboard jump (toggle-and-fill), snapshot-pane semantics. */
-  extendSelection: (fromIndex: number, toIndex: number, overflow: boolean) => void
+  extendSelection: (args: SearchPaneExtendSelectionArgs) => void
   /** Toggle selection at an index, snapshot-pane semantics. */
   toggleSelectionAt: (index: number) => void
   /** Open the entry under the cursor (Enter). */
@@ -53,7 +60,7 @@ export function createSearchPaneKeys(deps: SearchPaneKeysDeps): SearchPaneKeys {
     if (shiftKey) {
       // Extend selection across the jump via the same toggle-and-fill helper the
       // regular pane uses. Snapshot panes carry no `..` row (hasParent = false).
-      deps.extendSelection(deps.getCursorIndex(), index, overflow)
+      deps.extendSelection({ fromIndex: deps.getCursorIndex(), toIndex: index, overflow })
     }
     deps.setCursorIndex(index)
   }

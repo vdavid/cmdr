@@ -114,7 +114,7 @@ describe('createPanePointer', () => {
 
     it('extends the range on Shift+click, from the cursor', () => {
       createPanePointer(deps).handleSelect({ index: 5, shiftKey: true })
-      expect(calls.extendSelectionFromMouse).toHaveBeenCalledWith(5, 2, true)
+      expect(calls.extendSelectionFromMouse).toHaveBeenCalledWith({ index: 5, cursorIndex: 2, hasParent: true })
       expect(calls.toggleSelectionAt).not.toHaveBeenCalled()
     })
 

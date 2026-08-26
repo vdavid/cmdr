@@ -17,6 +17,13 @@ import { addToast } from '$lib/ui/toast'
 import { isFileListBackgroundClick } from './pane-background-dblclick'
 import DoubleClickPaneHintToastContent from './DoubleClickPaneHintToastContent.svelte'
 
+/** Shift+click args: extend the range from the cursor to the clicked row. */
+export interface ExtendSelectionFromMouseArgs {
+  index: number
+  cursorIndex: number
+  hasParent: boolean
+}
+
 export interface PanePointerDeps {
   getCursorIndex: () => number
   /** Move the cursor without the scroll + MCP round-trip a keyboard move does. */
@@ -30,7 +37,7 @@ export interface PanePointerDeps {
   onRequestFocus: () => void
   fetchCursorEntry: () => void
   /** Shift+click: extend the range from the cursor to the clicked row. */
-  extendSelectionFromMouse: (index: number, cursorIndex: number, hasParent: boolean) => void
+  extendSelectionFromMouse: (args: ExtendSelectionFromMouseArgs) => void
   /** Cmd+click: toggle the clicked row (a no-op on `..`). */
   toggleSelectionAt: (index: number, hasParent: boolean) => void
   /** End the Shift+click anchor gesture. */
@@ -52,7 +59,7 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
     const hasParent = deps.getHasParent()
     if (shiftKey) {
       // Shift wins over Cmd when both are held (matches Finder).
-      deps.extendSelectionFromMouse(index, deps.getCursorIndex(), hasParent)
+      deps.extendSelectionFromMouse({ index, cursorIndex: deps.getCursorIndex(), hasParent })
     } else if (metaKey) {
       // Cmd+click toggles the clicked item. `..` is a no-op inside toggleAt.
       deps.toggleSelectionAt(index, hasParent)

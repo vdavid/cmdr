@@ -62,13 +62,14 @@ describe('createCursorNavKeys', () => {
   it('applyNavigation commits the index and scrolls; extends selection only on shift', () => {
     const { nav, spies } = setup()
     const listRef = { scrollToIndex: vi.fn() }
-    nav.applyNavigation(7, listRef, false, false)
+    nav.applyNavigation({ newIndex: 7, listRef, shiftKey: false, overflow: false })
     expect(spies.extendSelection).not.toHaveBeenCalled()
     expect(spies.applyCursor).toHaveBeenCalledWith(7)
     expect(listRef.scrollToIndex).toHaveBeenCalledWith(7)
 
-    nav.applyNavigation(3, listRef, true, true)
-    expect(spies.extendSelection).toHaveBeenCalledWith(5, 3, true, true) // from cursor 5, hasParent true
+    nav.applyNavigation({ newIndex: 3, listRef, shiftKey: true, overflow: true })
+    // from cursor 5, hasParent true
+    expect(spies.extendSelection).toHaveBeenCalledWith({ fromIndex: 5, toIndex: 3, overflow: true, hasParent: true })
   })
 
   it('Full mode ArrowDown moves down one, clamped at the last row (overflow)', () => {

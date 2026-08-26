@@ -817,7 +817,7 @@
         selection.toggleAt(cursorIndex, hasParent)
         if (cursorIndex < effectiveTotalCount - 1) {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-            cursorNav.applyNavigation(cursorIndex + 1, listRef, false)
+            cursorNav.applyNavigation({ newIndex: cursorIndex + 1, listRef, shiftKey: false })
         }
     }
 
@@ -1196,7 +1196,7 @@
         getSelectedIndices: () => Array.from(selection.selectedIndices),
         onRequestFocus: () => onRequestFocus?.(),
         fetchCursorEntry: () => void selectionInfo.fetchEntry(),
-        extendSelectionFromMouse: (index, cursor, parent) =>
+        extendSelectionFromMouse: ({ index, cursorIndex: cursor, hasParent: parent }) =>
             { selection.handleShiftMouseNavigation(index, cursor, parent); },
         toggleSelectionAt: (index, parent) => { selection.toggleAt(index, parent); },
         clearRangeState: () => { selection.clearRangeState(); },
@@ -1260,7 +1260,7 @@
         applyCursor: (index: number) => {
             cursorIndex = index
         },
-        extendSelection: (fromIndex, toIndex, overflow, parent) =>
+        extendSelection: ({ fromIndex, toIndex, overflow, hasParent: parent }) =>
             { selection.handleShiftKeyboardNavigation(fromIndex, toIndex, overflow, parent); },
         getHasParent: () => hasParent,
         getEffectiveTotalCount: () => effectiveTotalCount,
@@ -1280,7 +1280,7 @@
 
     /** Lands the cursor on a row and scrolls it into view. */
     function moveCursorTo(index: number): void {
-        cursorNav.applyNavigation(index, activeListRef())
+        cursorNav.applyNavigation({ newIndex: index, listRef: activeListRef() })
     }
 
     /**
@@ -1318,7 +1318,7 @@
         getSearchResultsCount: () => searchResultsCount,
         getVisibleItemsCount: () => fullListRef?.getVisibleItemsCount?.() ?? 20,
         getSnapshotEntryAt: (index: number) => searchSnapshot?.entries[index],
-        extendSelection: (fromIndex, toIndex, overflow) =>
+        extendSelection: ({ fromIndex, toIndex, overflow }) =>
             { selection.handleShiftKeyboardNavigation(fromIndex, toIndex, overflow, false); },
         toggleSelectionAt: (index: number) => selection.toggleAt(index, false),
         openCursorItem: () => void openCursorItem(),
