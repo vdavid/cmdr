@@ -78,8 +78,17 @@ describe('pasteClipboardContentAsFile — setting gating (three values)', () => 
       false,
       true,
       onDirectoryDiffSpy,
-      findFileIndexSpy,
+      expect.any(Function),
     )
+    // The 7th arg adapts `findFileIndex`'s object payload into the real Tauri
+    // command's positional `(listingId, filename, showHiddenFiles)` signature.
+    const findFileIndexArg = (moveCursorSpy.mock.calls[0] as unknown as unknown[])[6] as (args: {
+      listingId: string
+      filename: string
+      showHiddenFiles: boolean
+    }) => unknown
+    findFileIndexArg({ listingId: 'lst-1', filename: 'pasted.txt', showHiddenFiles: true })
+    expect(findFileIndexSpy).toHaveBeenCalledWith('lst-1', 'pasted.txt', true)
     expect(addToastSpy).toHaveBeenCalledTimes(1)
     const [pane, , opts] = addToastSpy.mock.calls[0]
     expect(pane).toBe('left')

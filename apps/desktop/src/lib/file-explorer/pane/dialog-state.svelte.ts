@@ -598,7 +598,7 @@ export function createDialogState(deps: DialogStateDeps) {
         hasParent ?? false,
         deps.getShowHiddenFiles(),
         onDirectoryDiff,
-        findFileIndex,
+        (args) => findFileIndex(args.listingId, args.filename, args.showHiddenFiles),
       )
     },
 
@@ -626,7 +626,7 @@ export function createDialogState(deps: DialogStateDeps) {
           hasParent ?? false,
           deps.getShowHiddenFiles(),
           onDirectoryDiff,
-          findFileIndex,
+          (args) => findFileIndex(args.listingId, args.filename, args.showHiddenFiles),
         )
       }
 

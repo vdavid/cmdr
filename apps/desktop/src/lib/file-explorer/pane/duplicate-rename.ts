@@ -164,7 +164,7 @@ export async function openRenameOnDuplicate(request: DuplicateRenameRequest): Pr
     paneRef.hasParentEntry(),
     request.showHiddenFiles,
     onDirectoryDiff,
-    findFileIndex,
+    (args) => findFileIndex(args.listingId, args.filename, args.showHiddenFiles),
   )
 
   // `expectedName` refuses to activate on anything but the new item, and gives up

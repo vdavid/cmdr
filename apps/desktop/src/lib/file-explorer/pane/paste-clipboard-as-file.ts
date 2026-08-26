@@ -71,7 +71,7 @@ export async function pasteClipboardContentAsFile(deps: PasteClipboardAsFileDeps
     deps.hasParent,
     deps.showHiddenFiles,
     onDirectoryDiff,
-    findFileIndex,
+    (args) => findFileIndex(args.listingId, args.filename, args.showHiddenFiles),
   )
 
   addToastForPane(deps.originPane, PasteClipboardToastContent, {

@@ -3,7 +3,20 @@ import type { DirectoryDiff } from '$lib/file-explorer/types'
 import { removeExtension } from './new-folder-utils'
 
 type OnDirectoryDiffFn = (handler: (payload: DirectoryDiff) => void) => Promise<() => void>
-type FindFileIndexFn = (listingId: string, filename: string, showHiddenFiles: boolean) => Promise<number | null>
+
+/**
+ * Args for `FindFileIndexFn`: `listingId` and `filename` are both `string`, a
+ * pair a caller could swap. The real backend function this type stands in for
+ * (`findFileIndex` in `$lib/tauri-commands`) is a Tauri IPC command with a fixed
+ * `(listingId, filename, showHiddenFiles)` signature we can't reshape, so every
+ * call site adapts into this object at the boundary instead.
+ */
+export interface FindFileIndexArgs {
+  listingId: string
+  filename: string
+  showHiddenFiles: boolean
+}
+type FindFileIndexFn = (args: FindFileIndexArgs) => Promise<number | null>
 
 export async function getInitialFolderName(
   paneRef: FilePaneAPI | undefined,
@@ -49,7 +62,7 @@ export async function moveCursorToNewFolder(
   // Try to find the folder immediately: the directory-diff event often fires
   // before this listener is set up (the folder is created before onCreated runs).
   const tryMoveCursor = async (): Promise<boolean> => {
-    const index = await findFileIndex(paneListingId, folderName, showHiddenFiles)
+    const index = await findFileIndex({ listingId: paneListingId, filename: folderName, showHiddenFiles })
     if (index !== null) {
       const frontendIndex = hasParent ? index + 1 : index
       void paneRef?.setCursorIndex(frontendIndex)
