@@ -1,6 +1,14 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
-    import type { FileEntry, FriendlyError, NetworkHost, SelectPayload, SortColumn, SortOrder } from '../types'
+    import type {
+        FileEntry,
+        FriendlyError,
+        NetworkHost,
+        SelectPayload,
+        SortColumn,
+        SortOrder,
+        VisibleRangePayload,
+    } from '../types'
     import {
         refreshListingIndexSizes,
         type Location,
@@ -1112,7 +1120,7 @@
     const debouncedSyncMcp = createDebounce(() => void syncPaneStateToMcp(), 300)
 
     /** Handle visible range change from list components */
-    function handleVisibleRangeChange(start: number, end: number) {
+    function handleVisibleRangeChange({ start, end }: VisibleRangePayload) {
         visibleRangeStart = start
         visibleRangeEnd = end
         debouncedSyncMcp.call()

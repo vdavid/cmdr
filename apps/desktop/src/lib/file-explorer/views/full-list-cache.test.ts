@@ -133,7 +133,7 @@ describe('syncToProps', () => {
   it('wipes the entries on a hard reset so stale rows cannot survive a nav', async () => {
     const cache = makeCache()
     cache.syncToProps(true)
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
     expect(cache.entries).toHaveLength(2)
 
     props.listingId = 'listing-2'
@@ -149,7 +149,7 @@ describe('syncToProps', () => {
   ])('soft-refreshes on %s, keeping the rows on screen', async (_label, change) => {
     const cache = makeCache()
     cache.syncToProps(true)
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     change()
 
@@ -172,7 +172,7 @@ describe('fetch', () => {
   it('stores the fetched window', async () => {
     const cache = makeCache()
 
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     expect(cache.entries.map((e) => e.name)).toEqual(['a.txt', 'b.txt'])
     expect(cache.range).toEqual({ start: 0, end: 2 })
@@ -181,9 +181,9 @@ describe('fetch', () => {
   it('short-circuits when the range is already covered', async () => {
     utils.fetchVisibleRange.mockResolvedValue({ entries: [entry('a.txt')], range: { start: 0, end: 100 } })
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     expect(utils.fetchVisibleRange).toHaveBeenCalledOnce()
   })
@@ -191,9 +191,9 @@ describe('fetch', () => {
   it('refetches a covered range when forced, because a diff can stale it in place', async () => {
     utils.fetchVisibleRange.mockResolvedValue({ entries: [entry('a.txt')], range: { start: 0, end: 100 } })
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
-    await cache.fetch(0, 10, true)
+    await cache.fetch({ startIndex: 0, endIndex: 10, force: true })
 
     expect(utils.fetchVisibleRange).toHaveBeenCalledTimes(2)
     expect(utils.fetchVisibleRange).toHaveBeenLastCalledWith(expect.objectContaining({ force: true }))
@@ -208,8 +208,8 @@ describe('fetch', () => {
     )
     const cache = makeCache()
 
-    const first = cache.fetch(0, 10)
-    await cache.fetch(20, 30)
+    const first = cache.fetch({ startIndex: 0, endIndex: 10 })
+    await cache.fetch({ startIndex: 20, endIndex: 30 })
 
     expect(utils.fetchVisibleRange).toHaveBeenCalledOnce()
     release({ entries: [], range: { start: 0, end: 0 } })
@@ -220,17 +220,17 @@ describe('fetch', () => {
     utils.fetchVisibleRange.mockRejectedValueOnce(new Error('listing gone'))
     const cache = makeCache()
 
-    await expect(cache.fetch(0, 10)).resolves.toBeUndefined()
+    await expect(cache.fetch({ startIndex: 0, endIndex: 10 })).resolves.toBeUndefined()
 
     utils.fetchVisibleRange.mockResolvedValue({ entries: [entry('a.txt')], range: { start: 0, end: 1 } })
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
     expect(cache.entries).toHaveLength(1)
   })
 
   it('makes no IPC call on a static-entries pane', async () => {
     props.staticEntries = [entry('hit.txt')]
 
-    await makeCache().fetch(0, 10)
+    await makeCache().fetch({ startIndex: 0, endIndex: 10 })
 
     expect(utils.fetchVisibleRange).not.toHaveBeenCalled()
   })
@@ -239,9 +239,9 @@ describe('fetch', () => {
 describe('windowRows', () => {
   it('puts the synthetic ".." row at index 0 and shifts real files by one', async () => {
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
-    const rows = cache.windowRows(0, 3)
+    const rows = cache.windowRows({ startIndex: 0, endIndex: 3 })
 
     expect(rows.map((r) => [r.globalIndex, r.file.name])).toEqual([
       [0, '..'],
@@ -253,9 +253,9 @@ describe('windowRows', () => {
   it('uses raw indices when there is no parent row', async () => {
     props.hasParent = false
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
-    expect(cache.windowRows(0, 2).map((r) => [r.globalIndex, r.file.name])).toEqual([
+    expect(cache.windowRows({ startIndex: 0, endIndex: 2 }).map((r) => [r.globalIndex, r.file.name])).toEqual([
       [0, 'a.txt'],
       [1, 'b.txt'],
     ])
@@ -263,16 +263,16 @@ describe('windowRows', () => {
 
   it('skips rows outside the fetched range rather than rendering blanks', async () => {
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
-    expect(cache.windowRows(1, 50)).toHaveLength(2)
+    expect(cache.windowRows({ startIndex: 1, endIndex: 50 })).toHaveLength(2)
   })
 })
 
 describe('getEntryAt', () => {
   it('resolves the ".." row and a real row', async () => {
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     expect(cache.getEntryAt(0)?.name).toBe('..')
     expect(cache.getEntryAt(2)?.name).toBe('b.txt')
@@ -283,7 +283,7 @@ describe('getEntryAt', () => {
 describe('indexOfEntry', () => {
   it('reads the window back by path, the way `getEntryAt` reads it by index', async () => {
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     const row = cache.getEntryAt(2)
     expect(cache.indexOfEntry(row?.path ?? '')).toBe(2)
@@ -299,12 +299,12 @@ describe('syncStaticEntries', () => {
     cache.syncStaticEntries()
 
     expect(cache.range).toEqual({ start: 0, end: 2 })
-    expect(cache.windowRows(1, 3).map((r) => r.file.name)).toEqual(['hit-1.txt', 'hit-2.txt'])
+    expect(cache.windowRows({ startIndex: 1, endIndex: 3 }).map((r) => r.file.name)).toEqual(['hit-1.txt', 'hit-2.txt'])
   })
 
   it('leaves a normal pane cache untouched', async () => {
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     cache.syncStaticEntries()
 
@@ -352,7 +352,7 @@ describe('parent directory stats', () => {
 describe('enrichment passes', () => {
   it('refreshes index sizes for the cached rows and the current folder', async () => {
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     cache.refreshIndexSizes()
 
@@ -362,7 +362,7 @@ describe('enrichment passes', () => {
   it('skips the current folder at a volume root', async () => {
     props.hasParent = false
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     cache.refreshIndexSizes()
 
@@ -382,7 +382,7 @@ describe('enrichment passes', () => {
 
   it('re-fetches icons for the cached rows', async () => {
     const cache = makeCache()
-    await cache.fetch(0, 10)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
 
     cache.refetchIcons()
 

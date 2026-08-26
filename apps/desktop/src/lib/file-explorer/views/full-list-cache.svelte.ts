@@ -66,6 +66,12 @@ export interface WindowRow {
   globalIndex: number
 }
 
+/** The window `windowRows` and `fetch` operate on (UI indices, `endIndex` exclusive). */
+export interface VisibleWindowRange {
+  startIndex: number
+  endIndex: number
+}
+
 /**
  * What `syncToProps` decided this pass. `'idle'` means "nothing to do, and don't
  * fetch either" (static-entries pane, no listing, or no measured container yet).
@@ -84,9 +90,9 @@ export interface FullListCache {
   /** The UI index of a loaded row, or `undefined` when it isn't in the window. */
   indexOfEntry: (path: string) => number | undefined
   /** The rows to render for a virtual window, skipping indices not yet fetched. */
-  windowRows: (startIndex: number, endIndex: number) => WindowRow[]
+  windowRows: (args: VisibleWindowRange) => WindowRow[]
   /** Fetches the window's range. `force` skips the "already cached" short-circuit. */
-  fetch: (startItem: number, endItem: number, force?: boolean) => Promise<void>
+  fetch: (args: VisibleWindowRange & { force?: boolean }) => Promise<void>
   /**
    * Re-runs the reset / soft-refresh decision against the current props. Pass
    * `ready: false` (no measured container yet) to read the props without acting,
@@ -115,7 +121,7 @@ export function createFullListCache(deps: FullListCacheDeps): FullListCache {
   let prevTotalCount = 0
   let prevSoftTick = 0
 
-  async function fetch(startItem: number, endItem: number, force = false): Promise<void> {
+  async function fetch({ startIndex, endIndex, force = false }: VisibleWindowRange & { force?: boolean }): Promise<void> {
     // Static-entries branch (search-results pane): the array is already in
     // memory, no IPC needed. `syncStaticEntries` mirrors it into `entries`.
     if (deps.staticEntries() !== undefined) return
@@ -127,7 +133,12 @@ export function createFullListCache(deps: FullListCacheDeps): FullListCache {
 
     // Check if range is already cached BEFORE setting isFetching
     // This prevents blocking subsequent fetches when data is already available
-    const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
+    const { fetchStart, fetchEnd } = calculateFetchRange({
+      startItem: startIndex,
+      endItem: endIndex,
+      hasParent,
+      totalCount,
+    })
     if (!force && isRangeCached(fetchStart, fetchEnd, range)) {
       return // Already cached
     }
@@ -136,8 +147,8 @@ export function createFullListCache(deps: FullListCacheDeps): FullListCache {
     try {
       const result = await fetchVisibleRangeUtil({
         listingId,
-        startItem,
-        endItem,
+        startItem: startIndex,
+        endItem: endIndex,
         hasParent,
         totalCount,
         includeHidden: deps.includeHidden(),
@@ -175,7 +186,7 @@ export function createFullListCache(deps: FullListCacheDeps): FullListCache {
 
     indexOfEntry: (path: string) => indexOfEntryUtil(path, deps.hasParent(), entries, range),
 
-    windowRows: (startIndex: number, endIndex: number) => {
+    windowRows: ({ startIndex, endIndex }: VisibleWindowRange) => {
       const hasParent = deps.hasParent()
       const parentPath = deps.parentPath()
       // Spread to read every element, so the caller's `$derived` re-runs on an

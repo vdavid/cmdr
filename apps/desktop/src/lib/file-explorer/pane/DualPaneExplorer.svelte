@@ -9,7 +9,7 @@
     import { pluralize } from '$lib/utils/pluralize'
     import { type ViewMode } from '$lib/app-status-store'
     import type { CommandId, McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
-    import type { SelectionAction } from '../../../routes/(main)/explorer-api'
+    import type { SelectionActionArgs } from '../../../routes/(main)/explorer-api'
     import {
         listen,
         type Location,
@@ -1034,8 +1034,8 @@
         paneCommands.routePanelKey(payload)
     }
 
-    export function handleSelectionAction(action: SelectionAction, startIndex?: number, endIndex?: number) {
-        paneCommands.handleSelectionAction(action, startIndex, endIndex)
+    export function handleSelectionAction(args: SelectionActionArgs) {
+        paneCommands.handleSelectionAction(args)
     }
 
     export function applyIndicesToFocusedPane(idxs: number[], mode: 'add' | 'remove') {

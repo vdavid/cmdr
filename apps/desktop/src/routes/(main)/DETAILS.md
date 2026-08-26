@@ -260,7 +260,7 @@ dispatch path can't rely on the keydown bail.
 
 - **⌘A (`selection.selectAll`).** Intercepted as a menu accelerator before the webview. The handler routes to
   `active.select()` when a `<input>` / `<textarea>` is focused, otherwise delegates to
-  `explorerRef.handleSelectionAction('selectAll')`. The keydown bail doesn't help; the menu fires first.
+  `explorerRef.handleSelectionAction({ action: 'selectAll' })`. The keydown bail doesn't help; the menu fires first.
 - **The text-editing family while a modal is open.** `resolveGlobalKeyAction` (`global-keydown.ts`) normally resolves
   nothing when `isModalDialogOpen()`, so pane-scoped commands stay inert behind a dialog. `edit.cut` / `edit.copy` /
   `edit.paste` / `selection.selectAll` are the exception: with focus in a text input they still resolve, matched through

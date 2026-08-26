@@ -10,11 +10,11 @@ import type { CommandHandlerRecord } from './types'
 
 export const selectionHandlers = {
   'selection.toggle': ({ explorerRef }) => {
-    explorerRef?.handleSelectionAction('toggleAtCursor')
+    explorerRef?.handleSelectionAction({ action: 'toggleAtCursor' })
   },
 
   'selection.toggleAndDown': ({ explorerRef }) => {
-    explorerRef?.handleSelectionAction('toggleAtCursorAndMoveDown')
+    explorerRef?.handleSelectionAction({ action: 'toggleAtCursorAndMoveDown' })
   },
 
   'selection.selectAll': ({ explorerRef }) => {
@@ -26,11 +26,11 @@ export const selectionHandlers = {
       active.select()
       return
     }
-    explorerRef?.handleSelectionAction('selectAll')
+    explorerRef?.handleSelectionAction({ action: 'selectAll' })
   },
 
   'selection.deselectAll': ({ explorerRef }) => {
-    explorerRef?.handleSelectionAction('deselectAll')
+    explorerRef?.handleSelectionAction({ action: 'deselectAll' })
   },
 
   'selection.mcpSelect': async ({ explorerRef, dispatchArgs }) => {

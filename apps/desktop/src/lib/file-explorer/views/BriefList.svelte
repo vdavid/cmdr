@@ -1,6 +1,6 @@
 <script lang="ts">
     import { untrack } from 'svelte'
-    import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus } from '../types'
+    import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus, VisibleRangePayload } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
     import { calculateVirtualWindowVariable, getScrollToPositionVariable } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
@@ -104,7 +104,7 @@
         onIndexStatusRequest?: (paths: string[]) => void
         onFolderCoverageRequest?: (folderPaths: string[]) => void
         onSortChange?: (column: SortColumn) => void
-        onVisibleRangeChange?: (start: number, end: number) => void
+        onVisibleRangeChange?: (args: VisibleRangePayload) => void
         /** Called when rename input value changes */
         onRenameInput?: (value: string) => void
         /** Called when rename is submitted (Enter) */
@@ -821,7 +821,7 @@
         const endCol = virtualWindow.endIndex
         const startItem = startCol * itemsPerColumn
         const endItem = Math.min(endCol * itemsPerColumn, totalCount)
-        onVisibleRangeChange?.(startItem, endItem)
+        onVisibleRangeChange?.({ start: startItem, end: endItem })
     })
 </script>
 

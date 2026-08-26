@@ -1,6 +1,6 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
-    import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus } from '../types'
+    import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus, VisibleRangePayload } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { startSelectionDragTracking } from '../drag/drag-drop'
@@ -110,7 +110,7 @@
         onIndexStatusRequest?: (paths: string[]) => void
         onFolderCoverageRequest?: (folderPaths: string[]) => void
         onSortChange?: (column: SortColumn) => void
-        onVisibleRangeChange?: (start: number, end: number) => void
+        onVisibleRangeChange?: (args: VisibleRangePayload) => void
         /** Called when rename input value changes */
         onRenameInput?: (value: string) => void
         /** Called when rename is submitted (Enter) */
@@ -444,10 +444,12 @@
 
     /** Fetches the entries the current virtual window needs. */
     function fetchVisibleRange(force = false): void {
-        void cache.fetch(virtualWindow.startIndex, virtualWindow.endIndex, force)
+        void cache.fetch({ startIndex: virtualWindow.startIndex, endIndex: virtualWindow.endIndex, force })
     }
 
-    const visibleFiles = $derived.by(() => cache.windowRows(virtualWindow.startIndex, virtualWindow.endIndex))
+    const visibleFiles = $derived.by(() =>
+        cache.windowRows({ startIndex: virtualWindow.startIndex, endIndex: virtualWindow.endIndex }),
+    )
 
     /**
      * `aria-activedescendant` may only name a row that's actually in the DOM.
@@ -610,7 +612,7 @@
     $effect(() => {
         const startItem = virtualWindow.startIndex
         const endItem = virtualWindow.endIndex
-        onVisibleRangeChange?.(startItem, endItem)
+        onVisibleRangeChange?.({ start: startItem, end: endItem })
     })
 </script>
 

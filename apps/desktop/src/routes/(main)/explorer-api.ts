@@ -24,6 +24,13 @@ export type SelectionAction =
   | 'toggleAtCursorAndMoveDown'
   | 'selectRange'
 
+/** Args for `handleSelectionAction`. `startIndex`/`endIndex` only matter for `'selectRange'`. */
+export interface SelectionActionArgs {
+  action: SelectionAction
+  startIndex?: number
+  endIndex?: number
+}
+
 export interface ExplorerAPI {
   refocus: () => void
   switchPane: () => void
@@ -115,7 +122,7 @@ export interface ExplorerAPI {
    */
   getPaneListingId: (pane: 'left' | 'right') => string | null
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
-  handleSelectionAction: (action: SelectionAction, startIndex?: number, endIndex?: number) => void
+  handleSelectionAction: (args: SelectionActionArgs) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => Promise<void>
   /**
    * By-name selection for the MCP `select` tool's `names` mode. Throws when the

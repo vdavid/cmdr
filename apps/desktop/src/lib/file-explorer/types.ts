@@ -338,6 +338,16 @@ export interface SelectPayload {
   metaKey?: boolean
 }
 
+/**
+ * The virtualized window's visible rows, threaded from `BriefList` / `FullList`
+ * up through `SearchResultsView`'s pass-through `onVisibleRangeChange` prop to
+ * the pane, which uses it for MCP state sync.
+ */
+export interface VisibleRangePayload {
+  start: number
+  end: number
+}
+
 /** Statistics about a directory listing. */
 export interface ListingStats {
   /** Total number of files (not directories) */

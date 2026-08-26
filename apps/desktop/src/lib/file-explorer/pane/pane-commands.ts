@@ -4,7 +4,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
 import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import { capabilitiesFor } from './volume-capabilities'
-import type { SelectionAction } from '../../../routes/(main)/explorer-api'
+import type { SelectionActionArgs } from '../../../routes/(main)/explorer-api'
 import type { FilePaneAPI } from './types'
 import type { FileEntry, FriendlyError } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
@@ -223,13 +223,8 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     paneRef.handleKeyDown(event)
   }
 
-  /**
-   * Handle selection action from the keyboard/palette dispatch and MCP.
-   * @param action - The selection action (closed `SelectionAction` union)
-   * @param startIndex - Start index for range selection
-   * @param endIndex - End index for range selection
-   */
-  function handleSelectionAction(action: SelectionAction, startIndex?: number, endIndex?: number) {
+  /** Handle selection action from the keyboard/palette dispatch and MCP. `startIndex`/`endIndex` only matter for `'selectRange'`. */
+  function handleSelectionAction({ action, startIndex, endIndex }: SelectionActionArgs) {
     const paneRef = access.getPaneRef(access.getFocusedPane())
     if (!paneRef) return
 

@@ -153,8 +153,8 @@ describe('handleSelectionAction routing', () => {
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
 
-    cmds.handleSelectionAction('clear')
-    cmds.handleSelectionAction('deselectAll')
+    cmds.handleSelectionAction({ action: 'clear' })
+    cmds.handleSelectionAction({ action: 'deselectAll' })
 
     expect(ref.clearSelection).toHaveBeenCalledTimes(2)
   })
@@ -162,15 +162,15 @@ describe('handleSelectionAction routing', () => {
   it('routes selectAll', () => {
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.handleSelectionAction('selectAll')
+    cmds.handleSelectionAction({ action: 'selectAll' })
     expect(ref.selectAll).toHaveBeenCalledOnce()
   })
 
   it('routes toggleAtCursor and toggleAtCursorAndMoveDown', () => {
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.handleSelectionAction('toggleAtCursor')
-    cmds.handleSelectionAction('toggleAtCursorAndMoveDown')
+    cmds.handleSelectionAction({ action: 'toggleAtCursor' })
+    cmds.handleSelectionAction({ action: 'toggleAtCursorAndMoveDown' })
     expect(ref.toggleSelectionAtCursor).toHaveBeenCalledOnce()
     expect(ref.toggleSelectionAndMoveDownAtCursor).toHaveBeenCalledOnce()
   })
@@ -179,11 +179,11 @@ describe('handleSelectionAction routing', () => {
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
 
-    cmds.handleSelectionAction('selectRange', 2, 5)
+    cmds.handleSelectionAction({ action: 'selectRange', startIndex: 2, endIndex: 5 })
     expect(ref.selectRange).toHaveBeenCalledWith(2, 5)
 
     vi.mocked(ref.selectRange).mockClear()
-    cmds.handleSelectionAction('selectRange', 2)
+    cmds.handleSelectionAction({ action: 'selectRange', startIndex: 2 })
     expect(ref.selectRange).not.toHaveBeenCalled()
   })
 
@@ -192,13 +192,13 @@ describe('handleSelectionAction routing', () => {
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
     // The action param is the closed `SelectionAction` union now; a bogus value
     // can only arrive via a cast. Pin that the switch has no errant default.
-    cmds.handleSelectionAction('bogus' as SelectionAction)
+    cmds.handleSelectionAction({ action: 'bogus' as SelectionAction })
     expect(ref.clearSelection).not.toHaveBeenCalled()
 
     // No pane focused: nothing throws.
     const cmdsNoPane = create(buildAccess({ paneRefs: { left: undefined } }))
     expect(() => {
-      cmdsNoPane.handleSelectionAction('selectAll')
+      cmdsNoPane.handleSelectionAction({ action: 'selectAll' })
     }).not.toThrow()
   })
 })

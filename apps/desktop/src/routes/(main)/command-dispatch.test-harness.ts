@@ -526,19 +526,19 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'selection.toggle',
     expect: (e) => {
-      expect(e.handleSelectionAction).toHaveBeenCalledExactlyOnceWith('toggleAtCursor')
+      expect(e.handleSelectionAction).toHaveBeenCalledExactlyOnceWith({ action: 'toggleAtCursor' })
     },
   },
   {
     id: 'selection.toggleAndDown',
     expect: (e) => {
-      expect(e.handleSelectionAction).toHaveBeenCalledExactlyOnceWith('toggleAtCursorAndMoveDown')
+      expect(e.handleSelectionAction).toHaveBeenCalledExactlyOnceWith({ action: 'toggleAtCursorAndMoveDown' })
     },
   },
   {
     id: 'selection.deselectAll',
     expect: (e) => {
-      expect(e.handleSelectionAction).toHaveBeenCalledExactlyOnceWith('deselectAll')
+      expect(e.handleSelectionAction).toHaveBeenCalledExactlyOnceWith({ action: 'deselectAll' })
     },
   },
   {

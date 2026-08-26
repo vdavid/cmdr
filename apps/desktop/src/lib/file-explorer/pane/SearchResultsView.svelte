@@ -21,7 +21,7 @@
      * defensively we render a small "snapshot not available" pane rather than throwing.
      */
 
-    import type { FileEntry, SelectPayload, SortColumn, SortOrder } from '../types'
+    import type { FileEntry, SelectPayload, SortColumn, SortOrder, VisibleRangePayload } from '../types'
     import FullList from '../views/FullList.svelte'
     import { getSnapshot, getMutationTick, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
     import { capabilitiesForKind } from './volume-capabilities'
@@ -51,7 +51,7 @@
          */
         onSelect: (args: SelectPayload) => void
         /** Called by FullList when the visible window changes (passed through). */
-        onVisibleRangeChange?: (start: number, end: number) => void
+        onVisibleRangeChange?: (args: VisibleRangePayload) => void
     }
 
     const {

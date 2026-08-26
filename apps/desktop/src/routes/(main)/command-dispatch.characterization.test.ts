@@ -534,10 +534,10 @@ describe('characterization — activeElement input branches', () => {
     cleanup()
   })
 
-  it('selection.selectAll routes to handleSelectionAction("selectAll") with no input focused', async () => {
+  it('selection.selectAll routes to handleSelectionAction({ action: "selectAll" }) with no input focused', async () => {
     const explorer = makeExplorerSpy()
     await handleCommandExecute('selection.selectAll', makeCtx(explorer))
-    expect(explorer.handleSelectionAction).toHaveBeenCalledExactlyOnceWith('selectAll')
+    expect(explorer.handleSelectionAction).toHaveBeenCalledExactlyOnceWith({ action: 'selectAll' })
   })
 
   it('edit.copy uses execCommand("copy") when an input is focused', async () => {
