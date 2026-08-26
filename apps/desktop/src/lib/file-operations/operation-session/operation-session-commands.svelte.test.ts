@@ -1,20 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { commandMocks } = vi.hoisted(() => ({
-  commandMocks: {
-    pauseOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
-    resumeOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
-    cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
-    cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
-    resolveWriteConflict: vi.fn<
-      (id: string, conflictId: number, resolution: string, applyToAll: boolean) => Promise<string>
-    >(() => Promise.resolve('resolved')),
-    /** Mocked only so a test can prove the toggle never asks: the session
-     *  already holds the lifecycle status, so a query would be a round trip for
-     *  an answer on screen. */
-    getOperationStatus: vi.fn(() => Promise.resolve({ lifecycle: 'running' })),
-  },
-}))
+/** `resolveWriteConflict`'s real signature (`write-operations.ts`) is positional all the
+ *  way down to the raw IPC binding, so the exposed mock stays positional too; this inner
+ *  mock is what tests actually assert against, as a named payload so a future edit can't
+ *  silently swap `conflictId` and `applyToAll`. */
+const { commandMocks, resolveWriteConflictMock } = vi.hoisted(() => {
+  const resolveWriteConflictMock = vi.fn<
+    (payload: { operationId: string; conflictId: number; resolution: string; applyToAll: boolean }) => Promise<string>
+  >(() => Promise.resolve('resolved'))
+  return {
+    resolveWriteConflictMock,
+    commandMocks: {
+      pauseOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+      resumeOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+      cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+      cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
+      resolveWriteConflict: (operationId: string, conflictId: number, resolution: string, applyToAll: boolean) =>
+        resolveWriteConflictMock({ operationId, conflictId, resolution, applyToAll }),
+      /** Mocked only so a test can prove the toggle never asks: the session
+       *  already holds the lifecycle status, so a query would be a round trip for
+       *  an answer on screen. */
+      getOperationStatus: vi.fn(() => Promise.resolve({ lifecycle: 'running' })),
+    },
+  }
+})
 
 vi.mock('$lib/tauri-commands', () => commandMocks)
 
@@ -50,12 +59,21 @@ function harness(paused = false) {
 }
 
 beforeEach(() => {
-  for (const mock of Object.values(commandMocks)) mock.mockReset()
+  for (const mock of [
+    commandMocks.pauseOperation,
+    commandMocks.resumeOperation,
+    commandMocks.cancelOperation,
+    commandMocks.cancelWriteOperation,
+    commandMocks.getOperationStatus,
+    resolveWriteConflictMock,
+  ]) {
+    mock.mockReset()
+  }
   commandMocks.pauseOperation.mockResolvedValue(undefined)
   commandMocks.resumeOperation.mockResolvedValue(undefined)
   commandMocks.cancelOperation.mockResolvedValue(undefined)
   commandMocks.cancelWriteOperation.mockResolvedValue(undefined)
-  commandMocks.resolveWriteConflict.mockResolvedValue('resolved')
+  resolveWriteConflictMock.mockResolvedValue('resolved')
 })
 
 describe('pause and resume', () => {
@@ -235,7 +253,12 @@ describe('resolving a conflict', () => {
 
     expect(await commands.resolveConflict(4, 'overwrite', false)).toBe('resolved')
 
-    expect(commandMocks.resolveWriteConflict).toHaveBeenCalledWith('op-1', 4, 'overwrite', false)
+    expect(resolveWriteConflictMock).toHaveBeenCalledWith({
+      operationId: 'op-1',
+      conflictId: 4,
+      resolution: 'overwrite',
+      applyToAll: false,
+    })
     expect(commands.resolvingConflict).toBe(false)
     dispose()
   })
@@ -246,7 +269,7 @@ describe('resolving a conflict', () => {
   it.each(['resolved', 'already_resolved', 'no_pending_conflict', 'unknown_operation'] as const)(
     'passes the %s verdict straight back to the caller',
     async (outcome) => {
-      commandMocks.resolveWriteConflict.mockResolvedValueOnce(outcome)
+      resolveWriteConflictMock.mockResolvedValueOnce(outcome)
       const { commands, dispose } = harness()
 
       expect(await commands.resolveConflict(1, 'skip', true)).toBe(outcome)
@@ -256,14 +279,14 @@ describe('resolving a conflict', () => {
 
   it('drops a second answer while the first is in flight', async () => {
     const pending = deferred<string>()
-    commandMocks.resolveWriteConflict.mockReturnValueOnce(pending.promise)
+    resolveWriteConflictMock.mockReturnValueOnce(pending.promise)
     const { commands, dispose } = harness()
 
     const first = commands.resolveConflict(1, 'overwrite', false)
     expect(commands.resolvingConflict).toBe(true)
 
     expect(await commands.resolveConflict(1, 'skip', false)).toBeNull()
-    expect(commandMocks.resolveWriteConflict).toHaveBeenCalledTimes(1)
+    expect(resolveWriteConflictMock).toHaveBeenCalledTimes(1)
 
     pending.resolve('resolved')
     await first
@@ -272,7 +295,7 @@ describe('resolving a conflict', () => {
   })
 
   it('reports no verdict when the call never landed, so the question stays on screen', async () => {
-    commandMocks.resolveWriteConflict.mockRejectedValueOnce(new Error('ipc down'))
+    resolveWriteConflictMock.mockRejectedValueOnce(new Error('ipc down'))
     const { commands, dispose } = harness()
 
     expect(await commands.resolveConflict(1, 'overwrite', false)).toBeNull()

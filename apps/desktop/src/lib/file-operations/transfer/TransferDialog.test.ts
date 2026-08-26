@@ -35,21 +35,26 @@ interface ScanCompleteEvent {
   dedupBytesTotal: number
 }
 
+// `scanVolumeForConflicts`'s real signature (`mtp.ts`) is positional all the way down to
+// the raw IPC binding, so the exposed mock (below, in the `$lib/tauri-commands` factory)
+// stays positional too; this inner mock is what tests actually assert against, as a named
+// payload so a future edit can't silently swap `volumeId` and `destPath`.
 const scanVolumeForConflictsMock = vi.fn<
-  (
-    volumeId: string,
-    sourceItems: unknown[],
-    destPath: string,
-    sourceVolumeId?: string,
-    sourcePaths?: string[],
-  ) => Promise<VolumeConflictInfo[]>
+  (payload: {
+    volumeId: string
+    sourceItems: unknown[]
+    destPath: string
+    sourceVolumeId?: string
+    sourcePaths?: string[]
+  }) => Promise<VolumeConflictInfo[]>
 >(() => Promise.resolve([]))
 
 // Destination-existence probe behind the "this folder will be created" warning.
-// Defaults to "exists" so most tests see no warning; a test overrides it.
-const pathExistsCheckedMock = vi.fn<(path: string, volumeId?: string) => Promise<{ data: boolean; timedOut: boolean }>>(
-  () => Promise.resolve({ data: true, timedOut: false }),
-)
+// Defaults to "exists" so most tests see no warning; a test overrides it. Same
+// positional-real-signature reasoning as `scanVolumeForConflictsMock` above.
+const pathExistsCheckedMock = vi.fn<
+  (payload: { path: string; volumeId?: string }) => Promise<{ data: boolean; timedOut: boolean }>
+>(() => Promise.resolve({ data: true, timedOut: false }))
 
 // Home dir resolution for the long-form display of a bare `~` destination.
 vi.mock('@tauri-apps/api/path', () => ({
@@ -77,9 +82,14 @@ vi.mock('$lib/tauri-commands', () => ({
   }),
   onScanPreviewError: vi.fn(() => Promise.resolve(() => {})),
   onScanPreviewCancelled: vi.fn(() => Promise.resolve(() => {})),
-  scanVolumeForConflicts: (...args: Parameters<typeof scanVolumeForConflictsMock>) =>
-    scanVolumeForConflictsMock(...args),
-  pathExistsChecked: (...args: Parameters<typeof pathExistsCheckedMock>) => pathExistsCheckedMock(...args),
+  scanVolumeForConflicts: (
+    volumeId: string,
+    sourceItems: unknown[],
+    destPath: string,
+    sourceVolumeId?: string,
+    sourcePaths?: string[],
+  ) => scanVolumeForConflictsMock({ volumeId, sourceItems, destPath, sourceVolumeId, sourcePaths }),
+  pathExistsChecked: (path: string, volumeId?: string) => pathExistsCheckedMock({ path, volumeId }),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -272,10 +282,9 @@ describe('TransferDialog upfront conflict check decoupling', () => {
     await flushMicrotasks()
 
     expect(scanVolumeForConflictsMock).toHaveBeenCalled()
-    const call = scanVolumeForConflictsMock.mock.calls[0]
-    // args: (volumeId, sourceItems, destPath, sourceVolumeId, sourcePaths)
-    expect(call[3]).toBe('root')
-    expect(call[4]).toEqual(['/Users/test/photos', '/Users/test/notes.txt'])
+    const [call] = scanVolumeForConflictsMock.mock.calls[0]
+    expect(call.sourceVolumeId).toBe('root')
+    expect(call.sourcePaths).toEqual(['/Users/test/photos', '/Users/test/notes.txt'])
   })
 })
 

@@ -15,17 +15,28 @@ import {
 import type { FontSpec } from './measure'
 import type { MeasureResult } from './worker-client'
 
+/** `storeFontMetrics` and `extendFontMetrics`'s real signatures (`file-listing.ts`) are
+ *  positional all the way down to the raw IPC `invoke`, so the exposed mocks below (in the
+ *  `$lib/tauri-commands` factory) stay positional too; these inner mocks are what tests
+ *  actually assert against, as a named payload so a future edit can't silently swap
+ *  `codePoints` and `widths`. */
+interface FontMetricsWritePayload {
+  fontId: string
+  codePoints: number[]
+  widths: number[]
+}
+
 const hasFontMetrics = vi.fn<(fontId: string) => Promise<boolean>>()
-const storeFontMetrics = vi.fn<(fontId: string, codePoints: number[], widths: number[]) => Promise<void>>()
-const extendFontMetrics = vi.fn<(fontId: string, codePoints: number[], widths: number[]) => Promise<void>>()
+const storeFontMetrics = vi.fn<(payload: FontMetricsWritePayload) => Promise<void>>()
+const extendFontMetrics = vi.fn<(payload: FontMetricsWritePayload) => Promise<void>>()
 const measureOffMainThread = vi.fn<(spec: FontSpec, codePoints: Uint32Array) => Promise<MeasureResult>>()
 
 vi.mock('$lib/tauri-commands', () => ({
   hasFontMetrics: (fontId: string) => hasFontMetrics(fontId),
   storeFontMetrics: (fontId: string, codePoints: number[], widths: number[]) =>
-    storeFontMetrics(fontId, codePoints, widths),
+    storeFontMetrics({ fontId, codePoints, widths }),
   extendFontMetrics: (fontId: string, codePoints: number[], widths: number[]) =>
-    extendFontMetrics(fontId, codePoints, widths),
+    extendFontMetrics({ fontId, codePoints, widths }),
 }))
 
 vi.mock('./worker-client', () => ({
@@ -118,7 +129,7 @@ describe('ensureFontMetricsLoaded', () => {
   it('sends code points and widths as equal-length parallel arrays', async () => {
     await ensureFontMetricsLoaded()
 
-    const [fontId, codePoints, widths] = storeFontMetrics.mock.calls[0]
+    const [{ fontId, codePoints, widths }] = storeFontMetrics.mock.calls[0]
     expect(fontId).toBe(getCurrentFontId())
     expect(codePoints.length).toBe(widths.length)
     expect(codePoints.length).toBeGreaterThan(0)
@@ -146,7 +157,7 @@ describe('fillMissingFontMetrics', () => {
     const filled = await fillMissingFontMetrics(fontId, [0x4e00, 0xac00])
 
     expect(filled).toBe(true)
-    const [, codePoints, widths] = extendFontMetrics.mock.calls[0]
+    const [{ codePoints, widths }] = extendFontMetrics.mock.calls[0]
     expect(codePoints).toEqual([0x4e00, 0xac00])
     expect(widths.length).toBe(2)
   })
@@ -164,7 +175,7 @@ describe('fillMissingFontMetrics', () => {
     await fillMissingFontMetrics(fontId, [0x4e00, 0xac00])
 
     // The already-filled code point is not measured a second time.
-    const [, secondBatch] = extendFontMetrics.mock.calls[1]
+    const [{ codePoints: secondBatch }] = extendFontMetrics.mock.calls[1]
     expect(secondBatch).toEqual([0xac00])
   })
 
@@ -182,7 +193,7 @@ describe('fillMissingFontMetrics', () => {
     const filled = await fillMissingFontMetrics(fontId, [0xd800, 0x4e00])
 
     expect(filled).toBe(true)
-    const [, codePoints] = extendFontMetrics.mock.calls[0]
+    const [{ codePoints }] = extendFontMetrics.mock.calls[0]
     expect(codePoints).toEqual([0x4e00])
   })
 

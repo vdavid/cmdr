@@ -3,18 +3,28 @@ import type { OperationSnapshot, WriteConflictEvent, WriteProgressEvent } from '
 
 // Hoisted: `vi.mock`'s factory runs before the module body, so the mock it
 // closes over has to exist by then.
-const { listOperationsMock, commandMocks } = vi.hoisted(() => ({
-  listOperationsMock: vi.fn<() => Promise<OperationSnapshot[]>>(() => Promise.resolve([])),
-  commandMocks: {
-    pauseOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
-    resumeOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
-    cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
-    cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
-    resolveWriteConflict: vi.fn<
-      (id: string, conflictId: number, resolution: string, applyToAll: boolean) => Promise<string>
-    >(() => Promise.resolve('resolved')),
-  },
-}))
+//
+// `resolveWriteConflict`'s real signature (`write-operations.ts`) is positional all the
+// way down to the raw IPC binding, so the exposed mock stays positional too; the inner
+// `resolveWriteConflictMock` is what tests actually assert against, as a named payload so
+// a future edit can't silently swap `conflictId` and `applyToAll`.
+const { listOperationsMock, commandMocks, resolveWriteConflictMock } = vi.hoisted(() => {
+  const resolveWriteConflictMock = vi.fn<
+    (payload: { operationId: string; conflictId: number; resolution: string; applyToAll: boolean }) => Promise<string>
+  >(() => Promise.resolve('resolved'))
+  return {
+    listOperationsMock: vi.fn<() => Promise<OperationSnapshot[]>>(() => Promise.resolve([])),
+    resolveWriteConflictMock,
+    commandMocks: {
+      pauseOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+      resumeOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+      cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+      cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
+      resolveWriteConflict: (operationId: string, conflictId: number, resolution: string, applyToAll: boolean) =>
+        resolveWriteConflictMock({ operationId, conflictId, resolution, applyToAll }),
+    },
+  }
+})
 
 vi.mock('$lib/tauri-commands', () => ({
   listOperations: listOperationsMock,
@@ -120,12 +130,20 @@ function conflict(id: string, over: Partial<WriteConflictEvent> = {}): WriteConf
 beforeEach(() => {
   listOperationsMock.mockReset()
   listOperationsMock.mockResolvedValue([])
-  for (const mock of Object.values(commandMocks)) mock.mockReset()
+  for (const mock of [
+    commandMocks.pauseOperation,
+    commandMocks.resumeOperation,
+    commandMocks.cancelOperation,
+    commandMocks.cancelWriteOperation,
+    resolveWriteConflictMock,
+  ]) {
+    mock.mockReset()
+  }
   commandMocks.pauseOperation.mockResolvedValue(undefined)
   commandMocks.resumeOperation.mockResolvedValue(undefined)
   commandMocks.cancelOperation.mockResolvedValue(undefined)
   commandMocks.cancelWriteOperation.mockResolvedValue(undefined)
-  commandMocks.resolveWriteConflict.mockResolvedValue('resolved')
+  resolveWriteConflictMock.mockResolvedValue('resolved')
 })
 
 afterEach(() => {
@@ -407,7 +425,7 @@ describe('commands', () => {
   it.each(['resolved', 'already_resolved', 'no_pending_conflict', 'unknown_operation'] as const)(
     'lets go of the clash on a %s verdict, because the question is over either way',
     async (outcome) => {
-      commandMocks.resolveWriteConflict.mockResolvedValueOnce(outcome)
+      resolveWriteConflictMock.mockResolvedValueOnce(outcome)
       const { fanout, session, dispose } = harness()
       fanout._testEmit({ kind: 'conflict', event: conflict('a') })
 
@@ -426,7 +444,7 @@ describe('commands', () => {
     // forever with no prompt on screen.
     const { fanout, session, dispose } = harness()
     fanout._testEmit({ kind: 'conflict', event: conflict('a') })
-    commandMocks.resolveWriteConflict.mockImplementationOnce(() => {
+    resolveWriteConflictMock.mockImplementationOnce(() => {
       fanout._testEmit({ kind: 'conflict', event: conflict('a', { conflictId: 2, destinationPath: '/dst/next' }) })
       return Promise.resolve('resolved')
     })
@@ -449,7 +467,7 @@ describe('commands', () => {
     fanout._testEmit({ kind: 'conflictResolved', event: { operationId: 'a', conflictId: 1 } })
 
     expect(session.conflict).toBeNull()
-    expect(commandMocks.resolveWriteConflict).not.toHaveBeenCalled()
+    expect(resolveWriteConflictMock).not.toHaveBeenCalled()
     dispose()
   })
 
@@ -468,7 +486,7 @@ describe('commands', () => {
   })
 
   it('keeps the clash when the answer never landed', async () => {
-    commandMocks.resolveWriteConflict.mockRejectedValueOnce(new Error('ipc down'))
+    resolveWriteConflictMock.mockRejectedValueOnce(new Error('ipc down'))
     const { fanout, session, dispose } = harness()
     fanout._testEmit({ kind: 'conflict', event: conflict('a') })
 
@@ -486,7 +504,12 @@ describe('commands', () => {
 
     expect(await session.resolveConflict(7, 'skip', true)).toBe('resolved')
 
-    expect(commandMocks.resolveWriteConflict).toHaveBeenCalledWith('a', 7, 'skip', true)
+    expect(resolveWriteConflictMock).toHaveBeenCalledWith({
+      operationId: 'a',
+      conflictId: 7,
+      resolution: 'skip',
+      applyToAll: true,
+    })
     dispose()
   })
 

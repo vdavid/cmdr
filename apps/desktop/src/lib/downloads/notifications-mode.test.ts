@@ -14,7 +14,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { getSettingMock, setSettingMock, openSettingsWindowMock } = vi.hoisted(() => ({
   getSettingMock: vi.fn(),
   setSettingMock: vi.fn(),
-  openSettingsWindowMock: vi.fn<(surface: string, section?: string[], anchor?: string) => Promise<void>>(),
+  // `openSettingsWindow`'s real signature (`settings-window.ts`) is positional, so the
+  // exposed mock below stays positional too; this inner mock is what tests actually
+  // assert against, as a named payload so a future edit can't silently swap `surface`
+  // and `anchor`.
+  openSettingsWindowMock: vi.fn<(payload: { surface: string; section?: string[]; anchor?: string }) => Promise<void>>(),
 }))
 
 vi.mock('$lib/settings', () => ({
@@ -23,7 +27,8 @@ vi.mock('$lib/settings', () => ({
 }))
 
 vi.mock('$lib/settings/settings-window', () => ({
-  openSettingsWindow: openSettingsWindowMock,
+  openSettingsWindow: (surface: string, section?: string[], anchor?: string) =>
+    openSettingsWindowMock({ surface, section, anchor }),
 }))
 
 import {
@@ -68,7 +73,7 @@ describe('openSettingsToDownloadsNotifications', () => {
   it('navigates to the Notifications section path and the sub-group anchor', async () => {
     await openSettingsToDownloadsNotifications()
     expect(openSettingsWindowMock).toHaveBeenCalledTimes(1)
-    const [surface, section, anchor] = openSettingsWindowMock.mock.calls[0]
+    const [{ surface, section, anchor }] = openSettingsWindowMock.mock.calls[0]
     expect(surface).toBe('downloads-toast')
     expect(section).toEqual(['Behavior', 'Notifications'])
     expect(anchor).toBe('settings-downloads-notifications')
