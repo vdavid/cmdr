@@ -13,13 +13,13 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 import { closeFeedbackDialog, feedbackFlow } from './feedback-flow.svelte'
 import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL } from '$lib/beta-links'
 
-const sendFeedbackMock = vi.fn<(text: string, email?: string) => Promise<{ kind: string }>>()
+const sendFeedbackMock = vi.fn<(payload: { feedbackText: string; email?: string }) => Promise<{ kind: string }>>()
 const openExternalUrlMock = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  sendFeedback: (text: string, email?: string) => sendFeedbackMock(text, email),
+  sendFeedback: (text: string, email?: string) => sendFeedbackMock({ feedbackText: text, email }),
   openExternalUrl: (url: string) => openExternalUrlMock(url),
 }))
 
@@ -157,7 +157,7 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith('More keyboard shortcuts please!', undefined)
+    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'More keyboard shortcuts please!', email: undefined })
     expect(addToastMock).toHaveBeenCalled()
     expect(feedbackFlow.open).toBe(false)
   })
@@ -199,7 +199,7 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith('hi', 'tester@example.com')
+    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: 'tester@example.com' })
     expect(setSettingMock).toHaveBeenCalledWith('analytics.email', 'tester@example.com')
   })
 
@@ -246,7 +246,7 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith('hi', undefined)
+    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: undefined })
     expect(setSettingMock).not.toHaveBeenCalledWith('analytics.email', expect.anything())
   })
 
@@ -268,7 +268,7 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith('hi', 'onfile@example.com')
+    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: 'onfile@example.com' })
     // The address is already on file, so the send has nothing to write back.
     expect(setSettingMock).not.toHaveBeenCalledWith('analytics.email', expect.anything())
   })
@@ -296,7 +296,7 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith('hi', 'tester@example.com')
+    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: 'tester@example.com' })
     expect(setSettingMock).toHaveBeenCalledWith('updates.attachEmailToReports', true)
   })
 

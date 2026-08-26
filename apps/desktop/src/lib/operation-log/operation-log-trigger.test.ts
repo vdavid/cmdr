@@ -8,9 +8,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { OperationRow } from '$lib/ipc/bindings'
 
-const getRecentMock = vi.fn<(limit: number, offset: number) => Promise<OperationRow[]>>()
+const getRecentMock = vi.fn<(payload: { limit: number; offset: number }) => Promise<OperationRow[]>>()
 vi.mock('$lib/tauri-commands', () => ({
-  getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock(limit, offset),
+  getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock({ limit, offset }),
 }))
 
 vi.mock('$lib/logging/logger', () => ({
@@ -68,7 +68,7 @@ describe('openOperationLog', () => {
     getRecentMock.mockResolvedValue(fullPage('a'))
     await openOperationLog()
 
-    expect(getRecentMock).toHaveBeenCalledWith(OPERATION_LOG_PAGE, 0)
+    expect(getRecentMock).toHaveBeenCalledWith({ limit: OPERATION_LOG_PAGE, offset: 0 })
     expect(operationLogState.open).toBe(true)
     expect(operationLogState.entries).toHaveLength(OPERATION_LOG_PAGE)
     expect(operationLogState.hasMore).toBe(true)
@@ -119,7 +119,7 @@ describe('loadMoreOperations', () => {
     await loadMoreOperations()
 
     // Second fetch is offset by the first page's length.
-    expect(getRecentMock).toHaveBeenNthCalledWith(2, OPERATION_LOG_PAGE, OPERATION_LOG_PAGE)
+    expect(getRecentMock).toHaveBeenNthCalledWith(2, { limit: OPERATION_LOG_PAGE, offset: OPERATION_LOG_PAGE })
     expect(operationLogState.entries).toHaveLength(OPERATION_LOG_PAGE * 2)
 
     // No duplicate opIds across the two appended pages.

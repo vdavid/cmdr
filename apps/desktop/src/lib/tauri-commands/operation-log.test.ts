@@ -10,13 +10,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 /** The tauri-specta `Result<T, E>` wire shape the bindings return. */
 type Res<T> = { status: 'ok'; data: T } | { status: 'error'; error: string }
 
-const getRecentMock = vi.fn<(limit: number, offset: number) => Promise<Res<unknown>>>()
-const getDetailMock = vi.fn<(id: string, l: number, o: number) => Promise<Res<unknown>>>()
+const getRecentMock = vi.fn<(payload: { limit: number; offset: number }) => Promise<Res<unknown>>>()
+const getDetailMock =
+  vi.fn<(payload: { operationId: string; itemLimit: number; itemOffset: number }) => Promise<Res<unknown>>>()
 const undoMock = vi.fn<(ids: string[]) => Promise<Res<unknown>>>()
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock(limit, offset),
-    getOperationLogDetail: (id: string, l: number, o: number) => getDetailMock(id, l, o),
+    getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock({ limit, offset }),
+    getOperationLogDetail: (id: string, l: number, o: number) =>
+      getDetailMock({ operationId: id, itemLimit: l, itemOffset: o }),
     undoOperations: (ids: string[]) => undoMock(ids),
   },
 }))
@@ -29,7 +31,7 @@ describe('getRecentOperationLogEntries', () => {
   it('forwards limit/offset and returns the data on ok', async () => {
     getRecentMock.mockResolvedValue({ status: 'ok', data: [{ opId: 'a' }] })
     const rows = await getRecentOperationLogEntries(50, 100)
-    expect(getRecentMock).toHaveBeenCalledWith(50, 100)
+    expect(getRecentMock).toHaveBeenCalledWith({ limit: 50, offset: 100 })
     expect(rows).toEqual([{ opId: 'a' }])
   })
 
@@ -45,7 +47,7 @@ describe('getOperationLogDetail', () => {
   it('returns the detail on ok (and null when the op is absent)', async () => {
     getDetailMock.mockResolvedValue({ status: 'ok', data: null })
     expect(await getOperationLogDetail('op-1', 200, 0)).toBeNull()
-    expect(getDetailMock).toHaveBeenCalledWith('op-1', 200, 0)
+    expect(getDetailMock).toHaveBeenCalledWith({ operationId: 'op-1', itemLimit: 200, itemOffset: 0 })
 
     const detail = { operation: { opId: 'op-1' }, items: [], totalItems: 0 }
     getDetailMock.mockResolvedValue({ status: 'ok', data: detail })

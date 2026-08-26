@@ -13,12 +13,16 @@ import OperationLogDialog from './OperationLogDialog.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { operationLogState, closeOperationLog } from './operation-log-trigger.svelte'
 
-const getOperationLogDetailMock = vi.fn<(id: string, l: number, o: number) => Promise<OperationLogDetail | null>>()
+const getOperationLogDetailMock =
+  vi.fn<
+    (payload: { operationId: string; itemLimit: number; itemOffset: number }) => Promise<OperationLogDetail | null>
+  >()
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   getRecentOperationLogEntries: vi.fn(() => Promise.resolve([])),
-  getOperationLogDetail: (id: string, l: number, o: number) => getOperationLogDetailMock(id, l, o),
+  getOperationLogDetail: (id: string, l: number, o: number) =>
+    getOperationLogDetailMock({ operationId: id, itemLimit: l, itemOffset: o }),
 }))
 
 // Avoid pulling the reactive-settings chain; a stable stamp is all the row needs.
@@ -139,7 +143,7 @@ describe('OperationLogDialog', () => {
     await vi.waitFor(() => {
       expect(target.textContent).toContain('/left/file-a.txt')
     })
-    expect(getOperationLogDetailMock).toHaveBeenCalledWith('op-copy', 200, 0)
+    expect(getOperationLogDetailMock).toHaveBeenCalledWith({ operationId: 'op-copy', itemLimit: 200, itemOffset: 0 })
     expect(target.querySelector('.op-head')?.getAttribute('aria-expanded')).toBe('true')
     expect(target.textContent).toContain('/right/file-a.txt')
   })

@@ -9,7 +9,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SuggestedOpPage, SuggestedSweepView, SuggestionsChanged } from '$lib/tauri-commands'
 
 const listMock = vi.fn<() => Promise<SuggestedSweepView[]>>()
-const pageMock = vi.fn<(g: number, o: number, l: number) => Promise<SuggestedOpPage>>()
+const pageMock =
+  vi.fn<(payload: { groupId: number; offset: number; limit: number }) => Promise<SuggestedOpPage>>()
 const rejectMock = vi.fn<(g: number) => Promise<{ kind: string }>>()
 const approveMock = vi.fn<(g: number, deselected: number[]) => Promise<{ kind: string }>>()
 
@@ -18,7 +19,7 @@ let emit: ((payload: SuggestionsChanged) => void) | null = null
 
 vi.mock('$lib/tauri-commands', () => ({
   listSuggestedOps: () => listMock(),
-  pageSuggestedOps: (g: number, o: number, l: number) => pageMock(g, o, l),
+  pageSuggestedOps: (g: number, o: number, l: number) => pageMock({ groupId: g, offset: o, limit: l }),
   rejectSuggestedGroup: (g: number) => rejectMock(g),
   approveSuggestedGroup: (g: number, deselected: number[]) => approveMock(g, deselected),
   onSuggestionsChanged: (cb: (p: SuggestionsChanged) => void) => {
@@ -88,7 +89,7 @@ beforeEach(() => {
   suggestedOpsState.sweeps = []
   suggestedOpsState.loadError = false
   listMock.mockResolvedValue([sweep([group(7, 3)])])
-  pageMock.mockImplementation((_g, offset) =>
+  pageMock.mockImplementation(({ offset }) =>
     Promise.resolve({ ops: ops(offset, 200), offset, total: 60_000 } as unknown as SuggestedOpPage),
   )
   rejectMock.mockResolvedValue({ kind: 'rejected' })
@@ -188,7 +189,7 @@ describe('the op window', () => {
 
     // 60,000 ops, one window fetched.
     expect(pageMock).toHaveBeenCalledTimes(1)
-    expect(pageMock.mock.calls[0]?.[2]).toBeLessThanOrEqual(200)
+    expect(pageMock.mock.calls[0]?.[0]?.limit).toBeLessThanOrEqual(200)
     expect(suggestedOpsState.window?.total).toBe(60_000)
     expect(suggestedOpsState.window?.ops.length).toBe(200)
   })

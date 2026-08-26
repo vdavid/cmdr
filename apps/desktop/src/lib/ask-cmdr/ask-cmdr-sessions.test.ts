@@ -7,16 +7,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ConversationRow, ConversationSearchHit } from '$lib/tauri-commands'
 
-const listMock = vi.fn<(limit: number, offset: number, archived: boolean) => Promise<ConversationRow[]>>()
-const searchMock = vi.fn<(q: string, limit: number, offset: number) => Promise<ConversationSearchHit[]>>()
+const listMock =
+  vi.fn<(payload: { limit: number; offset: number; includeArchived: boolean }) => Promise<ConversationRow[]>>()
+const searchMock =
+  vi.fn<(payload: { query: string; limit: number; offset: number }) => Promise<ConversationSearchHit[]>>()
 const renameMock = vi.fn<(id: number, title: string) => Promise<void>>()
 const archiveMock = vi.fn<(id: number, archived: boolean) => Promise<void>>()
 const switchMock = vi.fn<(id: number) => Promise<void>>()
 const newChatMock = vi.fn()
 
 vi.mock('$lib/tauri-commands', () => ({
-  listAskCmdrConversations: (l: number, o: number, a: boolean) => listMock(l, o, a),
-  searchAskCmdrConversations: (q: string, l: number, o: number) => searchMock(q, l, o),
+  listAskCmdrConversations: (l: number, o: number, a: boolean) => listMock({ limit: l, offset: o, includeArchived: a }),
+  searchAskCmdrConversations: (q: string, l: number, o: number) => searchMock({ query: q, limit: l, offset: o }),
   renameAskCmdrConversation: (id: number, t: string) => renameMock(id, t),
   archiveAskCmdrConversation: (id: number, a: boolean) => archiveMock(id, a),
 }))
@@ -79,7 +81,7 @@ describe('sessions listing + paging', () => {
   it('loads the first page and sets hasMore only when the page is full', async () => {
     listMock.mockResolvedValueOnce(fullPage())
     await loadSessions()
-    expect(listMock).toHaveBeenCalledWith(SESSIONS_PAGE, 0, false)
+    expect(listMock).toHaveBeenCalledWith({ limit: SESSIONS_PAGE, offset: 0, includeArchived: false })
     expect(sessionsState.conversations).toHaveLength(SESSIONS_PAGE)
     expect(sessionsState.hasMore).toBe(true)
   })
@@ -96,7 +98,7 @@ describe('sessions listing + paging', () => {
     const second = [row(SESSIONS_PAGE + 1), row(SESSIONS_PAGE + 2)]
     listMock.mockResolvedValueOnce(second)
     await loadMoreSessions()
-    expect(listMock).toHaveBeenLastCalledWith(SESSIONS_PAGE, SESSIONS_PAGE, false)
+    expect(listMock).toHaveBeenLastCalledWith({ limit: SESSIONS_PAGE, offset: SESSIONS_PAGE, includeArchived: false })
     expect(sessionsState.conversations).toHaveLength(SESSIONS_PAGE + 2)
     // No id repeats — pages don't overlap.
     const ids = sessionsState.conversations.map((c) => c.id)
@@ -116,7 +118,7 @@ describe('sessions listing + paging', () => {
     await Promise.resolve()
     await Promise.resolve()
     expect(sessionsState.showArchived).toBe(true)
-    expect(listMock).toHaveBeenLastCalledWith(SESSIONS_PAGE, 0, true)
+    expect(listMock).toHaveBeenLastCalledWith({ limit: SESSIONS_PAGE, offset: 0, includeArchived: true })
   })
 })
 
@@ -133,7 +135,7 @@ describe('sessions search', () => {
     setSearchQuery('budget')
     expect(searchMock).not.toHaveBeenCalled() // debounced
     await vi.runAllTimersAsync()
-    expect(searchMock).toHaveBeenCalledWith('budget', expect.any(Number), 0)
+    expect(searchMock).toHaveBeenCalledWith({ query: 'budget', limit: expect.any(Number), offset: 0 })
     expect(sessionsState.hits).toEqual([hit(1)])
   })
 

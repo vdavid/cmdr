@@ -10,7 +10,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AskCmdrSendOutcome, AskCmdrStreamEvent, AskCmdrTurn, ConversationRow } from '$lib/tauri-commands'
 
 const sendMock = vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
-const listMock = vi.fn<(limit: number, offset: number, archived: boolean) => Promise<ConversationRow[]>>()
+const listMock =
+  vi.fn<(payload: { limit: number; offset: number; includeArchived: boolean }) => Promise<ConversationRow[]>>()
 const unlistenMock = vi.fn()
 const listenMock = vi.fn<(cb: (payload: AskCmdrTurn) => void) => Promise<() => void>>()
 
@@ -18,7 +19,7 @@ vi.mock('$lib/tauri-commands', () => ({
   sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[]) => sendMock(c, t, a, d),
   onAskCmdrTurn: (cb: (payload: AskCmdrTurn) => void) => listenMock(cb),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
-  listAskCmdrConversations: (l: number, o: number, a: boolean) => listMock(l, o, a),
+  listAskCmdrConversations: (l: number, o: number, a: boolean) => listMock({ limit: l, offset: o, includeArchived: a }),
   getAskCmdrConversation: vi.fn(() => Promise.resolve(null)),
   searchAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   renameAskCmdrConversation: vi.fn(() => Promise.resolve()),

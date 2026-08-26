@@ -20,7 +20,7 @@ const { actions, watcher, media, viewer } = vi.hoisted(() => ({
     denyAll: vi.fn(),
     setAllowed: vi.fn(),
     listingChanged: vi.fn(),
-    revise: vi.fn<(rowId: string, name: string) => Promise<void>>(),
+    revise: vi.fn<(payload: { rowId: string; destinationName: string }) => Promise<void>>(),
   },
   watcher: {
     handler: null as ((diff: { changes: unknown[] }) => void) | null,
@@ -32,7 +32,7 @@ const { actions, watcher, media, viewer } = vi.hoisted(() => ({
     drop: vi.fn<(tokens: string[]) => Promise<void>>(),
   },
   viewer: {
-    open: vi.fn<(path: string, volumeId: string) => Promise<void>>(),
+    open: vi.fn<(payload: { filePath: string; volumeId: string }) => Promise<void>>(),
   },
 }))
 
@@ -61,7 +61,7 @@ vi.mock('./ask-cmdr-trigger.svelte', async () => {
       actions.listingChanged(changes)
     },
     reviseRenameRow: async (rowId: string, destinationName: string) => {
-      await actions.revise(rowId, destinationName)
+      await actions.revise({ rowId, destinationName })
     },
   }
 })
@@ -83,7 +83,7 @@ vi.mock('../../routes/viewer/media-view', () => ({
 }))
 
 vi.mock('$lib/file-viewer/open-viewer', () => ({
-  openFileViewer: (path: string, volumeId: string) => viewer.open(path, volumeId),
+  openFileViewer: (path: string, volumeId: string) => viewer.open({ filePath: path, volumeId }),
 }))
 
 import BulkRenameReviewDialog from './BulkRenameReviewDialog.svelte'
@@ -381,7 +381,7 @@ describe('BulkRenameReviewDialog', () => {
     expect(focusedRows[0]?.textContent).toContain('before-two.png')
 
     buttons[1]?.click()
-    expect(viewer.open).toHaveBeenCalledWith('/shots/before-two.png', 'root')
+    expect(viewer.open).toHaveBeenCalledWith({ filePath: '/shots/before-two.png', volumeId: 'root' })
     await expectNoA11yViolations(target)
   })
 
@@ -504,11 +504,17 @@ describe('BulkRenameReviewDialog', () => {
 
     typeName(input, 'Klarna payment 2026-07-24.png')
     input.dispatchEvent(new FocusEvent('blur'))
-    expect(actions.revise).toHaveBeenCalledWith('opaque-row-one', 'Klarna payment 2026-07-24.png')
+    expect(actions.revise).toHaveBeenCalledWith({
+      rowId: 'opaque-row-one',
+      destinationName: 'Klarna payment 2026-07-24.png',
+    })
 
     typeName(input, 'Klarna payment confirmation 2026-07-24.png')
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    expect(actions.revise).toHaveBeenLastCalledWith('opaque-row-one', 'Klarna payment confirmation 2026-07-24.png')
+    expect(actions.revise).toHaveBeenLastCalledWith({
+      rowId: 'opaque-row-one',
+      destinationName: 'Klarna payment confirmation 2026-07-24.png',
+    })
     await expectNoA11yViolations(target)
   })
 
@@ -523,7 +529,10 @@ describe('BulkRenameReviewDialog', () => {
     typeName(input, 'after-three (2).png')
     input.dispatchEvent(new FocusEvent('blur'))
 
-    expect(actions.revise).toHaveBeenCalledWith('opaque-row-blocked', 'after-three (2).png')
+    expect(actions.revise).toHaveBeenCalledWith({
+      rowId: 'opaque-row-blocked',
+      destinationName: 'after-three (2).png',
+    })
   })
 
   /** Escape abandons one edit; it must not close the whole review over a typo. */

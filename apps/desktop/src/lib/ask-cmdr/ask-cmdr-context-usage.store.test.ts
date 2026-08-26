@@ -9,13 +9,14 @@ import type { AskCmdrSendOutcome, AskCmdrStreamEvent, ConversationDetailView } f
 
 const sendMock = vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
 const getConversationMock =
-  vi.fn<(id: number, limit: number, offset: number) => Promise<ConversationDetailView | null>>()
+  vi.fn<(payload: { id: number; msgLimit: number; msgOffset: number }) => Promise<ConversationDetailView | null>>()
 
 vi.mock('$lib/tauri-commands', () => ({
   sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[]) => sendMock(c, t, a, d),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
-  getAskCmdrConversation: (id: number, limit: number, offset: number) => getConversationMock(id, limit, offset),
+  getAskCmdrConversation: (id: number, limit: number, offset: number) =>
+    getConversationMock({ id, msgLimit: limit, msgOffset: offset }),
   recordAskCmdrModelChange: vi.fn(() => Promise.resolve(null)),
   preflightBulkRename: vi.fn(() => Promise.resolve({ status: 'ready', rows: [] })),
   cancelBulkRenameProposal: vi.fn(() => Promise.resolve()),
