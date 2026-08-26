@@ -78,6 +78,12 @@ curl -s --max-time 60 -o "$id.zip" "https://api.cloudflare.com/client/v4/account
   -H "Authorization: Bearer $TOKEN"
 ```
 
+### The notification email
+
+A report someone wrote by hand (`kind: 'user'`) is also mailed to David the moment it lands, with the note, the machine
+facts, and the presigned download link. Auto-sent reports aren't: they go to Discord only. Recipient, cap, and why it
+sends at intake instead of on a cron: `apps/api-server/src/telemetry/DETAILS.md` § Notification email.
+
 Each zip holds `manifest.json` plus `logs/cmdr.log` (and any rotated logs), all PII-redacted. The manifest includes
 `kind` (`user`/`auto`), `appVersion`, `osVersion`, `arch`, `generatedAt`, `buildMode`, `userNote` (Flow A only), the
 `diagId`, `activeSettings`, `logLevels` (`stdoutCurrent` + `stdoutModuleOverrides`), and a `breadcrumbs` ring (`kind`,

@@ -14,8 +14,14 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 
 - **`index.ts`**: Hono app assembly — mounts each area's route modules, wires the scheduled handler.
 - **`types.ts`**: `Bindings`, shared constants, and the helpers every area calls: `verifyAdminAuth`,
-  `enforceIpRateLimit`, `callerIp`, `hashCallerIp`, `isValidEmail`, `redactEmail`, `activationCountKey`.
-- **`email.ts`**: Resend delivery (HTML + plain text, multi-seat), behind the single `sendViaResend` wrapper.
+  `enforceIpRateLimit`, `callerIp`, `hashCallerIp`, `isValidEmail`, `redactEmail`, `activationCountKey`, `formatBytes`.
+- **`email.ts`**: Resend delivery (HTML + plain text, multi-seat), behind the single `sendViaResend` wrapper. Senders:
+  license keys, the crash digest, the feedback digest, one hand-written error report
+  (`sendErrorReportNotificationEmail`, sent at intake, not on cron: `src/telemetry/DETAILS.md` § Notification email),
+  the DB-size alert, and the device-count alert. `humanReportRecipient` is the one place the
+  `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` rule lives, shared by the feedback digest and error-report
+  mail so neither needs a new secret. The card-shaped emails share one page shell and one set of style constants, so
+  feedback and error reports read as one family.
 - **`discord.ts`**: Discord webhook client (single retry on 429, drop-on-failure).
 - **`scheduled.ts`**: the cron jobs (crash notifications, feedback digest, daily aggregation, DB size, retention sweep,
   eviction sweep). Tests split by axis: `crash-notification-email.test.ts` and `feedback-notification-email.test.ts`

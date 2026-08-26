@@ -1,4 +1,5 @@
 import {
+  humanReportRecipient,
   sendCrashNotificationEmail,
   sendDbSizeAlert,
   sendFeedbackNotificationEmail,
@@ -101,7 +102,7 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
  * `FEEDBACK_NOTIFICATION_EMAIL` splits it off later without a code change.
  */
 async function handleFeedbackNotifications(env: Bindings): Promise<void> {
-  const to = env.FEEDBACK_NOTIFICATION_EMAIL ?? env.CRASH_NOTIFICATION_EMAIL
+  const to = humanReportRecipient(env)
   if (!to || !env.RESEND_API_KEY) return
 
   const { results } = await env.TELEMETRY_DB.prepare(

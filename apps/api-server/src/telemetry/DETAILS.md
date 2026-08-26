@@ -9,7 +9,8 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 
 - **`telemetry.ts`**: routes `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`, plus
   `extractTopFunction`, `validateOptionalEnum` / `validateOptionalPattern`, and the sanitizers.
-- **`error-report.ts`**: `POST /error-report` (multipart upload to R2, presigned Discord notification).
+- **`error-report.ts`**: `POST /error-report` (multipart upload to R2, presigned Discord notification, and an email for
+  hand-written reports).
 - **`error-report-intake.ts`**: admission control — daily byte budget, intake pause flag, once-a-day alert claims,
   notification fan-out cap.
 - **`error-report-eviction.ts`**: 8/6 GB watermarks, the 60-day age floor, the KV lock, `extractDateSegment`, and the
@@ -17,14 +18,15 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **`feedback.ts`**: `POST /feedback` (in-app feedback → D1 + Discord).
 - Tests: `crash-report.test.ts` (incl. § "top_function derivation" over real backtraces), `heartbeat.test.ts`,
   `download-and-update-check.test.ts`, `error-report.test.ts`, `error-report-intake.test.ts`,
-  `error-report-eviction.test.ts`, `feedback.test.ts`.
+  `error-report-eviction.test.ts`, `error-report-email.test.ts`, `feedback.test.ts`. The route-level R2/KV/D1 fakes live
+  in `error-report-test-helpers.ts`; the Resend mock can't (`vi.mock` is hoisted per file).
 
 ## Request flows
 
 ```
 Crash report: POST /crash-report → rate-limit by IP (CRASH_REPORT_LIMITER, 429 if over) → validate payload (size + required fields + optional buildMode/appFate membership + diagId/email shape) → hash IP with daily salt → write to D1 incl. nullable diag_id + email + app_fate (fire-and-forget via waitUntil) → 204
 
-Error report: POST /error-report → rate-limit by IP (ERROR_REPORT_LIMITER, 429 if over) → global intake gates (intake_paused, then the day's byte budget; 503 + Retry-After if either trips, plus one Discord ping the day the budget runs out) → read the body under MAX_BODY_BYTES, cancelling past it (413) → parse multipart, validate bundle + meta (400/413) → stream the bundle to R2 under error-reports/{prod|dev}/{date}/{id}-{uuid}.zip → in waitUntil: bump total_bytes, charge the daily budget, tryEvict, then a Discord embed (capped at DAILY_NOTIFICATION_CAP/day) → 200 {id}
+Error report: POST /error-report → rate-limit by IP (ERROR_REPORT_LIMITER, 429 if over) → global intake gates (intake_paused, then the day's byte budget; 503 + Retry-After if either trips, plus one Discord ping the day the budget runs out) → read the body under MAX_BODY_BYTES, cancelling past it (413) → parse multipart, validate bundle + meta (400/413) → stream the bundle to R2 under error-reports/{prod|dev}/{date}/{id}-{uuid}.zip → in waitUntil: bump total_bytes, charge the daily budget, tryEvict, a Discord embed (capped at DAILY_NOTIFICATION_CAP/day), then for kind: user only, a notification email (capped at DAILY_ERROR_REPORT_EMAIL_CAP/day) → 200 {id}
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → validate payload (size + required fields + analId/version shape + config-size cap) → write to D1 heartbeat (fire-and-forget via waitUntil), no IP stored → 204
 
@@ -159,7 +161,37 @@ rather than throwing, so 413 stays distinguishable from a malformed-multipart 40
 **Discord notifications:** every upload triggers an embed with a 7-day presigned R2 GET URL, minted through the R2
 S3-compatible API via `aws4fetch` (`AwsClient.sign` with `signQuery: true` + `X-Amz-Expires`; 7 days is R2's max).
 Click-to-download convenience outweighs leak risk because only the maintainer reads `#error-reports`. The three R2
-secrets and their rotation runbook: `../../DETAILS.md` § R2 presigned URLs.
+secrets and their rotation runbook: `../../DETAILS.md` § R2 presigned URLs. `createPresigner` memoizes the URL per
+upload, so the email and the embed hand out the same link and an upload that notifies neither signs nothing.
+
+### Notification email (hand-written reports only)
+
+`kind: 'user'` reports (the ones written in the "Send error report" dialog) are mailed the moment they land, one report
+per email, alongside the Discord embed. `kind: 'auto'` never is.
+
+**Why at intake rather than on the cron:** a bundle lives in R2 with no D1 row, so there is no `notified_at` column a
+digest could drive, and a table for roughly four rows per two months earns nothing. Hand-written reports are rare and
+each already carries a presigned link, so `postUploadWork` sends directly.
+
+**Why auto-sends stay Discord-only:** one misbehaving install produced 50+ auto bundles in three days. Discord absorbs
+that volume; an inbox does not, and the hand-written report that needs an answer would be buried in it.
+
+**The cap** (`DAILY_ERROR_REPORT_EMAIL_CAP`, 10/UTC day, its own `error_email_count:{date}` KV key): `kind` is
+client-supplied, so a build that mislabels its auto-sends can aim the inbox at itself. Ten is ~150x the observed
+hand-written rate, so a genuinely bad day still arrives in full. Past it, one email says the rest of the day is
+suppressed, then silence until tomorrow. That notice goes to the same inbox rather than Discord: the inbox is the
+channel going quiet, and Discord is still getting every report anyway, so a notice there would explain a gap the reader
+can't see.
+
+**Failure isolation:** the send sits in its own try/catch inside `postUploadWork`, like every other side effect there.
+The bundle is stored and the client has its 200 before any of this runs, so a rejected send is logged and dropped, never
+surfaced to the reporter. Missing recipient or missing `RESEND_API_KEY` is a silent no-op.
+
+**What it says:** the short id, the note with `white-space: pre-wrap` so the writer's line breaks survive, app version,
+OS version, arch, bundle size, a `prod`/`dev` chip, and the download link with its 7-day expiry stated next to it
+(`linkTtlDays` is derived from `PRESIGN_TTL_SECONDS`, so the copy can't drift). Debug builds get a `[DEV]` subject mark;
+release builds get none, because a tag on every ordinary report is noise in an inbox list. Rendering lives in
+`../email.ts`.
 
 ### Eviction (8/6 GB watermarks + 60-day age floor + lifecycle)
 
@@ -204,6 +236,8 @@ costs no parsing and no storage.
   saying so, then silence until tomorrow. A webhook takes 30 messages/min, and a channel that goes quiet without
   explanation reads as "no reports". Bundles remain in R2 and in `/admin/error-reports` regardless. Eviction and budget
   alerts are NOT capped.
+- **Email cap** (`DAILY_ERROR_REPORT_EMAIL_CAP`, 10/day): the same three-way decision on its own KV key, so neither
+  channel can silence the other. Both go through `claimDailySlot`. Sizing and routing: § Notification email above.
 
 Every counter here is a racy read-then-write (KV has no atomic increment), so a concurrent burst can overshoot by
 roughly the in-flight amount. Deliberate: these are coarse circuit breakers, and the 10 MB bundle cap keeps a single

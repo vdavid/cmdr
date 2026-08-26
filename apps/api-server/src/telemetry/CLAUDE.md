@@ -21,6 +21,9 @@ control, `error-report-eviction.ts` capacity management), and `feedback.ts`.
   delete primitive. DETAILS § Eviction.
 - **`/error-report` reads bodies through `readCappedBody`, ❌ never `c.req.parseBody()`**: `content-length` is advisory,
   so the parser would buffer up to 100 MB inside a 128 MB isolate.
+- **Only hand-written error reports (`kind: 'user'`) are emailed**, straight from `postUploadWork`; auto-sends stay
+  Discord-only, because one bad install can produce dozens a day. `kind` is client-supplied, so the mail path carries
+  its own daily cap on its own KV key. DETAILS § Notification email.
 - **The error-report id comes from the client and is used as-is** (validated against `^ERR-[23456789A-Z]{5}$`); on an R2
   key collision retry with a fresh UUID, ❌ never a fresh id — the user already read it in the preview dialog.
 - **A download's UA family is computed at WRITE time** into `downloads.ua_family` (`../user-agent.ts`), so the signal
@@ -30,5 +33,5 @@ control, `error-report-eviction.ts` capacity management), and `feedback.ts`.
 - **`sanitizeRef` (`[a-z0-9._:-]`) is a cross-repo contract** with the website's client-side normalizer, and
   `sanitizeRefererHost` keeps the HOST only, so a referring page's query string can't leak in.
 
-Per-route payloads and columns, the R2 key shape, eviction and intake admission, and the UA-family model: `DETAILS.md`.
-Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Per-route payloads and columns, the R2 key shape, eviction and intake admission, the notification email, and the
+UA-family model: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

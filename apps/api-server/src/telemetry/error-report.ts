@@ -9,14 +9,17 @@ import {
   EVICTION_LOW_WATERMARK,
 } from './error-report-eviction'
 import {
+  DAILY_ERROR_REPORT_EMAIL_CAP,
   DAILY_INTAKE_BUDGET_BYTES,
   DAILY_NOTIFICATION_CAP,
   checkIntakeAllowed,
   claimBudgetAlert,
+  claimErrorReportEmailSlot,
   claimNotificationSlot,
   recordIntakeBytes,
   type IntakeRejection,
 } from './error-report-intake'
+import { humanReportRecipient, sendErrorReportNotificationEmail, sendErrorReportsSuppressedEmail } from '../email'
 import {
   postErrorReportNotification,
   postEvictionBlockedNotification,
@@ -79,6 +82,9 @@ async function readCappedBody(body: ReadableStream<Uint8Array>, maxBytes: number
   return buffer
 }
 const PRESIGN_TTL_SECONDS = 7 * 24 * 60 * 60 // R2 max for presigned URLs
+
+/** The same window in the unit the notification copy states, so the two can't drift apart. */
+const PRESIGN_TTL_DAYS = PRESIGN_TTL_SECONDS / (24 * 60 * 60)
 const DEFAULT_BUCKET_NAME = 'cmdr-error-reports'
 
 /**
@@ -194,21 +200,131 @@ function scheduleBackground(
 }
 
 /**
+ * A lazy, memoized presigned GET URL for one bundle. Both notification channels hand out the same
+ * link, an upload that notifies neither mints none, and a failure to sign is logged once and
+ * reported as `null` rather than sinking the notification.
+ */
+function createPresigner(env: Bindings, key: string): () => Promise<string | null> {
+  let attempted = false
+  let url: string | null = null
+  return async () => {
+    if (attempted) return url
+    attempted = true
+    try {
+      url = await buildPresignedUrl(env, key)
+    } catch (e) {
+      console.error('Error report: presign failed', e)
+    }
+    return url
+  }
+}
+
+/** What `postUploadWork` and its helpers know about the upload they're following up on. */
+interface UploadedReport {
+  id: string
+  key: string
+  sizeBytes: number
+  meta: ErrorReportMeta
+  uploadedUnixSeconds: number
+  date: string
+}
+
+/**
+ * Everything `#error-reports` hears about one upload: the per-upload embed (capped for the day)
+ * and the eviction alerts, which are not capped because they are rare and are the ones worth
+ * waking up for.
+ */
+async function notifyDiscord(
+  env: Bindings,
+  webhookUrl: string,
+  args: UploadedReport,
+  presignedUrl: () => Promise<string | null>,
+  evictionResult: Awaited<ReturnType<typeof tryEvict>> | null,
+): Promise<void> {
+  const decision = await claimNotificationSlot(env.ERROR_REPORT_META, args.date)
+  if (decision === 'suppress-notice') {
+    await postNotificationsSuppressedNotification(webhookUrl, { cap: DAILY_NOTIFICATION_CAP, date: args.date })
+  }
+  if (decision === 'notify') {
+    await postErrorReportNotification(webhookUrl, {
+      id: args.id,
+      kind: args.meta.kind,
+      buildMode: args.meta.buildMode ?? 'release',
+      appVersion: args.meta.appVersion,
+      osVersion: args.meta.osVersion,
+      arch: args.meta.arch,
+      sizeBytes: args.sizeBytes,
+      uploadedUnixSeconds: args.uploadedUnixSeconds,
+      downloadUrl: (await presignedUrl()) ?? '(presign unavailable; fetch via admin)',
+      userNote: args.meta.userNote,
+    })
+  }
+
+  if (evictionResult?.outcome === 'evicted' && evictionResult.evictedCount > 0) {
+    await postEvictionNotification(webhookUrl, {
+      evictedCount: evictionResult.evictedCount,
+      freedBytes: evictionResult.freedBytes,
+      newTotalBytes: evictionResult.newTotal,
+    })
+  }
+  if (evictionResult?.outcome === 'paused') {
+    await postEvictionBlockedNotification(webhookUrl, evictionResult)
+  }
+}
+
+/**
+ * Mail one hand-written report to whoever reads them. Auto-sends never reach here: one misbehaving
+ * install produced 50+ auto bundles in three days, and that volume in an inbox buries everything
+ * else, while Discord absorbs it. `kind` comes from the client's manifest, so a daily cap bounds
+ * what a build that mislabels its auto-sends can cost.
+ *
+ * Silent no-op when no recipient or Resend key is configured.
+ */
+async function mailUserErrorReport(
+  env: Bindings,
+  args: UploadedReport,
+  presignedUrl: () => Promise<string | null>,
+): Promise<void> {
+  const to = humanReportRecipient(env)
+  if (!to || !env.RESEND_API_KEY) return
+
+  const decision = await claimErrorReportEmailSlot(env.ERROR_REPORT_META, args.date)
+  if (decision === 'silent') return
+  if (decision === 'suppress-notice') {
+    await sendErrorReportsSuppressedEmail({
+      cap: DAILY_ERROR_REPORT_EMAIL_CAP,
+      date: args.date,
+      to,
+      resendApiKey: env.RESEND_API_KEY,
+    })
+    return
+  }
+
+  await sendErrorReportNotificationEmail({
+    report: {
+      id: args.id,
+      buildMode: args.meta.buildMode ?? 'release',
+      appVersion: args.meta.appVersion,
+      osVersion: args.meta.osVersion,
+      arch: args.meta.arch,
+      sizeBytes: args.sizeBytes,
+      userNote: args.meta.userNote,
+      downloadUrl: await presignedUrl(),
+      linkTtlDays: PRESIGN_TTL_DAYS,
+    },
+    to,
+    resendApiKey: env.RESEND_API_KEY,
+  })
+}
+
+/**
  * Background work that runs after the 200 has already shipped:
- * update the bytes counter, maybe evict, post Discord notification.
+ * update the bytes counter, maybe evict, post Discord notification, mail a hand-written report.
  * Wrapped to never throw; failures here are logged, not propagated.
  */
-async function postUploadWork(
-  env: Bindings,
-  args: {
-    id: string
-    key: string
-    sizeBytes: number
-    meta: ErrorReportMeta
-    uploadedUnixSeconds: number
-    date: string
-  },
-): Promise<void> {
+async function postUploadWork(env: Bindings, args: UploadedReport): Promise<void> {
+  const presignedUrl = createPresigner(env, args.key)
+
   try {
     await incrementTotalBytes(env.ERROR_REPORT_META, args.sizeBytes)
   } catch (e) {
@@ -229,45 +345,22 @@ async function postUploadWork(
   }
 
   if (env.DISCORD_WEBHOOK_URL) {
-    // Per-upload pings are capped for the day; the eviction alerts below are not. Those are rare
-    // and are the ones worth waking up for.
-    const decision = await claimNotificationSlot(env.ERROR_REPORT_META, args.date)
-    if (decision === 'suppress-notice') {
-      await postNotificationsSuppressedNotification(env.DISCORD_WEBHOOK_URL, {
-        cap: DAILY_NOTIFICATION_CAP,
-        date: args.date,
-      })
+    // Own try/catch like every other side effect here, so a KV or webhook hiccup can't take the
+    // email below down with it.
+    try {
+      await notifyDiscord(env, env.DISCORD_WEBHOOK_URL, args, presignedUrl, evictionResult)
+    } catch (e) {
+      console.error('Error report: Discord notification failed', e)
     }
-    if (decision === 'notify') {
-      let downloadUrl: string | null = null
-      try {
-        downloadUrl = await buildPresignedUrl(env, args.key)
-      } catch (e) {
-        console.error('Error report: presign failed', e)
-      }
-      await postErrorReportNotification(env.DISCORD_WEBHOOK_URL, {
-        id: args.id,
-        kind: args.meta.kind,
-        buildMode: args.meta.buildMode ?? 'release',
-        appVersion: args.meta.appVersion,
-        osVersion: args.meta.osVersion,
-        arch: args.meta.arch,
-        sizeBytes: args.sizeBytes,
-        uploadedUnixSeconds: args.uploadedUnixSeconds,
-        downloadUrl: downloadUrl ?? '(presign unavailable; fetch via admin)',
-        userNote: args.meta.userNote,
-      })
-    }
+  }
 
-    if (evictionResult?.outcome === 'evicted' && evictionResult.evictedCount > 0) {
-      await postEvictionNotification(env.DISCORD_WEBHOOK_URL, {
-        evictedCount: evictionResult.evictedCount,
-        freedBytes: evictionResult.freedBytes,
-        newTotalBytes: evictionResult.newTotal,
-      })
-    }
-    if (evictionResult?.outcome === 'paused') {
-      await postEvictionBlockedNotification(env.DISCORD_WEBHOOK_URL, evictionResult)
+  if (args.meta.kind === 'user') {
+    // A mail problem is ours, never the reporter's: the bundle is already stored and the client
+    // has its 200.
+    try {
+      await mailUserErrorReport(env, args, presignedUrl)
+    } catch (e) {
+      console.error('Error report: notification email failed', e)
     }
   }
 }

@@ -40,6 +40,13 @@ const BUDGET_ALERT_PREFIX = 'budget_alert:'
 const NOTIFY_COUNT_PREFIX = 'notify_count:'
 
 /**
+ * KV key prefix for the per-day count of error-report notification EMAILS. Deliberately its own
+ * prefix: the two channels have wildly different budgets, and sharing a counter would let Discord
+ * traffic silence the inbox.
+ */
+const EMAIL_COUNT_PREFIX = 'error_email_count:'
+
+/**
  * Error-report Discord pings allowed per UTC day, after which the channel gets one "suppressing
  * the rest" notice and nothing more.
  *
@@ -49,6 +56,19 @@ const NOTIFY_COUNT_PREFIX = 'notify_count:'
  * bundle is still in R2 and listed by `GET /admin/error-reports`.
  */
 export const DAILY_NOTIFICATION_CAP = 50
+
+/**
+ * Error-report notification emails allowed per UTC day, after which the inbox gets one "suppressing
+ * the rest" notice and nothing more.
+ *
+ * Only hand-written (`kind: 'user'`) reports are mailed, and those run about four per 60 days, so
+ * 10 in a single day is already ~150x the normal rate: a genuinely bad day (a broken release where
+ * several people all write in at once) still arrives in full. The cap exists because `kind` comes
+ * from the client's manifest, so a buggy or hostile build can label auto-sends as hand-written; the
+ * ceiling bounds what that costs at 10 emails plus one notice. Nothing is lost when it trips: every
+ * bundle is still in R2, pinged to Discord, and listed by `GET /admin/error-reports`.
+ */
+export const DAILY_ERROR_REPORT_EMAIL_CAP = 10
 
 /**
  * Day-scoped keys outlive their day by a margin so a late-arriving request still lands on the
@@ -117,19 +137,37 @@ export async function recordIntakeBytes(kv: KVNamespace, date: string, bytes: nu
 export type NotificationDecision = 'notify' | 'suppress-notice' | 'silent'
 
 /**
- * Take one slot from the day's notification allowance. Exactly one caller per day gets
- * `suppress-notice`, so the channel learns it stopped hearing about uploads instead of going
- * quiet without explanation. Racy like the other KV counters, which at worst shifts the cutoff by
- * a message or two.
+ * Take one slot from a day's allowance on `key`. Exactly one caller per day gets `suppress-notice`,
+ * so the channel learns it stopped hearing about uploads instead of going quiet without
+ * explanation. Racy like the other KV counters, which at worst shifts the cutoff by a message or
+ * two.
  */
-export async function claimNotificationSlot(kv: KVNamespace, date: string): Promise<NotificationDecision> {
-  const key = `${NOTIFY_COUNT_PREFIX}${date}`
+async function claimDailySlot(kv: KVNamespace, key: string, cap: number): Promise<NotificationDecision> {
   const count = parseInt((await kv.get(key)) ?? '0', 10) + 1
   await kv.put(key, String(count), { expirationTtl: DAY_KEY_TTL_SECONDS })
 
-  if (count <= DAILY_NOTIFICATION_CAP) return 'notify'
-  if (count === DAILY_NOTIFICATION_CAP + 1) return 'suppress-notice'
+  if (count <= cap) return 'notify'
+  if (count === cap + 1) return 'suppress-notice'
   return 'silent'
+}
+
+/** Take one slot from the day's Discord-ping allowance ({@link DAILY_NOTIFICATION_CAP}). */
+export async function claimNotificationSlot(kv: KVNamespace, date: string): Promise<NotificationDecision> {
+  return claimDailySlot(kv, `${NOTIFY_COUNT_PREFIX}${date}`, DAILY_NOTIFICATION_CAP)
+}
+
+/** KV key for the notification-email count of one UTC day (`yyyy-mm-dd`). */
+export function errorReportEmailCountKey(date: string): string {
+  return `${EMAIL_COUNT_PREFIX}${date}`
+}
+
+/**
+ * Take one slot from the day's notification-email allowance
+ * ({@link DAILY_ERROR_REPORT_EMAIL_CAP}). Counted separately from the Discord allowance, so a
+ * Discord burst can never suppress the inbox or the other way round.
+ */
+export async function claimErrorReportEmailSlot(kv: KVNamespace, date: string): Promise<NotificationDecision> {
+  return claimDailySlot(kv, errorReportEmailCountKey(date), DAILY_ERROR_REPORT_EMAIL_CAP)
 }
 
 /**

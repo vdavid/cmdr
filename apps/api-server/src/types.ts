@@ -122,6 +122,19 @@ export const maxOrganizationNameLength = 500
 export const activationCountKey = '_meta:activation_count'
 export const maxTransactionIdLength = 200
 
+/** "1.23 GB", "456 MB", "789 KB", "12 B". */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes.toString()} B`
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let value = bytes / 1024
+  let i = 0
+  while (value >= 1024 && i < units.length - 1) {
+    value /= 1024
+    i++
+  }
+  return `${value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2)} ${units[i]}`
+}
+
 export function isValidEmail(email: string): boolean {
   const atIndex = email.indexOf('@')
   return atIndex > 0 && email.indexOf('.', atIndex) > atIndex + 1

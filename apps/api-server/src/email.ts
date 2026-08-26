@@ -1,5 +1,39 @@
 import { Resend, type CreateEmailOptions } from 'resend'
 import type { LicenseType } from './licensing/license'
+import { formatBytes, type Bindings } from './types'
+
+/**
+ * Where mail a person wrote lands: the in-app feedback digest and hand-written error reports.
+ * `FEEDBACK_NOTIFICATION_EMAIL` when it's set, else the crash recipient, so neither channel needs
+ * a new secret to ship. `undefined` means nothing is configured and the caller stays quiet.
+ */
+export function humanReportRecipient(
+  env: Pick<Bindings, 'FEEDBACK_NOTIFICATION_EMAIL' | 'CRASH_NOTIFICATION_EMAIL'>,
+): string | undefined {
+  return env.FEEDBACK_NOTIFICATION_EMAIL ?? env.CRASH_NOTIFICATION_EMAIL
+}
+
+/** A card's shared chrome: the rounded border and the white ground the header and footer sit on. */
+const CARD_STYLE = 'border: 1px solid #e5e7eb; border-radius: 8px; margin: 0 0 20px; background: #ffffff;'
+
+/** The muted strip at the top of a card, carrying the machine facts. */
+const CARD_HEADER_STYLE =
+  'padding: 10px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; border-radius: 8px 8px 0 0; font-size: 13px; color: #6b7280;'
+
+/** The strip at the bottom of a card, carrying the follow-up action. */
+const CARD_FOOTER_STYLE = 'padding: 10px 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;'
+
+/** Prose a person wrote: a readable measure, and their line breaks kept. */
+const CARD_PROSE_STYLE =
+  'padding: 16px; max-width: 600px; font-size: 15px; line-height: 1.6; color: #1f2937; white-space: pre-wrap; word-break: break-word;'
+
+/** The `<body>` chrome every notification email shares. */
+const BODY_STYLE =
+  "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; max-width: 680px; margin: 0 auto; padding: 20px; background: #ffffff;"
+
+/** The closing line under the cards, explaining who sent this and why. */
+const SIGNOFF_STYLE =
+  'margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;'
 
 /**
  * Send through Resend, turning a rejected send into a thrown error.
@@ -145,11 +179,11 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
   )
 }
 
-/** The friendly build-mode label a feedback card shows, same vocabulary as the crash email's env column. */
-export type FeedbackEnv = 'prod' | 'dev' | '?'
+/** The friendly build-mode label a card shows, same vocabulary as the crash email's env column. */
+export type EmailEnv = 'prod' | 'dev' | '?'
 
 /** Chip colors per env: green for a shipped build, amber for a local one, gray for a row that says nothing. */
-const envChipColors: Record<FeedbackEnv, { background: string; text: string }> = {
+const envChipColors: Record<EmailEnv, { background: string; text: string }> = {
   prod: { background: '#ecfdf5', text: '#047857' },
   dev: { background: '#fff7ed', text: '#c2410c' },
   '?': { background: '#f3f4f6', text: '#6b7280' },
@@ -163,7 +197,7 @@ export interface FeedbackEmailRow {
   /** `created_at`, in the SQLite `datetime('now')` shape (`YYYY-MM-DD HH:MM:SS`, UTC). */
   when: string
   /** Friendly env (`'prod'` for release, `'dev'` for debug, `'?'` for unknown). */
-  env: FeedbackEnv
+  env: EmailEnv
   /** `app_version`. */
   version: string
   /** `os_version`. */
@@ -179,24 +213,54 @@ function feedbackSubject(count: number): string {
   return `Cmdr: ${String(count)} new feedback message${count === 1 ? '' : 's'}`
 }
 
+/** The `prod` / `dev` pill that tells shipped traffic from a local build at a glance. */
+function envChip(env: EmailEnv): string {
+  const chip = envChipColors[env]
+  return `<span style="display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; font-size: 12px; background: ${chip.background}; color: ${chip.text};">${escapeHtml(env)}</span>`
+}
+
+/**
+ * The page every card-shaped notification email shares: the subject as a heading, the cards, and
+ * one line saying what sent it. Light-only with explicit hex, because a mail client is not a
+ * browser and `prefers-color-scheme` support is a coin flip.
+ */
+function notificationPage(subject: string, cards: string, signoff: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="${BODY_STYLE}">
+    <h2 style="color: #111827;">${escapeHtml(subject)}</h2>
+
+    ${cards}
+
+    <p style="${SIGNOFF_STYLE}">
+        ${escapeHtml(signoff)}
+    </p>
+</body>
+</html>
+  `.trim()
+}
+
 /**
  * One card per message, stacked. Feedback is prose, so it gets a readable measure and its own
  * block rather than a table cell: a table column shreds a paragraph into a ribbon.
  */
 function renderFeedbackCard(entry: FeedbackEmailRow): string {
-  const chip = envChipColors[entry.env]
   const replyLine = entry.email
     ? `Reply to <a href="mailto:${escapeHtml(entry.email)}" style="color: #2563eb;">${escapeHtml(entry.email)}</a>`
     : 'No reply-to address'
 
   return `
-    <div style="border: 1px solid #e5e7eb; border-radius: 8px; margin: 0 0 20px; background: #ffffff;">
-        <div style="padding: 10px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; border-radius: 8px 8px 0 0; font-size: 13px; color: #6b7280;">
+    <div style="${CARD_STYLE}">
+        <div style="${CARD_HEADER_STYLE}">
             ${escapeHtml(entry.when)} UTC &middot; app ${escapeHtml(entry.version)} &middot; OS ${escapeHtml(entry.osVersion)}
-            <span style="display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; font-size: 12px; background: ${chip.background}; color: ${chip.text};">${escapeHtml(entry.env)}</span>
+            ${envChip(entry.env)}
         </div>
-        <div style="padding: 16px; max-width: 600px; font-size: 15px; line-height: 1.6; color: #1f2937; white-space: pre-wrap; word-break: break-word;">${escapeHtml(entry.message)}</div>
-        <div style="padding: 10px 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">${replyLine}</div>
+        <div style="${CARD_PROSE_STYLE}">${escapeHtml(entry.message)}</div>
+        <div style="${CARD_FOOTER_STYLE}">${replyLine}</div>
     </div>`
 }
 
@@ -229,25 +293,135 @@ export async function sendFeedbackNotificationEmail(params: FeedbackNotification
       to: params.to,
       subject,
       ...(soleReplyTo ? { replyTo: soleReplyTo } : {}),
-      html: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; max-width: 680px; margin: 0 auto; padding: 20px; background: #ffffff;">
-    <h2 style="color: #111827;">${escapeHtml(subject)}</h2>
-
-    ${cards}
-
-    <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
-        The Cmdr API server sends this digest whenever new in-app feedback arrives.
-    </p>
-</body>
-</html>
-        `.trim(),
+      html: notificationPage(
+        subject,
+        cards,
+        'The Cmdr API server sends this digest whenever new in-app feedback arrives.',
+      ),
     },
     'feedback notification',
+  )
+}
+
+/**
+ * One hand-written error report, as its notification email renders it. Everything here either
+ * comes off the reporter's machine or was typed by them, so every field is escaped at render time.
+ */
+export interface ErrorReportEmailRow {
+  /** The `ERR-XXXXX` the person read in the send dialog, so a reply can name the same id. */
+  id: string
+  /** From the manifest. Drives the `dev` chip and the subject's `[DEV]` mark, same rule as the Discord embed. */
+  buildMode: 'release' | 'debug'
+  appVersion: string
+  osVersion: string
+  arch: string
+  /** Bundle size in bytes, rendered through {@link formatBytes}. */
+  sizeBytes: number
+  /** What the person wrote. The reason this email exists; absent when they sent one without a note. */
+  userNote?: string
+  /** Presigned R2 GET URL, or `null` when the credentials to mint one aren't configured. */
+  downloadUrl: string | null
+  /** How long {@link downloadUrl} keeps working, so a stale click a week later isn't a mystery. */
+  linkTtlDays: number
+}
+
+/**
+ * The subject line, which is the whole email for anyone who doesn't open it. Debug builds are
+ * marked so they don't read as real user traffic; release builds carry no mark, because a tag on
+ * every ordinary report is noise in a list.
+ */
+function errorReportSubject(report: ErrorReportEmailRow): string {
+  const prefix = report.buildMode === 'debug' ? '[DEV] ' : ''
+  return `${prefix}Cmdr: someone sent error report ${report.id}`
+}
+
+/** The card body: the note, or a plain line saying there wasn't one. */
+function renderErrorReportCard(report: ErrorReportEmailRow): string {
+  const note = report.userNote?.trim()
+  const noteBlock = note
+    ? `<div style="${CARD_PROSE_STYLE}">${escapeHtml(note)}</div>`
+    : `<div style="${CARD_PROSE_STYLE} color: #6b7280;">No note came with this one.</div>`
+
+  const days = report.linkTtlDays.toString()
+  const downloadLine = report.downloadUrl
+    ? `<a href="${escapeHtml(report.downloadUrl)}" style="color: #2563eb;">Download the bundle</a> &middot; the link works for ${days} days`
+    : 'No download link this time. Fetch the bundle through the admin API.'
+
+  return `
+    <div style="${CARD_STYLE}">
+        <div style="${CARD_HEADER_STYLE}">
+            ${escapeHtml(report.id)} &middot; app ${escapeHtml(report.appVersion)} &middot; OS ${escapeHtml(report.osVersion)} &middot; ${escapeHtml(report.arch)} &middot; ${escapeHtml(formatBytes(report.sizeBytes))}
+            ${envChip(report.buildMode === 'debug' ? 'dev' : 'prod')}
+        </div>
+        ${noteBlock}
+        <div style="${CARD_FOOTER_STYLE}">${downloadLine}</div>
+    </div>`
+}
+
+interface ErrorReportNotificationParams {
+  report: ErrorReportEmailRow
+  to: string
+  resendApiKey: string
+}
+
+/**
+ * Mail one hand-written error report the moment it lands. One report per email: they run about
+ * four per 60 days and each is a person waiting for an answer, so there is nothing to batch and
+ * nothing to wait for. Auto-sent reports never come through here, they stay on Discord.
+ */
+export async function sendErrorReportNotificationEmail(params: ErrorReportNotificationParams): Promise<void> {
+  const resend = new Resend(params.resendApiKey)
+  const subject = errorReportSubject(params.report)
+
+  await sendViaResend(
+    resend,
+    {
+      from: 'Cmdr Error Reports <noreply@getcmdr.com>',
+      to: params.to,
+      subject,
+      html: notificationPage(
+        subject,
+        renderErrorReportCard(params.report),
+        'The Cmdr API server sends this whenever someone writes an error report by hand. Auto-sent reports go to Discord only.',
+      ),
+    },
+    'error report notification',
+  )
+}
+
+interface ErrorReportsSuppressedParams {
+  /** Reports mailed per UTC day before suppression starts. */
+  cap: number
+  /** The UTC day (`yyyy-mm-dd`) whose allowance ran out. */
+  date: string
+  to: string
+  resendApiKey: string
+}
+
+/**
+ * The one line the inbox gets when the day's allowance runs out, so it stops hearing about reports
+ * for a reason it can read rather than going quiet.
+ */
+export async function sendErrorReportsSuppressedEmail(params: ErrorReportsSuppressedParams): Promise<void> {
+  const resend = new Resend(params.resendApiKey)
+  const subject = `Cmdr: error report emails are suppressed for the rest of ${params.date}`
+
+  await sendViaResend(
+    resend,
+    {
+      from: 'Cmdr Error Reports <noreply@getcmdr.com>',
+      to: params.to,
+      subject,
+      html: notificationPage(
+        subject,
+        `
+    <div style="${CARD_STYLE}">
+        <div style="${CARD_PROSE_STYLE}">That's ${escapeHtml(params.cap.toString())} hand-written error reports mailed for ${escapeHtml(params.date)}, which is far past the usual rate, so the rest of today's reports stay out of your inbox. Nothing is lost: every bundle is in R2, pinged to Discord, and listed by GET /admin/error-reports. Emails resume tomorrow.</div>
+    </div>`,
+        'The Cmdr API server sends this once a day at most.',
+      ),
+    },
+    'error report suppression notice',
   )
 }
 

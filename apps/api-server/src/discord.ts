@@ -6,6 +6,8 @@
  * dropped notification is acceptable.
  */
 
+import { formatBytes } from './types'
+
 export interface ErrorReportNotification {
   id: string
   kind: 'user' | 'auto'
@@ -94,19 +96,6 @@ const BETA_SIGNUP_EMBED_COLOR = 0x57f287
  * D1 `feedback` table, so a truncated embed never loses data.
  */
 const FEEDBACK_EMBED_CAP = 3500
-
-/** "1.23 GB", "456 MB", "789 KB", "12 B". */
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes.toString()} B`
-  const units = ['KB', 'MB', 'GB', 'TB']
-  let value = bytes / 1024
-  let i = 0
-  while (value >= 1024 && i < units.length - 1) {
-    value /= 1024
-    i++
-  }
-  return `${value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2)} ${units[i]}`
-}
 
 /** Build the Discord webhook JSON body for a new error report. */
 export function buildErrorReportPayload(n: ErrorReportNotification): unknown {
