@@ -46,7 +46,9 @@ interface CaretHit {
 }
 
 interface CaretCapableDocument {
+  // Mirrors the DOM's own `caretPositionFromPoint(x, y)` signature; not ours to reshape.
   caretPositionFromPoint?: (x: number, y: number) => { offsetNode?: Node | null; offset?: number } | null
+  // Mirrors the DOM's own `caretRangeFromPoint(x, y)` signature; not ours to reshape.
   caretRangeFromPoint?: (x: number, y: number) => { startContainer: Node; startOffset: number } | null
 }
 
