@@ -149,11 +149,11 @@ inventory). Desktop-specific test, MCP, and E2E mechanics live in `apps/desktop/
   a snapshot test.
 - ❌ **No TS callback type with two or more confusable positional parameters** (same type, or an unresolved generic):
   TypeScript lets an implementation declare fewer parameters than the type offers, so a listener can silently bind the
-  wrong one, and same-typed positional params are freely swappable at the call site. Fix: a single named object
-  payload (`(args: { volumeId: string; targetPath: string }) => void`), so a dropped or reordered field fails to
-  compile. Enforced by `cmdr/no-confusable-callback-params`; opt out per-line with a reasoned `eslint-disable-next-line`
-  when the shape genuinely mirrors a fixed, unconverted external or production signature (a platform API, or a
-  positional pair with exactly one real, untouched call site).
+  wrong one, and same-typed positional params are freely swappable at the call site. Fix: a single named object payload
+  (`(args: { volumeId: string; targetPath: string }) => void`), so a dropped or reordered field fails to compile.
+  Enforced by `cmdr/no-confusable-callback-params`; opt out per-line with a reasoned `eslint-disable-next-line` when the
+  shape genuinely mirrors a fixed, unconverted external or production signature (a platform API, or a positional pair
+  with exactly one real, untouched call site).
 - Tool versions are mise-managed (`.mise.toml`; if `go` / `node` isn't found, check that `~/.local/share/mise/shims` is
   on `$PATH`),
 - Icons come from `unplugin-icons` + `@iconify-json/lucide` (see `docs/guides/icons.md`).
