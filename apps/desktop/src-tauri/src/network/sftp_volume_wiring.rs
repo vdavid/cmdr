@@ -141,12 +141,12 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// [`cancel_connect`] needs to call it off. ❗ A cancelled connect leaves
 /// nothing behind: no volume, no saved server, no secret.
 ///
-/// ❗ Every dial goes through `cmdr_sftp::connect_sftp_volume`, which runs it in
-/// a task and awaits the join handle, so a connect the caller walks away from
-/// detaches rather than dropping mid-handshake. Calling one OFF goes through the
-/// token instead, which stops the dial where it stands in every phase.
-/// `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`" has why that
-/// split is shaped the way it is, and what a dropped dial would leave behind.
+/// ❗ Every dial goes through `cmdr_sftp::connect_sftp_volume`, and a connect the
+/// caller walks away from leaves the far end nothing: the SFTP hello's teardown
+/// runs from a guard's `Drop` rather than from anyone's `await`. Calling one OFF
+/// goes through the token instead, which stops the dial where it stands in every
+/// phase and is what makes it answer `Cancelled`.
+/// `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`" has the terms.
 pub async fn connect_and_register(
     display_name: &str,
     params: SftpConnectionParams,

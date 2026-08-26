@@ -29,11 +29,10 @@
 //! - ❗ **A secret dies with the dial it built.** An attended reconnect passes
 //!   what the user typed straight to [`guarded_dial`]; the store is only ever
 //!   REFRESHED, never seeded.
-//! - ❗ **A dial is never dropped mid-handshake.** [`guarded_dial`] runs it in a
-//!   task and awaits the join handle, so an abandoned connect detaches instead.
-//!   Calling one OFF is a different thing and goes through the token instead, and
-//!   no reconnect on this path has one, because nobody is watching an unattended
-//!   redial.
+//! - ❗ **No reconnect on this path can be called off**, because nobody is
+//!   watching an unattended redial: [`guarded_dial`] gets a token nothing holds,
+//!   and the phase budgets are the only backstop. Abandoning one is safe on its
+//!   own terms (`transport::PendingEngine`).
 
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -69,33 +68,21 @@ const RECONNECT_BACKOFF: [Duration; 6] = [
     Duration::from_secs(120),
 ];
 
-/// Dials without ever dropping the dial.
+/// The one way this module dials. ❌ Never call [`transport::dial`] directly.
 ///
-/// ❗ The future is handed to a task and the JOIN HANDLE is what gets awaited, so
-/// a caller who goes away detaches the task instead of dropping the dial
-/// mid-handshake. ❌ Never call [`transport::dial`] directly.
-///
-/// ❗ That detaching IS what the spawn is for. The panic it once routed around is
-/// fixed in `openssh-sftp-client` 0.15.8, but a dial dropped inside the SFTP
-/// hello detaches the ENGINE instead and leaves the server's session open for the
-/// life of the process, and the phase deadline can't end it because nothing is
-/// left polling the dial. `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned
-/// `Sftp::new`" carries the measurement, and what retiring this would take.
-///
-/// ❗ The spawn costs no cancellation, because calling a connect OFF goes
-/// through `cancel` rather than through dropping this future: the token reaches
-/// into the task, the dial answers `Cancelled`, and the join handle comes back
-/// at once. A caller with nobody to cancel for it passes a token nothing holds.
+/// ❗ Awaiting the dial itself is safe at every phase, abandoning included:
+/// `transport::PendingEngine`'s `Drop` runs the hello's teardown whether or not
+/// anyone is still polling, so a caller who walks away leaves the far end
+/// nothing (`crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`").
+/// Calling a connect OFF is a different thing and goes through `cancel`, which
+/// is what makes it answer `Cancelled`.
 pub(super) async fn guarded_dial(
     host: &VolumeHost,
     params: SftpConnectionParams,
     offered_secret: Option<String>,
     cancel: CancellationToken,
 ) -> Result<DialOutcome, SftpConnectError> {
-    host.runtime()
-        .spawn(transport::dial(params, host.clone(), offered_secret, cancel))
-        .await
-        .map_err(|join| SftpConnectError::Transport(join.to_string()))?
+    transport::dial(params, host.clone(), offered_secret, cancel).await
 }
 
 /// Why an attempt didn't leave a live session, in the terms the loop acts on.

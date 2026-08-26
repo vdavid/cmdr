@@ -351,9 +351,9 @@ together, what the backend answers when one is on and can't work, and what a UI 
 `crates/cmdr-sftp/DETAILS.md` § "The two switches".
 
 `sftp_volume_wiring.rs` is the only path a volume gets registered on, and it does three things in one order: dial
-through `cmdr_sftp::connect_sftp_volume` (which runs the dial in a task, so an ABANDONED connect can't leave the
-server's session open for the life of the process: `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`"),
-register while retiring any predecessor with `on_superseded`, and remember the server. `disconnect`
+through `cmdr_sftp::connect_sftp_volume` (an ABANDONED connect leaves the server nothing, because the SFTP hello's
+teardown runs from a guard's `Drop`: `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`"), register while
+retiring any predecessor with `on_superseded`, and remember the server. `disconnect`
 downcasts through `Volume::as_any` rather than guessing at the id's shape, then DROPS the session — ❌ never
 `Sftp::close()`, which hangs forever over an SSH channel.
 

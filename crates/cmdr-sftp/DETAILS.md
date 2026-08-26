@@ -464,7 +464,8 @@ Two things bite when a hello never arrives, and `transport::stop_engine` is the 
 panicked whenever the `Sftp::new` future was dropped before the server's hello: any timed-out or abandoned connect.
 0.15.8 returns from the read task instead (openssh-rust/openssh-sftp-client#176, which is also the answer to upstream
 issue #153). ❗ **A floor rather than a preference**: `stop_engine` aborts that future on every hello that doesn't
-arrive, and `reconnect::guarded_dial` rests on the same fix, so a downgrade puts the panic back under both.
+arrive, and `PendingEngine`'s `Drop` reaches that same abort on the abandon path, so a downgrade puts the panic back
+under both.
 
 **Dropping the session closes nothing while the engine still holds the channel.** `Sftp::new` spawns tasks that own the
 channel halves, and each of those owns a sender the `russh` session task lives on. A `russh` `Handle` drop only logs;
@@ -493,7 +494,7 @@ dropped dial's session is gone from the server well inside the 2 s the cell allo
 surviving every probe out to 15 s without the guard. The deadline arm still ends where it always did, `TimedOut` at 9.8
 s with the far end closed 100 ms later.
 
-Three cells keep the whole hazard honest, and they pin OUTCOMES rather than a workaround:
+Four cells keep the whole hazard honest, and they pin OUTCOMES rather than a workaround:
 `dropping_a_dial_inside_the_hello_window_closes_the_servers_session_at_once` for the abandon,
 `a_cancel_inside_the_hello_window_closes_the_servers_session_at_once` for the cancel, and
 `abandoning_a_connect_does_not_panic_the_engines_task` plus

@@ -213,10 +213,10 @@ impl SftpVolume {
 /// lever each phase uses, the SFTP hello's included: `transport.rs`
 /// § "Cancelling a connect".
 ///
-/// ❗ The dial runs inside a task on `host.runtime()` and this function awaits
-/// the join handle, so dropping THIS future abandons the handle and never the
-/// dial. That indirection is load-bearing rather than leftover: `DETAILS.md`
-/// § "2. An abandoned `Sftp::new`" has what a dropped dial leaves on the server.
+/// ❗ Dropping this future is safe too, and leaves the far end just as little:
+/// the hello's teardown rides `transport::PendingEngine`'s `Drop` rather than
+/// anyone's `await`. `DETAILS.md` § "2. An abandoned `Sftp::new`" has why that
+/// takes a guard at all.
 pub async fn connect_sftp_volume(
     name: &str,
     volume_id: &str,

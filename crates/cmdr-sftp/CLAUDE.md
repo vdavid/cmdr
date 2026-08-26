@@ -20,7 +20,6 @@ user-facing words.
   tasks hold the channel and a sender the session lives on, so the socket would stay open for the life of the process.
   `transport::PendingEngine` owns the pair so every ending reaches it, an ABANDONED dial's included, from its `Drop`.
   `DETAILS.md` § "2. An abandoned `Sftp::new`".
-- **❗ Every dial goes through `reconnect::guarded_dial`**; ❌ never call `transport::dial` directly.
 - **❗ A connect is called off with a `CancellationToken`**, which is what makes it answer `Cancelled` and register,
   remember, and store nothing. Every phase stops where it stands, the hello included.
 - **Host-key trust keys on `(host, port, algorithm)` AND pins negotiation to it** — ❌ never one without the other. ❌

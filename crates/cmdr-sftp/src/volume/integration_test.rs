@@ -401,12 +401,13 @@ async fn disconnecting_drops_the_session_instead_of_closing_it() {
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn abandoning_a_connect_does_not_panic_the_engines_task() {
-    // ❗ `connect_sftp_volume` runs the dial in a task and awaits the JOIN
-    // HANDLE, so dropping this future abandons the handle and never the dial.
-    // The `openssh-sftp-client` panic that forced that shape is fixed in 0.15.8,
-    // so this now pins the upstream fix as much as our own routing. A regression
-    // either side surfaces as a panic in the test binary rather than as a failing
-    // assertion, which is what this cell converts back into a finding.
+    // ❗ These drops land ANYWHERE in the handshake, which is what makes this the
+    // broad net: `cancel_test` aims at the hello on purpose, and this sweeps the
+    // phases nothing can aim at. Aborting `Sftp::new` mid-hello is the move
+    // `openssh-sftp-client` 0.15.8 made safe, so this pins the upstream fix as
+    // much as our own teardown. A regression either side surfaces as a panic in
+    // the test binary rather than as a failing assertion, which is what this cell
+    // converts back into a finding.
     let params = fixture_params("OPENSSH", 12480);
     let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
 

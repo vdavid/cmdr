@@ -14,7 +14,8 @@
 //! future was dropped before the server's hello arrived
 //! (openssh-rust/openssh-sftp-client#176). ❗ 0.15.8 is a floor rather than a
 //! preference: [`stop_engine`] aborts the future on every hello that doesn't
-//! arrive, and `reconnect::guarded_dial` leans on the same fix.
+//! arrive, and [`PendingEngine`]'s `Drop` reaches that same abort when a caller
+//! walks away.
 //!
 //! **An engine nobody waits for holds the socket by itself.** `Sftp::new` spawns
 //! tasks that own the channel, and each of them owns a sender the `russh`
