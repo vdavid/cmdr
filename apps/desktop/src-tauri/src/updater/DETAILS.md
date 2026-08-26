@@ -4,8 +4,14 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 
 ## Key decisions
 
-- **Sync files into the bundle instead of replacing the `.app` directory.** Replacing changes the inode, which makes
-  macOS TCC lose FDA grants. (Guardrail in `CLAUDE.md`.)
+- **Sync files into the bundle instead of replacing the `.app` directory.** ❌ Not because replacing would cost the FDA
+  grant: it wouldn't. TCC's `access` table has no path or inode column, and the stored requirement for Cmdr is
+  `identifier "com.veszelovszki.cmdr" and anchor apple generic and … certificate leaf[subject.OU] = "83H6YAQMNP"`, so a
+  grant follows the signature, not the bundle on disk (verified on macOS 26.5.2, TCC.db inspection plus a
+  launch/move/relaunch of a signed probe, 2026-08-25; `docs/notes/self-move-to-applications-2026-08-25.md`). What the
+  decision actually rests on: `com.apple.macl` on the bundle is per-file and IS lost when the directory is recreated,
+  and the per-file atomic rename below needs a bundle to sync into. Both hold. Only the FDA half of the old rationale
+  was wrong, so don't reach for "it would cost FDA" when defending this.
 - **Sync order: Resources, Info.plist, _CodeSignature, then the MacOS binary last.** Updating the binary last minimizes
   the window where the code signature is inconsistent with the binary on disk; if the app crashes mid-update, the old
   binary is still intact.

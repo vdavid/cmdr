@@ -1,8 +1,8 @@
 # Updater module
 
-Custom macOS updater that syncs files *into* the existing `.app` bundle, preserving its inode and `com.apple.macl` xattr
-so macOS TCC (Full Disk Access) permissions survive updates. macOS-only (`#[cfg(target_os = "macos")]`); other platforms
-use the Tauri updater plugin and the frontend calls the plugin API directly.
+Custom macOS updater that syncs files *into* the existing `.app` bundle, keeping its `com.apple.macl` xattr and giving
+each per-file write the fresh inode the code-signing cache needs. macOS-only (`#[cfg(target_os = "macos")]`); other
+platforms use the Tauri updater plugin and the frontend calls the plugin API directly.
 
 ## File map
 
@@ -15,9 +15,9 @@ use the Tauri updater plugin and the frontend calls the plugin API directly.
 
 ## Must-knows
 
-- **Sync into the bundle, never replace the `.app` directory.** Replacing it changes the inode and macOS TCC loses FDA
-  grants, forcing the user to re-grant after every update. The install path fundamentally can't work outside a bundle
-  (no `Contents/` to sync into).
+- **Sync into the bundle, never replace the `.app` directory.** ❌ The reason is NOT that replacing loses the FDA grant
+  — a grant follows the code signature, not the path or inode, and survives a replace (measured; `DETAILS.md`). It's
+  that the per-file atomic rename below needs a bundle to sync into, and the install path can't work without one.
 - **Per-file writes use atomic rename (temp + `rename()`), not in-place `fs::copy`.** `fs::copy` keeps the same inode;
   macOS's kernel code-signing cache keys on inode and validates the new binary against the old cached code directory,
   causing `SIGKILL (Code Signature Invalid)` on launch. A new inode forces fresh validation. The admin path (`rsync -a`)

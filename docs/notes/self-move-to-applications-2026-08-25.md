@@ -83,8 +83,8 @@ no inode in it, and the 2026-08-05 bundle replacement above did not cost the gra
 the guardrail in `updater/CLAUDE.md`: per-file writes need a NEW inode, or the kernel's code-signing cache validates the
 new binary against the old code directory and `SIGKILL`s the app. `/Applications/Cmdr.app` also carries a
 `com.apple.macl` xattr, which is per-file and is lost when the directory is recreated, so there is still a reason not to
-replace the bundle in the updater. The FDA-specific half of the claim is the part that wants re-checking. Not changed
-here: it's load-bearing prose and the correction is a separate call.
+replace the bundle in the updater. Only the FDA-specific half of the claim was wrong, and `updater/CLAUDE.md` and
+`DETAILS.md` now say so.
 
 ## 3. A reliable self-move is implementable. The verified recipe
 
