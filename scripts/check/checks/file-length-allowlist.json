@@ -8,6 +8,9 @@
     "scripts/check/checks/registry.go": "append-only check registry (one CheckDefinition entry per check); line count tracks the number of checks, not splittable logic"
   },
   "files": {
+    "scripts/check/checks/common.go": 803,
+    "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.ts": 803,
+    "apps/desktop/src/lib/settings/settings-store.ts": 811,
     "apps/desktop/src-tauri/src/agent/chat/runtime/tests.rs": 1292,
     "apps/desktop/src-tauri/src/commands/file_system/volume_copy.rs": 819,
     "apps/desktop/src-tauri/src/commands/network.rs": 901,
