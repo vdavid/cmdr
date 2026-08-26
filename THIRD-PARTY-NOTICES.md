@@ -443,7 +443,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **oem_cp** 2.1.2, MIT, <https://github.com/tats-u/rust-oem-cp/>
 - **once_cell** 1.21.4, MIT OR Apache-2.0, <https://github.com/matklad/once_cell>
 - **open** 5.3.6, MIT, <https://github.com/Byron/open-rs>
-- **openssh-sftp-client** 0.15.7, MIT, <https://github.com/openssh-rust/openssh-sftp-client>
+- **openssh-sftp-client** 0.15.8, MIT, <https://github.com/openssh-rust/openssh-sftp-client>
 - **openssh-sftp-client-lowlevel** 0.7.2, MIT, <https://github.com/openssh-rust/openssh-sftp-client>
 - **openssh-sftp-error** 0.5.1, MIT, <https://github.com/openssh-rust/openssh-sftp-client>
 - **openssh-sftp-protocol** 0.24.2, MIT, <https://github.com/openssh-rust/openssh-sftp-client>
@@ -581,7 +581,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **siphasher** 1.0.3, MIT OR Apache-2.0, <https://github.com/jedisct1/rust-siphash>
 - **slab** 0.4.12, MIT, <https://github.com/tokio-rs/slab>
 - **smallvec** 1.15.2, MIT OR Apache-2.0, <https://github.com/servo/rust-smallvec>
-- **smb2** 0.18.1, MIT OR Apache-2.0, <https://github.com/vdavid/smb2>
+- **smb2** 0.19.0, MIT OR Apache-2.0, <https://github.com/vdavid/smb2>
 - **socket-pktinfo** 0.4.0, MIT, <https://github.com/pixsper/socket-pktinfo>
 - **socket2** 0.6.4, MIT OR Apache-2.0, <https://github.com/rust-lang/socket2>
 - **specta** 2.0.0-rc.24, MIT, <https://github.com/specta-rs/specta>
@@ -4136,7 +4136,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: awaitable 0.4.0, concurrent_arena 0.1.11, openssh-sftp-client 0.15.7, openssh-sftp-client-lowlevel 0.7.2, openssh-sftp-error 0.5.1, openssh-sftp-protocol 0.24.2, ssh_format 0.14.1, ssh_format_error 0.1.0, tokio-io-utility 0.7.6, vec-strings 0.4.8
+Covers: awaitable 0.4.0, concurrent_arena 0.1.11, openssh-sftp-client 0.15.8, openssh-sftp-client-lowlevel 0.7.2, openssh-sftp-error 0.5.1, openssh-sftp-protocol 0.24.2, ssh_format 0.14.1, ssh_format_error 0.1.0, tokio-io-utility 0.7.6, vec-strings 0.4.8
 
 Text from: `LICENSE`
 
@@ -10654,7 +10654,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: smb2 0.18.1
+Covers: smb2 0.19.0
 
 Text from: `LICENSE-MIT`
 
