@@ -18,6 +18,7 @@ const maxSlugLength = 80
 
 function likesCors(c: {
   req: { header: (name: string) => string | undefined }
+  // Mirrors Hono's own `Context.header(name, value)` signature; not ours to reshape.
   header: (name: string, value: string) => void
 }) {
   const origin = c.req.header('origin')
