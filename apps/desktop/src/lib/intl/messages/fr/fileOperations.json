@@ -28,6 +28,34 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
+  "fileOperations.trash.undoAction": "Annuler",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "Aller à la corbeille",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "Remise en place...",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "1be7766"
+  },
+  "fileOperations.trash.undone": "{countText} {count, plural, one {fichier remis en place} many {fichiers remis en place} other {fichiers remis en place}}.",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "{restoredText} {restored, plural, one {fichier remis en place} many {fichiers remis en place} other {fichiers remis en place}} ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other {éléments sont restés}} dans la corbeille.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "Rien à remettre en place. Ces éléments sont peut-être déjà de retour, ou leur disque n''est pas connecté.",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "2acefae"
+  },
+  "fileOperations.trash.noTrashHere": "Ce disque n''a pas de corbeille.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
   "fileOperations.delete.trashSwitch": "Placer dans la corbeille",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"

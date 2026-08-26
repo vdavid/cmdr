@@ -28,6 +28,34 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
+  "fileOperations.trash.undoAction": "Desfazer",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "Ir para o Lixo",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "Colocando de volta...",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "1be7766"
+  },
+  "fileOperations.trash.undone": "{count, plural, one {{countText} arquivo colocado de volta} many {{countText} arquivos colocados de volta} other {{countText} arquivos colocados de volta}}.",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "{restored, plural, one {{restoredText} arquivo colocado de volta} many {{restoredText} arquivos colocados de volta} other {{restoredText} arquivos colocados de volta}}; {skipped, plural, one {{skippedText} item ficou} many {{skippedText} itens ficaram} other {{skippedText} itens ficaram}} no Lixo.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "Nada a colocar de volta. Estes itens talvez já estejam de volta, ou o disco deles não está conectado.",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "2acefae"
+  },
+  "fileOperations.trash.noTrashHere": "Este disco não tem Lixo.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
   "fileOperations.delete.trashSwitch": "Mover para o Lixo",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"

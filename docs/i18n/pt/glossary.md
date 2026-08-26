@@ -1405,3 +1405,41 @@ muda.
 - Varredura pt-PT completa depois da correção (ficheiro, `estar a` + infinitivo, `tempo a` + infinitivo): zero
   ocorrências no catálogo `pt`.
 - Nenhum `@key.sourceHash` muda: só os valores foram editados.
+
+## Os dois botões do aviso do Lixo e a família "colocar de volta" (`fileOperations.trash.*`, `commands.fileGoToTrash.*`, 2026-08-27)
+
+Nove chaves novas: os dois botões do aviso que aparece logo depois de mover arquivos para o Lixo, os textos de progresso
+e de resultado do desfazer, e o comando "Go to trash" na paleta de comandos.
+
+- **undo (o botão) → `Desfazer`** · macOS Finder `ME13` Tier 1 (`Undo` = `Desfazer`), e o catálogo já entrega essa mesma
+  palavra para o mesmo botão em inglês (`askCmdr.renameUndo.undo`) · high. Uma palavra, cabe no aviso estreito.
+- **put back (a ação que o botão dispara) → `colocar de volta`** · macOS Finder `N153.1` (`Put Back` =
+  `Colocar de Volta`) e `PE130_V1`/`PE130_V2` ("could not be put back" = "Não foi possível colocar … de volta") · high.
+  É o termo do Finder para exatamente esta operação, então ele vale aqui em vez de `restaurar`, que o
+  `askCmdr.renameUndo.*` usa para devolver o NOME anterior, outra operação.
+- **"Go to trash" → `Ir para o Lixo`** · macOS Finder `TL_HELP_TCAN` Tier 1 ("Go to the Trash" = "Ir para o Lixo") ·
+  high. O mesmo valor no botão e no rótulo da paleta, como no inglês. `Lixo` continua maiúsculo (o nome do recurso, já
+  assentado).
+- **"Putting them back..." → `Colocando de volta...`** · gerúndio pt-BR (nunca `A colocar`, que é pt-PT), na forma dos
+  irmãos deste arquivo (`transferProgress.scanTitleCopy` = "Verificando antes de copiar..."). O arquivo `pt` mantém as
+  três reticências do original, não `…`.
+- **Concordância dentro dos ramos.** Em `undone` e na primeira metade de `undonePartial` o particípio concorda com o
+  substantivo contado (`arquivo colocado de volta` / `arquivos colocados de volta`), então `{countText}` entra DENTRO de
+  cada ramo, exatamente como `transfer.trash` já faz. Os três ramos CLDR (`one`, `many`, `other`) são obrigatórios.
+- **A segunda metade concorda normalmente.** Em `undonePartial`, `{skippedText}` tem o inteiro parceiro `{skipped}`,
+  então `ficou`/`ficaram` entram nos ramos:
+  `{skipped, plural, one {{skippedText} item ficou} many {{skippedText} itens ficaram} other {{skippedText} itens ficaram}} no Lixo`.
+  O contado é `item`/`itens`, o termo assentado para o `item` que a fonte diz nesta metade, não `arquivo` como na
+  primeira. Se algum dia aparecer um `*Text` avulso SEM parceiro plural, a saída é um verbo invariável em número, na
+  primeira pessoa (`deixamos {skippedText} no Lixo`), que ainda por cima segue o `style.md` § Formality.
+- **"Nothing to put back. …" →
+  `Nada a colocar de volta. Estes itens talvez já estejam de volta, ou o disco deles não está conectado.`** · segue a
+  estrutura da irmã `askCmdr.renameUndo.unavailable` · high. `item`/`itens` é o termo assentado, e **`disco`** é o termo
+  de drive (§ O bolsão de `drive` fechado).
+  - ⚠️ REVIEW FLAG: a irmã `askCmdr.renameUndo.unavailable` ainda diz **`a unidade dele`**, que é o termo da Microsoft e
+    contraria o `disco` assentado. A chave está fora deste lote; corrigir numa varredura.
+- **"This drive doesn't keep a trash." → `Este disco não tem Lixo.`** · constatação de fato, então não entra no registro
+  de `errors.write.trashNotSupported.message` ("não oferece suporte ao Lixo"), que é uma tela de erro · high.
+- **A descrição do comando → `Abra o Lixo do disco em que você está navegando`** · imperativo, como as outras descrições
+  de `commands.json` ("Faça uma cópia dos arquivos selecionados na mesma pasta"), com `você` explícito porque o verbo
+  sozinho seria ambíguo · high.

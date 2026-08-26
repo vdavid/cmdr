@@ -530,6 +530,15 @@
     "description": "Command name that deletes the selected files permanently, bypassing the trash. Appears in the command palette. The word \"permanently\" carries the warning that this can't be undone.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.fileGoToTrash.label": "Go to trash",
+  "@commands.fileGoToTrash.label": {
+    "description": "Command name that opens the trash folder in the file pane, so the user can look at what they have thrown away. Appears in the command palette. \"Trash\" is the macOS Trash, so use whatever your platform calls the recoverable wastebasket. VERB phrase.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.fileGoToTrash.description": "Open the trash of the drive you''re browsing",
+  "@commands.fileGoToTrash.description": {
+    "description": "One-line explanation under the \"Go to trash\" command name in the command palette. It says which trash opens, because each drive keeps its own: the one belonging to the drive shown in the active pane, not a single system-wide trash. Sentence case, no full stop; the apostrophe is doubled for ICU and renders as one."
+  },
   "commands.dialogConfirm.label": "Confirm open dialog",
   "@commands.dialogConfirm.label": {
     "description": "Internal command name for confirming an open dialog, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette).",

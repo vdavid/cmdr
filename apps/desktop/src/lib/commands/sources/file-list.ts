@@ -272,6 +272,17 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: ['⇧F8'],
   },
   {
+    // No shortcut: it's the "where did that go?" follow-up, reached from the
+    // palette or from the button on the trash toast, not from muscle memory.
+    id: 'file.goToTrash',
+    nameKey: 'commands.fileGoToTrash.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: [],
+    descriptionKey: 'commands.fileGoToTrash.description',
+    keywords: ['trash', 'bin', 'deleted', 'recover', 'restore', 'goto'],
+  },
+  {
     id: 'file.showInFinder',
     nameKey: isMacOS() ? 'commands.fileShowInFinder.mac.label' : 'commands.fileShowInFinder.other.label',
     scope: 'Main window/File list',

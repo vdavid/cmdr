@@ -100,6 +100,14 @@ GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (authori
   this is Cmdr's own in-app section name, kept consistent with the "Ajustes" naming · high
 - email → correo · macOS uses "correo"/"correo electrónico"; "correo" alone is fine and shorter · high
 - reply → responder · macOS ("responder") · high
+- undo → deshacer · macOS AppKit MenuCommands ("Undo Smart Dash" → "Deshacer guion inteligente"), GNOME Nautilus
+  ("Undo" → "Deshacer") · high
+- put back (an item from the trash, to where it was) → devolver … a su sitio · the catalog's own `devolver`
+  (`askCmdr.renameUndo.skipReason.failed.named`) plus `a su sitio` for "back where it was" · high. macOS Finder's
+  command label is "Sacar de la papelera"; keep `restaurar` for undoing a RENAME. Full reasoning: `glossary.md` § El
+  aviso de la papelera.
+- trash → papelera · macOS Finder, shared with Windows · high
+- drive → unidad · the catalog throughout (`askCmdr.renameUndo.unavailable`) · high
 
 Add rows as terms come up, each with sources and a confidence.
 
@@ -117,8 +125,15 @@ strings are counted, so no plural branches are needed there.
 - Write all three branches even though `many` (compact forms like `1.000.000`) usually repeats `other` verbatim; the
   catalog already does this (`queue.toolbar.selectedCount`, `transferProgress.queuedToastCount`).
 - **When the sentence continues past the counted noun, pull the WHOLE sentence into the branches.** English often leaves
-  the tail outside the plural ("{n} files are still open} and may already be partly written."); Spanish can't, because
+  the tail outside the plural ("{n} files are still open and may already be partly written."); Spanish can't, because
   the tail's verb and participle agree with the count. `transferProgress.stallInFlight` is the worked example.
+- **A counted tail with NO plural param has nothing to agree with.** A message that passes only the formatted
+  `{somethingText}` for a second count gives you no integer to select on. English gets away with it ("stayed" fits 1 and
+  12); Spanish doesn't. The fallback is to drop the conjugated verb and let the first half's noun carry the clause ("Se
+  devolvieron 12 archivos a su sitio; 3 todavía en la papelera."). Ask for an integer partner instead where you can:
+  `fileOperations.trash.undonePartial` gained a `{skipped}` driver for exactly this reason, so its second half now
+  conjugates normally ("…; {skippedText} {skipped, plural, one {elemento se quedó} many {elementos se quedaron} other
+  {elementos se quedaron}} en la papelera.").
 
 ## Notes and decisions
 

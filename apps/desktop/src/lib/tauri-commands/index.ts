@@ -577,7 +577,7 @@ export type {
 } from './mtp'
 
 // Rename
-export { checkRenamePermission, checkRenameValidity, moveToTrash, renameFile } from './rename'
+export { checkRenamePermission, checkRenameValidity, getTrashDir, moveToTrash, renameFile } from './rename'
 export type { RenameConflictFileInfo, RenameValidityResult } from './rename'
 
 // Settings and AI

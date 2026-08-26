@@ -440,6 +440,14 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
+  "commands.fileGoToTrash.label": "Zum Papierkorb gehen",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "Den Papierkorb des Laufwerks öffnen, auf dem du gerade bist",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "45df2c4"
+  },
   "commands.dialogConfirm.label": "Öffnen-Dialog bestätigen",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"

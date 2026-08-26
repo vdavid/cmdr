@@ -167,6 +167,7 @@ export const COMMAND_IDS = [
   'file.newFile',
   'file.delete',
   'file.deletePermanently',
+  'file.goToTrash',
   // Programmatically confirm an already-open transfer/delete dialog, carried by
   // the MCP `dialog confirm` tool.
   'dialog.confirm',

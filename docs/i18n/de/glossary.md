@@ -1431,3 +1431,30 @@ also für sich als vollständiger Satz lesbar sein und darf den Rahmen nicht wie
 - Zu prüfen beim Overflow-Check: `unmountRefused` (rund 125 Zeichen gegenüber 84 im Englischen) und
   `mtpDisconnectRefused` (rund 110) sind die längsten; beide erscheinen im Toast HINTER dem Rahmensatz, der bei einem
   langen `{volumeName}` schon breit ist.
+
+## Papierkorb-Toast: Widerrufen und Zurücklegen (`fileOperations.trash.*`, `commands.fileGoToTrash.*`, 2026-08-27)
+
+Neue Oberfläche: nachdem Cmdr Objekte in den Papierkorb bewegt hat, erscheint ein Toast mit zwei Tasten („Widerrufen“,
+„Zum Papierkorb gehen“); dazu kommt derselbe Befehl in der Befehlspalette.
+
+- **`undo` (Taste) → `Widerrufen`** · macOS AppKit MenuCommands („Undo Smart Dash“ → „Intelligenten Bindestrich
+  widerrufen“) und der Katalog selbst (`askCmdr.renameUndo.undo` = „Widerrufen“) · high. ❌ Nicht das Nautilus-Wort
+  „Rückgängig“ (GNOME `de`, Tier 3): macOS gewinnt, und der Katalog hat sich schon festgelegt.
+- **`put back` (Objekte aus dem Papierkorb an ihren alten Ort) → `zurücklegen`** · macOS Finder `N153.1` („Put Back“ →
+  „Zurücklegen“, `LocalizableMerged`) · high. Nicht mit `zurücksetzen` verwechseln: das ist im Katalog das
+  Umbenennen-Widerrufen (`askCmdr.renameUndo.undone` = „… zurückgesetzt.“), also NAMEN zurück, nicht ORTE. Nautilus'
+  „aus dem Papierkorb wiederherstellen“ ist korrektes Deutsch, aber Tier 3 und deutlich länger.
+- **`This drive doesn't keep a trash.` → `Dieses Laufwerk hat keinen Papierkorb.`** · reine Tatsachenaussage im Ton von
+  `fileOperations.delete.noTrashWarningStrong` („Dieses Volume unterstützt keinen Papierkorb.“); die englische Quelle
+  sagt hier `drive`, also `Laufwerk`, nicht `Volume` · high.
+- **`Nothing to put back.` → `Es gibt nichts zurückzulegen.`** · gleicher Satzbau wie das schon ausgelieferte
+  `askCmdr.renameUndo.unavailable` („Es gibt nichts zurückzusetzen. … oder ihr Laufwerk ist nicht verbunden.“), nur mit
+  dem Ortsverb · high.
+- **Die zweite Hälfte hat ihren eigenen Zähl-Parameter `{skipped}`**, trägt also ein finites Verb: „… zurückgelegt;
+  {skippedText} {skipped, plural, one {Objekt blieb} other {Objekte blieben}} im Papierkorb.“ Gezählt wird `Objekt`, das
+  Katalogwort für das `item`, das die Quelle in dieser Hälfte sagt, nicht `Datei` wie in der ersten · high.
+- **Toast-Taste und Befehlsname sind identisch** („Zum Papierkorb gehen“), passend zu den Geschwistern
+  `commands.navParent.label` („Zum übergeordneten Ordner gehen“) und `commands.downloadsGoToLatest.label` („Zum neuesten
+  Download gehen“). Zu prüfen beim Overflow-Check: 20 Zeichen gegenüber 11 im Englischen, in einem schmalen Toast neben
+  „Widerrufen“.
+- Kein `sameAsSourceJustification` nötig: alle neun Werte unterscheiden sich vom Englischen.

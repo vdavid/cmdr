@@ -1800,3 +1800,46 @@ Elke waarde valt achter een dubbele punt in `fileExplorer.pane.ejectFailedToast`
   `Verbinding verbreken lukte niet:`. Het Engels herhaalt daar net zo goed ("Couldn't disconnect: … nothing to
   disconnect"), en Nederlands heeft een object nodig bij `verbreken`, dus de herhaling is bewust. Bevestigen of het in
   de toast stoort.
+
+## De twee knoppen van de prullenmandmelding en de terugzet-familie (`fileOperations.trash.*`, `commands.fileGoToTrash.*`, 2026-08-27)
+
+Negen nieuwe sleutels: de twee knoppen op de melding die verschijnt nadat bestanden naar de prullenmand zijn verplaatst,
+de voortgangs- en resultaatteksten van het terugzetten, en de opdracht "Go to trash" in het opdrachtenpalet.
+
+- **"Undo" (de knop op deze melding) → `Zet terug`** · macOS Finder `N153.1` Tier 1: `Put Back` = `Zet terug`, precies
+  deze handeling (onderdelen uit de prullenmand terug op hun oude plek) · high. Twee woorden, negen tekens, past in een
+  smalle melding.
+  - ❌ NIET `Herstel` (Finder `ME13`, het Wijzig-menu): buiten dat menu is `Herstel` dubbelzinnig, want macOS gebruikt
+    hetzelfde woord voor `Revert` (`AppKit/Document`) en voor `Repair` (`N175` = "Herstel alias…"). Op een melding vlak
+    na een verwijderactie leest dat als "repareer".
+  - ❌ NIET `Ongedaan maken` (wat `askCmdr.renameUndo.undo` wel gebruikt): veertien tekens is te lang naast de tweede
+    knop. De afwijking is verdedigbaar omdat Finder `Zet terug` uitsluitend voor de prullenmand gebruikt; de generieke
+    undo-knop elders blijft `Ongedaan maken`.
+- **put back (het werkwoord) → `terugzetten` / `teruggezet`** · macOS Finder `PE130_V2` ("could not be put back" =
+  "konden niet worden teruggezet") + de al verzonden `askCmdr.renameUndo.undone`/`.undoing` · high. Eén stam voor knop,
+  voortgang en resultaat.
+- **"Go to trash" → `Ga naar prullenmand`** · werkwoord uit Finder `TL_HELP_TCAN` ("Go to the Trash" = "Ga naar de
+  prullenmand"), lidwoord weggelaten volgens Finders eigen knopvorm `N83` ("Go to Folder…" = "Ga naar map…") · high.
+  Dezelfde waarde op de knop en op het opdrachtenpalet-label, net als in het Engels.
+  - ❌ NIET `Naar prullenmand`: die waarde betekent in dit bestand al _verplaatsen_ naar de prullenmand
+    (`delete.trashSwitch`), dus op deze melding zou hij als "nog een keer weggooien" lezen.
+- **"Putting them back..." → `Bezig met terugzetten...`** · dezelfde vorm als de zustervoortgang in dit bestand
+  (`transferDialog.checkingConflicts` = "Bezig met controleren op conflicten..."). Het `nl`-bestand houdt hier drie
+  punten aan, zoals het Engelse origineel, niet `…`.
+- **De tweede helft congrueert gewoon.** Bij `{skippedText}` in `undonePartial` hoort het gehele getal `{skipped}`, dus
+  het werkwoord kan de takken in:
+  `… teruggezet; {skippedText} {skipped, plural, one {onderdeel bleef} other {onderdelen bleven}} in de prullenmand.`
+  Het getelde woord is `onderdeel`, het gevestigde woord voor het `item` dat de bron in deze helft zegt, niet `bestand`
+  zoals in de eerste helft. Komt er ooit een los `*Text`-getal ZONDER plural-partner langs, dan is de weglaat-truc de
+  uitweg: houd die helft werkwoordloos, parallel aan een deelwoord ernaast.
+- **"Nothing to put back. …" →
+  `Er is niets terug te zetten. Deze onderdelen staan misschien al terug, of hun schijf is niet verbonden.`** · zet de
+  zin van de zuster `askCmdr.renameUndo.unavailable` voort ("Er is niets terug te zetten. Deze groep is misschien al
+  ongedaan gemaakt, of de schijf is niet verbonden.") · high. `onderdeel` is het gevestigde woord voor "item"
+  (`delete.overflowMore`), `schijf` voor "drive".
+- **"This drive doesn't keep a trash." → `Deze schijf heeft geen prullenmand.`** · de al vastgelegde vorm
+  `Dit volume heeft geen prullenmand`, met `schijf` omdat het Engels hier `drive` zegt · high. Een feitelijke
+  mededeling, dus niet het register van `errors.write.trashNotSupported.message` ("ondersteunt … niet").
+- **De opdrachtbeschrijving → `Open de prullenmand van de schijf die je bekijkt`** · imperatief, zoals de andere
+  beschrijvingen in `commands.json` ("Maak een kopie van de geselecteerde bestanden in dezelfde map"), en `je` volgens
+  de vastgelegde aanspreekvorm · high.

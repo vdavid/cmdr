@@ -440,6 +440,14 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
+  "commands.fileGoToTrash.label": "前往废纸篓",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "打开你正在浏览的驱动器上的废纸篓",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "45df2c4"
+  },
   "commands.dialogConfirm.label": "确认打开对话框",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"

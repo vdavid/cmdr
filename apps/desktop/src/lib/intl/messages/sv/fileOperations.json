@@ -28,6 +28,34 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
+  "fileOperations.trash.undoAction": "Ångra",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "Gå till papperskorgen",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "Lägger tillbaka dem...",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "1be7766"
+  },
+  "fileOperations.trash.undone": "Lade tillbaka {countText} {count, plural, one {fil} other {filer}}.",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "Lade tillbaka {restoredText} {restored, plural, one {fil} other {filer}}; {skippedText} {skipped, plural, one {objekt} other {objekt}} ligger kvar i papperskorgen.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "Det finns inget att lägga tillbaka. Objekten kan redan vara tillbaka, eller så är deras enhet inte ansluten.",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "2acefae"
+  },
+  "fileOperations.trash.noTrashHere": "Det finns ingen papperskorg på den här enheten.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
   "fileOperations.delete.trashSwitch": "Flytta till papperskorgen",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"

@@ -529,3 +529,18 @@ component to render inline indicators (no toasts):
 - `$lib/utils/timing`: `withTimeout` (defense-in-depth IPC timeout wrapper)
 - `$lib/app-status-store`: `getLastUsedPathForVolume`
 - `../types`: `VolumeInfo`, `LocationCategory`, `NetworkHost`
+
+## `PaneRevealAPI`: the reveal primitives' actual dependency
+
+`navigate-and-select.ts` takes `PaneRevealAPI`, not `ExplorerAPI`: five methods (`getFocusedPane`, `setFocusedPane`,
+`getPaneLocation`, `navigate`, `moveCursor`), which is everything these functions touch.
+
+`ExplorerAPI` satisfies it structurally, so ⌘J, ⌘G, and the search-result reveal keep passing the whole explorer with no
+change. The narrowing exists for callers that CAN'T hand over a coordinator: a dialog outcome or a toast action gets the
+five methods from `DialogStateDeps.getExplorer()` instead of taking a dependency on tabs, volumes, and the MCP surface
+it has no business reaching. See `../pane/DETAILS.md` § "A dialog outcome that navigates".
+
+⚠️ `navigateToFileInPane` (and therefore `revealFileInBestPane`) can THROW: `moveCursor` rejects on a name the visible
+listing doesn't hold, which is what any dotfile is while "show hidden files" is off. The navigation has already happened
+at that point, so a caller revealing a file it doesn't control the name of should catch and carry on rather than let it
+surface as a fault. First case: `$lib/file-operations/delete/go-to-trash.ts`.

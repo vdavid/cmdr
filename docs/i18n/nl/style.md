@@ -78,6 +78,14 @@ Straightforward (sources agree, `high`):
 - in use → in gebruik · macOS Finder ("… is in gebruik") · high
 - unplug (a device) → loskoppelen ("Koppel het los") · catalog `mtp.permissionDialog.helpText`, macOS-consistent · high
 - idle (a device) → niet meer bezig · counterpart of the catalog's "Het apparaat is bezig" · high
+- put back (an item out of the prullenmand) → terugzetten / teruggezet · macOS Finder (`Put Back`→`Zet terug`, "could
+  not be put back"→"konden niet worden teruggezet") · high
+- undo, on the trash toast → Zet terug · macOS Finder's own Put Back command, which IS this action; short and
+  unambiguous where `Herstel` also means Revert/Repair. The generic undo button elsewhere stays `Ongedaan maken`. See
+  the glossary's prullenmandmelding pass · high
+- go to trash → Ga naar prullenmand · macOS Finder (`Go to the Trash`→`Ga naar de prullenmand`), article dropped the way
+  Finder's own button does (`Go to Folder…`→`Ga naar map…`) · high. NOT `Naar prullenmand`, which already means MOVE to
+  trash in `fileOperations.json`
 
 Add rows as terms come up, each with sources and a confidence.
 
@@ -98,6 +106,13 @@ sentence whose verb sits outside the plural needs the verb pulled INTO the branc
 possible: put only the noun plus its copula inside, and let the rest of the sentence share that one copula
 (`{count, plural, one {# bestand is} other {# bestanden zijn}} nog open en misschien al gedeeltelijk geschreven.`).
 Duplicating the whole sentence per branch works too but rots twice as fast.
+
+The trap has a second face: a preformatted `*Text` count with NO integer partner gives you no branch to put `is`/`zijn`
+in. The fallback is to drop the finite verb and keep the clause elliptical, parallel to a participial neighbour
+(`… teruggezet; {skippedText} nog in de prullenmand.`), which reads correctly at every count. Ask for an integer partner
+instead where you can: `fileOperations.trash.undonePartial` gained a `{skipped}` driver for exactly this reason, so its
+second half is now a normal plural with a real verb
+(`… teruggezet; {skippedText} {skipped, plural, one {onderdeel bleef} other {onderdelen bleven}} in de prullenmand.`).
 
 ## Notes and decisions
 

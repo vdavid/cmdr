@@ -1501,3 +1501,33 @@ upprepa ramens "det gick inte att": ramen säger redan att det inte hände, vär
   inget att återställa … eller så är dess enhet inte ansluten") · `high`. Samma mall bär både `volumeNotFound`
   (`… inget att mata ut`) och `notAnSmbVolume` (`… inget att koppla från`).
 - **Inga `sameAsSourceJustification`** · alla nio värden skiljer sig från engelskan.
+
+## Papperskorgs-toasten: ångra och gå till papperskorgen (2026-08-27; `fileOperations.trash.*` + `commands.fileGoToTrash.*`)
+
+Toasten som visas direkt efter att filer flyttats till papperskorgen, med knapparna `Ångra` och `Gå till papperskorgen`,
+plus kommandot med samma namn. Återanvänder `papperskorgen`, `enhet`, `fil/filer` och `objekt`. Nya beslut:
+
+- **put back (flytta tillbaka ur papperskorgen) → `lägga tillbaka`** · macOS Finder `sv` Tier 1: `N153.1` (`Put Back` →
+  "Lägg tillbaka"), verifierat i pilen 2026-08-27 · `high`. Det här är exakt samma åtgärd som Finders egen menypost, så
+  Tier 1 vinner. ❌ Inte `återställa`: det är `restore` (se § Rollback-familjen), och katalogen använder det redan för
+  namnåterställningen i `askCmdr.renameUndo.*` — två olika ytor ska inte låta likadant. ❌ Inte `flytta tillbaka`, trots
+  att Finders felmening säger "kunde inte flyttas tillbaka" (`PE130_V1`) och Nautilus `sv` har "Flytta tillbaka ”%s”
+  till papperskorgen": menypostens ord är det användaren ser som åtgärdens NAMN, och den vinner. Preteritum blir
+  `Lade tillbaka …`, subjektslöst precis som `transfer.trash` ("Flyttade … till papperskorgen").
+- **undo (knappen på toasten) → `Ångra`** · macOS `sv` `ME13`/AppKit `Undo` → "Ångra", och katalogens egen
+  `askCmdr.renameUndo.undo` säger redan `Ångra` · `high`. Krockar inte med `Avbryt` (Cancel).
+- **go to trash → `Gå till papperskorgen`** · katalogens `Gå till`-familj (`commands.navGoToPath.label`,
+  `commands.downloadsGoToLatest.label`) plus macOS `sv` "Gå till hemmappen" (`TL_HELP_HOME`) · `high`. ⚠️ 21 tecken mot
+  engelskans 11: knappen sitter i en smal toast, så överflödskontrollera den paret `Ångra` / `Gå till papperskorgen`.
+  Kortformen `Papperskorgen` finns om den klipps, men då tappar knappen sitt verb.
+- **"stayed in the trash" → `{skippedText} {skipped, plural, one {objekt} other {objekt}} ligger kvar i papperskorgen`**
+  · `ligger kvar` är katalogens ord för något som blir stående (`fileExplorer.smb.*`: "den här delningen ligger kvar på
+  systemanslutningen") · `high`. `{skipped}` är heltalspartnern till `{skippedText}`, så väljaren är äkta. Grenarna blir
+  ändå identiska: `objekt` (katalogens ord för det `item` källan säger i den här halvan) är neutrum och oförändrat i
+  plural, och svenska verb böjs inte för numerus. Skriv ut båda grenarna ändå, ICU kräver det.
+- **"the drive you're browsing" → `enheten du bläddrar i`** · katalogens `askCmdr.empty.hint` ("det du bläddrar i") ·
+  `high`. `öppna` var varmare i indexeringspasset, men här är `Öppna` redan meningens huvudverb.
+- **"This drive doesn't keep a trash." → `Det finns ingen papperskorg på den här enheten.`** · samma ram som
+  systersträngen `fileOperations.delete.archiveWarningStrong` ("Det finns ingen papperskorg i ett arkiv.") · `high`. Ett
+  konstaterande om enheten, ingen anmärkning mot användaren.
+- Inga `sameAsSourceJustification` behövs: alla nio värden skiljer sig från engelskan.

@@ -80,3 +80,23 @@ operations (a move can leave bytes nowhere durable), so they get the real target
 § "Durability" and `../DETAILS.md` § "Key decisions (shared)". Pinned by
 `tests.rs::no_global_sync_or_spawn_async_sync_in_write_operations`, which fails the suite if `spawn_async_sync` or a raw
 `libc::sync()` reappears in `write_operations/`.
+
+## Where a trash is (`trash_dir_for_path`)
+
+macOS keeps ONE trash per volume: `~/.Trash` for the boot volume, `<mount point>/.Trashes/<uid>` for everything else.
+`trash_dir_for_path` asks Cocoa the same question the trash move itself asks
+(`URLForDirectory:inDomain:appropriateForURL:create:`) rather than reconstructing the layout from `statfs` + `getuid`,
+so a disk image, a synthetic firmlink, or a volume with no trash answers for itself instead of against our guess.
+`create: false` keeps it a pure lookup: asking never brings a trash directory into existence.
+
+**Gotcha: it answers for a VOLUME, not an item.** `appropriateForURL:` resolves the URL's volume, and a path that
+doesn't exist has none — so it errors. Every caller asks about paths that are routinely gone by then (the item the user
+just trashed is no longer where it was), which is why the resolver walks up to the nearest existing ancestor: same
+volume, same trash. ❌ Don't remove the walk; without it the function returns `None` in exactly the case it exists for,
+and "Go to trash" silently stops working. `trash_dir_for_path_answers_for_a_path_that_is_already_gone` and
+`trash_dir_for_path_climbs_past_several_missing_levels` pin it, and
+`trash_dir_for_path_matches_where_the_item_actually_landed` pins the resolved directory against where a real trash move
+puts a file.
+
+`None` stays the ordinary answer for a volume with no trash (FAT32, SMB) and on non-macOS, so callers say "nowhere to
+go" rather than reporting something went wrong.

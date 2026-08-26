@@ -15,10 +15,10 @@ copy + move. Frontend counterpart:
   `volume_id`. The volume walker consults `try_get_authoritative_listing` before every `list_directory`, so a subtree
   open in another pane is cache-fed. DETAILS § "Volume-delete internals".
 - **`trash.rs`**: `move_to_trash_sync()` (macOS ObjC `trashItemAtURL`; Linux `trash` crate; reused by
-  `commands/rename.rs`) and `trash_files_with_progress()` (batch trash with per-item progress, cancellation, partial
-  failure). It refuses with a typed `MutationError`, ❌ never a sentence. Every item it can't take emits its own
-  `Failed` source-item event, since trash is per-item and the terminal event speaks for none of them. Existence checks
-  use `symlink_metadata()`.
+  `commands/rename.rs`), `trash_files_with_progress()` (batch trash with per-item progress, cancellation, partial
+  failure), and `trash_dir_for_path()` (`get_trash_dir`; ❌ keep its ancestor walk, DETAILS § Where a trash is). It refuses with a typed `MutationError`, ❌ never a sentence. Every item it can't take emits its own `Failed`
+  source-item event, since trash is per-item and the terminal event speaks for none of them. Existence checks use
+  `symlink_metadata()`.
 - **`volume_start.rs`**: a volume delete's managed lifecycle, here rather than `../mod.rs` because its body is `async`. DETAILS § "The volume delete's own lifecycle".
 - Test siblings: `delete_integration_test.rs`, `delete_volume_reuse_tests.rs` (preview reuse, oracle fast path, the
   missing-fact audit), `preview_binding_tests.rs` (the cache binding), `volume_cancel_tests.rs`.
@@ -48,11 +48,10 @@ copy + move. Frontend counterpart:
   and as fire-and-forget didn't make "complete" mean "durable". Pinned by
   `tests.rs::no_global_sync_or_spawn_async_sync_in_write_operations`.
 - **Recursive scan helpers that bail with `Err(Cancelled)` must NOT emit `write-cancelled` themselves; the top-level
-  caller must.** `scan_volume_recursive` checks cancel at every recursion level; emitting at the bail site would fire
-  the terminal event once per stacked frame. So it returns `Err(Cancelled)` silently and the caller emits via
-  `emit_cancelled_if_aborted` before propagating. Any new recursive scan with a per-level cancel check needs the same
-  caller-side emit, else the FE never sees `write-cancelled` and the dialog closes via the settle-fallback path instead
-  of the proper cancel flow. Pinned by `delete_cancel_during_scan_emits_write_cancelled`.
+  caller must.** `scan_volume_recursive` checks cancel per recursion level, so emitting at the bail site fires the
+  terminal event once per stacked frame; it returns silently and the caller emits via `emit_cancelled_if_aborted`. Any
+  new per-level-cancel scan needs the same caller-side emit, or the FE never sees `write-cancelled` and the dialog
+  closes through the settle fallback. Pinned by `delete_cancel_during_scan_emits_write_cancelled`.
 
 Full details (volume-delete scan-preview reuse and its three parts + data-safety contract, the no-`fsync` decision
 rationale): `DETAILS.md`.

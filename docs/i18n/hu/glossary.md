@@ -1781,3 +1781,39 @@ hagyta a két panelnevet („Get Info”, „Locked”) egyébként magyar monda
 - **`parancsot`, nem `menüt`** · az Apple futó szövege a menüelemre `parancs`-ként hivatkozik („válassza a Fájl > Infó
   megjelenítése parancsot”); a korábbi „a Get Info menüt” tárgyilag is téves volt (menüelem, nem menü). A névelő `az`,
   mert az `Infó` magánhangzóval kezdődik.
+
+## A Kuka-értesítés két gombja és a visszavonás családja (`fileOperations.trash.*`, `commands.fileGoToTrash.*`, 2026-08-27)
+
+Kilenc új kulcs: a Kukába helyezés után felbukkanó értesítés két gombja, a visszavonás folyamat- és eredményszövegei, és
+a parancspaletta „Go to trash” parancsa.
+
+- **undo (a gomb) → `Visszavonás`** · macOS Finder `ME13` Tier 1 (`Undo` = `Visszavonás`), és a katalógus már ezt
+  szállítja ugyanerre az angol gombra (`askCmdr.renameUndo.undo`) · high. Egy szó, elfér a keskeny értesítésben.
+- **put back (a művelet, amit a gomb elindít) → `visszahelyezés`** · macOS Finder `PE130_V1`/`PE130_V2` Tier 1 („^0
+  items could not be put back.” = „^0 elem visszahelyezése nem sikerült.”) · high. A Finder MENÜPARANCSA `Visszatevés`
+  (`N153.1`), tehát a tő közös; a mi szövegeink mondatok, nem menücímkék, ezért a mondatbeli alakot vesszük, ami
+  ráadásul a szótár `move → áthelyezés` sorával is egy családba esik. NEM `visszaállítás`: azt az `askCmdr.renameUndo.*`
+  a RÉGI NÉV visszaadására használja, más művelet.
+- **„Go to trash” → `Ugrás a Kukába`** · macOS Finder `TL_HELP_TCAN` Tier 1 („Go to the Trash” = „Ugrás a Kukába”) ·
+  high. Ugyanaz az érték a gombon és a parancspaletta címkéjén, ahogy az angolban is. A `Kuka` nagybetűs marad (settled,
+  a funkció neve), ahogy a Finder is írja ebben a sorban.
+- **„Putting them back...” → `Az elemek visszahelyezése…`** · főnévi folyamatalak, ahogy a fájl többi haladásjelzője
+  (`transferDialog.checkingConflicts` = `Ütközések keresése…`); `elem` a settled item-szó. A `hu` katalógus ebben a
+  fájlban `…`-t (U+2026) használ, nem három pontot, akkor is, ha az angol forrás `...`-ot ír.
+- **„Put back N files.” → `{countText} … visszahelyezve.`** · pontosan a testvér `transfer.trash` alakja
+  (`{countText} {count, plural, one {fájl} other {fájl}} áthelyezve a Kukába`), csak az igenév cserélődik. A számnév
+  után a főnév EGYES SZÁMBAN marad mindkét ágban (a `style.md` § Plurals fő szabálya).
+- **A részleges eredmény második fele kap egy főnevet.** Az angol forrás itt `item`-et mond, tehát a settled `elem` a
+  szó: `{skippedText} {skipped, plural, one {elem} other {elem}} a Kukában maradt`. A `{skippedText}` mellett ott van a
+  `{skipped}` egész számú társ is, de a magyarnak nincs rá szüksége: a számnév utáni főnév mindkét ágban egyes szám
+  marad, csak az ICU kéri, hogy mindkettőt kiírjuk.
+- **„Nothing to put back. …” →
+  `Nincs mit visszahelyezni. Lehet, hogy ezek az elemek már a helyükön vannak, vagy a meghajtójuk nincs csatlakoztatva.`**
+  · a testvér `askCmdr.renameUndo.unavailable` mondatszerkezetét viszi tovább
+  (`Nincs mit visszaállítani. Lehet, hogy …, vagy a meghajtója nincs csatlakoztatva.`), csak a művelet szava más · high.
+- **„This drive doesn't keep a trash.” → `Ezen a meghajtón nincs Kuka.`** · a már rögzített `Ezen a köteten nincs Kuka.`
+  alak, `kötet` helyett `meghajtó`, mert az angol itt `drive`-ot mond · high. Tényközlés, nem hibaüzenet: ezért nem a
+  `errors.write.trashNotSupported.message` („nem támogatja”) regisztere.
+- **A parancs leírása → `Az aktuális meghajtó Kukájának megnyitása`** · főnévi leírásforma, ahogy a `commands.json`
+  többi leírása (`Másolat készítése a kijelölt fájlokról ugyanabban a mappában`); az `aktuális` a katalógus szava a
+  „current”-re (`commands.editPaste.description`, `commands.favoritesAdd.description`) · high.

@@ -74,6 +74,11 @@ Format: each line is `English: chosen · sources · confidence`. Confidence is `
 - download: `letöltés` · mac, ms · high.
 - index / indexing: `index` / `indexelés` · ms ("index") · high.
 - overwrite: `felülírás` · mac ("Felülír"), ms, xf ("Felülírja?") · high.
+- undo: `visszavonás` · mac (Finder `ME13` „Visszavonás”), a katalógus `askCmdr.renameUndo.undo` · high.
+- put back (elem visszatétele a Kukából): `visszahelyezés` · mac (Finder `PE130` „…visszahelyezése nem sikerült”) ·
+  high. A Finder menüparancsa `Visszatevés`, a mondatbeli alak `visszahelyezés`; mi az utóbbit használjuk, mert a
+  szövegeink mondatok. NEM `visszaállítás` (az a régi NÉV visszaadása, `askCmdr.renameUndo.*`).
+- go to trash: `Ugrás a Kukába` · mac (Finder `TL_HELP_TCAN` „Go to the Trash” = „Ugrás a Kukába”) · high.
 
 Contested or split, with the per-source evidence:
 

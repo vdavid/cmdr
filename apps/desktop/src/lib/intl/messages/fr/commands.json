@@ -440,6 +440,14 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
+  "commands.fileGoToTrash.label": "Aller à la corbeille",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "Ouvrir la corbeille du disque que vous parcourez",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "45df2c4"
+  },
   "commands.dialogConfirm.label": "Confirmer la boîte de dialogue d''ouverture",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"

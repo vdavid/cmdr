@@ -27,6 +27,34 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
+  "fileOperations.trash.undoAction": "撤销",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "前往废纸篓",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "正在放回原处…",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "1be7766"
+  },
+  "fileOperations.trash.undone": "已将 {countText} {count, plural, other {个文件}}放回原处。",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "已将 {restoredText} {restored, plural, other {个文件}}放回原处；{skippedText} {skipped, plural, other {个项目}}仍在废纸篓中。",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "没有可放回的内容。这些项目可能已经回到原处，或者它们所在的驱动器未连接。",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "2acefae"
+  },
+  "fileOperations.trash.noTrashHere": "这个驱动器没有废纸篓。",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
   "fileOperations.delete.trashSwitch": "移到废纸篓",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"

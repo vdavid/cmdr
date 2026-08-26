@@ -46,6 +46,51 @@
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
+  "fileOperations.trash.undoAction": "Undo",
+  "@fileOperations.trash.undoAction": {
+    "description": "Button on the toast that appears right after files are moved to the trash. Pressing it puts every one of them back where it was. Short control label; the toast is narrow, so keep it to one or two words."
+  },
+
+  "fileOperations.trash.goToTrashAction": "Go to trash",
+  "@fileOperations.trash.goToTrashAction": {
+    "description": "Button on the toast that appears right after files are moved to the trash. Pressing it opens the trash folder in the file pane, with the cursor on the item that was just moved there. \"Trash\" is the macOS Trash, so use whatever your platform calls the recoverable wastebasket. Short control label; the toast is narrow, so keep it to one or two words."
+  },
+
+  "fileOperations.trash.undoing": "Putting them back...",
+  "@fileOperations.trash.undoing": {
+    "description": "Replaces the toast while an undo is running, after the user pressed Undo on the trash toast. Putting files back can take a while on a slow or busy drive, so this is a progress state, not a result. Sentence case; the character at the end is an ellipsis."
+  },
+
+  "fileOperations.trash.undone": "Put back {countText} {count, plural, one {file} other {files}}.",
+  "@fileOperations.trash.undone": {
+    "description": "Result toast when an undo put every trashed item back where it came from. Sentence case.",
+    "placeholders": {
+      "countText": "how many items came back, formatted for display (e.g. 1,234)",
+      "count": "the same number (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.trash.undonePartial": "Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the trash.",
+  "@fileOperations.trash.undonePartial": {
+    "description": "Result toast when an undo could only put SOME items back. Cmdr never overwrites while undoing, so an item whose old spot is taken again, or that changed since, is deliberately left where it is. Say this as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "restoredText": "how many items came back, formatted for display (e.g. 1,234)",
+      "restored": "the same number (drives the singular/plural form of the noun)",
+      "skippedText": "how many items stayed in the trash, formatted for display (e.g. 12)",
+      "skipped": "the same number of items that stayed in the trash (drives the singular/plural form of the noun beside it, and any agreement your language needs in that clause)"
+    }
+  },
+
+  "fileOperations.trash.undoUnavailable": "Nothing to put back. These items may already be back, or their drive isn''t connected.",
+  "@fileOperations.trash.undoUnavailable": {
+    "description": "Result toast when an undo had nothing to reverse: the items are already back, someone emptied the trash, or the drive they belong on is no longer connected. Two sentences, both plain statements rather than a warning. Sentence case; the apostrophe is doubled for ICU and renders as one."
+  },
+
+  "fileOperations.trash.noTrashHere": "This drive doesn''t keep a trash.",
+  "@fileOperations.trash.noTrashHere": {
+    "description": "Toast shown when the user asks to go to the trash while standing on a drive that has none (a USB stick formatted FAT32, a network share). A statement of fact about the drive, not a problem with what the user did. Sentence case; the apostrophe is doubled for ICU and renders as one."
+  },
+
   "fileOperations.delete.trashSwitch": "Move to trash",
   "@fileOperations.delete.trashSwitch": {
     "description": "Switch in the delete dialog, on by default. On moves items to the system trash (recoverable); off deletes them for good. Control label.",

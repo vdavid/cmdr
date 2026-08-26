@@ -110,6 +110,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'file.newFile': 'Create new file',
   'file.delete': 'Delete',
   'file.deletePermanently': 'Delete permanently',
+  'file.goToTrash': 'Go to trash',
   'dialog.confirm': 'Confirm open dialog',
   // Platform-conditional names resolve to the non-macOS label under jsdom.
   'file.showInFinder': 'Show in file manager',
@@ -166,6 +167,7 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'suggestedOps.show': 'Review the file operations Ask Cmdr suggested, and decide what runs',
   'askCmdr.toggle': 'Chat with an AI about your files, drives, and history',
   'nav.goToPath': 'Jump the focused pane to a typed, pasted, or recent path.',
+  'file.goToTrash': "Open the trash of the drive you're browsing",
   'favorites.add': "Add the focused pane's current folder to the switcher's Favorites.",
   'downloads.goToLatest': 'Open ~/Downloads and select the most recent file.',
   'pane.copyPathLeftToRight':

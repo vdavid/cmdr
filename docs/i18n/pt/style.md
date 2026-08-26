@@ -95,13 +95,16 @@ principle 2). "Excluir" survives only in its non-delete senses: query-scope excl
 Defer the full glossary until the variant is chosen (every row depends on it). Triangulate pt-BR/pt-PT macOS Finder
 (highest authority, both in the pile) + Microsoft terminology + GNOME/Xfce.
 
-| English term | Portuguese (pt-BR default) | Notes                                                    |
-| ------------ | -------------------------- | -------------------------------------------------------- |
-| file         | arquivo                    | pt-PT: ficheiro                                          |
-| folder       | pasta                      | shared                                                   |
-| trash        | Lixo                       | macOS Finder Tier-1 (glossary-locked); pt-PT: Reciclagem |
-| pane         | painel                     | confirm vs Finder                                        |
-| tab          | aba                        | pt-BR; pt-PT: separador                                  |
+| English term | Portuguese (pt-BR default) | Notes                                                     |
+| ------------ | -------------------------- | --------------------------------------------------------- |
+| file         | arquivo                    | pt-PT: ficheiro                                           |
+| folder       | pasta                      | shared                                                    |
+| trash        | Lixo                       | macOS Finder Tier-1 (glossary-locked); pt-PT: Reciclagem  |
+| pane         | painel                     | confirm vs Finder                                         |
+| tab          | aba                        | pt-BR; pt-PT: separador                                   |
+| undo         | Desfazer                   | macOS Finder `ME13`; same word the catalog already ships  |
+| put back     | colocar de volta           | macOS Finder `Put Back`; not `restaurar` (that is a name) |
+| go to trash  | Ir para o Lixo             | macOS Finder `Go to the Trash`                            |
 
 ## Brand and do-not-translate
 
@@ -121,6 +124,12 @@ Two mechanics that bite in Portuguese specifically:
   punctuation outside. See `transferProgress.stallInFlight` and the image-indexing plurals in `glossary.md`.
 - **`one` covers zero in Portuguese** (CLDR `i = 0..1`), so a `one` branch renders "0 arquivo". That's the correct CLDR
   form; write the branch so it reads sanely at 0, or make sure the string only renders for counts ≥ 1.
+- **A `*Text` count with NO integer partner has no branch to agree in.** A bare formatted number can't choose
+  `ficou`/`ficaram`, and Portuguese agrees. The fallback is a verb that agrees with something else and is therefore
+  invariant in the count: first-person active (`deixamos {skippedText} no Lixo`), which the Formality section already
+  prefers anyway. Ask for an integer partner instead where you can: `fileOperations.trash.undonePartial` gained a
+  `{skipped}` driver for exactly this reason, so its second half now agrees normally
+  (`{skipped, plural, one {{skippedText} item ficou} many {{skippedText} itens ficaram} other {…}} no Lixo`).
 
 ## Notes and decisions
 

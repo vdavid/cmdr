@@ -27,6 +27,34 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
+  "fileOperations.trash.undoAction": "Deshacer",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "Ir a la papelera",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "Devolviéndolos a su sitio...",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "1be7766"
+  },
+  "fileOperations.trash.undone": "Se {count, plural, one {devolvió} many {devolvieron} other {devolvieron}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}} a su sitio.",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "Se {restored, plural, one {devolvió} many {devolvieron} other {devolvieron}} {restoredText} {restored, plural, one {archivo} many {archivos} other {archivos}} a su sitio; {skippedText} {skipped, plural, one {elemento se quedó} many {elementos se quedaron} other {elementos se quedaron}} en la papelera.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "No hay nada que devolver. Puede que estos elementos ya estén de vuelta, o que su unidad no esté conectada.",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "2acefae"
+  },
+  "fileOperations.trash.noTrashHere": "Esta unidad no tiene papelera.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
   "fileOperations.delete.trashSwitch": "Mover a la papelera",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"

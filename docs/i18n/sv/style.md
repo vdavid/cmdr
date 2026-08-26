@@ -153,6 +153,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   pattern-match off English.
 - `en`/`ett` gender affects agreement ("en markerad fil" vs "ett markerat objekt"). Keep article and adjective agreeing
   with the counted noun inside each branch.
+- **Ett räknat `*Text`-tal UTAN egen plural-väljare behöver ett oböjligt substantiv.** Engelskan klarar sig med bara
+  talet, men svenskan vill ha ett räknat huvudord, och då finns ingen heltalsplaceholder att välja form på. Nödlösningen
+  är ett neutrumord som ser likadant ut i singular och plural: `objekt`. Be hellre om en heltalspartner:
+  `fileOperations.trash.undonePartial` fick en `{skipped}`-väljare just av det skälet, så andra satsen är nu en vanlig
+  plural (`{skippedText} {skipped, plural, one {objekt} other {objekt}} ligger kvar i papperskorgen`). Lägg aldrig en
+  egen `{n, plural, …}` runt själva `*Text`-värdet: det är en färdigformaterad sträng, inte ett tal.
 - **Pull a shared tail INSIDE the branches when it agrees with the counted noun.** English often leaves a trailing
   clause outside the plural ("{count, plural, …} and may already be partly written"); Swedish predicative adjectives and
   participles inflect for number ("öppen … skriven" vs "öppna … skrivna"), so a shared tail is wrong in one branch.

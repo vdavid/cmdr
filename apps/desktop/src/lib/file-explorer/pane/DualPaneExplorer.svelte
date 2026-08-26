@@ -202,6 +202,10 @@
         getFocusedPaneRef: () => getPaneRef(focusedPane),
         getFocusedPaneSide: () => focusedPane,
         getShowHiddenFiles: () => showHiddenFiles,
+        // The five pane-picking methods `PaneRevealAPI` asks for, handed over
+        // directly rather than routed back in as a prop: they're this component's
+        // own exports, so there's nothing to plumb from the route.
+        getExplorer: () => ({ getFocusedPane, setFocusedPane, getPaneLocation, navigate, moveCursor }),
         onRefocus: () => containerElement?.focus(),
         onOpenInEditor: (path: string) => void openInEditor(path),
     })

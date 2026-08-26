@@ -440,6 +440,14 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
+  "commands.fileGoToTrash.label": "Đi tới thùng rác",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "Mở thùng rác của ổ đĩa bạn đang duyệt",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "45df2c4"
+  },
   "commands.dialogConfirm.label": "Xác nhận hộp thoại mở",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"

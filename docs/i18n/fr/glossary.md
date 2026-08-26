@@ -1890,3 +1890,35 @@ pas amovible, il reste donc connecté. »
 Aucun `sameAsSourceJustification` nécessaire : les neuf valeurs diffèrent de l'anglais. Aucun `: ; ! ? %` dans les
 valeurs, donc la règle d'espace avant ponctuation ne se pose pas ; aucune apostrophe doublée (famille RAW), aucun U+2019
 ni U+202F.
+
+## La notification de corbeille : annuler et remettre en place (`fileOperations.trash.*`, `commands.fileGoToTrash.*`, 2026-08-27)
+
+Nouvelle surface : après un déplacement vers la corbeille, une notification propose deux boutons (« Annuler », « Aller à
+la corbeille ») ; la même commande existe dans la palette.
+
+- **`undo` (bouton) → `Annuler`** · macOS AppKit MenuCommands (« Undo Smart Dash » → « Annuler Tirets intelligents »),
+  GNOME Nautilus (« Undo » → « Annuler ») et le catalogue lui-même (`askCmdr.renameUndo.undo`) · high. À savoir : le
+  français rend `Undo` ET `Cancel` par « Annuler », et ici le bouton apparaît juste après une opération, donc une
+  lecture « annuler l'opération » est possible. macOS vit avec la même ambiguïté, et le résultat visé par l'utilisateur
+  est le même dans les deux lectures, donc on garde « Annuler ». « Remettre » (le « Put Back » du Finder) serait la
+  seule alternative sourcée si l'ambiguïté gênait un jour.
+- **`put back` (ramener un élément de la corbeille là où il était) → `remettre en place`** · macOS Finder `N153.1` («
+  Put Back » → « Remettre », `LocalizableMerged`) · high. « en place » explicite le « back where it was » de l'anglais.
+  ❌ Pas `restaurer` (Nautilus, Tier 3) : le catalogue le réserve au renommage annulé (`askCmdr.renameUndo.undone`, «
+  fichier restauré »), et la distinction entre rendre un EMPLACEMENT et rendre un NOM mérite d'être gardée.
+- **`This drive doesn't keep a trash.` → `Ce disque n'a pas de corbeille.`** · un fait sur le disque, sans verdict, dans
+  la lignée de `fileOperations.delete.noTrashWarningStrong` (« Ce volume ne prend pas en charge la corbeille. »).
+  L'anglais dit `drive`, donc `disque` · high
+- **`Nothing to put back.` → `Rien à remettre en place.`** · même moule que `askCmdr.renameUndo.unavailable` (« Rien à
+  restaurer. … ou son disque n'est pas connecté. ») · high
+- **`These items may already be back` → `Ces éléments sont peut-être déjà de retour`** · `de retour` est invariable,
+  donc aucun participe à accorder avec un contenu qu'on ne connaît pas · high
+- **La seconde moitié a son propre paramètre de comptage (`{skipped}`)**, donc elle porte un verbe conjugué et accordé :
+  « … remis en place ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other
+  {éléments sont restés}} dans la corbeille. » Le nom compté est `élément`, le mot du catalogue pour l'`item` que dit la
+  source dans cette moitié, pas `fichier` comme dans la première · high
+- **Le bouton de la notification et le nom de la commande portent le même texte** (« Aller à la corbeille »), comme ses
+  voisins `commands.navParent.label` (« Aller au dossier parent ») et `commands.downloadsGoToLatest.label` (« Aller au
+  dernier téléchargement »).
+- Espace ASCII avant le `;` de `undonePartial`, apostrophes ASCII doublées dans `undoUnavailable` et `noTrashHere`,
+  aucun U+2019 ni U+202F. Aucun `sameAsSourceJustification` nécessaire : les neuf valeurs diffèrent de l'anglais.

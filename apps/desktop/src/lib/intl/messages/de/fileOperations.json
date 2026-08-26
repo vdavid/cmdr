@@ -28,6 +28,34 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
+  "fileOperations.trash.undoAction": "Widerrufen",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "Zum Papierkorb gehen",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "Objekte werden zurückgelegt …",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "1be7766"
+  },
+  "fileOperations.trash.undone": "{countText} {count, plural, one {Datei} other {Dateien}} zurückgelegt.",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "{restoredText} {restored, plural, one {Datei} other {Dateien}} zurückgelegt; {skippedText} {skipped, plural, one {Objekt blieb} other {Objekte blieben}} im Papierkorb.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "Es gibt nichts zurückzulegen. Diese Objekte sind vielleicht schon zurück, oder ihr Laufwerk ist nicht verbunden.",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "2acefae"
+  },
+  "fileOperations.trash.noTrashHere": "Dieses Laufwerk hat keinen Papierkorb.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
   "fileOperations.delete.trashSwitch": "In den Papierkorb bewegen",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"

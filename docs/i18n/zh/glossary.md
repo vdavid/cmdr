@@ -1371,3 +1371,30 @@ Conventions worth keeping for this family:
   (`可能过一会儿它会自己推出`), no `失败`/`错误`, matching the English intent.
 - **`errors.eject.unexpected` is word-for-word `errors.mutation.unexpected`** (`出了点问题，Cmdr 也说不清是什么。`): the
   English sources are identical, so the Chinese is too.
+
+## 废纸篓提示条：撤销与前往废纸篓（2026-08-27；`fileOperations.trash.*` + `commands.fileGoToTrash.*`）
+
+文件被移到废纸篓后立刻出现的提示条，带 `撤销` 和 `前往废纸篓` 两个按钮，外加同名的命令面板命令。复用 `废纸篓`、
+`驱动器`、`个文件`、`个项目`。新定的词：
+
+- **put back（从废纸篓放回原来的位置）** · `放回原处`（句中可用 `放回`） · macOS Finder `zh-CN` Tier 1：`N153.1`
+  （`Put Back`
+  → 「放回原处」）、`PE130_V1`/`PE130_V2`（「“^1”无法放回。」「^0个项目无法放回。」），2026-08-27 在 pile 中核对 ·
+  `high`。这就是 Finder 自己对同一动作的菜单项，所以 Tier 1 优先。❌ 不用 `恢复`：目录已经把它留给了改回旧名称的
+  `askCmdr.renameUndo.*`，而这里文件是真的移回原位。❌ 不用 Nautilus `zh-CN` 的「从回收站恢复」：它连废纸篓都写成
+  `回收站`，不是 macOS 的用词。
+- **undo（提示条上的按钮）** · `撤销` · macOS `zh-CN` `ME13`/AppKit（`Undo` → 「撤销」），目录里
+  `askCmdr.renameUndo.undo` 也已经是 `撤销` · `high`。与 `回滚`（rollback，传输回滚）分工不同：这里是真正的撤销。
+- **go to trash** · `前往废纸篓` · 目录的 `前往` 系列（`commands.navGoToPath.label`、
+  `commands.downloadsGoToLatest.label`）和 macOS `zh-CN` 「前往个人文件夹」（`TL_HELP_HOME`） ·
+  `high`。中文只有 5 个字，提示条按钮不会挤。
+- **"stayed in the trash"** · `{skippedText} {skipped, plural, other {个项目}}仍在废纸篓中` · `仍`
+  是目录里表示「还是那样」的词（`仍处于打开状态`、`连接仍然可用`） · `high`。`{skipped}` 是 `{skippedText}`
+  的整数搭档；中文没有数的变化，所以只写 `other` 一支，量词短语 `个项目` 对任何数目都成立。
+- **"the drive you're browsing"** · `你正在浏览的驱动器` · 目录的 `askCmdr.empty.hint`（「你正在浏览的内容」） ·
+  `high`。第二层用 `…上的废纸篓`，避免两个 `的` 直接连用。
+- **"This drive doesn't keep a trash."** · `这个驱动器没有废纸篓。` · 与姐妹句
+  `fileOperations.delete.archiveWarningStrong`（「压缩文件里没有废纸篓。」）同一句式 ·
+  `high`。这是在讲驱动器的事实，不是说用户做错了；按 style.md 的口语指示代词规则用 `这个`，`此驱动器`
+  只留给已经定型的驱动器索引短标签。
+- 九条值都与英文不同，无需 `sameAsSourceJustification`。

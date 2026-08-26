@@ -6,9 +6,11 @@
  * bucket; the dispatch core stays small either way.
  *
  * `downloads.goToLatest` AWAITS `goToLatestDownload` (a follow-the-download
- * navigation); preserve its `await`.
+ * navigation); preserve its `await`. `file.goToTrash` awaits for the same reason:
+ * it resolves the volume's trash over IPC before any pane moves.
  */
 import { goToLatestDownload } from '$lib/downloads/go-to-latest'
+import { goToTrash } from '$lib/file-operations/delete/go-to-trash'
 import { addFavorite } from '$lib/tauri-commands'
 import { getFocusedPanePath } from '$lib/file-explorer/pane/focused-pane-reads'
 import { addToast } from '$lib/ui/toast'
@@ -26,6 +28,10 @@ function lastSegment(path: string): string {
 export const miscHandlers = {
   'downloads.goToLatest': async ({ explorerRef }) => {
     await goToLatestDownload(explorerRef)
+  },
+
+  'file.goToTrash': async ({ explorerRef }) => {
+    await goToTrash(explorerRef)
   },
 
   'favorites.add': async () => {

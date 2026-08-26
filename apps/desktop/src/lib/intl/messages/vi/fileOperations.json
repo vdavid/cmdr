@@ -28,6 +28,34 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
+  "fileOperations.trash.undoAction": "Hoàn tác",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "Đi tới thùng rác",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "Đang đưa chúng trở lại...",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "1be7766"
+  },
+  "fileOperations.trash.undone": "Đã đưa trở lại {countText} {count, plural, other {tệp}}.",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "Đã đưa trở lại {restoredText} {restored, plural, other {tệp}}; {skippedText} {skipped, plural, other {mục}} vẫn ở trong thùng rác.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "Không có gì để đưa trở lại. Có thể các mục này đã được đưa trở lại, hoặc ổ đĩa của chúng chưa được kết nối.",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "2acefae"
+  },
+  "fileOperations.trash.noTrashHere": "Ổ đĩa này không có thùng rác.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
   "fileOperations.delete.trashSwitch": "Chuyển vào thùng rác",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"

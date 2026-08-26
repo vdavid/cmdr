@@ -14,6 +14,7 @@ import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
 import type { DuplicateFollowUp } from './duplicate-rename'
 import type { FilePaneAPI } from './types'
+import type { PaneRevealAPI } from '../navigation/navigate-and-select'
 
 /**
  * `TransferDialog`'s confirm payload: everything the user (or an MCP
@@ -215,6 +216,13 @@ export interface DialogStateDeps {
   getFocusedPaneRef: () => FilePaneAPI | undefined
   getFocusedPaneSide: () => 'left' | 'right'
   getShowHiddenFiles: () => boolean
+  /**
+   * The pane-picking slice of the explorer, for a dialog outcome whose follow-up
+   * action navigates (the trash toast's "Go to trash"). Narrow on purpose: a
+   * dialog has no business driving the whole coordinator, and this is the subset
+   * `$lib/file-explorer/navigation/navigate-and-select` needs.
+   */
+  getExplorer: () => PaneRevealAPI | undefined
   onRefocus: () => void
   onOpenInEditor: (path: string) => void
 }

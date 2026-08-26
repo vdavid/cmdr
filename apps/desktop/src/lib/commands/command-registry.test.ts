@@ -92,6 +92,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'file.newFile',
   'file.delete',
   'file.deletePermanently',
+  'file.goToTrash',
   'file.showInFinder',
   'file.copyPath',
   'file.copyCurrentDirectoryPath',

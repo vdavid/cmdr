@@ -440,6 +440,14 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
+  "commands.fileGoToTrash.label": "Ir para o Lixo",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "Abra o Lixo do disco em que você está navegando",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "45df2c4"
+  },
   "commands.dialogConfirm.label": "Confirmar caixa de diálogo aberta",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"

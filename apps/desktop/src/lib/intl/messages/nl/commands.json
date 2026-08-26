@@ -442,6 +442,14 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
+  "commands.fileGoToTrash.label": "Ga naar prullenmand",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "Open de prullenmand van de schijf die je bekijkt",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "45df2c4"
+  },
   "commands.dialogConfirm.label": "Bevestig open dialoogvenster",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"

@@ -1061,3 +1061,23 @@ drifts the moment a fourth trigger appears.
   drive.
 
 Vocabulary and props: `src-tauri/src/analytics/DETAILS.md` § "Starter event set".
+
+## A dialog outcome that navigates
+
+`DialogStateDeps.getExplorer()` hands a dialog outcome the five-method `PaneRevealAPI`
+(`../navigation/navigate-and-select.ts`): `getFocusedPane`, `setFocusedPane`, `getPaneLocation`, `navigate`,
+`moveCursor`. That's everything the reveal primitives use and nothing else.
+
+`DualPaneExplorer` builds it from its OWN exports, so no handle travels back in from the route: the component already
+has the five functions as locals. `ExplorerAPI` satisfies the interface structurally, so the older call sites (⌘J, ⌘G,
+search-result reveal) keep passing the whole explorer unchanged.
+
+**Why narrow rather than pass `ExplorerAPI`.** The alternative was routing `explorerRef` back down as a prop from
+`+page.svelte`, which means handing a component its own handle. Narrowing the dependency instead keeps the direction of
+knowledge one-way, and a dialog gets no reach into tabs, volumes, quick-look, or the MCP surface it has no business
+touching.
+
+**Snapshot it at raise time.** The trash toast holds the handle for as long as it's on screen (the same shape as the
+downloads toast). The object is a snapshot; the methods inside it read live state, so a pane that moves under the toast
+still resolves correctly when the button is finally pressed. First consumer:
+`$lib/file-operations/delete/go-to-trash.ts`.

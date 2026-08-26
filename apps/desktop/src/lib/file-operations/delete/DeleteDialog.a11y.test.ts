@@ -1,14 +1,19 @@
 /**
- * Tier 3 a11y tests for `DeleteDialog.svelte`.
+ * Tier 3 a11y tests for this directory's two surfaces: `DeleteDialog.svelte` and
+ * the trash toast that follows it.
  *
- * Covers the dialog/alertdialog role switch (trash vs. permanent delete),
- * the no-trash warning banner, symlink notice, and the overflow state.
+ * The dialog block covers the dialog/alertdialog role switch (trash vs. permanent
+ * delete), the no-trash warning banner, symlink notice, and the overflow state.
  * All Tauri IPC used by the dialog is stubbed.
+ *
+ * Both live here rather than in a file each: `svelte-tests` charges per test FILE,
+ * not per test (`docs/testing.md` § "What a test actually costs").
  */
 
 import { describe, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import DeleteDialog from './DeleteDialog.svelte'
+import TrashCompleteToastContent from './TrashCompleteToastContent.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -131,6 +136,30 @@ describe('DeleteDialog a11y', () => {
         sourceVolumeId: 'root',
         onConfirm: () => {},
         onCancel: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y for `TrashCompleteToastContent.svelte`. The toast container owns the
+ * `role="status"` and the close button; what this component contributes is a
+ * sentence and two buttons, and both buttons have to be reachable and named.
+ */
+describe('TrashCompleteToastContent a11y', () => {
+  it('has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(TrashCompleteToastContent, {
+      target,
+      props: {
+        toastId: 'toast-1',
+        message: 'Moved 3 files to trash',
+        operationId: 'op-1',
+        sourceFolderPath: '/Users/test',
+        explorer: undefined,
       },
     })
     await tick()

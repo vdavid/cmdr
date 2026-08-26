@@ -28,6 +28,34 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
+  "fileOperations.trash.undoAction": "Visszavonás",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "Ugrás a Kukába",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "Az elemek visszahelyezése…",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "1be7766"
+  },
+  "fileOperations.trash.undone": "{countText} {count, plural, one {fájl} other {fájl}} visszahelyezve.",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "{restoredText} {restored, plural, one {fájl} other {fájl}} visszahelyezve; {skippedText} {skipped, plural, one {elem} other {elem}} a Kukában maradt.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "Nincs mit visszahelyezni. Lehet, hogy ezek az elemek már a helyükön vannak, vagy a meghajtójuk nincs csatlakoztatva.",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "2acefae"
+  },
+  "fileOperations.trash.noTrashHere": "Ezen a meghajtón nincs Kuka.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
   "fileOperations.delete.trashSwitch": "Áthelyezés a Kukába",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"

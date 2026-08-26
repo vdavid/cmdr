@@ -1506,3 +1506,31 @@ la regla es **citar al hermano antes que inventar la frase**.
   concuerda con `disco`, así que no hay género que exponer · high
 - Ningún valor lleva apóstrofo ni marcador `{}`, y los nueve difieren del inglés, así que no hace falta
   `sameAsSourceJustification`.
+
+## El aviso de la papelera: deshacer y devolver a su sitio (`fileOperations.trash.*`, `commands.fileGoToTrash.*`, 2026-08-27)
+
+Superficie nueva: después de mover elementos a la papelera aparece un aviso con dos botones ("Deshacer", "Ir a la
+papelera"), y el mismo comando está en la paleta de comandos.
+
+- **`undo` (botón) → `Deshacer`** · macOS AppKit MenuCommands ("Undo Smart Dash" → "Deshacer guion inteligente"), GNOME
+  Nautilus ("Undo" → "Deshacer") y el propio catálogo (`askCmdr.renameUndo.undo`) · high
+- **`put back` (devolver un elemento de la papelera a donde estaba) → `devolver … a su sitio`** · el catálogo ya usa
+  `devolver` para esto (`askCmdr.renameUndo.skipReason.failed.named`, "Cmdr no pudo devolverle su nombre anterior"), y
+  `a su sitio` es lo que aporta el "back where it was" del inglés · high. El Finder en español llama al comando "Sacar
+  de la papelera" (macOS `N153.1`), correcto para un rótulo de menú pero incómodo aquí: el aviso parcial ya nombra la
+  papelera en su segunda mitad y repetirla sonaría torpe. Nautilus dice "Restaurar … de la papelera"; `restaurar` está
+  reservado en el catálogo para deshacer un renombrado (`askCmdr.renameUndo.undone`), así que se mantiene la distinción
+  entre devolver un SITIO y restaurar un NOMBRE.
+- **`This drive doesn't keep a trash.` → `Esta unidad no tiene papelera.`** · dato sobre la unidad, sin veredicto, en la
+  línea de `fileOperations.delete.noTrashWarningStrong` ("Este volumen no admite papelera."). El inglés dice `drive`, y
+  `unidad` es lo que el catálogo usa para eso (`askCmdr.renameUndo.unavailable`, "su unidad no esté conectada") · high
+- **`Nothing to put back.` → `No hay nada que devolver.`** · el giro `no hay nada que + infinitivo` ya está asentado
+  (`askCmdr.renameUndo.unavailable`, "No hay nada que restaurar.") · high
+- **La segunda mitad trae su propio parámetro de cantidad (`{skipped}`)**, así que conjuga con normalidad: "… a su
+  sitio; {skippedText} {skipped, plural, one {elemento se quedó} many {elementos se quedaron} other {elementos se
+  quedaron}} en la papelera." El sustantivo contado es `elemento`, la palabra del catálogo para el `item` que dice la
+  fuente en esta mitad, no `archivo` como en la primera · high
+- **El botón del aviso y el nombre del comando son el mismo texto** ("Ir a la papelera"), igual que sus hermanos
+  `commands.navParent.label` ("Ir a la carpeta superior") y `commands.downloadsGoToLatest.label` ("Ir a la última
+  descarga").
+- Ningún valor necesita `sameAsSourceJustification`: los nueve difieren del inglés.

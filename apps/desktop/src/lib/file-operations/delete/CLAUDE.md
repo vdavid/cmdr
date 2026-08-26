@@ -12,35 +12,36 @@ Delete files permanently or move them to macOS Trash, with a confirmation dialog
   `dialog` for trash, `alertdialog` for permanent.
 - **delete-dialog-utils.ts** (+ test): pure utilities `generateDeleteTitle()`, `abbreviatePath()`, `getSymlinkNotice()`,
   `countSymlinks()`.
+- **TrashCompleteToastContent.svelte** + **trash-undo.ts** (journal rollback, worded) + **go-to-trash.ts** (the toast
+  button and the `file.goToTrash` command).
 
 ## Must-knows
 
-- **F8/Shift+F8 just set the initial mode; the user can flip it in-dialog.** F8 preselects trash, Shift+F8 preselects
-  permanent. `file.delete` / `file.deletePermanently` commands; `DualPaneExplorer.openDeleteDialog({ permanent })`
-  builds props from selection or cursor and looks up `supportsTrash` from the source `VolumeInfo`.
+- **F8/Shift+F8 only set the INITIAL mode; the user flips it in-dialog.**
+  `DualPaneExplorer.openDeleteDialog({ permanent })` builds props from selection or cursor and reads `supportsTrash` off
+  the source `VolumeInfo`.
 - **Holding Shift over an F8 dialog upgrades it to permanent until release; Shift NEVER demotes**, and a Shift+F8 dialog
   ignores the hold. Keep `blur` clearing the hold, or a window switch strands the dialog on "Delete permanently". ❌
   Keep the `keydown`/`keyup` listeners in the CAPTURE phase: `ModalDialog`'s overlay stops keydown, so a bubble-phase
   `window` listener never sees the hold. DETAILS § Shift-hold upgrade.
 - **`data-scan-state` on `.scan-stats`** (`counting` | `done`) is the only "counting done" signal; there's no completion
   checkmark. Mirrors `TransferDialog`'s marker, which E2E polls.
-- **`DeleteDialog` must forward `sourceVolumeId` into `startScanPreview`.** Without it, an MTP delete runs
-  `walk_dir_recursive` on `/DCIM/Camera`, hits path-not-found, and silently leaves the dialog stuck at "0 files".
-  Non-local volumes (MTP, SMB) must route through `run_volume_scan_preview`, not the local-FS walker.
+- **`DeleteDialog` must forward `sourceVolumeId` into `startScanPreview`**, or a non-local volume (MTP, SMB) runs the
+  local-FS walker, hits path-not-found, and leaves the dialog stuck at "0 files".
 - **`supportsTrash` drives the mode.** Each volume exposes it from `fsType` (statfs): APFS/HFS+ yes; FAT32, exFAT,
   smbfs, nfs, afpfs, webdav no. When false, the dialog forces permanent mode with a warning banner.
-- **Confirm AWAITS the `startScanPreview` IPC**, so `onConfirm` never dispatches a null `previewId`. A null id gives the
-  operation nothing to claim, so it re-walks the tree concurrently with the preview `startScan` already began, and that
-  orphan has no owner and nothing to cancel it (teardown's cleanup is gated on `!confirmed`). The IPC only mints an id
-  and spawns the walk, so it answers promptly even on a wedged share. `TransferDialog` awaits its own `scanStarted` for
-  the same three reasons.
-- **A permanent delete then waits for the WALK, in the backend, not here** (`scan_bridge::await_claimed_preview`), and
-  consumes the cached result rather than re-walking. **Trash is the one operation that doesn't wait**: `trashItemAtURL`
-  is atomic per top-level item, so it consumes nothing and `trash_files_start` frees the preview outright rather than
-  leaving an ownerless walk running. Scan events still carry index-derived `expectedFilesTotal`/`expectedBytesTotal`,
-  but the FE no longer renders a progress bar from them (it read as "already deleting" during scan).
-- **No undo, no `confirmBeforeDelete` setting.** Delete is destructive so the dialog always shows; both delete settings
-  were removed from the registry. Items trashed via `NSFileManager.trashItemAtURL` support Finder's "Put back".
+- **Confirm AWAITS the `startScanPreview` IPC**, so `onConfirm` never dispatches a null `previewId`: a null id leaves an
+  ownerless concurrent walk nothing can cancel. `TransferDialog` awaits its own `scanStarted` for the same reasons.
+  DETAILS § Scan-preview detail.
+- **A permanent delete waits for the WALK in the BACKEND** (`scan_bridge::await_claimed_preview`), consuming the cached
+  result. **Trash is the one operation that doesn't wait**: `trashItemAtURL` is atomic per top-level item, so
+  `trash_files_start` frees the preview outright. The FE renders no bar from the scan's expected totals (it read as
+  "already deleting"). DETAILS § Scan-preview detail.
+- **A trash is undoable, a delete never is.** Its toast carries Undo and "Go to trash", both needing the journaled op id
+  (no id → plain sentence). ❌ Never add a permanent delete there: it shows after EVERY trash, one misclick from the one
+  op no rollback reverses. No `confirmBeforeDelete` setting; the dialog always shows.
+- **The trash is PER VOLUME** (`get_trash_dir`), and revealing a trashed dotfile with hidden files off THROWS in
+  `moveCursor`. Keep that guarded. DETAILS § Undo and go-to-trash.
 - **`TransferProgressDialog` is shared** (`operationType: 'delete' | 'trash'`); transfer-only props (`destinationPath`,
   `direction`, `conflictResolution`) are optional and hidden. Progress dialog stays visible ≥400 ms to avoid flashes.
 - **After delete, the cursor keeps its row**, falling back to the same position index (clamped) when that row is the one

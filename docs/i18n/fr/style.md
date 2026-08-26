@@ -125,6 +125,11 @@ Straightforward (sources agree, `high`):
 - command line → ligne de commande · Double Commander ("Ajouter le nom du fichier dans la ligne de commande") · high
 - share (network) → partage (noun) / partager (verb) · macOS Finder ("Partage et permissions :", "Partager…", "Partagé
   par") · high
+- undo → annuler · macOS AppKit MenuCommands ("Undo Smart Dash" → "Annuler Tirets intelligents"), GNOME Nautilus
+  ("Undo" → "Annuler") · high. French renders both `Undo` and `Cancel` as "Annuler"; macOS lives with the same
+  ambiguity, so keep it. "Remettre" (Finder's "Put Back") is the sourced fallback if a surface ever needs the two apart.
+- put back (an item from the trash, to where it was) → remettre en place · macOS Finder ("Put Back" → "Remettre") ·
+  high. Not `restaurer`, which the catalog spends on undoing a RENAME (`askCmdr.renameUndo.*`).
 
 Contested or sense-specific (read the block):
 
@@ -197,6 +202,13 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   participle. Move the whole sentence into each branch. The parity check compares only the placeholder SET
   (`apps/desktop/scripts/i18n-check-parity.ts`), so this is safe, not a structure break. See
   `fileOperations.transferProgress.stallInFlight`.
+- **A counted tail with NO plural param has nothing to agree with.** A message that passes only the formatted
+  `{somethingText}` for a second count gives you no integer to select on. English gets away with it ("stayed" fits 1 and
+  12); French doesn't. The fallback is to drop the finite verb and let the first half's noun carry the clause : « 12
+  fichiers remis en place ; 3 toujours dans la corbeille. » Ask for an integer partner instead where you can :
+  `fileOperations.trash.undonePartial` gained a `{skipped}` driver for exactly this reason, so its second half now
+  accords normally : « … ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other
+  {éléments sont restés}} dans la corbeille. »
 - Write `many` identical to `other` unless the message really formats compact/large values: plain integers never select
   `many`, but parity and the plural check both want the branch. This is what the whole `fr` set does.
 

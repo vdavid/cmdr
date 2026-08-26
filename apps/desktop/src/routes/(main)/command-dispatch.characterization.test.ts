@@ -42,6 +42,7 @@ const m = vi.hoisted(() => ({
   openFeedbackDialog: vi.fn<() => void>(),
   runMenuTriggeredCheck: vi.fn(() => Promise.resolve()),
   goToLatestDownload: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
+  goToTrash: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   openExternalUrl: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   showInFinder: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   copyToClipboard: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
@@ -73,6 +74,7 @@ const {
   openFeedbackDialog,
   runMenuTriggeredCheck,
   goToLatestDownload,
+  goToTrash,
   openExternalUrl,
   showInFinder,
   copyToClipboard,
@@ -155,6 +157,10 @@ vi.mock('$lib/downloads/go-to-latest', () => ({
   goToLatestDownload: (...args: unknown[]) => m.goToLatestDownload(...args),
 }))
 
+vi.mock('$lib/file-operations/delete/go-to-trash', () => ({
+  goToTrash: (...args: unknown[]) => m.goToTrash(...args),
+}))
+
 // The whole `$lib/tauri-commands` barrel the arms call.
 vi.mock('$lib/tauri-commands', () => ({
   // Pulled in transitively via the Ask Cmdr toggle handler → explorer-state module init.
@@ -211,8 +217,8 @@ describe('characterization — id partition self-check', () => {
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
-  it('dispatchable set is exactly 109 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(109)
+  it('dispatchable set is exactly 110 ids', () => {
+    expect(DISPATCHABLE_IDS).toHaveLength(110)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {
@@ -256,6 +262,13 @@ describe('characterization — module-delegate arms', () => {
     const ctx = makeCtx(explorer)
     await handleCommandExecute('downloads.goToLatest', ctx)
     expect(goToLatestDownload).toHaveBeenCalledExactlyOnceWith(ctx.getExplorer())
+  })
+
+  it('file.goToTrash → goToTrash(explorerRef)', async () => {
+    const explorer = makeExplorerSpy()
+    const ctx = makeCtx(explorer)
+    await handleCommandExecute('file.goToTrash', ctx)
+    expect(goToTrash).toHaveBeenCalledExactlyOnceWith(ctx.getExplorer())
   })
 
   it('about.openWebsite → openExternalUrl with the exact URL', async () => {

@@ -27,6 +27,7 @@ import {
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
+import TrashCompleteToastContent from '$lib/file-operations/delete/TrashCompleteToastContent.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
 import { pathInsideArchive } from './volume-capabilities'
@@ -445,7 +446,32 @@ export function createDialogState(deps: DialogStateDeps) {
       // Bump the timeout for the long mixed/all-skipped sentences (default 4s reads as
       // a flicker for users still parsing the second clause). 7s comfortably covers the
       // longest variant without staying around long enough to nag.
-      addToast(toastMessage, { level: allSkipped ? 'info' : 'success', timeoutMs: 7000 })
+      //
+      // A trash gets the same sentence with Undo and "Go to trash" beside it, and a
+      // longer beat to reach them (hovering pauses the timer, so this is only the
+      // window in which the pointer has to arrive). Both actions need the journaled
+      // operation, so a trash that somehow has no id falls back to the plain toast
+      // rather than offering buttons that would do nothing.
+      if (op === 'trash' && settledOperationId) {
+        addToast(TrashCompleteToastContent, {
+          // Same honesty as the plain toast below: nothing actually moved is a
+          // neutral outcome, not a success, whatever the buttons beside it offer.
+          level: allSkipped ? 'info' : 'success',
+          timeoutMs: 10000,
+          props: {
+            message: toastMessage,
+            operationId: settledOperationId,
+            // Only used when the journal recorded no in-trash location, to pick
+            // WHICH volume's trash to open. The focused pane is the honest
+            // stand-in for a birth context that went missing: it's the pane the
+            // trash was started from.
+            sourceFolderPath: props?.sourceFolderPath ?? deps.getFocusedPaneRef()?.getCurrentPath() ?? '',
+            explorer: deps.getExplorer(),
+          },
+        })
+      } else {
+        addToast(toastMessage, { level: allSkipped ? 'info' : 'success', timeoutMs: 7000 })
+      }
 
       paneEffects.refreshPanesAfterTransfer()
       paneEffects.clearSourcePaneAfterTransfer()

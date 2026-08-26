@@ -53,3 +53,17 @@ export async function moveToTrash(path: string): Promise<void> {
   const res = await commands.moveToTrash(path)
   if (res.status === 'error') throwMutationError(res.error)
 }
+
+/**
+ * Which trash directory holds items trashed from `path`'s volume (macOS keeps one
+ * per volume). `null` means that volume has no trash to go to, which is an answer,
+ * not a refusal: a volume nobody has trashed to yet, or one with no trash at all.
+ *
+ * `path` need not still exist — the resolver climbs to a live ancestor on the same
+ * volume, which is what makes it usable on an item that was just trashed away.
+ */
+export async function getTrashDir(path: string): Promise<string | null> {
+  const res = await commands.getTrashDir(path)
+  if (res.status === 'error') throwMutationError(res.error)
+  return res.data
+}

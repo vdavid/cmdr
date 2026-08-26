@@ -72,6 +72,10 @@ Straightforward (sources agree, `high`):
 - directory → Verzeichnis · MS terminology (DEU/AUT/CHE); technical sense only, prefer Ordner for the UI · high
 - drive → Laufwerk · MS terminology (DEU/AUT/CHE) · high
 - trash → Papierkorb · macOS Finder (consistent), same on Windows · high
+- undo → widerrufen · macOS AppKit MenuCommands ("Undo Smart Dash" → "Intelligenten Bindestrich widerrufen"); NOT
+  Nautilus' "Rückgängig" (Tier 3) · high
+- put back (an item from the trash, to where it was) → zurücklegen · macOS Finder ("Put Back" → "Zurücklegen") · high.
+  Keep it apart from `zurücksetzen`, which the catalog spends on undoing a RENAME (`askCmdr.renameUndo.*`).
 - delete → löschen · macOS ("Delete"→"Löschen", "Erase"→"Löschen") · high
 - copy → kopieren · macOS ("Copy"→"Kopieren") · high
 - rename → umbenennen · macOS Finder ("Umbenennen …") · high
@@ -154,6 +158,13 @@ Dateien".
   sentence reads with `ist` AND with `sind`: "1 Datei ist noch geöffnet und möglicherweise schon teilweise geschrieben."
   / "5 Dateien sind noch geöffnet und …" (`transferProgress.stallInFlight`). If a shared tail can't agree with both,
   move it inside the branches rather than bending the grammar.
+- **A counted tail with NO plural param has nothing to agree with.** A message that passes only the formatted
+  `{somethingText}` for a second count gives you no integer to select on. English gets away with it ("stayed" fits 1 and
+  12); German doesn't. The fallback is to drop the finite verb and let the first half's noun carry the clause ("12
+  Dateien zurückgelegt; 3 noch im Papierkorb."). Ask for an integer partner instead where you can:
+  `fileOperations.trash.undonePartial` gained a `{skipped}` driver for exactly this reason, so its second half is now a
+  normal plural with a real verb ("… zurückgelegt; {skippedText} {skipped, plural, one {Objekt blieb} other {Objekte
+  blieben}} im Papierkorb.").
 
 ## Notes and decisions
 

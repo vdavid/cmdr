@@ -55,6 +55,8 @@ function makeState() {
     getFocusedPaneRef: () => paneRef,
     getFocusedPaneSide: () => 'right',
     getShowHiddenFiles: () => false,
+    // No pane navigation in these suites; the trash toast is the only consumer.
+    getExplorer: () => undefined,
     onRefocus,
     onOpenInEditor: vi.fn(),
   })

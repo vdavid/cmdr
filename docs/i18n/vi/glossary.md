@@ -1579,3 +1579,30 @@ sau đợt trên; chúng viết `chọn Get Info, và xem mục Sharing & Permis
   viết.
 - **`phần`, không phải `mục`** · Apple dùng `phần` cho đúng chỗ này trong đúng câu này (`N30`/`N32`/`NE43`); `mục` là từ
   catalog dùng cho một hạng mục trong danh sách · high.
+
+## Toast thùng rác: hoàn tác và đi tới thùng rác (2026-08-27; `fileOperations.trash.*` + `commands.fileGoToTrash.*`)
+
+Toast hiện ngay sau khi tệp được chuyển vào thùng rác, với hai nút `Hoàn tác` và `Đi tới thùng rác`, cùng lệnh cùng tên
+trong bảng lệnh. Dùng lại `thùng rác`, `ổ đĩa`, `tệp`, `mục`. Các quyết định mới:
+
+- **put back (đưa ra khỏi thùng rác, về chỗ cũ) → `đưa trở lại`** · macOS Finder `vi` Tier 1: `N153.1` (`Put Back` →
+  "Đưa trở lại"), và cả câu `PE130_V1`/`PE130_V2` ("Không thể đưa trở lại “^1”", "Không thể đưa trở lại ^0 mục"), kiểm
+  chứng trong pile 2026-08-27 · `high`. Đây đúng là mục menu của chính Finder cho cùng thao tác, nên Tier 1 thắng. ❌
+  Không dùng `đặt lại`: catalog đã dành từ đó cho việc trả lại TÊN cũ (`askCmdr.renameUndo.*`), còn ở đây tệp thật sự di
+  chuyển về chỗ cũ. ❌ Không dùng `khôi phục`/`lấy lại` của Nautilus `vi`: đó là "Restore", một khái niệm rộng hơn, và
+  Nautilus là Tier 3.
+- **undo (nút trên toast) → `Hoàn tác`** · macOS `vi` `ME13`/AppKit (`Undo` → "Hoàn tác"), và catalog đã có
+  `askCmdr.renameUndo.undo` = `Hoàn tác` · `high`. Không đụng với `Hủy` (Cancel).
+- **go to trash → `Đi tới thùng rác`** · họ `Đi tới` của catalog (`commands.navGoToPath.label`,
+  `commands.downloadsGoToLatest.label`) và macOS `vi` "Đi tới thư mục chính" (`TL_HELP_HOME`) · `high`. ⚠️ 16 ký tự so
+  với 11 của tiếng Anh; toast hẹp nên hãy kiểm tra tràn chữ cho cặp `Hoàn tác` / `Đi tới thùng rác`.
+- **"stayed in the trash" → `{skippedText} {skipped, plural, other {mục}} vẫn ở trong thùng rác`** · `mục` là từ đếm
+  macOS `vi` dùng cho item ("^0 mục", `PE130_V2`); `vẫn` là từ catalog đã dùng cho trạng thái còn nguyên · `high`.
+  `{skipped}` là số nguyên đi kèm `{skippedText}`, nhưng tiếng Việt không biến đổi theo số nên chỉ cần một nhánh
+  `other`.
+- **"the drive you're browsing" → `ổ đĩa bạn đang duyệt`** · `askCmdr.empty.hint` của catalog ("những gì bạn đang
+  duyệt") · `high`.
+- **"This drive doesn't keep a trash." → `Ổ đĩa này không có thùng rác.`** · cùng khung với câu chị em
+  `fileOperations.delete.archiveWarningStrong` ("Không có thùng rác bên trong tệp nén.") · `high`. Là một câu nói về ổ
+  đĩa, không phải lời trách người dùng.
+- Cả chín giá trị đều khác tiếng Anh, nên không cần `sameAsSourceJustification`.
