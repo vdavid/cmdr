@@ -424,7 +424,7 @@ func formatInvariantRegressions(regressions []invariantRegression, report invari
 		}
 	}
 	sb.WriteString("\nEach ❌ is an invariant the type system could hold instead. Encode it, delete a stale one, " +
-		"or get David's OK to raise the number (`.claude/rules/file-length-allowlist.md`).")
+		"or bump the number.")
 	return sb.String()
 }
 

@@ -6,6 +6,7 @@
     "apps/desktop/src-tauri/src/file_viewer/CLAUDE.md": 610,
     "apps/desktop/src/lib/file-explorer/drag/CLAUDE.md": 608,
     "apps/desktop/src/lib/file-explorer/navigation/CLAUDE.md": 618,
-    "apps/desktop/test/e2e-playwright/CLAUDE.md": 623
+    "apps/desktop/test/e2e-playwright/CLAUDE.md": 623,
+    "crates/cmdr-smb/CLAUDE.md": 642
   }
 }
