@@ -25,10 +25,18 @@ pub(crate) fn resolved_format_locale() -> Option<String> {
     use objc2_foundation::NSLocale;
 
     let locale = NSLocale::autoupdatingCurrentLocale();
+    // `countryCode` and ❌ never the better-named `regionCode`: that one is
+    // macOS 14+, and calling it on 12 or 13 raises an unrecognized-selector
+    // exception that unwinds out of an `extern "C"` frame and aborts the
+    // process. Both read the same value, `rg` override included (`en_US@rg=sezzzz`
+    // answers `SE` to either; macOS 26.5.2, Foundation via Swift, 2026-08-26),
+    // and Foundation's own header names `regionCode` as this one's replacement.
+    #[allow(deprecated, reason = "`regionCode`, the replacement, is macOS 14+ and we ship 12+")]
+    let region = locale.countryCode();
     compose_format_locale(
         &locale.languageCode().to_string(),
         locale.scriptCode().map(|script| script.to_string()).as_deref(),
-        locale.regionCode().map(|region| region.to_string()).as_deref()?,
+        region.map(|region| region.to_string()).as_deref()?,
     )
 }
 

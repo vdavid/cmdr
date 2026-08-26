@@ -109,11 +109,17 @@ help (`en-US-u-rg-sezzzz` resolves straight to `en-US`); naming the region as a 
 reproduces Foundation exactly. The full measurement and its evidence anchor live once, in
 `apps/desktop/src/lib/intl/DETAILS.md`.
 
-The three parts come from `NSLocale::autoupdatingCurrentLocale`, whose `regionCode` is documented to return the `rg`
-subtag's value when there is one (`SE` here, not `US`), and which this machine confirms (`languageCode` `en`,
-`regionCode` `SE`, `scriptCode` nil; macOS 26.5.2, 2026-08-19). The AUTOUPDATING locale rather than `currentLocale`:
-this is read from a live-change path, and the autoupdating one is the locale Foundation documents as tracking the
-user's preferences, so there's no question of a cached snapshot outliving the change that triggered the read.
+The three parts come from `NSLocale::autoupdatingCurrentLocale`, whose `countryCode` returns the `rg` subtag's value
+when there is one (`SE` here, not `US`), which this machine confirms (`languageCode` `en`, `countryCode` `SE`,
+`scriptCode` nil; macOS 26.5.2, 2026-08-19). `countryCode` rather than `regionCode`, the better-named property
+Foundation's header calls its replacement: that one is `API_AVAILABLE(macosx(14.0))`, and Cmdr ships
+`minimumSystemVersion: 12.0`, so on 12 or 13 the selector doesn't exist. It raised an unrecognized-selector exception
+inside the Tauri setup hook, which runs on the main thread inside tao's `extern "C"` `did_finish_launching`, so the
+exception unwound out of a `nounwind` frame and aborted the process before a window ever opened (every macOS 12/13
+launch, v0.39.0 and v0.40.0, GitHub issue #54). The two answer identically, `rg` override included (`en_US@rg=sezzzz`
+answers `SE` to both; macOS 26.5.2, Foundation via Swift, 2026-08-26). The AUTOUPDATING locale rather than `currentLocale`: this is read
+from a live-change path, and the autoupdating one is the locale Foundation documents as tracking the user's
+preferences, so there's no question of a cached snapshot outliving the change that triggered the read.
 
 The script rides along only when Foundation names one, which is exactly when dropping it would change the answer
 (`zh-Hans` and `zh-Hant` format dates differently). It's nil for every locale whose script its language implies, so the
