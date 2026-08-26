@@ -21,32 +21,34 @@ interface ConfigureOutcome {
   secretStoreError: unknown
 }
 
-const saveAiApiKey = vi.fn<(id: string, key: string) => Promise<null>>(() => Promise.resolve(null))
+const saveAiApiKey = vi.fn<(payload: { providerId: string; apiKey: string }) => Promise<null>>(() =>
+  Promise.resolve(null),
+)
 const getAiApiKeyStatus = vi.fn<(id: string) => Promise<KeyStatus>>(() =>
   Promise.resolve({ isSet: false, fingerprint: '' }),
 )
 const configureAi = vi.fn<
-  (
-    provider: string,
-    contextSize: number,
-    cloudProviderId: string,
-    baseUrl: string,
-    model: string,
-    requiresApiKey: boolean,
-  ) => Promise<ConfigureOutcome>
+  (payload: {
+    provider: string
+    contextSize: number
+    cloudProviderId: string
+    cloudBaseUrl: string
+    cloudModel: string
+    cloudRequiresApiKey: boolean
+  }) => Promise<ConfigureOutcome>
 >(() => Promise.resolve({ secretStoreError: null }))
 
 vi.mock('$lib/tauri-commands', () => ({
-  saveAiApiKey: (id: string, key: string) => saveAiApiKey(id, key),
+  saveAiApiKey: (providerId: string, apiKey: string) => saveAiApiKey({ providerId, apiKey }),
   getAiApiKeyStatus: (id: string) => getAiApiKeyStatus(id),
   configureAi: (
     provider: string,
     contextSize: number,
     cloudProviderId: string,
-    baseUrl: string,
-    model: string,
-    requiresApiKey: boolean,
-  ) => configureAi(provider, contextSize, cloudProviderId, baseUrl, model, requiresApiKey),
+    cloudBaseUrl: string,
+    cloudModel: string,
+    cloudRequiresApiKey: boolean,
+  ) => configureAi({ provider, contextSize, cloudProviderId, cloudBaseUrl, cloudModel, cloudRequiresApiKey }),
 }))
 
 const settingsMap: Record<string, string> = {}
@@ -137,7 +139,7 @@ describe('migrateApiKeysFromSettings', () => {
       openai: { apiKey: 'sk-legacy', model: 'gpt-4o' },
     })
     await migrateApiKeysFromSettings()
-    expect(saveAiApiKey).toHaveBeenCalledWith('openai', 'sk-legacy')
+    expect(saveAiApiKey).toHaveBeenCalledWith({ providerId: 'openai', apiKey: 'sk-legacy' })
     const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Record<string, unknown>
     const openai = updated.openai as Record<string, unknown>
     expect(openai.apiKey).toBeUndefined()
@@ -151,8 +153,8 @@ describe('migrateApiKeysFromSettings', () => {
       anthropic: { apiKey: 'sk-ant', model: 'claude' },
     })
     await migrateApiKeysFromSettings()
-    expect(saveAiApiKey).toHaveBeenCalledWith('openai', 'sk-one')
-    expect(saveAiApiKey).toHaveBeenCalledWith('anthropic', 'sk-ant')
+    expect(saveAiApiKey).toHaveBeenCalledWith({ providerId: 'openai', apiKey: 'sk-one' })
+    expect(saveAiApiKey).toHaveBeenCalledWith({ providerId: 'anthropic', apiKey: 'sk-ant' })
   })
 
   it('keeps the legacy entry in settings.json when the secret store rejects the save', async () => {
@@ -167,8 +169,8 @@ describe('migrateApiKeysFromSettings', () => {
   })
 
   it('migrates other providers even when one fails', async () => {
-    saveAiApiKey.mockImplementation((id: string) => {
-      if (id === 'openai') return Promise.reject(new Error('keyring locked'))
+    saveAiApiKey.mockImplementation(({ providerId }) => {
+      if (providerId === 'openai') return Promise.reject(new Error('keyring locked'))
       return Promise.resolve(null)
     })
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({
@@ -224,7 +226,7 @@ describe('migrateApiKeysFromSettings', () => {
 
     await migrateApiKeysFromSettings()
 
-    expect(saveAiApiKey).toHaveBeenCalledWith('openai', 'sk-legacy-123')
+    expect(saveAiApiKey).toHaveBeenCalledWith({ providerId: 'openai', apiKey: 'sk-legacy-123' })
     expect(rawStoreMap['ai.openaiApiKey']).toBeUndefined()
     expect(rawStoreMap['ai.openaiBaseUrl']).toBeUndefined()
     expect(rawStoreMap['ai.openaiModel']).toBeUndefined()
@@ -264,14 +266,14 @@ describe('pushConfigToBackend', () => {
 
     // The backend reads the key from the OS secret store itself; this window never sees it.
     // OpenAI requires a key, so requiresApiKey is true.
-    expect(configureAi).toHaveBeenCalledWith(
-      'cloud',
-      32768,
-      'openai',
-      expect.stringContaining('openai.com'),
-      'gpt-4o',
-      true,
-    )
+    expect(configureAi).toHaveBeenCalledWith({
+      provider: 'cloud',
+      contextSize: 32768,
+      cloudProviderId: 'openai',
+      cloudBaseUrl: expect.stringContaining('openai.com'),
+      cloudModel: 'gpt-4o',
+      cloudRequiresApiKey: true,
+    })
   })
 
   it('passes requiresApiKey=false for a keyless local endpoint (Ollama)', async () => {
@@ -282,14 +284,14 @@ describe('pushConfigToBackend', () => {
 
     await pushConfigToBackend()
 
-    expect(configureAi).toHaveBeenCalledWith(
-      'cloud',
-      32768,
-      'ollama',
-      expect.stringContaining('localhost'),
-      'llama3.2',
-      false,
-    )
+    expect(configureAi).toHaveBeenCalledWith({
+      provider: 'cloud',
+      contextSize: 32768,
+      cloudProviderId: 'ollama',
+      cloudBaseUrl: expect.stringContaining('localhost'),
+      cloudModel: 'llama3.2',
+      cloudRequiresApiKey: false,
+    })
   })
 
   it('surfaces a persistent toast when the backend reports a secret-store read failure', async () => {
@@ -338,7 +340,14 @@ describe('pushConfigToBackend', () => {
 
     await pushConfigToBackend()
 
-    expect(configureAi).toHaveBeenCalledWith('local', 16384, '', expect.any(String), expect.any(String), false)
+    expect(configureAi).toHaveBeenCalledWith({
+      provider: 'local',
+      contextSize: 16384,
+      cloudProviderId: '',
+      cloudBaseUrl: expect.any(String),
+      cloudModel: expect.any(String),
+      cloudRequiresApiKey: false,
+    })
   })
 
   it('never reaches for a command that reads the key back', async () => {

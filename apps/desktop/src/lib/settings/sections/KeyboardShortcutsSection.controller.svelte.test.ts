@@ -16,22 +16,26 @@ let macOS = true
 const effectiveShortcuts = new Map<string, string[]>()
 const modifiedIds = new Set<string>()
 
-const setShortcut = vi.fn<(id: string, index: number, combo: string) => void>()
-const addShortcut = vi.fn<(id: string, combo: string) => void>()
+const setShortcut = vi.fn<(payload: { commandId: string; index: number; shortcut: string }) => void>()
+const addShortcut = vi.fn<(payload: { commandId: string; shortcut: string }) => void>()
 const removeShortcut = vi.fn<(id: string, index: number) => void>()
 const resetShortcut = vi.fn<(id: string) => void>()
 const resetAllShortcuts = vi.fn(() => Promise.resolve())
-const findConflictsForShortcut = vi.fn<(combo: string, scope: string, id: string) => unknown[]>(() => [])
-const confirmDialog = vi.fn<(message: string, title: string) => Promise<boolean>>(() => Promise.resolve(false))
+const findConflictsForShortcut = vi.fn<
+  (payload: { shortcut: string; scope: string; excludeCommandId: string }) => unknown[]
+>(() => [])
+const confirmDialog = vi.fn<(payload: { message: string; title: string }) => Promise<boolean>>(() =>
+  Promise.resolve(false),
+)
 
 vi.mock('$lib/shortcuts', () => ({
   getEffectiveShortcuts: (id: string) => effectiveShortcuts.get(id) ?? [],
   isShortcutModified: (id: string) => modifiedIds.has(id),
-  setShortcut: (...a: [string, number, string]) => {
-    setShortcut(...a)
+  setShortcut: (commandId: string, index: number, shortcut: string) => {
+    setShortcut({ commandId, index, shortcut })
   },
-  addShortcut: (...a: [string, string]) => {
-    addShortcut(...a)
+  addShortcut: (commandId: string, shortcut: string) => {
+    addShortcut({ commandId, shortcut })
   },
   removeShortcut: (...a: [string, number]) => {
     removeShortcut(...a)
@@ -51,7 +55,8 @@ vi.mock('$lib/shortcuts', () => ({
     if (e.shiftKey) s += '⇧'
     return s + e.key
   },
-  findConflictsForShortcut: (...a: [string, string, string]) => findConflictsForShortcut(...a),
+  findConflictsForShortcut: (shortcut: string, scope: string, excludeCommandId: string) =>
+    findConflictsForShortcut({ shortcut, scope, excludeCommandId }),
   getConflictingCommandIds: () => new Set<string>(),
   getConflictCount: () => 0,
 }))
@@ -74,7 +79,7 @@ vi.mock('$lib/commands/fuzzy-search', () => ({
 }))
 
 vi.mock('$lib/utils/confirm-dialog', () => ({
-  confirmDialog: (...a: [string, string]) => confirmDialog(...a),
+  confirmDialog: (message: string, title: string) => confirmDialog({ message, title }),
 }))
 
 import { createKeyboardShortcutsController } from './KeyboardShortcutsSection.controller.svelte'
@@ -240,7 +245,7 @@ describe('capture + conflict engine', () => {
     c.handleKeyDown(keyEvent({ key: 'X', metaKey: true }))
     expect(c.pendingKey).toBe('⌘X')
     vi.advanceTimersByTime(500)
-    expect(setShortcut).toHaveBeenCalledWith('file.copy', 0, '⌘X')
+    expect(setShortcut).toHaveBeenCalledWith({ commandId: 'file.copy', index: 0, shortcut: '⌘X' })
     vi.useRealTimers()
   })
 
@@ -257,7 +262,7 @@ describe('capture + conflict engine', () => {
     c.handleRemoveFromOther()
     // Removes the combo from the other command, then saves ours.
     expect(removeShortcut).toHaveBeenCalledWith('app.about', 0)
-    expect(setShortcut).toHaveBeenCalledWith('file.copy', 0, '⌘X')
+    expect(setShortcut).toHaveBeenCalledWith({ commandId: 'file.copy', index: 0, shortcut: '⌘X' })
   })
 
   it('handleAddShortcut targets one-past-the-end and never writes a placeholder', () => {

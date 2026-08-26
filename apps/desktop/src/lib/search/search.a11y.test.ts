@@ -29,13 +29,17 @@ import type { CoverageNote as Note } from './coverage-note'
 import type { MediaIndexVolumeState, OcrHit, SimilarImage } from '$lib/ipc/bindings'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-const searchOcr = vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<OcrHit[]>>()
+const searchOcr =
+  vi.fn<(payload: { volumeId: string; query: string; limit: number | null }) => Promise<OcrHit[]>>()
 const searchSemantic =
-  vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<{ path: string; score: number }[]>>()
+  vi.fn<
+    (payload: { volumeId: string; query: string; limit: number | null }) => Promise<{ path: string; score: number }[]>
+  >()
 const volumeState = vi.fn<(volumeId: string) => Promise<MediaIndexVolumeState>>()
 const thumbnailToken = vi.fn<(path: string) => Promise<string | null>>()
 const dropTokens = vi.fn<(tokens: string[]) => Promise<void>>()
-const findSimilar = vi.fn<(volumeId: string, sourcePath: string, limit: number | null) => Promise<SimilarImage[]>>()
+const findSimilar =
+  vi.fn<(payload: { volumeId: string; sourcePath: string; limit: number | null }) => Promise<SimilarImage[]>>()
 
 // What `getSetting` answers. `null` means "use the real export", which is what the
 // blocks that never stubbed settings saw. The two blocks that did install theirs in
@@ -47,12 +51,15 @@ let settingsStub: ((key: string) => unknown) | null = null
 // spread first so a call outside the union behaves as it does un-merged.
 vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  mediaIndexSearchOcr: (v: string, q: string, l: number | null) => searchOcr(v, q, l),
-  mediaIndexSearchSemantic: (v: string, q: string, l: number | null) => searchSemantic(v, q, l),
+  mediaIndexSearchOcr: (volumeId: string, query: string, limit: number | null) =>
+    searchOcr({ volumeId, query, limit }),
+  mediaIndexSearchSemantic: (volumeId: string, query: string, limit: number | null) =>
+    searchSemantic({ volumeId, query, limit }),
   mediaIndexVolumeState: (v: string) => volumeState(v),
   mediaIndexThumbnailToken: (p: string) => thumbnailToken(p),
   mediaIndexDropThumbnailTokens: (t: string[]) => dropTokens(t),
-  mediaIndexFindSimilar: (v: string, s: string, l: number | null) => findSimilar(v, s, l),
+  mediaIndexFindSimilar: (volumeId: string, sourcePath: string, limit: number | null) =>
+    findSimilar({ volumeId, sourcePath, limit }),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   prepareSearchIndex: vi.fn(() => Promise.resolve({ ready: true, entryCount: 1234 })),
@@ -291,7 +298,7 @@ describe('ImageSearchResults a11y', () => {
       expect(target.querySelector('.ir-title-similar')).not.toBeNull()
     })
     // The command keys on the STORED (index-relative == absolute for local) path, capped at 48.
-    expect(findSimilar).toHaveBeenCalledWith('root', '/photos/receipt.png', 48)
+    expect(findSimilar).toHaveBeenCalledWith({ volumeId: 'root', sourcePath: '/photos/receipt.png', limit: 48 })
     expect(target.querySelectorAll('.ir-tile').length).toBe(2)
     await expectNoA11yViolations(target)
 

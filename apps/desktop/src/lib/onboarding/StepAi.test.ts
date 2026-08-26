@@ -37,17 +37,19 @@ const checkFullDiskAccess = vi.fn<() => Promise<boolean>>(() => Promise.resolve(
 const startAiDownload = vi.fn<() => Promise<void>>(() => Promise.resolve())
 const cancelAiDownload = vi.fn<() => Promise<void>>(() => Promise.resolve())
 const checkAiConnection = vi.fn<
-  (
-    baseUrl: string,
-    apiKey: string,
-  ) => Promise<{
+  (payload: {
+    baseUrl: string
+    providerId: string
+  }) => Promise<{
     connected: boolean
     authError: boolean
     models: string[]
     error: string | null
   }>
 >(() => Promise.resolve({ connected: true, authError: false, models: ['gpt-4.1-mini'], error: null }))
-const saveAiApiKey = vi.fn<(id: string, key: string) => Promise<null>>(() => Promise.resolve(null))
+const saveAiApiKey = vi.fn<(payload: { providerId: string; apiKey: string }) => Promise<null>>(() =>
+  Promise.resolve(null),
+)
 const getAiApiKeyStatus = vi.fn<(id: string) => Promise<{ isSet: boolean; fingerprint: string }>>(() =>
   Promise.resolve({ isSet: false, fingerprint: '' }),
 )
@@ -77,8 +79,8 @@ vi.mock('$lib/tauri-commands', () => ({
   checkFullDiskAccess: () => checkFullDiskAccess(),
   startAiDownload: () => startAiDownload(),
   cancelAiDownload: () => cancelAiDownload(),
-  checkAiConnection: (baseUrl: string, providerId: string) => checkAiConnection(baseUrl, providerId),
-  saveAiApiKey: (id: string, key: string) => saveAiApiKey(id, key),
+  checkAiConnection: (baseUrl: string, providerId: string) => checkAiConnection({ baseUrl, providerId }),
+  saveAiApiKey: (providerId: string, apiKey: string) => saveAiApiKey({ providerId, apiKey }),
   getAiApiKeyStatus: (id: string) => getAiApiKeyStatus(id),
   openExternalUrl: (url: string) => openExternalUrl(url),
   openPrivacySettings: () => openPrivacySettings(),

@@ -16,13 +16,16 @@ import ImageSearchResults from './ImageSearchResults.svelte'
 // Hoisted so the `vi.mock` factories (also hoisted) can close over these before the
 // component module — and thus the mocked deps — evaluate.
 const h = vi.hoisted(() => ({
-  searchOcr: vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<OcrHit[]>>(),
+  searchOcr: vi.fn<(payload: { volumeId: string; query: string; limit: number | null }) => Promise<OcrHit[]>>(),
   searchSemantic:
-    vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<{ path: string; score: number }[]>>(),
+    vi.fn<
+      (payload: { volumeId: string; query: string; limit: number | null }) => Promise<{ path: string; score: number }[]>
+    >(),
   volumeState: vi.fn<(volumeId: string) => Promise<MediaIndexVolumeState>>(),
   thumbnailToken: vi.fn<(path: string) => Promise<string | null>>(),
   dropTokens: vi.fn<(tokens: string[]) => Promise<void>>(),
-  findSimilar: vi.fn<(volumeId: string, sourcePath: string, limit: number | null) => Promise<SimilarImage[]>>(),
+  findSimilar:
+    vi.fn<(payload: { volumeId: string; sourcePath: string; limit: number | null }) => Promise<SimilarImage[]>>(),
   // The master toggle plus a captured live-change callback, so a test can flip it at
   // runtime exactly as the settings store does (the component subscribes via
   // `onSpecificSettingChange`).
@@ -30,12 +33,15 @@ const h = vi.hoisted(() => ({
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
-  mediaIndexSearchOcr: (v: string, q: string, l: number | null) => h.searchOcr(v, q, l),
-  mediaIndexSearchSemantic: (v: string, q: string, l: number | null) => h.searchSemantic(v, q, l),
+  mediaIndexSearchOcr: (volumeId: string, query: string, limit: number | null) =>
+    h.searchOcr({ volumeId, query, limit }),
+  mediaIndexSearchSemantic: (volumeId: string, query: string, limit: number | null) =>
+    h.searchSemantic({ volumeId, query, limit }),
   mediaIndexVolumeState: (v: string) => h.volumeState(v),
   mediaIndexThumbnailToken: (p: string) => h.thumbnailToken(p),
   mediaIndexDropThumbnailTokens: (t: string[]) => h.dropTokens(t),
-  mediaIndexFindSimilar: (v: string, s: string, l: number | null) => h.findSimilar(v, s, l),
+  mediaIndexFindSimilar: (volumeId: string, sourcePath: string, limit: number | null) =>
+    h.findSimilar({ volumeId, sourcePath, limit }),
 }))
 
 vi.mock('$lib/settings', () => ({
@@ -125,7 +131,7 @@ describe('ImageSearchResults master-toggle gating', () => {
     await settle()
 
     expect(target.querySelector('.image-results')).not.toBeNull()
-    expect(h.searchOcr).toHaveBeenCalledWith('root', 'invoice', null)
+    expect(h.searchOcr).toHaveBeenCalledWith({ volumeId: 'root', query: 'invoice', limit: null })
     expect(h.volumeState).toHaveBeenCalledWith('root')
   })
 

@@ -9,10 +9,10 @@ import { mount, tick, unmount, flushSync } from 'svelte'
 import CloudProviderSetup from './CloudProviderSetup.svelte'
 
 const checkAiConnection = vi.fn<
-  (
-    baseUrl: string,
-    key: string,
-  ) => Promise<{
+  (payload: {
+    baseUrl: string
+    providerId: string
+  }) => Promise<{
     connected: boolean
     authError: boolean
     models: string[]
@@ -26,15 +26,17 @@ const checkAiConnection = vi.fn<
     error: null,
   }),
 )
-const saveAiApiKey = vi.fn<(id: string, key: string) => Promise<null>>(() => Promise.resolve(null))
+const saveAiApiKey = vi.fn<(payload: { providerId: string; apiKey: string }) => Promise<null>>(() =>
+  Promise.resolve(null),
+)
 const getAiApiKeyStatus = vi.fn<(id: string) => Promise<{ isSet: boolean; fingerprint: string }>>(() =>
   Promise.resolve({ isSet: false, fingerprint: '' }),
 )
 const openExternalUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 
 vi.mock('$lib/tauri-commands', () => ({
-  checkAiConnection: (baseUrl: string, providerId: string) => checkAiConnection(baseUrl, providerId),
-  saveAiApiKey: (id: string, k: string) => saveAiApiKey(id, k),
+  checkAiConnection: (baseUrl: string, providerId: string) => checkAiConnection({ baseUrl, providerId }),
+  saveAiApiKey: (providerId: string, apiKey: string) => saveAiApiKey({ providerId, apiKey }),
   getAiApiKeyStatus: (id: string) => getAiApiKeyStatus(id),
   openExternalUrl: (url: string) => openExternalUrl(url),
 }))
@@ -139,7 +141,7 @@ describe('CloudProviderSetup', () => {
     keyInput.dispatchEvent(new Event('input', { bubbles: true }))
     // Save debounce is 300 ms; connection check debounce 1000 ms.
     await advanceTimers(400)
-    expect(saveAiApiKey).toHaveBeenCalledWith('openai', 'sk-test-key')
+    expect(saveAiApiKey).toHaveBeenCalledWith({ providerId: 'openai', apiKey: 'sk-test-key' })
     await advanceTimers(1100)
     expect(checkAiConnection).toHaveBeenCalled()
   })
@@ -179,7 +181,10 @@ describe('CloudProviderSetup', () => {
     getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'abc123' })
     mountSetup('openai')
     await settle()
-    expect(checkAiConnection).toHaveBeenCalledWith(expect.stringContaining('openai.com'), 'openai')
+    expect(checkAiConnection).toHaveBeenCalledWith({
+      baseUrl: expect.stringContaining('openai.com'),
+      providerId: 'openai',
+    })
   })
 
   it('connection-check returning models reveals the model combobox and ticks the API-key step', async () => {
@@ -416,7 +421,7 @@ describe('CloudProviderSetup', () => {
     mounted = { target, instance, providerId: 'anthropic' }
     await settle()
     // The flushPendingApiKeySave path saves against the OLD provider, not the new one.
-    expect(saveAiApiKey).toHaveBeenCalledWith('openai', 'sk-mid-flight')
+    expect(saveAiApiKey).toHaveBeenCalledWith({ providerId: 'openai', apiKey: 'sk-mid-flight' })
   })
 
   it('renders without a preset block when the providerId is unknown', async () => {

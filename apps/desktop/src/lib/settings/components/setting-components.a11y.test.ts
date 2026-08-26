@@ -28,7 +28,7 @@ const stubs = vi.hoisted(() => ({
   setSetting: vi.fn<(id: string, value: unknown) => unknown>(),
   // `null` keeps the real search helpers, which is what every block but
   // `SettingRow` had.
-  matchIndices: null as ((label: string, query: string) => number[]) | null,
+  matchIndices: null as ((payload: { query: string; settingId: string }) => number[]) | null,
   highlight: null as ((label: string, indices: number[]) => unknown) | null,
 }))
 
@@ -57,12 +57,13 @@ vi.mock('$lib/settings/settings-store', () => settingsApi)
 
 vi.mock('$lib/settings/settings-search', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
-  const realIndices = actual.getMatchIndicesForLabel as (label: string, query: string) => number[]
+  // Mirrors the real (unconverted) production signature, `(query, settingId) => number[]`.
+  const realIndices = actual.getMatchIndicesForLabel as (query: string, settingId: string) => number[]
   const realHighlight = actual.highlightMatches as (label: string, indices: number[]) => unknown
   return {
     ...actual,
-    getMatchIndicesForLabel: (label: string, query: string) =>
-      stubs.matchIndices ? stubs.matchIndices(label, query) : realIndices(label, query),
+    getMatchIndicesForLabel: (query: string, settingId: string) =>
+      stubs.matchIndices ? stubs.matchIndices({ query, settingId }) : realIndices(query, settingId),
     highlightMatches: (label: string, indices: number[]) =>
       stubs.highlight ? stubs.highlight(label, indices) : realHighlight(label, indices),
   }
