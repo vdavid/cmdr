@@ -193,7 +193,7 @@ fn assert_table_names_every_leaf(dumps: &[String], width: usize) {
     assert_eq!(
         leaves.len(),
         width,
-        "each of the {width} leaves writing at once owes its own row, got:\n{dump}"
+        "every leaf writing at once owes its own row, so the dump must carry {width} of them, got:\n{dump}"
     );
     let mut named: Vec<&str> = leaves
         .iter()
