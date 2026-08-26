@@ -9,6 +9,7 @@
         SortOrder,
         ConflictResolution,
     } from '$lib/file-explorer/types'
+    import type { TransferCompletePayload } from '$lib/file-explorer/pane/dialog-props'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { deriveTransferLabel } from './transfer-dialog-utils'
@@ -67,7 +68,7 @@
         itemSizes?: number[]
         /** Who triggered this operation (`aiClient` for MCP-originated writes). */
         initiator?: Initiator
-        onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
+        onComplete: (payload: TransferCompletePayload) => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: WriteOperationError) => void
         /** Send this operation to the background: unmount the modal but keep the

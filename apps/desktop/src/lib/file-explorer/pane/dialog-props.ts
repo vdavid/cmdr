@@ -34,6 +34,17 @@ export interface TransferConfirmPayload {
 }
 
 /**
+ * What a transfer operation reports when it finishes: `TransferProgressDialog`'s
+ * `onComplete`, shared by both the started and adopted arms
+ * (`onTransferComplete` / `onAdoptedComplete`).
+ */
+export interface TransferCompletePayload {
+  filesProcessed: number
+  filesSkipped: number
+  bytesProcessed: number
+}
+
+/**
  * BIRTH CONTEXT: what this window started, and therefore what it may do to its
  * panes afterwards. Also the input the archive-password submit re-dispatches
  * from, which is why it lives in a slot of its own. `DETAILS.md` § "Birth

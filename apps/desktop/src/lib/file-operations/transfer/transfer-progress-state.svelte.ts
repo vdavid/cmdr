@@ -65,6 +65,7 @@ import type {
   WriteOperationPhase,
   WriteOperationError,
 } from '$lib/file-explorer/types'
+import type { TransferCompletePayload } from '$lib/file-explorer/pane/dialog-props'
 import { pluralize } from '$lib/utils/pluralize'
 import { getAppLogger } from '$lib/logging/logger'
 import { tString } from '$lib/intl/messages.svelte'
@@ -83,7 +84,7 @@ export interface TransferProgressStateConfig extends TransferDispatchConfig {
    *  has no birth context for an adopted operation and must not run a pane tail
    *  against it (`../../file-explorer/pane/dialog-state.svelte.ts`). */
   adoptOperationId?: string
-  onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
+  onComplete: (payload: TransferCompletePayload) => void
   onCancelled: (filesProcessed: number) => void
   onError: (error: WriteOperationError) => void
   /** Send this operation to the background: unmount the modal but keep the op running. */
@@ -353,7 +354,11 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
           bytesNoun: pluralize(event.bytesProcessed, 'byte'),
         })
         close(() => {
-          config.onComplete(event.filesProcessed, event.filesSkipped, event.bytesProcessed)
+          config.onComplete({
+            filesProcessed: event.filesProcessed,
+            filesSkipped: event.filesSkipped,
+            bytesProcessed: event.bytesProcessed,
+          })
         })
         return
       }

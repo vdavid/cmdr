@@ -18,6 +18,7 @@
         ArchivePasswordPropsData,
         DeleteDialogPropsData,
         TransferConfirmPayload,
+        TransferCompletePayload,
     } from './dialog-props'
     import type { FriendlyError, WriteOperationError } from '../types'
 
@@ -82,14 +83,14 @@
         deleteDialogProps: DeleteDialogPropsData | null
         onTransferConfirm: (payload: TransferConfirmPayload) => void
         onTransferCancel: () => void
-        onTransferComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
+        onTransferComplete: (payload: TransferCompletePayload) => void
         onTransferCancelled: (filesProcessed: number) => void
         onTransferError: (error: WriteOperationError, friendly?: FriendlyError) => void
         onTransferQueue: () => void
         /** The four outcomes of a dialog that ADOPTED its operation. Separate
          *  callbacks, not a flag on the started ones: an adopted view has no
          *  birth context, so its tail must not be able to reach the pane work. */
-        onAdoptedComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
+        onAdoptedComplete: (payload: TransferCompletePayload) => void
         onAdoptedCancelled: (filesProcessed: number) => void
         onAdoptedError: (error: WriteOperationError) => void
         onAdoptedQueue: () => void

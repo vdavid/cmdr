@@ -61,7 +61,12 @@
     import type { TransferOperationType } from '../types'
     import type { Initiator } from '$lib/tauri-commands'
     import { createDialogState } from './dialog-state.svelte'
-    import type { AdoptedOperationData, ForegroundOperationVerdict, TransferConfirmPayload } from './dialog-props'
+    import type {
+        AdoptedOperationData,
+        ForegroundOperationVerdict,
+        TransferConfirmPayload,
+        TransferCompletePayload,
+    } from './dialog-props'
     import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
     import { createClipboardOperations } from './clipboard-operations'
@@ -1431,14 +1436,14 @@
     onTransferCancel={() => {
         dialogs.handleTransferCancel()
     }}
-    onTransferComplete={(files: number, skipped: number, bytes: number) => {
-        dialogs.handleTransferComplete(files, skipped, bytes)
+    onTransferComplete={(payload: TransferCompletePayload) => {
+        dialogs.handleTransferComplete(payload)
     }}
     onTransferCancelled={(files: number) => {
         dialogs.handleTransferCancelled(files)
     }}
-    onAdoptedComplete={(files: number, skipped: number, bytes: number) => {
-        dialogs.handleAdoptedComplete(files, skipped, bytes)
+    onAdoptedComplete={(payload: TransferCompletePayload) => {
+        dialogs.handleAdoptedComplete(payload)
     }}
     onAdoptedCancelled={(files: number) => {
         dialogs.handleAdoptedCancelled(files)

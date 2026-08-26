@@ -259,7 +259,7 @@ describe("an adopted view's outcomes touch no pane", () => {
     const { dialogs, rightPane, leftPane } = makeState()
     dialogs.foregroundOperation(adopted())
 
-    dialogs.handleAdoptedComplete(12, 0, 4096)
+    dialogs.handleAdoptedComplete({ filesProcessed: 12, filesSkipped: 0, bytesProcessed: 4096 })
 
     expect(rightPane.spies.clearSelection).not.toHaveBeenCalled()
     expect(rightPane.spies.clearOperationSnapshot).not.toHaveBeenCalled()
@@ -278,10 +278,10 @@ describe("an adopted view's outcomes touch no pane", () => {
     // whole window instead. This pins that neither family reaches for the store.
     const { dialogs } = makeState()
     dialogs.foregroundOperation({ ...adopted(), operationType: 'move' })
-    dialogs.handleAdoptedComplete(3, 0, 128)
+    dialogs.handleAdoptedComplete({ filesProcessed: 3, filesSkipped: 0, bytesProcessed: 128 })
 
     dialogs.startTransferProgress(moveProps())
-    dialogs.handleTransferComplete(2, 0, 2048)
+    dialogs.handleTransferComplete({ filesProcessed: 2, filesSkipped: 0, bytesProcessed: 2048 })
 
     expect(removeEntryFromAllSnapshots).not.toHaveBeenCalled()
   })
@@ -335,7 +335,7 @@ describe('a view whose pane has moved on since the operation was born', () => {
     dialogs.startTransferProgress(moveProps())
 
     dialogs.handleAdoptedQueue() // no-op: nothing adopted
-    dialogs.handleTransferComplete(2, 0, 2048)
+    dialogs.handleTransferComplete({ filesProcessed: 2, filesSkipped: 0, bytesProcessed: 2048 })
 
     expect(refreshListing).toHaveBeenCalled()
     expect(addToast).toHaveBeenCalledTimes(1)
@@ -347,7 +347,7 @@ describe('a view whose pane has moved on since the operation was born', () => {
     const { dialogs, rightPane } = makeState()
     dialogs.startTransferProgress(moveProps())
 
-    dialogs.handleTransferComplete(2, 0, 2048)
+    dialogs.handleTransferComplete({ filesProcessed: 2, filesSkipped: 0, bytesProcessed: 2048 })
 
     expect(rightPane.spies.clearSelection).toHaveBeenCalled()
     expect(rightPane.spies.clearOperationSnapshot).toHaveBeenCalled()

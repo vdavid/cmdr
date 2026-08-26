@@ -243,7 +243,7 @@ describe('steering the operation that IS running', () => {
   it('frees the slot for the next operation once it settles', () => {
     const { dialogs } = makeState()
     dialogs.startTransferProgress(copyProps())
-    dialogs.handleTransferComplete(1, 0, 2048)
+    dialogs.handleTransferComplete({ filesProcessed: 1, filesSkipped: 0, bytesProcessed: 2048 })
 
     expect(dialogs.startTransferProgress(copyProps())).toBe('started')
   })

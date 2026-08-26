@@ -30,7 +30,7 @@ import { getAppLogger } from '$lib/logging/logger'
 import { formatByteSize } from '$lib/units'
 import { transferOpLabel } from './transfer-op-label'
 import type { TransferOperationType, WriteOperationError } from '../types'
-import type { AdoptedOperationData, ForegroundOperationVerdict } from './dialog-props'
+import type { AdoptedOperationData, ForegroundOperationVerdict, TransferCompletePayload } from './dialog-props'
 
 const log = getAppLogger('fileExplorer')
 
@@ -124,7 +124,7 @@ export function createAdoptedOperation(deps: AdoptedOperationDeps) {
     /** An adopted operation finished. It says what the operation did and stops
      *  there: what a pane should do about a transfer belongs to the view that
      *  started it. */
-    handleComplete(filesProcessed: number, filesSkipped: number, bytesProcessed: number): void {
+    handleComplete({ filesProcessed, filesSkipped, bytesProcessed }: TransferCompletePayload): void {
       const op = adoptedProps?.operationType ?? 'copy'
       log.info(
         `${transferOpLabel(op)} complete (adopted): ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatByteSize(bytesProcessed)})`,

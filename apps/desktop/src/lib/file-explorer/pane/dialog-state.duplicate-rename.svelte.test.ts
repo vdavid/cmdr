@@ -137,7 +137,7 @@ describe('a completed duplicate the trigger asked to name', () => {
     dialogs.startTransferProgress(pasteDuplicateProps())
     setForegroundOperationId('op-1')
 
-    dialogs.handleTransferComplete(1, 0, 1024)
+    dialogs.handleTransferComplete({ filesProcessed: 1, filesSkipped: 0, bytesProcessed: 1024 })
     await drain()
 
     // The journal has nothing readable for this op until it settles, so nothing
@@ -162,7 +162,7 @@ describe('a completed duplicate the trigger asked to name', () => {
     setForegroundOperationId('op-1')
     emitSettled({ operationId: 'op-1', operationType: 'copy' })
 
-    dialogs.handleTransferComplete(1, 0, 1024)
+    dialogs.handleTransferComplete({ filesProcessed: 1, filesSkipped: 0, bytesProcessed: 1024 })
     await drain()
 
     expect(startRename).toHaveBeenCalledExactlyOnceWith({
@@ -176,7 +176,7 @@ describe('a completed duplicate the trigger asked to name', () => {
     dialogs.startTransferProgress(pasteDuplicateProps({ duplicateFollowUp: 'nothing' }))
     setForegroundOperationId('op-1')
 
-    dialogs.handleTransferComplete(1, 0, 1024)
+    dialogs.handleTransferComplete({ filesProcessed: 1, filesSkipped: 0, bytesProcessed: 1024 })
     emitSettled({ operationId: 'op-1', operationType: 'copy' })
     await drain()
 

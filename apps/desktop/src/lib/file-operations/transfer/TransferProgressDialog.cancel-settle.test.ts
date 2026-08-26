@@ -252,7 +252,7 @@ describe('TransferProgressDialog cancel-settle gate', () => {
       vi.advanceTimersByTime(450)
       await tick()
       expect(onComplete, 'complete path closes on min-display gate, no settle wait').toHaveBeenCalledTimes(1)
-      expect(onComplete).toHaveBeenCalledWith(5, 0, 1234)
+      expect(onComplete).toHaveBeenCalledWith({ filesProcessed: 5, filesSkipped: 0, bytesProcessed: 1234 })
       void unmount(component)
     } finally {
       vi.useRealTimers()

@@ -47,6 +47,7 @@ import type {
   NewFileDialogPropsData,
   NewFolderDialogPropsData,
   OperationStartVerdict,
+  TransferCompletePayload,
   TransferConfirmPayload,
   TransferErrorPropsData,
   TransferProgressPropsData,
@@ -409,7 +410,7 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
-    handleTransferComplete(filesProcessed: number, filesSkipped: number, bytesProcessed: number) {
+    handleTransferComplete({ filesProcessed, filesSkipped, bytesProcessed }: TransferCompletePayload) {
       const props = transferProgressProps
       const op = props?.operationType ?? 'copy'
       const opLabel = transferOpLabel(op)
@@ -467,8 +468,8 @@ export function createDialogState(deps: DialogStateDeps) {
     /** The four outcomes of a dialog that ADOPTED its operation. Separate from
      *  the birth handlers, in a separate module, so their pane work is not
      *  reachable from a view that has no birth context to act on. */
-    handleAdoptedComplete(filesProcessed: number, filesSkipped: number, bytesProcessed: number) {
-      adopted.handleComplete(filesProcessed, filesSkipped, bytesProcessed)
+    handleAdoptedComplete(payload: TransferCompletePayload) {
+      adopted.handleComplete(payload)
     },
 
     handleAdoptedCancelled(filesProcessed: number) {
