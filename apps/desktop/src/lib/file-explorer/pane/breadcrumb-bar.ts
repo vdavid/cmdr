@@ -15,7 +15,7 @@ import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
 import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
 import { isVolumeEjectable } from '../navigation/eject-predicate'
 import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
-import type { VolumeChangePayload } from './types'
+import type { VolumeChangePayload, VolumeSpaceWatchArgs } from './types'
 
 export interface BreadcrumbDisplayPathInput {
   currentPath: string
@@ -76,7 +76,7 @@ export interface BreadcrumbHandlerDeps {
   onRequestFocus: () => void
   loadDirectory: (path: string) => void
   refreshSpace: () => void
-  watchSpace: (volumeId: string, path: string) => void
+  watchSpace: (args: VolumeSpaceWatchArgs) => void
   unwatchSpace: () => void
   clearSpace: () => void
 }
@@ -134,7 +134,7 @@ export function createBreadcrumbHandlers(deps: BreadcrumbHandlerDeps): Breadcrum
         deps.clearSpace()
       } else {
         deps.refreshSpace()
-        deps.watchSpace(newVolumeId, targetPath)
+        deps.watchSpace({ volumeId: newVolumeId, path: targetPath })
       }
     } else {
       // Leaving a physical volume: stop watching

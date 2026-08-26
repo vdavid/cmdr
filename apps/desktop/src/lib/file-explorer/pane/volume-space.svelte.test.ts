@@ -113,7 +113,7 @@ describe('createVolumeSpace', () => {
 
   it('watch and unwatch register keyed by the pane id', () => {
     const ctl = setup()
-    ctl.watch('vol-2', '/vol-2')
+    ctl.watch({ volumeId: 'vol-2', path: '/vol-2' })
     expect(ipc.watchVolumeSpace).toHaveBeenCalledWith('left', 'vol-2', '/vol-2')
     ctl.unwatch()
     expect(ipc.unwatchVolumeSpace).toHaveBeenCalledWith('left')

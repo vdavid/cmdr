@@ -1239,8 +1239,8 @@
         onRequestFocus: () => onRequestFocus?.(),
         loadDirectory: (path) => void loader.loadDirectory({ path }),
         refreshSpace: () => void diskSpace.refresh(),
-        watchSpace: (id, path) => {
-            diskSpace.watch(id, path)
+        watchSpace: (args) => {
+            diskSpace.watch(args)
         },
         unwatchSpace: () => {
             diskSpace.unwatch()
@@ -1580,7 +1580,7 @@
             if (!isDiskImageVolume) {
                 void diskSpace.refresh()
                 // Register for live disk-space polling
-                diskSpace.watch(volumeId, currentPath)
+                diskSpace.watch({ volumeId, path: currentPath })
             }
         } else {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })

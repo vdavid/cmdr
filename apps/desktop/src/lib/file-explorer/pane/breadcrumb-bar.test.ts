@@ -241,7 +241,7 @@ describe('createBreadcrumbHandlers', () => {
       })
       expect(calls.loadDirectory).toHaveBeenCalledWith('/Volumes/Ext/photos')
       expect(calls.unwatchSpace).toHaveBeenCalledTimes(1)
-      expect(calls.watchSpace).toHaveBeenCalledWith('ext', '/Volumes/Ext/photos')
+      expect(calls.watchSpace).toHaveBeenCalledWith({ volumeId: 'ext', path: '/Volumes/Ext/photos' })
       expect(calls.refreshSpace).toHaveBeenCalledTimes(1)
     })
 

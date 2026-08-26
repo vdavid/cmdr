@@ -73,6 +73,16 @@ export interface CopyPathBetweenPanesArgs {
   target: 'left' | 'right'
 }
 
+/**
+ * The volume + path to start live disk-space polling for. Shared by
+ * `VolumeSpace.watch` and `BreadcrumbBarDeps.watchSpace`: both took
+ * `(volumeId, path)`, two same-typed strings a caller could swap.
+ */
+export interface VolumeSpaceWatchArgs {
+  volumeId: string
+  path: string
+}
+
 /** State snapshot for swapping panes without backend calls. */
 export interface SwapState {
   currentPath: string

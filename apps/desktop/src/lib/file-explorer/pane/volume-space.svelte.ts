@@ -20,6 +20,7 @@ import {
   type UnlistenFn,
 } from '$lib/tauri-commands'
 import { pathInsideArchive } from './volume-capabilities'
+import type { VolumeSpaceWatchArgs } from './types'
 
 export interface VolumeSpaceDeps {
   paneId: 'left' | 'right'
@@ -46,7 +47,7 @@ export interface VolumeSpace {
   /** Register for live backend disk-space events. Call once from `onMount`. */
   startListening: () => void
   /** Start live polling for a volume + path (keyed by this pane's id). */
-  watch: (volumeId: string, path: string) => void
+  watch: (args: VolumeSpaceWatchArgs) => void
   /** Stop live polling for this pane. */
   unwatch: () => void
   /** Clear the readout (e.g. after switching onto a disk-image volume). */
@@ -96,7 +97,7 @@ export function createVolumeSpace(deps: VolumeSpaceDeps): VolumeSpace {
     },
     refresh,
     startListening,
-    watch: (volumeId: string, path: string) => {
+    watch: ({ volumeId, path }: VolumeSpaceWatchArgs) => {
       void watchVolumeSpace(deps.paneId, volumeId, path)
     },
     unwatch: () => {
