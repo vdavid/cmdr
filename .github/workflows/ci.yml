@@ -185,6 +185,12 @@ jobs:
       - name: Check log-error-macro
         run: ./scripts/check/check --check desktop-rust-log-error-macro --ci
 
+      # The macOS deployment floor. Linux has no SDK, so this scans against the
+      # committed selector list a macOS run refreshes; it's the only gate between a
+      # too-new selector and an app that aborts on launch for everyone on an older Mac.
+      - name: Check macos-availability
+        run: ./scripts/check/check --check desktop-rust-macos-availability --ci
+
       - name: Check sqlite-open-direct
         run: ./scripts/check/check --check desktop-rust-sqlite-open-direct --ci
 

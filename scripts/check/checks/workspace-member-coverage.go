@@ -61,6 +61,10 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 		AppTreeOnly: true,
 		Why:         "it fences `file_system/write_operations/`, which only exists in the app tree; no other member has a write engine to keep out of the agent module",
 	},
+	"desktop-rust-macos-availability": {
+		Kinds: []MemberKind{KindApp, KindTool, KindVendored},
+		Why:   "any member linked into a process on an old Mac can raise the unrecognized-selector exception, and the vendored fork calls into the same frameworks we do",
+	},
 	"desktop-rust-sqlite-open-direct": {
 		Kinds: []MemberKind{KindApp},
 		Why:   "the page-cache slab is process-wide, so a standalone CLI opening the first connection in its own process has nothing to protect",

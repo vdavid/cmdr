@@ -174,6 +174,15 @@ var rustAppTreeInputs = inputs(
 	agentDocExclusions,
 )
 
+// macOSAvailabilityInputs is the scan set plus the file holding the floor being
+// enforced: raise `minimumSystemVersion` and the same sources get a different
+// verdict, so a cached pass from before that edit isn't one.
+var macOSAvailabilityInputs = inputs(
+	rustScanInputs(KindApp, KindTool, KindVendored),
+	[]string{"apps/desktop/src-tauri/tauri.conf.json"},
+	runnerDataInputs("macos-availability-selectors.json"),
+)
+
 // rustCompileInputs is what a lane that runs cargo over the whole workspace
 // reads: every member's tree plus the workspace configs.
 //

@@ -19,7 +19,8 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   The shared staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist
   shrink-wrap". Ten exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two
   with no § of their own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather than
-  auto-removing it).
+  auto-removing it). `macos-availability-selectors.json` is a sibling JSON that isn't an allowlist: it's the SDK's own
+  answer, cached so the Linux CI lanes can enforce it (§ "macOS availability").
 - **Not every file here is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test
   duration flagger" has the why), `docs_graph.go` is a shared library behind both `docs-reachable` and the
   `--docs-graph` renderer in `../docs_graph_render.go`, and three files carve the Playwright lane into stages so
@@ -1184,6 +1185,41 @@ nothing" and passes). Anything narrower than every first-party member carries a 
 
 `claude-md-length` needed no re-rooting: it enumerates via `git ls-files` across the whole repo already.
 
+## macOS availability
+
+`desktop-rust-macos-availability` fails on a call to an Objective-C selector newer than
+`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.conf.json`.
+
+The hole it fills: `objc2` carries no availability information, so every binding compiles against every deployment
+target and a selector the running OS lacks raises `NSInvalidArgumentException` instead. Raised on the main thread inside
+the Tauri setup hook (or any other `extern "C"` callback the OS calls us through), the exception unwinds out of a
+`nounwind` frame and hits `panic_cannot_unwind`, which aborts. `NSLocale.regionCode` (macOS 14+, `minimumSystemVersion`
+12.0) did exactly that to every macOS 12 and 13 user in v0.39.0 and v0.40.0: the app SIGABRTed half a second into
+launch, before a window opened (GitHub issue #54). It compiled clean, the tests passed, and it can't be caught by
+running the app on CI either, since GitHub's oldest hosted macOS image is now 14 (macos-13 is gone) and the selector
+exists there.
+
+How it decides:
+
+- **The SDK headers are the truth.** Every `@property` and method declaration in the frameworks we bind is read for its
+  `API_AVAILABLE(macos(N.M))` (Foundation writes it `macosx(N.M)`), keyed the way `objc2` spells the selector: keywords
+  joined by underscores, so `addObserverForName:object:queue:` is `addObserverForName_object_queue`. A declaration with
+  no attribute reads as "always been there".
+- **Which frameworks come from the manifests.** Each `objc2-*` dependency maps to the framework of the same name minus
+  the prefix and the kebab-case separators (`objc2-app-kit` → `AppKit.framework`), so a new binding crate extends the
+  check on its own. A crate that maps to nothing fails the check rather than being skipped; `nonFrameworkObjc2Crates`
+  lists the ones (like `objc2` itself) that legitimately bind no framework. `Headers` is a symlink into `Versions/`, and
+  a walk doesn't follow one, so it's resolved before reading.
+- **The answer is committed**, in `macos-availability-selectors.json` (floor, SDK name, and every selector above the
+  floor). CI is Linux end to end, so a check that needed the SDK would never gate anything; a macOS run refreshes the
+  file from the installed SDK and every run scans against it. A stale file under `--ci` is an error, and a file built
+  against a different floor is too, since it only lists what was above the floor at the time. Not hand-edited: run
+  `pnpm check macos-availability` on a Mac and commit the rewrite.
+- **Two deliberate blind spots.** A grep can't resolve a Rust receiver's class, so (a) the OLDEST declaration of a name
+  wins, and a name some class has carried since 10.x is never flagged, and (b) a selector has to carry an uppercase
+  letter to count, because `bytes`, `close`, and `title` are selectors AND ordinary Rust method names. Both trade recall
+  for a zero-noise list. Only files that mention `objc2` are read for calls, for the same reason.
+
 ## Apps and check counts
 
 Checks by app and tech:
@@ -1192,7 +1228,8 @@ Checks by app and tech:
   first-party member, with every doc lint in `rustdocDeniedLints` denied and any leftover warning failing the check too;
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
   cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (warn-only; the clone list, on a per-file-pair ratchet),
-  log-error-macro, sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
+  log-error-macro, macos-availability (no call to a selector newer than the bundle's `minimumSystemVersion`; § "macOS
+  availability"), sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
   shared page cache is always installed before SQLite initializes), error-string-match, write-ops-isolation (the write
   engine may not name the `agent` module: an approved operation is an ordinary operation, and an engine that can see the
   agent grows a second execution path; per-source outcomes reach a caller through the injected `OperationEventSink`

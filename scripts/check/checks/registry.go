@@ -193,6 +193,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunSqliteOpenDirect,
 	},
 	{
+		ID:                "desktop-rust-macos-availability",
+		Nickname:          "macos-availability",
+		DisplayName:       "macos-availability",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            macOSAvailabilityInputs,
+		Run:               RunMacOSAvailability,
+	},
+	{
 		ID:                "desktop-rust-discarded-outcome",
 		Nickname:          "discarded-outcome",
 		DisplayName:       "discarded-outcome",
