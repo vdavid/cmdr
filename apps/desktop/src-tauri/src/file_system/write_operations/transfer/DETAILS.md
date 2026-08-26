@@ -457,10 +457,10 @@ false positive. ❌ **Never collapse this to "trust the `Dead` verdict"** — th
 `transfer_probe::tests::a_task_that_keeps_moving_is_never_aborted` pins it (its probe reports `Dead` on every tick and
 the moving task is still never touched; removing the movement check turns that test red).
 
-**Why 180 s for the second condition.** It is a LAST resort even once armed: every backend that can bound its own waits
-already does, sooner — `smb2` gives a frame 20 s to reach the socket and a response 30 s of silence (3 minutes on a
-connection an ECHO has just proven alive), so a dead SMB session errors on its own and the file's retry picks it up
-without the watchdog being involved. What is left is the
+**Why 180 s for the second condition.** It is a LAST resort even once armed: a backend that can bound its own waits
+gets there first, so a dead SMB session errors on its own and the file's retry picks it up without the watchdog being
+involved. Which `smb2` deadline actually does that, and why `SEND_TIMEOUT` is not the one: the doc comment on
+`STALL_ABORT_AFTER` in `transfer_probe.rs`. What is left is the
 case with no deadline anywhere: an OS-mounted share, a USB stack, a future backend that forgot. The number clears the
 slowest HEALTHY gap between two byte reports, which is one chunk: a 1 MiB SMB read window needs a link under 6 KB/s to
 take this long, an 8 MiB MTP window needs USB at 45 KB/s.
@@ -547,8 +547,9 @@ path, for every cancel. Every Cancel button, the queue window's stop, a Rollback
 tier 1 and stay tier 1.
 
 **Tier 2, hard abort (`state.backend_abort`).** What tier 1 cannot do is bound the WAIT. A write that never calls
-`on_progress` never sees the cancel, and `smb2`'s own deadlines are 20 s to send plus 30 s of server silence, so one
-chunk can hold a quit for ~30 s. Tier 2 is a deadline holder's answer: `strategy.rs::stream_pipe_file` races the source
+`on_progress` never sees the cancel, and `smb2`'s own deadline for a chunk is 30 s of server silence, stretching to
+180 s while an ECHO keeps proving the connection alive (see the `STALL_ABORT_AFTER` doc comment in
+`transfer_probe.rs`), so one chunk can hold a quit for minutes. Tier 2 is a deadline holder's answer: `strategy.rs::stream_pipe_file` races the source
 open and the destination write against it, so the wait ends on our clock whether or not the backend comes back. Fired
 only by `state::abort_write_operation` / `abort_all_write_operations`, which today means the quit deadline and nothing
 else. Both fire tier 1 first — an abort is a cancel that ran out of patience, never a cancel with a shorter fuse — and

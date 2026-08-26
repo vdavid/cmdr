@@ -54,15 +54,30 @@ pub(super) const STALL_AFTER: Duration = Duration::from_secs(20);
 /// the watchdog stops reporting and ends the wait itself.
 ///
 /// This is the layer of last resort, and its length says so. Every backend that
-/// can bound its own waits already does, sooner: `smb2` gives a frame 20 s to
-/// reach the socket (`SEND_TIMEOUT`) and a response 30 s of silence
-/// (`RESPONSE_TIMEOUT`, extended on a connection an ECHO has just proven alive),
-/// so a dead SMB session surfaces as a typed error on its own and the file's
-/// retry picks it up without the watchdog ever being involved (verified against
-/// `smb2` 0.18.1, `client/connection.rs`, 2026-08-20). What is left for this constant is
-/// the case that has no deadline anywhere — an OS-mounted share, a USB stack, a
-/// future backend that forgot — which is precisely the shape that cost a user two
-/// files and a force-quit on 2026-07-31.
+/// can bound its own waits already does: on `smb2` a request fails after
+/// `RESPONSE_TIMEOUT` (30 s) of silence, measured from the moment the request
+/// REGISTERS, so a dead SMB session surfaces as a typed error on its own and the
+/// file's retry picks it up without the watchdog ever being involved. That
+/// deadline stretches to `ALIVE_DEADLINE_FACTOR` × 30 s = 180 s on a connection
+/// an ECHO has just proven alive, which is this constant exactly: against a
+/// server that answers ECHO while one operation is wedged, the two clocks tie
+/// rather than SMB's arriving first.
+///
+/// ❗ `SEND_TIMEOUT` (20 s) is NOT a second, tighter bound, and reading it as
+/// one is what a wedge investigation gets wrong. It wraps `sender.send(...)`
+/// alone — the socket write AFTER `writer_loop` has dequeued the frame — so time
+/// spent in the send queue behind an earlier stuck frame is measured
+/// (`queued_for`) and bounded by nothing on that path. A user's bundle caught a
+/// frame `registered 69.997358458s ago and NOT YET ON THE WIRE` with no
+/// `SendTimeout` anywhere in the log; what bounds such a frame is the response
+/// deadline above, which runs from registration. (Verified against `smb2`
+/// 0.18.1, `client/connection.rs` `writer_loop` and `await_response`,
+/// 2026-08-26.)
+///
+/// What is left for this constant is the case that has no deadline anywhere — an
+/// OS-mounted share, a USB stack, a future backend that forgot — which is
+/// precisely the shape that cost a user two files and a force-quit on
+/// 2026-07-31.
 ///
 /// 180 s, because the number has to clear the slowest HEALTHY thing that can
 /// happen between two byte reports. That is one chunk: a 1 MiB SMB read window
