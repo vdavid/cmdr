@@ -61,7 +61,7 @@
     // is unaffected (Send is already disabled while streaming). The E2E fake counts as a
     // provider (`fakeActive`), so send-and-render is testable with no real provider.
     let provider = $state<AiProvider>(getSetting('ai.provider'))
-    $effect(() => onSpecificSettingChange('ai.provider', (_id, v) => { provider = v }))
+    $effect(() => onSpecificSettingChange('ai.provider', (v) => { provider = v }))
     const providerOff = $derived(provider === 'off' && !fakeActive)
 
     const streaming = $derived(askCmdrState.streaming)

@@ -37,7 +37,7 @@
     const LEVEL_ID = 'behavior.archiveCompressionLevel'
     let level = $state(getSetting(LEVEL_ID))
     onMount(() =>
-        onSpecificSettingChange(LEVEL_ID, (_id, newValue) => {
+        onSpecificSettingChange(LEVEL_ID, (newValue) => {
             level = newValue
         }),
     )

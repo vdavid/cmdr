@@ -72,7 +72,7 @@ export function createAttachEmail(): AttachEmail {
   // Returning the unsubscribe as the effect's cleanup: the listener lives exactly as long
   // as the component that called this, including the second dialog in a two-dialog stack.
   $effect(() =>
-    onSpecificSettingChange('analytics.email', (_id, value) => {
+    onSpecificSettingChange('analytics.email', (value) => {
       contactEmail = value.trim()
     }),
   )

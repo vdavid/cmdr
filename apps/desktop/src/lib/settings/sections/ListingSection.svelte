@@ -32,7 +32,7 @@
     // module-scope state never updates, so we can't rely on its getter here.
     let briefWidthMode = $state<BriefColumnWidthMode>(getSetting('listing.briefColumnWidthMode'))
     onMount(() =>
-        onSpecificSettingChange('listing.briefColumnWidthMode', (_id, value) => {
+        onSpecificSettingChange('listing.briefColumnWidthMode', (value) => {
             briefWidthMode = value
         }),
     )

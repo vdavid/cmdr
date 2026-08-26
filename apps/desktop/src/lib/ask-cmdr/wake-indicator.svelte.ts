@@ -68,7 +68,7 @@ let unsubscribeSetting: (() => void) | null = null
 export async function startWakeIndicator(): Promise<void> {
   if (unlisten) return
   wakeIndicator.proactive = getSetting('askCmdr.proactive')
-  unsubscribeSetting = onSpecificSettingChange('askCmdr.proactive', (_id, value) => {
+  unsubscribeSetting = onSpecificSettingChange('askCmdr.proactive', (value) => {
     wakeIndicator.proactive = value
   })
   unlisten = await onAgentWakeStatus((status) => {

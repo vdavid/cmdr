@@ -20,12 +20,12 @@ import { _setLocaleForTests } from '$lib/intl/locale'
 let mockEmail = ''
 
 /** Live listeners on `analytics.email`, so a test can play the Settings window's part. */
-const emailListeners = new Set<(id: string, value: string) => void>()
+const emailListeners = new Set<(value: string) => void>()
 
 vi.mock('$lib/settings', () => ({
   getSetting: vi.fn((id: string) => (id === 'analytics.email' ? mockEmail : false)),
   setSetting: vi.fn(),
-  onSpecificSettingChange: (id: string, listener: (id: string, value: string) => void) => {
+  onSpecificSettingChange: (id: string, listener: (value: string) => void) => {
     if (id !== 'analytics.email') return () => {}
     emailListeners.add(listener)
     return () => emailListeners.delete(listener)
@@ -86,7 +86,7 @@ async function render(): Promise<HTMLElement> {
 /** Play the Settings window: the user edits `analytics.email` while the dialog stays up. */
 async function setContactEmailFromSettings(value: string) {
   mockEmail = value
-  for (const listener of [...emailListeners]) listener('analytics.email', value)
+  for (const listener of [...emailListeners]) listener(value)
   await tick()
 }
 

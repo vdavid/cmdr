@@ -66,7 +66,7 @@
 
     // Subscribe to setting changes (for external resets).
     onMount(() => {
-        return onSpecificSettingChange(id, (_id, newValue) => {
+        return onSpecificSettingChange(id, (newValue) => {
             value = newValue
             // Reset custom input state if value is back to a standard option.
             const isStandard = options.some((o) => o.value === newValue)

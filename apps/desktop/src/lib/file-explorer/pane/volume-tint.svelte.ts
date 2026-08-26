@@ -50,13 +50,13 @@ export function initVolumeTints(): void {
   tintSmb = getSetting('appearance.tintSmb')
   tintMtp = getSetting('appearance.tintMtp')
   unsubs.push(
-    onSpecificSettingChange('appearance.tintLocal', (_id, v) => {
+    onSpecificSettingChange('appearance.tintLocal', (v) => {
       tintLocal = v
     }),
-    onSpecificSettingChange('appearance.tintSmb', (_id, v) => {
+    onSpecificSettingChange('appearance.tintSmb', (v) => {
       tintSmb = v
     }),
-    onSpecificSettingChange('appearance.tintMtp', (_id, v) => {
+    onSpecificSettingChange('appearance.tintMtp', (v) => {
       tintMtp = v
     }),
   )

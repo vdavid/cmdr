@@ -108,7 +108,7 @@
     // section is a no-op: it renders nothing and fires no IPC (so a keystroke never opens
     // `media.db`). Flipping the setting live-hides/reveals the section with no restart.
     let masterEnabled = $state(getSetting('mediaIndex.enabled'))
-    $effect(() => onSpecificSettingChange('mediaIndex.enabled', (_id, v) => (masterEnabled = v)))
+    $effect(() => onSpecificSettingChange('mediaIndex.enabled', (v) => (masterEnabled = v)))
 
     let volumeState = $state<MediaIndexVolumeState | null>(null)
     let tiles = $state<Tile[]>([])

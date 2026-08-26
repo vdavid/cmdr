@@ -36,10 +36,10 @@
     let threshold = $state(getSetting('mediaIndex.importanceThreshold'))
 
     onMount(() => {
-        const unsubScope = onSpecificSettingChange('mediaIndex.scope', (_id, value) => (scope = value))
+        const unsubScope = onSpecificSettingChange('mediaIndex.scope', (value) => (scope = value))
         const unsubThreshold = onSpecificSettingChange(
             'mediaIndex.importanceThreshold',
-            (_id, value) => (threshold = value),
+            (value) => (threshold = value),
         )
         return () => {
             unsubScope()

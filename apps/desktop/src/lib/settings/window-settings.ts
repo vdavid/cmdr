@@ -135,7 +135,7 @@ export function initWindowLanguageSync(): () => void {
     else unlistenOsLocale = unlisten
   })
 
-  const unsubscribeSetting = onSpecificSettingChange('appearance.language', (_id, value) => {
+  const unsubscribeSetting = onSpecificSettingChange('appearance.language', (value) => {
     apply(value)
   })
 

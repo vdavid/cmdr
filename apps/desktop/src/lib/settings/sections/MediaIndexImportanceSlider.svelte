@@ -148,7 +148,7 @@
         void refreshPreview(bucket)
         void refreshLocalState()
         // Keep the slider in sync if the threshold changes in another window.
-        const unsub = onSpecificSettingChange('mediaIndex.importanceThreshold', (_id, value) => {
+        const unsub = onSpecificSettingChange('mediaIndex.importanceThreshold', (value) => {
             const next = bucketFromThreshold(value)
             if (next !== bucket) {
                 bucket = next

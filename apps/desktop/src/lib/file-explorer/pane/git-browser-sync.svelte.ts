@@ -56,10 +56,10 @@ export function createGitBrowserSync(deps: GitBrowserSyncDeps): GitBrowserSync {
   let showRepoChip = $state<boolean>(getSetting('fileExplorer.git.showRepoChip'))
   let showGitStatusColumn = $state<boolean>(getSetting('fileExplorer.git.showStatusColumn'))
 
-  const unsubscribeChipSetting = onSpecificSettingChange('fileExplorer.git.showRepoChip', (_id, v) => {
+  const unsubscribeChipSetting = onSpecificSettingChange('fileExplorer.git.showRepoChip', (v) => {
     showRepoChip = v
   })
-  const unsubscribeColumnSetting = onSpecificSettingChange('fileExplorer.git.showStatusColumn', (_id, v) => {
+  const unsubscribeColumnSetting = onSpecificSettingChange('fileExplorer.git.showStatusColumn', (v) => {
     showGitStatusColumn = v
   })
 

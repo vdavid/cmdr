@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-const subscribers = new Map<string, (id: string, value: unknown) => void>()
+const subscribers = new Map<string, (value: unknown) => void>()
 const settings = new Map<string, string>()
 
 vi.mock('$lib/settings/settings-store', () => ({
@@ -21,7 +21,7 @@ vi.mock('$lib/settings/settings-store', () => ({
   setSetting: vi.fn(),
   resetSetting: vi.fn(),
   isModified: vi.fn(() => false),
-  onSpecificSettingChange: vi.fn((id: string, cb: (id: string, value: unknown) => void) => {
+  onSpecificSettingChange: vi.fn((id: string, cb: (value: unknown) => void) => {
     subscribers.set(id, cb)
     return () => subscribers.delete(id)
   }),

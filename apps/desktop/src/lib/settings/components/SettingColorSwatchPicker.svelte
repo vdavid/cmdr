@@ -25,7 +25,7 @@
     let popoverEl: HTMLDivElement | undefined = $state()
 
     onMount(() => {
-        return onSpecificSettingChange(id, (_id, newValue) => {
+        return onSpecificSettingChange(id, (newValue) => {
             value = newValue as VolumeTintColor
         })
     })

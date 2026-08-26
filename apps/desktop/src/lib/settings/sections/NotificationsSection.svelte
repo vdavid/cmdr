@@ -171,10 +171,10 @@
         // Keep the description in sync when the binding is rebound in the
         // Keyboard shortcuts section (same window or another), and keep the
         // toggle state in sync if `enabled` changes elsewhere.
-        const unsubBinding = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_BINDING_KEY, (_id, value) => {
+        const unsubBinding = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_BINDING_KEY, (value) => {
             shortcutBinding = value
         })
-        const unsubEnabled = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_ENABLED_KEY, (_id, value) => {
+        const unsubEnabled = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_ENABLED_KEY, (value) => {
             shortcutEnabled = value
         })
         const unsubLowDiskSpace = onSpecificSettingChange(LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY, () => {

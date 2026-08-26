@@ -62,7 +62,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
 }))
 
 /** Live listeners on `analytics.email`, so a test can play the Settings window's part. */
-const emailListeners = new Set<(id: string, value: string) => void>()
+const emailListeners = new Set<(value: string) => void>()
 
 vi.mock('$lib/settings', async (importOriginal) => {
   const actual = await importOriginal<{ getSetting: (id: string) => unknown }>()
@@ -72,7 +72,7 @@ vi.mock('$lib/settings', async (importOriginal) => {
     setSetting: (id: string, value: unknown) => {
       setSettingMock(id, value)
     },
-    onSpecificSettingChange: (id: string, listener: (id: string, value: string) => void) => {
+    onSpecificSettingChange: (id: string, listener: (value: string) => void) => {
       if (id !== 'analytics.email') return () => {}
       emailListeners.add(listener)
       return () => emailListeners.delete(listener)
@@ -510,7 +510,7 @@ describe('ErrorReportDialog', () => {
 
     // Settings opens as its own window, so the dialog is still here when this lands.
     mockEmail = 'new@example.com'
-    for (const listener of [...emailListeners]) listener('analytics.email', 'new@example.com')
+    for (const listener of [...emailListeners]) listener('new@example.com')
     await tick()
 
     expect(target.textContent).toContain('new@example.com')

@@ -69,7 +69,7 @@
     onMount(() => {
         void syncState()
 
-        const unsubEnabled = onSpecificSettingChange('developer.mcpEnabled', (_id, value) => {
+        const unsubEnabled = onSpecificSettingChange('developer.mcpEnabled', (value) => {
             // Ignore echoes from our own syncState calls (sync + cross-window).
             // A real user toggle always changes the value away from the current server state.
             if (value === serverRunning) return

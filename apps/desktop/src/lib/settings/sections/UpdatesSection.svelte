@@ -36,7 +36,7 @@
     // or Enter) with a valid address, we subscribe it to the beta mailing list via `betaSignup`,
     // which sends ONLY the email (never an install id), so usage stats can't be tied back to it.
     let email = $state(getSetting('analytics.email'))
-    onSpecificSettingChange('analytics.email', (_id, value) => {
+    onSpecificSettingChange('analytics.email', (value) => {
         email = value
     })
 

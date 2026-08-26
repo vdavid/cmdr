@@ -40,7 +40,7 @@ vi.mock('$lib/updates/updater.svelte', async () => {
 })
 
 /** Live listeners on `analytics.email`, so a test can play another window's write. */
-const emailListeners = new Set<(id: string, value: string) => void>()
+const emailListeners = new Set<(value: string) => void>()
 
 vi.mock('$lib/settings/settings-store', () => ({
   // The email field reads a string; everything else in this section reads booleans.
@@ -48,7 +48,7 @@ vi.mock('$lib/settings/settings-store', () => ({
   setSetting: vi.fn(() => Promise.resolve()),
   resetSetting: vi.fn(),
   isModified: vi.fn(() => false),
-  onSpecificSettingChange: vi.fn((id: string, listener: (id: string, value: string) => void) => {
+  onSpecificSettingChange: vi.fn((id: string, listener: (value: string) => void) => {
     if (id !== 'analytics.email') return () => {}
     emailListeners.add(listener)
     return () => emailListeners.delete(listener)
@@ -266,7 +266,7 @@ describe('UpdatesSection card groups', () => {
     const target = render()
     await tick()
 
-    for (const listener of [...emailListeners]) listener('analytics.email', 'tester@example.com')
+    for (const listener of [...emailListeners]) listener('tester@example.com')
     await tick()
 
     expect(getEmailInput(target).value).toBe('tester@example.com')

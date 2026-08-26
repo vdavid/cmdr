@@ -16,12 +16,12 @@ import { createAttachEmail, type AttachEmail } from './attach-email.svelte'
 import { getSetting, setSetting } from '$lib/settings'
 
 /** Live listeners on `analytics.email`, so a test can play the Settings window's part. */
-const emailListeners = new Set<(id: string, value: string) => void>()
+const emailListeners = new Set<(value: string) => void>()
 
 vi.mock('$lib/settings', () => ({
   getSetting: vi.fn(),
   setSetting: vi.fn(),
-  onSpecificSettingChange: vi.fn((id: string, listener: (id: string, value: string) => void) => {
+  onSpecificSettingChange: vi.fn((id: string, listener: (value: string) => void) => {
     if (id !== 'analytics.email') throw new Error(`unexpected subscription: ${id}`)
     emailListeners.add(listener)
     return () => emailListeners.delete(listener)
@@ -66,7 +66,7 @@ function closeOwners() {
 
 /** Play the Settings window: write `analytics.email` and tell the subscribers. */
 function setContactEmailFromSettings(value: string) {
-  for (const listener of [...emailListeners]) listener('analytics.email', value)
+  for (const listener of [...emailListeners]) listener(value)
   flushSync()
 }
 

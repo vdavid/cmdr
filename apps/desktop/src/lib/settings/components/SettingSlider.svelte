@@ -81,7 +81,7 @@
 
     // Subscribe to setting changes (for external resets).
     onMount(() => {
-        return onSpecificSettingChange(id, (_id, newValue) => {
+        return onSpecificSettingChange(id, (newValue) => {
             value = toTrack(newValue as number)
         })
     })

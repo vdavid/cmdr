@@ -17,8 +17,8 @@ import type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/b
 
 let aiProvider: 'off' | 'local' | 'cloud' = 'off'
 let autoApplySetting = true
-const autoApplyListeners = new Set<(id: string, value: boolean) => void>()
-const aiProviderListeners = new Set<(id: string, value: unknown) => void>()
+const autoApplyListeners = new Set<(value: boolean) => void>()
+const aiProviderListeners = new Set<(value: unknown) => void>()
 
 const { translateSelectionMock, addRecentMock, getRecentMock } = vi.hoisted(() => ({
   // Typed signature so `mock.calls[0]` is a positional tuple rather than `[]`.
@@ -57,7 +57,7 @@ vi.mock('$lib/settings', () => ({
     if (key === 'search.autoApply') return autoApplySetting
     return undefined
   }),
-  onSpecificSettingChange: vi.fn((id: string, listener: (id: string, value: unknown) => void) => {
+  onSpecificSettingChange: vi.fn((id: string, listener: (value: unknown) => void) => {
     if (id === 'search.autoApply') {
       autoApplyListeners.add(listener)
       return () => autoApplyListeners.delete(listener)
@@ -77,7 +77,7 @@ vi.mock('$lib/icon-cache', () => ({
 
 function setAiProviderForTest(value: 'off' | 'local' | 'cloud'): void {
   aiProvider = value
-  for (const listener of aiProviderListeners) listener('ai.provider', value)
+  for (const listener of aiProviderListeners) listener(value)
 }
 
 function dispatchKey(target: Element, key: string, meta = false, shift = false): KeyboardEvent {

@@ -460,7 +460,7 @@
     // ─────────────────────────────────────────────────────────────────────────
 
     onMount(() => {
-        unlistenAiProvider = onSpecificSettingChange('ai.provider', (_id, value: unknown) => {
+        unlistenAiProvider = onSpecificSettingChange('ai.provider', (value: unknown) => {
             aiProvider = typeof value === 'string' ? value : 'off'
         })
     })

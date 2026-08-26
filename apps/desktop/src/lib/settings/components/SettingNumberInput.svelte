@@ -52,7 +52,7 @@
 
     // Subscribe to setting changes (for external resets); the store speaks ms.
     onMount(() => {
-        return onSpecificSettingChange(id, (_id, newValue) => {
+        return onSpecificSettingChange(id, (newValue) => {
             value = msToDurationValue(newValue as number, durationUnit)
         })
     })

@@ -41,7 +41,7 @@
     let value = $state(String(getSetting(id)))
 
     onMount(() => {
-        return onSpecificSettingChange(id, (_id, newValue) => {
+        return onSpecificSettingChange(id, (newValue) => {
             value = String(newValue)
         })
     })

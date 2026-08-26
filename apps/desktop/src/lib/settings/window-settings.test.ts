@@ -114,7 +114,7 @@ describe('initWindowSettings', () => {
 
 describe('initWindowLanguageSync', () => {
   /** The change listener the sync registers, so a test can fire it. */
-  let changeListener: ((id: string, value: string) => void) | undefined
+  let changeListener: ((value: string) => void) | undefined
   /** The OS-language-moved callback the sync registers, so a test can fire it. */
   let osLocaleMoved: (() => void) | undefined
   let language = 'system'
@@ -132,7 +132,7 @@ describe('initWindowLanguageSync', () => {
     setLocale.mockClear()
     vi.doMock('./settings-store', () => ({
       getSetting: () => language,
-      onSpecificSettingChange: (_id: string, listener: (id: string, value: string) => void) => {
+      onSpecificSettingChange: (_id: string, listener: (value: string) => void) => {
         changeListener = listener
         return unsubscribe
       },
@@ -185,7 +185,7 @@ describe('initWindowLanguageSync', () => {
     const { initWindowLanguageSync } = await loadWith(null)
     initWindowLanguageSync()
     setLocale.mockClear()
-    changeListener?.('appearance.language', 'de')
+    changeListener?.('de')
     expect(setLocale).toHaveBeenCalledWith('de')
   })
 

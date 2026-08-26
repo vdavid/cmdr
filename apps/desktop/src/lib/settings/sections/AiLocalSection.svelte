@@ -75,7 +75,7 @@
         }
 
         // Subscribe to context size changes (update pending, no auto-restart)
-        const unsubCtx = onSpecificSettingChange('ai.localContextSize', (_id, newValue) => {
+        const unsubCtx = onSpecificSettingChange('ai.localContextSize', (newValue) => {
             pendingContextSize = Number(newValue)
         })
         unlistenFns.push(unsubCtx)

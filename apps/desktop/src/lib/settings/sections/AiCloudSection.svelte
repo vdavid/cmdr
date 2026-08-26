@@ -88,7 +88,7 @@
     })
 
     // Subscribe to cloud provider changes
-    const unsubCloudProvider = onSpecificSettingChange('ai.cloudProvider', (_id, newValue) => {
+    const unsubCloudProvider = onSpecificSettingChange('ai.cloudProvider', (newValue) => {
         // Commit any in-flight typing to the OLD provider's keychain entry before we switch;
         // otherwise the pending save would silently target the wrong provider after `cloudProviderId`
         // changes below.
@@ -108,7 +108,7 @@
     // When the Ask Cmdr slot has its own model, this section's model doesn't reach Ask
     // Cmdr — say so under the picker instead of letting the change silently not apply.
     let askCmdrModelOverride = $state(getSetting('askCmdr.interactiveModel').trim())
-    const unsubAskCmdrModel = onSpecificSettingChange('askCmdr.interactiveModel', (_id, newValue) => {
+    const unsubAskCmdrModel = onSpecificSettingChange('askCmdr.interactiveModel', (newValue) => {
         askCmdrModelOverride = newValue.trim()
     })
     unlistenFns.push(unsubAskCmdrModel)

@@ -136,7 +136,7 @@
         // Keep in sync if the binding changes elsewhere (e.g. a reset, or the
         // warn-toast path). The acknowledged-reset rule is enforced by the
         // setter, not here.
-        const unsub = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_BINDING_KEY, (_id, value) => {
+        const unsub = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_BINDING_KEY, (value) => {
             binding = value
         })
 

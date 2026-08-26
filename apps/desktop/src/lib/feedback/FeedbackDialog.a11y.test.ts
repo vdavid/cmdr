@@ -29,13 +29,13 @@ let mockEmail = ''
 let mockAttachDefault = false
 const setSettingMock = vi.fn()
 /** Live listeners on `analytics.email`, so a test can play the Settings window's part. */
-const emailListeners = new Set<(id: string, value: string) => void>()
+const emailListeners = new Set<(value: string) => void>()
 vi.mock('$lib/settings', () => ({
   getSetting: vi.fn((id: string) => (id === 'analytics.email' ? mockEmail : mockAttachDefault)),
   setSetting: (id: string, value: unknown) => {
     setSettingMock(id, value)
   },
-  onSpecificSettingChange: (id: string, listener: (id: string, value: string) => void) => {
+  onSpecificSettingChange: (id: string, listener: (value: string) => void) => {
     if (id !== 'analytics.email') return () => {}
     emailListeners.add(listener)
     return () => emailListeners.delete(listener)
@@ -45,7 +45,7 @@ vi.mock('$lib/settings', () => ({
 /** The user edits their contact email in the Settings window while the dialog stays up. */
 async function setContactEmailFromSettings(value: string): Promise<void> {
   mockEmail = value
-  for (const listener of [...emailListeners]) listener('analytics.email', value)
+  for (const listener of [...emailListeners]) listener(value)
   await tick()
 }
 

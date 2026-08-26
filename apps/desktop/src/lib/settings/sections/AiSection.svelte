@@ -42,7 +42,7 @@
         }
 
         // Subscribe to provider changes
-        const unsubProvider = onSpecificSettingChange('ai.provider', (_id, newValue) => {
+        const unsubProvider = onSpecificSettingChange('ai.provider', (newValue) => {
             const oldProvider = provider
             provider = newValue
             void handleProviderChange(oldProvider, provider)

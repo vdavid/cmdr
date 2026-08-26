@@ -74,13 +74,13 @@
         local: 'settings.ai.provider.opt.local',
     }
     let provider = $state<AiProvider>(getSetting('ai.provider'))
-    $effect(() => onSpecificSettingChange('ai.provider', (_id, v) => { provider = v }))
+    $effect(() => onSpecificSettingChange('ai.provider', (v) => { provider = v }))
 
     // The interactive-slot model override (a hand-rolled text row: the registry has no
     // generic text-input primitive). Seed from the store, keep in sync cross-window.
     const modelDef = getSettingDefinition('askCmdr.interactiveModel') ?? { label: '', description: '' }
     let model = $state(getSetting('askCmdr.interactiveModel'))
-    $effect(() => onSpecificSettingChange('askCmdr.interactiveModel', (_id, v) => { model = v }))
+    $effect(() => onSpecificSettingChange('askCmdr.interactiveModel', (v) => { model = v }))
     function onModelInput(event: Event): void {
         const value = (event.target as HTMLInputElement).value
         model = value
@@ -93,7 +93,7 @@
     // second later, so asking the backend "is my pick too big" would warn a beat late.
     const memoryDef = getSettingDefinition('askCmdr.chatMemorySize') ?? { label: '', description: '' }
     let chatMemorySize = $state(getSetting('askCmdr.chatMemorySize'))
-    $effect(() => onSpecificSettingChange('askCmdr.chatMemorySize', (_id, v) => { chatMemorySize = v }))
+    $effect(() => onSpecificSettingChange('askCmdr.chatMemorySize', (v) => { chatMemorySize = v }))
     let knownWindowTokens = $state<number | null>(null)
     $effect(() => {
         void provider // a provider or model change moves the window this compares against
@@ -116,9 +116,9 @@
     const wakeDelayDef = getSettingDefinition('askCmdr.wakeDelay') ?? { label: '', description: '' }
     const wakeToastDef = getSettingDefinition('askCmdr.wakeToast') ?? { label: '', description: '' }
     let proactive = $state(getSetting('askCmdr.proactive'))
-    $effect(() => onSpecificSettingChange('askCmdr.proactive', (_id, v) => { proactive = v }))
+    $effect(() => onSpecificSettingChange('askCmdr.proactive', (v) => { proactive = v }))
     let wakeDelaySeconds = $state(getSetting('askCmdr.wakeDelay'))
-    $effect(() => onSpecificSettingChange('askCmdr.wakeDelay', (_id, v) => { wakeDelaySeconds = v }))
+    $effect(() => onSpecificSettingChange('askCmdr.wakeDelay', (v) => { wakeDelaySeconds = v }))
 
     // How long a quieter folder waits: a minute of patience for every second of attentiveness,
     // held to six hours. ⚠️ Mirrors `agent::wake::interest`'s `WARM_MULTIPLE` / `MAX_WARM_DELAY`,

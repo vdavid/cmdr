@@ -153,12 +153,12 @@ export const testSettings: { aiProvider: 'off' | 'local' | 'cloud'; autoApply: b
   autoApply: true,
 }
 
-const autoApplyListeners = new Set<(id: string, value: boolean) => void>()
+const autoApplyListeners = new Set<(value: boolean) => void>()
 
 /** Test helper: simulate a settings.json change for `search.autoApply` and notify subscribers. */
 export function setAutoApplyForTest(value: boolean): void {
   testSettings.autoApply = value
-  for (const listener of autoApplyListeners) listener('search.autoApply', value)
+  for (const listener of autoApplyListeners) listener(value)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -220,7 +220,7 @@ export function settingsMock(): Record<string, unknown> {
       if (key === 'mediaIndex.enabled') return true
       return undefined
     }),
-    onSpecificSettingChange: vi.fn((id: string, listener: (id: string, value: boolean) => void) => {
+    onSpecificSettingChange: vi.fn((id: string, listener: (value: boolean) => void) => {
       if (id !== 'search.autoApply') return () => {}
       autoApplyListeners.add(listener)
       return () => autoApplyListeners.delete(listener)

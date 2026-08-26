@@ -22,7 +22,7 @@ import type { RepoInfo } from '../git/git-store.svelte'
 
 const { gitStore, settingsListeners, settingsValues, isMtpVolumeIdSpy } = vi.hoisted<{
   gitStore: { lookupRepoInfo: Mock; subscribeToRepo: Mock; unsubscribeFromRepo: Mock }
-  settingsListeners: Record<string, (id: string, v: boolean) => void>
+  settingsListeners: Record<string, (v: boolean) => void>
   settingsValues: Record<string, boolean>
   isMtpVolumeIdSpy: Mock
 }>(() => ({
@@ -46,7 +46,7 @@ vi.mock('../git/git-store.svelte', () => ({
 }))
 vi.mock('$lib/settings', () => ({
   getSetting: (id: string) => settingsValues[id],
-  onSpecificSettingChange: (id: string, cb: (id: string, v: boolean) => void) => {
+  onSpecificSettingChange: (id: string, cb: (v: boolean) => void) => {
     settingsListeners[id] = cb
     return () => delete settingsListeners[id]
   },
@@ -160,8 +160,8 @@ describe('createGitBrowserSync', () => {
       expect(sub.gitRepoInfo?.repoRoot).toBe('/repo')
     })
 
-    settingsListeners['fileExplorer.git.showRepoChip']('fileExplorer.git.showRepoChip', false)
-    settingsListeners['fileExplorer.git.showStatusColumn']('fileExplorer.git.showStatusColumn', false)
+    settingsListeners['fileExplorer.git.showRepoChip'](false)
+    settingsListeners['fileExplorer.git.showStatusColumn'](false)
     flushSync()
 
     await vi.waitFor(() => {

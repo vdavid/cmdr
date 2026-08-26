@@ -24,16 +24,16 @@ const { state, spies } = vi.hoisted(() => ({
 // live listeners the composer registers, so a test can flip the provider with no remount.
 const settings = vi.hoisted(() => {
   const store = { provider: 'cloud' as string }
-  const listeners = new Set<(id: string, v: unknown) => void>()
+  const listeners = new Set<(v: unknown) => void>()
   return {
     getSetting: (id: string) => (id === 'ai.provider' ? store.provider : undefined),
-    onSpecificSettingChange: (id: string, cb: (id: string, v: unknown) => void) => {
+    onSpecificSettingChange: (id: string, cb: (v: unknown) => void) => {
       if (id === 'ai.provider') listeners.add(cb)
       return () => listeners.delete(cb)
     },
     setProvider(v: string): void {
       store.provider = v
-      for (const cb of listeners) cb('ai.provider', v)
+      for (const cb of listeners) cb(v)
     },
     reset(provider: string): void {
       listeners.clear()

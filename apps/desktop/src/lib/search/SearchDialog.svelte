@@ -235,7 +235,7 @@
     onMount(() => {
         // Live-mirror `ai.provider` so the AI chip appears / disappears in real time when
         // the user changes the provider in the settings window.
-        unlistenAiProvider = onSpecificSettingChange('ai.provider', (_id, value: unknown) => {
+        unlistenAiProvider = onSpecificSettingChange('ai.provider', (value: unknown) => {
             aiProvider = typeof value === 'string' ? value : 'off'
         })
         // How the handed-off walk's toast gets back here. Registered rather than

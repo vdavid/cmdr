@@ -80,7 +80,7 @@
     // Live master-toggle state for the queued-enrichment line (the setting can
     // flip in the settings window while this tooltip is up).
     let imageIndexEnabled = $state(getSetting('mediaIndex.enabled'))
-    onMount(() => onSpecificSettingChange('mediaIndex.enabled', (_id, value) => (imageIndexEnabled = value)))
+    onMount(() => onSpecificSettingChange('mediaIndex.enabled', (value) => (imageIndexEnabled = value)))
 
     // "Image indexing starts after the drive scan": image indexing is on, but its
     // pass is waiting for an eligible volume's drive index (the scan-completion

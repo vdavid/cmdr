@@ -26,7 +26,7 @@ const h = vi.hoisted(() => ({
   // The master toggle plus a captured live-change callback, so a test can flip it at
   // runtime exactly as the settings store does (the component subscribes via
   // `onSpecificSettingChange`).
-  settings: { masterEnabled: true, liveChange: null as null | ((id: string, value: unknown) => void) },
+  settings: { masterEnabled: true, liveChange: null as null | ((value: unknown) => void) },
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -40,7 +40,7 @@ vi.mock('$lib/tauri-commands', () => ({
 
 vi.mock('$lib/settings', () => ({
   getSetting: (key: string) => (key === 'mediaIndex.enabled' ? h.settings.masterEnabled : undefined),
-  onSpecificSettingChange: (_key: string, cb: (id: string, value: unknown) => void) => {
+  onSpecificSettingChange: (_key: string, cb: (value: unknown) => void) => {
     h.settings.liveChange = cb
     return () => {
       h.settings.liveChange = null
@@ -137,7 +137,7 @@ describe('ImageSearchResults master-toggle gating', () => {
 
     // Turn the master toggle off at runtime, exactly as the settings store would.
     expect(h.settings.liveChange).not.toBeNull()
-    h.settings.liveChange?.('mediaIndex.enabled', false)
+    h.settings.liveChange?.(false)
     flushSync()
     await settle()
 
@@ -148,7 +148,7 @@ describe('ImageSearchResults master-toggle gating', () => {
     expect(h.searchOcr).toHaveBeenCalledTimes(1)
 
     // Turning it back on resumes: the section returns and a fresh search runs (no restart).
-    h.settings.liveChange?.('mediaIndex.enabled', true)
+    h.settings.liveChange?.(true)
     flushSync()
     await settle()
     expect(target.querySelector('.image-results')).not.toBeNull()

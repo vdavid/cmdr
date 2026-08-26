@@ -11,11 +11,11 @@ import { mount, flushSync, type ComponentProps } from 'svelte'
 // changes; drive both from the test while preserving every other `$lib/settings`
 // export (intl and `<Size>` pull from the same module).
 let currentLevel = 6
-let changeCb: ((id: string, v: unknown) => void) | null = null
+let changeCb: ((v: unknown) => void) | null = null
 vi.mock('$lib/settings', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/settings')>()),
   getSetting: () => currentLevel,
-  onSpecificSettingChange: (_id: string, cb: (id: string, v: unknown) => void) => {
+  onSpecificSettingChange: (_id: string, cb: (v: unknown) => void) => {
     changeCb = cb
     return () => {}
   },
@@ -57,7 +57,7 @@ describe('CompressEstimateLine', () => {
     const atLevelSix = target.querySelector('.estimate-value')?.textContent ?? ''
     // Slide to the "Faster" end (level 1): compressible content inflates ~45%.
     currentLevel = 1
-    changeCb?.('behavior.archiveCompressionLevel', 1)
+    changeCb?.(1)
     flushSync()
     const atLevelOne = target.querySelector('.estimate-value')?.textContent ?? ''
     expect(atLevelOne).not.toBe(atLevelSix)

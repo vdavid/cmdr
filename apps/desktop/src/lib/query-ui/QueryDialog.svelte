@@ -315,7 +315,7 @@
 
         // Live-mirror `search.autoApply`. Shared key across consumers (no separate
         // `selection.autoApply` setting; the auto-apply contract is the same one).
-        unlistenAutoApply = onSpecificSettingChange('search.autoApply', (_id, value) => {
+        unlistenAutoApply = onSpecificSettingChange('search.autoApply', (value) => {
             autoApplyEnabled = value
         })
 

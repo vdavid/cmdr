@@ -52,7 +52,7 @@
     let overrides = $state(parseEnterBehaviorOverrides(getSetting(SETTING_ID)))
 
     onMount(() =>
-        onSpecificSettingChange(SETTING_ID, (_id, next) => {
+        onSpecificSettingChange(SETTING_ID, (next) => {
             overrides = parseEnterBehaviorOverrides(next)
         }),
     )

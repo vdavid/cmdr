@@ -691,8 +691,16 @@ async function saveToStore(): Promise<boolean> {
 
 type SettingChangeListener<K extends SettingId = SettingId> = (id: K, value: SettingsValues[K]) => void
 
+// The specific-listener registry drops the id `onSpecificSettingChange` echoes back from its
+// listener signature (see the export's doc comment for why), so it can't share `SettingChangeListener`
+// with the all-settings registry above. `SettingsValues[K]` isn't expressible as a single type
+// parameterized over every `K` in one `Set`, so the map is keyed by the (erased) value type and the
+// one dispatch site below casts back to the call's own `K` — the cast is narrow and unavoidable, not
+// a way to paper over a real mismatch.
+type SpecificSettingChangeListener = (value: never) => void
+
 const listeners = new Set<SettingChangeListener>()
-const specificListeners = new Map<SettingId, Set<SettingChangeListener>>()
+const specificListeners = new Map<SettingId, Set<SpecificSettingChangeListener>>()
 
 /**
  * Subscribe to all setting changes.
@@ -704,18 +712,25 @@ export function onSettingChange(listener: SettingChangeListener): () => void {
 
 /**
  * Subscribe to changes for a specific setting.
+ *
+ * The listener takes only the value, not `(id, value)`: since every call site already knows
+ * `id` (it just passed it in), a `(id, value) => void` signature let a listener declare just
+ * one parameter — TypeScript allows a callback to take fewer parameters than the type offers —
+ * and silently bind the ECHOED ID into what looked like the value slot. That shipped as a real
+ * bug (an email field rendering the literal id `analytics.email`). Dropping the parameter makes
+ * that class of bug unrepresentable here.
  */
 export function onSpecificSettingChange<K extends SettingId>(
   id: K,
-  listener: (id: K, value: SettingsValues[K]) => void,
+  listener: (value: SettingsValues[K]) => void,
 ): () => void {
   let set = specificListeners.get(id)
   if (!set) {
     set = new Set()
     specificListeners.set(id, set)
   }
-  set.add(listener as SettingChangeListener)
-  return () => set.delete(listener as SettingChangeListener)
+  set.add(listener)
+  return () => set.delete(listener)
 }
 
 function notifyListeners<K extends SettingId>(id: K, value: SettingsValues[K]): void {
@@ -733,7 +748,7 @@ function notifyListeners<K extends SettingId>(id: K, value: SettingsValues[K]): 
   if (specific) {
     for (const listener of specific) {
       try {
-        listener(id, value)
+        listener(value as never)
       } catch (error) {
         log.error('Setting change listener error: {error}', { error })
       }

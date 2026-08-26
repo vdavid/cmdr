@@ -18,13 +18,13 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 /** Live listeners on `analytics.email`, so a test can play the Settings window's part. */
-const emailListeners = new Set<(id: string, value: string) => void>()
+const emailListeners = new Set<(value: string) => void>()
 let mockEmail = ''
 
 vi.mock('$lib/settings', () => ({
   setSetting: vi.fn(),
   getSetting: vi.fn((id: string) => (id === 'analytics.email' ? mockEmail : false)),
-  onSpecificSettingChange: (id: string, listener: (id: string, value: string) => void) => {
+  onSpecificSettingChange: (id: string, listener: (value: string) => void) => {
     if (id !== 'analytics.email') return () => {}
     emailListeners.add(listener)
     return () => emailListeners.delete(listener)
@@ -67,7 +67,7 @@ async function mountDialog(): Promise<HTMLElement> {
 /** The user edits their contact email in the Settings window while the dialog stays up. */
 async function setContactEmailFromSettings(value: string): Promise<void> {
   mockEmail = value
-  for (const listener of [...emailListeners]) listener('analytics.email', value)
+  for (const listener of [...emailListeners]) listener(value)
   await tick()
 }
 

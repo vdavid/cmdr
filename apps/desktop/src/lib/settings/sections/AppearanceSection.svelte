@@ -42,7 +42,7 @@
     let appColorValue = $state(getSetting('appearance.appColor'))
 
     onMount(() => {
-        return onSpecificSettingChange('appearance.appColor', (_id, newValue) => {
+        return onSpecificSettingChange('appearance.appColor', (newValue) => {
             appColorValue = newValue
         })
     })

@@ -62,7 +62,7 @@
 
     onMount(() => {
         void refresh()
-        return onSpecificSettingChange('mediaIndex.semanticSearch.enabled', (_id, value) => (enabled = value))
+        return onSpecificSettingChange('mediaIndex.semanticSearch.enabled', (value) => (enabled = value))
     })
 
     async function download(): Promise<void> {

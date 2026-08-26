@@ -65,7 +65,7 @@
     let maxParallelism = $state(getSettingDefinition('mediaIndex.parallelism')?.constraints?.max ?? 16)
 
     onMount(() => {
-        const unsub = onSpecificSettingChange('mediaIndex.enabled', (_id, value) => (imageIndexEnabled = value))
+        const unsub = onSpecificSettingChange('mediaIndex.enabled', (value) => (imageIndexEnabled = value))
         void getMediaIndexMaxParallelism()
             .then((n) => (maxParallelism = n))
             .catch(() => {

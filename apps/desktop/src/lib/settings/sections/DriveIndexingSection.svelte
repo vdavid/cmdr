@@ -113,7 +113,7 @@
         })
         // The master switch can flip from the other window (or a reset), and every
         // row below it reads from this.
-        const unsubMaster = onSpecificSettingChange('indexing.enabled', (_id, value) => {
+        const unsubMaster = onSpecificSettingChange('indexing.enabled', (value) => {
             masterEnabled = value
         })
         // Refresh the index's disk use every 2 seconds while visible

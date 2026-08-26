@@ -22,7 +22,7 @@ const tauriState = {
 }
 // Captured `onSpecificSettingChange` callbacks, keyed by setting id, so tests can simulate
 // a user editing the port or flipping the enabled toggle (the component reacts to these).
-const settingChangeCallbacks = new Map<string, (id: string, value: unknown) => void>()
+const settingChangeCallbacks = new Map<string, (value: unknown) => void>()
 
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
@@ -37,7 +37,7 @@ vi.mock('$lib/settings/settings-store', () => ({
   }),
   resetSetting: vi.fn(),
   isModified: vi.fn(() => false),
-  onSpecificSettingChange: vi.fn((id: string, cb: (id: string, value: unknown) => void) => {
+  onSpecificSettingChange: vi.fn((id: string, cb: (value: unknown) => void) => {
     settingChangeCallbacks.set(id, cb)
     return () => settingChangeCallbacks.delete(id)
   }),
@@ -153,7 +153,7 @@ describe('McpServerSection', () => {
     ;(setMcpPort as Mock).mockResolvedValueOnce({ kind: 'portInUse', requested: 19300 })
     ;(findAvailablePort as Mock).mockResolvedValueOnce(57821)
 
-    settingChangeCallbacks.get('developer.mcpPort')?.('developer.mcpPort', 19300)
+    settingChangeCallbacks.get('developer.mcpPort')?.(19300)
     await vi.advanceTimersByTimeAsync(800) // elapse the change debounce
     await flushMicrotasks()
     await tick()
@@ -200,7 +200,7 @@ describe('McpServerSection', () => {
     ;(findAvailablePort as Mock).mockResolvedValueOnce(57821)
 
     // User flips the toggle on; the backend reports the pinned port busy and keeps the server off.
-    settingChangeCallbacks.get('developer.mcpEnabled')?.('developer.mcpEnabled', true)
+    settingChangeCallbacks.get('developer.mcpEnabled')?.(true)
     await flushMicrotasks()
     await tick()
 
