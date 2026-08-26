@@ -144,8 +144,9 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// ❗ Every dial goes through `cmdr_sftp::connect_sftp_volume`, which runs it in
 /// a task and awaits the join handle, so a connect the caller walks away from
 /// detaches rather than dropping mid-handshake. Calling one OFF goes through the
-/// token instead. `crates/cmdr-sftp/DETAILS.md` § "Crate hazards" has why that
-/// split is shaped the way it is.
+/// token instead, which stops the dial where it stands in every phase.
+/// `crates/cmdr-sftp/DETAILS.md` § "Crate hazards" has why that split is shaped
+/// the way it is.
 pub async fn connect_and_register(
     display_name: &str,
     params: SftpConnectionParams,

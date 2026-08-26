@@ -172,9 +172,9 @@ them.
     connection attempt, which Cmdr will. Open as issue #153 since 2026-03-19, unreproduced upstream. One-line fix,
     trivial to carry as a patch or upstream.
 
-    **Fixed upstream and shipped**: openssh-rust/openssh-sftp-client#176 landed in 0.15.8 (2026-08-24), which Cmdr is
-    on. The shape the crate grew to route around it is still in place; `crates/cmdr-sftp/DETAILS.md` § hazard 2 carries
-    what it would take to unwind.
+    **Fixed upstream and shipped**: openssh-rust/openssh-sftp-client#176 landed in 0.15.8 (2026-08-24), which Cmdr is on
+    and now depends on: `transport::stop_engine` aborts the `Sftp::new` future outright. `crates/cmdr-sftp/DETAILS.md` §
+    hazard 2 carries the terms.
 
   - **`File::read` advances the offset by the _requested_ length, not the returned one** (`src/file/mod.rs:426`), and
     `read_all` inherits it. A server that legally short-reads would leave a hole in a sequential download. It cannot

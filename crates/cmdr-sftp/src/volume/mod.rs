@@ -208,10 +208,10 @@ impl SftpVolume {
 /// `volume_id` must be the one the caller registers the volume under; production
 /// callers derive it from `sftp_volume_id(host, port, username)`.
 ///
-/// Cancelling `cancel` ends the attempt promptly and leaves ❗ nothing behind: no
-/// volume to register, no approval recorded, no secret written. What "promptly"
-/// means per phase, and why the SFTP hello is unlike the other two:
-/// `transport.rs` § "Cancelling a connect".
+/// Cancelling `cancel` ends the attempt where it stands and leaves ❗ nothing
+/// behind: no volume to register, no approval recorded, no secret written. The
+/// lever each phase uses, the SFTP hello's included: `transport.rs`
+/// § "Cancelling a connect".
 ///
 /// ❗ The dial runs inside a task on `host.runtime()` and this function awaits
 /// the join handle, so dropping THIS future abandons the handle and never the

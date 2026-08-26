@@ -17,12 +17,12 @@ user-facing words.
 - **❗ `File::close()` is the opposite: awaited, and only by its LAST clone.** A surviving clone makes it a silent no-op
   and the upload reports success on bytes nobody committed.
 - **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE so an abandoned dial detaches
-  rather than drops. The engine panic that forced this is fixed in `openssh-sftp-client` 0.15.8; the shape stays until
-  someone unwinds it on purpose. `DETAILS.md` § "2. An abandoned `Sftp::new`".
-- **❗ A connect is called off with a `CancellationToken`, ❌ never by dropping the dial.** Kex and auth stop on the
-  spot; a cancel in the SFTP hello leaves the engine finishing on a detached task that discards it, which is deliberate
-  rather than a leak. A cancelled connect registers, remembers, and stores nothing. `DETAILS.md` § "2b. Calling a
-  connect off".
+  rather than drops. The panic that forced it is fixed in 0.15.8; the shape stays until someone unwinds it on purpose.
+- **❗ A hello that never arrives ends in `transport::stop_engine`, ❌ never a bare `drop(session)`**: the engine's own
+  tasks hold the channel, and a sender the session lives on with it, so the socket would stay open for the life of the
+  process. `DETAILS.md` § "2. An abandoned `Sftp::new`".
+- **❗ A connect is called off with a `CancellationToken`, ❌ never by dropping the dial.** Every phase stops where it
+  stands, the hello included, and a cancelled connect registers, remembers, and stores nothing.
 - **Host-key trust keys on `(host, port, algorithm)` AND pins negotiation to it** — ❌ never one without the other. ❌
   Never record a fingerprint without re-asking the server (`volume::approve_host_key`).
 - **❌ Never anchor an out-of-root path; refuse it.** `root_anchored` turns `/etc/passwd` into `/srv/data/etc/passwd`.

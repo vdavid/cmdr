@@ -433,8 +433,7 @@ alternative, that is the price of the promise rather than an oversight.
 
 ## Crate hazards
 
-Read these before writing byte-path code, and note that hazard 2 is FIXED upstream while the shape it forced is still in
-our code.
+Read these before writing byte-path code.
 
 Every reading below was taken from `openssh-sftp-client` 0.15.7's source on 2026-08-22. We ship 0.15.8, whose only
 source change anywhere in the crate is the `tasks.rs` fix in hazard 2 (full crate diff, 2026-08-26), so the rest carries
@@ -457,67 +456,68 @@ there hangs the test rather than failing it, which is its own kind of loud.
 a detached task and discards the result; `File::close()` awaits it and returns the error, which for a staged write is
 where a server reports a write it could not commit. ❌ Don't read "never `close()`" as covering both.
 
-### 2. An abandoned `Sftp::new` panicked the engine's spawned task (fixed in 0.15.8, shape still here)
+### 2. An abandoned `Sftp::new`, and the engine that outlives it
 
-The engine's connect task did `tx.send(extensions).unwrap()`, which panicked whenever the `Sftp::new` future was dropped
-before the server's hello arrived: any timed-out or abandoned connect. 0.15.8 returns from the read task instead
-(openssh-rust/openssh-sftp-client#176, which is also the answer to upstream issue #153). Dropping or aborting a
-`Sftp::new` future is safe on the version we ship.
+Two things bite when a hello never arrives, and `transport::stop_engine` is the one place that answers both.
 
-**The two layers that routed around it are still in the code**, and unwinding either is a deliberate behavior change
-rather than a cleanup:
+**Aborting the future is only safe from 0.15.8 on.** The engine's connect task did `tx.send(extensions).unwrap()`, which
+panicked whenever the `Sftp::new` future was dropped before the server's hello: any timed-out or abandoned connect.
+0.15.8 returns from the read task instead (openssh-rust/openssh-sftp-client#176, which is also the answer to upstream
+issue #153). ❗ **A floor rather than a preference**: `stop_engine` aborts that future on every hello that doesn't
+arrive, and `reconnect::guarded_dial` rests on the same fix, so a downgrade puts the panic back under both.
 
-- `reconnect::guarded_dial` spawns the whole dial on `host.runtime()` and awaits the **join handle**, so a caller who
-  goes away detaches the dial instead of dropping it mid-handshake. ❗ Nothing else rides on that spawn: the token and
-  the deadline are arguments the dial already carries, so removing it costs no cancellation. What it changes is what an
-  ABANDONED dial does, which is now a free choice rather than a forced one.
-- `transport::await_hello` races only the JOIN HANDLE for `Sftp::new` and hands a cancelled hello to `finish_detached`
-  (§ 2b), which is why that phase has no true cancel yet.
+**Dropping the session closes nothing while the engine still holds the channel.** `Sftp::new` spawns tasks that own the
+channel halves, and each of those owns a sender the `russh` session task lives on. A `russh` `Handle` drop only logs;
+the session loop ends when its last sender goes. So an engine parked on a hello that never comes keeps the socket open
+for the life of the PROCESS, aborting the outer future included. `stop_engine` therefore aborts the engine, awaits the
+abort out, and then calls `Handle::disconnect`, which ends the session loop, closes the transport, and errors the
+engine's own tasks out with it (russh 0.62.7's client session loop, read 2026-08-26).
 
-They come out independently, and each is worth doing on its own terms: the first buys a smaller call graph, the second
-buys a real cancel. Both rest on the 0.15.8 floor, so a downgrade puts them back.
+❗ Only the unanswered-hello path needs the disconnect. A session that reached `SshConnection` is shut down by dropping
+the ENGINE, whose own drop orders its tasks to stop and releases the channel (§ 1).
 
-Two cells keep it honest, and they stay useful after any unwind because they pin the OUTCOME rather than our workaround:
+**`reconnect::guarded_dial` is the one shape still routing around the old panic.** It spawns the whole dial on
+`host.runtime()` and awaits the **join handle**, so a caller who goes away detaches the dial instead of dropping it
+mid-handshake. ❗ Nothing else rides on that spawn: the token and the deadline are arguments the dial already carries,
+so removing it costs no cancellation. What it changes is what an ABANDONED dial does, which on the 0.15.8 floor is a
+free choice rather than a forced one.
+
+Two cells keep the whole hazard honest, and they pin OUTCOMES rather than a workaround:
 `abandoning_a_connect_does_not_panic_the_engines_task` for the drop, and
-`a_cancel_inside_the_hello_window_leaves_no_live_session_and_no_panic` for the cancel, which asserts the engine's own
-task ENDED rather than died. A `JoinError` out of either is a regression whichever shape the code has, and it surfaces
-as an unrelated test binary crash rather than a failing assertion, which is what the cells convert back into a finding.
+`a_cancel_inside_a_real_hello_window_stops_the_engine_without_panicking_it` for the abort. A panic inside a spawned task
+doesn't fail the task that spawned it, so it surfaces as an unrelated test binary crash rather than a failing assertion,
+which is what the cells convert back into a finding.
 
 ### 2b. Calling a connect off
 
-A dial has three phases, and left alone it can hold a sign-in dialog for the full 30 s its budgets allow. `dial` takes a
-`tokio_util::sync::CancellationToken` so the user has a way out sooner, and the third phase is unlike the other two.
+A dial has four phases, and left alone it can hold a sign-in dialog for the full 30 s its budgets allow. `dial` takes a
+`tokio_util::sync::CancellationToken` so the user has a way out sooner. Every phase stops where it stands; what differs
+is the lever.
 
 - **The key exchange, the auth ladder, and the two channel requests** all run through `transport::within`, which races
-  the work against the token and **drops** it. `russh` unwinds a dropped future cleanly, so they stop where they stand.
-  The select is `biased`, so a token already cancelled when a step starts wins before the work is polled at all: a
-  connect the user called off never puts a packet on the wire, never spends an authentication attempt, and never reads
-  the secret store.
-- **The SFTP hello is waited out rather than dropped**, which makes it the one phase with no TRUE cancel. A cancel there
-  ends the USER's wait immediately and hands the still-running engine to `finish_detached`, which waits it out on a task
-  of its own and then drops both the engine and the session. That task gets a full `SUBSYSTEM_TIMEOUT` of its own rather
-  than the remainder of the dial's, so a cancel arriving late in the window doesn't yank a hello that was milliseconds
-  away; nobody is waiting on it, so all that matters is that it's bounded. ❗ **Deliberate rather than a leak.** The
-  task is what closes the socket, so the server sees the connection go as soon as the engine is done.
+  the work against the token and **drops** it. `russh` unwinds a dropped future cleanly. The select is `biased`, so a
+  token already cancelled when a step starts wins before the work is polled at all: a connect the user called off never
+  puts a packet on the wire, never spends an authentication attempt, and never reads the secret store.
+- **The SFTP hello runs in a task**, so dropping a future is no lever there. `transport::await_hello` races the join
+  handle and hands a hello that was cancelled, or that ran out of window, to `stop_engine` (§ hazard 2). The user's wait
+  and the server's session both end at the cancel.
+- **Cancel and timeout take the same exit**, and deliberately so: neither has anyone left waiting for a hello, and a
+  socket held open for one that may still arrive is a socket nobody is going to read.
+- **`hello` is two halves** so a cell can reach the second one: `start_engine` does the channel work and `await_hello`
+  waits the engine out. The wait measures 1.3 ms against `sftp-fixture-openssh` (instrumented dial, 2026-08-23), out of
+  a ~20 ms connect, so no amount of timing gets a cell into it reliably.
 
-  ❗ **On 0.15.8 this no longer has to be the shape.** Hazard 2's panic is what made dropping the hello unsafe; with it
-  fixed, `await_hello` could `abort()` the handle and close the socket AT the cancel instead of up to
-  `SUBSYSTEM_TIMEOUT` after it. Not done: it changes what a cancel does, and § hazard 2 says why both layers move
-  together.
+  `transport::dial_cancelling_inside_the_hello` is how a cell gets in anyway. It runs everything up to the engine's
+  start on a live token and then hands `await_hello` the cell's own token, with a `HelloPeer` that decides what answers:
+  the real `sftp` subsystem, or a command that swallows `SSH_FXP_INIT` and answers nothing, which holds the window open
+  for as long as the cell needs.
 
-- **The timeout path is NOT handed to `finish_detached`**, and the asymmetry is on purpose: a window that elapsed with
-  no hello means the server is broken rather than slow, so holding its socket open for another one buys nothing.
-  Dropping the session errors the engine's read task out, which is safe.
-- **`hello` is two halves** so a cell can reach the second one: `start_engine` does the droppable channel work,
-  `await_hello` does the part that can't be dropped, and `dial_cancelling_inside_the_hello` runs the first on a live
-  token and the second on a cancelled one. The wait in `await_hello` measures 1.3 ms against `sftp-fixture-openssh`
-  (instrumented dial, 2026-08-23), out of a ~20 ms connect, so no amount of timing gets a cell into it reliably.
-
-  Measured on the SERVER side too, because "not a leak" is a claim about what the far end sees: 20 back-to-back
-  cancelled hellos against `sftp-fixture-openssh` peak at **two** concurrent `sshd-session` processes and settle back to
-  zero (`docker exec … ps -eo args`, 2026-08-23). The detached tasks finish about as fast as they're made. The shipped
-  cell asserts the same thing in-process, by awaiting the handle `finish_detached` hands back, which needs no container
-  name to stay true.
+  **Measured on the far end**, because "the session is gone" is a claim about what the server sees, not about what we
+  dropped: the stalling peer's command carries a marker into the server's process table and ends when sshd closes the
+  session's pipes. It is gone 57 ms after the cancel, which is one `docker exec` probe wide
+  (`a_cancel_inside_the_hello_window_closes_the_servers_session_at_once`, 2026-08-26). ❗ A marker of the cell's own, ❌
+  never a count of `sshd-session` processes: the container stack is machine-wide and other suites hold sessions on the
+  same server.
 
 ❗ **A cancelled connect leaves nothing behind.** `volume::connect_sftp_volume` re-reads the token after the dial lands,
 so a cancel racing a session home still answers `Cancelled` and lets the session go: no volume registered, no host key
