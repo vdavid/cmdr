@@ -708,7 +708,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: null }) }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -720,7 +720,7 @@ describe('openDeleteDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
@@ -742,7 +742,7 @@ describe('openDeleteDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showAlert).not.toHaveBeenCalled()
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
@@ -763,7 +763,7 @@ describe('openDeleteDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(true)
+    await create(access, dialogs).openDeleteDialog({ permanent: true })
 
     expect(dialogs.showDeleteConfirmation).toHaveBeenCalledTimes(1)
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
@@ -780,7 +780,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ isFromCursor: true })
   })
@@ -794,7 +794,7 @@ describe('openDeleteDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ supportsTrash: false })
   })
@@ -805,7 +805,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -816,7 +816,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -829,7 +829,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(true)
+    await create(access, dialogs).openDeleteDialog({ permanent: true })
 
     expect(dialogs.showDeleteConfirmation).toHaveBeenCalledTimes(1)
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
@@ -848,7 +848,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -859,7 +859,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog(false)
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })

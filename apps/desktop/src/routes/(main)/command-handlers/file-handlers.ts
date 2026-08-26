@@ -108,12 +108,7 @@ export const fileHandlers = {
     // to pre-answer the conflict policy and tag provenance. `dispatchArgs` is
     // `undefined` in the arg-less case, so the openers default them all.
     const copyArgs = dispatchArgs as CommandArgs['file.copy'] | undefined
-    void explorerRef?.openCopyDialog(
-      copyArgs?.autoConfirm,
-      copyArgs?.onConflict,
-      copyArgs?.mcpRequestId,
-      copyArgs?.initiator,
-    )
+    void explorerRef?.openCopyDialog(copyArgs)
   },
 
   'file.duplicate': ({ explorerRef }) => {
@@ -124,22 +119,12 @@ export const fileHandlers = {
 
   'file.move': ({ explorerRef, dispatchArgs }) => {
     const moveArgs = dispatchArgs as CommandArgs['file.move'] | undefined
-    void explorerRef?.openMoveDialog(
-      moveArgs?.autoConfirm,
-      moveArgs?.onConflict,
-      moveArgs?.mcpRequestId,
-      moveArgs?.initiator,
-    )
+    void explorerRef?.openMoveDialog(moveArgs)
   },
 
   'file.compress': ({ explorerRef, dispatchArgs }) => {
     const compressArgs = dispatchArgs as CommandArgs['file.compress'] | undefined
-    void explorerRef?.openCompressDialog(
-      compressArgs?.autoConfirm,
-      compressArgs?.onConflict,
-      compressArgs?.mcpRequestId,
-      compressArgs?.initiator,
-    )
+    void explorerRef?.openCompressDialog(compressArgs)
   },
 
   'file.newFolder': ({ explorerRef, dispatchArgs }) => {
@@ -159,16 +144,16 @@ export const fileHandlers = {
     // The MCP `delete` tool may pass `permanent` (from its `mode`); F8 omits it
     // (trash-default). The dialog still clamps to permanent on no-trash volumes.
     const deleteArgs = dispatchArgs as CommandArgs['file.delete'] | undefined
-    void explorerRef?.openDeleteDialog(
-      deleteArgs?.permanent ?? false,
-      deleteArgs?.autoConfirm,
-      deleteArgs?.mcpRequestId,
-      deleteArgs?.initiator,
-    )
+    void explorerRef?.openDeleteDialog({
+      permanent: deleteArgs?.permanent ?? false,
+      autoConfirm: deleteArgs?.autoConfirm,
+      mcpRequestId: deleteArgs?.mcpRequestId,
+      initiator: deleteArgs?.initiator,
+    })
   },
 
   'file.deletePermanently': ({ explorerRef }) => {
-    void explorerRef?.openDeleteDialog(true)
+    void explorerRef?.openDeleteDialog({ permanent: true })
   },
 
   'dialog.confirm': ({ explorerRef, dispatchArgs }) => {

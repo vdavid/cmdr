@@ -5,6 +5,8 @@
         CancelLoadingPayload,
         CopyPathBetweenPanesArgs,
         FilePaneAPI,
+        OpenDeleteDialogArgs,
+        OpenTransferDialogArgs,
         StartRenameOptions,
         VolumeChangePayload,
     } from './types'
@@ -810,13 +812,8 @@
     }
 
     /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-    export async function openCopyDialog(
-        autoConfirm?: boolean,
-        onConflict?: string,
-        mcpRequestId?: string,
-        initiator?: Initiator,
-    ) {
-        await fileOps.openCopyDialog(autoConfirm, onConflict, mcpRequestId, initiator)
+    export async function openCopyDialog(args?: OpenTransferDialogArgs) {
+        await fileOps.openCopyDialog(args)
     }
 
     /** Duplicates the focused pane's selection (or cursor item) in place (⌘D). */
@@ -825,23 +822,13 @@
     }
 
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-    export async function openMoveDialog(
-        autoConfirm?: boolean,
-        onConflict?: string,
-        mcpRequestId?: string,
-        initiator?: Initiator,
-    ) {
-        await fileOps.openMoveDialog(autoConfirm, onConflict, mcpRequestId, initiator)
+    export async function openMoveDialog(args?: OpenTransferDialogArgs) {
+        await fileOps.openMoveDialog(args)
     }
 
     /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
-    export async function openCompressDialog(
-        autoConfirm?: boolean,
-        onConflict?: string,
-        mcpRequestId?: string,
-        initiator?: Initiator,
-    ) {
-        await fileOps.openCompressDialog(autoConfirm, onConflict, mcpRequestId, initiator)
+    export async function openCompressDialog(args?: OpenTransferDialogArgs) {
+        await fileOps.openCompressDialog(args)
     }
 
     /** Copies selected files (or cursor file) to the system clipboard. */
@@ -860,13 +847,8 @@
     }
 
     /** Opens the delete confirmation dialog for the current selection or cursor item. */
-    export async function openDeleteDialog(
-        permanent: boolean,
-        autoConfirm?: boolean,
-        mcpRequestId?: string,
-        initiator?: Initiator,
-    ) {
-        await fileOps.openDeleteDialog(permanent, autoConfirm, mcpRequestId, initiator)
+    export async function openDeleteDialog(args: OpenDeleteDialogArgs) {
+        await fileOps.openDeleteDialog(args)
     }
 
     // Focus the container after initialization so keyboard events work

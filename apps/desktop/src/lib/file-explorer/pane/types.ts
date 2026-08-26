@@ -1,5 +1,6 @@
 import type { FileEntry, FriendlyError, NetworkHost, ShareInfo } from '../types'
 import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
+import type { Initiator } from '$lib/tauri-commands'
 
 /** Options for `startRename`. */
 export interface StartRenameOptions {
@@ -81,6 +82,32 @@ export interface CopyPathBetweenPanesArgs {
 export interface VolumeSpaceWatchArgs {
   volumeId: string
   path: string
+}
+
+/**
+ * Shared args for the copy / move / compress dialog openers: an optional
+ * pre-answered conflict policy and MCP round-trip id, both `string`. Used by
+ * `ExplorerAPI.openCopyDialog` / `.openMoveDialog` / `.openCompressDialog`, each
+ * of which took `(autoConfirm?, onConflict?, mcpRequestId?, initiator?)` as four
+ * positional params with `onConflict` and `mcpRequestId` sharing `string`.
+ */
+export interface OpenTransferDialogArgs {
+  autoConfirm?: boolean
+  onConflict?: string
+  mcpRequestId?: string
+  initiator?: Initiator
+}
+
+/**
+ * Args for `ExplorerAPI.openDeleteDialog`, which took
+ * `(permanent, autoConfirm?, mcpRequestId?, initiator?)` with `permanent` and
+ * `autoConfirm` sharing `boolean`.
+ */
+export interface OpenDeleteDialogArgs {
+  permanent: boolean
+  autoConfirm?: boolean
+  mcpRequestId?: string
+  initiator?: Initiator
 }
 
 /** State snapshot for swapping panes without backend calls. */

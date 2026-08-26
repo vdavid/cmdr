@@ -16,7 +16,7 @@ progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_ope
 ## Must-knows
 
 - **F8/Shift+F8 just set the initial mode; the user can flip it in-dialog.** F8 preselects trash, Shift+F8 preselects
-  permanent. `file.delete` / `file.deletePermanently` commands; `DualPaneExplorer.openDeleteDialog(permanent)` builds
+  permanent. `file.delete` / `file.deletePermanently` commands; `DualPaneExplorer.openDeleteDialog({ permanent })` builds
   props from selection or cursor and looks up `supportsTrash` from the source `VolumeInfo`.
 - **Holding Shift over an F8 dialog upgrades it to permanent until release; Shift NEVER demotes**, and a Shift+F8 dialog
   ignores the hold (the user is still holding the key that opened it). Keep `blur` clearing the hold, or a window switch

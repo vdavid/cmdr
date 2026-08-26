@@ -29,7 +29,7 @@ import { operationStartIsBlocked } from './operation-start-gate'
 import { duplicateInPlace } from './duplicate-command'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { DuplicateFollowUp } from './duplicate-rename'
-import type { FilePaneAPI, StartRenameOptions } from './types'
+import type { FilePaneAPI, OpenDeleteDialogArgs, OpenTransferDialogArgs, StartRenameOptions } from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
@@ -454,33 +454,18 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-  async function openCopyDialog(
-    autoConfirm?: boolean,
-    onConflict?: string,
-    mcpRequestId?: string,
-    initiator?: Initiator,
-  ) {
-    await openTransferDialog('copy', autoConfirm, onConflict, mcpRequestId, initiator)
+  async function openCopyDialog(args?: OpenTransferDialogArgs) {
+    await openTransferDialog('copy', args?.autoConfirm, args?.onConflict, args?.mcpRequestId, args?.initiator)
   }
 
   /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-  async function openMoveDialog(
-    autoConfirm?: boolean,
-    onConflict?: string,
-    mcpRequestId?: string,
-    initiator?: Initiator,
-  ) {
-    await openTransferDialog('move', autoConfirm, onConflict, mcpRequestId, initiator)
+  async function openMoveDialog(args?: OpenTransferDialogArgs) {
+    await openTransferDialog('move', args?.autoConfirm, args?.onConflict, args?.mcpRequestId, args?.initiator)
   }
 
   /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
-  async function openCompressDialog(
-    autoConfirm?: boolean,
-    onConflict?: string,
-    mcpRequestId?: string,
-    initiator?: Initiator,
-  ) {
-    await openTransferDialog('compress', autoConfirm, onConflict, mcpRequestId, initiator)
+  async function openCompressDialog(args?: OpenTransferDialogArgs) {
+    await openTransferDialog('compress', args?.autoConfirm, args?.onConflict, args?.mcpRequestId, args?.initiator)
   }
 
   /**
@@ -496,12 +481,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * search ever indexes external read-only volumes we'd need to look that
    * up per entry).
    */
-  function openDeleteFromSearchResults(
-    permanent: boolean,
-    autoConfirm?: boolean,
-    mcpRequestId?: string,
-    initiator?: Initiator,
-  ) {
+  function openDeleteFromSearchResults({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
     const SEARCH_RESULTS_PREFIX = 'search-results://'
@@ -563,12 +543,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
   /** Opens the delete confirmation dialog for the current selection or cursor item. */
   // eslint-disable-next-line complexity -- Guard chain: each early-return is an independent precondition; splitting wouldn't add clarity.
-  async function openDeleteDialog(
-    permanent: boolean,
-    autoConfirm?: boolean,
-    mcpRequestId?: string,
-    initiator?: Initiator,
-  ) {
+  async function openDeleteDialog({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
     if (operationStartIsBlocked(mcpRequestId)) return
 
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
@@ -583,7 +558,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // not a `volumeId === 'search-results'` string compare; search-results
     // is the only source-capable `!hasBackendListing` kind to reach here.
     if (!capabilitiesFor(focusedVolId).hasBackendListing) {
-      openDeleteFromSearchResults(permanent, autoConfirm, mcpRequestId, initiator)
+      openDeleteFromSearchResults({ permanent, autoConfirm, mcpRequestId, initiator })
       return
     }
 

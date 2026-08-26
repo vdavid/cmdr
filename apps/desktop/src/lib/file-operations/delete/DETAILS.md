@@ -6,7 +6,7 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the flow and edge-case ca
 
 1. **Shortcut**: F8 (trash) or Shift+F8 (permanent delete).
 2. **Command**: `file.delete` or `file.deletePermanently` in `command-registry.ts`, handled in `+page.svelte`.
-3. **Selection**: `DualPaneExplorer.openDeleteDialog(permanent)` builds props from selection or cursor item (same
+3. **Selection**: `DualPaneExplorer.openDeleteDialog({ permanent })` builds props from selection or cursor item (same
    pattern as copy/move). Looks up `supportsTrash` from the source volume's `VolumeInfo`.
 4. **Dialog**: `DeleteDialog` opens with the file list; scan preview starts in the background via `startScanPreview()`.
 5. **Confirm**: `DeleteDialog` passes back the active `isPermanent` (from the switch);

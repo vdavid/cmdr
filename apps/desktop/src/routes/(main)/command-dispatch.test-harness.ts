@@ -438,7 +438,7 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.copy',
     expect: (e) => {
-      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined, undefined)
+      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(undefined)
     },
   },
   {
@@ -446,7 +446,11 @@ export const DELEGATE_ROWS: DelegateRow[] = [
     args: { autoConfirm: true, onConflict: 'overwrite_all', initiator: 'aiClient' },
     expect: (e) => {
       // The MCP `initiator` rides the same handler path as autoConfirm/onConflict.
-      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(true, 'overwrite_all', undefined, 'aiClient')
+      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith({
+        autoConfirm: true,
+        onConflict: 'overwrite_all',
+        initiator: 'aiClient',
+      })
     },
   },
   {
@@ -459,14 +463,18 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.move',
     expect: (e) => {
-      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined, undefined)
+      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(undefined)
     },
   },
   {
     id: 'file.move',
     args: { autoConfirm: false, onConflict: 'skip_all', initiator: 'aiClient' },
     expect: (e) => {
-      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(false, 'skip_all', undefined, 'aiClient')
+      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith({
+        autoConfirm: false,
+        onConflict: 'skip_all',
+        initiator: 'aiClient',
+      })
     },
   },
   {
@@ -498,20 +506,30 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.delete',
     expect: (e) => {
-      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, undefined, undefined, undefined)
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({
+        permanent: false,
+        autoConfirm: undefined,
+        mcpRequestId: undefined,
+        initiator: undefined,
+      })
     },
   },
   {
     id: 'file.delete',
     args: { autoConfirm: true, initiator: 'aiClient' },
     expect: (e) => {
-      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, true, undefined, 'aiClient')
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({
+        permanent: false,
+        autoConfirm: true,
+        mcpRequestId: undefined,
+        initiator: 'aiClient',
+      })
     },
   },
   {
     id: 'file.deletePermanently',
     expect: (e) => {
-      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(true)
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({ permanent: true })
     },
   },
   {
