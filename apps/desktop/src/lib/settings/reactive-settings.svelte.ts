@@ -105,7 +105,7 @@ async function runInit(options?: { restrictedWindow?: boolean }): Promise<void> 
 
     // Subscribe to changes (including cross-window changes). The arrow function delegates to
     // `applySettingChange` so the switch's case count stays under the per-fn complexity limit.
-    unsubscribe = onSettingChange((id, value) => {
+    unsubscribe = onSettingChange(({ id, value }) => {
       log.debug('Received setting change: {id} = {value}', { id, value })
       applySettingChange(id, value)
     })

@@ -529,7 +529,7 @@
     let unlistenClosedTabsCap: (() => void) | undefined
     $effect(() => {
         if (!initialized) return
-        unlistenClosedTabsCap = onSettingChange((id, value) => {
+        unlistenClosedTabsCap = onSettingChange(({ id, value }) => {
             if (id !== 'fileExplorer.tabs.closedTabHistorySize') return
             const cap = typeof value === 'number' ? value : getClosedTabsCap()
             trimClosedStack(leftTabMgr, cap)

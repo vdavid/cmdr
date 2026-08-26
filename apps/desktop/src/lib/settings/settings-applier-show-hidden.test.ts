@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const syncMenuShowHidden = vi.fn<(checked: boolean) => Promise<void>>(() => Promise.resolve())
 
 /** The change listener the applier registers, captured so the test can fire it. */
-let changeListener: ((id: string, value: unknown) => void) | undefined
+let changeListener: ((change: { id: string; value: unknown }) => void) | undefined
 
 // Stub every Tauri wrapper to a no-op promise (the applier fires a batch of
 // fire-and-forget backend pushes at startup), keeping a real spy on the one
@@ -37,7 +37,7 @@ vi.mock('$lib/settings', async (importOriginal) => {
   return {
     ...actual,
     initializeSettings: vi.fn().mockResolvedValue(undefined),
-    onSettingChange: (listener: (id: string, value: unknown) => void) => {
+    onSettingChange: (listener: (change: { id: string; value: unknown }) => void) => {
       changeListener = listener
       return () => {
         changeListener = undefined
@@ -61,14 +61,14 @@ describe('settings-applier: listing.showHiddenFiles', () => {
   it('pushes the new value to the native menu when the setting turns on', async () => {
     await initSettingsApplier()
     syncMenuShowHidden.mockClear()
-    changeListener?.('listing.showHiddenFiles', true)
+    changeListener?.({ id: 'listing.showHiddenFiles', value: true })
     expect(syncMenuShowHidden).toHaveBeenCalledExactlyOnceWith(true)
   })
 
   it('pushes the new value to the native menu when the setting turns off', async () => {
     await initSettingsApplier()
     syncMenuShowHidden.mockClear()
-    changeListener?.('listing.showHiddenFiles', false)
+    changeListener?.({ id: 'listing.showHiddenFiles', value: false })
     expect(syncMenuShowHidden).toHaveBeenCalledExactlyOnceWith(false)
   })
 
@@ -80,7 +80,7 @@ describe('settings-applier: listing.showHiddenFiles', () => {
   it('leaves the menu alone for an unrelated setting', async () => {
     await initSettingsApplier()
     syncMenuShowHidden.mockClear()
-    changeListener?.('listing.stripedRows', true)
+    changeListener?.({ id: 'listing.stripedRows', value: true })
     expect(syncMenuShowHidden).not.toHaveBeenCalled()
   })
 })

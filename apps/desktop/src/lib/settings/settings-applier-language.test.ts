@@ -14,7 +14,7 @@ import { _setSystemLocalesForTests } from '$lib/intl/os-locales'
 const setLocale = vi.fn()
 
 // The change listener the applier registers, captured so the test can fire it.
-let changeListener: ((id: string, value: unknown) => void) | undefined
+let changeListener: ((change: { id: string; value: unknown }) => void) | undefined
 // The startup value `getSetting('appearance.language')` returns.
 let startupLanguage = 'system'
 // The OS-locale-change handler the applier subscribes with.
@@ -60,7 +60,7 @@ vi.mock('$lib/settings', async (importOriginal) => {
     ...actual,
     initializeSettings: vi.fn().mockResolvedValue(undefined),
     getSetting: (id: string) => (id === 'appearance.language' ? startupLanguage : actual.getSetting(id as never)),
-    onSettingChange: (listener: (id: string, value: unknown) => void) => {
+    onSettingChange: (listener: (change: { id: string; value: unknown }) => void) => {
       changeListener = listener
       return () => {
         changeListener = undefined
@@ -114,7 +114,7 @@ describe('settings-applier: appearance.language', () => {
     await initSettingsApplier()
     setLocale.mockClear()
     expect(changeListener).toBeDefined()
-    changeListener?.('appearance.language', 'en-XA')
+    changeListener?.({ id: 'appearance.language', value: 'en-XA' })
     expect(setLocale).toHaveBeenCalledTimes(1)
     expect(setLocale).toHaveBeenCalledWith('en-XA')
   })
@@ -123,7 +123,7 @@ describe('settings-applier: appearance.language', () => {
     _setSystemLocalesForTests({ ui: 'hu', format: 'hu-HU' })
     await initSettingsApplier()
     setLocale.mockClear()
-    changeListener?.('appearance.language', 'system')
+    changeListener?.({ id: 'appearance.language', value: 'system' })
     expect(setLocale).toHaveBeenCalledTimes(1)
     expect(setLocale).toHaveBeenCalledWith('hu')
   })

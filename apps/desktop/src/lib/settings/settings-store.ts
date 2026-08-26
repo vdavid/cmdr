@@ -689,7 +689,21 @@ async function saveToStore(): Promise<boolean> {
 // Change Listeners
 // ============================================================================
 
-type SettingChangeListener<K extends SettingId = SettingId> = (id: K, value: SettingsValues[K]) => void
+/**
+ * A change to setting `id`, carrying its new `value`. Unlike
+ * `onSpecificSettingChange` (which drops the id since every call site already
+ * knows it), this all-settings listener genuinely needs both: a
+ * `(id, value) => void` shape let a listener declare just the one parameter it
+ * cared about — TypeScript allows a callback to take fewer parameters than the
+ * type offers — and silently bind the id into what looked like the value slot.
+ * A single object payload makes dropping or swapping a field a compile error.
+ */
+export interface SettingChangePayload<K extends SettingId = SettingId> {
+  id: K
+  value: SettingsValues[K]
+}
+
+type SettingChangeListener<K extends SettingId = SettingId> = (change: SettingChangePayload<K>) => void
 
 // The specific-listener registry drops the id `onSpecificSettingChange` echoes back from its
 // listener signature (see the export's doc comment for why), so it can't share `SettingChangeListener`
@@ -737,7 +751,7 @@ function notifyListeners<K extends SettingId>(id: K, value: SettingsValues[K]): 
   // Notify global listeners
   for (const listener of listeners) {
     try {
-      listener(id, value)
+      listener({ id, value })
     } catch (error) {
       log.error('Setting change listener error: {error}', { error })
     }

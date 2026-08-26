@@ -106,7 +106,10 @@ in), and TypeScript lets a listener declare fewer parameters than the type offer
 `(value) => {...}` against the old two-parameter signature silently received the ECHOED id positionally where `value`
 was expected. That shipped as a real bug: `UpdatesSection.svelte`'s email listener rendered the literal id
 `analytics.email` in the field. Dropping the id parameter makes that class of bug unrepresentable. The all-settings
-`onSettingChange` keeps `(id, value)`, since its listeners genuinely need to know which setting fired.
+`onSettingChange` keeps both fields, since its listeners genuinely need to know which setting fired, but takes them as
+one `SettingChangePayload` object (`{ id, value }`) rather than two positional parameters: `id` and `value` are both
+type parameters over the same `SettingId`/`SettingsValues[K]` pair, so a positional `(id, value)` shape had the same
+drop-or-swap risk `onSpecificSettingChange` closes for its own listener.
 
 ### Sparse persistence (only explicit choices are written)
 

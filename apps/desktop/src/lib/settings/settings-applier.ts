@@ -366,7 +366,7 @@ export async function initSettingsApplier(): Promise<void> {
     trackLanguageResolved()
 
     // Subscribe to future changes
-    unsubscribe = onSettingChange(handleSettingChange)
+    unsubscribe = onSettingChange(({ id, value }) => { handleSettingChange(id, value); })
 
     // Follow the OS while we run: `'system'` means the language the user reads
     // NOW, and the formatters follow the region they set NOW, so re-applying the

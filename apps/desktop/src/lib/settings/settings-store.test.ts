@@ -24,7 +24,7 @@ describe('setSetting idempotency', () => {
     setSetting('appearance.uiDensity', 'spacious')
 
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(listener).toHaveBeenCalledWith('appearance.uiDensity', 'spacious')
+    expect(listener).toHaveBeenCalledWith({ id: 'appearance.uiDensity', value: 'spacious' })
     expect(settingsChangedEmits()).toHaveLength(1)
     expect(settingsChangedEmits()[0]?.[1]).toEqual({ id: 'appearance.uiDensity', value: 'spacious', explicit: true })
 
@@ -62,7 +62,7 @@ describe('setSetting idempotency', () => {
     // Real change: cascade fires.
     setSetting('appearance.uiDensity', 'compact')
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(listener).toHaveBeenCalledWith('appearance.uiDensity', 'compact')
+    expect(listener).toHaveBeenCalledWith({ id: 'appearance.uiDensity', value: 'compact' })
     expect(settingsChangedEmits()).toHaveLength(1)
 
     unsub()
@@ -81,7 +81,7 @@ describe('setSetting idempotency', () => {
 
     setSetting('advanced.maxLogStorageMb', 456)
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(listener).toHaveBeenLastCalledWith('advanced.maxLogStorageMb', 456)
+    expect(listener).toHaveBeenLastCalledWith({ id: 'advanced.maxLogStorageMb', value: 456 })
 
     unsub()
   })
