@@ -6,7 +6,7 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 729
+- Rust crates: 730
 - npm packages: 125
 - Distinct license texts: 321
 
@@ -52,8 +52,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **base64ct** 1.8.3, Apache-2.0 OR MIT, <https://github.com/RustCrypto/formats>
 - **bcrypt-pbkdf** 0.11.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/password-hashes>
 - **bincode2** 2.0.1, MIT, <https://github.com/pravega/bincode2>
-- **bisync** 0.3.0, MIT OR Apache-2.0, <https://github.com/JM4ier/bisync>
-- **bisync_macros** 0.2.3, MIT OR Apache-2.0, <https://github.com/JM4ier/bisync>
 - **bit-set** 0.8.0, Apache-2.0 OR MIT, <https://github.com/contain-rs/bit-set>
 - **bit-vec** 0.8.0, Apache-2.0 OR MIT, <https://github.com/contain-rs/bit-vec>
 - **bit_field** 0.10.3, Apache-2.0 OR MIT, <https://github.com/phil-opp/rust-bit-field>
@@ -229,62 +227,65 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **getrandom** 0.4.3, MIT OR Apache-2.0, <https://github.com/rust-random/getrandom>
 - **ghash** 0.6.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/universal-hashes>
 - **gif** 0.14.2, MIT OR Apache-2.0, <https://github.com/image-rs/image-gif>
-- **gix** 0.86.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-actor** 0.41.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-archive** 0.35.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-attributes** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-bitmap** 0.3.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-blame** 0.16.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-chunk** 0.7.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-command** 0.9.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-commitgraph** 0.38.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-config** 0.59.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-config-value** 0.19.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-credentials** 0.39.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-date** 0.15.6, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-diff** 0.66.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-dir** 0.28.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-discover** 0.54.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-error** 0.2.5, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-features** 0.49.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-filter** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-fs** 0.22.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-glob** 0.27.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-hash** 0.26.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix** 0.87.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-actor** 0.42.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-archive** 0.36.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-attributes** 0.35.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-bitmap** 0.4.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-blame** 0.17.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-chunk** 0.8.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-command** 0.10.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-commitgraph** 0.39.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-config** 0.60.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-config-value** 0.19.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-credentials** 0.40.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-date** 0.16.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-diff** 0.67.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-dir** 0.29.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-discover** 0.55.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-error** 0.3.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-features** 0.49.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-filter** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-fs** 0.22.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-glob** 0.27.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-hash** 0.26.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-hashtable** 0.16.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-ignore** 0.22.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-imara-diff** 0.2.4, Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-index** 0.54.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-ignore** 0.22.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-imara-diff** 0.2.5, Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-index** 0.55.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-lock** 24.0.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-mailmap** 0.33.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-negotiate** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-object** 0.63.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-odb** 0.83.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-pack** 0.73.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-packetline** 0.22.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-path** 0.12.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-pathspec** 0.19.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-prompt** 0.16.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-protocol** 0.64.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-quote** 0.7.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-ref** 0.66.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-refspec** 0.44.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-revision** 0.48.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-revwalk** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-macros** 0.1.6, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-mailmap** 0.34.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-merge** 0.20.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-negotiate** 0.35.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-note** 0.1.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-object** 0.64.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-odb** 0.84.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-pack** 0.74.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-packetline** 0.22.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-path** 0.12.5, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-pathspec** 0.20.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-prompt** 0.17.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-protocol** 0.65.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-quote** 0.8.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-ref** 0.67.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-refspec** 0.45.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-revision** 0.49.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-revwalk** 0.35.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-sec** 0.14.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-shallow** 0.13.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-status** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-submodule** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-status** 0.34.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-submodule** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-tempfile** 24.0.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-trace** 0.1.21, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-transport** 0.58.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-traverse** 0.60.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-url** 0.37.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-utils** 0.3.5, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-validate** 0.11.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-worktree** 0.55.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-worktree-state** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-worktree-stream** 0.35.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-transport** 0.59.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-traverse** 0.61.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-url** 0.38.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-utils** 0.3.6, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-validate** 0.11.4, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-worktree** 0.56.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-worktree-state** 0.34.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-worktree-stream** 0.36.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-zlib** 0.1.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **glob** 0.3.3, MIT OR Apache-2.0, <https://github.com/rust-lang/glob>
 - **global-hotkey** 0.8.0, Apache-2.0 OR MIT, <https://github.com/tauri-apps/global-hotkey>
@@ -1588,7 +1589,7 @@ Apache License
 
 ### Apache-2.0
 
-Covers: gix-imara-diff 0.2.4, ring 0.17.14
+Covers: gix-imara-diff 0.2.5, ring 0.17.14
 
 Text from: `LICENSE`
 
@@ -4166,7 +4167,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: awaitable-error 0.1.0, bisync 0.3.0, bisync_macros 0.2.3, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, delegate 0.13.5, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.2, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, md5 0.8.1, minisign-verify 0.2.5, mtp-rs 0.30.0, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, openssh-sftp-protocol-error 0.1.1, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
+Covers: awaitable-error 0.1.0, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, delegate 0.13.5, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.2, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, md5 0.8.1, minisign-verify 0.2.5, mtp-rs 0.30.0, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, openssh-sftp-protocol-error 0.1.1, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
 
 ```text
 MIT License
@@ -7165,7 +7166,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: gix 0.86.0, gix-actor 0.41.2, gix-archive 0.35.0, gix-attributes 0.34.0, gix-bitmap 0.3.3, gix-blame 0.16.0, gix-chunk 0.7.3, gix-command 0.9.1, gix-commitgraph 0.38.0, gix-config 0.59.0, gix-config-value 0.19.0, gix-credentials 0.39.0, gix-date 0.15.6, gix-diff 0.66.0, gix-dir 0.28.0, gix-discover 0.54.0, gix-error 0.2.5, gix-features 0.49.0, gix-filter 0.33.0, gix-fs 0.22.0, gix-glob 0.27.0, gix-hash 0.26.0, gix-hashtable 0.16.0, gix-ignore 0.22.0, gix-index 0.54.0, gix-lock 24.0.0, gix-mailmap 0.33.2, gix-negotiate 0.34.0, gix-object 0.63.0, gix-odb 0.83.0, gix-pack 0.73.0, gix-packetline 0.22.0, gix-path 0.12.3, gix-pathspec 0.19.0, gix-prompt 0.16.0, gix-protocol 0.64.0, gix-quote 0.7.2, gix-ref 0.66.0, gix-refspec 0.44.0, gix-revision 0.48.0, gix-revwalk 0.34.0, gix-sec 0.14.2, gix-shallow 0.13.0, gix-status 0.33.0, gix-submodule 0.33.0, gix-tempfile 24.0.0, gix-trace 0.1.21, gix-transport 0.58.0, gix-traverse 0.60.0, gix-url 0.37.0, gix-utils 0.3.5, gix-validate 0.11.3, gix-worktree 0.55.0, gix-worktree-state 0.33.0, gix-worktree-stream 0.35.0, gix-zlib 0.1.0
+Covers: gix 0.87.1, gix-actor 0.42.0, gix-archive 0.36.1, gix-attributes 0.35.0, gix-bitmap 0.4.0, gix-blame 0.17.1, gix-chunk 0.8.0, gix-command 0.10.0, gix-commitgraph 0.39.0, gix-config 0.60.0, gix-config-value 0.19.1, gix-credentials 0.40.0, gix-date 0.16.0, gix-diff 0.67.1, gix-dir 0.29.1, gix-discover 0.55.0, gix-error 0.3.1, gix-features 0.49.1, gix-filter 0.34.0, gix-fs 0.22.1, gix-glob 0.27.1, gix-hash 0.26.2, gix-hashtable 0.16.0, gix-ignore 0.22.1, gix-index 0.55.0, gix-lock 24.0.0, gix-macros 0.1.6, gix-mailmap 0.34.1, gix-merge 0.20.1, gix-negotiate 0.35.1, gix-note 0.1.1, gix-object 0.64.1, gix-odb 0.84.0, gix-pack 0.74.2, gix-packetline 0.22.2, gix-path 0.12.5, gix-pathspec 0.20.0, gix-prompt 0.17.0, gix-protocol 0.65.1, gix-quote 0.8.0, gix-ref 0.67.1, gix-refspec 0.45.1, gix-revision 0.49.1, gix-revwalk 0.35.0, gix-sec 0.14.2, gix-shallow 0.13.0, gix-status 0.34.1, gix-submodule 0.34.0, gix-tempfile 24.0.0, gix-trace 0.1.21, gix-transport 0.59.1, gix-traverse 0.61.0, gix-url 0.38.0, gix-utils 0.3.6, gix-validate 0.11.4, gix-worktree 0.56.0, gix-worktree-state 0.34.1, gix-worktree-stream 0.36.1, gix-zlib 0.1.0
 
 Text from: `LICENSE-MIT`
 

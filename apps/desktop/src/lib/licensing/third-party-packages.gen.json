@@ -242,18 +242,6 @@
       "url": "https://github.com/pravega/bincode2"
     },
     {
-      "name": "bisync",
-      "version": "0.3.0",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/JM4ier/bisync"
-    },
-    {
-      "name": "bisync_macros",
-      "version": "0.2.3",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/JM4ier/bisync"
-    },
-    {
       "name": "bit-set",
       "version": "0.8.0",
       "license": "Apache-2.0 OR MIT",
@@ -1305,133 +1293,133 @@
     },
     {
       "name": "gix",
-      "version": "0.86.0",
+      "version": "0.87.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-actor",
-      "version": "0.41.2",
+      "version": "0.42.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-archive",
-      "version": "0.35.0",
+      "version": "0.36.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-attributes",
-      "version": "0.34.0",
+      "version": "0.35.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-bitmap",
-      "version": "0.3.3",
+      "version": "0.4.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-blame",
-      "version": "0.16.0",
+      "version": "0.17.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-chunk",
-      "version": "0.7.3",
+      "version": "0.8.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-command",
-      "version": "0.9.1",
+      "version": "0.10.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-commitgraph",
-      "version": "0.38.0",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/GitoxideLabs/gitoxide"
-    },
-    {
-      "name": "gix-config",
-      "version": "0.59.0",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/GitoxideLabs/gitoxide"
-    },
-    {
-      "name": "gix-config-value",
-      "version": "0.19.0",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/GitoxideLabs/gitoxide"
-    },
-    {
-      "name": "gix-credentials",
       "version": "0.39.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
+      "name": "gix-config",
+      "version": "0.60.0",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/GitoxideLabs/gitoxide"
+    },
+    {
+      "name": "gix-config-value",
+      "version": "0.19.1",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/GitoxideLabs/gitoxide"
+    },
+    {
+      "name": "gix-credentials",
+      "version": "0.40.0",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/GitoxideLabs/gitoxide"
+    },
+    {
       "name": "gix-date",
-      "version": "0.15.6",
+      "version": "0.16.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-diff",
-      "version": "0.66.0",
+      "version": "0.67.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-dir",
-      "version": "0.28.0",
+      "version": "0.29.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-discover",
-      "version": "0.54.0",
+      "version": "0.55.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-error",
-      "version": "0.2.5",
+      "version": "0.3.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-features",
-      "version": "0.49.0",
+      "version": "0.49.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-filter",
-      "version": "0.33.0",
+      "version": "0.34.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-fs",
-      "version": "0.22.0",
+      "version": "0.22.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-glob",
-      "version": "0.27.0",
+      "version": "0.27.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-hash",
-      "version": "0.26.0",
+      "version": "0.26.2",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
@@ -1443,19 +1431,19 @@
     },
     {
       "name": "gix-ignore",
-      "version": "0.22.0",
+      "version": "0.22.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-imara-diff",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "license": "Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-index",
-      "version": "0.54.0",
+      "version": "0.55.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
@@ -1466,92 +1454,110 @@
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
+      "name": "gix-macros",
+      "version": "0.1.6",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/GitoxideLabs/gitoxide"
+    },
+    {
       "name": "gix-mailmap",
-      "version": "0.33.2",
+      "version": "0.34.1",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/GitoxideLabs/gitoxide"
+    },
+    {
+      "name": "gix-merge",
+      "version": "0.20.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-negotiate",
-      "version": "0.34.0",
+      "version": "0.35.1",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/GitoxideLabs/gitoxide"
+    },
+    {
+      "name": "gix-note",
+      "version": "0.1.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-object",
-      "version": "0.63.0",
+      "version": "0.64.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-odb",
-      "version": "0.83.0",
+      "version": "0.84.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-pack",
-      "version": "0.73.0",
+      "version": "0.74.2",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-packetline",
-      "version": "0.22.0",
+      "version": "0.22.2",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-path",
-      "version": "0.12.3",
+      "version": "0.12.5",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-pathspec",
-      "version": "0.19.0",
+      "version": "0.20.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-prompt",
-      "version": "0.16.0",
+      "version": "0.17.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-protocol",
-      "version": "0.64.0",
+      "version": "0.65.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-quote",
-      "version": "0.7.2",
+      "version": "0.8.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-ref",
-      "version": "0.66.0",
+      "version": "0.67.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-refspec",
-      "version": "0.44.0",
+      "version": "0.45.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-revision",
-      "version": "0.48.0",
+      "version": "0.49.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-revwalk",
-      "version": "0.34.0",
+      "version": "0.35.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
@@ -1569,13 +1575,13 @@
     },
     {
       "name": "gix-status",
-      "version": "0.33.0",
+      "version": "0.34.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-submodule",
-      "version": "0.33.0",
+      "version": "0.34.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
@@ -1593,49 +1599,49 @@
     },
     {
       "name": "gix-transport",
-      "version": "0.58.0",
+      "version": "0.59.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-traverse",
-      "version": "0.60.0",
+      "version": "0.61.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-url",
-      "version": "0.37.0",
+      "version": "0.38.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-utils",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-validate",
-      "version": "0.11.3",
+      "version": "0.11.4",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-worktree",
-      "version": "0.55.0",
+      "version": "0.56.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-worktree-state",
-      "version": "0.33.0",
+      "version": "0.34.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
     {
       "name": "gix-worktree-stream",
-      "version": "0.35.0",
+      "version": "0.36.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/GitoxideLabs/gitoxide"
     },
