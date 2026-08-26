@@ -1,8 +1,8 @@
 # Delete and trash (frontend)
 
-Delete files permanently or move them to macOS Trash, with a confirmation dialog, scan preview, and progress tracking.
-Triggered by F8 (trash) or Shift+F8 (permanent). Always shows a confirmation dialog; reuses `TransferProgressDialog` for
-progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/delete/CLAUDE.md`.
+Delete files permanently or move them to macOS Trash, with a confirmation dialog, scan preview, and progress tracking
+(via `TransferProgressDialog`). Backend counterpart:
+`apps/desktop/src-tauri/src/file_system/write_operations/delete/CLAUDE.md`.
 
 ## Files
 
@@ -19,8 +19,9 @@ progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_ope
   permanent. `file.delete` / `file.deletePermanently` commands; `DualPaneExplorer.openDeleteDialog({ permanent })`
   builds props from selection or cursor and looks up `supportsTrash` from the source `VolumeInfo`.
 - **Holding Shift over an F8 dialog upgrades it to permanent until release; Shift NEVER demotes**, and a Shift+F8 dialog
-  ignores the hold (the user is still holding the key that opened it). Keep `blur` clearing the hold, or a window switch
-  strands the dialog on "Delete permanently". DETAILS § Shift-hold upgrade.
+  ignores the hold. Keep `blur` clearing the hold, or a window switch strands the dialog on "Delete permanently". ❌
+  Keep the `keydown`/`keyup` listeners in the CAPTURE phase: `ModalDialog`'s overlay stops keydown, so a bubble-phase
+  `window` listener never sees the hold. DETAILS § Shift-hold upgrade.
 - **`data-scan-state` on `.scan-stats`** (`counting` | `done`) is the only "counting done" signal; there's no completion
   checkmark. Mirrors `TransferDialog`'s marker, which E2E polls.
 - **`DeleteDialog` must forward `sourceVolumeId` into `startScanPreview`.** Without it, an MTP delete runs

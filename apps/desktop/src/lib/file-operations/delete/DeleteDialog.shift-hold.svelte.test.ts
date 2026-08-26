@@ -4,6 +4,11 @@
  *
  * A Shift+F8 dialog is already permanent and stays that way: the user is still
  * holding Shift when it opens, so the keyup that follows must not demote it to trash.
+ *
+ * Every key here is dispatched from the FOCUSED element inside the dialog and left to
+ * bubble, the way a browser does it. Dispatching straight on `window` would skip
+ * `ModalDialog`'s overlay, which calls `stopPropagation()` on keydown, and the suite
+ * would pass over a dialog that never flips in the real app.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -66,13 +71,28 @@ function isPermanentMode(target: HTMLElement): boolean {
   return target.querySelector('[role="alertdialog"]') !== null
 }
 
-async function pressShift(): Promise<void> {
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift', shiftKey: true, bubbles: true }))
+/** The overlay, which is what `ModalDialog` focuses on mount and what stops keydown propagation. */
+function overlayOf(target: HTMLElement): HTMLElement {
+  const overlay = target.querySelector<HTMLElement>('[role="dialog"], [role="alertdialog"]')
+  if (!overlay) throw new Error('dialog overlay not found')
+  return overlay
+}
+
+/** Dispatches from wherever focus actually is, so the event walks the real path to `window`. */
+function typeKey(target: HTMLElement, type: 'keydown' | 'keyup', shiftKey: boolean): void {
+  const overlay = overlayOf(target)
+  const active = document.activeElement
+  const from = active instanceof HTMLElement && overlay.contains(active) ? active : overlay
+  from.dispatchEvent(new KeyboardEvent(type, { key: 'Shift', shiftKey, bubbles: true }))
+}
+
+async function pressShift(target: HTMLElement): Promise<void> {
+  typeKey(target, 'keydown', true)
   await tick()
 }
 
-async function releaseShift(): Promise<void> {
-  window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift', shiftKey: false, bubbles: true }))
+async function releaseShift(target: HTMLElement): Promise<void> {
+  typeKey(target, 'keyup', false)
   await tick()
 }
 
@@ -90,17 +110,36 @@ describe('DeleteDialog Shift-hold upgrade', () => {
     await tick()
     expect(isPermanentMode(target)).toBe(false)
 
-    await pressShift()
+    await pressShift(target)
     expect(isPermanentMode(target)).toBe(true)
 
-    await releaseShift()
+    await releaseShift(target)
     expect(isPermanentMode(target)).toBe(false)
+  })
+
+  it('sees the hold even though the dialog overlay stops keydown propagation', async () => {
+    const { target } = mountDialog({ isPermanent: false })
+    await tick()
+
+    // Proof the trap is real: a bubble-phase window listener never hears this keydown,
+    // because `ModalDialog`'s overlay stops it. The dialog must flip anyway.
+    const heardOnWindow: string[] = []
+    const bubbleSpy = (event: Event) => heardOnWindow.push(event.type)
+    window.addEventListener('keydown', bubbleSpy)
+    try {
+      await pressShift(target)
+    } finally {
+      window.removeEventListener('keydown', bubbleSpy)
+    }
+
+    expect(heardOnWindow).toEqual([])
+    expect(isPermanentMode(target)).toBe(true)
   })
 
   it('confirms permanently while Shift is held', async () => {
     const { target, confirms } = mountDialog({ isPermanent: false })
     await tick()
-    await pressShift()
+    await pressShift(target)
 
     const confirmButton = [...target.querySelectorAll('button')].at(-1)
     confirmButton?.click()
@@ -114,14 +153,14 @@ describe('DeleteDialog Shift-hold upgrade', () => {
     await tick()
     expect(isPermanentMode(target)).toBe(true)
 
-    await releaseShift()
+    await releaseShift(target)
     expect(isPermanentMode(target)).toBe(true)
   })
 
   it('drops back to trash when the window loses focus mid-hold', async () => {
     const { target } = mountDialog({ isPermanent: false })
     await tick()
-    await pressShift()
+    await pressShift(target)
     expect(isPermanentMode(target)).toBe(true)
 
     window.dispatchEvent(new Event('blur'))
@@ -138,8 +177,8 @@ describe('DeleteDialog Shift-hold upgrade', () => {
     await tick()
     expect(isPermanentMode(target)).toBe(true)
 
-    await pressShift()
-    await releaseShift()
+    await pressShift(target)
+    await releaseShift(target)
     expect(isPermanentMode(target)).toBe(true)
   })
 })

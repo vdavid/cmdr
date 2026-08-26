@@ -76,7 +76,8 @@
 
     // The switch's own position. Forced to permanent on volumes that don't support trash.
     let switchIsPermanent = $state(initialIsPermanent || !supportsTrash)
-    /** True while Shift is down. Held on the window, so it also catches a release outside the dialog. */
+    /** True while Shift is down. Held on the window in the CAPTURE phase, so it also catches a
+     *  release outside the dialog. See `SHIFT_LISTENER_PHASE`. */
     let shiftHeld = $state(false)
     /** Shift-hold only upgrades a dialog that opened as a trash: on a Shift+F8 dialog the user is
      *  still holding the key that opened it, so honouring the release would demote a delete they
@@ -196,15 +197,21 @@
         shiftHeld = false
     }
 
+    /** Capture, NOT bubble: `ModalDialog`'s overlay calls `stopPropagation()` on every keydown to
+     *  shield the file explorer, and focus lives inside that overlay while we're open. A
+     *  bubble-phase window listener sits downstream of it, so it would never see the Shift keydown
+     *  at all. The capture phase runs on `window` first, before anything can stop the event. */
+    const SHIFT_LISTENER_PHASE = true
+
     function watchShift() {
-        window.addEventListener('keydown', syncShiftState)
-        window.addEventListener('keyup', syncShiftState)
+        window.addEventListener('keydown', syncShiftState, SHIFT_LISTENER_PHASE)
+        window.addEventListener('keyup', syncShiftState, SHIFT_LISTENER_PHASE)
         window.addEventListener('blur', releaseShift)
     }
 
     function unwatchShift() {
-        window.removeEventListener('keydown', syncShiftState)
-        window.removeEventListener('keyup', syncShiftState)
+        window.removeEventListener('keydown', syncShiftState, SHIFT_LISTENER_PHASE)
+        window.removeEventListener('keyup', syncShiftState, SHIFT_LISTENER_PHASE)
         window.removeEventListener('blur', releaseShift)
     }
 

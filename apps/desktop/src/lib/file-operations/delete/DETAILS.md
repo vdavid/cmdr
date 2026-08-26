@@ -30,8 +30,19 @@ tap.
 
 **Why the window, not the dialog**: `keydown`/`keyup` are on `window`, and every event re-reads `event.shiftKey` rather
 than matching the key name, so a keyup we never saw (a window switch, a native menu eating it) self-heals on the next
-keystroke. `blur` clears the hold outright, since a Shift released outside the window never comes back to us. Tests:
-`DeleteDialog.shift-hold.svelte.test.ts`.
+keystroke. `blur` clears the hold outright, since a Shift released outside the window never comes back to us.
+
+**Why the CAPTURE phase** (`SHIFT_LISTENER_PHASE`): `ModalDialog`'s overlay opens `handleOverlayKeydown` with an
+unconditional `event.stopPropagation()`, which is how every dialog shields the file explorer from its own typing. Focus
+sits on that overlay (it takes focus on mount), so a keydown starts inside the dialog and dies at the overlay: a
+bubble-phase `window` listener is downstream and never runs. `keyup` isn't stopped, so a bubble-phase listener would see
+only releases: the hold could never turn on, the feature would be dead in the app, and the unit tests would still pass.
+Capture on `window` runs before anything in the tree can stop the event.
+
+**Test the real path.** `DeleteDialog.shift-hold.svelte.test.ts` dispatches from `document.activeElement` inside the
+dialog and lets the event bubble, exactly as a browser does. Dispatching straight on `window` skips the overlay and
+turns the suite into a false-positive net; one test asserts the overlay really does eat the keydown, so a future
+"simplification" back to `window.dispatchEvent` fails loudly.
 
 ## Scan-preview detail
 
