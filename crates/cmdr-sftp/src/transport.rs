@@ -21,7 +21,9 @@
 //! session task lives on, so dropping the session handle closes nothing while
 //! they sit on a hello that never comes. [`stop_engine`] disconnects the session
 //! rather than dropping it, which ends the session loop and errors those tasks
-//! out with it.
+//! out with it. ❗ [`PendingEngine`] owns the pair so that EVERY ending reaches
+//! it, the one nobody is left to run included: a caller who stops polling the
+//! dial gets the same teardown out of that guard's `Drop`.
 //!
 //! **`Sftp::close()` never returns over a `russh` channel.** It awaits a read
 //! task that only ends at reader EOF, which a channel doesn't give until it's
@@ -45,6 +47,13 @@
 //!   cancel: 57 ms against `sftp-fixture-openssh`, and the measurement is one
 //!   `docker exec` probe wide
 //!   (`volume::cancel_test`, a hello peer that never answers, 2026-08-26).
+//!
+//! ❗ **Abandoning a dial is safe at every phase too**, which is a separate
+//! property from cancelling one: the earlier phases unwind because `russh` does,
+//! and the hello unwinds because [`PendingEngine`]'s `Drop` runs the same
+//! teardown a cancel does. The far end loses its session at the drop rather than
+//! at the phase budget, which nothing polls for anyway (same peer and probe,
+//! 2026-08-26).
 
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -180,12 +189,10 @@ pub enum DialOutcome {
 /// uses. ❗ A cancelled dial leaves nothing behind: no session, no approval, no
 /// stored secret.
 ///
-/// ❌ Never drop this future instead of cancelling the token: a drop inside the
-/// SFTP hello detaches the engine and leaves the server's session open for the
-/// life of the process (`crates/cmdr-sftp/DETAILS.md` § "2. An abandoned
-/// `Sftp::new`"). [`crate::volume::connect_sftp_volume`] is what guarantees
-/// nothing does, by
-/// running the whole dial inside a task.
+/// ❗ Dropping this future rather than cancelling the token is safe at every
+/// phase, and leaves the far end just as little: the hello's teardown rides
+/// [`PendingEngine`]'s `Drop`, so it runs whether or not anyone is still polling.
+/// A cancel that loses a race with a drop therefore costs nothing.
 pub async fn dial(
     params: SftpConnectionParams,
     host: VolumeHost,
@@ -305,7 +312,7 @@ async fn hello(
 ) -> Result<SshConnection, SftpConnectError> {
     let deadline = tokio::time::Instant::now() + SUBSYSTEM_TIMEOUT;
     let starting = start_engine(&session, host, cancel, deadline).await?;
-    await_hello(session, cancel, deadline, starting).await
+    await_hello(PendingEngine::new(host, starting, session), cancel, deadline).await
 }
 
 /// Opens the channel, asks for `sftp`, and puts `Sftp::new` on a task of its own.
@@ -330,6 +337,78 @@ async fn start_engine(
 
 /// The engine's own task, still waiting on the server's hello.
 type StartingEngine = JoinHandle<Result<Sftp, openssh_sftp_client::Error>>;
+
+/// An engine still waiting on its hello, and the session underneath it, held
+/// together because the two only ever end in ORDER.
+///
+/// ❗ **The `Drop` is what makes a dial safe to abandon.** Letting go of the join
+/// handle DETACHES the engine rather than aborting it, and a `russh` `Handle`'s
+/// own drop only logs, so a caller who walks away mid-hello would otherwise leave
+/// the far end holding its session for the life of the process. Owning both here
+/// means every ending runs [`stop_engine`]: the cancel, the phase deadline, an
+/// engine that answered with an error, and the caller who simply stopped polling.
+///
+/// [`Self::delivered`] is the one ending that doesn't, and correctly so: a hello
+/// that arrived becomes an [`SshConnection`], which owns its own shutdown.
+struct PendingEngine {
+    /// `None` only after [`Self::stop`] or [`Self::delivered`] has taken it.
+    starting: Option<StartingEngine>,
+    /// Taken alongside `starting`, so the two can never end apart.
+    session: Option<client::Handle<TrustHandler>>,
+    /// The app's runtime, because a `Drop` can't await and [`stop_engine`] must.
+    runtime: tokio::runtime::Handle,
+}
+
+impl PendingEngine {
+    fn new(host: &VolumeHost, starting: StartingEngine, session: client::Handle<TrustHandler>) -> Self {
+        Self {
+            starting: Some(starting),
+            session: Some(session),
+            runtime: host.runtime(),
+        }
+    }
+
+    /// The engine's task, for the race in [`await_hello`].
+    ///
+    /// ❗ Borrowed rather than taken, so the handle survives every ending and can
+    /// still be aborted.
+    fn starting(&mut self) -> &mut StartingEngine {
+        self.starting
+            .as_mut()
+            .expect("the engine is raced before it is stopped or delivered")
+    }
+
+    /// Ends both, in order, for a caller still around to await it.
+    async fn stop(&mut self) {
+        let (Some(starting), Some(session)) = (self.starting.take(), self.session.take()) else {
+            return;
+        };
+        stop_engine(starting, session).await;
+    }
+
+    /// Hands the session over to the [`SshConnection`] the hello produced, which
+    /// leaves the `Drop` below nothing to stop.
+    fn delivered(&mut self) -> client::Handle<TrustHandler> {
+        self.starting = None;
+        self.session
+            .take()
+            .expect("a hello that arrived delivers its session exactly once")
+    }
+}
+
+impl Drop for PendingEngine {
+    fn drop(&mut self) {
+        let (Some(starting), Some(session)) = (self.starting.take(), self.session.take()) else {
+            return;
+        };
+        // ❗ Spawned rather than awaited, because a `Drop` can't await. The task
+        // outlives this future by exactly one abort and one disconnect, and it is
+        // the ONLY thing still running once nobody polls the dial: the phase
+        // deadline can't help, since a deadline the dial carries only fires while
+        // something polls the dial.
+        self.runtime.spawn(stop_engine(starting, session));
+    }
+}
 
 /// One SSH channel, under the token and the phase deadline.
 async fn open_channel(
@@ -356,32 +435,33 @@ fn spawn_engine(host: &VolumeHost, channel: Channel<client::Msg>) -> StartingEng
 ///
 /// ❗ The engine runs in a task, so a cancel here can't drop a future the way the
 /// earlier phases do; [`stop_engine`] is the lever instead, and it is the same
-/// one for a window that ran out. Both endings leave the server nothing to hold.
+/// one for a window that ran out. [`PendingEngine`] owns both endings, plus the
+/// one this function never sees: a caller who stops polling it. All three leave
+/// the server nothing to hold.
 async fn await_hello(
-    session: client::Handle<TrustHandler>,
+    mut pending: PendingEngine,
     cancel: &CancellationToken,
     deadline: tokio::time::Instant,
-    mut starting: StartingEngine,
 ) -> Result<SshConnection, SftpConnectError> {
     let waited = tokio::select! {
         biased;
         () = cancel.cancelled() => Err(SftpConnectError::Cancelled),
-        // ❗ `&mut`, so the handle survives either ending and can still be
-        // aborted. Dropping it would DETACH the task instead, and an engine
-        // parked on a hello that never comes holds the socket for the life of
-        // the process rather than giving up on its own.
-        joined = tokio::time::timeout_at(deadline, &mut starting) => joined.map_err(|_elapsed| SftpConnectError::TimedOut),
+        joined = tokio::time::timeout_at(deadline, pending.starting()) => joined.map_err(|_elapsed| SftpConnectError::TimedOut),
     };
     let joined = match waited {
         Ok(joined) => joined,
         // Cancelled, or the window ran out with no hello: either way nobody is
-        // waiting for this engine any more.
+        // waiting for this engine any more. Awaited here rather than left to the
+        // `Drop`, so the caller's own wait covers the teardown.
         Err(ended) => {
-            stop_engine(starting, session).await;
+            pending.stop().await;
             return Err(ended);
         }
     };
 
+    // ❗ Both failing arms leave `pending` holding the session, so its `Drop`
+    // disconnects on the way out. An engine that answered with an error has
+    // already released the channel, but the session is ours to close either way.
     match joined {
         // The engine's own task DIED rather than ended, which on 0.15.8 should
         // not happen whatever we do to the future: the regression tell for
@@ -398,7 +478,7 @@ async fn await_hello(
             Ok(SshConnection {
                 sftp,
                 extensions,
-                _ssh: session,
+                _ssh: pending.delivered(),
             })
         }
     }
@@ -422,6 +502,11 @@ pub(crate) enum HelloPeer {
 ///
 /// The order is [`SshConnection`]'s own: the aborted task is awaited out first,
 /// so the engine has let its end of the channel go before the session goes.
+///
+/// ❗ The abort happens on the FIRST poll, which is what makes this safe to
+/// interrupt: a teardown that is itself dropped part-way has already ended the
+/// engine, and the session loop then ends on its own as those tasks release the
+/// last senders. The `disconnect` below makes that prompt and orderly.
 ///
 /// ❗ **`disconnect`, ❌ never a bare `drop(session)`.** `Sftp::new` spawns tasks
 /// of its own that hold the channel, and each of them holds a sender the session
@@ -490,7 +575,7 @@ pub(crate) async fn dial_cancelling_inside_the_hello(
     };
 
     let _ = reached_hello.send(());
-    await_hello(session, &cancel, deadline, starting).await
+    await_hello(PendingEngine::new(&host, starting, session), &cancel, deadline).await
 }
 
 fn prompt(params: &SftpConnectionParams, key: PresentedHostKey, kind: HostKeyPromptKind) -> HostKeyPrompt {

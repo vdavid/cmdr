@@ -18,12 +18,11 @@ user-facing words.
   and the upload reports success on bytes nobody committed.
 - **❗ A hello that never arrives ends in `transport::stop_engine`, ❌ never a bare `drop(session)`**: the engine's
   tasks hold the channel and a sender the session lives on, so the socket would stay open for the life of the process.
+  `transport::PendingEngine` owns the pair so every ending reaches it, an ABANDONED dial's included, from its `Drop`.
   `DETAILS.md` § "2. An abandoned `Sftp::new`".
-- **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE so an abandoned dial detaches
-  rather than drops. ❌ Never unwind it: a DROPPED dial parks an engine on that hello, nothing left polling its
-  deadline.
-- **❗ A connect is called off with a `CancellationToken`, ❌ never by dropping the dial.** Every phase stops where it
-  stands, the hello included, and a cancelled connect registers, remembers, and stores nothing.
+- **❗ Every dial goes through `reconnect::guarded_dial`**; ❌ never call `transport::dial` directly.
+- **❗ A connect is called off with a `CancellationToken`**, which is what makes it answer `Cancelled` and register,
+  remember, and store nothing. Every phase stops where it stands, the hello included.
 - **Host-key trust keys on `(host, port, algorithm)` AND pins negotiation to it** — ❌ never one without the other. ❌
   Never record a fingerprint without re-asking the server (`volume::approve_host_key`).
 - **❌ Never anchor an out-of-root path; refuse it.** `root_anchored` turns `/etc/passwd` into `/srv/data/etc/passwd`.

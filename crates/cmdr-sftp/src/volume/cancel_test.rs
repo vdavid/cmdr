@@ -174,6 +174,71 @@ async fn a_cancel_inside_the_hello_window_closes_the_servers_session_at_once() {
     assert!(volume.exists(Path::new("hello.txt")).await, "{FIXTURE}");
 }
 
+/// ❗ **The other lever: a caller that WALKS AWAY.** A cancel tells a dial to
+/// stop; an abandoned one simply stops being polled, and the far end has to lose
+/// its session all the same.
+///
+/// The two endings are genuinely different code. A cancel reaches
+/// [`transport::stop_engine`] through `await_hello`'s own select, while a drop
+/// reaches it through the pending engine's `Drop`, which is the only thing left
+/// running once nobody polls the dial. ❗ The phase budget is NO backstop here:
+/// a deadline the dial carries only fires while something polls the dial.
+///
+/// Same stalling peer and the same server-side marker as the cancel cell above,
+/// because the claim is the same claim: the session is gone from the SERVER,
+/// well inside [`PROMPTLY`] rather than at the 10 s budget or never.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn dropping_a_dial_inside_the_hello_window_closes_the_servers_session_at_once() {
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    drop(connect_fixture(&host, params.clone()).await);
+
+    let port = params.port;
+    let marker = format!("cmdr-dropped-hello-{}", std::process::id());
+    let (reached, in_the_window) = tokio::sync::oneshot::channel();
+    // ❗ A token nobody ever cancels. The lever this cell pulls is the drop below,
+    // and a cancel anywhere in here would test the cell above instead. ❗ Held
+    // right here rather than spawned, because a task is something you abort and
+    // this cell needs to DROP a future.
+    let mut dialing = Box::pin(transport::dial_cancelling_inside_the_hello(
+        params.clone(),
+        host.clone(),
+        transport::HelloPeer::Stalling(marker.clone()),
+        CancellationToken::new(),
+        reached,
+    ));
+    tokio::select! {
+        _ = &mut dialing => panic!("a peer that answers nothing can't have delivered a hello"),
+        signalled = in_the_window => {
+            signalled.expect("the dial has to reach the hello window before this cell can drop into it");
+        }
+    }
+
+    // Without this the rest could pass on a session that never opened.
+    let up = format!("the server to open the session the hello waits on ({FIXTURE})");
+    wait_until_async(PROMPTLY, &up, || sessions_open(port, &marker) == 1).await;
+
+    let started = Instant::now();
+    // The caller goes away: no cancel, no abort, the future is simply dropped.
+    drop(dialing);
+
+    // ❗ The point of the cell. The pending engine's `Drop` aborts the engine and
+    // disconnects the session, so the far end has nothing left to hold.
+    let gone = format!("the server's session to close at the drop ({FIXTURE})");
+    wait_until_async(PROMPTLY, &gone, || sessions_open(port, &marker) == 0).await;
+    assert!(
+        started.elapsed() < PROMPTLY,
+        "an abandoned dial has to close the far end at the drop, not at the phase budget"
+    );
+
+    // A panic in a spawned task doesn't fail the task that spawned it, so the
+    // proof it never happened is that the server and this binary are both still
+    // usable afterwards.
+    let volume = connect_fixture(&host, params).await;
+    assert!(volume.exists(Path::new("hello.txt")).await, "{FIXTURE}");
+}
+
 /// A cancel inside a REAL hello window, which is the shape production hits.
 ///
 /// The window is about a millisecond wide against a local server, so the cell

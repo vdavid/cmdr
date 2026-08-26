@@ -476,28 +476,30 @@ engine's own tasks out with it (russh 0.62.7's client session loop, read 2026-08
 ❗ Only the unanswered-hello path needs the disconnect. A session that reached `SshConnection` is shut down by dropping
 the ENGINE, whose own drop orders its tasks to stop and releases the channel (§ 1).
 
-**`reconnect::guarded_dial` is what keeps a dial polled to its end.** It spawns the whole dial on `host.runtime()` and
-awaits the **join handle**, so a caller who goes away detaches the dial instead of dropping it mid-handshake. Dropping
-one parked in the hello would let go of the engine's join handle, which DETACHES that task rather than aborting it, and
-of the `russh` `Handle`, whose `Drop` only logs: both conditions above at once, and the socket then stays open for the
-life of the process. ❗ `SUBSYSTEM_TIMEOUT` is no answer to that, because a deadline the dial CARRIES only fires while
-something polls the dial, which is exactly what an abandoned one lacks.
+**`transport::PendingEngine` is what makes an abandoned dial safe**, and it holds the engine's join handle and the
+session together precisely because those two only ever end in order. Every ending goes through `stop_engine`: the cancel
+and the phase deadline await it, an engine that answered with an error gets it on the way out, and a caller who simply
+stops polling gets it from the guard's `Drop`, which spawns the teardown on `host.runtime()` because a `Drop` can't
+await. `PendingEngine::delivered` is the one ending that skips it, and correctly: a hello that arrived becomes an
+`SshConnection`, which owns its own shutdown (§ 1).
+
+❗ **The guard is the only lever an abandoned dial has**, because letting go of the join handle DETACHES the engine
+rather than aborting it, and a `russh` `Handle`'s own drop only logs: both conditions above at once. `SUBSYSTEM_TIMEOUT`
+can't cover it either, since a deadline the dial CARRIES only fires while something polls the dial, which is exactly
+what an abandoned one lacks.
 
 Measured on the far end, where the claim lives (`HelloPeer::Stalling` against `sftp-fixture-openssh`, 2026-08-26): a
-dial dropped inside the hello leaves the server's session open at every probe out to 15 s, while the same dial left to
-run answers `TimedOut` at 9.9 s with the session gone 60 ms after that. So removing the spawn costs no CANCELLATION,
-which the token and the deadline carry on their own; what it costs is the abandon path, which is why `CLAUDE.md` keeps a
-guardrail against unwinding it.
+dropped dial's session is gone from the server well inside the 2 s the cell allows, against the same dial's session
+surviving every probe out to 15 s without the guard. The deadline arm still ends where it always did, `TimedOut` at 9.8
+s with the far end closed 100 ms later.
 
-❗ **The way to earn that collapse is to make the hello drop-safe**, rather than to keep callers from dropping a dial: a
-guard over the engine's join handle and the session, running `stop_engine` from its own `Drop`, would close the far end
-AT the abandon instead of at the phase budget, and leave the spawn nothing left to do. Nothing does that yet.
-
-Two cells keep the whole hazard honest, and they pin OUTCOMES rather than a workaround:
-`abandoning_a_connect_does_not_panic_the_engines_task` for the drop, and
-`a_cancel_inside_a_real_hello_window_stops_the_engine_without_panicking_it` for the abort. A panic inside a spawned task
-doesn't fail the task that spawned it, so it surfaces as an unrelated test binary crash rather than a failing assertion,
-which is what the cells convert back into a finding.
+Three cells keep the whole hazard honest, and they pin OUTCOMES rather than a workaround:
+`dropping_a_dial_inside_the_hello_window_closes_the_servers_session_at_once` for the abandon,
+`a_cancel_inside_the_hello_window_closes_the_servers_session_at_once` for the cancel, and
+`abandoning_a_connect_does_not_panic_the_engines_task` plus
+`a_cancel_inside_a_real_hello_window_stops_the_engine_without_panicking_it` for the abort that 0.15.8 made safe. A panic
+inside a spawned task doesn't fail the task that spawned it, so it surfaces as an unrelated test binary crash rather
+than a failing assertion, which is what the cells convert back into a finding.
 
 ### 2b. Calling a connect off
 
