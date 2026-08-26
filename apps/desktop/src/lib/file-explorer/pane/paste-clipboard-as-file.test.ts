@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import type { FilePaneAPI } from './types'
+import type { ToastContent, ToastOptions, ToastOriginPane } from '$lib/ui/toast/toast-store.svelte'
 
 // Spies for every dependency the gating helper touches. `pastedAsFileMessage`
 // deliberately uses the REAL `$lib/intl` (golden output), so intl is NOT mocked.
@@ -10,7 +11,7 @@ const { getSettingSpy, pasteClipboardAsFileSpy, findFileIndexSpy, onDirectoryDif
     pasteClipboardAsFileSpy: vi.fn<() => Promise<{ name: string; kind: 'text' | 'image' | 'pdf' } | null>>(),
     findFileIndexSpy: vi.fn(),
     onDirectoryDiffSpy: vi.fn(),
-    addToastSpy: vi.fn<(pane: unknown, content: unknown, options?: unknown) => string>(),
+    addToastSpy: vi.fn<(pane: ToastOriginPane, content: ToastContent, options?: ToastOptions) => string>(),
     moveCursorSpy: vi.fn<() => Promise<void>>(),
   }))
 

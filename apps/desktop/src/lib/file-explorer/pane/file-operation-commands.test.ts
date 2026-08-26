@@ -3,6 +3,7 @@ import type { PaneAccess } from './pane-access'
 import type { FilePaneAPI } from './types'
 import type { SearchSnapshot } from '$lib/search/snapshot-store.svelte'
 import type { FileEntry, VolumeInfo, TransferOperationType } from '../types'
+import type { ToastContent, ToastOptions } from '$lib/ui/toast/toast-store.svelte'
 
 const {
   getFileAtSpy,
@@ -19,7 +20,7 @@ const {
 } = vi.hoisted(() => ({
   getFileAtSpy: vi.fn<() => Promise<FileEntry | null>>(),
   getFilesAtIndicesSpy: vi.fn<() => Promise<FileEntry[]>>(),
-  addToastSpy: vi.fn<(content: unknown, options?: unknown) => string>(),
+  addToastSpy: vi.fn<(content: ToastContent, options?: ToastOptions) => string>(),
   getSnapshotSpy: vi.fn<() => SearchSnapshot | undefined>(),
   openFileViewerSpy: vi.fn<() => Promise<void>>(),
   getInitialFolderNameSpy: vi.fn<() => Promise<string>>(),

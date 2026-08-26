@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { PaneAccess } from './pane-access'
 import type { FilePaneAPI } from './types'
 import type { TransferProgressPropsData } from './dialog-props'
+import type { ToastContent, ToastOptions } from '$lib/ui/toast/toast-store.svelte'
 
 const {
   copyFilesToClipboardSpy,
@@ -22,7 +23,7 @@ const {
   cutPathsToClipboardSpy: vi.fn<() => Promise<number>>(),
   readClipboardFilesSpy: vi.fn<() => Promise<{ paths: string[]; isCut: boolean; isDirectory?: (boolean | null)[] }>>(),
   clearClipboardCutStateSpy: vi.fn<() => Promise<void>>(),
-  addToastSpy: vi.fn<(content: unknown, options?: unknown) => string>(),
+  addToastSpy: vi.fn<(content: ToastContent, options?: ToastOptions) => string>(),
   resolveSnapshotPathsSpy: vi.fn<() => string[]>(),
   getCommonParentPathSpy: vi.fn<() => string>(),
   pasteClipboardContentAsFileSpy: vi.fn<(deps: { onNothingCreated: () => void }) => Promise<void>>(),
@@ -43,7 +44,7 @@ vi.mock('$lib/ui/toast', () => ({
   addToast: addToastSpy,
   // Pane-tagged toasts (paste refusals, paste-as-file) funnel into the same spy,
   // dropping the pane arg so the message/options assertions below cover both.
-  addToastForPane: (_pane: unknown, content: unknown, options?: unknown) => addToastSpy(content, options),
+  addToastForPane: (_pane: unknown, content: ToastContent, options?: ToastOptions) => addToastSpy(content, options),
 }))
 
 // The no-file-URL fallback lives in its own module (unit-tested in
@@ -126,6 +127,17 @@ function buildAccess(config: AccessConfig = {}): PaneAccess {
 
 const dialogsStub = {
   startTransferProgress: vi.fn<(props: TransferProgressPropsData) => void>(),
+  // `showAlert(title, message)` mirrors the real (unconverted) `DialogState.showAlert`
+  // (`dialog-state.svelte.ts`): title and message are both `string` in production too,
+  // and every real call site passes them in this fixed order. Converting this stub to
+  // an object payload would misrepresent it: `clipboard-operations.ts` (untouched, out
+  // of scope here) calls `dialogs.showAlert(title, message)` positionally, so the mock
+  // must keep matching that shape.
+  // cmdr/no-confusable-callback-params: fixed, well-known pair mirroring real showAlert(title, message),
+  // never reordered; see comment above. NOT a real `eslint-disable-next-line` yet: the rule isn't
+  // registered in `eslint.config.js`, and ESLint treats an unknown rule id in a disable comment as a
+  // hard error, which would break `pnpm check` today. Swap this for a real disable directive when it's
+  // wired up.
   showAlert: vi.fn<(title: string, message: string) => void>(),
 }
 

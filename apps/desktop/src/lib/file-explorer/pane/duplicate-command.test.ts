@@ -8,9 +8,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { PaneAccess } from './pane-access'
 import type { FilePaneAPI } from './types'
 import type { VolumeInfo } from '../types'
+import type { ToastContent, ToastOptions } from '$lib/ui/toast/toast-store.svelte'
 
 const { addToastSpy, buildFromSelectionSpy, buildFromCursorSpy } = vi.hoisted(() => ({
-  addToastSpy: vi.fn<(content: unknown, options?: unknown) => string>(),
+  addToastSpy: vi.fn<(content: ToastContent, options?: ToastOptions) => string>(),
   buildFromSelectionSpy: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   buildFromCursorSpy: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }))

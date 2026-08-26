@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ExtensionChangePolicy } from '$lib/settings'
 
 const {
   executeRenameSaveSpy,
@@ -17,12 +18,21 @@ const {
   pathInsideArchiveSpy,
   tStringSpy,
 } = vi.hoisted(() => ({
+  // Mirrors the real, unconverted `executeRenameSave` (`rename/rename-operations.ts`):
+  // `trimmedName` and `volumeId` are both `string` in production too, and its one real
+  // call site (`rename-flow.svelte.ts`, untouched, out of scope here) invokes it
+  // positionally. An object payload here would misrepresent that positional shape.
   executeRenameSaveSpy:
     vi.fn<
+      // cmdr/no-confusable-callback-params: mirrors real, unconverted executeRenameSave(target,
+      // trimmedName, extensionPolicy, skipExtensionCheck?, volumeId?); see comment above. NOT a real
+      // `eslint-disable-next-line` yet: the rule isn't registered in `eslint.config.js`, and ESLint
+      // treats an unknown rule id in a disable comment as a hard error, which would break `pnpm check`
+      // today. Swap this for a real disable directive when it's wired up.
       (
         target: { path: string; originalName: string },
         trimmedName: string,
-        extensionPolicy: string,
+        extensionPolicy: ExtensionChangePolicy,
         skipExtensionCheck?: boolean,
         volumeId?: string,
       ) => Promise<unknown>

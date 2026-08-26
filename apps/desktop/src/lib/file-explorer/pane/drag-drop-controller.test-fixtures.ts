@@ -118,6 +118,16 @@ export function buildDialogs(): {
   showAlert: ReturnType<typeof vi.fn>
 } {
   const showTransfer = vi.fn<(props: TransferDialogPropsData) => void>()
+  // `showAlert(title, message)` mirrors the real (unconverted) `DialogState.showAlert`
+  // (`dialog-state.svelte.ts`): title and message are both `string` in production too,
+  // and the real call site (`drag-drop-controller.svelte.ts`, untouched, out of scope
+  // here) always passes them in this fixed order. An object payload here would
+  // misrepresent the positional shape that code actually calls.
+  // cmdr/no-confusable-callback-params: fixed, well-known pair mirroring real showAlert(title, message),
+  // never reordered; see comment above. NOT a real `eslint-disable-next-line` yet: the rule isn't
+  // registered in `eslint.config.js`, and ESLint treats an unknown rule id in a disable comment as a
+  // hard error, which would break `pnpm check` today. Swap this for a real disable directive when it's
+  // wired up.
   const showAlert = vi.fn<(title: string, message: string) => void>()
   const dialogs = { showTransfer, showAlert } as unknown as DialogState
   return { dialogs, showTransfer, showAlert }
