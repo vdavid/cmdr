@@ -167,10 +167,15 @@ them.
   - **`Sftp::close()` never returns over a russh channel.** It awaits `read_task`, which only ends at EOF on the reader
     (`src/sftp.rs:328`). Under the `openssh` feature the child's stdio EOFs on drop; a russh channel does not until you
     close it. Hit during benchmarking and worked around by closing the channel (or just dropping) instead.
-  - **A live `unwrap` on a dropped receiver**: `tx.send(extensions).unwrap()` in `src/tasks.rs:213` panics in a spawned
-    task if the `Sftp::new` future is dropped before the server hello arrives, which is to say if you cancel or time out
-    a connection attempt, which Cmdr will. Open as issue #153 since 2026-03-19, unreproduced upstream. One-line fix,
+  - **An `unwrap` on a dropped receiver**: `tx.send(extensions).unwrap()` in `src/tasks.rs:213` panics in a spawned task
+    if the `Sftp::new` future is dropped before the server hello arrives, which is to say if you cancel or time out a
+    connection attempt, which Cmdr will. Open as issue #153 since 2026-03-19, unreproduced upstream. One-line fix,
     trivial to carry as a patch or upstream.
+
+    **Fixed upstream and shipped**: openssh-rust/openssh-sftp-client#176 landed in 0.15.8 (2026-08-24), which Cmdr is
+    on. The shape the crate grew to route around it is still in place; `crates/cmdr-sftp/DETAILS.md` § hazard 2 carries
+    what it would take to unwind.
+
   - **`File::read` advances the offset by the _requested_ length, not the returned one** (`src/file/mod.rs:426`), and
     `read_all` inherits it. A server that legally short-reads would leave a hole in a sequential download. It cannot
     bite a reader that tracks its own offsets (which a windowed reader does anyway), and `TokioCompatFile` handles short

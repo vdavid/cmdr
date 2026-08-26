@@ -30,10 +30,10 @@
 //!   what the user typed straight to [`guarded_dial`]; the store is only ever
 //!   REFRESHED, never seeded.
 //! - ❗ **A dial is never dropped mid-handshake.** [`guarded_dial`] runs it in a
-//!   task and awaits the join handle, because abandoning a connect at the wrong
-//!   moment panics inside the engine (`transport.rs`). Calling one OFF is a
-//!   different thing and goes through the token instead — and no reconnect on
-//!   this path has one, because nobody is watching an unattended redial.
+//!   task and awaits the join handle, so an abandoned connect detaches instead.
+//!   Calling one OFF is a different thing and goes through the token instead, and
+//!   no reconnect on this path has one, because nobody is watching an unattended
+//!   redial.
 
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -73,8 +73,12 @@ const RECONNECT_BACKOFF: [Duration; 6] = [
 ///
 /// ❗ The future is handed to a task and the JOIN HANDLE is what gets awaited, so
 /// a caller who goes away detaches the task instead of dropping the dial
-/// mid-handshake, which panics a task inside `openssh-sftp-client`
-/// (`transport.rs` § hazard 1). ❌ Never call [`transport::dial`] directly.
+/// mid-handshake. ❌ Never call [`transport::dial`] directly.
+///
+/// The panic that forced this spawn is fixed in `openssh-sftp-client` 0.15.8, so
+/// the indirection is now a choice about what an abandoned dial does rather than
+/// a requirement. `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`"
+/// carries the terms.
 ///
 /// ❗ That spawn costs no cancellation, because calling a connect OFF goes
 /// through `cancel` rather than through dropping this future: the token reaches
@@ -140,7 +144,8 @@ impl SftpVolume {
         let auto_reconnect = inner.auto_reconnect.load(Ordering::Relaxed);
         inner.host.runtime().spawn(async move {
             // Dropping the transport IS the shutdown; the engine's own drop
-            // orders it and both its tasks exit (`transport.rs` § hazard 1).
+            // orders it and both its tasks exit. ❌ Never `Sftp::close()` here:
+            // it hangs forever over a `russh` channel (`DETAILS.md` § hazard 1).
             inner.session.write().await.take();
             drop(inner);
             if auto_reconnect {

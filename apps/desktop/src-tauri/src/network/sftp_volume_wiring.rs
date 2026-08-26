@@ -142,9 +142,10 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// nothing behind: no volume, no saved server, no secret.
 ///
 /// ❗ Every dial goes through `cmdr_sftp::connect_sftp_volume`, which runs it in
-/// a task and awaits the join handle: a connect DROPPED mid-handshake panics
-/// inside the SFTP engine (`crates/cmdr-sftp/DETAILS.md` § "Crate hazards"),
-/// which is why calling one off goes through the token instead.
+/// a task and awaits the join handle, so a connect the caller walks away from
+/// detaches rather than dropping mid-handshake. Calling one OFF goes through the
+/// token instead. `crates/cmdr-sftp/DETAILS.md` § "Crate hazards" has why that
+/// split is shaped the way it is.
 pub async fn connect_and_register(
     display_name: &str,
     params: SftpConnectionParams,

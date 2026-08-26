@@ -215,9 +215,8 @@ impl SftpVolume {
 ///
 /// ❗ The dial runs inside a task on `host.runtime()` and this function awaits
 /// the join handle, so dropping THIS future abandons the handle and never the
-/// dial — a dial dropped mid-handshake panics a task inside
-/// `openssh-sftp-client`, and a cancel that loses a race with a drop must still
-/// be safe. `transport.rs` has the detail.
+/// dial. `transport.rs` has the detail, including why that indirection outlived
+/// the `openssh-sftp-client` panic that forced it.
 pub async fn connect_sftp_volume(
     name: &str,
     volume_id: &str,

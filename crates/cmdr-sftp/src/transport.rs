@@ -8,15 +8,17 @@
 //!
 //! ## Two hazards this module is shaped around
 //!
-//! **An abandoned `Sftp::new` panics inside `openssh-sftp-client`.** `tasks.rs:215`
-//! does `tx.send(extensions).unwrap()`, which panics in a spawned task if the
-//! `Sftp::new` future was dropped before the server's hello arrived — that is,
-//! on any timed-out or abandoned connect (`openssh-sftp-client` 0.15.7, read
-//! 2026-08-22; upstream issue #153 covers the same `unwrap`). So `Sftp::new`
-//! runs in a task of its OWN and only its JOIN HANDLE is ever raced: giving up
-//! drops the handle, the future still runs to completion, and its result is
-//! discarded. ❌ Never wrap `Sftp::new` in `tokio::time::timeout` directly, and
-//! ❌ never `abort()` its task.
+//! **An abandoned `Sftp::new` panicked inside `openssh-sftp-client`, and this
+//! module is still shaped around it.** `tasks.rs` did
+//! `tx.send(extensions).unwrap()`, which panicked in a spawned task if the
+//! `Sftp::new` future was dropped before the server's hello arrived: any
+//! timed-out or abandoned connect. Fixed in 0.15.8, the version we ship
+//! (openssh-rust/openssh-sftp-client#176), so dropping or aborting that future
+//! is safe now. The shape it forced is still here: `Sftp::new` runs in a task of
+//! its OWN and only its JOIN HANDLE is ever raced, so giving up drops the handle
+//! and the future runs to completion. ❗ Unwinding that changes what an abandoned
+//! dial and a cancelled hello do, so it is a deliberate call rather than a
+//! cleanup: `DETAILS.md` § "2. An abandoned `Sftp::new`" has the terms.
 //!
 //! **`Sftp::close()` never returns over a `russh` channel.** It awaits a read
 //! task that only ends at reader EOF, which a channel doesn't give until it's
@@ -33,10 +35,12 @@
 //!   through [`within`], which races the work against the token and DROPS it on
 //!   a cancel. `russh` unwinds a dropped future cleanly, so they stop on the
 //!   spot.
-//! - The SFTP hello can't be dropped, per hazard 1. A cancel there ends the
-//!   USER's connect immediately and hands the still-running engine to
-//!   [`finish_detached`], which waits it out on a task of its own and throws
-//!   away both the engine and the session. Deliberate rather than a leak.
+//! - The SFTP hello is waited out rather than dropped, which leaves it the one
+//!   phase without a TRUE cancel. A cancel there ends the USER's connect
+//!   immediately and hands the still-running engine to [`finish_detached`],
+//!   which waits it out on a task of its own and throws away both the engine and
+//!   the session. Deliberate rather than a leak, and on 0.15.8 no longer forced:
+//!   see the hazard above.
 
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -207,9 +211,10 @@ pub async fn dial(
 ///
 /// ❗ Either ending DROPS `work`, which is exactly why the key exchange, the auth
 /// ladder, and the two channel requests are cancelable at all: `russh` unwinds a
-/// dropped future cleanly. ❌ Never run `Sftp::new` through this — dropping THAT
-/// future panics the engine's task (§ hazard 1), which is why [`await_hello`]
-/// races only its join handle.
+/// dropped future cleanly. [`await_hello`] races only a JOIN HANDLE instead of
+/// coming through here, which is what leaves the hello without a true cancel;
+/// `DETAILS.md` § "2. An abandoned `Sftp::new`" says what it would take to change
+/// that.
 async fn within<T>(
     cancel: &CancellationToken,
     deadline: tokio::time::Instant,
@@ -303,7 +308,7 @@ enum HelloEnded {
 /// worst case a user sits through 50 s instead of 30 s.
 ///
 /// The first two are ordinary `russh` futures and go under the token like the
-/// handshake phases do. The hello is the one a cancel can't shorten by dropping:
+/// handshake phases do. The hello is the one a cancel doesn't shorten by dropping:
 /// `Sftp::new` runs in a task of its own and only its JOIN HANDLE is ever raced,
 /// so a cancel there ends the user's wait at once and leaves the engine to
 /// [`finish_detached`].
@@ -342,7 +347,7 @@ async fn start_engine(
     Ok(host.runtime().spawn(Sftp::new(writer, reader, SftpOptions::new())))
 }
 
-/// The half a cancel can't shorten by dropping: waiting out the server's hello.
+/// The half a cancel doesn't shorten by dropping: waiting out the server's hello.
 async fn await_hello(
     session: client::Handle<TrustHandler>,
     host: &VolumeHost,
@@ -354,8 +359,8 @@ async fn await_hello(
         biased;
         () = cancel.cancelled() => None,
         // ❗ `&mut`, so the handle survives a cancel and can be handed on. Timing
-        // out drops it, which DETACHES the task rather than aborting it: the
-        // `Sftp::new` future stays alive and its `unwrap` keeps a receiver.
+        // out drops it, which DETACHES the task rather than aborting it, leaving
+        // the `Sftp::new` future to finish and close the socket on its way out.
         joined = tokio::time::timeout_at(deadline, &mut starting) => Some(joined),
     };
     let Some(joined) = waited else {
@@ -366,7 +371,7 @@ async fn await_hello(
         // ❗ Not handed to `finish_detached`, unlike a cancel: the window already
         // elapsed without a hello, so the server is broken rather than slow and
         // holding its socket open for another one buys nothing. Dropping the
-        // session errors the engine's read task out before its `unwrap`.
+        // session errors the engine's read task out.
         Err(_elapsed) => Err(SftpConnectError::TimedOut),
         Ok(Err(join)) => Err(SftpConnectError::Transport(join.to_string())),
         Ok(Ok(Err(e))) => Err(SftpConnectError::Transport(e.to_string())),
@@ -389,21 +394,26 @@ async fn await_hello(
 /// The task finishing an abandoned hello, and whether the engine's own task
 /// ENDED rather than died.
 ///
-/// ❗ That answer is the hazard's tell: a `Sftp::new` future somebody dropped or
-/// aborted kills its task instead of finishing it, and a `JoinError` here is the
-/// `tasks.rs` `unwrap` going off. Production drops the handle; the cell driving
-/// the hello window asserts on it, because a panic in a spawned task doesn't fail
-/// the test that spawned it.
+/// ❗ A `JoinError` here means the engine's own task DIED rather than ended,
+/// which on 0.15.8 should never happen whatever we do to the future. It is the
+/// regression tell either way: production drops the handle, and the cell driving
+/// the hello window asserts on this, because a panic in a spawned task doesn't
+/// fail the test that spawned it.
 type Finishing = JoinHandle<Result<(), tokio::task::JoinError>>;
 
 /// Lets an abandoned SFTP hello finish on its own, then throws away what it
 /// built.
 ///
-/// ❗ Deliberate, and ❌ not a leak. The engine's `Sftp::new` future has to run to
-/// completion or its task panics on an `unwrap` (§ hazard 1), so the only safe
-/// way to walk away from a hello is to stop WAITING for it. The session rides
-/// along and goes with it, so the server sees the connection close as soon as the
-/// engine is done.
+/// ❗ Deliberate, and ❌ not a leak. Walking away from a hello means stopping the
+/// WAIT for it and letting the engine finish; the session rides along and goes
+/// with it, so the server sees the connection close as soon as the engine is
+/// done.
+///
+/// ❗ **This is the one phase without a true cancel, and 0.15.8 lifted the reason
+/// for that.** The `unwrap` that made aborting `Sftp::new` unsafe is fixed, so
+/// this could become `starting.abort()` plus a `drop(session)` and close the
+/// socket at the cancel. Changing it is a call to make on purpose:
+/// `DETAILS.md` § "2. An abandoned `Sftp::new`" has the terms.
 ///
 /// A FULL [`SUBSYSTEM_TIMEOUT`] of its own, ❌ not the remainder of the dial's:
 /// a cancel arriving late in the window would otherwise yank a hello that was
@@ -435,8 +445,7 @@ fn finish_detached(
 /// the task that finishes it.
 ///
 /// ❗ The one phase a cell can't reach by timing: against a local server it is
-/// about a millisecond wide, and it is also the only one where a wrong shape
-/// panics rather than fails. Everything from the cancel on is [`await_hello`]'s
+/// about a millisecond wide. Everything from the cancel on is [`await_hello`]'s
 /// own code, so a cell driving this drives production.
 ///
 /// `cfg(test)` rather than the crate's `testing` feature because this is

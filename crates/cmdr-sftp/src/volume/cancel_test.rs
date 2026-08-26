@@ -2,9 +2,9 @@
 //! and that the one phase which can't be dropped survives being abandoned.
 //!
 //! ❗ **The hello window is why this file exists.** A cancel in the other two
-//! phases drops a `russh` future, which is ordinary; a cancel in the hello has to
-//! walk away from a future that panics its task when dropped
-//! (`transport.rs` § hazard 1), so the cell for it drives real containers.
+//! phases drops a `russh` future, which is ordinary; a cancel in the hello walks
+//! away from a future we let run to completion instead (`transport.rs`
+//! § "Cancelling a connect"), so the cell for it drives real containers.
 //!
 //! The servers, the ports, and what each one is for:
 //! `apps/desktop/test/sftp-servers/README.md`.
@@ -111,9 +111,7 @@ async fn a_cancel_during_the_handshake_stops_the_dial_promptly_and_registers_not
 /// everything up to the engine's start on a live token and hands `await_hello` an
 /// already-cancelled one, which is the code path a real cancel takes. What comes
 /// back is the task that finishes the abandoned engine, so awaiting it proves the
-/// engine ran to completion (dropped or aborted, its task would have died on the
-/// `tasks.rs` `unwrap` instead) and that both it and the session were then let
-/// go.
+/// engine ran to completion and that both it and the session were then let go.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn a_cancel_inside_the_hello_window_leaves_no_live_session_and_no_panic() {
@@ -137,7 +135,7 @@ async fn a_cancel_inside_the_hello_window_leaves_no_live_session_and_no_panic() 
             .expect("the task doing the finishing must not die either");
         assert!(
             finished.is_ok(),
-            "❗ the engine's own task died instead of finishing, which is the `tasks.rs` `unwrap` going off: something dropped or aborted `Sftp::new`'s future"
+            "❗ the engine's own task died instead of finishing: something inside `openssh-sftp-client` panicked on the way out"
         );
     }
 

@@ -161,11 +161,11 @@ tuning.
   server gives of bytes it accepted but could not commit (hazard 1's `File::close()` note). The guarantee rests on a
   precondition nothing enforces: `OwnedHandle::close` puts `SSH_FXP_CLOSE` on the wire only while
   `Arc::strong_count(&handle) == 1`, and returns `Ok(())` in silence otherwise (verified by reading
-  `openssh-sftp-client` 0.15.7's `OwnedHandle::close`, 2026-08-23). It holds today because `pump` takes its
-  `RemoteWrite` by value and every in-flight write owns its own clone, so all of them are dropped before
-  `write_from_stream` closes. ❌ Don't let a clone outlive `pump` (a cached writer, a spawned task, a retained handle in
-  a struct): the awaited close silently becomes a no-op, the upload reports success on bytes the server never committed,
-  and nothing fails to compile and no test goes red.
+  `openssh-sftp-client` 0.15.7's `OwnedHandle::close`, 2026-08-23; unchanged in the 0.15.8 we ship). It holds today
+  because `pump` takes its `RemoteWrite` by value and every in-flight write owns its own clone, so all of them are
+  dropped before `write_from_stream` closes. ❌ Don't let a clone outlive `pump` (a cached writer, a spawned task, a
+  retained handle in a struct): the awaited close silently becomes a no-op, the upload reports success on bytes the
+  server never committed, and nothing fails to compile and no test goes red.
 - ❗ **Every error path takes the partial with it**, cancellation included. The staging layer removes the temp too, so
   this is the backend being tidy rather than the safety net — and a failure removing it never replaces the error that
   caused it.
@@ -414,11 +414,12 @@ is private (`lib.rs`'s `use openssh_sftp_client_lowlevel as lowlevel`, not `pub 
 - **Server with it**: CLAIM the destination name first with a primitive the server refuses atomically, then let the
   rename land on a placeholder of our own. ❗ The claim's handle is DROPPED rather than closed, and that is not a
   shortcut: `OwnedHandle::drop` writes `SSH_FXP_CLOSE` into the send buffer synchronously and spawns only the wait for
-  its answer (`openssh-sftp-client` 0.15.7 `handle.rs`, read 2026-08-22), so the server sees the close before the rename
-  on the same ordered stream. Awaiting it would buy nothing but a third round trip per landed file. A file-shaped claim
-  (`SSH_FXF_EXCL`) covers the overwhelming case — a staged write landing — in one extra round trip. A directory source
-  can't be renamed onto a file (`ENOTDIR`), so a failed rename removes the placeholder, probes the SOURCE, and retries
-  with a directory-shaped claim (`SSH_FXP_MKDIR`, which POSIX rename replaces when it's empty).
+  its answer (`openssh-sftp-client` 0.15.7 `handle.rs`, read 2026-08-22; unchanged in the 0.15.8 we ship), so the server
+  sees the close before the rename on the same ordered stream. Awaiting it would buy nothing but a third round trip per
+  landed file. A file-shaped claim (`SSH_FXF_EXCL`) covers the overwhelming case — a staged write landing — in one extra
+  round trip. A directory source can't be renamed onto a file (`ENOTDIR`), so a failed rename removes the placeholder,
+  probes the SOURCE, and retries with a directory-shaped claim (`SSH_FXP_MKDIR`, which POSIX rename replaces when it's
+  empty).
 
 **Decision: the claim, ❌ not a pre-flight stat.** A stat guard is a TOCTOU window whose failure mode is that the user's
 EXISTING file is destroyed. The claim's failure mode is a zero-byte file at a name that was proven FREE a moment
@@ -432,8 +433,12 @@ alternative, that is the price of the promise rather than an oversight.
 
 ## Crate hazards
 
-Read these before writing byte-path code. Each one is a real defect in `openssh-sftp-client` 0.15.7, read from its
-source on 2026-08-22.
+Read these before writing byte-path code, and note that hazard 2 is FIXED upstream while the shape it forced is still in
+our code.
+
+Every reading below was taken from `openssh-sftp-client` 0.15.7's source on 2026-08-22. We ship 0.15.8, whose only
+source change anywhere in the crate is the `tasks.rs` fix in hazard 2 (full crate diff, 2026-08-26), so the rest carries
+over byte for byte.
 
 ### 1. `Sftp::close()` hangs forever over a `russh` channel
 
@@ -452,26 +457,31 @@ there hangs the test rather than failing it, which is its own kind of loud.
 a detached task and discards the result; `File::close()` awaits it and returns the error, which for a staged write is
 where a server reports a write it could not commit. ❌ Don't read "never `close()`" as covering both.
 
-### 2. An abandoned `Sftp::new` panics the engine's spawned task
+### 2. An abandoned `Sftp::new` panicked the engine's spawned task (fixed in 0.15.8, shape still here)
 
-The engine's connect task does `tx.send(extensions).unwrap()`, which panics if the `Sftp::new` future was dropped before
-the server's hello arrived — that is, on any timed-out or abandoned connect. (Upstream issue #153 is the same `unwrap`,
-filed 2026-03-19 and unreproduced there.)
+The engine's connect task did `tx.send(extensions).unwrap()`, which panicked whenever the `Sftp::new` future was dropped
+before the server's hello arrived: any timed-out or abandoned connect. 0.15.8 returns from the read task instead
+(openssh-rust/openssh-sftp-client#176, which is also the answer to upstream issue #153). Dropping or aborting a
+`Sftp::new` future is safe on the version we ship.
 
-The shape that avoids it, in two layers:
+**The two layers that routed around it are still in the code**, and unwinding either is a deliberate behavior change
+rather than a cleanup:
 
-- `reconnect::guarded_dial` spawns the whole dial on `host.runtime()` and awaits the **join handle**. Dropping the
-  caller's future drops the handle, which detaches the task rather than cancelling it. ❗ Still needed even though a
-  connect is now called off through a token: a cancel can lose the race with a caller that simply goes away.
-- `transport::await_hello` does the same again for `Sftp::new` itself, racing only the JOIN HANDLE, so giving up drops a
-  handle and never the future.
+- `reconnect::guarded_dial` spawns the whole dial on `host.runtime()` and awaits the **join handle**, so a caller who
+  goes away detaches the dial instead of dropping it mid-handshake. ❗ Nothing else rides on that spawn: the token and
+  the deadline are arguments the dial already carries, so removing it costs no cancellation. What it changes is what an
+  ABANDONED dial does, which is now a free choice rather than a forced one.
+- `transport::await_hello` races only the JOIN HANDLE for `Sftp::new` and hands a cancelled hello to `finish_detached`
+  (§ 2b), which is why that phase has no true cancel yet.
 
-❌ Never wrap `Sftp::new` in `tokio::time::timeout` directly, and ❌ never `abort()` its task — an abort ends the future
-just as a drop does, and reproduces the panic exactly. A regression here surfaces as a panic in a spawned task, which
-reads as an unrelated test binary crash rather than as a failing assertion. Two cells turn it back into a finding:
+They come out independently, and each is worth doing on its own terms: the first buys a smaller call graph, the second
+buys a real cancel. Both rest on the 0.15.8 floor, so a downgrade puts them back.
+
+Two cells keep it honest, and they stay useful after any unwind because they pin the OUTCOME rather than our workaround:
 `abandoning_a_connect_does_not_panic_the_engines_task` for the drop, and
 `a_cancel_inside_the_hello_window_leaves_no_live_session_and_no_panic` for the cancel, which asserts the engine's own
-task ENDED rather than died (`finish_detached` hands its `JoinError` back for exactly that).
+task ENDED rather than died. A `JoinError` out of either is a regression whichever shape the code has, and it surfaces
+as an unrelated test binary crash rather than a failing assertion, which is what the cells convert back into a finding.
 
 ### 2b. Calling a connect off
 
@@ -483,16 +493,21 @@ A dial has three phases, and left alone it can hold a sign-in dialog for the ful
   The select is `biased`, so a token already cancelled when a step starts wins before the work is polled at all: a
   connect the user called off never puts a packet on the wire, never spends an authentication attempt, and never reads
   the secret store.
-- **The SFTP hello can't be dropped**, per hazard 2 above. A cancel there ends the USER's wait immediately and hands the
-  still-running engine to `finish_detached`, which waits it out on a task of its own and then drops both the engine and
-  the session. That task gets a full `SUBSYSTEM_TIMEOUT` of its own rather than the remainder of the dial's, so a cancel
-  arriving late in the window doesn't yank a hello that was milliseconds away; nobody is waiting on it, so all that
-  matters is that it's bounded. ❗ **Deliberate rather than a leak.** The alternative is the `unwrap` panic, and the
-  alternative to _that_ is making the user wait out a hello they already walked away from. The task is what closes the
-  socket, so the server sees the connection go as soon as the engine is done.
+- **The SFTP hello is waited out rather than dropped**, which makes it the one phase with no TRUE cancel. A cancel there
+  ends the USER's wait immediately and hands the still-running engine to `finish_detached`, which waits it out on a task
+  of its own and then drops both the engine and the session. That task gets a full `SUBSYSTEM_TIMEOUT` of its own rather
+  than the remainder of the dial's, so a cancel arriving late in the window doesn't yank a hello that was milliseconds
+  away; nobody is waiting on it, so all that matters is that it's bounded. ❗ **Deliberate rather than a leak.** The
+  task is what closes the socket, so the server sees the connection go as soon as the engine is done.
+
+  ❗ **On 0.15.8 this no longer has to be the shape.** Hazard 2's panic is what made dropping the hello unsafe; with it
+  fixed, `await_hello` could `abort()` the handle and close the socket AT the cancel instead of up to
+  `SUBSYSTEM_TIMEOUT` after it. Not done: it changes what a cancel does, and § hazard 2 says why both layers move
+  together.
+
 - **The timeout path is NOT handed to `finish_detached`**, and the asymmetry is on purpose: a window that elapsed with
   no hello means the server is broken rather than slow, so holding its socket open for another one buys nothing.
-  Dropping the session errors the engine's read task out before its `unwrap`, which is safe.
+  Dropping the session errors the engine's read task out, which is safe.
 - **`hello` is two halves** so a cell can reach the second one: `start_engine` does the droppable channel work,
   `await_hello` does the part that can't be dropped, and `dial_cancelling_inside_the_hello` runs the first on a live
   token and the second on a cancelled one. The wait in `await_hello` measures 1.3 ms against `sftp-fixture-openssh`

@@ -37,7 +37,7 @@ russh = "0.62.7"
 # The SFTP protocol engine over russh's channel stream. Modeled on
 # openssh-portable's own `sftp-client.c`, and the only candidate that both
 # negotiates `limits@openssh.com` and exposes per-extension predicates.
-openssh-sftp-client = "0.15.7"
+openssh-sftp-client = "0.15.8"
 serde = { version = "1", features = ["derive"] }
 # Type export for the Rust↔TS bindings: `SftpHostKey` and the connection outcome
 # cross IPC. Pinned to the EXACT same version the app uses, for the reason

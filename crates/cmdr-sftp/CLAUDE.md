@@ -16,8 +16,9 @@ user-facing words.
 - **❌ Never call `Sftp::close()`** — it hangs forever over a `russh` channel; dropping the session IS the shutdown.
 - **❗ `File::close()` is the opposite: awaited, and only by its LAST clone.** A surviving clone makes it a silent no-op
   and the upload reports success on bytes nobody committed.
-- **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE: an ABANDONED `Sftp::new` panics
-  inside the engine. ❌ Never time out or `abort()` it.
+- **❗ Every dial goes through `reconnect::guarded_dial`**, which awaits a JOIN HANDLE so an abandoned dial detaches
+  rather than drops. The engine panic that forced this is fixed in `openssh-sftp-client` 0.15.8; the shape stays until
+  someone unwinds it on purpose. `DETAILS.md` § "2. An abandoned `Sftp::new`".
 - **❗ A connect is called off with a `CancellationToken`, ❌ never by dropping the dial.** Kex and auth stop on the
   spot; a cancel in the SFTP hello leaves the engine finishing on a detached task that discards it, which is deliberate
   rather than a leak. A cancelled connect registers, remembers, and stores nothing. `DETAILS.md` § "2b. Calling a
