@@ -34,6 +34,17 @@ export interface Selection {
   focus: LineOffset
 }
 
+/**
+ * Args for selecting the whole file: its total line count and the length of the
+ * last line. Shared by `createViewerSelection().selectAll` and
+ * `KeyboardDeps.selection.selectAll` (`viewer-keyboard.ts`): both took two
+ * same-typed `number`s a caller could swap.
+ */
+export interface SelectAllArgs {
+  totalLines: number
+  lastLineLength: number
+}
+
 /** Result of `normaliseSelection`: anchor and focus in document order. */
 export interface NormalisedSelection {
   start: LineOffset
@@ -329,7 +340,7 @@ export function createViewerSelection() {
     selection = { anchor: selection.anchor, focus: point }
   }
 
-  function selectAll(totalLines: number, lastLineLength: number): void {
+  function selectAll({ totalLines, lastLineLength }: SelectAllArgs): void {
     selection = makeSelectAll(totalLines, lastLineLength)
   }
 

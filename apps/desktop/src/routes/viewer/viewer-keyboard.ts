@@ -1,3 +1,5 @@
+import type { SelectAllArgs } from './selection.svelte'
+
 interface NavigationActions {
   scrollByLines: (n: number) => void
   scrollByPages: (n: number) => void
@@ -89,8 +91,8 @@ interface KeyboardDeps {
   /** Reads the cached text of a line, or `undefined` if not cached. */
   getLineText: (line: number) => string | undefined
   selection: {
-    /** Selects the whole file given the last line number and its length. */
-    selectAll: (lastLine: number, lastLineLength: number) => void
+    /** Selects the whole file given its total line count and the last line's length. */
+    selectAll: (args: SelectAllArgs) => void
   }
   scroll: NavigationActions
   search: {
@@ -145,13 +147,13 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
     const totalLines = deps.getTotalLines()
     if (totalLines !== null && totalLines > 0) {
       const lastLineText = deps.getLineText(totalLines - 1) ?? ''
-      deps.selection.selectAll(totalLines, lastLineText.length)
+      deps.selection.selectAll({ totalLines, lastLineLength: lastLineText.length })
       return
     }
     // ByteSeek-no-index ⌘A: we don't know `totalLines`. Use a sentinel that the
     // RangeEnd mapper translates to `RangeEnd::Eof` at the IPC boundary.
     if (deps.getTotalBytes() > 0) {
-      deps.selection.selectAll(Number.MAX_SAFE_INTEGER, 0)
+      deps.selection.selectAll({ totalLines: Number.MAX_SAFE_INTEGER, lastLineLength: 0 })
     }
   }
 
