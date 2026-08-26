@@ -182,7 +182,7 @@ describe('CloudProviderSetup', () => {
     mountSetup('openai')
     await settle()
     expect(checkAiConnection).toHaveBeenCalledWith({
-      baseUrl: expect.stringContaining('openai.com'),
+      baseUrl: expect.stringContaining('openai.com') as string,
       providerId: 'openai',
     })
   })

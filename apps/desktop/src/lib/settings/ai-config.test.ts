@@ -270,7 +270,7 @@ describe('pushConfigToBackend', () => {
       provider: 'cloud',
       contextSize: 32768,
       cloudProviderId: 'openai',
-      cloudBaseUrl: expect.stringContaining('openai.com'),
+      cloudBaseUrl: expect.stringContaining('openai.com') as string,
       cloudModel: 'gpt-4o',
       cloudRequiresApiKey: true,
     })
@@ -288,7 +288,7 @@ describe('pushConfigToBackend', () => {
       provider: 'cloud',
       contextSize: 32768,
       cloudProviderId: 'ollama',
-      cloudBaseUrl: expect.stringContaining('localhost'),
+      cloudBaseUrl: expect.stringContaining('localhost') as string,
       cloudModel: 'llama3.2',
       cloudRequiresApiKey: false,
     })
@@ -344,8 +344,8 @@ describe('pushConfigToBackend', () => {
       provider: 'local',
       contextSize: 16384,
       cloudProviderId: '',
-      cloudBaseUrl: expect.any(String),
-      cloudModel: expect.any(String),
+      cloudBaseUrl: expect.any(String) as string,
+      cloudModel: expect.any(String) as string,
       cloudRequiresApiKey: false,
     })
   })

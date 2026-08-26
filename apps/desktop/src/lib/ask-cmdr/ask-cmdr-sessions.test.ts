@@ -135,7 +135,7 @@ describe('sessions search', () => {
     setSearchQuery('budget')
     expect(searchMock).not.toHaveBeenCalled() // debounced
     await vi.runAllTimersAsync()
-    expect(searchMock).toHaveBeenCalledWith({ query: 'budget', limit: expect.any(Number), offset: 0 })
+    expect(searchMock).toHaveBeenCalledWith({ query: 'budget', limit: expect.any(Number) as number, offset: 0 })
     expect(sessionsState.hits).toEqual([hit(1)])
   })
 
