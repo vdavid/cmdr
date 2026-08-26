@@ -101,8 +101,8 @@ config UIs), `KeyboardShortcutsSection` (command names from the command registry
 ### Change listeners: `onSpecificSettingChange` drops the id
 
 **Decision / why.** `onSpecificSettingChange(id, listener)` calls `listener(value)`, not `listener(id, value)`, even
-though the caller-supplied `id` is available at the dispatch site. Every call site already knows `id` (it just passed
-it in), and TypeScript lets a listener declare fewer parameters than the type offers, so a listener written as
+though the caller-supplied `id` is available at the dispatch site. Every call site already knows `id` (it just passed it
+in), and TypeScript lets a listener declare fewer parameters than the type offers, so a listener written as
 `(value) => {...}` against the old two-parameter signature silently received the ECHOED id positionally where `value`
 was expected. That shipped as a real bug: `UpdatesSection.svelte`'s email listener rendered the literal id
 `analytics.email` in the field. Dropping the id parameter makes that class of bug unrepresentable. The all-settings
