@@ -157,6 +157,67 @@ pub fn trash_single_journaled(
 }
 
 // ============================================================================
+// Where trashed items land
+// ============================================================================
+
+/// The trash directory that holds items trashed from `path`'s volume.
+///
+/// macOS keeps ONE trash per volume, so there is no single answer: the boot
+/// volume's is `~/.Trash`, and every other mounted volume gets its own
+/// `<mount point>/.Trashes/<uid>`. Rather than reconstruct that from `statfs` +
+/// `getuid`, this asks Cocoa the same question the trash move itself asks, via
+/// `URLForDirectory:inDomain:appropriateForURL:create:`, so an unusual mount
+/// (a disk image, a synthetic firmlink, a volume with trash turned off) answers
+/// for itself instead of against our guess. `create: false` keeps this a pure
+/// lookup: a volume nobody has trashed anything to yet has no trash directory,
+/// and that answers `None` rather than quietly creating one.
+///
+/// `None` also covers a volume with no trash at all (FAT32, SMB), which is why
+/// callers treat it as "nowhere to go", never as a failure.
+///
+/// **Gotcha**: `appropriateForURL:` answers only for a path that EXISTS — it
+/// resolves the URL's volume, and a missing path has none. The question is asked
+/// about paths that are routinely gone by then (the item the user just trashed is
+/// no longer where it was), so this walks up to the nearest existing ancestor,
+/// which sits on the same volume and gives the same trash. Without the walk, "Go
+/// to trash" would answer `None` in exactly the case it exists for.
+///
+/// (verified on macOS 15: the boot volume answers `~/.Trash` and a mounted
+/// USB volume answers `/Volumes/<name>/.Trashes/501`; a nonexistent path answers
+/// an error until it's resolved against a live ancestor, 2026-08-27.)
+#[cfg(target_os = "macos")]
+pub fn trash_dir_for_path(path: &Path) -> Option<PathBuf> {
+    use objc2::rc::autoreleasepool;
+    use objc2_foundation::{NSFileManager, NSSearchPathDirectory, NSSearchPathDomainMask, NSString, NSURL};
+
+    let anchor = path.ancestors().find(|p| fs::symlink_metadata(p).is_ok())?;
+
+    autoreleasepool(|_| {
+        let path_str = anchor.to_string_lossy();
+        let ns_path = NSString::from_str(&path_str);
+        let url = NSURL::fileURLWithPath(&ns_path);
+        let file_manager = NSFileManager::defaultManager();
+
+        let trash_url = file_manager
+            .URLForDirectory_inDomain_appropriateForURL_create_error(
+                NSSearchPathDirectory::TrashDirectory,
+                NSSearchPathDomainMask::UserDomainMask,
+                Some(&url),
+                false,
+            )
+            .ok()?;
+        trash_url.path().map(|p| PathBuf::from(p.to_string()))
+    })
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn trash_dir_for_path(_path: &Path) -> Option<PathBuf> {
+    // The `trash` crate doesn't surface a trash location, and the XDG layout has no
+    // single answer for a non-home volume either. Callers degrade to "nowhere to go".
+    None
+}
+
+// ============================================================================
 // Batch trash with progress
 // ============================================================================
 
@@ -471,6 +532,67 @@ mod tests {
         );
         assert!(fs::symlink_metadata(&in_trash).is_ok(), "the item exists in Trash");
         let _ = fs::remove_file(&in_trash);
+    }
+
+    // ========================================================================
+    // trash_dir_for_path tests
+    // ========================================================================
+
+    /// The resolver has to agree with where the trash move actually puts things,
+    /// or "Go to trash" navigates somewhere the item isn't. Trashing a real file
+    /// and comparing its recorded location against the resolver is the only check
+    /// that pins the two together.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn trash_dir_for_path_matches_where_the_item_actually_landed() {
+        let tmp = create_test_dir("trash_dir_resolve");
+        let file = tmp.join("test.txt");
+        fs::write(&file, "content").unwrap();
+
+        let resolved = trash_dir_for_path(&file).expect("the boot volume has a trash");
+        let in_trash = move_to_trash_sync(&file)
+            .expect("trash succeeds")
+            .expect("macOS reports an in-trash location");
+
+        assert_eq!(
+            in_trash.parent(),
+            Some(resolved.as_path()),
+            "resolver said {}, the item landed in {}",
+            resolved.display(),
+            in_trash.display()
+        );
+        let _ = fs::remove_file(&in_trash);
+    }
+
+    /// The case the feature exists for: by the time anyone asks where a trashed item
+    /// went, its original path is gone. Cocoa refuses to resolve a volume for a path
+    /// that doesn't exist, so the ancestor walk is what keeps the answer coming.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn trash_dir_for_path_answers_for_a_path_that_is_already_gone() {
+        let tmp = create_test_dir("trash_dir_missing");
+        let never_existed = tmp.join("no-such-file.txt");
+
+        let resolved = trash_dir_for_path(&never_existed).expect("the volume still has a trash");
+        assert!(
+            resolved.components().any(|c| c.as_os_str() == ".Trash"),
+            "expected a ~/.Trash path, got {}",
+            resolved.display()
+        );
+    }
+
+    /// A whole subtree can be gone, not only the leaf (trashing a folder takes its
+    /// children with it), so the walk must climb as far as it needs to.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn trash_dir_for_path_climbs_past_several_missing_levels() {
+        let tmp = create_test_dir("trash_dir_deep_missing");
+        let deep = tmp.join("gone").join("also-gone").join("file.txt");
+
+        assert!(
+            trash_dir_for_path(&deep).is_some(),
+            "a path several levels below a live ancestor still resolves"
+        );
     }
 
     #[cfg(target_os = "macos")]

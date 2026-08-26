@@ -1119,6 +1119,15 @@ export const commands = {
   ) => typedError<null, MutationError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path })),
+  /**
+   *  Where items trashed from `path`'s volume end up, for the "Go to trash" navigation.
+   *
+   *  `Ok(None)` is the ordinary answer for a volume with no trash of its own (a volume
+   *  nobody has trashed to yet, or one that has no trash at all): the caller says so
+   *  rather than treating it as something going wrong. Resolution is a pure lookup,
+   *  never a create; see [`trash_dir_for_path`].
+   */
+  getTrashDir: (path: string) => typedError<string | null, MutationError>(__TAURI_INVOKE('get_trash_dir', { path })),
   // Returns the current restricted-paths snapshot (sorted, absolute paths).
   getRestrictedPaths: () => __TAURI_INVOKE<string[]>('get_restricted_paths'),
   /**

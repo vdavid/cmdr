@@ -13,7 +13,7 @@ use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
 use super::util::timeout_detached_typed;
-use crate::file_system::write_operations::trash::trash_single_journaled;
+use crate::file_system::write_operations::trash::{trash_dir_for_path, trash_single_journaled};
 use crate::file_system::write_operations::{
     MutationError, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
 };
@@ -47,6 +47,32 @@ pub async fn move_to_trash(path: String) -> Result<(), MutationError> {
         Ok(Ok(result)) => result.map(|_in_trash| ()),
         Ok(Err(join_err)) => Err(MutationError::Unexpected {
             detail: format!("the trash task didn't finish: {join_err}"),
+        }),
+        Err(_) => Err(MutationError::TimedOut),
+    }
+}
+
+/// Where items trashed from `path`'s volume end up, for the "Go to trash" navigation.
+///
+/// `Ok(None)` is the ordinary answer for a volume with no trash of its own (a volume
+/// nobody has trashed to yet, or one that has no trash at all): the caller says so
+/// rather than treating it as something going wrong. Resolution is a pure lookup,
+/// never a create; see [`trash_dir_for_path`].
+#[tauri::command]
+#[specta::specta]
+pub async fn get_trash_dir(path: String) -> Result<Option<String>, MutationError> {
+    let expanded = expand_tilde(&path);
+    let path_buf = PathBuf::from(&expanded);
+
+    match tokio::time::timeout(
+        Duration::from_secs(2),
+        tokio::task::spawn_blocking(move || trash_dir_for_path(&path_buf)),
+    )
+    .await
+    {
+        Ok(Ok(dir)) => Ok(dir.map(|p| p.to_string_lossy().into_owned())),
+        Ok(Err(join_err)) => Err(MutationError::Unexpected {
+            detail: format!("the trash-directory lookup didn't finish: {join_err}"),
         }),
         Err(_) => Err(MutationError::TimedOut),
     }
