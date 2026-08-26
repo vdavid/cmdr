@@ -30,6 +30,23 @@ const log = getAppLogger('navigation')
 type Pane = 'left' | 'right'
 
 /**
+ * The slice of `ExplorerAPI` these primitives actually use: pick a pane, see what
+ * it shows, go somewhere, land the cursor.
+ *
+ * Narrow on purpose. `ExplorerAPI` satisfies it structurally, so every existing
+ * caller keeps passing the whole explorer unchanged, but a caller that only wants
+ * to reveal something (a toast action, for one) can hand over the five methods it
+ * can actually supply instead of taking a dependency on the entire coordinator.
+ */
+export interface PaneRevealAPI {
+  getFocusedPane: ExplorerAPI['getFocusedPane']
+  setFocusedPane: ExplorerAPI['setFocusedPane']
+  getPaneLocation: ExplorerAPI['getPaneLocation']
+  navigate: ExplorerAPI['navigate']
+  moveCursor: ExplorerAPI['moveCursor']
+}
+
+/**
  * Resolve a directory path to a `Location` (volume id + path) at navigation's
  * edge, or show the shared "couldn't reach that location's drive" toast and
  * return `null`. The single resolve-or-toast used by the ⌘G, search-result, and
@@ -53,7 +70,7 @@ export async function resolveLocationOrToast(dir: string): Promise<Location | nu
  * navigate there, then move the cursor onto the file. An unresolvable parent
  * shows the shared toast and skips navigation.
  */
-export async function revealSearchResultInPane(explorer: ExplorerAPI, pane: Pane, filePath: string): Promise<void> {
+export async function revealSearchResultInPane(explorer: PaneRevealAPI, pane: Pane, filePath: string): Promise<void> {
   const lastSlash = filePath.lastIndexOf('/')
   const parentDir = lastSlash > 0 ? filePath.slice(0, lastSlash) : '/'
   const fileName = filePath.slice(lastSlash + 1)
@@ -71,7 +88,7 @@ export async function revealSearchResultInPane(explorer: ExplorerAPI, pane: Pane
  * happens to report a same-looking local path string thus never matches — its
  * volume mount path is an `mtp://…` / `smb://` URL the local dir isn't on.
  */
-function paneShowsLocalDir(explorer: ExplorerAPI, pane: Pane, dir: string): boolean {
+function paneShowsLocalDir(explorer: PaneRevealAPI, pane: Pane, dir: string): boolean {
   const { volumeId, volumePath, path } = explorer.getPaneLocation(pane)
   if (volumeId === 'network' || volumeId === 'search-results') return false
   if (path !== dir) return false
@@ -90,7 +107,7 @@ function paneShowsLocalDir(explorer: ExplorerAPI, pane: Pane, dir: string): bool
  * it has to check this. Callers that only move the user (go-to-path) can ignore
  * the result; the warning above is enough for them.
  */
-export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, location: Location): Promise<boolean> {
+export async function navigateToDirInPane(explorer: PaneRevealAPI, pane: Pane, location: Location): Promise<boolean> {
   const result = explorer.navigate({ pane, to: { goTo: location }, source: 'user' })
   if (result.status === 'refused') {
     log.warn('navigateToDirInPane: navigate refused {pane} {dir}: {reason}', {
@@ -109,7 +126,7 @@ export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, loc
  * `fileName` so the file is revealed/selected (we do NOT open it).
  */
 export async function navigateToFileInPane(
-  explorer: ExplorerAPI,
+  explorer: PaneRevealAPI,
   pane: Pane,
   location: Location,
   fileName: string,
@@ -133,7 +150,7 @@ export async function navigateToFileInPane(
  * caller to fall back to navigation. Re-evaluates pane contents live (don't cache
  * the result across an await — the empty-toast action runs this at click time).
  */
-function focusPaneShowing(explorer: ExplorerAPI, dir: string): Pane | null {
+function focusPaneShowing(explorer: PaneRevealAPI, dir: string): Pane | null {
   const focused = explorer.getFocusedPane()
   if (paneShowsLocalDir(explorer, focused, dir)) return focused
 
@@ -158,7 +175,11 @@ function focusPaneShowing(explorer: ExplorerAPI, dir: string): Pane | null {
  * The shared `navigateToFileInPane` primitive keeps its always-navigate-the-given-
  * pane contract for "Go to path" (⌘G); only the downloads flow reuses panes.
  */
-export async function revealFileInBestPane(explorer: ExplorerAPI, location: Location, fileName: string): Promise<void> {
+export async function revealFileInBestPane(
+  explorer: PaneRevealAPI,
+  location: Location,
+  fileName: string,
+): Promise<void> {
   const reused = focusPaneShowing(explorer, location.path)
   if (reused) {
     await explorer.moveCursor(reused, fileName)
@@ -173,7 +194,7 @@ export async function revealFileInBestPane(explorer: ExplorerAPI, location: Loca
  * has no file target). Used by the empty-Downloads toast's "Go to Downloads"
  * action.
  */
-export async function navigateToDirInBestPane(explorer: ExplorerAPI, location: Location): Promise<void> {
+export async function navigateToDirInBestPane(explorer: PaneRevealAPI, location: Location): Promise<void> {
   if (focusPaneShowing(explorer, location.path)) return
   await navigateToDirInPane(explorer, explorer.getFocusedPane(), location)
 }
