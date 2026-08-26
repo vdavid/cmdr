@@ -25,7 +25,9 @@ map: `DETAILS.md` § Files.
 - **Every phase announces itself to `transfer_probe.rs`, on ALL THREE streaming paths** (both copy drivers and the
   cross-volume move): ❌ no `.await` on a transfer path without a phase, ❌ never derive a stall from FE timing. A new
   streaming path owes BOTH `register_operation` and a `CURRENT_TASK_PROBE` scope — registering without binding looks
-  wired and reports nothing. `DETAILS.md` § "The stall signal".
+  wired and reports nothing — plus the SAME width and a `MergeCtx.op_probe` if it opens a `FileWindow`, or its leaves
+  share one row and clobber its stall-abort token (`volume/DETAILS.md` § "One in-flight-table row per leaf").
+  `DETAILS.md` § "The stall signal".
 - **The stall watchdog judges movement by the byte total the UI is showing** (`state.last_progress_bytes()`); ❌ the
   probe never gets a byte counter of its own. One the drivers must remember to feed is one a driver forgets, and the
   serial path forgetting it called every 1–2-source (and every MTP) transfer stalled. `DETAILS.md` § "The stall signal".

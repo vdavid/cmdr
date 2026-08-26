@@ -522,6 +522,45 @@ fn a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget() {
     );
 }
 
+/// Why "one row per in-flight write" is a correctness rule rather than a
+/// display preference: the stall-abort signal and the byte count both live ON
+/// the row, so two concurrent writes sharing one would leave the watchdog able
+/// to end only the wait of whichever armed last, and each write's progress
+/// overwritten by its sibling's. That is what a subtree walk handing its leaves
+/// the ENCLOSING source's row cost, on the cross-volume move, until each leaf
+/// got a `begin_task` of its own (`volume/merge.rs`, `volume/move.rs`).
+#[test]
+fn two_rows_keep_their_own_stall_abort_signal_and_byte_count() {
+    let guard = TestOperationGuard::register("probe-two-rows");
+    let state = guard.state();
+    let probe = probe_for(guard.id(), state);
+
+    let wedged = probe.begin_task(0, "/src/a.bin", "/dst/a.bin");
+    let healthy = probe.begin_task(1, "/src/b.bin", "/dst/b.bin");
+    let wedged_signal = wedged.probe().arm_stall_abort();
+    let healthy_signal = healthy.probe().arm_stall_abort();
+    wedged.probe().set_bytes(0, 66_476_516);
+    healthy.probe().set_bytes(4_194_304, 66_476_516);
+
+    // The watchdog ends the wedged write's wait, and nothing else's.
+    wedged.probe().trip_stall_abort();
+
+    assert!(wedged_signal.is_cancelled(), "the wedged write's own signal must trip");
+    assert!(
+        !healthy_signal.is_cancelled(),
+        "a sibling mid-write must not be abandoned along with it"
+    );
+    let dump = probe.render_dump("test");
+    assert!(
+        dump.contains("0/66476516 bytes, retries=0 stall-aborts=1, /src/a.bin -> /dst/a.bin"),
+        "{dump}"
+    );
+    assert!(
+        dump.contains("4194304/66476516 bytes, retries=0, /src/b.bin -> /dst/b.bin"),
+        "{dump}"
+    );
+}
+
 /// THE GATE, and the most important negative in this file. Elapsed silence is
 /// not evidence that a connection is dead — a large write to a loaded
 /// spinning-disk NAS is legitimately slow — so a volume that reports no verdict

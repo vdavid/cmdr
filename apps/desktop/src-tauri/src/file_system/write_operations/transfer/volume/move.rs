@@ -313,9 +313,10 @@ pub(crate) async fn move_volumes_with_progress(
     // backend (parity with the local-FS `ensure_destination_dir`). Source and
     // dest are different volumes here, so the dest-inside-source guard doesn't
     // apply. A move into an already-existing dest is a no-op create.
-    // The move pipeline is serial per source, so it has no use for the
-    // `DirectoryCreation` answer the copy driver reads (see
-    // `volume/copy.rs`, Phase 0.5).
+    // The move pipeline is serial across TOP-LEVEL sources, so it builds no
+    // destination name index and has no use for the `DirectoryCreation` answer
+    // that gates one (see `volume/copy.rs`, Phase 0.5). Its subtree walk still
+    // fans out; that width is the `FileWindow`'s, further down.
     dest_volume
         .create_directory_all(dest_path)
         .await
@@ -413,10 +414,16 @@ pub(crate) async fn move_volumes_with_progress(
     // operation that has the user's ONLY copy of the data in flight. Dropping
     // the guard when this function returns deregisters the operation and stops
     // the watchdog on its next tick.
+    //
+    // The width it declares is the FAN-OUT's, not the source loop's: one
+    // top-level source rides at a time up here, but a DIRECTORY source's subtree
+    // streams this many files at once through the `FileWindow` below, and the
+    // dump's `in_flight=<open>/<width>` is the one output a wedge investigation
+    // reads.
+    let concurrency = super::copy::transfer_concurrency(&*source_volume, &*dest_volume);
     let probe_guard = super::super::transfer_probe::register_operation(
         operation_id,
-        // The move pipeline runs exactly one source at a time.
-        1,
+        concurrency,
         total_files,
         // Both ends, so the watchdog can ask whether either connection has been
         // PROVEN dead before it acts on a stall (no backend can answer that yet
@@ -538,17 +545,18 @@ pub(crate) async fn move_volumes_with_progress(
             // A cross-volume move copies one source at a time, so a folder move
             // is the same single-source shape a folder copy is: without a window
             // its whole subtree streams one file at a time. Same width as the
-            // copy driver's, from the same function.
-            let file_window =
-                super::strategy::FileWindow::new(super::copy::transfer_concurrency(&*source_volume, &*dest_volume));
+            // copy driver's, and the same number the in-flight table declares.
+            let file_window = super::strategy::FileWindow::new(concurrency);
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             let leaf_files_done = Arc::clone(&leaf_files_done);
             let deep_skipped_files = Arc::clone(&deep_skipped_files);
             let journal_volumes = journal_volumes.clone();
-            // The move registers its one in-flight source too, so a frozen bar
-            // during a folder move gets the same "waiting on the destination"
-            // answer a copy does. The counter only labels rows in a dump;
-            // sources run one at a time here.
+            // The move keeps an in-flight table like the copy driver's, so a
+            // frozen bar during a folder move gets the same "waiting on the
+            // destination" answer: a row for the top-level source in hand, plus
+            // one per leaf the window holds (`MergeCtx.op_probe`, below). The
+            // counter only labels the source rows in a dump; sources run one at
+            // a time here.
             let op_probe = Arc::clone(&op_probe);
             let source_index = Arc::new(AtomicUsize::new(0));
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
@@ -632,9 +640,16 @@ pub(crate) async fn move_volumes_with_progress(
                         apply_to_all: &merge_apply_to_all,
                         source_hints: &source_hints,
                         window: file_window,
-                        // The cross-volume move registers no transfer probe, so
-                        // its leaves have no in-flight table to appear in.
-                        op_probe: None,
+                        // ❗ Every leaf the window holds opens a row of its OWN
+                        // through this, the invariant every `TaskProbe` field is
+                        // built on: `arm_stall_abort` REPLACES the row's token
+                        // per attempt and `set_bytes` STORES (never adds) that
+                        // attempt's count. `None` here would leave every leaf
+                        // reporting into the enclosing SOURCE's row through the
+                        // task-local below, so concurrent writes would clobber
+                        // one row's stall-abort token and byte count and the dump
+                        // would name the folder instead of the file that wedged.
+                        op_probe: Some(Arc::clone(&op_probe)),
                     };
                     // Held for this source's whole transfer, copy phase AND
                     // source sweep; dropping it clears the row. Mirrors
@@ -872,6 +887,12 @@ mod failure_tests;
 #[cfg(test)]
 #[path = "move_merge_tests.rs"]
 mod merge_tests;
+// Both drivers' in-flight tables, pinned side by side: a folder fans out the
+// same way whether it is moved or copied, so the table it renders is one
+// subject rather than two.
+#[cfg(test)]
+#[path = "probe_row_tests.rs"]
+mod probe_row_tests;
 #[cfg(test)]
 #[path = "move_progress_tests.rs"]
 mod progress_tests;

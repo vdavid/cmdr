@@ -256,6 +256,15 @@ its own `begin_task` row and runs inside its own `CURRENT_TASK_PROBE` scope. Tha
 wedged instead of the folder, and makes `WriteProgressEvent::activity.in_flight` a real measurement of how full the
 window got. The top-level source's own row stays alongside them at `Spawned` (a phase the watchdog never acts on).
 
+**Whoever builds a window owes the probe two things**, and both are one line each: `MergeCtx.op_probe`, so the leaves can
+open rows; and the SAME width to `register_operation`, so the dump's `in_flight=<open>/<width>` names the fan-out rather
+than the driver's own source loop. Miss the first and every leaf reports into the enclosing SOURCE's row through the
+outer task-local — the clobbering above, silently, plus a dump that names the folder. Miss the second and the table
+declares a width nothing uses. The cross-volume move missed both while running a `transfer_concurrency`-wide walk, and a
+user's bundle shows what that costs: a 282-file folder to a NAS dumped `in_flight=1/1` with ten writes open, its one row
+the top-level directory carrying a leaf's byte count. Pinned for both drivers side by side in `probe_row_tests.rs`,
+which photographs the live table from inside a write.
+
 **The live progress bar under-reports transiently, by design.** Both per-file progress callbacks were written for one
 in-flight leaf: `SerialLeafProgress`'s `leaf_high_water` and `make_concurrent_per_file_progress`'s `last_file_bytes` are
 each one watermark shared by every file in a subtree. With `W` leaves reporting into one watermark the bar lags by up to

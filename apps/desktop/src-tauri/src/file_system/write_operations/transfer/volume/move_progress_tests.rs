@@ -444,7 +444,11 @@ async fn a_cross_volume_move_in_flight_shows_its_source_and_phase() {
     let table = events
         .in_flight_table()
         .expect("a running cross-volume move must keep an in-flight table");
-    assert!(table.contains("in_flight=1/1"), "one source in flight: {table}");
+    // One row, because a single FILE source has no subtree to fan out. The
+    // width after the slash is `transfer_concurrency`'s answer for the pair, so
+    // it is the machine's, not a constant to pin here; what matters is that the
+    // move declares it rather than the `1` it used to claim over a wide walk.
+    assert!(table.contains("in_flight=1/"), "one source in flight: {table}");
     assert!(
         table.contains("streaming"),
         "the row must carry the phase the task-local records, not `spawned`: {table}"
