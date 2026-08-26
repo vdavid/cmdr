@@ -516,11 +516,26 @@ skips its `.cmdr-tmp-*` staging on the strength of that answer. What the backend
 the compound path, a post-CREATE failure cleans up after itself): `write_operations/transfer/DETAILS.md` § "The
 single-shot exemption".
 
-**Decision**: streaming-write progress reports the SERVER-CONFIRMED byte count (`FileWriter::bytes_written()`), never the count handed to the pipeline **Why**: `write_chunk` returns as soon as a chunk is accepted into smb2's `MAX_PIPELINE_WINDOW`-deep window, so accepted and acknowledged bytes differ by up to a full window per file, and by `concurrency x window` across an operation. In ERR-9WZRR (a 10-wide copy of 66 MB files to a NAS over a 6.7 MB/s link) that was ~320 MiB of pre-credited bytes: the bar ran ~48 s of wire time ahead, then flatlined while the queue drained, the ETA was built on bytes nothing had committed, and the transfer watchdog read the flatline as "no byte movement for 20s" on a healthy copy. `finish()` drains the window and returns the confirmed total, so the loop reports the acknowledged count per chunk and one final call credits the last window. The per-chunk call still happens even when the count hasn't moved, because it doubles as the cancel poll.
+**Decision**: streaming-write progress reports the SERVER-CONFIRMED byte count (`FileWriter::bytes_written()`), never
+the count handed to the pipeline **Why**: `write_chunk` returns as soon as a chunk is accepted into smb2's
+`MAX_PIPELINE_WINDOW`-deep window, so accepted and acknowledged bytes differ by up to a full window per file, and by
+`concurrency x window` across an operation. In ERR-9WZRR (a 10-wide copy of 66 MB files to a NAS over a 6.7 MB/s link)
+that was ~320 MiB of pre-credited bytes: the bar ran ~48 s of wire time ahead, then flatlined while the queue drained,
+the ETA was built on bytes nothing had committed, and the transfer watchdog read the flatline as "no byte movement for
+20s" on a healthy copy. `finish()` drains the window and returns the confirmed total, so the loop reports the
+acknowledged count per chunk and one final call credits the last window. The per-chunk call still happens even when the
+count hasn't moved, because it doubles as the cancel poll.
 
-The compound fast-path reports differently on purpose: it has no acknowledgement to report until the one all-or-nothing frame returns, so it reports bytes buffered during the source drain. That lie is bounded by `max_write_size` and the frame either lands whole or creates nothing.
+The compound fast-path reports differently on purpose: it has no acknowledgement to report until the one all-or-nothing
+frame returns, so it reports bytes buffered during the source drain. That lie is bounded by `max_write_size` and the
+frame either lands whole or creates nothing.
 
-**Gotcha/Why**: a test that means to exercise the streaming writer MUST size its file off `negotiated_max_write()`, not a literal. The fixture Samba negotiates a `max_write` far above any round number you would reach for, so a "4 MiB, surely multi-chunk" file takes the compound path and the test silently exercises nothing. Pinned by `smb_integration_write_progress_reports_confirmed_bytes_not_queued_ones`, which asserts the acknowledged count STALLS while the window fills (a strictly increasing sequence is the signature of counting queued bytes) and asserts `write_is_single_shot` is false up front.
+**Gotcha/Why**: a test that means to exercise the streaming writer MUST size its file off `negotiated_max_write()`, not
+a literal. The fixture Samba negotiates a `max_write` far above any round number you would reach for, so a "4 MiB,
+surely multi-chunk" file takes the compound path and the test silently exercises nothing. Pinned by
+`smb_integration_write_progress_reports_confirmed_bytes_not_queued_ones`, which asserts the acknowledged count STALLS
+while the window fills (a strictly increasing sequence is the signature of counting queued bytes) and asserts
+`write_is_single_shot` is false up front.
 
 ## What a `VolumeError` payload carries
 
