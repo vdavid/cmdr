@@ -1360,7 +1360,7 @@ dependencies = [
 
 [[package]]
 name = "cmdr"
-version = "0.40.0"
+version = "0.41.0"
 dependencies = [
  "alphanumeric-sort",
  "arc-swap",

@@ -5,21 +5,65 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.41.0] - 2026-08-26
+
+Cmdr was borked on v0.39.0 and v0.40.0 on macOS 12 Monterey and 13 Ventura. This update fixes it. Also some update flow
+improvements, crash reports are on by default, and a copy via SMB now shows progress better.
+
+### Added
+
+- Ask for a reply address right in any report dialog, even with no address on file (1a2cf06c)
+- Name the address a report will carry, with a link into Settings that the label then follows live (4a54c915)
 
 ### Changed
 
-- Crash reports are now on by default. If Cmdr goes down, it sends the app version, your macOS version, and where the
-  code stopped, never your files or anything about them. Crashes are invisible to me otherwise, so this one helps a lot.
-  To turn it off, head to Settings > Updates & privacy. Sending your logs stays off unless you ask for it.
+- Turn crash reports on by default, sending the app version, your macOS version, and where the code stopped. Never your
+  files! Switch it off in Settings > Updates & privacy if you'd like, but crash reporting really helps. (82bd918e)
 - Clicking "Later" on an update no longer ends the conversation: Cmdr keeps looking, picks up anything newer than what
-  it already downloaded, and asks again about once a day until you restart
+  it already downloaded, and asks again about once a day (8594de05)
+- Bound what a copy to a NAS queues up, so cancelling stops in seconds (eb367cb0)
 
 ### Fixed
 
-- Tell you to move Cmdr to your Applications folder when it's running from a spot it can't update itself from, like your
-  Downloads folder or a mounted disk image, instead of quietly getting stuck on an old version
-- Stop downloading a 63 MB update once an hour on an install that can never apply it
+- Fix Cmdr aborting on launch on macOS 12 and 13 (c004a1fe)
+- Fix a NAS copy's progress racing ahead and then freezing: it counts bytes the server confirmed now (c9b84134)
+- Say when Cmdr runs from a spot it can't update itself from, like Downloads or a mounted disk image, instead of
+  re-downloading a 63 MB update every hour (eb602565)
+- Fix an update server outage reading as "Couldn't parse update manifest" (b795b921)
+- Fix the Settings email field showing `analytics.email` instead of your address (5c24351d)
+- Fix a `code` word in What's new stacking one letter per line (2bed1bfb)
+- Fix a link in a What's new entry doing nothing when clicked (30180107)
+
+### Non-app
+
+- Fail the checks on any Objective-C selector newer than the macOS version Cmdr ships for, the bug class behind the
+  launch crash (1d2cc903)
+- Add `cmdr/no-confusable-callback-params` and turn it on in all four apps, so two same-typed positional callback
+  parameters are a lint error (40a058e5, f5bedc9f, d2f06c79)
+- Convert 105 confusable callback signatures to named payload objects, production and tests alike (9c289d6e, 9a9a8a64,
+  b060586a, da0a1dc6, 2f6e0a60, cc961f9b, a576cd24, faec4309, f48534f3, b09a0cc6, 83b2263a, 74c436fb, 0139b44a,
+  60f56cd0, 567116bf, ab9a532b, 8cbdfb8c, debf4dc5, b3788f64, b5badd07, 89a86964)
+- Answer "how many people use X" on the dashboard per app version, resolving an absent setting against what each release
+  defaulted to (c8743ba5, b7d6a5d5, 347aa26c)
+- Report active installs as a range, since an install with analytics off sends nothing at all (f55a045d)
+- Make the update path visible with a PII-free `update_check` event naming its outcome and what set it going (09a6b488,
+  01acc678)
+- Stop Cmdr's own dev, E2E, and tooling runs registering as active installs in the update-check table (529da1a9)
+- Mail hand-written error reports and in-app feedback to David's inbox instead of leaving them in Discord and D1
+  (485f8f50, 9d8b58db)
+- Close the SFTP connect leak at both ends: a cancelled or abandoned dial ends the server's session at once instead of
+  holding it for the life of the process (b1bf0a31, 04b4cbc3, d6630f6a, 9274002b, 39d9b1b1)
+- Name the wedged file inside a folder move in the transfer probe, instead of hiding it behind the folder's row
+  (96ebf91f)
+- Make `.mise.toml` the only place the repo names a Go toolchain (4aeecd4d, c04fc03f, 8e353dde, 37fcd991)
+- Unblock the Go 1.27 bump: staticcheck and three more analyzers can read its export data (13c3f2e6, 7bb1e581, f8a545d3)
+- Stop the SFTP test fixtures publishing twelve sshd servers to the LAN and the tailnet (c89100ef)
+- Stop an E2E run watching the developer's real Downloads folder (6bed8e6e)
+- Fix two E2E flakes: a search overlay leaking into the next spec, and a wake spec racing the turn that writes its
+  digest (7fb02fd6, 07766729)
+- Measure the self-move to Applications, and drop the Full Disk Access worry that decision rested on (7d8bb8a6,
+  35c835d4)
+- Show translators the real move-to-Applications dialog, plus three other surfaces that had none (75c52f28)
 
 ## [0.40.0] - 2026-08-24
 
