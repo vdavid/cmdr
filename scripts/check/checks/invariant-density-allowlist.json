@@ -1,7 +1,7 @@
 {
   "$comment": "Accepted ❌ rule count per subsystem, seeded from the state at the check's introduction. A strict ratchet: local runs lower an entry to the current count and drop a subsystem that reaches zero, and raising one is FREE for this check alone (.claude/rules/file-length-allowlist.md exempts it: a rule earns its place on whether the invariant is worth stating, which the number can't judge). The fix for a subsystem over its number is to encode the invariant in a type, not to bump the number.",
   "subsystems": {
-    ".": 15,
+    ".": 16,
     "apps/analytics-dashboard": 3,
     "apps/api-server": 20,
     "apps/desktop": 2,
