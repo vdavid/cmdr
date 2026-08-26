@@ -30,6 +30,9 @@ Discovery, the keychain, mounts, the upgrade passes, and every word a human read
 - **`write_from_stream` drives an OWNED `FileWriter` on a cloned `Connection`**, ❌ never one borrowed while the client
   mutex is held across the upload (the QNAP deadlock). Error paths `abort()` then delete the partial, or corrupt bytes
   linger.
+- **Streaming-write progress reports `FileWriter::bytes_written()`** (server-confirmed), ❌ never bytes handed to the
+  pipeline: `write_chunk` returns on ACCEPTANCE, so on a slow link the two diverge by `concurrency x window`. Size any
+  test meant to reach this path off `negotiated_max_write()`, or it silently takes the compound path.
 - **Bulk work draws on the refcounted pool of extra sessions** (`scan_pool.rs`); a dead member retries on a sibling and
   ❌ never moves the MAIN volume's connection state.
 - **smb2 bounds every wait itself**: ❌ no timeout layer of ours, and never read a missed keepalive as death.

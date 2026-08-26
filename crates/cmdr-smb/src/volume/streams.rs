@@ -378,8 +378,6 @@ impl SmbVolume {
                 let writer_result = tree.create_file_writer(conn, &smb_path).await;
                 let mut writer = self.handle_smb_result("write_from_stream(open)", &smb_path, writer_result)?;
 
-                let mut bytes_read = 0u64;
-
                 loop {
                     let chunk = match stream.next_chunk().await {
                         None => break,
@@ -404,9 +402,28 @@ impl SmbVolume {
                         return Err(ve);
                     }
 
-                    bytes_read += chunk.len() as u64;
-
-                    if on_progress(bytes_read, size) == std::ops::ControlFlow::Break(()) {
+                    // `bytes_written()` is what the SERVER has acknowledged, not what
+                    // we handed to the pipeline. `write_chunk` returns as soon as the
+                    // chunk is accepted into the `MAX_PIPELINE_WINDOW`-deep window, so
+                    // the two numbers differ by up to a full window per file — and by
+                    // `concurrency x window` across an operation, which on a slow link
+                    // is minutes of bytes.
+                    //
+                    // Gotcha/Why: reporting the accepted count here made progress a
+                    // lie that compounded. In ERR-9WZRR (10-wide copy of 66 MB files
+                    // to a NAS over a 6.7 MB/s link) ~320 MiB sat queued client-side,
+                    // so the bar raced ahead by ~48 s of wire time, then flatlined
+                    // while the queue drained; the transfer watchdog read the flatline
+                    // as "no byte movement for 20s" on a perfectly healthy copy, and
+                    // the ETA was built on bytes nothing had committed. The staging
+                    // rename is the only durability signal that matters, and it lands
+                    // on the acknowledged count. ❌ Don't report accepted bytes to make
+                    // the bar move sooner: the wait is real and hiding it is what cost
+                    // us the diagnosis.
+                    //
+                    // Called on EVERY chunk even when the count hasn't moved, because
+                    // this is also the cancel poll (`ControlFlow::Break` below).
+                    if on_progress(writer.bytes_written(), size) == std::ops::ControlFlow::Break(()) {
                         // Abort drains in-flight WRITE responses and closes the
                         // handle without the server-side fsync that `finish()`
                         // would force (we're about to delete the partial file
@@ -423,12 +440,22 @@ impl SmbVolume {
                 // `finish()` consumes the writer; on failure the handle is
                 // already gone, so we can only best-effort delete the partial.
                 let finish_result = writer.finish().await;
-                if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", &smb_path, finish_result) {
-                    delete_partial().await;
-                    return Err(ve);
-                }
+                let confirmed = match self.handle_smb_result("write_from_stream(finish)", &smb_path, finish_result) {
+                    Ok(confirmed) => confirmed,
+                    Err(ve) => {
+                        delete_partial().await;
+                        return Err(ve);
+                    }
+                };
 
-                bytes_read
+                // `finish()` drains the whole window, so the last chunks are confirmed
+                // only now. Without this call the file's progress would stop up to a
+                // window short of its size and never reach 100%. Its `ControlFlow` is
+                // deliberately ignored: the bytes are committed and the handle closed,
+                // so there is nothing left here for a cancel to stop.
+                let _ = on_progress(confirmed, size);
+
+                confirmed
             };
 
             // Patch the listing cache from local knowledge so the destination

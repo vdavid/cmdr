@@ -627,3 +627,86 @@ async fn smb_integration_a_write_over_the_negotiated_limit_is_not_single_shot() 
         "an empty file has no WRITE to compound with; it takes the streaming writer"
     );
 }
+
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_write_progress_reports_confirmed_bytes_not_queued_ones() {
+    // A streaming write pipelines up to `MAX_PIPELINE_WINDOW` WRITEs before it
+    // waits for any of them, so bytes handed to the pipeline and bytes the
+    // server has acknowledged are two different numbers. Progress must report
+    // the second one.
+    //
+    // The tell is that acknowledged bytes STALL while the window fills: several
+    // chunks go out before any response comes back, so consecutive callbacks
+    // repeat a value. Counting queued bytes instead makes every callback strictly
+    // larger than the last, which is what made a 6.7 MB/s NAS copy show its bar
+    // racing ahead and then sitting frozen for 40 s at a time while the queue
+    // drained (ERR-9WZRR).
+    //
+    // ❌ Don't assert the first callback reports 0. Credit pressure can force a
+    // drain inside the very first `write_chunk`, so that pins the fixture's credit
+    // behavior rather than the accounting under test.
+    let vol = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.unwrap();
+
+    // MUST exceed the negotiated `max_write`, or the write is single-shot and
+    // takes the compound fast-path, which buffers the source in memory and never
+    // reaches the streaming writer this test is about. Sizing this as a literal
+    // is how it silently tested nothing: the fixture Samba negotiates a `max_write`
+    // far above any round number you'd reach for.
+    let max_write = vol
+        .negotiated_max_write()
+        .await
+        .expect("a connected volume has negotiated params");
+    let size = max_write + 64 * 1024;
+    assert!(
+        !vol.write_is_single_shot(size).await,
+        "this test only means something on the streaming writer"
+    );
+
+    let source = InMemoryVolume::new("Source");
+    let data = vec![0x5A; size as usize];
+    source.create_file(Path::new("/pipelined.bin"), &data).await.unwrap();
+
+    let reported = std::sync::Mutex::new(Vec::<u64>::new());
+
+    let stream = source.open_read_stream(Path::new("/pipelined.bin")).await.unwrap();
+    let bytes = vol
+        .write_from_stream(
+            Path::new(&format!("{}/pipelined.bin", dir)),
+            size,
+            stream,
+            &|bytes_done, total| {
+                assert_eq!(total, size);
+                reported.lock().unwrap().push(bytes_done);
+                std::ops::ControlFlow::Continue(())
+            },
+        )
+        .await
+        .unwrap();
+
+    let reported = reported.into_inner().unwrap();
+    assert!(!reported.is_empty(), "expected progress callbacks");
+
+    assert!(
+        reported.windows(2).any(|w| w[0] == w[1]),
+        "acknowledged bytes must stall while the pipeline window fills, so some consecutive \
+         callbacks must repeat a value; a strictly increasing sequence means progress is \
+         counting bytes handed to the pipeline, not bytes the server confirmed: {reported:?}"
+    );
+
+    assert!(
+        reported.windows(2).all(|w| w[0] <= w[1]),
+        "progress must never go backwards: {reported:?}"
+    );
+    assert_eq!(
+        *reported.last().unwrap(),
+        size,
+        "the write is committed, so the last callback must account for every byte"
+    );
+    assert_eq!(bytes, size);
+
+    ensure_clean(&vol, &dir).await;
+}
