@@ -35,7 +35,7 @@ testing = ["smb2/testing", "dep:blake3"]
 cmdr-fs = { path = "../cmdr-fs" }
 # The SMB client. Same version and features the app pins, so one `smb2` resolves
 # for the whole graph and a feature turned on here reaches every consumer of it.
-smb2 = { version = "0.18.1", features = ["serde"] }
+smb2 = { version = "0.19.0", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 # Type export for the Rust↔TS bindings: `ShareListResult` and friends cross IPC.
 # Pinned to the EXACT same version the app uses, for the reason `cmdr-fs` gives:
