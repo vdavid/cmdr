@@ -21,6 +21,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { addToast } from '$lib/ui/toast'
     import { openExternalUrl } from '$lib/tauri-commands'
+    import { handleMarkdownLinkClick } from '$lib/ui/markdown-link-click'
     import { setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
     import { whatsNewState, closeWhatsNew } from './whats-new-trigger.svelte'
@@ -95,7 +96,10 @@
     {#snippet title()}{tString('whatsNew.dialog.title')}{/snippet}
 
     <div class="body" id="whats-new-body">
-        <div class="scroll-area">
+        <!-- Click delegate for anchor tags inside rendered markdown: an entry or a lead
+             can carry a Markdown link, and Tauri blocks raw <a> navigation. -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="scroll-area" onclick={handleMarkdownLinkClick}>
             {#if isEmpty}
                 <p class="empty">{tString('whatsNew.dialog.empty')}</p>
             {:else}
@@ -410,6 +414,21 @@
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-sm);
         padding: 0 var(--spacing-xxs);
+    }
+
+    /* A link inside an entry or a lead. Same accent and underline as the dialog's own
+       links, and the pointer has to be re-enabled over the app-wide `cursor: default`. */
+    .entries li :global(a),
+    .lead :global(a) {
+        color: var(--color-accent-text);
+        text-decoration: underline;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- re-enable pointer on links over the global cursor: default (see above) */
+        cursor: pointer;
+    }
+
+    .entries li :global(a:hover),
+    .lead :global(a:hover) {
+        color: var(--color-accent-hover);
     }
 
     .full-changelog {

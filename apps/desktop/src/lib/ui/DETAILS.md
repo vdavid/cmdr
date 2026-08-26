@@ -8,6 +8,11 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`ModalDialog.svelte`**: Central modal container: overlay, dragging, Escape, focus, MCP tracking
 - **`focus-trap.ts`**: `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack
 - **`dialog-registry.ts`**: `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs
+- **`markdown-link-click.ts`**: `handleMarkdownLinkClick`, the click delegate every `{@html}`-rendered markdown block
+  hangs on its container (`ErrorPane`, the What's new popup). Tauri blocks raw `<a>` navigation, so without it a link in
+  rendered markdown is inert; it resolves the anchor from the click target and routes the URL to `openExternalUrl`, or
+  to `openSystemSettingsUrl` for the `x-apple.systempreferences:` scheme Tauri's opener swallows. It does NOT allowlist
+  URLs, so it belongs on trusted markdown only
 - **`Button.svelte`**: Styled button with variant and size props
 - **`Select.svelte`**: Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>`
   replacement)

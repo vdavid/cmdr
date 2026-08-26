@@ -17,6 +17,9 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   openExternalUrl: (url: string) => openExternalUrlMock(url),
+  // Reached through `handleMarkdownLinkClick`, which the dialog delegates entry
+  // clicks to. Only the `x-apple.systempreferences:` scheme routes here.
+  openSystemSettingsUrl: vi.fn(() => Promise.resolve()),
 }))
 
 const setSettingMock = vi.fn()
@@ -40,7 +43,10 @@ const sampleReleases = [
     lead: 'A focused release with a couple of nice touches.',
     sections: [
       { title: 'Added', entries: ['A shiny **new** thing', 'Inline `code` survives'] },
-      { title: 'Fixed', entries: ['Squashed a flicker'] },
+      {
+        title: 'Fixed',
+        entries: ['Squashed a flicker', 'The rest is in the [changelog](https://getcmdr.com/changelog/)'],
+      },
     ],
   },
   {
@@ -167,6 +173,24 @@ describe('WhatsNewDialog', () => {
     link?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
     await tick()
     expect(openExternalUrlMock).toHaveBeenCalledWith('https://getcmdr.com/changelog/')
+  })
+
+  it('opens a link inside an entry externally instead of navigating the webview', async () => {
+    // Tauri blocks raw <a> navigation, so without the delegate on `.scroll-area` the
+    // link renders, looks clickable, and does nothing.
+    setReleases(sampleReleases, false)
+    const target = await mountDialog()
+    target.querySelector<HTMLButtonElement>('.details-toggle')?.click()
+    await tick()
+
+    const link = Array.from(target.querySelectorAll<HTMLAnchorElement>('.entries li a'))[0]
+    expect(link.getAttribute('href')).toBe('https://getcmdr.com/changelog/')
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    link.dispatchEvent(click)
+    await tick()
+
+    expect(openExternalUrlMock).toHaveBeenCalledExactlyOnceWith('https://getcmdr.com/changelog/')
+    expect(click.defaultPrevented).toBe(true)
   })
 
   it('Close button closes the dialog', async () => {

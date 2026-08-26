@@ -2,12 +2,13 @@
     import { onDestroy } from 'svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import type { FriendlyError } from '../types'
-    import { openExternalUrl, openPrivacySettings, openSystemSettingsUrl } from '$lib/tauri-commands'
+    import { openPrivacySettings } from '$lib/tauri-commands'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { eventMatchesCommand } from '$lib/shortcuts/shortcut-dispatch'
     import Button from '$lib/ui/Button.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { renderErrorMarkdown } from './error-pane-utils'
+    import { handleMarkdownLinkClick } from '$lib/ui/markdown-link-click'
     import { systemStrings } from '$lib/system-strings.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -82,25 +83,6 @@
         retryTimestamps = [...retryTimestamps, Date.now()]
         now = Date.now()
         onRetry?.()
-    }
-
-    /**
-     * Route anchor clicks inside the markdown blocks. `x-apple.systempreferences:` URLs
-     * go through a dedicated Rust IPC because Tauri's opener plugin only allows
-     * http/https/mailto/tel by default and would silently swallow them. Everything else
-     * goes through the standard external opener. The friendly-error markdown is
-     * backend-controlled (no user input), so no URL allowlisting is needed here.
-     */
-    function handleMarkdownLinkClick(e: MouseEvent) {
-        const link = (e.target instanceof Element ? e.target : null)?.closest('a')
-        const href = link?.getAttribute('href')
-        if (!link || !href) return
-        e.preventDefault()
-        if (href.startsWith('x-apple.systempreferences:')) {
-            void openSystemSettingsUrl(href)
-        } else {
-            void openExternalUrl(href)
-        }
     }
 
     function formatRelativeTime(timestampMs: number, currentMs: number): string {

@@ -319,10 +319,13 @@ export const whatsNewFixtures: Record<string, Patch<typeof whatsNewState>> = {
             // Inline markdown on purpose. Roughly one changelog entry in twelve carries a
             // `code` span, and an entry's markup has to stay in the text flow instead of
             // wrapping into the bullet column; `whats-new-markup.spec.ts` measures these.
+            // The link is here so the gallery shows a clickable one: Tauri blocks raw <a>
+            // navigation, so the dialog routes it through `handleMarkdownLinkClick`.
             entries: [
               'Copying to a disconnected network share explains itself instead of stalling.',
               'Shares named `café` or `公開` mount again, and a `diskutil` message stops reaching a toast in English.',
               'The crash dialog stops claiming Cmdr quit **unexpectedly** when it didn’t, and stops saying it twice.',
+              'Mounting a share over a flaky link retries instead of giving up. Background in the [changelog](https://getcmdr.com/changelog/).',
             ],
           },
         ],

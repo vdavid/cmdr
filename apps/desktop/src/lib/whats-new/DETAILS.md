@@ -56,6 +56,11 @@ How the pieces hold together:
   computes no layout, so this can only be caught in a real webview). The disclosure toggle keeps its grid: its two
   children are a marker span and a label, never markdown.
 
+- **A Markdown link in an entry or a lead works.** Tauri blocks raw `<a>` navigation, so `.scroll-area` delegates clicks
+  to `handleMarkdownLinkClick` (`$lib/ui/markdown-link-click.ts`, shared with `ErrorPane`), which resolves the anchor
+  from the click target and hands the URL to `openExternalUrl`. Without the delegate a link renders, looks clickable,
+  and does nothing.
+
 ## Lead rendering
 
 The dialog renders each release's `lead` through `snarkdown` inside a `<div class="lead">` (NOT a `<p>`). A lead can be
