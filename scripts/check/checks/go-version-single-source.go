@@ -166,12 +166,19 @@ var goVersionScanExtensions = map[string]bool{
 }
 
 // goVersionScanExempt are paths that legitimately contain the patterns above.
-// `.mise.toml` is the source of truth itself, and this check's test carries
-// pin-shaped fixtures in string literals, which comment-skipping can't excuse.
-// This check's own source needs no entry: its patterns live in doc comments and
-// in regex literals that spell digits as `\d`, so neither self-matches.
+// `.mise.toml` is the source of truth itself; this check's test carries
+// pin-shaped fixtures in string literals; and this check's own source spells the
+// `# allowed-go-version-pin:` marker in code (the tracker constructor, the
+// violation message), which the orphan tracker reads as four unused opt-outs.
+// Comment-skipping can't excuse either file, since both carry the patterns in
+// string literals rather than comments.
+//
+// Gotcha: a NEW check file is invisible to this list's effect until it's
+// committed. `repoFiles` enumerates via `git ls-files`, so an untracked source
+// is never scanned, and the check reports green right up until the commit.
 var goVersionScanExempt = map[string]bool{
 	".mise.toml": true,
+	"scripts/check/checks/go-version-single-source.go":      true,
 	"scripts/check/checks/go-version-single-source_test.go": true,
 }
 
