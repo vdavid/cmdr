@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "Đính kèm email của tôi ({email}) để chúng tôi trả lời",
+  "common.attachEmail": "Đính kèm địa chỉ email của tôi ({emailAddress} – <change>thay đổi</change>) để bạn có thể phản hồi",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "Email của bạn",
   "@common.attachEmailInputLabel": {
@@ -16,9 +16,9 @@
     "sourceHash": "53e6cdc",
     "sameAsSourceJustification": "Literal example email address 'you@example.com'; kept exactly as a recognizable placeholder address (locale-neutral)."
   },
-  "common.attachEmailPrompt": "Đính kèm email của tôi để chúng tôi trả lời",
+  "common.attachEmailPrompt": "Đính kèm địa chỉ email của tôi để bạn có thể phản hồi",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "Cmdr cần quyền Truy cập toàn bộ đĩa để theo dõi thư mục Tải về của bạn. <settingsLink>Mở Cài đặt hệ thống</settingsLink>",
   "@common.downloadsFdaHint": {

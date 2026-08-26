@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "Joindre mon adresse e-mail ({email}) pour qu''on puisse vous répondre",
+  "common.attachEmail": "Joindre mon adresse e-mail ({emailAddress} – <change>modifier</change>) pour que vous puissiez me répondre",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "Votre adresse e-mail",
   "@common.attachEmailInputLabel": {
@@ -15,9 +15,9 @@
   "@common.attachEmailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "common.attachEmailPrompt": "Joindre mon adresse e-mail pour qu''on puisse vous répondre",
+  "common.attachEmailPrompt": "Joindre mon adresse e-mail pour que vous puissiez me répondre",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "Cmdr a besoin de l''accès complet au disque pour surveiller votre dossier Téléchargements. <settingsLink>Ouvrir les Réglages Système</settingsLink>",
   "@common.downloadsFdaHint": {

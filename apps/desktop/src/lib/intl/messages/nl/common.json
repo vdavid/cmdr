@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "Voeg mijn e-mailadres ({email}) toe zodat we kunnen reageren",
+  "common.attachEmail": "Voeg mijn e-mailadres ({emailAddress} – <change>wijzigen</change>) toe zodat je contact kunt opnemen",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "Je e-mailadres",
   "@common.attachEmailInputLabel": {
@@ -15,9 +15,9 @@
   "@common.attachEmailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "common.attachEmailPrompt": "Voeg mijn e-mailadres toe zodat we kunnen reageren",
+  "common.attachEmailPrompt": "Voeg mijn e-mailadres toe zodat je contact kunt opnemen",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "Cmdr heeft volledige schijftoegang nodig om je map Downloads te volgen. <settingsLink>Open Systeeminstellingen</settingsLink>",
   "@common.downloadsFdaHint": {

@@ -2,6 +2,7 @@
     import type { Snippet } from 'svelte'
     import { isModified, resetSetting, onSpecificSettingChange, type SettingId } from '$lib/settings'
     import { getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
+    import { settingAnchorId } from '$lib/settings/settings-window'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Icon from '$lib/ui/Icon.svelte'
     import { onMount } from 'svelte'
@@ -58,7 +59,10 @@
     }
 </script>
 
-<div class="setting-row" class:disabled>
+<!-- Every row carries its deep-link anchor, so a surface elsewhere in the app can send
+     the user straight to one setting. `settingAnchorId` is the one definition of the
+     convention; the `<label for>` above keeps naming the control, not this row. -->
+<div class="setting-row" id={settingAnchorId(id)} class:disabled>
     <div class="setting-header" class:split>
         <div class="setting-label-wrapper">
             <label class="setting-label" for={id}

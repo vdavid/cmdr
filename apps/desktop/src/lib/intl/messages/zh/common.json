@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "附上我的邮箱（{email}）以便回复",
+  "common.attachEmail": "附上我的邮箱地址（{emailAddress} – <change>更改</change>），以便你回复",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "你的邮箱",
   "@common.attachEmailInputLabel": {
@@ -16,9 +16,9 @@
     "sourceHash": "53e6cdc",
     "sameAsSourceJustification": "Example email address \"you@example.com\": a recognizable placeholder format, kept literal so the @-pattern still reads as an email hint. Apple/Microsoft zh keep example addresses in this Latin form."
   },
-  "common.attachEmailPrompt": "附上我的邮箱以便回复",
+  "common.attachEmailPrompt": "附上我的邮箱地址，以便你回复",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "Cmdr 需要完全磁盘访问权限才能监视你的下载文件夹。<settingsLink>打开系统设置</settingsLink>",
   "@common.downloadsFdaHint": {

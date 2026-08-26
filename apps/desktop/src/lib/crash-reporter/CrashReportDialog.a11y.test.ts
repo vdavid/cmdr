@@ -5,7 +5,7 @@
  * send/dismiss actions.
  */
 
-import { describe, it, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import CrashReportDialog from './CrashReportDialog.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
@@ -17,9 +17,18 @@ vi.mock('$lib/tauri-commands', () => ({
   dismissCrashReport: vi.fn(() => Promise.resolve()),
 }))
 
+/** Live listeners on `analytics.email`, so a test can play the Settings window's part. */
+const emailListeners = new Set<(id: string, value: string) => void>()
+let mockEmail = ''
+
 vi.mock('$lib/settings', () => ({
   setSetting: vi.fn(),
-  getSetting: vi.fn((id: string) => (id === 'analytics.email' ? '' : false)),
+  getSetting: vi.fn((id: string) => (id === 'analytics.email' ? mockEmail : false)),
+  onSpecificSettingChange: (id: string, listener: (id: string, value: string) => void) => {
+    if (id !== 'analytics.email') return () => {}
+    emailListeners.add(listener)
+    return () => emailListeners.delete(listener)
+  },
 }))
 
 const minimalReport = {
@@ -43,15 +52,50 @@ const minimalReport = {
   possibleCrashLoop: false,
 }
 
+/** Mount the dialog and settle, so Ark's checkbox machine is running before any click. */
+async function mountDialog(): Promise<HTMLElement> {
+  const target = document.createElement('div')
+  document.body.appendChild(target)
+  mount(CrashReportDialog, {
+    target,
+    props: { report: minimalReport, onClose: () => {} },
+  })
+  await tick()
+  return target
+}
+
+/** The user edits their contact email in the Settings window while the dialog stays up. */
+async function setContactEmailFromSettings(value: string): Promise<void> {
+  mockEmail = value
+  for (const listener of [...emailListeners]) listener('analytics.email', value)
+  await tick()
+}
+
+function attachEmailCheckbox(target: HTMLElement): HTMLInputElement | null {
+  const label = Array.from(target.querySelectorAll('label')).find((l) => l.textContent.includes('Attach my email'))
+  return label?.querySelector('input[type="checkbox"]') ?? null
+}
+
 describe('CrashReportDialog a11y', () => {
   it('default (collapsed details) has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(CrashReportDialog, {
-      target,
-      props: { report: minimalReport, onClose: () => {} },
-    })
+    mockEmail = ''
+    const target = await mountDialog()
+    await expectNoA11yViolations(target)
+  })
+
+  it('asks for an address when the one it was naming is cleared in Settings', async () => {
+    mockEmail = 'tester@example.com'
+    const target = await mountDialog()
+    attachEmailCheckbox(target)?.click()
     await tick()
+    expect(target.querySelector('input[type="email"]')).toBeNull()
+
+    await setContactEmailFromSettings('')
+
+    // The tick stands, but it can no longer mean an address the user can't see: the field
+    // comes back empty and the report goes out without one until they fill it in.
+    expect(attachEmailCheckbox(target)?.checked).toBe(true)
+    expect(target.querySelector<HTMLInputElement>('input[type="email"]')?.value).toBe('')
     await expectNoA11yViolations(target)
   })
 })

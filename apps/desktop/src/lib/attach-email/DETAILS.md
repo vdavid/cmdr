@@ -1,21 +1,60 @@
 # Attach my email: details
 
-Depth behind `CLAUDE.md`. The two shapes the control takes, the settings it touches, why validation and persistence sit
-where they do, and what the tests pin.
+Depth behind `CLAUDE.md`. The two shapes the control takes, how it follows the address live, the settings it touches,
+why validation and persistence sit where they do, and what the tests pin.
 
 ## The two shapes
 
-`createAttachEmail()` reads `analytics.email` once at init (a plain cache read, so a mid-dialog settings change can't
-move the control under the user), trims it, and that decides the shape:
+`createAttachEmail()` holds `analytics.email`, trimmed, and that decides the shape:
 
-- **An address on file** (`hasContactEmail`): the label is `common.attachEmail`, which names the address in parentheses.
-  Ticking attaches it. No field, because the question is already answered.
-- **Nothing on file**: the label is `common.attachEmailPrompt` ("Attach my email so we can reply"). Ticking reveals a
-  `TextInput` (`type="email"`, named by `common.attachEmailInputLabel`, placeholder `common.attachEmailPlaceholder`)
-  indented under the label, and the box focuses it so a keyboard user can answer immediately.
+- **An address on file** (`hasContactEmail`): the label is `common.attachEmail`, which names the address in parentheses
+  and offers an inline `<change>` link. Ticking attaches it. No field, because the question is already answered.
+- **Nothing on file**: the label is `common.attachEmailPrompt` ("Attach my email address so you can follow up"). Ticking
+  reveals a `TextInput` (`type="email"`, named by `common.attachEmailInputLabel`, placeholder
+  `common.attachEmailPlaceholder`) indented under the label, and the box focuses it so a keyboard user can answer
+  immediately. A field revealed by a live change takes no focus: the user is in the Settings window at that moment.
 
-Only the second shape can write `analytics.email`. An address already on file is never edited from a report dialog; that
-belongs to Settings > Updates & privacy and the onboarding beta step.
+Only the second shape can write `analytics.email`. An address already on file is never edited from a report dialog; the
+`<change>` link hands that job to Settings > Updates & privacy, which also owns it for the onboarding beta step.
+
+## Following the address live
+
+`createAttachEmail()` subscribes with `onSpecificSettingChange('analytics.email', …)` from an `$effect`, whose cleanup
+is the unsubscribe. That puts the listener's life in the hands of the component that built the state, so a dialog that
+closes (including the second in a crash-over-error stack) takes its listener with it and no caller can forget a
+`dispose()`. The one-shot read it replaced can't work any more: the label's "change" link opens Settings as a WINDOW, so
+the user edits the address with the dialog still on screen behind it.
+
+**Decision: a live change keeps both the tick and the typed draft.** The tick means "I want a reply", which the address
+moving doesn't falsify, and it can't come to mean a different address behind the user's back, because the control always
+SHOWS what will ride along: the label names the address on file, the field shows what was typed, and `emailToAttach`
+reads whichever shape is current. So the two directions land like this:
+
+- **Empty → set**: the field disappears, the label names the new address, and that address is what sends. A draft left
+  in the field is kept, not sent, and comes back if the address is cleared again.
+- **Set → empty**: the collect field appears under a box that is still ticked, and `emailToAttach` goes `undefined`.
+  Nothing attaches until the user types something. This is the case worth being careful about, and it's why the tick is
+  safe to keep: an empty field attaches nothing, and a non-empty one is visible in front of the user.
+
+`updates.attachEmailToReports` stays a one-shot read. It seeds the tick; after that the tick belongs to the user in
+front of the dialog, and a sticky-choice write from another dialog moving it would be exactly the surprise the live
+address avoids.
+
+## The "change" link
+
+`common.attachEmail` carries a `<change>` tag, so the label renders through `<Trans>` (`$lib/intl`) rather than
+`tString()`, with `{emailAddress}` as a plain param. The tag and the param are named apart on purpose:
+`i18n-tag-param-collision` is an error precisely because `<Trans>` merges tag snippets into the interpolation params.
+
+The link is a `LinkButton` that calls
+`openSettingsWindow('attach-email', ['Updates & privacy'], settingAnchorId('analytics.email'))`. Two details in there:
+
+- **`settings-window` is imported lazily**, the way `ShortcutChip` does it: this control renders in the crash-report
+  dialog, and a static import would pull the settings window's Tauri surface into all three dialogs at eval time.
+- **A click on the link must not tick the box.** Ark's `Checkbox.Root` IS the `<label>` the link renders inside, and by
+  the time a handler on the link itself runs the box has already toggled. The guard therefore sits on the wrapper as an
+  `onclickcapture` that cancels the click on the way down. HTML does say a label ignores clicks on interactive content
+  inside it, but a canceled click can't activate a label anywhere, which is the version worth relying on.
 
 ## Validation
 
@@ -57,14 +96,20 @@ Each dialog also folds `blocksSend` into one `canSend` derived that gates the Se
 
 All five strings live in `common.json` (`common.attachEmail`, `…Prompt`, `…InputLabel`, `…Placeholder`, `…Invalid`),
 because three dialogs render them. `attach-email-i18n-parity.test.ts` freezes the English once, here rather than per
-dialog. The prompt is the parenthetical-free twin of `common.attachEmail`; keep them parallel when either is edited.
+dialog: the raw source (tag and placeholder included) plus the sentence as `<Trans>` composes it. The prompt is the
+link-free, parenthetical-free twin of `common.attachEmail`; keep them parallel when either is edited.
 
 ## Testing
 
-- `attach-email.test.ts`: the state machine against a mocked settings store, including the loose-validation corpus and
-  every persistence rule (typing writes nothing; an invalid address files nothing; an address on file is left alone).
-- `AttachEmailCheckbox.a11y.test.ts`: both shapes under axe, the field's accessible name, and the `aria-invalid` /
-  `aria-describedby` wiring. Its `render()` awaits a tick before any click: Ark's checkbox machine starts on the mount's
+- `attach-email.svelte.test.ts`: the state machine against a mocked settings store, including the loose-validation
+  corpus, every persistence rule (typing writes nothing; an invalid address files nothing; an address on file is left
+  alone), and the live switch in both directions. It builds the state inside an `$effect.root` because the `$effect`
+  needs an owner; closing that root is how it checks the listener really goes away.
+- `AttachEmailCheckbox.a11y.test.ts`: both shapes under axe, the field's accessible name, the `aria-invalid` /
+  `aria-describedby` wiring, the link (named, tab-reachable, deep-linking with the right surface/section/anchor, and
+  leaving the tick alone), and the live switch in both directions plus its teardown. It mounts
+  `attach-email-fixture.svelte` rather than calling `createAttachEmail()` itself, so the state's `$effect` has a real
+  component to belong to. Its `render()` awaits a tick before any click: Ark's checkbox machine starts on the mount's
   effects, and a synthetic click before that toggles the DOM input without ever reaching the binding.
 - `FeedbackDialog.a11y.test.ts` carries the end-to-end collect flow (type, tick, type an address, send, assert the
   `analytics.email` write and that a failed send writes nothing); `error-reporter.a11y.test.ts` covers the reuse shape

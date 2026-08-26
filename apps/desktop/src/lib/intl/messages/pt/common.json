@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "Anexar meu e-mail ({email}) para podermos responder",
+  "common.attachEmail": "Anexar meu endereço de e-mail ({emailAddress} – <change>alterar</change>) para que você possa responder",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "Seu e-mail",
   "@common.attachEmailInputLabel": {
@@ -15,9 +15,9 @@
   "@common.attachEmailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "common.attachEmailPrompt": "Anexar meu e-mail para podermos responder",
+  "common.attachEmailPrompt": "Anexar meu endereço de e-mail para que você possa responder",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads. <settingsLink>Abrir os Ajustes do Sistema</settingsLink>",
   "@common.downloadsFdaHint": {

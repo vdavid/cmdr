@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "Bifoga min e-postadress ({email}) så vi kan svara",
+  "common.attachEmail": "Bifoga min e-postadress ({emailAddress} – <change>ändra</change>) så att du kan höra av dig",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "Din e-postadress",
   "@common.attachEmailInputLabel": {
@@ -15,9 +15,9 @@
   "@common.attachEmailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "common.attachEmailPrompt": "Bifoga min e-postadress så vi kan svara",
+  "common.attachEmailPrompt": "Bifoga min e-postadress så att du kan höra av dig",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "Cmdr behöver fullständig åtkomst till skivan för att bevaka mappen Hämtade filer. <settingsLink>Öppna Systeminställningar</settingsLink>",
   "@common.downloadsFdaHint": {

@@ -9,7 +9,7 @@
     "apps/desktop/src/lib/file-operations/mkdir/new-folder-operations.ts ↔ apps/desktop/src/lib/file-operations/mkfile/new-file-operations.ts": 19,
     "apps/desktop/src/lib/mtp/mtp-store.svelte.ts": 14,
     "apps/desktop/src/lib/onboarding/StepBeta.svelte ↔ apps/desktop/src/lib/onboarding/StepOptional.svelte": 32,
-    "apps/desktop/src/lib/onboarding/StepBeta.svelte ↔ apps/desktop/src/lib/settings/sections/UpdatesSection.svelte": 51,
+    "apps/desktop/src/lib/onboarding/StepBeta.svelte ↔ apps/desktop/src/lib/settings/sections/UpdatesSection.svelte": 50,
     "apps/desktop/src/lib/query-ui/filter-chips/filter-popover-helpers.ts": 8,
     "apps/desktop/src/lib/search/ImageSearchResults.svelte": 22,
     "apps/desktop/src/lib/settings/components/SettingCheckbox.svelte ↔ apps/desktop/src/lib/settings/components/SettingSwitch.svelte": 20,

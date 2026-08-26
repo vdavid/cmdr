@@ -1,9 +1,9 @@
 {
-  "common.attachEmail": "Attach my email ({email}) so we can reply",
+  "common.attachEmail": "Attach my email address ({emailAddress} – <change>change</change>) so you can follow up",
   "@common.attachEmail": {
-    "description": "Label for an opt-in checkbox to include the user's email so the team can reply. Shared verbatim by the crash-report, error-report, and feedback dialogs. This variant appears when the app already has an address on file, which is shown in the parentheses; when it doesn't, common.attachEmailPrompt takes its place. Keep the two wordings parallel.",
+    "description": "Label for an opt-in checkbox to include the user's email address so the team can follow up on their report. Shared verbatim by the crash-report, error-report, and feedback dialogs. \"You\" is the Cmdr team; the user is the one speaking. This variant appears when the app already has an address on file, shown in the parentheses; when it doesn't, common.attachEmailPrompt takes its place, so keep the two wordings parallel. <change> wraps the inline link that opens Settings on the field holding that address; keep its text short and lowercase, a verb the user acts on.",
     "placeholders": {
-      "email": "the user's email address on file (e.g. alex@example.com)"
+      "emailAddress": "the user's email address on file (e.g. alex@example.com)"
     },
     "screenshot": "error-report.png",
     "screenshotNote": "Pictured in the error-report dialog; the crash-report and feedback dialogs place the same checkbox above their Send button."
@@ -24,9 +24,9 @@
     "description": "Placeholder inside the email field in the crash-report, error-report, and feedback dialogs, showing the expected shape. A standard example address; keep it as a recognizable placeholder address, matching whatever onboarding.stepBeta.emailPlaceholder uses in this language."
   },
 
-  "common.attachEmailPrompt": "Attach my email so we can reply",
+  "common.attachEmailPrompt": "Attach my email address so you can follow up",
   "@common.attachEmailPrompt": {
-    "description": "Label for the same opt-in checkbox as common.attachEmail, used when the app has no address on file yet: ticking it reveals a field to type one in. Shared by the crash-report, error-report, and feedback dialogs. Keep it parallel to common.attachEmail, minus the parenthesized address."
+    "description": "Label for the same opt-in checkbox as common.attachEmail, used when the app has no address on file yet: ticking it reveals a field to type one in. Shared by the crash-report, error-report, and feedback dialogs. \"You\" is the Cmdr team; the user is the one speaking. Keep it parallel to common.attachEmail, minus the parenthesized address and its link."
   },
 
   "common.downloadsFdaHint": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",

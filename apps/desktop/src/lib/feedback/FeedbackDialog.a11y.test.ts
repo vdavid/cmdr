@@ -28,12 +28,26 @@ vi.mock('$lib/tauri-commands', () => ({
 let mockEmail = ''
 let mockAttachDefault = false
 const setSettingMock = vi.fn()
+/** Live listeners on `analytics.email`, so a test can play the Settings window's part. */
+const emailListeners = new Set<(id: string, value: string) => void>()
 vi.mock('$lib/settings', () => ({
   getSetting: vi.fn((id: string) => (id === 'analytics.email' ? mockEmail : mockAttachDefault)),
   setSetting: (id: string, value: unknown) => {
     setSettingMock(id, value)
   },
+  onSpecificSettingChange: (id: string, listener: (id: string, value: string) => void) => {
+    if (id !== 'analytics.email') return () => {}
+    emailListeners.add(listener)
+    return () => emailListeners.delete(listener)
+  },
 }))
+
+/** The user edits their contact email in the Settings window while the dialog stays up. */
+async function setContactEmailFromSettings(value: string): Promise<void> {
+  mockEmail = value
+  for (const listener of [...emailListeners]) listener('analytics.email', value)
+  await tick()
+}
 
 const addToastMock = vi.fn<(...args: unknown[]) => void>()
 vi.mock('$lib/ui/toast', () => ({
@@ -167,7 +181,7 @@ describe('FeedbackDialog', () => {
   it('still offers the attach-email checkbox when no beta email is on file', async () => {
     mockEmail = ''
     const target = await mountDialog()
-    expect(target.textContent).toContain('Attach my email so we can reply')
+    expect(target.textContent).toContain('Attach my email address so you can follow up')
     expect(attachEmailCheckbox(target)?.checked).toBe(false)
     // The field is the tick's reward, so an untouched dialog asks nothing extra.
     expect(target.querySelector('input[type="email"]')).toBeNull()
@@ -233,6 +247,29 @@ describe('FeedbackDialog', () => {
     await new Promise((r) => setTimeout(r, 0))
 
     expect(sendFeedbackMock).toHaveBeenCalledWith('hi', undefined)
+    expect(setSettingMock).not.toHaveBeenCalledWith('analytics.email', expect.anything())
+  })
+
+  it('sends the address the user just filled in through Settings, not the field they abandoned', async () => {
+    mockEmail = ''
+    const target = await mountDialog()
+    feedbackFlow.open = true
+    await typeFeedback(target, 'hi')
+    await tickAttachEmail(target)
+    await typeEmail(target, 'draft@example.com')
+
+    // Settings is a window, not a modal, so this happens with the dialog still up.
+    await setContactEmailFromSettings('onfile@example.com')
+
+    expect(target.querySelector('input[type="email"]')).toBeNull()
+    expect(target.textContent).toContain('onfile@example.com')
+
+    findButton(target, 'Send feedback')?.click()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(sendFeedbackMock).toHaveBeenCalledWith('hi', 'onfile@example.com')
+    // The address is already on file, so the send has nothing to write back.
     expect(setSettingMock).not.toHaveBeenCalledWith('analytics.email', expect.anything())
   })
 

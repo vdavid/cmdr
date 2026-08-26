@@ -332,11 +332,12 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
   Position: opens centered on the main window on first open of the session (via `lib/window-positioning.ts`). After
   that, the position+size persists in-memory (via the `get_child_window_rect` / `set_child_window_rect` Tauri commands)
   so reopening lands in the same spot. On app start the cache is empty again. Saved rects that no longer fit any monitor
-  (display disconnected, etc.) are clamped to the nearest monitor. Also exports the keyboard-shortcut deep-link pair:
-  `shortcutAnchorId(commandId)` / `commandIdFromShortcutAnchor(anchorId)` (the `shortcut-<commandId>` DOM-id convention,
-  one definition so writer and readers can't drift) and `openShortcutCustomization(surface, commandId)` (the in-app
-  entry point clickable `ShortcutChip`s call to deep-link to a row). See § "Deep-link arrival into a shortcut row" below
-  and `sections/CLAUDE.md`.
+  (display disconnected, etc.) are clamped to the nearest monitor. Also exports the anchor conventions, one definition
+  each so writer and readers can't drift: `settingAnchorId(settingId)` (the `setting-<settingId>` DOM id `SettingRow`
+  stamps on every row, so any surface can deep-link to one setting) and the keyboard-shortcut pair
+  `shortcutAnchorId(commandId)` / `commandIdFromShortcutAnchor(anchorId)` (`shortcut-<commandId>`), plus
+  `openShortcutCustomization(surface, commandId)` (the in-app entry point clickable `ShortcutChip`s call to deep-link to
+  a row). See § "Deep-link arrival into a shortcut row" below and `sections/CLAUDE.md`.
 - **pending-shortcut-highlight.svelte.ts**: shared module-level `$state` seam for the deep-link arrival flash. The
   settings page writes the target command id (`setPendingShortcutHighlight`) after scrolling its row into view; the
   `KeyboardShortcutsSection` reads it (`getPendingShortcutHighlight`) to apply a `class:flash`, then clears it
@@ -357,9 +358,9 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
 ### Every open funnels through `openSettingsWindow`
 
 Settings has a dozen entry points (the `app.settings` command, the `open-settings` IPC event, five toasts, the pane
-Enter menu, the volume breadcrumb, and the two `openShortcutCustomization` callers). All of them call
-`openSettingsWindow(surface, section?, anchor?)`, which is what lets the `settings_opened` analytics event fire in
-exactly ONE place and cover a future call site automatically. Canonical event doc:
+Enter menu, the volume breadcrumb, the report dialogs' attach-email label, and the two `openShortcutCustomization`
+callers). All of them call `openSettingsWindow(surface, section?, anchor?)`, which is what lets the `settings_opened`
+analytics event fire in exactly ONE place and cover a future call site automatically. Canonical event doc:
 `apps/desktop/src-tauri/src/analytics/DETAILS.md`.
 
 `surface` is a closed `SettingsSurface` union and the FIRST parameter with no default, so a new call site has to name

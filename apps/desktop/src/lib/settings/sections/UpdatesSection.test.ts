@@ -39,13 +39,20 @@ vi.mock('$lib/updates/updater.svelte', async () => {
   }
 })
 
+/** Live listeners on `analytics.email`, so a test can play another window's write. */
+const emailListeners = new Set<(id: string, value: string) => void>()
+
 vi.mock('$lib/settings/settings-store', () => ({
   // The email field reads a string; everything else in this section reads booleans.
   getSetting: vi.fn((id: string) => (id === 'analytics.email' ? '' : true)),
   setSetting: vi.fn(() => Promise.resolve()),
   resetSetting: vi.fn(),
   isModified: vi.fn(() => false),
-  onSpecificSettingChange: vi.fn(() => () => {}),
+  onSpecificSettingChange: vi.fn((id: string, listener: (id: string, value: string) => void) => {
+    if (id !== 'analytics.email') return () => {}
+    emailListeners.add(listener)
+    return () => emailListeners.delete(listener)
+  }),
   onSettingChange: vi.fn(() => () => {}),
 }))
 
@@ -73,6 +80,12 @@ function getCheckButton(target: HTMLElement): HTMLButtonElement {
   const btn = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Check for updates')
   if (!btn) throw new Error('Check for updates button missing')
   return btn
+}
+
+function getEmailInput(target: HTMLElement): HTMLInputElement {
+  const input = target.querySelector<HTMLInputElement>('input[type="email"]')
+  if (!input) throw new Error('contact email input missing')
+  return input
 }
 
 describe('UpdatesSection', () => {
@@ -247,5 +260,15 @@ describe('UpdatesSection card groups', () => {
     expect(labels).not.toContain('Updates')
     expect(target.querySelectorAll('.section-card')).toHaveLength(1)
     target.remove()
+  })
+
+  it('shows the address another window wrote, not the id of the setting that changed', async () => {
+    const target = render()
+    await tick()
+
+    for (const listener of [...emailListeners]) listener('analytics.email', 'tester@example.com')
+    await tick()
+
+    expect(getEmailInput(target).value).toBe('tester@example.com')
   })
 })

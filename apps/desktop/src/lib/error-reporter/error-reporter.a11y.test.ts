@@ -61,6 +61,9 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
 }))
 
+/** Live listeners on `analytics.email`, so a test can play the Settings window's part. */
+const emailListeners = new Set<(id: string, value: string) => void>()
+
 vi.mock('$lib/settings', async (importOriginal) => {
   const actual = await importOriginal<{ getSetting: (id: string) => unknown }>()
   return {
@@ -68,6 +71,11 @@ vi.mock('$lib/settings', async (importOriginal) => {
     getSetting: vi.fn((id: string): unknown => (settingsStub ? settingsStub(id) : actual.getSetting(id))),
     setSetting: (id: string, value: unknown) => {
       setSettingMock(id, value)
+    },
+    onSpecificSettingChange: (id: string, listener: (id: string, value: string) => void) => {
+      if (id !== 'analytics.email') return () => {}
+      emailListeners.add(listener)
+      return () => emailListeners.delete(listener)
     },
   }
 })
@@ -459,7 +467,7 @@ describe('ErrorReportDialog', () => {
     mockEmail = ''
     const target = await mountSettled()
     expect(findAttachEmailCheckbox(target)?.checked).toBe(false)
-    expect(target.textContent).toContain('Attach my email so we can reply')
+    expect(target.textContent).toContain('Attach my email address so you can follow up')
     // The field is the tick's reward, so an untouched dialog asks nothing extra.
     expect(target.querySelector('input[type="email"]')).toBeNull()
   })
@@ -491,6 +499,33 @@ describe('ErrorReportDialog', () => {
     expect(checkbox).not.toBeNull()
     expect(checkbox?.checked).toBe(false)
     expect(target.textContent).toContain('tester@example.com')
+  })
+
+  it('carries the address the user corrected in Settings while the dialog stayed up', async () => {
+    mockEmail = 'old@example.com'
+    mockAttachDefault = false
+    const target = await mountSettled()
+    findAttachEmailCheckbox(target)?.click()
+    await tick()
+
+    // Settings opens as its own window, so the dialog is still here when this lands.
+    mockEmail = 'new@example.com'
+    for (const listener of [...emailListeners]) listener('analytics.email', 'new@example.com')
+    await tick()
+
+    expect(target.textContent).toContain('new@example.com')
+    expect(target.textContent).not.toContain('old@example.com')
+
+    errorReportFlow.open = true
+    const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
+      b.textContent.trim().startsWith('Send report'),
+    )
+    if (!sendButton) throw new Error('Send button missing')
+    sendButton.click()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(vi.mocked(sendErrorReport)).toHaveBeenCalledWith(undefined, 'new@example.com')
   })
 
   it('pre-ticks the checkbox when the sticky default is on', async () => {

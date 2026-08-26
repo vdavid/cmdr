@@ -90,12 +90,13 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
   avoid. The shared attach-email label is frozen once in `$lib/attach-email/attach-email-i18n-parity.test.ts`, not per
   dialog.
 - `CrashReportDialog.a11y.test.ts` / `CrashReportToastContent.a11y.test.ts` run axe over the default renders. The
-  toast's report only picks which sentence it renders, so one state covers its markup. The dialog test mocks
-  `analytics.email` to empty, so it exercises the collect shape only; the attach-email control's own behavior is covered
-  by `$lib/attach-email/attach-email.test.ts` and by the error reporter's a11y coverage, which renders it with an email
-  on file and asserts the sticky write. An a11y test doesn't have to sit beside its component: a DIRECTORY-LEVEL
-  `<area>.a11y.test.ts` importing several of them satisfies `a11y-coverage` just as well, and much of the frontend is
-  consolidated that way. Don't assume a colocated file when looking for a component's coverage.
+  toast's report only picks which sentence it renders, so one state covers its markup. The dialog test starts from the
+  collect shape and also covers the address being cleared out from under a ticked box; the attach-email control's own
+  behavior is covered by `$lib/attach-email/attach-email.svelte.test.ts` and by the error reporter's a11y coverage,
+  which renders it with an email on file and asserts the sticky write. An a11y test doesn't have to sit beside its
+  component: a DIRECTORY-LEVEL `<area>.a11y.test.ts` importing several of them satisfies `a11y-coverage` just as well,
+  and much of the frontend is consolidated that way. Don't assume a colocated file when looking for a component's
+  coverage.
 - All three dialog states are in the dialog gallery (`dialog-gallery/fixtures/crash-report.ts`), one per fate the
   frontend can see: `panic` (a modern `ended` report with a short id and a long backtrace, to keep the scrollable
   details block honest at 440px), `survived-panic` (the same panic with `appFate: 'keptRunning'`), and

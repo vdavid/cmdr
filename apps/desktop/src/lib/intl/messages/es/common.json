@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "Adjuntar mi correo ({email}) para que podamos responder",
+  "common.attachEmail": "Adjuntar mi correo electrónico ({emailAddress} – <change>cambiar</change>) para que puedas responderme",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "Tu dirección de correo",
   "@common.attachEmailInputLabel": {
@@ -15,9 +15,9 @@
   "@common.attachEmailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "common.attachEmailPrompt": "Adjuntar mi correo para que podamos responder",
+  "common.attachEmailPrompt": "Adjuntar mi correo electrónico para que puedas responderme",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "Cmdr necesita acceso a todo el disco para vigilar tu carpeta de Descargas. <settingsLink>Abrir Ajustes del Sistema</settingsLink>",
   "@common.downloadsFdaHint": {

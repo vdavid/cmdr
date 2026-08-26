@@ -19,6 +19,9 @@ in the section or registry, not here. Parent: `../CLAUDE.md` (registry, store, s
 - **Registry-driven by default.** Every primitive except the four window-chrome files takes `id: SettingId` first, reads
   its metadata from the registry, subscribes via `onSpecificSettingChange(id, …)`, and writes via `setSetting(id, …)`.
   Passing label / options / min / max as props from a section means the setting isn't registered yet.
+- **`SettingRow` stamps `settingAnchorId(id)` on every row**, which is what
+  `openSettingsWindow(surface, section, anchor)` scrolls to. Deep-link to a setting by passing that id, never by
+  inventing an anchor or reusing the `SettingId` (the row's `<label for>` already spends that on the control).
 - **`SettingRow.split`** enforces a 50-50 grid so control left-edges align across rows. Use it for select / text /
   password / slider / number / radio / combobox rows, not for switches, toggle groups, or full-width custom layouts.
 - **Card groups: wrap each row run in `{#if anyVisible(shouldShow, ...ids)}<SectionCard>`** (no wrapper component). The

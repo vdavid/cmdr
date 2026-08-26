@@ -26,6 +26,7 @@ import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '$lib/app-mode'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
+import type { SettingId } from './types'
 
 const log = getAppLogger('settings')
 
@@ -85,6 +86,8 @@ export type SettingsSurface =
   | 'shortcut-chip'
   /** The Quick Look hint toast, deep-linking to the Quick Look shortcut row. */
   | 'quick-look-toast'
+  /** The report dialogs' "Attach my email" label, deep-linking to the contact-email row. */
+  | 'attach-email'
 
 /**
  * Opens the settings window, or focuses it if already open. When `section` is provided,
@@ -221,6 +224,17 @@ export async function openSettingsWindow(surface: SettingsSurface, section?: str
   // E2E: push the window behind everything so a run's Settings windows don't pop
   // in front of the developer's work. No-op outside E2E. See `orderChildWindowToBackInE2e`.
   void orderChildWindowToBackInE2e(win)
+}
+
+/**
+ * The DOM-id convention for a setting's row, so any surface can deep-link to one.
+ *
+ * `SettingRow` stamps this on every row it renders and a caller passes the same id as
+ * `openSettingsWindow`'s `anchor`, so writer and reader can't drift. It's a separate id
+ * from the `SettingId` itself, which the row's `<label for>` already spends on the control.
+ */
+export function settingAnchorId(settingId: SettingId): string {
+  return `setting-${settingId}`
 }
 
 /**

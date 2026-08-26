@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "Meine E-Mail-Adresse ({email}) anhängen, damit wir antworten können",
+  "common.attachEmail": "Meine E-Mail-Adresse ({emailAddress} – <change>ändern</change>) anhängen, damit du dich melden kannst",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "Deine E-Mail-Adresse",
   "@common.attachEmailInputLabel": {
@@ -15,9 +15,9 @@
   "@common.attachEmailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "common.attachEmailPrompt": "Meine E-Mail-Adresse anhängen, damit wir antworten können",
+  "common.attachEmailPrompt": "Meine E-Mail-Adresse anhängen, damit du dich melden kannst",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "Cmdr braucht vollständigen Festplattenzugriff, um deinen Downloads-Ordner zu überwachen. <settingsLink>Systemeinstellungen öffnen</settingsLink>",
   "@common.downloadsFdaHint": {

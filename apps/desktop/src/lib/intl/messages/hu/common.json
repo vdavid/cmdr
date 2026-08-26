@@ -1,7 +1,7 @@
 {
-  "common.attachEmail": "Csatold az e-mail-címemet ({email}), hogy válaszolhassunk",
+  "common.attachEmail": "Csatold az e-mail-címemet ({emailAddress} – <change>módosítás</change>), hogy vissza tudj jelezni",
   "@common.attachEmail": {
-    "sourceHash": "5ab834c"
+    "sourceHash": "6ce573e"
   },
   "common.attachEmailInputLabel": "Az e-mail-címed",
   "@common.attachEmailInputLabel": {
@@ -16,9 +16,9 @@
     "sourceHash": "53e6cdc",
     "sameAsSourceJustification": "'you@example.com' is a literal example-email placeholder, kept verbatim everywhere per the cross-file reconciliation (style.md) - 'te@pelda.hu' broke parity and was reverted."
   },
-  "common.attachEmailPrompt": "Csatold az e-mail-címemet, hogy válaszolhassunk",
+  "common.attachEmailPrompt": "Csatold az e-mail-címemet, hogy vissza tudj jelezni",
   "@common.attachEmailPrompt": {
-    "sourceHash": "dcac141"
+    "sourceHash": "703760b"
   },
   "common.downloadsFdaHint": "A Cmdrnek teljes lemezhozzáférésre van szüksége a Letöltések mappád figyeléséhez. <settingsLink>Rendszerbeállítások megnyitása</settingsLink>",
   "@common.downloadsFdaHint": {

@@ -274,7 +274,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   a drive.
 - `settings_opened` (frontend, `$lib/settings/settings-window.ts` `openSettingsWindow`): `surface` enum (`command` /
   `ipc` / `crash-toast` / `error-toast` / `wake-indicator` / `paste-toast` / `enter-menu` / `volume-breadcrumb` /
-  `downloads-toast` / `low-disk-toast` / `shortcut-chip` / `quick-look-toast`); never the section. It sits in the
+  `downloads-toast` / `low-disk-toast` / `shortcut-chip` / `quick-look-toast` / `attach-email`); never the section. It sits in the
   window helper every entry point funnels through, so it counts all dozen of them and covers a new one for free. Why
   `surface` is a required first param and why `section` stays out: `apps/desktop/src/lib/settings/DETAILS.md` § "Every
   open funnels through `openSettingsWindow`".
