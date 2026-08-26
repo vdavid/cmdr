@@ -1,6 +1,6 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
-    import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
+    import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { startSelectionDragTracking } from '../drag/drag-drop'
@@ -103,7 +103,7 @@
         showGitColumn?: boolean
         /** Rename state for inline editing */
         renameState?: RenameState | null
-        onSelect: (index: number, shiftKey?: boolean, metaKey?: boolean) => void
+        onSelect: (args: SelectPayload) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
@@ -487,7 +487,7 @@
 
         if (plan.kind === 'ignore') return
         if (plan.kind === 'select') {
-            onSelect(index, event.shiftKey, event.metaKey)
+            onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
             return
         }
 
@@ -497,7 +497,7 @@
         if (plan.selectNow) {
             // Shift+click ranges, Cmd+click toggles; the drag then carries the
             // whole selection regardless of which row was pressed.
-            onSelect(index, event.shiftKey, event.metaKey)
+            onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
             startSelectionDragTracking(event, plan.context, { onDragInitiate })
             return
         }
@@ -506,10 +506,10 @@
         // decides whether this was a drag or a plain click.
         startSelectionDragTracking(event, plan.context, {
             onDragStart: () => {
-                onSelect(index, event.shiftKey, event.metaKey)
+                onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
             },
             onDragCancel: () => {
-                onSelect(index, event.shiftKey, event.metaKey)
+                onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
             },
             onDragInitiate,
         })
@@ -690,7 +690,7 @@
                         }}
                         oncontextmenu={(e: MouseEvent) => {
                             e.preventDefault()
-                            onSelect(globalIndex)
+                            onSelect({ index: globalIndex })
                             onContextMenu?.(file)
                         }}
                         role="option"

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
-    import type { FileEntry, FriendlyError, NetworkHost, SortColumn, SortOrder } from '../types'
+    import type { FileEntry, FriendlyError, NetworkHost, SelectPayload, SortColumn, SortOrder } from '../types'
     import {
         refreshListingIndexSizes,
         type Location,
@@ -1699,12 +1699,12 @@
                 {sortOrder}
                 selectedIndices={selection.selectedIndices}
                 onNavigate={(entry: FileEntry) => { void handleNavigate(entry) }}
-                onSelect={(idx: number, shiftKey?: boolean, metaKey?: boolean) => {
+                onSelect={({ index, shiftKey, metaKey }: SelectPayload) => {
                     // Reuse the regular pane's click semantics so shift-range
                     // and cmd-toggle behave identically. The snapshot pane has
                     // no `..` row, so `hasParent` is always false; `handleSelect`
                     // honours it via the bound `hasParent` state. M8d.
-                    handleSelect(idx, shiftKey ?? false, metaKey ?? false)
+                    handleSelect({ index, shiftKey: shiftKey ?? false, metaKey: metaKey ?? false })
                 }}
                 onVisibleRangeChange={handleVisibleRangeChange}
             />

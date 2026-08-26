@@ -11,7 +11,7 @@
  */
 
 import { getPathsAtIndices, showFileContextMenu, showParentRowContextMenu } from '$lib/tauri-commands'
-import type { FileEntry } from '../types'
+import type { FileEntry, SelectPayload } from '../types'
 import { getSetting, setSetting } from '$lib/settings'
 import { addToast } from '$lib/ui/toast'
 import { isFileListBackgroundClick } from './pane-background-dblclick'
@@ -41,14 +41,14 @@ export interface PanePointerDeps {
 }
 
 export interface PanePointer {
-  handleSelect: (index: number, shiftKey?: boolean, metaKey?: boolean) => void
+  handleSelect: (args: SelectPayload) => void
   handleContextMenu: (entry: FileEntry) => Promise<void>
   handlePaneClick: (event: MouseEvent) => void
   handlePaneBackgroundDblClick: (event: MouseEvent) => void
 }
 
 export function createPanePointer(deps: PanePointerDeps): PanePointer {
-  function handleSelect(index: number, shiftKey = false, metaKey = false): void {
+  function handleSelect({ index, shiftKey = false, metaKey = false }: SelectPayload): void {
     const hasParent = deps.getHasParent()
     if (shiftKey) {
       // Shift wins over Cmd when both are held (matches Finder).

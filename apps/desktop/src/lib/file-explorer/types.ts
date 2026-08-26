@@ -321,6 +321,23 @@ export interface ResortResult {
   newSelectedIndices: number[] | null
 }
 
+// ============================================================================
+// List-view callback payloads
+// ============================================================================
+
+/**
+ * A row click/context-menu selection, threaded from `BriefList` / `FullList` /
+ * `SearchResultsView`'s `onSelect` prop down through `PanePointer.handleSelect`.
+ * `shiftKey` extends the range from the cursor; `metaKey` toggles the row (Shift
+ * wins when both are held). Both are omitted, not `false`, for a plain click or
+ * a context-menu select.
+ */
+export interface SelectPayload {
+  index: number
+  shiftKey?: boolean
+  metaKey?: boolean
+}
+
 /** Statistics about a directory listing. */
 export interface ListingStats {
   /** Total number of files (not directories) */

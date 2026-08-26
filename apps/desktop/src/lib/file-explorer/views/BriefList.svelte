@@ -1,6 +1,6 @@
 <script lang="ts">
     import { untrack } from 'svelte'
-    import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
+    import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
     import { calculateVirtualWindowVariable, getScrollToPositionVariable } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
@@ -97,7 +97,7 @@
         sortOrder: SortOrder
         /** Rename state for inline editing */
         renameState?: RenameState | null
-        onSelect: (index: number, shiftKey?: boolean, metaKey?: boolean) => void
+        onSelect: (args: SelectPayload) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
@@ -491,7 +491,7 @@
 
         // ".." entry: just move cursor, no drag tracking
         if (entry.name === '..') {
-            onSelect(index, event.shiftKey, event.metaKey)
+            onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
             return
         }
 
@@ -507,18 +507,18 @@
                 { type: 'single', path: entry.path, iconId: entry.iconId, index, sourceVolumeId: volumeId, fileInfo },
                 {
                     onDragStart: () => {
-                        onSelect(index, event.shiftKey, event.metaKey)
+                        onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
                     },
                     onDragCancel: () => {
                         // Just do a normal select on cancel (mouseup without drag)
-                        onSelect(index, event.shiftKey, event.metaKey)
+                        onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
                     },
                     onDragInitiate,
                 },
             )
         } else {
             // Has selection: move cursor immediately (Shift+click ranges, Cmd+click toggles)
-            onSelect(index, event.shiftKey, event.metaKey)
+            onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
 
             // Always drag the selection (regardless of which file clicked)
             // Find the first selected file's icon for the drag preview
@@ -926,7 +926,7 @@
                                 }}
                                 oncontextmenu={(e: MouseEvent) => {
                                     e.preventDefault()
-                                    onSelect(globalIndex)
+                                    onSelect({ index: globalIndex })
                                     onContextMenu?.(file)
                                 }}
                                 role="option"

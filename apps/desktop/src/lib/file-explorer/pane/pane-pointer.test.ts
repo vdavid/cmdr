@@ -100,32 +100,32 @@ describe('createPanePointer', () => {
 
   describe('clicking a row', () => {
     it('moves the cursor, focuses the pane, and refreshes the cursor entry', () => {
-      createPanePointer(deps).handleSelect(5)
+      createPanePointer(deps).handleSelect({ index: 5 })
       expect(calls.setCursorIndex).toHaveBeenCalledWith(5)
       expect(calls.onRequestFocus).toHaveBeenCalledTimes(1)
       expect(calls.fetchCursorEntry).toHaveBeenCalledTimes(1)
     })
 
     it('ends the range gesture on a plain click', () => {
-      createPanePointer(deps).handleSelect(5)
+      createPanePointer(deps).handleSelect({ index: 5 })
       expect(calls.clearRangeState).toHaveBeenCalledTimes(1)
       expect(calls.extendSelectionFromMouse).not.toHaveBeenCalled()
     })
 
     it('extends the range on Shift+click, from the cursor', () => {
-      createPanePointer(deps).handleSelect(5, true)
+      createPanePointer(deps).handleSelect({ index: 5, shiftKey: true })
       expect(calls.extendSelectionFromMouse).toHaveBeenCalledWith(5, 2, true)
       expect(calls.toggleSelectionAt).not.toHaveBeenCalled()
     })
 
     it('toggles on Cmd+click and drops the anchor', () => {
-      createPanePointer(deps).handleSelect(5, false, true)
+      createPanePointer(deps).handleSelect({ index: 5, shiftKey: false, metaKey: true })
       expect(calls.toggleSelectionAt).toHaveBeenCalledWith(5, true)
       expect(calls.clearRangeState).toHaveBeenCalledTimes(1)
     })
 
     it('lets Shift win when both modifiers are held (Finder parity)', () => {
-      createPanePointer(deps).handleSelect(5, true, true)
+      createPanePointer(deps).handleSelect({ index: 5, shiftKey: true, metaKey: true })
       expect(calls.extendSelectionFromMouse).toHaveBeenCalledTimes(1)
       expect(calls.toggleSelectionAt).not.toHaveBeenCalled()
     })

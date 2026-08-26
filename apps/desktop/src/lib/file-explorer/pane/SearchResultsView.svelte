@@ -21,7 +21,7 @@
      * defensively we render a small "snapshot not available" pane rather than throwing.
      */
 
-    import type { FileEntry, SortColumn, SortOrder } from '../types'
+    import type { FileEntry, SelectPayload, SortColumn, SortOrder } from '../types'
     import FullList from '../views/FullList.svelte'
     import { getSnapshot, getMutationTick, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
     import { capabilitiesForKind } from './volume-capabilities'
@@ -49,7 +49,7 @@
          * Called when the user clicks / shift-clicks / cmd-clicks a row. Mirrors
          * `FullList`'s signature so the host pane can route to selection state.
          */
-        onSelect: (index: number, shiftKey?: boolean, metaKey?: boolean) => void
+        onSelect: (args: SelectPayload) => void
         /** Called by FullList when the visible window changes (passed through). */
         onVisibleRangeChange?: (start: number, end: number) => void
     }

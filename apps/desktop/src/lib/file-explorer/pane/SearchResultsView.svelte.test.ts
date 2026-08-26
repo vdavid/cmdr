@@ -8,7 +8,7 @@ import {
   type SearchSnapshot,
 } from '$lib/search/snapshot-store.svelte'
 import type { SearchResultEntry } from '$lib/ipc/bindings'
-import type { FileEntry } from '../types'
+import type { FileEntry, SelectPayload } from '../types'
 
 // FullList depends on a lot of platform-y machinery (canvas measurer, tauri commands).
 // We're not exercising its internals here — we just need the wrapper to render and
@@ -194,7 +194,7 @@ describe('SearchResultsView', () => {
 
     const target = document.createElement('div')
     document.body.appendChild(target)
-    let selectArgs: [number, boolean | undefined, boolean | undefined] | null = null
+    let selectArgs: SelectPayload | null = null
     mount(SearchResultsView, {
       target,
       props: {
@@ -206,8 +206,8 @@ describe('SearchResultsView', () => {
         // Pre-select the middle row; M8d wires this through to FullList.
         selectedIndices: new Set([1]),
         onNavigate: () => {},
-        onSelect: (idx, shiftKey, metaKey) => {
-          selectArgs = [idx, shiftKey, metaKey]
+        onSelect: (args: SelectPayload) => {
+          selectArgs = args
         },
       },
     })
