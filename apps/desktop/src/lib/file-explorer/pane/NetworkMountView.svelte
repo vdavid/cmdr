@@ -1,6 +1,6 @@
 <script lang="ts">
     import { tick } from 'svelte'
-    import type { MountError, NetworkHost, ShareInfo } from '../types'
+    import type { MountError, NetworkHost, NetworkLoginSubmitPayload, ShareInfo } from '../types'
     import {
         mountNetworkShare,
         resolvePathVolume,
@@ -245,7 +245,7 @@
     }
 
     /** Sync form-submit wrapper around the async retry (the form's `onConnect` returns void). */
-    function handleMountLoginConnect(username: string | null, password: string | null, rememberInKeychain: boolean) {
+    function handleMountLoginConnect({ username, password, rememberInKeychain }: NetworkLoginSubmitPayload) {
         void retryMountWithCredentials(username, password, rememberInKeychain)
     }
 

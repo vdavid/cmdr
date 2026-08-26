@@ -10,7 +10,7 @@
      */
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import type { NetworkHost } from '../types'
+    import type { NetworkHost, NetworkLoginSubmitPayload } from '../types'
     import { reconnectSmbVolumeWithCredentials } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
 
@@ -40,7 +40,9 @@
         source: 'discovered',
     })
 
-    function handleConnect(username: string | null, password: string | null): void {
+    // `rememberInKeychain` is unused: a reauth reconnect always persists the new
+    // password (see the module doc comment), so there's no separate opt-in here.
+    function handleConnect({ username, password }: NetworkLoginSubmitPayload): void {
         if (username === null) return // guest isn't offered in creds_required mode
         void doReconnect(username, password ?? '')
     }

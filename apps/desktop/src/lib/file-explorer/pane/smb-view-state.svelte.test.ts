@@ -113,7 +113,7 @@ describe('createSmbViewState', () => {
     ipc.upgradeToSmbVolumeWithCredentials.mockResolvedValue({ status: 'success' })
     const { sub } = create()
     sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    await sub.handleSmbUpgradeConnect('admin', 'pw', true)
+    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'pw', rememberInKeychain: true })
     expect(sub.smbUpgradeLogin).toBeNull()
     expect(requestVolumeRefreshSpy).toHaveBeenCalled()
     expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.connectedDirectlyToast', { level: 'success' })
@@ -123,7 +123,7 @@ describe('createSmbViewState', () => {
     ipc.upgradeToSmbVolumeWithCredentials.mockResolvedValue({ status: 'credentialsNeeded', message: 'Wrong password' })
     const { sub } = create()
     sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    await sub.handleSmbUpgradeConnect('admin', 'bad', false)
+    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'bad', rememberInKeychain: false })
     expect(sub.smbUpgradeLogin).not.toBeNull()
     expect(sub.smbUpgradeLogin?.errorMessage).toBe('Wrong password')
     expect(sub.smbUpgradeLogin?.isConnecting).toBe(false)
@@ -138,7 +138,7 @@ describe('createSmbViewState', () => {
     })
     const { sub } = create()
     sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    await sub.handleSmbUpgradeConnect('admin', 'pw', false)
+    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'pw', rememberInKeychain: false })
     expect(sub.smbUpgradeLogin).toBeNull()
     // The reason picks the catalog key; `upgrade-messages.test.ts` owns the words.
     expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.directConnectionUnreachableToast', {
@@ -150,7 +150,7 @@ describe('createSmbViewState', () => {
     ipc.upgradeToSmbVolumeWithCredentials.mockRejectedValue(new Error('boom'))
     const { sub } = create()
     sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    await sub.handleSmbUpgradeConnect('admin', 'pw', false)
+    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'pw', rememberInKeychain: false })
     expect(sub.smbUpgradeLogin).toBeNull()
     expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.directConnectionUnavailableToast', {
       level: 'error',
@@ -159,7 +159,7 @@ describe('createSmbViewState', () => {
 
   it('upgrade connect is a no-op when no form is open', async () => {
     const { sub } = create()
-    await sub.handleSmbUpgradeConnect('admin', 'pw', false)
+    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'pw', rememberInKeychain: false })
     expect(ipc.upgradeToSmbVolumeWithCredentials).not.toHaveBeenCalled()
   })
 

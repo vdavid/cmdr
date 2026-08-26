@@ -8,7 +8,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import CopyBox from '$lib/ui/CopyBox.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
-    import type { AuthMode, NetworkHost, ShareInfo, ShareListError } from '../types'
+    import type { AuthMode, NetworkHost, NetworkLoginSubmitPayload, ShareInfo, ShareListError } from '../types'
     import {
         getShareState,
         fetchShares,
@@ -357,7 +357,7 @@
         return shareError.message || tString('fileExplorer.network.share.connectionFailed', { reason: shareError.type })
     }
 
-    function handleConnect(username: string | null, password: string | null, rememberInKeychain: boolean) {
+    function handleConnect({ username, password, rememberInKeychain }: NetworkLoginSubmitPayload) {
         void connectWithCredentials(username, password, rememberInKeychain)
     }
 

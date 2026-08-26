@@ -408,6 +408,19 @@ export interface ShareInfo {
 /** Authentication mode detected for a host. */
 export type AuthMode = 'guest_allowed' | 'creds_required' | 'unknown'
 
+/**
+ * Credentials submitted from the inline network login form. Shared by
+ * `NetworkLoginForm`'s `onConnect` prop and `smb-view-state.svelte.ts`'s
+ * `handleSmbUpgradeConnect`, wired straight through in `FilePane.svelte`: both
+ * took `(username, password, rememberInKeychain)`, where `username` and
+ * `password` share the same `string | null` type.
+ */
+export interface NetworkLoginSubmitPayload {
+  username: string | null
+  password: string | null
+  rememberInKeychain: boolean
+}
+
 /** Result of a share listing operation. */
 export interface ShareListResult {
   /** Shares found on the host (already filtered to disk shares only) */

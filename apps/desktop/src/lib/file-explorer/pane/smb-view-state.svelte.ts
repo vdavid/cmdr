@@ -22,7 +22,7 @@ import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
-import type { VolumeInfo } from '../types'
+import type { NetworkLoginSubmitPayload, VolumeInfo } from '../types'
 
 const log = getAppLogger('fileExplorer')
 
@@ -68,11 +68,7 @@ export interface SmbViewState {
   /** Open the inline login form for a "Connect directly" upgrade that needs credentials. */
   handleSmbUpgradeLogin: (info: UpgradeResult & { status: 'credentialsNeeded' }, vid: string) => void
   /** Submit the inline login form: upgrade the OS-mount share to a direct connection. */
-  handleSmbUpgradeConnect: (
-    username: string | null,
-    password: string | null,
-    rememberInKeychain: boolean,
-  ) => Promise<void>
+  handleSmbUpgradeConnect: (submission: NetworkLoginSubmitPayload) => Promise<void>
   /** Dismiss the inline login form. */
   handleSmbUpgradeCancel: () => void
 }
@@ -170,11 +166,11 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     }
   }
 
-  async function handleSmbUpgradeConnect(
-    username: string | null,
-    password: string | null,
-    rememberInKeychain: boolean,
-  ): Promise<void> {
+  async function handleSmbUpgradeConnect({
+    username,
+    password,
+    rememberInKeychain,
+  }: NetworkLoginSubmitPayload): Promise<void> {
     if (!smbUpgradeLogin) return
     smbUpgradeLogin = { ...smbUpgradeLogin, isConnecting: true, errorMessage: undefined }
 

@@ -10,7 +10,7 @@
     import RadioGroup, { type RadioItem } from '$lib/ui/RadioGroup.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
-    import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost } from '../types'
+    import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost, NetworkLoginSubmitPayload } from '../types'
     import { getUsernameHints, getKnownShareByName } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -30,7 +30,7 @@
         /** Whether we're currently attempting to connect */
         isConnecting?: boolean
         /** Callback when user submits credentials */
-        onConnect: (username: string | null, password: string | null, rememberInKeychain: boolean) => void
+        onConnect: (submission: NetworkLoginSubmitPayload) => void
         /** Callback when user cancels */
         onCancel: () => void
     }
@@ -120,9 +120,9 @@
         if (!canSubmit || isConnecting) return
 
         if (connectionMode === 'guest') {
-            onConnect(null, null, false)
+            onConnect({ username: null, password: null, rememberInKeychain: false })
         } else {
-            onConnect(username.trim(), password, rememberInKeychain)
+            onConnect({ username: username.trim(), password, rememberInKeychain })
         }
     }
 
