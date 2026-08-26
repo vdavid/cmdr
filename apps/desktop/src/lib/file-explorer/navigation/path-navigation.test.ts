@@ -64,7 +64,12 @@ describe('determineNavigationPath', () => {
   })
 
   it('returns targetPath when it differs from volumePath (favorite navigation)', async () => {
-    const result = await determineNavigationPath('root', '/root-path', '/favorite/path', defaultOtherPane)
+    const result = await determineNavigationPath({
+      volumeId: 'root',
+      volumePath: '/root-path',
+      targetPath: '/favorite/path',
+      otherPane: defaultOtherPane,
+    })
     expect(result).toBe('/favorite/path')
     expect(mockPathExists).not.toHaveBeenCalled()
   })
@@ -77,7 +82,12 @@ describe('determineNavigationPath', () => {
     mockPathExists.mockResolvedValue(true)
     mockGetLastUsedPath.mockResolvedValue(undefined)
 
-    const resultPromise = determineNavigationPath('root', '/root-path', '/root-path', otherPane)
+    const resultPromise = determineNavigationPath({
+      volumeId: 'root',
+      volumePath: '/root-path',
+      targetPath: '/root-path',
+      otherPane,
+    })
     await vi.advanceTimersByTimeAsync(500)
     const result = await resultPromise
 
@@ -92,7 +102,7 @@ describe('determineNavigationPath', () => {
     mockPathExists.mockResolvedValue(false)
     mockGetLastUsedPath.mockResolvedValue(undefined)
 
-    const resultPromise = determineNavigationPath('root', '/', '/', otherPane)
+    const resultPromise = determineNavigationPath({ volumeId: 'root', volumePath: '/', targetPath: '/', otherPane })
     await vi.advanceTimersByTimeAsync(500)
     const result = await resultPromise
 
@@ -109,7 +119,12 @@ describe('determineNavigationPath', () => {
       p === '/Users/test/last-used' ? Promise.resolve(true) : Promise.resolve(false),
     )
 
-    const resultPromise = determineNavigationPath('root', '/', '/', defaultOtherPane)
+    const resultPromise = determineNavigationPath({
+      volumeId: 'root',
+      volumePath: '/',
+      targetPath: '/',
+      otherPane: defaultOtherPane,
+    })
     await vi.advanceTimersByTimeAsync(500)
     const result = await resultPromise
 
@@ -123,9 +138,14 @@ describe('determineNavigationPath', () => {
     mockGetLastUsedPath.mockResolvedValue('/Users/test/local-project')
     mockPathExists.mockResolvedValue(true)
 
-    const resultPromise = determineNavigationPath('smb-192-168-1-111-445-naspi', '/Volumes/naspi', '/Volumes/naspi', {
-      otherPaneVolumeId: 'root',
-      otherPanePath: '/Users/test/local-project',
+    const resultPromise = determineNavigationPath({
+      volumeId: 'smb-192-168-1-111-445-naspi',
+      volumePath: '/Volumes/naspi',
+      targetPath: '/Volumes/naspi',
+      otherPane: {
+        otherPaneVolumeId: 'root',
+        otherPanePath: '/Users/test/local-project',
+      },
     })
     await vi.advanceTimersByTimeAsync(500)
     const result = await resultPromise
@@ -137,7 +157,12 @@ describe('determineNavigationPath', () => {
     mockPathExists.mockResolvedValue(false)
     mockGetLastUsedPath.mockResolvedValue(undefined)
 
-    const resultPromise = determineNavigationPath('root', '/', '/', defaultOtherPane)
+    const resultPromise = determineNavigationPath({
+      volumeId: 'root',
+      volumePath: '/',
+      targetPath: '/',
+      otherPane: defaultOtherPane,
+    })
     await vi.advanceTimersByTimeAsync(500)
     const result = await resultPromise
 
@@ -148,12 +173,12 @@ describe('determineNavigationPath', () => {
     mockPathExists.mockResolvedValue(false)
     mockGetLastUsedPath.mockResolvedValue(undefined)
 
-    const resultPromise = determineNavigationPath(
-      'external',
-      '/Volumes/External',
-      '/Volumes/External',
-      defaultOtherPane,
-    )
+    const resultPromise = determineNavigationPath({
+      volumeId: 'external',
+      volumePath: '/Volumes/External',
+      targetPath: '/Volumes/External',
+      otherPane: defaultOtherPane,
+    })
     await vi.advanceTimersByTimeAsync(500)
     const result = await resultPromise
 
@@ -169,7 +194,7 @@ describe('determineNavigationPath', () => {
     mockPathExists.mockReturnValue(new Promise<boolean>(() => {}))
     mockGetLastUsedPath.mockResolvedValue(undefined)
 
-    const resultPromise = determineNavigationPath('root', '/', '/', otherPane)
+    const resultPromise = determineNavigationPath({ volumeId: 'root', volumePath: '/', targetPath: '/', otherPane })
     await vi.advanceTimersByTimeAsync(500)
     const result = await resultPromise
 
@@ -189,7 +214,7 @@ describe('determineNavigationPath', () => {
     })
     mockGetLastUsedPath.mockResolvedValue('/Users/test/last')
 
-    const resultPromise = determineNavigationPath('root', '/', '/', otherPane)
+    const resultPromise = determineNavigationPath({ volumeId: 'root', volumePath: '/', targetPath: '/', otherPane })
     await vi.advanceTimersByTimeAsync(500)
     await resultPromise
 

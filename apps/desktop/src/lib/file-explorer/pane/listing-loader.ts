@@ -27,7 +27,7 @@
  */
 import { tick } from 'svelte'
 import type { FriendlyError } from '../types'
-import type { SwapState } from './types'
+import type { SwapState, VolumeChangePayload } from './types'
 import {
   cancelListing,
   findFileIndex,
@@ -126,7 +126,7 @@ export interface ListingLoaderDeps {
 
   // Callbacks bubbled to the parent.
   onPathChange?: (path: string) => void
-  onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
+  onVolumeChange?: (change: VolumeChangePayload) => void
   onMtpFatalError?: (error: string) => void
   onCancelLoading?: (cancelledPath: string, selectName?: string) => void
   /**
@@ -231,7 +231,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     if (target === '~' || target === '/') {
       if (deps.getVolumeId() !== 'root' && deps.onVolumeChange) {
         log.info('Volume root unreachable, switching to root volume with path: {target}', { target })
-        deps.onVolumeChange('root', '/', target)
+        deps.onVolumeChange({ volumeId: 'root', volumePath: '/', targetPath: target })
       } else {
         landOnFallback(target)
       }
@@ -245,7 +245,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
           target,
           volumeId: volume.id,
         })
-        deps.onVolumeChange(volume.id, volume.path, target)
+        deps.onVolumeChange({ volumeId: volume.id, volumePath: volume.path, targetPath: target })
         return
       }
       landOnFallback(target)

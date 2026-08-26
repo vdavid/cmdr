@@ -19,6 +19,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { eventMatchesCommand } from '$lib/shortcuts'
+    import type { VolumeChangePayload } from './types'
 
     const log = getAppLogger('fileExplorer')
 
@@ -33,7 +34,7 @@
          * a new non-empty value re-arms the auto-mount gate.
          */
         initialAutoMountShare?: string | undefined
-        onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
+        onVolumeChange?: (change: VolumeChangePayload) => void
         onNetworkHostChange?: (host: NetworkHost | null) => void
     }
 
@@ -215,11 +216,11 @@
 
             if (mountedVolume) {
                 // Use the real volume ID and path from the system
-                onVolumeChange?.(mountedVolume.id, mountedVolume.path, mountPath)
+                onVolumeChange?.({ volumeId: mountedVolume.id, volumePath: mountedVolume.path, targetPath: mountPath })
             } else {
                 // Fallback: use mount path as both volume path and target
                 // This can happen if the volume list hasn't refreshed yet
-                onVolumeChange?.(mountPath, mountPath, mountPath)
+                onVolumeChange?.({ volumeId: mountPath, volumePath: mountPath, targetPath: mountPath })
             }
         } catch (e) {
             mountError = e as MountError

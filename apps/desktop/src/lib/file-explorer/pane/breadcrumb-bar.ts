@@ -15,6 +15,7 @@ import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
 import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
 import { isVolumeEjectable } from '../navigation/eject-predicate'
 import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
+import type { VolumeChangePayload } from './types'
 
 export interface BreadcrumbDisplayPathInput {
   currentPath: string
@@ -71,7 +72,7 @@ export interface BreadcrumbHandlerDeps {
   getCurrentVolumeInfo: () => VolumeInfo | null
   navigateToPath: (path: string) => Promise<void>
   setCurrentPath: (path: string) => void
-  onVolumeChange: (volumeId: string, volumePath: string, targetPath: string) => void
+  onVolumeChange: (change: VolumeChangePayload) => void
   onRequestFocus: () => void
   loadDirectory: (path: string) => void
   refreshSpace: () => void
@@ -84,7 +85,7 @@ export interface BreadcrumbHandlers {
   /** Navigate to a breadcrumb ancestor. Errors surface via the pane's error pipeline. */
   handleSegmentClick: (target: string) => void
   handleContextMenu: (event: MouseEvent) => void
-  handleVolumeChange: (newVolumeId: string, newVolumePath: string, targetPath: string) => void
+  handleVolumeChange: (change: VolumeChangePayload) => void
 }
 
 export function createBreadcrumbHandlers(deps: BreadcrumbHandlerDeps): BreadcrumbHandlers {
@@ -109,13 +110,14 @@ export function createBreadcrumbHandlers(deps: BreadcrumbHandlerDeps): Breadcrum
     )
   }
 
-  function handleVolumeChange(newVolumeId: string, newVolumePath: string, targetPath: string): void {
+  function handleVolumeChange(change: VolumeChangePayload): void {
+    const { volumeId: newVolumeId, targetPath } = change
     // Navigate to the target path (may differ from volume root for favorites)
     // Note: We intentionally don't call onPathChange here - the volume change handler
     // in DualPaneExplorer takes care of saving both the old volume's path and the new path.
     // Calling onPathChange would save the new path under the OLD volume ID (race condition).
     deps.setCurrentPath(targetPath)
-    deps.onVolumeChange(newVolumeId, newVolumePath, targetPath)
+    deps.onVolumeChange(change)
 
     // Don't load directory for network views (they handle their own data)
     // or device-only MTP views (they need connection first via auto-connect effect)

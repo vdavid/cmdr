@@ -525,7 +525,7 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
   it('navigateToFallback switches to the root volume when the target is outside a non-root volume', () => {
     const { loader, state, spies } = makeHarness({ volumeId: 'smb-host', volumePath: '/Volumes/x' })
     loader.navigateToFallback('~')
-    expect(spies.onVolumeChange).toHaveBeenCalledWith('root', '/', '~')
+    expect(spies.onVolumeChange).toHaveBeenCalledWith({ volumeId: 'root', volumePath: '/', targetPath: '~' })
     expect(state.currentPath).toBe('/a') // outside-volume path handed to onVolumeChange, currentPath left as-is
   })
 
@@ -555,7 +555,7 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
     h.resolvePathVolume.mockResolvedValueOnce({ volume: { id: 'root', path: '/' }, timedOut: false })
     loader.navigateToFallback('/Volumes')
     await vi.waitFor(() => {
-      expect(spies.onVolumeChange).toHaveBeenCalledWith('root', '/', '/Volumes')
+      expect(spies.onVolumeChange).toHaveBeenCalledWith({ volumeId: 'root', volumePath: '/', targetPath: '/Volumes' })
     })
     // The switch owns the landing, so the loader must not also list `/Volumes`
     // on the dead volume.
@@ -587,7 +587,7 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
     await loader.loadDirectory('/Volumes/naspi/gone')
     h.listeners.error[0]({ listingId: state.listingId, message: 'no such dir' })
     await vi.waitFor(() => {
-      expect(spies.onVolumeChange).toHaveBeenCalledWith('root', '/', '/Volumes')
+      expect(spies.onVolumeChange).toHaveBeenCalledWith({ volumeId: 'root', volumePath: '/', targetPath: '/Volumes' })
     })
   })
 

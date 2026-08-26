@@ -23,6 +23,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
+import type { VolumeChangePayload } from './types'
 
 /** Props the mocked FilePane last received, keyed by pane id. */
 const captured = vi.hoisted((): { props: Record<string, Record<string, unknown>> } => ({ props: {} }))
@@ -266,7 +267,11 @@ describe('scenario 3: pinned-tab fork (L7)', () => {
     const pinnedId = getActiveTab(mgr).id
     const tabCountBefore = mgr.tabs.length
 
-    ;(leftProps().onVolumeChange as (v: string, vp: string, tp: string) => void)('ext', '/Volumes/Ext', '/Volumes/Ext')
+    ;(leftProps().onVolumeChange as (change: VolumeChangePayload) => void)({
+      volumeId: 'ext',
+      volumePath: '/Volumes/Ext',
+      targetPath: '/Volumes/Ext',
+    })
     await settle()
 
     expect(mgr.tabs.length).toBe(tabCountBefore + 1)

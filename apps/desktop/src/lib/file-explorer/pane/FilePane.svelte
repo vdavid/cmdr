@@ -38,7 +38,7 @@
     import SmbReauthView from './SmbReauthView.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import SearchResultsView from './SearchResultsView.svelte'
-    import type { SearchResultsViewAPI } from './types'
+    import type { SearchResultsViewAPI, VolumeChangePayload } from './types'
     import { getSnapshot } from '$lib/search/snapshot-store.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
     import SmbReconnectingView from './SmbReconnectingView.svelte'
@@ -99,7 +99,7 @@
         sortOrder?: SortOrder
         directorySortMode?: DirectorySortMode
         onPathChange?: (path: string) => void
-        onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
+        onVolumeChange?: (change: VolumeChangePayload) => void
         /**
          * Go to an already-resolved `Location` (volume id + path). Used when a row
          * on the search-results pane opens a real entry: the pane resolves the
@@ -319,7 +319,7 @@
         fetchEntryUnderCursor: () => void selectionInfo.fetchEntry(),
         fetchListingStats: () => void selectionInfo.fetchStats(),
         onPathChange: (path) => onPathChange?.(path),
-        onVolumeChange: (id, path, target) => onVolumeChange?.(id, path, target),
+        onVolumeChange: (change) => onVolumeChange?.(change),
         onMtpFatalError: (message) => onMtpFatalError?.(message),
         onCancelLoading: (cancelledPath, selectName) => onCancelLoading?.(cancelledPath, selectName),
         onArchiveNeedsPassword: (info) => onArchiveNeedsPassword?.(info),
@@ -1227,7 +1227,7 @@
         setCurrentPath: (path) => {
             currentPath = path
         },
-        onVolumeChange: (id, path, target) => onVolumeChange?.(id, path, target),
+        onVolumeChange: (change) => onVolumeChange?.(change),
         onRequestFocus: () => onRequestFocus?.(),
         loadDirectory: (path) => void loader.loadDirectory(path),
         refreshSpace: () => void diskSpace.refresh(),

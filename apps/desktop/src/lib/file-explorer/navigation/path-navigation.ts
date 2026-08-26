@@ -18,6 +18,14 @@ export interface OtherPaneState {
   otherPanePath: string
 }
 
+/** Arguments for `determineNavigationPath`: the switching volume plus the other pane's state. */
+export interface DetermineNavigationPathArgs {
+  volumeId: string
+  volumePath: string
+  targetPath: string
+  otherPane: OtherPaneState
+}
+
 /**
  * True when `path` equals `volumePath` or is a descendant of it. Used to drop
  * stale or corrupted paths that don't belong on the given volume — for example
@@ -39,12 +47,8 @@ export function isPathOnVolume(path: string, volumePath: string): boolean {
  * 3. Stored lastUsedPath for this volume
  * 4. Default: ~ for main volume, volume root for others
  */
-export async function determineNavigationPath(
-  volumeId: string,
-  volumePath: string,
-  targetPath: string,
-  otherPane: OtherPaneState,
-): Promise<string> {
+export async function determineNavigationPath(args: DetermineNavigationPathArgs): Promise<string> {
+  const { volumeId, volumePath, targetPath, otherPane } = args
   const pathExistsTimeoutMs = 500
 
   // User navigated to a favorite, so go to the favorite's path directly

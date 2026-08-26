@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
-    import type { FilePaneAPI, StartRenameOptions } from './types'
+    import type { FilePaneAPI, StartRenameOptions, VolumeChangePayload } from './types'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
@@ -396,8 +396,7 @@
         },
         getPaneRef,
         getVolumePathById: (volumeId) => volumes.find((v) => v.id === volumeId)?.path,
-        determineNavigationPath: (volumeId, volumePath, targetPath, other) =>
-            determineNavigationPath(volumeId, volumePath, targetPath, other),
+        determineNavigationPath: (args) => determineNavigationPath(args),
         persist: (event) => {
             // The single nav-state persistence subscriber (A5) owns disk writes.
             // `pane-state` is covered REACTIVELY there (the subscriber's per-pane
@@ -1346,7 +1345,7 @@
                 onPathChange={(path: string) => {
                     handlePathCommitted(paneId, path)
                 }}
-                onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) => {
+                onVolumeChange={({ volumeId, targetPath }: VolumeChangePayload) => {
                     navigateIntent({
                         pane: paneId,
                         to: { selectVolume: { volumeId, path: targetPath } },

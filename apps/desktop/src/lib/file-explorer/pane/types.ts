@@ -30,6 +30,18 @@ export interface StartRenameOptions {
   expectedName?: string
 }
 
+/**
+ * A deliberate volume (re)select: the target volume, its mount path, and the
+ * path to land on (which may differ from the volume root for a favorite).
+ * Shared by every `onVolumeChange` carrier from `VolumeBreadcrumb` down
+ * through the pane's connection views to the breadcrumb-bar handlers.
+ */
+export interface VolumeChangePayload {
+  volumeId: string
+  volumePath: string
+  targetPath: string
+}
+
 /** State snapshot for swapping panes without backend calls. */
 export interface SwapState {
   currentPath: string

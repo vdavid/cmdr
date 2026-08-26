@@ -228,9 +228,17 @@ describe('createBreadcrumbHandlers', () => {
 
   describe('switching volume', () => {
     it('commits the target path, loads it, and follows it with the space watch', () => {
-      createBreadcrumbHandlers(deps).handleVolumeChange('ext', '/Volumes/Ext', '/Volumes/Ext/photos')
+      createBreadcrumbHandlers(deps).handleVolumeChange({
+        volumeId: 'ext',
+        volumePath: '/Volumes/Ext',
+        targetPath: '/Volumes/Ext/photos',
+      })
       expect(calls.setCurrentPath).toHaveBeenCalledWith('/Volumes/Ext/photos')
-      expect(calls.onVolumeChange).toHaveBeenCalledWith('ext', '/Volumes/Ext', '/Volumes/Ext/photos')
+      expect(calls.onVolumeChange).toHaveBeenCalledWith({
+        volumeId: 'ext',
+        volumePath: '/Volumes/Ext',
+        targetPath: '/Volumes/Ext/photos',
+      })
       expect(calls.loadDirectory).toHaveBeenCalledWith('/Volumes/Ext/photos')
       expect(calls.unwatchSpace).toHaveBeenCalledTimes(1)
       expect(calls.watchSpace).toHaveBeenCalledWith('ext', '/Volumes/Ext/photos')
@@ -239,14 +247,18 @@ describe('createBreadcrumbHandlers', () => {
 
     it('reads the disk-image flag off the NEW volume, before the prop catches up', () => {
       volumes = [{ id: 'dmg', name: 'Installer', isDiskImage: true }]
-      createBreadcrumbHandlers(deps).handleVolumeChange('dmg', '/Volumes/Installer', '/Volumes/Installer')
+      createBreadcrumbHandlers(deps).handleVolumeChange({
+        volumeId: 'dmg',
+        volumePath: '/Volumes/Installer',
+        targetPath: '/Volumes/Installer',
+      })
       expect(calls.clearSpace).toHaveBeenCalledTimes(1)
       expect(calls.watchSpace).not.toHaveBeenCalled()
       expect(calls.refreshSpace).not.toHaveBeenCalled()
     })
 
     it('skips the load for the network volume and stops watching space', () => {
-      createBreadcrumbHandlers(deps).handleVolumeChange('network', '/', '/')
+      createBreadcrumbHandlers(deps).handleVolumeChange({ volumeId: 'network', volumePath: '/', targetPath: '/' })
       expect(calls.loadDirectory).not.toHaveBeenCalled()
       expect(calls.unwatchSpace).toHaveBeenCalledTimes(1)
       expect(calls.watchSpace).not.toHaveBeenCalled()
@@ -254,13 +266,17 @@ describe('createBreadcrumbHandlers', () => {
 
     it('skips the load for a device-only MTP target, which needs connecting first', () => {
       mtp.isMtpVolumeId.mockReturnValue(true)
-      createBreadcrumbHandlers(deps).handleVolumeChange('mtp-2097152', '/', '/')
+      createBreadcrumbHandlers(deps).handleVolumeChange({ volumeId: 'mtp-2097152', volumePath: '/', targetPath: '/' })
       expect(calls.loadDirectory).not.toHaveBeenCalled()
     })
 
     it('loads a connected MTP storage target', () => {
       mtp.isMtpVolumeId.mockReturnValue(true)
-      createBreadcrumbHandlers(deps).handleVolumeChange('mtp-2097152:65537', '/', '/DCIM')
+      createBreadcrumbHandlers(deps).handleVolumeChange({
+        volumeId: 'mtp-2097152:65537',
+        volumePath: '/',
+        targetPath: '/DCIM',
+      })
       expect(calls.loadDirectory).toHaveBeenCalledWith('/DCIM')
     })
   })

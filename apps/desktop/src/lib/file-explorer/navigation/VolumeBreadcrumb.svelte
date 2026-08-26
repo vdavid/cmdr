@@ -32,6 +32,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { describeUsbSpeed, type VolumeInfo } from '../types'
+    import type { VolumeChangePayload } from '../pane/types'
     import { filesystemLabel } from './filesystem-label'
     import { isVolumeEjectable } from './eject-predicate'
     import { wordEjectRefusal } from './eject-error-messages'
@@ -90,7 +91,7 @@
     interface Props {
         volumeId: string
         currentPath: string
-        onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
+        onVolumeChange?: (change: VolumeChangePayload) => void
         /** Called when the upgrade flow needs the user to enter SMB credentials. */
         onSmbUpgradeLogin?: (info: UpgradeResult & { status: 'credentialsNeeded' }, volumeId: string) => void
     }
@@ -304,14 +305,18 @@
             const { volume: containingVolume } = await resolvePathVolume(volume.path)
             if (containingVolume) {
                 // Navigate to the favorite's path, but set the volume to the containing volume
-                onVolumeChange?.(containingVolume.id, containingVolume.path, volume.path)
+                onVolumeChange?.({
+                    volumeId: containingVolume.id,
+                    volumePath: containingVolume.path,
+                    targetPath: volume.path,
+                })
             } else {
                 // Fallback: use root volume
-                onVolumeChange?.('root', '/', volume.path)
+                onVolumeChange?.({ volumeId: 'root', volumePath: '/', targetPath: volume.path })
             }
         } else {
             // For actual volumes, navigate to the volume's root
-            onVolumeChange?.(volume.id, volume.path, volume.path)
+            onVolumeChange?.({ volumeId: volume.id, volumePath: volume.path, targetPath: volume.path })
             // First-connect indexing prompt (D6): self-gates on settings,
             // per-drive silence, and whether the drive is already indexed.
             if (isDriveRow(volume)) {

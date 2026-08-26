@@ -128,7 +128,7 @@ import {
   type NavigationHistory,
   type HistoryEntry,
 } from '../navigation/navigation-history'
-import { isPathOnVolume } from '../navigation/path-navigation'
+import { isPathOnVolume, type DetermineNavigationPathArgs } from '../navigation/path-navigation'
 import { tString } from '$lib/intl/messages.svelte'
 import type { Location } from '$lib/tauri-commands'
 
@@ -237,12 +237,7 @@ export interface NavigateDeps {
   /** The volume's mount path by id, or undefined when not in the live list. */
   getVolumePathById: (volumeId: string) => string | undefined
   /** Background "best path" resolver (`determineNavigationPath`), gated by the token. */
-  determineNavigationPath: (
-    volumeId: string,
-    volumePath: string,
-    targetPath: string,
-    otherPane: { otherPaneVolumeId: string; otherPanePath: string },
-  ) => Promise<string>
+  determineNavigationPath: (args: DetermineNavigationPathArgs) => Promise<string>
 
   // --- side effects ---
   /** Persistence trigger fed to the single nav-state persistence subscriber (A5). */
@@ -452,9 +447,14 @@ function scheduleVolumePathCorrection(
   const correctionGen = (deps.correctionGen.value += 1)
   const other = deps.otherPane(pane)
   void deps
-    .determineNavigationPath(volumeId, volumePath, targetPath, {
-      otherPaneVolumeId: deps.getPaneVolumeId(other),
-      otherPanePath: deps.getPanePath(other),
+    .determineNavigationPath({
+      volumeId,
+      volumePath,
+      targetPath,
+      otherPane: {
+        otherPaneVolumeId: deps.getPaneVolumeId(other),
+        otherPanePath: deps.getPanePath(other),
+      },
     })
     .then((betterPath) => {
       // GLOBAL supersede (matches the old `volumeChangeGeneration`, which was a

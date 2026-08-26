@@ -6,12 +6,13 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import type { VolumeChangePayload } from './types'
 
     const log = getAppLogger('mtpConnection')
 
     interface Props {
         volumeId: string
-        onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
+        onVolumeChange?: (change: VolumeChangePayload) => void
     }
 
     const { volumeId, onVolumeChange }: Props = $props()
@@ -99,7 +100,7 @@
                         // while waiting for the parent to update volumeId
                         mtpConnectedDeviceId = deviceId
                         if (onVolumeChange) {
-                            onVolumeChange(newVolumeId, newPath, newPath)
+                            onVolumeChange({ volumeId: newVolumeId, volumePath: newPath, targetPath: newPath })
                             log.info('onVolumeChange called successfully')
                         } else {
                             log.warn('onVolumeChange callback not provided!')

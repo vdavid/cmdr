@@ -27,6 +27,7 @@ import {
 import { createTabManager, getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
 import { createInitialTabState } from './tab-operations'
 import type { FilePaneAPI } from './types'
+import type { DetermineNavigationPathArgs } from '../navigation/path-navigation'
 
 /** A live volume map the fake deps resolve paths/names against (a Map so misses are `undefined`). */
 const VOLUMES = new Map<string, { id: string; name: string; path: string }>([
@@ -138,7 +139,7 @@ function makeHarness(opts?: HarnessOpts): Harness {
 
   const determineNavigationPath = vi
     .fn()
-    .mockImplementation((_v, _vp, targetPath: string) => Promise.resolve(targetPath))
+    .mockImplementation((args: DetermineNavigationPathArgs) => Promise.resolve(args.targetPath))
   const setFocusedPane = vi.fn()
   const addToast = vi.fn()
 
@@ -278,7 +279,12 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
 
   it('uses the volume mount path for the background correction lookup', () => {
     navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
-    expect(h.determineNavigationPath).toHaveBeenCalledWith('ext', '/Volumes/Ext', '/Volumes/Ext', expect.anything())
+    expect(h.determineNavigationPath).toHaveBeenCalledWith({
+      volumeId: 'ext',
+      volumePath: '/Volumes/Ext',
+      targetPath: '/Volumes/Ext',
+      otherPane: expect.anything() as DetermineNavigationPathArgs['otherPane'],
+    })
   })
 })
 
