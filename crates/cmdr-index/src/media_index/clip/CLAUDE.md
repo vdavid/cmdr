@@ -28,11 +28,11 @@ thread, `install.rs` the pinned download/verify/unpack, `tokenizer.rs` the fixed
 - **Turning the toggle off ≠ erase.** Existing embeddings stay searchable; only `media_index_delete_clip_model` removes
   them.
 - **Each tower loads on the first job that needs it, then stays for the process's whole life.** An enrichment pass holds
-  the image tower alone (59.0 MB of `MALLOC_LARGE`); a typed query adds the fp32 text tower's 245.9 MB. `WORKER` is
-  still a `OnceLock` and nothing drops a loaded tower, so the ceiling is unchanged; what moved is that a session pays
-  only for the halves it uses. Core ML allocates through the SYSTEM allocator, so `query_mimalloc_heap` shows none of
-  it. Numbers plus the compute-unit lever that moves them 35×: `DETAILS.md` § "What holding the towers costs". ❌ Don't
-  change `load_model_at`'s `MLComputeUnits::All` on the memory number alone; the speed side is unmeasured.
+  the image tower alone (59.0 MB of `MALLOC_LARGE`); a typed query adds the fp32 text tower's 245.9 MB. Nothing drops a
+  loaded tower, so a session pays for the halves it uses and keeps them, and the first query of a process wears the text
+  tower's ~677 ms cold load. Core ML allocates through the SYSTEM allocator, so `query_mimalloc_heap` shows none of it.
+  Numbers plus the compute-unit lever that moves them 35×: `DETAILS.md`. ❌ Don't change `load_model_at`'s
+  `MLComputeUnits::All` on the memory number alone; the speed side is unmeasured.
 - **A tower's `.mlpackage` source is reclaimed on THAT tower's own word.** ❌ Never gate the delete on anything but the
   tower losing its source having loaded AND encoded a sane embedding. A pair-wise precondition looks harmless and, with
   lazy loads, either never fires (trading RAM for ~550 MB of permanent disk) or deletes a source for a tower that never

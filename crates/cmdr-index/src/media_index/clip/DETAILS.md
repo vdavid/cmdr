@@ -215,9 +215,15 @@ vector query testable with deterministic vectors; the command owns the encode. `
 off, no model is installed, or the volume has no CLIP embeddings — so the UI voices coverage. Answers offline from
 `media.db`.
 
-**Latency:** the text tower is kept warm (a cold Core ML load is 1–2 s; a warm encode ~2 ms — spike numbers); the vector
-top-k is brute force below ~50k stored vectors and the per-volume ANN index at or above it (`../ann/DETAILS.md` — the
-engine decision went to `usearch` by a measured spike; `sqlite-vec` was disqualified as not actually ANN).
+**Latency:** the text tower loads on the FIRST query of the process and stays warm after it, so that one query wears the
+cold Core ML load and every later one is a warm encode. Measured on an M1 Max, macOS 26.6, debug build, warm `.mlmodelc`
+cache, 2026-08-27: **677 ms** for the first query, **8–10 ms** warm. The very first query after an install costs **2.14
+s** instead, because the tower still has a `.mlpackage` source and pays the one-time reclaim guard encode; that happens
+once ever. ⚠️ Before the towers loaded lazily, an enrichment pass that ran earlier in the session left the text tower
+warm, so a user who searched after enrichment saw the 8 ms path. They now see 677 ms once per launch. That is the cost
+side of not holding 245.9 MB, and it is the same latency the "unload after idle" idea would pay on every reload. The
+vector top-k is brute force below ~50k stored vectors and the per-volume ANN index at or above it (`../ann/DETAILS.md` —
+the engine decision went to `usearch` by a measured spike; `sqlite-vec` was disqualified as not actually ANN).
 
 **The residency harness** behind § "What holding the towers costs" is `clip::macos::residency_test`, `#[ignore]`d and
 env-gated because it needs the real ~267 MB model on disk:

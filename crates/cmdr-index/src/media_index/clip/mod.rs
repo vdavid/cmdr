@@ -6,8 +6,8 @@
 //!
 //! - the **image tower** embeds every enriched photo (on the same dedicated Vision
 //!   worker thread, from the same decode — see `backend`);
-//! - the **text tower** encodes a search query at query time (kept warm — a cold load is
-//!   1–2 s, a warm encode ~2 ms).
+//! - the **text tower** encodes a search query at query time. It loads on the first query
+//!   of the process (~677 ms) and stays warm after it (~8 ms an encode).
 //!
 //! CLIP's vector space is DIFFERENT from the Vision feature print, so its embeddings live
 //! in a separate `media_clip_embedding` table with independent `clip_stamp` staleness
@@ -65,7 +65,7 @@ pub(crate) fn current_stamp(data_dir: &Path) -> Option<String> {
     install::installed_stamp(data_dir)
 }
 
-/// Tokenize `query` and encode it to a CLIP text embedding via the warm text tower — the
+/// Tokenize `query` and encode it to a CLIP text embedding via the text tower — the
 /// query-time entry point (plan M3 Q6). `Err(ClipError::NotAvailable)` when no model is
 /// installed / off macOS, so the command returns no hits rather than erroring.
 pub fn encode_text_query(query: &str) -> Result<Vec<f32>, ClipError> {

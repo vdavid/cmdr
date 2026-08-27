@@ -3,7 +3,8 @@
 //! Image encoding is folded into the Vision backend's
 //! [`analyze_media`](crate::media_index::backend::VisionBackend::analyze_media) — one
 //! decode feeds both Vision and CLIP on the same worker thread. Text encoding is a
-//! query-time concern behind `ClipTextEncoder`, kept warm by the command layer.
+//! query-time concern behind `ClipTextEncoder`; the real tower loads on the first query and
+//! stays warm after it.
 //!
 //! Both fakes (`FakeClipTextEncoder` and the fake image path via
 //! [`fake_clip_embedding`]) project into ONE shared bag-of-words space, so a fake
@@ -15,9 +16,9 @@
 #[cfg(test)]
 use super::ClipError;
 
-/// Encode a text query into a CLIP text embedding (query time). The real impl keeps the
-/// text tower warm (a cold Core ML load is 1–2 s; a warm encode ~2 ms); the fake returns
-/// a deterministic vector in the shared fake space.
+/// Encode a text query into a CLIP text embedding (query time). The real impl loads the
+/// text tower on the first query and keeps it warm after that; the fake returns a
+/// deterministic vector in the shared fake space.
 // Test-only: production text encoding goes straight to the warm macOS tower
 // (`macos::encode_text`), so nothing off the test path holds one of these.
 #[cfg(test)]
