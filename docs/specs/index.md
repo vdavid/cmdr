@@ -49,14 +49,14 @@ left, so the durable intent survives the wipe.
       log line and analytics event exist for exactly that), reading file contents, a thread-timeline event for a
       chat-memory-size change (half a day, unblocked), the rail not refetching on a decision, and one chore needing a
       machine with a foreground: the consent screenshots.
-- [ ] 2026-08-20 `later/i18n-screenshot-gaps.md` - Translator-screenshot coverage: which catalog families are still
-      uncoupled, why each resists capture, and what closing it takes. Stands at **2,186 / 3,112 keys (70%)**: 1,248
-      direct plus 938 representative, over 137 captured surfaces. The percentage fell from the shipped plan's 75% only
-      because the catalog grew (the translated menu bar alone added 129 permanently-native `menu.*` keys); absolute
-      coverage rose. Biggest gaps: `settings.mediaIndex` (the whole panel body behind the image-indexing master toggle),
-      `askCmdr` (needs the scripted fake LLM to emit a tool call), `fileExplorer.navigation` (SMB connection and
-      favorites failure states), and four cheap settings surfaces the capture never visits. Live per-area numbers always
-      come from the generated `apps/desktop/src/lib/intl/messages/screenshots/coverage-report.md`, never this doc.
+- [ ] 2026-08-27 `later/i18n-screenshot-gaps.md` - **Which catalog families a translator still gets no picture of, and
+      why each resists capture.** Structural only: the doc now carries NO absolute numbers, because the ones it used to
+      carry went stale twice while the analysis around them stayed true. Every count, percentage, and per-area ranking
+      comes from the generated `apps/desktop/src/lib/intl/messages/screenshots/coverage-report.md`. Biggest gaps:
+      `settings.mediaIndex` (the whole panel body behind the image-indexing master toggle), `askCmdr` (the rail's fake
+      LLM says one thing and calls no tool, so no tool row ever renders), `fileExplorer.navigation` (per-drive index
+      status, SMB connection, favorites failures, disk-space retries), and four cheap settings surfaces the capture
+      never visits.
 - [ ] 2026-07-22 `later/indexing/swap-scan-plan.md` - Build-and-swap rescan: run the fast parallel guarded walker into a
       separate `index-{vid}.building.db`, then swap it in atomically (~8.4× faster, 107 s vs 897 s), replacing the
       ~15-minute serial in-place reconcile of a completed LOCAL index. Durable `.swap` marker + idempotent open-time
