@@ -100,7 +100,9 @@ const TIMED_OUT = Symbol('timed-out')
 async function withDeadline<T>(work: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
   let timer: ReturnType<typeof setTimeout> | undefined
   const deadline = new Promise<typeof TIMED_OUT>((resolve) => {
-    timer = setTimeout(() => resolve(TIMED_OUT), ms)
+    timer = setTimeout(() => {
+      resolve(TIMED_OUT)
+    }, ms)
   })
   try {
     return await Promise.race([work, deadline])
@@ -125,7 +127,7 @@ export async function probeAppAlive(
     (err: unknown) => `the liveness probe was rejected: ${String(err)}`,
   )
   const verdict = await withDeadline(answered, deadlineMs)
-  if (verdict === TIMED_OUT) return `no answer to the liveness probe in ${deadlineMs} ms`
+  if (verdict === TIMED_OUT) return `no answer to the liveness probe in ${String(deadlineMs)} ms`
   return verdict
 }
 
@@ -154,15 +156,23 @@ export function pingAppSocket(deadlineMs: number = APP_PROBE_DEADLINE_MS): Promi
       socket.destroy()
       resolve(verdict)
     }
-    const timer = setTimeout(() => finish(`no answer to the socket ping in ${deadlineMs} ms`), deadlineMs)
+    const timer = setTimeout(() => {
+      finish(`no answer to the socket ping in ${String(deadlineMs)} ms`)
+    }, deadlineMs)
 
     socket.on('connect', () => socket.write('{"type":"ping"}\n'))
-    socket.on('data', () => finish(null))
-    socket.on('error', (err: Error) => finish(`the socket ping was rejected: ${err.message}`))
+    socket.on('data', () => {
+      finish(null)
+    })
+    socket.on('error', (err: Error) => {
+      finish(`the socket ping was rejected: ${err.message}`)
+    })
     // Ordering matters: `finish` has already fired on a good ping, so reaching here means
     // the app hung up mid-handshake. Without this the promise would wait out the deadline
     // for a socket that is already gone.
-    socket.on('close', () => finish('the app closed the socket without answering the ping'))
+    socket.on('close', () => {
+      finish('the app closed the socket without answering the ping')
+    })
   })
 }
 

@@ -45,7 +45,16 @@ afterEach(async () => {
   // out the open ones, and the whole point of the non-answering server is a connection
   // nobody ends. Without this the hook waits until vitest kills it.
   accepted.forEach((socket) => socket.destroy())
-  await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))))
+  await Promise.all(
+    servers.map(
+      (s) =>
+        new Promise<void>((resolve) =>
+          s.close(() => {
+            resolve()
+          }),
+        ),
+    ),
+  )
   delete process.env.CMDR_PLAYWRIGHT_SOCKET
   fs.rmSync(socketDir, { recursive: true, force: true })
 })
@@ -165,7 +174,9 @@ describe('findAppDeath', () => {
 
     clearAppDeathMarker()
     expect(readAppDeath()).toBeNull()
-    expect(() => failIfAppIsKnownDead()).not.toThrow()
+    expect(() => {
+      failIfAppIsKnownDead()
+    }).not.toThrow()
   })
 })
 
@@ -190,7 +201,9 @@ describe('the webview half', () => {
   it('blames the killer on the way out, so the next test gets a verdict it did not have to earn', async () => {
     const killer = 'Archive browsing › opens the viewer'
     expect(await checkAppSurvived(hungPage(), killer, 50)).toContain('THIS is the one to debug')
-    expect(() => failIfAppIsKnownDead()).toThrow(new RegExp(`during "${killer}"`))
+    expect(() => {
+      failIfAppIsKnownDead()
+    }).toThrow(new RegExp(`during "${killer}"`))
   })
 
   it('stays quiet in teardown when the app is fine, and when the death is already recorded', async () => {
