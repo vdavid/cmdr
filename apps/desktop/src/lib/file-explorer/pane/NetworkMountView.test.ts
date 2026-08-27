@@ -31,7 +31,7 @@ vi.mock('$lib/tauri-commands', () => ({
   listSharesWithCredentials: vi.fn(() => Promise.resolve({ shares: [], authMode: 'unknown', fromCache: false })),
   isUsingCredentialFileFallback: vi.fn(() => Promise.resolve(false)),
   updateKnownShare: vi.fn(() => Promise.resolve()),
-  getUsernameHints: vi.fn(() => Promise.resolve({})),
+  getUsernameHint: vi.fn(() => Promise.resolve(null)),
   getKnownShareByName: vi.fn(() => Promise.resolve(null)),
   updateLeftPaneState: h.updateLeftPaneState,
   updateRightPaneState: vi.fn(() => Promise.resolve()),

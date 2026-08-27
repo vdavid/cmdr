@@ -3315,8 +3315,14 @@ export const commands = {
       lastKnownAuthOptions,
       username,
     }),
-  // Gets username hints for servers (last used username per server).
-  getUsernameHints: () => __TAURI_INVOKE<{ [key in string]: string }>('get_username_hints'),
+  /**
+   *  The username to pre-fill for `server_name`, or `None` if it has never been signed in to.
+   *
+   *  Takes the server by name and answers for that one server, rather than handing back a
+   *  map the caller has to key into: the identity rule lives in `known_shares`, not in the
+   *  IPC contract. See `known_shares::get_username_hint`.
+   */
+  getUsernameHint: (serverName: string) => __TAURI_INVOKE<string | null>('get_username_hint', { serverName }),
   /**
    *  Saves SMB credentials to the Keychain.
    *  Credentials are stored under "Cmdr" service name.

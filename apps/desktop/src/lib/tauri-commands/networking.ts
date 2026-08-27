@@ -218,17 +218,18 @@ export async function updateKnownShare(
 }
 
 /**
- * Gets username hints for servers (last used username per server).
- * Useful for pre-filling login forms.
- * Only available on macOS.
- * @returns Map of server name (lowercase) -> username
+ * The username to pre-fill for `serverName`, or null if it has never been signed in to.
+ *
+ * Pass whatever name you have (an mDNS instance name, a `.local` hostname, an IP): the
+ * backend matches on the server's stable identity, so any name form finds a hint saved
+ * under any other. Only available on macOS.
  */
-export async function getUsernameHints(): Promise<Record<string, string>> {
+export async function getUsernameHint(serverName: string): Promise<string | null> {
   try {
-    return await commands.getUsernameHints()
+    return await commands.getUsernameHint(serverName)
   } catch {
-    // Command not available (non-macOS) - return empty map
-    return {}
+    // Command not available (non-macOS) - no hint to offer
+    return null
   }
 }
 

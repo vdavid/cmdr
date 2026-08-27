@@ -28,7 +28,7 @@ vi.mock('$lib/tauri-commands', () => ({
   getSmbCredentials: h.getSmbCredentials,
   isUsingCredentialFileFallback: vi.fn(() => Promise.resolve(false)),
   updateKnownShare: vi.fn(() => Promise.resolve()),
-  getUsernameHints: vi.fn(() => Promise.resolve({})),
+  getUsernameHint: vi.fn(() => Promise.resolve(null)),
   getKnownShareByName: vi.fn(() => Promise.resolve(null)),
   updateLeftPaneState: vi.fn(() => Promise.resolve()),
   updateRightPaneState: vi.fn(() => Promise.resolve()),

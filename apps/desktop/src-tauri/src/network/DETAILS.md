@@ -278,6 +278,26 @@ Two places deliberately stay byte-exact: `path_volume_id` (the kernel is self-co
 point) and `mount_linux::derive_gvfs_path` (it has to match the path GVFS actually created, which is GVFS's convention
 to set, not ours).
 
+## Server-keyed answers are lookups, never maps
+
+`known_shares` answers "what username should this login form pre-fill" with
+`get_username_hint(server_name) -> Option<String>`, and "what do we know about this share" with
+`get_known_share(server_name, share_name)`. Both take raw names and do the keying HERE.
+
+The alternative is what this used to be: a command returning `HashMap<server_key, username>` for every server at once,
+which puts the KEY in the IPC contract. The caller then has to rebuild that key to read its own answer, so the rule
+exists twice, in two languages, and only one of them is the real one. It had already drifted. Rust keyed on
+`server_name.to_lowercase()` while `NetworkLoginForm.svelte` looked up `host.name.toLowerCase()`, and neither is
+`credential_key`, so a server saved as `Naspolya` was invisible to a form opened on `Naspolya._smb._tcp.local`, which
+is exactly the case a hint exists for. The failure is silent (no pre-fill, no error), which is why it sat there.
+
+Keying on [`server_identity::credential_key`] is what pairs the name forms, and it is deliberately the SAME identity the
+stored password uses: a hint and a password answer the same question ("who did this person sign in as here"), so they
+must agree about which server is which. Last match wins, because shares are appended in connect order.
+
+The general rule: a command whose result is keyed by something the caller must reconstruct is a command with the wrong
+signature. Take the identifier as an argument and answer for it.
+
 ## Every SMB subprocess runs under a deadline
 
 `smbutil view` (macOS) and `smbclient -L` (Linux) are the last thing tried when smb2 can't list a host's shares, and

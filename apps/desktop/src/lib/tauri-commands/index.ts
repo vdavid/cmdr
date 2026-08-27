@@ -189,7 +189,7 @@ export {
   prefetchShares,
   getKnownShareByName,
   updateKnownShare,
-  getUsernameHints,
+  getUsernameHint,
   saveSmbCredentials,
   getSmbCredentials,
   deleteSmbCredentials,

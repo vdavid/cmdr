@@ -69,7 +69,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   showNetworkHostContextMenu: vi.fn(() => Promise.resolve()),
   onNetworkHostContextAction: vi.fn(() => Promise.resolve(() => {})),
   disconnectNetworkHost: vi.fn(() => Promise.resolve()),
-  getUsernameHints: vi.fn(() => Promise.resolve({})),
+  getUsernameHint: vi.fn(() => Promise.resolve(null)),
   getKnownShareByName: vi.fn(() => Promise.resolve(null)),
   listSharesWithCredentials: vi.fn(() => Promise.resolve([])),
   saveSmbCredentials: vi.fn(() => Promise.resolve()),

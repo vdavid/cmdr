@@ -181,11 +181,15 @@ pub fn update_known_share(
     known_shares::update_known_share(&app, share);
 }
 
-/// Gets username hints for servers (last used username per server).
+/// The username to pre-fill for `server_name`, or `None` if it has never been signed in to.
+///
+/// Takes the server by name and answers for that one server, rather than handing back a
+/// map the caller has to key into: the identity rule lives in `known_shares`, not in the
+/// IPC contract. See `known_shares::get_username_hint`.
 #[tauri::command]
 #[specta::specta]
-pub fn get_username_hints() -> std::collections::HashMap<String, String> {
-    known_shares::get_username_hints()
+pub fn get_username_hint(server_name: String) -> Option<String> {
+    known_shares::get_username_hint(&server_name)
 }
 
 // --- Keychain Commands ---

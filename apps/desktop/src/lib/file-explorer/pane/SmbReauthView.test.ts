@@ -14,7 +14,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('$lib/tauri-commands', () => ({
   reconnectSmbVolumeWithCredentials: h.reconnectSmbVolumeWithCredentials,
-  getUsernameHints: vi.fn(() => Promise.resolve({})),
+  getUsernameHint: vi.fn(() => Promise.resolve(null)),
   getKnownShareByName: vi.fn(() => Promise.resolve(null)),
 }))
 

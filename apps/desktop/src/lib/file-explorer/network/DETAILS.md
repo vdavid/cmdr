@@ -82,8 +82,10 @@ Props: `host`, `shareName?`, `authMode`, `defaultConnectionMode?`, `initialUsern
 `onConnect`, `onCancel`.
 
 - Guest/credentials radio when `authMode === 'guest_allowed'`.
-- Pre-fills username from `getUsernameHints()` (server-keyed) or `getKnownShareByName()`; an explicit `initialUsername`
-  (for example from a failed mount) wins over both.
+- Pre-fills username from `getUsernameHint(host.name)` or `getKnownShareByName()`; an explicit `initialUsername` (for
+  example from a failed mount) wins over both. Both take the server BY NAME and match on its stable identity in Rust, so
+  a hint saved under one name form (`Naspolya`) is found when the form opens under another (`Naspolya._smb._tcp.local`).
+  ❌ Don't reintroduce a keyed map here: rebuilding the key in TypeScript is what made the two sides disagree.
 - Tab stops propagation (prevents the parent pane-switch while tabbing between fields).
 - `connectionMode` is `$derived.by` from `authMode` (guest default when guest allowed). `bind:group` writes a `let`, not
   the read-only derived; the derived re-evaluates when `authMode` changes.
@@ -284,7 +286,7 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
 ## Dependencies
 
 - `$lib/tauri-commands`: `listNetworkHosts`, `resolveNetworkHost`, `listSharesOnHost`, `listSharesWithCredentials`,
-  `prefetchShares`, `getSmbCredentials`, `saveSmbCredentials`, `deleteSmbCredentials`, `getUsernameHints`,
+  `prefetchShares`, `getSmbCredentials`, `saveSmbCredentials`, `deleteSmbCredentials`, `getUsernameHint`,
   `getKnownShareByName`, `updateKnownShare`, `updateLeftPaneState`, `updateRightPaneState`, `connectToServer`,
   `removeManualServer`
 - `$lib/settings/network-settings`: `getNetworkTimeoutMs`, `getShareCacheTtlMs`

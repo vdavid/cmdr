@@ -5,7 +5,6 @@
 
 use crate::ignore_poison::IgnorePoison;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -174,19 +173,35 @@ pub fn update_known_share<R: tauri::Runtime>(app: &tauri::AppHandle<R>, share: K
     save_known_shares(app);
 }
 
-/// Builds a map of server names to their last known usernames.
-/// Useful for pre-filling login forms.
-pub fn get_username_hints() -> HashMap<String, String> {
-    let cache = get_known_shares_mutex().lock_ignore_poison();
-    let mut hints = HashMap::new();
-    // Group by server, use most recently connected share's username
-    for share in cache.known_network_shares.iter() {
-        if let Some(ref username) = share.username {
-            // Keep the newest entry per server (shares are in order of addition/update)
-            hints.insert(share.server_name.to_lowercase(), username.clone());
-        }
-    }
-    hints
+/// The username to pre-fill a login form for `server_name`, if this server has ever been
+/// signed in to.
+///
+/// A LOOKUP, not a map of every server's hint, for the same reason
+/// [`get_known_share`] is one: the key stays on this side. A command handing the
+/// frontend a keyed map makes the key part of the IPC contract, and the caller has to
+/// rebuild it to read its own answer, so the rule ends up written twice in two
+/// languages and drifts. Ask by name and there is one rule, here.
+///
+/// Matching is [`credential_key`](crate::network::server_identity::credential_key), the
+/// same identity the stored PASSWORD is keyed by, so every name form of one server
+/// (`Naspolya`, `naspolya.local`, `Naspolya._smb._tcp.local`) finds the hint saved under
+/// any other. The share list records whichever name the connect used, while the login
+/// form opens on whatever discovery produced; a raw compare misses exactly the case the
+/// hint exists for.
+///
+/// Last match wins: shares are appended in connect order, so the newest username on this
+/// server is the one the person most recently signed in as.
+pub fn get_username_hint(server_name: &str) -> Option<String> {
+    use crate::network::server_identity::credential_key;
+
+    let key = credential_key(server_name);
+    get_known_shares_mutex()
+        .lock_ignore_poison()
+        .known_network_shares
+        .iter()
+        .filter(|s| credential_key(&s.server_name) == key)
+        .filter_map(|s| s.username.clone())
+        .next_back()
 }
 
 #[cfg(test)]
@@ -368,11 +383,83 @@ mod tests {
             });
         }
 
-        let hints = get_username_hints();
-        assert_eq!(hints.get("server1"), Some(&"alice".to_string()));
-        assert!(!hints.contains_key("server2")); // No username for guest-only
+        assert_eq!(get_username_hint("Server1"), Some("alice".to_string()));
+        assert_eq!(get_username_hint("Server2"), None); // No username for guest-only
+        assert_eq!(get_username_hint("nobody-here"), None);
 
         // Clean up
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+        }
+    }
+
+    /// The hint has to survive the server arriving under another of its names. The
+    /// login form opens on whatever `NetworkHost` discovery produced (an mDNS instance
+    /// name), while the share was saved under the name the connect used, so a lookup
+    /// that compared raw strings prefilled nothing for the exact case it exists for.
+    #[test]
+    fn a_username_hint_is_found_under_every_name_form_of_its_server() {
+        let _guard = SERIAL.lock().unwrap();
+        let cache = get_known_shares_mutex();
+
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+            c.known_network_shares.push(KnownNetworkShare {
+                server_name: "Naspolya".to_string(),
+                share_name: "naspi".to_string(),
+                protocol: "smb".to_string(),
+                last_connected_at: "2026-01-06T12:00:00Z".to_string(),
+                last_connection_mode: ConnectionMode::Credentials,
+                last_known_auth_options: AuthOptions::CredentialsOnly,
+                username: Some("david".to_string()),
+            });
+        }
+
+        for form in [
+            "Naspolya",
+            "naspolya",
+            "Naspolya.local",
+            "naspolya.local.",
+            "Naspolya._smb._tcp.local",
+        ] {
+            assert_eq!(
+                get_username_hint(form),
+                Some("david".to_string()),
+                "no hint found for the server spelled {form:?}"
+            );
+        }
+        // A different server keeps its own answer.
+        assert_eq!(get_username_hint("raspberrypi.local"), None);
+
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+        }
+    }
+
+    /// Shares are appended in connect order, so the LAST one carrying a username is the
+    /// most recent thing the person actually signed in as.
+    #[test]
+    fn the_newest_username_on_a_server_wins() {
+        let _guard = SERIAL.lock().unwrap();
+        let cache = get_known_shares_mutex();
+
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+            for (share, user) in [("old", Some("alice")), ("newer", Some("bob")), ("guest", None)] {
+                c.known_network_shares.push(KnownNetworkShare {
+                    server_name: "Naspolya".to_string(),
+                    share_name: share.to_string(),
+                    protocol: "smb".to_string(),
+                    last_connected_at: "2026-01-06T12:00:00Z".to_string(),
+                    last_connection_mode: ConnectionMode::Credentials,
+                    last_known_auth_options: AuthOptions::CredentialsOnly,
+                    username: user.map(str::to_string),
+                });
+            }
+        }
+
+        assert_eq!(get_username_hint("naspolya"), Some("bob".to_string()));
+
         if let Ok(mut c) = cache.lock() {
             c.known_network_shares.clear();
         }

@@ -264,11 +264,11 @@ pub fn update_known_share(
     // No-op
 }
 
-/// Gets username hints for servers (stub: returns empty).
+/// The username hint for a server (stub: never has one).
 #[tauri::command]
 #[specta::specta]
-pub fn get_username_hints() -> HashMap<String, String> {
-    HashMap::new()
+pub fn get_username_hint(_server_name: String) -> Option<String> {
+    None
 }
 
 /// Saves SMB credentials (stub: returns error).

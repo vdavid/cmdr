@@ -32,7 +32,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   // Never resolves: `SmbReauthView` audits the form before any round-trip lands.
   reconnectSmbVolumeWithCredentials: vi.fn(() => new Promise<never>(() => {})),
   // `NetworkLoginForm` (rendered inside `SmbReauthView`) pre-fills the username from these on mount.
-  getUsernameHints: vi.fn(() => Promise.resolve({})),
+  getUsernameHint: vi.fn(() => Promise.resolve(null)),
 }))
 
 // Partial mock: `ShortcutChip` (rendered inside the Go back / Go home buttons and

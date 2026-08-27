@@ -11,7 +11,7 @@
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost, NetworkLoginSubmitPayload } from '../types'
-    import { getUsernameHints, getKnownShareByName } from '$lib/tauri-commands'
+    import { getUsernameHint, getKnownShareByName } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -82,13 +82,12 @@
 
     // Load known share data and username hints on mount
     onMount(async () => {
-        // Get username hints for pre-filling
-        const hints = await getUsernameHints()
-        const serverKey = host.name.toLowerCase()
-        if (hints[serverKey]) {
-            usernameHint = hints[serverKey]
+        // Ask by name: the backend owns which spellings of a server are the same one.
+        const hint = await getUsernameHint(host.name)
+        if (hint) {
+            usernameHint = hint
             if (!initialUsername) {
-                username = hints[serverKey]
+                username = hint
             }
         }
 
