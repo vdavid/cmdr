@@ -270,6 +270,11 @@ are the same volume instance (`write_operations/transfer/volume/strategy.rs::try
   source leaves the scan dialog frozen and leaves the scan watchdog — which bounds a preview by INACTIVITY — unable to
   tell a slow tree from a server that stopped answering. The ticker is `cmdr_fs::volume::ScanTicker`, shared with SMB so
   the cumulative-for-the-call promise can't drift between the two.
+- ⚠️ **The batch walks EVERY path's whole subtree, one path at a time.** There's no pipelined-stat shortcut here (SMB
+  has one; this backend runs `scan_recursive` per path and only borrows the single path's `top_level_is_directory` for
+  the aggregate). So a batch of one directory is a full recursive walk, ❌ never a cheap "what is this path?". A caller
+  that wants the type and size of some top-level paths stats them instead: the model is
+  `apps/desktop/src-tauri/src/commands/file_system/volume_copy.rs`'s `stat_source_paths`, one `get_metadata` per path.
 - ❌ **Nothing here calls `authoritative_listing`.** There is no watcher, so `listing_watch_coverage` is `None` and a
   cached listing is only as fresh as the last look. SMB's scan may consult the cache because its watcher backs the
   claim; borrowing that here is how a pre-flight conflict scan misses a file and a copy overwrites it.

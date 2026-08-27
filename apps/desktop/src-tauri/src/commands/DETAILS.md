@@ -10,8 +10,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   kept only until `ipc.rs` stops registering the Linux set under that path. See
   `../volumes_linux/DETAILS.md` § "One command module".
 - **`util.rs`**: `TimedOut<T>`, `DeadlineError`, `blocking_with_timeout`, `blocking_with_timeout_flag`,
-  `blocking_typed_result_with_timeout`, `timeout_detached_typed`, `Deadline` + `timeout_detached_within`, and
-  `BlockingBudget`.
+  `blocking_typed_result_with_timeout`, `timeout_detached_typed`, `Deadline` (`elapsed` / `remaining` / `total` /
+  `fraction`) + `timeout_detached_within`, and `BlockingBudget`.
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
   `listing.rs`: streaming + virtual-scroll listing, path queries, `find_first_fuzzy_match` (type-to-jump),
   benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). `refresh_listing`
@@ -26,9 +26,14 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   pass-throughs that build the `TauriEventSink` and hand everything to `write_operations::start_volume_{copy, move,
   compress}`, which own the volume + destination-path resolution and the archive forks so a backend caller reaches the
   same routing (`../file_system/write_operations/DETAILS.md` § "Routing a transfer"). `scan_volume_for_conflicts` optionally takes a
-  source volume id + source paths and resolves each item's real `is_directory` + size from the source volume via ONE
-  batched `scan_for_copy_batch` (O(top-level items), never a subtree walk), overriding the FE's name-only placeholders
-  so dir-vs-dir collisions classify as silent merges; back-compatible when omitted. The source paths also drive
+  source volume id + source paths and resolves each item's real `is_directory` + size from the source volume via
+  `stat_source_paths`: one `Volume::get_metadata` per top-level path, `SOURCE_STAT_CONCURRENCY` (16) in flight, strictly
+  O(top-level items) and never a subtree walk. `merge_source_types_from_stats` folds the results over the FE's
+  name-only placeholders so dir-vs-dir collisions classify as silent merges; back-compatible when omitted. ❌ Don't
+  swap this back to `scan_for_copy_batch`: a batch of exactly one path takes a fast path straight into
+  `scan_recursive` on SMB and SFTP, so a single directory source walks its whole subtree (a 119k-file folder ate the
+  entire 30 s check budget, `ERR-AYVM4`). The batch scan stays right for the transfer's own scan phase, which wants
+  the tree. The source paths also drive
   `drop_self_collisions`, which removes the collisions naming a source itself so a same-folder paste doesn't announce
   every item as its own conflict. It answers with the engines' own predicates, which is what keeps the dialog and the
   write agreeing about which clashes are real (canonical:
@@ -317,3 +322,15 @@ either).
 
 The `blocking_*` helpers already have this property for free: they wrap `spawn_blocking`, so their timeout races a join
 handle too, and the blocking closure is never interrupted.
+
+### An optional leg gets a sub-budget, never the whole deadline
+
+When a command has one leg that MUST answer and another whose failure it treats as non-fatal, the optional leg runs on
+`deadline.fraction(divisor)`: a budget worth `1/divisor` of the deadline's original total, and never outliving what's
+left of the parent. `scan_volume_for_conflicts` does this with `SOURCE_STAT_BUDGET_DIVISOR` (3), so the source stats
+get 10 s of the check's 30 s and the mandatory destination scan keeps the rest.
+
+Why it matters: sharing one `Deadline` lets a wedged optional leg spend everything, after which the leg that actually
+answers the question fails instantly on an empty budget. The user then reads a timeout blamed on a device the command
+never got around to asking (here: "couldn't read the destination" for a hung SOURCE share), which sends them debugging
+the wrong end.

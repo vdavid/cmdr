@@ -167,8 +167,11 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
 - **File operations (copy/move/delete)**: `RUST_LOG=cmdr_lib::file_system::write_operations=debug,info pnpm dev`
 - **A transfer dialog that sits on 0 bytes, or on "Checking for conflicts..."**:
   `RUST_LOG=scan_preview=debug,conflict_scan=debug,info pnpm dev`. The scan preview logs its start, a 5 s heartbeat with
-  running counts, and its outcome; the conflict check logs its start, the collision count, and which leg gave up. Both
-  targets are already at Debug in the log FILE, so a user's bundle answers this without a re-run.
+  running counts, and its outcome; the conflict check logs its start, the collision count, and which leg gave up. The
+  give-up line names the leg's own share of the budget ("source stats unavailable after 9.8s of their 10.0s share"),
+  which is the tell for a starved SOURCE leg: the optional source stats get a third of the 30 s, so those seconds aren't
+  the destination's. Both targets are already at Debug in the log FILE, so a user's bundle answers this without a
+  re-run.
 - **A share that's slow, or a share browser that comes back empty**:
   `RUST_LOG=smb_fallback=debug,subprocess=debug,info pnpm dev`. `smb_fallback` says why a share is on the macOS kernel
   mount rather than a direct smb2 session (it names a rejected password as such, which is the fixable cause);

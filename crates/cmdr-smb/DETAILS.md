@@ -493,14 +493,16 @@ start. For a 100-file copy over a ~60 ms Tailscale link that's ~5 s of serial st
 `smb2::Connection` per path under a brief client-mutex acquire (cheap `Arc::clone`, all clones multiplex over the same
 SMB session), releases the lock, then drives `tree.stat(&mut conn, path)` on each clone inside a `FuturesUnordered`.
 Empty root paths skip the stat. Single-path batches fall through to `scan_recursive` so one-file drag-drops don't pay
-the batch machinery cost. Directories found during the stat phase recurse sequentially afterward; parallel directory
-recursion is a future enhancement. Measured 6.5× wall-clock win at 100 × 10 KB: 6.11 s → 947 ms. See
-`docs/notes/phase4-rtt-investigation.md` for the wire trace. **Oracle layered on top**: before the pipelined-stat block
-runs, every input path's parent is checked against the fresh-listing oracle
-(`host.listings().authoritative_listing(volume_id, parent)`). Oracle-served paths get their size + `is_directory` from
-the cached `FileEntry` and are removed from the leftover set; only the leftover paths go through the pipelined stat.
-Decision is per-parent: one batch can mix oracle-served and pipelined-stat paths, and if every path resolves via the
-oracle the stat pipeline is skipped entirely.
+the batch machinery cost. ⚠️ A single DIRECTORY path takes that same branch and walks its whole subtree: a batch of one
+is not a stat. A caller that only wants "what is this path?" stats it directly (the model:
+`apps/desktop/src-tauri/src/commands/file_system/volume_copy.rs`'s `stat_source_paths`, one `get_metadata` per top-level
+path). Directories found during the stat phase recurse sequentially afterward; parallel directory recursion is a future
+enhancement. Measured 6.5× wall-clock win at 100 × 10 KB: 6.11 s → 947 ms. See `docs/notes/phase4-rtt-investigation.md`
+for the wire trace. **Oracle layered on top**: before the pipelined-stat block runs, every input path's parent is
+checked against the fresh-listing oracle (`host.listings().authoritative_listing(volume_id, parent)`). Oracle-served
+paths get their size + `is_directory` from the cached `FileEntry` and are removed from the leftover set; only the
+leftover paths go through the pipelined stat. Decision is per-parent: one batch can mix oracle-served and pipelined-stat
+paths, and if every path resolves via the oracle the stat pipeline is skipped entirely.
 
 **Decision**: `SmbVolume` has a compound fast-path in `open_read_stream_with_hint` and `write_from_stream` for files ≤
 `max_read_size` / `max_write_size` **Why**: The streaming open+read+close sequence costs 3 RTTs per file. For small

@@ -196,9 +196,31 @@ impl Deadline {
         self.started.elapsed()
     }
 
+    /// The whole budget this deadline was minted with.
+    pub fn total(&self) -> Duration {
+        self.total
+    }
+
     /// What's left of the budget: `ZERO` once it's spent, never negative.
     pub fn remaining(&self) -> Duration {
         self.total.saturating_sub(self.elapsed())
+    }
+
+    /// A sub-budget worth `1/divisor` of this deadline's ORIGINAL total, and
+    /// never outliving what's left of this one.
+    ///
+    /// An OPTIONAL leg gets one of these. Without it, a leg whose failure the
+    /// code calls non-fatal can still spend the entire budget and leave the leg
+    /// that actually answers the question with nothing, which turns a soft
+    /// degradation into a hard timeout attributed to the wrong device.
+    ///
+    /// The share is of the ORIGINAL total rather than the remainder, so the
+    /// split holds however many legs ran first.
+    pub fn fraction(&self, divisor: u32) -> Self {
+        Self {
+            started: tokio::time::Instant::now(),
+            total: self.remaining().min(self.total / divisor),
+        }
     }
 }
 

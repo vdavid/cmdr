@@ -11,6 +11,7 @@ use crate::file_system::{
     scan_for_volume_copy as ops_scan_for_volume_copy, start_volume_compress, start_volume_copy, start_volume_move,
     transfer_would_land_on_its_source,
 };
+use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{Volume, VolumeError};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -208,11 +209,11 @@ impl std::error::Error for VolumeScanError {}
 ///
 /// When `source_volume_id` and `source_paths` are both provided, each item's
 /// `is_directory` and `size` are resolved authoritatively on the source volume
-/// via ONE batched stat (`scan_for_copy_batch`, strictly O(top-level items),
-/// never a subtree walk), overriding whatever the caller passed in `source_items`.
-/// This lets the dialog classify dir-vs-dir collisions as silent merges without
-/// the FE having to plumb per-item types. Callers that don't pass the source
-/// volume keep the legacy name-only behavior.
+/// via one `get_metadata` per top-level path (see `stat_source_paths`: strictly
+/// O(top-level items), never a subtree walk), overriding whatever the caller
+/// passed in `source_items`. This lets the dialog classify dir-vs-dir collisions
+/// as silent merges without the FE having to plumb per-item types. Callers that
+/// don't pass the source volume keep the legacy name-only behavior.
 #[tauri::command]
 #[specta::specta]
 pub async fn scan_volume_for_conflicts(
@@ -297,8 +298,9 @@ pub(crate) async fn scan_volume_for_conflicts_within(
     let mut resolved_source: Option<(Arc<dyn Volume>, Vec<PathBuf>)> = None;
 
     // Resolve real per-item types and sizes from the source volume when the
-    // caller supplied it. One batched stat, O(top-level items). `resolve_source`
-    // routes an archive-inner source through its ArchiveVolume.
+    // caller supplied it. One `get_metadata` per top-level path, O(top-level
+    // items) and never recursive. `resolve_source` routes an archive-inner
+    // source through its ArchiveVolume.
     if let (Some(src_volume_id), Some(src_paths)) = (source_volume_id, source_paths) {
         let paths: Vec<PathBuf> = src_paths.iter().map(PathBuf::from).collect();
         let first = paths.first().cloned();
@@ -311,22 +313,20 @@ pub(crate) async fn scan_volume_for_conflicts_within(
         .await;
         if let Ok(Some((src_volume, _))) = resolved {
             resolved_source = Some((Arc::clone(&src_volume), paths.clone()));
-            // Detached (see `timeout_detached`): the batch stat reaches the
-            // source device, so the deadline must not drop it.
-            let batch = timeout_detached_within(
-                &deadline,
+            // A sub-budget, because this leg is OPTIONAL (see the fallback
+            // below) and the destination scan after it is not. Detached (see
+            // `timeout_detached`): the stats reach the source device, so the
+            // deadline must not drop them mid-request.
+            let stat_deadline = deadline.fraction(SOURCE_STAT_BUDGET_DIVISOR);
+            let stats = timeout_detached_within(
+                &stat_deadline,
                 || VolumeScanError::TimedOut,
                 |detail| VolumeScanError::Unexpected { detail },
-                async move {
-                    src_volume
-                        .scan_for_copy_batch(&paths)
-                        .await
-                        .map_err(|error| VolumeScanError::Volume { error })
-                },
+                async move { Ok::<_, VolumeScanError>(stat_source_paths(&src_volume, &paths).await) },
             )
             .await;
-            match batch {
-                Ok(batch) => merge_source_types_from_batch(&mut source_items, &batch),
+            match stats {
+                Ok(stats) => merge_source_types_from_stats(&mut source_items, &stats),
                 // A source-side stat that doesn't come back is non-fatal: fall
                 // back to the name-only items the caller sent. Conflict
                 // detection still works by name; only the dir/size hints
@@ -334,8 +334,9 @@ pub(crate) async fn scan_volume_for_conflicts_within(
                 Err(e) => {
                     log::debug!(
                         target: CONFLICT_LOG_TARGET,
-                        "source batch stat unavailable after {:.0}s, using name-only items: {}",
-                        deadline.elapsed().as_secs_f64(),
+                        "source stats unavailable after {:.1}s of their {:.1}s share, using name-only items: {}",
+                        stat_deadline.elapsed().as_secs_f64(),
+                        stat_deadline.total().as_secs_f64(),
                         e
                     );
                 }
@@ -425,30 +426,54 @@ fn log_conflict_outcome(deadline: &Deadline, what: &str, e: &VolumeScanError) {
     );
 }
 
-/// Overlays authoritative `is_directory` + `size` from a source-volume batch
-/// stat onto the caller-supplied `source_items`, matched by base filename.
+/// Stats each top-level source path, concurrently, one `get_metadata` apiece.
+///
+/// ❗ Deliberately NOT `scan_for_copy_batch`: that walks a directory source's
+/// whole subtree to produce a recursive `total_bytes`, and the only two fields
+/// the conflict check wants — `is_directory`, and a FILE's size — need a plain
+/// stat. On a single directory source the SMB and SFTP backends take their
+/// `paths.len() == 1` fast path straight into `scan_recursive`, so a 119k-file
+/// folder spent the entire conflict budget on a number the merge below throws
+/// away (a real user's copy, 2026-08-27, `ERR-AYVM4`).
+///
+/// A path the source can't stat is simply absent from the result; the merge
+/// leaves the caller's values in place for it.
+async fn stat_source_paths(source_volume: &Arc<dyn Volume>, paths: &[PathBuf]) -> Vec<(PathBuf, FileEntry)> {
+    use futures_util::stream::{self, StreamExt};
+
+    stream::iter(paths.iter().cloned())
+        .map(|path| async move {
+            let entry = source_volume.get_metadata(&path).await.ok()?;
+            Some((path, entry))
+        })
+        .buffer_unordered(SOURCE_STAT_CONCURRENCY)
+        .filter_map(|hit| async move { hit })
+        .collect()
+        .await
+}
+
+/// Overlays authoritative `is_directory` + `size` from the source-volume stats
+/// onto the caller-supplied `source_items`, matched by base filename.
 ///
 /// The match key is the path's final component, which is exactly the `name`
-/// the FE derives for each `SourceItemInput`. An item with no batch hit keeps
-/// the values the caller sent (the safe fallback). For a top-level directory
-/// the batch's `total_bytes` is the recursive size, which we deliberately do
-/// NOT copy into `size` — a directory's conflict-UI size is meaningless and the
-/// dir-dir case never renders a size. Only files get their real size.
-fn merge_source_types_from_batch(
+/// the FE derives for each `SourceItemInput`. An item with no stat hit keeps
+/// the values the caller sent (the safe fallback). A directory keeps the
+/// caller's `size` too: a directory's conflict-UI size is meaningless and the
+/// dir-dir case never renders one.
+fn merge_source_types_from_stats(
     source_items: &mut [crate::file_system::SourceItemInfo],
-    batch: &crate::file_system::BatchScanResult,
+    stats: &[(PathBuf, FileEntry)],
 ) {
     use std::collections::HashMap;
-    let by_name: HashMap<&str, &crate::file_system::CopyScanResult> = batch
-        .per_path
+    let by_name: HashMap<&str, &FileEntry> = stats
         .iter()
-        .filter_map(|(path, scan)| path.file_name().and_then(|n| n.to_str()).map(|n| (n, scan)))
+        .filter_map(|(path, entry)| path.file_name().and_then(|n| n.to_str()).map(|n| (n, entry)))
         .collect();
     for item in source_items.iter_mut() {
-        if let Some(scan) = by_name.get(item.name.as_str()) {
-            item.is_directory = scan.top_level_is_directory;
-            if !scan.top_level_is_directory {
-                item.size = scan.total_bytes;
+        if let Some(entry) = by_name.get(item.name.as_str()) {
+            item.is_directory = entry.is_directory;
+            if !entry.is_directory && let Some(size) = entry.size {
+                item.size = size;
             }
         }
     }
@@ -460,6 +485,20 @@ fn merge_source_types_from_batch(
 /// already gives a recursive scan over IPC, and it's what the dialog's spinner
 /// is sized against.
 const CONFLICT_CHECK_BUDGET: Duration = Duration::from_secs(30);
+
+/// What share of the budget the OPTIONAL source-stat leg may spend: `1/N` of it.
+///
+/// The leg after it is the destination scan, which is the one that actually
+/// answers "does this clash?". Letting an optional leg run to the shared
+/// deadline leaves that one with zero budget, so it fails instantly and the
+/// dialog reports a destination timeout for a destination it never asked.
+const SOURCE_STAT_BUDGET_DIVISOR: u32 = 3;
+
+/// How many top-level source paths to stat at once.
+///
+/// Each is one round trip on a remote backend, so a wide selection wants
+/// overlap; the cap keeps a 10k-item selection from opening 10k of them.
+const SOURCE_STAT_CONCURRENCY: usize = 16;
 
 /// The log target every conflict-check line carries.
 const CONFLICT_LOG_TARGET: &str = "conflict_scan";
@@ -484,10 +523,11 @@ pub struct SourceItemInput {
 #[cfg(test)]
 mod tests {
     use super::{
-        Deadline, SourceItemInput, VolumeScanError, merge_source_types_from_batch, scan_volume_for_conflicts_within,
+        Deadline, SourceItemInput, VolumeScanError, merge_source_types_from_stats, scan_volume_for_conflicts_within,
     };
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
-    use crate::file_system::{BatchScanResult, CopyScanResult, InMemoryVolume, LocalPosixVolume, SourceItemInfo};
+    use crate::file_system::{InMemoryVolume, LocalPosixVolume, SourceItemInfo};
+    use cmdr_fs::entry::FileEntry;
     use crate::test_support::WedgedVolume;
     use cmdr_fs::volume::Volume;
     use std::path::{Path, PathBuf};
@@ -542,6 +582,48 @@ mod tests {
             started.elapsed() < budget * 4,
             "the whole check owes one budget, not one per leg: took {:?}",
             started.elapsed()
+        );
+    }
+
+    /// A source that won't answer costs its OWN leg, never the destination's.
+    ///
+    /// The source stat is an optional refinement — the code says so, and falls
+    /// back to the caller's name-only items when it fails. But it used to share
+    /// one budget with the destination scan, so a source that never answered
+    /// spent all 30 s and the destination scan then failed instantly, reporting
+    /// `couldn't read the destination (timed out)` for a destination it had
+    /// never asked. That is what a user saw on 2026-08-27 (`ERR-AYVM4`): the
+    /// source was one 119k-file folder, and the recursive walk the scan used to
+    /// run could never have finished inside any budget.
+    #[tokio::test]
+    async fn a_source_that_never_answers_still_lets_the_destination_answer() {
+        let dest_dir = tempfile::tempdir().expect("dest dir");
+        std::fs::write(dest_dir.path().join("photo.jpg"), b"theirs").expect("write dest");
+        let _source = TestVolumeRegistration::install(
+            "starving-source",
+            Arc::new(WedgedVolume::new("WedgedSource")) as Arc<dyn Volume>,
+        );
+        let _dest = TestVolumeRegistration::install(
+            "starving-dest",
+            Arc::new(LocalPosixVolume::new("Dest", dest_dir.path())) as Arc<dyn Volume>,
+        );
+
+        let budget = Duration::from_millis(900);
+        let conflicts = scan_volume_for_conflicts_within(
+            Deadline::new(budget),
+            String::from("starving-dest"),
+            vec![input("photo.jpg")],
+            dest_dir.path().to_string_lossy().into_owned(),
+            Some(String::from("starving-source")),
+            Some(vec![String::from("/media/photo.jpg")]),
+        )
+        .await
+        .expect("the destination is fine, so the check answers rather than blaming it");
+
+        assert_eq!(
+            conflicts.len(),
+            1,
+            "the clash is real and the dialog still has to say so, name-only hints or not"
         );
     }
 
@@ -754,14 +836,19 @@ mod tests {
         }
     }
 
-    fn scan(is_dir: bool, bytes: u64) -> CopyScanResult {
-        CopyScanResult {
-            file_count: if is_dir { 0 } else { 1 },
-            dir_count: if is_dir { 1 } else { 0 },
-            total_bytes: bytes,
-            dedup_bytes: bytes,
-            top_level_is_directory: is_dir,
-        }
+    fn stat(path: &str, is_dir: bool, bytes: u64) -> (PathBuf, FileEntry) {
+        let name = Path::new(path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default()
+            .to_string();
+        (
+            PathBuf::from(path),
+            FileEntry {
+                size: Some(bytes),
+                ..FileEntry::new(name, path.to_string(), is_dir, false)
+            },
+        )
     }
 
     fn item(name: &str) -> SourceItemInfo {
@@ -776,18 +863,12 @@ mod tests {
     #[test]
     fn overlays_real_directory_flag_onto_placeholder_items() {
         let mut items = vec![item("photos"), item("readme.txt")];
-        let batch = BatchScanResult {
-            aggregate: scan(false, 0),
-            per_path: vec![
-                (PathBuf::from("/src/photos"), scan(true, 999_999)),
-                (PathBuf::from("/src/readme.txt"), scan(false, 42)),
-            ],
-        };
+        let stats = vec![stat("/src/photos", true, 999_999), stat("/src/readme.txt", false, 42)];
 
-        merge_source_types_from_batch(&mut items, &batch);
+        merge_source_types_from_stats(&mut items, &stats);
 
-        // The directory item is now flagged as such; its recursive byte total
-        // is deliberately NOT copied into `size` (a dir's conflict size is
+        // The directory item is now flagged as such; whatever size the stat
+        // reported for it is deliberately NOT copied (a dir's conflict size is
         // meaningless).
         assert!(items[0].is_directory);
         assert_eq!(items[0].size, 0);
@@ -797,19 +878,16 @@ mod tests {
     }
 
     #[test]
-    fn keeps_caller_values_when_no_batch_hit() {
+    fn keeps_caller_values_when_no_stat_hit() {
         let mut items = vec![SourceItemInfo {
             name: "ghost".to_string(),
             size: 7,
             modified: Some(123),
             is_directory: true,
         }];
-        let batch = BatchScanResult {
-            aggregate: scan(false, 0),
-            per_path: vec![(PathBuf::from("/src/other"), scan(false, 1))],
-        };
+        let stats = vec![stat("/src/other", false, 1)];
 
-        merge_source_types_from_batch(&mut items, &batch);
+        merge_source_types_from_stats(&mut items, &stats);
 
         // No matching name → the caller's values survive untouched.
         assert!(items[0].is_directory);

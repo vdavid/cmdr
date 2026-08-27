@@ -104,7 +104,8 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
      relative: on a big remote directory that one listing still runs for minutes, which is why the confirm doesn't wait
      for it (§ "The confirm dispatches without waiting for the conflict check"). Each collision is classified by the
      backend-resolved `sourceIsDirectory` / `destIsDirectory` flags (the BE resolves real per-item types + sizes from
-     the source volume via one batched stat when the check passes `sourceVolumeId` + `sourcePaths`):
+     the source volume with one `get_metadata` per top-level path, 16 at a time and never a subtree walk, when the check
+     passes `sourceVolumeId` + `sourcePaths`):
      - **dir + dir** → a silent merge, NOT a conflict. Surfaced as an informational line ("N folders will merge with
        existing folders"); never counted in `totalConflictCount`; never forwarded as a bulk-skip name (a merging folder
        must not be skipped wholesale).
@@ -567,6 +568,11 @@ help is ask again after plugging the network back in.
 `unknown` (a bounded `withTimeout` at 35 s over the IPC, just above the backend's own 30 s budget, catches a call that
 never returns at all). `unknown` renders its own line, because rendering nothing is what a genuinely clean destination
 renders, and the user is about to decide what happens to their files on the strength of it.
+
+**A wedged SOURCE no longer costs the whole answer.** The 30 s backend budget covers both legs, but the optional
+source-stat leg is capped at a third of it, so a source that never answers still leaves the mandatory destination scan
+two thirds of the budget. The check then comes back with a real verdict built on the FE's own name-only
+`sourceIsDirectory` values, rather than `unknown`. Only a destination that can't be read reaches `unknown` now.
 
 **Why an unknown check is still safe to transfer on.** The pre-flight names feed `pre_known_conflicts`, which the
 backend reads under `Skip` alone as a bulk-skip PERF hint (`build_pre_skip_set`); every clash is still detected and
