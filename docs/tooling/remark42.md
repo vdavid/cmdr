@@ -9,8 +9,8 @@ pinned in `apps/website/docker-compose.yml`; don't restate it here, it goes stal
 
 **Gotcha**: a second Remark42 container, `remark42-blog`, runs on the same box for David's personal blog
 (`comments.veszelovszki.com`, `SITE=vdavid-blog`, its own OAuth clients). It's deployed from the `infra` repo at
-`hetzner/services/remark42-blog/` and has nothing to do with Cmdr. Match the container name exactly before restarting
-or reading env.
+`hetzner/services/remark42-blog/` and has nothing to do with Cmdr. Match the container name exactly before restarting or
+reading env.
 
 ## Sites served
 
@@ -61,8 +61,8 @@ deliberately not Cloudflare-proxied, so `{remote_host}` at Caddy is the real cli
 
 ## OAuth clients
 
-- **Google**: client named `Cmdr Remark42` in Google Cloud project `gen-lang-client-0179352958` (the auto-created
-  Gemini API project). Manage it under Google Auth Platform → Clients.
+- **Google**: client named `Cmdr Remark42` in Google Cloud project `gen-lang-client-0179352958` (the auto-created Gemini
+  API project). Manage it under Google Auth Platform → Clients.
 - **GitHub**: OAuth app `Ov23lihhp2lm7WROt4VX`.
 
 **Guardrail**: Google auto-deletes an OAuth client after six months with no token request and no settings change, which
