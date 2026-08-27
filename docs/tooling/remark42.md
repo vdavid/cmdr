@@ -7,6 +7,11 @@ Self-hosted commenting engine (v1.15.0). Runs as a Docker container alongside th
 - **Container name**: `remark42`
 - **Docker Compose**: `apps/website/docker-compose.yml`
 
+**Gotcha**: a second Remark42 container, `remark42-blog`, runs on the same box for David's personal blog
+(`comments.veszelovszki.com`, `SITE=vdavid-blog`, its own OAuth clients). It's deployed from the `infra` repo at
+`hetzner/services/remark42-blog/` and has nothing to do with Cmdr. Match the container name exactly before restarting
+or reading env.
+
 ## Sites served
 
 | Site ID   | Website          | Remark42 host                          |
@@ -37,6 +42,22 @@ Stored on the server at `apps/website/.env`:
 - **Google**: `https://comments.getcmdr.com/auth/google/callback`
 
 These must match exactly in the OAuth app settings on GitHub / Google Cloud Console.
+
+## OAuth clients
+
+- **Google**: client named `Cmdr Remark42` in Google Cloud project `gen-lang-client-0179352958` (the auto-created
+  Gemini API project). Manage it under Google Auth Platform → Clients.
+- **GitHub**: OAuth app `Ov23lihhp2lm7WROt4VX`.
+
+**Guardrail**: Google auto-deletes an OAuth client after six months with no token request and no settings change, which
+would silently break the Google sign-in button on the blog (GitHub login would keep working, so the outage is easy to
+miss). Traffic here is low enough that the client can idle past the limit on its own. Either sign in with Google on the
+blog occasionally, or rename the client / rotate its secret in the console; both count as activity and reset the clock.
+Google emails a warning first, and a deleted client is restorable for ~30 days under Clients → "Restore deleted OAuth
+clients". (Verified in the Google Cloud console, 2026-08-27.)
+
+Google supports two live secrets per client, so rotate without downtime: add a secret, update `AUTH_GOOGLE_CSEC` in the
+server `.env`, `docker compose up -d remark42`, confirm a real Google sign-in works, then delete the old secret.
 
 ## Common operations
 
