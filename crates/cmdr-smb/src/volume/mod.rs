@@ -83,8 +83,16 @@ const BACKEND: BackendName = "smb";
 pub struct SmbConnectionParams {
     /// Resolved server address (IP or hostname, ready to pass to
     /// [`build_smb_addr`](crate::build_smb_addr)).
+    ///
+    /// NFC-normalized: see [`SmbConnectionParams::new`].
     pub server: String,
     /// The share on that server, without leading or trailing separators.
+    ///
+    /// NFC-normalized, and it has to stay that way: this string goes to
+    /// `connect_share` verbatim, and a decomposed spelling is answered with
+    /// `STATUS_BAD_NETWORK_NAME`. Build these params with
+    /// [`SmbConnectionParams::new`] rather than by struct literal, or fold the
+    /// name yourself. See [`SmbConnectionParams::new`].
     pub share_name: String,
     /// The TCP port the server listens on (445 everywhere but a test fixture).
     pub port: u16,
@@ -350,14 +358,60 @@ impl SmbConnectionParams {
     /// (`"Guest"` / empty password), matching the historical mount-time
     /// defaults. The fields are public so callers with explicit credentials
     /// in hand can build the struct directly.
+    ///
+    /// **`server` and `share_name` are NFC-folded here**, which is what upholds
+    /// the invariant both fields document. macOS `statfs` hands out decomposed
+    /// (NFD) names while SMB servers store and answer with composed (NFC) ones,
+    /// and a share named `Régi NAS` reached with the decomposed spelling gets
+    /// `STATUS_BAD_NETWORK_NAME` from TreeConnect while the composed one connects
+    /// (ERR-ABXW4). Every wire use of the name reads it off these params, so
+    /// folding at the one constructor covers `build_session` and the watcher's
+    /// own session alike. Credentials are NOT folded: a password is bytes the
+    /// user typed, and normalizing it would change the secret.
     pub fn new(server: &str, share_name: &str, port: u16, username: Option<&str>, password: Option<&str>) -> Self {
+        use unicode_normalization::UnicodeNormalization;
+
         Self {
-            server: server.to_string(),
-            share_name: share_name.to_string(),
+            server: server.nfc().collect(),
+            share_name: share_name.nfc().collect(),
             port,
             username: username.unwrap_or("Guest").to_string(),
             password: password.unwrap_or("").to_string(),
         }
+    }
+}
+
+#[cfg(test)]
+mod params_normalization_test {
+    use super::SmbConnectionParams;
+
+    /// macOS `statfs` spells an accented share decomposed (NFD) while the server
+    /// stores it composed (NFC), and TreeConnect answers the NFD spelling with
+    /// `STATUS_BAD_NETWORK_NAME`. Both wire uses of the name (`build_session` and
+    /// the watcher's own session) read it off these params, so normalizing here
+    /// is what keeps a share named `Régi NAS` reachable. Reported as ERR-ABXW4.
+    #[test]
+    fn new_normalizes_share_and_server_to_nfc() {
+        let composed_share = "R\u{e9}gi NAS";
+        let decomposed_share = "Re\u{301}gi NAS";
+        assert_ne!(
+            composed_share, decomposed_share,
+            "the two spellings must differ as bytes, or this proves nothing"
+        );
+
+        let params = SmbConnectionParams::new("cafe\u{301}-nas", decomposed_share, 445, None, None);
+        assert_eq!(params.share_name, composed_share);
+        assert_eq!(params.server, "caf\u{e9}-nas");
+    }
+
+    /// An already-composed name must survive untouched: normalization is a fold,
+    /// not a rewrite.
+    #[test]
+    fn new_leaves_composed_names_alone() {
+        let params = SmbConnectionParams::new("naspolya", "R\u{e9}gi NAS", 445, Some("david"), Some("pw"));
+        assert_eq!(params.share_name, "R\u{e9}gi NAS");
+        assert_eq!(params.server, "naspolya");
+        assert_eq!(params.username, "david");
     }
 }
 

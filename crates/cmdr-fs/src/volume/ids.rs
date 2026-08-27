@@ -162,15 +162,24 @@ pub fn path_volume_id(mount_path: &str) -> String {
 /// `STATUS_OBJECT_PATH_NOT_FOUND`. Keying by (server, port, share) prevents it
 /// at the root.
 ///
-/// # Case folding
+/// # Case and normalization folding
 ///
 /// Server and share are lowercased before hashing, which is canonicalization
 /// rather than loss: DNS hostnames are case-insensitive, and so are SMB share
 /// names (Windows and Samba default), so `Naspolya`/`naspolya` and
 /// `Public`/`public` really are the same mount. The port is literal.
+///
+/// Both are NFC-folded first, for the same reason and against a worse failure.
+/// macOS `statfs` spells an accented name decomposed while mDNS and the server's
+/// share list spell it composed, so one visible share reaches the two upgrade
+/// paths as two byte strings. Two IDs for one share splits its `index-{id}.db`,
+/// its `lastUsedPaths`, and every tab's `volumeId` down whichever path happened
+/// to register it first.
 pub fn smb_volume_id(server: &str, port: u16, share: &str) -> String {
-    let server = server.to_lowercase();
-    let share = share.to_lowercase();
+    use unicode_normalization::UnicodeNormalization;
+
+    let server: String = server.nfc().flat_map(char::to_lowercase).collect();
+    let share: String = share.nfc().flat_map(char::to_lowercase).collect();
     let port = port.to_string();
     derived_id("smb", &format!("{server}-{port}-{share}"), &[&server, &port, &share])
 }
@@ -527,6 +536,30 @@ mod id_tests {
         assert_eq!(
             smb_volume_id("naspolya", 445, "Public"),
             smb_volume_id("naspolya", 445, "public")
+        );
+    }
+
+    #[test]
+    fn smb_volume_id_folds_unicode_normalization() {
+        // macOS hands out NFD (decomposed) share names from `statfs` while mDNS and
+        // the server's own share list hand out NFC (composed) ones, so one visible
+        // share arrives spelled two ways. Two IDs for one share splits its index,
+        // `lastUsedPaths`, and tab `volumeId`s down whichever path registered it.
+        // Reported as ERR-ABXW4 on the share `Régi NAS`.
+        let composed = "R\u{e9}gi NAS";
+        let decomposed = "Re\u{301}gi NAS";
+        assert_ne!(
+            composed, decomposed,
+            "the two spellings must differ as bytes, or this proves nothing"
+        );
+        assert_eq!(
+            smb_volume_id("naspolya", 445, composed),
+            smb_volume_id("naspolya", 445, decomposed)
+        );
+        // The server half arrives from the same two pipes, so it folds too.
+        assert_eq!(
+            smb_volume_id("caf\u{e9}-nas", 445, "naspi"),
+            smb_volume_id("cafe\u{301}-nas", 445, "naspi")
         );
     }
 

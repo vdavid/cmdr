@@ -83,6 +83,13 @@ So the funnel here mints `{scheme}-{slug}-{digest}`:
 Case folding happens only where the protocol says two spellings ARE one thing (DNS hostnames, SMB share names, hex
 UUIDs). That's canonicalization; everywhere else, folding would be exactly the information loss that caused the bug.
 
+`smb_volume_id` NFC-folds its server and share before case-folding them, for the same reason and against the
+one-volume-two-IDs direction above. macOS `statfs` spells an accented name decomposed while mDNS and the server's share
+list spell it composed, so the two SMB upgrade paths would mint two IDs for one share and split its index and saved
+paths down whichever path registered it first (ERR-ABXW4). `path_volume_id` deliberately does NOT fold: it hashes a
+kernel-supplied mount path, and the kernel is self-consistent about how it spells one. The full list of places an SMB
+name is folded lives in `apps/desktop/src-tauri/src/network/DETAILS.md` § "One SMB name, two spellings".
+
 The 64-bit digest also bounds the length, which is load-bearing: an ID is a filename component, and macOS and Linux both
 stop at 255 bytes. It's the reason a fully-injective escaping scheme (percent-encode the path) was rejected: reversible
 and elegant, but unbounded, and it renders a mount path with spaces unreadable anyway.

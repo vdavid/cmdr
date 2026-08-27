@@ -54,6 +54,12 @@ log = "0.4"
 # `fallible_uint` for the app-side stores; the feature set has to be a superset of
 # every consumer's or Cargo unification silently drops one.
 rusqlite = { version = "0.40", features = ["bundled", "collation", "fallible_uint"] }
+# NFC folding for the identity half of `volume::ids`. macOS hands out decomposed
+# (NFD) names while servers and mDNS hand out composed (NFC) ones, so one visible
+# share arrives spelled two ways; without the fold it gets two volume IDs and its
+# index and saved paths split down whichever path registered it. Same version the
+# app and the SMB backend pin.
+unicode-normalization = "0.1"
 # Standard-location resolution for the special-system-folder icon classifier.
 dirs = "6"
 # uid/gid → name resolution for `FileEntry`'s owner and group columns.

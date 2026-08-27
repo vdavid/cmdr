@@ -242,6 +242,19 @@ fn same_share_name(a: &str, b: &str) -> bool {
     a.nfc().eq(b.nfc())
 }
 
+/// Whether two spellings name the same server.
+///
+/// Case-insensitive because DNS is, and NFC-folded for the same cross-pipe reason
+/// as [`same_share_name`]: one side is the name the caller was given (discovered or
+/// typed), the other comes back from `statfs`, and macOS spells an accented name
+/// decomposed there. A byte compare walks past that server's mounts.
+fn same_server_name(a: &str, b: &str) -> bool {
+    use unicode_normalization::UnicodeNormalization;
+    a.nfc()
+        .flat_map(char::to_lowercase)
+        .eq(b.nfc().flat_map(char::to_lowercase))
+}
+
 /// Renders `server` as a URL authority host: an IPv6 literal in brackets, anything
 /// else NFC-normalized and percent-encoded. See [`build_smb_mount_url`].
 fn encode_url_host(server: &str) -> String {
@@ -582,17 +595,14 @@ pub fn unmount_smb_shares_from_host(server_name: &str, server_ip: Option<&str>) 
         return unmounted;
     };
 
-    let server_name_lower = server_name.to_lowercase();
-
     for entry in entries.flatten() {
         let mount_path = entry.path().to_string_lossy().to_string();
         let Some(info) = get_smb_mount_info(&mount_path) else {
             continue;
         };
 
-        let server_lower = info.server.to_lowercase();
-        let matches =
-            server_lower == server_name_lower || server_ip.is_some_and(|ip| server_lower == ip.to_lowercase());
+        let matches = same_server_name(&info.server, server_name)
+            || server_ip.is_some_and(|ip| same_server_name(&info.server, ip));
 
         if !matches {
             continue;

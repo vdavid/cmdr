@@ -67,10 +67,17 @@ impl From<SecretStoreError> for KeychainError {
 /// server (mDNS instance name, `.local` hostname, `statfs` service name) keys the same
 /// entry. Without this, a password saved by the frontend under `Naspolya` is invisible
 /// to the upgrade path looking up `Naspolya._smb._tcp.local`.
+///
+/// The share is NFC-folded for the same reason one step down: it reaches the frontend
+/// composed (from the server's share list) and the upgrade path decomposed (from
+/// `statfs`), so an accented share saved one way is looked up the other and silently
+/// falls back to guest. `credential_key` already folds the server half.
 fn make_account_name(server: &str, share: Option<&str>) -> String {
+    use unicode_normalization::UnicodeNormalization;
+
     let key = crate::network::server_identity::credential_key(server);
     match share {
-        Some(s) => format!("smb://{}/{}", key, s),
+        Some(s) => format!("smb://{}/{}", key, s.nfc().collect::<String>()),
         None => format!("smb://{}", key),
     }
 }
@@ -185,6 +192,17 @@ mod tests {
     fn test_make_account_name_with_share() {
         let account = make_account_name("TEST_SERVER", Some("Documents"));
         assert_eq!(account, "smb://test_server/Documents");
+    }
+
+    /// A share-level password saved under the composed spelling has to be found by
+    /// the upgrade path looking it up with the decomposed one `statfs` hands out,
+    /// or the share silently falls back to guest. Same reason the server half is
+    /// collapsed to a stable identity. Reported as ERR-ABXW4.
+    #[test]
+    fn make_account_name_folds_share_normalization() {
+        let composed = make_account_name("naspolya", Some("R\u{e9}gi NAS"));
+        let decomposed = make_account_name("naspolya", Some("Re\u{301}gi NAS"));
+        assert_eq!(composed, decomposed);
     }
 
     #[test]

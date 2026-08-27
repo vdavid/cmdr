@@ -119,8 +119,18 @@ fn save_known_shares<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 }
 
 /// Creates a unique key for a share.
+///
+/// Case- and NFC-folded, because one share reaches this store spelled more than one
+/// way: the frontend saves the name from the server's share list (composed), while
+/// the mount paths look it up from `statfs` (decomposed on macOS). A byte key
+/// remembers one share as two, and the auth mode saved under one spelling is missing
+/// under the other.
 fn share_key(server_name: &str, share_name: &str) -> String {
-    format!("{}/{}", server_name.to_lowercase(), share_name.to_lowercase())
+    use unicode_normalization::UnicodeNormalization;
+
+    let server: String = server_name.nfc().flat_map(char::to_lowercase).collect();
+    let share: String = share_name.nfc().flat_map(char::to_lowercase).collect();
+    format!("{}/{}", server, share)
 }
 
 /// Gets all known network shares.
@@ -191,6 +201,18 @@ mod tests {
     fn test_share_key() {
         assert_eq!(share_key("MyNAS", "Documents"), "mynas/documents");
         assert_eq!(share_key("server.local", "Media"), "server.local/media");
+    }
+
+    /// One accented share reaches this store composed (the frontend's share list)
+    /// and decomposed (`statfs` on the mount), so a byte-keyed store remembers it
+    /// twice and the auth mode saved on one spelling is missing on the other.
+    /// Reported as ERR-ABXW4.
+    #[test]
+    fn share_key_folds_unicode_normalization() {
+        assert_eq!(
+            share_key("Szabolcs-DS224", "R\u{e9}gi NAS"),
+            share_key("Szabolcs-DS224", "Re\u{301}gi NAS")
+        );
     }
 
     #[test]

@@ -343,3 +343,15 @@ async fn smb_integration_mount_non_ascii_share() {
         volume.id
     );
 }
+
+/// "Disconnect" has to find every share of the server it was handed, and the two
+/// names it compares come from different pipes: the caller's is the discovered or
+/// typed one, while the mount's comes back from `statfs`. macOS spells the second
+/// decomposed, so a byte compare walks past an accented server's shares and leaves
+/// them mounted with their sessions torn down. Same fold as `same_share_name`.
+#[test]
+fn same_server_name_folds_normalization_and_case() {
+    assert!(same_server_name("Zu\u{308}rich.local", "Zürich.local"));
+    assert!(same_server_name("CAFÉ-NAS", "cafe\u{301}-nas"));
+    assert!(!same_server_name("naspolya", "raspberrypi"));
+}

@@ -250,6 +250,34 @@ macOS keeps the ESCAPED form in `statfs`'s `f_mntfromname`, so the round trip cl
 `volumes/DETAILS.md` § "SMB mount sources are percent-escaped". `smb_integration_mount_non_ascii_share` covers the
 whole path against the `unicode` fixture host, which is why the Rust integration lane brings that container up.
 
+## One SMB name, two spellings: every use of it folds NFC
+
+The mount URL is one instance of a rule that holds everywhere an SMB server or share name is sent, keyed, or compared.
+A name reaches us through two pipes that disagree: `statfs` (and the mount paths under it) spells an accented name
+DECOMPOSED, while mDNS, the server's own share list, and the frontend spell it COMPOSED. One visible share is
+therefore two byte strings, and every byte-exact use of it is a latent split.
+
+The failure is not theoretical and not cosmetic. On a Synology share named `Régi NAS` the decomposed spelling reached
+`TreeConnect` and came back `STATUS_BAD_NETWORK_NAME` while the composed one connected in the same second; the share
+sat on the kernel mount and "Connect directly" could never fix it, because that path reads the name from `statfs`
+(ERR-ABXW4). The same split, one layer over, hands one share two volume IDs and two Keychain entries.
+
+Every one of these folds NFC, and a new use of a name has to join them:
+
+- **The wire.** `cmdr_smb::SmbConnectionParams::new` folds `server` and `share_name`, which is what both `connect_share`
+  calls read (the session and the watcher's own session). ❌ Never build those params by struct literal from a raw
+  `statfs` name. Paths under the share are folded separately by `cmdr_smb::volume::paths`.
+- **Identity.** `cmdr_fs::volume::ids::smb_volume_id` folds both halves before it case-folds, so a share gets one
+  `index-{id}.db`, one set of `lastUsedPaths`, and one `volumeId` however it was registered.
+- **Credentials.** `keychain::make_account_name` folds the share half; `server_identity::normalize` folds the server
+  half for every `credential_key` / `same_server` answer.
+- **Stores and comparisons.** `known_shares::share_key`, `mount::same_share_name`, `mount::same_server_name`.
+- **Never the password.** It's bytes the user typed; folding it would change the secret.
+
+Two places deliberately stay byte-exact: `path_volume_id` (the kernel is self-consistent about how it spells a mount
+point) and `mount_linux::derive_gvfs_path` (it has to match the path GVFS actually created, which is GVFS's convention
+to set, not ours).
+
 ## Every SMB subprocess runs under a deadline
 
 `smbutil view` (macOS) and `smbclient -L` (Linux) are the last thing tried when smb2 can't list a host's shares, and

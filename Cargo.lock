@@ -1493,6 +1493,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-util",
+ "unicode-normalization",
  "uuid",
  "uzers",
  "xattr",

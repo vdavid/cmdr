@@ -34,9 +34,15 @@ pub fn same_server(a: &str, b: &str, hosts: &[NetworkHost]) -> bool {
     !identifiers(a, hosts).is_disjoint(&identifiers(b, hosts))
 }
 
-/// Lowercases and strips the trailing dot of a fully qualified name.
+/// Lowercases, NFC-folds, and strips the trailing dot of a fully qualified name.
+///
+/// The NFC fold pairs the spellings one accented server name arrives in: composed
+/// from mDNS, decomposed from `statfs`. Without it the two forms are two identities,
+/// and a password saved under one is never found under the other.
 fn normalize(s: &str) -> String {
-    s.trim_end_matches('.').to_lowercase()
+    use unicode_normalization::UnicodeNormalization;
+
+    s.trim_end_matches('.').nfc().flat_map(char::to_lowercase).collect()
 }
 
 /// The stable key for a server's stored credentials.
@@ -109,6 +115,16 @@ fn identifiers(s: &str, hosts: &[NetworkHost]) -> HashSet<String> {
 mod tests {
     use super::*;
     use crate::network::HostSource;
+
+    /// An accented server name reaches us composed from mDNS and decomposed from
+    /// `statfs`, and the credential key is what pairs the two. Reported as ERR-ABXW4.
+    #[test]
+    fn credential_key_folds_unicode_normalization() {
+        assert_eq!(
+            credential_key("Caf\u{e9}-NAS.local"),
+            credential_key("Cafe\u{301}-NAS.local")
+        );
+    }
 
     fn naspolya() -> NetworkHost {
         NetworkHost {
