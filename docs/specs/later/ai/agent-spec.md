@@ -1,10 +1,11 @@
 # Agent: v1.0 spec (with v1.5+ outlook)
 
-Status: **partially implemented**. The reactive half shipped as **Ask Cmdr** (a read-only chat rail); the proactive half
-(summaries, event pipeline, wake loop, proposal store, memory, notifications) is not started. Written 2026-06-04;
-codebase claims reconciled against the live tree 2026-07-08 and again 2026-08-18. Section §0 is the current status map
-and is the first thing to read; the rest of the spec still states the v1.0 target, so where §0 and a later section
-disagree about the tree, §0 wins.
+Status: **partially implemented**. Ask Cmdr shipped the chat rail, and v0.40.0 (2026-08-24) shipped the proactive agent:
+the event pipeline, the wake loop, the durable proposal spine, and agent memory. What remains designed and unbuilt is
+the knowledge layer (folder summaries and the walk that fills them), the activity log, notifications with the
+proactivity dial, and the tail §0 lists. Written 2026-06-04; codebase claims re-derived from the live tree 2026-08-27.
+Section §0 is the current status map and is the first thing to read; the rest of the spec still states the v1.0 target,
+so where §0 and a later section disagree about the tree, §0 wins.
 
 This spec captures a full design session between David and an AI agent. It is written so that a fresh agent (or human)
 can pick it up with no other context. Decisions below are settled unless they appear in §18 (open questions); intentions
@@ -12,67 +13,108 @@ and principles (§2) govern anything this spec doesn't explicitly answer. §19 i
 a second angle on the same material for future planning and implementing agents. Code paths in this spec are relative to
 `apps/desktop/src-tauri/` unless noted.
 
-## 0. Status map (reconciled 2026-08-18)
+## 0. Status map (re-derived from the tree 2026-08-27)
 
-What the tree holds today, section by section. "Shipped" means in `main` with tests and colocated docs.
+What the tree holds today, section by section. "Shipped" means in `main` with tests and colocated docs. Every claim here
+is read off the code, never off a status line; re-derive again before trusting it, because this map lags both ways.
 
 **Shipped:**
 
-- **The agent subsystem exists**: `src/agent/` (~15k lines), named after the entity per D44, with `CLAUDE.md` +
-  `DETAILS.md`. Its first user-facing slice is Ask Cmdr, a read-only chat rail. Frontend: `src/lib/ask-cmdr/`.
+- **The agent subsystem exists**: `src/agent/`, named after the entity per D44, with a `CLAUDE.md` + `DETAILS.md` pair
+  at every level. Two user-facing slices: Ask Cmdr, the chat rail, and the proactive agent that wakes on disk activity
+  and proposes. Frontend: `src/lib/ask-cmdr/` and `src/lib/suggested-ops/`.
 - **§4 storage, the durable half**: `main.db` ships with a forward-migration ladder mirroring `operation_log/store/`,
-  WAL pragmas, no custom collation, and FTS5 (no rusqlite feature needed; the bundled SQLite compiles it in). Tables
-  today: `meta`, `conversations`, `messages`, `cost_meter`. `operation-log.db` ships as the peer durable journal, and
-  its `Initiator` enum already carries `Agent` and `AgentEdited` (the spec's "reserved for later" is now built).
+  WAL pragmas, no custom collation, and FTS5 over message text (no rusqlite feature needed; the bundled SQLite compiles
+  it in). Tables today: `meta`, `conversations`, `messages`, `cost_meter`, `agent_inbox`, and the proposal spine
+  (`proposal_sets`, `proposals`, `proposal_ops`, `proposal_acceptances`, plus the rename producer's
+  `proposal_rename_evidence` sidecar). `operation-log.db` ships as the peer durable journal, and its `Initiator` enum
+  carries `Agent` and `AgentEdited`.
 - **§5.1 importance scorer**: shipped as its own neutral subsystem, not under `agent/`
   (`crates/cmdr-index/src/importance/`, per-volume `importance.db`, explain call, offline reads, an evals corpus, and a
   scoped incremental rescore at ~100 µs per origin). This supersedes D8's "cached in the drive index"; see §18.15.
+- **§6 event pipeline**: `agent/wake/` ships the coalescer (`coalesce.rs`), the interest scorer (`interest.rs`), the
+  inbox with deliver-by deadlines (`inbox.rs`, `persist.rs`), budgeted digest compaction (`compact.rs`), and the writer
+  thread that owns the timer (`writer.rs`). §18.14's tap point is resolved: a second observer inside the indexer's
+  `process_live_batch`, after rename detection and storm coalescing, never a parallel FSEvents subscription. Canonical
+  account, including restart behavior: `apps/desktop/src-tauri/src/agent/wake/DETAILS.md`.
+- **§8 proposals as durable state**: the spine ships, in a three-level shape this spec's two levels did not anticipate.
+  A **sweep** (`proposal_sets`) is one wake's output, a **group** (`proposals`) is the reviewable unit and exactly one
+  executor call, an **op** (`proposal_ops`) is one path that may be a whole directory. Freeze at creation holds (D27),
+  per-op `(inode, size, mtime)` snapshots exist for the apply-time drift check (D29), per-op statuses make partial apply
+  reportable (D28), and apply runs through the shipped `OperationManager` (D33). The acceptance record is server-owned
+  and held apart from the op rows, which is what makes a claim safe against a concurrent one. Canonical:
+  `apps/desktop/src-tauri/src/agent/store/proposals/DETAILS.md` and `agent/suggested_ops/DETAILS.md`.
+- **§9.1, the wake job**: `agent/wake/job.rs` (`prepare_wake` / `run_wake`) is the second job type. §9.2's fresh-context
+  discipline holds (D36): a wake assembles from state, reuses `ChatRuntime`, and opens a real thread
+  (`ConversationOrigin::Notification`) so the user can reply into the reasoning that produced a suggestion.
 - **§9.2/9.3 context assembly and §9.4 runtime discipline**: `agent/chat/` ships the stable prefix, elide-only
   compaction, a user-set chat-memory size, single-flight per thread, per-message budgets, cancellation, crash-safe
   persistence, and a typed `AgentChatEvent` seam.
-- **§9.6 IPC**: `commands/agent/` ships the chat, conversation CRUD + FTS, attachment, consent, and cost families over
-  typed bindings, with streaming on a Tauri `Channel`.
+- **§9.6 IPC**: `commands/agent/` ships the chat, conversation CRUD + FTS, attachment, consent, cost, wake, memory, and
+  suggested-ops families over typed bindings, with streaming on a Tauri `Channel`.
+- **§7, profile and memory**: `~/.cmdr/CMDR.md` is read into the stable prefix when present (read-only), and agent
+  memory ships as a Markdown folder the agent writes: an `AGENTS.md` hub plus `outcomes.md`, a fixed-size ring recording
+  what the user did with each suggestion, with a path jail, size caps, and a user-facing wipe. ⚠️ It lives at
+  `<data-dir>/ai/memory/`, **not** the `~/.cmdr/memory/` D25 named. Canonical: `agent/memory/DETAILS.md`.
 - **§10.2 provider layer**: `agent/llm/` ships the `AgentLlm` seam (trait, genai impl over `crate::ai::AiBackend`, a
   deterministic fake, a typed message-part model carrying the opaque provider reasoning blob). D41 is built.
-- **§11.1 consumer gating**: D59 is built. `mcp/tool_registry/` carries both the `Consumer` and `Access` dimensions; the
-  agent's dispatch view is pinned by structural tests to its authored `[agent]` entries, every one `Read` or `Propose`,
-  never `Write`. `Propose` additionally needs a hand-authored name in `EXPECTED_PROPOSE_TOOL_NAMES`.
-- **§11.2, part of the toolset**: five read families (`app_state`, `list_pane_files`, `list_dir`, `important_folders` +
-  `folder_importance`, `list_volumes`) plus shared `operations_list` / `operations_get` and the photo pair
-  (`search_photos`, `image_facts`). One `Propose` tool is authored: `propose_rename_plan`.
-- **§7, the profile only**: `~/.cmdr/CMDR.md` is read into the stable prefix when present (read-only).
+- **§11.1 consumer gating**: D59 is built. `mcp/tool_registry/` carries both the `Consumer` and `Access` dimensions, and
+  the agent's dispatch view is pinned by structural tests to its authored `[agent]` entries. ⚠️ `Access` now has a
+  **third** variant beyond `Read` and `Propose`: see "Changed since the spec was written" below.
+- **§11.2, the toolset**: reads (`app_state`, `list_pane_files`, `list_dir`, `important_folders` + `folder_importance`,
+  `list_volumes`, `list_suggestions`, `get_suggestion_group`, `nothing_to_suggest`) plus shared `operations_list` /
+  `operations_get` and the photo pair (`search_photos`, `image_facts`). Two `Propose` tools: `propose_rename_plan` and
+  the general `propose_suggestions` (move, copy, trash, delete, rename, compress, extract, grouped, capped at 200 named
+  paths or a selector resolved once against the drive index). Two `Memory` tools: `memory_write`, `memory_edit`.
 - **§12 consent and cost**: a backend-enforced consent gate (`agent/consent.rs`, `CONSENT_COPY_VERSION`, record in
   `main.db`'s `meta`, fails closed) plus a per-day, per-thread cost meter with an honest unpriced path.
 - **§12.1 enable flow, the wizard half**: the onboarding wizard ships `StepFda` and `StepAi`.
+- **§15's north-star metric**: proposal acceptance rate is instrumented (`agent/suggested_ops/analytics.rs`, D46),
+  carrying a verb and a bucketed count, never a path or a rationale.
 - **§16, part of settings**: `askCmdr.interactiveModel` (the interactive slot layered over shared `ai/` provider config,
-  so the bulk slot slots in with no migration) and `askCmdr.chatMemorySize`.
+  so the bulk slot slots in with no migration), `askCmdr.chatMemorySize`, and the proactive trio `askCmdr.proactive`,
+  `askCmdr.wakeDelay`, `askCmdr.wakeToast`.
 
 **Not started:**
 
 - **§4.1 index relocation**: the per-volume `index-{volume_id}.db` files still live in the app data dir. Nothing moved
   to `~/Library/Caches/<bundle id>/`, nothing was renamed to `drive-index-{volume_id}.db`.
-- **§4.2, the rest of the schema**: no `volumes`, `folder_summaries`, `proposals`, `proposal_ops`, `agent_log`,
-  `agent_inbox`, `walk_state`, or `user_action_log` tables, and no retention pruning in `main.db`.
+- **§4.2, the remaining tables**: no `volumes`, `folder_summaries`, `walk_state`, or `user_action_log`.
 - **§5.2, §5.3 summarization**: no summarizer, no walk, no preflight, no summary FTS. The agent's knowledge today is the
-  drive index, importance, the operation log, live app state, and image-derived text.
-- **§6 event pipeline**: no coalescer, interest scorer, inbox, deadline scheduling, digest compaction, or restart
-  reconciliation for the agent. §18.14's tap point is still undesigned.
-- **§8 proposals as durable state**: `propose_rename_plan` stages into an in-memory `RenameProposalStore` keyed by
-  opaque id, reviewed in `BulkRenameReviewDialog` and undoable after apply. There is no `proposals` / `proposal_ops`
-  table, no freeze-at-creation snapshot, no drift detection, no expiry, no invalidation, and no `OperationManager` batch
-  apply. §8.5 auto-apply does not exist.
-- **§7, rules and memory**: no `~/.cmdr/rules/*.md` with `applies_to`, no `~/.cmdr/memory/`, no memory writes.
-- **§9.1 job types**: only chat exists. No wake, planner, or summarizer job.
-- **§9.5 notifications**: no `notify_user` tool, no proactivity dial, no per-folder mute or snooze.
+  drive index, importance, the operation log, live app state, image-derived text, and its own memory. This is the
+  largest unbuilt block in the spec and the one most of §5 and D9-D16 exist for.
+- **§7, rules**: no `~/.cmdr/rules/*.md` with `applies_to`. The profile and memory halves ship; the scoped-rules half
+  does not.
+- **§9.1, the other two job types**: no planner and no summarizer job.
+- **§9.5 notifications and the proactivity dial**: no `notify_user` tool, no named policy bundles (off / quiet / normal
+  / eager), no per-folder mute, no snooze, no daily cap. What ships instead is narrower: an on/off `askCmdr.proactive`,
+  a cadence slider, a toast toggle, and the corner indicator.
 - **§10.4 bulk slot**: only the interactive slot is settable.
 - **§12 activity log**: no `agent_log` table and no activity or read-log surface. Transparency today is the rail's
-  per-tool lines.
+  per-tool lines and the suggestions panel. Principle 5 is still the least-paid principle here.
 - **§14 prompts as repo assets**: prompts are Rust source, not markdown templates. No `prompt-lint` check.
 - **§15 evals**: seeded only (`agent/tools/propose/name_quality_eval.rs`, plus the importance evals corpus). No
   synthetic-home fixture generator, no summarizer or planner scoring harness.
+- **§8.5 auto-apply**: no grant, no `protectedSettings` set. Everything still goes through the review click.
+
+**Decided against since, so don't build them off this spec:**
+
+- **Proposal expiry and batch caps** (§8.3, §8.4, D30's expiry half): a suggestion waits until the user acts on it, and
+  a 60 000-op group is legitimate. `agent/store/proposals/DETAILS.md` § "DDL notes".
+- **An `invalidated` status** (§8.3): the lifecycle is `pending` / `approved` / `interrupted` / `completed` /
+  `rejected`, with drift caught by the per-source fingerprint check at preflight rather than by an FS event flipping a
+  stored row. Same doc, § "Statuses, and who owns each one".
+- **`main.db` retention pruning** (§4.1's constraint list): `agent/store/DETAILS.md` § "No auto-retention in v1" carries
+  the reasoning and the scaffold that would implement it.
 
 **Changed since the spec was written, and the spec text below is stale where it says otherwise:**
 
+- **The agent has a write verb the spec's D26 rules out**, bounded rather than absent. `Access::Memory` is a third
+  registry variant: it writes inside `<data-dir>/ai/memory/` and nowhere else, authored by hand into
+  `EXPECTED_MEMORY_TOOL_NAMES` exactly as `Propose` is, because no structural check can prove a handler stays in the
+  jail. So §11.1's "every one `Read` or `Propose`, never `Write`" is stale, and the invariant it protected is now "the
+  agent changes nothing outside its own memory folder". Depth: `mcp/tool_registry/mod.rs` on `Access`, and
+  `agent/memory/DETAILS.md`.
 - **genai is pinned `=0.6.5`**, not `=0.6.0-beta.19`, and it is no longer a beta. §18.1's supply risk is reduced but not
   gone (still a solo-maintainer crate carrying the whole provider layer).
 - **The `read_file` tool of §11.3 was not built, and the privacy line moved with it.** The agent has no content-read
@@ -83,14 +125,20 @@ What the tree holds today, section by section. "Shipped" means in `main` with te
 - **§11.1's "factor a transport-agnostic core first" did not happen and was not needed.** `execute_tool` is still
   generic over the Tauri `Runtime` and handlers still take `&AppHandle<R>` plus a `serde_json::Value`. The in-process
   agent consumes that shape directly. The bounded refactor named there is not a prerequisite for anything left.
-- **A `Propose` tool exists.** `agent/DETAILS.md` still says the allowlist "is empty today"; it holds
-  `propose_rename_plan`. Its bounding contract (cap the payload, pin it with a test) is live, not hypothetical.
-- **Evidence grounding is a new invariant the spec never anticipated.** A proposal citing file contents must prove the
+- **Evidence grounding is an invariant the spec never anticipated.** A proposal citing file contents must prove the
   model actually received them: `propose::evidence::ImageFactsLedger` is scoped per chat thread, and
   `propose_rename_plan` refuses a plan citing content the ledger has no delivery for. This exists because 12 real files
   got fabricated names. Any future `Propose` tool inherits the obligation. See
   `apps/desktop/src-tauri/src/agent/tools/propose/DETAILS.md` § Evidence, and invariant 6 in
   `apps/desktop/src-tauri/src/agent/DETAILS.md`.
+- **A wake surfaces through the rail, not through a notification.** §9.5's `notify_user` was never the shipped path: a
+  wake opens a thread and announces itself on the corner indicator (`wake/indicator.rs`) and, when it proposed
+  something, a staged toast (`wake/staged.rs`). A future §9.5 build starts from that, not from a blank surface.
+
+**Ownership note.** The wake loop's own deliberate leftovers (the two interest tuning knobs, the three cadence
+constants, reading file contents, the chat-memory-size timeline event, the rail's refetch-on-decision gap, and the
+consent screenshots) belong to `docs/specs/later/ai/wake-loop-follow-ups.md` and are **not** restated here. Where §18
+below names one of them, that file is the owner.
 
 ## 1. What this is
 
@@ -113,10 +161,12 @@ notifications. This spec is about agent behavior, inputs, outputs, storage, cont
 2. **The agent costs ~zero when nothing interesting happens.** No idle wakes, no heartbeat LLM calls. Noise is absorbed
    deterministically (counters and staleness marks); it reaches the model only as one digest line the next time the
    agent wakes for a real reason.
-3. **Propose, never act.** The agent has no write tools. Its only write path is the proposal queue, gated by user
-   review, executed by the existing file-op pipeline (preflight, conflicts, progress, rollback, trash). This is also the
-   structural prompt-injection defense: file contents are an untrusted input, and the worst a malicious file can achieve
-   is a weird suggestion sitting in a review queue.
+3. **Propose, never act.** The agent has no write tools that reach the user's files. Its only write path to them is the
+   proposal queue, gated by user review, executed by the existing file-op pipeline (preflight, conflicts, progress,
+   rollback, trash). This is also the structural prompt-injection defense: file contents are an untrusted input, and the
+   worst a malicious file can achieve is a weird suggestion sitting in a review queue. The one bounded exception shipped
+   since: the agent writes its own memory folder (`Access::Memory`, jailed to `<data-dir>/ai/memory/`), which is a
+   different promise and is authored by hand for exactly that reason.
 4. **Continuity through state, not transcript.** The agent does not carry its life story in its context window. Durable
    knowledge lives in the database and in markdown memory; each wake gets a fresh, budgeted context assembled from
    state. Only chat threads keep (bounded) transcripts.
@@ -429,11 +479,17 @@ Layout (user-authored content lives in a friendly dotdir, machine state in the a
   me" and "what I inferred" never blur. User-auditable: open, edit, delete. Size-capped, deduplicated, and every write
   is logged to the activity log.
 
+**Shipped differently**: memory landed at `<data-dir>/ai/memory/`, not under `~/.cmdr/`, so the profile the user authors
+and the notes the agent writes live in different places. The separation D25 exists for is intact; only the location
+moved. `agent/memory/DETAILS.md` is the account, including the caps, the path jail, and the wipe. The activity-log half
+of the bullet above is still unpaid: memory writes are not logged to any `agent_log`, because there isn't one.
+
 Folder-level `CMDR.md` files are cut from v1 entirely (see §3 later-scope for the trust-tier design if they return). The
 `applies_to` mechanism covers folder-specific rules without the pollution or the injection surface.
 
-DRY references work because the agent has a read-file tool: a user can write "see `~/.claude/CLAUDE.md` for my profile"
-and the agent follows it (within the read-tool guardrails, §11.3).
+DRY references were designed around a read-file tool the agent does not have (§11.3), so a profile that says "see
+`~/.claude/CLAUDE.md`" points at something the agent cannot open. Either the reference is inlined, or `read_file`'s
+whole consent story gets re-decided first.
 
 The markdown/DB line (principle 6): summaries, proposals, and logs are DB; beliefs and rules are markdown.
 
@@ -479,11 +535,10 @@ The queue this depends on has shipped: `file_system/write_operations/manager.rs`
 queue with a transfer-queue window, copy/move/delete spawn via `spawn_managed`, and rename/mkdir/mkfile run as managed
 instant ops via `run_instant`. Crucially the pipeline is headless-callable: writes emit through the `OperationEventSink`
 trait (`event_sinks.rs`), built only at the IPC edge and injected in (production `TauriEventSink`, test
-`CollectorEventSink`), so the managed write path no longer needs Tauri. That is what a proposal executor needs. The
-remaining work is therefore a **fit-check against the shipped manager, not a prerequisite effort**: whether it accepts a
-batch of ops as one unit with per-op statuses and partial apply (the `proposal_ops` table keys apply on the op subset),
-and whether it reports a per-op result the `proposal_ops` table can consume. Design the apply call against
-`OperationManager`'s API, and file any batch-semantics gaps as small extensions to it.
+`CollectorEventSink`), so the managed write path no longer needs Tauri. **This is built.** `agent/suggested_ops/bridge/`
+claims an approved group and hands its ops to the manager through the same routed entry points a click uses, and a sink
+decorator writes per-op outcomes back onto `proposal_ops`. The one shape the fit-check turned up is that a group binds
+one verb to one destination, so the batch is the GROUP rather than the sweep.
 
 Because applied proposals execute through the managed pipeline, **the operation log journals every applied proposal
 batch for free** (the operation log hooks that pipeline). A _rejected_ proposal never becomes an operation, so it never
@@ -631,8 +686,9 @@ the whole runtime and UI test against the fake. See `agent/llm/CLAUDE.md`.
 What that leaves:
 
 - The bulk slot (§10.4) is unbuilt; only the interactive slot resolves a model today.
-- The quirk list of §10.1 is verified for the chat loop's shapes, not for every provider under a long multi-turn planner
-  loop. Re-verify when the planner job arrives, against the model the bulk and interactive slots actually run.
+- The quirk list of §10.1 is verified for the chat and wake loops' shapes, not for every provider under a long
+  multi-turn planner loop. Re-verify when the planner job arrives, against the model the bulk and interactive slots
+  actually run.
 
 ### 10.3 Support tiers
 
@@ -695,7 +751,11 @@ proposal pipeline's apply step, never on tool exposure.
 `access` (`Read` / `Propose` / `Write`) is the stronger guarantee the token gate can't give, since `TokenGate::Open`
 covers destructive-but-prompting ops. `execute_tool` refuses any name outside the caller's consumer view before
 dispatch, and `agent::tools::view` re-checks `tool_access` as a runtime backstop. Structural tests pin the agent view to
-exactly its authored `[agent]` entries and require every one to be `Read` or `Propose`.
+exactly its authored `[agent]` entries. ⚠️ There are now **three** access levels, not two: `Access::Memory` is a
+deliberate, bounded widening for the two memory tools, hand-authored into `EXPECTED_MEMORY_TOOL_NAMES` the same way
+`Propose` names go into `EXPECTED_PROPOSE_TOOL_NAMES`, because no structural check can prove a handler stays inside the
+memory jail. The invariant is therefore "the agent changes nothing outside `<data-dir>/ai/memory/`", not "the agent
+changes nothing".
 
 The transport-agnostic-core refactor this section once called a prerequisite **did not happen and was not needed**:
 `execute_tool` is still generic over the Tauri `Runtime` and handlers still take `&AppHandle<R>` plus a
@@ -710,6 +770,10 @@ Knowledge: `get_folder_summary`, `search_summaries` (FTS), `list_stale_summaries
 (sizes, counts, recency). Proposals: `create_proposal_batch`, list/withdraw. Memory: scoped write (logged). Interaction:
 `notify_user`. Files: `read_file` (below), and an archive-listing tool (zip browse + edit and read-only tar/7z have
 shipped, so this reads the existing `ArchiveVolume` listing rather than waiting on a feature).
+
+Of that list, the drive-index queries, the proposal trio, and the memory writes ship; §0 has the shipped names. The
+summary tools wait on §5.2, `notify_user` on §9.5, and `read_file` is not a designed feature waiting to be implemented
+(§11.3).
 
 One-shot AI features (natural-language search, AI rename) are not "the agent" but use the same substrate: e.g. the
 search box's NL path calls `search_summaries`. The registry and knowledge DB are shared infrastructure; the agent is
@@ -809,61 +873,39 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
 
 ## 17. Build order
 
-**Superseded in part (David's call, 2026-08-18); the shape decisions now live in
-`apps/desktop/src-tauri/src/agent/store/proposals/DETAILS.md`, and the proactive half has since shipped end to end
-(`agent/wake/`, `agent/memory/`); what it deliberately left is `docs/specs/later/ai/wake-loop-follow-ups.md`.** David's
-call: milestones 1, 2, 4, and 5 below ship as ONE release rather than staged, because a proposal store with no window,
-or a window with one op kind, is not a shippable half. That plan absorbs them and carries the shape decisions (a group
-is one verb and one destination; freeze moves from creation to approval). The ordering rationale below still explains
-WHY the original sequence was wrong; it just no longer describes the release plan. Milestones 3, 6, 7, and 8 are
-untouched and still queue behind it.
+**Milestones 1, 2, 4, and 5 shipped in v0.40.0** (2026-08-24), as one release rather than staged: a proposal store with
+no window, or a window with one op kind, is not a shippable half. The shape decisions that release settled live in
+`apps/desktop/src-tauri/src/agent/store/proposals/DETAILS.md` (a group is one verb and one destination; the freeze stays
+at creation, and a test counts the resolver's calls to keep it there). What that release deliberately left is
+`docs/specs/later/ai/wake-loop-follow-ups.md`.
 
-Milestones 1-4 and 9 of the original order are done or mostly done (§0). What follows is the remaining order, and it
-deliberately **inverts the original sequence**: the original spent the knowledge layer, event pipeline, and wake loop
-before a single proactive proposal reached a user, which delivers the north-star metric (§15, proposal acceptance rate)
-last. This order buys that number first and lets it decide how much of the expensive machinery is worth building.
+Milestone 2 shipped in outcome rather than in shape: the deterministic-detector-first step was skipped, and the wake
+loop's LLM entered the proactive path at the same time as the proposal spine. The interest scoring upstream of it is
+still deterministic (principle 1 holds), and acceptance rate is instrumented, so the decision point that milestone
+existed to buy is now a live measurement rather than a gate.
 
-The organizing principle: **each milestone must be shippable to beta users on its own.** Ask Cmdr proved that pattern
-works, and the proactive half is exactly the kind of bet that should not be validated by a big-bang release.
+What remains, in order. Each still has to be shippable to beta users on its own.
 
-1. **The proposal spine, durable.** `proposals` + `proposal_ops` in `main.db`, freeze-at-creation, per-op
-   `(inode, size, mtime)` snapshots, drift detection at apply, per-op statuses and partial apply, expiry, trash-default,
-   batch caps. Apply through the shipped `OperationManager` (§20.3 fit-check). Migrate `propose_rename_plan` off its
-   in-memory `RenameProposalStore` onto this store, so the one shipped proposing feature is the first consumer and the
-   store is exercised by real use rather than tests alone. No new LLM behavior; this is the durable, testable spine
-   every later milestone rides.
-2. **One deterministic detector, end to end.** The narrowest proactive slice that produces a real proposal: a rule over
-   the already-shipped `downloads/` watcher and the importance data (for example, installers already opened). No
-   summaries, no coalescer, no wake loop, no LLM in the detection path. It needs a review surface (generalize the bulk
-   rename review dialog), a notification path, and the proactivity dial with its caps and per-folder mute. Ship it to
-   beta and start measuring acceptance rate.
-
-   This is the decision point. If users accept proposals, the rest of the plan is worth its cost. If they don't, the fix
-   is upstream of the machinery, and milestones 3-6 would have been built on a wrong premise.
-
-3. **Activity log** (`agent_log`) and its surface. Principle 5 is unpaid so far: the rail's per-tool lines are the only
-   transparency, and a proactive agent needs the full decision record before it earns more autonomy. Pull it earlier
-   than the original order for that reason.
-4. **Event pipeline** (§6): the coalescer, interest scoring, `agent_inbox` with deliver-by deadlines, budgeted digest
-   compaction, restart reconciliation. Resolve §18.14 (tap point, and how the `downloads/` watcher relates) first: this
-   milestone is a second interest-oriented stage over the indexer's already-corrected stream, never a parallel FSEvents
-   subscription. The pure `coalesce` and `compact` seams (§6.3) make this the best parallel-agent target in the whole
-   plan.
-5. **Wake loop** (§9.1, §9.2): the wake job type, its context recipe, per-wake budgets, degraded modes. This is where
-   the LLM finally enters the proactive path, and it enters over a proven proposal store, a proven review surface, a
-   real activity log, and a bounded digest.
-6. **Knowledge layer** (§5.2, §5.3): summarizer job, `folder_summaries` + FTS, the resumable importance-gated walk, the
-   preflight with its cost estimate. Last, not first, because it is the only milestone that spends the user's money
-   before delivering anything, and by this point real acceptance data says whether summaries are what the proposals were
-   missing. Scope it against that evidence rather than the spec's original whole-drive ambition.
-7. **Memory and rules** (§7): `~/.cmdr/rules/*.md` with `applies_to`, `~/.cmdr/memory/`, scoped memory writes. The
-   profile half already ships.
-8. **The rest**: the bulk model slot (§10.4), `main.db` retention pruning, the index relocation to `~/Library/Caches/`
-   (§4.1, independent of everything else and safe to slot in whenever), prompts as repo assets plus `prompt-lint` (§14),
+1. **Activity log** (`agent_log`) and its surface. Principle 5 is the least-paid principle in the subsystem: the rail's
+   per-tool lines and the suggestions panel are the only transparency, and an agent that already proposes and writes
+   memory unprompted needs the full decision record before it earns more autonomy. §4.2 carries the three-way
+   terminology boundary this table has to respect (operation log = mutations, `agent_log` = the agent's decisions,
+   `user_action_log` = navigation and intent); §18.19 asks whether it shares the rail's surface.
+2. **Knowledge layer** (§5.2, §5.3): summarizer job, `folder_summaries` + FTS, the resumable importance-gated walk, the
+   preflight with its cost estimate. The largest remaining block, and the only one that spends the user's money before
+   delivering anything. Real acceptance data now exists, so scope it against what proposals are actually missing rather
+   than against the spec's original whole-drive ambition.
+3. **Scoped rules** (§7): `~/.cmdr/rules/*.md` with `applies_to`. The profile and memory halves ship; this is the
+   remaining third, and it is what gives folder-scoped guidance without putting files in folders.
+4. **Notifications and the proactivity dial** (§9.5): the etiquette caps, the named policy bundles, per-folder mute, and
+   snooze. Start from what ships (the corner indicator, the staged toast, `askCmdr.proactive` plus the cadence slider),
+   not from a blank surface.
+5. **The rest**: the bulk model slot (§10.4), the index relocation to `~/Library/Caches/` (§4.1, independent of
+   everything else and safe to slot in whenever), prompts as repo assets plus `prompt-lint` (§14), the planner job type,
    and the §8.5 auto-apply grant, which should land only after acceptance-rate data justifies it.
 
-**Evals** (§15) run alongside from milestone 1, not after: the fixture generator for synthetic home directories is worth
-pulling forward the way §20.4 argued, and the proposal spine is testable without a model.
+**Evals** (§15) run alongside rather than after: the synthetic-home fixture generator is worth pulling forward the way
+§20.5 argues, and the proposal spine is testable without a model.
 
 ## 18. Open questions and investigations (honest list)
 
@@ -876,7 +918,9 @@ pulling forward the way §20.4 argued, and the proposal spine is testable withou
    a server GUID available per protocol? (Believed not hard, but undesigned.)
 3. Importance-scorer signal weights and the exact scoring formula: needs iteration against real home directories.
 4. `kMDItemLastUsedDate` sampling strategy and cost on large folders.
-5. Wake deadline tier values (2-5s / 1-5min / 1h) and the digest token budget (2-4k): initial guesses, tune with use.
+5. **OWNED ELSEWHERE.** The wake deadline tiers, the interest thresholds, and the digest token budget shipped as guesses
+   and are still guesses; they wait on a week of real wakes, and `docs/specs/later/ai/wake-loop-follow-ups.md` holds the
+   list with the log line and analytics event that unblock it. ❌ Don't tune them from here.
 6. `listing_fingerprint` exact definition (proposed: hash over child names + sizes + mtimes).
 7. Conversation/thread data model details, and how a notification reply inherits wake context technically.
 8. Memory mining design (v1.5): which implicit signals, what confidence threshold, whether mined memories need their own
@@ -890,8 +934,10 @@ pulling forward the way §20.4 argued, and the proposal spine is testable withou
 13. Whether `interest_weight` denormalization into `main.db` summaries is worth it vs. always reading from the drive
     index. (Also keeps the "split writers" story honest: the indexer should not write into `main.db`; if denormalized,
     the agent copies the weight at summary time.)
-14. Event tap point (§6.1): exactly where the agent's coalescer subscribes on the indexer's corrected event stream, and
-    how the standalone `downloads/` watcher and the agent's Downloads-related detectors relate (merge? coexist?).
+14. **RESOLVED.** The agent's coalescer taps as a second observer inside the indexer's `process_live_batch`, after
+    rename detection and storm coalescing, and three of its four counters are wired in crate-side by hand because they
+    are unreachable there. ❌ Never a parallel FSEvents subscription, never per-file messages.
+    `apps/desktop/src-tauri/src/agent/wake/DETAILS.md` § "The tap point" is the account.
 
 ### From the 2026-07 design review (proposed, not decided)
 
@@ -916,11 +962,23 @@ of sections above; treat them as inputs to the next planning round.
 
 ## 19. Decision log
 
-Every decision below still stands as intent. Several are now **built** (D1, D3, D4, D22's DB half, D33, D34's chat job,
-D36, D37, D38, D41, D42's pinning, D43's interactive slot, D44, D48's posture, D49, D51's wizard step, D55, D59) and two
-are **superseded**: D8's "cached in the drive index" (§18.15, now a separate `importance.db`) and D26's `read_file`
-assumption (§11.3, no content-read tool exists at all, so the privacy line is narrower than D26 planned for). §0 has the
-full map.
+Every decision below still stands as intent unless marked otherwise. Many are now **built**: D1, D3, D4, D17, D18, D19,
+D21's FS half, D22, D25's separation (at a different path), D26's proposal spine, D27, D28, D29, D32, D33, D34's chat
+and wake jobs, D35, D36, D37, D38, D41, D42's pinning, D43's interactive slot, D44, D46, D48's posture, D49, D51's
+wizard step, D55, D56, D59.
+
+Four are **superseded or refined**, and the tree is the authority on each:
+
+- **D8's "cached in the drive index"** → a separate per-volume `importance.db` (§18.15).
+- **D26's "no direct write tools"** → refined to "no write tools outside the agent's own memory folder", after
+  `Access::Memory` shipped; and its `read_file` assumption is gone entirely, so the privacy line is narrower than D26
+  planned for (§11.3).
+- **D25's `~/.cmdr/memory/`** → `<data-dir>/ai/memory/`. The rules-versus-memory separation D25 exists for holds; only
+  the location moved.
+- **D30's expiry half and §8.4's batch caps** → decided against, with reasons colocated
+  (`agent/store/proposals/DETAILS.md` § "DDL notes"). D30's trash-over-delete half stands.
+
+§0 has the full map.
 
 - **D1**: Two DB families: per-volume `drive-index-{volume_id}.db` (cache) + `main.db` (durable catch-all). Rationale:
   Regenerable vs. valuable; separate writers; different backup policies; index is per-volume today.
@@ -1052,12 +1110,11 @@ sequencing notes that are easy to lose otherwise:
    (decisions settled, intent captured), but the planning step still exists: repo context, exact DDL, module layout,
    migration-code shape, and IPC bindings belong in a milestone plan, not here. Coding off the spec forces the
    implementer to make planning calls mid-flight. This held for every Ask Cmdr milestone and it still holds.
-4. **Fit-check the shipped `OperationManager` before the proposal spine (§17 milestone 1), not a from-scratch queue
-   effort.** The lane-based queue, transfer-queue window, managed instant ops, and the IPC-edge-injected
-   `OperationEventSink` (the headless-callable write path) are all in the tree. What is left is confirming batch-of-ops
-   apply with per-op statuses and per-op result reporting, and filing any gap as a small extension to the manager.
-   Capture the agent's requirements (batch apply, per-op results, cancellation) against its current API.
-5. **Pull the synthetic-home fixture generator forward.** Still true, now for the proposal spine and the detector rather
+4. **Apply goes through the shipped `OperationManager`, and that path is built.** `agent/suggested_ops/bridge/` is the
+   worked example: an approved group becomes an ordinary executor call through the same routed entry points a click
+   uses, with a sink decorator writing per-op outcomes back. Any new proposal producer rides that bridge rather than
+   reaching for the manager itself.
+5. **Pull the synthetic-home fixture generator forward.** Still true, now for the knowledge layer and the planner rather
    than the importance scorer (which grew its own evals corpus in the end).
 6. **Fold durable intent into colocated `CLAUDE.md` files as milestones land.** `docs/specs/` is wiped periodically by
    design (see the specs README), so the decisions and intent here must migrate into code-adjacent docs as the

@@ -9,7 +9,7 @@ open questions below survive the milestone (weight tuning, sampling cost) as fol
 
 Several planned features need to know, cheaply and deterministically, **which folders matter**:
 
-- The in-app **agent** (`docs/specs/later/agent-spec.md`) gates LLM summarization on importance (§5.1, §5.2), scores
+- The in-app **agent** (`docs/specs/later/ai/agent-spec.md`) gates LLM summarization on importance (§5.1, §5.2), scores
   event-bundle interest by it (§6.2), and feeds the weight to the LLM as a reasoning input (§5.1). Its decision D8 fixes
   "deterministic importance scorer, cached in the drive index."
 - The **media-ML enrichment scheduler** (`docs/specs/later/media-ml-index-plan.md`) wants to enrich important folders
@@ -251,7 +251,7 @@ before any storage or scheduler lands.
   markers raising a subtree, path-class priors. **Navigation-visit and `kMDItemLastUsedDate` signals are typed into
   `FolderSignals` as optional and left `None` in M1** (they wire in M2), so the formula shape is final but their sources
   land later.
-- **Synthetic-home fixture generator** (agent-spec §15, §20.4): a builder over `InMemoryVolume` that constructs
+- **Synthetic-home fixture generator** (agent-spec §15, §20.5): a builder over `InMemoryVolume` that constructs
   realistic home-directory trees (a Downloads with mixed junk, a `.git` project, a `node_modules`, a monoculture log
   folder, a Documents/invoices tree) and derives `FolderSignals` from them — the corpus the scorer iterates against.
   Verify `InMemoryVolume`'s shape first (confirmed present, `HashMap`-backed).

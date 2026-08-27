@@ -103,12 +103,15 @@ left, so the durable intent survives the wipe.
       closed the levers; the resilience fix stopped the source); captures the seams, the clean per-volume-WAL
       data-safety split, the `ai/process.rs` sidecar prior art, and the effort/tradeoffs, with revisit triggers.
 - [ ] 2026-06-04 `later/ai/agent-spec.md` - Persistent in-app agent proposing file operations. PARTIALLY SHIPPED; status
-      reconciled against the tree 2026-08-18 in the spec's §0. The reactive half shipped as Ask Cmdr (`src/agent/`:
-      `main.db` store, the `AgentLlm` seam, consumer-gated tools, the chat runtime, consent, cost meter, one `Propose`
-      tool), plus the importance scorer as its own subsystem. The proactive half (durable proposal store, detectors,
-      activity log, event pipeline, wake loop, summaries, memory) is not started. §17 is rewritten around what's left
-      and inverts the original order: prove the proposal loop with a deterministic detector and measure acceptance
-      before spending on the whole-drive summarization pass.
+      re-derived from the tree 2026-08-27 in the spec's §0, which is the first thing to read and wins over any later
+      section. Shipped: Ask Cmdr's chat rail, plus the proactive agent in v0.40.0 (the wake pipeline with its coalescer,
+      interest scorer, and inbox; the three-level durable proposal spine; agent memory; two `Propose` tools;
+      acceptance-rate instrumentation), plus the importance scorer as its own subsystem. **Still designed and unbuilt**:
+      the knowledge layer (folder summaries, the importance-gated walk, the preflight) as the largest block, the
+      activity log, scoped rules, notification etiquette with the proactivity dial, the bulk model slot, the index
+      relocation, prompts-as-assets, the evals harness, and auto-apply. §17 carries that order. The spec's §19 decision
+      log is cited by bare number from about 25 code and doc sites, so it stays whether or not the rest does. The wake
+      loop's own leftovers are `later/ai/wake-loop-follow-ups.md`, not this file.
 - [ ] 2026-06-04 `later/data-dir-rename-spec-draft.md` - Rename data directories from bundle-id to plain names.
 - [ ] 2026-06-28 `later/indexing/index-vacuum-reader-pinning.md` - Reclaim residual index-DB freelist that long-lived
       root readers stop the incremental vacuum from returning to the OS (deferred: the big freelist sources are now
