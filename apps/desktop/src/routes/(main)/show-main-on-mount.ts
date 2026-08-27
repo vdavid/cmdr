@@ -31,12 +31,13 @@ const PAINT_AFTER_SHOW_TIMEOUT_MS = 1000
  * one doesn't, we re-show as a repair — `makeKeyAndOrderFront:` re-invalidates
  * the view, and a blank window that never repaints is otherwise stuck until
  * the user resizes it (observed once on a cold prod launch during a heavy
- * full-root reindex).
+ * full-root reindex). The repair passes `'repaint-repair'` so it repaints
+ * without taking the front back from an app the user switched to meanwhile.
  *
  * Call fire-and-forget from `onMount` so it never holds up listener setup.
  */
 export async function showMainOnMount(): Promise<void> {
-  await showMainWindow()
+  await showMainWindow('launch')
 
   const paint = await waitForNextPaint(PAINT_AFTER_SHOW_TIMEOUT_MS)
   if (paint === 'painted') {
@@ -47,5 +48,5 @@ export async function showMainOnMount(): Promise<void> {
   log.warn('No frame within {ms}ms of showing the main window; re-showing to force a repaint', {
     ms: PAINT_AFTER_SHOW_TIMEOUT_MS,
   })
-  await showMainWindow()
+  await showMainWindow('repaint-repair')
 }

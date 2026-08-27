@@ -1,8 +1,8 @@
-//! Window z-ordering commands, used only by E2E test runs to keep a test's
-//! windows out of the developer's way (order them to the back without focusing).
-//! On macOS these hop to the AppKit main thread; off macOS / outside E2E they
-//! are no-ops.
+//! Showing the main window, and the z-ordering commands an E2E run uses to keep its windows out
+//! of the developer's way (order them to the back without focusing). On macOS the ordering hops to
+//! the AppKit main thread; off macOS / outside E2E it is a no-op.
 
+use serde::Deserialize;
 use tauri::{AppHandle, Runtime, Window};
 // `get_webview_window` / `run_on_main_thread` come from `Manager`, used only on
 // the macOS ordering path; off macOS the commands are no-ops.
@@ -36,9 +36,29 @@ fn order_ns_window_back(ns_window: *mut objc2::runtime::AnyObject) -> Result<(),
     Ok(())
 }
 
+/// Why the frontend is showing the main window. Decides whether the show also brings Cmdr to the
+/// front, which is a different question from whether the window becomes visible.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, specta::Type)]
+#[serde(rename_all = "kebab-case")]
+pub enum ShowReason {
+    /// The app started and this is the first time the window becomes visible.
+    Launch,
+    /// A repair re-show after no frame landed on the first one.
+    RepaintRepair,
+}
+
+/// Whether a show should also make Cmdr the active app.
+///
+/// Only a launch does. The repair re-show fires up to a second later, by which point the user may
+/// have moved on to another app; taking the front back then is worse than the blank window it
+/// repairs.
+fn activates_app(reason: ShowReason) -> bool {
+    matches!(reason, ShowReason::Launch)
+}
+
 #[tauri::command]
 #[specta::specta]
-pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
+pub fn show_main_window<R: Runtime>(window: Window<R>, reason: ShowReason) -> Result<(), String> {
     // E2E: on macOS, order the window to the back without focusing it instead of
     // `window.show()` (which calls `makeKeyAndOrderFront:`, always grabbing OS
     // focus AND raising the window to the front). This keeps a test run's windows
@@ -62,7 +82,25 @@ pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
         return Ok(());
     }
-    window.show().map_err(|e| e.to_string())
+    window.show().map_err(|e| e.to_string())?;
+
+    if activates_app(reason) {
+        // `show()` is `makeKeyAndOrderFront:`, which makes the window key WITHIN Cmdr but never
+        // makes Cmdr the active app, so a launch that isn't already frontmost lands behind
+        // whatever is. Two ways that happens: the updater's relaunch spawns the binary directly
+        // (`tauri::process::restart_macos_app`), which bypasses LaunchServices, so macOS grants
+        // the new process no activation at all; and a slow cold launch can lose the front position
+        // before the frontend mounts, since the window is created `"visible": false` and nothing
+        // shows it until then. `set_focus` is what asks for activation
+        // (`activateIgnoringOtherApps:` under tao).
+        //
+        // Best-effort: the window is already up, so a refused activation is worth a line in the
+        // log, not a failed command that would skip the caller's paint check.
+        if let Err(e) = window.set_focus() {
+            log::warn!(target: "ui", "show_main_window: set_focus failed: {e}");
+        }
+    }
+    Ok(())
 }
 
 /// E2E-only: order a freshly created child window (Settings, file viewer,
@@ -100,4 +138,32 @@ pub fn order_window_to_back<R: Runtime>(app: AppHandle<R>, label: String) -> Res
     #[cfg(not(target_os = "macos"))]
     let _ = (app, label);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Only a launch may take the front. The repair re-show must not: it fires up to a second
+    /// after the window appeared, by which point the user may have moved on to another app, and
+    /// yanking focus back then is worse than the blank window it repairs.
+    #[test]
+    fn only_a_launch_activates_the_app() {
+        assert!(activates_app(ShowReason::Launch));
+        assert!(!activates_app(ShowReason::RepaintRepair));
+    }
+
+    /// The frontend sends the reason as a bare kebab-case string, so the wire spellings are part
+    /// of the contract with `showMainWindow` (`$lib/tauri-commands/app-state.ts`).
+    #[test]
+    fn a_reason_arrives_as_a_kebab_case_string() {
+        assert_eq!(
+            serde_json::from_str::<ShowReason>(r#""launch""#).unwrap(),
+            ShowReason::Launch
+        );
+        assert_eq!(
+            serde_json::from_str::<ShowReason>(r#""repaint-repair""#).unwrap(),
+            ShowReason::RepaintRepair
+        );
+    }
 }

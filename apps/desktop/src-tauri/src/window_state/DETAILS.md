@@ -105,7 +105,8 @@ Order matters, and it's the order upstream used:
 The plugin had a fourth step, **show + focus**, and we deliberately dropped it. Cmdr shows the main window from the
 frontend's `onMount` (`routes/(main)/show-main-on-mount.ts` → `show_main_window`), and that path must stay the only
 one: `show_main_window` orders the window to the *back* in E2E mode so test runs don't pop in front of the developer,
-so an unconditional `show()` from Rust would make every E2E run steal focus.
+so an unconditional `show()` from Rust would make every E2E run steal focus. The focus half isn't lost: a `launch`
+show activates the app from inside `show_main_window` (`commands/DETAILS.md`).
 
 Because nothing here acts on it, the saved `visible` flag is recorded but never applied. It stays in the schema so
 plugin-written files round-trip unchanged.

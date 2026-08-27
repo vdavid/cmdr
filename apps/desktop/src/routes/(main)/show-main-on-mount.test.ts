@@ -33,7 +33,7 @@ describe('showMainOnMount', () => {
     const done = showMainOnMount()
     await Promise.resolve()
     await Promise.resolve()
-    expect(showMainWindow).toHaveBeenCalledOnce()
+    expect(showMainWindow).toHaveBeenCalledExactlyOnceWith('launch')
 
     resolvePaint('painted')
     await done
@@ -42,7 +42,7 @@ describe('showMainOnMount', () => {
   it('logs debug and does not re-show when a frame lands', async () => {
     waitForNextPaint.mockResolvedValue('painted')
     await showMainOnMount()
-    expect(showMainWindow).toHaveBeenCalledOnce()
+    expect(showMainWindow).toHaveBeenCalledExactlyOnceWith('launch')
     expect(debug).toHaveBeenCalledOnce()
     expect(warn).not.toHaveBeenCalled()
   })
@@ -53,5 +53,14 @@ describe('showMainOnMount', () => {
     expect(showMainWindow).toHaveBeenCalledTimes(2)
     expect(warn).toHaveBeenCalledOnce()
     expect(debug).not.toHaveBeenCalled()
+  })
+
+  it('asks the repair re-show not to take the front back', async () => {
+    // The launch show activates Cmdr; the repair one must not, or a user who switched apps in
+    // the second it waited gets yanked back.
+    waitForNextPaint.mockResolvedValue('timeout')
+    await showMainOnMount()
+    expect(showMainWindow).toHaveBeenNthCalledWith(1, 'launch')
+    expect(showMainWindow).toHaveBeenNthCalledWith(2, 'repaint-repair')
   })
 })

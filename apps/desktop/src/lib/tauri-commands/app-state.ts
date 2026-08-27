@@ -177,12 +177,23 @@ export async function updateViewModeMenu(
 // ============================================================================
 
 /**
- * Shows the main window.
- * Should be called when the frontend is ready to avoid white flash.
+ * Why the main window is being shown, which decides whether the show also brings Cmdr to the
+ * front. Mirrors the `ShowReason` enum in `commands/window_ordering.rs`, which holds the
+ * rationale for each.
  */
-export async function showMainWindow(): Promise<void> {
+export type MainWindowShowReason = 'launch' | 'repaint-repair'
+
+/**
+ * Shows the main window. Call it when the frontend is ready, to avoid a white flash.
+ *
+ * A `'launch'` show also activates Cmdr, because macOS won't do that on its own: showing a window
+ * doesn't make its app the active one, so a launch that isn't already frontmost (every relaunch
+ * from the update toast, for one) would otherwise appear behind whatever is. A `'repaint-repair'`
+ * show leaves the front position alone.
+ */
+export async function showMainWindow(reason: MainWindowShowReason): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see the `ipc.rs` manifest)
-  await invoke('show_main_window')
+  await invoke('show_main_window', { reason })
 }
 
 /**

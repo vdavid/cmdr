@@ -133,8 +133,15 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   the private `set_menu_context` helper; see `menu/DETAILS.md`).
 - **`quick_look.rs`**: `quick_look_open` / `quick_look_set_path` / `quick_look_close` (native `QLPreviewPanel`
   singleton on macOS, no-op stubs elsewhere; 2 s main-thread-hop timeout). See `crate::quick_look`.
-- **`window_ordering.rs`**: `show_main_window` / `order_window_to_back`, E2E-only window z-ordering (order to back
-  without focus). No-op off macOS / outside E2E.
+- **`window_ordering.rs`**: `show_main_window` / `order_window_to_back`. `show_main_window` is the ONE path that makes
+  Cmdr visible (the window is created `"visible": false`; the frontend calls it from `onMount`), and it takes a
+  `ShowReason`: a `launch` show follows `show()` with `set_focus()`, a `repaint-repair` re-show doesn't. The activation
+  is load-bearing, because `show()` is only `makeKeyAndOrderFront:`, which makes the window key within Cmdr without
+  making Cmdr the active app: the update toast's relaunch spawns the binary directly
+  (`tauri::process::restart_macos_app`), bypassing LaunchServices, so the new process is granted no activation and its
+  window opens behind whatever is frontmost (verified on macOS 15.5 with Tauri 2.11.5, from a user-reported background
+  start after "Restart now", 2026-08-27). `order_window_to_back` is E2E-only z-ordering (order to back without focus),
+  a no-op off macOS / outside E2E, and the E2E branch of `show_main_window` orders back instead of showing.
 - **`file_actions.rs`**: direct file actions from the palette / menus — `show_in_finder`, `get_info`, `open_in_editor`,
   `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
   `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`).
