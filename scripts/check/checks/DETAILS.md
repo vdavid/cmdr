@@ -520,6 +520,33 @@ No allowlist: a missing `DETAILS.md` is always fixable by creating the file (the
 down), so there's nothing to exempt. Reuses `findClaudeMdFiles` (the same walk as `claude-md-length` and
 `claude-md-reminder`).
 
+## CLAUDE.md reminder
+
+`claude-md-reminder` (`IsFast`, **warn-only**, `NotInCI`) nudges when source files changed under a directory with a
+colocated `CLAUDE.md` but no agent doc covering them was touched. It's a nudge aimed at the agent mid-change, not a
+gate, and a nudge only works while it's mostly right: a reminder that fires on work the author already thought about
+gets cleared reflexively, which costs the same tokens as a real one and catches nothing. Two rules keep the
+signal-to-noise up, and both are load-bearing.
+
+**The window is the change being made now.** `pickBaseRef` bases on LOCAL `main`, and on `main` itself returns "" so
+only the working tree counts. Branches are cut from local `main` and fast-forwarded back, so local `main` is the real
+branch point; `origin/main` is not, because `main` here routinely sits many unpushed commits ahead of the remote.
+Basing on the remote widened the window to "everything not yet pushed", so every source change in that pile re-warned
+on every run until the next push: the fix for the warning became `git push`, which says nothing about documentation.
+The check never runs in CI, so the remote's view of the branch point is never the relevant one.
+
+**Any doc tier on the ancestor chain counts** (`docTouchedOnChain`), plus the repo-root `AGENTS.md` (the root
+`CLAUDE.md` is only the `@`-import manifest, so `AGENTS.md` is the doc a root-level change updates). Attribution still
+buckets a file into its NEAREST `CLAUDE.md` dir, but that isn't always the tier a change belongs in: a detail about a
+deep module can legitimately live in a parent's `DETAILS.md`. Demanding the nearest doc specifically nagged at changes
+that were already documented one directory up. The known cost: touching `AGENTS.md` silences the reminder repo-wide for
+that change, including for a second subsystem the author didn't document. That's the right trade for a warn-only nudge,
+since over-nagging is what stops it being read at all.
+
+Only `.rs`, `.ts`, `.svelte`, `.css`, `.go`, and `.js` count as source (`reminderSourceExts`); a JSON or lockfile edit
+rarely warrants a doc update on its own. Renames contribute both paths (`parsePorcelainZ`) so the nudge fires whichever
+side the author thinks of.
+
 ## Analytics event catalog
 
 `analytics-event-catalog` (`IsFast`, an **error** in both directions) pins the PostHog event vocabulary to its one

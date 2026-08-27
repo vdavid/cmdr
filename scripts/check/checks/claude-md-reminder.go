@@ -20,19 +20,30 @@ var reminderSourceExts = map[string]bool{
 	".js":     true,
 }
 
+// reminderRootDoc is the repo-root push-tier doc. The root `CLAUDE.md` is only
+// an `@`-import manifest, so `AGENTS.md` is the doc a root-level change updates.
+const reminderRootDoc = "AGENTS.md"
+
 type reminderMiss struct {
 	dir   string
 	count int
 }
 
 // RunClaudeMdReminder warns when source files were changed (in the working tree
-// or on the current branch vs the base branch) under a directory that has a
-// colocated CLAUDE.md, but neither that CLAUDE.md nor its sibling DETAILS.md
-// (the pull-tier doc) was also touched. Always succeeds (emits warnings, never
-// fails).
+// or on the current branch vs local `main`) under a directory that has a
+// colocated CLAUDE.md, but no CLAUDE.md, DETAILS.md, or root AGENTS.md on that
+// directory's ancestor chain was also touched. Always succeeds (emits warnings,
+// never fails).
 //
 // The intent is a low-friction nudge to the agent that just made the change:
 // "you touched code under X/, did you mean to update its colocated docs too?"
+// Both halves of that intent constrain the check, and getting either wrong turns
+// it into noise the reader learns to skip:
+//
+//   - "just made" bounds the window (see changedFiles and pickBaseRef): work
+//     already merged into `main` is not the change being made now.
+//   - "its docs" accepts any tier that covers the code (see docTouchedOnChain):
+//     the nearest doc dir isn't always where the change belongs.
 func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 	claudeFiles, err := findClaudeMdFiles(ctx.RootDir)
 	if err != nil {
@@ -58,10 +69,10 @@ func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 			len(claudeFiles), Pluralize(len(claudeFiles), "file", "files"))), nil
 	}
 
-	changedDocDirs := make(map[string]bool) // dirs whose CLAUDE.md or DETAILS.md was touched
+	changedDocDirs := make(map[string]bool) // dirs whose agent docs were touched
 	bucket := make(map[string]int)          // CLAUDE.md dir → count of changed source files under it
 	for _, f := range changed {
-		if base := filepath.Base(f); base == "CLAUDE.md" || base == "DETAILS.md" {
+		if isReminderDoc(f) {
 			changedDocDirs[filepath.Dir(f)] = true
 			continue
 		}
@@ -75,7 +86,7 @@ func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 
 	var misses []reminderMiss
 	for dir, count := range bucket {
-		if changedDocDirs[dir] {
+		if docTouchedOnChain(dir, changedDocDirs) {
 			continue
 		}
 		misses = append(misses, reminderMiss{dir, count})
@@ -128,16 +139,16 @@ func findClaudeMdFiles(rootDir string) ([]string, error) {
 	return files, nil
 }
 
-// changedFiles returns repo-relative paths of files that differ between the
-// working tree and the base branch. The set is the union of:
+// changedFiles returns repo-relative paths of the files making up the change
+// currently being worked on. The set is the union of:
 //
 //   - `git status --porcelain=v1 -z` (staged, unstaged, untracked)
 //   - `git diff --name-only -z <base>...HEAD` (committed on this branch since
-//     diverging from base)
+//     diverging from base), when pickBaseRef names a base
 //
 // Renames and copies contribute both old and new paths so the doc check fires
-// on either side. If neither `origin/main` nor `main` exists, only the working
-// tree is consulted.
+// on either side. On the base branch itself, or in a repo with no base branch,
+// only the working tree is consulted.
 func changedFiles(rootDir string) ([]string, error) {
 	seen := make(map[string]bool)
 
@@ -169,15 +180,42 @@ func changedFiles(rootDir string) ([]string, error) {
 	return out, nil
 }
 
-// pickBaseRef returns the first existing ref from the candidate list, or ""
-// if none exist (single-branch repo, fresh init, etc.).
+// pickBaseRef returns the ref this branch's committed work should be compared
+// against, or "" when there's no branch-shaped unit of work to scope to (we're
+// on the base branch, or the repo has no base branch at all).
+//
+// LOCAL `main` is the base, never `origin/main`, and that ordering is the whole
+// point: branches are cut from local `main` and fast-forwarded back into it, so
+// local `main` is the actual branch point. `main` here also routinely sits many
+// unpushed commits ahead of the remote, so basing on `origin/main` widens the
+// window to "everything not yet pushed": every source change in that pile
+// re-warns on every run for days, until a push that has nothing to do with
+// whether the change was documented. This check never runs in CI (see its
+// registry entry), so the remote's view of the branch point is never the
+// relevant one.
 func pickBaseRef(rootDir string) string {
-	for _, ref := range []string{"origin/main", "main"} {
-		if _, err := runGitOut(rootDir, "rev-parse", "--verify", "--quiet", ref); err == nil {
-			return ref
+	branch := currentBranch(rootDir)
+	for _, ref := range []string{"main", "origin/main"} {
+		if _, err := runGitOut(rootDir, "rev-parse", "--verify", "--quiet", ref); err != nil {
+			continue
 		}
+		if branch != "" && strings.TrimPrefix(ref, "origin/") == branch {
+			// On the base branch itself: the working tree is the current change.
+			return ""
+		}
+		return ref
 	}
 	return ""
+}
+
+// currentBranch returns the short name of the checked-out branch, or "" when
+// HEAD is detached.
+func currentBranch(rootDir string) string {
+	out, err := runGitOut(rootDir, "symbolic-ref", "--short", "--quiet", "HEAD")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
 }
 
 func runGitOut(rootDir string, args ...string) (string, error) {
@@ -223,6 +261,43 @@ func parsePorcelainZ(s string) []string {
 		}
 	}
 	return paths
+}
+
+// isReminderDoc reports whether a changed path is one of the agent docs that
+// count as documenting a change: either tier of a colocated pair, or the
+// repo-root AGENTS.md.
+func isReminderDoc(rel string) bool {
+	if rel == reminderRootDoc {
+		return true
+	}
+	base := filepath.Base(rel)
+	return base == "CLAUDE.md" || base == "DETAILS.md"
+}
+
+// docTouchedOnChain reports whether dir or any of its ancestors (up to and
+// including the repo root) had an agent doc changed.
+//
+// Attribution buckets a source file into its NEAREST CLAUDE.md dir, but that
+// isn't always the tier the change belongs in: a detail about a deep module can
+// legitimately live in a parent's DETAILS.md, or in the root AGENTS.md when it's
+// repo-wide. Demanding the nearest doc specifically nags at changes that are
+// already documented, one directory up.
+//
+// This does mean a change touching AGENTS.md silences the reminder repo-wide,
+// including for a second subsystem the author didn't document. That's the right
+// trade for a warn-only nudge: someone editing the hub doc has demonstrably
+// thought about docs, and over-nagging is what stops the check being read at all.
+func docTouchedOnChain(dir string, changedDocDirs map[string]bool) bool {
+	for {
+		if changedDocDirs[dir] {
+			return true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return false
+		}
+		dir = parent
+	}
 }
 
 // nearestClaudeDir walks up from filePath's directory and returns the nearest

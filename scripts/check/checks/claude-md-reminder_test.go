@@ -8,32 +8,39 @@ import (
 	"testing"
 )
 
+// reminderGit runs a git command in the fixture repo with a fixed identity.
+func reminderGit(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(),
+		"GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.com",
+		"GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.com",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
+
+// reminderWrite writes a fixture file, creating parent directories as needed.
+func reminderWrite(t *testing.T, dir, rel, body string) {
+	t.Helper()
+	full := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(full, []byte(body), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // initReminderRepo seeds a repo with a `main` branch holding one CLAUDE.md and
 // some source files, then leaves HEAD on a fresh branch the test can mutate.
 func initReminderRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-
-	run := func(args ...string) {
-		cmd := exec.Command("git", args...)
-		cmd.Dir = dir
-		cmd.Env = append(os.Environ(),
-			"GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.com",
-			"GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.com",
-		)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git %v: %v\n%s", args, err, out)
-		}
-	}
-	write := func(rel, body string) {
-		full := filepath.Join(dir, rel)
-		if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(full, []byte(body), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
+	run := func(args ...string) { reminderGit(t, dir, args...) }
+	write := func(rel, body string) { reminderWrite(t, dir, rel, body) }
 
 	run("init", "-q", "-b", "main")
 	write("apps/desktop/CLAUDE.md", "# Desktop\n")
@@ -136,17 +143,7 @@ func TestReminder_NearestClaudeWins(t *testing.T) {
 	// A file under a deeper CLAUDE.md should attribute to the deeper one,
 	// not the ancestor.
 	dir := initReminderRepo(t)
-	run := func(args ...string) {
-		cmd := exec.Command("git", args...)
-		cmd.Dir = dir
-		cmd.Env = append(os.Environ(),
-			"GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.com",
-			"GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.com",
-		)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git %v: %v\n%s", args, err, out)
-		}
-	}
+	run := func(args ...string) { reminderGit(t, dir, args...) }
 
 	// Commit the deeper CLAUDE.md and a baseline source file so they're not
 	// counted as "untracked changes" by the next run.
@@ -186,17 +183,7 @@ func TestReminder_NearestClaudeWins(t *testing.T) {
 
 func TestReminder_BranchVsMain_DetectsCommittedChanges(t *testing.T) {
 	dir := initReminderRepo(t)
-	run := func(args ...string) {
-		cmd := exec.Command("git", args...)
-		cmd.Dir = dir
-		cmd.Env = append(os.Environ(),
-			"GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.com",
-			"GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.com",
-		)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git %v: %v\n%s", args, err, out)
-		}
-	}
+	run := func(args ...string) { reminderGit(t, dir, args...) }
 	run("checkout", "-q", "-b", "feature")
 	if err := os.WriteFile(filepath.Join(dir, "apps/desktop/src/lib.rs"), []byte("fn branched() {}\n"), 0644); err != nil {
 		t.Fatal(err)
@@ -223,5 +210,112 @@ func TestParsePorcelainZ_RenameKeepsBothPaths(t *testing.T) {
 		if p != want[i] {
 			t.Errorf("path %d: got %q, want %q", i, p, want[i])
 		}
+	}
+}
+
+// seedFakeOrigin points `refs/remotes/origin/main` at the current commit, so the
+// fixture reproduces the shape of a repo whose local `main` runs ahead of an
+// out-of-date remote.
+func seedFakeOrigin(t *testing.T, dir string) {
+	t.Helper()
+	reminderGit(t, dir, "update-ref", "refs/remotes/origin/main", "HEAD")
+}
+
+func TestReminder_OnMain_IgnoresCommittedWork(t *testing.T) {
+	// Committed work on `main` is behind us: the reminder is aimed at the change
+	// being made right now, and on `main` that's the working tree. Widening the
+	// window to everything not yet pushed makes each commit re-warn on every run
+	// until the next push, which says nothing about whether it was documented.
+	dir := initReminderRepo(t)
+	seedFakeOrigin(t, dir)
+
+	reminderWrite(t, dir, "apps/desktop/src/lib.rs", "fn committed() {}\n")
+	reminderGit(t, dir, "add", "apps/desktop/src/lib.rs")
+	reminderGit(t, dir, "commit", "-q", "-m", "undocumented change on main")
+
+	res := runReminder(t, dir)
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected success for already-committed work on main, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestReminder_OnMain_StillWarnsForWorkingTree(t *testing.T) {
+	dir := initReminderRepo(t)
+	seedFakeOrigin(t, dir)
+
+	reminderWrite(t, dir, "apps/desktop/src/lib.rs", "fn uncommitted() {}\n")
+
+	res := runReminder(t, dir)
+	if res.Code != ResultWarning {
+		t.Fatalf("expected warning for uncommitted work on main, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestReminder_BranchScopesToLocalMain_NotRemote(t *testing.T) {
+	// The branch point is local `main`, so unpushed commits sitting on `main`
+	// belong to neither this branch nor this reminder.
+	dir := initReminderRepo(t)
+	seedFakeOrigin(t, dir)
+
+	reminderWrite(t, dir, "apps/other/CLAUDE.md", "# Other\n")
+	reminderWrite(t, dir, "apps/other/src/x.ts", "export const x = 1\n")
+	reminderGit(t, dir, "add", ".")
+	reminderGit(t, dir, "commit", "-q", "-m", "seed other module")
+
+	// Unpushed, undocumented work on `main` itself.
+	reminderWrite(t, dir, "apps/desktop/src/lib.rs", "fn on_main() {}\n")
+	reminderGit(t, dir, "add", "apps/desktop/src/lib.rs")
+	reminderGit(t, dir, "commit", "-q", "-m", "undocumented change on main")
+
+	// The branch's own undocumented work.
+	reminderGit(t, dir, "checkout", "-q", "-b", "feature")
+	reminderWrite(t, dir, "apps/other/src/x.ts", "export const x = 2\n")
+	reminderGit(t, dir, "add", "apps/other/src/x.ts")
+	reminderGit(t, dir, "commit", "-q", "-m", "undocumented change on branch")
+
+	res := runReminder(t, dir)
+	if res.Code != ResultWarning {
+		t.Fatalf("expected warning for the branch's own change, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "- apps/other/ ") {
+		t.Errorf("expected the branch's change to be reported, got: %s", res.Message)
+	}
+	if strings.Contains(res.Message, "- apps/desktop/ ") {
+		t.Errorf("work sitting unpushed on main should be out of the branch window, got: %s", res.Message)
+	}
+}
+
+func TestReminder_AncestorDocUpdate_Passes(t *testing.T) {
+	// The nearest doc isn't always the right tier: a change under a deep module
+	// can belong in a parent's docs, and that's still a documented change.
+	dir := initReminderRepo(t)
+	reminderWrite(t, dir, "apps/desktop/src/feature/CLAUDE.md", "# Feature\n")
+	reminderWrite(t, dir, "apps/desktop/src/feature/code.rs", "fn x() {}\n")
+	reminderGit(t, dir, "add", ".")
+	reminderGit(t, dir, "commit", "-q", "-m", "seed feature module")
+
+	reminderWrite(t, dir, "apps/desktop/src/feature/code.rs", "fn changed() {}\n")
+	reminderWrite(t, dir, "apps/desktop/DETAILS.md", "# Desktop details\n\nDocumented there.\n")
+
+	res := runReminder(t, dir)
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected success when an ancestor's doc covered the change, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestReminder_RootAgentsMdUpdate_Passes(t *testing.T) {
+	// The root `CLAUDE.md` is only an `@`-import manifest, so `AGENTS.md` is the
+	// doc a repo-level change actually updates.
+	dir := initReminderRepo(t)
+	reminderWrite(t, dir, "AGENTS.md", "# Repo\n")
+	reminderGit(t, dir, "add", ".")
+	reminderGit(t, dir, "commit", "-q", "-m", "seed AGENTS.md")
+
+	reminderWrite(t, dir, "apps/desktop/src/lib.rs", "fn changed() {}\n")
+	reminderWrite(t, dir, "AGENTS.md", "# Repo\n\nDocumented here.\n")
+
+	res := runReminder(t, dir)
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected success when root AGENTS.md covered the change, got %v: %s", res.Code, res.Message)
 	}
 }
