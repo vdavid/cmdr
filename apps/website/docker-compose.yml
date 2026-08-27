@@ -29,6 +29,11 @@ services:
       - remark42-data:/srv/var
     environment:
       - REMARK_URL=https://comments.getcmdr.com
+      # Only honor X-Forwarded-For from proxy-net (Caddy). Unset means any client can
+      # spoof it and bypass vote dedup and rate limiting. Network CIDR, not Caddy's
+      # container IP: bridge IPs shift on recreate, and a stale pin collapses every
+      # commenter into one IP.
+      - TRUSTED_PROXY=172.18.0.0/16
       - SECRET=${REMARK42_SECRET}
       - SITE=getcmdr
       - AUTH_GOOGLE_CID=${AUTH_GOOGLE_CID}

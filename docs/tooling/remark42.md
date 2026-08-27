@@ -1,9 +1,9 @@
 # Remark42 (comments)
 
-Self-hosted commenting engine (v1.15.0). Runs as a Docker container alongside the website on the Hetzner VPS.
+Self-hosted commenting engine. Runs as a Docker container alongside the website on the Hetzner VPS. The version is
+pinned in `apps/website/docker-compose.yml`; don't restate it here, it goes stale.
 
 - **Host URL**: https://comments.getcmdr.com
-- **Docker image**: `umputun/remark42:v1.15.0`
 - **Container name**: `remark42`
 - **Docker Compose**: `apps/website/docker-compose.yml`
 
@@ -42,6 +42,22 @@ Stored on the server at `apps/website/.env`:
 - **Google**: `https://comments.getcmdr.com/auth/google/callback`
 
 These must match exactly in the OAuth app settings on GitHub / Google Cloud Console.
+
+## Client IP handling
+
+Vote dedup and rate limiting key off the client IP, which reaches Remark42 in `X-Forwarded-For`, so both ends are
+configured to keep that header trustworthy:
+
+- **Caddy** sets `header_up X-Forwarded-For {remote_host}` on the `comments.getcmdr.com` route (`infra` repo,
+  `hetzner/services/caddy/Caddyfile`). Caddy's default **appends** to a client-supplied header rather than replacing it,
+  which leaves the spoofed value in place.
+- **Remark42** sets `TRUSTED_PROXY=172.18.0.0/16` (the `proxy-net` subnet), so it only honors the header from Caddy.
+  Unset, it trusts any client and logs a startup warning.
+
+**Gotcha**: trust the network CIDR, not Caddy's container IP. Docker bridge IPs are pool-assigned and shift when a
+container is recreated, and a stale pin doesn't fail loudly: Remark42 falls back to the socket peer, which is Caddy, so
+every commenter collapses into a single IP and shares one rate limit and vote identity. `comments.getcmdr.com` is
+deliberately not Cloudflare-proxied, so `{remote_host}` at Caddy is the real client.
 
 ## OAuth clients
 
