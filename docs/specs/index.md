@@ -120,8 +120,6 @@ left, so the durable intent survives the wipe.
       fixed).
 - [ ] 2026-06-21 `later/transfer-queue-v2-plan.md` - Transfer queue/pause v2: per-lane budgets (FTP conns),
       mid-large-file pause, concurrent-path pause, connection keep-alive, queue reorder/persist.
-- [ ] 2026-06-13 `later/docs-single-source-sweep.md` - Multi-agent sweep to de-duplicate mechanism docs (map points, one
-      canonical home).
 - [ ] 2026-06-28 `later/indexing/drive-index-overall-eta.md` - Overall indexing ETA across remaining steps, with the
       backend per-phase calibration it needs to stay honest (the step checklist ships per-step ETA only).
 - [ ] 2026-07-14 `later/default-file-manager-spec.md` - Reveal-in-Cmdr (`NSFileViewer` redirect) + `public.folder`
