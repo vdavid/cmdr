@@ -41,8 +41,10 @@ already identified, and restructuring the tests is still not the fix.
 ## The margin table, and why a flat duration budget is the wrong metric
 
 One clean full run (`cargo nextest run --workspace --features cmdr/virtual-mtp`, 2026-08-23): **6,599 tests, 26 s wall
-clock, 379 s of summed per-test wall clock, mean 57 ms. 12 tests over 2 s, 3 over 3 s, 1 over 5 s.** (This re-derives
-the number `docs/specs/open-decisions.md` item 12 was blocked on.)
+clock, 379 s of summed per-test wall clock, mean 57 ms. 12 tests over 2 s, 3 over 3 s, 1 over 5 s.** These are IDLE
+numbers, which is the wrong basis for a speed bar: the standing standard is two seconds on a saturated machine
+(`docs/testing.md` § "A Rust test gets two seconds on a saturated machine"). What follows is about predicting flakes, a
+separate question.
 
 Two saturated full-suite runs (96 and 192 spinning workers, load 77 and 209) killed nine tests between them. Ranked by
 **margin = per-test cap ÷ idle runtime**, they are the thin-margin tests, and nothing else:

@@ -21,12 +21,13 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   the last gap. It also carries the verified move recipe and the step everyone gets wrong (a copied bundle keeps its
   quarantine xattr and is translocated again **even from `/Applications`** until the xattr is stripped). Read it before
   anyone reopens the auto-move question, or repeats the claim that changing the `.app` inode costs FDA.
-- `rust-test-flake-analysis-2026-08-23.md` — what actually makes the Rust lanes go red, measured rather than assumed,
-  and the numbers `docs/specs/open-decisions.md` item 12 needed. **The recommendation is to budget a test's MARGIN
-  (per-test cap ÷ idle runtime), not its duration**: every test two saturated full-suite runs killed sits at the thin
-  end of that ratio, while three of the four causes found have no duration signal at all. Read it before anyone seeds a
-  duration allowlist, and read the first section regardless: it carries the two ways `~/cmdr-test-log.csv` and
-  `~/cmdr-check-log.csv` mislead a naive top-offenders query.
+- `rust-test-flake-analysis-2026-08-23.md` — what actually makes the Rust lanes go red, measured rather than assumed.
+  **What predicts a starvation kill is a test's MARGIN (per-test cap ÷ idle runtime), not its duration**: every test two
+  saturated full-suite runs killed sits at the thin end of that ratio, while three of the four causes found have no
+  duration signal at all. That is a flake predictor, not the speed bar: the standing standard is two seconds on a
+  saturated machine (`docs/testing.md` § "A Rust test gets two seconds on a saturated machine"), and no margin ratchet
+  is planned. Read this note before anyone seeds a duration allowlist, and read the first section regardless: it carries
+  the two ways `~/cmdr-test-log.csv` and `~/cmdr-check-log.csv` mislead a naive top-offenders query.
 - `sftp-crate-evaluation-2026-08-22.md`: which Rust crate the SFTP backend gets built on, with each candidate's source
   read rather than its README. **The recommendation is `russh` + `openssh-sftp-client`**, and the reasoning is written
   out so it can be argued with. Read it before anyone proposes `russh-sftp` (the popular default) or a libssh2 binding:

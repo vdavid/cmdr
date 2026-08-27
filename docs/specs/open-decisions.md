@@ -41,47 +41,25 @@ translated into nine locales, so a change means re-translating those keys, and n
    compaction idea then evaporates; **(b)** no, keep per-item approval and build compaction instead; **(c)** defer both.
    This has blocked its two dependent milestones since July.
 
-7. **Does the `write_operations` module tangle get scoped into the backend-crate effort, or stand alone?** It is now the
-   app crate's largest genuine cycle at 11 sibling modules with no parent node, and nothing owns it. Scoping it needs an
-   edge analysis first, about half a day.
-
 ## Three questions I recommend closing as already answered
 
 Each was left open in a spec and has since been settled by shipped code or by measurement. They need ratification, not
 design.
 
-8. **How aggressive should the SMB session deadline be?** **Recommend: leave `smb2`'s defaults.** The ECHO keepalive
+7. **How aggressive should the SMB session deadline be?** **Recommend: leave `smb2`'s defaults.** The ECHO keepalive
    means the base deadline no longer has to be sized for the slowest healthy case, and Cmdr's per-file retry absorbs a
    breach as a blip. Nothing measured says the current numbers hurt.
-9. **Should an SMB reconnect be silent?** **Recommend: yes, silent, with the evidence available on demand.** It already
+8. **Should an SMB reconnect be silent?** **Recommend: yes, silent, with the evidence available on demand.** It already
    is silent, `smb_diagnostics.rs` already exposes the counters for anyone investigating, and a toast per reconnect
    would fire on every laptop lid-close.
-10. **Credit budget, or a sanity ceiling on the concurrency window?** **Recommend: close as answered.** The question has
-    no well-defined answer as posed: credits gate write frames connection-wide while the window gates concurrent FILES,
-    so there is no file-level value a credit budget could produce. The 32 ceiling stays because the NAS plateaus at 12
-    on both corpus shapes.
+9. **Credit budget, or a sanity ceiling on the concurrency window?** **Recommend: close as answered.** The question has
+   no well-defined answer as posed: credits gate write frames connection-wide while the window gates concurrent FILES,
+   so there is no file-level value a credit budget could produce. The 32 ceiling stays because the NAS plateaus at 12 on
+   both corpus shapes.
 
-## Maintenance calls
+## One maintenance call
 
-11. **A deliberate `invariant-density` ratchet pass.** The check warns repo-wide on four subsystems and has been
+10. **A deliberate `invariant-density` ratchet pass.** The check warns repo-wide on four subsystems and has been
     drifting up unnoticed because it is warn-only. `crates/cmdr-index` sits at 371 rules and 2.96 per kloc against the
     frontend's 0.87, and it is also the codebase's top bug source. `AGENTS.md` says the fix is to make each invariant
     unrepresentable in a type rather than to raise the number. Worth scheduling rather than letting it drift.
-
-12. **A per-test duration budget for the Rust suites**, mirroring the two seconds E2E already enforces. **Recommend:
-    build it, but budget the MARGIN, not the duration.** The blocker is gone: one clean full run on 2026-08-23 is 6,599
-    tests in 26 s wall clock, with **12 over two seconds**, three over three, and one over five. (`~/cmdr-test-log.csv`
-    logs only about 30 passes per run because `testLogSlowSeconds` is 1.0 s, which is by design, not the parser bug this
-    entry used to suspect.) What a flat two-second rule would buy is the wrong thing, though: of the four causes behind
-    every Rust flake measured this month, three have no duration signal at all (0.25 s, 1.6 s, and a config fact with no
-    runtime), while the fourth ranks perfectly by **cap ÷ idle runtime** — every test two saturated full-suite runs
-    killed sits at the thin end of that ratio, topped by `busy_db_is_retried_not_deleted` at **1.4×**, which no duration
-    rule catches without also catching a dozen honest two-second tests. Seeding a margin ratchet still needs David's OK
-    (it's a new allowlist). Evidence: `docs/notes/rust-test-flake-analysis-2026-08-23.md`.
-
-    **David's answer (2026-08-23): don't build the margin ratchet, and the standard he wants is different from both
-    options above.** He wants a test flagged when it takes longer than two seconds **on a SATURATED machine**, not an
-    idle one, on the grounds that almost every test here can be refactored to finish in a very short time. That inverts
-    the framing: the idle-machine measurement this entry argues from is the wrong baseline, and a test needing more than
-    two seconds under load is a test to fix rather than a threshold to tune around. Nothing is being built for it right
-    now; capture the standard so a future duration check is measured under saturation and not against the 26 s idle run.

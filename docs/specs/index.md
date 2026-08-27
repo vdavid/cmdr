@@ -23,11 +23,11 @@ that lives beside the code, and git holds the history.
       closes one plan outright, the verifier mark with its abandoned-ground trigger, Spotlight recency for a true first
       run, a "watch only these folders" setting, Finder sidebar favorites, and one skipped end-to-end test. **Four days
       if every item is taken**, and they are genuinely independent.
-- [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Twelve calls waiting on David:
-      unreviewed user-facing copy in three features, two product calls that have blocked dependent milestones since
-      July, three questions that shipped code has already answered and that just need closing, and two maintenance
-      calls. Most take a minute. A question with no answer looks exactly like a task nobody picked up, which is how a
-      600-line spec stays alive for a year.
+- [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Ten calls waiting on David:
+      unreviewed user-facing copy in four places, two product calls (one of which has blocked its dependent milestones
+      since July), three questions that shipped code has already answered and that just need closing, and one
+      maintenance call. Most take a minute. A question with no answer looks exactly like a task nobody picked up, which
+      is how a 600-line spec stays alive for a year.
 
 ## Later
 
@@ -35,12 +35,12 @@ Deferred future work. Unchecked by default; the folder name is the status. Each 
 left, so the durable intent survives the wipe.
 
 - [ ] 2026-08-23 `later/sftp-follow-ups.md` - **The SFTP backend ships without a way to reach it.** The crate, its IPC
-      surface, and the fixtures are done and documented in `crates/cmdr-sftp/DETAILS.md`; four things are open. The
+      surface, and the fixtures are done and documented in `crates/cmdr-sftp/DETAILS.md`; three things are open. The
       sidebar has no SFTP arm and path resolution doesn't answer for a remote path, so David's sign-in UI is the next
-      build (its whole guide is one section of that `DETAILS.md`). Free space and non-UTF-8 filenames wait on the same
-      vendoring of `openssh-sftp-protocol` + `ssh_format`, so they're one job. The auth rung a banner shows is decided
-      per dial and nothing refreshes it, which the banner design has to settle first. And two backends still put their
-      protocol's wording where `VolumeError::NotFound` promises a path.
+      build (its whole guide is one section of that `DETAILS.md`, and `get_volume_sign_in_state` already answers live
+      what a banner should ask for). Free space and non-UTF-8 filenames wait on the same vendoring of
+      `openssh-sftp-protocol` + `ssh_format`, so they're one job. And two backends still put their protocol's wording
+      where `VolumeError::NotFound` promises a path.
 
 - [ ] 2026-08-23 `later/ai/wake-loop-follow-ups.md` - What the shipped proactive agent deliberately left. Two interest
       tuning knobs and three cadence constants that want a week of real wakes before anyone moves them (the per-outcome
@@ -48,14 +48,13 @@ left, so the durable intent survives the wipe.
       chat-memory-size change (half a day, unblocked), the rail not refetching on a decision, and one chore needing a
       machine with a foreground: the consent screenshots.
 - [ ] 2026-08-20 `later/i18n-screenshot-gaps.md` - Translator-screenshot coverage: which catalog families are still
-      uncoupled, why each resists capture, and what closing it takes. Stands at **2,101 / 2,989 keys (70%)**: 1,200
-      direct plus 901 representative, over 132 captured surfaces with none failed. The percentage fell from the shipped
-      plan's 75% only because the catalog grew (the translated menu bar alone added 129 permanently-native `menu.*`
-      keys); absolute coverage rose. Biggest gaps: `settings.mediaIndex` (80, the whole panel body behind the
-      image-indexing master toggle), `askCmdr` (82, needs the scripted fake LLM to emit a tool call),
-      `fileExplorer.navigation` (55, SMB connection and favorites failure states), and four cheap settings surfaces the
-      capture never visits. Live per-area numbers always come from the generated
-      `apps/desktop/src/lib/intl/messages/screenshots/coverage-report.md`, never this doc.
+      uncoupled, why each resists capture, and what closing it takes. Stands at **2,186 / 3,112 keys (70%)**: 1,248
+      direct plus 938 representative, over 137 captured surfaces. The percentage fell from the shipped plan's 75% only
+      because the catalog grew (the translated menu bar alone added 129 permanently-native `menu.*` keys); absolute
+      coverage rose. Biggest gaps: `settings.mediaIndex` (the whole panel body behind the image-indexing master toggle),
+      `askCmdr` (needs the scripted fake LLM to emit a tool call), `fileExplorer.navigation` (SMB connection and
+      favorites failure states), and four cheap settings surfaces the capture never visits. Live per-area numbers always
+      come from the generated `apps/desktop/src/lib/intl/messages/screenshots/coverage-report.md`, never this doc.
 - [ ] 2026-07-22 `later/indexing/swap-scan-plan.md` - Build-and-swap rescan: run the fast parallel guarded walker into a
       separate `index-{vid}.building.db`, then swap it in atomically (~8.4× faster, 107 s vs 897 s), replacing the
       ~15-minute serial in-place reconcile of a completed LOCAL index. Durable `.swap` marker + idempotent open-time

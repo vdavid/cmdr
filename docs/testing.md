@@ -463,6 +463,20 @@ runs killed on 2026-08-23 sat at the thin end of it, and the suite's thinnest is
 cap). Raw duration doesn't predict it: the SMB test that failed most often all month cost 0.25 s idle. Full table:
 `docs/notes/rust-test-flake-analysis-2026-08-23.md`.
 
+### A Rust test gets two seconds on a saturated machine
+
+That is the standard, and the saturated part is the whole of it: a test measured on an idle machine is measured on the
+machine nobody's suite runs on. Almost every test here can be refactored to finish in a fraction of two seconds, so a
+test needing longer under load is a test to fix rather than a threshold to tune around. The E2E lanes already enforce
+two seconds per test, defended automatically by `scripts/check/checks/e2e-duration-allowlist.json`; the Rust suites hold
+the same bar by hand.
+
+Nothing enforces it yet, and no margin ratchet is planned. When something does enforce it, it measures under saturation:
+one clean idle full run is 6,599 tests in 26 s wall clock with 12 over two seconds, and flagging those dozen catches
+honest tests while missing the ones saturation actually kills. Those rank by margin instead, which is a separate
+question from how long a test ought to take. Evidence for both halves:
+`docs/notes/rust-test-flake-analysis-2026-08-23.md`.
+
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 
 Use `commands.commandName(args)` from `apps/desktop/src/lib/ipc/`. Enforced by `cmdr/no-raw-tauri-invoke` ESLint rule
