@@ -11,10 +11,11 @@ that lives beside the code, and git holds the history.
 ## In progress
 
 - [ ] 2026-08-21 `indexing-loose-ends.md` - **The coverage machine works; these are the threads left hanging.** Phased
-      indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled: a rename that
-      closes one plan outright, the verifier mark with its abandoned-ground trigger, Spotlight recency for a true first
-      run, a "watch only these folders" setting, Finder sidebar favorites, and one skipped end-to-end test. **Four days
-      if every item is taken**, and they are genuinely independent.
+      indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled. Two
+      engineering calls are left: the verifier mark with its abandoned-ground trigger (searchability, ❌ not
+      throughput), and Spotlight recency for a true first run (three shape questions open). **A day and a half**, and
+      they are independent. Two items left for GitHub as product work (`#56`, `#57`), one was dropped as untestable by
+      design, and the `mgr.scanning` rename shipped.
 - [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Ten calls waiting on David:
       unreviewed user-facing copy in four places, two product calls (one of which has blocked its dependent milestones
       since July), three questions that shipped code has already answered and that just need closing, and one
@@ -87,9 +88,9 @@ left, so the durable intent survives the wipe.
       rescore costing O(touched), a kind-aware multi-volume scheduler, an anonymized real-index eval corpus, and three
       dev bins. Three things are open. The weights are still untuned defaults even though the whole tuning loop is
       built, because real corpus dumps are gitignored and the run needs David's own home directory. The Spotlight
-      sampler's cap has never been measured (and is NOT the same work as `indexing-loose-ends.md` item 3, which seeds a
-      first run before any index exists). And a recompute runs under no cancellation token, so `stop_all_indexing`
-      doesn't reach it, which is survivable only while a full pass stays seconds.
+      sampler's cap has never been measured (and is NOT the same work as `indexing-loose-ends.md`'s Spotlight-recency
+      item, which seeds a first run before any index exists). And a recompute runs under no cancellation token, so
+      `stop_all_indexing` doesn't reach it, which is survivable only while a full pass stays seconds.
 - [ ] 2026-08-27 `later/indexing/media-ml-index-plan.md` - **Mostly shipped; kept for its decision log and two parked
       milestones.** Searchable image index (OCR, tags, faces, text→image) as an ML enrichment layer on the drive index:
       macOS-native Vision + Core ML, vectors in SQLite, on-device by default. SHIPPED and in users' hands: M1/M1.5/M2
