@@ -112,8 +112,15 @@ left, so the durable intent survives the wipe.
       support at "(winter?)".
 - [ ] 2026-05-10 `later/totalcmd-plugin-analysis.md` - Not a spec, but Total Commander packer-plugin research backing
       future archive/plugin work.
-- [ ] 2026-05-29 `later/disk-cleanup-advice-process.md` - Not a spec, but reference notes for a future disk-cleanup
-      advice feature.
+- [ ] 2026-08-27 `later/disk-cleanup-advice-process.md` - Not a spec and not unfinished work: **reference notes on how
+      to give disk-cleanup advice without losing the user's trust**, from a session where an agent got it wrong three
+      times. The heuristic (delete only what is BOTH filesystem-idle by mtime and process-idle by `pgrep`; present
+      candidates with signals, never a "safe to delete" bucket) doubles as the judgment model for the roadmap's
+      disk-space visualizer. Also carries the Cmdr-against-`du` tooling numbers (~25–30× on a directory level, mtimes
+      included). Corrected 2026-08-27: the parameter is `sizeMin`, not `min_size`, and the note's "you can't ask for
+      every dir over N GB" limit is refuted by `sortBy: "size"` with `excludeSystemDirs: false`, which is now the
+      default path. 💭 Belongs in `docs/notes/` rather than a folder whose contract is unfinished work; left here
+      pending David's call.
 - [ ] 2026-07-18 `later/indexing/out-of-process-indexing.md` - Deferred escalation: move drive and media indexing into a
       separate OS process for a hard "can't starve the UI" guarantee. Not needed now (thread QoS + bounded logging
       closed the levers; the resilience fix stopped the source); captures the seams, the clean per-volume-WAL

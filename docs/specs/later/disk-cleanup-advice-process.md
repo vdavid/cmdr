@@ -1,7 +1,12 @@
-# Disk cleanup advice — process notes for agents
+# Disk cleanup advice: process notes for agents
 
-Lessons from a real session where a general-purpose agent gave wrong recommendations. Keep this short and concrete;
-expand as more pitfalls show up.
+Not a spec and not unfinished work: reference notes from a real session where a general-purpose agent gave wrong
+recommendations (2026-06-12). Two audiences, and they want different halves. An agent asked to free disk space on a
+machine wants the heuristic and the pitfalls. Anyone designing the roadmap's disk-space visualizer or a "what can I
+delete?" feature wants the heuristic as the product's judgment model, because the pitfalls below are exactly the ways
+such a feature would lose a user's trust.
+
+Keep it short and concrete; expand as more pitfalls show up.
 
 ## The user's actual heuristic (use this)
 
@@ -63,9 +68,26 @@ Otherwise list as "candidate, ask user."
 
 ## The tooling that actually helps
 
-### Default path: Cmdr MCP `state` resource + `nav_to_path` + `sort`
+### Default path: one size-sorted `search` over the whole volume
 
-This is the right starting point for almost every cleanup task. The pattern:
+The `search` tool answers "where did the space go?" directly, and it's the right first call:
+
+```
+mcp__cmdr-dev__search(sortBy="size", excludeSystemDirs=false, limit=50)
+```
+
+`sortBy: "size"` returns the biggest matches anywhere in scope, files and folders on one scale, **a folder counted by
+its recursive total**. `excludeSystemDirs: false` is not optional here: the default hides `node_modules`, `.git`, and
+`Caches`, which are usually where the space actually went (the result says how many matches it hid). Narrow with
+`scope`, `type="dir"`, `sizeMin` / `sizeMax` (human-readable, for example `"1 GB"`), and `pattern`. A search covers one
+volume, so every include path in `scope` has to be on the same drive.
+
+Verified against the tool schema on 2026-08-27. ⚠️ The parameter is `sizeMin`, not `min_size`.
+
+### Drill-down: `state` resource + `nav_to_path` + `sort`
+
+Once the search names a suspect, walk into it. This also stays the fallback when a volume is unindexed enough that the
+search is slow. The pattern:
 
 ```
 nav_to_path(pane, <dir>)
@@ -76,7 +98,7 @@ ReadMcpResourceTool(cmdr-dev, "cmdr://state?include=panes")
 
 Returns up to 76 entries with **size + mtime** in roughly **2 s per directory level**. Drilling four levels deep takes
 ~8 s total. Compare to `du -sh <dir>/*` at the same depth: **30–70 s per level, no mtimes**. Roughly 25–30× faster, with
-the activity signal included.
+the activity signal included. (Measured in the 2026-06-12 session on David's laptop, by wall clock.)
 
 Workflow:
 
@@ -87,14 +109,15 @@ Workflow:
    skips them entirely.
 4. mtimes come for free; combine with `pgrep` for the activity signal.
 
-### Secondary: search MCP with explicit patterns
+### Named bloat: `search` with a pattern
 
-`mcp__cmdr-dev__search` with `type=dir`, a pattern (`target|node_modules|caches`), and `min_size` returns the answer in
-<1 s for the "specific kinds of bloat" case. AI search (`mcp__cmdr-dev__ai_search`) hits the same backend; works well
-when the query names what to look for, returns empty/sparse when it doesn't.
+`type="dir"` plus a pattern (`target|node_modules|caches`, `patternType="regex"`) and `sizeMin` answers the "specific
+kinds of bloat" case in under a second. AI search (`mcp__cmdr-dev__ai_search`) hits the same backend; it works well when
+the query names what to look for and returns sparse results when it doesn't.
 
-Known limit: `min_size` with no pattern (or with `*`) on dir search returns very few results. Don't rely on it for the
-"show me every dir over N GB anywhere" query. Use the state walk for that.
+⚠️ The 2026-06-12 session recorded that a size filter with no pattern returned very few results, and concluded the state
+walk was the only way to ask "show me every dir over N GB anywhere". **That's no longer true**: `sortBy: "size"` is
+built for exactly that query and is now the default path above.
 
 ### When to fall back to `du`
 
@@ -139,7 +162,8 @@ workflow plus Time Machine cover the rare oops).
 
 ## Quick checklist before generating any recommendation
 
-- [ ] Walked the top of the tree with state + size sort, not guessed from training data.
+- [ ] Asked the volume with a size-sorted `search` (`excludeSystemDirs: false`), or walked the tree with state + size
+      sort. Never guessed from training data.
 - [ ] Checked mtime ≥ 14 days for every "stale" claim.
 - [ ] Ran `pgrep`/`ps` for every app whose cache I'm about to suggest wiping.
 - [ ] Computed reclaim ÷ refetch-cost; dropped low-ratio items.
@@ -154,8 +178,8 @@ reclaimed ~120 GB on their own.
 
 **Second round (state-walk approach):** walked `/`, `/Applications`, `/Users/<user>` via `cmdr://state` sorted by size
 desc with `showHidden: true`. Two drills surfaced `~/.ollama/models` (19 GB, idle 14 months) and `~/.npm` (20 GB,
-package cache). Combined with `~/java_error_in_idea.hprof` (2.5 GB crash dump) and a rustup prune (4 toolchains
+package cache). Combined with `~/java_error_in_idea.hprof` (2.5 GB crash dump) and a rustup prune (four toolchains
 predating every project's MSRV, ~3 GB), reclaimed ~45 GB more without a single bad recommendation.
 
-Free space went from 37 GB → 185 GB across the session. The shift was a tooling shift (state walk over `du` and search),
-not just a heuristic shift.
+Free space went from 37 GB to 185 GB across the session. The shift was a tooling shift, away from `du`, more than a
+heuristic shift. Today a size-sorted `search` would have found both suspects in one call.
