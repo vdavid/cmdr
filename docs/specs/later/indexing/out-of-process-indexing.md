@@ -20,14 +20,16 @@ that makes "a runaway indexer can never starve the UI" a structural guarantee ra
 Two in-process levers were closing the actual gap, and both are cheaper and lower-risk than a process split:
 
 1. **Thread QoS.** The heavy indexing threads (writer, scanner, walker workers plus watchdog, local reconcile) now set
-   `QOS_CLASS_UTILITY` at thread start (`src-tauri/src/thread_qos.rs`). Under contention macOS lets the UI's
-   user-interactive threads preempt them, so indexing yields the core without a process boundary.
+   `QOS_CLASS_UTILITY` at thread start (`crates/cmdr-fs/src/thread_qos.rs`, shared by both crates and the host runtime).
+   Under contention macOS lets the UI's user-interactive threads preempt them, so indexing yields the core without a
+   process boundary.
 2. **Bounded logging.** The file-log writer now coalesces identical-line floods (`src-tauri/src/logging/coalesce.rs`),
    so a runaway loop can't peg a core through `write` syscalls or stall other threads on the log mutex. The synchronous
    write path is preserved, so the crash tail stays complete.
 
 Plus the source of the original incident is fixed independently: fatal storage errors now stop and fail the index
-instead of retrying forever (`indexing/CLAUDE.md` § "A fatal storage error STOPS"). With the source stopped and both
+instead of retrying forever (`crates/cmdr-index/src/indexing/writer/DETAILS.md` § "Fatal storage failure — the writer is
+the detector", with the `Failed` state's side in `indexing/lifecycle/DETAILS.md`). With the source stopped and both
 levers closed, the remaining risk doesn't justify the cost below. Revisit only if a new starvation path appears that
 neither QoS nor coalescing can contain (see "When to revisit").
 
@@ -44,7 +46,7 @@ host builds and owns. That was not done for this escalation, but it moves most o
 - **Events are a plain Rust enum, and the host owns the wire format.** The `AppHandle`-bound emit sites below are gone:
   the index reports `IndexEvent` values through an `EventSink`, and Cmdr's sink maps them to the 15 Tauri payload
   structs it now owns app-side. Emitting onto a pipe instead means writing a second sink, not touching the index.
-- **Status reads already go through one handle**, not through the registry. `Index` has 35 methods and app code reaches
+- **Status reads already go through one handle**, not through the registry. `Index` has 38 methods and app code reaches
   nothing else, so "these calls become RPC" is a bounded, enumerable list rather than three dozen scattered call sites.
 - **Cancellation is one primitive** (`tokio_util::sync::CancellationToken`), observable from outside, which is what a
   cross-process stop would have to be built on.

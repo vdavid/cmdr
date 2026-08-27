@@ -7,10 +7,21 @@ deliberately NOT built yet, to keep the honest-ETA spine intact.
 ## Why deferred, not just unfinished
 
 An overall ETA is only honest if the not-yet-started steps have real estimates. Those need persisted **per-phase**
-priors (how long this volume's last scan / save / compute / reconcile each took). The backend records per-phase
-`duration_ms` today only in the in-memory `DEBUG_STATS` ring (capped at 20, reset on restart, not per-volume-persisted).
+priors (how long this volume's last scan / save / compute / reconcile each took), and only the SCAN phase has one.
+
+- **Scan: already persisted, per volume and per walk kind.** `scan_duration_ms` lands in the index DB's `meta` at
+  completion, in three buckets (`scan_duration_ms_full_walk`, `scan_duration_ms_change_check`, and the unsuffixed
+  last-completed-scan fallback), and is read back as a `ScanCalibrationSet` to seed the active step's ETA. The two walks
+  differ by roughly 5x on the same volume, which is why they are bucketed rather than averaged.
+  `crates/cmdr-index/src/indexing/store/mod.rs` owns that shape; `lifecycle/manager/start.rs` and
+  `lifecycle/network_scan.rs` are the write sites.
+- **Save, compute, and replay: no priors at all.** Their `duration_ms` lives only in `DEBUG_STATS.phase_history`
+  (`crates/cmdr-index/src/indexing/events/mod.rs`), an app-wide ring capped at 20 entries that a reset clears and a
+  restart empties. Nothing is per-volume and nothing survives a launch.
+
 A "rough overall ETA" built without them collapses to _just the active step's ETA wearing an "overall" label_ — which
-trips the plan's own honest-ETA rule. So overall ETA is deferred as one coherent unit WITH its calibration.
+trips the plan's own honest-ETA rule. So overall ETA is deferred as one coherent unit WITH the calibration the remaining
+steps still lack.
 
 ## What v1 ships instead (and why it's enough for now)
 
@@ -21,8 +32,10 @@ trips the plan's own honest-ETA rule. So overall ETA is deferred as one coherent
 
 ## What this follow-up needs
 
-1. **Backend**: persist last scan's per-phase durations per volume (a per-volume meta-write at pipeline end), plus a
-   read to seed estimates at the next scan's start.
+1. **Backend**: extend the persisted calibration from scan-only to every phase (a per-volume meta-write at pipeline end
+   for save, compute, and replay), plus a read to seed their estimates at the next scan's start. The scan half of this
+   is done, so the work is following its pattern outward, not inventing one: same `meta` keys, same per-walk-kind
+   bucketing where the phase's cost differs by walk.
 2. **Frontend**: sum the active step's live ETA with the seeded estimates of the pending steps into one honest overall
    figure, shown once (not per step). Keep the per-step ETA too, or fold it in — a UX call at build time.
 3. Only show the overall figure once the seed exists (a first-ever scan has no priors → no overall ETA, same honest

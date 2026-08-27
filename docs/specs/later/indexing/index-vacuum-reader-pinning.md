@@ -5,21 +5,24 @@ reconcile/rescan work made this low-priority.
 
 ## The diagnosis
 
-The per-volume index DB runs `auto_vacuum = INCREMENTAL` with a 30s maintenance tick (`state.rs`) that sends
-`IncrementalVacuum` + `wal_checkpoint(TRUNCATE)` to the writer (`writer/maintenance.rs`). The intent: drain the freelist
-(free pages from deletes/rescans) back to the OS within ~10 min.
+The per-volume index DB runs `auto_vacuum = INCREMENTAL` (`store/schema.rs`) with a 30 s maintenance tick
+(`lifecycle/state/startup.rs`) that sends `IncrementalVacuum` + `WalCheckpoint` to the writer (`writer/maintenance.rs`),
+alongside two unrelated errands the same tick carries. The intent: drain the freelist (free pages from deletes/rescans)
+back to the OS within ~10 min.
 
 In practice, on the `root` volume it reclaims almost nothing during a live session. Measured on a 2.5 GB `index-root.db`
-with ~1.6 GB freelist: over 5 minutes of live running, the file shed **40 KB** (~8 KB/min); at that rate the 1.6 GB
-would take ~135 days. Independently of the maintenance tick firing.
+with ~1.6 GB freelist (David's machine, live session, 2026-06-28): over 5 minutes of live running, the file shed **40
+KB** (~8 KB/min); at that rate the 1.6 GB would take ~135 days. Independently of the maintenance tick firing.
 
 Cause: in WAL mode, the main DB file can only be truncated down to the size the **oldest live read snapshot** still
 needs, and a checkpoint can't truncate the WAL past the oldest reader. The `root` index always has long-lived readers —
 open panes' enrichment `ReadPool` connections and the live event loop's read connection. While any of them holds a
 snapshot older than the mass-delete that freed the pages, `incremental_vacuum` returns ~nothing and the file stays
 bloated. The freed pages get recycled for new writes (so `freelist_count` churns slowly) but are never returned to the
-OS. (Note: the WAL hovering at ~4 MB is just the default `wal_autocheckpoint = 1000` high-water mark, NOT evidence of a
-stuck reader — the real signal is `incremental_vacuum` freeing ~0 pages despite a large freelist.)
+OS. (Note: a WAL sitting at some steady size is NOT evidence of a stuck reader. The write connection sets
+`wal_autocheckpoint = 4000` (~16 MiB) and `journal_size_limit = 67108864` (`store/schema.rs`), so the file has a
+designed high-water mark and reuses it in place. The real signal is `incremental_vacuum` freeing ~0 pages despite a
+large freelist.)
 
 ## Why deferred
 
