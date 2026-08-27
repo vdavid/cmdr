@@ -29,6 +29,11 @@ types, and the re-exports every `store::X` path resolves through), `schema.rs` (
 - **Open only via `crate::sqlite_util::{open, open_read_only, open_in_memory}`** (enforced by
   `desktop-rust-sqlite-open-direct`). They install the process-wide 64 MiB page-cache slab; the first direct
   `rusqlite::Connection::open*` initializes SQLite and locks the slab out for good.
+- **❌ Never bind a `u64` column raw.** rusqlite's `ToSql for u64` fails above `i64::MAX`, and inside `with_savepoint`
+  that takes the ENTIRE batch down (one high-bit SMB inode lost a 609-row directory, which then indexed as empty).
+  Inodes go through `entries.rs::inode_to_sql` / `inode_from_sql`, a bit-cast BOTH ways, ❌ never clamped: an inode is
+  an identity, and saturating makes `find_entry_by_inode` match unrelated files. Sizes, times, and counts go through
+  `size_to_sql` / `dir_stats.rs::clamp_to_sql`, which saturate. DETAILS § "a `u64` never reaches a bind as itself".
 - **Hot writes use `prepare_cached`, and the cache (64, writers only) must outsize the store's 38 sites.** `rusqlite`'s
   default 16 silently re-compiles: no error, no failing test.
 - **Scan calibration lives in PER-WALK-KIND `meta` buckets, never one slot.** A truncating full walk and a

@@ -65,7 +65,9 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
     {
         use std::os::unix::fs::MetadataExt;
         let blocks = metadata.blocks();
-        let physical_size = if blocks > 0 { blocks * 512 } else { 0 };
+        // Saturating: release builds don't check overflow, so a bogus block
+        // count from a network filesystem would wrap into a small, wrong size.
+        let physical_size = if blocks > 0 { blocks.saturating_mul(512) } else { 0 };
         metadata_from_raw(
             metadata.len(),
             physical_size,

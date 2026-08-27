@@ -363,6 +363,105 @@ fn insert_entries_v2_batch_test() {
     assert_eq!(entry.logical_size, Some(42));
 }
 
+/// An SMB file id routinely has its high bit set, and the whole batch used to
+/// die on it.
+///
+/// `ATTR_CMN_FILEID` on a mounted smbfs share is the server's 64-bit file id (or
+/// a path hash when the server has no usable one), so values above `i64::MAX`
+/// are ordinary: 43% of the files in one directory on a QNAP measured that way.
+/// SQLite's `INTEGER` holds every bit of one, but binding a bare `u64` asks
+/// rusqlite to prove it's positive, and the `TryFromIntError` it raises aborts
+/// the savepoint — losing all ~2000 rows of the batch, including the ones whose
+/// inodes were fine. A user's 609-entry directory indexed as empty that way
+/// (`ERR-AYVM4`, 2026-08-27) and stayed empty, because the scan marks the
+/// directory listed regardless.
+///
+/// The inode is an identity, so it round-trips as a bit-cast. ❌ Not a
+/// saturating clamp: that collapses every high-bit inode onto one value, and
+/// `find_entry_by_inode` would then match unrelated files into each other
+/// during rename detection.
+#[test]
+fn a_high_bit_inode_round_trips_and_keeps_the_rest_of_the_batch() {
+    let (_store, dir) = open_temp_store();
+    let db_path = dir.path().join("test-index.db");
+    let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+    // A real value sampled from a mounted QNAP share.
+    let smb_inode: u64 = 16_927_209_734_986_940_580;
+    assert!(i64::try_from(smb_inode).is_err(), "the fixture has to exercise the case");
+
+    let entries = vec![
+        EntryRow {
+            id: 200,
+            parent_id: ROOT_ID,
+            name: "from-the-nas.jpg".into(),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(1024),
+            physical_size: Some(4096),
+            modified_at: Some(1234),
+            inode: Some(smb_inode),
+        },
+        EntryRow {
+            id: 201,
+            parent_id: ROOT_ID,
+            name: "ordinary.jpg".into(),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(2048),
+            physical_size: Some(4096),
+            modified_at: Some(1234),
+            inode: Some(42),
+        },
+    ];
+    let landed = IndexStore::insert_entries_v2_batch(&conn, &entries).expect("the batch lands");
+    assert_eq!(landed, vec![true, true], "both rows land, high-bit inode and all");
+
+    let entry = IndexStore::get_entry_by_id(&conn, 200).unwrap().unwrap();
+    assert_eq!(
+        entry.inode,
+        Some(smb_inode),
+        "the inode reads back bit for bit, or rename detection matches the wrong file"
+    );
+
+    // And the index seek still finds it, which is the only reason to store it.
+    assert_eq!(
+        IndexStore::find_entry_by_inode(&conn, smb_inode).unwrap(),
+        Some(200),
+        "the `idx_inode` lookup has to agree with what the insert wrote"
+    );
+    assert_eq!(IndexStore::find_entry_by_inode(&conn, 42).unwrap(), Some(201));
+}
+
+/// A size is a magnitude, not an identity, so an absurd one saturates instead of
+/// taking the batch down with it. `physical_size` is the reachable case: it
+/// comes from `st_blocks * 512`, which wraps in release on a bogus block count.
+#[test]
+fn an_absurd_size_saturates_rather_than_losing_the_batch() {
+    let (_store, dir) = open_temp_store();
+    let db_path = dir.path().join("test-index.db");
+    let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+    let entries = vec![EntryRow {
+        id: 300,
+        parent_id: ROOT_ID,
+        name: "impossible.bin".into(),
+        is_directory: false,
+        is_symlink: false,
+        logical_size: Some(u64::MAX),
+        physical_size: Some(u64::MAX),
+        modified_at: Some(u64::MAX),
+        inode: None,
+    }];
+    let landed = IndexStore::insert_entries_v2_batch(&conn, &entries).expect("the batch lands");
+    assert_eq!(landed, vec![true]);
+
+    let entry = IndexStore::get_entry_by_id(&conn, 300).unwrap().unwrap();
+    assert_eq!(entry.logical_size, Some(i64::MAX as u64), "clamped, not lost");
+    assert_eq!(entry.physical_size, Some(i64::MAX as u64));
+    assert_eq!(entry.modified_at, Some(i64::MAX as u64));
+}
+
 // Duplicate (parent_id, name_folded) must be rejected by the schema.
 // The aggregator walks parent_id chains and sums every row; a duplicate would
 // double-count its size into ancestor dir_stats. Schema v12 reinstated the

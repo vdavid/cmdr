@@ -5,6 +5,12 @@
 use super::{DirStatsById, IndexStore, IndexStoreError, with_savepoint};
 use rusqlite::{Connection, OptionalExtension, params};
 
+/// A `u64` aggregate as SQLite stores it, saturating at `i64::MAX`. Same
+/// reasoning as `entries.rs::size_to_sql`.
+fn clamp_to_sql(value: u64) -> i64 {
+    i64::try_from(value).unwrap_or(i64::MAX)
+}
+
 impl IndexStore {
     /// Look up dir_stats for a single entry by ID.
     pub fn get_dir_stats_by_id(conn: &Connection, entry_id: i64) -> Result<Option<DirStatsById>, IndexStoreError> {
@@ -128,12 +134,15 @@ impl IndexStore {
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             )?;
             for s in stats {
+                // Saturating, for the reason `entries.rs::size_to_sql` gives:
+                // these are `u64` sums, and one above `i64::MAX` would fail its
+                // bind and take the whole savepoint's batch down with it.
                 stmt.execute(params![
                     s.entry_id,
-                    s.recursive_logical_size,
-                    s.recursive_physical_size,
-                    s.recursive_file_count,
-                    s.recursive_dir_count,
+                    clamp_to_sql(s.recursive_logical_size),
+                    clamp_to_sql(s.recursive_physical_size),
+                    clamp_to_sql(s.recursive_file_count),
+                    clamp_to_sql(s.recursive_dir_count),
                     s.recursive_has_symlinks as i32,
                     s.min_subtree_epoch,
                 ])?;

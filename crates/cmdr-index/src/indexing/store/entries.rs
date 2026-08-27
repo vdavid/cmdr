@@ -17,6 +17,48 @@ fn placeholders(count: usize) -> String {
     vec!["?"; count].join(", ")
 }
 
+/// An inode as SQLite stores it: the same 64 bits, reinterpreted as signed.
+///
+/// SQLite's `INTEGER` is a signed 64-bit column and holds every bit of a `u64`,
+/// but binding a bare `u64` asks rusqlite to prove it's positive and raises a
+/// `TryFromIntError` when it isn't. That error aborts the whole savepoint, so
+/// ONE such row used to lose an entire ~2000-row batch (`ERR-AYVM4`: a 609-entry
+/// SMB directory indexed as empty, and stayed empty, because the scan marks the
+/// directory listed either way).
+///
+/// High-bit inodes are ordinary, not corrupt: `ATTR_CMN_FILEID` on a mounted
+/// smbfs share is the server's 64-bit file id, or a path hash when the server
+/// has no usable one. 43% of one directory's files on a QNAP measured above
+/// `i64::MAX` (2026-08-27).
+///
+/// ❌ Never clamp an inode instead. It is an IDENTITY: saturating would collapse
+/// every high-bit value onto `i64::MAX`, and `find_entry_by_inode` would match
+/// unrelated files into each other during rename detection and hardlink dedup.
+/// The bit-cast round-trips exactly and preserves equality, so `idx_inode` keeps
+/// working and rows written before this existed (all of them ≤ `i64::MAX`, where
+/// the cast is the identity) need no migration.
+///
+/// ❗ Both directions and every inode read, write, and lookup must use this
+/// pair, or a seek binds a positive value against a row stored as negative.
+const fn inode_to_sql(inode: u64) -> i64 {
+    inode as i64
+}
+
+const fn inode_from_sql(stored: i64) -> u64 {
+    stored as u64
+}
+
+/// A size or timestamp as SQLite stores it, saturating at `i64::MAX`.
+///
+/// The same bind failure as [`inode_to_sql`], with the opposite right answer: a
+/// size is a MAGNITUDE, so an absurd one is garbage worth clamping rather than
+/// an identity worth preserving. The reachable case is `physical_size`, which
+/// comes from `st_blocks * 512` and wraps in release on a bogus block count.
+/// Losing the row's whole batch over it is the one outcome nobody wants.
+fn size_to_sql(value: Option<u64>) -> Option<i64> {
+    value.map(|v| i64::try_from(v).unwrap_or(i64::MAX))
+}
+
 impl IndexStore {
     // ── Read methods (integer-keyed, new API) ────────────────────────
 
@@ -42,7 +84,7 @@ impl IndexStore {
                 logical_size: row.get(5)?,
                 physical_size: row.get(6)?,
                 modified_at: row.get(7)?,
-                inode: row.get(8)?,
+                inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -87,7 +129,7 @@ impl IndexStore {
                 logical_size: row.get(5)?,
                 physical_size: row.get(6)?,
                 modified_at: row.get(7)?,
-                inode: row.get(8)?,
+                inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -114,7 +156,7 @@ impl IndexStore {
                 logical_size: row.get(5)?,
                 physical_size: row.get(6)?,
                 modified_at: row.get(7)?,
-                inode: row.get(8)?,
+                inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -143,7 +185,7 @@ impl IndexStore {
                 logical_size: row.get(5)?,
                 physical_size: row.get(6)?,
                 modified_at: row.get(7)?,
-                inode: row.get(8)?,
+                inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -316,7 +358,7 @@ impl IndexStore {
                     logical_size: row.get(5)?,
                     physical_size: row.get(6)?,
                     modified_at: row.get(7)?,
-                    inode: row.get(8)?,
+                    inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
                 })
             })
             .optional()?;
@@ -343,12 +385,12 @@ impl IndexStore {
                 let mut stmt = conn.prepare_cached(
                     "SELECT 1 FROM entries WHERE inode = ?1 AND logical_size IS NOT NULL AND id != ?2 LIMIT 1",
                 )?;
-                stmt.query_row(params![inode, eid], |_| Ok(())).optional()?
+                stmt.query_row(params![inode_to_sql(inode), eid], |_| Ok(())).optional()?
             }
             None => {
                 let mut stmt =
                     conn.prepare_cached("SELECT 1 FROM entries WHERE inode = ?1 AND logical_size IS NOT NULL LIMIT 1")?;
-                stmt.query_row(params![inode], |_| Ok(())).optional()?
+                stmt.query_row(params![inode_to_sql(inode)], |_| Ok(())).optional()?
             }
         };
         Ok(found.is_some())
@@ -369,7 +411,9 @@ impl IndexStore {
     /// inode is unique by construction.
     pub fn find_entry_by_inode(conn: &Connection, inode: u64) -> Result<Option<i64>, IndexStoreError> {
         let mut stmt = conn.prepare_cached("SELECT id FROM entries WHERE inode = ?1 LIMIT 1")?;
-        let result = stmt.query_row(params![inode], |row| row.get::<_, i64>(0)).optional()?;
+        let result = stmt
+            .query_row(params![inode_to_sql(inode)], |row| row.get::<_, i64>(0))
+            .optional()?;
         Ok(result)
     }
 
@@ -424,10 +468,10 @@ impl IndexStore {
             name_folded,
             is_directory as i32,
             is_symlink as i32,
-            logical_size,
-            physical_size,
-            modified_at,
-            inode,
+            size_to_sql(logical_size),
+            size_to_sql(physical_size),
+            size_to_sql(modified_at),
+            inode.map(inode_to_sql),
         ])?;
         Ok(conn.last_insert_rowid())
     }
@@ -471,10 +515,10 @@ impl IndexStore {
             name_folded,
             is_directory as i32,
             is_symlink as i32,
-            logical_size,
-            physical_size,
-            modified_at,
-            inode,
+            size_to_sql(logical_size),
+            size_to_sql(physical_size),
+            size_to_sql(modified_at),
+            inode.map(inode_to_sql),
         ])?;
         Ok(id)
     }
@@ -516,10 +560,10 @@ impl IndexStore {
                     name_folded,
                     e.is_directory as i32,
                     e.is_symlink as i32,
-                    e.logical_size,
-                    e.physical_size,
-                    e.modified_at,
-                    e.inode,
+                    size_to_sql(e.logical_size),
+                    size_to_sql(e.physical_size),
+                    size_to_sql(e.modified_at),
+                    e.inode.map(inode_to_sql),
                 ])?;
                 inserted.push(rows == 1);
             }
@@ -545,10 +589,10 @@ impl IndexStore {
             params![
                 is_directory as i32,
                 is_symlink as i32,
-                logical_size,
-                physical_size,
-                modified_at,
-                inode,
+                size_to_sql(logical_size),
+                size_to_sql(physical_size),
+                size_to_sql(modified_at),
+                inode.map(inode_to_sql),
                 id
             ],
         )?;

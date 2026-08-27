@@ -116,9 +116,15 @@ impl FilesystemKind {
     /// miss real renames AND, worse, mistake an inode-reused delete+create for a
     /// move (re-homing the old entry's `dir_stats` onto an unrelated file). Every
     /// other format we recognize (APFS, HFS+, ext4/btrfs/XFS/ZFS, NTFS) keeps the
-    /// inode stable across rename. `Smb`/`Mtp`/`Other` return `true` (their
-    /// indexes don't run the local inode-keyed rename pre-pass), so only the two
-    /// derived-inode formats opt out.
+    /// inode stable across rename. `Smb`/`Mtp`/`Other` return `true`, so only
+    /// the two derived-inode formats opt out.
+    ///
+    /// ❗ `Smb` returning `true` is load-bearing, not a shrug: a MOUNTED share is
+    /// walked by the ordinary local scanner, which stores whatever
+    /// `ATTR_CMN_FILEID` gives it. That is the server's 64-bit file id, or a path
+    /// hash when the server has none, so it routinely has the high bit set and
+    /// must be written through `cmdr-index`'s `inode_to_sql` bit-cast rather than
+    /// bound as a bare `u64`.
     pub fn has_stable_inodes(self) -> bool {
         !matches!(self, Self::Fat32 | Self::ExFat)
     }
