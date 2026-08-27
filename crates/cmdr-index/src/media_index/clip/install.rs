@@ -45,6 +45,11 @@ pub(crate) struct ClipTowerSpec {
 /// Which half of the CLIP model a tower is. The two towers load, verify, and reclaim their
 /// source INDEPENDENTLY, so every path that means "the text one" names it instead of
 /// indexing [`CLIP_TOWERS`] by position.
+///
+/// Gated like `towers` and `drop_compiled`, its only callers: naming a tower is something
+/// the CoreML loader and the tower harness do, and both are `any(test, macOS)`. In a
+/// non-test Linux lib build nothing reaches it, and the workspace denies `unused`.
+#[cfg(any(test, target_os = "macos"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ClipTower {
     /// Embeds every enriched photo (enrichment runs it in a loop).
@@ -53,6 +58,7 @@ pub(crate) enum ClipTower {
     Text,
 }
 
+#[cfg(any(test, target_os = "macos"))]
 impl ClipTower {
     /// This tower's pinned artifact spec. `each_tower_maps_to_its_pinned_spec` holds the
     /// two in step.
