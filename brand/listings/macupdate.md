@@ -176,7 +176,7 @@ through 0.40.0, since none of those refreshes was ever submitted; the 0.36 line 
   <li>A failed background operation keeps its reason until you dismiss it, in the queue and as a toast.</li>
   <li>Cmdr asks before quitting with a transfer in flight, and clears away whatever it left half-written.</li>
   <li>Resize dialogs from any edge, and hover any shortened path or label to see the whole thing.</li>
-  <li>Copy the current folder's path with ⌃⌘C on the ".." row.</li>
+  <li>Copy the current folder's path with ⌘⌥C on the ".." row.</li>
   <li>An Acknowledgements dialog crediting all 775 open-source packages Cmdr ships.</li>
   <li>Right-click any text field for Cut, Copy, Paste, and Select all.</li>
   <li>Undo for an AI bulk rename, one batch at a time or a whole multi-batch run at once.</li>

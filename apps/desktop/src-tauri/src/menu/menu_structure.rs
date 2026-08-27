@@ -356,7 +356,7 @@ pub fn build_parent_row_context_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::R
 /// Builds a context menu for the breadcrumb path bar.
 ///
 /// `accelerator` is the user's configured shortcut for the "Copy path" command (in
-/// Tauri accelerator format, e.g. "Ctrl+Shift+C"), or empty if none is set.
+/// Tauri accelerator format, e.g. "Cmd+Opt+C"), or empty if none is set.
 /// `eject_volume_name`, when present, appends an `Eject ({name})` item that lets
 /// the user eject the volume the breadcrumb represents. The caller is responsible
 /// for stashing the matching `volume_id` in `MenuState.volume_eject_context` so

@@ -731,7 +731,7 @@ The copy/move dialog stops showing an ETA it no longer believes and explains the
 
 ## Caminho copiado: a confirmação da área de transferência (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-Uma chave: a linha do aviso informativo depois de ⌃⌘C. O caminho aparece abaixo, em linha própria e monoespaçada, então
+Uma chave: a linha do aviso informativo depois de ⌘⌥C. O caminho aparece abaixo, em linha própria e monoespaçada, então
 NÃO é um marcador dentro da frase: a frase termina em dois-pontos e precisa funcionar sem ele.
 
 - **"Copied the path, it's now on your clipboard:" → `Caminho copiado, agora está na área de transferência:`** ·

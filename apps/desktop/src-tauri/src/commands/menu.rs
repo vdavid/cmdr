@@ -157,7 +157,7 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
 /// Shows a native context menu for the breadcrumb path bar.
 ///
 /// `shortcut` is the user's configured shortcut for "Copy path" in frontend format
-/// (e.g. "⌃⌘C"), or empty string if no shortcut is configured.
+/// (e.g. "⌘⌥C"), or empty string if no shortcut is configured.
 /// `eject_volume_id` + `eject_volume_name` are set when the breadcrumb represents an
 /// ejectable volume; both must be present (or both absent) — the command stashes the
 /// id in `MenuState.volume_row_context` so `on_menu_event` can dispatch the click.

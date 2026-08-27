@@ -1047,7 +1047,7 @@ Settled while translating the stalled-transfer notice (7 `fileOperations.transfe
 
 ## Másolt útvonal: a vágólap-visszajelzés (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-Egy kulcs: a ⌃⌘C utáni információs toast szövege. Maga az útvonal alatta, külön, fix szélességű sorban jelenik meg,
+Egy kulcs: a ⌘⌥C utáni információs toast szövege. Maga az útvonal alatta, külön, fix szélességű sorban jelenik meg,
 tehát NEM helyőrző a mondatban: a mondat kettősponttal zárul, és önmagában is állnia kell.
 
 - **"Copied the path, it's now on your clipboard:" → `Útvonal másolva, most már a vágólapon van:`** · a bevett

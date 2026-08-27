@@ -211,7 +211,7 @@
 
   "menu.edit.copyPath": "Copy path",
   "@menu.edit.copyPath": {
-    "description": "VERB phrase (imperative). Puts the full filesystem path of the selected file or folder on the clipboard, as text (⌃⌘C). \"path\" is the location string like /Users/me/photo.jpg; use the word your macOS Finder uses in \"Copy as Pathname\". Its breadcrumb-menu sibling is menu.breadcrumb.copyPath."
+    "description": "VERB phrase (imperative). Puts the full filesystem path of the selected file or folder on the clipboard, as text (⌘⌥C). \"path\" is the location string like /Users/me/photo.jpg; use the word your macOS Finder uses in \"Copy as Pathname\". Its breadcrumb-menu sibling is menu.breadcrumb.copyPath."
   },
 
   "menu.edit.copyFilename": "Copy filename",

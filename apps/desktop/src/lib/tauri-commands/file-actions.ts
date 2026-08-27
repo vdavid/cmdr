@@ -88,7 +88,7 @@ export async function cloudRemoveDownload(path: string): Promise<void> {
  * a `volume-context-action` event on click (subscribe via `onVolumeContextAction`).
  * Pass both or neither; one without the other is treated as no eject target.
  *
- * @param shortcut - Frontend shortcut string for "Copy path" (e.g. "⌃⌘C"), or empty.
+ * @param shortcut - Frontend shortcut string for "Copy path" (e.g. "⌘⌥C"), or empty.
  * @param ejectVolumeId - Volume to eject when the user clicks the eject item.
  * @param ejectVolumeName - Display name for the "Eject ({name})" label.
  */

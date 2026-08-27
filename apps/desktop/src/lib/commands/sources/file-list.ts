@@ -294,7 +294,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileCopyPath.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘⌃C'],
+    shortcuts: ['⌘⌥C'],
   },
   {
     id: 'file.copyCurrentDirectoryPath',

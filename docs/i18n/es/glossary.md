@@ -877,7 +877,7 @@ Nautilus, and Total/Double Commander.
 
 ## Ruta copiada: la confirmación del portapapeles (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-Una clave: la línea del aviso informativo tras ⌃⌘C. La ruta va debajo, en su propia línea monoespaciada, así que NO es
+Una clave: la línea del aviso informativo tras ⌘⌥C. La ruta va debajo, en su propia línea monoespaciada, así que NO es
 un marcador dentro de la frase: la frase acaba en dos puntos y tiene que sostenerse sin la ruta.
 
 - **"Copied the path, it's now on your clipboard:" → `Ruta copiada, ya está en el portapapeles:`** · reutiliza

@@ -902,7 +902,7 @@ wait-on-a-remote-endpoint phrasing (the exact same surface), Microsoft zh-Hans T
 
 ## 已拷贝路径：剪贴板确认提示 (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-一个键：按 ⌃⌘C 之后的信息提示行。路径本身在下一行以等宽字体单独显示，因此它并不是句中的占位符——句子以全角冒号结尾，去掉路径后也必须读得通。
+一个键：按 ⌘⌥C 之后的信息提示行。路径本身在下一行以等宽字体单独显示，因此它并不是句中的占位符——句子以全角冒号结尾，去掉路径后也必须读得通。
 
 - **"Copied the path, it's now on your clipboard:" → `已将路径拷贝到剪贴板：`** · 复用词汇表中已确认的 `path → 路径` 与
   `clipboard → 剪贴板`，动词沿用 Finder 的 `拷贝` · confirmed。`已将 X 拷贝到 Y`

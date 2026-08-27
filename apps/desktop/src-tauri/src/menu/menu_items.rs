@@ -27,16 +27,17 @@ use super::{
 /// width.
 pub(super) const COPY_FILENAME_MAX_CHARS: usize = 50;
 
-/// Platform-aware accelerator for "Copy path to clipboard".
-/// On macOS: Ctrl+Cmd+C. On Linux: Ctrl+Shift+C (Ctrl+Cmd+C becomes Ctrl+Ctrl+C which is broken).
+/// Platform-aware accelerator for "Copy path to clipboard", matching Finder's "Copy as Pathname".
+/// Must stay in sync with the `file.copyPath` default in `src/lib/commands/sources/file-list.ts`
+/// (`⌘⌥C`), which is what the frontend dispatcher listens for.
 #[cfg(target_os = "macos")]
 pub(crate) fn copy_path_accelerator() -> &'static str {
-    "Ctrl+Cmd+C"
+    "Cmd+Opt+C"
 }
 
 #[cfg(not(target_os = "macos"))]
 pub(crate) fn copy_path_accelerator() -> &'static str {
-    "Ctrl+Shift+C"
+    "Ctrl+Alt+C"
 }
 
 /// Platform-aware accelerator for "Show in Finder / file manager".

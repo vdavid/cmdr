@@ -1058,7 +1058,7 @@ REVIEW FLAGS (stalled-transfer pass):
 
 ## Gekopieerd pad: de klembordbevestiging (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-Eén sleutel: de regel van de informatiemelding na ⌃⌘C. Het pad staat eronder op een eigen regel in een
+Eén sleutel: de regel van de informatiemelding na ⌘⌥C. Het pad staat eronder op een eigen regel in een
 vaste-breedtelettertype, dus het is GEEN plaatshouder in de zin: de zin eindigt op een dubbele punt en moet zonder het
 pad kloppen.
 

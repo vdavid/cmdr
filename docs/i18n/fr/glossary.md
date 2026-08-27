@@ -1047,7 +1047,7 @@ Phrasing notes for this pass:
 
 ## Chemin copié : la confirmation du presse-papiers (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-Une clé : la ligne de la notification d'information après ⌃⌘C. Le chemin s'affiche en dessous, sur sa propre ligne en
+Une clé : la ligne de la notification d'information après ⌘⌥C. Le chemin s'affiche en dessous, sur sa propre ligne en
 police à chasse fixe : ce n'est donc PAS un paramètre dans la phrase, qui se termine par deux-points et doit tenir sans
 lui.
 

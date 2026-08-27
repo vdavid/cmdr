@@ -1,7 +1,7 @@
 /**
  * Tier 3 a11y tests for `CopiedPathToastContent.svelte`.
  *
- * Compact toast body shown after ⌃⌘C: a confirmation line plus the copied path.
+ * Compact toast body shown after ⌘⌥C: a confirmation line plus the copied path.
  * Modeled on `PasteClipboardToastContent.a11y.test.ts`.
  */
 

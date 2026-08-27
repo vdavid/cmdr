@@ -797,7 +797,7 @@ Terms and phrasings settled for the eight stall strings (`fileOperations.transfe
 
 ## Kopierter Pfad: die Zwischenablage-Bestätigung (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-Ein Key: die Info-Toast-Zeile nach ⌃⌘C. Der Pfad selbst steht darunter in einer eigenen Monospace-Zeile, ist also KEIN
+Ein Key: die Info-Toast-Zeile nach ⌘⌥C. Der Pfad selbst steht darunter in einer eigenen Monospace-Zeile, ist also KEIN
 Platzhalter im Satz — der Satz endet auf einem Doppelpunkt und muss ohne den Pfad grammatisch stehen.
 
 - **"Copied the path, it's now on your clipboard:" → `Pfad kopiert, er liegt jetzt in der Zwischenablage:`** · reuses

@@ -891,7 +891,7 @@ replaces the ETA line, so it must stay calm and never reach for `fel`/`misslycka
 
 ## Kopierad sökväg: urklippsbekräftelsen (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-En nyckel: raden i informationsnotisen efter ⌃⌘C. Sökvägen visas under den, på egen rad med fast teckenbredd, så den är
+En nyckel: raden i informationsnotisen efter ⌘⌥C. Sökvägen visas under den, på egen rad med fast teckenbredd, så den är
 INTE en platshållare i meningen: meningen slutar med kolon och måste fungera utan den.
 
 - **"Copied the path, it's now on your clipboard:" → `Kopierade sökvägen, den finns nu i urklipp:`** · återanvänder

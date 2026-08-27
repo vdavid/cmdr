@@ -888,7 +888,7 @@ catalog's `Giữ chạy ở chế độ nền` + `Vẫn đang chạy ở chế �
 
 ## Đường dẫn đã sao chép: xác nhận bảng nhớ tạm (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
-Một khóa: dòng thông báo thông tin sau ⌃⌘C. Đường dẫn hiện ngay bên dưới trên một dòng riêng với phông chữ đơn cách, nên
+Một khóa: dòng thông báo thông tin sau ⌘⌥C. Đường dẫn hiện ngay bên dưới trên một dòng riêng với phông chữ đơn cách, nên
 nó KHÔNG phải chỗ giữ chỗ trong câu: câu kết thúc bằng dấu hai chấm và phải đứng vững khi thiếu đường dẫn.
 
 - **"Copied the path, it's now on your clipboard:" → `Đã sao chép đường dẫn vào bảng nhớ tạm:`** · dùng lại
