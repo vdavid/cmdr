@@ -18,7 +18,6 @@
 //! macOS only. Every other platform gets an empty vec from a stub, so callers need no
 //! `cfg` of their own.
 
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -60,8 +59,13 @@ pub fn folders_with_recent_files(_scope: &Path, _window: Duration, _max_files: u
 /// Count the files per parent folder and order by that count, busiest first.
 ///
 /// Split out from the query so the ranking is exercisable on every platform, with no
-/// Spotlight and no machine state.
+/// Spotlight and no machine state. Gated on `any(test, macOS)` for exactly that reason:
+/// its only non-test reader is the macOS `folders_with_recent_files`, so a plain Linux
+/// build has none and the workspace denies `unused`.
+#[cfg(any(test, target_os = "macos"))]
 fn fold_into_folders(files: impl IntoIterator<Item = PathBuf>) -> Vec<RecentFolder> {
+    use std::collections::HashMap;
+
     let mut counts: HashMap<PathBuf, usize> = HashMap::new();
     for file in files {
         // A path with no parent is `/` or a bare relative name; neither is a folder
@@ -81,6 +85,9 @@ fn fold_into_folders(files: impl IntoIterator<Item = PathBuf>) -> Vec<RecentFold
 /// How many whole days `window` covers, as the query language's `$time.today()`
 /// argument wants it. At least one: a sub-day window would otherwise become
 /// `$time.today(0)`, which is midnight tonight and matches nothing.
+///
+/// Gated like [`fold_into_folders`]: only `mod macos` and the tests read it.
+#[cfg(any(test, target_os = "macos"))]
 fn window_in_days(window: Duration) -> u64 {
     (window.as_secs() / 86_400).max(1)
 }
