@@ -1,12 +1,14 @@
 # Data directory rename: rough spec draft
 
-Status: draft, deliberately rough. 2026-06-04.
+Status: **not started**, still a draft. Nothing has moved: `com.veszelovszki.cmdr` is still the directory name in
+`install_id.rs`, `favorites/store.rs`, `analytics/mod.rs`, `priority/roots.rs`, `icons/disk_cache.rs`,
+`logging/startup.rs`, `secrets/mod.rs`, and `settings/loader.rs`.
 
-**Provenance, read this first.** This draft was written by an AI agent at the end of a design session that was mostly
-about a different feature (the in-app agent, see `docs/specs/later/ai/agent-spec.md`). The author's knowledge of Cmdr
-comes from `AGENTS.md`, `docs/architecture.md`, `docs/architecture-patterns.md`, and that session; it did NOT freshly
-investigate the codebase for this draft. Every claim about the code below should be verified by the agent that picks
-this up. Holes are marked explicitly. Treat this as a starting point and an agenda, not a plan.
+**Provenance, read this first.** This draft was written by an AI agent at the end of a design session mostly about a
+different feature (the in-app agent, `docs/specs/later/ai/agent-spec.md`), without a fresh look at the code. A
+2026-08-27 audit checked every claim in it against the tree: §3's four mechanisms all hold, and three of the open
+questions are answered below from the code rather than guessed. **The two go/no-go questions (§6.1 and §6.2) are still
+open**, and they are the whole risk. Treat this as an agenda, not a plan.
 
 ## 1. Goal
 
@@ -18,8 +20,10 @@ Each maps a current path to its target:
 - **`~/Library/Application Support/com.veszelovszki.cmdr-dev/`**: `.../cmdr-dev/`
 - **`~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>/` (per-worktree)**: `.../cmdr-dev-<slug>/`
 - **`~/Library/Logs/com.veszelovszki.cmdr/`**: `~/Library/Logs/cmdr/`
-- **`~/Library/Caches/com.veszelovszki.cmdr/` (once the drive index moves there per agent-spec)**:
-  `~/Library/Caches/cmdr/`
+- **`~/Library/Caches/com.veszelovszki.cmdr/`**: `~/Library/Caches/cmdr/`. ⚠️ This path doesn't exist yet. The move of
+  the drive index into it is owned by `docs/specs/later/ai/agent-spec.md` § 4.1 (which also renames the files to
+  `drive-index-{volume_id}.db`), and that item is not started either. **This doc owns the directory NAME, that one owns
+  what goes in it**; neither should restate the other.
 
 Motivation: the `com.veszelovszki` prefix adds no value to the user or the developer; plain `cmdr` is friendlier. This
 is an aesthetic and ergonomics change.
@@ -31,10 +35,13 @@ everything else (one more migration step to account for).
 ## 2. The one hard constraint
 
 **The bundle identifier `com.veszelovszki.cmdr` must never change.** macOS keys TCC/Full Disk Access grants to the
-bundle identifier plus code signature; the custom in-place updater exists precisely to preserve TCC across updates.
-Changing the identifier would reset FDA for every user, and likely disturb Keychain access and signing/notarization
-identity. Only the data _paths_ move; the app's identity does not. The rename is therefore a "stop deriving paths from
-the identifier" change, not an identifier change.
+bundle identifier plus code signature, and the identifier is baked into the updater's designated requirement (see
+`apps/desktop/src-tauri/src/updater/DETAILS.md`, which is the canonical statement). Changing it would reset FDA for
+every user and break the update path. Only the data _paths_ move; the app's identity does not. The rename is therefore a
+"stop deriving paths from the identifier" change, not an identifier change.
+
+(TCC records no path, only the identifier plus signature, so moving the BUNDLE is a separate and already-answered
+question: `docs/notes/self-move-to-applications-2026-08-25.md`.)
 
 ## 3. What makes this non-trivial
 
@@ -50,16 +57,25 @@ the identifier" change, not an identifier change.
    and abandoning the rename. This is the second half of the go/no-go investigation. HOLE: not verified.
 3. **Migration for existing installs.** Rename-on-startup (same volume, near-atomic), with partial-failure handling, and
    possibly a transitional symlink old → new kept for a release or two for external readers. Edge cases to design for: a
-   second instance running during migration (HOLE: single-instance enforcement status unknown to the author), a crash
-   mid-migration, and Time Machine restores of the old path.
-4. **Every external reader of the paths.** Known from docs (verify and complete by grepping): `scripts/mcp-call.sh` and
-   agent helpers (read `mcp.port` / `tauri-mcp.port` from the data dir), E2E fixtures and the Linux E2E pipeline, the
-   crash reporter (writes `crash-report.json` to the data dir), the error reporter's log-tail bundling, the file-backed
-   secret store fallback, the logging dir resolver, and `docs/tooling/instance-isolation.md` itself.
+   crash mid-migration, and Time Machine restores of the old path. **A concurrent second instance is not one of them**:
+   `apps/desktop/src-tauri/src/instance_lock.rs` holds an advisory whole-file lock on `<data dir>/.instance.lock`, so
+   exactly one process owns a data dir. Two consequences for the migration: it runs after the lock is taken, and the
+   lock file itself sits INSIDE the directory being moved, so the ordering (acquire, migrate, or migrate, acquire) is a
+   real design decision rather than a detail.
+4. **Every external reader of the paths.** Verified present, so complete this list by grepping rather than rebuilding
+   it: `scripts/mcp-call.sh` and the agent helpers (read `<data dir>/mcp.port`, `<data dir>/mcp.token`, and
+   `<data dir>/tauri-mcp.port`), `apps/desktop/test/e2e-shared/port-file.ts` and the Linux E2E pipeline, the crash
+   reporter's `crash-report.json`, the error reporter's log-tail bundling, the file-backed secret store fallback
+   (`~/.local/share/com.veszelovszki.cmdr/credentials.enc` on Linux), `logging/startup.rs`'s dir resolver, and
+   `docs/tooling/instance-isolation.md` and `docs/tooling/mcp.md`, which both print the paths for humans. ⚠️ `mcp.token`
+   is a secret written 0o600, so a migration that copies rather than renames has to carry the mode.
 5. **Per-worktree dev instances** (`pnpm dev --worktree <slug>`) must keep their isolation guarantees through the rename
    (ports, data dir, Dock label).
-6. **Linux.** The author does not know what Linux currently uses (presumably an XDG path derived from the identifier) or
-   whether the rename should apply there at all. HOLE.
+6. **Linux.** Answered: Linux derives from the identifier too, via XDG. `dirs::data_dir()/com.veszelovszki.cmdr` for app
+   data (`icons/disk_cache.rs`), `~/.local/share/com.veszelovszki.cmdr/credentials.enc` for the secret fallback, and
+   `dirs::data_local_dir()/com.veszelovszki.cmdr/logs` for logs. Whether the rename should apply there is still a call
+   to make, and it's cheap to defer: Linux isn't advertised (`docs/notes/linux-gaps-2026-08-10.md`), so there's no
+   installed base to migrate.
 
 ## 4. Honest value assessment (from the session)
 
@@ -85,13 +101,19 @@ the identifier" change, not an identifier change.
 
 ## 6. Open questions (all of them, since this is a draft)
 
-1. Can a prod Tauri build's `app_data_dir()` be repointed without changing the identifier, and how? (Core go/no-go.)
-2. Can `tauri-plugin-store` be redirected? (Core go/no-go.) Window state is no longer a question: it's ours now
-   (`apps/desktop/src-tauri/src/window_state/`) and already resolves through `config::resolved_app_data_dir`.
-3. What does Linux use today, and does the rename apply there?
-4. Is there single-instance enforcement that makes migration-on-startup safe?
-5. Full inventory of path references (grep for the bundle id across the repo, scripts, docs, CI).
-6. Symlink compatibility window: needed at all, and for how long?
-7. Does anything outside the repo (user scripts, third-party tools, support docs) reference the old path in ways worth a
+Still open, in the order that matters:
+
+1. Can a prod Tauri build's `app_data_dir()` be repointed without changing the identifier, and how? **Core go/no-go**,
+   and the one to timebox first.
+2. Can `tauri-plugin-store` be redirected? **Core go/no-go.** Still registered in `lib.rs`
+   (`tauri_plugin_store::Builder`), and settings persist through it. Window state is no longer part of this question:
+   it's ours (`apps/desktop/src-tauri/src/window_state/`) and resolves through `config::resolved_app_data_dir`.
+3. Does the rename apply on Linux at all? (What Linux uses today is answered in §3.6.)
+4. Symlink compatibility window: needed at all, and for how long?
+5. Does anything outside the repo (user scripts, third-party tools, support docs) reference the old path in ways worth a
    release-note warning?
-8. Sequencing with the agent feature's storage work (agent-spec §4): one combined migration or two separate ones?
+6. Sequencing with the index relocation (`agent-spec.md` § 4.1): one combined migration or two separate ones? Both are
+   unstarted, so either order is still available.
+
+Answered by the 2026-08-27 audit, kept so nobody re-asks: single-instance enforcement exists (§3.3), Linux derives from
+the identifier via XDG (§3.6), the external-reader inventory is in §3.4, and window state is already redirected.

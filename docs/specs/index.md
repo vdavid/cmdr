@@ -128,7 +128,15 @@ left, so the durable intent survives the wipe.
       relocation, prompts-as-assets, the evals harness, and auto-apply. §17 carries that order. The spec's §19 decision
       log is cited by bare number from about 25 code and doc sites, so it stays whether or not the rest does. The wake
       loop's own leftovers are `later/ai/wake-loop-follow-ups.md`, not this file.
-- [ ] 2026-06-04 `later/data-dir-rename-spec-draft.md` - Rename data directories from bundle-id to plain names.
+- [ ] 2026-08-27 `later/data-dir-rename-spec-draft.md` - **Plain data-directory names instead of bundle-id ones**
+      (`~/Library/Application Support/cmdr/`, not `.../com.veszelovszki.cmdr/`). NOT STARTED; still a draft, and the
+      value is admittedly small and cosmetic. **The bundle identifier itself must never change** (TCC and the updater's
+      designated requirement both key on it), so this is a "stop deriving paths from the identifier" change. Two
+      go/no-go questions carry all the risk and want a timebox before any building: can a prod Tauri build's
+      `app_data_dir()` be repointed, and can `tauri-plugin-store` follow it. If they fight back, drop the rename. The
+      2026-08-27 audit closed three other holes from the code (single-instance enforcement exists, Linux derives via
+      XDG, the external-reader inventory is written out). ❗ The index relocation into `~/Library/Caches/` belongs to
+      `later/ai/agent-spec.md` § 4.1, not here: this doc owns the directory name, that one owns what goes in it.
 - [ ] 2026-06-28 `later/indexing/index-vacuum-reader-pinning.md` - Reclaim residual index-DB freelist that long-lived
       root readers stop the incremental vacuum from returning to the OS (deferred: the big freelist sources are now
       fixed).
