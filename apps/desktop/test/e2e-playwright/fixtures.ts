@@ -29,6 +29,13 @@
 import { createTauriTest } from '@srsholmes/tauri-playwright'
 import type { TestInfo } from '@playwright/test'
 import { describeFixtureTreeDiff, diffFixtureTree, restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
+import {
+  assertAppAlive,
+  checkAppSurvived,
+  DEAD_APP_TEST_BUDGET_MS,
+  findAppDeath,
+  type EvaluatablePage,
+} from './app-death.js'
 
 // Each parallel E2E shard spawns its own Tauri instance bound to a distinct
 // Unix socket. The Go check runner sets CMDR_PLAYWRIGHT_SOCKET per shard.
@@ -58,15 +65,48 @@ export { expect }
 export const captureTest = baseTest
 
 /**
- * Every test gets the window-title decoration and, on the way out, the leak
- * guard. `auto: true` is what makes that true for every spec file rather than
- * for one file per worker (see the file header).
+ * Every test gets the dead-app circuit breaker on both sides, the window-title decoration,
+ * and, on the way out, the leak guard. `auto: true` is what makes that true for every spec
+ * file rather than for one file per worker (see the file header).
+ *
+ * TWO fixtures, and the split is load-bearing rather than tidiness.
+ *
+ * ❗ `cmdrDeadAppGate` is declared FIRST and destructures NOTHING, so Playwright sets it up
+ * before `tauriPage` exists. That is the only place a wedged app can be caught cheaply:
+ * `tauriPage`'s own setup pings the plugin socket with no deadline and blocks there for the
+ * entire 15 s test timeout, so a breaker hanging off `tauriPage` still REPORTS the wedge
+ * correctly while saving nothing. Measured both ways against a SIGSTOPped app (macOS 15,
+ * 2026-08-27): 22 tests, 15 s each, either way. Hence the gate does its own socket ping.
+ *
+ * `cmdrTestGuards` then brackets the test with the parts that need a page. Its entry probe
+ * is NOT redundant with the gate: the gate proves the Rust side is answering, this one
+ * proves the WEBVIEW is, and a webview can wedge under a perfectly healthy plugin. On the
+ * way out it asks whether THIS test killed the app, which is what names the culprit instead
+ * of the next test in line.
  */
-export const test = baseTest.extend<{ cmdrTestGuards: undefined }>({
+export const test = baseTest.extend<{ cmdrDeadAppGate: undefined; cmdrTestGuards: undefined }>({
+  cmdrDeadAppGate: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright reads the destructuring pattern to build the dependency graph, and an EMPTY one is how a fixture declares it needs nothing. Naming the parameter instead would change what this fixture waits for, which is the one thing it must not do.
+    async ({}, use, testInfo) => {
+      const death = await findAppDeath(formatTestName(testInfo))
+      if (death !== null) {
+        // ❗ Shrink the budget BEFORE throwing. A fixture error does not stop Playwright
+        // from running the spec's own `beforeEach` hooks, and those hang on `tauriPage`
+        // for the full 15 s, so the throw alone reports the wedge without saving a second.
+        testInfo.setTimeout(DEAD_APP_TEST_BUDGET_MS)
+        throw new Error(death)
+      }
+      await use(undefined)
+    },
+    { auto: true },
+  ],
   cmdrTestGuards: [
     async ({ tauriPage }, use, testInfo) => {
+      await assertAppAlive(tauriPage, formatTestName(testInfo))
       await decorateTitle(tauriPage, testInfo, '')
       await use(undefined)
+      const died = await checkAppSurvived(tauriPage, formatTestName(testInfo))
+      if (died !== null) throw new Error(died)
       await decorateTitle(tauriPage, testInfo, ' (FINISHED)')
       await failOnLeaks(tauriPage)
     },
@@ -78,13 +118,6 @@ export const test = baseTest.extend<{ cmdrTestGuards: undefined }>({
 // across tests. Each shard owns its own Tauri instance + its own worker process,
 // so this lives correctly per-shard.
 let baseTitle: string | null = null
-
-type EvaluatablePage = {
-  evaluate: {
-    (js: string): Promise<unknown>
-    <T>(js: string): Promise<T>
-  }
-}
 
 /** Joins describe blocks + test title into "Section > test name" style. */
 function formatTestName(info: TestInfo): string {

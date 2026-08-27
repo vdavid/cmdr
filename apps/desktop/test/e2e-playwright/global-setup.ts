@@ -12,8 +12,14 @@
 import fs from 'fs'
 import { createFixtures, recreateFixtures } from '../e2e-shared/fixtures.js'
 import { recreateMtpFixtures } from '../e2e-shared/mtp-fixtures.js'
+import { clearAppDeathMarker } from './app-death.js'
 
 export default function globalSetup(): void {
+  // Ahead of the shard-kind gate below, because a marker left by a previous run outlives
+  // the process that wrote it and would fail every test of this one before it got to touch
+  // the app. Every shard kind starts from "the app is alive". See `app-death.ts`.
+  clearAppDeathMarker()
+
   // ❗ The marketing capture is the one shard with NO fixture tree: it photographs the
   // developer's REAL folders, and `CMDR_E2E_START_PATH` is what arms the post-test
   // guard that deletes anything not in the fixture manifest. Creating a tree here

@@ -701,6 +701,58 @@ as "stop reading here, fix this test": a triage instruction, not one more failur
 **Recovery is not a licence to leak.** A spec that needs an operation drained still drains it in its own `afterEach`;
 this is the backstop for the case nobody predicted, and every trip through it is still a failed test.
 
+### The dead-app circuit breaker
+
+`breakTheCascade` handles an app that is unwilling to close a dialog. `app-death.ts` handles the harder shape: an app
+that has stopped answering at all. Nothing recovers from that, and asking anyway is expensive — every call into a wedged
+app waits forever, so each later test sits out its whole 15 s timeout, and the CI retry sits it out a second time. CI
+run 32915058946 is the worst case on record: the app went silent 48 seconds in, right after
+`archive-browsing.spec.ts:235`, and never logged another line. 86 tests had passed; the remaining 223 each cost ~32 s to
+learn the same nothing, and the job ran 136 minutes against a healthy-run 19.
+
+Three things have to be true at once, and each one was found the hard way by measuring against a SIGSTOPped app (macOS
+15, 2026-08-27) — a process that is alive, holding its socket open, and answering nothing, which is exactly the CI
+shape. Each fix below is listed with what the run cost without it: 22 tests, 15 s each, every time.
+
+**1. The gate cannot go through `tauriPage`.** `@srsholmes/tauri-playwright`'s fixture connects to the plugin socket and
+sends `{"type":"ping"}` with NO deadline, then waits on a line a wedged app never writes. That blocks the whole 15 s
+before any code here runs, so a breaker hanging off `tauriPage` reports the wedge perfectly and saves nothing. The gate
+(`cmdrDeadAppGate` in `fixtures.ts`) therefore destructures NOTHING, which is what makes Playwright set it up first, and
+`pingAppSocket` speaks the two-line protocol itself under a deadline. ❌ Don't give that fixture a `tauriPage`
+dependency; it silently un-fixes this.
+
+**2. Throwing from the gate is not enough.** A failed fixture does not stop Playwright from running the spec's own
+`beforeEach` hooks, and those hang on `tauriPage` for the full timeout anyway. So the gate calls
+`testInfo.setTimeout(DEAD_APP_TEST_BUDGET_MS)` BEFORE it throws, and a doomed test costs 1 s instead of 15.
+
+**3. A healthy plugin does not mean a healthy webview.** The socket ping only proves the Rust side is awake. So
+`cmdrTestGuards` (which does take `tauriPage`) also runs `assertAppAlive` on the way in and `checkAppSurvived` on the
+way out, both via a `document.querySelector` probe under the same deadline. The way-out one is what names the culprit
+instead of the next test in line.
+
+The rest of the shape:
+
+- **The ANSWER is the signal, never its value.** A spec that destroyed the focused window mid-test gets `null` back from
+  `evaluate` and is perfectly healthy; a `{ ok: false }` ping reply is an app that is awake and talking. Only silence
+  counts.
+- **10 s deadlines are deliberately loose.** A false positive abandons a whole shard, and both probes answer in about a
+  millisecond on a live app. The run pays it exactly once, on the test that finds the body.
+- **The verdict is a FILE** next to the shard's socket (`$CMDR_PLAYWRIGHT_SOCKET.dead`), not a module variable.
+  Playwright discards a worker process after a failure, and the first thing the breaker ever sees IS a failure, so
+  in-process state would be gone by the test that needs to read it. Keying it to the socket is what keeps parallel
+  shards from reading each other's verdict.
+- **Once recorded, later tests decide with one file read**: no ping, no probe, no deadline.
+- **`global-setup.ts` clears the marker** before every run, for every shard kind. A marker outlives the process that
+  wrote it, and a stale one would fail an entire healthy run before its first test touched the app.
+
+Measured end to end on `archive-browsing.spec.ts` against the wedged app: 25 s for the test that discovers it, then 1.0
+s each for the other 21, against 15 s each before. The same spec on a healthy app still passes 22/22 with no measurable
+overhead.
+
+❗ Failing fast is the entire feature; the breaker never tries to revive or relaunch anything. An app that stopped
+answering has already lost whatever state the suite depends on, and a shard that quietly restarted underneath its tests
+reports green runs that prove nothing.
+
 ## The fixture-tree leak guard
 
 `left/` and `right/` are shared by every spec on a shard, and roughly half of them mutate the tree. `recreateFixtures`
