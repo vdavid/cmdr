@@ -210,7 +210,7 @@ impl CreatesAFolderAfterEveryWalk {
         };
         let name = format!("churn-{}", self.created.fetch_add(1, Ordering::Relaxed));
         std::fs::create_dir_all(tree.join(&name)).expect("the folder somebody just created");
-        let Some((writer, _)) = state::get_writer_and_scanning_for(self.volume_id) else {
+        let Some((writer, _)) = state::get_writer_and_flux_for(self.volume_id) else {
             return;
         };
         // The volume root, which the stitch listed on its way to the first phase

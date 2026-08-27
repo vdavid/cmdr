@@ -39,8 +39,8 @@ pub(super) struct ScanCompletion {
     pub join_handle: std::thread::JoinHandle<Result<ScanSummary, ScanError>>,
     /// Set to true when the scan finishes so the progress reporter loop exits.
     pub scan_done: Arc<AtomicBool>,
-    /// The manager's "a scan is running" flag; reset to false on completion.
-    pub scanning: Arc<AtomicBool>,
+    /// The manager's "a bulk producer owns this ground" flag; cleared on completion.
+    pub ground_in_flux: Arc<AtomicBool>,
     /// The whole-volume claim `start_scan` took, held here for the rest of the
     /// scan's life and dropped when the walk is provably over.
     ///
@@ -113,7 +113,7 @@ async fn finish_the_scan(params: ScanCompletion) {
     let ScanCompletion {
         join_handle,
         scan_done,
-        scanning,
+        ground_in_flux,
         ground,
         event_rx,
         watcher_overflow_flag,
@@ -133,8 +133,8 @@ async fn finish_the_scan(params: ScanCompletion) {
 
     // Signal the progress reporter to stop regardless of outcome
     scan_done.store(true, Ordering::Relaxed);
-    // Reset scanning flag so get_status() reports correctly
-    scanning.store(false, Ordering::Relaxed);
+    // Clear the in-flux flag so get_status() reports correctly
+    ground_in_flux.store(false, Ordering::Relaxed);
     // And let the volume's ground go, which is what lets a search walk start.
     // Released HERE, right after the join: the walk thread is finished, so nothing
     // is reading the disk any more, and a search that waited through the scan gets
@@ -543,7 +543,7 @@ mod tests {
             ScanCompletion {
                 join_handle: std::thread::spawn(move || result),
                 scan_done: Arc::new(AtomicBool::new(false)),
-                scanning: Arc::new(AtomicBool::new(true)),
+                ground_in_flux: Arc::new(AtomicBool::new(true)),
                 // The ground a real scan hands over, taken the way `start_scan`
                 // takes it so the handler releases something real.
                 ground: cover::Claim::take(volume_id, vec!["/".to_string()], cover::Holder::Rewriting),

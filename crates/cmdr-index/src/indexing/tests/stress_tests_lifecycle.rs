@@ -249,7 +249,7 @@ fn double_start_guard_prevents_concurrent_scans() {
     let (writer, _read_conn, _dir) = setup_writer();
     let db_path = writer.db_path();
 
-    // Shared scanning flag (mirrors IndexManager.scanning)
+    // Shared in-flux flag (mirrors IndexManager.ground_in_flux)
     let scanning = Arc::new(AtomicBool::new(false));
 
     // Simulate start_scan's guard check

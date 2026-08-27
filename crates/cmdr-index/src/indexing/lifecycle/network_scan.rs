@@ -224,7 +224,7 @@ impl IndexManager {
         let volume_used_bytes =
             tokio::task::block_in_place(|| crate::indexing::host::volumes::current().volume_used_bytes(&volume_root));
 
-        // Pre-arm-before-snapshot: flip `scanning` BEFORE truncating, so any live
+        // Pre-arm-before-snapshot: flip `ground_in_flux` BEFORE truncating, so any live
         // SMB change racing in during/after the truncate is BUFFERED by
         // `apply_smb_change` (which reads this flag) instead of being applied
         // against the gutted, half-rebuilt index and lost. The smb2 watcher has
@@ -232,7 +232,7 @@ impl IndexManager {
         // the wire; this is the moment we start stashing them for post-scan
         // replay. The ordering survives a mid-scan watcher respawn: a respawned
         // watcher feeds the same buffer while this flag stays set.
-        self.scanning.store(true, Ordering::Relaxed);
+        self.ground_in_flux.store(true, Ordering::Relaxed);
 
         // Reconcile vs truncate: an already-populated index is RESCANNED in place
         // (diff each dir, write only changes) so the last-good data stays visible
@@ -355,7 +355,7 @@ impl IndexManager {
         // volume able to start another, while tearing the volume down stops it.
         let cancel = self.volume_cancel.child_token();
         self.scan_handle = Some(ScanHandle::new(Arc::clone(&progress), cancel.clone()));
-        // `scanning` was already set true above (pre-arm before truncate).
+        // `ground_in_flux` was already set true above (pre-arm before truncate).
 
         // Progress + mid-scan partial-aggregation reporter (500 ms), stops when the
         // scan signals done. The SAME generalized `ScanProgressReporter` the local
@@ -382,7 +382,7 @@ impl IndexManager {
         let writer = self.writer.clone();
         let events = Arc::clone(&self.events);
         let volume_id = self.volume_id.clone();
-        let scanning = Arc::clone(&self.scanning);
+        let ground_in_flux = Arc::clone(&self.ground_in_flux);
         // Clone the freshness handle into the completion task so it fires the
         // `ScanCompleted` / `WatcherDied` transition through the `Arc` directly,
         // never re-locking the registry.
@@ -431,7 +431,7 @@ impl IndexManager {
             scan_session_volume.end_scan_session().await;
 
             scan_done.store(true, Ordering::Relaxed);
-            scanning.store(false, Ordering::Relaxed);
+            ground_in_flux.store(false, Ordering::Relaxed);
             // And the share's ground goes back, now that nothing is walking it. The
             // claim rode into this task because the scan outlives `start_volume_scan`;
             // owned here, it is released on every arm below, on a cancel, and on a

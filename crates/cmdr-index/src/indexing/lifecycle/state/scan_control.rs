@@ -18,13 +18,13 @@ use crate::indexing::lifecycle::manager::{IndexManager, PhaseResume};
 use crate::indexing::lifecycle::rescan_request::{RescanOutcome, ScanStartError};
 use crate::indexing::reconcile::verifier;
 
-/// Flip a Running volume's "a full scan is in flight" flag, so a test can pin
+/// Flip a Running volume's "a bulk producer owns this ground" flag, so a test can pin
 /// what a walk does against one without racing a real scan into place.
 #[cfg(test)]
-pub(crate) fn set_scanning_for_test(volume_id: &str, scanning: bool) {
+pub(crate) fn set_ground_in_flux_for_test(volume_id: &str, in_flux: bool) {
     let reg = INDEX_REGISTRY.lock_ignore_poison();
     match reg.get(volume_id).map(|i| &i.phase) {
-        Some(IndexPhase::Running(mgr)) => mgr.scanning.store(scanning, Ordering::Relaxed),
+        Some(IndexPhase::Running(mgr)) => mgr.ground_in_flux.store(in_flux, Ordering::Relaxed),
         _ => panic!("'{volume_id}' has no running manager to mark"),
     }
 }
@@ -90,7 +90,7 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
             // bail; this is the concurrency half, and it asks "is a walk reading the
             // disk right now" rather than "does the machine have work" — between
             // roots there is nothing to race.
-            let scanning = mgr.scanning.load(Ordering::Relaxed) || mgr.phases_are_walking();
+            let ground_in_flux = mgr.ground_in_flux.load(Ordering::Relaxed) || mgr.phases_are_walking();
             // The volume's path space, taken off the SAME instance the writer came
             // from. The verifier reads `volume_id`'s index and writes `mgr.writer`,
             // so the two must name one volume: routing the read through root's pool
@@ -105,7 +105,7 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
             // volume is gone.
             let cancel = signals.cancel.child_token();
             drop(reg);
-            verifier::maybe_verify(volume_id, dir_path, space, writer, events, scanning, cancel);
+            verifier::maybe_verify(volume_id, dir_path, space, writer, events, ground_in_flux, cancel);
         }
     });
 }

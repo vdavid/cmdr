@@ -497,7 +497,7 @@ impl Drive {
     /// Send one message through this drive's own writer and wait for it to land.
     fn write(&self, message: WriteMessage) {
         let (writer, _) =
-            crate::indexing::lifecycle::state::get_writer_and_scanning_for(self.volume_id).expect("a running writer");
+            crate::indexing::lifecycle::state::get_writer_and_flux_for(self.volume_id).expect("a running writer");
         writer.send(message).expect("the writer takes it");
         writer.flush_blocking().expect("and commits it");
     }

@@ -123,7 +123,7 @@ impl IndexManager {
 
         // Suppress verifier until replay completes. The spawned task resets
         // this to false when replay is done (or on fallback to full scan).
-        self.scanning.store(true, Ordering::Relaxed);
+        self.ground_in_flux.store(true, Ordering::Relaxed);
 
         // And take the volume's ground for the same stretch. Replay walks nothing,
         // but it WRITES the whole volume: every journal event goes through the
@@ -161,7 +161,7 @@ impl IndexManager {
         // the same space as the live loop that follows.
         let space = self.path_space();
         let live_event_task_slot = Arc::clone(&self.live_event_task);
-        let scanning = Arc::clone(&self.scanning);
+        let ground_in_flux = Arc::clone(&self.ground_in_flux);
 
         // The fallback task (below) re-resolves this manager in the registry by
         // volume id, so keep a clone for it before `volume_id` is moved into the
@@ -199,15 +199,15 @@ impl IndexManager {
                 },
                 fallback_tx,
                 watcher_overflow,
-                Arc::clone(&scanning),
+                Arc::clone(&ground_in_flux),
             )
             .await;
 
-            // Live event loop ended (shutdown). Clear scanning as a safety net
+            // Live event loop ended (shutdown). Clear the in-flux flag as a safety net
             // (normally cleared inside run_replay_event_loop after replay phase).
             // The ground needs no safety net: the loop owns the claim, so an early
             // return, an abort, and a panic all release it.
-            scanning.store(false, Ordering::Relaxed);
+            ground_in_flux.store(false, Ordering::Relaxed);
 
             if let Err(e) = result {
                 log::warn!("Replay event loop error: {e}");
@@ -673,7 +673,7 @@ impl IndexManager {
                 .map_err(|e| format!("Failed to start scan: {e}"))?
         };
 
-        self.scanning.store(true, Ordering::Relaxed);
+        self.ground_in_flux.store(true, Ordering::Relaxed);
 
         // Shared flag: set to true when the scan finishes (or fails/panics), so the
         // progress reporter loop exits. The completion handler below sets it.
@@ -706,7 +706,7 @@ impl IndexManager {
         let volume_id = self.volume_id.clone();
         let events = Arc::clone(&self.events);
         let writer = self.writer.clone();
-        let scanning = Arc::clone(&self.scanning);
+        let ground_in_flux = Arc::clone(&self.ground_in_flux);
         // Clone the freshness handle into the completion task so it fires
         // `ScanCompleted` through the `Arc` directly, never re-locking the registry.
         let freshness = Arc::clone(&self.freshness);
@@ -716,7 +716,7 @@ impl IndexManager {
             super::super::scan_completion::ScanCompletion {
                 join_handle,
                 scan_done,
-                scanning,
+                ground_in_flux,
                 ground,
                 event_rx,
                 watcher_overflow_flag,

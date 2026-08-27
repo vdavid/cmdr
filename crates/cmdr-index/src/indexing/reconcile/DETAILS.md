@@ -418,10 +418,10 @@ iCloud dir / network-as-local) can't park a tokio worker — keep this offload; 
 the async path (filtering through `scanner::should_exclude`), (3) diffs by normalized name, sending
 `UpsertEntryV2`/`DeleteEntryById`/`DeleteSubtreeById`/`PropagateDeltaById` corrections. New directories are flushed then
 scanned via `scan_subtree` with delta propagation. Debounce: 30 s per path, max 2 concurrent verifications. Only runs
-after the initial scan completes (checks `scanning`). `invalidate()` clears state on shutdown/clear. The `in_flight`
-slot is freed (and the path recorded in `recent`) via an `InFlightGuard` RAII `Drop`, not a post-`await` line, so a
-panic in `verify_and_correct`/`emit_dir_updated` can't permanently leak a slot against `MAX_CONCURRENT_VERIFICATIONS`
-(pinned by `verifier.rs::tests::in_flight_slot_is_freed_on_panic_unwind`).
+after the initial scan completes (checks `ground_in_flux`). `invalidate()` clears state on shutdown/clear. The
+`in_flight` slot is freed (and the path recorded in `recent`) via an `InFlightGuard` RAII `Drop`, not a post-`await`
+line, so a panic in `verify_and_correct`/`emit_dir_updated` can't permanently leak a slot against
+`MAX_CONCURRENT_VERIFICATIONS` (pinned by `verifier.rs::tests::in_flight_slot_is_freed_on_panic_unwind`).
 
 **❌ The read volume, the write volume, and the path space must be ONE volume.** `verify_and_correct` takes
 `volume_id` + `IndexPathSpace` + `IndexWriter`, and `trigger_verification` takes all three off the same running instance

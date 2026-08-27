@@ -113,11 +113,11 @@ lifetime, not just while a pane shows the share, so the index must update even w
   (`list_directory_end`) can't reach it. Pinned by `smb_integration_pane_close_does_not_kill_index_watcher`.
 - **Buffer-during-scan.** The smb2 watcher runs continuously, so changes are on the wire throughout a scan. A change to
   an already-walked dir can't be applied straight to the mid-scan index (the scan truncated the DB and is still
-  inserting). So `start_volume_scan` flips `scanning` true BEFORE the truncate, and while set `apply_smb_change` BUFFERS
-  the change (per-volume `SCAN_CHANGE_BUFFER`, bounded `MAX_BUFFERED_CHANGES = 50_000`) instead of applying it. The
-  scan-completion handler calls `replay_buffered_changes` AFTER aggregation lands, then transitions to Fresh; overflow
-  fires `OverflowUnrecoverable` ⇒ Stale; an interrupted scan calls `discard_buffered_changes`. The completion handler
-  itself is owned by `../lifecycle/DETAILS.md`.
+  inserting). So `start_volume_scan` flips `ground_in_flux` true BEFORE the truncate, and while set `apply_smb_change`
+  BUFFERS the change (per-volume `SCAN_CHANGE_BUFFER`, bounded `MAX_BUFFERED_CHANGES = 50_000`) instead of applying it.
+  The scan-completion handler calls `replay_buffered_changes` AFTER aggregation lands, then transitions to Fresh;
+  overflow fires `OverflowUnrecoverable` ⇒ Stale; an interrupted scan calls `discard_buffered_changes`. The completion
+  handler itself is owned by `../lifecycle/DETAILS.md`.
 - **Overflow policy.** On `STATUS_NOTIFY_ENUM_DIR` the watcher keeps watching (the session is fine) and emits a
   root-scoped `FullRefresh`; the index path fires `OverflowUnrecoverable` ⇒ Stale (the watcher only ever signals
   overflow for the share ROOT, so a full rescan is the only honest repair). Overflow is a DIFFERENT code path from a

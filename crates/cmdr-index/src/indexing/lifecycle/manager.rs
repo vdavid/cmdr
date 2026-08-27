@@ -71,8 +71,18 @@ pub(crate) struct IndexManager {
     live_event_task: Arc<std::sync::Mutex<Option<tokio::task::JoinHandle<()>>>>,
     /// Where this volume's scan and phase reports go.
     pub(super) events: Arc<dyn EventSink>,
-    /// Whether a full scan is currently running. Shared with the completion handler.
-    pub(super) scanning: Arc<AtomicBool>,
+    /// Whether a bulk producer owns this volume's ground right now: a full scan
+    /// (local or network) or a journal replay, each of which rewrites rows in bulk
+    /// rather than one committed change at a time.
+    ///
+    /// ⚠️ Not "the index has work": that is `phases_have_work`, and this stays
+    /// false between a phased run's frontier roots. Every reader cares for the one
+    /// reason, that the rows are unstable while it is set: `get_status` reports it
+    /// and names `walked_roots`, the SMB and MTP translators BUFFER changes across
+    /// the truncate, the verifier is suppressed, `awaits_its_first_scan` refuses to
+    /// start a second walk, and `cover_context_for` declines to hand one the same
+    /// ground. Shared with the completion handler, which clears it.
+    pub(super) ground_in_flux: Arc<AtomicBool>,
     /// This volume's freshness signal — the SAME `Arc` the registry `IndexInstance`
     /// holds. The manager fires its scan transitions (`ScanStarted`,
     /// `ScanCompleted`, `WatcherDied`) through this handle via
@@ -329,7 +339,7 @@ impl IndexManager {
             branch_watched: false,
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
             events,
-            scanning: Arc::new(AtomicBool::new(false)),
+            ground_in_flux: Arc::new(AtomicBool::new(false)),
             freshness,
             phases: None,
             pending_phases: PendingPhases::No,
@@ -536,7 +546,7 @@ impl IndexManager {
             handle.cancel();
         }
         self.scan_handle = None;
-        self.scanning.store(false, Ordering::Relaxed);
+        self.ground_in_flux.store(false, Ordering::Relaxed);
 
         // Stop the FSEvents watcher
         if let Some(ref mut watcher) = self.drive_watcher {
@@ -572,7 +582,7 @@ impl IndexManager {
         let db_file_size = self.store.db_file_size().ok();
 
         // A phased run has no `ScanHandle`; its counters live on the machine, and
-        // its `scanning` is "the machine has work", never "a walk is running right
+        // its reported `scanning` is "the machine has work", never "a walk is running right
         // now" (which goes false between frontier roots, 50-150 times a phase).
         let snap = self
             .scan_handle
@@ -580,7 +590,7 @@ impl IndexManager {
             .map(|h| h.progress.snapshot())
             .or_else(|| self.phases.as_ref().map(|phases| phases.progress().snapshot()));
         let counters = live_scan_counters(snap, self.scan_calibration);
-        let scanning = self.scanning.load(Ordering::Relaxed) || self.phases_have_work();
+        let scanning = self.ground_in_flux.load(Ordering::Relaxed) || self.phases_have_work();
 
         // What the walker holds right now. A whole-volume run holds the volume
         // root (the same ground it announced at start), a phased one holds the
@@ -589,7 +599,7 @@ impl IndexManager {
         // for one that just reloaded.
         let walked_roots = match self.phases.as_ref() {
             Some(phases) if phases.has_work() => phases.walked_roots(),
-            _ if self.scanning.load(Ordering::Relaxed) => vec![self.volume_root.to_string_lossy().into_owned()],
+            _ if self.ground_in_flux.load(Ordering::Relaxed) => vec![self.volume_root.to_string_lossy().into_owned()],
             _ => Vec::new(),
         };
 
@@ -705,7 +715,7 @@ impl IndexManager {
         self.volume_cancel.cancel();
         self.stop_phases();
         self.scan_handle = None;
-        self.scanning.store(false, Ordering::Relaxed);
+        self.ground_in_flux.store(false, Ordering::Relaxed);
 
         // 2. Stop the watcher. Dropping the sender closes the channel, which causes event_rx.recv() to
         //    return None in the event loop.

@@ -369,10 +369,10 @@ every path, deferred ones included. Anchor:
   freshness color is a shape its own doc comment rules out).
 - `get_status` / `get_debug_status` report `initialized: true, scanning: true` with no numbers, so the hourglass stops
   blanking at the moment a rescan begins. ❌ Nothing here may read a database: the registry lock is held.
-- `get_writer_and_scanning_for` hands out the writer with `scanning: true`, so an SMB or MTP change is BUFFERED for
-  post-scan replay instead of dropped. ⚠️ The `true` is deliberate and is NOT the manager's real flag: that flag flips
-  partway through `start_scan`, so a live apply in the gap would write rows the `TruncateData` below it blanks, or land
-  after it with ids the walk is about to allocate.
+- `get_writer_and_flux_for` hands out the writer with in-flux `true`, so an SMB or MTP change is BUFFERED for post-scan
+  replay instead of dropped. ⚠️ The `true` is deliberate and is NOT the manager's real flag: that flag flips partway
+  through `start_scan`, so a live apply in the gap would write rows the `TruncateData` below it blanks, or land after it
+  with ids the walk is about to allocate.
 - `cover_context_for` still answers `None` — a scan is starting, which is one of the three cases it already refuses. The
   claim table refuses the walk one line later anyway (`claim_the_volume` takes the volume `Exclusive`ly before every
   blocking call in `start_scan`), so the phase check is belt over braces.
@@ -553,7 +553,7 @@ waiting for".
   converting a window where NO lock is held into one where a lock every reader of that volume must take is held across
   blocking I/O — 3–10 ms typical on the boot disk, seconds on the truncating arm, unbounded on a wedged mount. That is
   the hazard § "Lock discipline" above records two QA incidents for, and `cover_context_for` (50–150 calls a phase) plus
-  `get_writer_and_scanning_for` (per SMB change) would both move onto it.
+  `get_writer_and_flux_for` (per SMB change) would both move onto it.
 - **The two exclusions it was credited with are already carried elsewhere**: `start_pending_phases` is single-flighted
   by `PendingPhases`' compare-and-set, and `cover_context_for` by the `Exclusive` claim `start_scan` takes before any
   blocking work.
@@ -709,19 +709,19 @@ the whole vocabulary, and why identity isn't is `cover/live/DETAILS.md` § "The 
 
 ⚠️ **The claim is NOT scoped to the call that takes it**, and this is the part that bites. `start_scan` returns while
 the walk runs, so the claim travels into the task that ends the run: `ScanCompletion` on the local path, the completion
-task on the network one, and `run_replay_event_loop` for a replay. Each drops it right where it clears `mgr.scanning`.
-Left held, the drive refuses every later rescan AND every search walk for the rest of the session, which no retry gets
-out of. ❌ Don't release one anywhere else: `stop_scan` and `shutdown` cancel the walk and let its own ending free the
-ground, because a cancel is a request and the walk keeps writing until it notices.
+task on the network one, and `run_replay_event_loop` for a replay. Each drops it right where it clears
+`mgr.ground_in_flux`. Left held, the drive refuses every later rescan AND every search walk for the rest of the session,
+which no retry gets out of. ❌ Don't release one anywhere else: `stop_scan` and `shutdown` cancel the walk and let its
+own ending free the ground, because a cancel is a request and the walk keeps writing until it notices.
 
 ⚠️ **Journal replay claims the volume too, and it is the least obvious holder in the system.** It walks nothing, so it
 looks like it holds no ground — but it WRITES anywhere on the volume through the reconciler, allocating ids for names a
 concurrent scan or cover walk would allocate too. That is the same `INSERT OR IGNORE` collision the claim table exists
 to prevent, and a "Rescan now" landing mid-replay would truncate under rows replay is still inserting. So `start_replay`
-takes an `Exclusive` claim beside its `scanning.store(true)`, and `run_replay_event_loop` drops it beside the matching
-`store(false)` — where the REPLAY phase ends, ❌ never where the task does: that same task goes on to run the live loop
-for the rest of the session. `cover_context_for` keeps reading `mgr.scanning` independently, which is what refuses a new
-cover walk during replay; the claim is what refuses a truncating one.
+takes an `Exclusive` claim beside its `ground_in_flux.store(true)`, and `run_replay_event_loop` drops it beside the
+matching `store(false)` — where the REPLAY phase ends, ❌ never where the task does: that same task goes on to run the
+live loop for the rest of the session. `cover_context_for` keeps reading `mgr.ground_in_flux` independently, which is
+what refuses a new cover walk during replay; the claim is what refuses a truncating one.
 
 ⚠️ **The phase question refuses nothing that can reach `start_volume_scan` today, and it is still load-bearing.** A
 volume is phase-covered only if `first_index_is_the_machines` says so, and that requires `uses_local_scanner()`, which

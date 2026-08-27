@@ -71,8 +71,8 @@ three levels, each closing a case the one above it can't see.
 
 1. **Reuse the volume's writer** (`state::cover_context_for`). A `Running` volume hands its own writer over; the walk
    never stands a second one up.
-2. **Don't walk a volume that's being scanned.** `cover_context_for` answers `None` while `mgr.scanning` is set, and
-   `context_for_walk` turns that plus `Initializing` into `NoCoverContext::ScanInProgress`. The scan already covers
+2. **Don't walk a volume that's being scanned.** `cover_context_for` answers `None` while `mgr.ground_in_flux` is set,
+   and `context_for_walk` turns that plus `Initializing` into `NoCoverContext::ScanInProgress`. The scan already covers
    everything a search would have walked, and running beside it isn't merely redundant: both allocate fresh ids for the
    same names, `insert_entries_v2_batch` is `INSERT OR IGNORE`, and the row that loses takes its subtree with it. With
    no index at all, the lock-first reservation inside `start_indexing_for` decides who builds one.

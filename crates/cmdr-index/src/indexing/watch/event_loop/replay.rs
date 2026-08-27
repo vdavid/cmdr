@@ -77,7 +77,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     config: ReplayConfig,
     fallback_tx: tokio::sync::oneshot::Sender<RescanReason>,
     watcher_overflow: Option<Arc<AtomicBool>>,
-    scanning: Arc<AtomicBool>,
+    ground_in_flux: Arc<AtomicBool>,
 ) -> Result<(), String> {
     let ReplayConfig {
         volume_id,
@@ -406,8 +406,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     ]);
     set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Live, "post-replay");
 
-    // Replay done. Allow verifier to run and report scanning=false to frontend.
-    scanning.store(false, Ordering::Relaxed);
+    // Replay done. Release the ground, which lets the verifier run and reports
+    // `scanning: false` to the frontend.
+    ground_in_flux.store(false, Ordering::Relaxed);
     // And hand the volume's ground back, so a rescan or a search walk can have it.
     // From here this loop is a LIVE loop: it writes one event at a time against
     // committed rows, which is what `branches` arbitrates, not the claim table.

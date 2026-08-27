@@ -11,7 +11,7 @@
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::sync::Arc;
 
-use super::{INDEX_REGISTRY, get_writer_and_scanning_for};
+use super::{INDEX_REGISTRY, get_writer_and_flux_for};
 use crate::indexing::lifecycle::freshness::{Freshness, FreshnessEvent};
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::writer::WriteMessage;
@@ -111,7 +111,7 @@ pub(crate) fn apply_freshness_event_on(
 /// benign — the freshness badge already flips Stale alongside this call, and the
 /// per-dir stale derivation self-corrects once the bump commits.
 pub(crate) fn bump_current_epoch_for(volume_id: &str) {
-    if let Some((writer, _scanning)) = get_writer_and_scanning_for(volume_id)
+    if let Some((writer, _scanning)) = get_writer_and_flux_for(volume_id)
         && let Err(e) = writer.send(WriteMessage::BumpCurrentEpoch)
     {
         log::warn!("bump_current_epoch_for('{volume_id}'): writer send failed: {e}");

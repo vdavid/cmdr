@@ -29,8 +29,8 @@ the first index, each with its own `CLAUDE.md`. Other leaves are one job each (`
   that stopped with a non-empty frontier earns another PASS via `state::resume_the_phases`, ❌ never `force_scan`, which
   truncates a volume that completed meanwhile.
 - **Both scan entries ask `phases_have_work`, then `claim_the_volume`**, and a whole-volume claim OUTLIVES its call: it
-  drops where its run clears `mgr.scanning`. ❌ Never release one early, and run the walk it owes where its holder stops
-  WRITING (`rescan_request::run_if_owed`).
+  drops where its run clears `mgr.ground_in_flux`. ❌ Never release one early, and run the walk it owes where its holder
+  stops WRITING (`rescan_request::run_if_owed`).
 - **Fire a pipeline-phase transition through `events::set_phase_for`**; the `IndexPhase` swaps here are a different
   machine. Freshness has ONE total table (`Freshness::on`), and `..._on` vs `apply_freshness_event` is LOCK DISCIPLINE.
 - **A fatal storage error STOPS and FAILS the index.** Recovery is a rebuild, never a retry.

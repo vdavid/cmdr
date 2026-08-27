@@ -22,7 +22,7 @@ Each of these fails SILENTLY when ignored.
   truncate the index that just finished; a terminal ahead of the heal's progress ticks leaves every hourglass lit until
   relaunch.
 - **`working` (a phase queued or running) is what scan entries refuse against; `walking` (reading the disk now) is only
-  the verifier's.** ❌ Never `mgr.scanning`: `cover_context_for` returns `None` under it, so our own walks fail.
+  the verifier's.** ❌ Never `mgr.ground_in_flux`: `cover_context_for` returns `None` under it, so our own walks fail.
 - **One `cover()` per GROUP of frontier roots**, joined, sized from what the last group cost (`grouping.rs`), draining
   per phase and taking stock per DRAIN. ⚠️ A group also STOPS for a folder somebody opened, through a PEEK over every
   remembered folder; that earns another PASS and ❌ never sizes the next group.

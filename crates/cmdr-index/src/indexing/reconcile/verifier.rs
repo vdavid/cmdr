@@ -84,10 +84,10 @@ pub(crate) fn maybe_verify(
     space: IndexPathSpace,
     writer: IndexWriter,
     events: std::sync::Arc<dyn crate::EventSink>,
-    scanning: bool,
+    ground_in_flux: bool,
     cancel: CancellationToken,
 ) {
-    if scanning {
+    if ground_in_flux {
         return;
     }
 

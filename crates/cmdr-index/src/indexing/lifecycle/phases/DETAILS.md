@@ -294,10 +294,10 @@ decision, so ❌ don't read either as wrong; ⚠️ do quote the app's figure fo
   `phases_have_work` answers from this instead: `Owed` from `register_a_phased_start` until the start is taken,
   `BeingStarted` for as long as `PhaseStart::run` is standing the machine up off the registry lock. That second window
   has a driver thread already walking in it (`manager/phased.rs`).
-- **`walking`** — a walk is reading the disk right now. Feeds the verifier's `scanning` argument only; between roots
-  there is nothing to race.
-- ❌ Never `mgr.scanning`: `cover_context_for` returns `None` while it is true, so the machine's own `cover()` calls
-  would fail with `ScanInProgress`.
+- **`walking`** — a walk is reading the disk right now. Feeds the verifier's `ground_in_flux` argument only; between
+  roots there is nothing to race.
+- ❌ Never `mgr.ground_in_flux`: `cover_context_for` returns `None` while it is true, so the machine's own `cover()`
+  calls would fail with `ScanInProgress`.
 - **The progress shape**: phase label, live entry counter, elapsed, and ❌ no percentage until the volume-root phase. A
   phased run has no knowable total before then, and the design principles forbid a bar parked at 100%. So the
   `ScanStarted` event and the stashed calibration both carry `volume_used_bytes: None`, and

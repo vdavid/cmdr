@@ -124,11 +124,13 @@ pub(crate) fn awaits_its_first_scan(volume_id: &str) -> bool {
     let db_path = {
         let reg = INDEX_REGISTRY.lock_ignore_poison();
         match reg.get(volume_id).map(|i| &i.phase) {
-            // `Initializing` is a start already in flight, and a scanning manager
-            // is a walk already running: neither needs another. A volume the phase
+            // `Initializing` is a start already in flight, and a manager whose ground
+            // is in flux is a walk already running: neither needs another. A volume the phase
             // machine still has work for is the third shape of the same thing — it
             // is being walked whole, in pieces.
-            Some(IndexPhase::Running(mgr)) if !mgr.scanning.load(Ordering::Relaxed) && !mgr.phases_have_work() => {
+            Some(IndexPhase::Running(mgr))
+                if !mgr.ground_in_flux.load(Ordering::Relaxed) && !mgr.phases_have_work() =>
+            {
                 mgr.db_path().to_path_buf()
             }
             _ => return false,

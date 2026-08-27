@@ -30,7 +30,7 @@
 //! ## Invariants honored
 //!
 //! - **Single-writer-per-DB**: we only ENQUEUE messages on the volume's existing
-//!   writer thread (via `state::get_writer_and_scanning_for`); we never open a
+//!   writer thread (via `state::get_writer_and_flux_for`); we never open a
 //!   write connection here. A change arriving while the volume isn't `Running`
 //!   (disabled) is dropped; one arriving mid-scan is BUFFERED and replayed after
 //!   the scan, so it isn't lost against the rebuilding index.
@@ -221,7 +221,7 @@ pub(crate) fn apply_smb_change(volume_id: &str, parent_path: &Path, change: &Dir
     // (initializing volumes are mid-scan; absent ones are disabled). Also read
     // whether a full scan is in progress — if so, BUFFER instead of applying, so
     // a change to an already-walked dir isn't lost against the rebuilding index.
-    let (writer, scanning) = match state::get_writer_and_scanning_for(volume_id) {
+    let (writer, scanning) = match state::get_writer_and_flux_for(volume_id) {
         Some(pair) => pair,
         None => return,
     };
@@ -279,7 +279,7 @@ pub(crate) fn replay_buffered_changes(volume_id: &str) -> bool {
 
     // The volume is `Running` and no longer scanning by the time we replay, so
     // re-fetch the writer and apply each change against the now-complete index.
-    let Some((writer, _)) = state::get_writer_and_scanning_for(volume_id) else {
+    let Some((writer, _)) = state::get_writer_and_flux_for(volume_id) else {
         return true;
     };
     let count = buffered.changes.len();

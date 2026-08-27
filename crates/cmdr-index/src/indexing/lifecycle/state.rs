@@ -75,7 +75,7 @@ pub(crate) use reservation::{is_initializing_phase, try_reserve_initializing_pha
 pub(in crate::indexing::lifecycle) use scan_control::{Handover, off_the_registry, resume_the_phases};
 pub use scan_control::{force_scan, stop_scan, trigger_verification};
 #[cfg(test)]
-pub(crate) use scan_control::{rescan_with_phases_owed_for_test, set_scanning_for_test, while_detached_for_test};
+pub(crate) use scan_control::{rescan_with_phases_owed_for_test, set_ground_in_flux_for_test, while_detached_for_test};
 pub(crate) use startup::record_drive_index_enabled;
 pub use startup::start_indexing;
 pub(in crate::indexing::lifecycle) use startup::start_indexing_for;
@@ -403,7 +403,7 @@ pub(crate) fn resolved_index_db_path(volume_id: &str) -> Result<PathBuf, String>
 /// if it has a `Running` index. Used by the SMB watch→index translator to
 /// enqueue change messages (`UpsertEntryV2` / `DeleteEntryById` / …) onto the
 /// single per-volume writer thread, preserving the single-writer-per-DB
-/// invariant: the translator never writes directly. The `scanning` flag lets the
+/// invariant: the translator never writes directly. The in-flux flag lets the
 /// translator BUFFER changes during a full (re)scan and replay them after, so a
 /// change to an already-walked directory isn't lost against the mid-scan
 /// (truncated, rebuilding) index — the SMB equivalent of the local
@@ -413,17 +413,17 @@ pub(crate) fn resolved_index_db_path(volume_id: &str) -> Result<PathBuf, String>
 /// absent.
 ///
 /// A [`Detached`](IndexPhase::Detached) volume answers with its writer and
-/// `scanning: true`, so the change is BUFFERED. Both halves matter: the phase
+/// in-flux `true`, so the change is BUFFERED. Both halves matter: the phase
 /// exists because a scan is being started, so `true` is the honest answer, and
 /// buffering is what stops the change going on the floor the way it did when this
 /// window read as no index at all. ❌ Don't "improve" it to the manager's real
-/// `scanning` flag — that flag flips true partway through `start_scan`, so a live
+/// `ground_in_flux` flag — that flag flips true partway through `start_scan`, so a live
 /// apply in the gap would insert rows the `TruncateData` a few lines later blanks,
 /// or worse, rows that land after it with ids the walk is about to allocate.
-pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::indexing::writer::IndexWriter, bool)> {
+pub(crate) fn get_writer_and_flux_for(volume_id: &str) -> Option<(crate::indexing::writer::IndexWriter, bool)> {
     let reg = INDEX_REGISTRY.lock_ignore_poison();
     match reg.get(volume_id).map(|i| &i.phase) {
-        Some(IndexPhase::Running(mgr)) => Some((mgr.writer.clone(), mgr.scanning.load(Ordering::Relaxed))),
+        Some(IndexPhase::Running(mgr)) => Some((mgr.writer.clone(), mgr.ground_in_flux.load(Ordering::Relaxed))),
         Some(IndexPhase::Detached { writer, .. }) => Some((writer.clone(), true)),
         _ => None,
     }
@@ -454,7 +454,7 @@ pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::ind
 pub(crate) fn cover_context_for(volume_id: &str) -> Option<crate::indexing::lifecycle::cover::CoverContext> {
     let reg = INDEX_REGISTRY.lock_ignore_poison();
     match reg.get(volume_id).map(|i| &i.phase) {
-        Some(IndexPhase::Running(mgr)) if !mgr.scanning.load(Ordering::Relaxed) => {
+        Some(IndexPhase::Running(mgr)) if !mgr.ground_in_flux.load(Ordering::Relaxed) => {
             Some(crate::indexing::lifecycle::cover::CoverContext {
                 volume_id: volume_id.to_string(),
                 writer: mgr.writer.clone(),
