@@ -233,7 +233,25 @@ mod tests {
             Ok(which)
         }
 
-        fn encode(&self, model: &ClipTower, _input: ClipInput<'_>) -> Result<Vec<f32>, ClipError> {
+        fn encode(&self, model: &ClipTower, input: ClipInput<'_>) -> Result<Vec<f32>, ClipError> {
+            // The real CoreML engine hands these buffers straight to a fixed-shape model,
+            // so a wrong length is a crash there and nothing here would have caught it.
+            // Checking it is also what READS the payload: on a non-macOS build `macos.rs`
+            // is compiled out, and this is the only reader `ClipInput`'s fields have.
+            match input {
+                ClipInput::Ids(ids) => assert_eq!(
+                    ids.len(),
+                    CONTEXT_LENGTH,
+                    "the text tower takes exactly CONTEXT_LENGTH ids"
+                ),
+                ClipInput::Pixels(pixels) => {
+                    assert_eq!(
+                        pixels.len(),
+                        IMAGE_PIXELS,
+                        "the image tower takes exactly IMAGE_PIXELS floats"
+                    )
+                }
+            }
             self.encodes.borrow_mut().push(*model);
             let value = if self.nan_from == Some(*model) { f32::NAN } else { 0.5 };
             Ok(vec![value; EMBED_DIM])
