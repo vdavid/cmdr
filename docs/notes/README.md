@@ -173,6 +173,22 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   class, and the leads that turned up nothing so nobody re-runs them. Keep it until its two open recommendations (a
   mount-kind answer for `LocalPosixVolume`, and measuring FSEvents on an `smbfs` mount) are settled.
 
+**Design research behind a roadmapped feature nobody has started:**
+
+- `totalcmd-plugin-analysis.md` — the only design artifact for "Add plugins". Covers all four Total Commander plugin
+  types, categorizing every plugin in the catalogs A-F, and the bottom third is the actionable part the doc's own
+  reading guide points at: which abstraction should own each job, the patterns worth inheriting against the historical
+  accidents, and 10 questions that shape a plugin API more than format support does. **Its recommendations are
+  subprocess plus JSON-RPC as primary with WASM as a fast lane, one capability manifest instead of four plugin types,
+  and a Column-first vertical slice as the first build**, with MCP-shaped-against-bespoke and manifest-against-types
+  flagged as the two calls expensive to get wrong. ⚠️ 84 KB, most of it the survey tables backing the priority stats.
+
+- `disk-cleanup-advice-process.md` — how to give disk-cleanup advice without losing the user's trust, from a session
+  where an agent got it wrong three times. **The heuristic is to delete only what is BOTH filesystem-idle by mtime and
+  process-idle by `pgrep`, and to present candidates with their signals rather than a "safe to delete" bucket**, which
+  doubles as the judgment model for the roadmap's disk-space visualizer. Also carries the Cmdr-against-`du` numbers
+  (~25-30× on a directory level, mtimes included).
+
 **A decision record for something we evaluated and rejected**, kept so nobody re-proposes it from the same premises:
 
 - `manager-custody-spike-2026-08-18.md` — why `IndexPhase::Running` stays a `Box<IndexManager>` and the
