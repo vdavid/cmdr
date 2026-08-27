@@ -1,113 +1,88 @@
 # Dropbox sync status on Linux
 
-## Context
+Not started. On Linux the pane draws no cloud badges at all: `get_sync_status` has a non-macOS arm that returns an empty
+map (`apps/desktop/src-tauri/src/commands/sync_status.rs`), and `file_system::sync_status` is gated
+`#[cfg(target_os = "macos")]` in `file_system/mod.rs`.
 
-Linux gap #16 from `docs/specs/linux-remaining-gaps.md`. The macOS implementation detects Dropbox/iCloud sync status via
-`stat()` + NSURL APIs. On Linux, the non-macOS fallback returns an empty map, so no sync icons are shown.
+This doc holds the protocol research, which is the part that took the work, plus what the current module shape means for
+anyone building the Linux arm. ❗ The step-by-step file plan this doc once carried described a single
+`file_system/sync_status.rs`; that module is now a six-file directory with its own concurrency design, so the shape
+below replaces it.
 
-Dropbox on Linux exposes sync status via a Unix domain socket at `~/.dropbox/command_socket`. This is the same protocol
-the Nautilus Dropbox extension uses. Fallback: `dropbox filestatus <path>` CLI.
+Linux support isn't advertised and this gap isn't on the ledger in `docs/notes/linux-gaps-2026-08-10.md`, which records
+what a Linux user hits today. Nothing blocks on this.
 
-Linux Dropbox removed Smart Sync in 2019, so `OnlineOnly` and `Downloading` states won't occur. Only `Synced`,
-`Uploading` (mapped from "syncing"), and `Unknown`.
+## What the Linux arm can and can't cover
 
-## Plan
+macOS answers for every provider at once: Dropbox, iCloud Drive, Google Drive, OneDrive, and Box all register File
+Provider domains, and one `NSURL` resource value covers them all. **Linux has no such common layer.** Dropbox exposes
+its own Unix socket, and every other provider would need its own integration, so a Linux arm is a Dropbox arm, and the
+badge stays absent everywhere else.
 
-### 1. Extract shared `SyncStatus` enum to `sync_status_types.rs`
+Linux Dropbox dropped Smart Sync in 2019, so `OnlineOnly` and `Downloading` can't occur. Only `Synced`, `Uploading`
+(mapped from "syncing"), and `Unknown` are reachable.
 
-Create `file_system/sync_status_types.rs` (always compiled), contains:
+## The protocol
 
-- `SyncStatus` enum (moved from `sync_status.rs`)
-- Serialization test (moved from `sync_status.rs`)
+Dropbox for Linux answers sync-status questions on a Unix domain socket at `~/.dropbox/command_socket`. This is the same
+protocol the Nautilus Dropbox extension uses.
 
-Update `sync_status.rs` (macOS) to `pub use super::sync_status_types::SyncStatus` instead of defining the enum. Remove
-the serialization test from it (now lives in the shared file).
+- **Request**: `icon_overlay_file_status\npath\t<filepath>\ndone\n`
+- **Response**: `status\t<status_string>\ndone\n`
+- **Batching**: one connection serves every path in a batch. Clone the stream for a separate reader and writer so
+  `BufReader` doesn't swallow bytes belonging to the next response.
 
-### 2. Update `file_system/mod.rs` module gating
+Status strings map as:
 
-Follow the `network/mod.rs` `#[path]` pattern:
+- **"up to date"**: `Synced`. Matches the cloud.
+- **"syncing"**: `Uploading`. The protocol carries no direction, and with no Smart Sync on Linux it's always an upload.
+- **"unsyncable"**: `Unknown`. Can't sync (permissions, path length).
+- **"unwatched"**: `Unknown`. Outside the Dropbox folder.
 
-```rust
-pub mod sync_status_types;
+**CLI fallback**: `dropbox filestatus <path>` prints `<path>: <status>`. Parse with `rfind(": ")` so a colon inside a
+path doesn't split the line in the wrong place. One subprocess per path, so it's a fallback and never the default.
 
-#[cfg(target_os = "macos")]
-pub mod sync_status;              // resolves to sync_status.rs
+Neither path needs a new dependency: `std::os::unix::net::UnixStream`, `dirs`, and `log` are all already in the tree.
 
-#[cfg(target_os = "linux")]
-#[path = "sync_status_linux.rs"]
-pub mod sync_status;
-```
+## What the current module means for the build
 
-### 3. Create `sync_status_linux.rs`
+`file_system/sync_status/` is not a single function any more. Read its `CLAUDE.md` and `DETAILS.md` before designing the
+Linux arm; the questions below are the ones that shape it.
 
-Core new file. Fallback chain: socket -> CLI -> empty map.
+- **The public API is `statuses_within(paths, deadline) -> (HashMap<String, SyncStatus>, bool)`**, plus
+  `status_within_blocking`, `invalidate_dir`, and `invalidate_path`. A Linux arm has to answer the same shape, deadline
+  and all, or the caller changes too.
+- **`SyncStatus` lives in `sync_status/mod.rs`**, next to the private `SyncKnowledge` the cache stores. Making the enum
+  cross-platform means lifting it out of a macOS-gated module, and `SyncKnowledge` has to come along or be split,
+  because the cache is keyed on it.
+- **Reuse `cache.rs` and `service.rs`; skip `pool.rs`.** The cache (per-directory, TTL'd per knowledge kind) and the
+  service (one batch in flight, superseded rather than stacked) exist because a pane re-asks for every visible path
+  several times a second, which is just as true on Linux. The 8 MB-stack thread pool exists because a macOS framework
+  call blows rayon's 2 MB stacks and can block forever inside `fileproviderd`; a local socket round-trip is neither, so
+  it doesn't earn the pool.
+- **There is no Linux equivalent of tier one.** The macOS probe answers "no provider owns this file" from one xattr read
+  (`cmdr_fs::file_provider`, `com.apple.file-provider-domain-id`, 13.9 µs), and nearly every file on the machine stops
+  there. Linux has no such marker, so the arm needs its own cheap ancestor gate (the Dropbox folder root, read once)
+  before it pays a socket round-trip per path. ⚠️ Without that gate every listing in every directory talks to the
+  daemon.
+- **The IPC types differ per platform today.** The macOS command returns `TimedOut<HashMap<String, SyncStatus>>` and the
+  fallback returns `TimedOut<HashMap<String, String>>`. Widening the `#[cfg]` collapses them to one type, which changes
+  `bindings.ts`; see `CONTRIBUTING.md` § Linux testing for why `pnpm check bindings-fresh` can't be trusted to tell you
+  so from a Linux host.
 
-**Socket protocol:**
+## Testing
 
-- Connect to `~/.dropbox/command_socket` (Unix domain socket)
-- Send: `icon_overlay_file_status\npath\t<filepath>\ndone\n`
-- Receive: `status\t<status_string>\ndone\n`
-- Reuse one connection for all paths in a batch (clone stream for separate reader/writer to avoid `BufReader` buffering
-  issues)
+Parsing is pure and testable without I/O: the status-string mapping (including case and whitespace handling, and unknown
+strings) and the CLI line parser with its colon-in-path case.
 
-**Status mapping:** | Dropbox string | SyncStatus | Reason | |---|---|---| | "up to date" | `Synced` | Matches cloud | |
-"syncing" | `Uploading` | No direction info; Linux has no Smart Sync so it's always upload | | "unsyncable" | `Unknown`
-| Can't sync (permissions, path length) | | "unwatched" | `Unknown` | Outside Dropbox folder |
+The socket half tests against a real Unix socket in a `tempfile::TempDir` with a thread standing in for the Dropbox
+daemon: one file, two files over one connection, a socket path that doesn't exist (degrades to empty), and an empty
+input (returns early). Inject the socket path so the test never depends on `$HOME`.
 
-**CLI fallback:** `dropbox filestatus <path>`, output format `<path>: <status>`. Parse with `rfind(": ")` to handle
-colons in paths. One subprocess per path.
+The CLI fallback needs no integration test of its own: its parsing is covered directly, and the missing-socket test
+covers the degradation path.
 
-**Key functions:**
+## Checks
 
-- `get_sync_statuses(paths) -> HashMap<String, SyncStatus>`: public API, matches macOS signature
-- `get_sync_statuses_with_socket_path(paths, socket_path)`: testable version with injected path
-- `query_statuses_via_socket(socket_path, paths)`: batch socket query
-- `read_socket_response(reader)`: parse one response from socket
-- `query_statuses_via_cli(paths)`: CLI fallback
-- `map_dropbox_status(status_str) -> SyncStatus`: string-to-enum mapping
-- `parse_cli_status_line(line) -> Option<(String, SyncStatus)>`: parse one CLI output line
-
-**No new dependencies.** Uses `std::os::unix::net::UnixStream`, `dirs` (already in Cargo.toml), `log` (already used).
-
-### 4. Update `commands/sync_status.rs`
-
-Widen `#[cfg]` gates from `target_os = "macos"` to `any(target_os = "macos", target_os = "linux")`. The `lib.rs` command
-registration is already platform-independent, no change needed there.
-
-### 5. Tests (all in `sync_status_linux.rs`)
-
-**Pure parsing tests (no I/O):**
-
-- `map_dropbox_status`: all known strings, case-insensitive, whitespace trimming, unknown strings
-- `parse_cli_status_line`: valid lines, syncing status, colon-in-path edge case, invalid lines
-
-**Socket integration tests (mock server):**
-
-- Create real Unix socket in `tempfile::TempDir`, spawn thread as mock Dropbox daemon
-- `socket_query_returns_synced`: single file query
-- `socket_batch_query_multiple_files`: two files, sequential on one connection
-- `nonexistent_socket_returns_empty`: graceful degradation
-- `empty_paths_returns_empty_map`: early return
-
-CLI fallback is tested implicitly: parsing logic is covered by `parse_cli_status_line` tests, and the graceful
-degradation test covers the case where neither socket nor CLI is available.
-
-### 6. Update `commands/CLAUDE.md`
-
-Update the sync_status entry to reflect that Linux now delegates to `file_system::sync_status` too.
-
-## Files to modify
-
-- **`src-tauri/src/file_system/sync_status_types.rs`**: Create: shared `SyncStatus` enum
-- **`src-tauri/src/file_system/sync_status.rs`**: Edit: remove enum definition, `pub use` from shared
-- **`src-tauri/src/file_system/sync_status_linux.rs`**: Create: socket protocol, CLI fallback, tests
-- **`src-tauri/src/file_system/mod.rs`**: Edit: add `sync_status_types`, `#[path]` gating for Linux
-- **`src-tauri/src/commands/sync_status.rs`**: Edit: widen `#[cfg]` to include Linux
-- **`src-tauri/src/commands/CLAUDE.md`**: Edit: update sync_status description
-
-## Verification
-
-1. `pnpm check --check rust-tests`: all Rust tests pass (including new socket mock tests)
-2. `pnpm check --check clippy`: no warnings
-3. `pnpm check --check rustfmt`: formatting
-4. `pnpm check --check cfg-gate`: macOS-only imports properly gated
+`pnpm check rust-tests clippy rustfmt cfg-gate` covers it. `cfg-gate` is the one that matters most here: it's what
+catches a macOS-only import leaking into the Linux build.

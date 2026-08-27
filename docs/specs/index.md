@@ -94,7 +94,14 @@ left, so the durable intent survives the wipe.
       quiet backfill, in-place search-results refresh, a locale native-string pass, and David's visual QA.
 - [ ] 2026-03-10 `later/db-first-listings-plan.md` - Serve directory listings from the SQLite index for sub-ms
       navigation.
-- [ ] 2026-03-10 `later/dropbox-sync-status-linux.md` - Detect Dropbox sync status on Linux via command socket.
+- [ ] 2026-08-27 `later/dropbox-sync-status-linux.md` - **Cloud badges on Linux, which today are simply absent**: the
+      IPC command has a non-macOS arm returning an empty map, and the whole `file_system::sync_status` module is
+      macOS-gated. NOT STARTED. The doc holds the research that took the work (Dropbox's `~/.dropbox/command_socket`
+      protocol, the four status strings, the `dropbox filestatus` fallback, and why only `Synced` / `Uploading` /
+      `Unknown` are reachable without Smart Sync), plus what the module's current six-file shape demands of a Linux arm:
+      reuse the cache and the one-batch service, skip the macOS-only thread pool, and build a cheap ancestor gate,
+      because Linux has no equivalent of the xattr tier that lets macOS skip nearly every file for 13.9 µs. **A Linux
+      arm is a Dropbox arm**; no other provider has a common layer there.
 - [ ] 2026-03-10 `later/linux-builds-plan.md` - Add Linux release build target plus website download detection.
 - [ ] 2026-05-10 `later/totalcmd-plugin-analysis.md` - Not a spec, but Total Commander packer-plugin research backing
       future archive/plugin work.
