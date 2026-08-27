@@ -1,7 +1,9 @@
 # Reveal in Cmdr + default folder handler
 
-Status: deferred. Research done 2026-07-14 (web sources + codebase recon, Fable 5 session "Open with Cmdr - Finder alt
-via LSHandler"); NOT yet spike-verified on a real machine. Run the spike below before building.
+Status: deferred, and **nothing here is built** (re-derived from the tree 2026-08-27: `NSFileViewer` appears nowhere in
+the repo, `on_run_event` handles only `Ready` / `ExitRequested` / `Exit`, and `apps/desktop/src-tauri/Info.plist`
+carries no `CFBundleDocumentTypes`). The research below is from 2026-07-14 (web sources plus codebase recon) and was
+never spike-verified on a real machine. Run the spike before building.
 
 ## Goal
 
@@ -28,16 +30,16 @@ They're independent OS toggles with different blast radius and different fragili
   2026-07, community sources: ForkLift docs, MPU forum, yazi/fman GitHub threads).
 - **B. `public.folder` default handler**: the sanctioned LaunchServices route. Set via
   `NSWorkspace.setDefaultApplication(at:toOpenContentType:completionHandler:)` (macOS 12+, exactly our
-  `minimumSystemVersion` floor, so no fallback path needed). Takes the app URL, async completion, surfaces errors. Never
-  poke `com.apple.launchservices.secure` with `defaults write` (the recipe most blogs show): it's fragile and LS db
-  rebuilds can drop it.
+  `minimumSystemVersion` floor in `tauri.conf.json`, verified 2026-08-27, so no fallback path needed). Takes the app
+  URL, async completion, surfaces errors. Never poke `com.apple.launchservices.secure` with `defaults write` (the recipe
+  most blogs show): it's fragile and LS db rebuilds can drop it.
 
 Prerequisite for B (and possibly for A; spike item 1): Cmdr must declare itself a folder viewer via
 `CFBundleDocumentTypes` with `LSItemContentTypes = [public.folder]`, `CFBundleTypeRole = Viewer`,
 `LSHandlerRank = Alternate` (Alternate so we never auto-become default; the toggle is the only path). Tauri's
-`bundle.fileAssociations` is extension-based and can't express a UTI-only type, so this goes directly into our
-`Info.plist` (Tauri merges it). Side effect worth knowing: Cmdr will appear in Finder's "Open With" menu for folders
-even with both toggles off. That's arguably a free feature, not a bug.
+`bundle.fileAssociations` is extension-based and can't express a UTI-only type, so this goes directly into
+`apps/desktop/src-tauri/Info.plist`, which already exists and which Tauri merges. Side effect worth knowing: Cmdr will
+appear in Finder's "Open With" menu for folders even with both toggles off. That's arguably a free feature, not a bug.
 
 ## Event delivery and app plumbing
 
@@ -47,17 +49,21 @@ even with both toggles off. That's arguably a free feature, not a bug.
   plugin on macOS.
 - **Dispatch rule**: URL is a file → reveal (navigate focused pane to parent, cursor on the file). URL is a folder →
   open it. Known ambiguity: a _reveal_ of a folder becomes an _open_ of it; acceptable, Finder-parity is not required.
+- **Where the arm goes**: `app_lifecycle.rs::on_run_event` is the single `RunEvent` match, and today it carries only
+  `Ready`, `ExitRequested`, and `Exit`. `Opened` is a new arm there, not a new plumbing layer.
 - **Cold-start race**: `RunEvent::Opened` can fire before the webview/frontend is mounted; a naive forward drops the
-  event and the launch silently lands on the default dirs. Buffer URLs in Rust and replay on the frontend-ready signal
-  (find the existing FE-ready handshake; the MCP session init path has one).
+  event and the launch silently lands on the default dirs. Buffer URLs in Rust and replay once the frontend is up. ❗
+  **There is no frontend-ready handshake to reuse** (verified 2026-08-27: no `frontend_ready` / `app_ready` signal
+  exists, and the MCP path has none either), so the replay trigger is part of this work. The cheapest honest shape is a
+  first-invoke from the frontend that drains the buffer.
 - **Window state**: on delivery, show + unminimize + focus the main window.
-- **The reveal primitive already exists**: `mcp/executor/downloads.rs` (`go_to_latest_download`) does exactly
-  navigate-parent-then-`mcp-move-cursor`, with the disappeared-file race handled. Reuse that internal path; don't build
-  a second one.
+- **The reveal primitive already exists**: `mcp/executor/downloads.rs`'s `go_to_latest_download` navigates the focused
+  pane to the parent directory then moves the cursor via `mcp-move-cursor`, with the disappeared-file race handled (72
+  lines, verified 2026-08-27). Reuse that internal path; ❌ don't build a second one.
 - Multi-URL events (user opened several folders at once): iterate; see open question 3.
 - Revealed paths may hit TCC prompts like any navigation; existing flows handle it, nothing new needed.
 
-## Registration module (Rust, objc2 – we already ship objc2-app-kit 0.3)
+## Registration module (Rust, objc2 — `objc2-app-kit` 0.3 is already a dependency, verified 2026-08-27)
 
 - **Read current state**: `NSWorkspace.urlForApplication(toOpen:)` for `public.folder`, and read the `NSFileViewer`
   default. The Settings toggles MUST mirror actual OS state on every Settings open, not a stored flag: the user can
@@ -77,7 +83,8 @@ even with both toggles off. That's arguably a free feature, not a bug.
 Decided (conversation, 2026-06/07):
 
 - **Default OFF for both.** This mutates machine-wide OS state; installing a beta app must not rewire the Mac. Opt-in
-  lives on onboarding step 4 (the existing "Optional" step, `OnboardingStep = 4`) and in Settings.
+  lives on onboarding step 4 (the existing "Optional" step: `OnboardingStep` is `1 | 2 | 3 | 4` and step 4 renders
+  `StepOptional.svelte`, verified 2026-08-27) and in Settings.
 - **First-activation moment**: the first time a redirect/open actually fires, show a one-time "this is the thing you
   turned on, here's the off switch" confirmation. Since the user opted in, the tone is friendly confirmation, not
   apology. David wants a notification here; recommendation on the table (undecided): an in-app sheet in the just-focused
@@ -113,7 +120,8 @@ Open questions:
 5. Deleting Cmdr.app while registered: confirm LS falls back to Finder for B and AppKit falls back for A (uninstall runs
    no code, so graceful degradation is the only cleanup we get).
 6. Confirm no OS consent dialog interferes (macOS 15+ added consent UI for default _browser_ changes; folders are
-   believed prompt-free; verify on macOS 15 and 26).
+   believed prompt-free). Verify on the current macOS (26.x, what the team measures on) and, if a machine is available,
+   on the 12.0 `minimumSystemVersion` floor.
 7. Confirm the `Info.plist` declaration alone (toggles off) has no surprising side effects beyond the "Open With" menu
    entry.
 
