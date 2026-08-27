@@ -82,12 +82,6 @@ left, so the durable intent survives the wipe.
       one reaches review as a blocked row), because proposal construction is synchronous and must never touch a live
       mount. And nothing compares a reply's coverage claim against what the tool actually returned; the prompt contract
       and its test are all there is.
-- [ ] 2026-07-07 `later/archive-browsing-polish.md` - Follow-ups to the shipped archive-browsing feature. SHIPPED:
-      one-pass sequential extract, ZipCrypto + WinZip-AES + 7z-AES decrypt end to end, remote-source copy-into, remote
-      temp reaping, move-out per-entry convergence, the archive folder split, and SMB push-refresh for remote archives.
-      DEFERRED (each with a settled design or trigger): fast tail-add zip edits (clone+tail-rewrite design validated in
-      `docs/notes/m-append-spike.md`; the SMB path needs an smb2 copychunk client API), open-with-external for inner
-      files (design spiked), and MTP in-place editing (stretch).
 - [ ] 2026-08-27 `later/importance-follow-ups.md` - **What the shipped folder-importance subsystem still owes.** It grew
       well past its plan: five documented area pairs under `crates/cmdr-index/src/importance/`, a scoped incremental
       rescore costing O(touched), a kind-aware multi-volume scheduler, an anonymized real-index eval corpus, and three
@@ -104,11 +98,12 @@ left, so the durable intent survives the wipe.
       PARKED on purpose: M4a/M4b faces (David wants to be closer in the loop) and M5 LLM captions. **The doc survives a
       wipe because ~40 `media_index` code sites cite its § "Key decisions" by bare number.** ⚠️ A bare `plan M<n>` in
       that same code means the WIPED `resource-use-plan.md`, not this plan's milestones.
-- [ ] 2026-06-28 `later/colorful-tags-plan.md` - macOS Finder tags: read + show colored dots, and context-menu assign.
-      SHIPPED (M0–M3); durable intent lives in the colocated `CLAUDE.md`/`DETAILS.md`. Remaining is minor polish only:
-      quiet backfill, in-place search-results refresh, a locale native-string pass, and David's visual QA.
-- [ ] 2026-03-10 `later/db-first-listings-plan.md` - Serve directory listings from the SQLite index for sub-ms
-      navigation.
+- [ ] 2026-03-10 `later/db-first-listings-plan.md` - Serve directory listings from the SQLite index instead of
+      `readdir` + `stat`. Status re-derived 2026-08-27: the per-navigation verifier SHIPPED (it grew into all of
+      `indexing/reconcile/`), as did the logical/physical size split; the DB-first read path is NOT built. The 2026-03
+      design was rewritten against the current index, which is id-keyed and per-volume rather than path-keyed, and two
+      blockers are now named: the motivating latency number predates release-build measurement, and `created` became a
+      sort column the index can't answer.
 - [ ] 2026-08-27 `later/dropbox-sync-status-linux.md` - **Cloud badges on Linux, which today are simply absent**: the
       IPC command has a non-macOS arm returning an empty map, and the whole `file_system::sync_status` module is
       macOS-gated. NOT STARTED. The doc holds the research that took the work (Dropbox's `~/.dropbox/command_socket`
@@ -176,8 +171,6 @@ left, so the durable intent survives the wipe.
       Carries the diagnosis, the two candidate fix shapes (release the pinning reader, or a quiesce barrier at an idle
       trigger), why a startup `VACUUM` is the wrong tool, and the diagnosis to run FIRST. **Revisit only with data**
       from a long session that actually bloats.
-- [ ] 2026-06-21 `later/transfer-queue-v2-plan.md` - Transfer queue/pause v2: per-lane budgets (FTP conns),
-      mid-large-file pause, concurrent-path pause, connection keep-alive, queue reorder/persist.
 - [ ] 2026-08-27 `later/indexing/drive-index-overall-eta.md` - **A true overall "~Xm left" across all remaining indexing
       steps, deliberately not built, because an honest one needs per-phase priors that mostly don't exist yet.** Today
       the step checklist shows where you are plus the ACTIVE step's own ETA. Half the calibration has since landed: scan
@@ -187,3 +180,21 @@ left, so the durable intent survives the wipe.
 - [ ] 2026-07-14 `later/default-file-manager-spec.md` - Reveal-in-Cmdr (`NSFileViewer` redirect) + `public.folder`
       default handler: two opt-in toggles (default OFF, onboarding step 4 + Settings), `RunEvent::Opened` plumbing with
       cold-start buffering, sanctioned `NSWorkspace` registration, and a spike checklist to run before building.
+      Confirmed 2026-08-27 that NONE of it is built and every codebase anchor it names still holds, except that there is
+      no frontend-ready handshake to reuse for the cold-start replay.
+- [ ] 2026-08-27 `later/archive-follow-ups.md` - The three things archive browsing still owes, re-derived from the tree:
+      a fast tail-add zip edit (design settled in `docs/notes/m-append-spike.md`; the remote half waits on an `smb2`
+      copychunk client API, the same one `Volume::copy_within` waits on), open-with-external-app for a file inside an
+      archive (shape spiked, one LaunchServices seam unverified), and in-place MTP archive editing (stretch). Replaces
+      `later/archive-browsing-polish.md`, whose other eight items had shipped or were status narration.
+- [ ] 2026-08-27 `later/tags-follow-ups.md` - The two Finder-tag gaps still open, re-derived from the tree: the seven
+      context-menu color circles show on backends that can't hold a tag, and a tag assigned from search results doesn't
+      light up until the next navigation. Both are judgment calls, neither blocks anything. Replaces
+      `later/colorful-tags-plan.md`, whose design decisions all live in the colocated `DETAILS.md` files now and whose
+      quiet-backfill worry the change-only diff emit already closed.
+- [ ] 2026-08-27 `later/transfer-queue-follow-ups.md` - The five transfer-queue extensions still open, re-derived from
+      the tree: per-lane budgets above 1 (`LANE_BUDGET` is still a const 1, and the motivating case moved from parked
+      FTP to SFTP/SMB), reconnect or keep-alive across a long pause (SMB and SFTP only now), bounding paused-and-parked
+      blocking threads, queue reordering, and queue persistence across restarts. Replaces
+      `later/transfer-queue-v2-plan.md`, whose mid-large-file and concurrent-path pause items both shipped via
+      `CheckpointStream`.

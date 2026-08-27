@@ -318,8 +318,8 @@ double-extension split. The reading-core, mutation, and watch tests live with th
 
 `ArchiveVolume` (browse + extract + `scan_for_copy`) and backend routing (§ "Routing and lifecycle") are landed:
 `VolumeManager::resolve`, the shared `src/boundary.rs` detector, the archive LRU, the read-only write guards, the live
-content watch, and zip mutation (browse + extract + edit, local and remote-hosted). What's still ahead (sequencing lives
-in `docs/specs/later/archive-browsing-polish.md`):
+content watch, and zip mutation (browse + extract + edit, local and remote-hosted). What's still ahead (scheduling and
+triggers live in `docs/specs/later/archive-follow-ups.md`):
 
 - **Open-with-external-app for a file INSIDE an archive (deferred).** Enter on a file inside a `.zip` still opens the
   VIEWER (bounded temp-extract), not the OS default app. Extract-then-launch isn't a clean reuse of
