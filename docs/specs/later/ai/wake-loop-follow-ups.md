@@ -38,7 +38,7 @@ Each item says what it costs and what would trigger it. None of them blocks anyt
 ## One chore that needs a machine with a foreground
 
 - **`pnpm i18n:shots` has never run against the new consent copy.** It refuses when another app holds the front
-  position, so it cannot run on the headless agent box. The five new `askCmdr.consent.*` keys carry
+  position, so it cannot run on the headless agent box. The `askCmdr.consent.*` keys carry
   `@key.screenshot: ask-cmdr-consent.png` by hand, which is correct for the surface they render on and keeps
   `message-screenshots-fresh` green, but they read as uncoupled in the generated `coverage-report.md` until a capture
   runs.
