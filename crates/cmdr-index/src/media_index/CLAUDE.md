@@ -42,6 +42,9 @@ This file owns the leaves: `coverage/`, `gate.rs` (toggle / scope / threshold / 
 - **Cancellation hooks the EXISTING indexing watchdog** (❌ no second one; one shared memory ceiling), between images
   via `gate::should_stop` (watchdog OR toggle OFF); ❌ don't narrow it to `is_cancelled`.
 - **CLIP is a SEPARATE vector space from the Vision feature print**; ❌ never cosine-compare the two.
+- **A bare `plan M<n>` comment here means a WIPED spec, not the milestone-numbered plan still on disk**, whose numbers
+  mean different things. Resolve it in `DETAILS.md` § "What a bare "plan M<n>" in this subsystem means"; ❌ never add a
+  new one.
 - **Every pass emits `media-enrich-progress`** over the ENRICHABLE subset (❌ never `images.len()`) and
   `media-enrich-terminal` on EVERY exit path. New commands register in the `ipc.rs` manifest, events in
   `collect_events!`.

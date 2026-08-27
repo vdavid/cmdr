@@ -1,4 +1,4 @@
-//! CLIP natural-language semantic image search (plan M3).
+//! CLIP natural-language semantic image search.
 //!
 //! CLIP maps images and text into ONE shared 512-d vector space, so a typed query
 //! ("beach sunset") is encoded to a vector and cosine-matched against the stored image

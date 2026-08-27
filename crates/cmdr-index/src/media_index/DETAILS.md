@@ -532,6 +532,33 @@ network-volume UI is in `network/DETAILS.md`, the CLIP UI in `clip/DETAILS.md`.
   confirm dialog (recoverable, but re-reading costs time) precedes the prune; an honest toast reports the freed space.
   The arithmetic behind it is `scheduler/DETAILS.md` § Reclaim space.
 
+## What a bare "plan M<n>" in this subsystem means
+
+⚠️ **It is NOT `docs/specs/later/indexing/media-ml-index-plan.md`, the only milestone-numbered plan still on disk.**
+About 80 comments under `media_index/` cite `plan M<n>`, and every one of them means a wiped spec whose numbering
+collides with the surviving plan's: read `plan M4` as that plan's faces milestone, or `plan M6` as its photo-search
+agent tool, and you will be badly wrong. This table is the only place the mapping survives, so keep it when you touch
+these comments.
+
+The numbers come from a wiped `resource-use-plan.md` (the 2026-07 one, "make media indexing fast, small, and honest at
+NAS scale"; a later, unrelated plan reused that filename for idle CPU and RAM, and its numbering reached docs rather
+than code):
+
+- **M1**: unstick NAS enrichment, the byte-read transport and fetch fan-out width.
+- **M2**: parallel enrichment workers plus the settings slider, and the byte-bounded admission gate.
+- **M3**: f16 embeddings, which is also where CLIP's two-part staleness and the one-decode `Q5` / `Q6` questions live.
+- **M4**: integer-id keying in the media DB, so a rename is one `UPDATE media_file.path`.
+- **M5a / M5b**: CLIP model slimming, palettizing the image tower and reclaiming the `.mlpackage` after compile.
+- **M6**: ANN vector search (the usearch HNSW index under `ann/`).
+- **M9**: WAL checkpoint hygiene at pass completion.
+
+❗ `plan Decision N` is a different scheme and DOES mean the surviving `media-ml-index-plan.md`. So does a spelled-out
+milestone (`M4a` faces, `M5` LLM captions).
+
+The durable account of everything those milestones built is this file and the `CLAUDE.md` / `DETAILS.md` pairs beneath
+it; the wiped plan is not needed to understand any of it. ❌ Don't add a new bare `plan M<n>` comment: name the thing
+instead, so the next reader needs no lookup table.
+
 ## Standing cost
 
 `media_index` adds a THIRD long-lived writer thread per volume (index + importance + media) plus a per-volume `watch`
