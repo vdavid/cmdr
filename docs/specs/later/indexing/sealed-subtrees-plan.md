@@ -1,7 +1,18 @@
 # Sealed subtrees: bounding the cost of high-churn directories
 
-Status: plan for implementation. Branch: `david/sealed-subtrees`. Follows the per-subtree rescan throttle
-(`indexing/DETAILS.md` § "Per-subtree rescan throttle").
+Status re-derived from the tree, 2026-08-27.
+
+- **M1 SHIPPED**, and its durable account is not here: `crates/cmdr-index/src/indexing/reconcile/DETAILS.md` § "Bounding
+  verification cost (the two teeth)" owns the mechanism, the constant, the honest costs, and the measurement method. The
+  M1 section below is kept only for what it decided and why. ❌ Don't re-read it as work to do.
+- **M2–M5 NOT STARTED, and gated.** No seal table, no seal state, no `pick_seal_root` — the only sealing-adjacent code
+  in the tree is the churn monitor from Spike B (`indexing/watch/churn_monitor.rs`, read-only, off unless
+  `CMDR_CHURN_SPIKE` is set). **They may never be needed**: gate 1 below asks whether residual pain after M1 justifies a
+  five-phase change to the `dir_stats` ledger, and "M1 alone was the whole fix" is a live answer.
+- **All three spikes have run** (2026-07-20). Spike B returned a result that CHANGES the design, not just confirms it:
+  see § "Spike results".
+
+Follows the per-subtree rescan throttle (`indexing/DETAILS.md` § "Per-subtree rescan throttle").
 
 ## The incident that motivated this
 
@@ -28,8 +39,8 @@ into RAM.
 
 **Why the existing throttles don't help.** They work. Post-verification steady state is 50–100 msgs/5 s with an empty
 queue, and DriveFS's ~30 renames/min arrive as one batched burst per minute. But both throttles live in `reconciler`
-(`throttle.rs` per-file, `rescan_throttle.rs` per-subtree) and `event_loop/verification.rs` consults neither, by design:
-verification is the correctness catch-up after a cold start.
+(`reconciler/throttle.rs` per-file, `reconciler/rescan/throttle.rs` per-subtree) and `event_loop/verification.rs`
+consults neither, by design: verification is the correctness catch-up after a cold start.
 
 More fundamentally, **throttling cannot fix this class**. Re-syncing a directory costs O(children), not O(events),
 because the per-child events were dropped and all you can do is readdir and diff. Throttling a 1.14M-entry directory
@@ -203,9 +214,9 @@ _is_ the signal you have reached a directory holding something worth keeping. Pe
 individual hex leaf is remarkable; only the roll-up at `cache/` is enormous.
 
 **This is a genuinely new mechanism.** `pick_and_collapse_rescan` (`reconciler/rescan.rs:221-239`) picks the shallowest
-member of a pending set and drops queued descendants; it is not an ancestor walk and aggregates nothing.
-`rescan_throttle.rs` is only `is_eligible` / `record_completion` / `gc`. Borrow their _testability_ shape (pure,
-clock-injected), not their logic.
+member of a pending set and drops queued descendants; it is not an ancestor walk and aggregates nothing. the per-subtree
+`reconciler/rescan/throttle.rs` is only `is_eligible` / `record_completion` / `gc`. Borrow their _testability_ shape
+(pure, clock-injected), not their logic.
 
 **Hard stops:** never seal `~`, `~/Documents`, `~/Desktop`, `~/Downloads`, `~/Pictures`, or a volume root. The list is
 belt-and-braces only — churn is what actually keys the decision — and it needs a Linux counterpart (Cmdr has a Linux
@@ -222,75 +233,37 @@ optional.
 
 ## Milestones
 
-### M1 — Bound the blast radius (ships alone)
+### M1 — Bound the blast radius — ✅ SHIPPED
 
-Independent of all sealing machinery. No schema change, no seal state.
+The two teeth are in `crates/cmdr-index/src/indexing/watch/event_loop/verify_guard.rs` (pure, threshold-injected),
+consulted by `verify_affected_dirs`. ❌ **Nothing about the mechanism is restated here**:
+`crates/cmdr-index/src/indexing/reconcile/DETAILS.md` § "Bounding verification cost (the two teeth)" is the canonical
+account, and it carries the incident, both teeth, the shared `HUGE_DIR_CHILDREN` constant with the measurement that
+justifies it, the `listed_epoch = 0` trap and why it inverts honesty, and the honest cost this trade accepts.
 
-**Two teeth.** `verify_affected_dirs` materialises the whole DB child list _before_ any per-child work
-(`verification.rs:222-250`). Guarding only the upsert loop leaves most of the cost in place.
+What M1 leaves for the rest of this plan, and why gate 1 is a real question rather than a formality:
 
-1. **Before** `list_children_on`: a `LIMIT threshold+1` probe (not a full `COUNT(*)`). Over threshold → skip the path,
-   don't snapshot it.
-2. **Inside** the Phase-2 `read_dir` loop: a cap on **iterations, not upserts**. The loop `continue`s past DB-known
-   children before doing any work (`verification.rs:290-298`), so for a `fetch_temp` already fully in the DB the upsert
-   count is near zero while the iteration count is 1.14M — and the iteration plus the `db_child_names` `HashSet`
-   (`:259-262`) is where the time and memory actually go. An upsert cap would be a no-op on the measured incident. This
-   tooth also covers the directory that is small in the DB but huge on disk, which passes any DB-side count.
+- It fixes the **stall**, not the class. It does not reclaim the search index's RAM (the rows stay in the DB), and it
+  guards only `verify_affected_dirs` — a shallow `MustScanSubDirs` still routes to `start_scan` and re-walks, and
+  `reconcile_subtree` still diffs on a deep anchor.
+- Tooth 1 skips before the snapshot, so deletions from a journal gap are not reaped and the ancestor chain stays
+  inflated until another path corrects it. **That is the same delete-drift class Phase C has to solve**, now present in
+  shipped code rather than only in a sealed design.
+- A declined directory still reports `recursive_size_complete = true`.
 
-**What a declined directory must NOT do: write `listed_epoch = 0`.** An earlier draft proposed this as "honest-stale".
-It is the opposite. Affected dirs carry a _positive_ epoch from the scan, and `absorbing_min_epoch`
-(`aggregator/mod.rs:272-286`) propagates a zero up the whole chain, so `min_subtree_epoch` → 0 for every ancestor to `~`
-and `/`. The read side derives `recursive_size_complete = min_subtree_epoch > 0`, so declining one temp dir would render
-the entire home folder incomplete and make `expected_totals` return `None` for every copy of `~`.
+**The severity instrument shipped as a different thing than this plan proposed, and it matters for gate 1.** The plan
+asked for a `huge_dirs_seen` atomic counter hooked into the guarded walker's `visit_dir` and `local_reconcile`'s per-dir
+listing. That was never built. What exists instead:
 
-The 32-failed-reads walker precedent does not apply: those dirs were _never_ listed, so they stay at 0. Nothing is
-downgraded. Same word, opposite operation. **Leave `listed_epoch` untouched.**
+- **A one-off SQL census over any existing index**, which needs no instrumentation at all and sidesteps the plan's own
+  objection that a walker-only counter reads zero on an established machine. The query and its 2026-07-21 result (29
+  directories at or above 10,000 children, topped by `fetch_temp` at 955,724) are in that same `DETAILS.md` section,
+  including the reason every number is a LOWER bound: a read abandoned at `LOCAL_LIST_TIMEOUT` skips the subtree.
+- **`verify_declined_dirs` and `verify_truncated_dirs`** on the debug surface and the `indexing` MCP resource, counting
+  the guard's own activations, which the SQL cannot answer.
 
-**The honest cost of M1 (this is a trade, not a free win).** Say it in the docs rather than claiming no downside:
-
-- Tooth 1 skips before the snapshot, so the stale-detection loop (`verification.rs:272-282`) never runs: deletions from
-  the journal gap are not reaped and the ancestor chain stays inflated until another path corrects it. That is the same
-  delete-drift class sealing later has to solve.
-- Tooth 2 leaves a _partially_ diffed directory.
-- The declined dir still reports `recursive_size_complete = true`. We knowingly decline to enumerate and still claim
-  exact. Radical transparency (`design-principles.md:11-13`) says own that debt.
-- **Scope of the fix:** it fixes the _stall_. It does not reclaim the 16% search RAM (rows stay in the DB), and it
-  guards only `verify_affected_dirs` — a shallow `MustScanSubDirs` still routes to `start_scan` (`rescan.rs:43-72`) and
-  re-walks, and `reconcile_subtree` still diffs on a deep anchor.
-- The "1.14M `EntryRow`s are a large share of the 1.01 GB peak" claim is **unmeasured**. Back-of-envelope it is ~130–160
-  MB plus a comparable transient for the per-parent name `HashSet`. Measure before advertising a RAM win.
-
-**The instrument for the severity question.** Not an in-memory list from verification: `verify_affected_dirs` runs only
-after a journal-gap replay, so on a machine that never gaps it stays empty regardless of how many pathological
-directories exist.
-
-The guarded walker alone is not enough either: a populated, previously-completed index **never runs it** — that rescan
-takes `local_reconcile.rs` (`build_live_children:232`, per `DETAILS.md:533-545`), and the walker only runs on a first
-scan or after `clear_index`. So on exactly the established machines whose directories we want to count, a walker-only
-counter stays zero. **Hook both the guarded walker's `visit_dir` and `local_reconcile`'s per-dir listing.**
-
-Make it an **atomic counter**, not `DEBUG_STATS`'s mutex'd `record_must_scan` ring: the walker is multi-threaded and a
-per-directory lock on the scan hot path is not acceptable. Expose it through the debug surface and the `indexing` MCP
-tool.
-
-**Tests.** Extract the decision as a **pure function** (the `rescan_route::classify` shape) with an injectable
-threshold, so it runs in the ms-scale unit tier per `../../../testing.md`.
-
-1. _(TDD, red first)_ Pure-function tests for the probe/cap decision at the boundary (under, at, over).
-2. _(TDD, red first)_ Integration: a batch with one over-threshold dir and one normal dir — the oversized one produces
-   zero per-child upserts **and** the normal one is still fully diffed. The second half is not optional: without it the
-   test passes if the whole function is replaced with `return`, the no-op-fixture anti-pattern `../../../testing.md`
-   names. Use the existing `verifier.rs::tests` pattern (`:420`, `:514`, …), which already installs a root `ReadPool`
-   under `READ_POOL_TEST_MUTEX` with tiny fixtures — the caveat is about _scale_, not reachability.
-3. _(Regression guard, not TDD — it cannot go red, the code never wrote the epoch.)_ A declined directory leaves
-   `listed_epoch` and every ancestor's `min_subtree_epoch` unchanged.
-
-**Docs.** `indexing/DETAILS.md` § verification gets the guard, the rationale, and the honest costs above.
-`indexing/CLAUDE.md` needs a guardrail line — but it is already **782 words against the 600-word ceiling** (1000
-allowlisted, `claude-md-length.go:35`), so **condense first, don't raise the allowlist** (`file-length-allowlist.md`,
-`../../../doc-system.md`).
-
-**Checks.** `pnpm check rust --fast` while iterating, then `pnpm check rust`.
+So gate 1 is answerable today from a census plus the two counters, without building anything first. ❌ Don't schedule
+the counter the plan asked for; run the query.
 
 ### M2–M4 — Sealing (one landing unit)
 
@@ -512,10 +485,11 @@ verify that first. Tracked separately from this plan.
 directory is a recurring class rather than a Google Drive quirk. The census now measures the residual severity that
 gates M2–M4.
 
-## Spikes (do these before M2–M4)
+## The spikes (all three have run; kept for their method and numbers)
 
-Four of the gates below were really "someone should measure this", which is a plan smell. These resolve them with data
-instead of judgment. **None require the feature to exist.**
+Four of the gates below were really "someone should measure this", which is a plan smell. These resolved them with data
+instead of judgment, and none required the feature to exist. ❌ Don't re-run them; read § "Spike results" for what they
+returned, and the linked notes for the numbers.
 
 ### Spike A — re-anchor cost — DONE, go with conditions
 
@@ -600,5 +574,6 @@ Open beyond the gates:
 ## Housekeeping
 
 - Listed in `index.md`.
-- Unrelated drift spotted while planning: `indexing/DETAILS.md:401` heads a section "Search stays single-volume (D7)",
-  but `search/execute.rs::resolve_targets` (`:33-60`) now resolves and merges multiple volumes. Worth a separate fix.
+- ⚠️ **Every `file.rs:NN` above is from 2026-07-20 and most have drifted** (the lifecycle and reconcile modules were
+  both split into subdirs since). Treat them as "this claim was true of this file", resolve the symbol with
+  `codegraph_search`, and re-derive any number before quoting it. The named SYMBOLS are the durable half.

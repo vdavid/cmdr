@@ -1,9 +1,13 @@
 # Swap-scan: replace the in-place reconcile rescan with a build-and-swap
 
-Status: plan, 2026-07-22. Local-disk only. Author-facing (AI agents). Read the two foundation notes first:
-`docs/notes/swap-scan-feasibility.md` (the read-only study and the traps) and
-`docs/notes/indexing-benchmarks-2026-07-21.md` § "Swap-scan re-measurement, 2026-07-22" (the justification). This plan
-names current post-reorg paths under `crates/cmdr-index/src/indexing`.
+Status: plan, not started. Nothing below is built: there is no `.building.db`, no `.swap` marker, and no swap route, and
+the in-place reconcile is still the only rescan path for a completed local index (re-derived from the tree 2026-08-27).
+Local-disk only. Author-facing (AI agents).
+
+Read three notes first: `docs/notes/swap-scan-feasibility.md` (the read-only study and the traps),
+`docs/notes/indexing-benchmarks-2026-07-21.md` § "Swap-scan re-measurement, 2026-07-22" (the justification), and
+`docs/notes/manager-custody-spike-2026-08-18.md` § 5 + § 6, which lands ON this plan: the custody window § 2.3 step 5
+runs the swap inside has been rebuilt since this was written, and § 5 says what that changes for the swap.
 
 ## 1. Intention
 
@@ -78,10 +82,10 @@ Build phase (old index stays live and complete the entire time):
 2. **Set the build file's `current_epoch` = old file's `current_epoch` + 1 and FLUSH it before the walk starts.** The
    walker reads `current_epoch` off its own connection to stamp every directory's `listed_epoch` DURING the walk (the
    same invariant as today's Step 0a'/0b, which bumps + flushes `current_epoch` before the walk reads it,
-   `crates/cmdr-index/src/indexing/lifecycle/manager.rs`). If the epoch were only written in the post-walk meta (§ 2.3),
-   the walker would stamp every dir at the fresh-file default (1) while meta later claimed old+1, and enrichment would
-   then mark every directory `recursive_size_stale = true` after the swap. So the epoch is a BEFORE-walk build-setup
-   step, not a post-walk meta write.
+   `crates/cmdr-index/src/indexing/lifecycle/manager/start.rs`). If the epoch were only written in the post-walk meta (§
+   2.3), the walker would stamp every dir at the fresh-file default (1) while meta later claimed old+1, and enrichment
+   would then mark every directory `recursive_size_stale = true` after the swap. So the epoch is a BEFORE-walk
+   build-setup step, not a post-walk meta write.
 3. Run the SAME `scanner::scan_volume` guarded parallel walker, feeding `build_writer` instead of `self.writer`. The
    walker's progress watchdog, the 32-consecutive-failure backstop, and exclusions behave identically (§ 4).
 4. **The build writer is spawned NOT search-feeding, so it never bumps `WRITER_GENERATION`.** This is the free fix for
@@ -123,27 +127,38 @@ When the walk completes cleanly and the build file is fully written:
    `store: IndexStore` (a non-shared `read_conn`) and `writer: IndexWriter` as plain fields, and the post-scan
    `run_scan_completion` task is DETACHED: it holds only clones (an `IndexWriter` handle, Arcs, `event_rx`), has no
    `&mut IndexManager`, and cannot mutate those fields. So the re-point cannot happen inside the completion task as
-   spawned. It must run on an owned `&mut mgr` taken out of `INDEX_REGISTRY` with the existing extract-drop-reinsert
-   pattern that `perform_registry_rescan` (`crates/cmdr-index/src/indexing/lifecycle/manager.rs`) already uses: lock,
-   `std::mem::replace` the phase to `ShuttingDown`, take the `IndexManager` out, drop the lock, do the blocking
-   quiesce/commit/re-point on the owned manager, re-lock, reinsert as `Running`. **The ENTIRE swap (quiesce → meta →
-   durable marker → promote → re-point) runs inside this one owned-manager critical section.** Extracting the manager
-   (phase → `ShuttingDown`) is the single mutual-exclusion point: while it is out, a concurrent `stop_indexing` /
-   `fail_index` / `clear_index` sees `ShuttingDown` and cannot win a second extract, so it cannot tear the manager down
-   mid-promote. Do NOT split the swap across two extract windows (a concurrent teardown could interleave and leave a
-   `.swap` marker with no owner); the recovery pass (§ 2.4) is the crash backstop, not a substitute for holding the
-   manager across the whole commit. On that owned manager: replace `mgr.store` with a FRESH `IndexStore::open(&db_path)`
-   and `mgr.writer` with a FRESH `IndexWriter::spawn_for(&db_path, .., feeds_search=true for root, ..)` on
-   `index-{vid}.db`, exactly as `new_for_kind` does at startup. Call `ReadPool::invalidate()` so read thread-locals
-   re-open the file (the path stays `index-{vid}.db` across the in-place rename, so the root `ReadPool`'s fixed
-   `db_path` is unchanged and reopen re-points root reads correctly; note the manager's own `store.read_conn` is NOT a
-   `ReadPool` connection, which is exactly why it must be replaced explicitly here). Bump `WRITER_GENERATION` EXACTLY
-   ONCE so the search arena reloads off the new file a single time. Then the existing replay-buffered-events + go-live
-   path runs against the new writer/store. **This reshapes the completion wiring** (§ 4, M3): swap-scan's tail is a
-   registry operation, not a fire-and-forget task step. **Footgun to avoid:** the detached completion task captured a
-   CLONE of the OLD `writer` at spawn time (`ScanCompletion.writer`); after the swap that clone targets the shut-down
-   old writer. Every post-swap write (the buffered-event replay, `UpdateLastEventId`, go-live) must route through the
-   NEW writer taken from the re-pointed manager, never the captured clone.
+   spawned. It must run on an owned `&mut mgr` taken out of `INDEX_REGISTRY` with the extract-work-reinsert primitive
+   `state::off_the_registry` (`crates/cmdr-index/src/indexing/lifecycle/state/scan_control.rs`), which
+   `perform_registry_rescan` already uses: lock, replace the phase, take the `IndexManager` out, drop the lock, do the
+   blocking quiesce/commit/re-point on the owned manager, re-lock, restore. **The ENTIRE swap (quiesce → meta → durable
+   marker → promote → re-point) runs inside this one owned-manager critical section.** Do NOT split the swap across two
+   extract windows (a concurrent teardown could interleave and leave a `.swap` marker with no owner); the recovery pass
+   (§ 2.4) is the crash backstop, not a substitute for holding the manager across the whole commit.
+
+   ⚠️ **What the extraction publishes, and what that guarantees, is not what this plan originally assumed.** The window
+   is its own phase, `IndexPhase::Detached { writer, teardown }` — deliberately DISTINCT from `ShuttingDown`, because
+   one transient state serving both is what made a teardown landing in the window read as "somebody is already tearing
+   this down", report success, and do nothing. So a concurrent `stop_indexing` / `fail_index` / `clear_index` meeting
+   the swap window is **neither refused nor lost: it CLAIMS the volume** (sets `teardown`), and whoever hands the
+   manager back carries the request out. An RAII guard restores the phase on unwind, so a panic mid-swap can't strand
+   the volume. The mutual exclusion the commit needs still holds — nothing can win a second extract while the manager is
+   out — but the plan must inherit the claim, not assume a refusal: after the promote, check whether the window was
+   claimed and run the teardown instead of restoring `Running`. Canonical account:
+   `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "The detached window"; why it exists and what it fixed for
+   this plan specifically: `docs/notes/manager-custody-spike-2026-08-18.md` § 5.
+
+   On that owned manager: replace `mgr.store` with a FRESH `IndexStore::open(&db_path)` and `mgr.writer` with a FRESH
+   `IndexWriter::spawn_for(&db_path, .., feeds_search=true for root, ..)` on `index-{vid}.db`, exactly as `new_for_kind`
+   does at startup. Call `ReadPool::invalidate()` so read thread-locals re-open the file (the path stays
+   `index-{vid}.db` across the in-place rename, so the root `ReadPool`'s fixed `db_path` is unchanged and reopen
+   re-points root reads correctly; note the manager's own `store.read_conn` is NOT a `ReadPool` connection, which is
+   exactly why it must be replaced explicitly here). Bump `WRITER_GENERATION` EXACTLY ONCE so the search arena reloads
+   off the new file a single time. Then the existing replay-buffered-events + go-live path runs against the new
+   writer/store. **This reshapes the completion wiring** (§ 4, M3): swap-scan's tail is a registry operation, not a
+   fire-and-forget task step. **Footgun to avoid:** the detached completion task captured a CLONE of the OLD `writer` at
+   spawn time (`ScanCompletion.writer`); after the swap that clone targets the shut-down old writer. Every post-swap
+   write (the buffered-event replay, `UpdateLastEventId`, go-live) must route through the NEW writer taken from the
+   re-pointed manager, never the captured clone.
 
 ### 2.4 Idempotent recovery (must run as the FIRST step of open, before any connection)
 
@@ -182,10 +197,10 @@ At the swap we re-point NEW work to the new file (fresh store, fresh writer, `Re
 bump) and only then unlink the old file's three files. An in-flight reader mid-query on the old inode continues against
 the now-unlinked inode and finishes correctly (POSIX keeps the inode alive until its last fd closes); new readers opened
 after `invalidate` open the new `.db`. This is the same "index stays readable throughout" property the feasibility note
-calls out, and `ReadPool::invalidate()` already exists and is already called on four lifecycle paths (`stop_indexing`,
-`remove_instance_and_handles`, `clear_index`, `fail_index` in `crates/cmdr-index/src/indexing/lifecycle/state.rs`). Read
-connections open `SQLITE_OPEN_READ_ONLY` but still touch `-shm` in WAL mode, so unlinking the old `-wal` / `-shm` under
-an in-flight WAL reader is precisely the property M0 spike (b) must PROVE on APFS, not assume.
+calls out, and `ReadPool::invalidate()` already exists and is already wired into the teardown paths
+(`crates/cmdr-index/src/indexing/lifecycle/state/teardown.rs`, which also documents why the `invalidate()` call sits
+outside the lock). Read connections open `SQLITE_OPEN_READ_ONLY` but still touch `-shm` in WAL mode, so unlinking the
+old `-wal` / `-shm` under an in-flight WAL reader is precisely the property M0 spike (b) must PROVE on APFS, not assume.
 
 ### 2.6 The biggest data-safety risk, and how the plan defends it
 
@@ -209,9 +224,9 @@ outright by the variant choice.
 
 - **`scan_completed_at` cleared at scan start (the headline-voiding bug).** Today `start_scan` sends
   `DeleteMeta("scan_completed_at")` to `self.writer` before the walk
-  (`crates/cmdr-index/src/indexing/lifecycle/manager.rs` Step 0a). **Decision:** on the swap-scan path, DO NOT clear
-  `scan_completed_at` on the old writer. The old file's completion marker stays intact throughout; the new file gets its
-  own `scan_completed_at` written just before the commit marker (§ 2.3 step 2). Interrupt-safety follows by
+  (`crates/cmdr-index/src/indexing/lifecycle/manager/start.rs` Step 0a). **Decision:** on the swap-scan path, DO NOT
+  clear `scan_completed_at` on the old writer. The old file's completion marker stays intact throughout; the new file
+  gets its own `scan_completed_at` written just before the commit marker (§ 2.3 step 2). Interrupt-safety follows by
   construction.
 - **Index-name collision (`idx_parent_name_folded_new`).** Neutralized: a separate DB file has its own schema namespace,
   so index names never collide and `create_tables` never silently rebuilds a duplicate index. No change needed.
@@ -231,8 +246,8 @@ outright by the variant choice.
 - **Freshness / coverage-epoch continuity.** During the build, freshness is Scanning (blue badge), same as today; an
   interrupt reverts to the old index's freshness (Fresh, since it was complete), because nothing permanent flipped.
   **Decision: do NOT bump the old writer's `current_epoch` at swap-scan start.** Today `start_scan` Step 0a' sends
-  `BumpCurrentEpoch` to `self.writer` unconditionally (`crates/cmdr-index/src/indexing/lifecycle/manager.rs`). On the
-  swap path that must be SKIPPED on the old writer, because bumping the live file's `current_epoch` above its stored
+  `BumpCurrentEpoch` to `self.writer` unconditionally (`crates/cmdr-index/src/indexing/lifecycle/manager/start.rs`). On
+  the swap path that must be SKIPPED on the old writer, because bumping the live file's `current_epoch` above its stored
   `min_subtree_epoch` flips every visible directory to `recursive_size_stale = true` (via `apply_dir_stats` in
   enrichment) for the whole ~2-minute build, so the user would watch their sizes go stale-grey during a rescan that is
   supposed to keep them visible. Instead the epoch is stamped in the BUILD file. **Epoch continuity is SIMPLER for swap
@@ -255,8 +270,8 @@ outright by the variant choice.
 ## 4. Interactions with the rest of indexing
 
 - **Reconcile-vs-truncate routing (`local_rescan_reconciles`).** Today
-  `crates/cmdr-index/src/indexing/lifecycle/manager.rs` `start_scan` decides fresh-truncate vs in-place-reconcile via
-  `local_rescan_reconciles(entry_count, prior_scan_completed)`. Swap-scan is a THIRD path INSIDE the "rescan of a
+  `crates/cmdr-index/src/indexing/lifecycle/manager/start.rs` `start_scan` decides fresh-truncate vs in-place-reconcile
+  via `local_rescan_reconciles(entry_count, prior_scan_completed)`. Swap-scan is a THIRD path INSIDE the "rescan of a
   complete index" branch. New decision, in order: (1) empty or never-completed index → fresh truncate scan (unchanged);
   (2) completed + populated + LOCAL + swap-scan enabled + enough free disk → SWAP-SCAN; (3) completed + populated +
   LOCAL + (flag off OR not enough disk) → in-place reconcile (today's path, kept as the safety net). The
@@ -273,17 +288,20 @@ outright by the variant choice.
   `scan_start_event_id` baseline is written to the new file.
 - **Per-volume registry + lock discipline.** No new registry key: one `VolumeId` still maps to one `IndexInstance`. The
   manager grows fields for the build triple (`build_store`, `build_writer`) and holds them only for the build's
-  duration. The swap re-point runs on an owned `&mut mgr` taken out of the registry via the extract-drop-reinsert
-  pattern (§ 2.3 step 5); the blocking quiesce/commit/re-point happens OFF the `INDEX_REGISTRY` lock, and the manager is
-  reinserted as `Running` after. Never hold the registry lock across the blocking build or the swap
-  (`crates/cmdr-index/src/indexing/lifecycle/CLAUDE.md` lock discipline).
+  duration. The swap re-point runs on an owned `&mut mgr` taken out of the registry via `off_the_registry` (§ 2.3 step
+  5); the blocking quiesce/commit/re-point happens OFF the `INDEX_REGISTRY` lock, and the manager is restored after (as
+  `Running`, or torn down if the window was claimed). Never hold the registry lock across the blocking build or the swap
+  (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "Lock discipline (the load-bearing decisions)", which records
+  two QA incidents for exactly that).
 - **Fatal storage error / memory watchdog mid-build.** `fail_index` and `stop_all_indexing`
   (`crates/cmdr-index/src/indexing/resources`) stop indexing mid-scan through the registry, calling `mgr.shutdown()`,
   which today only tears down `self.writer` / `self.drive_watcher` / `self.live_event_task` and knows nothing about a
   build triple. So the open-time recovery (§ 2.4) is a FILE backstop only, not a thread/fd backstop: the plan must ALSO
   wire build-triple teardown (drain + shut down `build_writer`, drop `build_store`, then delete `.building.db`) into
   `shutdown()`, `fail_index`, and `stop_all_indexing`, or a mid-build fatal error leaves the build writer thread and its
-  fd alive. The old index stays untouched and authoritative regardless. Milestone M5 owns this wiring.
+  fd alive. The old index stays untouched and authoritative regardless. Milestone M5 owns this wiring. Note this is the
+  same worry as § 2.3 step 5's claimed-teardown handling, one level down: the claim tells the swap a teardown is
+  waiting, and this bullet is what the teardown then has to reach.
 - **Scope: LOCAL only.** Root (boot volume) is the primary target and where the 8x is measured. `LocalExternal` (USB/SD,
   mount-rooted, same local scanner + FSEvents path) is a natural extension guarded by the same free-space check; it is
   called out as a fast follow-on, not first-cut, to keep M1–M3 focused on root. **SMB and MTP are out of scope**: they
