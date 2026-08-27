@@ -84,16 +84,17 @@ Rules for writing them:
 
 ## Where to look (router)
 
-- **Editing code**: For "where does symbol X live", use `codegraph_search` (CodeGraph is enabled for the project and is
-  up to date.). Claude Code harness autoloads `C.md`s when you touch a dir. Read a subsystem's `C.md` proactively if not
-  touching but running its tooling/tests (like `test/e2e-playwright/CLAUDE.md` before the E2E suite).
+- **Editing code**: for "where does symbol X live", use `codegraph_search` (enabled and up to date). The harness
+  autoloads `C.md`s when you touch a dir. Read a subsystem's `C.md` proactively when running its tooling/tests without
+  touching it (like `test/e2e-playwright/CLAUDE.md` before the E2E suite).
 - **Before planning**, read `docs/architecture.md`: the subsystem map (what + where + a pointer to each area's docs).
 - **A procedure** (release, screenshots, deps, adding a window or icon): `docs/guides/` and the skills. Building a
   dialog, settings screen, window, or form control: `docs/guides/building-ui.md` (house primitives and where each deeper
   doc lives).
 - **Debugging a running app / reading logs**: [This](docs/tooling/logging.md) is the first stop, not `Console.app` or
-  grepping code. It gives all (FE & BE) log-file paths, format, and `RUST_LOG` recipes. Watch RAM per line with
-  `CMDR_LOG_RAM_USE=1`.
+  grepping code. All (FE & BE) log paths, format, and `RUST_LOG` recipes. RAM per line: `CMDR_LOG_RAM_USE=1`.
+- **A report from a USER** (`ERR-XXXXX`, a crash, in-app feedback): `docs/tooling/feedback-and-error-digest.md`. The
+  logging doc above is the LOCAL app and won't find one.
 - **Branding / marketing**: `brand/CLAUDE.md`, `apps/website/`, and `README.md`. You don't need app internals.
 - **Writing, code, or UI-copy style**: `docs/style-guide.md` (read before writing user-facing strings or non-trivial
   code). Product and UX values: `docs/design-principles.md`.

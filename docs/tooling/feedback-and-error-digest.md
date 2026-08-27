@@ -52,6 +52,36 @@ stamps `notified_at` after the send rather than before: `apps/api-server/DETAILS
 Bundles are keyed `error-reports/{prod|dev}/YYYY-MM-DD/{ERR-XXXXX}-{uuid}.zip`. Default to the `prod` prefix only; `dev`
 is mostly E2E/test noise. 90-day lifecycle TTL on the bucket.
 
+### Chasing ONE id (`ERR-ABXW4`)
+
+The most common way you get here: David pastes a report id. **An id alone is not addressable.** The date is part of the
+key and nothing maps id to date, so you cannot `get` a bundle knowing only its id, and there is no id index to query.
+
+Walk BACKWARDS FROM TODAY, one day per request, and stop at the first hit. Reports are usually read within a day or two
+of arriving, so this is normally one or two calls; a 90-day sweep to find one bundle is the slow way round and the whole
+reason this section exists. ❌ Don't reach for the range recipe below for a single id.
+
+```bash
+ACC=6a4433bf11c3cf86feda057f76f47991
+TOKEN=$(secret CLOUDFLARE_API_TOKEN)
+for i in $(seq 0 90); do
+  d=$(date -v-${i}d +%Y-%m-%d)   # GNU date: date -d "-$i day" +%Y-%m-%d
+  hit=$(timeout 15 curl -s --max-time 12 </dev/null \
+    "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buckets/cmdr-error-reports/objects?prefix=error-reports/prod/$d&per_page=100" \
+    -H "Authorization: Bearer $TOKEN" | jq -r '.result[]?.key' | grep ERR-ABXW4)
+  [ -n "$hit" ] && { echo "$hit"; break; }
+done
+```
+
+❌ **Keep the loop SEQUENTIAL.** `xargs -P` (and backgrounded `curl`s) hang indefinitely against this API in a sandboxed
+shell, with no output and no error: a 92-day parallel sweep produced zero rows and had to be killed twice before the
+sequential version ran the same range in under a minute. Redirect stdin from `/dev/null` too, so a child can't inherit
+and block on the terminal.
+
+Once you have the key, download and unzip it per **Download a bundle** below, then read `manifest.json` (`userNote`,
+`kind`, `appVersion`, `breadcrumbs`) and `logs/cmdr.log`. The breadcrumb ring holds only the last 50 events, so for
+anything that happened earlier in the session the LOG is the record, not the breadcrumbs.
+
 `wrangler r2 object` can `get` a known key but has **no list subcommand**, so enumerate with the Cloudflare REST API
 (per-day prefix; loop the dates in the range). The list response carries each bundle's metadata, so you get the shape of
 the window without downloading anything:
@@ -64,8 +94,9 @@ curl -s --max-time 25 "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buc
 ```
 
 Always pass `--max-time` (and ideally wrap in `timeout`): the CF API occasionally stalls a connection, and a bare `curl`
-in a per-day loop will hang the whole run indefinitely. An empty day is a normal `{"success":true,"result":[]}`, so use
-`.result[]?` to tolerate it.
+in a per-day loop will hang the whole run indefinitely. Keep the loop sequential and feed each `curl` `</dev/null` for
+the reason in "Chasing ONE id" above: parallelizing it with `xargs -P` hangs with no output at all. An empty day is a
+normal `{"success":true,"result":[]}`, so use `.result[]?` to tolerate it.
 
 `.custom_metadata` holds `id, kind, appVersion, osVersion, arch, generatedAt`. If a day has more than `per_page`
 results, `.result_info` carries `is_truncated` + `cursor`; pass `&cursor=<cursor>` to page on.
