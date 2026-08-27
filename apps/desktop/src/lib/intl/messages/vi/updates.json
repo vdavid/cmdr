@@ -7,17 +7,30 @@
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "updates.toast.available": "Đã có phiên bản mới. Khởi động lại để cập nhật.",
-  "@updates.toast.available": {
-    "sourceHash": "cb97574"
+  "updates.toast.ready": "Đã có phiên bản mới của Cmdr.",
+  "@updates.toast.ready": {
+    "sourceHash": "622668e"
+  },
+  "updates.toast.readyDetail": "Khởi động lại ngay, hoặc bản mới sẽ tự chạy trong lần mở Cmdr tiếp theo.",
+  "@updates.toast.readyDetail": {
+    "sourceHash": "aab853f"
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "sourceHash": "41b26f1",
+    "sameAsSourceJustification": "Placeholder-only: two version numbers and an arrow, no translatable words. Vietnamese writes version numbers the same way, and the literal \"v\" prefix matches the rest of the vi updates catalog."
+  },
+  "updates.toast.versionChangeAria": "Cập nhật từ phiên bản {prev} lên phiên bản {next}",
+  "@updates.toast.versionChangeAria": {
+    "sourceHash": "911d79c"
   },
   "updates.toast.later": "Để sau",
   "@updates.toast.later": {
     "sourceHash": "73b6e48"
   },
-  "updates.toast.restart": "Khởi động lại",
+  "updates.toast.restart": "Khởi động lại ngay",
   "@updates.toast.restart": {
-    "sourceHash": "6b983a8"
+    "sourceHash": "09af100"
   },
   "updates.moveToApplicationsDialog.title": "Chuyển Cmdr vào thư mục Ứng dụng",
   "@updates.moveToApplicationsDialog.title": {

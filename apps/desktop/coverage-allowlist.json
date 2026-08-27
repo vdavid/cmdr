@@ -304,9 +304,6 @@
     "ui/toast/ToastContainer.svelte": {
       "reason": "UI component, renders from toast store"
     },
-    "updates/UpdateToastContent.svelte": {
-      "reason": "UI component, toast content for update prompt"
-    },
     "utils/confirm-dialog.ts": {
       "reason": "Thin wrapper over Tauri dialog API"
     },

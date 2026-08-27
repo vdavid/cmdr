@@ -14,9 +14,35 @@
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
-  "updates.toast.available": "New version available. Restart to update.",
-  "@updates.toast.available": {
-    "description": "Body of the persistent toast prompting the user to restart and apply a downloaded update.",
+  "updates.toast.ready": "A new version of Cmdr is ready.",
+  "@updates.toast.ready": {
+    "description": "Headline of the persistent toast that appears once an update has been downloaded and written into the app. It states the situation; the line below it says what happens next. Sentence case.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
+  },
+  "updates.toast.readyDetail": "Restart now, or you''ll get it the next time you open Cmdr.",
+  "@updates.toast.readyDetail": {
+    "description": "Second line of the update-ready toast, under the headline. Reassures the user that doing nothing still gets them the new version: the update is already written to disk and only needs a fresh launch to take effect. Conversational, and the point it has to land is that no action is required.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "description": "Small, dimmed metadata line at the bottom of the update-ready toast, showing which version replaces which. Version numbers and an arrow only, with no words to translate; the literal \"v\" prefix and the arrow are both intentional. Keep it identical to English unless your language writes version numbers differently.",
+    "placeholders": {
+      "prev": "the version the user is running right now (for example 0.28.3)",
+      "next": "the version that has been downloaded and will run after a restart (for example 0.29.0)"
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
+  },
+  "updates.toast.versionChangeAria": "Updating from version {prev} to version {next}",
+  "@updates.toast.versionChangeAria": {
+    "description": "Accessible name for the version line above, which a screen reader would otherwise read out as a bare arrow symbol. Never visible on screen. A plain sentence naming both versions.",
+    "placeholders": {
+      "prev": "the version the user is running right now (for example 0.28.3)",
+      "next": "the version that has been downloaded and will run after a restart (for example 0.29.0)"
+    },
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
@@ -26,9 +52,9 @@
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
-  "updates.toast.restart": "Restart",
+  "updates.toast.restart": "Restart now",
   "@updates.toast.restart": {
-    "description": "Button that restarts the app immediately to apply the downloaded update. Tight mini button.",
+    "description": "Button that restarts the app immediately so the already-downloaded update takes effect. Paired with a \"Later\" button that dismisses the toast. Tight mini button, so keep it short.",
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },

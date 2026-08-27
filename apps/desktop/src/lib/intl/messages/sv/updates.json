@@ -7,17 +7,30 @@
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "updates.toast.available": "Ny version finns. Starta om för att uppdatera.",
-  "@updates.toast.available": {
-    "sourceHash": "cb97574"
+  "updates.toast.ready": "En ny version av Cmdr är klar.",
+  "@updates.toast.ready": {
+    "sourceHash": "622668e"
+  },
+  "updates.toast.readyDetail": "Starta om nu, eller så får du den nästa gång du öppnar Cmdr.",
+  "@updates.toast.readyDetail": {
+    "sourceHash": "aab853f"
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "sourceHash": "41b26f1",
+    "sameAsSourceJustification": "Placeholder-only: two version numbers and an arrow, no translatable words. Swedish writes version numbers the same way, and the literal \"v\" prefix matches the rest of the sv updates catalog."
+  },
+  "updates.toast.versionChangeAria": "Uppdaterar från version {prev} till version {next}",
+  "@updates.toast.versionChangeAria": {
+    "sourceHash": "911d79c"
   },
   "updates.toast.later": "Senare",
   "@updates.toast.later": {
     "sourceHash": "73b6e48"
   },
-  "updates.toast.restart": "Starta om",
+  "updates.toast.restart": "Starta om nu",
   "@updates.toast.restart": {
-    "sourceHash": "6b983a8"
+    "sourceHash": "09af100"
   },
   "updates.moveToApplicationsDialog.title": "Flytta Cmdr till din mapp Program",
   "@updates.moveToApplicationsDialog.title": {

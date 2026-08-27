@@ -7,17 +7,30 @@
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "updates.toast.available": "Nova versão disponível. Reinicie para atualizar.",
-  "@updates.toast.available": {
-    "sourceHash": "cb97574"
+  "updates.toast.ready": "Uma nova versão do Cmdr está pronta.",
+  "@updates.toast.ready": {
+    "sourceHash": "622668e"
+  },
+  "updates.toast.readyDetail": "Reinicie agora ou ela chega na próxima vez que você abrir o Cmdr.",
+  "@updates.toast.readyDetail": {
+    "sourceHash": "aab853f"
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "sourceHash": "41b26f1",
+    "sameAsSourceJustification": "Placeholder-only: two version numbers and an arrow, no translatable words. Brazilian Portuguese writes version numbers the same way, and the literal \"v\" prefix matches the rest of the pt updates catalog."
+  },
+  "updates.toast.versionChangeAria": "Atualizando da versão {prev} para a versão {next}",
+  "@updates.toast.versionChangeAria": {
+    "sourceHash": "911d79c"
   },
   "updates.toast.later": "Depois",
   "@updates.toast.later": {
     "sourceHash": "73b6e48"
   },
-  "updates.toast.restart": "Reiniciar",
+  "updates.toast.restart": "Reiniciar agora",
   "@updates.toast.restart": {
-    "sourceHash": "6b983a8"
+    "sourceHash": "09af100"
   },
   "updates.moveToApplicationsDialog.title": "Mova o Cmdr para a sua pasta Aplicativos",
   "@updates.moveToApplicationsDialog.title": {

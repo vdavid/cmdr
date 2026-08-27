@@ -7,18 +7,31 @@
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "updates.toast.available": "Nieuwe versie beschikbaar. Herstart om bij te werken.",
-  "@updates.toast.available": {
-    "sourceHash": "cb97574"
+  "updates.toast.ready": "Er staat een nieuwe versie van Cmdr klaar.",
+  "@updates.toast.ready": {
+    "sourceHash": "622668e"
+  },
+  "updates.toast.readyDetail": "Herstart nu, of je krijgt hem de volgende keer dat je Cmdr opent.",
+  "@updates.toast.readyDetail": {
+    "sourceHash": "aab853f"
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "sourceHash": "41b26f1",
+    "sameAsSourceJustification": "Placeholder-only: two version numbers and an arrow, no translatable words. Dutch writes version numbers the same way, and the literal \"v\" prefix matches the rest of the nl updates catalog."
+  },
+  "updates.toast.versionChangeAria": "Bijwerken van versie {prev} naar versie {next}",
+  "@updates.toast.versionChangeAria": {
+    "sourceHash": "911d79c"
   },
   "updates.toast.later": "Later",
   "@updates.toast.later": {
     "sourceHash": "73b6e48",
     "sameAsSourceJustification": "'Later' is the same word in Dutch (a genuine Dutch adverb), the natural dismiss-for-now button label (glossary: later -> Later)."
   },
-  "updates.toast.restart": "Herstart",
+  "updates.toast.restart": "Herstart nu",
   "@updates.toast.restart": {
-    "sourceHash": "6b983a8"
+    "sourceHash": "09af100"
   },
   "updates.moveToApplicationsDialog.title": "Verplaats Cmdr naar je map Programma''s",
   "@updates.moveToApplicationsDialog.title": {

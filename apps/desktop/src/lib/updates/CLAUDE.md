@@ -35,8 +35,10 @@ Frontend auto-update checker, restart toast, and manual "Check for updates" affo
   returns early on `checking` / `downloading` / `installing` (in-flight work owns the state machine), ❌ never on
   `ready`: that guard let installs sit 25-38 days on a build newer releases had passed. A re-check from `ready` touches
   nothing unless the server offers a strictly NEWER version. `DETAILS.md` § Re-checking while staged.
-- **"Later" can't silence the prompt for good.** A staged update re-raises its toast every `RESTART_NUDGE_INTERVAL_MS`
-  (24 h) off the poll; a newer staged build resets the clock. ❌ Don't shorten it into nagging.
+- **"Later" can't silence the prompt, and `readyDetail` is why it needn't.** A staged update re-raises its toast every
+  `RESTART_NUDGE_INTERVAL_MS` (24 h); a newer build resets the clock. ❌ Don't shorten that into nagging, and ❌ don't
+  cut the toast's second line (without it "Later" reads as "skip this update") or the version row's `role="img"` label.
+  `DETAILS.md` § Why the toast names the fallback.
 - **An install that can't write its own bundle never downloads.** macOS-only: `update_write_blocker` reports App
   Translocation or a read-only volume, and a blocker raises the move-to-Applications dialog (once a session) instead of
   ~63 MB the install could never apply. A FAILED classification is not a blocker: it saves a doomed download, it isn't

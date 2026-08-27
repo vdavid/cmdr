@@ -7,17 +7,30 @@
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "updates.toast.available": "有新版本可用。重新启动以更新。",
-  "@updates.toast.available": {
-    "sourceHash": "cb97574"
+  "updates.toast.ready": "Cmdr 新版本已就绪。",
+  "@updates.toast.ready": {
+    "sourceHash": "622668e"
+  },
+  "updates.toast.readyDetail": "现在重新启动，或者下次打开 Cmdr 时自动生效。",
+  "@updates.toast.readyDetail": {
+    "sourceHash": "aab853f"
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "sourceHash": "41b26f1",
+    "sameAsSourceJustification": "Placeholder-only: two version numbers and an arrow, no translatable words. Chinese writes version numbers in Arabic numerals the same way, and the literal \"v\" prefix matches the rest of the zh updates catalog."
+  },
+  "updates.toast.versionChangeAria": "从版本 {prev} 更新到版本 {next}",
+  "@updates.toast.versionChangeAria": {
+    "sourceHash": "911d79c"
   },
   "updates.toast.later": "稍后",
   "@updates.toast.later": {
     "sourceHash": "73b6e48"
   },
-  "updates.toast.restart": "重新启动",
+  "updates.toast.restart": "立即重新启动",
   "@updates.toast.restart": {
-    "sourceHash": "6b983a8"
+    "sourceHash": "09af100"
   },
   "updates.moveToApplicationsDialog.title": "把 Cmdr 移到你的应用程序文件夹",
   "@updates.moveToApplicationsDialog.title": {

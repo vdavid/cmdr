@@ -78,6 +78,23 @@ When `status` becomes `'ready'`, the updater funnels through `showUpdateToast()`
 action, and dismisses via `dismissToast('update')` for "Later". There's no local dismissed flag; the toast
 infrastructure manages dismissal.
 
+### Why the toast names the fallback
+
+The body is three parts: a headline (`updates.toast.ready`), a line saying what happens if the user does nothing
+(`updates.toast.readyDetail`), and a dimmed `v{prev} → v{next}` row (`updates.toast.versionChange`).
+
+The middle line is load-bearing. `install_update` has already synced the new bytes into the running bundle by the time
+this toast appears, so the update is finished work and the next launch picks it up whether or not anyone presses
+anything. Without that stated, "Later" reads as "skip this update" and the user carries a decision they don't actually
+have; the 24 h re-nudge above exists because installs really did sit stale. Keep the line honest about the fallback
+rather than shortening it into a bare "Restart to update".
+
+The version row is data, not prose, which is why it's a separate key rather than two placeholders inside a sentence:
+`v{prev} → v{next}` has no translatable words, so every locale ships it byte-identical with a recorded
+`sameAsSourceJustification`, and no locale has to reorder a version number inside a clause. It renders only when both
+ends are known, and carries `role="img"` plus `updates.toast.versionChangeAria`, so a screen reader gets "Updating from
+version 0.28.3 to version 0.29.0" instead of the arrow's symbol name in whatever language the reader uses.
+
 ## What a check reports
 
 Every exit of `checkForUpdates()` fires one `update_check` event through `update-analytics.ts`. The catalog entry (the
