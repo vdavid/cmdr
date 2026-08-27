@@ -69,11 +69,13 @@ left, so the durable intent survives the wipe.
       aggregate + a bounded head of large files, churn-rolled seal root, periodic re-anchoring, a distinct "approximate"
       size state) NOT STARTED and probably never needed: M1 alone may be the whole fix, so M2–M5 stay gated behind
       measured residual pain.
-- [ ] 2026-07-21 `later/ai/natural-language-bulk-rename-hardening-handoff.md` - Hardening continuation for the shipped
-      natural-language bulk rename. All hardening landed (atomic no-overwrite, dependency-aware execution, live
-      conflict/source detection, review warnings, truncation disclosure, plus a follow-up closing local rename/rollback
-      safety gaps) EXCEPT finding 5: record both "agent proposed" and "user approved" provenance in the operation log.
-      That's the only remaining work.
+- [ ] 2026-08-27 `later/ai/bulk-rename-follow-ups.md` - **What the reviewed bulk rename deliberately left.** The whole
+      hardening wave shipped, provenance included: the operation log records `agent_edited` when the user retyped a name
+      in review, and the durable proposal spine binds an approval to the exact ops it covered. Two items are open, both
+      waiting on a real report rather than on effort. One invented remote filename still refuses a whole plan (a local
+      one reaches review as a blocked row), because proposal construction is synchronous and must never touch a live
+      mount. And nothing compares a reply's coverage claim against what the tool actually returned; the prompt contract
+      and its test are all there is.
 - [ ] 2026-07-07 `later/archive-browsing-polish.md` - Follow-ups to the shipped archive-browsing feature. SHIPPED:
       one-pass sequential extract, ZipCrypto + WinZip-AES + 7z-AES decrypt end to end, remote-source copy-into, remote
       temp reaping, move-out per-entry convergence, the archive folder split, and SMB push-refresh for remote archives.
