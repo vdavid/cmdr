@@ -1,57 +1,35 @@
 # Updates module
 
-Frontend auto-update checker, restart toast, and manual "Check for updates" affordances.
+Frontend auto-update checker, restart toast, and the manual "Check for updates" affordances.
 
 ## File map
 
-- `updater.svelte.ts`: orchestration. The check loop, `checkForUpdates()` state machine, `startUpdateChecker()` (called
-  once from `+layout.svelte`), the toast/onboarding gating, and `runMenuTriggeredCheck()`.
-- `update-state.svelte.ts`: the module-level `updateState` `$state` singleton (`status`, `error`, version snapshots),
-  re-exported from `updater.svelte.ts`.
-- `update-status-text.ts`: pure `formatUpdateStatus()` (state → user-facing string), shared by Settings and toasts.
+- `updater.svelte.ts`: orchestration. The poll loop, the `checkForUpdates()` state machine, `startUpdateChecker()`, the
+  toast/onboarding gating, `runMenuTriggeredCheck()`.
+- `update-state.svelte.ts`: the `updateState` `$state` singleton, re-exported from `updater.svelte.ts`.
+- `update-status-text.ts`: pure `formatUpdateStatus()`, shared by Settings and both toasts.
 - `update-analytics.ts`: the `update_check` event's vocabulary and its one emitter.
-- `UpdateToastContent.svelte` (`id: 'update'`, persistent): restart prompt. `UpdateCheckToastContent.svelte`
-  (`id: 'update-check'`, 10 s): menu-triggered phase status.
-- `MoveToApplicationsDialog.svelte` (`dialogId: 'move-to-applications'`): the nudge for an install that can't write its
-  own bundle. Mounted by `routes/(main)/+layout.svelte` off `updateBlockerNotice`.
+- `UpdateToastContent.svelte` (`id: 'update'`, persistent) is the restart prompt; `UpdateCheckToastContent.svelte`
+  (`id: 'update-check'`, 10 s) the menu-triggered phase status; `MoveToApplicationsDialog.svelte` the nudge for a bundle
+  that can't be written.
 
 ## Must-knows
 
-- **Copy lives in the `updates.*` catalog**, resolved via `t()`/`tString()`; don't hardcode user-facing strings
-  (`cmdr/no-raw-user-facing-string` is enforced here). `DETAILS.md` § i18n.
-- **Cleanup is mandatory.** `startUpdateChecker()` returns a teardown fn that `+layout.svelte` must call in `onDestroy`,
-  or the interval leaks. `.svelte.ts` is required wherever `$state` lives.
-- **Platform asymmetry.** The branch is `isMacOS()` (from `$lib/shortcuts/key-capture`), not `navigator.platform`. macOS
-  calls three custom `invoke()` commands, so `downloading` and `installing` are distinct phases; non-macOS dynamically
-  imports `@tauri-apps/plugin-updater` for its fused `downloadAndInstall()` and stays in `downloading`. The Rust module
-  isn't compiled off macOS. UIs treat both phases identically.
-- **Nothing may show during onboarding.** The restart toast is gated by the pure
-  `shouldShowUpdateToast({ onboarded, onboardingShowing, status })`; only `showUpdateToast()` calls `addToast`, never
-  `addToast` directly. Reopening a gate re-attempts both the toast and a held-back move-to-Applications nudge, so
-  neither is lost.
-- **The error catch logs `warn`, not `error`,** so a transient background-check network blip doesn't trip the auto error
-  reporter (Flow B). Settings still shows the message via `updateState.error`.
-- **The poll keeps running while an update is staged, and only `supersedesStagedUpdate` may write.** `checkForUpdates()`
-  returns early on `checking` / `downloading` / `installing` (in-flight work owns the state machine), ❌ never on
-  `ready`: that guard let installs sit 25-38 days on a build newer releases had passed. A re-check from `ready` touches
-  nothing unless the server offers a strictly NEWER version. `DETAILS.md` § Re-checking while staged.
-- **"Later" can't silence the prompt, and `readyDetail` is why it needn't.** A staged update re-raises its toast every
-  `RESTART_NUDGE_INTERVAL_MS` (24 h); a newer build resets the clock. ❌ Don't shorten that into nagging, and ❌ don't
-  cut the toast's second line (without it "Later" reads as "skip this update") or the version row's `role="img"` label.
-  `DETAILS.md` § Why the toast names the fallback.
-- **An install that can't write its own bundle never downloads.** macOS-only: `update_write_blocker` reports App
-  Translocation or a read-only volume, and a blocker raises the move-to-Applications dialog (once a session) instead of
-  ~63 MB the install could never apply. A FAILED classification is not a blocker: it saves a doomed download, it isn't
-  permission to update. `DETAILS.md` § When the bundle can't be written.
-- **Every exit of `checkForUpdates()` fires one `update_check` event** (`update-analytics.ts`), and the failing phase is
-  read off `updateState.status`, ❌ never off the error message. A new exit without an event is a hole in the one view
-  of the update path there is. Catalog: `src-tauri/src/analytics/DETAILS.md`.
-- **`checkForUpdates(trigger)` names its entry point** (`startup` / `poll` / `auto_check_on` / `command` / `settings`),
-  required and defaultless so a new call site can't join someone else's bucket.
-- **The update manifest endpoint is hardcoded in Rust** (via the API server), not in TypeScript.
-- **Non-production guard:** `check_for_update` returns `None` unless the process is a real user's production install
-  (inside a `.app` bundle, none of `prod_instance::NON_PROD_ENV_VARS` set), so no dev, CI, E2E, or capture run reaches
-  the endpoint. The loop still runs there; only the Rust command no-ops. `src-tauri/src/updater/CLAUDE.md`.
-- Test-only hooks `_resetUpdaterStateForTest` / `_setUpdateStatusForTest` are for `updater.test.ts` only.
+- **Copy lives in the `updates.*` catalog**, resolved through `t()`/`tString()`; `cmdr/no-raw-user-facing-string` is
+  enforced here.
+- **Branch on `isMacOS()`, ❌ never `navigator.platform`.** macOS runs three custom commands; everywhere else the Tauri
+  plugin's fused `downloadAndInstall()`.
+- **Nothing may show during onboarding.** Only `showUpdateToast()` calls `addToast`, gated by the pure
+  `shouldShowUpdateToast()`; ❌ never `addToast` directly.
+- **`checkForUpdates()` ❌ never returns early on `ready`.** That guard let installs sit 25-38 days on a build newer
+  releases had passed; only `supersedesStagedUpdate` may overwrite a staged one.
+- **"Later" can't silence the restart prompt, and the toast's second line is why it needn't.** ❌ Don't shorten the 24 h
+  re-nudge into nagging, and ❌ don't cut `readyDetail` or the version row's `role="img"` label.
+- **A bundle that can't be written never downloads**, but a FAILED classification is ❌ not permission to update.
+- **Every exit of `checkForUpdates()` fires one `update_check` event**, with the phase read off `updateState.status`, ❌
+  never off the error message. `trigger` is defaultless, so a new call site has to pick its own bucket.
+- **Only a real production install reaches the endpoint** (`check_for_update` answers `None` otherwise), and the
+  manifest URL is hardcoded in Rust. `src-tauri/src/updater/CLAUDE.md`.
 
-Full details (state-machine diagram, menu wiring, decision rationale, dependencies): `DETAILS.md`.
+Depth (lifecycle, state machine, staged re-checks, the unwritable bundle, onboarding gating, what a check reports, menu
+wiring, i18n, decisions, gotchas, dependencies): `DETAILS.md`.

@@ -36,9 +36,13 @@ and `nextVersion` (set when an update is found). Settings > Updates and `UpdateC
 singleton and format via `formatUpdateStatus()`.
 
 The macOS path runs `download_update` and `install_update` as two commands (distinct `downloading` / `installing`
-phases); the non-macOS path uses the plugin's fused `downloadAndInstall()` (stays in `downloading`). The Rust backend at
-`src-tauri/src/updater/` syncs files into the existing `.app` bundle, preserving the inode and TCC/Full Disk Access
-permissions.
+phases); the non-macOS path uses the plugin's fused `downloadAndInstall()` (stays in `downloading`, and the plugin is
+dynamically imported so the bundle doesn't carry it on macOS). The Rust backend at `src-tauri/src/updater/` syncs files
+into the existing `.app` bundle, preserving the inode and TCC/Full Disk Access permissions, and isn't compiled off
+macOS.
+
+The branch is `isMacOS()` from `$lib/shortcuts/key-capture`, ❌ never `navigator.platform`, which is deprecated and lies
+under WKWebView. Both UIs treat `downloading` and `installing` identically, so the split costs the frontend nothing.
 
 ## Re-checking while staged
 
@@ -205,7 +209,14 @@ When a gate opens, the helper re-attempts the toast; if the download finished du
   download-and-install path stays untested (hard Tauri/network deps).
 - Version ordering comes from `compareVersions` (`$lib/utils/version.ts`), shared with `$lib/whats-new`. Don't re-roll
   it here: two comparators that disagree would let the updater call a release newer while What's New calls it older.
-- The `warn`-not-`error` logging convention is documented in `src-tauri/src/error_reporter/DETAILS.md` § convention.
+- **The catch around a check logs `warn`, not `error`.** A background poll runs on whatever network the user happens to
+  be on, so a transient blip would otherwise trip the automatic error reporter (Flow B) on something nobody needs to see
+  a report about. Settings still surfaces the message through `updateState.error`. The convention itself is documented
+  in `src-tauri/src/error_reporter/DETAILS.md` § convention.
+- `_resetUpdaterStateForTest` / `_setUpdateStatusForTest` exist for `updater.test.ts` and the toast tests. Don't reach
+  for them from app code: they write the singleton without going through the state machine.
+- `startUpdateChecker()` returns a teardown fn that `+layout.svelte` must call in `onDestroy`, or the poll interval
+  leaks across a route teardown. Anything holding `$state` here lives in a `.svelte.ts` file.
 
 ## Dependencies
 
