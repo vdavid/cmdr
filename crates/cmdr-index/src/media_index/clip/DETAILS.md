@@ -88,7 +88,7 @@ reads `installed: false`, so the UI returns to the download affordance.
 ## The Core ML towers + worker thread (`macos.rs`)
 
 Mirrors the Vision backend's threading discipline: `MLModel` is `!Send` and a synchronous ANE predict is an XPC
-round-trip that can overrun a small stack, so ONE dedicated 8 MB-stack `clip-worker` thread owns both loaded towers and
+round-trip that can overrun a small stack, so ONE dedicated 8 MB-stack `clip-worker` thread owns every loaded tower and
 SERIALIZES every predict (Apple's pooled-inference recommendation). `encode_text` (query-time) and `encode_image` (from
 the Vision worker) both send a job to it and block for the reply, so no `!Send` object crosses a boundary — only the
 input ids / pixel `Vec` in and the embedding `Vec<f32>` out. `.mlpackage` is compiled to `.mlmodelc` on-device at first
@@ -99,14 +99,53 @@ build, the CoreGraphics `CGBitmapContextCreate` render). The tokenizer (`tokeniz
 produces the fixed `[1,77]` int32 sequence (`[BOS] content [EOS]`, EOS-padded), pinned bit-exact to the HuggingFace
 reference.
 
+### Each tower loads on demand, and reclaims its own source
+
+`towers.rs` holds the part that has nothing to do with Core ML: a `Towers<E: TowerEngine>` with one slot per tower, each
+filled by the FIRST job that needs it and then held for the process. `macos.rs` supplies the production engine
+(`CoreMl`); a fake engine in `towers.rs`'s tests supplies the rest, which is what makes these rules testable with no
+model on disk and no ANE.
+
+The job already knows which tower it needs, and now the type does too: `ClipInput::Ids` only ever reaches the text tower
+and `ClipInput::Pixels` only ever the image tower (`ClipInput::tower`), so nothing can route a job to the wrong half and
+no separate `tower` argument can disagree with the payload.
+
+**Decision: the M5a source reclaim is per tower, and never rides on another tower's word.** A tower's `.mlpackage` is
+deleted once THAT tower has loaded and encoded a sane zero-input embedding through its own compiled model. **Why:** the
+reclaim used to require both towers, which was free when both always loaded. Once loads are lazy that precondition is a
+trap in both directions. Keeping it pair-wise means an enrichment-only session never reclaims anything, trading ~246 MB
+of RAM for ~550 MB of permanent disk, and nothing measures disk, so it would never show up. Dropping it to "any tower
+verified" would delete a source on the strength of a model that never ran. Per-tower is the only shape where the
+guarantee still reads the same as before: **a source is never reclaimed on the strength of a tower that hasn't verified
+sane**. It works because the artifacts are already per-tower on disk (`package_path` / `compiled_path`), the sanity
+check is a per-tower NaN screen, and `is_installed` is a per-tower package-OR-compiled test that a half-reclaimed dir
+still satisfies.
+
+**The guard encode runs only while a source is still there to reclaim.** Post-reclaim (every launch after the first) a
+load spends no throwaway encode, so lazy loading doesn't move that cost into a user's first typed query. A tower whose
+guard encode comes back unusable keeps its source and is still served to callers: the guard decides the delete, not
+whether the feature runs.
+
+A load failure is cached per tower, so a broken install costs one failed load rather than one per job, and a text tower
+that won't load leaves enrichment's image tower working.
+
 ## What holding the towers costs
 
-**Both towers loaded and predicted-through cost 307-412 MB of `MALLOC_LARGE` plus ~120-176 MB of `MALLOC_SMALL`, and the
-process never gets it back** (measured on an M1 Max, macOS 26.5, debug build, `MLComputeUnits::All`, 2026-08-21, by
-`clip::macos::residency_test`). `WORKER` is a `OnceLock`, so the first encode of the session loads both towers and they
-stay for the process lifetime whether or not anything encodes again, whether or not the user turns semantic search off
-afterwards. This is the steady-state idle cost named in
+**A loaded tower's weights are held for the process lifetime and the process never gets them back**, whether or not
+anything encodes again and whether or not the user turns semantic search off afterwards. Nothing drops a loaded tower;
+what a session controls is which towers it loads at all. Both towers together cost 307-412 MB of `MALLOC_LARGE` plus
+~120-176 MB of `MALLOC_SMALL` (measured on an M1 Max, macOS 26.5, debug build, `MLComputeUnits::All`, 2026-08-21, by
+`clip::macos::residency_test`). This is the steady-state idle cost named in
 `../../../../../docs/notes/idle-malloc-large-clip-towers-2026-08-21.md`.
+
+**What a real session pays** (re-measured on an M1 Max, macOS 26.6, debug build, `MLComputeUnits::All`, 2026-08-27,
+`.mlmodelc` cache warm):
+
+- enrichment only, through the production `Towers` path: **58,982,400 bytes** of `MALLOC_LARGE`, 25 regions, all of them
+  the image tower's palettized MLP matrices. No `101,187,584` region, which is proof the text tower never loaded rather
+  than an inference from a total (`an_enrichment_only_session_never_materializes_the_text_towers_weights`).
+- one typed query and no enrichment: 245,891,072 bytes, 39 regions.
+- both: 304,873,472 bytes, 64 regions, the exact sum of the two.
 
 ⚠️ **It is invisible to `query_mimalloc_heap`.** Core ML allocates through the SYSTEM allocator, and mimalloc is not a
 registered macOS zone, so a Rust-side heap reading reports none of this.
@@ -121,9 +160,10 @@ run):
 - `2,359,296` x ~25: image-tower MLP matrices at the shipped 8-bit palettization, `768 x 3072 x 1 byte`.
 
 **The split between the towers is measured, not inferred** (`CMDR_CLIP_TOWER=image|text` loads one alone): the image
-tower is 64.6 MB of `MALLOC_LARGE` plus 65.5 MB of `MALLOC_SMALL`, the **text tower 251.5 MB plus 84.8 MB**. So the
-tower whose only job is encoding a typed query is about 80% of the bill, and the one enrichment runs in a loop is the
-cheap half, because it ships 8-bit palettized and the text tower ships fp32.
+tower is 59.0-64.6 MB of `MALLOC_LARGE` plus 54.3-65.5 MB of `MALLOC_SMALL`, the **text tower 245.9-251.5 MB plus
+73.6-84.8 MB** (the spread is across the 2026-08-21 and 2026-08-27 runs; Core ML's region counts move by one or two). So
+the tower whose only job is encoding a typed query is about 80% of the bill, and the one enrichment runs in a loop is
+the cheap half, because it ships 8-bit palettized and the text tower ships fp32.
 
 **The compute-unit assignment decides the whole bill**, which is the lead any fix starts from (`CMDR_CLIP_COMPUTE_UNITS`
 in the residency test switches it):
@@ -136,9 +176,10 @@ in the residency test switches it):
 of permanent residency against enrichment speed, and that trade has NOT been measured. The `CLAUDE.md` guardrail against
 changing `load_model_at`'s `MLComputeUnits::All` on the memory number alone rests on exactly this gap.
 
-The second lead is scope rather than precision, and it is the bigger one: `load_towers` loads BOTH towers whichever one
-is wanted, so an enrichment pass pays 251.5 MB for a text tower it will never call, and a single typed search query pays
-64.6 MB for an image tower it will never call. Each is independently loadable today.
+Scope is settled: each tower loads on demand (§ "Each tower loads on demand, and reclaims its own source"), so an
+enrichment pass no longer pays for a text tower it will never call. What is left on the memory side is dropping a tower
+that has gone idle, and the compute-unit trade above; both are open, and both carry a question that memory alone can't
+answer.
 
 ## Model install (`install.rs`, plan Decision 9)
 
@@ -148,18 +189,20 @@ ML models are `.mlpackage` DIRECTORY bundles (zipped), so this adds a zip extrac
 extractor, so a half-model can never load and mis-embed (data safety, `verify_checksum` red→green tests).
 `installed_stamp` builds the `clip_stamp`.
 
-**The M5a package reclaim (plan M5a).** The model dir was 1.1 GB because it kept BOTH the ~550 MB combined downloaded
-`.mlpackage` sources and the compiled `.mlmodelc`. Now, on the `clip-worker` thread's first load, once both towers load
-AND a zero-input encode is sane (512-d, all-finite — `verify_sane`, guarding against a NaN-emitting model), each
-`.mlpackage` source is deleted (`reclaim_source_package`), keeping only the compiled model (~350 MB dir, faster first
-load). **Tradeoff:** the `.mlmodelc` is OS-version-specific, so an OS upgrade can invalidate it, and with the source
-gone we can't recompile locally. `load_tower` handles this: it prefers the cached `.mlmodelc`; if it won't load it drops
-the stale compiled and, if a `.mlpackage` is still present, recompiles from it; if NEITHER a loadable compiled model nor
-a source remains, it returns `NotAvailable` having deleted the stale compiled — so `is_installed` (now **`.mlpackage` OR
-`.mlmodelc` present per tower**) flips to `false` and the standard `media_index_download_clip_model` flow refetches the
-pinned zip (same sha contract). A rare ~200 MB re-download vs ~550 MB saved on every launch, and never a crash or a
-silently-dead feature. The filesystem decisions (`is_installed`, `reclaim_source_package`, `drop_compiled`) are unit
-tested; the FFI compile/load around them isn't (needs Core ML + the real model).
+**The M5a package reclaim (plan M5a).** The model dir would otherwise be 1.1 GB, keeping BOTH the ~550 MB combined
+downloaded `.mlpackage` sources and the compiled `.mlmodelc`. Instead, on the `clip-worker` thread's first load of a
+tower, once that tower loads AND its zero-input encode is sane (512-d, all-finite, guarding against a NaN-emitting
+model), its `.mlpackage` source is deleted (`reclaim_source_package`), keeping only the compiled model (~350 MB dir once
+both towers have been through it, faster first load). The per-tower rule and why it has to be per-tower: § "Each tower
+loads on demand, and reclaims its own source". **Tradeoff:** the `.mlmodelc` is OS-version-specific, so an OS upgrade
+can invalidate it, and with the source gone we can't recompile locally. `load_tower` handles this: it prefers the cached
+`.mlmodelc`; if it won't load it drops the stale compiled and, if a `.mlpackage` is still present, recompiles from it;
+if NEITHER a loadable compiled model nor a source remains, it returns `NotAvailable` having deleted the stale compiled —
+so `is_installed` (now **`.mlpackage` OR `.mlmodelc` present per tower**) flips to `false` and the standard
+`media_index_download_clip_model` flow refetches the pinned zip (same sha contract). A rare ~200 MB re-download vs ~550
+MB saved on every launch, and never a crash or a silently-dead feature. The filesystem decisions (`is_installed`,
+`reclaim_source_package`, `drop_compiled`) are unit tested; the FFI compile/load around them isn't (needs Core ML + the
+real model).
 
 ## The query path
 
@@ -206,7 +249,9 @@ CMDR_CLIP_MODEL_DIR=~/Library/Application\ Support/com.veszelovszki.cmdr/clip-mo
 
 The tokenizer is pinned bit-exact to `reference-tokenization.json`, and the encode path against `reference-vectors.json`
 (both checked in from the conversion script). `verify_checksum` and the install/reclaim filesystem decisions are real
-red→green unit tests. The delete-model path is pinned by
+red→green unit tests, as are the lazy-load and per-tower reclaim rules in `towers.rs`: a fake `TowerEngine` over a real
+temp model dir pins "an enrichment-only session never loads the text tower" and "only the tower that verified loses its
+source" with no model and no ANE. The delete-model path is pinned by
 `writer::tests::prune_all_clip_drops_embeddings_resets_stamps_and_keeps_vision` and
 `enrich_tests::delete_clip_model_removes_the_model_and_every_volumes_embeddings`. The Core ML FFI itself isn't unit
 tested (it needs the real model on-device).

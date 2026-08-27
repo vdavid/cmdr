@@ -42,6 +42,28 @@ pub(crate) struct ClipTowerSpec {
     pub(crate) package_dir: &'static str,
 }
 
+/// Which half of the CLIP model a tower is. The two towers load, verify, and reclaim their
+/// source INDEPENDENTLY, so every path that means "the text one" names it instead of
+/// indexing [`CLIP_TOWERS`] by position.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ClipTower {
+    /// Embeds every enriched photo (enrichment runs it in a loop).
+    Image,
+    /// Encodes a typed search query (query time only).
+    Text,
+}
+
+impl ClipTower {
+    /// This tower's pinned artifact spec. `each_tower_maps_to_its_pinned_spec` holds the
+    /// two in step.
+    pub(crate) fn spec(self) -> &'static ClipTowerSpec {
+        match self {
+            ClipTower::Image => &CLIP_TOWERS[0],
+            ClipTower::Text => &CLIP_TOWERS[1],
+        }
+    }
+}
+
 /// The unfilled-hash sentinel: while a tower's `sha256` is this, install refuses (there is
 /// no real artifact to verify against yet). Retained as the "not configured" guard even
 /// though the real hashes are pinned below.
@@ -476,6 +498,13 @@ mod tests {
             verify_checksum(&zip_path, PLACEHOLDER_SHA),
             Err(InstallError::NotConfigured)
         ));
+    }
+
+    #[test]
+    fn each_tower_maps_to_its_pinned_spec() {
+        assert_eq!(CLIP_TOWERS.len(), 2, "the two roles cover every pinned tower");
+        assert_eq!(ClipTower::Image.spec().package_dir, "clip-image.mlpackage");
+        assert_eq!(ClipTower::Text.spec().package_dir, "clip-text.mlpackage");
     }
 
     #[test]

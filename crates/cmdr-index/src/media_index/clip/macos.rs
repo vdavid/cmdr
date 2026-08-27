@@ -2,21 +2,25 @@
 //!
 //! Mirrors the Vision backend's threading discipline (`backend/vision.rs`): all Core ML
 //! `MLModel` objects are `!Send`, and the synchronous ANE predict is an XPC round-trip
-//! that can overrun a small stack, so ONE dedicated 8 MB-stack thread owns both loaded
-//! towers and SERIALIZES every predict (Apple's recommendation for pooled inference).
+//! that can overrun a small stack, so ONE dedicated 8 MB-stack thread owns every loaded
+//! tower and SERIALIZES every predict (Apple's recommendation for pooled inference).
 //! `encode_text` (query time) and `encode_image` (enrichment, called from the Vision
 //! worker) both send a job to this thread and block for the reply, so no `!Send` object
 //! ever crosses a thread boundary — only the input ids / pixel `Vec` in and the embedding
 //! `Vec<f32>` out.
 //!
+//! Each tower loads on the FIRST job that needs it and is then held for the process, so an
+//! enrichment pass never materializes the text tower's weights and a search-only session
+//! never materializes the image tower's. The laziness and the per-tower source reclaim live
+//! in `towers.rs`; this file is the Core ML side of that seam ([`CoreMl`]).
+//!
 //! The `.mlpackage` towers are compiled to `.mlmodelc` on-device at first load (via
 //! `compileModelAtURL:error:`) and the compiled bundle is cached beside the model so later
-//! launches skip the 1–2 s compile. After a verified compile (both towers load AND encode a
-//! sane embedding) the ~550 MB combined `.mlpackage` sources are deleted (plan M5a — the
-//! compiled model is all the worker needs); if a compiled model later fails to load (an OS
-//! upgrade can invalidate it) with no source to recompile from, [`load_tower`] drops the
-//! stale `.mlmodelc` so the feature reads as not-installed and the standard download flow
-//! refetches the pinned zip.
+//! launches skip the 1–2 s compile. After a verified compile the tower's `.mlpackage`
+//! source is deleted (plan M5a — the compiled model is all the worker needs); if a compiled
+//! model later fails to load (an OS upgrade can invalidate it) with no source to recompile
+//! from, [`load_tower`] drops the stale `.mlmodelc` so the feature reads as not-installed
+//! and the standard download flow refetches the pinned zip.
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
@@ -32,17 +36,9 @@ use objc2_core_ml::{
 use objc2_foundation::{NSArray, NSDictionary, NSNumber, NSString, NSURL};
 
 use super::ClipError;
-use super::install::{
-    CLIP_TOWERS, ClipTowerSpec, clip_model_dir, compiled_path, drop_compiled, package_path, reclaim_source_package,
-};
+use super::install::{ClipTower, ClipTowerSpec, clip_model_dir, compiled_path, drop_compiled, package_path};
 use super::tokenizer::CONTEXT_LENGTH;
-
-/// The CLIP embedding dimensionality (OpenAI CLIP ViT-B/32). Both towers output this.
-const EMBED_DIM: usize = 512;
-/// The image tower input side (224×224 RGB, CHW).
-const IMAGE_SIDE: usize = 224;
-/// The image tower input element count (`1 × 3 × 224 × 224`).
-pub const IMAGE_PIXELS: usize = 3 * IMAGE_SIDE * IMAGE_SIDE;
+use super::towers::{ClipInput, EMBED_DIM, IMAGE_SIDE, TowerEngine, Towers};
 
 /// A job for the CLIP worker thread. Each carries a reply channel.
 enum ClipJob {
@@ -56,14 +52,15 @@ enum ClipJob {
     },
 }
 
-/// A handle to the CLIP worker thread. Cloneable senders; one thread + two loaded towers.
+/// A handle to the CLIP worker thread. Cloneable senders; one thread owning every tower it
+/// has been asked to load.
 pub struct ClipWorker {
     sender: mpsc::Sender<ClipJob>,
 }
 
 impl ClipWorker {
-    /// Spawn the worker thread, lazily loading both towers from `model_dir` on first use.
-    /// The thread lives for the process (the global [`worker`]).
+    /// Spawn the worker thread. It loads nothing yet: each tower comes off disk on the
+    /// first job that needs it. The thread lives for the process (the global [`worker`]).
     fn spawn(model_dir: PathBuf) -> ClipWorker {
         let (sender, receiver) = mpsc::channel::<ClipJob>();
         thread::Builder::new()
@@ -83,7 +80,7 @@ impl ClipWorker {
         rx.recv().map_err(|_| ClipError::NotAvailable)?
     }
 
-    /// Encode a CHW `[0,1]` pixel buffer (length [`IMAGE_PIXELS`]) to an image embedding.
+    /// Encode a CHW `[0,1]` pixel buffer (length [`IMAGE_PIXELS`](super::towers::IMAGE_PIXELS)) to an image embedding.
     pub fn encode_image(&self, pixels: Vec<f32>) -> Result<Vec<f32>, ClipError> {
         let (reply, rx) = mpsc::channel();
         self.sender
@@ -93,59 +90,46 @@ impl ClipWorker {
     }
 }
 
-/// The worker thread: load both towers once (lazily), then serve predict jobs. If a tower
-/// fails to load, every job returns the load error (the feature stays gated off).
+/// The worker thread: serve predict jobs, loading each tower on the first job that needs it
+/// (`towers.rs`). A tower that fails to load returns its load error to every job for THAT
+/// tower and leaves the other one working.
 fn worker_loop(model_dir: &Path, receiver: &mpsc::Receiver<ClipJob>) {
-    let models = load_towers(model_dir);
-    // M5a: once both towers load AND a zero-input encode is sane (512-d, finite — not the
-    // NaN a bad palettization would emit), the ~550 MB combined `.mlpackage` sources are dead
-    // weight (the compiled `.mlmodelc` is all the worker needs), so reclaim them. A failed
-    // sanity check keeps the sources so a recompile stays possible.
-    if let Ok(m) = &models
-        && verify_sane(m)
-    {
-        for tower in CLIP_TOWERS {
-            match reclaim_source_package(model_dir, tower) {
-                Ok(true) => {
-                    log::info!(target: "media_index", "reclaimed CLIP source package '{}' after verified compile", tower.artifact)
-                }
-                Ok(false) => {}
-                Err(e) => log::warn!(target: "media_index", "reclaim of CLIP source '{}' failed: {e}", tower.artifact),
-            }
-        }
-    }
+    let mut towers = Towers::new(CoreMl, model_dir.to_path_buf());
     while let Ok(job) = receiver.recv() {
         match job {
             ClipJob::EncodeText { ids, reply } => {
-                let out = match &models {
-                    Ok(m) => m.encode_text(&ids),
-                    Err(e) => Err(e.clone()),
-                };
-                let _ = reply.send(out);
+                let _ = reply.send(towers.encode(ClipInput::Ids(&ids)));
             }
             ClipJob::EncodeImage { pixels, reply } => {
-                let out = match &models {
-                    Ok(m) => m.encode_image(&pixels),
-                    Err(e) => Err(e.clone()),
-                };
-                let _ = reply.send(out);
+                let _ = reply.send(towers.encode(ClipInput::Pixels(&pixels)));
             }
         }
     }
 }
 
-/// Both loaded towers, confined to the worker thread (`MLModel` is `!Send`).
-struct ClipModels {
-    image: Retained<MLModel>,
-    text: Retained<MLModel>,
-}
+/// The production [`TowerEngine`]: real Core ML towers, confined to the worker thread
+/// (`MLModel` is `!Send`).
+struct CoreMl;
 
-/// Load both towers from the install dir, each with the M5a recovery path.
-fn load_towers(model_dir: &Path) -> Result<ClipModels, ClipError> {
-    Ok(ClipModels {
-        image: load_tower(model_dir, &CLIP_TOWERS[0])?,
-        text: load_tower(model_dir, &CLIP_TOWERS[1])?,
-    })
+impl TowerEngine for CoreMl {
+    type Model = Retained<MLModel>;
+
+    fn load(&self, model_dir: &Path, which: ClipTower) -> Result<Retained<MLModel>, ClipError> {
+        load_tower(model_dir, which.spec())
+    }
+
+    fn encode(&self, model: &Retained<MLModel>, input: ClipInput<'_>) -> Result<Vec<f32>, ClipError> {
+        autoreleasepool(|_| match input {
+            ClipInput::Ids(ids) => {
+                let arr = int32_multiarray(&[1, CONTEXT_LENGTH as isize], ids)?;
+                predict(model, "input_ids", &arr)
+            }
+            ClipInput::Pixels(pixels) => {
+                let arr = float32_multiarray(&[1, 3, IMAGE_SIDE as isize, IMAGE_SIDE as isize], pixels)?;
+                predict(model, "image", &arr)
+            }
+        })
+    }
 }
 
 /// Load one tower, recovering across the M5a package-reclaim (plan M5a):
@@ -223,36 +207,6 @@ fn compile_and_cache(pkg_path: &Path, cache: &Path) -> Result<Retained<NSURL>, C
         Ok(file_url(cache))
     } else {
         Ok(temp)
-    }
-}
-
-/// Whether both towers produce a sane embedding from a zero input — the M5a delete-guard
-/// (512-d and all-finite, so a NaN-emitting model keeps its source rather than reclaiming
-/// it). Runs one throwaway encode per tower on the worker thread at first load.
-fn verify_sane(models: &ClipModels) -> bool {
-    let image_ok = is_sane_embedding(&models.encode_image(&vec![0.0f32; IMAGE_PIXELS]));
-    let text_ok = is_sane_embedding(&models.encode_text(&vec![0i32; CONTEXT_LENGTH]));
-    image_ok && text_ok
-}
-
-/// A produced embedding is sane when it's the expected width and holds no NaN/inf.
-fn is_sane_embedding(result: &Result<Vec<f32>, ClipError>) -> bool {
-    matches!(result, Ok(v) if v.len() == EMBED_DIM && v.iter().all(|x| x.is_finite()))
-}
-
-impl ClipModels {
-    fn encode_text(&self, ids: &[i32]) -> Result<Vec<f32>, ClipError> {
-        autoreleasepool(|_| {
-            let arr = int32_multiarray(&[1, CONTEXT_LENGTH as isize], ids)?;
-            predict(&self.text, "input_ids", &arr)
-        })
-    }
-
-    fn encode_image(&self, pixels: &[f32]) -> Result<Vec<f32>, ClipError> {
-        autoreleasepool(|_| {
-            let arr = float32_multiarray(&[1, 3, IMAGE_SIDE as isize, IMAGE_SIDE as isize], pixels)?;
-            predict(&self.image, "image", &arr)
-        })
     }
 }
 
@@ -432,6 +386,7 @@ mod residency_test {
     use cmdr_fs::process_memory::query_vm_regions;
 
     use super::*;
+    use crate::media_index::clip::towers::IMAGE_PIXELS;
 
     /// The `MALLOC_LARGE` user tag from `<mach/vm_statistics.h>`: macOS routes
     /// every allocation past its 127 KB large-zone threshold to a VM region of
@@ -502,24 +457,14 @@ mod residency_test {
         map.tags.iter().find(|t| t.tag == TAG_MALLOC_LARGE)
     }
 
-    /// One zero-input encode through a loaded image tower, which is what makes Core
-    /// ML materialize its weights.
-    fn predict_image(model: &MLModel) -> Result<Vec<f32>, ClipError> {
-        autoreleasepool(|_| {
-            let arr = float32_multiarray(
-                &[1, 3, IMAGE_SIDE as isize, IMAGE_SIDE as isize],
-                &vec![0.0f32; IMAGE_PIXELS],
-            )?;
-            predict(model, "image", &arr)
-        })
-    }
-
-    /// The same for a text tower.
-    fn predict_text(model: &MLModel) -> Result<Vec<f32>, ClipError> {
-        autoreleasepool(|_| {
-            let arr = int32_multiarray(&[1, CONTEXT_LENGTH as isize], &vec![0i32; CONTEXT_LENGTH])?;
-            predict(model, "input_ids", &arr)
-        })
+    /// One zero-input encode through a loaded tower, which is what makes Core ML
+    /// materialize its weights. Runs the production encode path ([`CoreMl`]).
+    fn predict_zeros(model: &Retained<MLModel>, which: ClipTower) -> Vec<f32> {
+        let out = match which {
+            ClipTower::Image => CoreMl.encode(model, ClipInput::Pixels(&vec![0.0f32; IMAGE_PIXELS])),
+            ClipTower::Text => CoreMl.encode(model, ClipInput::Ids(&vec![0i32; CONTEXT_LENGTH])),
+        };
+        out.expect("a loaded tower encodes a zero input")
     }
 
     /// Holding both CLIP towers costs a few hundred MB of `MALLOC_LARGE`, in
@@ -549,9 +494,16 @@ mod residency_test {
         };
 
         // Compile first if the `.mlmodelc` cache is cold, so the measurement below
-        // sees residency rather than an on-device compile running inside it.
-        if !CLIP_TOWERS.iter().all(|t| compiled_path(&model_dir, t).is_dir()) {
-            drop(load_towers(&model_dir).expect("the towers should load"));
+        // sees residency rather than an on-device compile running inside it. ⚠️ An
+        // in-process compile leaves several hundred MB resident that dropping the
+        // model doesn't return, so a cold-cache run can only report; the assertions
+        // need a second run against the now-warm cache.
+        let mut compiled_in_process = false;
+        for which in [ClipTower::Image, ClipTower::Text] {
+            if !compiled_path(&model_dir, which.spec()).is_dir() {
+                drop(load_tower(&model_dir, which.spec()).expect("the tower should load"));
+                compiled_in_process = true;
+            }
         }
 
         let before = query_vm_regions(0).expect("the VM map is walkable in-process");
@@ -564,13 +516,13 @@ mod residency_test {
         // measures the compile, not the residency. Each tower is held until after
         // the snapshot below.
         let image = want_image.then(|| {
-            let model = load_tower_with(&model_dir, &CLIP_TOWERS[0], units);
-            predict_image(&model).expect("image encode");
+            let model = load_tower_with(&model_dir, ClipTower::Image.spec(), units);
+            predict_zeros(&model, ClipTower::Image);
             model
         });
         let text = want_text.then(|| {
-            let model = load_tower_with(&model_dir, &CLIP_TOWERS[1], units);
-            predict_text(&model).expect("text encode");
+            let model = load_tower_with(&model_dir, ClipTower::Text.spec(), units);
+            predict_zeros(&model, ClipTower::Text);
             model
         });
 
@@ -594,6 +546,13 @@ mod residency_test {
         // than ~410), and a single-tower run is an attribution measurement. Those
         // report their numbers and assert nothing.
         if units != MLComputeUnits::All || !want_image || !want_text {
+            drop((image, text));
+            return;
+        }
+        if compiled_in_process {
+            eprintln!(
+                "the `.mlmodelc` cache was cold, so an on-device compile inflated the baseline — re-run for the assertions"
+            );
             drop((image, text));
             return;
         }
@@ -622,5 +581,74 @@ mod residency_test {
         }
 
         drop((image, text));
+    }
+
+    /// An enrichment-only session holds the image tower and NOTHING of the text tower,
+    /// measured through the production path ([`Towers`] over [`CoreMl`], the same object
+    /// the `clip-worker` thread drives).
+    ///
+    /// The assertion is the token embedding: `101,187,584` bytes is the text tower's
+    /// `49,408 × 512` fp32 lookup table, nothing else in the process is that size, and
+    /// `idle-malloc-large-clip-towers-2026-08-21.md` § "One command settles it" reads a
+    /// live app the same way. Its absence is proof the text tower never loaded, not an
+    /// inference from a total.
+    ///
+    /// ⚠️ Like production, this reclaims the image tower's `.mlpackage` source once it
+    /// verifies, so a model dir pointed at here comes back in the post-reclaim state.
+    ///
+    /// `#[ignore]`d and env-gated: it needs the real ~267 MB model on disk.
+    #[test]
+    #[ignore = "needs the real CLIP model on disk; set CMDR_CLIP_MODEL_DIR"]
+    #[allow(
+        clippy::print_stderr,
+        reason = "an ignored measurement harness prints its numbers to stderr for `--no-capture`; it never runs in the app or CI"
+    )]
+    fn an_enrichment_only_session_never_materializes_the_text_towers_weights() {
+        let Some(model_dir) = model_dir_or_skip() else {
+            eprintln!("CMDR_CLIP_MODEL_DIR unset or not a directory — nothing measured");
+            return;
+        };
+        if !compiled_path(&model_dir, ClipTower::Image.spec()).is_dir() {
+            eprintln!("the image tower's `.mlmodelc` cache is cold — run the both-towers measurement first");
+            return;
+        }
+
+        let before = query_vm_regions(0).expect("the VM map is walkable in-process");
+        let before_large = malloc_large(&before).map_or(0, |t| t.dirty_bytes);
+
+        let mut towers = Towers::new(CoreMl, model_dir);
+        let embedding = towers
+            .encode(ClipInput::Pixels(&vec![0.0f32; IMAGE_PIXELS]))
+            .expect("the image tower encodes");
+        assert_eq!(embedding.len(), EMBED_DIM);
+
+        let after = query_vm_regions(24).expect("the VM map is walkable in-process");
+        let large = malloc_large(&after).expect("the image tower puts weights in MALLOC_LARGE");
+        let growth = large.dirty_bytes.saturating_sub(before_large);
+        eprintln!(
+            "image-only MALLOC_LARGE dirty {before_large} -> {} (+{growth})",
+            large.dirty_bytes
+        );
+        for group in &large.sizes {
+            eprintln!("  {:>12} bytes x {:>4}", group.region_bytes, group.count);
+        }
+
+        assert!(
+            !large.sizes.iter().any(|s| s.region_bytes == TOKEN_EMBEDDING_BYTES),
+            "a {TOKEN_EMBEDDING_BYTES}-byte region means the text tower loaded: {:?}",
+            large.sizes.iter().map(|s| s.region_bytes).collect::<Vec<_>>()
+        );
+        assert!(
+            large.sizes.iter().any(|s| s.region_bytes == IMAGE_MLP_BYTES),
+            "the image tower's palettized MLP matrices should be resident: {:?}",
+            large.sizes.iter().map(|s| s.region_bytes).collect::<Vec<_>>()
+        );
+        // Both towers cost ~290 MB on the reference machine and the image tower ~56 MB.
+        // The ceiling sits well above the image tower and well below the pair, so it
+        // catches "the text tower came back" without pinning a Core ML build's number.
+        assert!(
+            growth < 150 * 1024 * 1024,
+            "an image-only session should cost tens of MB, not hundreds: saw {growth}"
+        );
     }
 }

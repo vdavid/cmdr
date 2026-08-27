@@ -17,6 +17,7 @@
 //! ## Module map
 //!
 //! - `tokenizer` — the CLIP byte-pair tokenizer (ctx 77), query text → int32 token ids.
+//! - `towers` — which tower a job needs, and the lazy per-tower load + source reclaim.
 //! - `backend` — the encoder seams: `backend::ClipTextEncoder` (query time) and the
 //!   image encoding folded into the Vision backend's combined `analyze_media`, each with a
 //!   deterministic fake so the pipeline is testable with no model/FFI.
@@ -34,6 +35,10 @@ pub mod install;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos;
 pub(crate) mod tokenizer;
+// The lazy per-tower load + reclaim rules. macOS is the only platform that loads a tower,
+// but the rules are platform-neutral, so their tests run everywhere.
+#[cfg(any(test, target_os = "macos"))]
+pub(crate) mod towers;
 
 use std::path::Path;
 
