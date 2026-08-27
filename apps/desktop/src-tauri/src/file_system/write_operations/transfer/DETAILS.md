@@ -248,6 +248,35 @@ The same park-in-place behavior is also driven by a SECOND trigger: foreground d
 
 **The arm** (`CheckpointStream::auto_yield_to_foreground`, after the pause handling in `checkpoint`). It fires when ALL hold: the source opts in (`Volume::supports_foreground_yield()`, MTP and SMB — this is the enable-switch, NOT a release/reopen proxy), not cancelled, `bytes_yielded < total_size`, the min-progress floor is satisfied, and `Volume::foreground_pending().await` is true (an atomic load behind the device gate). Then it parks (debounces, below) and returns; the next `next_chunk` reads the next window from the current offset. The op stays **`Running`** the whole time — this is a transient DEVICE yield, not a user pause, so it must NOT touch `OperationIntent` or the manager's `LifecycleStatus` (the queue window's Pause/Resume button keys on those; flipping to Paused would misreport user intent). Byte exactness and the cancel-wins contract are the same park-in-place contract as pause; the arm only adds WHEN to park.
 
+## Skipped work moves the bars, and stays out of the rate
+
+A skip is progress: the child is decided, it will never be copied, and both bars have to reach their totals. So every
+skip credits the same two counters a completed leaf does, and every skip also goes through
+`WriteOperationState::note_skipped(files, bytes)`.
+
+The two halves that keep it honest:
+
+- **The event stays GROSS.** `state.rs::enrich_progress` samples the ETA estimator with `bytes_done` / `bytes_total` /
+  `files_done` / `files_total` NET of `skipped_totals()`, while the emitted `WriteProgressEvent` keeps the gross
+  numbers the two bars render. A skipped 4 GB file therefore advances the bar without reading as 4 GB/s of throughput.
+  Remaining work is identical either way (`done` and `total` lose the same term), so this changes the RATE only, never
+  the ETA's numerator. ❌ Don't reintroduce a "reseed the estimator baseline" call for this: the netting covers the
+  bulk-skip preludes and the per-item skips with one rule, and a baseline reset can't express a skip that lands
+  mid-window.
+- **Every skip site calls it.** The bulk-skip preludes (`transfer_driver/sync_driver.rs`, `async_driver.rs`,
+  `volume/copy.rs`'s concurrent one), the per-iteration skips (`TransferOutcome::Skipped`, `ConflictDecision::Skip`),
+  and the deep-merge decline (`volume/merge.rs`'s `MergeChildDecision::Skip`, via `MergeCtx.on_file_skipped`). Miss one
+  and it spikes the reported speed instead.
+
+**`SerialLeafProgress::on_leaf_skipped` is THROTTLED, where `on_leaf_complete` is not.** The completion milestone
+bypasses the throttle on purpose, so a big leaf's `N/N` always lands. A skip can't have that: a merge declines tens of
+thousands of children back to back, and an unthrottled emit apiece is an IPC flood. The end-of-operation emit carries
+the final numbers, so nothing is lost by letting the throttle eat the middle.
+
+Why the deep-merge site is the one to guard hardest: a merge whose children all clash moves no bytes at all, so if its
+skips don't credit the bars the dialog sits at `0 of N` for the entire run and reads as frozen. A user cancelled a
+healthy transfer over exactly that (`ERR-AYVM4`).
+
 ## The stall signal
 
 `TransferActivity` (`types.rs`) rides on every `write-progress` event: `in_flight`, `still_for_seconds`, and
@@ -279,7 +308,7 @@ watchdog re-sends the last recorded event each tick with a fresh activity snapsh
 unchanged (nothing moved); only the activity is new. It goes through `emit_progress_via_sink`, so the ETA estimator
 also sees the stillness and decays its own estimate to `None` rather than the FE having to special-case it.
 
-**One byte counter, and it is the one on screen.** `OperationProbe::bytes_done` reads `state.last_progress_bytes()`: the aggregate total of the newest `write-progress` event the operation published. It keeps NO counter of its own, and ❌ must never be given one again. It had one — an `Arc<AtomicU64>` handed in at registration — which only `volume/copy_concurrent.rs` ever fed. The serial path (fewer than three top-level sources, or any backend reporting `max_concurrent_ops() == 1`, so every MTP transfer) keeps its running totals in `SerialLeafProgress` and left that atomic at zero, so a perfectly healthy copy read as still and the dialog said "the transfer has stopped moving" from the 10 s mark to the end of the transfer, over a bar that was visibly climbing. Reading the published event instead makes "the watchdog measures the same number the user sees" true by construction rather than by review: every emit site already has to route through `state.rs::enrich_progress`, which is what stores it. Pinned by `a_transfer_publishing_progress_across_file_boundaries_is_never_called_still`, which drives three leaf boundaries through a real `SerialLeafProgress`.
+**Movement is EITHER axis, and both counters are the ones on screen.** `watchdog_step` resets the stillness clock when `bytes_done` OR `files_done` changes. A merge declining thousands of children advances the file count with the byte total flat, and that is a transfer doing its job: judging on bytes alone called one healthy run stuck for a minute and the user cancelled it (`ERR-AYVM4`). `OperationProbe::bytes_done` / `files_done` read `state.last_progress_bytes()` / `last_progress_files()`: the aggregate totals of the newest `write-progress` event the operation published. The probe keeps NO counter of its own, and ❌ must never be given one again. It had one — an `Arc<AtomicU64>` handed in at registration — which only `volume/copy_concurrent.rs` ever fed. The serial path (fewer than three top-level sources, or any backend reporting `max_concurrent_ops() == 1`, so every MTP transfer) keeps its running totals in `SerialLeafProgress` and left that atomic at zero, so a perfectly healthy copy read as still and the dialog said "the transfer has stopped moving" from the 10 s mark to the end of the transfer, over a bar that was visibly climbing. Reading the published event instead makes "the watchdog measures the same number the user sees" true by construction rather than by review: every emit site already has to route through `state.rs::enrich_progress`, which is what stores it. Pinned by `a_transfer_publishing_progress_across_file_boundaries_is_never_called_still`, which drives three leaf boundaries through a real `SerialLeafProgress`.
 
 Two consequences worth knowing. Movement resolution is the progress throttle (`progress_interval_ms`, 200 ms by default), two orders of magnitude finer than the 10 s notice and the 20 s log line. And the reading is `0` before the first progress event, which no registered operation can observe: `copy_volumes_with_progress` emits its opening `Copying` tick before it registers the probe.
 
@@ -298,6 +327,12 @@ and says nothing. That is what a cross-volume MOVE did until it was registered, 
 holding the user's only copy of the data is worse than a noisy one. The move also sets `TaskPhase::Finalizing` on its
 handle directly once the copy phase ends, because its safe-replace finalize and source sweep run after the task-local's
 scope closes and a dump taken during them must not still claim it is streaming.
+
+**`TaskPhase::Walking`** (label `"walking"`) covers the same gap for a DIRECTORY source: `merge_level` sets it at every
+level while it lists the source and resolves what is already at the destination, before any of that level's files reach
+the window. Without it a folder copy's row read `spawned` for the whole walk, so a dump of a healthy transfer looked
+like a task that had never started. It is a WORKING phase, so `wait_reason()` is `None` (the level waits on source and
+destination in turn, and naming either would be a guess) and `is_abortable_on_stall()` is false.
 
 NOT registered, on purpose: the same-volume move (`volume/move_same.rs` + `rename_merge.rs`) is a rename, so it streams
 no bytes and has no wedge of this shape; and the local-FS copy, delete, and trash keep no in-flight table at all, which

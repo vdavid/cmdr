@@ -53,52 +53,51 @@ fn first_sample_seeds_and_returns_zero() {
 }
 
 #[test]
-fn bulk_skip_baseline_jump_does_not_pollute_rate() {
-    // Models the volume-copy Skip-All path. Caller emits `(0, 0)` at the
-    // Copying-phase boundary (the estimator reseeds and returns ZERO);
-    // the driver's bulk-skip prelude then jumps the counters to
-    // `(bulk_skip_files, bulk_skip_bytes)` instantly. Without an explicit
-    // baseline reseed, the bulk-skip delta over ε time becomes the
-    // first-sample rate (~22 GB/s, ~250 files/s in this fixture), and
-    // EWMA takes many seconds to decay it. The fix: call
-    // `reseed_baseline` before the bulk-skip emit so the jump becomes
-    // the new starting point, not throughput. The next real per-file
-    // emit's delta is then just the actually-copied portion.
+fn skipped_work_kept_out_of_the_sample_does_not_pollute_rate() {
+    // Models the volume-copy Skip-All path. The bulk-skip prelude credits
+    // 22 GB / 250 files to the progress bars instantly, and the estimator must
+    // not read that as throughput: over the ~1 ms it takes, the delta is
+    // ~22 GB/s and ~250 files/s, and the EWMA needs many seconds to decay it.
+    //
+    // `WriteOperationState::enrich_progress` is what keeps it out: it samples
+    // the counters NET of `note_skipped`, so the estimator below only ever sees
+    // the 15 MB / 1 file that a real copy moved. This pins the arithmetic that
+    // makes that subtraction worth doing.
     let start = Instant::now();
     let mut est = EtaEstimator::new();
 
-    // t=0: initial Copying emit (phase transition Scanning -> Copying).
+    // t=0: initial Copying emit (phase transition Scanning -> Copying). Gross
+    // counters are (0, 0) here too, so net and gross agree.
     let initial = est.update_at(at(start, 0), WriteOperationPhase::Copying, 0, 35_000_000_000, 0, 1051);
     assert_eq!(initial, EtaStats::ZERO);
 
-    // t=1 ms: driver bulk-skip prelude credits 22 GB / 250 files
-    // instantly. Caller calls `reseed_baseline` immediately before the
-    // emit so the estimator absorbs the jump as its new starting point.
-    est.reseed_baseline(at(start, 1), Duration::ZERO, 22_000_000_000, 250);
+    // t=1 ms: the bulk-skip prelude jumps the BARS to 22 GB / 250 files. Net of
+    // the skip that is still (0, 0), so there is nothing here to sample and the
+    // estimator is not called at all.
 
-    // t=1001 ms: first real per-file emit. Actually-copied delta vs.
-    // the new baseline = 15 MB / 1 file over 1 s.
+    // t=1001 ms: first real per-file emit. Gross is 22,015 MB / 251 files;
+    // net of the 22 GB / 250 files skipped, 15 MB / 1 file over 1 s. Totals are
+    // netted the same way, which leaves the remaining work unchanged.
     let stats = est.update_at(
         at(start, 1001),
         WriteOperationPhase::Copying,
-        22_015_000_000,
-        35_000_000_000,
-        251,
-        1051,
+        15_000_000,
+        13_000_000_000,
+        1,
+        801,
     );
 
-    // Pre-fix: bytes_per_second is in the GB/s range and files_per_second
-    // is in the hundreds (a 250-file / 22-GB jump over ε time pinned the
-    // EWMA's first sample, then partially decayed). Assert single-digit
+    // Fed the gross counters instead, `bytes_per_second` lands in the GB/s
+    // range and `files_per_second` in the hundreds. Assert single-digit
     // multiples of the true rate, not orders of magnitude off.
     assert!(
         stats.bytes_per_second < 50_000_000,
-        "bytes_per_second = {} (expected ~15 MB/s, bulk-skip should not feed the rate)",
+        "bytes_per_second = {} (expected ~15 MB/s, a skip should not feed the rate)",
         stats.bytes_per_second,
     );
     assert!(
         stats.files_per_second < 5.0,
-        "files_per_second = {} (expected ~1 file/s, bulk-skip should not feed the rate)",
+        "files_per_second = {} (expected ~1 file/s, a skip should not feed the rate)",
         stats.files_per_second,
     );
 }

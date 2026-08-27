@@ -5,7 +5,7 @@
 use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
@@ -74,6 +74,21 @@ pub struct WriteOperationState {
     /// at every `write-progress` emit site, so every emitter (local copy/delete,
     /// volume copy/move, MTP, SMB) reports rates and ETA uniformly.
     pub estimator: std::sync::Mutex<EtaEstimator>,
+    /// Running totals of what this operation SKIPPED: counted by the progress
+    /// bars, subtracted from what the rate estimator sees.
+    ///
+    /// A skipped file is done — a person watching `3 of 900` needs it to reach
+    /// `900`, and a merge that skips every clashing child would otherwise leave
+    /// both bars frozen at zero for the whole run (a real transfer of 119,204
+    /// files did exactly that: `ERR-AYVM4`, 2026-08-27). But no bytes moved for
+    /// it, so charging it to throughput reads as an instant burst and blows the
+    /// speed and ETA apart. Hence: gross on the event, net in the sample.
+    ///
+    /// Every skip goes through [`note_skipped`](Self::note_skipped) — the bulk
+    /// prelude, a per-source outcome, a conflict decision, and a deep merge
+    /// child alike — so `enrich_progress` can do the subtraction in ONE place.
+    skipped_files: AtomicUsize,
+    skipped_bytes: AtomicU64,
     /// How long this operation has spent waiting on a PERSON: the pause the user
     /// pressed, and the conflict prompts they haven't answered yet. The
     /// [`pause_gate`](Self::pause_gate) and the
@@ -193,6 +208,8 @@ impl WriteOperationState {
             conflict_slot: ConflictSlot::new(Arc::clone(&human_wait)),
             conflict_dispatch_lock: tokio::sync::Mutex::new(()),
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
+            skipped_files: AtomicUsize::new(0),
+            skipped_bytes: AtomicU64::new(0),
             backend_cancel: CancellationToken::new(),
             backend_abort: CancellationToken::new(),
             pause_gate: PauseGate::new(Arc::clone(&human_wait)),
@@ -227,17 +244,24 @@ impl WriteOperationState {
         self
     }
 
-    /// Re-anchor the rate estimator on counters that jumped without any bytes
-    /// moving (the bulk-skip prelude credits every pre-known conflict at once).
-    /// The one caller-facing wrapper over `EtaEstimator::reseed_baseline`, so
-    /// no emit site has to know the estimator lives behind a lock or that the
-    /// human-wait clock feeds it. A poisoned lock skips the re-anchor: the rate
-    /// display is advisory, and a panic here would take the transfer with it.
-    pub fn reseed_estimator_baseline(&self, bytes_done: u64, files_done: usize) {
-        let now = Instant::now();
-        if let Ok(mut est) = self.estimator.lock() {
-            est.reseed_baseline(now, self.human_wait.total_at(now), bytes_done, files_done);
-        }
+    /// Records that `files` files worth `bytes` were credited to the progress
+    /// counters without being transferred.
+    ///
+    /// Call it for EVERY kind of skip, right where the counters are credited.
+    /// `enrich_progress` subtracts the running totals before sampling, so the
+    /// bars move and the rate doesn't notice. See
+    /// [`skipped_files`](Self::skipped_files).
+    pub fn note_skipped(&self, files: usize, bytes: u64) {
+        self.skipped_files.fetch_add(files, Ordering::Relaxed);
+        self.skipped_bytes.fetch_add(bytes, Ordering::Relaxed);
+    }
+
+    /// What this operation has skipped so far: `(files, bytes)`.
+    pub fn skipped_totals(&self) -> (usize, u64) {
+        (
+            self.skipped_files.load(Ordering::Relaxed),
+            self.skipped_bytes.load(Ordering::Relaxed),
+        )
     }
 
     /// Populate `bytes_per_second`, `files_per_second`, `eta_seconds`, and
@@ -256,6 +280,11 @@ impl WriteOperationState {
         }
 
         let now = Instant::now();
+        // Net of everything skipped: the event keeps the gross counters the two
+        // bars render, the estimator only ever sees work that moved bytes. The
+        // remaining work is identical either way (both sides lose the same
+        // term), so this changes the RATE, never the ETA's numerator.
+        let (skipped_files, skipped_bytes) = self.skipped_totals();
         let stats = match self.estimator.lock() {
             Ok(mut est) => est.update(EtaSample {
                 now,
@@ -263,10 +292,10 @@ impl WriteOperationState {
                 // so the rate window doesn't get to count them.
                 human_wait_total: self.human_wait.total_at(now),
                 phase: event.phase,
-                bytes_done: event.bytes_done,
-                bytes_total: event.bytes_total,
-                files_done: event.files_done,
-                files_total: event.files_total,
+                bytes_done: event.bytes_done.saturating_sub(skipped_bytes),
+                bytes_total: event.bytes_total.saturating_sub(skipped_bytes),
+                files_done: event.files_done.saturating_sub(skipped_files),
+                files_total: event.files_total.saturating_sub(skipped_files),
             }),
             // Poisoned mutex (another thread panicked). Skip the enrichment
             // rather than propagating the panic; progress events are advisory.
@@ -353,6 +382,19 @@ impl WriteOperationState {
     /// to feed a second counter.
     pub(super) fn last_progress_bytes(&self) -> Option<u64> {
         self.last_progress.lock_ignore_poison().as_ref().map(|e| e.bytes_done)
+    }
+
+    /// The file count behind that same last event: the OTHER axis a transfer
+    /// can advance along.
+    ///
+    /// A merge walking into a folder the user already has can decline thousands
+    /// of children in a row. Every one of them is progress a person can see on
+    /// the file bar, and none of them moves a byte, so a watchdog reading bytes
+    /// alone calls a working transfer stalled. Read together with
+    /// [`last_progress_bytes`](Self::last_progress_bytes), never instead of it:
+    /// a big file mid-stream advances bytes with the file count still.
+    pub(super) fn last_progress_files(&self) -> Option<usize> {
+        self.last_progress.lock_ignore_poison().as_ref().map(|e| e.files_done)
     }
 
     /// Tell every window that this operation has just parked on a person, or

@@ -85,12 +85,11 @@ where
             bulk_skip_files,
             bulk_skip_bytes
         );
-        // Re-anchor the rate estimator BEFORE emitting. The bulk-skip jump
-        // is past work credited instantly, not throughput; without this
-        // reseed the first real per-file emit's delta is computed against
-        // `(0, 0)` and pins `bytes_per_second` at GB/s level. See
-        // `eta::EtaEstimator::reseed_baseline` for the full rationale.
-        state.reseed_estimator_baseline(bytes_done, files_done);
+        // Tell the estimator BEFORE emitting. The bulk-skip jump is past work
+        // credited instantly, not throughput; unrecorded, the first real
+        // per-file emit's delta is computed against `(0, 0)` and pins
+        // `bytes_per_second` at GB/s level. See `state.note_skipped`.
+        state.note_skipped(bulk_skip_files, bulk_skip_bytes);
         emit_progress_and_status(
             events,
             state,
@@ -170,6 +169,7 @@ where
                 bytes_done += bytes_accounted;
                 files_skipped += 1;
                 bytes_skipped += bytes_accounted;
+                state.note_skipped(1, bytes_accounted);
                 // Skip-arm bump emits a throttled progress event so the bar
                 // reflects the user's Skip choice immediately.
                 emit_progress_and_status(

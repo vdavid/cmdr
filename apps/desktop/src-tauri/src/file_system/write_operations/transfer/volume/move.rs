@@ -623,6 +623,10 @@ pub(crate) async fn move_volumes_with_progress(
                         let leaf_progress = Arc::clone(&leaf_progress);
                         move |leaf_bytes: u64| leaf_progress.on_leaf_complete(leaf_bytes)
                     };
+                    let on_file_skipped = {
+                        let leaf_progress = Arc::clone(&leaf_progress);
+                        move |leaf_bytes: u64| leaf_progress.on_leaf_skipped(leaf_bytes)
+                    };
                     // The copy phase's per-file ledger. Cross-volume move's own
                     // rollback reverses renames / cleans staging separately, but
                     // the operation-log capture harvests it below for the per-leaf
@@ -639,6 +643,7 @@ pub(crate) async fn move_volumes_with_progress(
                         state: &state,
                         apply_to_all: &merge_apply_to_all,
                         source_hints: &source_hints,
+                        on_file_skipped: &on_file_skipped,
                         window: file_window,
                         // ❗ Every leaf the window holds opens a row of its OWN
                         // through this, the invariant every `TaskProbe` field is

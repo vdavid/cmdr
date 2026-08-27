@@ -34,7 +34,7 @@ use futures_util::stream::FuturesUnordered;
 
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::WriteOperationError;
-use super::super::transfer_probe::{CURRENT_TASK_PROBE, OperationProbe, TaskProbeHandle};
+use super::super::transfer_probe::{CURRENT_TASK_PROBE, OperationProbe, TaskPhase, TaskProbeHandle, set_task_phase};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::strategy::{CreatedPaths, FileWindow, MergeCtx, note_pending_for_local_dest, staging_for, stream_pipe_file};
 use super::transfer_error::{AtPath, PathedVolumeError};
@@ -374,9 +374,30 @@ async fn merge_level<'a>(
     pool: &mut LeafPool<'a>,
 ) -> Result<(), PathedVolumeError> {
     note_pending_for_local_dest(dest_volume, dest_path);
+    // Say what this task is doing before the first `.await` of the level. A
+    // walk parks on listings, so a stack sample sees nothing and the dump would
+    // otherwise still read `spawned` however long the tree takes. Each leaf
+    // sets its own phase once it starts streaming, and the next level sets this
+    // one back.
+    set_task_phase(TaskPhase::Walking);
 
-    // Ensure the destination directory exists, and learn whether THIS level
-    // pre-existed (a merge) or we created it fresh.
+    // The source listing is needed at EVERY level, whatever the destination
+    // turns out to hold, and it lands on a different device than the whole
+    // destination chain below. So the two run concurrently rather than in
+    // sequence: on a cross-share merge each leg is a full network round trip,
+    // and paying them one after the other doubled the walk's cost per
+    // directory (measured ~1.2 s/dir SMB→SMB in a user's bundle, `ERR-AYVM4`,
+    // where the walk WAS the transfer).
+    //
+    // Nothing about ordering changes: every decision — prompt order, the
+    // apply-to-all latch, the order directories are created in — is made in
+    // the `for entry in &entries` loop below, after both legs have landed.
+    let source_listing = source_volume.list_directory(source_path, None);
+
+    // Ensure the destination directory exists, learn whether THIS level
+    // pre-existed (a merge) or we created it fresh, and for a merge build the
+    // name→entry map ONCE. A freshly-created level can't clash, so we never
+    // list it.
     //
     // Every backend EXCEPT MTP surfaces "already exists" as
     // `VolumeError::AlreadyExists` (SMB needs smb2 ≥ 0.8.0 to typed-classify
@@ -386,54 +407,56 @@ async fn merge_level<'a>(
     // target the WRONG dir. So on MTP (and any backend whose `create_directory`
     // can't be trusted to error on collision) we pre-check existence with the
     // one listing the merge level pays anyway, and skip the create when present.
-    let level_pre_existed = if backend_create_directory_detects_collisions(dest_volume) {
-        match dest_volume.create_directory(dest_path).await {
-            Ok(()) => {
-                created.record_dir(dest_path.to_path_buf());
-                false
-            }
-            Err(VolumeError::AlreadyExists(_)) => true,
-            Err(VolumeError::NotSupported) => {
-                // Backend can't create directories at all; assume
-                // `write_from_stream` materializes parents on demand (LocalPosix
-                // does via `create_dir_all` semantics). Treat as fresh.
-                false
-            }
-            Err(e) => return Err(e).at(source_path),
-        }
-    } else {
-        // Untrusted-collision backend (MTP): pre-check existence.
-        if dest_volume.exists(dest_path).await {
-            true
-        } else {
+    let dest_prepare = async {
+        let level_pre_existed = if backend_create_directory_detects_collisions(dest_volume) {
             match dest_volume.create_directory(dest_path).await {
                 Ok(()) => {
                     created.record_dir(dest_path.to_path_buf());
                     false
                 }
-                // A race created it between the check and the create; merge.
                 Err(VolumeError::AlreadyExists(_)) => true,
-                Err(VolumeError::NotSupported) => false,
-                Err(e) => return Err(e).at(source_path),
+                Err(VolumeError::NotSupported) => {
+                    // Backend can't create directories at all; assume
+                    // `write_from_stream` materializes parents on demand (LocalPosix
+                    // does via `create_dir_all` semantics). Treat as fresh.
+                    false
+                }
+                Err(e) => return Err(e),
             }
-        }
+        } else {
+            // Untrusted-collision backend (MTP): pre-check existence.
+            if dest_volume.exists(dest_path).await {
+                true
+            } else {
+                match dest_volume.create_directory(dest_path).await {
+                    Ok(()) => {
+                        created.record_dir(dest_path.to_path_buf());
+                        false
+                    }
+                    // A race created it between the check and the create; merge.
+                    Err(VolumeError::AlreadyExists(_)) => true,
+                    Err(VolumeError::NotSupported) => false,
+                    Err(e) => return Err(e),
+                }
+            }
+        };
+
+        let dest_by_name: HashMap<String, FileEntry> = if level_pre_existed {
+            dest_volume
+                .list_directory(dest_path, None)
+                .await?
+                .into_iter()
+                .map(|e| (e.name.clone(), e))
+                .collect()
+        } else {
+            HashMap::new()
+        };
+        Ok(dest_by_name)
     };
 
-    // Build the dest name→entry map ONCE, only for a pre-existing (merging)
-    // level. A freshly-created level can't clash, so we never list it.
-    let dest_by_name: HashMap<String, FileEntry> = if level_pre_existed {
-        dest_volume
-            .list_directory(dest_path, None)
-            .await
-            .at(source_path)?
-            .into_iter()
-            .map(|e| (e.name.clone(), e))
-            .collect()
-    } else {
-        HashMap::new()
-    };
-
-    let entries = source_volume.list_directory(source_path, None).await.at(source_path)?;
+    let (dest_by_name, entries) = tokio::join!(dest_prepare, source_listing);
+    let dest_by_name = dest_by_name.at(source_path)?;
+    let entries = entries.at(source_path)?;
 
     for entry in &entries {
         if super::super::super::state::is_cancelled(&state.intent) {
@@ -484,7 +507,11 @@ async fn merge_level<'a>(
                     // A DEEP skip: record it so the caller knows this subtree did
                     // not extract in full (the move-out op must keep the source in
                     // the archive; deleting it would drop this un-landed child).
-                    created.record_skip(child_source.clone(), entry.size.unwrap_or(0));
+                    let skipped_bytes = entry.size.unwrap_or(0);
+                    created.record_skip(child_source.clone(), skipped_bytes);
+                    // ...and credit it to the bars. Without this a merge whose
+                    // children all clash reports nothing at all until it ends.
+                    (ctx.on_file_skipped)(skipped_bytes);
                     continue;
                 }
                 MergeChildDecision::Proceed { write_path, replace } => {

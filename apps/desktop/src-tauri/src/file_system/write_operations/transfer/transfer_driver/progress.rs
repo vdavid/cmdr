@@ -152,6 +152,39 @@ impl SerialLeafProgress {
             self.total_bytes,
         );
     }
+
+    /// Per-leaf `on_file_skipped` callback: a child the conflict policy declined.
+    ///
+    /// Credits the same two counters a completed leaf does, because a skipped
+    /// child IS done and both bars have to reach their totals. `note_skipped`
+    /// is what keeps it out of the rate: see
+    /// [`WriteOperationState::note_skipped`].
+    ///
+    /// ❗ Throttled, unlike [`on_leaf_complete`](Self::on_leaf_complete). That
+    /// one bypasses the throttle so a single large leaf's `N/N` always lands;
+    /// skips arrive in the opposite shape — a merge into a folder the user
+    /// already has can decline tens of thousands of children back to back, and
+    /// an unthrottled emit apiece is a flood of IPC nobody reads. The
+    /// operation's completion event carries the final tally regardless.
+    pub(in crate::file_system::write_operations::transfer) fn on_leaf_skipped(&self, leaf_bytes: u64) {
+        let new_total = self.byte_base.fetch_add(leaf_bytes, Ordering::Relaxed) + leaf_bytes;
+        self.leaf_high_water.store(0, Ordering::Relaxed);
+        let new_files = self.files_done.fetch_add(1, Ordering::Relaxed) + 1;
+        self.state.note_skipped(1, leaf_bytes);
+        try_emit_throttled_progress(
+            &*self.events,
+            &self.state,
+            &self.operation_id,
+            self.operation_type,
+            self.file_name.clone(),
+            new_files,
+            self.total_files,
+            new_total,
+            self.total_bytes,
+            &self.last_emit,
+            self.progress_interval,
+        );
+    }
 }
 
 /// Builds a per-file `on_progress` callback for `copy_single_path` for

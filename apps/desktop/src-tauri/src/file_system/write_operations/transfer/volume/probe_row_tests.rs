@@ -220,8 +220,8 @@ fn assert_table_names_every_leaf(dumps: &[String], width: usize) {
         "the folder's own row must carry no leaf's byte count, got:\n{dump}"
     );
     assert!(
-        folder.contains("spawned"),
-        "the folder's own row must stay in a phase the watchdog never acts on, got:\n{dump}"
+        folder.contains("walking"),
+        "the folder's own row names the walk, and stays in a phase the watchdog never acts on, got:\n{dump}"
     );
 }
 

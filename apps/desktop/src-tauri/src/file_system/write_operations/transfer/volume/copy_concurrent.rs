@@ -563,6 +563,20 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 // empty map is correct (and avoids capturing the function's
                 // `source_hints` into the `'static` task).
                 let merge_hints: HashMap<PathBuf, SourceHint> = HashMap::new();
+                // A skipped child reports no chunks, so unlike a copied one its
+                // bytes never reach `bytes_done_a` through the progress
+                // callback: credit both axes here. `note_skipped` is what keeps
+                // them off the rate.
+                let on_file_skipped = {
+                    let bytes_done_a = Arc::clone(&bytes_done_a);
+                    let files_done_a = Arc::clone(&files_done_a);
+                    let state_clone = Arc::clone(&state_clone);
+                    move |leaf_bytes: u64| {
+                        bytes_done_a.fetch_add(leaf_bytes, Ordering::Relaxed);
+                        files_done_a.fetch_add(1, Ordering::Relaxed);
+                        state_clone.note_skipped(1, leaf_bytes);
+                    }
+                };
                 let merge_ctx = super::strategy::MergeCtx {
                     events: &*events_task,
                     operation_id: &merge_op_id,
@@ -570,6 +584,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     state: &state_clone,
                     apply_to_all: &merge_apply_to_all,
                     source_hints: &merge_hints,
+                    on_file_skipped: &on_file_skipped,
                     window: merge_window,
                     op_probe: merge_probe,
                 };

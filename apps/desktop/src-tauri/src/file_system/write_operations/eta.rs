@@ -130,34 +130,6 @@ impl EtaEstimator {
         Self::default()
     }
 
-    /// Re-anchor the estimator's baseline to the given counters without
-    /// computing a rate from the jump. Use this when the caller wants to
-    /// advance the absolute counters by a chunk that is NOT throughput
-    /// (e.g. the bulk-skip prelude credits N files / B bytes instantly to
-    /// reflect "Skip-All for pre-known conflicts" — those files were never
-    /// actually copied, so feeding the delta into the EWMA pins the first
-    /// sample at GB/s and pollutes the rate display for many seconds).
-    ///
-    /// No-op if no phase is active (the next `update` will seed normally).
-    /// Does NOT change the phase; the next `update` keeps the current phase
-    /// unless it actually transitions.
-    pub fn reseed_baseline(&mut self, now: Instant, human_wait_total: Duration, bytes_done: u64, files_done: usize) {
-        if let Some(state) = self.state.as_mut() {
-            state.last_t = now;
-            state.last_human_wait = human_wait_total;
-            state.last_bytes = bytes_done;
-            state.last_files = files_done;
-            // Reset samples to 0 so the next `update` takes the fast-path
-            // first-sample seed (initialize EWMA from the instantaneous rate
-            // rather than smoothing from zero, per the existing first-sample
-            // rationale). The samples gate also keeps `eta_seconds = None`
-            // until two real samples land.
-            state.samples = 0;
-            state.bytes_rate = 0.0;
-            state.files_rate = 0.0;
-        }
-    }
-
     /// Update the estimator with the latest counters and return the current stats.
     pub fn update(&mut self, sample: EtaSample) -> EtaStats {
         let EtaSample {

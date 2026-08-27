@@ -179,6 +179,15 @@ pub(super) enum TaskPhase {
     /// Between attempts at the same file: a transport blip took the last one out
     /// and the backoff is running (`retry.rs`).
     WaitingToRetry = 8,
+    /// Walking a directory source's tree: listing a level and resolving what is
+    /// already there, before any of its files can be handed to the window.
+    ///
+    /// On a cross-share merge this is a full network round trip per level, and
+    /// on a tree of many small folders it is most of the transfer's wall clock.
+    /// Without a phase of its own the walk reported `spawned`, and a dump of a
+    /// perfectly healthy transfer read as a task that had never started
+    /// (`ERR-AYVM4`, 54 s in).
+    Walking = 9,
 }
 
 impl TaskPhase {
@@ -193,6 +202,7 @@ impl TaskPhase {
             Self::Finalizing => "finalizing",
             Self::ResolvingConflict => "resolving-conflict",
             Self::WaitingToRetry => "waiting-to-retry",
+            Self::Walking => "walking",
         }
     }
 
@@ -215,7 +225,11 @@ impl TaskPhase {
             // A backoff is our own doing, not a wait on a device or a person, and
             // it is over in a second or less. The dump names the phase; the UI
             // keeps whatever reason the stall itself produced.
-            | Self::WaitingToRetry => None,
+            | Self::WaitingToRetry
+            // Walking is WORKING — listing levels and resolving what's there.
+            // It waits on the source and the destination in turn, so naming
+            // either one would be a guess.
+            | Self::Walking => None,
         }
     }
 
@@ -241,6 +255,7 @@ impl TaskPhase {
             6 => Self::Finalizing,
             7 => Self::ResolvingConflict,
             8 => Self::WaitingToRetry,
+            9 => Self::Walking,
             _ => Self::Spawned,
         }
     }
@@ -453,6 +468,13 @@ impl OperationProbe {
         self.state.last_progress_bytes().unwrap_or(0)
     }
 
+    /// The file count the UI is showing, from the same event `bytes_done` comes
+    /// from. See [`WriteOperationState::last_progress_files`]; the probe keeps no
+    /// counter of its own here either, for the reason above.
+    fn files_done(&self) -> usize {
+        self.state.last_progress_files().unwrap_or(0)
+    }
+
     pub(super) fn set_driver_phase(&self, phase: DriverPhase, detail: &str) {
         self.driver_phase.store(phase as u8, Ordering::Relaxed);
         detail.clone_into(&mut self.driver_detail.lock_ignore_poison());
@@ -494,8 +516,8 @@ impl OperationProbe {
     }
 
     /// One watchdog tick, split out from the timer loop so it can be tested
-    /// without waiting on wall-clock seconds. `still_for` is how long the byte
-    /// counter has been unchanged.
+    /// without waiting on wall-clock seconds. `still_for` is how long BOTH
+    /// progress counters have been unchanged.
     fn watchdog_step(&self, watchdog: &mut WatchdogState, now: Duration) {
         // A transfer waiting on a person is not stalled, and must not accrue
         // stall time or heartbeat at the UI while the conflict dialog is open.
@@ -509,9 +531,15 @@ impl OperationProbe {
             return;
         }
         self.track_and_abort_wedged_tasks(now);
+        // Movement is EITHER axis. A stream of skipped children advances the
+        // file count with the byte total flat, and it is unambiguously a
+        // transfer doing its job — a user watched one work for a minute and
+        // cancelled it because this said it was stuck (`ERR-AYVM4`).
         let bytes = self.bytes_done();
-        if bytes != watchdog.last_bytes {
+        let files = self.files_done();
+        if bytes != watchdog.last_bytes || files != watchdog.last_files {
             watchdog.last_bytes = bytes;
+            watchdog.last_files = files;
             watchdog.still_since = now;
             self.still_for_seconds.store(0, Ordering::Relaxed);
             return;
@@ -959,6 +987,7 @@ impl Drop for OperationProbeGuard {
 /// sleeping.
 struct WatchdogState {
     last_bytes: u64,
+    last_files: usize,
     still_since: Duration,
     last_reported: Duration,
 }
@@ -967,6 +996,7 @@ impl WatchdogState {
     fn new() -> Self {
         Self {
             last_bytes: u64::MAX,
+            last_files: usize::MAX,
             still_since: Duration::ZERO,
             last_reported: Duration::ZERO,
         }

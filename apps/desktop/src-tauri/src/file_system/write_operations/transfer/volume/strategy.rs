@@ -190,6 +190,15 @@ pub(super) struct MergeCtx<'a> {
     /// The operation-wide file-copy window, shared by every walker. See
     /// [`FileWindow`] for why there is exactly one of these per operation.
     pub window: FileWindow,
+    /// Credits ONE child the merge declined to the operation's progress
+    /// counters: `on_file_skipped(bytes)`.
+    ///
+    /// A skipped child is done, so both bars count it; the implementation also
+    /// tells the rate estimator to leave those bytes out (nothing moved for
+    /// them). Lives on `MergeCtx` rather than beside `on_file_complete` in the
+    /// walker's argument list because a deep skip can only happen when there IS
+    /// a merge context — `merge: None` overwrites blindly and never declines.
+    pub on_file_skipped: &'a (dyn Fn(u64) + Sync),
     /// The operation's live in-flight table, so each leaf a walker overlaps gets
     /// its OWN row (and its own stall-abort token). `None` in the tests that
     /// register no probe. A leaf runs inside its row's

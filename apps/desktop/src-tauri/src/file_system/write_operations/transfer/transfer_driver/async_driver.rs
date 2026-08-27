@@ -110,9 +110,9 @@ where
             bulk_skip_files,
             bulk_skip_bytes
         );
-        // Re-anchor the rate estimator: bulk-skip credit is past work, not
-        // throughput. See `drive_transfer_serial_sync` for the rationale.
-        state.reseed_estimator_baseline(bytes_done, files_done);
+        // Tell the estimator: bulk-skip credit is past work, not throughput.
+        // See `drive_transfer_serial_sync` for the rationale.
+        state.note_skipped(bulk_skip_files, bulk_skip_bytes);
         emit_progress_and_status(
             events,
             state,
@@ -200,6 +200,7 @@ where
                     bytes_done += bytes_accounted;
                     files_skipped += 1;
                     bytes_skipped += bytes_accounted;
+                    state.note_skipped(1, bytes_accounted);
                     if last_progress_time.elapsed() >= progress_interval {
                         last_progress_time = Instant::now();
                         emit_progress_and_status(
@@ -281,6 +282,7 @@ where
                 bytes_done += bytes_accounted;
                 files_skipped += 1;
                 bytes_skipped += bytes_accounted;
+                state.note_skipped(1, bytes_accounted);
                 if last_progress_time.elapsed() >= progress_interval {
                     last_progress_time = Instant::now();
                     emit_progress_and_status(

@@ -391,6 +391,10 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         let leaf_progress = Arc::clone(&leaf_progress);
                         move |leaf_bytes: u64| leaf_progress.on_leaf_complete(leaf_bytes)
                     };
+                    let on_file_skipped = {
+                        let leaf_progress = Arc::clone(&leaf_progress);
+                        move |leaf_bytes: u64| leaf_progress.on_leaf_skipped(leaf_bytes)
+                    };
 
                     // Per-source rollback ledger: the files this transfer
                     // streams and the dirs it newly creates inside a
@@ -408,6 +412,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         state: &state,
                         apply_to_all: &merge_apply_to_all,
                         source_hints: &source_hints,
+                        on_file_skipped: &on_file_skipped,
                         // A DIRECTORY source streams its subtree through the
                         // op-wide window even here, where the driver itself runs
                         // one source at a time. That is the whole point: one

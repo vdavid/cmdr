@@ -411,6 +411,108 @@ async fn skip_all_merges_folder_and_skips_only_clashing_files() {
 }
 
 // ============================================================================
+// Deep skips move the bars, and stay out of the rate
+// ============================================================================
+
+/// A child a deep merge skips is DONE, and both bars have to say so.
+///
+/// A merge whose children all clash used to credit nothing at all until the
+/// operation ended: `MergeChildDecision::Skip` recorded the skip in the
+/// rollback ledger and moved on, so a person watched `0 of 119,204` for the
+/// whole run while the walk worked perfectly. That is what a user reported on
+/// 2026-08-27 (`ERR-AYVM4`); they cancelled a healthy transfer because nothing
+/// on screen moved.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_deep_skip_credits_both_progress_bars() {
+    let (source, dest) = make_rich_merge().await;
+    let state = make_state();
+    let events = Arc::new(CollectorEventSink::new());
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Skip,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    copy_volumes_with_progress(
+        events.clone(),
+        "op-deep-skip-progress",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/album")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await
+    .expect("the merge completes");
+
+    // The copying phase only: the scan emits its findings as `files_done`, which
+    // is a different meaning of the same field.
+    let progress: Vec<_> = events
+        .progress
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|e| e.phase == WriteOperationPhase::Copying)
+        .cloned()
+        .collect();
+    let last = progress.last().expect("the copy emits progress");
+
+    // `/album` holds five source files: two fresh ones that copy, two that
+    // clash and are skipped, and `swap` (a file landing on a dir) that the type
+    // mismatch skips as well. All five are accounted for, so the bar arrives.
+    assert_eq!(
+        (last.files_done, last.files_total),
+        (5, 5),
+        "every child is done — skipped or copied — and the file bar counts all of them"
+    );
+    assert_eq!(
+        (last.bytes_done, last.bytes_total),
+        (58, 58),
+        "the byte bar counts a skipped child's bytes too, so it can reach its total"
+    );
+}
+
+/// ...and the rate must not read those skipped bytes as throughput.
+///
+/// Nothing moved for a skip, so charging it to the EWMA reads as an
+/// instantaneous burst. On a merge that skips thousands of children in a row
+/// that is not a blip, it IS the reported speed.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_deep_skip_stays_out_of_the_rate() {
+    let (source, dest) = make_rich_merge().await;
+    let state = make_state();
+    let events = Arc::new(CollectorEventSink::new());
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Skip,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    copy_volumes_with_progress(
+        events.clone(),
+        "op-deep-skip-rate",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/album")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await
+    .expect("the merge completes");
+
+    let (skipped_files, skipped_bytes) = state.skipped_totals();
+    // `clash.txt` (16) + `sub/clash2.txt` (10) + `swap` (13), the three children
+    // the Skip policy declined.
+    assert_eq!(skipped_files, 3, "every declined child is recorded as skipped");
+    assert_eq!(
+        skipped_bytes, 39,
+        "with its bytes, so the estimator can subtract them from the sample"
+    );
+}
+
+// ============================================================================
 // Stop-mode deep file clash emits a conflict with correct paths/flags, resumes
 // ============================================================================
 
