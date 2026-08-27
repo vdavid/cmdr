@@ -349,9 +349,8 @@ A fast, pure-Rust algorithm assigning each folder an interest weight. Inputs (ha
 **This section shipped**, as its own neutral subsystem rather than agent-owned code:
 `crates/cmdr-index/src/importance/`, with weights in a separate per-volume `importance.db` (a regenerable cache), an
 explain call, offline reads for unmounted volumes, an evals corpus, and a scoped incremental rescore costing O(touched)
-rather than O(dirs). This supersedes D8's "cached in the drive index"; the plan is
-`docs/specs/later/importance-subsystem-plan.md` and the durable intent lives in the `importance/` and `indexing/`
-colocated docs. The list above stays the requirements source. The weight serves three consumers: summary generation
+rather than O(dirs). This supersedes D8's "cached in the drive index"; the durable intent lives in the `importance/` and `indexing/`
+colocated docs, and what the subsystem still owes is `docs/specs/later/importance-follow-ups.md`. The list above stays the requirements source. The weight serves three consumers: summary generation
 gating, event-bundle interest (§6.2), and as an input the LLM sees when reasoning about folders. The agent already reads
 it through the `important_folders` and `folder_importance` tools.
 
@@ -946,8 +945,8 @@ of sections above; treat them as inputs to the next planning round.
 
 15. **SHIPPED.** The scorer (§5.1) is its own neutral subsystem serving the agent, the media-ML enrichment scheduler,
     and future consumers. §5.1 stays the requirements source; placement under `src/agent/` and D8's "cached in the drive
-    index" are superseded. Plan: `docs/specs/later/importance-subsystem-plan.md`; code:
-    `crates/cmdr-index/src/importance/`.
+    index" are superseded. Code: `crates/cmdr-index/src/importance/`; what it still owes:
+    `docs/specs/later/importance-follow-ups.md`.
 16. **Per-folder "capability enrollment."** A concept for which folders are enrolled in which expensive analyses (e.g.
     deep photo analysis). Suggested vehicle: the agent's settings-suggestions via `notify_user` action buttons, NOT via
     `proposal_ops` (the freeze/drift semantics of §8.2 fit file ops, not settings changes).
