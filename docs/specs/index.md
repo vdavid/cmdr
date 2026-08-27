@@ -185,16 +185,12 @@ left, so the durable intent survives the wipe.
 - [ ] 2026-08-27 `later/archive-follow-ups.md` - The three things archive browsing still owes, re-derived from the tree:
       a fast tail-add zip edit (design settled in `docs/notes/m-append-spike.md`; the remote half waits on an `smb2`
       copychunk client API, the same one `Volume::copy_within` waits on), open-with-external-app for a file inside an
-      archive (shape spiked, one LaunchServices seam unverified), and in-place MTP archive editing (stretch). Replaces
-      `later/archive-browsing-polish.md`, whose other eight items had shipped or were status narration.
+      archive (shape spiked, one LaunchServices seam unverified), and in-place MTP archive editing (stretch).
 - [ ] 2026-08-27 `later/tags-follow-ups.md` - The two Finder-tag gaps still open, re-derived from the tree: the seven
       context-menu color circles show on backends that can't hold a tag, and a tag assigned from search results doesn't
-      light up until the next navigation. Both are judgment calls, neither blocks anything. Replaces
-      `later/colorful-tags-plan.md`, whose design decisions all live in the colocated `DETAILS.md` files now and whose
-      quiet-backfill worry the change-only diff emit already closed.
+      light up until the next navigation. Both are judgment calls, neither blocks anything, and every design decision
+      behind the feature lives in the colocated `DETAILS.md` files.
 - [ ] 2026-08-27 `later/transfer-queue-follow-ups.md` - The five transfer-queue extensions still open, re-derived from
       the tree: per-lane budgets above 1 (`LANE_BUDGET` is still a const 1, and the motivating case moved from parked
       FTP to SFTP/SMB), reconnect or keep-alive across a long pause (SMB and SFTP only now), bounding paused-and-parked
-      blocking threads, queue reordering, and queue persistence across restarts. Replaces
-      `later/transfer-queue-v2-plan.md`, whose mid-large-file and concurrent-path pause items both shipped via
-      `CheckpointStream`.
+      blocking threads, queue reordering, and queue persistence across restarts.
