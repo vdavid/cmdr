@@ -1,10 +1,25 @@
 # Add Linux build target
 
+**Status: not started**, re-derived from the tree on 2026-08-27. `.github/workflows/release.yml` still builds three
+macOS targets and nothing else, and `apps/website/src/lib/release.ts` still exports only `dmgUrls` / `dmgSizes`. One
+Milestone 1 item DID land separately and is marked below. The public roadmap puts "Add Windows and true Linux support"
+in the also-soon bucket at "(winter?)", so nothing here is scheduled.
+
 ## Context
 
-Cmdr already has Linux Rust dependencies (`zbus`, `freedesktop-icons`, `libacl`, etc.) and the CI runs Linux E2E tests.
-The missing piece is a release build that produces distributable artifacts and a website that detects Linux visitors and
-offers them the right download.
+Cmdr already has Linux Rust dependencies (`zbus`, `freedesktop-icons`, `libacl`, etc.), the CI runs a full Linux
+Playwright E2E job (`desktop-e2e-linux` in `ci.yml`), and a `.deb` can be built by hand today (`CONTRIBUTING.md` §
+"Building a `.deb` on Linux"). The missing piece is a release build that produces distributable artifacts and a website
+that detects Linux visitors and offers them the right download.
+
+## ⚠️ Read this before shipping any of it
+
+Building for Linux and supporting Linux are different jobs, and this plan only covers the first. A Linux download button
+advertises a build with known functional gaps, recorded in `docs/notes/linux-gaps-2026-08-10.md`: **the live file
+watcher never starts** (one unreadable directory anywhere under the root aborts the whole recursive inotify watch, which
+is the common case, not an edge case), the `Cmd+` menu accelerators print as Super chords, and the English catalog
+carries 504 macOS-specific strings ("your Mac", `⌘`, "Finder"). Closing those is a prerequisite for advertising Linux,
+not a follow-up, and none of it is in the milestones below.
 
 **Goal:** When a Linux user visits getcmdr.com, they see a Linux download button (AppImage by default, .deb as
 alternative). macOS users continue to see exactly what they see today. The updater works for both platforms.
@@ -30,7 +45,9 @@ Add two Linux matrix entries to the existing `build` job:
   platform: linux
 ```
 
-The existing macOS entries get `os: macos-latest` and `platform: macos` to distinguish them.
+The existing macOS entries get `os: macos-latest` and `platform: macos` to distinguish them. Note the job currently
+hardcodes `runs-on: macos-latest` at job level, so this also means moving it to `runs-on: ${{ matrix.os }}`; the comment
+above that line explains why it's pinned, and it survives the move.
 
 The aarch64 build runs on GitHub's ARM runner (`ubuntu-24.04-arm`) for native compilation, no cross-compilation needed.
 Native is simpler and faster than cross-compilation.
@@ -98,15 +115,16 @@ The existing config mostly works for Linux as-is:
 - `bundle.macOS` section is ignored on Linux.
 - `bundle.icon` includes PNG files that Linux uses.
 
-Changes needed:
+**Already done**: the `bundle.linux` section exists, pointing `deb.desktopTemplate` at
+`apps/desktop/src-tauri/linux/cmdr.desktop.hbs`, which carries `Categories=Utility;FileManager;FileTools;`, `Keywords`,
+`StartupWMClass`, and a conditional `MimeType`. It landed alongside the local `.deb` build documented in
+`CONTRIBUTING.md`. Nothing to do here.
 
-- **Bundle targets**: Change from `"all"` to explicitly listing targets per platform, or override in CI. On Linux we
-  only want `deb` and `appimage` (not RPM). The CI build step should pass `--bundles deb,appimage` to avoid needing
-  `rpmbuild`.
-- **Add `bundle.linux` section**: Include a `.desktop` file with proper `Categories` (for example,
-  `Utility;FileManager;`), `MimeType`, and icon references. Without this, the app may not show up correctly in GNOME/KDE
-  app launchers. Tauri generates a minimal default, but it's worth getting right from day one since it's almost no
-  effort.
+Still needed:
+
+- **Bundle targets**: `bundle.targets` is still `"all"`. Change it to explicitly listed targets per platform, or
+  override in CI. On Linux we only want `deb` and `appimage` (not RPM). The CI build step should pass
+  `--bundles deb,appimage` to avoid needing `rpmbuild`.
 
 ## Part 3: Website
 
@@ -228,8 +246,9 @@ Two card variants inside `Download.astro`, toggled by CSS using `html[data-os="l
 This avoids a flash of the wrong platform since the macOS card renders instantly and the Linux card swaps in after JS
 runs. The swap is fast enough to be imperceptible.
 
-The "Windows coming soon" newsletter CTA at the bottom of Download.astro changes to "Windows coming soon" (just drop
-"Linux" from the text).
+The newsletter CTA at the bottom of `Download.astro` currently reads "Windows coming soon. Linux in alpha (self-build
+for now). Get notified:". Once there's a real Linux download, the self-build clause comes out and the label is "Windows
+coming soon. Get notified:".
 
 ### 3e. No-JS / unsupported browser behavior
 
@@ -284,8 +303,10 @@ The publish job populates `appImageSizes` by checking AppImage file sizes, same 
 The codebase already compiles for Linux; the CI runs Linux E2E tests via `cargo build --target x86_64-unknown-linux-gnu`
 on every PR. All platform-specific Rust code uses `#[cfg(target_os = "...")]` gates (`zbus`, `freedesktop-icons`,
 `libacl`, etc. for Linux; `objc2`, `core-foundation`, etc. for macOS). The `cfg-gate` check in CI
-(`pnpm check --check cfg-gate`) verifies that no macOS-only code leaks into Linux builds and vice versa. No additional
-Rust changes are expected for the release build; the same binary that passes E2E tests is the one that gets bundled.
+(`pnpm check cfg-gate`) verifies that no macOS-only code leaks into Linux builds and vice versa. No additional Rust
+changes are expected for the release build itself; the same binary that passes E2E tests is the one that gets bundled.
+That's a statement about the build, not about the app: see the gaps warning at the top for what that binary does wrong
+on Linux.
 
 ## Verification
 
@@ -308,8 +329,11 @@ Rust changes are expected for the release build; the same binary that passes E2E
 
 ### Milestone 1: CI builds and Tauri config
 
-- [ ] Add `bundle.linux` section to `tauri.conf.json` with `.desktop` categories (`Utility;FileManager;`) and icon refs
-- [ ] Add Linux x86_64 and aarch64 matrix entries to `release.yml` build job (use `--bundles deb,appimage`)
+- [x] Add `bundle.linux` section to `tauri.conf.json` with `.desktop` categories and icon refs (landed with the local
+      `.deb` build; see `apps/desktop/src-tauri/linux/cmdr.desktop.hbs`)
+- [ ] Narrow `bundle.targets` from `"all"` to per-platform targets
+- [ ] Add Linux x86_64 and aarch64 matrix entries to `release.yml` build job (use `--bundles deb,appimage`), moving
+      `runs-on` from the job to `${{ matrix.os }}`
 - [ ] Conditionalize macOS-only steps (certificate, notarization) with `if: matrix.platform == 'macos'`
 - [ ] Add Linux system deps install step with `if: matrix.platform == 'linux'`
 - [ ] Upload Linux artifacts (AppImage, .deb, updater) for both archs to GitHub release
@@ -325,9 +349,8 @@ Rust changes are expected for the release build; the same binary that passes E2E
 - [ ] Add `data-linux-appimage-*` attributes to download links in Hero, Header, pricing
 - [ ] Build platform-aware Download.astro with macOS/Linux card toggle and arch selector for Linux
 - [ ] Add "Also available for Linux/macOS" cross-platform links
-- [ ] Update "Windows and Linux coming soon" text to "Windows coming soon"
-- [ ] Run website checks:
-      `pnpm check --check website-prettier,website-eslint,website-typecheck,website-build,website-e2e`
+- [ ] Drop the "Linux in alpha (self-build for now)" clause from the `Download.astro` newsletter CTA
+- [ ] Run website checks: `pnpm check website-prettier website-eslint website-typecheck website-build website-e2e`
 
 ### Milestone 3: Verification
 

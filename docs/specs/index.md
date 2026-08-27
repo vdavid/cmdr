@@ -102,7 +102,14 @@ left, so the durable intent survives the wipe.
       reuse the cache and the one-batch service, skip the macOS-only thread pool, and build a cheap ancestor gate,
       because Linux has no equivalent of the xattr tier that lets macOS skip nearly every file for 13.9 µs. **A Linux
       arm is a Dropbox arm**; no other provider has a common layer there.
-- [ ] 2026-03-10 `later/linux-builds-plan.md` - Add Linux release build target plus website download detection.
+- [ ] 2026-08-27 `later/linux-builds-plan.md` - **A Linux release build and a website that offers it.** NOT STARTED:
+      `release.yml` still builds three macOS targets only, and `release.ts` exports only `dmgUrls` / `dmgSizes`. The
+      plan covers the CI matrix (x86_64 plus aarch64, native on GitHub's ARM runner), the `latest.json` platform keys
+      and `appImageSizes`, and the website's OS detection and platform-aware download card. One item already landed on
+      its own: the `bundle.linux` `.desktop` template. ⚠️ **Building for Linux is not supporting Linux**: the app on
+      Linux has a file watcher that never starts, Super-bound menu accelerators, and 504 macOS-specific strings
+      (`docs/notes/linux-gaps-2026-08-10.md`), and none of that is in these milestones. The roadmap puts real Linux
+      support at "(winter?)".
 - [ ] 2026-05-10 `later/totalcmd-plugin-analysis.md` - Not a spec, but Total Commander packer-plugin research backing
       future archive/plugin work.
 - [ ] 2026-05-29 `later/disk-cleanup-advice-process.md` - Not a spec, but reference notes for a future disk-cleanup
