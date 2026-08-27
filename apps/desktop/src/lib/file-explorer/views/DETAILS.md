@@ -278,8 +278,9 @@ edge of the Name cell: in **Full** mode the Name column is `1fr`, so flexbox giv
 width-constrained, so `brief_columns.rs` adds a per-row `tag_cluster_width` suffix (a pure function of the colored-tag
 count, mirroring `tagClusterWidthPx` in `tag-dots-utils.ts` — keep the two in sync) before taking the per-column max, or
 the dots would clip the next column. Tags arrive after first paint, so the column grows once when the tag batch lands:
-one accepted "settle" per directory (D10). Only colored tags (index 1-7) draw a dot; colourless tags (index 0) are
-dotless but still listed in the cluster's accessible label.
+one accepted "settle" per directory, which is a deliberate trade against holding first paint for the xattr pass. Only
+colored tags (index 1-7) draw a dot; colourless tags (index 0) are dotless but still listed in the cluster's accessible
+label.
 
 **Decision**: Brief columns shrink-wrap to the widest filename in each column, with the backend measuring widths and the
 frontend rendering to those measurements **Why**: Long filenames deserve their full width while short ones let the user

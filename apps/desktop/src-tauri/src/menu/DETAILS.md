@@ -131,7 +131,7 @@ Exceptions that do NOT use `"execute-command"`:
   `spawn_blocking` (off the main/menu thread). The keyboard-assignable `tags.toggle*` commands cover
   the focused-selection case via the frontend (`pane-commands.ts::toggleTagOnFocusedSelection` →
   `toggle_tags` IPC); no default shortcut.
-  - **Checked state = applied tag** (D7): muda's `IconMenuItem` has no native gutter checkmark (a fork
+  - **Checked state = applied tag**: muda's `IconMenuItem` has no native gutter checkmark (a fork
     would be a two-repo muda+Tauri patch), so the "applied" circle composites a white check INTO the
     bitmap. A color is "applied" when EVERY selected path already carries it
     (`FileContextInfo.applied_tag_colors`, computed from `tags::applied_colors` at menu-build time);
