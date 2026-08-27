@@ -10,14 +10,6 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-08-21 `idle-cost.md` - **Cmdr costs too much while you're not using it.** An idle prod build burned 110
-      minutes of CPU over 9.1 hours at a 1.78 GB footprint. Two items left, and both wait on a measurement rather than
-      on effort: the CLIP towers (an enrichment pass holds 251.5 MB of text tower it never calls, gated on one
-      confirming command on David's laptop), and the reconcile drain's unbounded arrival rate (demoted to "read the
-      churn line for a week, then choose between four candidate shapes", one of which needs David's call on whether the
-      rescan walk may read the shipped `SYSTEM_DIR_EXCLUDES`). **About a day of build work, plus a week of passive
-      observation before the second item can be ranked.** Read `docs/notes/idle-cpu-attribution-2026-08-03.md` first:
-      four hypotheses here were refuted by measurement.
 - [ ] 2026-08-21 `indexing-loose-ends.md` - **The coverage machine works; these are the threads left hanging.** Phased
       indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled: a rename that
       closes one plan outright, the verifier mark with its abandoned-ground trigger, Spotlight recency for a true first
@@ -33,6 +25,16 @@ that lives beside the code, and git holds the history.
 
 Deferred future work. Unchecked by default; the folder name is the status. Each entry notes what shipped and what's
 left, so the durable intent survives the wipe.
+
+- [ ] 2026-08-27 `later/idle-cost-follow-ups.md` - **What the idle-cost effort deliberately left.** Two structural fixes
+      shipped (each CLIP tower loads on demand, and an anchor storm costs one visible sweep a day instead of a subtree
+      walk each), both documented beside the code. What's open starts with a measurement rather than a fix: every number
+      this effort was ranked against came from one v0.37.0 reading on a machine running six cargo builds, and five
+      things have changed since, so **a fresh idle baseline on David's laptop comes before ranking anything else**.
+      Then: three CLIP calls that memory alone can't settle (the idle unload, now with its 677 ms cold-query price
+      measured; the ~400 MB compute-unit trade, blocked on unmeasured enrichment throughput; an fp16 spike), the rescan
+      threshold's week of churn data, one question for David about `SYSTEM_DIR_EXCLUDES` that gates nothing, and two
+      smaller calls.
 
 - [ ] 2026-08-23 `later/sftp-follow-ups.md` - **The SFTP backend ships without a way to reach it.** The crate, its IPC
       surface, and the fixtures are done and documented in `crates/cmdr-sftp/DETAILS.md`; three things are open. The

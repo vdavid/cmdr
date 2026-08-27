@@ -1,11 +1,12 @@
 # What a media live tick costs, and which half of it was the surprise
 
 A live tick (`crates/cmdr-index/src/media_index/scheduler/live.rs`) fires at most once a minute per local volume, for as
-long as the app is open, and on a machine whose churn is build output almost every one of them finds nothing to do.
-`docs/specs/idle-cost.md` item 2 asked for the walk to move behind the coverage gates, and set one condition first:
-measure the gates, because they "may cost more than the walk being moved behind them".
+long as the app is open, and on a machine whose churn is build output almost every one of them finds nothing to do. The
+idle-cost effort proposed moving that walk behind the coverage gates, on one condition: measure the gates first, because
+they may cost more than the walk being moved behind them.
 
-They did, at David's folder count. The premise held, and the answer it pointed at was not the one the item described.
+They did, at David's folder count. The premise held, and the answer it pointed at was not the one the proposal
+described.
 
 ## Method, and what these numbers are not
 

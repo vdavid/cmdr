@@ -37,7 +37,7 @@ use crate::indexing::store::{IndexStore, ROOT_ID};
 const WALK_WIDTHS: &[usize] = &[100, 500, 2_000, 10_000];
 
 /// Scored-folder counts to measure the coverage gate at. The top of the ladder is the
-/// 90,308 folders `docs/specs/idle-cost.md` quotes for David's root volume.
+/// 90,308 folders `docs/notes/live-tick-cost-2026-08-21.md` measures on David's root volume.
 const SCORE_WIDTHS: &[usize] = &[1_000, 10_000, 90_308];
 
 /// Files per synthetic touched dir, none of them images: build output is the churn

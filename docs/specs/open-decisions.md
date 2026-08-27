@@ -3,8 +3,9 @@
 **Problem**: a question with no answer looks exactly like a task nobody picked up, so it sits inside a 600-line spec and
 keeps that spec alive for years. These are the calls that gate work but are not themselves work. Most take a minute.
 
-Decisions that gate exactly one effort live in that effort's spec instead: the reconcile-governor shape is in
-`idle-cost.md`.
+Decisions that gate exactly one effort live in that effort's spec instead. A call that gates nothing but is still worth
+making sits with the work it came from: `later/idle-cost-follow-ups.md` holds the CLIP idle-unload and compute-unit
+calls, and the question of whether the rescan walk may read `SYSTEM_DIR_EXCLUDES`.
 
 ## Human-facing copy shipped as agent drafts
 
