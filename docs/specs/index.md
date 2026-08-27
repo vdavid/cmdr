@@ -116,10 +116,12 @@ left, so the durable intent survives the wipe.
       `release.yml` still builds three macOS targets only, and `release.ts` exports only `dmgUrls` / `dmgSizes`. The
       plan covers the CI matrix (x86_64 plus aarch64, native on GitHub's ARM runner), the `latest.json` platform keys
       and `appImageSizes`, and the website's OS detection and platform-aware download card. One item already landed on
-      its own: the `bundle.linux` `.desktop` template. ⚠️ **Building for Linux is not supporting Linux**: the app on
-      Linux has a file watcher that never starts, Super-bound menu accelerators, and 504 macOS-specific strings
-      (`docs/notes/linux-gaps-2026-08-10.md`), and none of that is in these milestones. The roadmap puts real Linux
-      support at "(winter?)".
+      its own: the `bundle.linux` `.desktop` template. ⚠️ **Building for Linux is not supporting Linux**, so the three
+      known gaps are now Milestone 0: a file watcher that never starts (the blocker; one unreadable directory aborts the
+      whole recursive inotify watch), Super-bound menu accelerators, and 504 macOS-specific strings needing a
+      re-translation pass (`docs/notes/linux-gaps-2026-08-10.md`). ❗ Milestone 0 gates the website's download button,
+      not the CI build: publishing artifacts a self-builder can find is what the roadmap already promises. The roadmap
+      puts real Linux support at "(winter?)".
 - [ ] 2026-08-27 `later/indexing/out-of-process-indexing.md` - **The escalation we chose not to take, written down so
       the decision can be re-opened on evidence rather than re-derived.** Moving drive and media indexing into their own
       OS process is the only design that makes "a runaway indexer can never starve the UI" structural instead of
