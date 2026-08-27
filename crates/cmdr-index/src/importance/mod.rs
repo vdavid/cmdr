@@ -2,9 +2,9 @@
 //! matter" that any expensive feature can consume (the in-app agent, the media-ML
 //! enrichment scheduler, future disk-cleanup / prefetch features).
 //!
-//! M1 ships the pure heart of it: the [`scorer`] (values-in / score-out, no I/O)
-//! and its tunable [`Weights`]. Storage, the lifecycle bus, the scheduler, and the
-//! read API land in later milestones (see `docs/specs/later/importance-subsystem-plan.md`).
+//! At its heart is the [`scorer`] (values-in / score-out, no I/O) and its tunable
+//! [`Weights`]; around it sit the per-volume store, the scheduler that rides
+//! `indexing/`'s lifecycle bus, and the read API every consumer goes through.
 //!
 //! Read [`DETAILS.md`](DETAILS.md) before working here: the subsystem-wide rules
 //! and the top-level files. Each area subdir documents itself.

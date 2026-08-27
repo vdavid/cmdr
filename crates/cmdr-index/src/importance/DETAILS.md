@@ -1,9 +1,9 @@
 # Importance subsystem — details
 
 The deterministic, cheap folder-importance score that any expensive feature consumes (the in-app agent, the media-ML
-enrichment scheduler, future disk-cleanup / prefetch). Full design and milestone plan:
-`docs/specs/later/importance-subsystem-plan.md`. This doc covers what's SUBSYSTEM-WIDE plus the top-level files no area
-subdir owns; each area documents itself.
+enrichment scheduler, future disk-cleanup / prefetch). This doc covers what's SUBSYSTEM-WIDE plus the top-level files no
+area subdir owns; each area documents itself. What the subsystem still owes:
+`docs/specs/later/importance-follow-ups.md`.
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
 
@@ -176,5 +176,5 @@ Three `crates/index-query` binaries, each documented next to the code it drives:
 
 - No IPC surface beyond `record_visit`; no user-facing strings, no i18n (`record_visit` and the dev bins are invisible
   to the app UI).
-- Weight tuning against real trees, and the `kMDItemLastUsedDate` sampling cost, are unmeasured — see the plan's
-  open-questions.
+- Weight tuning against real trees, the `kMDItemLastUsedDate` sampling cost, and a recompute nothing can stop are all
+  open — `docs/specs/later/importance-follow-ups.md`.

@@ -82,10 +82,14 @@ left, so the durable intent survives the wipe.
       DEFERRED (each with a settled design or trigger): fast tail-add zip edits (clone+tail-rewrite design validated in
       `docs/notes/m-append-spike.md`; the SMB path needs an smb2 copychunk client API), open-with-external for inner
       files (design spiked), and MTP in-place editing (stretch).
-- [ ] 2026-07-08 `later/importance-subsystem-plan.md` - Neutral, deterministic folder-importance subsystem (per-volume
-      `importance.db`, a minimal lifecycle bus in `indexing/`, an explain call, offline-unmounted reads), exposed as a
-      general read API. SHIPPED (M1–M4); durable intent lives in the `importance/` and `indexing/` `CLAUDE.md`/
-      `DETAILS.md`. Open follow-ups: weight tuning, and the `kMDItemLastUsedDate` sampling cost.
+- [ ] 2026-08-27 `later/importance-follow-ups.md` - **What the shipped folder-importance subsystem still owes.** It grew
+      well past its plan: five documented area pairs under `crates/cmdr-index/src/importance/`, a scoped incremental
+      rescore costing O(touched), a kind-aware multi-volume scheduler, an anonymized real-index eval corpus, and three
+      dev bins. Three things are open. The weights are still untuned defaults even though the whole tuning loop is
+      built, because real corpus dumps are gitignored and the run needs David's own home directory. The Spotlight
+      sampler's cap has never been measured (and is NOT the same work as `indexing-loose-ends.md` item 3, which seeds a
+      first run before any index exists). And a recompute runs under no cancellation token, so `stop_all_indexing`
+      doesn't reach it, which is survivable only while a full pass stays seconds.
 - [ ] 2026-07-13 `later/indexing/media-ml-index-plan.md` - Searchable image index (OCR, tags, faces, text→image) as an
       ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation Models), vectors in SQLite,
       on-device by default. SHIPPED: M1/M1.5/M2 (backend + OCR foundation), M3 (natural-language CLIP semantic search;
