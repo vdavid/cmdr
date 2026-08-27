@@ -349,10 +349,11 @@ A fast, pure-Rust algorithm assigning each folder an interest weight. Inputs (ha
 **This section shipped**, as its own neutral subsystem rather than agent-owned code:
 `crates/cmdr-index/src/importance/`, with weights in a separate per-volume `importance.db` (a regenerable cache), an
 explain call, offline reads for unmounted volumes, an evals corpus, and a scoped incremental rescore costing O(touched)
-rather than O(dirs). This supersedes D8's "cached in the drive index"; the durable intent lives in the `importance/` and `indexing/`
-colocated docs, and what the subsystem still owes is `docs/specs/later/importance-follow-ups.md`. The list above stays the requirements source. The weight serves three consumers: summary generation
-gating, event-bundle interest (§6.2), and as an input the LLM sees when reasoning about folders. The agent already reads
-it through the `important_folders` and `folder_importance` tools.
+rather than O(dirs). This supersedes D8's "cached in the drive index"; the durable intent lives in the `importance/` and
+`indexing/` colocated docs, and what the subsystem still owes is `docs/specs/later/importance-follow-ups.md`. The list
+above stays the requirements source. The weight serves three consumers: summary generation gating, event-bundle interest
+(§6.2), and as an input the LLM sees when reasoning about folders. The agent already reads it through the
+`important_folders` and `folder_importance` tools.
 
 Still open here: signal-weight tuning (§18.3) and the `kMDItemLastUsedDate` sampling cost (§18.4).
 
