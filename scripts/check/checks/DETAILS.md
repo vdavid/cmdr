@@ -530,10 +530,10 @@ signal-to-noise up, and both are load-bearing.
 
 **The window is the change being made now.** `pickBaseRef` bases on LOCAL `main`, and on `main` itself returns "" so
 only the working tree counts. Branches are cut from local `main` and fast-forwarded back, so local `main` is the real
-branch point; `origin/main` is not, because `main` here routinely sits many unpushed commits ahead of the remote.
-Basing on the remote widened the window to "everything not yet pushed", so every source change in that pile re-warned
-on every run until the next push: the fix for the warning became `git push`, which says nothing about documentation.
-The check never runs in CI, so the remote's view of the branch point is never the relevant one.
+branch point; `origin/main` is not, because `main` here routinely sits many unpushed commits ahead of the remote. Basing
+on the remote widened the window to "everything not yet pushed", so every source change in that pile re-warned on every
+run until the next push: the fix for the warning became `git push`, which says nothing about documentation. The check
+never runs in CI, so the remote's view of the branch point is never the relevant one.
 
 **Any doc tier on the ancestor chain counts** (`docTouchedOnChain`), plus the repo-root `AGENTS.md` (the root
 `CLAUDE.md` is only the `@`-import manifest, so `AGENTS.md` is the doc a root-level change updates). Attribution still
