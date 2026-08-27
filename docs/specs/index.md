@@ -57,18 +57,24 @@ left, so the durable intent survives the wipe.
       LLM says one thing and calls no tool, so no tool row ever renders), `fileExplorer.navigation` (per-drive index
       status, SMB connection, favorites failures, disk-space retries), and four cheap settings surfaces the capture
       never visits.
-- [ ] 2026-07-22 `later/indexing/swap-scan-plan.md` - Build-and-swap rescan: run the fast parallel guarded walker into a
-      separate `index-{vid}.building.db`, then swap it in atomically (~8.4× faster, 107 s vs 897 s), replacing the
-      ~15-minute serial in-place reconcile of a completed LOCAL index. Durable `.swap` marker + idempotent open-time
-      recovery guarantees exactly one complete index across any crash. NOT STARTED (only the plan + reviews exist;
-      reconcile is still the sole rescan path). Foundation: `docs/notes/swap-scan-feasibility.md`,
-      `docs/notes/indexing-benchmarks-2026-07-21.md`.
-- [ ] 2026-07-22 `later/indexing/sealed-subtrees-plan.md` - Bound the cost of pathological high-churn directories
-      without lying about folder sizes (motivated by a 7-minute, 1 GB cold-start stall from one 1.14M-file directory).
-      M1 (two-teeth child-count guard in post-replay verification) SHIPPED. M2–M5 (seal a subtree to its `dir_stats`
-      aggregate + a bounded head of large files, churn-rolled seal root, periodic re-anchoring, a distinct "approximate"
-      size state) NOT STARTED and probably never needed: M1 alone may be the whole fix, so M2–M5 stay gated behind
-      measured residual pain.
+- [ ] 2026-08-27 `later/indexing/swap-scan-plan.md` - **A rescan of a completed local index takes ~15 minutes; a fresh
+      parallel scan of the same volume takes two.** Build-and-swap closes that gap: run the guarded walker into a
+      separate `index-{vid}.building.db`, then promote it atomically (8.4× measured, 107 s vs 897 s), keeping the
+      in-place reconcile as the fallback when disk is tight or the flag is off. A durable `.swap` marker plus idempotent
+      open-time recovery is what guarantees exactly one complete index across any crash. **NOT STARTED**, re-derived
+      from the tree 2026-08-27: no `.building.db`, no marker, no route. Its custody window was rebuilt underneath it
+      since it was written (`IndexPhase::Detached` now CLAIMS a teardown rather than refusing it), so § 2.3 step 5 is
+      corrected and `docs/notes/manager-custody-spike-2026-08-18.md` § 5 is required reading. Foundation:
+      `docs/notes/swap-scan-feasibility.md`, `docs/notes/indexing-benchmarks-2026-07-21.md`.
+- [ ] 2026-08-27 `later/indexing/sealed-subtrees-plan.md` - **Bound the cost of pathological high-churn directories
+      without lying about folder sizes**, motivated by one 1.14M-file directory causing a 7-minute, 1 GB cold-start
+      stall. **M1 (the two-teeth verify guard) SHIPPED**, and its account now lives beside the code, so the milestone
+      here is a decision record rather than work. **M2–M5 NOT STARTED and possibly never needed** (seal a subtree to its
+      `dir_stats` aggregate plus a bounded head of large files, a churn-rolled seal root, periodic re-anchoring, a
+      distinct "approximate" size state): they stay gated behind measured residual pain, and gate 1 is answerable TODAY
+      from a SQL census plus two shipped counters, without building an instrument first. All three spikes have run;
+      Spike B's result CHANGES Phase B's seal-root rule rather than confirming it (churn share alone selects
+      `~/Library/Containers`, which would seal every app's container).
 - [ ] 2026-08-27 `later/ai/bulk-rename-follow-ups.md` - **What the reviewed bulk rename deliberately left.** The whole
       hardening wave shipped, provenance included: the operation log records `agent_edited` when the user retyped a name
       in review, and the durable proposal spine binds an approval to the exact ops it covered. Two items are open, both
@@ -90,11 +96,14 @@ left, so the durable intent survives the wipe.
       sampler's cap has never been measured (and is NOT the same work as `indexing-loose-ends.md` item 3, which seeds a
       first run before any index exists). And a recompute runs under no cancellation token, so `stop_all_indexing`
       doesn't reach it, which is survivable only while a full pass stays seconds.
-- [ ] 2026-07-13 `later/indexing/media-ml-index-plan.md` - Searchable image index (OCR, tags, faces, text→image) as an
-      ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation Models), vectors in SQLite,
-      on-device by default. SHIPPED: M1/M1.5/M2 (backend + OCR foundation), M3 (natural-language CLIP semantic search;
-      the CLIP path is gated dark until the model artifacts are uploaded), M6 (photo-search agent/MCP tool). PARKED:
-      M4a/M4b faces (David wants to be closer in the loop), and M5 LLM captions (optional).
+- [ ] 2026-08-27 `later/indexing/media-ml-index-plan.md` - **Mostly shipped; kept for its decision log and two parked
+      milestones.** Searchable image index (OCR, tags, faces, text→image) as an ML enrichment layer on the drive index:
+      macOS-native Vision + Core ML, vectors in SQLite, on-device by default. SHIPPED and in users' hands: M1/M1.5/M2
+      (backend, OCR, tags, SMB enrichment), M3 (CLIP semantic search, live since v0.36.0 on 2026-07-24 — an earlier
+      entry here said it was gated dark pending a model upload, which was false), M6 (photo-search agent/MCP tool).
+      PARKED on purpose: M4a/M4b faces (David wants to be closer in the loop) and M5 LLM captions. **The doc survives a
+      wipe because ~40 `media_index` code sites cite its § "Key decisions" by bare number.** ⚠️ A bare `plan M<n>` in
+      that same code means the WIPED `resource-use-plan.md`, not this plan's milestones.
 - [ ] 2026-06-28 `later/colorful-tags-plan.md` - macOS Finder tags: read + show colored dots, and context-menu assign.
       SHIPPED (M0–M3); durable intent lives in the colocated `CLAUDE.md`/`DETAILS.md`. Remaining is minor polish only:
       quiet backfill, in-place search-results refresh, a locale native-string pass, and David's visual QA.
@@ -134,10 +143,13 @@ left, so the durable intent survives the wipe.
       every dir over N GB" limit is refuted by `sortBy: "size"` with `excludeSystemDirs: false`, which is now the
       default path. 💭 Belongs in `docs/notes/` rather than a folder whose contract is unfinished work; left here
       pending David's call.
-- [ ] 2026-07-18 `later/indexing/out-of-process-indexing.md` - Deferred escalation: move drive and media indexing into a
-      separate OS process for a hard "can't starve the UI" guarantee. Not needed now (thread QoS + bounded logging
-      closed the levers; the resilience fix stopped the source); captures the seams, the clean per-volume-WAL
-      data-safety split, the `ai/process.rs` sidecar prior art, and the effort/tradeoffs, with revisit triggers.
+- [ ] 2026-08-27 `later/indexing/out-of-process-indexing.md` - **The escalation we chose not to take, written down so
+      the decision can be re-opened on evidence rather than re-derived.** Moving drive and media indexing into their own
+      OS process is the only design that makes "a runaway indexer can never starve the UI" structural instead of
+      defended. Not needed now: thread QoS and bounded logging closed the actual levers, and the resilience fix stopped
+      the source incident. Captures the seams (the crate extraction turned most of the control-plane work from "design
+      it" into "route it"), the clean per-volume-WAL data-safety split, the `ai/process.rs` sidecar prior art, the
+      multi-week effort and its new failure modes, and three named revisit triggers.
 - [ ] 2026-06-04 `later/ai/agent-spec.md` - Persistent in-app agent proposing file operations. PARTIALLY SHIPPED; status
       re-derived from the tree 2026-08-27 in the spec's §0, which is the first thing to read and wins over any later
       section. Shipped: Ask Cmdr's chat rail, plus the proactive agent in v0.40.0 (the wake pipeline with its coalescer,
@@ -157,13 +169,21 @@ left, so the durable intent survives the wipe.
       2026-08-27 audit closed three other holes from the code (single-instance enforcement exists, Linux derives via
       XDG, the external-reader inventory is written out). ❗ The index relocation into `~/Library/Caches/` belongs to
       `later/ai/agent-spec.md` § 4.1, not here: this doc owns the directory name, that one owns what goes in it.
-- [ ] 2026-06-28 `later/indexing/index-vacuum-reader-pinning.md` - Reclaim residual index-DB freelist that long-lived
-      root readers stop the incremental vacuum from returning to the OS (deferred: the big freelist sources are now
-      fixed).
+- [ ] 2026-08-27 `later/indexing/index-vacuum-reader-pinning.md` - **A long-lived reader pins the index DB's freelist,
+      so the incremental vacuum returns almost nothing to the OS during a session** (40 KB shed over five minutes
+      against a 1.6 GB freelist: ~135 days at that rate). Deferred, because the shipped reclaim work removed both
+      SOURCES of a large freelist, so the acute multi-GB bloat no longer forms; what's left is slow live-event churn.
+      Carries the diagnosis, the two candidate fix shapes (release the pinning reader, or a quiesce barrier at an idle
+      trigger), why a startup `VACUUM` is the wrong tool, and the diagnosis to run FIRST. **Revisit only with data**
+      from a long session that actually bloats.
 - [ ] 2026-06-21 `later/transfer-queue-v2-plan.md` - Transfer queue/pause v2: per-lane budgets (FTP conns),
       mid-large-file pause, concurrent-path pause, connection keep-alive, queue reorder/persist.
-- [ ] 2026-06-28 `later/indexing/drive-index-overall-eta.md` - Overall indexing ETA across remaining steps, with the
-      backend per-phase calibration it needs to stay honest (the step checklist ships per-step ETA only).
+- [ ] 2026-08-27 `later/indexing/drive-index-overall-eta.md` - **A true overall "~Xm left" across all remaining indexing
+      steps, deliberately not built, because an honest one needs per-phase priors that mostly don't exist yet.** Today
+      the step checklist shows where you are plus the ACTIVE step's own ETA. Half the calibration has since landed: scan
+      duration is persisted per volume and per walk kind and already seeds that ETA. Save, compute, and replay still
+      have no priors at all (their timings live only in an app-wide 20-entry debug ring that a restart empties), so the
+      remaining work is extending a pattern that exists rather than inventing one.
 - [ ] 2026-07-14 `later/default-file-manager-spec.md` - Reveal-in-Cmdr (`NSFileViewer` redirect) + `public.folder`
       default handler: two opt-in toggles (default OFF, onboarding step 4 + Settings), `RunEvent::Opened` plumbing with
       cold-start buffering, sanctioned `NSWorkspace` registration, and a spike checklist to run before building.
