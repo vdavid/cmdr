@@ -18,6 +18,13 @@ jobs:
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
+    # Every job here carries a `timeout-minutes` at roughly 2x its healthy run, because the
+    # GitHub default is SIX HOURS and a job that stops making progress will happily spend
+    # them. A single wedged E2E app once burned 136 minutes of runner on 223 tests that each
+    # sat out their own timeout. These caps are the backstop, never the mechanism: a check
+    # that can hang is supposed to notice and say so (the E2E lane's own circuit breaker is
+    # `apps/desktop/test/e2e-playwright/app-death.ts`). Raise a cap when the run grows into it.
+    timeout-minutes: 5
     outputs:
       rust: ${{ steps.filter.outputs.rust }}
       svelte: ${{ steps.filter.outputs.svelte }}
@@ -113,6 +120,7 @@ jobs:
   desktop-rust:
     name: Desktop (Rust)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: changes
     if: inputs.run_all || needs.changes.outputs.rust == 'true'
 
@@ -276,6 +284,7 @@ jobs:
   desktop-svelte:
     name: Desktop (Svelte)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: changes
     if: inputs.run_all || needs.changes.outputs.svelte == 'true'
 
@@ -400,6 +409,9 @@ jobs:
   desktop-e2e-linux:
     name: E2E tests (Playwright, Linux)
     runs-on: ubuntu-latest
+    # ~13 min build + ~6 min for 313 tests on a green run, so 40 leaves room for a slow
+    # runner and a cold Docker cache while still cutting a runaway short.
+    timeout-minutes: 40
     # Gated ONLY on change detection — not on desktop-rust OR desktop-svelte:
     # - desktop-rust: independent. A Rust unit-test failure shouldn't skip e2e
     #   (and vice versa). Gating them together hid a 4-day red-main streak in
@@ -521,6 +533,7 @@ jobs:
   website:
     name: Website
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: changes
     if: inputs.run_all || needs.changes.outputs.website == 'true'
 
@@ -591,6 +604,7 @@ jobs:
   api-server:
     name: API server
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: changes
     if: inputs.run_all || needs.changes.outputs.api-server == 'true'
 
@@ -634,6 +648,7 @@ jobs:
   dashboard:
     name: Analytics dashboard
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: changes
     if: inputs.run_all || needs.changes.outputs.dashboard == 'true'
 
@@ -701,6 +716,7 @@ jobs:
   hygiene:
     name: Repo hygiene
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -780,6 +796,7 @@ jobs:
   scripts:
     name: Scripts (Go)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: changes
     if: inputs.run_all || needs.changes.outputs.scripts == 'true'
 
@@ -835,6 +852,7 @@ jobs:
   deploy-website:
     name: Deploy website
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: website
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
@@ -857,6 +875,7 @@ jobs:
   ci-ok:
     name: CI OK
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, api-server, dashboard, scripts, hygiene]
     if: always()
     steps:
