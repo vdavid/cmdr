@@ -80,6 +80,29 @@ pub(in crate::indexing) fn min_interval_for(is_boot_disk: bool) -> Duration {
     }
 }
 
+/// Why an anchor is taking the visible-sweep route. A typed value rather than a
+/// preformatted string, because two log lines and the scan trigger's label all
+/// need it and this repo never classifies by message text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::indexing) enum SweepReason {
+    /// A root-scale anchor: macOS coalesced its report up to `/` or near it, so
+    /// the path carries no diagnostic information.
+    ShallowAnchor,
+    /// Too many DISTINCT deep anchors arriving to be worth walking one at a time
+    /// (`super::cardinality`).
+    HighCardinality,
+}
+
+impl SweepReason {
+    /// The adjective both log lines and the scan trigger's label use.
+    pub(in crate::indexing) fn label(self) -> &'static str {
+        match self {
+            Self::ShallowAnchor => "shallow",
+            Self::HighCardinality => "high-cardinality",
+        }
+    }
+}
+
 /// Where a `MustScanSubDirs` anchor should go.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::indexing) enum RescanRoute {

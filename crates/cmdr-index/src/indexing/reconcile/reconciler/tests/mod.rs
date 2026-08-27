@@ -3,6 +3,7 @@
 //! (`setup_test_writer` and friends, which `rescan/settle.rs` also imports).
 //! The themes are the sibling modules below.
 
+use super::rescan::cardinality::HIGH_CARDINALITY_ANCHORS;
 use super::*;
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::{TestInstanceGuard, check_db_consistency};

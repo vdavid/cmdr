@@ -5,7 +5,7 @@ sees while it does; the diff engine it calls to do the walking is `../../CLAUDE.
 
 `mod.rs` the drain (one walk at a time, `Utility`-QoS, anchors queued in `pending_rescans`); `route.rs` the depth split;
 `throttle.rs` the per-subtree window; `settle.rs` the delay a brand-new subtree gets; `hold.rs` the "size updating"
-hourglass; `churn.rs` the 15-minute observability line.
+hourglass; `churn.rs` the 15-minute observability line; `cardinality.rs` the arrival-rate bound.
 
 ## Must-knows
 
@@ -21,6 +21,11 @@ hourglass; `churn.rs` the 15-minute observability line.
 - **Depth-split `MustScanSubDirs`** (`route.rs`): SHALLOW (`depth ≤ 2`) → visible scanner, NO hourglass hold, never
   `pending_rescans`; DEEP (`≥ 3`) → throttled drain. A shallow anchor sweeps at most ONCE A DAY, boot disk only;
   coalesced anchors are counted, the badge stays GREEN, and the window is wall-clock and persisted.
+- **Cardinality routing reads ARRIVALS, never completions** (`cardinality.rs`): past `HIGH_CARDINALITY_ANCHORS` distinct
+  DEEP anchors in a window, a boot disk's deep anchors join that same once-a-day sweep. ❌ Don't count only the anchors
+  that reach the drain, and ❌ don't route off `churn.rs` instead: both make the counter measure the drain's own output,
+  so it arms, starves its input, disarms, and oscillates every window. The threshold is an UNMEASURED guess awaiting a
+  week of churn lines.
 - **`RescanDrain` and `ScanTrigger` stay in `../../reconciler.rs` on purpose**: `EventReconciler`'s own method returns
   the drain, so naming a `rescan` type in the parent's signatures would close a cycle through `lifecycle::manager`. ❌
   Don't "tidy" them down here.

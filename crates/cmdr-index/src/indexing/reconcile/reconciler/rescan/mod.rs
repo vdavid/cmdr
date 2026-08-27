@@ -16,9 +16,11 @@
 
 mod churn;
 mod hold;
-// `route` and `throttle` are `pub(super)`: `reconciler.rs` re-exports the sweep
-// record from one and holds a `RescanThrottle` field of the other. The rest of
-// the scheduler is private to this module.
+// `cardinality`, `route`, and `throttle` are `pub(super)`: `reconciler.rs`
+// re-exports the sweep record from one, holds a `RescanThrottle` field of another,
+// and its routing tests name the cardinality threshold. The rest of the scheduler
+// is private to this module.
+pub(super) mod cardinality;
 pub(super) mod route;
 mod settle;
 pub(super) mod throttle;
@@ -26,7 +28,7 @@ pub(super) mod throttle;
 use self::hold::{
     adopt_picked_holds, hold_if_eligible, reconcile_with_eligibility, release_and_emit_completion, release_rescan_hold,
 };
-use self::route::{RescanRoute, SHALLOW_COALESCED_KEY, SHALLOW_SWEEP_AT_KEY, now_unix};
+use self::route::{RescanRoute, SHALLOW_COALESCED_KEY, SHALLOW_SWEEP_AT_KEY, SweepReason, now_unix};
 use self::throttle::RescanThrottle;
 use super::{
     DEBUG_STATS, EventReconciler, IndexStore, IndexWriter, ReconcileSummary, RescanDrain, ScanTrigger, WriteMessage,
@@ -55,28 +57,64 @@ impl EventReconciler {
         }
     }
 
-    /// Route a `MustScanSubDirs` anchor by depth (see [`route`]). The single
-    /// entry point for the two feeders the churn-resilience fix targets — the live
-    /// path (`process_live_event`) and the post-replay handoff (`event_loop::replay`):
+    /// Route a `MustScanSubDirs` anchor (see [`route`]). The single entry point
+    /// for the two feeders the churn-resilience fix targets — the live path
+    /// (`process_live_event`) and the post-replay handoff (`event_loop::replay`):
     ///
-    /// - **Shallow/root-scale** anchor: take the VISIBLE scanner path
-    ///   ([`route_shallow_to_scanner`](Self::route_shallow_to_scanner)) — single-
-    ///   flight, updates freshness, and (critically) NO per-dir hourglass hold, so a
+    /// - **Shallow/root-scale** anchor: take the VISIBLE sweep path
+    ///   ([`route_to_visible_sweep`](Self::route_to_visible_sweep)) — single-flight,
+    ///   updates freshness, and (critically) NO per-dir hourglass hold, so a
     ///   continuously re-churning `/` can't leave the hold stuck for a ~20-min walk.
-    /// - **Deep/narrow** anchor: keep the throttled `reconcile_subtree` drain, which
-    ///   is exactly what it's good at.
+    /// - **Deep/narrow** anchor arriving into a HIGH-CARDINALITY window
+    ///   (`cardinality`): the same visible sweep. Walking one anchor each is only
+    ///   worth it while there are few of them; past that the volume buys a bounded
+    ///   worst case (one sweep a day) with up to a day of staleness.
+    /// - **Deep/narrow** anchor otherwise: the throttled `reconcile_subtree` drain,
+    ///   which is exactly what it's good at.
     pub(in crate::indexing) fn route_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
         match route::classify(path_prefix::depth(&path.to_string_lossy())) {
-            RescanRoute::Scanner => self.route_shallow_to_scanner(path, writer),
-            RescanRoute::Reconcile => self.queue_must_scan_sub_dirs(path, writer),
+            RescanRoute::Scanner => self.route_to_visible_sweep(path, writer, SweepReason::ShallowAnchor),
+            RescanRoute::Reconcile => {
+                if self.anchor_cardinality_is_high(&path) {
+                    self.route_to_visible_sweep(path, writer, SweepReason::HighCardinality)
+                } else {
+                    self.queue_must_scan_sub_dirs(path, writer)
+                }
+            }
         }
     }
 
-    /// Request a VISIBLE full (re)scan for a shallow/root-scale anchor, gated by the
-    /// per-volume once-a-day sweep window. Deliberately takes NO hourglass hold and
-    /// never enters `pending_rescans`: the scanner path is visible and single-flight,
-    /// and holding the per-dir hourglass for a root-scale reconcile is the stuck-
-    /// hourglass bug this replaces.
+    /// Whether this deep anchor arrives into a window already carrying more
+    /// distinct anchors than the drain should walk one at a time (`cardinality`).
+    /// Notes the arrival as a side effect, which is what keeps the verdict stable:
+    /// arrivals are counted whether or not they end up routed, so a machine that
+    /// keeps producing anchors keeps the window crossed instead of oscillating
+    /// between the two routes every window.
+    ///
+    /// **Boot disk only**, for the reason
+    /// [`route::EXTERNAL_SHALLOW_RESCAN_MIN_INTERVAL`] already gives plus a third
+    /// that is decisive on its own: an external volume's sweep window is 45 s, so
+    /// routing there would turn high cardinality into a whole-volume walk every
+    /// 45 seconds, which is strictly worse than the drain it replaced.
+    ///
+    /// An anchor this volume won't walk anyway is not counted: it costs nothing
+    /// today, so it must not arm the router.
+    fn anchor_cardinality_is_high(&self, anchor: &Path) -> bool {
+        self.space.is_boot_disk()
+            && self.may_walk(anchor)
+            && cardinality::note_arrival(&self.volume_id, anchor, Instant::now())
+    }
+
+    /// Request a VISIBLE full (re)scan for an anchor the drain shouldn't take,
+    /// gated by the per-volume once-a-day sweep window. Deliberately takes NO
+    /// hourglass hold and never enters `pending_rescans`: the scanner path is
+    /// visible and single-flight, and holding the per-dir hourglass for a
+    /// root-scale reconcile is the stuck-hourglass bug this replaces.
+    ///
+    /// Two reasons reach here and share one window, because they draw on one
+    /// resource (whole-volume sweeps per day) and mean the same thing to a reader:
+    /// macOS lost track of changes and we haven't re-derived the truth yet. See
+    /// [`SweepReason`].
     ///
     /// Inside the window we do NOT sweep, and the skipped signal is not forgotten:
     /// it's COUNTED and persisted, so the volume tooltip can say how many change
@@ -87,7 +125,7 @@ impl EventReconciler {
     /// The window is boot-disk-only ([`route::min_interval_for`]); a
     /// mount-rooted external drive keeps the short cooldown. See
     /// `route::SHALLOW_RESCAN_MIN_INTERVAL` for the measurements.
-    fn route_shallow_to_scanner(&mut self, anchor: PathBuf, writer: &IndexWriter) {
+    fn route_to_visible_sweep(&mut self, anchor: PathBuf, writer: &IndexWriter, reason: SweepReason) {
         DEBUG_STATS.record_must_scan(&anchor.to_string_lossy());
         let (action, record) = route::decide_shallow_anchor(
             &self.volume_id,
@@ -96,7 +134,8 @@ impl EventReconciler {
         );
         if action == route::ShallowAnchorAction::Coalesce {
             log::info!(
-                "MustScanSubDirs: shallow anchor {} inside the sweep window; coalescing ({} since the last sweep)",
+                "MustScanSubDirs: {} anchor {} inside the sweep window; coalescing ({} since the last sweep)",
+                reason.label(),
                 anchor.display(),
                 record.coalesced_since_sweep,
             );
@@ -118,9 +157,10 @@ impl EventReconciler {
                 value: at.to_string(),
             });
         }
-        let label = format!("shallow MustScanSubDirs ({})", anchor.display());
+        let label = format!("{} MustScanSubDirs ({})", reason.label(), anchor.display());
         log::info!(
-            "MustScanSubDirs: routing shallow anchor {} to the visible scanner",
+            "MustScanSubDirs: routing {} anchor {} to the visible scanner",
+            reason.label(),
             anchor.display()
         );
         match &self.scan_trigger {
@@ -141,8 +181,9 @@ impl EventReconciler {
     }
 
     /// Queue a MustScanSubDirs rescan on the throttled reconcile drain, capped to
-    /// max 1 concurrent. This is the DEEP-anchor path; shallow anchors route to the
-    /// scanner via [`route_must_scan_sub_dirs`](Self::route_must_scan_sub_dirs).
+    /// max 1 concurrent. This is the DEEP-anchor path; shallow anchors and deep
+    /// ones arriving into a high-cardinality window route to the visible sweep via
+    /// [`route_must_scan_sub_dirs`](Self::route_must_scan_sub_dirs).
     pub(in crate::indexing) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
         // On a branch-watched volume the walk owns coverage growth: an anchor
         // outside the covered branches would have the watcher indexing ground

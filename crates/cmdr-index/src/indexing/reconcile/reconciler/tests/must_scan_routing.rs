@@ -101,7 +101,7 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
 /// and that a coalesced anchor goes nowhere. It does NOT pin the window's length
 /// — it fires both events in the same second, which the old 45 s cooldown would
 /// have coalesced too. The length is pinned by `rescan::route`'s unit tests, which
-/// inject the clock; `route_shallow_to_scanner` reads the wall clock directly, so
+/// inject the clock; `route_to_visible_sweep` reads the wall clock directly, so
 /// a day-long window can't be exercised here without injecting a clock through
 /// the live path.
 #[tokio::test]
@@ -371,5 +371,150 @@ async fn a_branch_watched_volume_never_routes_an_anchor_to_the_whole_volume_scan
     );
 
     crate::indexing::watch::branches::forget(volume_id);
+    writer.shutdown();
+}
+
+// ── Anchor-cardinality routing ──────────────────────────────────
+
+/// Fire `count` distinct deep `MustScanSubDirs` anchors through the live path.
+/// Depth 4 and up, so the shallow/deep split sends every one of them to the drain
+/// unless cardinality routing takes over.
+fn storm_of_distinct_deep_anchors(
+    reconciler: &mut EventReconciler,
+    conn: &Connection,
+    writer: &IndexWriter,
+    prefix: &str,
+    count: usize,
+) {
+    let mut pending = HashSet::new();
+    for i in 0..count {
+        reconciler.process_live_event(
+            &make_event(
+                &format!("{prefix}/aaa/bbb/ccc/anchor-{i}"),
+                i as u64 + 1,
+                must_scan_dir_flags(),
+            ),
+            conn,
+            writer,
+            &mut pending,
+        );
+    }
+}
+
+/// The arrival-rate bound. The per-subtree throttle caps how often ONE anchor
+/// re-walks and does nothing about how many DISTINCT anchors show up, because it
+/// is eligible-on-first-sight by design. So a storm of one-shot anchors (a
+/// compiler's fingerprint dirs, an updater's staging dirs) used to mean one
+/// subtree walk each, forever, at whatever rate the machine produced them.
+///
+/// Past a window's worth of distinct deep anchors the volume takes the visible
+/// once-a-day sweep instead, exactly where a root-scale anchor goes: ONE sweep,
+/// and every anchor after it counted rather than walked.
+#[tokio::test]
+async fn a_storm_of_distinct_deep_anchors_routes_to_the_visible_sweep() {
+    let volume_id = "smb://reconciler-test-anchor-cardinality";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler =
+        EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
+    reconciler.switch_to_live();
+    // Keep the queue visible (no spawn), so the drain's share is assertable.
+    reconciler.rescan_active.store(true, Ordering::Relaxed);
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    let over = 50;
+    storm_of_distinct_deep_anchors(&mut reconciler, &conn, &writer, "", HIGH_CARDINALITY_ANCHORS + over);
+
+    assert_eq!(
+        sink.lock().unwrap().len(),
+        1,
+        "the storm turns into ONE visible sweep, however long it runs: the once-a-day \
+         window governs it the same way it governs a root-scale anchor"
+    );
+    assert_eq!(
+        reconciler.pending_rescans_snapshot().len(),
+        HIGH_CARDINALITY_ANCHORS - 1,
+        "everything up to the threshold still walked on the drain; nothing after it did"
+    );
+    assert_eq!(
+        sweep_record(volume_id).coalesced_since_sweep,
+        over as u32,
+        "and every anchor past the sweep is COUNTED, so the tooltip can say how many \
+         change signals macOS lost since the last full check"
+    );
+
+    writer.shutdown();
+}
+
+/// The no-behavior-change case, and the one that matters most: an ordinary
+/// machine's handful of deep anchors keeps the throttled drain, which walks the
+/// anchor and nothing above it. Cardinality routing costs up to a day of
+/// whole-volume staleness, so it must never trip on normal use.
+#[tokio::test]
+async fn an_ordinary_machines_deep_anchors_keep_the_reconcile_drain() {
+    let volume_id = "smb://reconciler-test-ordinary-cardinality";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler =
+        EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
+    reconciler.switch_to_live();
+    reconciler.rescan_active.store(true, Ordering::Relaxed);
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    let ordinary = HIGH_CARDINALITY_ANCHORS - 1;
+    storm_of_distinct_deep_anchors(&mut reconciler, &conn, &writer, "", ordinary);
+
+    assert!(
+        sink.lock().unwrap().is_empty(),
+        "a machine under the threshold never routes, so nothing about it changes"
+    );
+    assert_eq!(
+        reconciler.pending_rescans_snapshot().len(),
+        ordinary,
+        "every anchor is still walked in place by the throttled drain"
+    );
+    assert_eq!(
+        sweep_record(volume_id).coalesced_since_sweep,
+        0,
+        "and nothing was skipped, so the tooltip stays silent"
+    );
+
+    writer.shutdown();
+}
+
+/// Cardinality routing is BOOT-DISK ONLY. An external volume's sweep window is
+/// 45 s (`EXTERNAL_SHALLOW_RESCAN_MIN_INTERVAL`, which is a debounce rather than a
+/// schedule), so routing there would turn high cardinality into a whole-volume
+/// walk every 45 seconds — strictly worse than the drain it replaced. The other
+/// half of the reason is the one already written down for the shallow window: the
+/// per-navigation verifier is root-scoped, so an external drive has the least
+/// cover between sweeps of any volume kind.
+#[tokio::test]
+async fn an_external_volume_keeps_the_drain_however_many_anchors_arrive() {
+    let volume_id = "smb://reconciler-test-external-cardinality";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(
+        volume_id.to_string(),
+        IndexPathSpace::mount_rooted("/Volumes/reconciler-test-external"),
+        CancellationToken::new(),
+    );
+    reconciler.switch_to_live();
+    reconciler.rescan_active.store(true, Ordering::Relaxed);
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    let burst = HIGH_CARDINALITY_ANCHORS + 50;
+    storm_of_distinct_deep_anchors(&mut reconciler, &conn, &writer, "", burst);
+
+    assert!(
+        sink.lock().unwrap().is_empty(),
+        "a mount-rooted volume never routes on cardinality, whatever arrives"
+    );
+    assert_eq!(
+        reconciler.pending_rescans_snapshot().len(),
+        burst,
+        "every anchor stays on the drain, which walks it and nothing above it"
+    );
+
     writer.shutdown();
 }

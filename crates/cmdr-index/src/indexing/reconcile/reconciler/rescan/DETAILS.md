@@ -243,7 +243,7 @@ the VISIBLE scanner path; this makes the two equivalent signals converge. `route
 point for the two feeders the fix targets — the live path `process_live_event` and the post-replay handoff
 `event_loop::replay`) classifies by anchor depth via `route::classify`:
 
-- **Shallow** (`depth <= SHALLOW_RESCAN_MAX_DEPTH = 2`, i.e. `/`, `/Users`, `/Users/<me>`): `route_shallow_to_scanner`
+- **Shallow** (`depth <= SHALLOW_RESCAN_MAX_DEPTH = 2`, i.e. `/`, `/Users`, `/Users/<me>`): `route_to_visible_sweep`
   requests a fresh `start_scan` via `ScanTrigger` and takes NO hourglass hold and NEVER enters `pending_rescans`
   (holding it is the stuck-hourglass bug). In production `ScanTrigger::Registry` spawns
   `manager::perform_registry_rescan` (extract manager → stop watcher + live loop → `start_scan` off the lock → reinsert
@@ -255,6 +255,65 @@ point for the two feeders the fix targets — the live path `process_live_event`
 Depth is a proxy for "re-listing this is walk-the-world expensive"; 2–3 levels is where a reconcile stops being cheap
 and starts holding the hourglass for the better part of a full scan.
 
+## Anchor-cardinality routing (`cardinality.rs`)
+
+**The problem the throttle can't reach.** `throttle.rs` bounds how often a GIVEN anchor re-walks. It contributes nothing
+to bounding how many DISTINCT anchors arrive, because `is_eligible` is eligible-on-first-sight by design (a leading
+edge, deliberately not a debounce). A machine producing one-shot anchors — a compiler's fingerprint dirs, an updater's
+staging dirs — therefore pays one subtree walk per anchor at whatever rate it produces them, so the cost scales with the
+user's workload rather than with anything Cmdr controls. `settle.rs` catches the sub-30-second slice of this (an anchor
+deleted before it settles) and nothing catches the rest.
+
+**Decision**: past `HIGH_CARDINALITY_ANCHORS` distinct DEEP anchors arriving on one volume within a
+`CARDINALITY_WINDOW`, every further deep anchor takes `route_to_visible_sweep` instead of the drain, landing in the same
+once-a-day window a root-scale anchor lands in. **Why**: it reuses a shipped mechanism and a shipped user-facing story
+(coalesced signals counted into the volume tooltip, badge green), and it's the only bound of the four considered that
+fights neither `hold.rs` nor `local_reconcile/cost_budget.rs` — a routed anchor never enters `pending_rescans` at all,
+so it takes no hourglass hold and there is nothing for the ~1 s sweep to re-derive. **What it buys**: predictability and
+a bounded worst case (one whole-volume sweep a day), paid for with up to 24 hours of whole-volume staleness. ⚠️ It is
+NOT a CPU win: "the reconcile drain is the one that moves the CPU number" was wrong answer one in
+`docs/notes/idle-cpu-attribution-2026-08-03.md`, refuted by measurement.
+
+**The threshold is a GUESS and it is waiting on data.** No distribution of per-window anchor cardinality has been
+collected. The churn line above is what will collect it (an ordinary week on a quiet machine, then a `docs/notes/`
+note), and `HIGH_CARDINALITY_ANCHORS` should be re-set from that. What it is positioned against is the only
+anchor-cardinality data in the repo, from the same sampled log the sections above use (David's machine, 2026-07-19..23,
+running six cargo builds — a heavy case, not a typical one): 5,876 distinct anchors across a sampled day, on the order
+of 60 per 15-minute window spread evenly, against 1,595 one-shot anchors in the single worst window. 256 sits several
+times above that heavy machine's average window and an order of magnitude below its worst. Corroborating rather than
+deriving: the churn window stops tracking per-anchor tallies at 64, so a window past 256 lost the ability to name a
+culprit folder long ago.
+
+**Arrivals, never completions, and that is the whole design.** The obvious signal to route from is the churn window
+beside it, which already accumulates per-anchor walks and cost. It's the wrong one: it measures completed reconciles,
+which is exactly the quantity routing suppresses, so a router reading it would arm, starve its own input, disarm, and
+oscillate between the two routes every window. Arrivals are exogenous — a compiler keeps producing anchors whether or
+not we walk them — so counting them keeps the verdict stable for as long as the storm lasts and lifts it one to two
+windows after the storm stops. ⚠️ This is why every deep arrival must be counted, INCLUDING the ones that end up routed:
+skip those and the counter measures the drain's output again, with the oscillation back.
+
+**The previous window counts too.** A window starts from zero distinct anchors, so a machine still churning would read
+low for the minutes it takes to re-cross, and every boundary would hand the drain a fresh burst of walks. The verdict is
+`crossed this window || crossed the last one`, which makes the bound continuous while anchors keep arriving. More than
+one window of silence carries nothing, because the windows in between saw no arrivals at all.
+
+**Boot disk only**, like the sweep window itself, for the two reasons under `EXTERNAL_SHALLOW_RESCAN_MIN_INTERVAL` plus
+a third that is decisive alone: an external volume's window is 45 s, so routing there would turn high cardinality into a
+whole-volume walk every 45 seconds, strictly worse than the drain it replaced. An anchor `may_walk` refuses isn't
+counted either — it costs nothing today, so it must not arm the router.
+
+**Bounded memory, explicitly.** The set stops inserting at the threshold: it exists to answer "have we seen this many
+DISTINCT anchors yet", and once it has, another path can't change the answer. So one volume holds at most
+`HIGH_CARDINALITY_ANCHORS` paths per window, in exactly the case (a storm of unique one-shot anchors) where an unbounded
+set would be worst. The ledger is a process-global keyed by volume id, for the same reason the sweep ledger is: a
+reconciler is recreated on every scan cycle, and a per-instance window would forget the storm each time.
+
+**What this deliberately does NOT touch.** The two feeders that call `queue_must_scan_sub_dirs` directly — the
+removal-storm drop rule and the Leak-B escalation re-queue — are unchanged, exactly as the depth split left them; the
+escalation path is a correctness path (a missing parent chain) and must never be coalesced away. ❌ And nothing here
+reads a path-shaped exclusion list: cardinality is a rate question, and `scanner/exclusions.rs` gaining a fourth
+consumer is an open question for David, not a dependency of this.
+
 ## The once-a-day sweep window for shallow anchors
 
 **The measurement** (David's machine, 2026-07-18..20): **14 of 28 scans were triggered by a shallow `MustScanSubDirs`
@@ -265,7 +324,10 @@ up and coalesced to the watch root. Each trigger runs the SERIAL reconcile walk,
 That's roughly ten multi-minute-to-multi-hour full walks a day for a signal that says nothing about what changed.
 
 **The policy** (`SHALLOW_RESCAN_MIN_INTERVAL = 24 h`, `decide_shallow_anchor`): a shallow anchor means "this index is
-now SUSPECT", not "rescan right now". At most one real sweep per volume per day.
+now SUSPECT", not "rescan right now". At most one real sweep per volume per day. Two reasons reach this window and share
+it (`SweepReason`): a shallow anchor, and a deep anchor arriving into a high-cardinality storm. They draw on one
+resource — whole-volume sweeps per day — and mean the same thing to a reader, so the tooltip line covers both without a
+word changing.
 
 - **Boot disk ONLY.** A mount-rooted volume keeps `EXTERNAL_SHALLOW_RESCAN_MIN_INTERVAL` (45 s), selected by
   `min_interval_for(space.is_boot_disk())`. The reason to keep them apart: we measured the storm on `/` and have no

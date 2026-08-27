@@ -128,6 +128,17 @@ describe('DriveIndexBadge color class', () => {
     const { target } = render(makeStatus({ freshness: 'stale' }))
     expect(target.querySelector('.drive-index-badge-stale')).not.toBeNull()
   })
+
+  // Coalescing change signals into one full check a day is the DESIGNED operating
+  // state, not a fault, so it must never raise a fault colour. Yellow stays
+  // reserved for a check that failed to happen when it was due. At the rate a
+  // busy machine produces these, a badge that went yellow would sit yellow all
+  // day and train people to ignore it.
+  it('stays green while change signals are being coalesced', () => {
+    const { target } = render(makeStatus({ freshness: 'fresh', coalescedSignalsSinceSweep: 1_284 }))
+    expect(target.querySelector('.drive-index-badge-fresh')).not.toBeNull()
+    expect(target.querySelector('.drive-index-badge-stale')).toBeNull()
+  })
 })
 
 describe('DriveIndexBadge menu', () => {
