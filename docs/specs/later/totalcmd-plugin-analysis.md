@@ -1,5 +1,37 @@
 # Total Commander plugin review
 
+Research and a design argument for a plugin system, not a spec and not a task list. Nothing here is started; "Add
+plugins" sits on the public roadmap at "(fall?)". Written 2026-06-12, from the Total Commander plugin catalogs.
+
+## How to read this
+
+It's long, and the actionable third is at the bottom.
+
+- **§ Packer / File system / Content / Lister plugins** (the bulk): every plugin in the catalogs, categorized A–F, with
+  per-type stats and takeaways. Reference material. The stats are the evidence behind the investment-priority call, so
+  they're worth keeping even though nobody reads the tables twice.
+- **§ Analysis**: which abstraction should own each job, the patterns worth inheriting, the ones that are TC's
+  historical accident, and 10 questions that shape a plugin API more than format support does. **Start here.**
+- **§ Unpacking each of these 10 points**: the recommendations, with the reasoning written out so it can be argued with.
+  Subprocess plus JSON-RPC as primary with WASM as a fast lane, one capability manifest instead of four plugin types,
+  and a Column-first vertical slice as the first thing to build.
+
+The two calls it says are expensive to get wrong: **MCP-shaped against bespoke**, and **one capability manifest against
+four plugin types**.
+
+## What the tree says now, which this doc predates
+
+Two of its premises have firmed up since it was written, both in its favor:
+
+- **Backend crates are a settled pattern.** `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` all sit behind the one `Volume`
+  trait (`crates/cmdr-fs/src/volume/mod.rs`, async for every I/O method, exactly as § 4 assumes) and share a
+  `host_seam_test.rs` shape. The doc's "if your plugin SDK makes Volumes cheap, this whole category collapses into
+  Volumes" now has three worked examples instead of one.
+- **MCP is a bigger surface than it was.** The § 2 "should the plugin API just BE MCP-shaped?" question is
+  correspondingly weightier. Note the ports it quotes are still the defaults, but discovery now runs through
+  `<data dir>/mcp.port` and a `0o600` `mcp.token` first (`apps/desktop/src-tauri/src/mcp/port_file.rs`), so a plugin
+  host would inherit that handshake rather than a fixed port.
+
 ## Packer plugins
 
 Reviewed and categorized the packer plugins from both sources. Deduplicated where the same plugin appears in both lists
@@ -808,10 +840,10 @@ The big ones I'd want answered first; these shape the API more than format suppo
 1. **Process isolation & crash containment.** TC plugins are in-process DLLs; one bad plugin tanks the app. What's
    Cmdr's stance? WASM (sandboxed, cross-platform, slower)? Subprocess + JSON-RPC (Tauri-native, easy)? Native dylib
    (fast, dangerous)? Pick before you design types, as it dictates the ABI.
-2. **MCP overlap.** You already expose Cmdr to agents via MCP (port 19224 prod / 19225 dev). MCP is essentially
-   "external tool as a stdio JSON-RPC plugin." Should Cmdr's plugin API just _be_ MCP-shaped, so the same plugin serves
-   humans and AI agents? This could collapse two systems into one. Worth a hard look before committing to a bespoke
-   contract.
+2. **MCP overlap.** You already expose Cmdr to agents via MCP (default port 19224 prod / 19225 dev, discovered through a
+   port file). MCP is essentially "external tool as a stdio JSON-RPC plugin." Should Cmdr's plugin API just _be_
+   MCP-shaped, so the same plugin serves humans and AI agents? This could collapse two systems into one. Worth a hard
+   look before committing to a bespoke contract.
 3. **Trust/permissions model.** TC has none. Cmdr is going to ship to non-developers. Per-plugin capability declarations
    (filesystem scope, network scope, exec scope), Tauri-style consent, signed manifests, and a registry: these need to
    be in v1 of the API, not bolted on. Look at VS Code, Raycast, Obsidian extension permissions.

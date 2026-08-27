@@ -110,8 +110,15 @@ left, so the durable intent survives the wipe.
       Linux has a file watcher that never starts, Super-bound menu accelerators, and 504 macOS-specific strings
       (`docs/notes/linux-gaps-2026-08-10.md`), and none of that is in these milestones. The roadmap puts real Linux
       support at "(winter?)".
-- [ ] 2026-05-10 `later/totalcmd-plugin-analysis.md` - Not a spec, but Total Commander packer-plugin research backing
-      future archive/plugin work.
+- [ ] 2026-08-27 `later/totalcmd-plugin-analysis.md` - **The only design artifact for the roadmap's "Add plugins"** (at
+      "(fall?)", not started). Not a spec: research plus an argument. Covers all four Total Commander plugin types, not
+      just packers, categorizing every plugin in the catalogs A–F. The bottom third is the actionable part and the doc
+      now says so up front: which abstraction should own each job, the TC patterns worth inheriting against the
+      historical accidents, and 10 questions that shape a plugin API more than format support does. Its recommendations:
+      subprocess plus JSON-RPC as primary with WASM as a fast lane, **one capability manifest instead of four plugin
+      types**, and a Column-first vertical slice as the first build. The two calls it flags as expensive to get wrong
+      are MCP-shaped against bespoke, and manifest against types. ⚠️ **84 KB**, by far the largest doc here; most of it
+      is the survey tables that back the investment-priority stats.
 - [ ] 2026-08-27 `later/disk-cleanup-advice-process.md` - Not a spec and not unfinished work: **reference notes on how
       to give disk-cleanup advice without losing the user's trust**, from a session where an agent got it wrong three
       times. The heuristic (delete only what is BOTH filesystem-idle by mtime and process-idle by `pgrep`; present
