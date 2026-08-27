@@ -1,64 +1,25 @@
 # The coverage machine works; these are the threads left hanging
 
 **Problem**: phased indexing and claim-based ground ownership both shipped, and both left a named tail nobody scheduled.
-Neither remaining item is urgent, both are small, and both are engineering calls rather than product ones: nothing here
-has a setting, a string, or a permission prompt attached.
-
-**Size**: a day and a half if both are taken, and they are independent.
+What is left is one unexplained measurement; every item that was work has landed, moved to GitHub, or been declined on
+the record.
 
 **Read first**: `crates/cmdr-index/src/indexing/lifecycle/phases/DETAILS.md` (the phase machine and why the walk's order
 changed but not its extent), and `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "Two ownership designs that
 were considered and rejected" before proposing any change to who owns a walk.
 
-## The work
-
-1. **The verifier MARK, with the abandoned-ground visit trigger.** A day, and these ship together. A folder the user
-   browses is fully read by the verifier and still needs a walk afterwards. Today the verifier BAILS on
-   `listed_epoch == 0` (`reconcile/verifier.rs`, `is_the_walks_to_cover`), which is the correct and safe half; marking
-   is strictly more useful and strictly harder. ⚠️ The two are mutually exclusive: a verifier that both bails and marks
-   is incoherent, so this is a replacement.
-
-   **What it buys, stated honestly.** ❌ Not throughput. The payoff is that browsed ground becomes searchable ground:
-   today a folder the user is looking at can be absent from search until a walk reaches it, and for ground marked
-   `Abandoned` nothing the user does fixes it at all (`writer/abandoned_retry.rs` says so twice: "navigating into it
-   doesn't"). Secondarily it reuses a directory read already paid for, over the handful of folders somebody actually
-   visits, which is real but small. Its companion is the abandoned-ground visit trigger, and landing both lets
-   `abandoned_retry`'s backoff drop its five-minute first step and become one curve instead of two policies. ⚠️ That
-   collapse is a simplification, ❌ not a saving: the first step is documented as costing "~nothing" because clearing a
-   cause does no disk work by itself.
-
-   ⚠️ **The risk is the reason this is a day and not an afternoon.** `verifier.rs` spells out what a wrong mark does:
-   writing children under a directory nothing marked is "precisely the non-virgin node that sends a later cover walk
-   down the serial repair path, and running a full recursive `scan_subtree` per new subdirectory to get there". The
-   failure mode is not a wrong answer, it is a walk that silently degrades.
-
-2. **Feed first-run priority from Spotlight recency.** Half a day once the three questions below are answered.
-   `importance/last_used.rs` already samples `kMDItemLastUsedDate`, but from inside the crate and only once an index
-   exists. An app-side Spotlight query at launch would feed `priority_roots` on a true first run, which is exactly when
-   last session's tab paths are empty and the machine has least to go on. Needs Full Disk Access, which the phase
-   machine already waits for.
-
-   ⚠️ **The baseline is not nothing.** On a true first run `priority/roots.rs` already answers with
-   `STANDARD_HOME_FOLDERS` (Downloads, Documents, Desktop, Pictures, Movies, Music, each taken only when it exists and
-   holds something) plus the cloud roots. So the win is re-ranking those six and surfacing the folder that isn't among
-   them, ❌ not filling an empty list.
-
-   **Three questions decide the shape, and an implementer who isn't given them will invent answers:**
-
-   - **Files to folders.** Spotlight returns files. Nothing says whether a hit promotes its parent, its nearest common
-     ancestor with other hits, or a bounded ancestor under `$HOME`, nor whether the ranking is by hit count or by
-     recency.
-   - **The window.** A bounded query (`kMDItemLastUsedDate > $time.today(-N)`) needs an `N`, and the result set needs a
-     cap, because Spotlight does not sort.
-   - **Which API.** `last_used.rs` uses per-item `MDItemCopyAttribute`, which cannot express a query. This needs
-     `MDQuery` or a shelled-out `mdfind`, so it is a new Spotlight pattern rather than an extension of that one.
-
-   ⚠️ The seam is contractually cheap: `HostPolicy::priority_roots` is asked at every phase boundary with "❌ no I/O on
-   a contended path and no blocking lock". So the query runs once at launch, off-thread, and feeds the existing cache in
-   `priority/roots.rs` behind its `CACHE_TTL`.
-
 ## Deliberately not doing
 
+- **The verifier MARK, with the abandoned-ground visit trigger.** Replacing the verifier's `listed_epoch == 0` bail
+  (`reconcile/verifier.rs`, `is_the_walks_to_cover`) with a mark would let a browsed folder become searchable without
+  waiting for a walk, and would fix the one case where ground marked `Abandoned` is unreachable by anything the user
+  does. ⚠️ **It is not a throughput win, which is why it lost.** `writer/abandoned_retry.rs` documents its five-minute
+  first step as costing "~nothing", so collapsing that backoff is a simplification and not a saving; the reuse of a
+  directory read already paid for is real but covers only the folders somebody actually visits. Against that,
+  `verifier.rs` spells out the risk: writing children under a directory nothing marked is "precisely the non-virgin node
+  that sends a later cover walk down the serial repair path, and running a full recursive `scan_subtree` per new
+  subdirectory to get there" — a walk that degrades silently rather than an answer that is wrong. **Recommendation:
+  leave the bail alone.** Revisit only if abandoned ground shows up in real reports.
 - **Pinning the first-run layout end to end.** A Playwright run over a first launch asserting left `~` and right
   `~/Downloads` cannot pass, because `first-run-layout.ts` opens with `if (ctx.isAutomatedRun) return 'leaveAlone'` on
   purpose, so an E2E run never lays out. And `onboarding.spec.ts` records that per-spec env control is out of scope:
@@ -74,6 +35,15 @@ were considered and rejected" before proposing any change to who owns a walk.
 - **A replay-loop test harness.** There is none in the repo, and building one means a real `DriveWatcher` over a temp
   tree, so it is a day of harness for one assertion. The risk it would guard, a truncate under a live replay, is
   prevented by the `Exclusive` claim.
+
+## Shipped
+
+- **The `mgr.scanning` rename**, which closed the claim-based ownership plan. It is `ground_in_flux` now, because a
+  replay sets it too and its most important reader is a guard rather than a report.
+- **Spotlight recency feeding the first-run walk order.** `src/spotlight.rs` asks Spotlight which folders hold this
+  user's recently-opened files, coupled to nothing; `priority/roots/recency.rs` decides when to ask and what is worth
+  walking early. Ranked by direct file count over a 30-day window, below tabs and favorites and above the static home
+  folders. Details and the three filters: `apps/desktop/src-tauri/src/priority/DETAILS.md` § "The recency signal".
 
 ## Split out to GitHub
 

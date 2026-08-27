@@ -10,12 +10,13 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-08-21 `indexing-loose-ends.md` - **The coverage machine works; these are the threads left hanging.** Phased
-      indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled. Two
-      engineering calls are left: the verifier mark with its abandoned-ground trigger (searchability, ❌ not
-      throughput), and Spotlight recency for a true first run (three shape questions open). **A day and a half**, and
-      they are independent. Two items left for GitHub as product work (`#56`, `#57`), one was dropped as untestable by
-      design, and the `mgr.scanning` rename shipped.
+- [x] 2026-08-21 `indexing-loose-ends.md` - **The coverage machine works; these are the threads left hanging.** Phased
+      indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled. All of it is
+      now resolved: the `mgr.scanning` rename and Spotlight-recency first-run ordering shipped, two items left for
+      GitHub as product work (`#56`, `#57`), and two were declined on the record (the verifier mark, which is a
+      searchability win with a silent-walk-degradation risk and ❌ no throughput payoff, and the first-run layout E2E,
+      which cannot pass by design). **Kept for one unexplained measurement**: a 19–21 s gap the phase machine's own docs
+      flag, worth resolving before anyone tunes phase boundaries.
 - [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Ten calls waiting on David:
       unreviewed user-facing copy in four places, two product calls (one of which has blocked its dependent milestones
       since July), three questions that shipped code has already answered and that just need closing, and one
