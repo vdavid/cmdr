@@ -231,24 +231,24 @@ path-keyed (backward compat) and integer-keyed APIs exist.
 `entries.rs` binds every `u64` column through one of two converters, and both directions of the inode pair are
 mandatory: bind one side raw and a seek compares a positive value against a row stored as negative.
 
-- **`inode_to_sql` / `inode_from_sql`: a bit-cast, both ways.** An inode is an IDENTITY, so it must round-trip
-  exactly. ❌ Never clamp one: saturating collapses every high-bit value onto `i64::MAX`, and `find_entry_by_inode`
-  then matches unrelated files into each other during rename detection and hardlink dedup. Equality on the bit
-  pattern is preserved, so `idx_inode` keeps working and pre-existing rows (all ≤ `i64::MAX`, where the cast is the
-  identity) need no migration.
-- **`size_to_sql` (and `dir_stats.rs`'s `clamp_to_sql`): saturating at `i64::MAX`.** A size or a count is a
-  MAGNITUDE, so an absurd one is garbage worth clamping.
+- **`inode_to_sql` / `inode_from_sql`: a bit-cast, both ways.** An inode is an IDENTITY, so it must round-trip exactly.
+  ❌ Never clamp one: saturating collapses every high-bit value onto `i64::MAX`, and `find_entry_by_inode` then matches
+  unrelated files into each other during rename detection and hardlink dedup. Equality on the bit pattern is preserved,
+  so `idx_inode` keeps working and pre-existing rows (all ≤ `i64::MAX`, where the cast is the identity) need no
+  migration.
+- **`size_to_sql` (and `dir_stats.rs`'s `clamp_to_sql`): saturating at `i64::MAX`.** A size or a count is a MAGNITUDE,
+  so an absurd one is garbage worth clamping.
 
 **Why it matters.** SQLite's `INTEGER` is a signed 64-bit column and holds every bit of a `u64`, but rusqlite's
 `ToSql for u64` runs `i64::try_from` and raises `TryFromIntError` above `i64::MAX`. That error propagates out of the
-`with_savepoint` closure, which rolls the savepoint back, so ONE bad row loses the whole ~2000-row batch, and the
-caller only logs it: `InsertVisitor::flush` still queues `MarkDirsListed`, so the directory ends up stamped with the
-current epoch and no children, and the coverage frontier never re-covers it.
+`with_savepoint` closure, which rolls the savepoint back, so ONE bad row loses the whole ~2000-row batch, and the caller
+only logs it: `InsertVisitor::flush` still queues `MarkDirsListed`, so the directory ends up stamped with the current
+epoch and no children, and the coverage frontier never re-covers it.
 
 High-bit inodes are ordinary on a MOUNTED SMB share, which the local scanner walks like any other volume:
-`ATTR_CMN_FILEID` on smbfs is the server's 64-bit file id, or a path hash when the server has none. 43% of the files
-in one directory on a QNAP measured above `i64::MAX` (verified on macOS 26.5.2 against `//…/naspi`, `stat -f '%i'`
-over 111 files, 2026-08-27), which is how a user's 609-entry directory indexed as empty (`ERR-AYVM4`).
+`ATTR_CMN_FILEID` on smbfs is the server's 64-bit file id, or a path hash when the server has none. 43% of the files in
+one directory on a QNAP measured above `i64::MAX` (verified on macOS 26.5.2 against `//…/naspi`, `stat -f '%i'` over 111
+files, 2026-08-27), which is how a user's 609-entry directory indexed as empty (`ERR-AYVM4`).
 
 ## Decision: SQLite page memory is one process-wide slab, not a per-connection budget
 
