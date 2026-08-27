@@ -49,13 +49,13 @@ Two colocated tiers per code area, enforced by checks:
 
 - We often call `CLAUDE.md` and `DETAILS.md` `C.md` and `D.md`, `C+D.md` together.
 - **`C.md`** Auto-injected by the CC harness whenever a (sub)agent touches a dir, every session and wt. ONLY must-knows:
-  gotchas, guardrails, a 2–3 line module map, and pointer to `DETAILS.md`. `claude-md-length` warns past 600, try to
-  keep it much shorter.
+  gotchas, guardrails, a 2–3 line module map, and pointer to `DETAILS.md`. **Aim for 300–400 words.** `claude-md-length`
+  warns past 600, but that's the alarm, not the target.
 - **`D.md`** the rest. Read on demand. Architecture, data flows, decision rationale, edge-case catalogs. No length
   limit, but try to be concise to make it token-efficient. When writing, default to `D.md`; promote to `C.md`.
 - `claude-md-details-sibling` enforces all `C.md` and `D.md` to exist in pairs. Never `@`-import `D.md` from a `C.md`!
-- Cut `C.md` radically: make each part sound like a tweet, move depth to `D.md`, and split the module if it can't fit in
-  600 words.
+- Cut `C.md` radically: make each part sound like a tweet, move depth to `D.md`, and split the module if it can't reach
+  300–400 words that way.
 - `docs-reachable` enforces the doc graph to be linked: (every doc reachable from this file by link-walking),
   `docs-dead-links` and `docs-link-text` (no broken or path-shaped reference), and `resident-doc-budget` (the
   always-resident bundle, this file plus its `@`-imports plus `.claude/rules/`, can't silently regrow). Keep this

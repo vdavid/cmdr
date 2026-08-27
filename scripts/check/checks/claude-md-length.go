@@ -14,6 +14,11 @@ const (
 	// every agent session that touches its directory, so each word costs tokens
 	// repeatedly. The pull-tier DETAILS.md (read on demand) is deliberately
 	// unlimited and is NOT checked. See AGENTS.md § File structure.
+	//
+	// This is the ALARM, not the target: authored files aim for 300-400 words
+	// (docs/doc-system.md § C vs D). A warn here means a file drifted to roughly
+	// double where it should sit, so the fix is condensing or splitting, not
+	// trimming back to 599.
 	claudeMdWarnWords = 600
 
 	// Tolerate this much growth above each allowlisted file's recorded word count

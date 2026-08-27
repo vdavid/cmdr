@@ -27,8 +27,13 @@ cut. Keep in `CLAUDE.md`: invariants, gotchas, "don't do X because Y" guardrails
 `DETAILS.md` pointer. Everything else (architecture narrative, data flows, decision rationale, history, edge-case
 catalogs, benchmarks) is depth.
 
-- **No word floor.** A `CLAUDE.md` should be as small as its essentials allow. If 80 words captures the must-knows, 80
-  is right; don't pad toward the 600-word ceiling. Dense and focused beats comprehensive.
+- **Aim for 300-400 words; 600 is the alarm, not the goal.** `claude-md-length` warns past 600, so a file that lands at
+  599 reads as fine and isn't: it's roughly double what a must-know list needs, paid every session in every worktree by
+  every agent that touches the directory. Treat a file over ~400 as one to condense, and a file that can't reach ~400
+  after condensing and moving depth as a module worth splitting.
+- **No word floor either.** A `CLAUDE.md` should be as small as its essentials allow. If 80 words captures the
+  must-knows, 80 is right; the 300-400 aim is a ceiling to work down toward, never a quota to pad up to. Dense and
+  focused beats comprehensive.
 - **Condense before you move.** Most bloat is padded wording, not misplaced depth: a typical `CLAUDE.md` halves with
   zero information loss before anything moves to `DETAILS.md`. Tighten the prose first, then move what's genuinely
   depth.
@@ -93,7 +98,9 @@ Convention rots; checks don't. Each invariant is a check (sources in `scripts/ch
 
 - **`resident-doc-budget`** (warn): caps the always-resident bundle (root `CLAUDE.md` + its `@`-imports +
   `.claude/rules/`); the cap ratchets DOWN only. Guards against silent regrowth of the per-session cost.
-- **`claude-md-length`** (warn): caps each `CLAUDE.md` at 600 words; shrink-wraps its allowlist.
+- **`claude-md-length`** (warn): warns past 600 words per `CLAUDE.md`; shrink-wraps its allowlist. The authored target
+  is 300-400 (see § C vs D), so the warn catches files that drifted well past where they should sit, not files that are
+  merely at their limit.
 - **`invariant-density`** (warn): counts the `❌` rules each subsystem's docs carry, absolute and per 1,000 source
   lines; a strict ratchet, so the number can only go down. See § The rule budget.
 - **`claude-md-details-sibling`** (error): every non-root `CLAUDE.md` has a sibling `DETAILS.md` and links it.
