@@ -34,8 +34,8 @@
 //! Beside "who gets the volume" sits the smaller question of which of its folders
 //! come first: [`roots`] ranks the ones this user cares about, for a walk that takes
 //! a volume in pieces. An order and nothing else, so a wrong guess costs a few
-//! minutes of scheduling and never a file that goes unindexed. ⚠️ No caller asks
-//! for it yet — see the module's own docs.
+//! minutes of scheduling and never a file that goes unindexed. The index's phase
+//! machine asks for it at every phase boundary.
 
 pub mod foreground;
 /// The adapter that answers the index subsystems' `HostPolicy` question from the

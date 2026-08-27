@@ -122,13 +122,15 @@ fn cached_roots() -> Vec<PathBuf> {
 /// user's first look at the switcher would have.
 fn collect_inputs() -> Option<RootInputs> {
     let home = dirs::home_dir()?;
+    let fda_pending = crate::fda_gate::is_fda_pending_runtime();
     Some(RootInputs {
         tabs: last_session_tab_paths(&home),
         favorites: crate::favorites::store::list()
             .into_iter()
             .map(|favorite| PathBuf::from(favorite.path))
             .collect(),
-        fda_pending: crate::fda_gate::is_fda_pending_runtime(),
+        recent: recency::folders(&home, fda_pending),
+        fda_pending,
         home,
     })
 }
@@ -174,6 +176,9 @@ struct RootInputs {
     tabs: Vec<PathBuf>,
     /// The user's favorites, in their own order.
     favorites: Vec<PathBuf>,
+    /// Where the user has been working lately, busiest first. Empty on a build with no
+    /// Spotlight, and on every ask before the sample lands (`recency.rs`).
+    recent: Vec<PathBuf>,
     /// While the Full Disk Access decision is pending, ❌ don't stat TCC-anchored paths:
     /// even `Path::exists()` raises a system popup on top of our onboarding modal.
     fda_pending: bool,
@@ -196,10 +201,15 @@ enum Requirement {
 ///
 /// 1. last session's tab paths, most recently active first (literally where the user was),
 /// 2. the user's favorites, in their order,
-/// 3. the standard home folders that exist and hold something,
-/// 4. the cloud roots that exist (after the local ones: a File Provider read can stall,
+/// 3. the folders holding the files they opened this month, busiest first (`recency.rs`),
+/// 4. the standard home folders that exist and hold something,
+/// 5. the cloud roots that exist (after the local ones: a File Provider read can stall,
 ///    and a stall must not delay `~/Downloads`),
-/// 5. `$HOME` itself, which sweeps up everything the guesses missed.
+/// 6. `$HOME` itself, which sweeps up everything the guesses missed.
+///
+/// Recency sits below the two signals the user stated OUTRIGHT and above the static
+/// list, which is the whole of what it buys: on a true first run there are no tabs and
+/// no favorites, so without it the order is the same for everybody.
 ///
 /// `on_another_volume` decides whether a candidate belongs to some other mount; it is
 /// injected so the ranking stays testable without a volume registry.
@@ -216,6 +226,9 @@ fn rank_roots(inputs: &RootInputs, on_another_volume: &dyn Fn(&Path) -> bool) ->
     }
     for favorite in &inputs.favorites {
         order.consider(favorite, Requirement::Directory);
+    }
+    for folder in &inputs.recent {
+        order.consider(folder, Requirement::Directory);
     }
     for folder in STANDARD_HOME_FOLDERS {
         order.consider(&inputs.home.join(folder), Requirement::NonEmptyDirectory);
@@ -419,6 +432,8 @@ fn local_path(path: Option<&serde_json::Value>, volume_id: Option<&serde_json::V
     let path = PathBuf::from(raw);
     path.is_absolute().then_some(path)
 }
+
+mod recency;
 
 #[cfg(test)]
 mod tests;

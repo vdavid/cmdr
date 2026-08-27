@@ -10,8 +10,11 @@ at their own loop boundaries.
 - `foreground.rs`: last-interactive-activity timestamps, app-wide + per volume. Written by the hot listing IPC.
 - `transfers.rs`: per-volume gauge of user-initiated write ops (copy/move/delete/trash/drag-out).
 - `roots.rs`: which folders matter to this user, ranked, for a walk that takes a volume in pieces. Last session's tabs,
-  favorites, the standard home folders, cloud roots, then `$HOME`. Read by the index's phase machine at each phase
-  boundary, so an edited favorites list lands without a restart.
+  favorites, where they've been working this month (`roots/recency.rs`), the standard home folders, cloud roots, then
+  `$HOME`. Read by the index's phase machine at each phase boundary, so an edited favorites list lands without a
+  restart.
+- `roots/recency.rs`: the Spotlight-recency signal: when to ask, and which answers are worth walking early. The query
+  itself is `apps/desktop/src-tauri/src/spotlight.rs`, coupled to nothing.
 - `host_policy.rs`: `AppHostPolicy` (the index subsystems' `HostPolicy`) and `AppUserActivity` (a storage backend's
   narrower per-volume question), answering from the signals above. Installed once in `setup()`.
 
@@ -22,15 +25,16 @@ at their own loop boundaries.
   desyncs the count; a missed unregister is already covered by the manager's panic-safe cleanup.
 - **A missing foreground entry means "never browsed" = idle.** ❌ Don't collapse it to a `0` timestamp — `0` is a real
   clock point, and every background user would stall for the app's first threshold window.
-- **Consumers pick their own scope on purpose** (documented per consumer in `foreground.rs` + `DETAILS.md`): enrichment
-  reads APP-WIDE foreground + per-volume transfers; scan pacing and transfer-yield read PER-VOLUME. Don't "unify" the
-  scopes.
+- **Consumers pick their own scope on purpose** (per consumer in `foreground.rs` + `DETAILS.md`): enrichment reads
+  APP-WIDE foreground + per-volume transfers; scan pacing and transfer-yield read PER-VOLUME. Don't "unify" them.
 - **The index reads these through `AppHostPolicy`, never directly.** It's being extracted into a Tauri-free crate, so
   `crate::priority` isn't reachable from it. A new index consumer asks `indexing::host::policy` and the adapter answers;
   ❌ don't hand it a `crate::priority` import back. SMB transfer-yield and the write-op feed still call in directly —
   they're app code.
 - **Indexing yields must keep forward progress structural**: throttle-to-one or pause-with-resume, ❌ never a gate that
   can stop work with no wake-up path (see `indexing/network_scanner/scan_pace.rs`'s never-zero budget).
+- **The recency sample is armed ONCE per process, off-thread, and answers late.** ❌ Never make an ask wait for it, and
+  ❌ never arm it while the FDA gate is pending.
 - **Priority roots are a walk ORDER, never a scope.** Dropping one changes what gets indexed first and never what gets
   indexed, which is what makes ranking on guesses safe. ❌ Don't grow a setting, a promise, or a skip out of them.
 - **❌ Never stat a path here while the FDA gate is pending and `tcc_paths::is_potentially_tcc_restricted` says a gate

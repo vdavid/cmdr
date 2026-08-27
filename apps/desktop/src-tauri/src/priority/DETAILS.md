@@ -37,11 +37,11 @@ cancellation machinery for no behavior we need. The priority order is enforced b
 
 ## The walk order (`roots.rs`)
 
-⚠️ **Read this whole section as a description of a seam, not of behavior.** Today's drive index walks a volume as one
-bulk scan and never asks for an order; `HostPolicy::priority_roots` is wired end to end and covered by tests, and the
-walk that would act on it isn't built. Nothing here changes what a user sees until a caller arrives.
+The consumer is the index's phase machine, which covers a never-completed volume in pieces and asks
+`HostPolicy::priority_roots` at every phase boundary (`indexing/lifecycle/phases/`). It is on by default
+(`PHASED_FIRST_INDEX`), so this ranking is what a real first index walks first.
 
-The ranked list is the schedule a walk that took a volume in pieces would follow. Everything about it follows from one
+The ranked list is the schedule that walk follows. Everything about it follows from one
 property: **it is an order and nothing else.** Such a walk covers the whole volume either way, so a root that appears,
 disappears, or turns out to be a bad guess costs a few minutes of ordering and never a file that goes unindexed. That is
 what makes it safe to rank on signals that are cheap, incomplete, and occasionally wrong.
@@ -58,17 +58,22 @@ what makes it safe to rank on signals that are cheap, incomplete, and occasional
 2. **Cmdr favorites** in the user's own order. The seed is platform-dependent (`/Applications` on macOS, the home folder
    on Linux), so the ranking takes whatever `favorites::store::list()` hands it; ❌ never assume the macOS four. Note
    that reading them seeds the defaults on a first run, exactly as the volume switcher's own read does.
-3. **The standard home folders** (`Downloads`, `Documents`, `Desktop`, `Pictures`, `Movies`, `Music`) that exist AND
+3. **Where they have been working this month**, from Spotlight: the folders holding files with a
+   `kMDItemLastUsedDate` inside the window, busiest first. `roots/recency.rs` decides when to ask and what to keep;
+   `apps/desktop/src-tauri/src/spotlight.rs` asks. Below the two signals the user stated OUTRIGHT and above the static list, which is the whole
+   of what it buys: on a true first run there are no tabs and no favorites, so without it every machine gets the same
+   order. See § "The recency signal" below.
+4. **The standard home folders** (`Downloads`, `Documents`, `Desktop`, `Pictures`, `Movies`, `Music`) that exist AND
    hold something. The non-empty bar is only for the folders we guessed at: a folder the user named themselves is taken
    as-is, since them saying it matters beats what happens to be in it today.
-4. **Cloud roots**: every File Provider domain under `~/Library/CloudStorage`, then `~/Dropbox`, then iCloud Drive.
+5. **Cloud roots**: every File Provider domain under `~/Library/CloudStorage`, then `~/Dropbox`, then iCloud Drive.
    After the local ones deliberately: a File Provider read can stall, and a stall must not delay `~/Downloads`. The
    domains are sorted, because `read_dir` order is arbitrary and a schedule that reshuffles between asks is one nobody
    can debug. **Known limit**: ordering only protects the WALK. Listing `~/Library/CloudStorage` and stat-ing a domain
    root are local metadata reads (macOS keeps domain roots materialized; the stalls are on unmaterialized file
    CONTENTS), but if one ever did hang, it would hang the whole answer, local roots included. If that shows up, the fix
    belongs where the seam is consulted, not here.
-5. **`$HOME`**, last, sweeping up whatever the guesses missed. Last is load-bearing: first, and every later root would
+6. **`$HOME`**, last, sweeping up whatever the guesses missed. Last is load-bearing: first, and every later root would
    be a descendant of it and get dropped, collapsing the whole schedule into one undifferentiated walk.
 
 **The filters** each candidate passes, in `WalkOrder::consider`:
@@ -103,6 +108,49 @@ the computation on purpose: a burst of asks then produces one answer instead of 
 
 **Only the boot volume gets an answer.** Every signal above describes one machine's layout, so a share inheriting it
 would be nonsense; a share's own order is a question for whoever needs it.
+
+### The recency signal (`roots/recency.rs`)
+
+**The question it answers**, and the only one it answers: on a true first run there are no tabs and no favorites, so
+the ranking falls back to a static list identical on every machine. This is what makes that one run personal, at the one
+moment nothing else can (the index knows nothing yet, so the index's own signals can't help).
+
+**A folder is ranked by how many recently-used files sit DIRECTLY in it**, never recursively. A recursive count would
+hand `$HOME` every file below it and put it on top, which is exactly the collapse the `$HOME`-goes-last rule exists to
+prevent.
+
+**The window is 30 days.** A fresh install often follows a new machine or a migration, where the last week of activity
+is unpacking rather than working, so a tighter window ranks the wrong folders on precisely the run this serves. A month
+sees past that and still lets last spring's project fall off.
+
+**Asked once per process, off-thread, and late is fine.** `HostPolicy::priority_roots` is contractually cheap (no I/O on
+a contended path, no blocking lock) and a synchronous `MDQuery` plus one attribute read per result is neither. So the
+first ask that finds the FDA gate settled ARMS a detached sampler thread and answers without it; later asks pick the
+result up. The phase machine asks at every boundary, so it joins within a phase or two of index start. Arriving late
+costs an order, never a file. The arming is a compare-and-set rather than a lock held across the spawn, because asks
+arrive in bursts milliseconds apart.
+
+**Three filters, and each is load-bearing:**
+
+- **`~/Library` descendants are dropped here**, not by `WalkOrder::consider`, which only rejects `~/Library` ITSELF.
+  A month of recency under a home directory is dominated by application-support files (measured on this machine: at a
+  wide window, three of the top five folders were `Library/Application Support/Claude`, `Library/Dropbox`, and
+  `Library/Keyboard Layouts`). Uncapped they would take every slot the signal has. Its `CloudStorage` and iCloud Drive
+  children are the exception and stay: a file opened in Dropbox is the user's own work.
+- **A folder needs at least 2 recently-used files.** One is somebody opening an attachment once; two is a place they
+  went back to. ⚠️ A guess, and the first knob to turn if this ever ranks badly on a real home.
+- **At most 8 folders reach the ranking.** ⚠️ Not optional: the whole ranking caps at 24 and recency outranks the
+  standard home folders, so an uncapped tail of barely-used folders would push `~/Downloads` and `~/Documents` off the
+  end entirely.
+
+**Everything about it is best-effort.** Spotlight turned off, a volume that isn't indexed, a permission we don't have,
+or a macOS release that changes the query language all produce an empty answer and a log line, never an error. Verified
+against a live Spotlight index on macOS 26.6.2 (2026-08-27): the query matches `mdfind`'s result set exactly, and the
+folder folding put `~/Downloads` on top at 13 files over a 10-year window.
+
+**Read `kMDItemPath` off the query's own results, ❌ never `MDItemCreate` per path.** `MDQueryGetResultAtIndex` follows
+the CoreFoundation GET rule, so its `MDItem` is borrowed from the query and must not be released, and every path is
+copied out before the query is.
 
 ## Scope choices (why each consumer reads what it reads)
 

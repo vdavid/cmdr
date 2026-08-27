@@ -28,8 +28,41 @@ fn inputs(home: &Path) -> RootInputs {
         home: home.to_path_buf(),
         tabs: Vec::new(),
         favorites: Vec::new(),
+        recent: Vec::new(),
         fda_pending: false,
     }
+}
+
+/// Recency's whole job is the first run, when there are no tabs and no favorites and
+/// the order would otherwise be the same static list for everybody.
+#[test]
+fn on_a_first_run_recency_outranks_the_standard_home_folders() {
+    let (_dir, home) = home_with("roots_recency_first_run", &["Downloads", "Documents", "code"]);
+    let mut inputs = inputs(&home);
+    inputs.recent = vec![home.join("code")];
+
+    let roots = rank_roots(&inputs, &all_local);
+
+    assert_eq!(
+        roots.first(),
+        Some(&home.join("code")),
+        "the folder they actually work in beats the static list, got {roots:?}"
+    );
+}
+
+/// ⚠️ Recency is a GUESS from an OS index; a favorite is the user saying it outright.
+/// If this ever inverts, a stale Spotlight record outranks a deliberate choice.
+#[test]
+fn a_stated_favorite_still_beats_a_guessed_recent_folder() {
+    let (_dir, home) = home_with("roots_recency_under_favorites", &["Pinned", "Busy"]);
+    let mut inputs = inputs(&home);
+    inputs.favorites = vec![home.join("Pinned")];
+    inputs.recent = vec![home.join("Busy")];
+
+    let roots = rank_roots(&inputs, &all_local);
+
+    assert_eq!(roots.first(), Some(&home.join("Pinned")));
+    assert_eq!(roots.get(1), Some(&home.join("Busy")));
 }
 
 /// The strongest signal there is: where the user actually was. It has to outrank

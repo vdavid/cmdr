@@ -153,6 +153,9 @@ pub mod selection;
 mod settings;
 mod short_id;
 mod space_poller;
+/// Ask Spotlight which folders this user has been working in. One narrow question,
+/// coupled to nothing: see the module's own docs.
+mod spotlight;
 mod subprocess;
 mod system_events;
 mod system_memory;
