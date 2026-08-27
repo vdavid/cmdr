@@ -343,6 +343,16 @@ returns early (`test_mode::may_adopt_preexisting_network_mounts`, checked in
 its Keychain entry, opens a session to it, or raises a toast about it that then fails whichever spec is running. The
 FSEvents mount-time path is deliberately NOT gated: a mount that appears DURING a run is the test's own fixture.
 
+**One upgrade at a time per volume, so the notice can't be raised by a loser.** Every path re-checks
+`is_already_direct` before connecting, but that alone is a check-then-act: the mount-time and startup paths both looked,
+both saw "not direct", and both connected on one mount 20 ms apart. The attempt that failed announced a fallback that
+the other attempt's session disproved 55 ms later, and nothing retracts a notice the frontend already has, so the user
+was told they were on the slow path while a direct session served their files (ERR-ABXW4). `smb_upgrade`'s
+`lock_volume_upgrade` holds a per-volume-id lock across the whole attempt and the re-check happens under it, turning
+the sequence into lock-check-act: the second path waits, sees the first one's `Direct` volume, and skips. The redundant
+session, auth round-trip, and volume replacement stop happening too. The lock is per volume, not global, so a NAS
+remounting every share at login still warms them in parallel.
+
 **A landed direct session clears the server's entry** (`clear_os_mount_notice`, called from both the auto and the
 manual install paths). A notice describes a situation, not an event: once the server is off the slow path, the next
 genuine regression is worth saying out loud again. Without the clear, one bad startup would mute the notice for the

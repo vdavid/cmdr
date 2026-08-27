@@ -44,9 +44,9 @@ Frontend: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`. Auth-flow back
 - **A direct-session install auto-resumes the drive index** (`register_smb_volume` / `try_smb_upgrade`).
 - **All three upgrade paths share one resolution** (`resolve_ip_to_hostname_with_wait` + `get_keychain_password`); the
   one-shot resolver misses hostname-keyed creds → guest → `STATUS_LOGON_FAILURE`.
-- **Decide at ACT time, not trigger time**: every path waits 1.5–16.5 s for mDNS, so re-check `is_already_direct` right
-  before connecting, and let the startup pass RE-SCAN after its wait. One `UpgradePass` at a time; a stale decision
-  once replaced a healthy volume three times in 15 s, one mid-copy.
+- **Decide at ACT time, under the lock**: every path waits 1.5–16.5 s for mDNS, so re-check `is_already_direct` right
+  before connecting, holding `lock_volume_upgrade` (per volume) so two paths can't both pass the check and connect. One
+  `UpgradePass` at a time; a stale decision once replaced a healthy volume three times in 15 s, one mid-copy.
   `file_system/volume/backends/DETAILS.md` § "Every upgrade decides at ACT time".
 - **Every SMB subprocess takes a deadline** via `crate::subprocess::output_within`: `smbutil`/`smbclient` never give up
   on a quiet server. ❌ Not a bare `Command::output()`, ❌ not `tokio::time::timeout` around `spawn_blocking` (leaks the

@@ -5,6 +5,7 @@
 //! 2. **Mount-time** (`volumes::watcher::try_upgrade_smb_mount`): FSEvents detects new mount
 //! 3. **Manual** (`commands::network::upgrade_to_smb_volume`): user clicks "Connect directly"
 
+use crate::ignore_poison::IgnorePoison;
 use crate::network::get_discovered_hosts;
 
 /// Derives the SMB volume ID from `statfs(mount_path)` (macOS) or
@@ -226,6 +227,42 @@ pub(crate) fn is_already_direct(volume_id: &str) -> bool {
     )
 }
 
+/// One lock per volume id, so only one upgrade attempt for a given share is ever
+/// in flight.
+///
+/// The map holds a small entry per SMB volume this run has tried to upgrade (a
+/// handful), and the lock inside it is what the attempt actually waits on.
+static VOLUME_UPGRADE_LOCKS: std::sync::LazyLock<
+    std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<tokio::sync::Mutex<()>>>>,
+> = std::sync::LazyLock::new(Default::default);
+
+/// Takes the upgrade lock for `volume_id`, waiting for any attempt already
+/// running on it.
+///
+/// **Why a lock and not another `is_already_direct` check.** Every path already
+/// re-checks `is_already_direct` immediately before connecting, but that is a
+/// check-then-act: two paths can both look, both see "not direct", and both
+/// connect. They did, 20 ms apart, on the mount in ERR-ABXW4. The loser then
+/// announced a kernel-mount fallback that the winner's session had already
+/// disproved, and nothing retracts a notice once the frontend has it: the user
+/// was told they were on the slow path while a direct session served their files.
+///
+/// Holding this across the connect turns the check into lock-check-act. The
+/// second path waits, then sees the first path's `Direct` volume and skips, so
+/// the false notice can't be raised and the redundant session, auth round-trip,
+/// and volume replacement never happen either.
+///
+/// Held across the whole attempt (up to the 10 s connect timeout plus retries),
+/// which is the point: a manual "Connect directly" that lands mid-attempt waits
+/// for the real answer instead of racing to a second one.
+async fn lock_volume_upgrade(volume_id: &str) -> tokio::sync::OwnedMutexGuard<()> {
+    let lock = {
+        let mut locks = VOLUME_UPGRADE_LOCKS.lock_ignore_poison();
+        std::sync::Arc::clone(locks.entry(volume_id.to_string()).or_default())
+    };
+    lock.lock_owned().await
+}
+
 /// Whether an existing-mount upgrade pass is in flight.
 static UPGRADE_PASS_PENDING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
@@ -326,10 +363,12 @@ pub(crate) async fn register_smb_volume(
     let volume_id = volume_id_from_statfs(mount_path)
         .unwrap_or_else(|| crate::file_system::volume::smb_volume_id(server, port, share));
 
-    // Another path (a manual "Connect directly", the mount-time upgrade, an
-    // earlier pass) may have finished the job while we waited on mDNS. Replacing
-    // a healthy direct volume costs a whole session setup and hands every
-    // in-flight holder to a superseded instance for no reason.
+    // Serialize against any other attempt on this same volume, then re-check under
+    // the lock. Another path (a manual "Connect directly", the mount-time upgrade,
+    // an earlier pass) may have finished the job while we waited on mDNS or on the
+    // lock itself. Replacing a healthy direct volume costs a whole session setup
+    // and hands every in-flight holder to a superseded instance for no reason.
+    let _upgrade_guard = lock_volume_upgrade(&volume_id).await;
     if is_already_direct(&volume_id) {
         log::debug!("{volume_id} is already a direct smb2 connection; skipping the upgrade");
         return;
@@ -429,8 +468,10 @@ pub(crate) async fn try_smb_upgrade(
     let resolved_server = resolve_server_address(server);
     let display = friendly_server_name(server);
 
-    // Same re-check as the auto path: the 1.5 s mDNS wait upstream is enough
-    // time for another path to have upgraded this volume already.
+    // Same lock and re-check as the auto path: the 1.5 s mDNS wait upstream is
+    // enough time for another path to have upgraded this volume already, and if one
+    // is mid-attempt we want its answer rather than a second connection racing it.
+    let _upgrade_guard = lock_volume_upgrade(volume_id).await;
     if is_already_direct(volume_id) {
         log::debug!("{volume_id} is already a direct smb2 connection; nothing to upgrade");
         return Ok(());

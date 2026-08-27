@@ -646,3 +646,56 @@ fn an_auth_rejection_is_invisible_to_upgrade_failure_so_the_log_asks_is_auth_err
         "UpgradeFailure has no auth variant; the fallback log must not use it to describe an auth failure"
     );
 }
+
+/// Two upgrade attempts on one volume must not overlap.
+///
+/// The bug this guards (ERR-ABXW4): the mount-time and startup paths both fired on
+/// one mount 20 ms apart, both passed the `is_already_direct` check, and both
+/// connected. The one that failed announced a kernel-mount fallback that the other
+/// one's session had already disproved, and a notice can't be retracted once the
+/// frontend has it.
+#[tokio::test]
+async fn one_volume_upgrades_one_at_a_time() {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let in_flight = Arc::new(AtomicUsize::new(0));
+    let overlapped = Arc::new(AtomicUsize::new(0));
+
+    let attempt = |id: &'static str, in_flight: Arc<AtomicUsize>, overlapped: Arc<AtomicUsize>| async move {
+        let _guard = lock_volume_upgrade(id).await;
+        if in_flight.fetch_add(1, Ordering::AcqRel) != 0 {
+            overlapped.fetch_add(1, Ordering::AcqRel);
+        }
+        // Long enough that a second attempt would land inside this window if the
+        // lock weren't holding it out.
+        // allowed-test-sleep: the window IS the subject — it stands in for an attempt's
+        // connect, and overlap can only be observed while one is still in flight.
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        in_flight.fetch_sub(1, Ordering::AcqRel);
+    };
+
+    let a = tokio::spawn(attempt("smb-same-volume", in_flight.clone(), overlapped.clone()));
+    let b = tokio::spawn(attempt("smb-same-volume", in_flight.clone(), overlapped.clone()));
+    let (a, b) = tokio::join!(a, b);
+    a.unwrap();
+    b.unwrap();
+
+    assert_eq!(
+        overlapped.load(Ordering::Acquire),
+        0,
+        "two attempts on the same volume id overlapped"
+    );
+}
+
+/// The lock is per volume, so an upgrade on one share can't stall an unrelated one.
+/// A single global lock would serialize every share on a NAS that remounts them all
+/// at login, turning a parallel warm-up into a queue.
+#[tokio::test]
+async fn different_volumes_upgrade_concurrently() {
+    let first = lock_volume_upgrade("smb-volume-one").await;
+    // Would deadlock on a shared lock; must return promptly on a per-volume one.
+    let second = tokio::time::timeout(Duration::from_secs(5), lock_volume_upgrade("smb-volume-two")).await;
+    assert!(second.is_ok(), "an unrelated volume's upgrade was blocked");
+    drop(first);
+}
