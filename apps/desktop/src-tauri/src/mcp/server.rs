@@ -563,6 +563,27 @@ fn build_json_response(response: McpResponse, new_session_id: Option<String>) ->
     http_response
 }
 
+/// The request headers with the bearer token replaced by a placeholder, for the
+/// debug dump.
+///
+/// ❗ `HeaderMap`'s own `Debug` prints every value, so dumping it raw wrote the
+/// token into the log file — and `cmdr://logs` is readable with NO token, so any
+/// local process could have read the token straight back out and used it on the
+/// gated calls. ❌ Never log the map directly.
+fn loggable_headers(headers: &HeaderMap) -> Vec<(String, String)> {
+    headers
+        .iter()
+        .map(|(name, value)| {
+            let rendered = if name == header::AUTHORIZATION {
+                "<redacted>".to_string()
+            } else {
+                format!("{value:?}")
+            };
+            (name.to_string(), rendered)
+        })
+        .collect()
+}
+
 /// Handle HTTP POST to MCP endpoint (main request handler).
 async fn handle_mcp_post<R: Runtime>(
     State(state): State<Arc<McpState<R>>>,
@@ -570,7 +591,7 @@ async fn handle_mcp_post<R: Runtime>(
     Json(request): Json<McpRequest>,
 ) -> Response {
     log::debug!("MCP: POST /mcp - method: {}", request.method);
-    log::debug!("MCP: POST headers: {:?}", headers);
+    log::debug!("MCP: POST headers: {:?}", loggable_headers(&headers));
 
     // 1. Validate Origin header (browser-CSRF / DNS-rebinding defense)
     if let Err(response) = validate_origin(&headers) {
@@ -820,6 +841,22 @@ fn format_tool_result(value: &Value) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_header_dump_never_carries_the_bearer_token() {
+        // `cmdr://logs` needs no token to read, so a token in the log file is a
+        // token anyone on this machine can pick up and spend on the gated calls.
+        let mut headers = HeaderMap::new();
+        headers.insert(header::AUTHORIZATION, "Bearer super-secret".parse().unwrap());
+        headers.insert(header::ORIGIN, "http://127.0.0.1".parse().unwrap());
+
+        let dumped = format!("{:?}", loggable_headers(&headers));
+
+        assert!(!dumped.contains("super-secret"), "{dumped}");
+        assert!(dumped.contains("<redacted>"), "{dumped}");
+        // Everything else still reads, which is what the dump is for.
+        assert!(dumped.contains("127.0.0.1"), "{dumped}");
+    }
 
     #[test]
     fn test_health_response() {
