@@ -17,6 +17,13 @@ that lives beside the code, and git holds the history.
       searchability win with a silent-walk-degradation risk and ❌ no throughput payoff, and the first-run layout E2E,
       which cannot pass by design). **Kept for one unexplained measurement**: a 19–21 s gap the phase machine's own docs
       flag, worth resolving before anyone tunes phase boundaries.
+- [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
+      rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit
+      only ~101 plan rows per reply and each reply is staged and reviewed on its own. The fix is presentational:
+      accumulate a job's proposals into one review, apply them as the operations they already are, and leave every
+      guardrail per row. ❌ Not the per-rule approval question in `open-decisions.md`, which was answered no. Depends on
+      two properties shipped code already has (a proposal never expires, and the dialog renders every row without
+      paging), so what remains is frontend and store-shape work with one design choice: open the review on turn end.
 - [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Seven calls waiting on David:
       unreviewed user-facing copy in four places, two product calls (one of which has blocked its dependent milestones
       since July), and one maintenance call. Most take a minute. A question with no answer looks exactly like a task
