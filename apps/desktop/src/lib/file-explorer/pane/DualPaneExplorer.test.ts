@@ -60,6 +60,10 @@ vi.mock('$lib/tauri-commands', () => ({
     hasMore: false,
   }),
   listDirectoryEndSession: vi.fn().mockResolvedValue(undefined),
+  // The pane tears an abandoned listing down with BOTH of these (see
+  // `listing-loader.ts::abandonListing`), so both have to exist here.
+  cancelListing: vi.fn().mockResolvedValue(undefined),
+  listDirectoryEnd: vi.fn().mockResolvedValue(undefined),
   openFile: vi.fn().mockResolvedValue(undefined),
   getIcons: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
   listen: vi.fn(() => Promise.resolve(() => {})),

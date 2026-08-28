@@ -707,3 +707,60 @@ describe('createListingLoader — swap state + cleanup', () => {
     expect(h.listDirectoryEnd).toHaveBeenCalledWith(idA)
   })
 })
+
+describe('createListingLoader — abandoned listings are torn down, not just forgotten', () => {
+  // `cancelListing` only flips a cancel flag on the backend's STREAMING_STATE
+  // (`streaming.rs`); ONLY `listDirectoryEnd` drops the LISTING_CACHE entry and
+  // stops its OS watcher. Every path that abandons a listing id must therefore
+  // call `listDirectoryEnd`, or the entry and an armed file watch survive until
+  // the 6 h orphan reaper. Observed: an E2E run carried 11 concurrent orphans,
+  // each re-reading a deleted archive every debounce cycle for the whole run.
+
+  it('ends the listing when a listing error abandons it', async () => {
+    const { loader, state } = makeHarness()
+    await loader.loadDirectory({ path: '/a' })
+    const idA = state.listingId
+    h.listDirectoryEnd.mockClear()
+
+    h.listeners.error[0]({ listingId: idA, message: 'permission denied' })
+    await vi.waitFor(() => {
+      expect(state.error).toBe('permission denied')
+    })
+
+    expect(h.listDirectoryEnd).toHaveBeenCalledWith(idA)
+  })
+
+  it('ends the listing when a cancelled event abandons it', async () => {
+    const { loader, state } = makeHarness()
+    await loader.loadDirectory({ path: '/a' })
+    const idA = state.listingId
+    h.listDirectoryEnd.mockClear()
+
+    h.listeners.cancelled[0]({ listingId: idA })
+    await Promise.resolve()
+
+    expect(h.listDirectoryEnd).toHaveBeenCalledWith(idA)
+  })
+
+  it('ends the listing a superseded load started', async () => {
+    const { loader, state } = makeHarness()
+    // Hold load A's start open so load B supersedes it BEFORE A's id is visible
+    // to B's own cleanup — the window where nothing else would ever end A.
+    const startA = deferred<{ listingId: string; status: { kind: string } }>()
+    h.listDirectoryStart.mockImplementationOnce(() => startA.promise)
+
+    const loadA = loader.loadDirectory({ path: '/a' })
+    // A's id lands after its listeners register, which is after the first tick.
+    await vi.waitFor(() => {
+      expect(state.listingId).not.toBe('')
+    })
+    const idA = state.listingId
+    await loader.loadDirectory({ path: '/b' })
+    h.listDirectoryEnd.mockClear()
+
+    startA.resolve({ listingId: idA, status: { kind: 'ok' } })
+    await loadA
+
+    expect(h.listDirectoryEnd).toHaveBeenCalledWith(idA)
+  })
+})

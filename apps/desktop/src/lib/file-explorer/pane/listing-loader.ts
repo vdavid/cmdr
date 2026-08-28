@@ -195,9 +195,32 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     pendingLoadReject = null
   }
 
+  /**
+   * Releases a listing the pane is walking away from: cancel the streaming read if
+   * it's still running, then END it so the backend drops the cache entry and stops
+   * its watcher.
+   *
+   * ❌ Never call `cancelListing` alone to abandon a listing. It only sets a flag the
+   * backend checks atomically with its cache insert, so it wins the race only while
+   * the listing hasn't landed yet; once it has, only `listDirectoryEnd` removes it
+   * (`file_system/listing/operations.rs`). The gap leaks an entry AND an OS file
+   * watch per abandoned navigation.
+   */
+  function abandonListing(listingId: string) {
+    if (!listingId) return
+    void cancelListing(listingId)
+    void listDirectoryEnd(listingId)
+  }
+
   function resetLoadingState(errorMessage?: string, preserveTotalCount = false, friendly?: FriendlyError | null) {
     if (errorMessage) deps.setError(errorMessage)
     deps.setFriendlyError(friendly ?? null)
+    // Tear the abandoned listing down BEFORE dropping our handle on it. Clearing
+    // `listingId` alone strands the backend's `LISTING_CACHE` entry and its armed
+    // OS watcher until the 6 h orphan reaper, because no later `loadDirectory`
+    // can see the id to close it. `cancelListing` is NOT a substitute: it only
+    // flips a cancel flag, and a listing that already landed in the cache ignores it.
+    abandonListing(deps.getListingId())
     deps.setListingId('')
     if (!preserveTotalCount) deps.setTotalCount(0)
     deps.setLoading(false)
@@ -297,8 +320,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     // Cancel any abandoned listing from previous navigation
     if (listingId) {
       log.debug('[FilePane] loadDirectory: cancelling previous listing {listingId}', { listingId })
-      void cancelListing(listingId)
-      void listDirectoryEnd(listingId)
+      abandonListing(listingId)
       // Evict the closed directory's per-path icons (no longer visible).
       evictPerPathIconsForDir(loadedPath)
       deps.setListingId('')
@@ -460,8 +482,10 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
 
       // Check if this load was cancelled while we were starting
       if (thisGeneration !== loadGeneration) {
-        // Cancel the abandoned listing
-        void cancelListing(newListingId)
+        // Tear the abandoned listing down. The superseding load can't do it for us:
+        // it read `listingId` before this start returned, so a listing that landed
+        // in the backend cache afterwards is invisible to everyone but this line.
+        abandonListing(newListingId)
         return
       }
     } catch (e) {

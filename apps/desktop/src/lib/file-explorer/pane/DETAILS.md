@@ -942,6 +942,16 @@ survive the rebuild on the Rust side, so they aren't in that list.
 
 ## Gotchas
 
+- **Abandoning a listing goes through `listing-loader.ts::abandonListing`, never a bare `cancelListing`.**
+  `cancelListing` only flips a cancel flag the backend checks atomically with its `LISTING_CACHE` insert
+  (`file_system/listing/streaming.rs`), so it wins the race only while the listing hasn't landed yet; once it has, ONLY
+  `listDirectoryEnd` removes the entry and stops its OS watcher (`file_system/listing/operations.rs`). Every path that
+  drops a `listingId` — the error and cancelled handlers via `resetLoadingState`, the superseded-load branch, and
+  `loadDirectory`'s own previous-listing cleanup — must call both, which is why they share one helper. Getting this
+  wrong is invisible locally and costs a leaked cache entry plus an armed file watch per abandoned navigation until the
+  6 h orphan reaper (`file_system/listing/DETAILS.md` § Backstop reaper). Measured before the fix: one Linux E2E run
+  carried 11 concurrent orphans, each re-reading a deleted archive every debounce cycle for the whole run (verified on
+  the Linux Docker lane, 2026-08-28).
 - **The focus guard must exempt dialog content.** `DualPaneExplorer.handleFocusGuard` refocuses the container on any
   non-input focusin inside the explorer, and the rename dialogs (`RenameConflictDialog`, `ExtensionChangeDialog`) mount
   INSIDE FilePane. Without the `[role="dialog"], [role="alertdialog"]` exemption, the guard yanks focus off the dialog
