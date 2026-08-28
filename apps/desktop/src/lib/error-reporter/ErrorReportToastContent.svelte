@@ -2,10 +2,18 @@
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { getLastSentReportId } from './error-report-toast-state.svelte'
+    import { getLastSentReportId, getLastSentReportKind } from './error-report-toast-state.svelte'
 
     const toastId = 'error-report-sent'
     let copied = $state(false)
+
+    // One toast, two outcomes: a report that shipped, and a note that joined the report
+    // Flow B had already sent. Only the lead sentence differs.
+    const messageKey = $derived(
+        getLastSentReportKind() === 'amended'
+            ? ('errorReporter.amendedToast.message' as const)
+            : ('errorReporter.sentToast.message' as const),
+    )
 
     async function handleCopy() {
         await navigator.clipboard.writeText(getLastSentReportId())
@@ -20,7 +28,7 @@
 
 <div class="content">
     <span class="message">
-        {tString('errorReporter.sentToast.message')}
+        {tString(messageKey)}
         <span class="id-badge">{getLastSentReportId()}</span>
     </span>
     <div class="actions">

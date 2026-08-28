@@ -3,17 +3,17 @@
     import Button from '$lib/ui/Button.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { tString } from '$lib/intl/messages.svelte'
-    import { openErrorReportDialog } from './error-report-flow.svelte'
+    import { openErrorReportDialogForAutoSentReport } from './error-report-flow.svelte'
     import { getLastAutoSentReportId } from './auto-send-toast-state.svelte'
 
     const TOAST_ID = 'error-report-auto-sent'
 
-    function handleView() {
-        // Reuse Flow A's preview dialog so the user can inspect what was just sent.
-        // The dialog re-builds the bundle locally (same inputs, deterministic output)
-        // so what they see matches what shipped (modulo the timestamp).
+    function handleViewOrAddNotes() {
+        // Amend mode, ❌ never the compose entry point: this dialog shows the bundle that
+        // actually shipped and adds the note to THAT report, so one incident stays one
+        // report with one id.
         dismissToast(TOAST_ID)
-        openErrorReportDialog()
+        openErrorReportDialogForAutoSentReport()
     }
 
     function handleChangeSettings() {
@@ -32,8 +32,8 @@
         <Button size="mini" variant="secondary" onclick={handleChangeSettings}
             >{tString('errorReporter.autoSentToast.changeSettings')}</Button
         >
-        <Button size="mini" variant="primary" onclick={handleView}
-            >{tString('errorReporter.autoSentToast.view')}</Button
+        <Button size="mini" variant="primary" onclick={handleViewOrAddNotes}
+            >{tString('errorReporter.autoSentToast.viewOrAddNotes')}</Button
         >
     </div>
 </div>

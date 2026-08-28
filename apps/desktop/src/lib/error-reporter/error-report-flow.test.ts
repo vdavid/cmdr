@@ -7,7 +7,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { errorReportFlow, openErrorReportDialog, closeErrorReportDialog } from './error-report-flow.svelte'
+import {
+  errorReportFlow,
+  openErrorReportDialog,
+  openErrorReportDialogForAutoSentReport,
+  closeErrorReportDialog,
+} from './error-report-flow.svelte'
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(() => Promise.resolve()),
@@ -51,5 +56,31 @@ describe('error-report-flow', () => {
     closeErrorReportDialog()
     openErrorReportDialog('second note')
     expect(errorReportFlow.initialNote).toBe('second note')
+  })
+
+  it('starts in compose mode', () => {
+    expect(errorReportFlow.mode).toBe('compose')
+    openErrorReportDialog()
+    expect(errorReportFlow.mode).toBe('compose')
+  })
+
+  it('openErrorReportDialogForAutoSentReport opens in amend mode', () => {
+    openErrorReportDialogForAutoSentReport()
+    expect(errorReportFlow.open).toBe(true)
+    expect(errorReportFlow.mode).toBe('amend')
+  })
+
+  it('closeErrorReportDialog drops amend mode', () => {
+    openErrorReportDialogForAutoSentReport()
+    closeErrorReportDialog()
+    expect(errorReportFlow.mode).toBe('compose')
+  })
+
+  // The amend entry point exists so the auto-sent toast can't reach the compose
+  // path; a stale `amend` left behind would send the Help menu there next time.
+  it('the compose entry point resets a leftover amend mode', () => {
+    openErrorReportDialogForAutoSentReport()
+    openErrorReportDialog('from the Help menu')
+    expect(errorReportFlow.mode).toBe('compose')
   })
 })

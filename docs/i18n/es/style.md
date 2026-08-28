@@ -107,6 +107,14 @@ GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (authori
   command label is "Sacar de la papelera"; keep `restaurar` for undoing a RENAME. Full reasoning: `glossary.md` § El
   aviso de la papelera.
 - trash → papelera · macOS Finder, shared with Windows · high
+- add → añadir · macOS `es` throughout ("Añadir", "Añadir etiquetas…"); **`agregar` has zero hits** in the whole macOS
+  `es` corpus, so it never wins here · high
+- add to X (no direct object, "Add to report") → añadir a X · macOS Finder ("Añadir al Dock", "Añadir a favoritos",
+  "Añadir a la barra lateral") licenses the same ellipsis Spanish would otherwise refuse · high
+- the Help menu (referring to it in prose) → el menú Ayuda · macOS Finder `MenuBar` + AppKit ("Ayuda"), and
+  `menu.bar.help` in the catalog; no quotes, matching macOS's "selecciona menú Apple > Ajustes del Sistema" · high
+- view (look at something) → ver; show (reveal something) → mostrar · the catalog's own split (`menu.file.view` = "Ver",
+  `commands.fileShowInFinder` = "Mostrar en el Finder") · high
 - drive → unidad · the catalog throughout (`askCmdr.renameUndo.unavailable`) · high
 
 Add rows as terms come up, each with sources and a confidence.
@@ -146,9 +154,15 @@ strings are counted, so no plural branches are needed there.
   2026-06-19). Match macOS.
 - **Inverted opening marks.** Questions open with `¿` and exclamations with `¡`. (No question/exclamation strings in the
   crash set.)
-- **Ellipsis in "Sending…".** The en catalog value is `Sending...` (three ASCII dots, per its `@key` description "Ends
-  with three dots"), so the Spanish value uses three ASCII dots too: "Enviando...". macOS's own string is "Enviando…"
-  (one Unicode char); we follow Cmdr's catalog convention, not macOS's, to keep the source/translation shapes aligned.
+- **Ellipsis: copy the shape of the en value, character for character.** The in-progress button labels
+  (`errorReporter.dialog.sending` = `Sending…`, `errorReporter.amend.submitting` = `Adding…`) use ONE Unicode `…`, and
+  their `@key` descriptions say so, so the Spanish values do too: "Enviando…", "Añadiendo…". This also matches macOS,
+  which writes "Enviando…". Check the actual en value before assuming: an older note here claimed three ASCII dots.
+- **A just-finished action takes the preterite, not the peninsular compound perfect.** "Cmdr already sent this report" →
+  `Cmdr ya envió este informe`, matching `fileExplorer.navigation.useSavedPasswordMessage` ("la contraseña que macOS ya
+  guardó") and `crashReporter.dialog.body.ended` ("se cerró inesperadamente"). Spain would say "ya ha enviado"; the
+  preterite is the form that reads right on both sides of the Atlantic, which is what the pan-regional base wants. A
+  future `es-ES` variant is where the compound perfect belongs.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **Speed multipliers (`4x`, `100x`) spell the "times" out: `4 veces más lenta`, `(a veces, 100 veces)`.** The `4x`
   notation belongs to English UI prose; Spanish writes `N veces`. Keep the figure in digits (not `cuatro`): these are
@@ -176,6 +190,11 @@ strings are counted, so no plural branches are needed there.
 
 ## Decisions to confirm with David
 
+- **`informe de error` vs `informe de fallos` is a live seam.** The `errorReporter.*` dialog says `informe de error`
+  while the menu item that opens it (`menu.help.sendErrorReport`) says `Enviar informe de fallos…`, so the same feature
+  has two names on screen. English has one ("error report") and one for crashes ("crash report"), so this is ours to
+  fix, not a source problem. Copy written since then routes around it (`errorReporter.amend.unavailable` says "envía un
+  informe nuevo" without naming the type). Pick one and sweep both families.
 - **crash report → "informe de fallos"** (tentative): no single canonical source. "fallos" is the gentlest, most natural
   fit for Cmdr's non-alarmist voice; the more technical alternatives are "informe de bloqueos" (matches MS/macOS
   "bloqueo" for crash) or keeping it generic as "informe del problema". Confirm which reads best.

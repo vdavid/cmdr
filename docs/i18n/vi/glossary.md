@@ -1606,3 +1606,43 @@ trong bảng lệnh. Dùng lại `thùng rác`, `ổ đĩa`, `tệp`, `mục`. C
   `fileOperations.delete.archiveWarningStrong` ("Không có thùng rác bên trong tệp nén.") · `high`. Là một câu nói về ổ
   đĩa, không phải lời trách người dùng.
 - Cả chín giá trị đều khác tiếng Anh, nên không cần `sameAsSourceJustification`.
+
+## Thêm ghi chú vào báo cáo đã gửi (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`, 2026-08-28)
+
+Cmdr tự gửi báo cáo (người dùng đã chọn bật), rồi toast "Đã gửi báo cáo sự cố" cho một nút mở hộp thoại xem lại đúng
+những gì đã gửi và viết thêm ghi chú **vào chính báo cáo đó**; không có lần tải lên thứ hai. Mười một khóa dùng lại
+`báo cáo` / `báo cáo sự cố`, `ghi chú`, `ID tham chiếu`, `nhóm`, `đính kèm`, `email` đã có. Quyết định mới:
+
+- **add / add to X → `thêm` / `Thêm vào X`** · macOS `vi` Tier 1: `Thêm`, `Thêm vào Dock`, `Thêm vào Mục ưa thích`,
+  `Thêm vào Thanh bên`; Xfce Thunar `vi` "Thêm vào bảng Địa điểm"; thuật ngữ Microsoft ("add" → `thêm`). Kiểm chứng
+  trong pile 2026-08-28 · `high`. Cả họ dùng chung một gốc từ: tiêu đề `Thêm vào báo cáo sự cố của bạn`, nút
+  `Thêm vào báo cáo`, trạng thái `Đang thêm…`, toast `Đã thêm ghi chú vào báo cáo`.
+- **"Couldn''t add your note: {error}" → `Không thể thêm ghi chú của bạn: {error}`** · đúng khuôn macOS `vi` "Không thể
+  thêm máy chủ ^0 vào mục ưa thích của bạn" và khuôn `Không thể …: {error}` mà catalog đã dùng
+  (`errorReporter.dialog.sendFailedToast`, `.prepareFailed`) · `high`. Không có chữ "lỗi"/"thất bại", đúng yêu cầu của
+  bản tiếng Anh.
+- **"That report can''t take a note any more." → `Không thể thêm ghi chú vào báo cáo đó nữa.`** · `high`. Chọn
+  `Không thể … nữa` (khuôn tự nhiên nhất) thay vì dịch sát "báo cáo đó không nhận được ghi chú": tiếng Việt đặt việc bất
+  khả thi lên trước đọc xuôi hơn, và câu vẫn nói về báo cáo chứ không trách người dùng. Khuôn `không còn … nữa` của
+  macOS (`bạn không còn có quyền … nữa`) cũng đúng nhưng dài hơn cho một dòng thay chỗ ô nhập.
+- **"To get your notes to the team" → `Để nhóm nhận được ghi chú của bạn`** · `high`. Cố ý KHÔNG dùng `chuyển` (style
+  guide dành `chuyển`/`di chuyển` cho thao tác Move) và tránh lặp `gửi … gửi` trong cùng một câu.
+- **"from the Help menu" → `từ menu Trợ giúp`** · trùng khớp từng chữ với câu đã có trong catalog
+  (`settings.updates.errorReports.description`: "Bạn luôn có thể gửi báo cáo thủ công từ menu Trợ giúp") và với
+  `menu.bar.help` = `Trợ giúp` (macOS Finder `vi`) · `high`. ❌ Không dịch "Help" thành `Giúp đỡ`/`Hỗ trợ`.
+- **"What was sent" → `Những gì đã được gửi`** · cặp song sinh với `errorReporter.dialog.detailsToggle`
+  (`Những gì sắp được gửi`, "What''s about to be sent"): chỉ đổi `sắp` → `đã`, nên hai hộp thoại đọc như một · `high`.
+- **"View or add notes to the report" → `Xem hoặc thêm ghi chú vào báo cáo`** · `xem` = macOS AppKit/thuật ngữ Microsoft
+  ("view" → `xem`) · `high`. Giữ đủ **cả hai vế** (xem + thêm) như bản tiếng Anh David tự viết. 33 ký tự so với 31 của
+  tiếng Anh, nên không nở thêm; ⚠️ vẫn kiểm tra tràn chữ vì nút đứng cạnh `Đổi cài đặt` trong một toast hẹp.
+- **`báo cáo` trần trong hộp thoại, `báo cáo sự cố` ở tiêu đề** · đúng phép cắt đã ghi ở mục crash-report: tiếng Anh chỉ
+  nói "error report" ở tiêu đề (`Add to your error report`), còn phần thân nói "this report" · `high`.
+- **Bỏ một `của bạn` trong `amendedToast.message`** · tiếng Anh có hai ("your report", "Your reference ID"), nhưng lặp
+  `của bạn` hai lần trong một dòng toast ngắn đọc rất nặng. Giữ `ID tham chiếu của bạn là` y hệt
+  `errorReporter.sentToast.message` (hai toast hiện cùng một chỗ, phải khớp nhau), và bỏ ở vế `báo cáo`, nơi quyền sở
+  hữu đã hiển nhiên · `high`.
+- **"and it''ll join what the team already has" → `và nó sẽ được thêm vào chính báo cáo mà nhóm đã có`** · `tentative`.
+  Kho tham chiếu không có câu nào tương đương; `chính … mà` là cách nêu bật "vẫn là báo cáo đó, không gửi cái thứ hai",
+  đúng ý `@key.description`. Nhờ người bản ngữ soát lại câu này nếu có dịp.
+- Cả 11 giá trị đều khác tiếng Anh, nên không cần `sameAsSourceJustification`. Không giá trị nào chứa dấu nháy đơn, nên
+  không phát sinh chuyện nhân đôi `''` của ICU; `{error}` giữ nguyên.

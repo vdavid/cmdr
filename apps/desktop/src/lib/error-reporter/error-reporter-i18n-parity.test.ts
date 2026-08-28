@@ -87,6 +87,35 @@ describe('error-reporter toast copy parity (en)', () => {
     expect(tString('errorReporter.autoSentToast.title')).toBe('Error report sent')
     expect(tString('errorReporter.autoSentToast.referenceIdLabel')).toBe('Reference ID:')
     expect(tString('errorReporter.autoSentToast.changeSettings')).toBe('Change settings')
-    expect(tString('errorReporter.autoSentToast.view')).toBe('View')
+    expect(tString('errorReporter.autoSentToast.viewOrAddNotes')).toBe('View or add notes to the report')
+  })
+
+  it('resolves the amended-report toast', () => {
+    expect(tString('errorReporter.amendedToast.message')).toBe('Note added to your report. Your reference ID is')
+  })
+})
+
+/**
+ * Amend mode is new copy, not a move, so these goldens exist to make an edit
+ * deliberate: changing one here means changing it in every locale too.
+ */
+describe('error-reporter amend-mode copy (en)', () => {
+  it('resolves the static amend strings', () => {
+    expect(tString('errorReporter.amend.title')).toBe('Add to your error report')
+    expect(tString('errorReporter.amend.description')).toBe(
+      "Cmdr already sent this report. Write a note, or attach your email, and it'll join what the team already has.",
+    )
+    expect(tString('errorReporter.amend.noteLabel')).toBe('Your note')
+    expect(tString('errorReporter.amend.detailsToggle')).toBe('What was sent')
+    expect(tString('errorReporter.amend.submit')).toBe('Add to report')
+    expect(tString('errorReporter.amend.submitting')).toBe('Adding…')
+    expect(tString('errorReporter.amend.close')).toBe('Close')
+    expect(tString('errorReporter.amend.unavailable')).toBe(
+      "That report can't take a note any more. To get your notes to the team, send a new report from the Help menu.",
+    )
+  })
+
+  it('resolves the interpolated amend strings', () => {
+    expect(t('errorReporter.amend.addFailedToast', { error: 'boom' })).toBe("Couldn't add your note: boom")
   })
 })

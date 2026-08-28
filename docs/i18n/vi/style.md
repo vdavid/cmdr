@@ -184,6 +184,16 @@ Vietnamese has no grammatical number, so one form covers all counts.
   and deletes, write the plain `chuyển tệp`; `di chuyển tệp` would narrow the sentence to one operation.
 - **`rút` (unplug) has no pile source in Vietnamese** and rests entirely on catalog consistency (four shipped MTP
   strings). Use it only where the English genuinely tells someone to pull the cable, never for a connection reset.
+- **Một gốc từ cho cả họ "add".** Mọi chỗ nói tới việc thêm ghi chú vào một báo cáo đã gửi đều đi từ `thêm`:
+  `Thêm vào báo cáo sự cố của bạn` (tiêu đề), `Thêm vào báo cáo` (nút), `Đang thêm…` (đang chạy),
+  `Đã thêm ghi chú vào báo cáo` (toast), `Không thể thêm ghi chú của bạn: {error}` (toast hỏng). Bằng chứng và các quyết
+  định kèm theo: `glossary.md` § Thêm ghi chú vào báo cáo đã gửi.
+- **Đừng lặp `của bạn` hai lần trong một câu ngắn.** Tiếng Anh rải "your" thoải mái; tiếng Việt thì nặng. Giữ `của bạn`
+  ở chỗ nó mang thông tin (hoặc ở chỗ một chuỗi chị em đã dùng, để hai chuỗi khớp nhau) và bỏ ở chỗ quyền sở hữu đã hiển
+  nhiên. Ví dụ `errorReporter.amendedToast.message`.
+- **Nhắc tới một menu của ứng dụng thì viết `menu <Tên>`**, lấy tên đúng như `menu.bar.*` (macOS Finder `vi`):
+  `từ menu Trợ giúp`. Catalog đã có sẵn câu này trong `settings.updates.errorReports.description`; dùng lại y hệt thay
+  vì viết một biến thể mới.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

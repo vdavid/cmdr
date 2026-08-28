@@ -1443,3 +1443,47 @@ e de resultado do desfazer, e o comando "Go to trash" na paleta de comandos.
 - **A descrição do comando → `Abra o Lixo do disco em que você está navegando`** · imperativo, como as outras descrições
   de `commands.json` ("Faça uma cópia dos arquivos selecionados na mesma pasta"), com `você` explícito porque o verbo
   sozinho seria ambíguo · high.
+
+### Notas anexadas a um relatório já enviado (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`, 2026-08-28)
+
+O Cmdr envia um relatório sozinho quando a pessoa optou por isso, e agora o aviso rápido abre um diálogo que mostra o
+que já foi enviado e aceita uma nota que entra NO MESMO relatório. Nada sobe uma segunda vez, e o texto precisa deixar
+isso claro.
+
+- **note (a caixa de texto livre) → `nota`** · o termo já publicado no diálogo de envio
+  (`errorReporter.dialog.noteLabel` "Adicionar uma nota (opcional)", `notePlaceholder`, `noteTooLong` "A nota é longa
+  demais") · high. A terminologia da Microsoft pt-BR dá `observação` (id 233427) e `nota pessoal` (id 2769303) para
+  "note", mas os dois diálogos dividem a mesma caixa: trocar o termo abriria uma costura entre telas irmãs. No diálogo
+  de acréscimo o rótulo é **`Sua nota`**, sem `(opcional)`, porque aqui a nota (ou o email) é o que libera o botão.
+- **"Add to report" → `Adicionar ao relatório`; "Adding…" → `Adicionando…`** · KDE Dolphin pt-BR ("Add to Places" =
+  "Adicionar aos locais"), Total Commander pt-BR (`1741="Adicionar ao &submenu"`), Double Commander pt-BR ("Add to
+  queue" = "Adicionar à fila") · high. O par botão/estado espelha `dialog.send`/`dialog.sending` ("Enviar relatório" /
+  "Enviando…"). Gerúndio brasileiro (`Adicionando…`, nunca `A adicionar…`).
+- **"attach your email" → `anexe seu email`** · terminologia da Microsoft pt-BR (attach = `anexar`, ids 16026/1083539) e
+  o rótulo já publicado `settings.updates.attachEmailToReports.label` ("Anexar meu email aos relatórios por padrão") ·
+  high. `email` sem hífen, como as chaves desse grupo em `settings.json`.
+- **"What was sent" → `O que foi enviado`** · o passado da irmã `dialog.detailsToggle` ("O que está prestes a ser
+  enviado") · high. As duas abrem o mesmo painel; só o tempo verbal muda, e o paralelismo é o que faz a pessoa
+  reconhecer a tela.
+- **"and it''ll join what the team already has" → `e isso entra no mesmo relatório que a equipe já tem`** · high.
+  `mesmo relatório` diz explicitamente o que o inglês só sugere (nada é enviado duas vezes), que é o ponto da tela. ❌
+  Não `se junta ao que a equipe já tem`: literal e vago em pt-BR. `a equipe` é o termo já publicado em
+  `dialog.description`.
+- **"from the Help menu" → `pelo menu Ajuda`** · o menu nativo é `Ajuda` (§ Menus nativos, macOS Finder e Safari
+  `pt-BR`), e a frase inteira já está publicada em `settings.updates.errorReports.description` ("Você sempre pode enviar
+  um relatório manual pelo menu Ajuda.") · high. O item correspondente é `Enviar relatório de problema…`
+  (`menu.help.sendErrorReport`).
+- **`amend.unavailable` não fala em falha nem em erro**: `Esse relatório não aceita mais notas.` é uma constatação, não
+  um aviso de problema. O plural `notas` lê melhor que o singular do inglês, e `Para levar suas notas até a equipe`
+  mantém a voz ativa com a pessoa como agente.
+- **"View or add notes to the report" → `Ver ou adicionar notas ao relatório`** · `Ver X` é o padrão do catálogo para
+  botões e links de "View X" ("Ver detalhes da licença", "Ver registro completo de alterações"), enquanto `Visualizar`
+  fica reservado ao menu Visualizar · high. As duas metades (olhar e acrescentar) ficam de pé, e o botão cabe ao lado de
+  `Alterar ajustes` no aviso rápido.
+- **Close → `Fechar`** · KDE Dolphin e Double Commander pt-BR · confirmed.
+- Varredura pt-PT do lote (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o
+  nome, `você` omitido): zero ocorrências. Nenhum valor é idêntico ao inglês, então nenhum precisa de
+  `sameAsSourceJustification`; nenhum leva apóstrofo, então não há `''` no lote.
+- ⚠️ REVIEW FLAG (fora deste lote): `askCmdr.wakeToast.openThread` está como `Ver porquê`. Em pt-BR o substantivo pede
+  artigo (`Ver o porquê`) ou a forma separada e acentuada no fim da frase (`Ver por quê`); `porquê` avulso não é forma
+  correta. Corrigir numa varredura.

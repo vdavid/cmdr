@@ -842,8 +842,8 @@ FIRST toast's `originPane` (consistent with its partial replace of other fields)
 
 ### Hover behavior
 
-A transient toast hides at `max(mountedAt + timeoutMs, pointerLeftAt + HOVER_LEAVE_GRACE_MS)`, with the grace tail at
-1 second. Hovering doesn't pause or extend the natural clock; it only guarantees that tail once the cursor is off, so a
+A transient toast hides at `max(mountedAt + timeoutMs, pointerLeftAt + HOVER_LEAVE_GRACE_MS)`, with the grace tail at 1
+second. Hovering doesn't pause or extend the natural clock; it only guarantees that tail once the cursor is off, so a
 toast can't vanish out from under a pointer that's still on it and can't snap away the instant the mouse drifts off.
 
 In practice: `pointerenter` clears the timer, `pointerleave` re-arms it for whatever is left of the natural window, or
@@ -852,8 +852,8 @@ the same toast hovered t=0.5s–1s still goes at t=4s (the natural deadline deci
 leaves.
 
 Decision: don't turn this into a paused countdown. Handing a long-hovered toast its leftover seconds back makes it
-linger once the user is clearly done with it, and pausing costs a pile of bookkeeping (elapsed time, captured
-remainder, whether the toast ever had unhovered visibility) that the `max()` rule replaces with a deadline and a timer.
+linger once the user is clearly done with it, and pausing costs a pile of bookkeeping (elapsed time, captured remainder,
+whether the toast ever had unhovered visibility) that the `max()` rule replaces with a deadline and a timer.
 
 `HOVER_LEAVE_GRACE_MS` lives in `toast/toast-store.svelte.ts` so a future tuning lands in one place. Persistent toasts
 have no timer and the hover handlers no-op for them.

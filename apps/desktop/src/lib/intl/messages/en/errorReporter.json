@@ -149,6 +149,54 @@
     }
   },
 
+  "errorReporter.amend.title": "Add to your error report",
+  "@errorReporter.amend.title": {
+    "description": "Title of the dialog when the user is adding a note to a report Cmdr already sent by itself (auto-send). Reached from the \"Error report sent\" toast, never from the Help menu. \"Cmdr\" is the product name (do not translate)."
+  },
+
+  "errorReporter.amend.description": "Cmdr already sent this report. Write a note, or attach your email, and it''ll join what the team already has.",
+  "@errorReporter.amend.description": {
+    "description": "Main explanation in the add-a-note dialog: the report is already with the team, and whatever the user writes here is attached to that same report (no second report is sent). It also tells them why the button stays disabled until they write a note or attach an email. Reassuring. \"Cmdr\" is the product name (do not translate)."
+  },
+
+  "errorReporter.amend.noteLabel": "Your note",
+  "@errorReporter.amend.noteLabel": {
+    "description": "Label above the free-text box in the add-a-note dialog. Unlike the send dialog''s label, this one is not marked optional: a note or an email address is needed before the button works."
+  },
+
+  "errorReporter.amend.detailsToggle": "What was sent",
+  "@errorReporter.amend.detailsToggle": {
+    "description": "Toggle that expands a panel showing exactly what was already uploaded (manifest and sample log lines). Past tense: it describes the report that has already gone. Preceded by a disclosure triangle; followed by the bundle size in parentheses."
+  },
+
+  "errorReporter.amend.submit": "Add to report",
+  "@errorReporter.amend.submit": {
+    "description": "Primary button that attaches the user''s note to the report that was already sent. Keep it short (a tight button)."
+  },
+
+  "errorReporter.amend.submitting": "Adding…",
+  "@errorReporter.amend.submitting": {
+    "description": "Label on the primary button while the note is being attached (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short."
+  },
+
+  "errorReporter.amend.unavailable": "That report can''t take a note any more. To get your notes to the team, send a new report from the Help menu.",
+  "@errorReporter.amend.unavailable": {
+    "description": "Shown instead of the note box when the report can no longer be added to, either because Cmdr restarted since it was sent or because the server left no way to add to it. Points the user at Help > Send error report instead. \"Help\" is the name of the app''s Help menu; use the wording macOS uses for that menu in your language. Avoid the words \"error\" and \"failed\" in the translated wording."
+  },
+
+  "errorReporter.amend.close": "Close",
+  "@errorReporter.amend.close": {
+    "description": "Button that closes the dialog when there is nothing to add to. It is the only button in that state. Keep it short (a tight button)."
+  },
+
+  "errorReporter.amend.addFailedToast": "Couldn''t add your note: {error}",
+  "@errorReporter.amend.addFailedToast": {
+    "description": "Toast shown when attaching the note to the already-sent report didn''t work. The reason follows the colon. Avoid the words \"error\" and \"failed\" in the translated wording.",
+    "placeholders": {
+      "error": "the technical reason the note couldn''t be attached (not translated)"
+    }
+  },
+
   "errorReporter.sentToast.message": "Error report sent. Your reference ID is",
   "@errorReporter.sentToast.message": {
     "description": "Lead text of the toast confirming the report was sent. The reference ID itself follows immediately in a badge, so this string ends right before it (no trailing punctuation)."
@@ -167,6 +215,11 @@
   "errorReporter.sentToast.copied": "Copied",
   "@errorReporter.sentToast.copied": {
     "description": "Confirmation shown for two seconds on the copy button after the reference ID is copied. Keep it short (a tight button)."
+  },
+
+  "errorReporter.amendedToast.message": "Note added to your report. Your reference ID is",
+  "@errorReporter.amendedToast.message": {
+    "description": "Lead text of the toast confirming the user''s note was attached to the report that had already been sent. The reference ID itself follows immediately in a badge, so this string ends right before it (no trailing punctuation)."
   },
 
   "errorReporter.bundleSavedToast.message": "Saved bundle to disk",
@@ -199,8 +252,8 @@
     "description": "Button on the auto-sent toast that opens the app's Settings (where auto-send can be turned off). Keep it short (a tight button)."
   },
 
-  "errorReporter.autoSentToast.view": "View",
-  "@errorReporter.autoSentToast.view": {
-    "description": "Button on the auto-sent toast that opens a preview of what was just sent. Keep it short (a tight button)."
+  "errorReporter.autoSentToast.viewOrAddNotes": "View or add notes to the report",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "description": "Button on the auto-sent toast. It opens a dialog showing exactly what was sent, where the user can also write a note that gets attached to that same report. Both halves matter: looking, and adding. It sits in a toast next to a shorter \"Change settings\" button, so keep it as compact as your language allows without losing either half."
   }
 }

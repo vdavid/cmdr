@@ -18,7 +18,19 @@ Format, the confidence scale, and the full process: `docs/guides/i18n-translatio
   high
 - feedback → Feedback (kept; the loanword is standard in DE UI, macOS/MS both use it) · high
 - report ID → Berichts-ID · compound of Bericht (report) + ID; standard DE compound formation · high
+- note (the free-text the user writes into a report) → Notiz · MS terminology (`note`, Noun → `Notiz`, AUT/DEU/CHE/LUX)
+  and the catalog itself (`errorReporter.dialog.noteLabel` = "Notiz hinzufügen (optional)") · high. ❌ Not "Hinweis":
+  that is MS's other `note` sense, the editorial "Note:" callout, and it reads as advice FROM the app, not text BY the
+  user.
+- "Add to X" (a button/menu item that puts something into X) → "Zu X hinzufügen" · macOS Finder `de` ("Zum Dock
+  hinzufügen" `300772.title`, "Zur Seitenleiste hinzufügen" `300790.title`, "Tags hinzufügen" `TL34`) · high
+- view / see (a document, a list, a report) → ansehen · the catalog throughout ("Vollständiges Änderungsprotokoll
+  ansehen", "Dateien ansehen"); macOS's "anzeigen" is the SHOW sense (make something visible), so keep the two apart ·
+  high
 - email → E-Mail (-Adresse for the address) · macOS Mail, MS terminology · high
+- attach (an email address to a report) → anhängen · the catalog's settled pair (`common.attachEmail` = "Meine
+  E-Mail-Adresse … anhängen", `settings.updates.attachEmailToReports.label` = "Meine E-Mail standardmäßig an Berichte
+  anhängen") · high
 - dismiss (button closing a dialog) → Schließen · macOS uses "Schließen" / "Ignorieren"; "Schließen" fits a
   close-without-action button · high
 - send → senden · macOS Mail ("Senden") · high
@@ -1256,7 +1268,7 @@ Einschub, steht deshalb überall in der eigenen deutschen Anführung „…“ u
 - **Archivbearbeitung (das Umschreiben eines Zips) → `Archivbearbeitung`; „edits aren''t ready“ →
   `lassen sich noch nicht bearbeiten`** · gesetztes `edit → bearbeiten` (§ Archive browsing) als geschlossenes
   Kompositum wie `Vorgangsprotokoll` · high.
-- **„Renaming can''t take an item out of / from one archive to another“ →
+- **„Renaming can't take an item out of / from one archive to another“ →
   `Beim Umbenennen kann ein Objekt sein Archiv nicht verlassen.` / `… nicht von einem Archiv in ein anderes wechseln.`**
   · `item → Objekt`, `archive → Archiv`; der gemeinsame Kopf `Beim Umbenennen kann ein Objekt …` hält die beiden
   Geschwister parallel · high. Der Nachsatz `Bewege es stattdessen.` nutzt das gesetzte `move → bewegen` (Finder), damit
@@ -1458,3 +1470,45 @@ Neue Oberfläche: nachdem Cmdr Objekte in den Papierkorb bewegt hat, erscheint e
   Download gehen“). Zu prüfen beim Overflow-Check: 20 Zeichen gegenüber 11 im Englischen, in einem schmalen Toast neben
   „Widerrufen“.
 - Kein `sameAsSourceJustification` nötig: alle neun Werte unterscheiden sich vom Englischen.
+
+## Fehlerbericht nachträglich ergänzen: der Notiz-Dialog (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`, 2026-08-28)
+
+Neue Oberfläche: Cmdr hat den Bericht selbst gesendet (Auto-Senden), der Toast „Fehlerbericht gesendet“ trägt jetzt eine
+Taste, die einen Dialog öffnet. Dort sieht man, was gesendet wurde, und kann eine Notiz nachreichen, die an DENSELBEN
+Bericht angehängt wird. Es geht kein zweiter Bericht raus, und genau das muss die Sprache tragen.
+
+- **`Bericht` statt `Fehlerbericht` innerhalb des Dialogs und der Toasts** · dieselbe Trennung, die der Absturzdialog
+  schon fährt (§ „Titel und Bestätigung“: `Absturzbericht` nur, wenn es wirklich abgestürzt ist) · high. Der DIALOGTITEL
+  nennt die Sache einmal voll („Zu deinem Fehlerbericht hinzufügen“), damit klar ist, worum es geht; danach reicht
+  `Bericht`, und die Tasten bleiben schmal.
+- **`Add to your error report` → `Zu deinem Fehlerbericht hinzufügen`**, **`Add to report` → `Zum Bericht hinzufügen`**
+  · macOS Finder `de` („Zum Dock hinzufügen“, „Zur Seitenleiste hinzufügen“) · high. Zu prüfen beim Overflow-Check: die
+  Taste hat 22 Zeichen gegenüber 13 im Englischen und steht neben `Abbrechen`.
+- **`Adding…` → `Wird hinzugefügt …`** · die Katalogkonvention für laufende Vorgänge, wortgleich gebaut wie das
+  Geschwister `errorReporter.dialog.sending` („Wird gesendet …“), Leerzeichen vor den Auslassungspunkten · high.
+- **`What was sent` → `Was gesendet wurde`** · exakte Vergangenheitsform des Geschwisters
+  `errorReporter.dialog.detailsToggle` („Was gleich gesendet wird“) · high. Die beiden Klapp-Panels stehen im selben
+  Dialoggerüst, also müssen sie sich auch im Deutschen als Zeitform-Paar lesen.
+- **`Your note` → `Deine Notiz`** · `du`-Anrede wie im ganzen Katalog; ohne „(optional)“, weil hier anders als beim
+  Sendedialog eine Notiz oder eine E-Mail-Adresse nötig ist, bevor die Taste greift · high.
+- **`…and it'll join what the team already has` → `… und es kommt zu dem hinzu, was das Team schon hat`** · konstruiert,
+  `high` für die Bausteine (`hinzukommen zu` ist Standarddeutsch, `das Team` steht schon in
+  `errorReporter.dialog.description`), `tentative` für die Satzform: die Referenzsammlung kennt keinen Beleg für „einen
+  bereits gesendeten Bericht ergänzen“. Die Formulierung hält bewusst den `hinzu…`-Wortstamm des Dialogs durch, damit
+  Beschreibung, Taste und Toast eine Familie bilden.
+- **`That report can't take a note any more.` → `Zu diesem Bericht lässt sich keine Notiz mehr hinzufügen.`** · das
+  Katalogmuster für Absagen („X ließ sich nicht …“, siehe § Terms) im Präsens · high. Kein „Fehler“, kein
+  „fehlgeschlagen“ — die Stilregel gilt, und das Wort `Fehlerbericht` taucht in diesem Satz bewusst nicht auf.
+- **Das Help-Menü heißt im Fließtext `das Menü „Hilfe“`** · macOS Finder `de` benennt Menüs genau so („Wähle es aus,
+  wähle im Menü „Ablage“ die Option „Informationen“ …“, `BN43`), und `menu.bar.help` ist bereits `Hilfe` · high. Der
+  Zielbefehl dahinter ist `menu.help.sendErrorReport` („Fehlerbericht senden…“).
+- **`View or add notes to the report` → `Bericht ansehen oder Notiz hinzufügen`** · beide Hälften bleiben stehen, weil
+  die Taste beides kann; `ansehen` aus dem Katalog, `hinzufügen` aus dem Finder · high. Verworfen:
+  `Bericht ansehen oder ergänzen` (kürzer, aber `ergänzen` hat in der ganzen Referenzsammlung keinen Beleg und lässt
+  offen, WAS man ergänzt). Zu prüfen beim Overflow-Check: 37 Zeichen gegenüber 31 im Englischen, in einem Toast neben
+  „Einstellungen ändern“.
+- **`Note added to your report.` → `Notiz zum Bericht hinzugefügt.`** · Satzbau wortgleich zum Geschwister
+  `errorReporter.sentToast.message` („Fehlerbericht gesendet. Deine Referenz-ID ist“), damit die beiden Toasts als Paar
+  lesbar sind · high. Das Possessiv fällt weg: zwei `dein` hintereinander („zu deinem Bericht. Deine Referenz-ID“) liest
+  sich holprig, und das deutsche UI setzt das Possessiv ohnehin sparsamer als das Englische.
+- Kein `sameAsSourceJustification` nötig: alle elf Werte unterscheiden sich vom Englischen.

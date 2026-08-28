@@ -154,6 +154,11 @@ Two mechanics that bite in Portuguese specifically:
 - **Os nove avisos de ejetar/desconectar entram depois de dois pontos** (`fileExplorer.pane.ejectFailedToast` /
   `disconnectFailedToast`), então cada valor é uma oração completa, começa com maiúscula e cabe em uma ou duas frases
   curtas. `timedOut` não pode soar como falha. Evidência: `glossary.md` § Recusas de ejetar e desconectar.
+- **Um relatório já enviado recebe uma NOTA, nunca um segundo envio.** As chaves de `errorReporter.amend.*` falam do
+  mesmo relatório (`e isso entra no mesmo relatório que a equipe já tem`), a caixa continua sendo uma **nota** (o termo
+  do diálogo de envio, para as duas telas não terem costura) e o encaminhamento quando não dá mais para acrescentar é
+  sempre **pelo menu Ajuda**, a frase que `settings.updates.errorReports.description` já publica. Evidência:
+  `glossary.md` § Notas anexadas a um relatório já enviado.
 - **O diálogo de falha tem três aberturas, e duas delas não podem falar em falha.** `crashReporter.dialog.body.ended`
   fala do app que encerrou; `keptRunning` e `unknown` descrevem um problema que o Cmdr atravessou (ou pode ter
   atravessado), então nelas não entram `falha`, `encerrou`, `fechou`, `parou` nem `travou`, e o relatório fica

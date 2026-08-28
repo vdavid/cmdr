@@ -253,6 +253,9 @@ export const feedbackFixtures: Record<string, Patch<typeof feedbackFlow>> = {
 
 export const errorReportFixtures: Record<string, Patch<typeof errorReportFlow>> = {
   blank: { open: true, initialNote: '' },
+  // Amend mode, the state the "Error report sent" toast opens. It reads the REAL Flow B
+  // stash, so what this row shows depends on whether this run auto-sent anything.
+  amend: { open: true, initialNote: '', mode: 'amend' },
   // What the toast's "Send error report…" link ferries in: a multi-line message
   // with a path in it, which is where the note box's sizing shows its hand.
   'from-toast': {

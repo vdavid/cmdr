@@ -42,6 +42,10 @@ so don't copy that pattern.
     `achtergronden`), don't fall back to the bare noun, which reads as a label: use the prepositional or directional
     phrase the catalog already uses for the concept ("Op de achtergrond", like the settled "Naar prullenmand"). See the
     glossary's empty-queue button pass.
+  - **A separable verb keeps its particle at the END of the label**, however far that pushes it: "Add to report" →
+    `Voeg aan rapport toe`, not the English-ordered "Voeg toe aan rapport". macOS does exactly this ("Voeg aan begin van
+    knoppenbalk toe", "Voeg het lettertype aan de stijl toe", verified in `nl/macOS/AppKit`, 2026-08-28). Same for
+    `zet … terug`, `werp … uit`, `koppel … los`.
 
 ## Terminology and glossary
 
@@ -86,6 +90,12 @@ Straightforward (sources agree, `high`):
 - go to trash → Ga naar prullenmand · macOS Finder (`Go to the Trash`→`Ga naar de prullenmand`), article dropped the way
   Finder's own button does (`Go to Folder…`→`Ga naar map…`) · high. NOT `Naar prullenmand`, which already means MOVE to
   trash in `fileOperations.json`
+- add (to something that already exists) → toevoegen / toegevoegd; button `Voeg aan {X} toe` · macOS Finder ("Als je
+  personen aan dit document wilt toevoegen …") + AppKit ("Voeg aan begin van knoppenbalk toe") · high
+- note (free-text the user writes) → notitie · MS (`note`→`notitie`); settled across `errorReporter.json`. The
+  feedback-pass row `note → bericht` is that surface only; don't mix the two words in one dialog · high
+- the Help menu → het Help-menu · the Dutch macOS menu bar keeps `Help` (see the glossary's native-menu pass); hyphen
+  after the English proper name, like `SMB-share` · high
 
 Add rows as terms come up, each with sources and a confidence.
 
@@ -184,6 +194,10 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   `beveiligd`. Evidence: `glossary.md` § Get Info en Beveiligd.
 - **"The transfer has stopped moving" → "De overdracht komt niet meer vooruit"**: picked over the more idiomatic
   standstill phrase "ligt stil", which sits too close to the neighbouring "Gepauzeerd" state. Confirm the tradeoff.
+- **"View or add notes to the report" → "Bekijk het rapport of voeg notities toe"** (`autoSentToast.viewOrAddNotes`): 39
+  characters against the English 31, on a toast next to the short "Wijzig instellingen". Dutch can't hang one shared
+  object in front of both verbs, so each verb carries its own half. The compact "Bekijk of vul het rapport aan" fits
+  better but drops the notitie the dialog is for. Confirm which one wins in the real toast, and overflow-check it.
 
 ## Glossary
 

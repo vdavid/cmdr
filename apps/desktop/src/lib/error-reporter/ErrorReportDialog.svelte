@@ -1,11 +1,20 @@
 <script lang="ts">
     /**
-     * Preview-and-send dialog for user-initiated error reports (Flow A).
+     * The error-report dialog, in both of its modes.
+     *
+     * COMPOSE (Flow A, the Help menu and the error-toast link): `prepareErrorReportPreview`
+     * renders the preview, `sendErrorReport` ships the bundle under the id the preview
+     * showed. In dev, an extra "Save bundle to disk (debug)" button writes the zip to the
+     * app data dir for inspection.
+     *
+     * AMEND (reached only from the Flow B auto-sent toast): `getAutoSentReportPreview`
+     * returns what already shipped, and `amendErrorReport` adds the note to that same
+     * report. Nothing on this path can upload a second bundle: when there's no stashed
+     * report, or the server handed back no amend key, the dialog says so and offers no
+     * submit at all.
      *
      * Mounted from `(main)/+layout.svelte` and driven by the reactive `errorReportFlow`
-     * store. Calls `prepareErrorReportPreview` to render the preview and `sendErrorReport`
-     * to ship the bundle. In dev, an extra "Save bundle to disk (debug)" button writes
-     * the zip to the app data dir for inspection.
+     * store, whose `mode` picks the branch.
      */
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -17,6 +26,8 @@
     import Size from '$lib/ui/Size.svelte'
     import { addToast } from '$lib/ui/toast'
     import {
+        amendErrorReport,
+        getAutoSentReportPreview,
         prepareErrorReportPreview,
         sendErrorReport,
         saveErrorReportToDisk,
@@ -25,7 +36,7 @@
      
     import ErrorReportToastContent from './ErrorReportToastContent.svelte'
     import BundleSavedToastContent from './BundleSavedToastContent.svelte'
-    import { setLastSentReportId } from './error-report-toast-state.svelte'
+    import { setLastSentReport } from './error-report-toast-state.svelte'
     import { setLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
     import { getAppLogger } from '$lib/logging/logger'
@@ -46,11 +57,18 @@
     const SOFT_WARN_AT = 50_000
     const POST_SEND_TOAST_MS = 10_000
 
+    // Both are read once at init, the way the dialog is opened once per use. Reading
+    // them reactively would let a close mid-flight swap the mode under the submit.
     let userNote = $state(errorReportFlow.initialNote)
+    const isAmend = errorReportFlow.mode === 'amend'
+
     const attachEmail = createAttachEmail()
     let detailsExpanded = $state(false)
     let preview = $state<PreviewPayload | null>(null)
     let preparingError = $state<string | null>(null)
+    // Amend mode only: nothing was auto-sent this run, or the report can't take a note.
+    // Either way the dialog offers no submit; ❌ never a fallback to a fresh send.
+    let amendUnavailable = $state(false)
     let preparing = $state(true)
     let sending = $state(false)
     let copiedId = $state(false)
@@ -64,23 +82,32 @@
     const showCounter = $derived(noteLength > SOFT_WARN_AT)
     const isDev = import.meta.env.DEV
 
-    // Build the preview ONCE when the dialog mounts. The user note doesn't change the
-    // log content: only the manifest's `userNote` field changes, so there's no reason to
-    // re-run the megabyte-scale bundle build on every keystroke. The displayed manifest
-    // is overlaid with the live `userNote` value below; the actual bundle that gets
-    // shipped is rebuilt server-side-of-IPC on Send with the final note.
+    // Load the preview ONCE when the dialog mounts. ❌ Nothing read synchronously in here
+    // may be reactive: `attachEmail.emailToAttach` used to be an argument, which made every
+    // keystroke in the email field re-run the megabyte-scale bundle build and mint a fresh
+    // report id under the user's cursor. The note and the email only ever land in the
+    // manifest, and `displayedManifest` overlays both live, so the preview stays accurate.
     $effect(() => {
-        void buildInitialPreview()
+        void loadPreview()
     })
 
-    async function buildInitialPreview() {
+    async function loadPreview() {
         try {
-            const result = await prepareErrorReportPreview(undefined, attachEmail.emailToAttach)
-            preview = result
+            if (isAmend) {
+                const autoSent = await getAutoSentReportPreview()
+                // `canAmend` is the flag, never the shape of an error message.
+                if (autoSent?.canAmend) preview = autoSent
+                else amendUnavailable = true
+            } else {
+                preview = await prepareErrorReportPreview()
+            }
             preparingError = null
         } catch (e) {
-            preparingError = String(e)
-            log.warn("Couldn't prepare error report preview: {error}", { error: String(e) })
+            // Amend mode has nothing to fall back to, and falling back to a fresh send is
+            // the very bug this mode exists to fix, so it lands on the honest dead end.
+            if (isAmend) amendUnavailable = true
+            else preparingError = String(e)
+            log.warn("Couldn't load the error report preview: {error}", { error: String(e) })
         } finally {
             preparing = false
         }
@@ -108,18 +135,32 @@
         return Array.from(s).length
     }
 
-    /** Blocks the Send button, the ⌘Enter combo, and `handleSend` itself, from one place. */
-    const canSend = $derived(!sending && !noteOverLimit && !preparing && !attachEmail.blocksSend)
+    // An amendment needs something to carry: the server turns down one with neither a note
+    // nor an address, so the button is what stops it, not a round trip.
+    const hasAmendPayload = $derived(userNote.trim().length > 0 || attachEmail.emailToAttach !== undefined)
+
+    /** Blocks the submit button, the ⌘Enter combo, and `handleSend` itself, from one place. */
+    const canSend = $derived(
+        !sending &&
+            !noteOverLimit &&
+            !preparing &&
+            !attachEmail.blocksSend &&
+            (!isAmend || (preview !== null && hasAmendPayload)),
+    )
 
     async function handleSend() {
         if (!canSend) return
         sending = true
         try {
-            const result = await sendErrorReport(userNote || undefined, attachEmail.emailToAttach)
+            // Amend adds to the report that already shipped; compose ships a new one under
+            // the id the badge and the Copy button have been showing all along.
+            const result = isAmend
+                ? await amendErrorReport(userNote || undefined, attachEmail.emailToAttach)
+                : await sendErrorReport(userNote || undefined, attachEmail.emailToAttach, preview?.id)
             // Sticky choice and a newly typed address are remembered only now: a
             // half-typed one shouldn't become the reply channel for every report.
             attachEmail.persist()
-            setLastSentReportId(result.id)
+            setLastSentReport({ id: result.id, kind: isAmend ? 'amended' : 'sent' })
             addToast(ErrorReportToastContent, {
                 id: 'error-report-sent',
                 level: 'success',
@@ -131,7 +172,10 @@
             log.warn('Sending error report returned an error: {error}', { error: String(e) })
             // Suppress the inline "Send error report…" action: this toast is the failure
             // of that very flow, so offering to re-run it would be a confusing loop.
-            addToast(tString('errorReporter.dialog.sendFailedToast', { error: String(e) }), {
+            const message = isAmend
+                ? tString('errorReporter.amend.addFailedToast', { error: String(e) })
+                : tString('errorReporter.dialog.sendFailedToast', { error: String(e) })
+            addToast(message, {
                 level: 'error',
                 suppressErrorReportAction: true,
             })
@@ -142,7 +186,7 @@
 
     async function handleSaveToDisk() {
         try {
-            const path = await saveErrorReportToDisk(userNote || undefined, attachEmail.emailToAttach)
+            const path = await saveErrorReportToDisk(userNote || undefined, attachEmail.emailToAttach, preview?.id)
             setLastSavedBundlePath(path)
             addToast(BundleSavedToastContent, {
                 id: 'error-report-bundle-saved',
@@ -192,11 +236,22 @@
     ariaDescribedby="error-report-body"
     containerStyle="width: 540px"
 >
-    {#snippet title()}{tString('errorReporter.dialog.title')}{/snippet}
+    {#snippet title()}{isAmend
+            ? tString('errorReporter.amend.title')
+            : tString('errorReporter.dialog.title')}{/snippet}
 
+    {#if amendUnavailable}
+        <div>
+            <p id="error-report-body" class="description">{tString('errorReporter.amend.unavailable')}</p>
+            <div class="button-row">
+                <span class="spacer"></span>
+                <Button variant="primary" onclick={handleClose}>{tString('errorReporter.amend.close')}</Button>
+            </div>
+        </div>
+    {:else}
     <div>
         <p id="error-report-body" class="description">
-            {tString('errorReporter.dialog.description')}
+            {isAmend ? tString('errorReporter.amend.description') : tString('errorReporter.dialog.description')}
         </p>
 
         {#if preview}
@@ -210,7 +265,7 @@
         {/if}
 
         <label class="note-label" for="error-report-note">
-            <span>{tString('errorReporter.dialog.noteLabel')}</span>
+            <span>{isAmend ? tString('errorReporter.amend.noteLabel') : tString('errorReporter.dialog.noteLabel')}</span>
             {#if showCounter}
                 <span class="note-counter" class:over={noteOverLimit}>
                     {t('errorReporter.dialog.counter', {
@@ -244,7 +299,7 @@
             aria-expanded={detailsExpanded}
         >
             <span class="toggle-arrow" class:expanded={detailsExpanded}>&#x25B8;</span>
-            {tString('errorReporter.dialog.detailsToggle')}
+            {isAmend ? tString('errorReporter.amend.detailsToggle') : tString('errorReporter.dialog.detailsToggle')}
             {#if preview}
                 <span class="size-hint">(<Size bytes={preview.sizeBytes} />)</span>
             {/if}
@@ -285,7 +340,8 @@
         {/if}
 
         <div class="button-row">
-            {#if isDev}
+            <!-- Amend mode builds no local bundle, so there's nothing on disk to save. -->
+            {#if isDev && !isAmend}
                 <Button variant="secondary" onclick={() => void handleSaveToDisk()} disabled={sending}>
                     {tString('errorReporter.dialog.saveToDisk')}
                 </Button>
@@ -294,15 +350,16 @@
             <Button variant="secondary" onclick={handleClose} disabled={sending}
                 >{tString('errorReporter.dialog.cancel')}</Button
             >
-            <Button
-                variant="primary"
-                onclick={() => void handleSend()}
-                disabled={!canSend}
-            >
-                {sending ? tString('errorReporter.dialog.sending') : tString('errorReporter.dialog.send')}
+            <Button variant="primary" onclick={() => void handleSend()} disabled={!canSend}>
+                {#if isAmend}
+                    {sending ? tString('errorReporter.amend.submitting') : tString('errorReporter.amend.submit')}
+                {:else}
+                    {sending ? tString('errorReporter.dialog.sending') : tString('errorReporter.dialog.send')}
+                {/if}
             </Button>
         </div>
     </div>
+    {/if}
 </ModalDialog>
 
 <style>

@@ -1817,3 +1817,58 @@ a parancspaletta „Go to trash” parancsa.
 - **A parancs leírása → `Az aktuális meghajtó Kukájának megnyitása`** · főnévi leírásforma, ahogy a `commands.json`
   többi leírása (`Másolat készítése a kijelölt fájlokról ugyanabban a mappában`); az `aktuális` a katalógus szava a
   „current”-re (`commands.editPaste.description`, `commands.favoritesAdd.description`) · high.
+
+## A már elküldött jelentés kiegészítése (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`, 2026-08-28)
+
+Tizenegy új kulcs: a Cmdr magától elküldi a hibajelentést, az értesítés gombja pedig megnyit egy ablakot, ahol a
+felhasználó megnézheti, mi ment el, és megjegyzést fűzhet UGYANAHHOZ a jelentéshez (nincs második feltöltés).
+
+- **add to X → `Hozzáadás a(z) X-hoz/-hez`** · macOS Tier 1 (`Hozzáadás a Kedvencekhez`, `Hozzáadás a Dockhoz`,
+  `Hozzáadás az oldalsávhoz`), Microsoft-terminológia (`add` = `Hozzáadás`) · high. Innen `amend.title` =
+  `Hozzáadás a hibajelentésedhez` és `amend.submit` = `Hozzáadás a jelentéshez`. A címke/gomb párost szándékosan ugyanaz
+  a viszony köti össze, mint a küldő ablak `dialog.title` (`Hibajelentés küldése`) és `dialog.send` (`Jelentés küldése`)
+  párját: a CÍM a teljes `hibajelentés` szót viszi, a GOMB a rövid `jelentés`-t.
+- **note (a felhasználó szabad szövege) → `megjegyzés`** · Microsoft-terminológia (`comment` = „A note or annotation
+  that an author or reviewer adds to a document” = `megjegyzés`; a `note` szócikk hu oldalán is szerepel a
+  `megjegyzés`), Double Commander (`Fájl/mappa megjegyzés`, `Megjegyzés szerk&esztése...`) · high. Megerősíti a már
+  szállított `errorReporter.dialog.noteLabel` = `Megjegyzés hozzáadása (nem kötelező)`. NEM `jegyzet`: a Microsoft azt a
+  külön álló Notes-elem értelmére tartja fenn (`Jegyzetek`, `Skype-jegyzetek`), a macOS pile-ban pedig a `megjegyzés`
+  csak a „remember” jelentésben fordul elő (`Helyesírás megjegyzése`), ami itt nem zavaró, mert a mi mondataink tárgya
+  mindig maga a szöveg.
+- **view (a művelet) → `megtekintés`** · macOS Tier 1 (`A(z) %@ megtekintéséhez jelentkezzen be`,
+  `Megosztott (csak megtekintés)`), Microsoft-terminológia (`view` = `megtekint`) · high.
+- **„Your note” → `A megjegyzésed`** · a mezőcímkék határozott névelős birtokos alakja már a katalógus szokása
+  (`settings` „Your email address” = `Az e-mail-címed`) · high. Az angol itt szándékosan elhagyja a „(optional)”-t, mi
+  is elhagyjuk.
+- **„What was sent” → `Mi került elküldésre`** · a testvér `errorReporter.dialog.detailsToggle` = `Mi kerül elküldésre`
+  MÚLT IDEJŰ alakja, betű szerint ugyanaz a szerkezet. A két kapcsoló egymás mellett él ugyanabban a funkcióban, és az
+  angol is csak igeidőben tér el („What''s about to be sent” / „What was sent”), ezért a magyar sem hoz be új
+  szerkezetet. A `kerül + -ásra/-ésre` alak a fájl saját idiómája (`eltávolításra kerülnek`, `nem kerülnek elküldésre`).
+- **„Adding…” → `Hozzáadás…`** · a testvér `dialog.sending` = `Küldés…` főnévi folyamatalakja ugyanezzel a lemmával ·
+  high. U+2026, nem három pont.
+- **„That report can''t take a note any more. …” →
+  `Ehhez a jelentéshez már nem lehet megjegyzést hozzáadni. Ha el szeretnéd juttatni a megjegyzésedet a csapathoz, küldj új jelentést a Súgó menüből.`**
+  · a `már nem` tagadás a macOS mintája (`… vagy Ön már nem rendelkezik engedéllyel …`); a `Súgó` a szótár szava (mac
+  Tier 1, `menu.bar.help` = `Súgó`), a menüből-irányítás pedig a macOS „válassza az Apple menü > …” mondatainak tegező
+  változata. A `hozzáadni` igét azért választottuk a szebb `megjegyzést fűzni` helyett, mert a `fűz` lemma a pile-ban
+  csak az `összefűz`/`hozzáfűz` (append) jelentésben él, a `hozzáad` viszont az egész funkció settled igéje. Nincs benne
+  sem `hiba`, sem `nem sikerült`: tényközlés, nem hibaüzenet.
+- **„Couldn''t add your note: {error}” → `Nem sikerült hozzáadni a megjegyzésedet: {error}`** · pontosan a testvérek
+  szerkezete (`Nem sikerült elküldeni a hibajelentést: {error}`, `Nem sikerült menteni a csomagot: {error}`) · high.
+- **„Note added to your report. Your reference ID is” →
+  `A megjegyzésed bekerült a jelentésbe. A hivatkozási azonosítód:`** · a testvér `sentToast.message`
+  (`A hibajelentés elment. A hivatkozási azonosítód:`) második mondata változatlanul, kettősponttal, mert az azonosító
+  közvetlenül utána jön egy jelvényben. A `hivatkozási azonosító` settled.
+- **„View or add notes to the report” → `Megtekintés vagy megjegyzés hozzáadása`** · FLAGGED (lásd lent). Mindkét fele
+  megvan (nézés + hozzáadás), főnévi címkeformában, és elfér az értesítés keskeny gombsorában a rövidebb
+  `Beállítások módosítása` mellett. A „to the report” nem jelenik meg külön: fölötte ott áll az értesítés címe
+  (`A hibajelentés elment`), tehát a tárgy egyértelmű, a teljes `Jelentés megtekintése vagy megjegyzés hozzáadása`
+  viszont már 47 karakter lenne.
+
+Natív anyanyelvi ellenőrzésre megjelölve:
+
+- `errorReporter.autoSentToast.viewOrAddNotes`: a tömörség és a teljesség közti váltás megítélése (kimarad-e a
+  „jelentés” szó a gombról) ízlés kérdése; a jelenlegi alak a tömörebbet választja.
+- `errorReporter.amend.description`: a második tagmondat (`és odakerül a többi mellé, ami már a csapatnál van`) az angol
+  „it''ll join what the team already has” szándékosan lezser képét viszi tovább; érthető és tegező, de több egyformán jó
+  magyar megoldás létezik rá.

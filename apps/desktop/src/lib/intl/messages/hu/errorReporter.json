@@ -92,6 +92,42 @@
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
+  "errorReporter.amend.title": "Hozzáadás a hibajelentésedhez",
+  "@errorReporter.amend.title": {
+    "sourceHash": "b19796b"
+  },
+  "errorReporter.amend.description": "A Cmdr ezt a jelentést már elküldte. Írj egy megjegyzést, vagy csatold az e-mail-címedet, és odakerül a többi mellé, ami már a csapatnál van.",
+  "@errorReporter.amend.description": {
+    "sourceHash": "276771e"
+  },
+  "errorReporter.amend.noteLabel": "A megjegyzésed",
+  "@errorReporter.amend.noteLabel": {
+    "sourceHash": "5331e47"
+  },
+  "errorReporter.amend.detailsToggle": "Mi került elküldésre",
+  "@errorReporter.amend.detailsToggle": {
+    "sourceHash": "cb2415e"
+  },
+  "errorReporter.amend.submit": "Hozzáadás a jelentéshez",
+  "@errorReporter.amend.submit": {
+    "sourceHash": "e05fdbe"
+  },
+  "errorReporter.amend.submitting": "Hozzáadás…",
+  "@errorReporter.amend.submitting": {
+    "sourceHash": "c6de6f4"
+  },
+  "errorReporter.amend.unavailable": "Ehhez a jelentéshez már nem lehet megjegyzést hozzáadni. Ha el szeretnéd juttatni a megjegyzésedet a csapathoz, küldj új jelentést a Súgó menüből.",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "cbb7a33"
+  },
+  "errorReporter.amend.close": "Bezárás",
+  "@errorReporter.amend.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "errorReporter.amend.addFailedToast": "Nem sikerült hozzáadni a megjegyzésedet: {error}",
+  "@errorReporter.amend.addFailedToast": {
+    "sourceHash": "69df136"
+  },
   "errorReporter.sentToast.message": "A hibajelentés elment. A hivatkozási azonosítód:",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
@@ -107,6 +143,10 @@
   "errorReporter.sentToast.copied": "Másolva",
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
+  },
+  "errorReporter.amendedToast.message": "A megjegyzésed bekerült a jelentésbe. A hivatkozási azonosítód:",
+  "@errorReporter.amendedToast.message": {
+    "sourceHash": "5471d7f"
   },
   "errorReporter.bundleSavedToast.message": "Csomag mentve lemezre",
   "@errorReporter.bundleSavedToast.message": {
@@ -132,8 +172,8 @@
   "@errorReporter.autoSentToast.changeSettings": {
     "sourceHash": "873512a"
   },
-  "errorReporter.autoSentToast.view": "Megtekintés",
-  "@errorReporter.autoSentToast.view": {
-    "sourceHash": "dcc839a"
+  "errorReporter.autoSentToast.viewOrAddNotes": "Megtekintés vagy megjegyzés hozzáadása",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "sourceHash": "81a00a0"
   }
 }

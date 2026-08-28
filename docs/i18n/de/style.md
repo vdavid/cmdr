@@ -218,6 +218,19 @@ Dateien".
 - **Don't translate „moving files“ literally when the message also covers copying and deleting.** `bewegen` is the NAME
   of Cmdr's Move command in German, so it reads as that one operation; use the catalog's `Vorgang` instead („Auf diesem
   Laufwerk läuft noch ein Vorgang von Cmdr.“).
+- **Ein Menü im Fließtext heißt `das Menü „Hilfe“`, nicht `das Hilfe-Menü`.** macOS `de` verweist genau so auf seine
+  Menüs („Wähle es aus, wähle im Menü „Ablage“ die Option „Informationen“ …“, Finder `BN43`). Den Menünamen selbst
+  nimmst du aus `menu.*` im Katalog, nicht aus einer Direktübersetzung des Englischen: `Help` ist `Hilfe`, `File` ist
+  `Ablage`. Belege: `glossary.md` § Native Menüs.
+- **Den vollen Feature-Namen einmal nennen, danach das kurze Wort.** Der Katalog trennt `Absturzbericht` /
+  `Fehlerbericht` (die Feature-Namen) von schlichtem `Bericht` (das Ding, über das der Dialog gerade spricht). Ein
+  Dialogtitel nennt die Sache voll, die Tasten und Toasts darunter kürzen auf `Bericht`: das hält die Tasten schmal und
+  liest sich nicht gestelzt. Worked sets: `glossary.md` § Absturzdialog, `glossary.md` § Fehlerbericht nachträglich
+  ergänzen.
+- **Eine Wortfamilie pro Dialog durchhalten.** Wenn ein Dialog eine Aktion trägt, nehmen Beschreibung, Taste,
+  Fortschrittslabel und Bestätigungs-Toast denselben Stamm (`hinzufügen` → `Wird hinzugefügt …` → `hinzugefügt` →
+  `kommt … hinzu`). Das Englische wechselt hier freier („add“, „join“); im Deutschen wirkt der Wechsel wie zwei
+  verschiedene Vorgänge.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

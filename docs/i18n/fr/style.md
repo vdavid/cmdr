@@ -130,6 +130,12 @@ Straightforward (sources agree, `high`):
   ambiguity, so keep it. "Remettre" (Finder's "Put Back") is the sourced fallback if a surface ever needs the two apart.
 - put back (an item from the trash, to where it was) → remettre en place · macOS Finder ("Put Back" → "Remettre") ·
   high. Not `restaurer`, which the catalog spends on undoing a RENAME (`askCmdr.renameUndo.*`).
+- view (consult information) → voir; view (open a file's content) → afficher · the catalog's own split
+  (`menu.app.licenseDetails` "Voir les détails de la licence" vs `fileExplorer.functionKeyBar.viewAction` "Afficher le
+  fichier") · high. "Voir" is also the shorter of the two, which decides tight toast buttons.
+- add to (attach something to an existing object) → ajouter à · macOS Finder/AppKit ("Ajouter à la barre latérale",
+  "Ajouter au Dock", "Ajouter aux favoris"): French takes the bare `Ajouter à X` with no explicit object, exactly like
+  English · high
 
 Contested or sense-specific (read the block):
 
@@ -245,6 +251,11 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
 - **Speed multipliers spell out "fois".** English UI writes `4x` / `100x`; French prose writes "4 fois plus lente",
   "parfois 100 fois". Keep the digit, drop the `x`: the bare `x` form reads as English marketing copy. See `glossary.md`
   § Notification de repli sur le montage macOS.
+- **« Couldn't <do X>: {error} » se rend par « <Nom verbal> impossible : {error} ».** Moule figé du catalogue, qui évite
+  « erreur » / « échec » tout en restant court : « Préparation de l'aperçu impossible : », « Envoi du rapport d'incident
+  impossible : », « Enregistrement du lot impossible : », « Ajout de votre note impossible : ». Nom verbal +
+  `impossible` + espace ASCII + `:`, jamais « Impossible de… » en tête quand la valeur suit déjà un deux-points ailleurs
+  (voir la puce suivante).
 - **Une valeur insérée après un deux-points ne redit pas le moule.** Plusieurs clés `errors.*` sont livrées dans une
   notification qui porte déjà « Impossible de … : », donc la valeur commence directement par l'observation et jamais par
   un second « Impossible de … ». Elle garde sa majuscule initiale, comme toutes les valeurs `errors.*`. Exemple

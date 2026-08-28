@@ -5,7 +5,7 @@
     "apps/analytics-dashboard": 3,
     "apps/api-server": 24,
     "apps/desktop": 2,
-    "apps/desktop/src": 289,
+    "apps/desktop/src": 294,
     "apps/desktop/src-tauri": 417,
     "apps/desktop/test": 24,
     "apps/website": 1,

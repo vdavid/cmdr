@@ -93,6 +93,42 @@
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
+  "errorReporter.amend.title": "Lägg till i din felrapport",
+  "@errorReporter.amend.title": {
+    "sourceHash": "b19796b"
+  },
+  "errorReporter.amend.description": "Cmdr har redan skickat den här rapporten. Skriv en notering eller bifoga din e-post, så läggs det till i rapporten som teamet redan har.",
+  "@errorReporter.amend.description": {
+    "sourceHash": "276771e"
+  },
+  "errorReporter.amend.noteLabel": "Din notering",
+  "@errorReporter.amend.noteLabel": {
+    "sourceHash": "5331e47"
+  },
+  "errorReporter.amend.detailsToggle": "Det här har skickats",
+  "@errorReporter.amend.detailsToggle": {
+    "sourceHash": "cb2415e"
+  },
+  "errorReporter.amend.submit": "Lägg till i rapporten",
+  "@errorReporter.amend.submit": {
+    "sourceHash": "e05fdbe"
+  },
+  "errorReporter.amend.submitting": "Lägger till…",
+  "@errorReporter.amend.submitting": {
+    "sourceHash": "c6de6f4"
+  },
+  "errorReporter.amend.unavailable": "Det går inte längre att lägga till något i den rapporten. Skicka en ny rapport från Hjälp-menyn, så når dina noteringar teamet.",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "cbb7a33"
+  },
+  "errorReporter.amend.close": "Stäng",
+  "@errorReporter.amend.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "errorReporter.amend.addFailedToast": "Det gick inte att lägga till din notering: {error}",
+  "@errorReporter.amend.addFailedToast": {
+    "sourceHash": "69df136"
+  },
   "errorReporter.sentToast.message": "Felrapporten har skickats. Ditt referens-ID är",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
@@ -108,6 +144,10 @@
   "errorReporter.sentToast.copied": "Kopierad",
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
+  },
+  "errorReporter.amendedToast.message": "Noteringen har lagts till i din rapport. Ditt referens-ID är",
+  "@errorReporter.amendedToast.message": {
+    "sourceHash": "5471d7f"
   },
   "errorReporter.bundleSavedToast.message": "Sparade paketet på disk",
   "@errorReporter.bundleSavedToast.message": {
@@ -133,8 +173,8 @@
   "@errorReporter.autoSentToast.changeSettings": {
     "sourceHash": "873512a"
   },
-  "errorReporter.autoSentToast.view": "Visa",
-  "@errorReporter.autoSentToast.view": {
-    "sourceHash": "dcc839a"
+  "errorReporter.autoSentToast.viewOrAddNotes": "Visa rapporten eller lägg till en notering",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "sourceHash": "81a00a0"
   }
 }

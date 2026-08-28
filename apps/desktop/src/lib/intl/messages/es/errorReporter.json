@@ -92,6 +92,42 @@
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
+  "errorReporter.amend.title": "Añadir a tu informe de error",
+  "@errorReporter.amend.title": {
+    "sourceHash": "b19796b"
+  },
+  "errorReporter.amend.description": "Cmdr ya envió este informe. Escribe una nota o adjunta tu correo, y se sumará a lo que el equipo ya tiene.",
+  "@errorReporter.amend.description": {
+    "sourceHash": "276771e"
+  },
+  "errorReporter.amend.noteLabel": "Tu nota",
+  "@errorReporter.amend.noteLabel": {
+    "sourceHash": "5331e47"
+  },
+  "errorReporter.amend.detailsToggle": "Lo que se envió",
+  "@errorReporter.amend.detailsToggle": {
+    "sourceHash": "cb2415e"
+  },
+  "errorReporter.amend.submit": "Añadir al informe",
+  "@errorReporter.amend.submit": {
+    "sourceHash": "e05fdbe"
+  },
+  "errorReporter.amend.submitting": "Añadiendo…",
+  "@errorReporter.amend.submitting": {
+    "sourceHash": "c6de6f4"
+  },
+  "errorReporter.amend.unavailable": "Ya no se pueden añadir notas a ese informe. Para hacer llegar tus notas al equipo, envía un informe nuevo desde el menú Ayuda.",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "cbb7a33"
+  },
+  "errorReporter.amend.close": "Cerrar",
+  "@errorReporter.amend.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "errorReporter.amend.addFailedToast": "No se pudo añadir tu nota: {error}",
+  "@errorReporter.amend.addFailedToast": {
+    "sourceHash": "69df136"
+  },
   "errorReporter.sentToast.message": "Informe de error enviado. Tu ID de referencia es",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
@@ -107,6 +143,10 @@
   "errorReporter.sentToast.copied": "Copiado",
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
+  },
+  "errorReporter.amendedToast.message": "Nota añadida a tu informe. Tu ID de referencia es",
+  "@errorReporter.amendedToast.message": {
+    "sourceHash": "5471d7f"
   },
   "errorReporter.bundleSavedToast.message": "Paquete guardado en el disco",
   "@errorReporter.bundleSavedToast.message": {
@@ -132,8 +172,8 @@
   "@errorReporter.autoSentToast.changeSettings": {
     "sourceHash": "873512a"
   },
-  "errorReporter.autoSentToast.view": "Ver",
-  "@errorReporter.autoSentToast.view": {
-    "sourceHash": "dcc839a"
+  "errorReporter.autoSentToast.viewOrAddNotes": "Ver o añadir notas al informe",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "sourceHash": "81a00a0"
   }
 }

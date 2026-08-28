@@ -1531,3 +1531,47 @@ plus kommandot med samma namn. Återanvänder `papperskorgen`, `enhet`, `fil/fil
   systersträngen `fileOperations.delete.archiveWarningStrong` ("Det finns ingen papperskorg i ett arkiv.") · `high`. Ett
   konstaterande om enheten, ingen anmärkning mot användaren.
 - Inga `sameAsSourceJustification` behövs: alla nio värden skiljer sig från engelskan.
+
+## Komplettera en redan skickad felrapport (2026-08-28; `errorReporter.amend.*` + `.amendedToast.message` + `.autoSentToast.viewOrAddNotes`)
+
+Dialogen som öppnas från toasten "Felrapporten har skickats": den visar vad som redan laddades upp och låter dig skriva
+en notering som fästs på **samma** rapport (inget skickas en andra gång). Återanvänder `felrapport`, `notering`,
+`Referens-ID`, `teamet` och `bifoga … e-post` från `errorReporter.json`/`common.json`-passen. Nya beslut:
+
+- **"add to" (fästa något på en befintlig rapport) → `lägga till i`** · macOS `sv` AppKit/Finder har mönstret som
+  knappetikett: "Lägg till i Dock", "Lägg till i sidofältet" (verifierat i pilen 2026-08-28) · `high`. Därför
+  `Lägg till i din felrapport` (titel), `Lägg till i rapporten` (knapp), `Lägger till…` (pågår). ❌ Inte `bifoga`: det
+  ordet är redan upptaget av e-postadressen (`common.attachEmail`, `settings.updates.attachEmailToReports.label`), och
+  två olika "fästa vid rapporten"-verb i samma dialog läses som två olika saker. ⚠️ `Lägg till i rapporten` är 21 tecken
+  mot engelskans 13 på en smal knapp; överflödskontrollera den mot `Stäng`. Kortformen `Lägg till` (macOS belägger den
+  ensam) finns om den klipps, men då tappar knappen sitt objekt.
+- **"What was sent" → `Det här har skickats`** · syskon till `errorReporter.dialog.detailsToggle` ("Det här är på väg
+  att skickas"), enligt § Kraschdialogens tre varianter-regeln om delad ram · `high`. Perfekt, inte preteritum:
+  rapporten skickades nyss och resultatet står kvar, precis som `autoSentToast.title` ("Felrapporten har skickats").
+  Följs av paketstorleken inom parentes, så etiketten måste stå för sig själv.
+- **"can't take a note any more" → `Det går inte längre att lägga till något i den rapporten`** · macOS `sv` säger
+  genomgående `inte längre` för "no longer / not any more" ("Det här dokumentet är inte längre tillgängligt", "har du
+  inte längre behörighet", verifierat i pilen 2026-08-28) · `high`. `gå att` + infinitiv i stället för passivt
+  `kan inte läggas till` (style.md:s passiv-`-s`-regel). Ordföljden är `inte längre att`, inte `att … längre`.
+- **Pekare till en meny → `från Hjälp-menyn`** · katalogens egen `settings.updates.errorReports.description` ("Du kan
+  alltid skicka en manuell rapport från Hjälp-menyn") plus macOS `sv` "Apple-menyn" · `high`. Menyrubriken `Hjälp` är
+  satt (§ Inbyggda menyer, `menu.bar.help`), och bindestrecket är det svenska sättet att sammansätta ett egennamn med
+  `-menyn`. ❌ Inte `menyn Hjälp` och inte `Hjälpmenyn` utan bindestreck.
+- **"To get your notes to the team, …" → `…, så når dina noteringar teamet`** · aktiv följdsats i stället för engelskans
+  syftesbisats · `high`. Verbet `nå` gör noteringarna till subjekt, vilket undviker både passiv och ett upprepat
+  `skicka` i samma mening som redan börjar med `Skicka en ny rapport`.
+- **"it'll join what the team already has" → `så läggs det till i rapporten som teamet redan har`** · samma `teamet` som
+  `errorReporter.dialog.description` ("till teamet så att vi kan åtgärda") · `high`. Engelskans "what the team already
+  has" blir konkret `rapporten som teamet redan har`: det är hela poängen med dialogen (inget andra paket skickas), och
+  svenskan har inget lika smidigt `vad de redan har`.
+- **"Note added to your report." → `Noteringen har lagts till i din rapport.`** · syskon till
+  `errorReporter.sentToast.message` ("Felrapporten har skickats. Ditt referens-ID är"), samma
+  `<substantiv> har <perfekt particip>`-ram · `high`. Andra satsen är ordagrant systernyckelns.
+- **"Close" → `Stäng`** · macOS AppKit `Close` → "Stäng" · `high`. Skilt från `Avfärda` (dismiss, på toaster) och
+  `Avbryt` (cancel, när en åtgärd överges). Här stänger knappen bara dialogen, ingen åtgärd avbryts.
+- **`errorReporter.autoSentToast.viewOrAddNotes` → `Visa rapporten eller lägg till en notering`** · båda halvorna
+  bevarade (titta + lägga till), vilket engelskan uttryckligen kräver · `high`. ⚠️ 42 tecken mot engelskans 31, i en
+  toast bredvid `Ändra inställningar`: överflödskontrollera. Avvisade kortformer: `Visa eller lägg till noteringar` (gör
+  `noteringar` till objekt även för `visa`, men det är rapporten man visar) och `Visa eller komplettera rapporten`
+  (kompakt och korrekt, men tappar ordet `notering` som binder knappen till fältet `Din notering` i dialogen).
+- **Inga `sameAsSourceJustification`** · alla elva värden skiljer sig från engelskan.

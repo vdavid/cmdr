@@ -93,6 +93,42 @@
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
+  "errorReporter.amend.title": "Toevoegen aan je foutrapport",
+  "@errorReporter.amend.title": {
+    "sourceHash": "b19796b"
+  },
+  "errorReporter.amend.description": "Cmdr heeft dit rapport al verstuurd. Schrijf een notitie of voeg je e-mailadres toe, dan komt het bij wat het team al heeft.",
+  "@errorReporter.amend.description": {
+    "sourceHash": "276771e"
+  },
+  "errorReporter.amend.noteLabel": "Je notitie",
+  "@errorReporter.amend.noteLabel": {
+    "sourceHash": "5331e47"
+  },
+  "errorReporter.amend.detailsToggle": "Wat er verstuurd is",
+  "@errorReporter.amend.detailsToggle": {
+    "sourceHash": "cb2415e"
+  },
+  "errorReporter.amend.submit": "Voeg aan rapport toe",
+  "@errorReporter.amend.submit": {
+    "sourceHash": "e05fdbe"
+  },
+  "errorReporter.amend.submitting": "Toevoegen…",
+  "@errorReporter.amend.submitting": {
+    "sourceHash": "c6de6f4"
+  },
+  "errorReporter.amend.unavailable": "Aan dat rapport kun je niets meer toevoegen. Om je notities alsnog bij het team te krijgen, verstuur je een nieuw rapport via het Help-menu.",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "cbb7a33"
+  },
+  "errorReporter.amend.close": "Sluit",
+  "@errorReporter.amend.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "errorReporter.amend.addFailedToast": "Je notitie toevoegen lukte niet: {error}",
+  "@errorReporter.amend.addFailedToast": {
+    "sourceHash": "69df136"
+  },
   "errorReporter.sentToast.message": "Foutrapport verstuurd. Je referentie-ID is",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
@@ -108,6 +144,10 @@
   "errorReporter.sentToast.copied": "Gekopieerd",
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
+  },
+  "errorReporter.amendedToast.message": "Notitie toegevoegd aan je rapport. Je referentie-ID is",
+  "@errorReporter.amendedToast.message": {
+    "sourceHash": "5471d7f"
   },
   "errorReporter.bundleSavedToast.message": "Bundel bewaard op schijf",
   "@errorReporter.bundleSavedToast.message": {
@@ -133,8 +173,8 @@
   "@errorReporter.autoSentToast.changeSettings": {
     "sourceHash": "873512a"
   },
-  "errorReporter.autoSentToast.view": "Bekijk",
-  "@errorReporter.autoSentToast.view": {
-    "sourceHash": "dcc839a"
+  "errorReporter.autoSentToast.viewOrAddNotes": "Bekijk het rapport of voeg notities toe",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "sourceHash": "81a00a0"
   }
 }

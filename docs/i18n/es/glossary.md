@@ -1534,3 +1534,57 @@ papelera"), y el mismo comando está en la paleta de comandos.
   `commands.navParent.label` ("Ir a la carpeta superior") y `commands.downloadsGoToLatest.label` ("Ir a la última
   descarga").
 - Ningún valor necesita `sameAsSourceJustification`: los nueve difieren del inglés.
+
+## Añadir a un informe ya enviado: el diálogo de la nota tardía (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`, 2026-08-28)
+
+Superficie nueva: cuando Cmdr envía un informe por su cuenta, el aviso trae un botón que abre un diálogo con lo que ya
+se envió y una caja para escribir una nota que se engancha a ESE mismo informe (no se sube nada por segunda vez). Si el
+informe ya no admite añadidos, el diálogo lo dice y remite al menú Ayuda.
+
+- **`add to` (sin objeto directo, "Add to your error report" / "Add to report") → `Añadir a …` / `Añadir al informe`** ·
+  macOS `es` usa exactamente esta elipsis en sus propios comandos: `Añadir a favoritos`, `Añadir a la barra lateral`,
+  `Añadir al Dock` (Finder `MenuBar`/`Localizable`) · high. El español normalmente pide objeto tras `añadir`, así que
+  sin este precedente habría que meter un `algo` de relleno; con él, el título y el botón conservan la brevedad del
+  inglés. ❌ No `agregar`: **cero apariciones** en todo el corpus de macOS `es` frente a las 20+ de `añadir`, y el
+  catálogo ya dice `Añade una nota (opcional)` en el diálogo hermano.
+- **El título del diálogo va en infinitivo** (`Añadir a tu informe de error`), igual que su hermano
+  `errorReporter.dialog.title` (`Enviar informe de error`) y `feedback.dialog.title` (`Enviar comentarios`) · high. El
+  imperativo de `updates.moveToApplicationsDialog.title` ("Mueve Cmdr a…") es la excepción de un título que da una
+  instrucción, no la norma.
+- **`error report` sigue siendo `informe de error`** aquí, por coherencia con las claves vecinas de `errorReporter.*` ·
+  tentative (heredado). ⚠️ Costura conocida: el ítem de menú `menu.help.sendErrorReport` dice
+  `Enviar informe de fallos…` mientras que este diálogo dice `informe de error`. Por eso `amend.unavailable` remite al
+  menú SIN nombrar el tipo de informe (`envía un informe nuevo desde el menú Ayuda`): así no elige bando en una costura
+  que nadie ha resuelto todavía. Si algún día se unifica, esta clave no hay que tocarla.
+- **`the Help menu` → `el menú Ayuda`** · el nombre del menú es `Ayuda` en macOS (Finder `MenuBar` `300630`/`300631`,
+  AppKit `MenuCommands`/`HelpManager`) y el catálogo ya lo fija en `menu.bar.help` · high. Sin comillas: macOS escribe
+  `selecciona menú Apple > Ajustes del Sistema` (entrecomilla los paneles, no los menús).
+- **`can't take a note any more` → `Ya no se pueden añadir notas a ese informe`** · el `ya no + presente` impersonal es
+  el giro de macOS para una capacidad que se acabó ("Este documento ya no está disponible", "ya no podrás acceder a
+  ellos") · high. Impersonal a propósito: no hay culpable, no hay veredicto, y no aparecen `error`, `fallo` ni
+  `no se pudo`, que es lo que pide la voz de Cmdr para esta clave.
+- **`To get your notes to the team` → `Para hacer llegar tus notas al equipo`** · `hacer llegar` traslada el "get … to"
+  sin inventar un verbo de envío que chocaría con el `envía` de la misma frase · high.
+- **`already sent` → `ya envió` (pretérito), no `ya ha enviado`** · el `es` base es panregional (ver `style.md` §
+  Decision points), y el pretérito es el que funciona en las dos orillas; el catálogo ya lo hace en
+  `fileExplorer.navigation.useSavedPasswordMessage` ("la contraseña que macOS ya guardó") y en
+  `crashReporter.dialog.body.ended` ("se cerró inesperadamente") · high. El compuesto peninsular queda registrado como
+  la variante que pediría un futuro `es-ES`.
+- **`attach your email` → `adjunta tu correo`** · lo pide la coherencia con la casilla que está justo debajo en el mismo
+  diálogo (`common.attachEmail`, "Adjuntar mi correo electrónico … para que puedas responderme") y con
+  `settings.updates.attachEmailToReports.label` · high. `adjuntar` para el sentido "incluir con un mensaje" ya estaba
+  fijado por la terminología de Microsoft (§ pase de Ask Cmdr).
+- **`and it'll join what the team already has` → `y se sumará a lo que el equipo ya tiene`** · `sumarse a` evita repetir
+  `añadir` por tercera vez en dos frases y no obliga a decidir si el sujeto es la nota o el correo (ambos singulares,
+  así que el verbo concuerda con cualquiera de los dos) · high.
+- **`What was sent` → `Lo que se envió`** · calco exacto del hermano `errorReporter.dialog.detailsToggle` ("Lo que está
+  a punto de enviarse") pasado a pasado, que es justo el contraste que hace el inglés · high.
+- **`View or add notes to the report` → `Ver o añadir notas al informe`** · las dos mitades se conservan, que es lo que
+  pide la clave. `View` → `Ver` y `Show` → `Mostrar` es la partición del catálogo (`menu.file.view` = `Ver`,
+  `commands.fileShowInFinder` = `Mostrar en el Finder`) · high. 29 caracteres frente a los 31 del inglés: no crece, así
+  que sigue cabiendo junto a `Cambiar ajustes` en el aviso.
+- **`Note added to your report.` → `Nota añadida a tu informe.`** · el participio concuerda con `nota` (femenino), no
+  con la persona, así que no expone ningún género · high.
+- Ningún valor lleva apóstrofo, así que no hay nada que duplicar para ICU; `{error}` va literal en
+  `No se pudo añadir tu nota: {error}`, con el mismo molde que `errorReporter.dialog.sendFailedToast`. Los once difieren
+  del inglés, así que ninguno necesita `sameAsSourceJustification`.

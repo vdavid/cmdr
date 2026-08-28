@@ -1922,3 +1922,51 @@ la corbeille ») ; la même commande existe dans la palette.
   dernier téléchargement »).
 - Espace ASCII avant le `;` de `undonePartial`, apostrophes ASCII doublées dans `undoUnavailable` et `noTrashHere`,
   aucun U+2019 ni U+202F. Aucun `sameAsSourceJustification` nécessaire : les neuf valeurs diffèrent de l'anglais.
+
+## Compléter un rapport déjà envoyé : les 11 clés `errorReporter.amend*` (2026-08-28)
+
+Nouvelle surface : quand Cmdr a envoyé un rapport d'incident tout seul (envoi automatique), la notification « Rapport
+d'incident envoyé » porte un bouton qui ouvre une fenêtre montrant ce qui est parti et où l'utilisateur peut écrire une
+note **rattachée au même rapport** (rien n'est renvoyé une seconde fois). Si le rapport n'accepte plus rien, la fenêtre
+le dit et renvoie vers Aide > Envoyer un rapport d'incident…
+
+Les 11 valeurs sont ICU (apostrophes doublées), espace ASCII avant `:`, aucun U+2019 ni U+202F, aucun
+`sameAsSourceJustification` nécessaire (les 11 diffèrent de l'anglais).
+
+- **`Add to your error report` (titre) → `Ajouter à votre rapport d'incident`** · le moule `Ajouter à X` sans objet
+  explicite est attesté tel quel chez Apple (macOS `Ajouter à la barre latérale`, `Ajouter au Dock`,
+  `Ajouter aux favoris`), donc l'infinitif transitif sans complément d'objet passe en français comme en anglais · high.
+  `Compléter votre rapport` se lit bien mais n'est pas attesté dans la pile comme verbe d'interface (la terminologie
+  Microsoft ne l'a qu'en `autocomplétion`), et il casserait la chaîne `Ajouter…` qui court sur le titre, le bouton et la
+  notification de confirmation.
+- **`Add to report` (bouton) → `Ajouter au rapport`** · même verbe que le titre, court pour un bouton serré · high
+- **`Adding…` → `Ajout…`** · exactement le moule du frère `errorReporter.dialog.sending` (« Envoi… ») : nom verbal +
+  U+2026 · high
+- **`Your note` → `Votre note`** · `note` est déjà le mot du catalogue pour ce champ (`errorReporter.dialog.noteLabel` «
+  Ajouter une note (facultatif) », `noteTooLong` « La note est trop longue. ») · high
+- **`What was sent` → `Ce qui a été envoyé`** · le frère `errorReporter.dialog.detailsToggle` dit « Ce qui va être
+  envoyé » pour le futur ; le passé composé passif garde le parallélisme exact des deux bascules · high
+- **`it'll join what the team already has` → `cela rejoindra ce que l'équipe a déjà reçu`** · `rejoindre` porte le
+  `join` de la source sans promettre un second envoi · high. L'anglais enchaîne « Write a note, or attach your email,
+  and … » ; le français passe par un deux-points (« Écrivez une note ou joignez votre e-mail : … »), plus naturel que la
+  virgule avant `ou` calquée de l'anglais.
+- **`attach your email` → `joignez votre e-mail`** · `joindre` est le verbe du catalogue pour rattacher l'e-mail à un
+  rapport (`settings.updates.emailPrivacyNote` « … pour joindre à un rapport que vous envoyez ») · high
+- **`That report can't take a note any more.` → `Ce rapport n'accepte plus de note.`** · un constat, sans verdict ni
+  `erreur` / `échec` / `bloqué` (règle du guide de style) · high
+- **`from the Help menu` → `depuis le menu Aide`** · `Aide` est le titre du menu chez Apple (`menu.bar.help`, Finder et
+  Safari `fr`) et le catalogue dit déjà « depuis le menu Aide » dans `settings.updates.errorReports.description` · high
+- **`Couldn't add your note: {error}` → `Ajout de votre note impossible : {error}`** · moule figé de la famille
+  (`prepareFailed` « Préparation de l'aperçu impossible : », `sendFailedToast` « Envoi du rapport d'incident impossible
+  : », `saveFailedToast` « Enregistrement du lot impossible : ») : nom verbal + `impossible` + espace ASCII + `:` · high
+- **`Note added to your report. Your reference ID is` →
+  `Note ajoutée à votre rapport. Votre identifiant de référence est`** · seconde moitié identique au frère
+  `errorReporter.sentToast.message` (la valeur s'arrête juste avant le badge, sans ponctuation finale) ; `ajoutée`
+  s'accorde avec `note`, féminin · high
+- **`View or add notes to the report` → `Voir le rapport ou y ajouter des notes`** · les deux moitiés (regarder ET
+  ajouter) sont tenues, et le pronom `y` évite de répéter « au rapport », ce qui garde le bouton court (38 caractères
+  contre 31 en anglais) dans une notification où il voisine « Modifier les réglages » · high. `Voir` plutôt
+  qu'`Afficher` : le catalogue réserve `Afficher` à l'ouverture d'un contenu (`fileExplorer.functionKeyBar.viewAction` «
+  Afficher le fichier ») et utilise `Voir` pour consulter une information (`menu.app.licenseDetails` « Voir les détails
+  de la licence », `whatsNew.dialog.seeFullChangelog`), ce qui est le sens ici. `Afficher` coûterait aussi trois
+  caractères de plus.

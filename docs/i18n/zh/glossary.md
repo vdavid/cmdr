@@ -1398,3 +1398,35 @@ Conventions worth keeping for this family:
   `high`。这是在讲驱动器的事实，不是说用户做错了；按 style.md 的口语指示代词规则用 `这个`，`此驱动器`
   只留给已经定型的驱动器索引短标签。
 - 九条值都与英文不同，无需 `sameAsSourceJustification`。
+
+## 给已发送的错误报告补充备注 / amending a sent error report（`errorReporter.amend.*`、`errorReporter.amendedToast.message`、`errorReporter.autoSentToast.viewOrAddNotes`，2026-08-28）
+
+自动发送的错误报告发出去之后，提示条上多了一个按钮，打开一个对话框：里面能看到刚才发出去了什么，也能写备注附到**同一份**报告上（不会再传一次）。如果那份报告已经不能再补充（Cmdr 重启过，或服务器没留入口），对话框改为提示，并把人指向「帮助 > 发送错误报告…」。复用上一轮已经定下的
+`错误报告`、`备注`、`参考编号`、`报告包`、`团队`、`忽略`，以及 `common.attachEmail*` 的 `附上你的邮箱`。新定的词：
+
+- **add to (an already-sent report)** · `添加到…`（标题 `添加到你的错误报告`，按钮 `添加到报告`） · macOS Finder `zh-CN`
+  的 `N169.13`（`Add to Dock` → 「添加到程序坞」）就是这个句式；`添加`
+  本身在 Finder 里到处都是（`RN21`、`IN_A7`、连接服务器窗口的工具提示），2026-08-28 在 pile 中核对 ·
+  `high`。英文标题和按钮特意互相呼应（`Add to your error report` / `Add to report`），中文照做，所以两处都用
+  `添加到`。❌ 不用 `补充`：它偏书面，且与目录里已有的 `添加备注（可选）`（`errorReporter.dialog.noteLabel`）对不上。
+- **adding…（按钮进行时）** · `正在添加…` · 与同一目录的 `正在发送…`、`正在准备预览…` 同一模式 ·
+  `high`。省略号是 U+2026 单字符。
+- **what was sent（已发生的那次）** · `已发送的内容` · 与发送对话框的 `即将发送的内容`
+  （`errorReporter.dialog.detailsToggle`）成对：`即将` 对 `已`，一眼能分出「要发的」和「发过的」 · `high`。
+- **view (the report contents)** · `查看` · macOS `zh-CN` 用 `查看` 表示「看内容」（`NE57`「没有权限查看其内容」、
+  `TL_HELP_INFO`「查看所选文件和文件夹的信息」、`快速查看`），2026-08-28 在 pile 中核对 · `high`。❌ 不用
+  `显示`：那是菜单栏 `View` 的名字（`menu.bar.view` = `显示`），指的是改变视图，不是读内容。
+- **"View or add notes to the report"（提示条按钮）** · `查看报告或添加备注` ·
+  `high`。英文两半都要保住（看 + 加），中文把宾语拆开成「查看报告」和「添加备注」，9 个字，紧挨着 `更改设置` 也不挤。
+- **"can''t take a note any more"** · `这份报告已经无法再添加备注。` · style.md 的中性说法 `无法…`，不用 `错误`/`失败` ·
+  `high`。`错误` 只保留在产品功能名 `错误报告` 里。
+- **指向帮助菜单** · `请从“帮助”菜单发送一份新报告。`
+  · 目录里已有一模一样的说法（`settings.updates.errorReports.description`：「你随时可以从“帮助”菜单手动发送报告」），菜单名
+  `帮助` 与 `menu.bar.help` 一致，也是 macOS AppKit `MenuCommands` 的 `Help` → 「帮助」 · `high`。
+  **约定**：正文里引用菜单名时，简体用直角外的弯引号 `“…”` 包住菜单名，后面接 `菜单`，不写路径式的 `帮助 > …`
+  （路径写法留给 onboarding 里那种加粗的操作指引）。
+- **"Note added to your report."** · `备注已添加到你的报告。` · 与 `errorReporter.sentToast.message`
+  （`错误报告已发送。你的参考编号是`）同一节奏，句尾不加标点，后面紧跟参考编号徽章 · `high`。
+- **"Couldn''t add your note: {error}"** · `无法添加你的备注：{error}` · 与同目录的
+  `无法发送错误报告：{error}`、`无法保存报告包：{error}` 同一句式，全角冒号 · `high`。
+- 十一条值都与英文不同，无需 `sameAsSourceJustification`。中文没有撇号，ICU 的 `''` 规则在这一批里用不上。

@@ -174,6 +174,13 @@ inflection.
   into a wrapper key (`无法推出 {volumeName}：…`, `无法断开连接：…`) and read as the sentence AFTER the colon. Write
   them to continue that sentence, and pick a different construction for the second clause (`没法断开它` instead of a
   second `无法断开连接`). Examples and the per-term evidence: `glossary.md` § Eject / disconnect error copy.
+- **Quote a menu name in running text, don't write a menu path.** In prose, wrap the menu's name in `“…”` and follow it
+  with `菜单`: `请从“帮助”菜单发送一份新报告。` (the shape `settings.updates.errorReports.description` already uses).
+  The bold `帮助 > 发送反馈…` path shape is reserved for the step-by-step onboarding instructions. Menu names must match
+  `menu.*` exactly (Help = `帮助`), so a copy edit can't drift the two apart.
+- **`查看` is "look at the contents", `显示` is the View menu.** macOS `zh-CN` splits them, and so does the catalog:
+  `menu.bar.view` = `显示` (change the view), while reading a report, a file, or an info panel is `查看`. Picking the
+  wrong one makes a button sound like a view-mode switch. Evidence: `glossary.md` § amending a sent error report.
 - **No letter case; the sentence-case rule is moot for Chinese text.** Han characters are unicameral. Just keep Latin
   brand words (Cmdr, macOS) as-is.
 - **Each script is its own pass.** Never machine-convert Simplified↔Traditional (one-to-many mappings + divergent

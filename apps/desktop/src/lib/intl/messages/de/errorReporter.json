@@ -93,6 +93,42 @@
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
+  "errorReporter.amend.title": "Zu deinem Fehlerbericht hinzufügen",
+  "@errorReporter.amend.title": {
+    "sourceHash": "b19796b"
+  },
+  "errorReporter.amend.description": "Cmdr hat diesen Bericht bereits gesendet. Schreib eine Notiz oder häng deine E-Mail-Adresse an, und es kommt zu dem hinzu, was das Team schon hat.",
+  "@errorReporter.amend.description": {
+    "sourceHash": "276771e"
+  },
+  "errorReporter.amend.noteLabel": "Deine Notiz",
+  "@errorReporter.amend.noteLabel": {
+    "sourceHash": "5331e47"
+  },
+  "errorReporter.amend.detailsToggle": "Was gesendet wurde",
+  "@errorReporter.amend.detailsToggle": {
+    "sourceHash": "cb2415e"
+  },
+  "errorReporter.amend.submit": "Zum Bericht hinzufügen",
+  "@errorReporter.amend.submit": {
+    "sourceHash": "e05fdbe"
+  },
+  "errorReporter.amend.submitting": "Wird hinzugefügt …",
+  "@errorReporter.amend.submitting": {
+    "sourceHash": "c6de6f4"
+  },
+  "errorReporter.amend.unavailable": "Zu diesem Bericht lässt sich keine Notiz mehr hinzufügen. Damit deine Notizen beim Team ankommen, sende über das Menü „Hilfe“ einen neuen Bericht.",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "cbb7a33"
+  },
+  "errorReporter.amend.close": "Schließen",
+  "@errorReporter.amend.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "errorReporter.amend.addFailedToast": "Deine Notiz ließ sich nicht hinzufügen: {error}",
+  "@errorReporter.amend.addFailedToast": {
+    "sourceHash": "69df136"
+  },
   "errorReporter.sentToast.message": "Fehlerbericht gesendet. Deine Referenz-ID ist",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
@@ -108,6 +144,10 @@
   "errorReporter.sentToast.copied": "Kopiert",
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
+  },
+  "errorReporter.amendedToast.message": "Notiz zum Bericht hinzugefügt. Deine Referenz-ID ist",
+  "@errorReporter.amendedToast.message": {
+    "sourceHash": "5471d7f"
   },
   "errorReporter.bundleSavedToast.message": "Bündel auf Datenträger gesichert",
   "@errorReporter.bundleSavedToast.message": {
@@ -133,8 +173,8 @@
   "@errorReporter.autoSentToast.changeSettings": {
     "sourceHash": "873512a"
   },
-  "errorReporter.autoSentToast.view": "Ansehen",
-  "@errorReporter.autoSentToast.view": {
-    "sourceHash": "dcc839a"
+  "errorReporter.autoSentToast.viewOrAddNotes": "Bericht ansehen oder Notiz hinzufügen",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "sourceHash": "81a00a0"
   }
 }

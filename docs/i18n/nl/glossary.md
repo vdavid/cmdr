@@ -1843,3 +1843,47 @@ de voortgangs- en resultaatteksten van het terugzetten, en de opdracht "Go to tr
 - **De opdrachtbeschrijving → `Open de prullenmand van de schijf die je bekijkt`** · imperatief, zoals de andere
   beschrijvingen in `commands.json` ("Maak een kopie van de geselecteerde bestanden in dezelfde map"), en `je` volgens
   de vastgelegde aanspreekvorm · high.
+
+## Aanvullen wat al verstuurd is: het notitievenster bij een automatisch foutrapport (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`, 2026-08-28)
+
+Elf sleutels: Cmdr heeft een foutrapport uit zichzelf verstuurd (de gebruiker koos daarvoor), de melding zegt dat, en
+een knop op die melding opent een venster met precies wat er verstuurd is plus een veld voor een notitie die AAN
+DATZELFDE rapport wordt gehangen. Er gaat niets een tweede keer omhoog. Gemijnd in `_ignored/i18n/nl/`, 2026-08-28.
+
+- **"Add to X" (knop) → `Voeg aan X toe`** · macOS AppKit Tier 1: `Voeg aan begin van knoppenbalk toe`,
+  `Voeg de liniaal aan de stijl toe`, `Voeg het lettertype aan de stijl toe` · high. Het scheidbare `toe` staat
+  achteraan, dus `Add to report` wordt `Voeg aan rapport toe`, niet het Engels-geordende "Voeg toe aan rapport". De
+  bare-stem imperatief volgt de knopregel in `style.md`.
+- **add (aan iets bestaands) → `toevoegen` / `toegevoegd`** · macOS Finder ("Als je personen aan dit document wilt
+  toevoegen …", "De server '^0' kan niet aan je favorieten worden toegevoegd") · high. Eén stam voor titel, knop,
+  voortgang en bevestiging.
+- **Venstertitel = infinitiefgroep, niet de imperatief.** `Add to your error report` → `Toevoegen aan je foutrapport`,
+  parallel aan de zustertitel `errorReporter.dialog.title` (`Send error report` → `Foutrapport versturen`) · high. De
+  imperatief is voorbehouden aan knoppen.
+- **"Adding…" → `Toevoegen…`** · zelfde vorm als de zuster `errorReporter.dialog.sending` (`Sending…` → `Versturen…`) ·
+  high. Eén teken `…` (U+2026), zoals het Engels.
+- **note → `notitie`** (niet `bericht`) · MS `note` → `notitie`, en dit bestand heeft het al vast in
+  `dialog.noteLabel`/`noteTooLong` · high. De rij "note (user's message) → bericht" hierboven komt uit de feedback-pass;
+  binnen `errorReporter.json` wint `notitie`, anders krijg je twee woorden voor hetzelfde veld.
+- **"What was sent" → `Wat er verstuurd is`** · de voltooide tegenhanger van het bestaande `dialog.detailsToggle`
+  (`What''s about to be sent` → `Wat er verstuurd gaat worden`) · high. Zelfde zinsbouw, alleen de tijd verschilt, zoals
+  in het Engels.
+- **"the Help menu" → `het Help-menu`** · de menubalk heet in het Nederlandse macOS `Help` (Finder `nl`, zie § Native
+  menu's), dus geen vertaling van "Help" · high. Streepje na een Engelse eigennaam, net als `SMB-share`. De bijbehorende
+  opdracht heet in de catalogus `Verstuur foutrapport…` (`menu.help.sendErrorReport`); het Engels noemt alleen het menu,
+  dus die zin doet dat ook.
+- **"can't take a note any more" → `Aan dat rapport kun je niets meer toevoegen`** · high. Geen `fout` en geen
+  `mislukt`: dit is een mededeling over wat er nog kan, niet over wat er misging (de stemregel in `style.md`).
+- **"To get your notes to the team, …" → `Om je notities alsnog bij het team te krijgen, verstuur je …`** · de
+  doelzin-met-`je` van Finder ("Als je personen aan dit document wilt toevoegen, verplaats je het naar iCloud") · high.
+  `alsnog` vangt het Engelse "instead" zonder een tweede `je je` op te leveren.
+- **"Couldn't add your note: {error}" → `Je notitie toevoegen lukte niet: {error}`** · de catalogusbrede weergave van
+  "couldn't X" (`X lukte niet`, zie `dialog.saveFailedToast` = `Bundel bewaren lukte niet`) · high.
+- **"Note added to your report." → `Notitie toegevoegd aan je rapport.`** · deelwoord vooraan, zoals de zustermelding
+  `sentToast.message` (`Foutrapport verstuurd. Je referentie-ID is`) · high. De melding eindigt vlak vóór de badge, dus
+  zonder leesteken na `is`.
+- **"View or add notes to the report" (knop op de melding) → `Bekijk het rapport of voeg notities toe`** · high voor de
+  woorden, tentative voor de lengte. Beide helften moeten blijven staan (kijken én toevoegen), en het gedeelde lijdend
+  voorwerp kan in het Nederlands niet vóór beide werkwoorden staan, dus het rapport wordt bij het eerste werkwoord
+  genoemd en `notities` bij het tweede. De kortere `Bekijk of vul het rapport aan` viel af: `aanvullen` benoemt de
+  notitie niet, terwijl het venster er precies om draait.

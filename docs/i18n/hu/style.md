@@ -191,6 +191,14 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   és a `errors.mutation.unexpected` angolul betű szerint azonos, magyarul mégsem az: az előbbi a
   `Nem sikerült kiadni: …` burkoló után áll, ahol a settled `Valami nem sikerült` közvetlen szóismétlés lenne. Ilyenkor
   a settled alak marad az alapeset, az eltérést pedig a `glossary.md`-ben indokoljuk, forrással.
+- **Ha két angol szöveg csak IGEIDŐBEN tér el, a magyar se hozzon be új szerkezetet.** A
+  `errorReporter.dialog.detailsToggle` (`Mi kerül elküldésre`) és a testvére, a `errorReporter.amend.detailsToggle`
+  (`Mi került elküldésre`) egymás mellett él ugyanabban a funkcióban; a `kerül + -ásra/-ésre` szerkezet megtartása
+  varratmentessé teszi a párt, még ha önmagában szebb lenne is egy `-va/-ve` vagy cselekvő alak. Bizonyíték és a többi
+  amend-döntés: `glossary.md` § A már elküldött jelentés kiegészítése.
+- **Menübe irányításkor a `-ból/-ből` alak a természetes**: `küldj új jelentést a Súgó menüből`. A macOS ugyanezt önöző
+  felszólításként írja (`válassza az Apple menü > Rendszerbeállítások elemet`), a menü NEVE onnan jön, a MONDAT a miénk,
+  tehát tegező marad.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

@@ -173,6 +173,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **Sentence case is native.** Swedish doesn't capitalize common nouns, days, or months, so the app's sentence-case rule
   applies without friction. Don't title-case.
 - **Quotation marks: `”…”`** (right double quote both sides) is the standard Swedish form. Avoid English `"…"`.
+- **Kommat före konsekutivt `så` står kvar.** Regeln nedan gäller `och`/`eller`, inte `så`: när andra satsen är en följd
+  av den första sätter svenskan komma ("Skriv en notering eller bifoga din e-post, så läggs det till i rapporten",
+  "Skicka en ny rapport från Hjälp-menyn, så når dina noteringar teamet"). Samma mening kan alltså sakna komma före
+  `eller` och ha komma före `så`; det är inte inkonsekvent.
 - **No comma before `och`/`eller` joining two short main clauses.** English keeps it ("Cancel it, or leave it running in
   the background"); Swedish drops it when both clauses are short ("Avbryt den eller låt den fortsätta i bakgrunden").
   Cmdr's English Oxford-comma rule is an English rule; Swedish punctuation wins here. Keep the comma only when the

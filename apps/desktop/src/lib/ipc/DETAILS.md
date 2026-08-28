@@ -247,6 +247,7 @@ These commands stay on raw `invoke()` for now. Each call site has:
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `record_breadcrumb`                                      | Takes `Option<serde_json::Value>` for arbitrary breadcrumb context                             | Keep on raw `invoke()`; free-form value is the point of breadcrumbs                 |
 | `prepare_error_report_preview`                           | Return type includes `Breadcrumb.ctx: Option<serde_json::Value>`, which specta can't represent | Needs a typed `Ctx` struct to replace `Value`, or strip `ctx` from the preview type |
+| `get_auto_sent_report_preview`                           | Same `Breadcrumb.ctx: Option<serde_json::Value>` in the returned manifest                      | Rides along with `prepare_error_report_preview`; the same `Ctx` struct frees both   |
 | `store_font_metrics`                                     | Generic over `<R: tauri::Runtime>`, specta can't collect type info for generic commands        | Keep as-is; font metrics are write-only (no TS type needed for the return value)    |
 | `stream_folder_suggestions`, `cancel_folder_suggestions` | Tauri `Channel<T>` (streaming) isn't specta-friendly yet                                       | Re-evaluate when specta supports `Channel<T>` (track upstream)                      |
 

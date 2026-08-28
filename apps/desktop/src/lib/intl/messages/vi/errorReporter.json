@@ -92,6 +92,42 @@
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
+  "errorReporter.amend.title": "Thêm vào báo cáo sự cố của bạn",
+  "@errorReporter.amend.title": {
+    "sourceHash": "b19796b"
+  },
+  "errorReporter.amend.description": "Cmdr đã gửi báo cáo này rồi. Hãy viết ghi chú, hoặc đính kèm email của bạn, và nó sẽ được thêm vào chính báo cáo mà nhóm đã có.",
+  "@errorReporter.amend.description": {
+    "sourceHash": "276771e"
+  },
+  "errorReporter.amend.noteLabel": "Ghi chú của bạn",
+  "@errorReporter.amend.noteLabel": {
+    "sourceHash": "5331e47"
+  },
+  "errorReporter.amend.detailsToggle": "Những gì đã được gửi",
+  "@errorReporter.amend.detailsToggle": {
+    "sourceHash": "cb2415e"
+  },
+  "errorReporter.amend.submit": "Thêm vào báo cáo",
+  "@errorReporter.amend.submit": {
+    "sourceHash": "e05fdbe"
+  },
+  "errorReporter.amend.submitting": "Đang thêm…",
+  "@errorReporter.amend.submitting": {
+    "sourceHash": "c6de6f4"
+  },
+  "errorReporter.amend.unavailable": "Không thể thêm ghi chú vào báo cáo đó nữa. Để nhóm nhận được ghi chú của bạn, hãy gửi một báo cáo mới từ menu Trợ giúp.",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "cbb7a33"
+  },
+  "errorReporter.amend.close": "Đóng",
+  "@errorReporter.amend.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "errorReporter.amend.addFailedToast": "Không thể thêm ghi chú của bạn: {error}",
+  "@errorReporter.amend.addFailedToast": {
+    "sourceHash": "69df136"
+  },
   "errorReporter.sentToast.message": "Đã gửi báo cáo sự cố. ID tham chiếu của bạn là",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
@@ -107,6 +143,10 @@
   "errorReporter.sentToast.copied": "Đã sao chép",
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
+  },
+  "errorReporter.amendedToast.message": "Đã thêm ghi chú vào báo cáo. ID tham chiếu của bạn là",
+  "@errorReporter.amendedToast.message": {
+    "sourceHash": "5471d7f"
   },
   "errorReporter.bundleSavedToast.message": "Đã lưu gói vào đĩa",
   "@errorReporter.bundleSavedToast.message": {
@@ -132,8 +172,8 @@
   "@errorReporter.autoSentToast.changeSettings": {
     "sourceHash": "873512a"
   },
-  "errorReporter.autoSentToast.view": "Xem",
-  "@errorReporter.autoSentToast.view": {
-    "sourceHash": "dcc839a"
+  "errorReporter.autoSentToast.viewOrAddNotes": "Xem hoặc thêm ghi chú vào báo cáo",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "sourceHash": "81a00a0"
   }
 }
