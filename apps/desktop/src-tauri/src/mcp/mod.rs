@@ -13,6 +13,7 @@ pub mod pane_state;
 pub mod port_file;
 mod protocol;
 pub mod resources;
+mod safe_headers;
 mod server;
 pub mod terminal_ops;
 mod tool_registry;

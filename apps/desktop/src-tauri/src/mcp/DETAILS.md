@@ -282,6 +282,12 @@ Constants and configuration for the MCP server (port, bind address, transport se
 
 `SoftDialogTracker` implementation: tracks which dialogs MCP believes are open. Updated by MCP tool calls; not always in sync with actual Tauri window state (see gotchas).
 
+### Redacting request headers (`safe_headers.rs`)
+
+`SafeHeaders`: a newtype over `HeaderMap` whose `Debug` replaces the `authorization` value with `<redacted>`, plus the
+axum extractor both `/mcp` handlers use so a raw `HeaderMap` never enters either one. Validators still reach the real
+values through `Deref`. Why this is a type and not a rule: § Authentication.
+
 ### Archive-password prompt (`archive_password.rs`)
 
 `ArchivePasswordPromptStore`: one slot holding what the encrypted-archive password prompt is ASKING (archive name, the
@@ -432,6 +438,8 @@ The token is a fresh CSPRNG value (`Uuid::new_v4`, 122 random bits), generated o
 It then sends `Authorization: Bearer <token>` on the gated calls. `scripts/mcp-call.sh` already does this (reads `<data_dir>/mcp.token`, or `CMDR_MCP_TOKEN`); the E2E harness fetches it via the `get_mcp_token` Tauri IPC. The app's own frontend does NOT talk to this HTTP server (it uses the separate Tauri MCP bridge), so it needs no token.
 
 The rejection is returned as an **in-band JSON-RPC error at HTTP 200, not a 401**. The MCP Streamable-HTTP spec reserves HTTP 401 for an OAuth challenge, so a 401 makes clients (Claude Code, etc.) launch an OAuth discovery flow and surface a confusing "Invalid OAuth error response" instead of our message. A 200 + JSON-RPC `error` is the canonical application-error shape and renders client-side as `MCP error <code>: <message>` (the same path `nav_to_path`'s "path does not exist" takes). Our bearer gate isn't OAuth, so it must not look like one.
+
+**The token must not reach a LOG either, and that is enforced by a type rather than a rule.** Both handlers take `SafeHeaders` (`safe_headers.rs`), a newtype over `HeaderMap` whose `Debug` renders the `authorization` value as `<redacted>` and everything else verbatim; the raw map never enters either handler, so a `{:?}` on the headers is safe by construction. It replaced a rule-shaped fix that patched only the POST route and left the SSE one leaking — which is the shape to avoid here, because a header dump is the natural thing to reach for while debugging a transport. Why it matters more than it looks: `cmdr://logs` is readable with **no** token, and its redaction covers home paths, SMB URIs, and emails, never bearer tokens. A leaked token in the log is therefore readable over the open surface by the same local process the token exists to keep out, and the SSE route is precisely where a client sends `Authorization` to open the stream. Pinned by `both_routes_log_headers_through_the_redacting_type`, which fails to COMPILE if either handler goes back to a bare `HeaderMap`.
 
 The message names the gated tool (from the request's `name` field) and its honest reason — it applies without the usual in-app confirmation — rather than a hardcoded "destructive file operation" that's wrong for `set_setting` / `indexing` / `tag` / `favorites`. It tells the caller exactly where the token lives (the `CMDR_MCP_TOKEN` env var and the resolved `<data_dir>/mcp.token` path). That's safe: the secret is the file's 0o600 contents and the env value, not the path, which is already discoverable. The message never echoes the token, and it's identical for a missing vs a wrong token (no oracle) — the tool name comes from the request, so it doesn't leak whether a token was presented.
 

@@ -6,7 +6,7 @@
 use axum::{
     Json, Router,
     extract::State,
-    http::{HeaderMap, StatusCode, header},
+    http::{StatusCode, header},
     response::{
         IntoResponse, Response,
         sse::{Event, Sse},
@@ -33,6 +33,7 @@ use super::config::McpConfig;
 use super::port_file::{remove_port_file, write_port_file, write_secret_file};
 use super::protocol::{INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, McpRequest, McpResponse, ServerCapabilities};
 use super::resources::{get_all_resources, read_resource};
+use super::safe_headers::SafeHeaders;
 use super::tool_registry::{Consumer, execute_tool};
 use super::tools::get_all_tools;
 
@@ -479,7 +480,7 @@ async fn health_check() -> impl IntoResponse {
 /// Handle HTTP GET to MCP endpoint.
 /// Per 2024-11-05 spec: Server sends an SSE stream with an 'endpoint' event first.
 /// Per 2025-11-25 spec: Server MUST return 405 if it doesn't offer SSE, or start an SSE stream.
-async fn handle_mcp_get(headers: HeaderMap) -> Response {
+async fn handle_mcp_get(headers: SafeHeaders) -> Response {
     let user_agent = headers
         .get(header::USER_AGENT)
         .and_then(|v| v.to_str().ok())
@@ -494,7 +495,7 @@ async fn handle_mcp_get(headers: HeaderMap) -> Response {
         user_agent,
         origin
     );
-    log::trace!("MCP: GET headers: {:?}", headers);
+    log::trace!("MCP: GET headers: {headers:?}");
 
     // Validate Origin header (browser-CSRF / DNS-rebinding defense)
     if let Err(response) = validate_origin(&headers) {
@@ -563,35 +564,14 @@ fn build_json_response(response: McpResponse, new_session_id: Option<String>) ->
     http_response
 }
 
-/// The request headers with the bearer token replaced by a placeholder, for the
-/// debug dump.
-///
-/// ❗ `HeaderMap`'s own `Debug` prints every value, so dumping it raw wrote the
-/// token into the log file — and `cmdr://logs` is readable with NO token, so any
-/// local process could have read the token straight back out and used it on the
-/// gated calls. ❌ Never log the map directly.
-fn loggable_headers(headers: &HeaderMap) -> Vec<(String, String)> {
-    headers
-        .iter()
-        .map(|(name, value)| {
-            let rendered = if name == header::AUTHORIZATION {
-                "<redacted>".to_string()
-            } else {
-                format!("{value:?}")
-            };
-            (name.to_string(), rendered)
-        })
-        .collect()
-}
-
 /// Handle HTTP POST to MCP endpoint (main request handler).
 async fn handle_mcp_post<R: Runtime>(
     State(state): State<Arc<McpState<R>>>,
-    headers: HeaderMap,
+    headers: SafeHeaders,
     Json(request): Json<McpRequest>,
 ) -> Response {
     log::debug!("MCP: POST /mcp - method: {}", request.method);
-    log::debug!("MCP: POST headers: {:?}", loggable_headers(&headers));
+    log::debug!("MCP: POST headers: {headers:?}");
 
     // 1. Validate Origin header (browser-CSRF / DNS-rebinding defense)
     if let Err(response) = validate_origin(&headers) {
@@ -841,21 +821,25 @@ fn format_tool_result(value: &Value) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::http::HeaderMap;
 
-    #[test]
-    fn the_header_dump_never_carries_the_bearer_token() {
-        // `cmdr://logs` needs no token to read, so a token in the log file is a
-        // token anyone on this machine can pick up and spend on the gated calls.
-        let mut headers = HeaderMap::new();
-        headers.insert(header::AUTHORIZATION, "Bearer super-secret".parse().unwrap());
-        headers.insert(header::ORIGIN, "http://127.0.0.1".parse().unwrap());
-
-        let dumped = format!("{:?}", loggable_headers(&headers));
-
-        assert!(!dumped.contains("super-secret"), "{dumped}");
-        assert!(dumped.contains("<redacted>"), "{dumped}");
-        // Everything else still reads, which is what the dump is for.
-        assert!(dumped.contains("127.0.0.1"), "{dumped}");
+    /// Never called: it exists so BOTH routes' header parameters have to be
+    /// `SafeHeaders`. A handler that went back to a bare `HeaderMap` stops
+    /// compiling right here.
+    ///
+    /// The GET (SSE) route kept leaking for a while after the POST one was
+    /// fixed — which is what a rule saying "don't log the map" costs, and why
+    /// the guarantee is a type the raw map can't get past rather than a line in
+    /// a doc. The redaction itself is `SafeHeaders`'s `Debug` (tested in
+    /// `safe_headers.rs`), so it covers every log site either route will have.
+    #[expect(dead_code, reason = "a compile-time pin on both handler signatures, never run")]
+    async fn both_routes_take_redacting_headers(
+        state: State<Arc<McpState<tauri::Wry>>>,
+        headers: SafeHeaders,
+        body: Json<McpRequest>,
+    ) {
+        handle_mcp_get(SafeHeaders::new(HeaderMap::new())).await;
+        handle_mcp_post(state, headers, body).await;
     }
 
     #[test]
