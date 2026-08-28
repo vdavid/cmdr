@@ -3,6 +3,7 @@
 //! Provides a Streamable HTTP server that exposes cmdr functionality as MCP tools,
 //! enabling AI agents to control the file manager.
 
+pub mod archive_password;
 mod auth;
 pub mod config;
 pub mod dialog_state;
@@ -20,6 +21,7 @@ mod tools;
 #[cfg(test)]
 mod tests;
 
+pub use archive_password::ArchivePasswordPromptStore;
 pub use auth::current_mcp_token;
 pub use config::McpConfig;
 pub use dialog_state::SoftDialogTracker;

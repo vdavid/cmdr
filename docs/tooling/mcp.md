@@ -92,7 +92,8 @@ default; `CMDR_MCP_TIMEOUT` moves it.
 Most tools (resource reads, nav, search, dialog-prompting ops) need no auth. A bearer token is required ONLY for the
 calls that bypass the user's confirmation dialog: `set_setting`, `delete` / `move` / `copy` with `autoConfirm: true`,
 and `dialog` with `action: "confirm"` (including `quit-confirmation`; the matching `close`, which keeps working, is
-open). Calling one of these without the token logs `MCP: rejected request with missing/invalid bearer token` and returns
+open). `resolve_conflict` and `unlock_archive` are gated too: they answer, with no dialog, a question that was put to
+the user. Calling one of these without the token logs `MCP: rejected request with missing/invalid bearer token` and returns
 a JSON-RPC error pointing at the token file. To get it right on the first try:
 
 - **`./scripts/mcp-call.sh` handles the token for you.** It reads `<data_dir>/mcp.token` (or `CMDR_MCP_TOKEN`) and sends
@@ -181,6 +182,39 @@ answered the same clash first). A refusal carries `data.outcome` instead: `stale
 re-read `cmdr://state`), `no_pending_conflict`, or `unknown_operation`. Branch on those, never on the sentence.
 `applyToAll: true` answers the rest of the operation's clashes the same way. Both `dialog confirm` and
 `resolve_conflict` are token-gated, so route them through `./scripts/mcp-call.sh`.
+
+## Unlocking an encrypted archive
+
+An encrypted archive raises a password prompt, and `cmdr://state` says which archive is asking and in which of the two
+flows:
+
+```bash
+./scripts/mcp-call.sh --read-resource 'cmdr://state?include=dialogs'
+#   - type: archive-password
+#     archive: "photos.zip"
+#     archivePath: "/Users/…/photos.zip/holiday.raw"
+#     mode: transfer
+#     wrongAttempt: false
+#     settledOperationId: op-7
+#     answerWith: unlock_archive
+
+./scripts/mcp-call.sh unlock_archive '{"archivePath":"/Users/…/photos.zip/holiday.raw","password":"hunter2"}'
+```
+
+Copy `archivePath` back verbatim: the tool refuses (`data.outcome: "different_archive"`) rather than answering whatever
+happens to be asking, since another surface may have answered the prompt you read. `no_password_prompt` means nothing is
+asking. The tool is token-gated, so route it through `./scripts/mcp-call.sh`.
+
+What happens next depends on `mode`:
+
+- **`browse`** → `outcome: "retrying_listing"`. Listing is a read, so the unlock finishes the job: the pane shows the
+  archive's contents.
+- **`transfer`** → `outcome: "password_stored"`. The password is stored and **nothing is running**. The copy that hit
+  the prompt was already over, and supplying a password never starts a write, so run `copy` / `move` again to extract —
+  through the ordinary confirmation, like any other write. That second attempt succeeds with the stored password.
+
+Storing a password proves nothing about it. Re-read `cmdr://state` either way: the prompt is back with
+`wrongAttempt: true` when it was wrong. `dialog close archive-password` cancels instead, and forgets the password.
 
 ## Quitting the app
 

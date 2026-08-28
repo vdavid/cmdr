@@ -8,6 +8,7 @@ mod ack;
 // dispatch in the sibling `mcp/tool_registry/mod.rs` can name their `pub` handler fns; a sibling
 // can't otherwise reach `executor`'s descendants (E0603). `ack` stays private (executor-internal).
 pub(crate) mod app;
+pub(crate) mod archive_password;
 pub(crate) mod async_tools;
 pub(crate) mod conflicts;
 pub(crate) mod dialogs;

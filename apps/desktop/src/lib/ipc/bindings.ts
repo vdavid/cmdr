@@ -1430,6 +1430,11 @@ export const commands = {
   notifyDialogClosed: (dialogType: string) => __TAURI_INVOKE<void>('notify_dialog_closed', { dialogType }),
   // Tauri command: frontend registers all known soft dialog types at startup.
   registerKnownDialogs: (dialogs: KnownDialog[]) => __TAURI_INVOKE<void>('register_known_dialogs', { dialogs }),
+  // Tauri command: the frontend raised (or re-raised) the prompt.
+  notifyArchivePasswordPrompt: (prompt: ArchivePasswordPrompt) =>
+    __TAURI_INVOKE<void>('notify_archive_password_prompt', { prompt }),
+  // Tauri command: the prompt is gone (answered, cancelled, or swept).
+  notifyArchivePasswordDismissed: () => __TAURI_INVOKE<void>('notify_archive_password_dismissed'),
   /**
    *  Gets sync status for multiple file paths.
    *
@@ -4396,6 +4401,48 @@ export type ApprovalResultView =
   | { kind: 'sourceVolumeGone'; volumeId: string }
   // The group claimed, but the write engine wouldn't start it.
   | { kind: 'couldNotStart'; detail: string }
+
+// The live archive-password prompt, as the frontend raised it.
+export type ArchivePasswordPrompt = {
+  // The archive's display name, the one the dialog shows (`photos.zip`).
+  archiveName: string
+  /**
+   *  The path the prompt was raised on, and the one an answer must NAME: the
+   *  archive file for a browse, the errored source path (which may be INSIDE
+   *  the archive) for a transfer. Both resolve to the same archive volume.
+   */
+  archivePath: string
+  /**
+   *  The drive the archive lives on. Supplied by the frontend and never by a
+   *  caller: an answer names the archive, and the backend supplies the rest.
+   */
+  parentVolumeId: string
+  mode: ArchivePromptMode
+  /**
+   *  Whether a stored password was just rejected. The only thing that makes
+   *  the loop closeable from outside: an agent can tell a rejected attempt
+   *  from a first ask without watching the dialog.
+   */
+  wrongAttempt: boolean
+  /**
+   *  The operation that hit the prompt, for a `transfer`. Already settled (a
+   *  password failure settles the operation rather than parking it), so it is
+   *  a correlation handle, not something to resume.
+   */
+  operationId: string | null
+}
+
+/**
+ *  Which flow raised the prompt. The two are genuinely different situations for
+ *  a caller: unlocking a browse completes it (a listing is a read), while
+ *  unlocking a transfer only stores the password — the copy that hit the prompt
+ *  is already settled, and starting another one is a write like any other.
+ */
+export type ArchivePromptMode =
+  // Listing the archive needs the password: its metadata is encrypted too.
+  | 'browse'
+  // A copy or move out of the archive needs it to read the source entry.
+  | 'transfer'
 
 /**
  *  The `archive_edit` subkind, supplied by the capturing driver (compress vs

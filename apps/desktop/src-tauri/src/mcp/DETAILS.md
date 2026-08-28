@@ -169,6 +169,9 @@ provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier.
   `overwrite_smaller` | `overwrite_older`, optional `applyToAll`; gate `Always`). Answers ONE name clash a running
   operation is parked on, the state a person reaches by leaving the transfer dialog on "Ask for each" and clicking Skip
   on one file. See § "Answering one clash" below for how it's reached, what it returns, and why the id is required.
+- Archives (1): `unlock_archive` (`archivePath` + `password`; gate `Always`). Answers the encrypted-archive password
+  prompt, the other modal state a hand used to be the only way to drive. See § "Answering the archive password" below
+  for the discovery block, the two modes, and why it may store a password but never start the write.
 - Favorites (1): `favorites` (`action` = `add` | `rename` | `remove` | `reorder`; `path` (+ optional `name`) for add, `id` for rename/remove, `name` for rename, `orderedIds` (the COMPLETE new ordering) for reorder; gate `Always`). A thin adapter over `commands::favorites` (`add_favorite` / `rename_favorite` / `remove_favorite` / `reorder_favorites`), which persist `favorites.json` and re-emit `volumes-changed` themselves, so the switcher refreshes live — no FE dispatch, no invented ack (the `indexing` precedent). `reorder` is a pass-through of the full ordering (a `(id, position)` shape would force the MCP layer to re-implement splicing). Discover ids in `cmdr://state` `favorites:`.
 - Eject (1): `eject` (`volumeId`; gate `Open`). A thin adapter over `file_system::volume::eject::eject` — parity with the one-click Eject button. The backend refuses honestly (surfaced as errors, not false OKs) while a write op reads from or writes to the volume (`EjectError::Busy`) and for non-ejectable volumes; `Open` because it's a reversible, one-click runtime action touching no persistent state.
 - Async (1): `await` (poll until a condition is met. Pane conditions (`pane` required): `has_item`, `not_has_item`, `item_count_gte`, `item_count_lte`, `path`, or `path_contains` — the absence conditions are for "wait until the delete finished" flows; `~` expands in path-condition values; `afterGeneration` avoids matching stale state. Volume condition (`volumeId` + `value`, no pane): `index_status` waits until a volume's indexing freshness equals `fresh` / `scanning` / `stale`, reading the single freshness store each tick (never re-deriving — the transition table lives in `indexing/lifecycle/freshness.rs`). Deliberately two fields, NOT a packed `<volumeId>:<status>` string: MTP volume ids embed colons. Operation conditions (no pane): `operation_complete` (`value` = operationId) resolves when the op settles and reports the terminal status (completed / cancelled / failed) — an id in neither the live registry (`list_operations`) nor the terminal-ops ring is an honest "unknown operationId" error, never a hang; `operations_idle` (no `value`) resolves when no op is running or queued (paused ops excluded, so it can't hang on a parked op) and logs the snapshot it decided on at `debug` under target `mcp::await` — it once answered "idle" while a copy admitted eight seconds earlier was ~20% done and has not reproduced, so the id-and-status list plus the poll count is the evidence the next occurrence needs (empty list = `list_operations` never saw the op; rows present = every one read as paused or settled). `timeoutSeconds` up to 60.)
@@ -196,6 +199,55 @@ The loop, all MCP: `copy` → `dialog confirm transfer-confirmation` with **`onC
 - `StaleAnswer` / `NoPendingConflict` / `UnknownOperation` → `INVALID_PARAMS`, with the same token in `data.outcome`. Nothing happened, and the caller's picture of the operation is wrong — the `queue` `pause_reply` mapping, for the same reason: an `OK` for something that didn't happen sends an agent on acting against a transfer that never moved.
 
 ❌ Never branch on the message; branch on `outcome` / `data.outcome`. `stop` is rejected as a resolution (it's the policy that raises the question). Gate `Always`: this answers, with no dialog, a question that was put to the user, and `overwrite` destroys a file — the same bypass the token guards for `dialog confirm`. Proven end to end by `apps/desktop/test/e2e-playwright/mcp-conflicts.spec.ts`, which drives a Stop-mode clash entirely through MCP, answers one file, and shows the second clash surviving the first one's answer.
+
+#### Answering the archive password (`unlock_archive`)
+
+**The other state only a hand could drive.** An encrypted archive raises a password prompt, and until this tool the
+prompt was IPC-only: `cmdr://state` showed a bare `- type: archive-password` with no archive named and no way to answer,
+so an agent's only exit was cancel. Both flows sat in that blind spot — browsing into a header-encrypted archive, and
+copying out of an encrypted one — which is the same shape the conflict wedge lived in for months. ❌ Don't narrow it
+back.
+
+**Discovery is the `dialogs:` entry** (`resources/mod.rs::format_archive_password_dialog`), fed by a mirror the frontend
+pushes as it raises the prompt (`mcp/archive_password.rs`, `ArchivePasswordPromptStore`; cleared on dismissal and on
+`register_known_dialogs`, since a webview reload never fires the dismiss half). It carries `archive`, `archivePath` (the
+string an answer must echo back), `mode`, `wrongAttempt`, `answerWith`, and for a transfer the `settledOperationId`.
+`wrongAttempt` is what makes the loop closeable from outside: storing a password proves nothing about it, so the
+observable that a stored one was just REJECTED is the whole feedback signal.
+
+**The two modes are genuinely different events, and the reply says which.**
+
+- `browse` → `outcome: "retrying_listing"`. Re-listing is a READ, so unlocking completes it exactly as it does for a
+  person: the pane lists the archive, or the prompt comes back with `wrongAttempt: true`.
+- `transfer` → `outcome: "password_stored"`. The password is stored and **nothing is running**. Extracting means
+  running `copy` / `move` again.
+
+**❌ `unlock_archive` must never start a write. This is the whole design constraint.** A person's submit re-dispatches
+the parked copy for them; the agent path settles it instead (`archive-password-flow.svelte.ts::supplyStoredPassword` →
+`settleBirthOperation`, ❌ never `redispatchBirthOperation`). Two reasons it isn't merely conservative: that re-dispatch
+is a genuinely NEW operation — the backend already settled the old one, because `record_failure` excludes
+`ArchiveNeedsPassword` by typed variant (`write_operations/DETAILS.md` § "Retained failures") — and a new operation
+started from inside an unlock would be the one write on this surface reaching disk with no confirmation dialog and no
+`autoConfirm` token in front of it. Sending the caller back through `copy` also sidesteps the re-dispatch's known hazard
+(it re-scans against birth context captured before the prompt, so a pane that moved meanwhile aims it at the wrong
+place — `file-explorer/pane/DETAILS.md` § "Birth context"); a fresh `copy` reads current pane state.
+
+**The secret's whole path is JSON param → `commands::file_system::store_archive_password` → the archive volume's
+`Zeroizing` slot.** It never enters the prompt mirror, never renders in a resource, never appears in a log line, and is
+never echoed in the reply (pinned by a test). The frontend is then told to do its follow-up by the ordinary
+`mcp-confirm-dialog` event with no payload beyond the type, so the password never crosses into the webview at all —
+which is also why the frontend arm asserts that it calls neither `setArchivePassword` nor `clearArchivePassword`.
+
+**Gate `Always`, even though the tool starts nothing.** It doesn't fit the gate line cleanly (it mutates no user data
+and no persistent config), and the line's own tie-breaker is to gate. Two concrete reasons: it hands a secret into the
+app, and `wrongAttempt` turns the surface into a password ORACLE — an ungated tool would let any loopback process grind
+guesses against an archive the user opened, reading the verdict straight out of `cmdr://state`. `dialog confirm
+archive-password` is refused and points here, since a confirm carries nowhere to put the password; `dialog close
+archive-password` is still the cancel, and forgets the stored password as a person's cancel does.
+
+Proven end to end by `apps/desktop/test/e2e-playwright/mcp-archive-password.spec.ts`, which drives both flows entirely
+over MCP and holds the boundary open for three seconds after the unlock: no operation appears, and the destination file
+does not exist, until the agent starts the copy again through the normal confirmation.
 
 ### Resources (`resources/`)
 
@@ -229,6 +281,14 @@ Constants and configuration for the MCP server (port, bind address, transport se
 ### Dialog state (`dialog_state.rs`)
 
 `SoftDialogTracker` implementation: tracks which dialogs MCP believes are open. Updated by MCP tool calls; not always in sync with actual Tauri window state (see gotchas).
+
+### Archive-password prompt (`archive_password.rs`)
+
+`ArchivePasswordPromptStore`: one slot holding what the encrypted-archive password prompt is ASKING (archive name, the
+path an answer must name, the parent volume id, `browse` / `transfer`, `wrongAttempt`, and the settled operation id).
+Pushed by the frontend flow as it raises and dismisses the prompt, and cleared by `register_known_dialogs` alongside the
+open-dialog list, since a webview reload never fires the dismiss half. ❌ The password itself never reaches this store —
+it goes straight to the archive volume. § "Answering the archive password" has the whole contract.
 
 ### State stores
 
@@ -348,6 +408,8 @@ The bearer token is required for **only the calls that bypass the user's in-app 
 - `indexing` (all four actions mutate per-drive config or throw away / start heavy background work with no confirmation dialog — the `set_setting` rationale applied per drive),
 - `tag` (silent metadata mutation on user files, with no in-app confirmation dialog to piggyback on),
 - `favorites` (persistent app-config mutation with no confirmation dialog — the `set_setting` rationale), and
+- `unlock_archive` (hands a secret into the app, and the `wrongAttempt` flag it makes observable would otherwise be a
+  password oracle any loopback process could grind against; § "Answering the archive password"), and
 - `queue` with `rollback: true` (a rollback cancel deletes already-copied files with no confirmation dialog — the auto-confirm-a-destructive-thing shape; the `IfRollback` gate). Plain pause/resume/cancel stay open (transient runtime actions, crash-safe pipeline, no persistent state touched), as does `eject` (a reversible one-click runtime action; the backend refuses honestly while the volume is busy).
 
 **Everything else needs no token**: resource reads (`cmdr://state`, `cmdr://logs`, etc.), navigation, search, and the destructive ops that still pop the confirmation dialog (`autoConfirm` absent/false).

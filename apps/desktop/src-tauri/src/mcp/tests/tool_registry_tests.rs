@@ -53,6 +53,7 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "indexing",
     "queue",
     "resolve_conflict",
+    "unlock_archive",
     "favorites",
     "connect_to_server",
     "remove_manual_server",
@@ -71,9 +72,10 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
 #[test]
 fn test_all_tools_count() {
     // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
-    // + 2 search + 1 settings + 1 indexing + 1 queue + 1 conflict + 1 favorites + 3 network + 1 eject + 1
-    // await + 1 downloads + 3 operation_log + 2 photo (search + facts) + 1 index listing (list_dir) = 46
-    assert_eq!(get_all_tools().len(), 46);
+    // + 2 search + 1 settings + 1 indexing + 1 queue + 1 conflict + 1 archive unlock + 1 favorites
+    // + 3 network + 1 eject + 1 await + 1 downloads + 3 operation_log + 2 photo (search + facts)
+    // + 1 index listing (list_dir) = 47
+    assert_eq!(get_all_tools().len(), 47);
 }
 
 #[test]
@@ -658,6 +660,10 @@ fn test_gate_table_is_complete_and_correct() {
         ("indexing", TokenGate::Always),
         ("queue", TokenGate::IfRollback),
         ("resolve_conflict", TokenGate::Always),
+        // Gated even though it starts nothing: it hands a secret in, and the
+        // `wrongAttempt` flag it makes observable would otherwise be a password
+        // oracle any loopback process could grind against. DETAILS § Authentication.
+        ("unlock_archive", TokenGate::Always),
         ("connect_to_server", TokenGate::Open),
         ("remove_manual_server", TokenGate::Open),
         ("upgrade_smb_to_direct", TokenGate::Open),

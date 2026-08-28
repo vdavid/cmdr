@@ -27,7 +27,21 @@ pub async fn set_archive_password(
     archive_path: String,
     password: String,
 ) -> Result<(), String> {
-    with_archive(&parent_volume_id, &archive_path, move |archive| {
+    store_archive_password(&parent_volume_id, &archive_path, password).await
+}
+
+/// The storage itself, without the IPC wrapper, so the MCP `unlock_archive` tool
+/// puts a password in the same one slot the dialog does.
+///
+/// ❗ The only place either surface may put a password. It goes straight into the
+/// volume's `Zeroizing` slot and is never copied anywhere a resource, a log line,
+/// or a tool result can reach.
+pub async fn store_archive_password(
+    parent_volume_id: &str,
+    archive_path: &str,
+    password: String,
+) -> Result<(), String> {
+    with_archive(parent_volume_id, archive_path, move |archive| {
         archive.set_password(password)
     })
     .await

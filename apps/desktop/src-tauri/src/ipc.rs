@@ -254,6 +254,8 @@ macro_rules! ipc_command_manifest {
                     crate::mcp::dialog_state::notify_dialog_opened,
                     crate::mcp::dialog_state::notify_dialog_closed,
                     crate::mcp::dialog_state::register_known_dialogs,
+                    crate::mcp::archive_password::notify_archive_password_prompt,
+                    crate::mcp::archive_password::notify_archive_password_dismissed,
                     crate::commands::sync_status::get_sync_status,
                     crate::commands::smb_diagnostics::list_smb_volumes,
                     crate::commands::smb_diagnostics::get_smb_diagnostics,

@@ -173,7 +173,9 @@ export function createDialogState(deps: DialogStateDeps) {
     },
     settleBirthOperation: () => {
       const op = transferProgressProps?.operationType ?? 'copy'
-      log.info('{op} archive-password prompt cancelled', { op: transferOpLabel(op) })
+      // Both answers that end WITHOUT a retry land here: a cancel, and an MCP
+      // unlock (which stores the password but deliberately starts nothing).
+      log.info('{op} archive-password prompt closed with no retry', { op: transferOpLabel(op) })
 
       paneEffects.refreshPanesAfterTransfer()
       paneEffects.clearSourcePaneAfterTransfer()
@@ -558,6 +560,7 @@ export function createDialogState(deps: DialogStateDeps) {
           parentVolumeId: transferProgressProps.sourceVolumeId,
           archivePath: error.path,
           wrongAttempt: error.wrongAttempt,
+          operationId: failedOperationId,
         })
         return
       }
@@ -778,6 +781,11 @@ export function createDialogState(deps: DialogStateDeps) {
         // For MCP auto-confirm, honor whatever the props initialized with.
         const isPermanent = deleteDialogProps.isPermanent || !deleteDialogProps.supportsTrash
         this.handleDeleteConfirm(null, isPermanent)
+      } else if (dialogType === 'archive-password' && archivePassword.showDialog) {
+        // The `unlock_archive` tool already stored the password on the backend;
+        // this is the follow-up. ⚠️ It settles a transfer rather than
+        // re-dispatching it — see `supplyStoredPassword`.
+        archivePassword.supplyStoredPassword()
       }
     },
   }

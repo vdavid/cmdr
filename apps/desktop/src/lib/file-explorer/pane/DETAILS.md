@@ -570,6 +570,17 @@ then copy the ADOPTED operation's sources to the ADOPTED operation's destination
 correct-looking guard. With two slots the question doesn't arise, and the occupancy test is "either slot full, or any
 dialog open", which also covers the invisible case.
 
+**Only a PERSON's submit re-dispatches.** The prompt has two answers that store a password, and they part company right
+here. `handleSubmit` (someone typing into the dialog) re-dispatches the parked copy. `supplyStoredPassword` (the MCP
+`unlock_archive` tool, routed in through `confirmOpenDialog('archive-password')`) ❌ **must never** call
+`redispatchBirthOperation`: it settles the transfer and the agent runs `copy` / `move` again, so extraction reaches disk
+through the same confirmation and token gate as every other write instead of falling out of an unlock. It also dodges
+the stale-context hazard below, since a fresh `copy` reads current pane state rather than context captured before the
+prompt. Browse mode has no such split: re-listing is a read, so both answers retry. Whole contract, including why the
+parked operation is already settled: `src-tauri/src/mcp/DETAILS.md` § "Answering the archive password". Raising or
+clearing the prompt also mirrors it to the backend (`notifyArchivePasswordPrompt` / `-Dismissed`), which is what lets
+`cmdr://state` name the archive at all; ❌ the password is never part of that mirror.
+
 **The archive-password flow can't aim the re-dispatch either.** `archive-password-flow.svelte.ts` owns the prompt and
 both its modes but holds no reference to birth context: it asks `hasBirthContext()` and then calls
 `redispatchBirthOperation()` or `settleBirthOperation()`, neither of which takes an argument. So "the retry re-runs the

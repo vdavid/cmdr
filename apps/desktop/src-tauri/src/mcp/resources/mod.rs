@@ -465,6 +465,35 @@ fn extract_viewer_path<R: Runtime>(window: &WebviewWindow<R>) -> Option<String> 
         .map(|(_, value)| value.into_owned())
 }
 
+/// The `archive-password` dialog entry: everything an answer needs, and the one
+/// thing that says whether the last answer was wrong.
+///
+/// ❌ The password is never here. This block carries the QUESTION; the answer
+/// goes straight to the archive volume through `unlock_archive`.
+///
+/// `mode` is what a reader has to branch on: unlocking a `browse` finishes it
+/// (a listing is a read), while unlocking a `transfer` stores the password and
+/// nothing more — the copy that raised it is already settled, so extracting
+/// means starting a copy again, through the gate every copy goes through.
+pub(crate) fn format_archive_password_dialog(
+    prompt: &crate::mcp::archive_password::ArchivePasswordPrompt,
+) -> String {
+    let mut yaml = String::from("  - type: archive-password\n");
+    yaml.push_str(&format!("    archive: {:?}\n", prompt.archive_name));
+    yaml.push_str(&format!("    archivePath: {:?}\n", prompt.archive_path));
+    yaml.push_str(&format!("    mode: {}\n", prompt.mode.token()));
+    yaml.push_str(&format!("    wrongAttempt: {}\n", prompt.wrong_attempt));
+    if let Some(operation_id) = &prompt.operation_id {
+        // Already settled — a handle for correlating with the copy you started,
+        // not a row you'll find under `operations:`.
+        yaml.push_str(&format!("    settledOperationId: {}\n", operation_id));
+    }
+    yaml.push_str("    answerWith: unlock_archive\n");
+    // Trailing newline is added by the caller, which joins entries with one.
+    yaml.pop();
+    yaml
+}
+
 /// Build YAML for the "available dialogs" resource.
 /// Combines window-based types (hardcoded, stable) with soft dialog types
 /// registered by the frontend at startup.
@@ -648,8 +677,19 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
             }
         }
         if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
+            let prompt = app
+                .try_state::<crate::mcp::ArchivePasswordPromptStore>()
+                .and_then(|store| store.get());
             for dialog_type in tracker.get_open_types() {
-                dialog_entries.push(format!("  - type: {}", dialog_type));
+                // The archive-password prompt is the one soft dialog whose id
+                // isn't enough to act on: an answer has to name the archive.
+                if dialog_type == "archive-password"
+                    && let Some(prompt) = prompt.as_ref()
+                {
+                    dialog_entries.push(format_archive_password_dialog(prompt));
+                } else {
+                    dialog_entries.push(format!("  - type: {}", dialog_type));
+                }
             }
         }
         if dialog_entries.is_empty() {

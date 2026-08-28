@@ -557,7 +557,13 @@ export {
   scanVolumeForConflicts,
 } from './mtp'
 // Archive-password commands (encrypted-archive unlock)
-export { setArchivePassword, clearArchivePassword } from './archive'
+export {
+  setArchivePassword,
+  clearArchivePassword,
+  notifyArchivePasswordPrompt,
+  notifyArchivePasswordDismissed,
+  type ArchivePasswordPrompt,
+} from './archive'
 export type {
   MtpDeviceInfo,
   MtpStorageInfo,

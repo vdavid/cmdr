@@ -42,6 +42,16 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   field or `data.outcome`, never as prose an agent would have to parse. `stop` is rejected as a resolution: it is the
   policy that RAISES the question. Discovery is the `pendingConflict:` block in `cmdr://state` under `operations:`
   (`resources/operations.rs`), which is also the only place the `conflictId` an answer must carry comes from.
+- **`archive_password.rs`**: `unlock_archive` — answers the encrypted-archive password prompt. Same shape as
+  `conflicts.rs`: the answer must NAME what it answers (`archivePath`, off the `archive-password` entry in
+  `cmdr://state` `dialogs:`), and `no_password_prompt` / `different_archive` are refusals carrying a typed
+  `data.outcome` rather than prose. It stores the password through `commands::file_system::store_archive_password` (the
+  same one slot the dialog writes) and then emits a payload-free `mcp-confirm-dialog` so the frontend does the mode's
+  follow-up; the secret never crosses into the webview. ❌ **It must never dispatch an operation.** `browse` answers
+  `retrying_listing` (a listing is a read, so the unlock finishes it); `transfer` answers `password_stored` and stops
+  there, because starting the extraction is a write and goes through `copy` / `move` like every other one. Full
+  rationale, including why the parked operation is already settled and why the gate is `Always`: `../DETAILS.md`
+  § "Answering the archive password".
 - **`downloads.rs`**: `go_to_latest_download` (resolves via `downloads::commands::go_to_latest_download`, then
   `mcp-nav-to-path` + `mcp-move-cursor`).
 - **`operation_log.rs`**: `operations_list`, `operations_get` (short-lived read-only connection over the query API,
@@ -87,6 +97,11 @@ budget on timeout.
   `dialog close settings` (single-window family).
 - **`WindowCountBelow {prefix, threshold}`**: fires when the matching window count is `< threshold`. Used by
   `dialog close file-viewer` (snapshot count, ack when one closes; don't wait for all viewers to vanish).
+- **`ArchivePromptAdvanced {from}`**: fires when the archive-password prompt mirror
+  (`mcp/archive_password.rs`) moves past `from` — the frontend either took the prompt down or put a new one up. Used by
+  `unlock_archive`, and ❌ never `SoftDialogDisappeared` for it: a browse unlock re-lists at once, and a wrong password
+  raises the prompt again fast enough that the dialog may never unmount, so a "closed" wait would spend its whole budget
+  on a flow that worked. A generation moves whichever way it went.
 - **`Any([...])`**: fires on a logical OR over inner signals. Reserved for multi-mode tools.
 
 Polling cadence: 250 ms for state-driven signals (matches the `await` tool); 100 ms for window/soft-dialog signals (both

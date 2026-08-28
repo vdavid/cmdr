@@ -36,6 +36,8 @@ vi.mock('$lib/tauri-commands', () => ({
   findFileIndex: vi.fn(() => Promise.resolve(null)),
   setArchivePassword: vi.fn(() => Promise.resolve()),
   clearArchivePassword: vi.fn(() => Promise.resolve()),
+  notifyArchivePasswordPrompt: vi.fn(() => Promise.resolve()),
+  notifyArchivePasswordDismissed: vi.fn(() => Promise.resolve()),
   dismissFailedOperation,
 }))
 

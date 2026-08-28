@@ -6,7 +6,9 @@
 //
 // Backend: `apps/desktop/src-tauri/src/commands/file_system/archive.rs`.
 
-import { commands } from '$lib/ipc/bindings'
+import { commands, type ArchivePasswordPrompt } from '$lib/ipc/bindings'
+
+export type { ArchivePasswordPrompt }
 
 /**
  * Stores `password` for the archive at `archivePath` on `parentVolumeId`,
@@ -29,4 +31,21 @@ export async function setArchivePassword(parentVolumeId: string, archivePath: st
 export async function clearArchivePassword(parentVolumeId: string, archivePath: string): Promise<void> {
   const res = await commands.clearArchivePassword(parentVolumeId, archivePath)
   if (res.status === 'error') throw new Error(res.error)
+}
+
+/**
+ * Mirrors what the password prompt is ASKING to the backend, so `cmdr://state`
+ * can name the archive and the `unlock_archive` tool can answer it. Without this
+ * an agent reads a bare `- type: archive-password` and has nothing to act on.
+ *
+ * ❌ The password never rides this call: it carries the question, never the
+ * answer.
+ */
+export async function notifyArchivePasswordPrompt(prompt: ArchivePasswordPrompt): Promise<void> {
+  await commands.notifyArchivePasswordPrompt(prompt)
+}
+
+/** The prompt is gone (answered, cancelled, or swept). */
+export async function notifyArchivePasswordDismissed(): Promise<void> {
+  await commands.notifyArchivePasswordDismissed()
 }

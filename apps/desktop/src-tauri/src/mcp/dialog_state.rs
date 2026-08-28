@@ -123,6 +123,12 @@ pub fn register_known_dialogs(app: AppHandle, dialogs: Vec<KnownDialog>) {
         tracker.forget_open();
         tracker.register_known(dialogs);
     }
+    // The archive-password mirror is the same shape of orphan: a reload never
+    // fires the dismiss half, and a stale prompt would let `unlock_archive`
+    // answer a question nobody is asking.
+    if let Some(store) = app.try_state::<crate::mcp::ArchivePasswordPromptStore>() {
+        store.clear();
+    }
 }
 
 #[cfg(test)]

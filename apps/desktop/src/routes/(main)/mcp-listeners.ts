@@ -113,7 +113,9 @@ export function parseViewMode(value: unknown): ViewMode | undefined {
 
 /** Confirm-dialog type. */
 export function parseConfirmDialogType(value: unknown): ConfirmDialogType | undefined {
-  return value === 'transfer-confirmation' || value === 'delete-confirmation' ? value : undefined
+  return value === 'transfer-confirmation' || value === 'delete-confirmation' || value === 'archive-password'
+    ? value
+    : undefined
 }
 
 /** Selection count: a number, or the `'all'` sentinel. */

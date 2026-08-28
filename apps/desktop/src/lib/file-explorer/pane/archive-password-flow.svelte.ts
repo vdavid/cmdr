@@ -12,9 +12,21 @@
  * owner to re-dispatch or settle it, but it holds no reference to the props and
  * can supply none, so the re-dispatch cannot be aimed at anything but the
  * operation the user unlocked. `DETAILS.md` § "Birth context".
+ *
+ * Two entry points answer the prompt, and only one of them re-dispatches:
+ * `handleSubmit` is a person typing, `supplyStoredPassword` is the MCP
+ * `unlock_archive` tool. See that method for why an agent must not start the
+ * write. Whatever raises or clears the prompt also mirrors it to the backend
+ * (`showPrompt` / `hidePrompt`), which is what lets `cmdr://state` name the
+ * archive at all.
  */
 
-import { setArchivePassword, clearArchivePassword } from '$lib/tauri-commands'
+import {
+  setArchivePassword,
+  clearArchivePassword,
+  notifyArchivePasswordPrompt,
+  notifyArchivePasswordDismissed,
+} from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { archiveNameFromPath } from './volume-capabilities'
 import { transferOpLabel } from './transfer-op-label'
@@ -51,6 +63,37 @@ export function createArchivePasswordFlow(deps: ArchivePasswordFlowDeps) {
     }
   }
 
+  /** Raises the prompt and mirrors WHAT IT ASKS to the backend, so `cmdr://state`
+   *  names the archive and `unlock_archive` has something to answer. The two go
+   *  together: a prompt on screen that nothing outside can see is exactly the
+   *  blind spot this flow used to be. ❌ The password is not part of the mirror. */
+  function showPrompt(props: ArchivePasswordPropsData, operationId: string | null): void {
+    promptProps = props
+    showDialog = true
+    void notifyArchivePasswordPrompt({
+      archiveName: props.archiveName,
+      archivePath: props.archivePath,
+      parentVolumeId: props.parentVolumeId,
+      mode: props.mode,
+      wrongAttempt: props.wrongAttempt,
+      operationId,
+    }).catch((err: unknown) => {
+      // Only MCP loses out, and only until the next prompt. Never worth
+      // surfacing to someone who is looking at the dialog.
+      log.warn('Failed to mirror the archive-password prompt: {error}', { error: err })
+    })
+  }
+
+  /** Takes the prompt down and clears the mirror with it, so nothing outside is
+   *  told a question is still open. */
+  function hidePrompt(): void {
+    showDialog = false
+    promptProps = null
+    void notifyArchivePasswordDismissed().catch((err: unknown) => {
+      log.warn('Failed to clear the archive-password mirror: {error}', { error: err })
+    })
+  }
+
   return {
     get showDialog(): boolean {
       return showDialog
@@ -68,21 +111,27 @@ export function createArchivePasswordFlow(deps: ArchivePasswordFlowDeps) {
       parentVolumeId: string
       archivePath: string
       wrongAttempt: boolean
+      /** The operation that hit the prompt. Already settled by the backend (a
+       *  password failure settles it), so it's a correlation handle for whoever
+       *  started the copy, never something to resume. */
+      operationId: string | null
     }): void {
       log.info('{op} operation needs an archive password ({state}): {path}', {
         op: transferOpLabel(info.operationType),
         state: info.wrongAttempt ? 'rejected' : 'first prompt',
         path: info.archivePath,
       })
-      promptProps = {
-        archiveName: archiveNameFromPath(info.archivePath),
-        wrongAttempt: info.wrongAttempt,
-        parentVolumeId: info.parentVolumeId,
-        archivePath: info.archivePath,
-        mode: 'transfer',
-      }
       deps.setProgressDialogShown(false)
-      showDialog = true
+      showPrompt(
+        {
+          archiveName: archiveNameFromPath(info.archivePath),
+          wrongAttempt: info.wrongAttempt,
+          parentVolumeId: info.parentVolumeId,
+          archivePath: info.archivePath,
+          mode: 'transfer',
+        },
+        info.operationId,
+      )
     },
 
     /** Raises the browse-time prompt: a directory listing of a header-encrypted
@@ -94,15 +143,17 @@ export function createArchivePasswordFlow(deps: ArchivePasswordFlowDeps) {
         state: info.wrongAttempt ? 'rejected' : 'first prompt',
         path: info.archivePath,
       })
-      promptProps = {
-        archiveName: archiveNameFromPath(info.archivePath),
-        wrongAttempt: info.wrongAttempt,
-        parentVolumeId: info.volumeId,
-        archivePath: info.archivePath,
-        mode: 'browse',
-        retry: info.retry,
-      }
-      showDialog = true
+      showPrompt(
+        {
+          archiveName: archiveNameFromPath(info.archivePath),
+          wrongAttempt: info.wrongAttempt,
+          parentVolumeId: info.volumeId,
+          archivePath: info.archivePath,
+          mode: 'browse',
+          retry: info.retry,
+        },
+        null,
+      )
     },
 
     /** Stores the entered password on the backend, then retries whatever raised
@@ -115,8 +166,7 @@ export function createArchivePasswordFlow(deps: ArchivePasswordFlowDeps) {
 
       if (pw.mode === 'browse') {
         const retry = pw.retry
-        showDialog = false
-        promptProps = null
+        hidePrompt()
         void (async () => {
           await storePassword(pw.parentVolumeId, pw.archivePath, password)
           retry?.()
@@ -129,13 +179,46 @@ export function createArchivePasswordFlow(deps: ArchivePasswordFlowDeps) {
       // one preview). Nothing to retry if the operation has gone away.
       if (!deps.hasBirthContext()) return
 
-      showDialog = false
-      promptProps = null
+      hidePrompt()
 
       void (async () => {
         await storePassword(pw.parentVolumeId, pw.archivePath, password)
         deps.redispatchBirthOperation()
       })()
+    },
+
+    /**
+     * The MCP `unlock_archive` tool supplied the password. The backend already
+     * stored it, so all that is left is the mode's follow-up.
+     *
+     * **The one difference from `handleSubmit`, and the reason this is a separate
+     * entry point: transfer mode does NOT re-dispatch.** A person typing the
+     * password is standing in front of the operation they started; an agent
+     * supplying one would otherwise be starting a brand-new write with no
+     * confirmation dialog and no token in front of it, which is the one thing
+     * extraction must not get that a copy doesn't. ❌ Never call
+     * `redispatchBirthOperation` from here. The agent runs `copy` / `move`
+     * again, through the same gate as any other write, and the stored password
+     * makes that one succeed.
+     *
+     * Browse mode has no such boundary: re-listing is a read, so it retries
+     * exactly as a person's submit does.
+     */
+    supplyStoredPassword(): void {
+      const pw = promptProps
+      if (!pw) return
+
+      if (pw.mode === 'browse') {
+        const retry = pw.retry
+        hidePrompt()
+        retry?.()
+        return
+      }
+
+      log.info('Archive password supplied over MCP: stored, and the transfer is settled rather than re-dispatched')
+      hidePrompt()
+      if (deps.hasBirthContext()) deps.settleBirthOperation()
+      deps.onRefocus()
     },
 
     /** The user dismissed the prompt: forget any stored password. Browse mode
@@ -151,22 +234,21 @@ export function createArchivePasswordFlow(deps: ArchivePasswordFlowDeps) {
 
       if (pw?.mode === 'browse') {
         log.info('Browse archive-password prompt cancelled')
-        showDialog = false
-        promptProps = null
+        hidePrompt()
         deps.onRefocus()
         return
       }
 
-      showDialog = false
-      promptProps = null
+      hidePrompt()
       deps.settleBirthOperation()
       deps.onRefocus()
     },
 
-    /** Clears the prompt with no backend call, for the render-failure sweep. */
+    /** Clears the prompt with no password call, for the render-failure sweep.
+     *  The mirror still goes: a prompt nothing will ever answer must not be left
+     *  advertised in `cmdr://state`. */
     forget(): void {
-      showDialog = false
-      promptProps = null
+      hidePrompt()
     },
   }
 }

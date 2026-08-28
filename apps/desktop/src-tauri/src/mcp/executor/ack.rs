@@ -110,6 +110,14 @@ pub enum AckSignal {
     /// count, dispatch the close, wait for the count to drop. For close-all,
     /// use `threshold: 1` (i.e., wait for count to reach 0).
     WindowCountBelow { prefix: &'static str, threshold: usize },
+    /// The archive-password prompt mirror moved past `from`: the frontend either
+    /// took the prompt down or put a new one up.
+    ///
+    /// `unlock_archive`'s ack, and ❌ not `SoftDialogDisappeared`: a browse
+    /// unlock re-lists immediately, so a wrong password can raise the prompt
+    /// again before the dialog ever unmounts, and a "closed" wait would then time
+    /// out on a flow that worked perfectly.
+    ArchivePromptAdvanced { from: u64 },
 }
 
 impl AckSignal {
@@ -125,6 +133,9 @@ impl AckSignal {
             AckSignal::WindowDisappeared(label) => format!("window '{label}' closed"),
             AckSignal::WindowCountBelow { prefix, threshold } => {
                 format!("window count for '{prefix}' < {threshold}")
+            }
+            AckSignal::ArchivePromptAdvanced { from } => {
+                format!("archive-password prompt generation > {from}")
             }
         }
     }
@@ -194,6 +205,10 @@ fn check_signal<R: Runtime>(app: &AppHandle<R>, signal: &AckSignal) -> bool {
         AckSignal::WindowAppeared(pattern) => window_matches(app, pattern),
         AckSignal::WindowDisappeared(pattern) => !window_matches(app, pattern),
         AckSignal::WindowCountBelow { prefix, threshold } => count_windows_matching(app, prefix) < *threshold,
+        AckSignal::ArchivePromptAdvanced { from } => app
+            .try_state::<crate::mcp::ArchivePasswordPromptStore>()
+            .map(|store| store.generation() > *from)
+            .unwrap_or(false),
     }
 }
 
@@ -232,7 +247,10 @@ fn signal_uses_windows(signal: &AckSignal) -> bool {
         | AckSignal::WindowDisappeared(_)
         | AckSignal::WindowCountBelow { .. }
         | AckSignal::SoftDialogAppeared(_)
-        | AckSignal::SoftDialogDisappeared(_) => true,
+        | AckSignal::SoftDialogDisappeared(_)
+        // Same shape: a dialog mutation the frontend reports on its own, with no
+        // pane-state push behind it.
+        | AckSignal::ArchivePromptAdvanced { .. } => true,
         AckSignal::GenerationAdvanced { .. } => false,
     }
 }

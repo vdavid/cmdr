@@ -15,10 +15,13 @@ import type { TransferProgressPropsData } from './dialog-props'
 import type { WriteOperationError } from '../types'
 import type { FilePaneAPI } from './types'
 
-const { setArchivePassword, clearArchivePassword } = vi.hoisted(() => ({
-  setArchivePassword: vi.fn(() => Promise.resolve()),
-  clearArchivePassword: vi.fn(() => Promise.resolve()),
-}))
+const { setArchivePassword, clearArchivePassword, notifyArchivePasswordPrompt, notifyArchivePasswordDismissed } =
+  vi.hoisted(() => ({
+    setArchivePassword: vi.fn(() => Promise.resolve()),
+    clearArchivePassword: vi.fn(() => Promise.resolve()),
+    notifyArchivePasswordPrompt: vi.fn(() => Promise.resolve()),
+    notifyArchivePasswordDismissed: vi.fn(() => Promise.resolve()),
+  }))
 
 vi.mock('$lib/tauri-commands', () => ({
   refreshListing: vi.fn(() => Promise.resolve()),
@@ -26,6 +29,8 @@ vi.mock('$lib/tauri-commands', () => ({
   findFileIndex: vi.fn(() => Promise.resolve(null)),
   setArchivePassword,
   clearArchivePassword,
+  notifyArchivePasswordPrompt,
+  notifyArchivePasswordDismissed,
 }))
 
 vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn() }))
@@ -246,5 +251,112 @@ describe('archive-password browse path', () => {
     dialogs.showArchivePasswordForBrowse(browseInfo(true))
 
     expect(dialogs.archivePasswordProps?.wrongAttempt).toBe(true)
+  })
+})
+
+// The prompt used to be visible only to whoever was looking at the screen: MCP
+// saw a bare `- type: archive-password` and could name nothing. Every raise
+// mirrors what is being ASKED to the backend, and every dismissal clears it.
+describe('archive-password mirror for cmdr://state', () => {
+  it('mirrors what a transfer prompt is asking, and never the password', () => {
+    const { dialogs } = makeState()
+    dialogs.startTransferProgress(copyProps())
+
+    dialogs.handleTransferError(needsPassword(true))
+
+    expect(notifyArchivePasswordPrompt).toHaveBeenCalledWith({
+      archiveName: 'secret.zip',
+      archivePath: '/Users/me/secret.zip/inner/report.pdf',
+      parentVolumeId: 'root',
+      mode: 'transfer',
+      wrongAttempt: true,
+      operationId: null,
+    })
+  })
+
+  it('mirrors a browse prompt with no operation attached', () => {
+    const { dialogs } = makeState()
+    dialogs.showArchivePasswordForBrowse({
+      volumeId: 'root',
+      archivePath: '/Users/me/locked.7z',
+      wrongAttempt: false,
+      retry: vi.fn(),
+    })
+
+    expect(notifyArchivePasswordPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'browse', operationId: null }),
+    )
+  })
+
+  it('clears the mirror on cancel, so nothing advertises a question that is gone', () => {
+    const { dialogs } = makeState()
+    dialogs.startTransferProgress(copyProps())
+    dialogs.handleTransferError(needsPassword(false))
+
+    dialogs.handleArchivePasswordCancel()
+
+    expect(notifyArchivePasswordDismissed).toHaveBeenCalled()
+  })
+})
+
+// The boundary the whole MCP surface is shaped around: an agent may supply the
+// password, but it must never be the thing that starts the write.
+describe('archive-password supplied over MCP', () => {
+  it('settles a transfer instead of re-dispatching it, so no write starts', () => {
+    const { dialogs, rightPane } = makeState()
+    dialogs.startTransferProgress(copyProps())
+    dialogs.handleTransferError(needsPassword(false))
+
+    dialogs.confirmOpenDialog('archive-password')
+
+    // ⭐ The proof. A person's submit re-shows the progress dialog on a fresh
+    // dispatch; this must not, or extraction would be the one write that skips
+    // the confirmation and the token every other copy goes through.
+    expect(dialogs.showTransferProgressDialog).toBe(false)
+    expect(dialogs.transferProgressProps).toBeNull()
+    // And it settles cleanly rather than leaving the pane looking mid-copy.
+    expect(dialogs.showArchivePasswordDialog).toBe(false)
+    expect(rightPane.spies.clearSelection).toHaveBeenCalled()
+    expect(onRefocus).toHaveBeenCalled()
+  })
+
+  it('does NOT forget the password it was just given', () => {
+    // Cancel clears the stored password; this path is the opposite of a cancel,
+    // and clearing here would make the follow-up copy prompt all over again.
+    const { dialogs } = makeState()
+    dialogs.startTransferProgress(copyProps())
+    dialogs.handleTransferError(needsPassword(false))
+
+    dialogs.confirmOpenDialog('archive-password')
+
+    expect(clearArchivePassword).not.toHaveBeenCalled()
+    // The backend stored it before confirming, so the frontend stores nothing:
+    // the secret never crosses into the webview.
+    expect(setArchivePassword).not.toHaveBeenCalled()
+  })
+
+  it('completes a browse by re-listing, because a listing is a read', () => {
+    const { dialogs } = makeState()
+    const retry = vi.fn()
+    dialogs.showArchivePasswordForBrowse({
+      volumeId: 'root',
+      archivePath: '/Users/me/locked.7z',
+      wrongAttempt: false,
+      retry,
+    })
+
+    dialogs.confirmOpenDialog('archive-password')
+
+    expect(retry).toHaveBeenCalled()
+    expect(dialogs.showArchivePasswordDialog).toBe(false)
+    expect(notifyArchivePasswordDismissed).toHaveBeenCalled()
+  })
+
+  it('is a no-op when no prompt is up', () => {
+    const { dialogs } = makeState()
+    dialogs.confirmOpenDialog('archive-password')
+
+    expect(dialogs.showArchivePasswordDialog).toBe(false)
+    expect(notifyArchivePasswordDismissed).not.toHaveBeenCalled()
   })
 })

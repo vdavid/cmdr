@@ -724,6 +724,10 @@ pub fn run() {
             // Initialize soft dialog tracker for MCP (overlays like about, license, confirmations)
             app.manage(mcp::SoftDialogTracker::new());
 
+            // What the encrypted-archive password prompt is asking, so `cmdr://state`
+            // can name the archive and `unlock_archive` can answer it.
+            app.manage(mcp::ArchivePasswordPromptStore::new());
+
             // Start MCP server for AI agent integration
             // Use settings from user preferences, with env vars as override for dev
             let mcp_config = mcp::McpConfig::from_settings_and_env(

@@ -47,8 +47,8 @@ use serde_json::Value;
 
 use super::executor::{ToolError, ToolResult};
 use super::executor::{
-    app, async_tools, conflicts, dialogs, downloads, eject, favorites, file_ops, image_facts, indexing, nav,
-    operation_log, photos, queue, quit, search, tags, view,
+    app, archive_password, async_tools, conflicts, dialogs, downloads, eject, favorites, file_ops, image_facts,
+    indexing, nav, operation_log, photos, queue, quit, search, tags, view,
 };
 use super::tools::Tool;
 
@@ -524,6 +524,16 @@ mcp_tools! {
         consumers: &[Consumer::AiClient],
         access: Access::Write,
         run: params_only conflicts::execute_resolve_conflict
+    },
+    "unlock_archive" => {
+        desc: "Answer the archive-password prompt in cmdr://state, naming its archivePath. \
+               browse mode: it re-lists and you're in. transfer mode: it stores the password ONLY, since \
+               supplying one never starts a write; run copy or move again to extract. Token-gated.",
+        schema: schemas::unlock_archive_schema(),
+        gate: TokenGate::Always,
+        consumers: &[Consumer::AiClient],
+        access: Access::Write,
+        run: app_params archive_password::execute_unlock_archive
     },
 
     // ── Favorites ───────────────────────────────────────────────────────────

@@ -903,6 +903,27 @@
       "name": "resolve_conflict"
     },
     {
+      "description": "Answer the archive-password prompt in cmdr://state, naming its archivePath. browse mode: it re-lists and you're in. transfer mode: it stores the password ONLY, since supplying one never starts a write; run copy or move again to extract. Token-gated.",
+      "inputSchema": {
+        "properties": {
+          "archivePath": {
+            "description": "Which archive you're answering, copied verbatim from the archivePath on the archive-password entry in cmdr://state dialogs. Required: another surface may have answered the prompt you read and a different archive may be asking now.",
+            "type": "string"
+          },
+          "password": {
+            "description": "The password to try. Stored on the archive only, never echoed back, never rendered in cmdr://state, never logged.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "archivePath",
+          "password"
+        ],
+        "type": "object"
+      },
+      "name": "unlock_archive"
+    },
+    {
       "description": "Manage the user's favorites (the switcher's Favorites section). add: path (+ optional name). rename: id + name. remove: id. reorder: orderedIds, the COMPLETE new ordering. Discover ids in cmdr://state favorites.",
       "inputSchema": {
         "properties": {

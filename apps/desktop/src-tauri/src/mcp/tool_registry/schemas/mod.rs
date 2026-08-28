@@ -7,6 +7,7 @@
 
 use serde_json::{Value, json};
 
+mod archive;
 mod async_tools;
 mod dialogs;
 mod favorites;
@@ -20,6 +21,7 @@ mod search;
 mod settings;
 mod view;
 
+pub use archive::*;
 pub use async_tools::*;
 pub use dialogs::*;
 pub use favorites::*;
