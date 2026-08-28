@@ -9284,9 +9284,9 @@ checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
 
 [[package]]
 name = "smb2"
-version = "0.20.0"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03d25c02a1004ff8cf2e21371d93a89731e5e6150a90c17a072c7cf2db3d5461"
+checksum = "e43a4f6a066bb21389d5725e4e4f50892621d77c9a1fde4af85ae4f722d97b88"
 dependencies = [
  "aes 0.9.1",
  "aes-gcm 0.11.0",

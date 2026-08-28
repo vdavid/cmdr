@@ -67,10 +67,6 @@ use std::sync::Arc;
 /// little past this and are less gentle on a NAS also serving other load.
 pub(super) const SCAN_POOL_SIZE: usize = 4;
 
-/// Gap between the staggered member logins at pool open, so we don't hit the
-/// server with `SCAN_POOL_SIZE` simultaneous session setups.
-const POOL_LOGIN_STAGGER: Duration = Duration::from_millis(75);
-
 /// Bounded, growing backoff for reconnecting a dead pool member. Shorter than the
 /// main session's watcher-death schedule: a pool member is a best-effort
 /// accelerator, the scan is finite, and a member that stays down just means the
@@ -342,17 +338,21 @@ impl ScanPool {
     }
 }
 
-/// Open up to `n` extra sessions, staggered, returning one slot per index
-/// (`Some` opened, `None` failed). Runs the logins concurrently but delayed so
-/// the server doesn't see `n` simultaneous session setups.
+/// Open up to `n` extra sessions at once, returning one slot per index (`Some`
+/// opened, `None` failed).
+///
+/// ⚠️ The logins are simultaneous, and that needs smb2 0.20.1 or newer. Below
+/// it, every connection a process opened carried one `ClientGuid`, and Samba
+/// answers a guid it already knows by passing the socket to the smbd owning the
+/// first connection, losing the negotiate's credit grant when logins overlap:
+/// one of them hangs 30 s and fails. The `Cargo.toml` floor is what keeps this
+/// safe, so don't lower it, and don't reintroduce a delay between logins to
+/// work around a hang that a version bump fixes properly.
 async fn open_slots(params: &SmbConnectionParams, n: usize, volume_id: &str) -> Vec<Option<MemberSession>> {
     let mut futs = FuturesUnordered::new();
     for i in 0..n {
         let params = params.clone();
-        futs.push(async move {
-            tokio::time::sleep(POOL_LOGIN_STAGGER * i as u32).await;
-            (i, build_session(&params).await)
-        });
+        futs.push(async move { (i, build_session(&params).await) });
     }
     let mut slots: Vec<Option<MemberSession>> = (0..n).map(|_| None).collect();
     while let Some((i, result)) = futs.next().await {

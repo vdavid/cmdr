@@ -35,7 +35,10 @@ testing = ["smb2/testing", "dep:blake3"]
 cmdr-fs = { path = "../cmdr-fs" }
 # The SMB client. Same version and features the app pins, so one `smb2` resolves
 # for the whole graph and a feature turned on here reaches every consumer of it.
-smb2 = { version = "0.20.0", features = ["serde"] }
+# 0.20.1 is a floor, not a preference: it is the first version where each
+# connection carries its own `ClientGuid`, which is what lets the scan pool open
+# its sessions simultaneously. See `volume/scan_pool.rs::open_slots`.
+smb2 = { version = "0.20.1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 # Type export for the Rust↔TS bindings: `ShareListResult` and friends cross IPC.
 # Pinned to the EXACT same version the app uses, for the reason `cmdr-fs` gives:
