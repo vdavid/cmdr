@@ -35,7 +35,10 @@ import { applySearchPrefill, type SearchPrefill, type SearchMode } from '$lib/se
 import type { Initiator } from '$lib/tauri-commands'
 import { resolveLocation } from '$lib/file-explorer/navigation/resolve-location'
 import { tString } from '$lib/intl/messages.svelte'
+import { getAppLogger } from '$lib/logging/logger'
 import type { ExplorerAPI } from './explorer-api'
+
+const log = getAppLogger('mcpListeners')
 
 /**
  * Typed dispatch entry point the adapter calls. Bound by the caller to
@@ -334,8 +337,14 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (!pane || path === undefined) return
     const explorerRef = getExplorer()
-    // explorerRef may be null during HMR; skip silently, let the backend timeout handle it
-    if (!explorerRef) return
+    // `explorerRef` is null during HMR, and would also be null if the explorer ever
+    // failed to mount. Let the backend's timeout handle the reply, but say so: a
+    // navigation that never reaches the pane is otherwise indistinguishable from one
+    // that ran and did nothing.
+    if (!explorerRef) {
+      log.warn('mcp-nav-to-path dropped: no explorer is mounted ({pane} pane, {path})', { path, pane })
+      return
+    }
     void (async () => {
       const reply = async (body: { ok: true } | { ok: false; error: string }): Promise<void> => {
         if (requestId === undefined) return
@@ -345,11 +354,21 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
 
       const outcome = await resolveLocation(path)
       if (!outcome.ok) {
+        // Log as well as reply: a caller that sends no `requestId` (the E2E harness,
+        // and anything fire-and-forget) gets no reply, so without this line a
+        // dropped navigation leaves no trace anywhere. That silence is what made a
+        // two-hour CI wedge undiagnosable.
+        log.warn('mcp-nav-to-path dropped: {path} did not resolve to a volume ({pane} pane)', { path, pane })
         await reply({ ok: false, error: tString('fileExplorer.navigation.locationUnreachableToast') })
         return
       }
       const result = explorerRef.navigate({ pane, to: { goTo: outcome.location }, source: 'mcp' })
       if (result.status === 'refused') {
+        log.warn('mcp-nav-to-path refused for {path} ({pane} pane): {reason}', {
+          path,
+          pane,
+          reason: result.reason.message,
+        })
         // Synchronous refusal (pane not available, on the network volume for an
         // smb:// target, etc.) — forward the exact refusal string the agent reads.
         await reply({ ok: false, error: result.reason.message })

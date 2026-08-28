@@ -8,6 +8,8 @@ regardless of `RUST_LOG` or the verbose toggle; terminal defaults to Info).
 
 - **`logger.ts`**: LogTape config, `getAppLogger()` entry point, verbose toggle, `debugCategories`.
 - **`log-bridge.ts`**: batching sink (collects FE logs for 100 ms, dedups, throttles at 200/s, sends to Rust via IPC).
+- **`uncaught-errors.ts`**: forwards `window` `error` / `unhandledrejection` to `log.error` under the `uncaught`
+  category. Registered from `routes/+layout.ts`.
 - Rust side: `src-tauri/src/commands/logging.rs` (batch IPC receiver + runtime level control); the dispatch tree is in
   `src-tauri/src/logging/CLAUDE.md`.
 
@@ -24,6 +26,10 @@ Full architecture and decisions: `DETAILS.md`. Usage (adding logging, `RUST_LOG`
   ` (×N, deduplicated)` appended. Above 200 FE logs/s the excess is dropped with an "Excessive frontend logging
   detected" warning naming the top three dropped-from categories. Don't remove these guards; an unthrottled FE loop
   floods the IPC.
+- **An uncaught frontend throw is only visible because `uncaught-errors.ts` forwards it.** Nothing else does: the
+  console is unread under Tauri, so without those two listeners a crash leaves no line in the log file, nothing in an
+  error-report bundle, and nothing in a CI E2E run. The listeners deliberately don't `preventDefault` — they observe,
+  they never swallow (which would also blind `hmr-recovery`).
 - **`beforeunload` flush is best-effort (async)**, so logs right before a page unload may not all reach Rust.
 - **Error-report bundles (Help > Send error report…) include the file target's recent debug logs**, the same logs the
   cap setting governs. Keep the file chain at Debug.
