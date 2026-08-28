@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import { callerIp, enforceIpRateLimit, hashCallerIp, type Bindings } from '../types'
+import { callerIp, emailShapePattern, enforceIpRateLimit, hashCallerIp, type Bindings } from '../types'
 import { classifyUaFamily } from '../user-agent'
 
 const telemetry = new Hono<{ Bindings: Bindings }>()
@@ -129,8 +129,6 @@ function extractTopFunction(frames: string[] | undefined): string {
   }
   return 'unknown'
 }
-
-const emailShapePattern = /^[^\s@]+@[^\s@]+$/
 
 /**
  * Validate an optional `string`-and-pattern field. `null` and `undefined` both mean "field

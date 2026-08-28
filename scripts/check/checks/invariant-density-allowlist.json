@@ -3,7 +3,7 @@
   "subsystems": {
     ".": 17,
     "apps/analytics-dashboard": 3,
-    "apps/api-server": 20,
+    "apps/api-server": 24,
     "apps/desktop": 2,
     "apps/desktop/src": 289,
     "apps/desktop/src-tauri": 417,

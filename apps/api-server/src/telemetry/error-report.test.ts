@@ -258,6 +258,35 @@ describe('POST /error-report', () => {
     expect(res.status).toBe(400)
   })
 
+  it('accepts the reply-to email the send dialog attaches', async () => {
+    const bindings = createBindings()
+    const fd = buildMultipart(new Uint8Array([1]), { ...validMeta, email: 'someone@example.com' })
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(200)
+  })
+
+  it('accepts a report whose email the Rust client sends as null', async () => {
+    const bindings = createBindings()
+    const fd = buildMultipart(new Uint8Array([1]), { ...validMeta, email: null })
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(200)
+  })
+
+  it('returns 400 for an email that is not shaped like an address', async () => {
+    const bindings = createBindings()
+    const fd = buildMultipart(new Uint8Array([1]), { ...validMeta, email: 'not an address' })
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid meta shape')
+  })
+
   it('returns 429 when the caller is over the IP rate limit', async () => {
     const { limiter } = createMockRateLimiter(false)
     const bucket = createR2()

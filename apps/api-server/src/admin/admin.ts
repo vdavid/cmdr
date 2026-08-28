@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { constantTimeEqual } from '../licensing/paddle'
 import { type Bindings, activationCountKey, verifyAdminAuth } from '../types'
-import { extractDateSegment } from '../telemetry/error-report-eviction'
+import { extractDateSegment, isAmendSidecarKey } from '../telemetry/error-report-eviction'
 
 const admin = new Hono<{ Bindings: Bindings }>()
 
@@ -42,6 +42,23 @@ interface ErrorReportRow {
 }
 
 /**
+ * One listed bundle as a row. Every metadata field is treated as possibly absent: a bundle could in
+ * principle have been stored without one, and a missing field should cost that column, not the row.
+ */
+function toErrorReportRow(obj: R2Object, date: string): ErrorReportRow {
+  const meta: Record<string, string | undefined> = obj.customMetadata ?? {}
+  return {
+    id: meta.id ?? '',
+    kind: meta.kind ?? '',
+    appVersion: meta.appVersion ?? '',
+    osVersion: meta.osVersion ?? '',
+    arch: meta.arch ?? '',
+    date: date || obj.uploaded.toISOString().slice(0, 10),
+    generatedAt: meta.generatedAt ?? obj.uploaded.toISOString(),
+  }
+}
+
+/**
  * Lists prod error-report bundles newer than `cutoffDate` (null = no cutoff), mapping each to its
  * metadata row. Pages through R2 with custom metadata included; the zip bodies stay in the bucket.
  */
@@ -51,20 +68,13 @@ async function listProdErrorReports(bucket: R2Bucket, cutoffDate: string | null)
   do {
     const list = await bucket.list({ prefix: errorReportProdPrefix, cursor, include: ['customMetadata'] })
     for (const obj of list.objects) {
+      // An amended report also carries a `.amend.json` sidecar under this prefix. It is part of the
+      // report, not a second one, so counting it would double the report in every aggregation.
+      if (isAmendSidecarKey(obj.key)) continue
       const date = extractDateSegment(obj.key)
       // The date segment sorts lexically (yyyy-mm-dd), so a string compare is a valid window filter.
       if (cutoffDate && date && date < cutoffDate) continue
-      // A bundle could in principle lack a metadata field, so treat each as possibly absent.
-      const meta: Record<string, string | undefined> = obj.customMetadata ?? {}
-      rows.push({
-        id: meta.id ?? '',
-        kind: meta.kind ?? '',
-        appVersion: meta.appVersion ?? '',
-        osVersion: meta.osVersion ?? '',
-        arch: meta.arch ?? '',
-        date: date || obj.uploaded.toISOString().slice(0, 10),
-        generatedAt: meta.generatedAt ?? obj.uploaded.toISOString(),
-      })
+      rows.push(toErrorReportRow(obj, date))
     }
     cursor = list.truncated ? list.cursor : undefined
   } while (cursor)

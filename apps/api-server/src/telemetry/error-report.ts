@@ -1,6 +1,13 @@
 import { Hono, type Context } from 'hono'
 import { AwsClient } from 'aws4fetch'
-import { enforceIpRateLimit, type Bindings } from '../types'
+import {
+  enforceIpRateLimit,
+  hasEmailShape,
+  isAbsent,
+  readCappedBody,
+  scheduleBackground,
+  type Bindings,
+} from '../types'
 import {
   ERROR_REPORT_PREFIX,
   incrementTotalBytes,
@@ -19,6 +26,7 @@ import {
   recordIntakeBytes,
   type IntakeRejection,
 } from './error-report-intake'
+import { hashAmendKey, mintAmendKey, writeReportIndex } from './error-report-amend'
 import { humanReportRecipient, sendErrorReportNotificationEmail, sendErrorReportsSuppressedEmail } from '../email'
 import {
   postErrorReportNotification,
@@ -41,46 +49,6 @@ const MAX_BUNDLE_BYTES = 10 * 1024 * 1024 // 10 MB hard cap on the bundle part
  */
 const MAX_BODY_BYTES = MAX_BUNDLE_BYTES + 1024 * 1024
 
-/**
- * Read a request body, stopping at `maxBytes`. Returns the bytes, or null when the body is over
- * the cap (the read is cancelled at that point, so the rest is never pulled off the socket).
- *
- * `content-length` can't carry this weight: a chunked upload declares no length, and a declared
- * one can lie, either way leaving the multipart parser to buffer up to Cloudflare's 100 MB request
- * limit inside a 128 MB isolate. Reading it ourselves bounds that at `maxBytes` no matter what the
- * headers claim.
- *
- * Returning null rather than throwing keeps "too large" distinguishable from "malformed multipart"
- * without matching on a parser message.
- */
-async function readCappedBody(body: ReadableStream<Uint8Array>, maxBytes: number): Promise<ArrayBuffer | null> {
-  const reader = body.getReader()
-  const chunks: Uint8Array[] = []
-  let total = 0
-  try {
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      total += value.byteLength
-      if (total > maxBytes) {
-        await reader.cancel()
-        return null
-      }
-      chunks.push(value)
-    }
-  } finally {
-    reader.releaseLock()
-  }
-
-  const buffer = new ArrayBuffer(total)
-  const out = new Uint8Array(buffer)
-  let offset = 0
-  for (const chunk of chunks) {
-    out.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  return buffer
-}
 const PRESIGN_TTL_SECONDS = 7 * 24 * 60 * 60 // R2 max for presigned URLs
 
 /** The same window in the unit the notification copy states, so the two can't drift apart. */
@@ -114,17 +82,14 @@ export interface ErrorReportMeta {
   osVersion: string
   arch: string
   userNote?: string
+  /**
+   * Reply-to address, set only when the person ticked "Attach my email" in the send dialog. The
+   * auto-dispatcher never sets it: enabling auto-send is not consent to ship an address on every
+   * report (enforced client-side by `bundle_builder::email_for_kind`). Shape-checked loosely, like
+   * every other reply-to we take.
+   */
+  email?: string
   generatedAt: string
-}
-
-/**
- * An optional field the Rust client may omit or send as `null`. serde serializes
- * `Option::None` as JSON `null`, so a validator that only tolerates `undefined`
- * rejects a note-less report with a 400 (the bug that once broke sending). `null`
- * and `undefined` both mean "absent"; only a present-but-wrong value fails.
- */
-function isAbsent(v: unknown): boolean {
-  return v === undefined || v === null
 }
 
 function isValidMeta(value: unknown): value is ErrorReportMeta {
@@ -136,8 +101,17 @@ function isValidMeta(value: unknown): value is ErrorReportMeta {
     const val = v[k]
     if (typeof val !== 'string' || val.length === 0) return false
   }
+  return hasValidOptionalMetaFields(v)
+}
+
+/**
+ * The manifest fields a client may omit. Each tolerates `null` as well as `undefined` (see
+ * {@link isAbsent}); only a present-but-wrong value fails.
+ */
+function hasValidOptionalMetaFields(v: Record<string, unknown>): boolean {
   if (!isAbsent(v['userNote']) && typeof v['userNote'] !== 'string') return false
   if (!isAbsent(v['buildMode']) && v['buildMode'] !== 'release' && v['buildMode'] !== 'debug') return false
+  if (!isAbsent(v['email']) && (typeof v['email'] !== 'string' || !hasEmailShape(v['email']))) return false
   return true
 }
 
@@ -177,26 +151,6 @@ async function buildPresignedUrl(env: Bindings, key: string): Promise<string | n
   // `client.sign` returns a `Request` whose `url` is a string (per AwsClient typings).
   const signed = await client.sign(url, { method: 'GET', aws: { signQuery: true } })
   return signed.url
-}
-
-/**
- * Hono `c.executionCtx.waitUntil` wrapper that falls back to inline await in tests.
- *
- * Takes only the `waitUntil` shape it actually calls: Hono's `Context.executionCtx` is its own
- * `ExecutionContext<unknown>`, which carries members (`tracing`) that the ambient
- * `@cloudflare/workers-types` `ExecutionContext` doesn't, so naming either type here breaks the
- * other whenever the two drift.
- */
-function scheduleBackground(
-  c: { executionCtx: { waitUntil: (promise: Promise<unknown>) => void } },
-  work: Promise<void>,
-): Promise<void> {
-  try {
-    c.executionCtx.waitUntil(work)
-    return Promise.resolve()
-  } catch {
-    return work
-  }
 }
 
 /**
@@ -309,6 +263,7 @@ async function mailUserErrorReport(
       arch: args.meta.arch,
       sizeBytes: args.sizeBytes,
       userNote: args.meta.userNote,
+      email: args.meta.email,
       downloadUrl: await presignedUrl(),
       linkTtlDays: PRESIGN_TTL_DAYS,
     },
@@ -515,9 +470,30 @@ errorReport.post('/error-report', async (c) => {
     },
   })
 
+  // The ONE thing that runs before the 200 rather than in `postUploadWork`. The client is handed
+  // its amend credential in this response, so an index written afterwards would be a credential
+  // that opens nothing for however long the background work takes. It's a single small KV put.
+  //
+  // A failed put costs the amend flow, not the report: the bundle is already in R2, so the answer
+  // is a 200 carrying `amendKey: null`, which clients treat as "amending isn't available for this
+  // one".
+  const amendKey = mintAmendKey()
+  let issuedAmendKey: string | null = amendKey
+  try {
+    await writeReportIndex(c.env.ERROR_REPORT_META, id, {
+      env,
+      date: datePrefix,
+      key,
+      amendKeyHash: await hashAmendKey(amendKey),
+    })
+  } catch (e) {
+    issuedAmendKey = null
+    console.error('Error report: writeReportIndex failed; the report cannot be amended', e)
+  }
+
   await scheduleBackground(c, postUploadWork(c.env, { id, key, sizeBytes, meta, uploadedUnixSeconds, date: today }))
 
-  return c.json({ id })
+  return c.json({ id, amendKey: issuedAmendKey })
 })
 
 export { errorReport, MAX_BUNDLE_BYTES, EVICTION_HIGH_WATERMARK, EVICTION_LOW_WATERMARK }

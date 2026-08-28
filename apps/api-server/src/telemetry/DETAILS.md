@@ -9,8 +9,10 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 
 - **`telemetry.ts`**: routes `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`, plus
   `extractTopFunction`, `validateOptionalEnum` / `validateOptionalPattern`, and the sanitizers.
-- **`error-report.ts`**: `POST /error-report` (multipart upload to R2, presigned Discord notification, and an email for
-  hand-written reports).
+- **`error-report.ts`**: `POST /error-report` (multipart upload to R2, the KV index write, presigned Discord
+  notification, and an email for hand-written reports).
+- **`error-report-amend.ts`**: `POST /error-report/:id/amend`, plus the `report:{id}` KV index and the amend credential
+  both routes share.
 - **`error-report-intake.ts`**: admission control — daily byte budget, intake pause flag, once-a-day alert claims,
   notification fan-out cap.
 - **`error-report-eviction.ts`**: 8/6 GB watermarks, the 60-day age floor, the KV lock, `extractDateSegment`, and the
@@ -18,15 +20,18 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **`feedback.ts`**: `POST /feedback` (in-app feedback → D1 + Discord).
 - Tests: `crash-report.test.ts` (incl. § "top_function derivation" over real backtraces), `heartbeat.test.ts`,
   `download-and-update-check.test.ts`, `error-report.test.ts`, `error-report-intake.test.ts`,
-  `error-report-eviction.test.ts`, `error-report-email.test.ts`, `feedback.test.ts`. The route-level R2/KV/D1 fakes live
-  in `error-report-test-helpers.ts`; the Resend mock can't (`vi.mock` is hoisted per file).
+  `error-report-eviction.test.ts`, `error-report-email.test.ts`, `error-report-amend.test.ts`, `feedback.test.ts`. The
+  route-level R2/KV/D1 fakes live in `error-report-test-helpers.ts`; the Resend mock can't (`vi.mock` is hoisted per
+  file).
 
 ## Request flows
 
 ```
 Crash report: POST /crash-report → rate-limit by IP (CRASH_REPORT_LIMITER, 429 if over) → validate payload (size + required fields + optional buildMode/appFate membership + diagId/email shape) → hash IP with daily salt → write to D1 incl. nullable diag_id + email + app_fate (fire-and-forget via waitUntil) → 204
 
-Error report: POST /error-report → rate-limit by IP (ERROR_REPORT_LIMITER, 429 if over) → global intake gates (intake_paused, then the day's byte budget; 503 + Retry-After if either trips, plus one Discord ping the day the budget runs out) → read the body under MAX_BODY_BYTES, cancelling past it (413) → parse multipart, validate bundle + meta (400/413) → stream the bundle to R2 under error-reports/{prod|dev}/{date}/{id}-{uuid}.zip → in waitUntil: bump total_bytes, charge the daily budget, tryEvict, a Discord embed (capped at DAILY_NOTIFICATION_CAP/day), then for kind: user only, a notification email (capped at DAILY_ERROR_REPORT_EMAIL_CAP/day) → 200 {id}
+Error report: POST /error-report → rate-limit by IP (ERROR_REPORT_LIMITER, 429 if over) → global intake gates (intake_paused, then the day's byte budget; 503 + Retry-After if either trips, plus one Discord ping the day the budget runs out) → read the body under MAX_BODY_BYTES, cancelling past it (413) → parse multipart, validate bundle + meta (400/413) → stream the bundle to R2 under error-reports/{prod|dev}/{date}/{id}-{uuid}.zip → AWAITED: mint an amend key and write report:{id} to KV → in waitUntil: bump total_bytes, charge the daily budget, tryEvict, a Discord embed (capped at DAILY_NOTIFICATION_CAP/day), then for kind: user only, a notification email (capped at DAILY_ERROR_REPORT_EMAIL_CAP/day) → 200 {id, amendKey}
+
+Error report amendment: POST /error-report/:id/amend → rate-limit by IP (ERROR_REPORT_AMEND_LIMITER, 429 if over) → validate :id shape (400) → read the JSON body under 512 KB (400/413) → validate amendKey + note/email, at least one of the two (400) → read report:{id} from KV (404 if gone) → SHA-256 the presented key, constantTimeEqual against amendKeyHash (401) → read-modify-write the {bundle}.amend.json sidecar in R2 → in waitUntil: an amendment email on the shared DAILY_ERROR_REPORT_EMAIL_CAP allowance → 200 {id, amendments}
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → validate payload (size + required fields + analId/version shape + config-size cap) → write to D1 heartbeat (fire-and-forget via waitUntil), no IP stored → 204
 
@@ -150,19 +155,89 @@ the raw rows at seven days.
 **R2 key shape:** `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`. The env segment (`prod` for release
 builds, `dev` for debug, inferred from `meta.buildMode`) keeps dev-run reports out of the production sort order. Legacy
 keys (`error-reports/{yyyy-mm-dd}/...`) still exist; eviction reads the date segment via `extractDateSegment`, which
-handles both shapes. The 90-day R2 lifecycle drains the legacy shape naturally, so no migration is needed.
+handles both shapes. The 90-day R2 lifecycle drains the legacy shape naturally, so no migration is needed. An amended
+report also carries a `.amend.json` sidecar on the same key (§ Amendments).
+
+**`meta.email`:** the reply-to address, present only when the person ticked "Attach my email" in the send dialog. The
+auto-dispatcher never sets it (a user who enabled auto-send hasn't consented to shipping their address on every report),
+so it is structurally absent from `kind: 'auto'` bundles. Validated with the shared loose `hasEmailShape`
+(`../types.ts`), the reply-to form every channel uses, never the stricter licensing `isValidEmail`. It reaches the
+server inside the manifest, is stored in the bundle zip, and drives the notification email's `Reply-To`. Its retention
+is the bundle's: 90 days, via the R2 lifecycle.
 
 **Body cap:** `content-length` is advisory (a chunked upload declares no length; a declared one can lie), so
-`readReportUpload` reads the body itself through `readCappedBody` and cancels past `MAX_BODY_BYTES` (bundle cap + 1 MB
-for the `meta` part and multipart framing, sized against the client's 100,000-char `userNote` limit). Without it the
-multipart parser would buffer up to Cloudflare's 100 MB request limit inside a 128 MB isolate. Over-cap returns null
-rather than throwing, so 413 stays distinguishable from a malformed-multipart 400 without matching on parser text.
+`readReportUpload` reads the body itself through `readCappedBody` (`../types.ts`) and cancels past `MAX_BODY_BYTES`
+(bundle cap + 1 MB for the `meta` part and multipart framing, sized against the client's 100,000-char `userNote` limit).
+Without it the multipart parser would buffer up to Cloudflare's 100 MB request limit inside a 128 MB isolate. Over-cap
+returns null rather than throwing, so 413 stays distinguishable from a malformed-multipart 400 without matching on
+parser text. The amend route reads its JSON body the same way, under its own 512 KB cap: `c.req.text()` has exactly the
+`parseBody` problem, and counting bytes rather than `String.length` keeps the budget from running ~1.5x loose on
+multi-byte text.
 
 **Discord notifications:** every upload triggers an embed with a 7-day presigned R2 GET URL, minted through the R2
 S3-compatible API via `aws4fetch` (`AwsClient.sign` with `signQuery: true` + `X-Amz-Expires`; 7 days is R2's max).
 Click-to-download convenience outweighs leak risk because only the maintainer reads `#error-reports`. The three R2
 secrets and their rotation runbook: `../../DETAILS.md` § R2 presigned URLs. `createPresigner` memoizes the URL per
 upload, so the email and the embed hand out the same link and an upload that notifies neither signs nothing.
+
+### The report index and the amend credential
+
+**What it is:** one `ERROR_REPORT_META` key per upload, `report:{ERR-XXXXX}` → `{ env, date, key, amendKeyHash }`, where
+`key` is the full R2 object key. 90-day TTL, matching the bucket lifecycle, so the index never outlives the bundle it
+points at and never survives as a pointer to something already gone.
+
+**Why it exists:** the date is part of the R2 key and nothing else maps an id to one, so finding one bundle used to mean
+walking backwards a day per API request. The index makes a report addressable by the id a person can actually read: one
+KV get for triage (`docs/tooling/feedback-and-error-digest.md`), and the lookup the amend route runs.
+
+**Why the write is AWAITED, alone among this route's side effects.** Everything else `/error-report` does after storing
+the bundle rides `waitUntil` so the 200 ships fast. This one cannot: the same response hands the client its amend
+credential, and a credential that opens nothing until some background work finishes is a race the client would lose. It
+is one small KV put. ❌ Don't move it into `postUploadWork`. A put that throws costs the amend flow, not the report: the
+bundle is already in R2, so the route logs it and answers 200 with `amendKey: null`, which clients read as "this one
+can't be amended".
+
+**Why a stored random credential rather than the id itself:** `ERR-XXXXX` is 31^5 ≈ 28.6 million values, and it is
+printed in the send dialog, quoted back in emails, and pasted into chats. It identifies a report; it can't authorize
+writing to one. The credential is 32 bytes from `crypto.getRandomValues`, base64url, returned exactly once in the upload
+response. Only its SHA-256 is stored, so a KV dump is a pile of hashes rather than a pile of live credentials, and the
+comparison goes through `constantTimeEqual` (`../licensing/paddle.ts`), the same one `verifyAdminAuth` uses.
+
+**The 404 on an unknown id is a deliberate, bounded leak:** it tells a caller whether an id exists. Ids are shown to
+users and are not secret, the credential check is what actually gates writing, and `ERROR_REPORT_AMEND_LIMITER` bounds
+how fast the id space could be walked. Answering 401 for an unknown id instead would leave a real reporter with an
+expired report unable to tell "gone" from "wrong key".
+
+### Amendments (`error-report-amend.ts`)
+
+`POST /error-report/:id/amend` is how a second thought lands on a report that is already stored: a note someone forgot,
+or a reply-to address they decided to give after all. Without it the client's only move is a second upload, which mints
+a second `ERR-XXXXX` and splits one incident across two unrelated bundles.
+
+**Where amendments live:** a sidecar R2 object beside the bundle, the same key with `.zip` swapped for `.amend.json`
+(`amendSidecarKey`), holding `{ id, amendments: [{ note, email, amendedAt }, ...] }`. Beside the bundle rather than in
+KV or D1 because that is what keeps the two in step for free: the sidecar is evicted with its bundle, expires on the
+same 90-day lifecycle, and lands in the same place a triager is already looking. `amendedAt` is the server clock.
+
+The sidecar shares the `error-reports/prod/` prefix, so anything listing that prefix has to skip it: `tryEvict` pairs it
+with its bundle (§ Eviction) and `/admin/error-reports` filters it out (`../admin/DETAILS.md`), because counting it
+would double an amended report in every aggregation the dashboard runs.
+
+**Read-modify-write, so a second amendment appends.** R2 has no append, so two amendments racing on one report can lose
+the earlier one. Accepted: a person adding two notes to the same report in the same second isn't worth a lock, and the
+email carries each note's text regardless.
+
+**Rate limiting and budget:** its own `ERROR_REPORT_AMEND_LIMITER` (10/min/IP) rather than a share of the upload
+limiter, which is tighter for a reason that doesn't apply here (a note is not a 10 MB bundle) and would otherwise turn
+away a reporter whose upload just spent the allowance. The daily BYTE budget is deliberately not charged: a note is
+bytes-tiny, and charging it would let notes push the bucket toward an intake pause.
+
+**The email** reuses the report notification path and shares its daily allowance (`claimErrorReportEmailSlot`), charged
+against TODAY rather than the report's upload date. A report can be amended months after it landed, and that day's
+counter key expired long ago, so charging it would reset the cap to zero on every amendment to an old report. Sharing
+the allowance rather than taking a second one is deliberate. It is the same inbox and the same conversation, and an
+amendment needs a credential minted by an upload, so it is never the cheaper way to flood. It rides `waitUntil` after
+the 200, like every other side effect here: the sidecar is already stored, so a mail problem is ours.
 
 ### Notification email (hand-written reports only)
 
@@ -187,11 +262,16 @@ can't see.
 The bundle is stored and the client has its 200 before any of this runs, so a rejected send is logged and dropped, never
 surfaced to the reporter. Missing recipient or missing `RESEND_API_KEY` is a silent no-op.
 
+**Reply-To:** when the reporter ticked "Attach my email", `meta.email` becomes the message's `Reply-To`, so answering
+them is a plain reply. One report per email means there is always exactly one right address, unlike the feedback digest,
+which sets the header only when a batch carries exactly one. The address is also rendered as a `mailto:` in the card
+footer (`replyToLine`, shared with the feedback card).
+
 **What it says:** the short id, the note with `white-space: pre-wrap` so the writer's line breaks survive, app version,
-OS version, arch, bundle size, a `prod`/`dev` chip, and the download link with its 7-day expiry stated next to it
-(`linkTtlDays` is derived from `PRESIGN_TTL_SECONDS`, so the copy can't drift). Debug builds get a `[DEV]` subject mark;
-release builds get none, because a tag on every ordinary report is noise in an inbox list. Rendering lives in
-`../email.ts`.
+OS version, arch, bundle size, a `prod`/`dev` chip, the reply-to line, and the download link with its 7-day expiry
+stated next to it (`linkTtlDays` is derived from `PRESIGN_TTL_SECONDS`, so the copy can't drift). Debug builds get a
+`[DEV]` subject mark; release builds get none, because a tag on every ordinary report is noise in an inbox list.
+Rendering lives in `../email.ts`.
 
 ### Eviction (8/6 GB watermarks + 60-day age floor + lifecycle)
 
@@ -204,6 +284,14 @@ Three layers keep the bucket bounded:
 2. **Daily cron sweep**: corrects KV drift by recomputing from R2, lifts an intake pause once the bucket is back under
    the LOW watermark, and re-runs `tryEvict`.
 3. **R2 lifecycle rule**: 90-day expiration applied at provisioning time via `../../scripts/setup-cf-infra.sh`.
+
+**Amendment sidecars are never candidates in their own right.** `tryEvict` filters `.amend.json` objects out of the
+candidate list and deletes each one with its bundle instead, counting both toward what that bundle frees. A sidecar is
+always younger than the report it amends, so judging it separately would either orphan it (the bundle gone, the note
+left counting against the bucket until the lifecycle got to it) or hold its bundle behind the age floor. Their bytes
+still count in `total_bytes`, and `extractDateSegment` reads a sidecar key exactly like a bundle key, since it scans
+segments for the date rather than parsing the filename. A sidecar written against a bundle that eviction already removed
+(possible for up to 30 days, between the 60-day floor and the 90-day index TTL) is left to the lifecycle.
 
 The KV counter is approximate (read-then-write, no atomic increment). Both the daily sweep and the post-eviction
 recompute correct it. R2 deletes are idempotent, so concurrent evictors deleting the same oldest object cause no harm.

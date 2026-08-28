@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import { enforceIpRateLimit, type Bindings } from '../types'
+import { enforceIpRateLimit, hasEmailShape, type Bindings } from '../types'
 import { postFeedbackNotification } from '../discord'
 
 const feedback = new Hono<{ Bindings: Bindings }>()
@@ -27,9 +27,6 @@ const maxFeedbackChars = 100_000
  * so 512 KB leaves headroom for the JSON envelope without letting anyone POST megabytes.
  */
 const maxFeedbackBytes = 512 * 1024
-
-/** Same loose reply-only shape check as the crash reporter; we never over-validate emails. */
-const emailShapePattern = /^[^\s@]+@[^\s@]+$/
 
 interface FeedbackBody {
   feedback: string
@@ -60,7 +57,7 @@ function validateFeedbackShape(body: Record<string, unknown>): string | null {
     }
   }
   const email = body.email
-  if (email !== undefined && email !== null && (typeof email !== 'string' || !emailShapePattern.test(email))) {
+  if (email !== undefined && email !== null && (typeof email !== 'string' || !hasEmailShape(email))) {
     return 'Invalid email'
   }
   const buildMode = body.buildMode

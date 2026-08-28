@@ -54,12 +54,23 @@ is mostly E2E/test noise. 90-day lifecycle TTL on the bucket.
 
 ### Chasing ONE id (`ERR-ABXW4`)
 
-The most common way you get here: David pastes a report id. **An id alone is not addressable.** The date is part of the
-key and nothing maps id to date, so you cannot `get` a bundle knowing only its id, and there is no id index to query.
+The most common way you get here: David pastes a report id. **Ask KV first.** Every upload writes `report:{ERR-XXXXX}` →
+`{ env, date, key, amendKeyHash }` into the `ERROR_REPORT_META` namespace, so one call turns an id into its full R2 key:
+
+```bash
+cd apps/api-server
+npx wrangler kv key get "report:ERR-ABXW4" --binding ERROR_REPORT_META --remote --text
+# {"env":"prod","date":"2026-08-27","key":"error-reports/prod/2026-08-27/ERR-ABXW4-<uuid>.zip","amendKeyHash":"..."}
+```
+
+`amendKeyHash` is only there for the amend route's credential check; it tells you nothing useful about the report.
+
+The entry has a 90-day TTL, matching the bucket lifecycle, so a miss means one of two things: the bundle is gone too, or
+the report predates the index. **For a report that predates the index, fall back to the walk below.**
 
 Walk BACKWARDS FROM TODAY, one day per request, and stop at the first hit. Reports are usually read within a day or two
-of arriving, so this is normally one or two calls; a 90-day sweep to find one bundle is the slow way round and the whole
-reason this section exists. ❌ Don't reach for the range recipe below for a single id.
+of arriving, so this is normally one or two calls; a 90-day sweep to find one bundle is the slow way round. ❌ Don't
+reach for the range recipe below for a single id.
 
 ```bash
 ACC=6a4433bf11c3cf86feda057f76f47991
@@ -108,6 +119,14 @@ enc=$(printf '%s' "$key" | sed 's|/|%2F|g')
 curl -s --max-time 60 -o "$id.zip" "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buckets/cmdr-error-reports/objects/$enc" \
   -H "Authorization: Bearer $TOKEN"
 ```
+
+### Amendments (`{key}.amend.json`)
+
+A reporter can add a note or a reply-to address after their bundle is already stored, and it lands in a sidecar object
+beside the bundle: the same key with `.zip` swapped for `.amend.json`, holding
+`{ id, amendments: [{ note, email, amendedAt }, ...] }`. Fetch it with the same URL-encoded-key `curl` as a bundle; it's
+plain JSON, no unzip. Each amendment is also mailed when it arrives, so an inbox thread usually beats going to R2 for
+it. Most reports have no sidecar; a 404 there is the normal case, not a problem.
 
 ### The notification email
 

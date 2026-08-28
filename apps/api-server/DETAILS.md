@@ -14,7 +14,11 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 
 - **`index.ts`**: Hono app assembly — mounts each area's route modules, wires the scheduled handler.
 - **`types.ts`**: `Bindings`, shared constants, and the helpers every area calls: `verifyAdminAuth`,
-  `enforceIpRateLimit`, `callerIp`, `hashCallerIp`, `isValidEmail`, `redactEmail`, `activationCountKey`, `formatBytes`.
+  `enforceIpRateLimit`, `callerIp`, `hashCallerIp`, `isValidEmail`, `hasEmailShape` / `emailShapePattern` (the one loose
+  reply-to check, shared by crash reports, feedback, error reports, and amendments), `isAbsent`, `readCappedBody`,
+  `scheduleBackground`, `redactEmail`, `activationCountKey`, `formatBytes`. The last four live here rather than beside
+  one route precisely so a second route can't reimplement them: a hand-rolled body read is how a size cap becomes
+  decorative.
 - **`email.ts`**: Resend delivery (HTML + plain text, multi-seat), behind the single `sendViaResend` wrapper. Senders:
   license keys, the crash digest, the feedback digest, one hand-written error report
   (`sendErrorReportNotificationEmail`, sent at intake, not on cron: `src/telemetry/DETAILS.md` § Notification email),
@@ -54,6 +58,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 | POST    | `/crash-report`            | IP rate-limit | Ingest crash report to D1                                                                          |
 | POST    | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                               |
 | POST    | `/error-report`            | IP rate-limit | Multipart upload (zip + meta) → R2, Discord notify. Also gated by the global intake budget         |
+| POST    | `/error-report/:id/amend`  | amend key     | Add a note or reply-to address to a report already in R2 (`.amend.json` sidecar + email)           |
 | POST    | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                |
 | POST    | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                       |
 | GET     | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                |
@@ -108,18 +113,19 @@ verifies against whichever public key matches its build mode. Full rationale and
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
-| Binding                | Type         | Purpose                                                                                |
-| ---------------------- | ------------ | -------------------------------------------------------------------------------------- |
-| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                     |
-| `ERROR_REPORT_META`    | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                      |
-| `LINK_CODES`           | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)           |
-| `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)          |
-| `BETA_SIGNUP_LIMITER`  | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat)   |
-| `FEEDBACK_LIMITER`     | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)      |
-| `ERROR_REPORT_LIMITER` | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB) |
-| `CRASH_REPORT_LIMITER` | Rate limit   | Gates `POST /crash-report` at 10 req/min/IP (a crashing app flushes a small burst)     |
-| `LIKES_LIMITER`        | Rate limit   | Gates `POST`/`DELETE /likes/:slug` at 20 req/min/IP (bounds unauthenticated KV growth) |
-| `BLOG_LIKES`           | KV namespace | One key per post (`likes:<slug>`) holding the count and the caller pseudonyms          |
+| Binding                      | Type         | Purpose                                                                                |
+| ---------------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| `ERROR_REPORTS_BUCKET`       | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                     |
+| `ERROR_REPORT_META`          | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                      |
+| `LINK_CODES`                 | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)           |
+| `HEARTBEAT_LIMITER`          | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)          |
+| `BETA_SIGNUP_LIMITER`        | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat)   |
+| `FEEDBACK_LIMITER`           | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)      |
+| `ERROR_REPORT_LIMITER`       | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB) |
+| `ERROR_REPORT_AMEND_LIMITER` | Rate limit   | Gates `POST /error-report/:id/amend` at 10 req/min/IP (a note, not a bundle)           |
+| `CRASH_REPORT_LIMITER`       | Rate limit   | Gates `POST /crash-report` at 10 req/min/IP (a crashing app flushes a small burst)     |
+| `LIKES_LIMITER`              | Rate limit   | Gates `POST`/`DELETE /likes/:slug` at 20 req/min/IP (bounds unauthenticated KV growth) |
+| `BLOG_LIKES`                 | KV namespace | One key per post (`likes:<slug>`) holding the count and the caller pseudonyms          |
 
 **Rate limits are per data center, not global.** Cloudflare's rate-limit bindings count per colo
 ([docs](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)), so each one bounds a single
@@ -135,6 +141,11 @@ where a flood is expensive.
 - `intake_paused`: kill switch. Present = `/error-report` returns 503.
 - `budget_alert:{yyyy-mm-dd}`: claimed by the one caller that sends the day's "budget exhausted" ping. 48-h TTL.
 - `notify_count:{yyyy-mm-dd}`: per-upload Discord pings sent today, against `DAILY_NOTIFICATION_CAP`. 48-h TTL.
+- `error_email_count:{yyyy-mm-dd}`: notification emails sent today (reports and amendments share this one), against
+  `DAILY_ERROR_REPORT_EMAIL_CAP`. 48-h TTL.
+- `report:{ERR-XXXXX}`: `{ env, date, key, amendKeyHash }` for one uploaded report, so an id is addressable without
+  walking the bucket, and `/error-report/:id/amend` has something to authenticate against. 90-day TTL, matching the R2
+  lifecycle. Only the credential's SHA-256 is here, never the credential. `src/telemetry/DETAILS.md` § The report index.
 
 `LINK_CODES` detail: the one `codes` key maps `?r=<code>` → `{ utm_source, utm_medium?, note? }` (id
 `6dbba67c8ece475daf3e8c0406d242c9`). Created with `wrangler kv namespace create LINK_CODES`; no preview id (matches the
@@ -309,7 +320,12 @@ because its stable `anal_id` IS the identifying data.
 - **`heartbeat`**: rows DELETED after two years. Two years covers every window the dashboard computes (DAU, new
   installs, D7 retention) with room to spare.
 - **Error report bundles**: 90-day R2 lifecycle, plus capacity-driven eviction that never touches anything under 60 days
-  (`src/telemetry/DETAILS.md` § Eviction). Not part of this sweep.
+  (`src/telemetry/DETAILS.md` § Eviction). Not part of this sweep. The same 90 days covers every reply-to address an
+  error report can carry (`meta.email` inside the bundle zip, and any address in the `.amend.json` sidecar) and the
+  `report:{id}` KV index entry, whose TTL is set to match. That is the same window `crash_reports.email` gets, reached
+  by expiry rather than by a sweep: the R2 objects have no columns to clear, so the lifecycle IS the enforcement. ❌
+  Never raise the index TTL past the lifecycle: an entry outliving its bundle is both a dangling pointer and an address
+  kept past what the policy promises.
 
 Two invariants the sweep must keep, both pinned by tests in `src/scheduled.test.ts`:
 

@@ -104,6 +104,18 @@ namespace_id = "1004"
 limit = 3
 period = 60
 
+# Rate limit for POST /error-report/:id/amend, keyed by the caller IP (transient, never stored). An
+# amendment is a small JSON POST that stores a note, not a bundle, so this is looser than the upload
+# limiter; it is a SEPARATE binding so a reporter who just spent their upload allowance can still add
+# a note to what they sent. `period` must be 10 or 60. `namespace_id` is a per-account integer id.
+[[ratelimits]]
+name = "ERROR_REPORT_AMEND_LIMITER"
+namespace_id = "1007"
+
+[ratelimits.simple]
+limit = 10
+period = 60
+
 # Rate limit for POST /crash-report, keyed by the caller IP (transient, never stored). A crashing
 # app can legitimately send a small burst (queued reports flush on the next launch), so this is
 # looser than the error-report limiter but still far under what a flood needs. `period` must be 10

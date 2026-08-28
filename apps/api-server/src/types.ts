@@ -22,6 +22,12 @@ export type Bindings = {
   // The tightest of the set: each accepted request stores up to 10 MB in R2. Optional; the route
   // skips the gate when absent.
   ERROR_REPORT_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /error-report/:id/amend, keyed by the caller IP (never
+  // stored). Its own binding rather than a share of ERROR_REPORT_LIMITER: an amendment is a tiny
+  // JSON POST that stores no bundle, so it can be looser, and a reporter adding a note should never
+  // be turned away because their upload just spent the upload allowance. Optional; the route skips
+  // the gate when absent.
+  ERROR_REPORT_AMEND_LIMITER?: RateLimit
   // Workers rate-limit binding gating POST /crash-report, keyed by the caller IP (never stored).
   // Optional; the route skips the gate when absent.
   CRASH_REPORT_LIMITER?: RateLimit
@@ -140,6 +146,33 @@ export function isValidEmail(email: string): boolean {
   return atIndex > 0 && email.indexOf('.', atIndex) > atIndex + 1
 }
 
+/**
+ * The loose shape check every REPLY-TO address goes through: crash reports, in-app feedback, error
+ * reports, and error-report amendments.
+ *
+ * Deliberately weaker than {@link isValidEmail}, which gates licensing: a license email that
+ * bounces means a paying customer got nothing, so that path is worth being strict about. A reply-to
+ * is a favor the person did us, and the cost of over-validating it (silently dropping a real
+ * address that our regex disagrees with) is worse than the cost of storing one that bounces.
+ */
+/**
+ * An optional field the Rust client may omit or send as `null`. serde serializes `Option::None` as
+ * JSON `null`, not as an absent key (specta's unified mode rejects `skip_serializing_if` on a
+ * Tauri command surface), so a validator that only tolerates `undefined` rejects exactly the
+ * upgrade-window payloads worth keeping. `null` and `undefined` both mean "absent"; only a
+ * present-but-wrong value fails.
+ */
+export function isAbsent(v: unknown): boolean {
+  return v === undefined || v === null
+}
+
+export const emailShapePattern = /^[^\s@]+@[^\s@]+$/
+
+/** {@link emailShapePattern} as a predicate, for the validators that want a boolean. */
+export function hasEmailShape(value: string): boolean {
+  return emailShapePattern.test(value)
+}
+
 export function isValidLicenseType(type: string): type is LicenseType {
   return (licenseTypes as readonly string[]).includes(type)
 }
@@ -190,6 +223,72 @@ export async function enforceIpRateLimit(limiter: RateLimit | undefined, req: He
   if (!limiter) return null
   const { success } = await limiter.limit({ key: callerIp(req) })
   return success ? null : Response.json({ error: 'Too many requests' }, { status: 429 })
+}
+
+/**
+ * Read a request body, stopping at `maxBytes`. Returns the bytes, or null when the body is over the
+ * cap (the read is cancelled at that point, so the rest is never pulled off the socket).
+ *
+ * **Every route that reads a body under a size limit goes through this**, and ❌ never through
+ * `c.req.text()` / `c.req.parseBody()`: `content-length` is advisory, since a chunked upload
+ * declares no length and a declared one can lie. Both of those buffer whatever actually arrives
+ * before anything can measure it, so a cap applied afterwards is decorative and the isolate (128 MB
+ * against Cloudflare's 100 MB request limit) is what gives way. A `content-length` pre-check is
+ * still worth keeping as a cheap fast-fail for an honest client; it just can't be the cap.
+ *
+ * Counting BYTES also means a limit means what it says: `String.length` counts UTF-16 code units,
+ * which runs a byte budget roughly 1.5x loose on multi-byte text.
+ *
+ * Returning null rather than throwing keeps "too large" distinguishable from "malformed body"
+ * without matching on a parser message.
+ */
+export async function readCappedBody(body: ReadableStream<Uint8Array>, maxBytes: number): Promise<ArrayBuffer | null> {
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const buffer = new ArrayBuffer(total)
+  const out = new Uint8Array(buffer)
+  let offset = 0
+  for (const chunk of chunks) {
+    out.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return buffer
+}
+
+/**
+ * Hono `c.executionCtx.waitUntil` wrapper that falls back to inline await in tests.
+ *
+ * Takes only the `waitUntil` shape it actually calls: Hono's `Context.executionCtx` is its own
+ * `ExecutionContext<unknown>`, which carries members (`tracing`) that the ambient
+ * `@cloudflare/workers-types` `ExecutionContext` doesn't, so naming either type here breaks the
+ * other whenever the two drift.
+ */
+export function scheduleBackground(
+  c: { executionCtx: { waitUntil: (promise: Promise<unknown>) => void } },
+  work: Promise<void>,
+): Promise<void> {
+  try {
+    c.executionCtx.waitUntil(work)
+    return Promise.resolve()
+  } catch {
+    return work
+  }
 }
 
 /** Warn at most once per isolate, so a misconfigured deploy is visible without flooding the log. */

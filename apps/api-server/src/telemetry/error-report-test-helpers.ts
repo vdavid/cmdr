@@ -62,6 +62,17 @@ export function createR2(): R2Bucket & { _store: Map<string, StoredObj> } {
       })
       return { key, size: bytes.length } as unknown
     },
+    get: (key: string) => {
+      const stored = store.get(key)
+      if (!stored) return Promise.resolve(null)
+      const text = () => Promise.resolve(new TextDecoder().decode(stored.body))
+      return Promise.resolve({
+        key,
+        size: stored.size,
+        text,
+        json: async () => JSON.parse(await text()) as unknown,
+      } as unknown as R2ObjectBody)
+    },
     list: ({ prefix, cursor, limit }: { prefix?: string; cursor?: string; limit?: number } = {}) => {
       const all = [...store.entries()]
         .filter(([k]) => !prefix || k.startsWith(prefix))

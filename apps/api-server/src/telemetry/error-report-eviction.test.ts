@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  amendSidecarKey,
+  extractDateSegment,
   incrementTotalBytes,
   recomputeTotal,
   tryEvict,
@@ -373,6 +375,49 @@ describe('tryEvict age floor', () => {
     if (result.outcome !== 'evicted') throw new Error('expected eviction')
     expect(result.evictedCount).toBe(3)
     expect(await kv.get(INTAKE_PAUSED_KEY)).toBeNull()
+  })
+
+  it("takes a bundle's amendment sidecar down with it", async () => {
+    // A note left behind by its bundle is an orphan nothing will ever read, and it would keep
+    // counting against the bucket until the lifecycle got to it.
+    const bundle = freshBundle(1, EVICTION_MIN_AGE_DAYS + 20, 2 * GB)
+    const objs = [
+      bundle,
+      { key: amendSidecarKey(bundle.key), size: 1024, uploaded: bundle.uploaded },
+      freshBundle(2, EVICTION_MIN_AGE_DAYS + 1, 1 * GB),
+      freshBundle(3, 1, 3 * GB), // too young to touch
+    ]
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
+
+    const result = await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv }, evictionOptions)
+
+    if (result.outcome !== 'evicted') throw new Error('expected eviction')
+    // Two bundles evicted, the sidecar riding along with the first rather than counting as a third.
+    expect(result.evictedCount).toBe(2)
+    expect(result.freedBytes).toBe(3 * GB + 1024)
+    const remaining = await bucket.list({ prefix: ERROR_REPORT_PREFIX })
+    expect(remaining.objects.map((o) => o.key)).toEqual([objs[3].key])
+  })
+
+  it('never evicts a sidecar on its own', async () => {
+    // A sidecar is always younger than the bundle it amends, so judging it separately would either
+    // orphan it or hold its bundle behind the age floor.
+    const bundle = freshBundle(1, EVICTION_MIN_AGE_DAYS - 1, 4 * GB)
+    const objs = [bundle, { key: amendSidecarKey(bundle.key), size: 2 * GB, uploaded: daysBefore(0) }]
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
+
+    const result = await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv }, evictionOptions)
+
+    expect(result.outcome).toBe('paused')
+    const remaining = await bucket.list({ prefix: ERROR_REPORT_PREFIX })
+    expect(remaining.objects).toHaveLength(2)
+  })
+
+  it('reads the date segment out of a sidecar key like any other', () => {
+    const bundle = freshBundle(1, 0, 1)
+    expect(extractDateSegment(amendSidecarKey(bundle.key))).toBe(extractDateSegment(bundle.key))
   })
 
   it('releases the lock after pausing', async () => {

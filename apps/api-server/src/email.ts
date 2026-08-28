@@ -31,6 +31,17 @@ const CARD_PROSE_STYLE =
 const BODY_STYLE =
   "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; max-width: 680px; margin: 0 auto; padding: 20px; background: #ffffff;"
 
+/**
+ * A card footer's reply line: the address as a `mailto:`, or a plain statement that there isn't
+ * one. Every channel a person can attach an address to (feedback, error reports, amendments) says
+ * it the same way, and the address stays clickable even when the message's `Reply-To` header
+ * can't carry it (a digest of several messages).
+ */
+function replyToLine(email: string | null | undefined): string {
+  if (!email) return 'No reply-to address'
+  return `Reply to <a href="mailto:${escapeHtml(email)}" style="color: #2563eb;">${escapeHtml(email)}</a>`
+}
+
 /** The closing line under the cards, explaining who sent this and why. */
 const SIGNOFF_STYLE =
   'margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;'
@@ -249,9 +260,7 @@ function notificationPage(subject: string, cards: string, signoff: string): stri
  * block rather than a table cell: a table column shreds a paragraph into a ribbon.
  */
 function renderFeedbackCard(entry: FeedbackEmailRow): string {
-  const replyLine = entry.email
-    ? `Reply to <a href="mailto:${escapeHtml(entry.email)}" style="color: #2563eb;">${escapeHtml(entry.email)}</a>`
-    : 'No reply-to address'
+  const replyLine = replyToLine(entry.email)
 
   return `
     <div style="${CARD_STYLE}">
@@ -319,6 +328,8 @@ export interface ErrorReportEmailRow {
   sizeBytes: number
   /** What the person wrote. The reason this email exists; absent when they sent one without a note. */
   userNote?: string
+  /** Reply-to address, present only when the reporter ticked "Attach my email" in the send dialog. */
+  email?: string
   /** Presigned R2 GET URL, or `null` when the credentials to mint one aren't configured. */
   downloadUrl: string | null
   /** How long {@link downloadUrl} keeps working, so a stale click a week later isn't a mystery. */
@@ -354,6 +365,7 @@ function renderErrorReportCard(report: ErrorReportEmailRow): string {
             ${envChip(report.buildMode === 'debug' ? 'dev' : 'prod')}
         </div>
         ${noteBlock}
+        <div style="${CARD_FOOTER_STYLE}">${replyToLine(report.email)}</div>
         <div style="${CARD_FOOTER_STYLE}">${downloadLine}</div>
     </div>`
 }
@@ -368,6 +380,10 @@ interface ErrorReportNotificationParams {
  * Mail one hand-written error report the moment it lands. One report per email: they run about
  * four per 60 days and each is a person waiting for an answer, so there is nothing to batch and
  * nothing to wait for. Auto-sent reports never come through here, they stay on Discord.
+ *
+ * An attached address becomes the message's `Reply-To`, so answering the reporter is a plain reply.
+ * One report per email means there is always exactly one right answer to reply to, unlike the
+ * feedback digest, which has to decide.
  */
 export async function sendErrorReportNotificationEmail(params: ErrorReportNotificationParams): Promise<void> {
   const resend = new Resend(params.resendApiKey)
@@ -379,6 +395,7 @@ export async function sendErrorReportNotificationEmail(params: ErrorReportNotifi
       from: 'Cmdr Error Reports <noreply@getcmdr.com>',
       to: params.to,
       subject,
+      ...(params.report.email ? { replyTo: params.report.email } : {}),
       html: notificationPage(
         subject,
         renderErrorReportCard(params.report),
@@ -386,6 +403,65 @@ export async function sendErrorReportNotificationEmail(params: ErrorReportNotifi
       ),
     },
     'error report notification',
+  )
+}
+
+/** One amendment someone added to a report that was already sent. */
+export interface ErrorReportAmendmentRow {
+  /** The `ERR-XXXXX` of the report this lands on, so the reply can name the same id. */
+  id: string
+  /** What they added. Null when they only wanted to leave an address. */
+  note: string | null
+  /** A reply-to address added after the fact. Null when they only wanted to add a note. */
+  email: string | null
+  /** How many amendments this report now carries, so a third one reads as a thread, not a repeat. */
+  amendmentCount: number
+}
+
+interface ErrorReportAmendmentParams {
+  amendment: ErrorReportAmendmentRow
+  to: string
+  resendApiKey: string
+}
+
+/**
+ * Mail one amendment: a note or an address someone added after their bundle was already sent.
+ *
+ * It goes to the same inbox as the report itself, because an afterthought is worth as much as the
+ * first thought and it arrives while the report is still open. The original bundle is not re-linked
+ * here: the id is enough to find it (`report:{id}` in KV), and a second presigned link per note
+ * would multiply live download URLs for one bundle.
+ */
+export async function sendErrorReportAmendmentEmail(params: ErrorReportAmendmentParams): Promise<void> {
+  const resend = new Resend(params.resendApiKey)
+  const { id, note, email, amendmentCount } = params.amendment
+  const subject = `Cmdr: someone added to error report ${id}`
+
+  const noteBlock = note
+    ? `<div style="${CARD_PROSE_STYLE}">${escapeHtml(note)}</div>`
+    : `<div style="${CARD_PROSE_STYLE} color: #6b7280;">No note this time, only the address.</div>`
+  const countLine =
+    amendmentCount > 1 ? ` &middot; amendment ${escapeHtml(amendmentCount.toString())} on this report` : ''
+
+  await sendViaResend(
+    resend,
+    {
+      from: 'Cmdr Error Reports <noreply@getcmdr.com>',
+      to: params.to,
+      subject,
+      ...(email ? { replyTo: email } : {}),
+      html: notificationPage(
+        subject,
+        `
+    <div style="${CARD_STYLE}">
+        <div style="${CARD_HEADER_STYLE}">${escapeHtml(id)}${countLine}</div>
+        ${noteBlock}
+        <div style="${CARD_FOOTER_STYLE}">${replyToLine(email)}</div>
+    </div>`,
+        'The Cmdr API server sends this when someone adds to an error report they already sent.',
+      ),
+    },
+    'error report amendment',
   )
 }
 
@@ -416,7 +492,7 @@ export async function sendErrorReportsSuppressedEmail(params: ErrorReportsSuppre
         subject,
         `
     <div style="${CARD_STYLE}">
-        <div style="${CARD_PROSE_STYLE}">That's ${escapeHtml(params.cap.toString())} hand-written error reports mailed for ${escapeHtml(params.date)}, which is far past the usual rate, so the rest of today's reports stay out of your inbox. Nothing is lost: every bundle is in R2, pinged to Discord, and listed by GET /admin/error-reports. Emails resume tomorrow.</div>
+        <div style="${CARD_PROSE_STYLE}">That's ${escapeHtml(params.cap.toString())} error report emails sent for ${escapeHtml(params.date)}, counting hand-written reports and the amendments people add to them, which is far past the usual rate. The rest of today's stay out of your inbox. Nothing is lost: every bundle is in R2, pinged to Discord, and listed by GET /admin/error-reports, and amendments are in the bundle's sidecar. Emails resume tomorrow.</div>
     </div>`,
         'The Cmdr API server sends this once a day at most.',
       ),

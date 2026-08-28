@@ -375,6 +375,30 @@ describe('GET /admin/error-reports', () => {
     expect(await res.json()).toEqual([])
   })
 
+  it('leaves amendment sidecars out of the listing', async () => {
+    // A sidecar is part of the report it amends, not a second report. Counting it would double an
+    // amended report in every aggregation the dashboard runs.
+    const bindings = {
+      ...baseBindings,
+      ERROR_REPORTS_BUCKET: createMockR2([
+        {
+          key: 'error-reports/prod/2026-06-10/ERR-ABCDE-uuid.zip',
+          customMetadata: { id: 'ERR-ABCDE', kind: 'user' },
+        },
+        {
+          key: 'error-reports/prod/2026-06-10/ERR-ABCDE-uuid.amend.json',
+          customMetadata: { id: 'ERR-ABCDE', kind: 'amendment' },
+        },
+      ]),
+    }
+
+    const res = await app.request('/admin/error-reports?range=all', { headers: authHeaders }, bindings)
+
+    const rows = await res.json<{ id: string }[]>()
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.id).toBe('ERR-ABCDE')
+  })
+
   it('maps each bundle from its key date and custom metadata', async () => {
     const bindings = {
       ...baseBindings,

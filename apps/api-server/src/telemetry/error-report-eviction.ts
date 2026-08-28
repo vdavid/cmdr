@@ -12,7 +12,9 @@ import { pauseIntake } from './error-report-intake'
  * - `total_bytes`: running byte total across all bundles. Approximate, drift-prone.
  * - `eviction_in_progress`: short-lived (60 s TTL) lock to prevent concurrent eviction.
  *
- * The R2 key shape is `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`.
+ * The R2 key shape is `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`. An amended
+ * report also carries a `.amend.json` sidecar on the same key (see {@link amendSidecarKey}); it
+ * counts toward the total and is deleted with its bundle, never on its own.
  *
  * Legacy shape (still present in the bucket; aged out via the 90-day R2 lifecycle):
  * `error-reports/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`. Eviction sorts oldest-first
@@ -41,6 +43,23 @@ export const EVICTION_MIN_AGE_DAYS = 60
 
 /** R2 key prefix for all error report bundles. */
 export const ERROR_REPORT_PREFIX = 'error-reports/'
+
+/**
+ * What an amendment sidecar's key ends in, where the bundle's ends in `.zip`. Sitting next to the
+ * bundle under the same prefix is what makes an amendment findable from the bundle key alone, with
+ * no second index to keep in step.
+ */
+export const AMEND_SIDECAR_SUFFIX = '.amend.json'
+
+/** The sidecar key for a bundle: the same key with `.zip` swapped for {@link AMEND_SIDECAR_SUFFIX}. */
+export function amendSidecarKey(bundleKey: string): string {
+  return `${bundleKey.replace(/\.zip$/, '')}${AMEND_SIDECAR_SUFFIX}`
+}
+
+/** True for an amendment sidecar rather than a bundle. */
+export function isAmendSidecarKey(key: string): boolean {
+  return key.endsWith(AMEND_SIDECAR_SUFFIX)
+}
 
 /** KV keys. */
 export const TOTAL_BYTES_KEY = 'total_bytes'
@@ -166,10 +185,19 @@ export async function tryEvict(
     const all = await listAllObjects(env.ERROR_REPORTS_BUCKET)
     const totalBytes = all.reduce((s, o) => s + o.size, 0)
 
+    // A sidecar is never a candidate in its own right: it belongs to its bundle and goes when the
+    // bundle goes. Judging it separately would either orphan it (the bundle deleted, the note left
+    // behind) or, since an amendment is always younger than what it amends, block its bundle behind
+    // the age floor.
+    const sidecarSizes = new Map(all.filter((o) => isAmendSidecarKey(o.key)).map((o) => [o.key, o.size]))
+    const bundles = all.filter((o) => !isAmendSidecarKey(o.key))
+    /** What deleting one bundle actually frees: the bundle plus whatever note rides along with it. */
+    const freedBy = (key: string, size: number): number => size + (sidecarSizes.get(amendSidecarKey(key)) ?? 0)
+
     // Age comes from R2's `uploaded`, not the key's date segment: it's storage ground truth and
     // can't drift with however the key was built.
     const cutoff = now.getTime() - minAgeDays * 24 * 60 * 60 * 1000
-    const evictable = all.filter((o) => o.uploaded.getTime() <= cutoff)
+    const evictable = bundles.filter((o) => o.uploaded.getTime() <= cutoff)
 
     // Sort oldest first. The date segment inside the key is the primary signal
     // (yyyy-mm-dd sorts lexically); extracted via `extractDateSegment` so the
@@ -184,7 +212,7 @@ export async function tryEvict(
     })
 
     const neededBytes = totalBytes - low
-    const evictableBytes = evictable.reduce((s, o) => s + o.size, 0)
+    const evictableBytes = evictable.reduce((s, o) => s + freedBy(o.key, o.size), 0)
     if (evictableBytes < neededBytes) {
       await pauseIntake(env.ERROR_REPORT_META)
       console.error(
@@ -197,9 +225,12 @@ export async function tryEvict(
     let runningTotal = totalBytes
     for (const obj of evictable) {
       if (runningTotal <= low) break
+      const sidecar = amendSidecarKey(obj.key)
       await env.ERROR_REPORTS_BUCKET.delete(obj.key)
-      runningTotal -= obj.size
-      freedBytes += obj.size
+      if (sidecarSizes.has(sidecar)) await env.ERROR_REPORTS_BUCKET.delete(sidecar)
+      const freed = freedBy(obj.key, obj.size)
+      runningTotal -= freed
+      freedBytes += freed
       evictedCount++
     }
 

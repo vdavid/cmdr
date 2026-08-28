@@ -5,6 +5,7 @@ import { admin } from './admin/admin'
 import { funnel } from './admin/funnel'
 import { telemetry } from './telemetry/telemetry'
 import { errorReport } from './telemetry/error-report'
+import { errorReportAmend } from './telemetry/error-report-amend'
 import { feedback } from './telemetry/feedback'
 import { likes } from './website/likes'
 import { betaSignup } from './website/beta-signup'
@@ -33,6 +34,7 @@ app.route('/', funnel)
 app.route('/', telemetry)
 app.route('/', likes)
 app.route('/', errorReport)
+app.route('/', errorReportAmend)
 app.route('/', betaSignup)
 app.route('/', feedback)
 app.route('/', linkCodes)

@@ -13,7 +13,8 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   update-enabled installs, the retained aggregate ∪ today's raw), `/admin/crashes` (by day/crash site/signal),
   `/admin/heartbeat-dau`, `/admin/config-shape` (settings values per app version, § below), `/admin/feedback` (full
   text + reply-to email, newest first), `/admin/error-reports` (per-bundle R2 metadata via `list` + custom metadata,
-  newest first).
+  newest first; `.amend.json` sidecars share the prefix and are skipped, since an amendment is part of its report rather
+  than a second one).
 - **`funnel.ts`**: `/admin/funnel`, plus the pure `buildDateList` / `assembleFunnel` / `aggregateUaFamilies` helpers.
 - Tests: `admin-stats.test.ts`, `admin-endpoints.test.ts`, `funnel.test.ts` (route auth/validation plus the pure date
   math, zero-fill, and D7-knowability rules).

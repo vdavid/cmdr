@@ -15,6 +15,7 @@ interface SentEmail {
   to: string
   subject: string
   html: string
+  replyTo?: string
 }
 
 /** Resend reports a rejected send in the response rather than throwing, so both shapes are valid. */
@@ -200,6 +201,28 @@ describe('error-report notification email', () => {
     expect(html).toContain('admin')
   })
 
+  it('makes the attached address the reply-to, so answering is a plain reply', async () => {
+    await upload(mailableBindings(), { ...validMeta, email: 'reporter@example.com' })
+
+    const { replyTo, html } = lastEmailCall()
+    expect(replyTo).toBe('reporter@example.com')
+    expect(html).toContain('reporter@example.com')
+  })
+
+  it('says there is no reply channel when the reporter attached no address', async () => {
+    await upload(mailableBindings())
+
+    const { replyTo, html } = lastEmailCall()
+    expect(replyTo).toBeUndefined()
+    expect(html).toContain('No reply-to address')
+  })
+
+  it('escapes HTML in the attached address', async () => {
+    await upload(mailableBindings(), { ...validMeta, email: '"><i>x</i>@example.com' })
+
+    expect(lastEmailCall().html).not.toContain('<i>x</i>')
+  })
+
   it('stops mailing past the daily cap, after one notice saying so', async () => {
     const kv = createKv()
     // Start one slot below the cap so the run is short.
@@ -269,5 +292,74 @@ describe('error-report notification email', () => {
     await upload(bindings)
 
     expect(bucket._store.size).toBe(1)
+  })
+})
+
+describe('error-report amendment email', () => {
+  /** Upload, then amend, returning the amend response. */
+  async function uploadThenAmend(
+    bindings: Record<string, unknown>,
+    body: (amendKey: string | null) => unknown,
+  ): Promise<Response> {
+    const fd = buildMultipart(new Uint8Array([1, 2, 3]), validMeta)
+    const uploaded = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+    const { id, amendKey } = await uploaded.json<{ id: string; amendKey: string | null }>()
+    mockSend.mockClear()
+    return app.request(
+      `/error-report/${id}/amend`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body(amendKey)),
+        headers: { 'content-type': 'application/json' },
+      },
+      bindings,
+    )
+  }
+
+  it('mails the amendment so it reaches a human like the report did', async () => {
+    const res = await uploadThenAmend(mailableBindings(), (amendKey) => ({
+      amendKey,
+      note: 'One more thing: it only happens on Wi-Fi.',
+    }))
+
+    expect(res.status).toBe(200)
+    expect(mockSend).toHaveBeenCalledOnce()
+    const { to, subject, html } = lastEmailCall()
+    expect(to).toBe('david@example.com')
+    expect(subject).toContain('ERR-A2345')
+    expect(html).toContain('One more thing: it only happens on Wi-Fi.')
+  })
+
+  it('sets the reply-to when the amendment carries an address', async () => {
+    await uploadThenAmend(mailableBindings(), (amendKey) => ({ amendKey, email: 'later@example.com' }))
+
+    expect(lastEmailCall().replyTo).toBe('later@example.com')
+  })
+
+  it('escapes HTML in the amendment note', async () => {
+    await uploadThenAmend(mailableBindings(), (amendKey) => ({
+      amendKey,
+      note: '<script>alert(1)</script> A & B',
+    }))
+
+    const { html } = lastEmailCall()
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('&lt;script&gt;')
+  })
+
+  it('still amends when no recipient is configured', async () => {
+    const res = await uploadThenAmend(createBindings(), (amendKey) => ({ amendKey, note: 'no inbox here' }))
+
+    expect(res.status).toBe(200)
+    expect(mockSend).not.toHaveBeenCalled()
+  })
+
+  it('keeps the amendment successful when the send throws outright', async () => {
+    // The sidecar is already in R2 and the client is waiting. A mail problem is ours.
+    mockSend.mockImplementationOnce(() => Promise.reject(new Error('network is down')))
+
+    const res = await uploadThenAmend(mailableBindings(), (amendKey) => ({ amendKey, note: 'still lands' }))
+
+    expect(res.status).toBe(200)
   })
 })
