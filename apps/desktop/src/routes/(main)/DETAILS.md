@@ -171,6 +171,13 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`)
   awaits `result.settled` before replying `ok: true`. Resolving at the edge also narrows the on-network refusal — a
   local target from a network pane now switches volumes instead of refusing; only an `smb://` target still refuses. The
   bus dispatch is fire-and-forget and can't surface this round-trip.
+
+  **Every way this handler declines also logs.** The three of them — the path not resolving to a volume, `navigate()`
+  refusing, and no explorer being mounted — used to `return` in silence, because the only channel out is a reply keyed
+  on `requestId`, and fire-and-forget callers (the E2E harness among them) don't send one. A navigation that never
+  reaches the pane then looks exactly like one that ran and did nothing: a Linux E2E run where the panes stopped
+  listing for two hours left no frontend evidence at all. Keep the `log.warn` in each branch. Uncaught throws in this
+  file are covered separately by `lib/logging/uncaught-errors.ts`.
 - **`mcp-response` round-trips** (`mcp-open-under-cursor`, `mcp-move-cursor`, `mcp-select`, `mcp-select-names`,
   `mcp-refresh`): the bus dispatches the `void`-returning intent; the adapter owns the `requestId` correlation and the
   `emit('mcp-response', { requestId, ok, error? })` reply. It awaits the dispatch's promise so the ack fires only after
