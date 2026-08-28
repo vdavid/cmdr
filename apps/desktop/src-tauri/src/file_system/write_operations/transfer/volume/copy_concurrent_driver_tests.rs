@@ -21,7 +21,7 @@
 //! and `drive` below is the one place a test has to know that.
 
 use super::*;
-use crate::file_system::volume::{InMemoryVolume, VolumeReadStream};
+use crate::file_system::volume::{InMemoryVolume, VolumeError, VolumeReadStream};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::ConflictResolution;
 use cmdr_fs::staging::STAGING_TEMP_MARKER;

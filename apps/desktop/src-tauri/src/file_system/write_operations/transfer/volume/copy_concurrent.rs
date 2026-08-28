@@ -35,75 +35,15 @@ use super::super::super::journal;
 use super::super::super::state::{WriteOperationState, is_cancelled, load_intent, update_operation_status};
 use super::super::super::types::{VolumeCopyConfig, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::super::dest_name_index::{DestLookup, DestNameIndex};
-use super::super::transfer_driver::make_concurrent_per_file_progress;
 use super::super::transfer_probe::OperationProbe;
 use super::conflict::resolve_volume_conflict;
 use super::copy::drain_deadline as drain_deadline_for;
+use super::copy_concurrent_task::{CopyTask, CopyTaskFailure, CopyTaskSuccess, run_copy_task};
 use super::preflight::SourceHint;
-use super::strategy::{copy_single_path, resolve_source_is_directory};
+use super::strategy::resolve_source_is_directory;
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
-use crate::file_system::volume::{Volume, VolumeError};
+use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
-
-/// Success payload for one concurrent copy task.
-///
-/// `partial_path` is the path the task pushed into `in_flight_partials` (the
-/// temp sibling under safe-replace, else the dest) so the result handler can
-/// remove the right entry. `recorded_path` is the top-level landed path (the
-/// original after a safe-replace finalize, else the dest) — recorded for
-/// rollback ONLY for a top-level file source. `created_files` / `created_dirs`
-/// carry the per-file destinations and newly-created subdirectories from a
-/// DIRECTORY source's recursive copy, so rollback removes exactly what the op
-/// wrote into a (possibly pre-existing, merged) dest directory and never the
-/// directory root.
-struct CopyTaskSuccess {
-    partial_path: PathBuf,
-    recorded_path: PathBuf,
-    source_is_dir: bool,
-    bytes: u64,
-    /// Whether this source replaced any existing dest file (a top-level file→file
-    /// safe-replace, or a deep-merge child overwrite). Feeds the operation-log
-    /// eligibility: a copy that overwrote isn't rollbackable (the original is gone).
-    overwrote: bool,
-    created_files: Vec<PathBuf>,
-    created_dirs: Vec<PathBuf>,
-    /// The top-level source this task copied, and how many children a deep
-    /// merge skipped in its subtree. `skipped_count == 0` means the whole
-    /// subtree landed durably, so the out-of-zip move op may drop it from the
-    /// archive; any deep skip keeps it.
-    source_path: PathBuf,
-    skipped_count: usize,
-    skipped_bytes: u64,
-}
-
-/// Failure payload for one concurrent copy task.
-///
-/// `failed_path` is the in-flight partial entry to remove from
-/// `in_flight_partials` (the temp sibling under safe-replace, else the dest
-/// item path). ❌ It is NOT the path to report: it names where the partial sits
-/// on the DESTINATION, which for a directory source is the dest dir root.
-/// `reported_path` is the SOURCE item the walker actually failed on (a file deep
-/// inside the subtree, not the top-level item the user selected), and is the only
-/// one of the two a user can act on. Keep them separate. `cleanup_temp` distinguishes a STREAM failure (`true` — the
-/// dest/temp is a half-written partial and must be cleaned) from a FINALIZE
-/// failure after a SUCCESSFUL write (`false` — the temp holds the only complete
-/// copy of the new data and MUST be left on disk).
-///
-/// `source_is_dir` plus `created_files` / `created_dirs` carry the per-file
-/// rollback ledger for a DIRECTORY source interrupted mid-stream. Without it the
-/// post-loop cleanup/rollback would fall back to recursively deleting the dest
-/// directory ROOT — which on a merge destroys pre-existing dest-only files. With
-/// it, the partials are cleaned per-file and the newly-created dirs pruned
-/// empty-only, so a merged dir holding a sentinel survives.
-struct CopyTaskFailure {
-    failed_path: PathBuf,
-    reported_path: PathBuf,
-    error: VolumeError,
-    cleanup_temp: bool,
-    source_is_dir: bool,
-    created_files: Vec<PathBuf>,
-    created_dirs: Vec<PathBuf>,
-}
 
 /// Everything the concurrent driver needs from its caller.
 ///
@@ -295,8 +235,8 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
     // finalize-failure case would be total data loss. The `created_*` ledger
     // carries a DIRECTORY source's per-file partials out of the error arm so
     // post-loop cleanup never recursively deletes a merged dest dir root.
-    type CopyTaskFuture<'a> = Pin<Box<dyn Future<Output = Result<CopyTaskSuccess, CopyTaskFailure>> + Send + 'a>>;
-    let mut in_flight: FuturesUnordered<CopyTaskFuture<'_>> = FuturesUnordered::new();
+    type CopyTaskFuture = Pin<Box<dyn Future<Output = Result<CopyTaskSuccess, CopyTaskFailure>> + Send>>;
+    let mut in_flight: FuturesUnordered<CopyTaskFuture> = FuturesUnordered::new();
 
     // Inline helper: drains ONE future from `in_flight`, updates tracking.
     // Returns Err on the first task failure (caller breaks + stores copy_error).
@@ -509,28 +449,6 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 in_flight_partials.lock_ignore_poison().push(dest_item_path.clone());
             }
 
-            let src_vol = Arc::clone(&source_volume);
-            let dst_vol = Arc::clone(&dest_volume);
-            let state_clone = Arc::clone(state);
-            let events_task = Arc::clone(&events);
-            let op_id = operation_id;
-            let files_done_a = Arc::clone(&files_done_atomic);
-            let bytes_done_a = Arc::clone(&atomic_bytes_done);
-            let last_prog_a = Arc::clone(&last_progress_mutex);
-            let source_owned = source_path.clone();
-            let dest_owned = dest_item_path.clone();
-            let replace_after_write_owned = replace_after_write.clone();
-            let file_name_owned = file_name.clone();
-            // Per-task merge context: deep file clashes inside a directory
-            // source landing on a merged dest honor the file policy, sharing
-            // the op-wide apply-to-all latch with every other task and the
-            // top-level dispatch.
-            let merge_config = config.clone();
-            let merge_op_id = operation_id.to_string();
-            let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
-            let merge_window = file_window.clone();
-            let merge_probe = op_probe.clone();
-            let leaf_window = file_window.clone();
             // Register before the task is pushed, so a task that never gets
             // polled still shows up in a dump as `spawned`.
             let task_probe = op_probe.as_ref().map(|probe| {
@@ -540,205 +458,30 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     &dest_item_path.display().to_string(),
                 )
             });
-
-            in_flight.push(Box::pin(async move {
-                // Held for the task's whole life; dropping it (completion,
-                // abort, panic) removes the row from the in-flight table.
-                let task_probe = task_probe;
-                let probe_handle = task_probe
-                    .as_ref()
-                    .map(super::super::transfer_probe::TaskProbeHandle::probe);
-                // Per-task `last_file_bytes` tracks bytes reported for the
-                // file this task is copying; deltas roll up into the
-                // shared `bytes_done_a` so the throttle emits an aggregate.
-                // Owned by the task; the helper closure carries its own
-                // Arc clone, the post-call compensation reads the same
-                // counter to detect "volume never invoked on_progress."
-                let last_file_bytes = Arc::new(AtomicU64::new(0));
-                // Per-source rollback ledger: the files this task streams
-                // and the dirs it newly creates inside a directory source.
-                let created = super::strategy::CreatedPaths::default();
-                // Deep merge children are never top-level sources, so the
-                // resolver never keys into per-source hints for them — an
-                // empty map is correct (and avoids capturing the function's
-                // `source_hints` into the `'static` task).
-                let merge_hints: HashMap<PathBuf, SourceHint> = HashMap::new();
-                // A skipped child reports no chunks, so unlike a copied one its
-                // bytes never reach `bytes_done_a` through the progress
-                // callback: credit both axes here. `note_skipped` is what keeps
-                // them off the rate.
-                let on_file_skipped = {
-                    let bytes_done_a = Arc::clone(&bytes_done_a);
-                    let files_done_a = Arc::clone(&files_done_a);
-                    let state_clone = Arc::clone(&state_clone);
-                    move |leaf_bytes: u64| {
-                        bytes_done_a.fetch_add(leaf_bytes, Ordering::Relaxed);
-                        files_done_a.fetch_add(1, Ordering::Relaxed);
-                        state_clone.note_skipped(1, leaf_bytes);
-                    }
-                };
-                let merge_ctx = super::strategy::MergeCtx {
-                    events: &*events_task,
-                    operation_id: &merge_op_id,
-                    config: &merge_config,
-                    state: &state_clone,
-                    apply_to_all: &merge_apply_to_all,
-                    source_hints: &merge_hints,
-                    on_file_skipped: &on_file_skipped,
-                    window: merge_window,
-                    op_probe: merge_probe,
-                };
-                let on_file_progress = make_concurrent_per_file_progress(
-                    Arc::clone(&events_task),
-                    Arc::clone(&state_clone),
-                    op_id.to_string(),
-                    WriteOperationType::Copy,
-                    file_name_owned.clone(),
-                    Arc::clone(&last_file_bytes),
-                    Arc::clone(&bytes_done_a),
-                    Arc::clone(&files_done_a),
-                    total_files,
-                    total_bytes,
-                    Arc::clone(&last_prog_a),
-                    progress_interval,
-                );
-                // The byte count is rolled into the aggregate by the progress
-                // callback's per-chunk delta (and the post-task compensation),
-                // so this only advances the leaf-file axis.
-                let on_file_complete = |_leaf_bytes: u64| {
-                    files_done_a.fetch_add(1, Ordering::Relaxed);
-                };
-                // A top-level FILE source IS a leaf, so it takes its slot from
-                // the same op-wide window a directory's children take theirs
-                // from. Otherwise a batch mixing files and folders would carry
-                // `W` file tasks PLUS the walkers' `W` leaves — twice the width
-                // the user's setting asked for, on one connection.
-                //
-                // ❌ A DIRECTORY source takes none. A walker that held a slot
-                // while waiting for its own children to get theirs would
-                // deadlock the operation outright at width 1.
-                let _leaf_permit = if source_is_dir {
-                    None
-                } else {
-                    leaf_window.reserve().await
-                };
-                let copy_fut = copy_single_path(
-                    &src_vol,
-                    &source_owned,
-                    Some(source_is_dir),
-                    source_size_hint,
-                    &dst_vol,
-                    &dest_owned,
-                    &state_clone,
-                    &created,
-                    &on_file_progress,
-                    &on_file_complete,
-                    Some(&merge_ctx),
-                    super::strategy::staging_for(&replace_after_write_owned),
-                );
-                // Bind this task's probe as a task-local for the whole copy, so
-                // `stream_pipe_file` and `CheckpointStream` can record their
-                // phases without threading a handle through every signature.
-                let result = match probe_handle {
-                    Some(probe) => {
-                        super::super::transfer_probe::CURRENT_TASK_PROBE
-                            .scope(probe, copy_fut)
-                            .await
-                    }
-                    None => copy_fut.await,
-                };
-                let created_files = std::mem::take(&mut *created.files.lock_ignore_poison());
-                let created_dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
-                // Deep-merge skips in this source's subtree; `0` means the
-                // whole subtree landed durably (the move op may drop it from
-                // the archive).
-                let task_skipped_count = created.skipped_file_count();
-                let task_skipped_bytes = created.skipped_byte_count();
-                // Overwrote iff a top-level file→file safe-replace fires below,
-                // OR a deep-merge child replaced an existing dest file. Computed
-                // before `replace_after_write_owned` is consumed. Feeds the
-                // operation-log eligibility (a copy that overwrote can't roll back).
-                let task_overwrote = replace_after_write_owned.is_some() || created.any_overwrote();
-                match result {
-                    Ok(bytes) => {
-                        // If the volume didn't call the progress callback,
-                        // add bytes_copied to the aggregate so the total is
-                        // right. Same compensation the sequential path does.
-                        if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes > 0 {
-                            bytes_done_a.fetch_add(bytes, Ordering::Relaxed);
-                        }
-                        // Safe-replace finalize: the temp now holds the
-                        // complete new data; delete the original and rename
-                        // the temp into place. On finalize error, surface
-                        // it as this file's failure with `cleanup_temp =
-                        // false` — the write SUCCEEDED, so the temp is
-                        // committed data (the only complete copy, since
-                        // finalize's delete step may already have removed
-                        // the original). It must survive as a recoverable
-                        // `.cmdr-tmp-*` artifact, NOT be cleaned.
-                        if let Some(orig) = replace_after_write_owned {
-                            if let Err(e) = super::conflict::finalize_safe_replace(&dst_vol, &dest_owned, &orig).await {
-                                // Finalize is file→file only (safe-replace),
-                                // so there's no directory ledger to carry.
-                                return Err(CopyTaskFailure {
-                                    failed_path: dest_owned,
-                                    reported_path: source_owned.clone(),
-                                    error: e,
-                                    cleanup_temp: false,
-                                    source_is_dir: false,
-                                    created_files,
-                                    created_dirs,
-                                });
-                            }
-                            // Landed at `orig`; the temp `dest_owned` is
-                            // gone after the rename. Report the temp as the
-                            // partial to remove and `orig` as the recorded
-                            // path for rollback bookkeeping. Safe-replace is
-                            // file→file only, so there are no created dirs.
-                            return Ok(CopyTaskSuccess {
-                                partial_path: dest_owned,
-                                recorded_path: orig,
-                                source_is_dir: false,
-                                bytes,
-                                overwrote: task_overwrote,
-                                created_files,
-                                created_dirs,
-                                source_path: source_owned,
-                                skipped_count: task_skipped_count,
-                                skipped_bytes: task_skipped_bytes,
-                            });
-                        }
-                        Ok(CopyTaskSuccess {
-                            partial_path: dest_owned.clone(),
-                            recorded_path: dest_owned,
-                            source_is_dir,
-                            bytes,
-                            overwrote: task_overwrote,
-                            created_files,
-                            created_dirs,
-                            source_path: source_owned,
-                            skipped_count: task_skipped_count,
-                            skipped_bytes: task_skipped_bytes,
-                        })
-                    }
-                    // Stream failure (incl. mid-stream cancel): the dest/temp
-                    // is a half-written partial → clean it
-                    // (`cleanup_temp = true`). For a DIRECTORY source, carry
-                    // the per-file ledger so the result handler records the
-                    // individual partials instead of the dir root — the
-                    // post-loop must never recursively delete a merged dest
-                    // dir and destroy pre-existing dest-only files.
-                    Err(e) => Err(CopyTaskFailure {
-                        failed_path: dest_owned,
-                        reported_path: e.path,
-                        error: e.error,
-                        cleanup_temp: true,
-                        source_is_dir,
-                        created_files,
-                        created_dirs,
-                    }),
-                }
-            }));
+            in_flight.push(Box::pin(run_copy_task(CopyTask {
+                events: Arc::clone(&events),
+                operation_id: operation_id.to_string(),
+                state: Arc::clone(state),
+                source_volume: Arc::clone(&source_volume),
+                dest_volume: Arc::clone(&dest_volume),
+                config: config.clone(),
+                apply_to_all: Arc::clone(&apply_to_all_cell),
+                source_path: source_path.clone(),
+                source_is_dir,
+                source_size_hint,
+                dest_path: dest_item_path,
+                replace_after_write,
+                file_name,
+                window: file_window.clone(),
+                op_probe: op_probe.clone(),
+                task_probe,
+                files_done: Arc::clone(&files_done_atomic),
+                bytes_done: Arc::clone(&atomic_bytes_done),
+                last_progress: Arc::clone(&last_progress_mutex),
+                progress_interval,
+                total_files,
+                total_bytes,
+            })));
         }
 
         if in_flight.is_empty() {

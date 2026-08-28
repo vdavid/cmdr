@@ -15,6 +15,7 @@ mod cleanup;
 mod conflict;
 mod copy;
 mod copy_concurrent;
+mod copy_concurrent_task;
 mod copy_serial;
 mod merge;
 /// `move` is a Rust keyword, so the module is `r#move`. Nothing outside this
