@@ -203,11 +203,16 @@ The rule the list encodes: **a probe whose answer can select a destructive branc
 
 **Scan-as-you-merge: deep per-file conflicts resolved inline, one dest listing per merged level.** `merge.rs::copy_directory_streaming` discovers deep clashes as it walks, with no upfront recursive pre-scan. The trigger is `create_directory`'s result: `Ok(())` means WE created the level fresh (nothing can clash — skip the dest listing, stream every child straight in); `AlreadyExists` means we're MERGING into the user's pre-existing dir (list the dest level ONCE, build a `name → FileEntry` map, dispatch each clashing source child through `resolve_volume_conflict`). Dir-vs-dir children recurse unconditionally (no resolver call for the folder); a type mismatch routes through the resolver; a Skip leaves the dest child untouched. No per-child `get_metadata` probes — one listing per level, in-memory lookups after. Context is threaded via a `MergeCtx` struct (sink, op id, config, `state`, the op-wide apply-to-all latch cell, source hints) so `copy_single_path`'s signature doesn't grow per item. The merge engine is shared by all three pipelines: volume copy (serial `copy.rs` AND concurrent `copy_concurrent.rs`), and cross-volume move (`move.rs::move_volumes_with_progress`). `MergeCtx` is `None` only for the cross-volume move's _staging_ writes and tests that never merge.
 
-**The two legs of a level run concurrently.** `merge_level` drives the source `list_directory` and the whole
-destination chain (`create_directory`, then the conditional dest `list_directory`) under one `tokio::join!`, so a level
-costs `max(source, dest)` rather than their sum. On a cross-share merge each leg is a full network round trip, and
-they're independent: the dest chain's shape depends only on what `create_directory` answers, never on the source
-listing.
+**The two legs of a level run concurrently, unless a backend is single-transport.** `merge_level` drives the source
+`list_directory` and the whole destination chain (`create_directory`, then the conditional dest `list_directory`) under
+one `tokio::join!`, so a level costs `max(source, dest)` rather than their sum. On a cross-share merge each leg is a
+full network round trip, and they're independent: the dest chain's shape depends only on what `create_directory`
+answers, never on the source listing.
+
+❌ **They stay sequential when either side reports `max_concurrent_ops() == 1`** (MTP: one USB bulk transport). The
+device lock `MtpConnection` takes is released before the PTP transaction runs, so two overlapping calls would
+interleave transactions on one phone. These two listings sit OUTSIDE the `FileWindow` that keeps every leaf serial
+there, so they have to honor the same rule themselves.
 
 ❌ **Nothing that ORDERS anything may move into either leg.** Every ordering decision still happens in the
 `for entry in &entries` loop after both legs land: which child prompts first, the apply-to-all latch, and the order

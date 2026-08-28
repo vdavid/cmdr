@@ -382,17 +382,24 @@ async fn merge_level<'a>(
     set_task_phase(TaskPhase::Walking);
 
     // The source listing is needed at EVERY level, whatever the destination
-    // turns out to hold, and it lands on a different device than the whole
-    // destination chain below. So the two run concurrently rather than in
-    // sequence: on a cross-share merge each leg is a full network round trip,
-    // and paying them one after the other doubled the walk's cost per
-    // directory (measured ~1.2 s/dir SMB→SMB in a user's bundle, `ERR-AYVM4`,
-    // where the walk WAS the transfer).
+    // turns out to hold, and it is independent of the whole destination chain
+    // below. So the two run concurrently rather than in sequence: on a
+    // cross-share merge each leg is a full network round trip, and paying them
+    // one after the other doubled the walk's cost per directory (measured
+    // ~1.2 s/dir SMB→SMB in a user's bundle, `ERR-AYVM4`, where the walk WAS the
+    // transfer).
     //
-    // Nothing about ordering changes: every decision — prompt order, the
-    // apply-to-all latch, the order directories are created in — is made in
+    // ❗ Unless either side is a single-transport backend. MTP reports
+    // `max_concurrent_ops() == 1` because it is one USB bulk transport, and the
+    // device lock it takes is released before the PTP transaction runs, so two
+    // overlapping calls would interleave transactions on one phone. The window
+    // keeps every LEAF serial there for the same reason; these two listings sit
+    // outside the window, so they have to honor it themselves.
+    //
+    // Nothing about ordering changes either way: every decision — prompt order,
+    // the apply-to-all latch, the order directories are created in — is made in
     // the `for entry in &entries` loop below, after both legs have landed.
-    let source_listing = source_volume.list_directory(source_path, None);
+    let legs_may_overlap = source_volume.max_concurrent_ops() > 1 && dest_volume.max_concurrent_ops() > 1;
 
     // Ensure the destination directory exists, learn whether THIS level
     // pre-existed (a merge) or we created it fresh, and for a merge build the
@@ -454,7 +461,14 @@ async fn merge_level<'a>(
         Ok(dest_by_name)
     };
 
-    let (dest_by_name, entries) = tokio::join!(dest_prepare, source_listing);
+    let (dest_by_name, entries) = if legs_may_overlap {
+        tokio::join!(dest_prepare, source_volume.list_directory(source_path, None))
+    } else {
+        (
+            dest_prepare.await,
+            source_volume.list_directory(source_path, None).await,
+        )
+    };
     let dest_by_name = dest_by_name.at(source_path)?;
     let entries = entries.at(source_path)?;
 
