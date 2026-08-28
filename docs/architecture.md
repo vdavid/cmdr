@@ -233,7 +233,7 @@ All under `apps/desktop/src-tauri/src/`.
 - `feedback.rs`: Open-beta feedback: text validation + payload assembly + send to `POST /feedback`. IPC in
   `commands/feedback.rs`
 - `error_reporter/`: Error reports: bundle build (manifest + redacted log tail), short-ID + R2 upload, debounced
-  auto-dispatcher
+  auto-dispatcher, and the amend path that adds a note to a report that already went out
 - `events/`: App-side Tauri payloads for subsystems that emit typed values instead of wire formats (the drive index,
   media index, importance). See `events/CLAUDE.md`
 - `updater/`: macOS custom updater: syncs files into the running `.app` in place so FDA survives updates. Other

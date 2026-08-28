@@ -4,8 +4,10 @@
 //! through [`on_error_logged`]. The first error in a window starts a 60 s ± 10 s debounce
 //! timer; subsequent errors within the window only bump a counter (the first call's
 //! metadata is captured for the user-facing note). When the timer fires, [`flush`] builds
-//! a 1 MB-tail bundle and uploads it via the same pipeline Phase 4 uses, then emits an
-//! `error-report-auto-sent` Tauri event so the frontend can show a confirmation toast.
+//! a 1 MB-tail bundle and uploads it via the same pipeline Phase 4 uses, records what it sent
+//! in [`super::auto_sent`], then emits an `error-report-auto-sent` Tauri event so the frontend
+//! can show a confirmation toast. The stash comes first: the toast offers to show the report
+//! and add a note to it, and both read what the flush left behind.
 //!
 //! ## Why not retry on upload failure
 //!
@@ -33,7 +35,7 @@
 //! orphaned window and spawns the flush task with the remaining time. If the deadline
 //! has already elapsed, [`sleep_until`] is a no-op and `flush` runs immediately.
 
-use crate::error_reporter::{self, BundleKind, BundleScope, FLOW_B_BUNDLE_CAP_MB};
+use crate::error_reporter::{self, BundleKind, BundleScope, FLOW_B_BUNDLE_CAP_MB, auto_sent};
 use chrono::{DateTime, Utc};
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
@@ -55,12 +57,6 @@ const JITTER: Duration = Duration::from_secs(10);
 /// the cap stays in lockstep with the bundle scope (Flow B fires without per-event
 /// consent; small bundle, anchored on the actual error).
 const AUTO_BUNDLE_CAP_MB: usize = FLOW_B_BUNDLE_CAP_MB;
-
-/// Server URL for error report ingestion. Mirrors the commands layer constant.
-#[cfg(debug_assertions)]
-const ERROR_REPORT_URL: &str = "http://localhost:8787/error-report";
-#[cfg(not(debug_assertions))]
-const ERROR_REPORT_URL: &str = "https://api.getcmdr.com/error-report";
 
 /// `error-report-auto-sent`: emitted after a successful Flow B auto-send. The
 /// frontend listens for this and shows the confirmation toast. `id` is the
@@ -304,10 +300,19 @@ async fn flush(app: AppHandle<Wry>) {
     let scope = BundleScope::Window {
         first_error_at: state.first_error_at,
     };
-    // Flow B NEVER attaches an email: the user opted into auto-send, not into shipping
-    // their address on every report. `email_for_kind` enforces this structurally too, but
-    // we pass `None` here to make the intent explicit at the call site.
-    let bundle = match error_reporter::build_bundle(&app, BundleKind::Auto, Some(note), None, scope) {
+    // Flow B NEVER attaches an email: the user opted into auto-send, not into shipping their
+    // address on every report. There's nothing to pass here even by mistake, since only
+    // `AttachedEmail::from_flow_a_dialog` mints one and this path never sees a dialog.
+    let request = error_reporter::BundleRequest {
+        kind: BundleKind::Auto,
+        scope,
+        // No preview to keep an id in step with; the manifest's minted id is the only one
+        // anyone ever sees, via the `error-report-auto-sent` event.
+        id: None,
+        user_note: Some(note),
+        email: None,
+    };
+    let bundle = match error_reporter::build_bundle(&app, request) {
         Ok(b) => b,
         Err(e) => {
             log::warn!(
@@ -319,12 +324,30 @@ async fn flush(app: AppHandle<Wry>) {
     };
 
     let capped = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, AUTO_BUNDLE_CAP_MB);
-    match error_reporter::upload(capped, &bundle.manifest, ERROR_REPORT_URL).await {
+    let size_bytes = capped.len();
+    // Bound to a `let` rather than awaited in the `match` scrutinee: the scrutinee's temporaries
+    // (including the borrow of `bundle.manifest`) would outlive the arms, and the success arm
+    // moves the manifest into the stash.
+    let uploaded = error_reporter::upload(capped, &bundle.manifest, &error_reporter::error_report_url()).await;
+    match uploaded {
         Ok(result) => {
             log::info!(
                 target: "cmdr_lib::error_reporter",
                 "Auto-send: error report uploaded, id={}",
                 result.id,
+            );
+            // Stash before the event: the toast the event raises can offer "see what was sent"
+            // and "add a note" the instant it renders, and both read this.
+            auto_sent::record(
+                result.id.clone(),
+                result.amend_key,
+                auto_sent::AutoSentPreview {
+                    size_bytes,
+                    manifest: bundle.manifest,
+                    sample_first: bundle.sample_first,
+                    sample_last: bundle.sample_last,
+                    total_redacted_lines: bundle.total_redacted_lines,
+                },
             );
             // This bundle carries the session's log tail, so a panic logged before now went out
             // with it, and the next launch shouldn't offer the same panic a second time. THIS

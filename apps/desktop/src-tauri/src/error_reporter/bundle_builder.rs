@@ -12,7 +12,7 @@
 
 use super::tail_walker;
 use super::{
-    BuildMode, BuiltBundle, BundleKind, BundleManifest, BundleScope, FLOW_A_BUNDLE_CAP_MB, breadcrumbs,
+    AttachedEmail, BuildMode, BuiltBundle, BundleKind, BundleManifest, BundleScope, FLOW_A_BUNDLE_CAP_MB, breadcrumbs,
     build_log_level_snapshot, cached_active_settings,
 };
 use crate::logging;
@@ -42,17 +42,37 @@ pub(super) struct PreparedFile {
     pub(super) mtime: SystemTime,
 }
 
+/// Everything a bundle build needs beyond the app handle.
+///
+/// A struct rather than five positional arguments: three of the five are optional, and a
+/// note and an email address are both "some text the user typed" at a call site, so
+/// swapping them would compile.
+#[derive(Debug)]
+pub struct BundleRequest {
+    pub kind: BundleKind,
+    /// Which log content makes it into the bundle. See [`BundleScope`].
+    pub scope: BundleScope,
+    /// Build the bundle under THIS id instead of minting a fresh one.
+    ///
+    /// Flow A's dialog previews a report under an id and offers a Copy button for it, so
+    /// the send has to ship that same id or the user walks away holding an id no report
+    /// was ever filed under. Anything that isn't a well-formed `ERR-XXXXX` is discarded
+    /// and a fresh id minted (see [`resolve_bundle_id`]); the value crosses IPC, so it's
+    /// vetted rather than trusted.
+    pub id: Option<String>,
+    /// Trimmed and dropped if empty. Callers cap its length (the commands layer enforces
+    /// 100 000 code points). For [`BundleKind::Auto`] the note is also run through
+    /// [`redact::redact_line_salted`]: the auto-dispatcher builds it from a raw error
+    /// message that routinely contains paths (updater failures embedding `current_exe()`),
+    /// and the user never gets to vet what ships. A [`BundleKind::User`] note was typed and
+    /// previewed by the person sending it, so it goes verbatim.
+    pub user_note: Option<String>,
+    /// The reply-to address, present only when someone attached one to this very report.
+    /// See [`AttachedEmail`] for why the type, not a `String`.
+    pub email: Option<AttachedEmail>,
+}
+
 /// Build an error report bundle in memory. No network. No disk writes (except reading logs).
-///
-/// `user_note` is trimmed and dropped if empty. Callers are expected to cap its length
-/// (the commands layer enforces 100 000 chars). For [`BundleKind::Auto`] bundles, the note
-/// is also run through [`redact::redact_line_salted`] before being stored in the manifest:
-/// the auto-dispatcher constructs the note from a raw error message that routinely contains
-/// paths (e.g. updater failures embedding `current_exe()`), and the user never gets a chance
-/// to vet what ships. For [`BundleKind::User`] the user typed the note themselves and is
-/// presumed to know what they're sharing, so it goes through verbatim.
-///
-/// `scope` controls which log content makes it into the bundle. See [`BundleScope`].
 ///
 /// ## Pipeline
 ///
@@ -70,12 +90,16 @@ pub(super) struct PreparedFile {
 /// code is easier to reason about for that flow.
 pub fn build_bundle<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
-    kind: BundleKind,
-    user_note: Option<String>,
-    email: Option<String>,
-    scope: BundleScope,
+    request: BundleRequest,
 ) -> Result<BuiltBundle, String> {
-    let id = super::generate_short_id();
+    let BundleRequest {
+        kind,
+        scope,
+        id,
+        user_note,
+        email,
+    } = request;
+    let id = resolve_bundle_id(id);
     let now_utc = Utc::now();
     let now_system = SystemTime::now();
 
@@ -99,7 +123,7 @@ pub fn build_bundle<R: tauri::Runtime>(
         diag_id: crate::install_id::diagnostics_id(),
         // Email rides ONLY Flow A (User). `email_for_kind` strips it for Flow B (Auto) so an
         // auto-send can never ship an address the user didn't consent to per report.
-        email: email_for_kind(kind, email),
+        email: email_for_kind(kind, email).map(AttachedEmail::into_inner),
         // Full machine snapshot incl. live state: error reports run in a healthy context. The data
         // dir is where the drive-index DBs live; the snapshot reads only their sizes, never contents.
         system: match crate::config::resolved_app_data_dir(app) {
@@ -152,14 +176,37 @@ pub(super) fn prepare_user_note(note: &str, kind: BundleKind, salt: &[u8]) -> Op
 /// ([`BundleKind::User`], the dialog with the attach-email checkbox) keeps whatever the
 /// user attached; Flow B ([`BundleKind::Auto`], the auto-dispatcher) ALWAYS gets `None`.
 ///
-/// This is the structural guard behind the Flow-B-never-email invariant: even if a future
-/// caller wires an email into the auto path by mistake, it's stripped here, in one place,
-/// rather than relying on every call site to pass `None`. Pure, so it's unit-testable
-/// without a Tauri handle.
-pub(super) fn email_for_kind(kind: BundleKind, email: Option<String>) -> Option<String> {
+/// One of the two guards behind "no email without a per-report user action" (DETAILS.md):
+/// [`AttachedEmail`] decides who may supply an address, this decides which bundles may carry
+/// one. Even if a future caller wires an email into the auto path by mistake, it's stripped
+/// here, in one place, rather than relying on every call site to pass `None`. Pure, so it's
+/// unit-testable without a Tauri handle.
+pub(super) fn email_for_kind(kind: BundleKind, email: Option<AttachedEmail>) -> Option<AttachedEmail> {
     match kind {
         BundleKind::User => email,
         BundleKind::Auto => None,
+    }
+}
+
+/// Use the caller's id when it's a well-formed `ERR-XXXXX`, otherwise mint a fresh one.
+///
+/// One dialog session gets ONE id: the preview mints it, the send reuses it, and the id the
+/// user copied out of the dialog is the id the report lands under. Validation happens here
+/// rather than at the IPC boundary so no caller (this or the next one) can build a bundle
+/// around an id the app didn't mint; the id becomes part of the server-side object key.
+pub(super) fn resolve_bundle_id(requested: Option<String>) -> String {
+    match requested {
+        Some(id) if crate::short_id::matches(super::SHORT_ID_PREFIX, &id) => id,
+        Some(_) => {
+            // No id text in the log line: it's attacker- or bug-supplied, unbounded, and
+            // knowing the shape was wrong is the whole diagnostic.
+            log::warn!(
+                target: "cmdr_lib::error_reporter",
+                "Ignoring a malformed report id from the caller; minting a fresh one",
+            );
+            super::generate_short_id()
+        }
+        None => super::generate_short_id(),
     }
 }
 

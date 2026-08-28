@@ -36,10 +36,57 @@ pub fn generate(prefix: &str) -> String {
     out
 }
 
+/// True when `candidate` is exactly `{prefix}-XXXXX` with every suffix character drawn
+/// from [`ALPHABET`].
+///
+/// The gate for an id that arrives from outside this process: the error-report dialog
+/// previews a report under an id and then hands that id back on send, and an id the app
+/// didn't mint has no business becoming a server-side object key. Kept here so the
+/// alphabet has exactly one definition.
+pub fn matches(prefix: &str, candidate: &str) -> bool {
+    let Some(suffix) = candidate.strip_prefix(prefix).and_then(|rest| rest.strip_prefix('-')) else {
+        return false;
+    };
+    // Byte length is the right measure here BECAUSE every byte is then checked against an
+    // all-ASCII alphabet: a five-char suffix with a multibyte char is six-plus bytes and
+    // fails the length test before the alphabet test ever sees it.
+    suffix.len() == SUFFIX_LEN && suffix.bytes().all(|b| ALPHABET.contains(&b))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::HashSet;
+
+    #[test]
+    fn matches_accepts_what_generate_produces() {
+        for _ in 0..200 {
+            let id = generate("ERR");
+            assert!(matches("ERR", &id), "`{id}` should match its own prefix");
+        }
+        assert!(matches("CRASH", &generate("CRASH")));
+    }
+
+    #[test]
+    fn matches_rejects_anything_off_shape() {
+        for bad in [
+            "",
+            "ERR",
+            "ERR-",
+            "ERR-AB23",   // too short
+            "ERR-AB23XY", // too long
+            "ERR-ab23x",  // lowercase
+            "ERR-AB2 X",  // space
+            "ERR-0O1IL",  // the excluded look-alike characters
+            "ERR-AB23X extra",
+            "ERRR-AB23X",
+            "CRASH-AB23X", // right shape, wrong prefix
+            "ERR-ÁB23X",   // multibyte, and five chars but six bytes
+            "../ERR-AB23X",
+        ] {
+            assert!(!matches("ERR", bad), "`{bad}` should not match");
+        }
+    }
 
     #[test]
     fn err_prefix_matches_shape() {

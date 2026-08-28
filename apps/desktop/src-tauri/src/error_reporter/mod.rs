@@ -23,12 +23,15 @@
 //!   Used by Flow B and as defense-in-depth on Flow A.
 //! - [`tail_walker`]: reads a log file from the end backward in 64 KB chunks.
 //! - [`auto_dispatcher`]: Flow B (opt-in auto-send on user-visible errors).
+//! - [`auto_sent`]: what the last Flow B send shipped, and the amend call that adds a note to it.
 //! - [`breadcrumbs`]: bounded ring buffer of recent triage events.
 //!
 //! `mod.rs` keeps the public types ([`BundleKind`], [`BundleScope`], [`BundleManifest`],
-//! [`ResolvedSettings`], [`BuiltBundle`], [`UploadResult`]), the [`log_error!`](crate::log_error) macro,
-//! [`upload`], [`generate_short_id`], [`save_bundle_to_disk`], plus the cached-settings
-//! and log-level-snapshot helpers shared between the two pipelines.
+//! [`ResolvedSettings`], [`BuiltBundle`], [`UploadResult`], [`AmendKey`], [`AttachedEmail`]),
+//! the [`log_error!`](crate::log_error) macro, [`upload`], [`generate_short_id`],
+//! [`save_bundle_to_disk`], the endpoint URLs every flow derives from
+//! ([`error_report_url`], [`error_report_amend_url`]), plus the cached-settings and
+//! log-level-snapshot helpers shared between the two pipelines.
 
 #[cfg(debug_assertions)]
 use crate::config;
@@ -42,6 +45,7 @@ use std::time::Duration;
 mod tests;
 
 pub mod auto_dispatcher;
+pub mod auto_sent;
 pub mod breadcrumbs;
 pub(crate) mod bundle_builder;
 pub(crate) mod bundle_capper;
@@ -49,8 +53,10 @@ mod tail_walker;
 
 #[cfg(test)]
 mod auto_dispatcher_tests;
+#[cfg(test)]
+mod auto_sent_tests;
 
-pub use bundle_builder::build_bundle;
+pub use bundle_builder::{BundleRequest, build_bundle};
 pub use bundle_capper::cap_bundle_to_mb;
 
 /// Log an error and (if Flow B is opted in) feed it to the auto-dispatcher.
@@ -359,8 +365,111 @@ pub struct BuiltBundle {
 
 /// Server response shape from `POST /error-report`.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UploadResult {
     pub id: String,
+    /// Credential that lets this client add notes to THIS report later (see
+    /// [`auto_sent::amend`]). `None` when the server couldn't mint one, and `#[serde(default)]`
+    /// so a server that predates the field still parses: an older deployment must never turn
+    /// a landed upload into a client-side parse failure.
+    #[serde(default)]
+    pub amend_key: Option<AmendKey>,
+}
+
+/// A credential for amending one already-uploaded report. Reusable: amendments accumulate, so
+/// holding onto it is what lets someone come back with a second thought (see [`auto_sent::amend`]).
+///
+/// It's a secret, so the type carries the handling rules instead of a doc asking people to
+/// remember them: the [`std::fmt::Debug`] impl prints a placeholder (a `{:?}` on a struct
+/// holding one can't leak it into the log file, and from there into the next bundle), and
+/// there's deliberately no `Display` and no `Serialize`. The one place it goes on the wire
+/// spells that out with [`AmendKey::as_str`], which is easy to grep for.
+#[derive(Clone, Deserialize)]
+#[serde(transparent)]
+pub struct AmendKey(String);
+
+impl AmendKey {
+    /// The raw credential. Only for putting it in the amend request body; never log it,
+    /// never write it into a bundle, never persist it.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    #[cfg(test)]
+    pub fn for_test(raw: &str) -> Self {
+        Self(raw.to_string())
+    }
+}
+
+impl std::fmt::Debug for AmendKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("AmendKey(<redacted>)")
+    }
+}
+
+/// An email address a person attached to ONE report, in ONE interaction, by typing it into
+/// the error-report dialog and pressing the button.
+///
+/// The invariant: **no email leaves the machine without an explicit per-report user action.**
+/// This type is how that's enforced rather than remembered. Every path that can put an
+/// address on the wire ([`build_bundle`] via [`BundleRequest::email`], and
+/// [`auto_sent::amend`]) takes an `AttachedEmail` and nothing else, and
+/// [`AttachedEmail::from_flow_a_dialog`] is its only constructor. A background sender (the
+/// auto-dispatcher, a future retry queue, a crash-time flush) has no address to hand over
+/// and no way to mint one from a `String` it happens to be holding.
+///
+/// [`bundle_builder::email_for_kind`] still strips it from [`BundleKind::Auto`] manifests
+/// as a second belt: the type says who may supply an address, that says which bundles may
+/// carry one.
+#[derive(Clone, PartialEq, Eq)]
+pub struct AttachedEmail(String);
+
+impl AttachedEmail {
+    /// Wrap the address a Flow A IPC command just received from the dialog. Call this ONLY
+    /// where a person typed the address and pressed send in the same interaction; that
+    /// consent is the whole reason the type exists.
+    ///
+    /// Returns `None` for a missing, empty, or whitespace-only address, so "the box was
+    /// there and the user left it blank" and "no box" collapse into the same value.
+    pub fn from_flow_a_dialog(email: Option<String>) -> Option<Self> {
+        let trimmed = email?.trim().to_string();
+        if trimmed.is_empty() { None } else { Some(Self(trimmed)) }
+    }
+
+    /// The address itself. Only for putting it on the wire, in the one manifest field and the
+    /// one amend-request field that carry it.
+    pub fn into_inner(self) -> String {
+        self.0
+    }
+}
+
+impl std::fmt::Debug for AttachedEmail {
+    /// Addresses are PII we ship deliberately, in one manifest field. A stray `{:?}` on a
+    /// request struct isn't that field, so it prints a placeholder.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("AttachedEmail(<redacted>)")
+    }
+}
+
+/// Base URL of the api server. Debug builds talk to a local `wrangler dev`.
+///
+/// Every error-report endpoint is derived from this one constant ([`error_report_url`],
+/// [`error_report_amend_url`]) so the three callers (Flow A's commands, Flow B's
+/// auto-dispatcher, and the amend path) can't drift onto different hosts.
+#[cfg(debug_assertions)]
+const API_BASE_URL: &str = "http://localhost:8787";
+#[cfg(not(debug_assertions))]
+const API_BASE_URL: &str = "https://api.getcmdr.com";
+
+/// `POST` target for a new error-report bundle (multipart: the zip plus the manifest).
+pub fn error_report_url() -> String {
+    format!("{API_BASE_URL}/error-report")
+}
+
+/// `POST` target for adding a note to an already-uploaded report. `id` is the report's
+/// `ERR-XXXXX`.
+pub fn error_report_amend_url(id: &str) -> String {
+    format!("{API_BASE_URL}/error-report/{id}/amend")
 }
 
 /// Generate a short ID like `ERR-8F3A2`. Thin wrapper around [`crate::short_id::generate`]
@@ -397,6 +506,9 @@ pub async fn upload(zip_bytes: Vec<u8>, manifest: &BundleManifest, server_url: &
         // out, so this block IS the function body and a `return` would be redundant.
         Ok(UploadResult {
             id: manifest.id.clone(),
+            // No server call, so no credential. The amend path treats this the same as a
+            // server that declined to mint one, and reports it as "can't take a note".
+            amend_key: None,
         })
     }
     #[cfg(not(feature = "playwright-e2e"))]
@@ -410,6 +522,7 @@ pub async fn upload(zip_bytes: Vec<u8>, manifest: &BundleManifest, server_url: &
             );
             return Ok(UploadResult {
                 id: manifest.id.clone(),
+                amend_key: None,
             });
         }
 

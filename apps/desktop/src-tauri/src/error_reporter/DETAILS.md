@@ -30,8 +30,18 @@ Manifest fields (`BundleManifest`):
 - `id`: short ID (`ERR-XXXXX`) generated client-side via [`crate::short_id::generate`]
   (kept as a thin wrapper in `error_reporter::generate_short_id`). The api server
   validates the shape and uses this id as-is. The trailing UUID in the R2 key
-  guarantees object uniqueness, so there's no server-side regeneration. The UI shows
-  the same id everywhere (dialog preview, toast, server response).
+  guarantees object uniqueness, so there's no server-side regeneration.
+
+  The dialog shows the id, offers a Copy button for it, and the report lands under that
+  same id BECAUSE the id rides the send call: `prepare_error_report_preview` mints it,
+  the frontend hands it back as `send_error_report`'s `id` argument, and
+  `bundle_builder::resolve_bundle_id` reuses it. Both commands call `build_bundle`, and
+  `build_bundle` mints an id, so without that hand-back each command produces a
+  different one and the user copies an id no report was ever filed under. Anything that
+  isn't a well-formed `ERR-XXXXX` is discarded and a fresh id minted: the value crosses
+  IPC, and it becomes part of a server-side object key, so it's vetted rather than
+  trusted. `save_error_report_to_disk` takes the same argument so the debug path can't
+  drift from the real one.
 - `kind`: `"user"` (user-initiated send) or `"auto"` (opt-in auto-send).
 - `buildMode`: `"release"` or `"debug"`. Resolved at compile time from
   `cfg!(debug_assertions)` via `BuildMode::current()`. Forwarded to the api server so the
@@ -72,7 +82,7 @@ Manifest fields (`BundleManifest`):
   **NEVER the `anal_` analytics id** (see `analytics/CLAUDE.md` § "Two ids that never meet"): the two-id split keeps a
   voluntarily-attached email unjoinable to the analytics stream. It rides both flows (that's its purpose).
 - `email` (optional): a beta tester's contact email so we can reply about the bug. Set **only by Flow A** (the dialog
-  with the attach-email checkbox), never by Flow B. See the Flow-B-never-email rule below.
+  with the attach-email checkbox), never by Flow B. See the per-report-consent rule below.
 - `system`: the machine snapshot from [`crate::diagnostics_snapshot`], always the full `collect_full` form (error
   reports run in a healthy context, so `live` is `Some`): Mac model, CPU counts, OS build, preferred language, the
   whole-machine RAM breakdown (`SystemMemoryInfo`) plus Cmdr's own RSS, app uptime, thermal state, the data-dir volume's
@@ -81,15 +91,30 @@ Manifest fields (`BundleManifest`):
   breakdown is sizes only. See the "never widen" note in `CLAUDE.md`.
 - `generatedAt`: ISO 8601 UTC timestamp.
 
-### Flow-B-never-email (load-bearing privacy rule)
+### No email without a per-report user action (load-bearing privacy rule)
 
-`BundleManifest.email` may be set **only** on Flow A ([`BundleKind::User`]: the user-initiated dialog with the
-attach-email checkbox). Flow B ([`BundleKind::Auto`], the `auto_dispatcher`, which fires on `log_error!` with no preview
-and no per-report consent) **always** ships `email: None`. A user who enabled auto-send hasn't consented to attaching
-their address to every report, and a leak there would break the decoupling promise. This is enforced **structurally**:
-`build_bundle` takes an `email` argument and runs it through `bundle_builder::email_for_kind(kind, email)`, which returns
-`None` for `Auto` regardless of what's passed. So even a future caller that wires an email into the auto path can't leak
-it. The auto-dispatcher also passes `None` explicitly at its call site. Guarded by `email_for_kind_drops_email_for_auto_flow_only`.
+The invariant: **an address only ever leaves this machine because a person typed it into a dialog and pressed the
+button in that same interaction.** A user who enabled auto-send hasn't consented to attaching their address to every
+report, and a leak there would break the decoupling promise.
+
+Two mechanisms hold it, and they answer different questions.
+
+- **Who may supply an address**: the `AttachedEmail` newtype. Everything that can put one on the wire (`build_bundle`
+  via `BundleRequest.email`, and `auto_sent::amend`) takes an `AttachedEmail` and nothing else, and
+  `AttachedEmail::from_flow_a_dialog` is its only constructor. A background sender (the auto-dispatcher, a future
+  retry queue, a crash-time flush) has no address to hand over and no way to mint one from a `String` it happens to be
+  holding. The type is also `Debug`-redacted, so a `{:?}` on a request struct can't print it into the log file and
+  from there into the next bundle.
+- **Which bundles may carry one**: `bundle_builder::email_for_kind(kind, email)` returns `None` for
+  [`BundleKind::Auto`] whatever it's handed, so `BundleManifest.email` is settable only on Flow A. The
+  auto-dispatcher also passes `None` explicitly at its call site. Guarded by
+  `email_for_kind_drops_email_for_auto_flow_only`.
+
+**Amending a Flow B report DOES carry an email, and that's not an exception.** The amend call
+(`auto_sent::amend`, reached from the `amend_error_report` command) is a Flow A act about a Flow B report: the person
+is looking at the toast, typing a note, and pressing send right then. That's exactly the explicit per-report action
+the invariant is about. What it must never become is a path that reuses a remembered address, which is why it takes
+an `AttachedEmail` built at the IPC boundary from what the dialog just sent, rather than reading one from settings.
 
 Distinct from `crash_reporter::ActiveSettings`: that struct is the on-disk crash file
 format and stays `Option<bool>`-shaped for backward compatibility with crash files
@@ -118,22 +143,39 @@ SMB URIs, and UNC paths. See the redact module for the full pattern table.
 - **`tests.rs`**: Unit tests: zip structure, redaction, ID format/uniqueness, capping, streaming pipeline
 - **`auto_dispatcher.rs`**: Flow B: opt-in auto-send on user-visible errors (60 s ± 10 s debounce, 1 MB tail, no retry on failure)
 - **`auto_dispatcher_tests.rs`**: Unit tests: debounce, opt-in flag, first-call wins, jitter band, crash-loop interaction
+- **`auto_sent.rs`**: the stash of what the last Flow B send shipped, plus `amend` (`POST /error-report/{id}/amend`). See "Amending an auto-sent report" below.
+- **`auto_sent_tests.rs`**: Unit tests: stash contents, overwrite-on-second-send, `can_amend`, the two ways an amend gives up before the network
 - **`breadcrumbs.rs`**: Bounded ring buffer of recent FE/BE triage events (capacity 50). Snapshot is shipped in the manifest.
 
-## Two-command frontend split (rationale)
+## The command surface (rationale)
 
-The Tauri commands layer exposes **two** commands:
+`commands/error_reporter.rs` exposes four report commands (plus `record_breadcrumb` and
+`record_settings_defaults`):
 
-- `prepare_error_report_preview` returns the manifest + first/last sample lines + total
-  size. Used by the dialog to render the preview.
-- `send_error_report` re-builds the bundle and uploads it.
+- `prepare_error_report_preview(userNote?, email?)` returns the manifest + first/last
+  sample lines + total size + the minted `id`. Used by the dialog to render the preview.
+- `send_error_report(userNote?, email?, id?)` re-builds the bundle and uploads it. Pass
+  the preview's `id` back; see the `id` manifest field above for why.
+- `get_auto_sent_report_preview()` returns the same preview material for the report Flow B
+  already sent, plus `can_amend`, or `null` when nothing was auto-sent this run.
+- `amend_error_report(userNote?, email?)` adds a note to that report. No id argument:
+  there's only ever one stashed report.
 
-Why two commands instead of building once and caching across IPC: the bundle is megabytes
-of compressed bytes. Holding it in a Tauri-side `OnceLock` between IPC calls would couple
-state across two unrelated commands and risk leaking memory if the user dismisses the
-dialog. Re-building is cheap (the heavy work is reading + redacting log lines, which
-runs on the blocking pool either way), and the inputs are deterministic enough that the
-preview hash matches what'll be uploaded.
+`prepare_error_report_preview` and `get_auto_sent_report_preview` are absent from
+`bindings.ts` (a `BundleManifest` holds `Breadcrumb.ctx: Option<Value>`, which specta
+can't describe), so the frontend reaches them by raw invoke with the documented eslint
+opt-out. The other two are typed. See `ipc.rs`'s `dispatch_only` lists.
+
+Why the preview and the send re-build rather than building once and caching across IPC:
+the bundle is megabytes of compressed bytes. Holding it in a Tauri-side `OnceLock`
+between IPC calls would couple state across two unrelated commands and risk leaking
+memory if the user dismisses the dialog. Re-building is cheap (the heavy work is reading
++ redacting log lines, which runs on the blocking pool either way), and the inputs are
+deterministic enough that the preview hash matches what'll be uploaded.
+
+**That rule is about the BYTES, and `auto_sent` doesn't break it.** The stash keeps a
+manifest, a couple of dozen sample lines, a count, and a size: a few KB, held for as long
+as one toast lives. The megabytes never survive the dispatch.
 
 ## CI and E2E bypass
 
@@ -149,6 +191,8 @@ calling the network:
   E2E run are already visible in the test output; the report channel is for failures
   we can't observe directly. Compile-time beats an env-var check: the only binaries
   carrying the feature are purpose-built for tests.
+
+`auto_sent::amend` carries the same two short-circuits, for the same reasons.
 
 On a non-2xx, [`upload`] returns `server returned <status>: <body>`, folding in the api
 server's own `{"error": "..."}` explanation (trimmed to 200 chars so a stray HTML error
@@ -245,9 +289,13 @@ per-event consent, so the consent has to be up front). When enabled:
    and schedules a flush at `now + 60 s ± 10 s of jitter`. Subsequent errors in the same
    window only bump the counter; the first-call metadata is kept verbatim.
 3. When the timer fires: build a bundle (`BundleKind::Auto`, user note carries the count
-   + first-error preview), trim to a 1 MB tail via `cap_bundle_to_mb`, upload, emit
-   `error-report-auto-sent` with the ID (the same `ERR-XXXXX` the manifest carried; the server validates the shape and echoes it back, never regenerates). The frontend listens for that
-   event and shows a confirmation toast (see `apps/desktop/src/lib/error-reporter/`).
+   + first-error preview), trim to a 1 MB tail via `cap_bundle_to_mb`, upload, record what
+   went out in `auto_sent`, then emit `error-report-auto-sent` with the ID (the same
+   `ERR-XXXXX` the manifest carried; the server validates the shape and echoes it back,
+   never regenerates). The frontend listens for that event and shows a confirmation toast
+   (see `apps/desktop/src/lib/error-reporter/`). **The stash is recorded before the event
+   is emitted**: the toast offers to show the report and to add a note to it, and both
+   read the stash the instant it renders.
 
 ### Why jitter?
 
@@ -354,6 +402,69 @@ deadline has already passed, the spawned task fires immediately. The `mark_flush
 helper plus the late-arrival path in `set_app_handle` race against each other safely;
 the loser just bails.
 
+## Amending an auto-sent report
+
+Flow B sends without asking, so the confirmation toast is the first time the user hears about the report. If they have
+something to add ("this happened while I was copying to my NAS"), the note has to reach a report that already shipped.
+
+`auto_sent` holds, for the most recent successful auto-send: the id, the amend key, and the same preview material
+`prepare_error_report_preview` returns (manifest, first/last sample lines, redacted-line count, size). Written by the
+auto-dispatcher's flush, read by `get_auto_sent_report_preview`, spent by `amend_error_report`.
+
+- **Not the zip bytes.** See "The command surface" above for the distinction.
+- **A second auto-send overwrites the first**, because the toast is deduped to one on screen: there's only ever one
+  report the user could be looking at. Same reason `amend` takes no id.
+- **The stash dies with the process.** So does the toast, so there's nothing to reconnect to after a restart. No
+  on-disk persistence here, for the same reason the auto-dispatcher doesn't flush on shutdown.
+
+### The amend key
+
+`POST /error-report` answers `{ "id": "ERR-XXXXX", "amendKey": "<base64url>" | null }`. `amendKey` is a credential
+scoped to that one report: it's what lets a client that just uploaded a report add to it without any account or
+session.
+
+- `UploadResult.amend_key` is `#[serde(default)]`, so a server that predates the field still parses. An older
+  deployment must never turn a landed upload into a client-side parse failure.
+- The CI and `playwright-e2e` short-circuits in `upload` synthesize `amend_key: None`. No server call, no credential;
+  the amend path then reports the report as one that can't take a note, which is the truth.
+- `AmendKey` has no `Display` and no `Serialize`, and its `Debug` prints a placeholder. The one place it reaches the
+  wire builds the JSON body by hand, which is what makes that site greppable. Never log it, never put it in a bundle,
+  never write it to disk.
+- **A landed amend keeps the key**, so `can_amend` stays true and someone who adds a note and then remembers they
+  wanted to leave an address can come back. What the client depends on: the credential stays usable for the life of
+  the report's index entry, and amendments accumulate rather than replace. The server side of that contract, entry
+  lifetime included, is `apps/api-server/src/telemetry/error-report-amend.ts`; don't restate it here, and don't encode
+  a guess about it in the client. Guarding a double-click is the frontend disabling its button while the call is in
+  flight.
+
+### The request
+
+`POST {base}/error-report/{id}/amend` with `{ "amendKey": string, "note"?: string, "email"?: string }`. The base is
+`error_reporter::API_BASE_URL` (`localhost:8787` in debug, `api.getcmdr.com` in release); `error_report_url` and
+`error_report_amend_url` both derive from it, and the auto-dispatcher and the commands layer call those rather than
+keeping their own copies of the host.
+
+Amending is **two steps**, because unlike `POST /error-report` the endpoint is per-report and the caller can't build
+the URL until it knows the id:
+
+1. `auto_sent::amend_target()` resolves the id and the credential in ONE read of the stash, or says why there's nothing
+   to amend. One read, not two, so an auto-send landing mid-amend can't pair report A's URL with report B's credential.
+2. `amend_error_report` turns that id into a URL with `error_report_amend_url`, and `auto_sent::amend(target, url, …)`
+   spends it.
+
+`amend` takes the URL as a parameter for the same reason `upload` does: the endpoint belongs to the caller, and a test
+can point it at a `wiremock` server. `auto_sent_tests.rs` covers the body (credential in `amendKey`, note and address
+present when given and absent when not), the JSON content type, both server-error shapes, and a second amend reusing
+the same credential. This is the one request that carries a person's email address, so it stays covered.
+
+The CI short-circuit sits behind `should_skip_network()`, which is `!cfg!(test) && CI`: CI sets `CI`, so without the
+`cfg!(test)` half every one of those tests would assert nothing on the only runner that matters. The
+`playwright-e2e` compile-out is unconditional, so an E2E binary carries no amend request at all.
+
+The note goes through the same `validate_user_note` (100 000 code points) the send path uses, so the two can't drift.
+Errors mirror `upload`: the server's own `{"error": "..."}` body is folded into the message, capped at 200 chars, and
+displayed only (the repo-wide no-string-matching rule covers branching on it; `can_amend` is the flag for that).
+
 ## Breadcrumbs
 
 A bounded ring buffer (capacity 50) of recent triage events. Each `Breadcrumb`
@@ -393,10 +504,9 @@ because breadcrumbs are best-effort instrumentation, not a feature.
 - Per-entry mtimes are set explicitly (manifest = `now`, logs = source-file mtime).
   Without this, the `zip` crate's `SimpleFileOptions::default()` writes 1980-01-01 for
   every entry, and extracted bundles look like ancient archives.
-- The server uses the client-supplied `id` verbatim; the upload response echoes it.
-  Don't regenerate server-side: the trailing UUID in the R2 key already guarantees
-  uniqueness, and showing one id in the preview dialog and a different one in the
-  toast is confusing.
+- The server uses the client-supplied `id` verbatim and echoes it back. Where that id
+  comes from, and why the send has to be handed the preview's one, is the `id` manifest
+  field above.
 - The line-timestamp filter (Flow A's tail walker AND Flow B's per-line filter) relies
   on the file chain's ISO-8601 stamp format
   (`YYYY-MM-DDTHH:MM:SS.mmm±HH:MM`, see `logging::dispatch::file_timestamp`). Lines

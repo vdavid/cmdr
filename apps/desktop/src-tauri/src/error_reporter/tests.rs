@@ -1,6 +1,6 @@
 use super::bundle_builder::{
     PreparedFile, build_bundle_streaming, build_zip, email_for_kind, load_and_filter_log_file, prepare_user_note,
-    zip_dt,
+    resolve_bundle_id, zip_dt,
 };
 use super::bundle_capper::cap_bundle_to_bytes;
 use super::*;
@@ -267,7 +267,7 @@ fn manifest_serializes_diag_id_and_email_camelcase_never_anal() {
 fn email_for_kind_drops_email_for_auto_flow_only() {
     // The whole point of Flow-B-never-email: a `BundleKind::Auto` bundle never carries an
     // email, even if a caller mistakenly passes one. Flow A (User) keeps it.
-    let attached = Some("tester@example.com".to_string());
+    let attached = AttachedEmail::from_flow_a_dialog(Some("tester@example.com".to_string()));
     assert_eq!(email_for_kind(BundleKind::User, attached.clone()), attached);
     assert_eq!(
         email_for_kind(BundleKind::Auto, attached),
@@ -276,6 +276,93 @@ fn email_for_kind_drops_email_for_auto_flow_only() {
     );
     // User flow with no email stays None.
     assert_eq!(email_for_kind(BundleKind::User, None), None);
+}
+
+#[test]
+fn attached_email_normalizes_what_the_dialog_sends() {
+    assert_eq!(
+        AttachedEmail::from_flow_a_dialog(Some("  tester@example.com  ".to_string()))
+            .expect("a real address survives")
+            .into_inner(),
+        "tester@example.com",
+    );
+    // "The box was there and they left it blank" and "no box" are the same thing.
+    assert_eq!(AttachedEmail::from_flow_a_dialog(None), None);
+    assert_eq!(AttachedEmail::from_flow_a_dialog(Some(String::new())), None);
+    assert_eq!(AttachedEmail::from_flow_a_dialog(Some("   \t ".to_string())), None);
+}
+
+#[test]
+fn attached_email_never_prints_itself() {
+    let email = AttachedEmail::from_flow_a_dialog(Some("tester@example.com".to_string()));
+    let printed = format!("{email:?}");
+    assert!(
+        !printed.contains("tester@example.com"),
+        "a `{{:?}}` must not leak the address into a log line: {printed}",
+    );
+}
+
+#[test]
+fn resolve_bundle_id_keeps_a_well_formed_caller_id() {
+    // One dialog session, one id: the preview's id has to survive into the send, or the user
+    // copies an id no report was ever filed under.
+    for _ in 0..20 {
+        let from_preview = generate_short_id();
+        assert_eq!(resolve_bundle_id(Some(from_preview.clone())), from_preview);
+    }
+}
+
+#[test]
+fn resolve_bundle_id_mints_a_fresh_one_when_absent_or_malformed() {
+    let malformed = [
+        "",
+        "ERR-",
+        "ERR-AB23",
+        "ERR-AB23XY",
+        "ERR-ab23x",
+        "ERR-0O1IL",
+        "CRASH-AB23X",
+        "ERR-AB23X/../../etc",
+        "ERR-ÁB23X",
+    ];
+    for bad in malformed {
+        let id = resolve_bundle_id(Some(bad.to_string()));
+        assert_ne!(id, bad, "`{bad}` must not be used as-is");
+        assert!(
+            crate::short_id::matches("ERR", &id),
+            "a rejected id must be replaced with a fresh one, got `{id}`",
+        );
+    }
+    assert!(crate::short_id::matches("ERR", &resolve_bundle_id(None)));
+}
+
+#[test]
+fn upload_result_reads_the_amend_key_and_tolerates_a_server_without_one() {
+    let minted: UploadResult =
+        serde_json::from_str(r#"{"id":"ERR-AB23X","amendKey":"aGVsbG8-d29ybGQ_"}"#).expect("parses");
+    assert_eq!(minted.id, "ERR-AB23X");
+    assert_eq!(
+        minted.amend_key.as_ref().map(AmendKey::as_str),
+        Some("aGVsbG8-d29ybGQ_"),
+    );
+
+    let declined: UploadResult = serde_json::from_str(r#"{"id":"ERR-AB23X","amendKey":null}"#).expect("parses");
+    assert!(declined.amend_key.is_none(), "an explicit null means no key");
+
+    // An older api server doesn't send the field at all. That must stay a successful upload,
+    // not a client-side parse failure that loses a report that already landed.
+    let older_server: UploadResult = serde_json::from_str(r#"{"id":"ERR-AB23X"}"#).expect("parses");
+    assert!(older_server.amend_key.is_none());
+}
+
+#[test]
+fn amend_key_never_prints_itself() {
+    let key = AmendKey::for_test("s3cret-amend-key");
+    let printed = format!("{key:?}");
+    assert!(
+        !printed.contains("s3cret"),
+        "a `{{:?}}` must not leak the credential into a log line: {printed}",
+    );
 }
 
 #[test]

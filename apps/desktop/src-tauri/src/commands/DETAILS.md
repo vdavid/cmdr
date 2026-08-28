@@ -194,8 +194,15 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`beta_signup.rs`**: `beta_signup(email)` POSTs ONLY the email (never an install id) to `POST /beta-signup`. Returns a
   typed `BetaSignupResult` (`subscribed`/`invalidEmail`/`softFailure`). Network, not filesystem, so no
   `blocking_with_timeout` (the `reqwest` client carries its own 10 s timeout).
-- **`error_reporter.rs`** (Flow A): `prepare_error_report_preview`, `send_error_report`. Two-step so the preview dialog
-  is deterministic without shipping the full bundle through IPC twice. Upload skipped in dev/CI.
+- **`error_reporter.rs`**: Flow A's `prepare_error_report_preview(userNote?, email?)` and
+  `send_error_report(userNote?, email?, id?)`, two-step so the preview dialog is deterministic without shipping the
+  full bundle through IPC twice. Hand the preview's `id` back to the send or the report lands under a different one
+  than the dialog showed. Plus `get_auto_sent_report_preview()` (what Flow B already sent, with `can_amend`; `null`
+  when nothing was auto-sent this run) and `amend_error_report(userNote?, email?)`, which adds a note to that one
+  report and so takes no id (it resolves the target from the stash, then supplies
+  `error_report_amend_url(id)` the way the send path supplies its own URL). `flow_a_request` is the single place note validation, id reuse, and wrapping an address in
+  `AttachedEmail` happen. Network skipped in dev/CI. The two preview commands are dispatch-only (a `BundleManifest`
+  holds a `serde_json::Value`, which specta can't describe), so the frontend reaches them by raw invoke.
 - **`analytics.rs`**: `track_event(name, props_json)`, a thin pass-through to `posthog::capture` for the open set of
   frontend feature events. No capability entry; the PII-free prop contract lives in `analytics/CLAUDE.md`.
 - **`feedback.rs`**: `send_feedback(feedback_text, email?)` POSTs to `/feedback` via `crate::feedback`, returning a

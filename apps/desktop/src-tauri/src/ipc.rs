@@ -271,8 +271,10 @@ macro_rules! ipc_command_manifest {
                     crate::commands::crash_reporter::dismiss_crash_report,
                     crate::commands::crash_reporter::send_crash_report,
                     crate::commands::error_reporter::send_error_report,
-                    // prepare_error_report_preview: BundleManifest contains Breadcrumb.ctx: Option<Value>
-                    // which specta can't represent. Excluded; stays in generate_handler![].
+                    crate::commands::error_reporter::amend_error_report,
+                    // prepare_error_report_preview and get_auto_sent_report_preview: BundleManifest
+                    // contains Breadcrumb.ctx: Option<Value> which specta can't represent. Excluded;
+                    // they stay in generate_handler![].
                     // record_breadcrumb takes Option<serde_json::Value>: excluded; stays in generate_handler![].
                     crate::commands::error_reporter::record_settings_defaults,
                     crate::commands::feedback::send_feedback,
@@ -479,6 +481,7 @@ macro_rules! ipc_command_manifest {
                     // Carry a `serde_json::Value` (a free-form breadcrumb payload, and a bundle
                     // manifest holding one), which specta can't represent.
                     crate::commands::error_reporter::prepare_error_report_preview,
+                    crate::commands::error_reporter::get_auto_sent_report_preview,
                     crate::commands::error_reporter::record_breadcrumb,
                 ]
             }

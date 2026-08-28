@@ -1600,11 +1600,31 @@ export const commands = {
    */
   sendCrashReport: (report: CrashReport) => typedError<null, string>(__TAURI_INVOKE('send_crash_report', { report })),
   /**
-   *  Re-build the bundle and upload it. Returns the server-issued ID; display *that* to
-   *  the user, not any locally-generated ID from a prior `prepare` call.
+   *  Re-build the bundle and upload it. Returns the report's ID.
+   *
+   *  Pass the `id` the preview returned so the report ships under the id the dialog showed;
+   *  omit it (or pass something that isn't an `ERR-XXXXX`) and a fresh one is minted.
    */
-  sendErrorReport: (userNote: string | null, email: string | null) =>
-    typedError<SendResult, string>(__TAURI_INVOKE('send_error_report', { userNote, email })),
+  sendErrorReport: (userNote: string | null, email: string | null, id: string | null) =>
+    typedError<SendResult, string>(__TAURI_INVOKE('send_error_report', { userNote, email, id })),
+  /**
+   *  Add a note (and optionally a reply-to address) to the report Flow B already sent.
+   *
+   *  Takes no id: there's only ever one stashed report. Returns its id so the UI can confirm
+   *  against what it was showing. Errs when nothing was auto-sent this run or the server never
+   *  handed back an amend key; `can_amend` from [`get_auto_sent_report_preview`] is the flag to
+   *  branch on, not the message.
+   *
+   *  Callable more than once for the same report: amendments accumulate, and `can_amend` stays
+   *  true after one lands. Disable the button while the call is in flight rather than after it
+   *  returns.
+   *
+   *  An address here does NOT break the Flow-B-never-email rule: the person typed it into a
+   *  dialog and pressed the button, which is the explicit per-report action the invariant is
+   *  about. [`AttachedEmail`] is what carries that consent into the send.
+   */
+  amendErrorReport: (userNote: string | null, email: string | null) =>
+    typedError<AmendResult, string>(__TAURI_INVOKE('amend_error_report', { userNote, email })),
   /**
    *  Pushes the FE settings-registry default map to the backend, where it feeds
    *  [`crate::error_reporter::ResolvedSettings::from_settings`] so manifests don't
@@ -3927,9 +3947,12 @@ export const commands = {
   /**
    *  Debug-only escape hatch: build the bundle and write it to the app data dir as a `.zip`.
    *  Helpful when iterating on the redactor or the manifest format.
+   *
+   *  Takes the same `id` as [`send_error_report`] so the dev path can't drift from the real one:
+   *  the zip on disk is the bundle the send would have shipped, id included.
    */
-  saveErrorReportToDisk: (userNote: string | null, email: string | null) =>
-    typedError<string, string>(__TAURI_INVOKE('save_error_report_to_disk', { userNote, email })),
+  saveErrorReportToDisk: (userNote: string | null, email: string | null, id: string | null) =>
+    typedError<string, string>(__TAURI_INVOKE('save_error_report_to_disk', { userNote, email, id })),
   /**
    *  Debug-only command that generates a real typed `ListingError` for the debug
    *  error pane preview.
@@ -4301,6 +4324,10 @@ export type AiTranslateErrorKind =
   | 'unknownProvider'
 
 export type AiVerifying = null
+
+export type AmendResult = {
+  id: string
+}
 
 /**
  *  What we know about the app's fate AFTER this report hit disk.
