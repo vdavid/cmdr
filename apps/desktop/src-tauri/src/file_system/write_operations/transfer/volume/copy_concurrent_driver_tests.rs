@@ -17,8 +17,15 @@
 //! copy of the new data must be left on disk) is pinned end to end instead, in
 //! `copy_crashsafe_tests.rs`; the stream-failure arm below is its sibling.
 //!
+//! Beyond the ledger, this is also where the pieces the phase runner can't reach
+//! get pinned: what `prepare_source` decides for one source before any task
+//! exists (a pre-skip costs nothing, a Skip credits both progress axes once, an
+//! Overwrite becomes a staged write plus a swap), and that a directory source
+//! takes no slot from the file window, so a window narrower than the batch can't
+//! deadlock on itself.
+//!
 //! Fixtures are local: the driver takes ~30 fields the phase runner assembles,
-//! and `drive` below is the one place a test has to know that.
+//! and `Harness` below is the one place a test has to know that.
 
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, VolumeError, VolumeReadStream};
@@ -74,6 +81,143 @@ impl Volume for FailReadForPathVolume {
 // Harness
 // ============================================================================
 
+/// Everything a `ConcurrentCopy` borrows, owned in one place so a test can hand
+/// out a context and then read the ledgers back.
+///
+/// The phase runner computes all of this before it reaches the driver; here it
+/// starts at its "nothing known upfront" value — no destination index (so the
+/// pre-check probes), no preflight hints (so `resolve_source_is_directory` asks
+/// the volume), no journal, no probe — and a test overrides only the field it is
+/// about.
+struct Harness {
+    state: Arc<WriteOperationState>,
+    events: Arc<dyn OperationEventSink>,
+    config: VolumeCopyConfig,
+    source_paths: Vec<PathBuf>,
+    pre_skip_paths: HashSet<PathBuf>,
+    source_hints: HashMap<PathBuf, SourceHint>,
+    dest_index: Option<DestNameIndex>,
+    journal_volumes: Option<(String, String)>,
+    op_probe: Option<Arc<OperationProbe>>,
+    files_done: Arc<AtomicUsize>,
+    bytes_done: Arc<AtomicU64>,
+    files_skipped: Arc<AtomicUsize>,
+    bytes_skipped: Arc<AtomicU64>,
+    last_progress: Arc<std::sync::Mutex<Instant>>,
+    apply_to_all: Arc<std::sync::Mutex<ApplyToAll>>,
+    copied_paths: Arc<std::sync::Mutex<Vec<PathBuf>>>,
+    created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
+    in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>>,
+}
+
+impl Harness {
+    fn new(source_paths: &[PathBuf]) -> Self {
+        Self {
+            state: Arc::new(WriteOperationState::new(Duration::from_millis(50))),
+            events: Arc::new(CollectorEventSink::new()),
+            config: merge_config(),
+            source_paths: source_paths.to_vec(),
+            pre_skip_paths: HashSet::new(),
+            source_hints: HashMap::new(),
+            dest_index: None,
+            journal_volumes: None,
+            op_probe: None,
+            files_done: Arc::new(AtomicUsize::new(0)),
+            bytes_done: Arc::new(AtomicU64::new(0)),
+            files_skipped: Arc::new(AtomicUsize::new(0)),
+            bytes_skipped: Arc::new(AtomicU64::new(0)),
+            last_progress: Arc::new(std::sync::Mutex::new(Instant::now())),
+            apply_to_all: Arc::new(std::sync::Mutex::new(ApplyToAll::default())),
+            copied_paths: Arc::new(std::sync::Mutex::new(Vec::new())),
+            created_dirs: Arc::new(std::sync::Mutex::new(Vec::new())),
+            in_flight_partials: Arc::new(std::sync::Mutex::new(Vec::new())),
+        }
+    }
+
+    fn ctx(&self, source: Arc<dyn Volume>, dest: Arc<dyn Volume>, concurrency: usize) -> ConcurrentCopy<'_> {
+        ConcurrentCopy {
+            events: Arc::clone(&self.events),
+            operation_id: "driver-unit-test",
+            state: &self.state,
+            source_volume: source,
+            source_paths: &self.source_paths,
+            dest_volume: dest,
+            dest_path: Path::new("/"),
+            config: &self.config,
+            concurrency,
+            file_window: super::super::strategy::FileWindow::new(concurrency),
+            dest_dir_is_ours: false,
+            dest_index: &self.dest_index,
+            pre_skip_paths: &self.pre_skip_paths,
+            source_hints: &self.source_hints,
+            total_files: self.source_paths.len(),
+            total_bytes: 0,
+            progress_interval: Duration::from_millis(0),
+            journal_volumes: &self.journal_volumes,
+            op_probe: &self.op_probe,
+            files_done_atomic: Arc::clone(&self.files_done),
+            atomic_bytes_done: Arc::clone(&self.bytes_done),
+            files_skipped_atomic: Arc::clone(&self.files_skipped),
+            bytes_skipped_atomic: Arc::clone(&self.bytes_skipped),
+            last_progress_mutex: Arc::clone(&self.last_progress),
+            apply_to_all_cell: Arc::clone(&self.apply_to_all),
+            copied_paths: Arc::clone(&self.copied_paths),
+            created_dirs: Arc::clone(&self.created_dirs),
+            in_flight_partials: Arc::clone(&self.in_flight_partials),
+            deep_skipped_files: Arc::new(AtomicUsize::new(0)),
+            deep_skipped_bytes: Arc::new(AtomicU64::new(0)),
+        }
+    }
+
+    /// Runs the whole window over the harness's sources and reports what the
+    /// driver left behind.
+    async fn drive(
+        &self,
+        source: Arc<dyn Volume>,
+        dest: Arc<dyn Volume>,
+        concurrency: usize,
+    ) -> Result<DriverRun, WriteFailure> {
+        let outcome = drive_transfer_concurrent(self.ctx(source, dest, concurrency)).await?;
+        Ok(DriverRun {
+            outcome,
+            copied_paths: self.copied_paths.lock_ignore_poison().clone(),
+            created_dirs: self.created_dirs.lock_ignore_poison().clone(),
+            in_flight_partials: self.in_flight_partials.lock_ignore_poison().clone(),
+        })
+    }
+
+    /// Fills `source_hints` from a REAL preflight scan, the way the phase runner
+    /// does before it reaches the driver.
+    ///
+    /// ❌ Never hand-build a `SourceHint`: a literal records the test author's
+    /// assumptions rather than a shape production emits, which is the whole
+    /// point of `no-hand-rolled-fixture`.
+    async fn seed_hints_from_preflight(&mut self, source: &Arc<dyn Volume>) {
+        let preflight = super::super::preflight::scan_volume_sources(
+            source,
+            &self.source_paths,
+            &self.config,
+            "driver-unit-test",
+            WriteOperationType::Copy,
+            &self.state,
+            &*self.events,
+        )
+        .await
+        .expect("a preflight scan of an in-memory source can't fail");
+        self.source_hints = preflight.source_hints;
+    }
+
+    /// `(files_done, bytes_done, files_skipped, bytes_skipped)`.
+    fn counters(&self) -> (usize, u64, usize, u64) {
+        (
+            self.files_done.load(Ordering::Relaxed),
+            self.bytes_done.load(Ordering::Relaxed),
+            self.files_skipped.load(Ordering::Relaxed),
+            self.bytes_skipped.load(Ordering::Relaxed),
+        )
+    }
+}
+
 /// What one driver run left behind: its own outcome plus the three shared
 /// ledgers the phase runner reads after it returns.
 struct DriverRun {
@@ -81,70 +225,6 @@ struct DriverRun {
     copied_paths: Vec<PathBuf>,
     created_dirs: Vec<PathBuf>,
     in_flight_partials: Vec<PathBuf>,
-}
-
-/// Runs the concurrent driver over `sources`, with a window of 4 and everything
-/// the phase runner would otherwise have computed set to its "nothing known
-/// upfront" value: no destination index (so the pre-check probes), no preflight
-/// hints (so `resolve_source_is_directory` asks the volume), no journal, no
-/// probe.
-async fn drive(
-    source: Arc<dyn Volume>,
-    dest: Arc<dyn Volume>,
-    sources: &[PathBuf],
-    config: &VolumeCopyConfig,
-) -> Result<DriverRun, WriteFailure> {
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
-    let events: Arc<dyn OperationEventSink> = Arc::new(CollectorEventSink::new());
-    let copied_paths = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let created_dirs = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let in_flight_partials = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let pre_skip_paths = HashSet::new();
-    let source_hints = HashMap::new();
-    let dest_index = None;
-    let journal_volumes = None;
-    let op_probe = None;
-
-    let outcome = drive_transfer_concurrent(ConcurrentCopy {
-        events,
-        operation_id: "driver-unit-test",
-        state: &state,
-        source_volume: source,
-        source_paths: sources,
-        dest_volume: dest,
-        dest_path: Path::new("/"),
-        config,
-        concurrency: 4,
-        file_window: super::super::strategy::FileWindow::new(4),
-        dest_dir_is_ours: false,
-        dest_index: &dest_index,
-        pre_skip_paths: &pre_skip_paths,
-        source_hints: &source_hints,
-        total_files: sources.len(),
-        total_bytes: 0,
-        progress_interval: Duration::from_millis(0),
-        journal_volumes: &journal_volumes,
-        op_probe: &op_probe,
-        files_done_atomic: Arc::new(AtomicUsize::new(0)),
-        atomic_bytes_done: Arc::new(AtomicU64::new(0)),
-        files_skipped_atomic: Arc::new(AtomicUsize::new(0)),
-        bytes_skipped_atomic: Arc::new(AtomicU64::new(0)),
-        last_progress_mutex: Arc::new(std::sync::Mutex::new(Instant::now())),
-        apply_to_all_cell: Arc::new(std::sync::Mutex::new(ApplyToAll::default())),
-        copied_paths: Arc::clone(&copied_paths),
-        created_dirs: Arc::clone(&created_dirs),
-        in_flight_partials: Arc::clone(&in_flight_partials),
-        deep_skipped_files: Arc::new(AtomicUsize::new(0)),
-        deep_skipped_bytes: Arc::new(AtomicU64::new(0)),
-    })
-    .await?;
-
-    Ok(DriverRun {
-        outcome,
-        copied_paths: copied_paths.lock_ignore_poison().clone(),
-        created_dirs: created_dirs.lock_ignore_poison().clone(),
-        in_flight_partials: in_flight_partials.lock_ignore_poison().clone(),
-    })
 }
 
 /// A source directory of `n` files, merging into a pre-existing destination
@@ -210,9 +290,10 @@ fn merge_config() -> VolumeCopyConfig {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn a_completed_directory_source_is_recorded_file_by_file_never_by_its_root() {
     let (source, dest, sources) = merge_batch(3).await;
-    let config = merge_config();
+    let harness = Harness::new(&sources);
 
-    let run = drive(source as Arc<dyn Volume>, Arc::clone(&dest), &sources, &config)
+    let run = harness
+        .drive(source as Arc<dyn Volume>, Arc::clone(&dest), 4)
         .await
         .expect("the driver only errors when conflict resolution itself fails");
 
@@ -266,9 +347,10 @@ async fn a_failed_directory_source_records_its_files_and_never_its_root_as_a_par
         inner: source_inner,
         fail_for: PathBuf::from("/album/new1.bin"),
     });
-    let config = merge_config();
+    let harness = Harness::new(&sources);
 
-    let run = drive(source, Arc::clone(&dest), &sources, &config)
+    let run = harness
+        .drive(source, Arc::clone(&dest), 4)
         .await
         .expect("a task failure comes back in the outcome, not as an Err");
 
@@ -332,9 +414,9 @@ async fn a_stream_failure_hands_its_staged_partial_back_for_cleanup() {
         PathBuf::from("/b.txt"),
         PathBuf::from("/c.txt"),
     ];
-    let config = merge_config();
+    let harness = Harness::new(&sources);
 
-    let run = drive(source, Arc::clone(&dest), &sources, &config).await.unwrap();
+    let run = harness.drive(source, Arc::clone(&dest), 4).await.unwrap();
 
     assert!(
         run.outcome.copy_error.is_some(),
@@ -358,4 +440,165 @@ async fn a_stream_failure_hands_its_staged_partial_back_for_cleanup() {
         b"BBB-old",
         "a stream failure must leave the destination it was replacing untouched"
     );
+}
+
+// ============================================================================
+// Preparing one source
+// ============================================================================
+
+/// A source the bulk skip already accounted is dropped without touching
+/// anything: no probe, no ledger entry, and — the part that would go wrong
+/// quietly — no second credit to the progress counters.
+///
+/// `pre_skip_paths` holds clashes resolved and counted BEFORE the driver
+/// started. Crediting them again here would report more files done than the
+/// operation has.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_pre_skipped_source_is_dropped_without_being_counted_again() {
+    let source = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source.create_file(Path::new("/a.txt"), b"AAA").await.unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+
+    let sources = vec![PathBuf::from("/a.txt")];
+    let mut harness = Harness::new(&sources);
+    harness.pre_skip_paths.insert(PathBuf::from("/a.txt"));
+
+    let ctx = harness.ctx(source as Arc<dyn Volume>, dest, 4);
+    let prepared = ctx
+        .prepare_source(0, Path::new("/a.txt"))
+        .await
+        .expect("a pre-skip is not a failure");
+
+    assert!(prepared.is_none(), "a pre-skipped source must not be spawned");
+    assert_eq!(
+        harness.counters(),
+        (0, 0, 0, 0),
+        "the bulk skip already counted this source; counting it again over-reports progress"
+    );
+    assert!(
+        harness.in_flight_partials.lock_ignore_poison().is_empty(),
+        "nothing was written, so nothing is in flight"
+    );
+}
+
+/// A clash the resolver answers with Skip advances BOTH progress axes exactly
+/// once, using the preflight hint's size.
+///
+/// Without it a "Skip all" choice runs through dozens of conflicts with the bar
+/// pinned at 0%, which reads as a hung operation: the user can see it working
+/// through their files.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_conflict_resolved_to_skip_credits_both_progress_axes_once() {
+    let source = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source.create_file(Path::new("/a.txt"), b"AAA").await.unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+    dest.create_file(Path::new("/a.txt"), b"OLD").await.unwrap();
+
+    let sources = vec![PathBuf::from("/a.txt")];
+    let source: Arc<dyn Volume> = source;
+    let mut harness = Harness::new(&sources);
+    harness.config.conflict_resolution = ConflictResolution::Skip;
+    harness.seed_hints_from_preflight(&source).await;
+
+    let ctx = harness.ctx(Arc::clone(&source), dest, 4);
+    let prepared = ctx.prepare_source(0, Path::new("/a.txt")).await.unwrap();
+
+    assert!(prepared.is_none(), "Skip means no task");
+    assert_eq!(
+        harness.counters(),
+        (1, 3, 1, 3),
+        "a skipped file counts once on the done axis and once on the skipped axis, at its scanned size"
+    );
+}
+
+/// A file→file Overwrite is prepared as a STAGED write plus a swap, and it is
+/// the temp — never the user's file — that goes on the in-flight partial list.
+///
+/// That is what makes a mid-stream failure survivable: the original is untouched
+/// until the temp is complete, and the cleanup sweep that runs on cancel or
+/// error can only reach the temp.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_file_overwrite_is_prepared_as_a_staged_write_plus_a_swap() {
+    let source = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source.create_file(Path::new("/a.txt"), b"NEW").await.unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+    dest.create_file(Path::new("/a.txt"), b"OLD").await.unwrap();
+
+    let sources = vec![PathBuf::from("/a.txt")];
+    let harness = Harness::new(&sources);
+
+    let ctx = harness.ctx(source as Arc<dyn Volume>, dest, 4);
+    let task = ctx
+        .prepare_source(0, Path::new("/a.txt"))
+        .await
+        .unwrap()
+        .expect("an Overwrite spawns a task");
+
+    assert!(
+        task.dest_path.to_string_lossy().contains(STAGING_TEMP_MARKER),
+        "the bytes go to a temp sibling, not onto the file being replaced: {}",
+        task.dest_path.display()
+    );
+    assert_eq!(
+        task.replace_after_write,
+        Some(PathBuf::from("/a.txt")),
+        "the swap has to name the original, or the new data never takes its place"
+    );
+    assert_eq!(
+        *harness.in_flight_partials.lock_ignore_poison(),
+        vec![task.dest_path.clone()],
+        "the TEMP is the partial cleanup may remove; the original must never be on this list"
+    );
+}
+
+// ============================================================================
+// The file window
+// ============================================================================
+
+/// A DIRECTORY source takes no slot from the operation's file window, so a
+/// window narrower than the batch can't deadlock on itself.
+///
+/// Two directory sources in a two-wide window: if each held a permit while
+/// walking, both permits would be gone and every leaf underneath them would wait
+/// forever for one. A top-level FILE source is a leaf and does take its slot,
+/// which is why the two can't share one rule.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_directory_source_takes_no_slot_from_the_file_window() {
+    let source = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    for dir in ["d1", "d2"] {
+        source.create_directory(Path::new(&format!("/{dir}"))).await.unwrap();
+        for i in 0..3 {
+            source
+                .create_file(Path::new(&format!("/{dir}/leaf{i}.bin")), &vec![7u8; 10_000])
+                .await
+                .unwrap();
+        }
+    }
+    source
+        .create_file(Path::new("/f.bin"), &vec![8u8; 10_000])
+        .await
+        .unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+
+    let sources = vec![PathBuf::from("/d1"), PathBuf::from("/d2"), PathBuf::from("/f.bin")];
+    let harness = Harness::new(&sources);
+
+    // A deadlock here would otherwise run until nextest kills the process with
+    // nothing to say; the deadline turns it into a readable failure.
+    let run = tokio::time::timeout(
+        Duration::from_secs(5),
+        harness.drive(source as Arc<dyn Volume>, Arc::clone(&dest), 2),
+    )
+    .await
+    .expect("a two-wide window over two directory sources must not deadlock")
+    .unwrap();
+
+    assert!(run.outcome.copy_error.is_none(), "{:?}", run.outcome.copy_error);
+    for dir in ["d1", "d2"] {
+        for i in 0..3 {
+            let leaf = format!("/{dir}/leaf{i}.bin");
+            assert!(dest.exists(Path::new(&leaf)).await, "{leaf} never landed");
+        }
+    }
+    assert!(dest.exists(Path::new("/f.bin")).await);
 }
