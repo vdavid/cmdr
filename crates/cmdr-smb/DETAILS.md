@@ -430,6 +430,11 @@ is NOT evidence of death** and nothing here may treat it as such: a QNAP TS-464 
 the wire meanwhile. That is also why `SmbVolume::connection_liveness()` stays unimplemented; the full argument and what
 `smb2` would have to expose to change it: `write_operations/transfer/DETAILS.md` § "The watchdog ACTS".
 
+**The numbers stay as they are, and the case for widening them is closed.** The base deadline no longer has to be sized
+for the slowest healthy case, because the ECHO stretch already covers a connection that is alive but busy; and a breach
+that does land reaches `retry.rs::is_retryable` as a typed retryable error, so a per-file retry on a rebuilt session
+absorbs it as a blip rather than a failed file. Nothing measured says the defaults hurt.
+
 **Read `sent_age` before drawing any conclusion from a stall.** `None` means the request never reached the wire, so the
 server has not been asked yet and none of the deadlines above are even running; a `Some` age is the only number that
 says how long the server has actually been silent.

@@ -42,25 +42,9 @@ translated into nine locales, so a change means re-translating those keys, and n
    compaction idea then evaporates; **(b)** no, keep per-item approval and build compaction instead; **(c)** defer both.
    This has blocked its two dependent milestones since July.
 
-## Three questions I recommend closing as already answered
-
-Each was left open in a spec and has since been settled by shipped code or by measurement. They need ratification, not
-design.
-
-7. **How aggressive should the SMB session deadline be?** **Recommend: leave `smb2`'s defaults.** The ECHO keepalive
-   means the base deadline no longer has to be sized for the slowest healthy case, and Cmdr's per-file retry absorbs a
-   breach as a blip. Nothing measured says the current numbers hurt.
-8. **Should an SMB reconnect be silent?** **Recommend: yes, silent, with the evidence available on demand.** It already
-   is silent, `smb_diagnostics.rs` already exposes the counters for anyone investigating, and a toast per reconnect
-   would fire on every laptop lid-close.
-9. **Credit budget, or a sanity ceiling on the concurrency window?** **Recommend: close as answered.** The question has
-   no well-defined answer as posed: credits gate write frames connection-wide while the window gates concurrent FILES,
-   so there is no file-level value a credit budget could produce. The 32 ceiling stays because the NAS plateaus at 12 on
-   both corpus shapes.
-
 ## One maintenance call
 
-10. **A deliberate `invariant-density` ratchet pass.** The check warns repo-wide on four subsystems and has been
-    drifting up unnoticed because it is warn-only. `crates/cmdr-index` sits at 371 rules and 2.96 per kloc against the
-    frontend's 0.87, and it is also the codebase's top bug source. `AGENTS.md` says the fix is to make each invariant
-    unrepresentable in a type rather than to raise the number. Worth scheduling rather than letting it drift.
+7. **A deliberate `invariant-density` ratchet pass.** The check warns repo-wide on four subsystems and has been drifting
+   up unnoticed because it is warn-only. `crates/cmdr-index` sits at 371 rules and 2.96 per kloc against the frontend's
+   0.87, and it is also the codebase's top bug source. `AGENTS.md` says the fix is to make each invariant
+   unrepresentable in a type rather than to raise the number. Worth scheduling rather than letting it drift.

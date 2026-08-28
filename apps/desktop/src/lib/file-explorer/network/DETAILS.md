@@ -259,6 +259,11 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
   work everywhere and make the API boundary explicit.
 - **`tryStoredCredentials` skips the `hasSmbCredentials` pre-check**: two Keychain calls = two system prompts; one
   direct call plus catch = one.
+- **A reconnect is silent: no toast fires for one.** The recovery already shows itself where the user is looking, in the
+  pane (`SmbReconnectingView`, then the give-up banner) and on the volume picker's dot, and every laptop lid-close drops
+  the session, so a toast per reconnect would fire on routine sleep/wake and teach the user to dismiss it unread. The
+  evidence stays available on demand instead: the debug window's SMB diagnostics dashboard reads the session counters
+  through `src-tauri/src/commands/smb_diagnostics.rs`.
 
 ## Gotchas
 

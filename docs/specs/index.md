@@ -17,11 +17,10 @@ that lives beside the code, and git holds the history.
       searchability win with a silent-walk-degradation risk and ❌ no throughput payoff, and the first-run layout E2E,
       which cannot pass by design). **Kept for one unexplained measurement**: a 19–21 s gap the phase machine's own docs
       flag, worth resolving before anyone tunes phase boundaries.
-- [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Ten calls waiting on David:
+- [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Seven calls waiting on David:
       unreviewed user-facing copy in four places, two product calls (one of which has blocked its dependent milestones
-      since July), three questions that shipped code has already answered and that just need closing, and one
-      maintenance call. Most take a minute. A question with no answer looks exactly like a task nobody picked up, which
-      is how a 600-line spec stays alive for a year.
+      since July), and one maintenance call. Most take a minute. A question with no answer looks exactly like a task
+      nobody picked up, which is how a 600-line spec stays alive for a year.
 
 ## Later
 
