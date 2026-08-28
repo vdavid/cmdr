@@ -36,12 +36,13 @@ use super::super::super::state::{WriteOperationState, is_cancelled, load_intent,
 use super::super::super::types::{VolumeCopyConfig, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::super::dest_name_index::{DestLookup, DestNameIndex};
 use super::super::transfer_probe::OperationProbe;
-use super::conflict::resolve_volume_conflict;
+use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::copy::drain_deadline as drain_deadline_for;
 use super::copy_concurrent_task::{CopyTask, CopyTaskFailure, CopyTaskSuccess, run_copy_task};
 use super::preflight::SourceHint;
 use super::strategy::resolve_source_is_directory;
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
+use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 
@@ -109,65 +110,315 @@ pub(super) struct ConcurrentOutcome {
     pub(super) copy_error: Option<WriteFailure>,
 }
 
-/// Bumps `files_done` and `bytes_done` for a skipped source and (throttled)
-/// emits a `write-progress` event. Without this, a "Skip all" choice silently
-/// runs through dozens of conflicts with the progress bar pinned at 0% — the
-/// user expects the bar to reflect skipped files since the operation is in
-/// fact processing them.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Helper bundles all the per-emit context the surrounding loop already has on hand"
-)]
-fn account_skipped_file(
-    source_path: &Path,
-    source_hints: &HashMap<PathBuf, SourceHint>,
-    files_done_atomic: &Arc<AtomicUsize>,
-    atomic_bytes_done: &Arc<AtomicU64>,
-    files_skipped_atomic: &Arc<AtomicUsize>,
-    bytes_skipped_atomic: &Arc<AtomicU64>,
-    last_progress_mutex: &Arc<std::sync::Mutex<Instant>>,
-    progress_interval: Duration,
-    state: &Arc<WriteOperationState>,
-    events: &dyn OperationEventSink,
-    operation_id: &str,
-    total_files: usize,
-    total_bytes: u64,
-) {
-    let hint_size = source_hints
-        .get(source_path)
-        .map(|h| if h.is_directory { 0 } else { h.size })
-        .unwrap_or(0);
-    let new_files = files_done_atomic.fetch_add(1, Ordering::Relaxed) + 1;
-    let new_bytes = atomic_bytes_done.fetch_add(hint_size, Ordering::Relaxed) + hint_size;
-    files_skipped_atomic.fetch_add(1, Ordering::Relaxed);
-    bytes_skipped_atomic.fetch_add(hint_size, Ordering::Relaxed);
+impl ConcurrentCopy<'_> {
+    /// Works out what (if anything) the driver should spawn for one top-level
+    /// source: is it a directory, where does it land, and does something already
+    /// sit at that name?
+    ///
+    /// `Ok(None)` means the source is done with — the bulk skip already
+    /// accounted it, or conflict resolution said Skip. `Err` means resolution
+    /// itself failed, which ends the operation.
+    ///
+    /// Everything here runs SYNCHRONOUSLY on the driver, before the task exists.
+    /// That is the contract: one Stop prompt blocks the whole batch instead of
+    /// several tasks racing prompts into one oneshot slot, and nothing streams
+    /// into a folder the user is still being asked about. ❌ Don't move any of
+    /// it into `run_copy_task`.
+    async fn prepare_source(&self, source_index: usize, source_path: &Path) -> Result<Option<CopyTask>, WriteFailure> {
+        // Pre-known conflict already accounted upfront in the bulk skip.
+        if self.pre_skip_paths.contains(source_path) {
+            return Ok(None);
+        }
 
-    let mut last = last_progress_mutex.lock_ignore_poison();
-    if last.elapsed() >= progress_interval {
-        *last = Instant::now();
-        drop(last);
-        state.emit_progress_via_sink(
-            events,
-            WriteProgressEvent::new(
-                operation_id.to_string(),
-                WriteOperationType::Copy,
+        // Is this source a directory? Resolved ONCE per source, here, from
+        // the preflight hint — or by probing when there is none (a LOCAL
+        // scan preview completes with an empty `per_path`, so a real
+        // directory can arrive hintless). Three things downstream read this
+        // answer and all three break on a wrong one: the conflict resolver,
+        // `copy_single_path`'s streaming branch, and — the data-safety one —
+        // the `in_flight_partials` gate below, which keeps a merged
+        // destination directory out of the post-loop's recursive sweep.
+        let source_hint = self.source_hints.get(source_path).copied();
+        let source_is_dir = resolve_source_is_directory(
+            &self.source_volume,
+            source_path,
+            source_hint.map(|hint| hint.is_directory),
+        )
+        .await
+        .map_err(|e| {
+            WriteFailure::synthetic(map_volume_error(
+                &source_path.display().to_string(),
+                PathRole::Source,
+                e,
+            ))
+        })?;
+        // Sizes stay hint-only: a missing size just means no SMB compound
+        // fast path, never a wrong branch, so it isn't worth a probe.
+        let source_size_hint = source_hint.and_then(|hint| (!hint.is_directory).then_some(hint.size));
+
+        // Resolve destination path + conflict synchronously.
+        let mut dest_item_path = if let Some(name) = source_path.file_name() {
+            self.dest_path.join(name)
+        } else {
+            self.dest_path.to_path_buf()
+        };
+        // For a file→file Overwrite, conflict resolution hands back a
+        // temp sibling to stream into plus the original path to swap in
+        // after the write fully lands (safe-replace). `None` ⇒ write
+        // `dest_item_path` directly.
+        let mut replace_after_write: Option<PathBuf> = None;
+        if let Some(dest_meta) = self
+            .existing_dest_entry(source_index, source_path, &dest_item_path)
+            .await
+        {
+            // The type and size come from the scan (or the one probe above),
+            // never a re-stat: an MTP `scan_for_copy` lists the parent dir,
+            // ~18 s for 1046 photos on a cold cache.
+            log::debug!(
+                "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                dest_item_path.display(),
+                source_is_dir,
+                dest_meta.is_directory,
+            );
+            let resolved = self
+                .resolve_conflict_on_the_driver(
+                    source_path,
+                    &dest_item_path,
+                    source_size_hint,
+                    dest_meta.size,
+                    source_is_dir,
+                )
+                .await?;
+            match resolved {
+                None => {
+                    log::debug!(
+                        "copy_volumes_with_progress: skipping {} due to conflict resolution",
+                        source_path.display()
+                    );
+                    self.account_skipped_file(source_path);
+                    return Ok(None);
+                }
+                Some(rc) => {
+                    dest_item_path = rc.write_path;
+                    replace_after_write = rc.replace_after_write;
+                }
+            }
+        }
+
+        let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
+        log::debug!(
+            "copy_volumes_with_progress: spawning copy {} -> {}",
+            source_path.display(),
+            dest_item_path.display()
+        );
+
+        // Mark this destination as in-flight so cancel/error can clean it
+        // up — but ONLY for a FILE source. A DIRECTORY source's dest is a
+        // (possibly pre-existing, merged) dir whose cleanup path is
+        // `remove_tree`; recording the dir ROOT here and
+        // then recursively deleting it on keep-partials/rollback would
+        // destroy pre-existing dest-only files (the merge invariant). A
+        // directory source's cleanup is owned entirely by the per-file
+        // `created`/`copied_paths` ledger threaded out of the task's
+        // result arms. (A dir task dropped mid-flight on abort leaves its
+        // in-flight `.cmdr-tmp-<uuid>` for the backend writer's abort to
+        // clean; never the merged root.) Pinned by
+        // `cancel_mid_merge_stream_concurrent_preserves_preexisting_dest_file`.
+        if !source_is_dir {
+            self.in_flight_partials
+                .lock_ignore_poison()
+                .push(dest_item_path.clone());
+        }
+
+        // Register before the task is pushed, so a task that never gets
+        // polled still shows up in a dump as `spawned`.
+        let task_probe = self.op_probe.as_ref().map(|probe| {
+            probe.begin_task(
+                source_index,
+                &source_path.display().to_string(),
+                &dest_item_path.display().to_string(),
+            )
+        });
+        Ok(Some(CopyTask {
+            events: Arc::clone(&self.events),
+            operation_id: self.operation_id.to_string(),
+            state: Arc::clone(self.state),
+            source_volume: Arc::clone(&self.source_volume),
+            dest_volume: Arc::clone(&self.dest_volume),
+            config: self.config.clone(),
+            apply_to_all: Arc::clone(&self.apply_to_all_cell),
+            source_path: source_path.to_path_buf(),
+            source_is_dir,
+            source_size_hint,
+            dest_path: dest_item_path,
+            replace_after_write,
+            file_name,
+            window: self.file_window.clone(),
+            op_probe: self.op_probe.clone(),
+            task_probe,
+            files_done: Arc::clone(&self.files_done_atomic),
+            bytes_done: Arc::clone(&self.atomic_bytes_done),
+            last_progress: Arc::clone(&self.last_progress_mutex),
+            progress_interval: self.progress_interval,
+            total_files: self.total_files,
+            total_bytes: self.total_bytes,
+        }))
+    }
+
+    /// Is something already sitting at this destination name?
+    ///
+    /// Asked as a `get_metadata` per source it is ONE ROUND TRIP PER FILE,
+    /// serialized here on the driver, and on a NAS at 3.7 ms RTT it measured
+    /// 2.378 s of a 3.224 s best run for 500 files — 74%, and no window width
+    /// can overlap it
+    /// (`docs/notes/transfer-concurrency-window-bench-2026-08-02.md`).
+    ///
+    /// Two things answer it more cheaply, in order:
+    ///
+    /// 1. **A destination directory THIS OPERATION created** (Phase 0.5):
+    ///    nothing the user already had can be inside a folder that didn't exist
+    ///    a moment ago, so every probe is a guaranteed miss and there's nothing
+    ///    even to index. ❌ Never widen this to "the destination is empty". A
+    ///    pre-existing empty directory can gain an entry from another process
+    ///    between any two instants; one we just created cannot have held
+    ///    anything BEFORE we made it. Only the second claim is safe, and the
+    ///    difference is silent when you get it wrong.
+    /// 2. **The destination listing Phase 0.6 already paid for**, for a merge
+    ///    into a pre-existing folder — the ordinary F5 copy. `DestNameIndex`
+    ///    answers `Absent` only when no name in that listing can resolve to this
+    ///    one on any backend; anything it can't settle comes back `Unknown` and
+    ///    falls through to the probe, which stays authoritative.
+    ///
+    /// The listing is taken once, at the start: by the 400th file of a large
+    /// batch it can be minutes old, so a file that ARRIVES at the destination
+    /// mid-batch is missed and an Overwrite replaces it with no prompt. That
+    /// trade is deliberate and David chose it (2026-08-02); ❌ don't answer it
+    /// with re-listing, polling, or a freshness window. `DETAILS.md` §
+    /// "Answering the pre-check from one listing".
+    async fn existing_dest_entry(
+        &self,
+        source_index: usize,
+        source_path: &Path,
+        dest_item_path: &Path,
+    ) -> Option<FileEntry> {
+        if self.dest_dir_is_ours {
+            return None;
+        }
+        match self
+            .dest_index
+            .as_ref()
+            .map(|index| index.lookup(source_path.file_name()))
+        {
+            Some(DestLookup::Absent) => None,
+            Some(DestLookup::Present(entry)) => Some(*entry),
+            // No index (a local destination, or a listing that failed), or a
+            // name only the backend can settle.
+            Some(DestLookup::Unknown) | None => {
+                // Record the pre-check BEFORE awaiting it. In the 2026-07-31
+                // incident this destination `get_metadata` was the driver's last
+                // log line and nothing said whether it returned, so a dump has to
+                // be able to name it as the step in progress.
+                if let Some(probe) = self.op_probe.as_ref() {
+                    probe.set_driver_phase(
+                        super::super::transfer_probe::DriverPhase::PreparingNext,
+                        &format!("#{source_index} {}", dest_item_path.display()),
+                    );
+                }
+                self.dest_volume.get_metadata(dest_item_path).await.ok()
+            }
+        }
+    }
+
+    /// Runs the conflict resolver for one top-level clash, on the driver.
+    ///
+    /// Copies the op-wide latch out, runs the resolver on the stack local,
+    /// stores it back — mirroring the serial path. The resolver's
+    /// `conflict_dispatch_lock` (acquired inside) is what serializes the human
+    /// against in-flight deep merges spawned by earlier iterations; that same
+    /// lock is why a top-level prompt and a deep prompt can't race the one
+    /// oneshot slot. The known acceptable residual: an already-emitted prompt
+    /// isn't retroactively resolved by another task's "…all" latch — a rare
+    /// extra prompt, never data loss.
+    async fn resolve_conflict_on_the_driver(
+        &self,
+        source_path: &Path,
+        dest_item_path: &Path,
+        source_size_hint: Option<u64>,
+        dest_size_hint: Option<u64>,
+        source_is_dir: bool,
+    ) -> Result<Option<ResolvedConflict>, WriteFailure> {
+        let mut latched = *self.apply_to_all_cell.lock_ignore_poison();
+        let resolved = resolve_volume_conflict(
+            &self.source_volume,
+            source_path,
+            &self.dest_volume,
+            dest_item_path,
+            self.config,
+            &*self.events,
+            self.operation_id,
+            self.state,
+            &mut latched,
+            source_size_hint,
+            dest_size_hint,
+            Some(source_is_dir),
+        )
+        .await
+        .map_err(WriteFailure::synthetic);
+        *self.apply_to_all_cell.lock_ignore_poison() = latched;
+        resolved
+    }
+
+    /// Drops one path from the in-flight partial list, wherever it sits.
+    fn forget_in_flight_partial(&self, path: &Path) {
+        let mut partials = self.in_flight_partials.lock_ignore_poison();
+        if let Some(pos) = partials.iter().position(|p| p == path) {
+            partials.swap_remove(pos);
+        }
+    }
+
+    /// Bumps `files_done` and `bytes_done` for a skipped source and (throttled)
+    /// emits a `write-progress` event. Without this, a "Skip all" choice silently
+    /// runs through dozens of conflicts with the progress bar pinned at 0% — the
+    /// user expects the bar to reflect skipped files since the operation is in
+    /// fact processing them.
+    fn account_skipped_file(&self, source_path: &Path) {
+        let hint_size = self
+            .source_hints
+            .get(source_path)
+            .map(|h| if h.is_directory { 0 } else { h.size })
+            .unwrap_or(0);
+        let new_files = self.files_done_atomic.fetch_add(1, Ordering::Relaxed) + 1;
+        let new_bytes = self.atomic_bytes_done.fetch_add(hint_size, Ordering::Relaxed) + hint_size;
+        self.files_skipped_atomic.fetch_add(1, Ordering::Relaxed);
+        self.bytes_skipped_atomic.fetch_add(hint_size, Ordering::Relaxed);
+
+        let mut last = self.last_progress_mutex.lock_ignore_poison();
+        if last.elapsed() >= self.progress_interval {
+            *last = Instant::now();
+            drop(last);
+            self.state.emit_progress_via_sink(
+                &*self.events,
+                WriteProgressEvent::new(
+                    self.operation_id.to_string(),
+                    WriteOperationType::Copy,
+                    WriteOperationPhase::Copying,
+                    source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+                    new_files,
+                    self.total_files,
+                    new_bytes,
+                    self.total_bytes,
+                ),
+            );
+            update_operation_status(
+                self.operation_id,
                 WriteOperationPhase::Copying,
                 source_path.file_name().map(|n| n.to_string_lossy().to_string()),
                 new_files,
-                total_files,
+                self.total_files,
                 new_bytes,
-                total_bytes,
-            ),
-        );
-        update_operation_status(
-            operation_id,
-            WriteOperationPhase::Copying,
-            source_path.file_name().map(|n| n.to_string_lossy().to_string()),
-            new_files,
-            total_files,
-            new_bytes,
-            total_bytes,
-        );
+                self.total_bytes,
+            );
+        }
     }
 }
 
@@ -177,332 +428,131 @@ fn account_skipped_file(
 /// comes back as `ConcurrentOutcome::copy_error` so the caller's post-loop still
 /// runs its rollback and cleanup.
 pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result<ConcurrentOutcome, WriteFailure> {
-    let ConcurrentCopy {
-        events,
-        operation_id,
-        state,
-        source_volume,
-        source_paths,
-        dest_volume,
-        dest_path,
-        config,
-        concurrency,
-        file_window,
-        dest_dir_is_ours,
-        dest_index,
-        pre_skip_paths,
-        source_hints,
-        total_files,
-        total_bytes,
-        progress_interval,
-        journal_volumes,
-        op_probe,
-        files_done_atomic,
-        atomic_bytes_done,
-        files_skipped_atomic,
-        bytes_skipped_atomic,
-        last_progress_mutex,
-        apply_to_all_cell,
-        copied_paths,
-        created_dirs,
-        in_flight_partials,
-        deep_skipped_files,
-        deep_skipped_bytes,
-    } = ctx;
+    let mut driver = ConcurrentDriver::new(ctx);
+    driver.run().await?;
+    Ok(driver.finish())
+}
 
-    // Handed back to the caller's post-loop; see `ConcurrentOutcome`.
-    let mut last_dest_path: Option<PathBuf> = None;
-    let mut copy_error: Option<WriteFailure> = None;
+/// One task per top-level source item, streaming end to end. The future owns
+/// everything it touches (`copy_concurrent_task.rs`), so the window carries no
+/// lifetime and the phases around it stay free to borrow the driver.
+type CopyTaskFuture = Pin<Box<dyn Future<Output = Result<CopyTaskSuccess, CopyTaskFailure>> + Send>>;
 
-    // Concurrent path: FuturesUnordered-driven sliding window sized by
-    // `concurrency`. Each task streams one top-level source item end-to-end.
-    // Conflict resolution runs synchronously on this driver before the task
-    // is spawned (F14) so the whole batch blocks on a single Stop prompt
-    // instead of racing per-task prompts.
-    // Ok payload is `(partial_path, recorded_path, bytes)`: `partial_path`
-    // is the path the task pushed into `in_flight_partials` (the temp
-    // sibling under safe-replace, else the dest itself) so the result
-    // handler can remove the right entry; `recorded_path` is the final
-    // landed path for rollback bookkeeping (the original after a
-    // safe-replace finalize, else the dest).
-    //
-    // Err payload is a `CopyTaskFailure`: `cleanup_temp` distinguishes a
-    // STREAM failure (`true` — the dest/temp is a partial and must be
-    // cleaned) from a FINALIZE failure after a SUCCESSFUL write (`false` —
-    // the temp now holds the only complete copy of the new data and MUST be
-    // left on disk; the original was already deleted by
-    // `finalize_safe_replace`'s delete step). Deleting the temp in the
-    // finalize-failure case would be total data loss. The `created_*` ledger
-    // carries a DIRECTORY source's per-file partials out of the error arm so
-    // post-loop cleanup never recursively deletes a merged dest dir root.
-    type CopyTaskFuture = Pin<Box<dyn Future<Output = Result<CopyTaskSuccess, CopyTaskFailure>> + Send>>;
-    let mut in_flight: FuturesUnordered<CopyTaskFuture> = FuturesUnordered::new();
+/// The sliding window and the state that changes as it runs.
+///
+/// The borrowed context stays whole in `ctx` — it is what the per-source
+/// preparation in `copy_concurrent_source.rs` reads, and none of it changes
+/// during a run. Everything that DOES change lives here, which is what makes
+/// each phase a method you can read (and drive from a test) on its own.
+struct ConcurrentDriver<'a> {
+    ctx: ConcurrentCopy<'a>,
+    in_flight: FuturesUnordered<CopyTaskFuture>,
+    /// The sources still to prepare, in the order the user selected them.
+    sources: std::iter::Enumerate<std::slice::Iter<'a, PathBuf>>,
+    /// Set once the driver has SEEN the user's cancel / rollback: from then on
+    /// it stops waiting indefinitely for its tasks and gives them a bounded
+    /// window to wind down. See `copy.rs::CANCEL_DRAIN_DEADLINE`.
+    drain_deadline: Option<tokio::time::Instant>,
+    /// Whether that window is the hard-abort tier's short one rather than the
+    /// cooperative cancel's. Latched, so the abort re-arms the deadline once.
+    drain_shortened: bool,
+    /// Handed back to the caller's post-loop; see `ConcurrentOutcome`.
+    last_dest_path: Option<PathBuf>,
+    copy_error: Option<WriteFailure>,
+}
 
-    // Inline helper: drains ONE future from `in_flight`, updates tracking.
-    // Returns Err on the first task failure (caller breaks + stores copy_error).
-    // `in_flight` is threaded through as a mutable borrow so the helper is
-    // just a local lambda in shape, but we inline below for borrow clarity.
+/// How one trip through the driver's await ended.
+enum AwaitStep {
+    /// The wind-down window was armed or shortened. Nothing settled; go round
+    /// again so the new deadline is the one being waited on.
+    Rearmed,
+    /// A task came back.
+    Settled(Result<CopyTaskSuccess, CopyTaskFailure>),
+    /// The window emptied, or the wind-down deadline expired with tasks still
+    /// in it — those are abandoned, and their staged partials are cleaned up by
+    /// the caller's post-loop.
+    Finished,
+}
 
-    let mut iter = source_paths.iter().enumerate();
-    // Set once the driver has SEEN the user's cancel / rollback: from then on
-    // it stops waiting indefinitely for its tasks and gives them a bounded
-    // window to wind down. See `CANCEL_DRAIN_DEADLINE`.
-    let mut drain_deadline: Option<tokio::time::Instant> = None;
-    // Whether that window is the hard-abort tier's short one rather than the
-    // cooperative cancel's. Latched, so the abort re-arms the deadline once.
-    let mut drain_shortened = false;
-    loop {
-        // Keep pushing new tasks until either sources run out or the window is full.
-        while in_flight.len() < concurrency {
-            if is_cancelled(&state.intent) {
+impl<'a> ConcurrentDriver<'a> {
+    fn new(ctx: ConcurrentCopy<'a>) -> Self {
+        Self {
+            sources: ctx.source_paths.iter().enumerate(),
+            ctx,
+            in_flight: FuturesUnordered::new(),
+            drain_deadline: None,
+            drain_shortened: false,
+            last_dest_path: None,
+            copy_error: None,
+        }
+    }
+
+    /// Fill the window, wait for something, record it. Ends when the sources and
+    /// the window are both empty, on the first task failure, or when a
+    /// wind-down deadline expires.
+    async fn run(&mut self) -> Result<(), WriteFailure> {
+        loop {
+            self.spawn_ready_tasks().await?;
+            if self.in_flight.is_empty() {
                 break;
             }
-            let Some((source_index, source_path)) = iter.next() else {
+            match self.await_next().await {
+                AwaitStep::Rearmed => continue,
+                AwaitStep::Finished => break,
+                AwaitStep::Settled(Ok(success)) => self.record_success(success),
+                AwaitStep::Settled(Err(failure)) => {
+                    self.record_failure(failure);
+                    // Drop remaining in-flight tasks; their streams close, temp
+                    // files get cleaned up by the per-backend write abort +
+                    // delete path. Partial cleanup is the caller's post-loop.
+                    break;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Keep preparing and pushing sources until either they run out or the
+    /// window is full.
+    ///
+    /// Preparing a source is where conflict resolution happens, synchronously,
+    /// on this driver — so while a person is answering a Stop prompt the window
+    /// is neither filled further nor drained, and nothing is streaming into a
+    /// folder they are still being asked about.
+    async fn spawn_ready_tasks(&mut self) -> Result<(), WriteFailure> {
+        while self.in_flight.len() < self.ctx.concurrency {
+            if is_cancelled(&self.ctx.state.intent) {
+                break;
+            }
+            let Some((source_index, source_path)) = self.sources.next() else {
                 break;
             };
-
-            // Pre-known conflict already accounted upfront in the bulk skip.
-            if pre_skip_paths.contains(source_path) {
-                continue;
+            if let Some(task) = self.ctx.prepare_source(source_index, source_path).await? {
+                self.in_flight.push(Box::pin(run_copy_task(task)));
             }
-
-            // Is this source a directory? Resolved ONCE per source, here, from
-            // the preflight hint — or by probing when there is none (a LOCAL
-            // scan preview completes with an empty `per_path`, so a real
-            // directory can arrive hintless). Three things downstream read this
-            // answer and all three break on a wrong one: the conflict resolver,
-            // `copy_single_path`'s streaming branch, and — the data-safety one —
-            // the `in_flight_partials` gate below, which keeps a merged
-            // destination directory out of the post-loop's recursive sweep.
-            let source_hint = source_hints.get(source_path).copied();
-            let source_is_dir =
-                resolve_source_is_directory(&source_volume, source_path, source_hint.map(|hint| hint.is_directory))
-                    .await
-                    .map_err(|e| {
-                        WriteFailure::synthetic(map_volume_error(
-                            &source_path.display().to_string(),
-                            PathRole::Source,
-                            e,
-                        ))
-                    })?;
-            // Sizes stay hint-only: a missing size just means no SMB compound
-            // fast path, never a wrong branch, so it isn't worth a probe.
-            let source_size_hint = source_hint.and_then(|hint| (!hint.is_directory).then_some(hint.size));
-
-            // Resolve destination path + conflict synchronously.
-            let mut dest_item_path = if let Some(name) = source_path.file_name() {
-                dest_path.join(name)
-            } else {
-                dest_path.to_path_buf()
-            };
-            // For a file→file Overwrite, conflict resolution hands back a
-            // temp sibling to stream into plus the original path to swap in
-            // after the write fully lands (safe-replace). `None` ⇒ write
-            // `dest_item_path` directly.
-            let mut replace_after_write: Option<PathBuf> = None;
-            // The destination pre-check: something already at this name ⇒
-            // resolve the conflict. Asked as a `get_metadata` per source it
-            // is ONE ROUND TRIP PER FILE, serialized here on the driver, and
-            // on a NAS at 3.7 ms RTT it measured 2.378 s of a 3.224 s best
-            // run for 500 files — 74%, and no window width can overlap it
-            // (`docs/notes/transfer-concurrency-window-bench-2026-08-02.md`).
-            //
-            // Two things answer it more cheaply, in order:
-            //
-            // 1. **A destination directory THIS OPERATION created** (Phase
-            //    0.5): nothing the user already had can be inside a folder
-            //    that didn't exist a moment ago, so every probe is a
-            //    guaranteed miss and there's nothing even to index.
-            //    ❌ Never widen this to "the destination is empty". A
-            //    pre-existing empty directory can gain an entry from another
-            //    process between any two instants; one we just created cannot
-            //    have held anything BEFORE we made it. Only the second claim
-            //    is safe, and the difference is silent when you get it wrong.
-            // 2. **The destination listing Phase 0.6 already paid for**, for
-            //    a merge into a pre-existing folder — the ordinary F5 copy.
-            //    `DestNameIndex` answers `Absent` only when no name in that
-            //    listing can resolve to this one on any backend; anything it
-            //    can't settle comes back `Unknown` and falls through to the
-            //    probe below, which stays authoritative.
-            //
-            // The listing is taken once, at the start: by the 400th file of a
-            // large batch it can be minutes old, so a file that ARRIVES at
-            // the destination mid-batch is missed and an Overwrite replaces
-            // it with no prompt. That trade is deliberate and David chose it
-            // (2026-08-02); ❌ don't answer it with re-listing, polling, or a
-            // freshness window. `DETAILS.md` § "Answering the pre-check from
-            // one listing".
-            let existing_dest_meta = if dest_dir_is_ours {
-                None
-            } else {
-                match dest_index.as_ref().map(|index| index.lookup(source_path.file_name())) {
-                    Some(DestLookup::Absent) => None,
-                    Some(DestLookup::Present(entry)) => Some(*entry),
-                    // No index (a local destination, or a listing that
-                    // failed), or a name only the backend can settle.
-                    Some(DestLookup::Unknown) | None => {
-                        // Record the pre-check BEFORE awaiting it. In the
-                        // 2026-07-31 incident this destination `get_metadata`
-                        // was the driver's last log line and nothing said
-                        // whether it returned, so a dump has to be able to
-                        // name it as the step in progress.
-                        if let Some(probe) = op_probe.as_ref() {
-                            probe.set_driver_phase(
-                                super::super::transfer_probe::DriverPhase::PreparingNext,
-                                &format!("#{source_index} {}", dest_item_path.display()),
-                            );
-                        }
-                        dest_volume.get_metadata(&dest_item_path).await.ok()
-                    }
-                }
-            };
-            if let Some(dest_meta) = existing_dest_meta {
-                // The type and size come from the scan (or the one probe above),
-                // never a re-stat: an MTP `scan_for_copy` lists the parent dir,
-                // ~18 s for 1046 photos on a cold cache.
-                let source_is_directory_hint = Some(source_is_dir);
-                let dest_size_hint = dest_meta.size;
-                log::debug!(
-                    "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                    dest_item_path.display(),
-                    source_is_dir,
-                    dest_meta.is_directory,
-                );
-                // Copy the op-wide latch out, run the resolver on the stack
-                // local, store it back — mirroring the serial path. The
-                // resolver's `conflict_dispatch_lock` (acquired inside) is
-                // what serializes the human against in-flight deep merges
-                // spawned by earlier loop iterations; this same lock is why a
-                // top-level prompt and a deep prompt can't race the one
-                // oneshot slot. The known acceptable residual: an already-
-                // emitted prompt isn't retroactively resolved by another
-                // task's "…all" latch — a rare extra prompt, never data loss.
-                let mut latched = *apply_to_all_cell.lock_ignore_poison();
-                let resolved = resolve_volume_conflict(
-                    &source_volume,
-                    source_path,
-                    &dest_volume,
-                    &dest_item_path,
-                    config,
-                    &*events,
-                    operation_id,
-                    state,
-                    &mut latched,
-                    source_size_hint,
-                    dest_size_hint,
-                    source_is_directory_hint,
-                )
-                .await
-                .map_err(WriteFailure::synthetic);
-                *apply_to_all_cell.lock_ignore_poison() = latched;
-                let resolved = resolved?;
-                match resolved {
-                    None => {
-                        log::debug!(
-                            "copy_volumes_with_progress: skipping {} due to conflict resolution",
-                            source_path.display()
-                        );
-                        account_skipped_file(
-                            source_path,
-                            source_hints,
-                            &files_done_atomic,
-                            &atomic_bytes_done,
-                            &files_skipped_atomic,
-                            &bytes_skipped_atomic,
-                            &last_progress_mutex,
-                            progress_interval,
-                            state,
-                            &*events,
-                            operation_id,
-                            total_files,
-                            total_bytes,
-                        );
-                        continue;
-                    }
-                    Some(rc) => {
-                        dest_item_path = rc.write_path;
-                        replace_after_write = rc.replace_after_write;
-                    }
-                }
-            }
-
-            let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
-            log::debug!(
-                "copy_volumes_with_progress: spawning copy {} -> {}",
-                source_path.display(),
-                dest_item_path.display()
-            );
-
-            // Mark this destination as in-flight so cancel/error can clean it
-            // up — but ONLY for a FILE source. A DIRECTORY source's dest is a
-            // (possibly pre-existing, merged) dir whose cleanup path is
-            // `remove_tree`; recording the dir ROOT here and
-            // then recursively deleting it on keep-partials/rollback would
-            // destroy pre-existing dest-only files (the merge invariant). A
-            // directory source's cleanup is owned entirely by the per-file
-            // `created`/`copied_paths` ledger threaded out of the task's
-            // result arms. (A dir task dropped mid-flight on abort leaves its
-            // in-flight `.cmdr-tmp-<uuid>` for the backend writer's abort to
-            // clean; never the merged root.) Pinned by
-            // `cancel_mid_merge_stream_concurrent_preserves_preexisting_dest_file`.
-            if !source_is_dir {
-                in_flight_partials.lock_ignore_poison().push(dest_item_path.clone());
-            }
-
-            // Register before the task is pushed, so a task that never gets
-            // polled still shows up in a dump as `spawned`.
-            let task_probe = op_probe.as_ref().map(|probe| {
-                probe.begin_task(
-                    source_index,
-                    &source_path.display().to_string(),
-                    &dest_item_path.display().to_string(),
-                )
-            });
-            in_flight.push(Box::pin(run_copy_task(CopyTask {
-                events: Arc::clone(&events),
-                operation_id: operation_id.to_string(),
-                state: Arc::clone(state),
-                source_volume: Arc::clone(&source_volume),
-                dest_volume: Arc::clone(&dest_volume),
-                config: config.clone(),
-                apply_to_all: Arc::clone(&apply_to_all_cell),
-                source_path: source_path.clone(),
-                source_is_dir,
-                source_size_hint,
-                dest_path: dest_item_path,
-                replace_after_write,
-                file_name,
-                window: file_window.clone(),
-                op_probe: op_probe.clone(),
-                task_probe,
-                files_done: Arc::clone(&files_done_atomic),
-                bytes_done: Arc::clone(&atomic_bytes_done),
-                last_progress: Arc::clone(&last_progress_mutex),
-                progress_interval,
-                total_files,
-                total_bytes,
-            })));
         }
+        Ok(())
+    }
 
-        if in_flight.is_empty() {
-            break;
-        }
-
-        // The await the driver parked on for 20 minutes in the 2026-07-31
-        // incident. Naming it means a dump distinguishes "the driver is
-        // waiting for tasks" from "the driver is stuck preparing the next
-        // source", which the log could not tell apart.
-        if let Some(probe) = op_probe.as_ref() {
+    /// Wait for the next task, for the user's cancel, or for the wind-down
+    /// deadline — whichever comes first.
+    ///
+    /// Observing the user's intent HERE is what makes Cancel and Rollback work
+    /// at all. `spawn_ready_tasks` checks `is_cancelled` too, but a driver whose
+    /// window is full — or whose sources have run out — never gets back to it
+    /// while its tasks are parked, which is why Rollback did nothing in the
+    /// 2026-07-31 incident. `backend_cancel` fires on every transition out of
+    /// `Running`, so both Cancel and Rollback land here.
+    async fn await_next(&mut self) -> AwaitStep {
+        // The await the driver parked on for 20 minutes in that incident.
+        // Naming it means a dump distinguishes "the driver is waiting for tasks"
+        // from "the driver is stuck preparing the next source", which the log
+        // could not tell apart.
+        if let Some(probe) = self.ctx.op_probe.as_ref() {
             probe.set_driver_phase(super::super::transfer_probe::DriverPhase::AwaitingTasks, "");
         }
-
-        // Observing the user's intent HERE is what makes Cancel and Rollback
-        // work at all. The spawn loop above checks `is_cancelled` too, but a
-        // driver whose window is full — or whose sources have run out — never
-        // gets back to it while its tasks are parked, which is why Rollback
-        // did nothing in the incident. `backend_cancel` fires on every
-        // transition out of `Running`, so both Cancel and Rollback land here.
-        let next = match drain_deadline {
+        let operation_id = self.ctx.operation_id;
+        let next = match self.drain_deadline {
             // Already winding down: bounded, so one task that never returns
             // can't hold the operation (and the user's dialog) open.
             //
@@ -513,19 +563,19 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
             // fired token is ready forever, and an unguarded arm would spin.
             Some(deadline) => tokio::select! {
                 biased;
-                () = state.backend_abort.cancelled(), if !drain_shortened => {
-                    drain_shortened = true;
+                () = self.ctx.state.backend_abort.cancelled(), if !self.drain_shortened => {
+                    self.drain_shortened = true;
                     let shortened = drain_deadline_for(true);
                     log::info!(
                         target: "copy",
                         "copy_volumes_with_progress: op={operation_id} is no longer waiting for its {} in-flight task(s); \
                          cutting the wind-down short (to {shortened:?})",
-                        in_flight.len(),
+                        self.in_flight.len(),
                     );
-                    drain_deadline = Some(tokio::time::Instant::now() + shortened);
-                    continue;
+                    self.drain_deadline = Some(tokio::time::Instant::now() + shortened);
+                    return AwaitStep::Rearmed;
                 }
-                result = tokio::time::timeout_at(deadline, in_flight.next()) => match result {
+                result = tokio::time::timeout_at(deadline, self.in_flight.next()) => match result {
                     Ok(next) => next,
                     Err(_) => {
                         crate::log_error!(
@@ -533,14 +583,14 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                             "copy_volumes_with_progress: op={} abandoning {} task(s) that did not wind down within {:?} of the cancel. \
                              Their handles are left for the backend to reap; their staged partials are cleaned up below.{}",
                             operation_id,
-                            in_flight.len(),
-                            drain_deadline_for(drain_shortened),
-                            op_probe
+                            self.in_flight.len(),
+                            drain_deadline_for(self.drain_shortened),
+                            self.ctx.op_probe
                                 .as_ref()
                                 .map(|p| format!("\n{}", p.render_dump("abandoning wedged tasks")))
                                 .unwrap_or_default(),
                         );
-                        break;
+                        return AwaitStep::Finished;
                     }
                 },
             },
@@ -549,182 +599,184 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     // Cancel wins the race: a task result that was also ready
                     // is re-polled on the next pass, so nothing is dropped.
                     biased;
-                    () = state.backend_cancel.cancelled() => {
+                    () = self.ctx.state.backend_cancel.cancelled() => {
                         // An abort fires tier 1 first, so it can be what woke this
                         // arm; ask which window we're owed rather than assuming.
-                        drain_shortened = state.backend_abort.is_cancelled();
-                        let window = drain_deadline_for(drain_shortened);
+                        self.drain_shortened = self.ctx.state.backend_abort.is_cancelled();
+                        let window = drain_deadline_for(self.drain_shortened);
                         log::info!(
                             target: "copy",
                             "copy_volumes_with_progress: op={} observed {:?} while awaiting {} in-flight task(s); \
                              winding them down (up to {window:?})",
                             operation_id,
-                            load_intent(&state.intent),
-                            in_flight.len(),
+                            load_intent(&self.ctx.state.intent),
+                            self.in_flight.len(),
                         );
-                        drain_deadline = Some(tokio::time::Instant::now() + window);
-                        continue;
+                        self.drain_deadline = Some(tokio::time::Instant::now() + window);
+                        return AwaitStep::Rearmed;
                     }
-                    next = in_flight.next() => next,
+                    next = self.in_flight.next() => next,
                 }
             }
         };
         match next {
-            Some(Ok(CopyTaskSuccess {
-                partial_path,
-                recorded_path,
-                source_is_dir,
-                bytes,
-                overwrote,
-                created_files,
-                created_dirs: task_created_dirs,
-                source_path: done_source,
-                skipped_count: task_skipped_count,
-                skipped_bytes: task_skipped_bytes,
-            })) => {
-                // Fold this source's deep-merge skips into the op-wide tally,
-                // and — when the source landed with ZERO skips — record it as
-                // fully extracted so the out-of-zip move op may drop it.
-                deep_skipped_files.fetch_add(task_skipped_count, Ordering::Relaxed);
-                deep_skipped_bytes.fetch_add(task_skipped_bytes, Ordering::Relaxed);
-                if task_skipped_count == 0 {
-                    events.note_source_landed_clean(&done_source);
-                }
-                // Remove the in-flight partial (the temp under safe-replace,
-                // else the dest) and record what the op wrote for rollback.
-                let mut partials = in_flight_partials.lock_ignore_poison();
-                if let Some(pos) = partials.iter().position(|p| p == &partial_path) {
-                    partials.swap_remove(pos);
-                }
-                drop(partials);
-                let file_name_done = recorded_path.file_name().map(|n| n.to_string_lossy().to_string());
-                // Journal the per-leaf `rollback_unit` rows under the REAL
-                // volume ids (a file source → one leaf at `recorded_path`; a dir
-                // source → one leaf per `created_files` entry, source rebased
-                // from `done_source`). Created dirs journal post-loop (after all
-                // files, so their `seq` follows the contents). No-ops for the
-                // both-local shortcut (that path journals via `copy_files_start`)
-                // and in tests that don't set a journal target.
-                if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
-                    journal::record_volume_transfer_source(
-                        operation_id,
-                        src_vol,
-                        &done_source,
-                        dst_vol,
-                        &recorded_path,
-                        source_is_dir,
-                        &created_files,
-                        (!source_is_dir).then_some(bytes as i64),
-                        overwrote,
-                    );
-                }
-                // For a DIRECTORY source, record the individual files and the
-                // newly-created subdirs the op wrote — never the directory
-                // root — so rollback can't recursively delete a merged
-                // directory and destroy dest-only files. For a FILE source,
-                // record the landed path (the original after a safe-replace
-                // finalize, else the dest); `created_*` are empty.
-                if source_is_dir {
-                    copied_paths.lock_ignore_poison().extend(created_files);
-                    created_dirs.lock_ignore_poison().extend(task_created_dirs);
-                } else {
-                    copied_paths.lock_ignore_poison().push(recorded_path);
-                }
-                // Per-file milestone emit. The task's `on_file_complete`
-                // bumped `files_done_atomic`; the FE's files-axis needs
-                // a Copying event that observes the bumped value, but
-                // no chunked emit fires after `on_file_complete` (the
-                // file's transfer is over). Mirrors the serial path's
-                // milestone in `transfer_driver.rs::drive_transfer_serial_async`.
-                *last_progress_mutex.lock_ignore_poison() = Instant::now();
-                let current_files = files_done_atomic.load(Ordering::Relaxed);
-                let current_bytes = atomic_bytes_done.load(Ordering::Relaxed);
-                state.emit_progress_via_sink(
-                    &*events,
-                    WriteProgressEvent::new(
-                        operation_id.to_string(),
-                        WriteOperationType::Copy,
-                        WriteOperationPhase::Copying,
-                        file_name_done.clone(),
-                        current_files,
-                        total_files,
-                        current_bytes,
-                        total_bytes,
-                    ),
-                );
-                update_operation_status(
-                    operation_id,
-                    WriteOperationPhase::Copying,
-                    file_name_done,
-                    current_files,
-                    total_files,
-                    current_bytes,
-                    total_bytes,
-                );
-            }
-            Some(Err(CopyTaskFailure {
-                failed_path: failed_dest,
-                reported_path,
-                error: e,
-                cleanup_temp,
-                source_is_dir,
-                created_files,
-                created_dirs: task_created_dirs,
-            })) => {
-                // Remove from in-flight partials; this one's own partial
-                // cleanup (if any) the post-loop logic will do.
-                let mut partials = in_flight_partials.lock_ignore_poison();
-                if let Some(pos) = partials.iter().position(|p| p == &failed_dest) {
-                    partials.swap_remove(pos);
-                }
-                drop(partials);
-                if source_is_dir {
-                    // DIRECTORY source interrupted mid-stream. Record the
-                    // per-file partials and newly-created subdirs the op
-                    // wrote, NOT the dir root `failed_dest`. The post-loop
-                    // then cleans/rolls back per-file (and prunes created
-                    // dirs empty-only), so a merged dir holding a
-                    // pre-existing dest-only file survives — recursively
-                    // deleting the root would be silent data loss.
-                    copied_paths.lock_ignore_poison().extend(created_files);
-                    created_dirs.lock_ignore_poison().extend(task_created_dirs);
-                } else if cleanup_temp {
-                    // FILE source stream failure: `failed_dest` is the single
-                    // half-written partial. Clean it.
-                    //
-                    // `cleanup_temp == false` ⇒ finalize failed AFTER a
-                    // successful write: `failed_dest` is the temp holding the
-                    // ONLY complete copy of the new data (finalize already
-                    // deleted the original). Do NOT designate it for cleanup —
-                    // leaving it on disk as a `.cmdr-tmp-*` artifact is the
-                    // correct, safe outcome. Cleaning it would be total data
-                    // loss.
-                    last_dest_path = Some(failed_dest.clone());
-                }
-                copy_error = Some(WriteFailure::from_volume(&reported_path, PathRole::Source, e));
-                // Drop remaining in-flight tasks; their streams close,
-                // temp files get cleaned up by the per-backend write
-                // abort + delete path. Partial cleanup is done below.
-                break;
-            }
-            None => break,
+            Some(settled) => AwaitStep::Settled(settled),
+            None => AwaitStep::Finished,
         }
     }
 
-    // Drain whatever's left on cancel/error. On success, `in_flight` is
-    // already empty. On abort, drop cancels the remaining futures (F10).
-    if let Some(probe) = op_probe.as_ref() {
-        probe.set_driver_phase(
-            super::super::transfer_probe::DriverPhase::PostLoop,
-            "draining in-flight",
+    /// One source landed: fold its tallies in, drop its in-flight partial,
+    /// journal it, record what it wrote for rollback, and emit the milestone.
+    fn record_success(&mut self, success: CopyTaskSuccess) {
+        let CopyTaskSuccess {
+            partial_path,
+            recorded_path,
+            source_is_dir,
+            bytes,
+            overwrote,
+            created_files,
+            created_dirs: task_created_dirs,
+            source_path: done_source,
+            skipped_count: task_skipped_count,
+            skipped_bytes: task_skipped_bytes,
+        } = success;
+        let ctx = &self.ctx;
+
+        // Fold this source's deep-merge skips into the op-wide tally, and — when
+        // the source landed with ZERO skips — record it as fully extracted so
+        // the out-of-zip move op may drop it.
+        ctx.deep_skipped_files.fetch_add(task_skipped_count, Ordering::Relaxed);
+        ctx.deep_skipped_bytes.fetch_add(task_skipped_bytes, Ordering::Relaxed);
+        if task_skipped_count == 0 {
+            ctx.events.note_source_landed_clean(&done_source);
+        }
+        // Remove the in-flight partial (the temp under safe-replace, else the
+        // dest) and record what the op wrote for rollback.
+        ctx.forget_in_flight_partial(&partial_path);
+        let file_name_done = recorded_path.file_name().map(|n| n.to_string_lossy().to_string());
+        // Journal the per-leaf `rollback_unit` rows under the REAL volume ids (a
+        // file source → one leaf at `recorded_path`; a dir source → one leaf per
+        // `created_files` entry, source rebased from `done_source`). Created dirs
+        // journal post-loop (after all files, so their `seq` follows the
+        // contents). No-ops for the both-local shortcut (that path journals via
+        // `copy_files_start`) and in tests that don't set a journal target.
+        if let Some((src_vol, dst_vol)) = ctx.journal_volumes.as_ref() {
+            journal::record_volume_transfer_source(
+                ctx.operation_id,
+                src_vol,
+                &done_source,
+                dst_vol,
+                &recorded_path,
+                source_is_dir,
+                &created_files,
+                (!source_is_dir).then_some(bytes as i64),
+                overwrote,
+            );
+        }
+        // For a DIRECTORY source, record the individual files and the
+        // newly-created subdirs the op wrote — never the directory root — so
+        // rollback can't recursively delete a merged directory and destroy
+        // dest-only files. For a FILE source, record the landed path (the
+        // original after a safe-replace finalize, else the dest); `created_*`
+        // are empty.
+        if source_is_dir {
+            ctx.copied_paths.lock_ignore_poison().extend(created_files);
+            ctx.created_dirs.lock_ignore_poison().extend(task_created_dirs);
+        } else {
+            ctx.copied_paths.lock_ignore_poison().push(recorded_path);
+        }
+        // Per-file milestone emit. The task's `on_file_complete` bumped
+        // `files_done_atomic`; the FE's files-axis needs a Copying event that
+        // observes the bumped value, but no chunked emit fires after
+        // `on_file_complete` (the file's transfer is over). Mirrors the serial
+        // path's milestone in `transfer_driver.rs::drive_transfer_serial_async`.
+        *ctx.last_progress_mutex.lock_ignore_poison() = Instant::now();
+        let current_files = ctx.files_done_atomic.load(Ordering::Relaxed);
+        let current_bytes = ctx.atomic_bytes_done.load(Ordering::Relaxed);
+        ctx.state.emit_progress_via_sink(
+            &*ctx.events,
+            WriteProgressEvent::new(
+                ctx.operation_id.to_string(),
+                WriteOperationType::Copy,
+                WriteOperationPhase::Copying,
+                file_name_done.clone(),
+                current_files,
+                ctx.total_files,
+                current_bytes,
+                ctx.total_bytes,
+            ),
+        );
+        update_operation_status(
+            ctx.operation_id,
+            WriteOperationPhase::Copying,
+            file_name_done,
+            current_files,
+            ctx.total_files,
+            current_bytes,
+            ctx.total_bytes,
         );
     }
-    drop(in_flight);
 
-    Ok(ConcurrentOutcome {
-        last_dest_path,
-        copy_error,
-    })
+    /// One source failed: drop its in-flight partial, thread its rollback ledger
+    /// out, and decide whether what it left behind is a partial to clean or
+    /// committed data to keep.
+    fn record_failure(&mut self, failure: CopyTaskFailure) {
+        let CopyTaskFailure {
+            failed_path: failed_dest,
+            reported_path,
+            error: e,
+            cleanup_temp,
+            source_is_dir,
+            created_files,
+            created_dirs: task_created_dirs,
+        } = failure;
+        let ctx = &self.ctx;
+
+        // Remove from in-flight partials; this one's own partial cleanup (if
+        // any) the post-loop logic will do.
+        ctx.forget_in_flight_partial(&failed_dest);
+        if source_is_dir {
+            // DIRECTORY source interrupted mid-stream. Record the per-file
+            // partials and newly-created subdirs the op wrote, NOT the dir root
+            // `failed_dest`. The post-loop then cleans/rolls back per-file (and
+            // prunes created dirs empty-only), so a merged dir holding a
+            // pre-existing dest-only file survives — recursively deleting the
+            // root would be silent data loss.
+            ctx.copied_paths.lock_ignore_poison().extend(created_files);
+            ctx.created_dirs.lock_ignore_poison().extend(task_created_dirs);
+        } else if cleanup_temp {
+            // FILE source stream failure: `failed_dest` is the single
+            // half-written partial. Clean it.
+            //
+            // `cleanup_temp == false` ⇒ finalize failed AFTER a successful
+            // write: `failed_dest` is the temp holding the ONLY complete copy of
+            // the new data (finalize already deleted the original). Do NOT
+            // designate it for cleanup — leaving it on disk as a `.cmdr-tmp-*`
+            // artifact is the correct, safe outcome. Cleaning it would be total
+            // data loss.
+            self.last_dest_path = Some(failed_dest);
+        }
+        self.copy_error = Some(WriteFailure::from_volume(&reported_path, PathRole::Source, e));
+    }
+
+    /// Hand the post-loop what it needs, after letting go of whatever is left in
+    /// the window.
+    fn finish(self) -> ConcurrentOutcome {
+        // Drain whatever's left on cancel/error. On success, `in_flight` is
+        // already empty. On abort, drop cancels the remaining futures (F10).
+        if let Some(probe) = self.ctx.op_probe.as_ref() {
+            probe.set_driver_phase(
+                super::super::transfer_probe::DriverPhase::PostLoop,
+                "draining in-flight",
+            );
+        }
+        drop(self.in_flight);
+
+        ConcurrentOutcome {
+            last_dest_path: self.last_dest_path,
+            copy_error: self.copy_error,
+        }
+    }
 }
 
 /// The driver's own contract, asserted on what it hands back rather than on the
