@@ -1161,6 +1161,12 @@ mod crashsafe_tests;
 #[path = "copy_extract_out_tests.rs"]
 mod extract_out_tests;
 #[cfg(test)]
+#[path = "merge_dir_vs_dir_tests.rs"]
+mod merge_dir_vs_dir_tests;
+#[cfg(test)]
+#[path = "merge_dispatch_mutex_tests.rs"]
+mod merge_dispatch_mutex_tests;
+#[cfg(test)]
 #[path = "merge_tests.rs"]
 mod merge_tests;
 #[cfg(test)]

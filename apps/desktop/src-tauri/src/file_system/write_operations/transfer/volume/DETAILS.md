@@ -19,8 +19,13 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   `copy_single_path`). `merge.rs` walks a tree (`copy_directory_streaming`, `resolve_merge_child`): a directory child
   recurses there, a file child goes to `strategy.rs`. `sequential_extract.rs` reuses the same walk in plan mode, which
   is why the merge/conflict/rollback code is not reimplemented for one-pass archives.
-- **`strategy_*_tests.rs` are shallow engine tests**; the full merge + policy pipeline is pinned by
-  `merge_tests.rs`. `rename_merge_tests.rs` drives `LocalPosixVolume` over a tempdir because
+- **`strategy_*_tests.rs` are shallow engine tests**; the full merge + policy pipeline is pinned by the copy-side
+  merge suite. That suite is three files split by contract, all declared from `copy.rs`: `merge_tests.rs` (per-file
+  conflict resolution INSIDE a directory merge, and the fixtures `make_rich_merge` / `make_deep_clash_with_bigger_dest`
+  it owns), `merge_dir_vs_dir_tests.rs` (the "always merge, never prompt" contract and its boundary, the type
+  mismatches and fresh levels that are NOT dir-vs-dir merges), and `merge_dispatch_mutex_tests.rs` (the
+  conflict-dispatch mutex across concurrent and nested merges). A new merge test adds itself to the matching contract
+  rather than growing one file. `rename_merge_tests.rs` drives `LocalPosixVolume` over a tempdir because
   `InMemoryVolume` models neither real subtree-rename nor empty-only-delete semantics, plus a `CaseInsensitiveVolume`
   double for the case-fold cases.
 - **Naming a destination is `naming.rs`, not `conflict.rs`.** `find_unique_volume_name` (plus `resolve_local_path`, the
@@ -343,7 +348,7 @@ The two are NOT equivalent, and every gap is a conflict that becomes a silent ov
 
 Pinned by `copy_precheck_tests.rs` (end to end, against a destination that resolves names case- and normalization-insensitively like a real share: an exact-match map turns those cases green while the user's data is gone) and `dest_name_index_tests.rs` (the matching rule alone).
 
-**The conflict-dispatch mutex serializes the human across concurrent / nested merges.** `WriteOperationState::conflict_dispatch_lock` (a `tokio::sync::Mutex`, next to `conflict_slot` — same concern: one human, one oneshot slot) guards the whole Stop-mode dispatch inside `resolve_volume_conflict`: acquire → check `is_cancelled` (bail with `Cancelled` if so — load-bearing: a dropped sender on cancel unblocks only the ONE awaiting task, so a task parked on the mutex must not then emit a prompt nobody will answer, a hang) → re-check the latch (a prior "…all" answer collapses this queued prompt) → emit + await → store latch → release. Released on every exit path, NEVER held across the subsequent file write — serialize the human, not the I/O. The concurrent spawn loop's top-level dispatch and every deep merge acquire the SAME lock. Known acceptable residual: a prompt already emitted before another task latched "…all" isn't retroactively resolved — a rare extra prompt, never a data risk. Pinned by `merge_tests.rs` (concurrent-two-deep-clashes, top-level-vs-deep race, cancel-while-queued no-hang).
+**The conflict-dispatch mutex serializes the human across concurrent / nested merges.** `WriteOperationState::conflict_dispatch_lock` (a `tokio::sync::Mutex`, next to `conflict_slot` — same concern: one human, one oneshot slot) guards the whole Stop-mode dispatch inside `resolve_volume_conflict`: acquire → check `is_cancelled` (bail with `Cancelled` if so — load-bearing: a dropped sender on cancel unblocks only the ONE awaiting task, so a task parked on the mutex must not then emit a prompt nobody will answer, a hang) → re-check the latch (a prior "…all" answer collapses this queued prompt) → emit + await → store latch → release. Released on every exit path, NEVER held across the subsequent file write — serialize the human, not the I/O. The concurrent spawn loop's top-level dispatch and every deep merge acquire the SAME lock. Known acceptable residual: a prompt already emitted before another task latched "…all" isn't retroactively resolved — a rare extra prompt, never a data risk. Pinned by `merge_dispatch_mutex_tests.rs` (concurrent-two-deep-clashes, top-level-vs-deep race, cancel-while-queued no-hang).
 
 **The merge invariant.** A merge never deletes or overwrites a dest file the source doesn't shadow — under every file policy, on every backend, including cancel and rollback mid-merge. Pinned by `merge_tests.rs::merge_never_deletes_unshadowed_dest_files_under_every_policy` (the property test) and the SMB integration pin `smb_integration_merge_deep_clash_skip_all_preserves_dest_only_files`.
 
