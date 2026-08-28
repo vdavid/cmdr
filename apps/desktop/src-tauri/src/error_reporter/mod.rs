@@ -393,9 +393,11 @@ pub async fn upload(zip_bytes: Vec<u8>, manifest: &BundleManifest, server_url: &
             "Skipping error report upload (E2E build). Local ID: {}",
             manifest.id,
         );
-        return Ok(UploadResult {
+        // Tail expression, not `return`: under this feature the block below is compiled
+        // out, so this block IS the function body and a `return` would be redundant.
+        Ok(UploadResult {
             id: manifest.id.clone(),
-        });
+        })
     }
     #[cfg(not(feature = "playwright-e2e"))]
     {

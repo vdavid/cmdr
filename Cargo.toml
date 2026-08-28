@@ -86,3 +86,8 @@ undocumented_unsafe_blocks = "warn"
 # No silent `.unwrap()` in production: each is a handled error or a documented
 # `.expect("why")`. `#[test]` fns are exempt via `clippy.toml`.
 unwrap_used = "warn"
+# A std/parking_lot guard alive across an `.await` parks a lock on a task the runtime
+# may not poll again for a long time, or ever. The whole app can hang on it, and the
+# symptom (one subsystem stops, the rest looks fine) reads as anything but a lock.
+# The tree is clean today, so this only has to stay clean.
+await_holding_lock = "deny"

@@ -40,7 +40,13 @@ pub enum SendFeedbackResult {
     /// E2E builds compile out the network path in `send` (the only constructor of this
     /// variant), so `deny(unused)` needs the cfg-gated allow. The variant must stay even
     /// then: the frontend's generated union type covers all three kinds.
-    #[cfg_attr(feature = "playwright-e2e", allow(dead_code))]
+    #[cfg_attr(
+        feature = "playwright-e2e",
+        allow(
+            dead_code,
+            reason = "E2E builds compile out `send`'s network path, the only constructor"
+        )
+    )]
     SoftFailure,
 }
 
@@ -85,7 +91,10 @@ pub fn build_payload(feedback: String, email: Option<String>) -> FeedbackPayload
 
 /// Network timeout for the send request. Mirrors the beta-signup and crash/error reporters.
 /// E2E builds compile out the network path in `send` (its only user), hence the cfg-gated allow.
-#[cfg_attr(feature = "playwright-e2e", allow(dead_code))]
+#[cfg_attr(
+    feature = "playwright-e2e",
+    allow(dead_code, reason = "E2E builds compile out `send`'s network path, its only user")
+)]
 const SEND_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// POST the payload to the api-server. Skips the network in CI (env var) and in E2E builds
@@ -96,7 +105,9 @@ pub async fn send(payload: &FeedbackPayload, server_url: &str) -> SendFeedbackRe
     {
         let _ = (payload, server_url); // the network path is compiled out below
         log::info!(target: "cmdr_lib::feedback", "Skipping feedback send (E2E build)");
-        return SendFeedbackResult::Sent;
+        // Tail expression, not `return`: under this feature the block below is compiled
+        // out, so this block IS the function body and a `return` would be redundant.
+        SendFeedbackResult::Sent
     }
     #[cfg(not(feature = "playwright-e2e"))]
     {
