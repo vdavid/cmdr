@@ -1,14 +1,15 @@
 /**
  * Component-level test for `ToastItem.svelte`.
  *
- * Focuses on the close-button tooltip and the `onUserDismiss` vs `onTimeout`
- * split, both added so the AI download toast can show a tooltip on its X
- * button and remember user-driven dismissal.
+ * Covers the close-button tooltip, the `onUserDismiss` vs `onTimeout` split,
+ * and the auto-dismiss rule: a transient toast hides at
+ * `max(mountedAt + timeoutMs, pointerLeftAt + HOVER_LEAVE_GRACE_MS)`.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import ToastItem from './ToastItem.svelte'
+import { HOVER_LEAVE_GRACE_MS } from './toast-store.svelte'
 
 function mountItem(props: Record<string, unknown>): HTMLElement {
   const target = document.createElement('div')
@@ -98,7 +99,7 @@ describe('ToastItem close button', () => {
   })
 })
 
-describe('ToastItem hover-pause and grace timer', () => {
+describe('ToastItem auto-dismiss rule', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     vi.useFakeTimers()
@@ -120,47 +121,65 @@ describe('ToastItem hover-pause and grace timer', () => {
     expect(onTimeout).toHaveBeenCalledWith('baseline')
   })
 
-  it('hover before expiry pauses the timer; leaving resumes with remaining time', async () => {
+  it('keeps the original deadline when the pointer leaves well inside the natural window', async () => {
     const onTimeout = vi.fn()
-    const target = mountItem({ onTimeout, id: 'pause', dismissal: 'transient', timeoutMs: 4000 })
+    const target = mountItem({ onTimeout, id: 'inside', dismissal: 'transient', timeoutMs: 4000 })
     await tick()
 
-    // 1 second in, hover -> pause.
-    vi.advanceTimersByTime(1000)
+    // Hover from t=500 to t=1000: the hover neither pauses nor extends the clock.
     const toast = target.querySelector('.toast') as HTMLElement
+    vi.advanceTimersByTime(500)
     toast.dispatchEvent(new PointerEvent('pointerenter'))
-
-    // Spend 10 seconds hovered; no timeout should fire.
-    vi.advanceTimersByTime(10000)
-    expect(onTimeout).not.toHaveBeenCalled()
-
-    // Leave -> should re-arm with remaining 3000 ms.
+    vi.advanceTimersByTime(500)
     toast.dispatchEvent(new PointerEvent('pointerleave'))
+
+    // 3000 ms of the natural window are left, and that beats the 1000 ms tail,
+    // so the toast must live the full remainder — not be shortened to the tail.
     vi.advanceTimersByTime(2999)
     expect(onTimeout).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(2)
-    expect(onTimeout).toHaveBeenCalledWith('pause')
+    expect(onTimeout).toHaveBeenCalledWith('inside')
   })
 
-  it('hover past natural expiry holds the toast; leaving triggers a 2000 ms grace timer', async () => {
+  it('holds a toast hovered past its natural deadline, then hides it one second after the pointer leaves', async () => {
     const onTimeout = vi.fn()
-    const target = mountItem({ onTimeout, id: 'grace', dismissal: 'transient', timeoutMs: 4000 })
+    const target = mountItem({ onTimeout, id: 'past', dismissal: 'transient', timeoutMs: 4000 })
     await tick()
 
-    // Hover immediately, then go past natural expiry.
+    // Hover at t=1000 (well inside the window) and stay until t=20000.
     const toast = target.querySelector('.toast') as HTMLElement
+    vi.advanceTimersByTime(1000)
     toast.dispatchEvent(new PointerEvent('pointerenter'))
-    vi.advanceTimersByTime(10000)
+    vi.advanceTimersByTime(19000)
     expect(onTimeout).not.toHaveBeenCalled()
 
-    // Leave -> grace timer (2000 ms), not immediate dismissal.
+    // The natural deadline is long gone, so the 1000 ms tail decides.
     toast.dispatchEvent(new PointerEvent('pointerleave'))
-    vi.advanceTimersByTime(1999)
+    vi.advanceTimersByTime(HOVER_LEAVE_GRACE_MS - 1)
     expect(onTimeout).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(2)
-    expect(onTimeout).toHaveBeenCalledWith('grace')
+    expect(onTimeout).toHaveBeenCalledWith('past')
+  })
+
+  it('gives the one-second tail when the pointer leaves just before the natural deadline', async () => {
+    const onTimeout = vi.fn()
+    const target = mountItem({ onTimeout, id: 'tail', dismissal: 'transient', timeoutMs: 4000 })
+    await tick()
+
+    // Leave at t=3900: only 100 ms of the natural window remain, so the tail wins.
+    const toast = target.querySelector('.toast') as HTMLElement
+    vi.advanceTimersByTime(3800)
+    toast.dispatchEvent(new PointerEvent('pointerenter'))
+    vi.advanceTimersByTime(100)
+    toast.dispatchEvent(new PointerEvent('pointerleave'))
+
+    vi.advanceTimersByTime(999)
+    expect(onTimeout).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(2)
+    expect(onTimeout).toHaveBeenCalledWith('tail')
   })
 
   it('persistent toast has no timer regardless of hover', async () => {

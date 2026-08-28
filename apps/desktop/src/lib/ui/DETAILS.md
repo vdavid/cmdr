@@ -842,18 +842,21 @@ FIRST toast's `originPane` (consistent with its partial replace of other fields)
 
 ### Hover behavior
 
-All transient toasts pause their auto-dismiss timer while the pointer is over them. On pointer leave, the timer either
-resumes with the remaining time or starts a 2-second grace window, depending on whether the user got any unhovered time
-to read the toast:
+A transient toast hides at `max(mountedAt + timeoutMs, pointerLeftAt + HOVER_LEAVE_GRACE_MS)`, with the grace tail at
+1 second. Hovering doesn't pause or extend the natural clock; it only guarantees that tail once the cursor is off, so a
+toast can't vanish out from under a pointer that's still on it and can't snap away the instant the mouse drifts off.
 
-- If the timer had made any progress before the hover started, leaving resumes the timer with the captured remainder so
-  the user gets the rest of the natural visibility window they would have had without the hover.
-- If the pointer entered before the toast had any unhovered visibility (the only reading window was during hover),
-  leaving starts a `HOVER_LEAVE_GRACE_MS` (2-second) grace timer. This catches accidental cursor exits and gives the
-  user a beat to actually read the toast before it disappears.
+In practice: `pointerenter` clears the timer, `pointerleave` re-arms it for whatever is left of the natural window, or
+the tail, whichever is longer. A 4-second toast hovered from t=1s to t=20s therefore goes at t=21s (the tail decides);
+the same toast hovered t=0.5s–1s still goes at t=4s (the natural deadline decides), not a second after the pointer
+leaves.
 
-`HOVER_LEAVE_GRACE_MS` is exported from `toast/index.ts` for any future tuning. Persistent toasts have no timer and the
-hover handlers no-op for them.
+Decision: don't turn this into a paused countdown. Handing a long-hovered toast its leftover seconds back makes it
+linger once the user is clearly done with it, and pausing costs a pile of bookkeeping (elapsed time, captured
+remainder, whether the toast ever had unhovered visibility) that the `max()` rule replaces with a deadline and a timer.
+
+`HOVER_LEAVE_GRACE_MS` lives in `toast/toast-store.svelte.ts` so a future tuning lands in one place. Persistent toasts
+have no timer and the hover handlers no-op for them.
 
 ## CopyBox
 

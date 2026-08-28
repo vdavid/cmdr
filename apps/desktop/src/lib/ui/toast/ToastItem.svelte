@@ -50,34 +50,21 @@
         onUserDismiss,
     }: Props = $props()
 
-    // Auto-dismiss timer plus hover-pause bookkeeping.
+    // Auto-dismiss timer for transient toasts.
     //
-    // For a transient toast, `startTimer(ms)` arms the auto-dismiss timer and
-    // records the duration (`armedForMs`) and the wall-clock moment it was
-    // armed (`timerStartedAt`). `activeElapsedMs` accumulates the un-hovered
-    // visibility time so we can tell the difference between "user hovered
-    // during the natural visibility window" and "user hovered before the
-    // toast got any unhovered moment."
-    //
-    // `pointerenter` clears the timer, captures how much time was left on it
-    // (`pausedRemainingMs`), and adds the time that already passed to
-    // `activeElapsedMs`. `pointerleave` decides what to do next:
-    //  - If the timer made any progress before being paused (the user saw
-    //    the toast for a moment before hovering), resume with the captured
-    //    remainder. The natural visibility window is preserved across the
-    //    hover.
-    //  - If no progress was made (the pointer entered before any unhovered
-    //    visibility), the toast already lived past its natural expiry while
-    //    hovered: start a `HOVER_LEAVE_GRACE_MS` grace timer so an accidental
-    //    cursor exit doesn't snap it away.
+    // The rule: a toast hides at `max(its natural deadline, the moment the
+    // pointer left it + HOVER_LEAVE_GRACE_MS)`. The natural deadline is
+    // `mountedAt + timeoutMs` in wall-clock time, and hovering neither pauses
+    // nor extends that clock. What hovering guarantees is the grace tail after
+    // the pointer leaves, so a toast can never vanish out from under a cursor
+    // that's still on it, and never snaps away the instant the mouse drifts
+    // off. Don't reintroduce a paused countdown: a toast hovered for a
+    // minute is meant to go one second after the pointer leaves, not to get
+    // its leftover seconds back.
     //
     // Persistent toasts never get a timer; the hover handlers no-op for them.
     let timer: ReturnType<typeof setTimeout> | undefined
-    let timerStartedAt: number | undefined
-    let armedForMs: number | undefined
-    let pausedRemainingMs: number | undefined
-    let activeElapsedMs = 0
-    let isHovered = false
+    let naturalDeadline = 0
 
     // Error-level toasts that carry a plain-text message get an inline "Send error
     // report…" action. Component-content toasts manage their own actions, so we don't
@@ -101,14 +88,10 @@
             clearTimeout(timer)
             timer = undefined
         }
-        timerStartedAt = undefined
-        armedForMs = undefined
     }
 
-    function startTimer(ms: number) {
+    function armTimer(ms: number) {
         clearTimer()
-        armedForMs = ms
-        timerStartedAt = Date.now()
         timer = setTimeout(() => {
             onTimeout(id)
         }, ms)
@@ -116,40 +99,18 @@
 
     function handlePointerEnter() {
         if (dismissal !== 'transient') return
-        if (isHovered) return
-        isHovered = true
-        if (timer === undefined || timerStartedAt === undefined || armedForMs === undefined) {
-            // Timer already fired (or never armed): nothing left to pause.
-            pausedRemainingMs = 0
-            return
-        }
-        const elapsed = Date.now() - timerStartedAt
-        activeElapsedMs += elapsed
-        pausedRemainingMs = Math.max(0, armedForMs - elapsed)
         clearTimer()
     }
 
     function handlePointerLeave() {
         if (dismissal !== 'transient') return
-        if (!isHovered) return
-        isHovered = false
-        // The toast had a chance to be read unhovered iff `activeElapsedMs > 0`.
-        // - Some unhovered time happened → resume with the captured remainder
-        //   (preserves the natural visibility window across the hover).
-        // - No unhovered time at all (hover started immediately) → the only
-        //   reading window was during hover, so on leave give the grace
-        //   period for an accidental cursor exit.
-        if (activeElapsedMs > 0 && pausedRemainingMs !== undefined && pausedRemainingMs > 0) {
-            startTimer(pausedRemainingMs)
-        } else {
-            startTimer(HOVER_LEAVE_GRACE_MS)
-        }
-        pausedRemainingMs = undefined
+        armTimer(Math.max(naturalDeadline - Date.now(), HOVER_LEAVE_GRACE_MS))
     }
 
     onMount(() => {
         if (dismissal === 'transient') {
-            startTimer(timeoutMs)
+            naturalDeadline = Date.now() + timeoutMs
+            armTimer(timeoutMs)
         }
     })
 

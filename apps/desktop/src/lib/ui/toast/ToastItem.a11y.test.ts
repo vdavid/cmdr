@@ -89,8 +89,8 @@ describe('ToastItem a11y', () => {
   })
 })
 
-describe('ToastItem a11y (hover-paused state)', () => {
-  it('hover-paused transient toast has no violations', async () => {
+describe('ToastItem a11y (hovered state)', () => {
+  it('hovered transient toast has no violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(ToastItem, {

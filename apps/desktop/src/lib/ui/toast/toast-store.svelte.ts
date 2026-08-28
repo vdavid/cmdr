@@ -10,14 +10,15 @@ export type ToastOriginPane = 'left' | 'right'
 export type ToastContent = string | Component<any>
 
 /**
- * Grace period applied by `ToastItem` after the pointer leaves a transient
- * toast that has already passed its natural `timeoutMs`. Catches accidental
- * cursor exits so the toast doesn't vanish the instant the mouse drifts off.
+ * The tail `ToastItem` guarantees a transient toast after the pointer leaves it.
+ * A toast hides at `max(mountedAt + timeoutMs, pointerLeftAt + this)`: hovering
+ * doesn't pause or extend the natural clock, it only promises this much time
+ * once the cursor is off, so an accidental exit doesn't snap the toast away.
  *
  * Exported so a future tuning lives in one place; `ToastItem.svelte` imports
  * this constant rather than hard-coding the value.
  */
-export const HOVER_LEAVE_GRACE_MS = 2000
+export const HOVER_LEAVE_GRACE_MS = 1000
 
 /** Default per-group cap when `toastGroup` is set but `maxInGroup` is not. */
 export const DEFAULT_MAX_IN_GROUP = 5
