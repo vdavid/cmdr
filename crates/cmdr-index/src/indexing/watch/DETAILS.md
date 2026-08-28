@@ -347,3 +347,10 @@ appearing is a change in `/a`. The storm anchor is the documented exception abov
 **Nothing survives a batch**: the map drains on report, so memory is bounded by one batch's folders, and a per-batch
 folder cap (4,096, the same order as the host channel's bound) stops a pathological batch handing a host half a million
 rollups to loop over on the live-loop thread. Past it the extra folders are dropped and logged.
+
+## No replay-loop test harness
+
+**Decision: there is none, and building one is not scheduled.** A real harness means a live `DriveWatcher` over a temp
+tree, so it is about a day of scaffolding for roughly one assertion. **Why that is acceptable**: the risk it would
+guard, a truncate landing under a live replay, is already prevented structurally by the `Exclusive` claim rather than by
+a test that would have to reproduce the race. Build it only alongside a second thing that needs the same scaffolding.

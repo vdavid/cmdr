@@ -466,3 +466,13 @@ replay `affected_paths` rather than the verification-discovered paths). The FE h
 
 The rescan SCHEDULER — which anchor walks, when, how often, and what the user sees while it does — is
 `reconciler/rescan/DETAILS.md`. This file is the diff engine it calls.
+
+**Decision: the verifier BAILS on unlisted ground; it does not MARK.** Replacing the `listed_epoch == 0` bail
+(`is_the_walks_to_cover`) with a mark would let a browsed folder become searchable without waiting for a walk, and would
+reach the one case where ground marked `Abandoned` is unreachable by anything the user does. **Why it lost: it is not a
+throughput win.** `writer/abandoned_retry.rs` documents its five-minute first step as costing "~nothing", so collapsing
+that backoff is a simplification and not a saving, and the reuse of a directory read already paid for covers only the
+folders somebody actually visits. Against that, the bail's own doc comment above spells out the cost of getting it
+wrong: writing children under a directory nothing marked is precisely the non-virgin node that sends a later cover walk
+down the serial repair path. A walk that degrades silently is worse than an answer that is wrong, because nothing
+reports it. ❌ Don't revisit without abandoned ground showing up in a real report.

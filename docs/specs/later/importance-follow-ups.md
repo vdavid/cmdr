@@ -40,9 +40,9 @@ missing number is what the sampling phase costs against a real Spotlight index a
 **Bounded by construction**: sampling runs only where the volume mask says `last_used_available`, so SMB never pays it
 and the cost is confined to the boot disk.
 
-⚠️ **Not the same work as `indexing-loose-ends.md` item 3.** That item wants an app-side `mdfind` at LAUNCH to seed
-`priority_roots` on a true first run, before any index exists. This one is about what the in-crate sampler costs once
-one does. Don't merge them.
+⚠️ **Not the same work as the shipped first-run recency signal** (`apps/desktop/src-tauri/src/priority/DETAILS.md` §
+"The recency signal"). That one asks Spotlight at LAUNCH to seed `priority_roots` on a true first run, before any index
+exists. This one is about what the in-crate sampler costs once one does. Don't merge them.
 
 ## 3. A recompute can't be stopped
 

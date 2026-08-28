@@ -10,13 +10,6 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [x] 2026-08-21 `indexing-loose-ends.md` - **The coverage machine works; these are the threads left hanging.** Phased
-      indexing and claim-based ground ownership both shipped and both left a named tail nobody scheduled. All of it is
-      now resolved: the `mgr.scanning` rename and Spotlight-recency first-run ordering shipped, two items left for
-      GitHub as product work (`#56`, `#57`), and two were declined on the record (the verifier mark, which is a
-      searchability win with a silent-walk-degradation risk and ❌ no throughput payoff, and the first-run layout E2E,
-      which cannot pass by design). **Kept for one unexplained measurement**: a 19–21 s gap the phase machine's own docs
-      flag, worth resolving before anyone tunes phase boundaries.
 - [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
       rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit
       only ~101 plan rows per reply and each reply is staged and reviewed on its own. The fix is presentational:
@@ -95,9 +88,10 @@ left, so the durable intent survives the wipe.
       rescore costing O(touched), a kind-aware multi-volume scheduler, an anonymized real-index eval corpus, and three
       dev bins. Three things are open. The weights are still untuned defaults even though the whole tuning loop is
       built, because real corpus dumps are gitignored and the run needs David's own home directory. The Spotlight
-      sampler's cap has never been measured (and is NOT the same work as `indexing-loose-ends.md`'s Spotlight-recency
-      item, which seeds a first run before any index exists). And a recompute runs under no cancellation token, so
-      `stop_all_indexing` doesn't reach it, which is survivable only while a full pass stays seconds.
+      sampler's cap has never been measured (and is NOT the same work as the shipped first-run recency signal in
+      `apps/desktop/src-tauri/src/priority/DETAILS.md`, which seeds a first run before any index exists). And a
+      recompute runs under no cancellation token, so `stop_all_indexing` doesn't reach it, which is survivable only
+      while a full pass stays seconds.
 - [ ] 2026-08-27 `later/indexing/media-ml-index-plan.md` - **Mostly shipped; kept for its decision log and two parked
       milestones.** Searchable image index (OCR, tags, faces, text→image) as an ML enrichment layer on the drive index:
       macOS-native Vision + Core ML, vectors in SQLite, on-device by default. SHIPPED and in users' hands: M1/M1.5/M2

@@ -491,6 +491,14 @@ different browser engines disagreed on how to resolve nested `color-mix(var(...)
 producing environment-dependent ratios. Axe stays on for structural rules (ARIA, focus order, labels, keyboard nav)
 where a running browser is genuinely needed. See `docs/design-system.md` § Automated contrast checks.
 
+**Decision**: there is no E2E over a first launch asserting left `~` and right `~/Downloads`. **Why**: it cannot pass.
+`first-run-layout.ts` opens with `if (ctx.isAutomatedRun) return 'leaveAlone'` on purpose, so an automated run never
+lays out; and every spec shares one Tauri instance per shard (see `onboarding.spec.ts` on per-spec env control being out
+of scope), so there is no first launch for a spec to observe. Making it real means a dedicated fresh-data-dir launch
+plus an escape hatch through the guard that protects every other spec, for one assertion over a pure function whose
+whole decision matrix is already unit-covered. ❌ Don't re-propose it as "the missing first-run test"; the unit tests
+own it.
+
 **Note on tier 3 overlap:** Most of the structural audits here (ARIA, labels, roles, accessible names) now also run at
 the component level in tier 3, see `apps/desktop/src/**/*.a11y.test.ts` and the helper at `src/lib/test-a11y.ts`. Tier 3
 is fast (milliseconds per component) and catches regressions during dev; this E2E tier still earns its keep for

@@ -361,3 +361,10 @@ word changing.
 `classify`, `window_elapsed`, `min_interval_for`, and `decide_shallow_anchor_in` are pure/clock-injected and unit-tested
 in `route.rs`; the decision and seeding take an EXPLICIT ledger so the tests use a local `HashMap` (clearing a shared
 global from parallel tests flaked). `../tests/must_scan_routing.rs` holds the live-path repros.
+
+**Decision: this scheduler stays as it is; it is not migrating onto claims.** It is a second queue-and-lease scheduler,
+unaware of the other actors that now coordinate through claims, and unifying the ownership half is a day or two of work.
+**Why it lost**: it is the one piece of that migration with no user-visible payoff, and the coupling it was meant to
+cure is at least documented now that this module carries its own `CLAUDE.md` / `DETAILS.md` pair. David was asked once
+and did not answer; this records the non-answer as a decision rather than leaving it open. Revisit if a real conflict
+between this scheduler and a claim-holding walk shows up, ❌ not on tidiness grounds.
