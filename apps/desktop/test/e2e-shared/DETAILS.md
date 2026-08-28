@@ -45,9 +45,9 @@ Contract and cost live where the guard is used: `../e2e-playwright/DETAILS.md` Â
 
 **Not every committed fixture is in the manifest.** `archive-fixtures/` also holds `encrypted.zip` (ZipCrypto entries,
 password `hunter2`: it LISTS without a password, so only extraction prompts) and `locked.7z` (`-mhe=on`, same password:
-its metadata is encrypted, so even listing prompts). `mcp-archive-password.spec.ts` copies those into `left/` itself
-and lets the restore sweep them away, because putting them in the pristine tree would hand two extra entries to every
-other spec's `left/`.
+its metadata is encrypted, so even listing prompts). `mcp-archive-password.spec.ts` copies those into `left/` itself and
+lets the restore sweep them away, because putting them in the pristine tree would hand two extra entries to every other
+spec's `left/`.
 
 ## Decisions
 

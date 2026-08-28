@@ -475,9 +475,7 @@ fn extract_viewer_path<R: Runtime>(window: &WebviewWindow<R>) -> Option<String> 
 /// (a listing is a read), while unlocking a `transfer` stores the password and
 /// nothing more — the copy that raised it is already settled, so extracting
 /// means starting a copy again, through the gate every copy goes through.
-pub(crate) fn format_archive_password_dialog(
-    prompt: &crate::mcp::archive_password::ArchivePasswordPrompt,
-) -> String {
+pub(crate) fn format_archive_password_dialog(prompt: &crate::mcp::archive_password::ArchivePasswordPrompt) -> String {
     let mut yaml = String::from("  - type: archive-password\n");
     yaml.push_str(&format!("    archive: {:?}\n", prompt.archive_name));
     yaml.push_str(&format!("    archivePath: {:?}\n", prompt.archive_path));

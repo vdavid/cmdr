@@ -49,13 +49,9 @@ pub async fn execute_unlock_archive<R: Runtime>(app: &AppHandle<R>, params: &Val
         return Err(different_archive(&prompt, &archive_path));
     }
 
-    crate::commands::file_system::store_archive_password(
-        &prompt.parent_volume_id,
-        &prompt.archive_path,
-        password,
-    )
-    .await
-    .map_err(ToolError::internal)?;
+    crate::commands::file_system::store_archive_password(&prompt.parent_volume_id, &prompt.archive_path, password)
+        .await
+        .map_err(ToolError::internal)?;
 
     // The frontend takes the prompt down and does the mode's follow-up. It reads
     // the password back from the volume, so nothing about it rides this event.
@@ -186,7 +182,10 @@ mod tests {
     fn each_mode_reports_a_distinct_typed_outcome() {
         // An agent that can't tell a finished browse from a stored-but-unused
         // password acts on a copy that never ran.
-        assert_eq!(report(&prompt(ArchivePromptMode::Browse))["outcome"], "retrying_listing");
+        assert_eq!(
+            report(&prompt(ArchivePromptMode::Browse))["outcome"],
+            "retrying_listing"
+        );
         assert_eq!(
             report(&prompt(ArchivePromptMode::Transfer))["outcome"],
             "password_stored"

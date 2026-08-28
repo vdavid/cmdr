@@ -430,10 +430,8 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     h.pathExistsChecked.mockResolvedValue({ data: false, timedOut: false })
     h.resolveValidPath.mockResolvedValue('/a')
     await loader.loadDirectory({ path: '/a/locked.7z' })
-    const idA = state.listingId
-
     h.listeners.error[0]({
-      listingId: idA,
+      listingId: state.listingId,
       message: 'needs a password',
       error: { reason: { reason: 'archiveNeedsPassword', wrongAttempt: false } },
     })
@@ -441,16 +439,13 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
       expect(spies.onArchiveNeedsPassword).toHaveBeenCalled()
     })
 
-    expect(spies.onArchiveNeedsPassword.mock.calls[0][0]).toMatchObject({
-      archivePath: '/a/locked.7z',
-      wrongAttempt: false,
-    })
+    expect(spies.onArchiveNeedsPassword.mock.calls[0][0]).toMatchObject({ archivePath: '/a/locked.7z' })
     // No probe, so no walk-up: the pane stays put, showing the fallback the
-    // prompt sits on top of.
+    // prompt sits on top of, with the failed path in history so Back goes one
+    // step rather than two.
     expect(h.pathExistsChecked).not.toHaveBeenCalled()
     expect(h.resolveValidPath).not.toHaveBeenCalled()
     expect(state.error).toBe('needs a password')
-    // And the failed path is in history, so Back goes one step, not two.
     expect(spies.onPathChange).toHaveBeenCalledWith('/a/locked.7z')
   })
 

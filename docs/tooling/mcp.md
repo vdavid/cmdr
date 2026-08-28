@@ -93,8 +93,8 @@ Most tools (resource reads, nav, search, dialog-prompting ops) need no auth. A b
 calls that bypass the user's confirmation dialog: `set_setting`, `delete` / `move` / `copy` with `autoConfirm: true`,
 and `dialog` with `action: "confirm"` (including `quit-confirmation`; the matching `close`, which keeps working, is
 open). `resolve_conflict` and `unlock_archive` are gated too: they answer, with no dialog, a question that was put to
-the user. Calling one of these without the token logs `MCP: rejected request with missing/invalid bearer token` and returns
-a JSON-RPC error pointing at the token file. To get it right on the first try:
+the user. Calling one of these without the token logs `MCP: rejected request with missing/invalid bearer token` and
+returns a JSON-RPC error pointing at the token file. To get it right on the first try:
 
 - **`./scripts/mcp-call.sh` handles the token for you.** It reads `<data_dir>/mcp.token` (or `CMDR_MCP_TOKEN`) and sends
   `Authorization: Bearer <token>` on every request. Prefer it for any gated call: `./scripts/mcp-call.sh set_setting …`

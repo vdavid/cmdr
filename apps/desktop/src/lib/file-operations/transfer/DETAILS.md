@@ -198,10 +198,10 @@ error dialog.
   carried-over id would silently downgrade to a full re-walk. A wrong password makes the backend raise
   `archive_needs_password` again with `wrongAttempt: true`, so the interception fires a second time and the dialog
   re-prompts (its distinct copy, empty field via a fresh mount).
-- **An agent's unlock stores but never starts.** The MCP `unlock_archive` tool routes to `supplyStoredPassword`
-  instead of `handleArchivePasswordSubmit`, and ❌ never re-dispatches: it settles the transfer, and the agent runs
-  `copy` / `move` again so extraction goes through the same gate as every other write.
-  `pane/DETAILS.md` § "Only a PERSON's submit re-dispatches".
+- **An agent's unlock stores but never starts.** The MCP `unlock_archive` tool routes to `supplyStoredPassword` instead
+  of `handleArchivePasswordSubmit`, and ❌ never re-dispatches: it settles the transfer, and the agent runs `copy` /
+  `move` again so extraction goes through the same gate as every other write. `pane/DETAILS.md` § "Only a PERSON's
+  submit re-dispatches".
 - **Mid-transfer wrong password.** ZipCrypto's open-time check false-accepts ~1/256, caught later at end-of-stream CRC,
   so a `wrongAttempt: true` error can arrive AFTER progress started. The interception is in the running-op error path,
   so this is handled the same as an up-front rejection — no separate pre-flight branch.
@@ -210,10 +210,10 @@ error dialog.
   and selection, null the props, refocus — so nothing looks stuck. The op already terminated on the backend (the
   write-error settled it), so there's no running op to cancel.
 - **AES archives reach here too.** WinZip AES (AE-1/AE-2, what `7z -mem=AES256` and recent WinZip write) decrypts
-  through the `zip` crate's `aes-crypto` feature, and a password-protected 7z through `sevenz-rust2`'s `aes256`, so
-  both raise this prompt and both can be unlocked by it (`crates/cmdr-archive/src/read/archive_test.rs`,
-  `read/multiformat_test.rs`). Only the rejection family — not-an-archive, an unsupported codec, a synthesized tree
-  past the node cap — collapses to `Unsupported` and takes the ordinary friendly-error path instead.
+  through the `zip` crate's `aes-crypto` feature, and a password-protected 7z through `sevenz-rust2`'s `aes256`, so both
+  raise this prompt and both can be unlocked by it (`crates/cmdr-archive/src/read/archive_test.rs`,
+  `read/multiformat_test.rs`). Only the rejection family — not-an-archive, an unsupported codec, a synthesized tree past
+  the node cap — collapses to `Unsupported` and takes the ordinary friendly-error path instead.
 
 Backend counterpart (decrypt path, the typed signal, per-archive password storage + LRU lifetime):
 `crates/cmdr-archive/DETAILS.md` § "Password-protected archives".

@@ -51,7 +51,10 @@ fn the_archive_password_entry_carries_everything_an_answer_needs() {
 
     assert!(yaml.contains("- type: archive-password"), "{yaml}");
     assert!(yaml.contains("archive: \"photos.zip\""), "{yaml}");
-    assert!(yaml.contains("archivePath: \"/tmp/left/photos.zip/holiday.raw\""), "{yaml}");
+    assert!(
+        yaml.contains("archivePath: \"/tmp/left/photos.zip/holiday.raw\""),
+        "{yaml}"
+    );
     assert!(yaml.contains("mode: transfer"), "{yaml}");
     assert!(yaml.contains("wrongAttempt: false"), "{yaml}");
     // The operation is already settled, so the name says so rather than
