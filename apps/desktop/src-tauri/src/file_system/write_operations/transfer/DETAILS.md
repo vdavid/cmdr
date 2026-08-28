@@ -24,7 +24,7 @@ facts that none of those carry live here:
   including a post-completion `RollingBack` recheck, for the rollback-clicked-in-the-last-millisecond race (commit
   `1de4255d`). Pre-flight scan, dry-run, disk-space, and bulk-skip filtering stay OUTSIDE the driver, in `copy/mod.rs`.
 - **`volume/` holds the whole cross-volume engine and is a facade** (`volume/mod.rs`): copy phases (`copy.rs` + the two
-  drivers `copy_concurrent.rs` / `copy_serial.rs`), move (`move.rs`, declared `mod r#move;` because `move` is a
+  drivers, serial in `copy_serial.rs` and concurrent across `copy_concurrent{,_source,_task}.rs`), move (`move.rs`, declared `mod r#move;` because `move` is a
   keyword, plus `move_same.rs` and `rename_merge.rs` for the same-volume rename path), the merge/staging engine
   (`strategy.rs`, `sequential_extract.rs`), and the supporting `conflict.rs`, `cleanup.rs`, `preflight.rs`,
   `transfer_error.rs`. Every one of those is PRIVATE to `volume`; `mod.rs` re-exports the nine items outside code calls,

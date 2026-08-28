@@ -14,6 +14,15 @@ nothing else will"), and cancel/rollback against a parked driver (§ "Cancel and
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape and its
 invariants: `CLAUDE.md`. Only the layout facts neither of those carries live here:
 
+- **The concurrent copy driver is three files, one per stage of a source's life.** `copy_concurrent.rs` turns the
+  window (`ConcurrentDriver`: fill, wait, record, plus the drain-deadline tiers); `copy_concurrent_source.rs` decides
+  what a source needs before it can join it (`ConcurrentCopy::prepare_source`: the directory question, the destination
+  pre-check, the SYNCHRONOUS conflict resolve, skip accounting); `copy_concurrent_task.rs` streams one source end to
+  end (`run_copy_task` over an owned `CopyTask`, plus the two result payloads). The task's inputs are OWNED, which is
+  what keeps its future `'static` and the window free of a lifetime — ❌ don't reintroduce a borrow there, it welds the
+  window to the borrowed context and blocks every further split. `copy_concurrent_driver_tests.rs` drives
+  `drive_transfer_concurrent` and `prepare_source` directly, because the post-loop's delete-capability split (below)
+  means an end-to-end assertion can't tell a right rollback ledger from a wrong one.
 - **The engine is two files, and they call each other.** `strategy.rs` moves ONE file's bytes (staging,
   `stream_pipe_file`, both cancel tiers) and owns the vocabulary both halves speak (`MergeCtx`, `CreatedPaths`,
   `copy_single_path`). `merge.rs` walks a tree (`copy_directory_streaming`, `resolve_merge_child`): a directory child
@@ -255,8 +264,8 @@ across a recursive descent.
 
 **What did NOT change, deliberately.** Discovery stays serial: ONE walker descends in listing order, creates each
 directory, and resolves every conflict on itself before that child's bytes join the window — the same rule
-`copy_concurrent.rs` follows at the top level ("conflict resolution runs synchronously on the driver BEFORE a task is
-spawned"). So prompt order, the `apply_to_all` latch, `conflict_dispatch_lock`'s role, and the order `created_dirs` is
+`copy_concurrent_source.rs` follows at the top level ("conflict resolution runs synchronously on the driver BEFORE a
+task is spawned"). So prompt order, the `apply_to_all` latch, `conflict_dispatch_lock`'s role, and the order `created_dirs` is
 recorded in are all exactly what they were. Rollback's "creation order, shallowest first" therefore survives untouched
 within a source; across sources the concurrent driver already interleaved it, and the property that matters there is
 only ancestor-before-descendant, which holds because a level can't start until its parent's `create_directory` returned.
@@ -552,7 +561,7 @@ source path. A dest-side caller that needs the other verdict maps explicitly thr
 
 - Cross-volume move (`move.rs`) and serial copy (`copy_serial.rs`) map with `e.path`, never the loop's
   `source_path`.
-- The concurrent driver (`copy_concurrent.rs`) carries TWO paths on `CopyTaskFailure` and they are not
+- The concurrent driver carries TWO paths on `CopyTaskFailure` (`copy_concurrent_task.rs`) and they are not
   interchangeable: `failed_path` is the DESTINATION entry to drop from `in_flight_partials` and possibly clean, while
   `reported_path` is the SOURCE item the user is told about. Merging them would either clean the wrong path or report
   the dest dir root.

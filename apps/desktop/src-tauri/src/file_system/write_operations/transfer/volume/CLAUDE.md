@@ -1,7 +1,7 @@
 # Cross-volume transfer (copy + move)
 
-Copy and move across backends (Local ↔ MTP ↔ SMB ↔ archive): the phase runner (`copy.rs`, over one of
-`copy_{concurrent,serial}.rs`), the cross- and same-volume move paths, and the merge/staging engine (`strategy.rs`,
+Copy and move across backends (Local ↔ MTP ↔ SMB ↔ archive): the phase runner (`copy.rs`, over `copy_serial.rs` or
+`copy_concurrent{,_source,_task}.rs`), the cross- and same-volume move paths, and the merge/staging engine (`strategy.rs`,
 `merge.rs`). Full file map: `DETAILS.md` § Files. Shared scaffolding and local-FS copy: `../CLAUDE.md`.
 
 - **This directory is a facade: outside code reaches it only as `transfer::volume::<item>`.** A new outside caller adds
