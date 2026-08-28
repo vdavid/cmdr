@@ -15,6 +15,7 @@ mod cleanup;
 mod conflict;
 mod copy;
 mod copy_concurrent;
+mod copy_concurrent_source;
 mod copy_concurrent_task;
 mod copy_serial;
 mod merge;
