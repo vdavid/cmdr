@@ -1,5 +1,5 @@
 /**
- * Tests for the quit-gate command wrappers and the `quit-requested` subscription.
+ * Tests for the quit-gate command wrappers and the two gate subscriptions.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -12,11 +12,12 @@ vi.mock('$lib/ipc/bindings', () => ({
   },
   events: {
     quitRequested: { listen: vi.fn() },
+    quitCalledOff: { listen: vi.fn() },
   },
 }))
 
 import { commands, events } from '$lib/ipc/bindings'
-import { quitConfirm, quitCancel, onQuitRequested } from './quit'
+import { quitConfirm, quitCancel, onQuitRequested, onQuitCalledOff } from './quit'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -51,6 +52,26 @@ describe('onQuitRequested', () => {
     const payload: QuitRequested = { operations: [], countdownMs: 15_000 }
     deliver?.({ payload })
     expect(seen).toEqual([payload])
+
+    stop()
+    expect(unlisten).toHaveBeenCalledOnce()
+  })
+})
+
+describe('onQuitCalledOff', () => {
+  it('fires on the payload-free event and hands back the unlisten', async () => {
+    const unlisten = vi.fn()
+    let deliver: ((event: { payload: null }) => void) | undefined
+    vi.mocked(events.quitCalledOff.listen).mockImplementation((cb: unknown) => {
+      deliver = cb as (event: { payload: null }) => void
+      return Promise.resolve(unlisten)
+    })
+
+    const calledOff = vi.fn()
+    const stop = await onQuitCalledOff(calledOff)
+
+    deliver?.({ payload: null })
+    expect(calledOff).toHaveBeenCalledOnce()
 
     stop()
     expect(unlisten).toHaveBeenCalledOnce()

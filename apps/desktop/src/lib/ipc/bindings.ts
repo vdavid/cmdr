@@ -2579,12 +2579,12 @@ export const commands = {
    *  The user pressed Quit. Stops every operation and ends the process; see
    *  [`super::tear_down_and_exit`] for the order and the budget.
    */
-  quitConfirm: () => __TAURI_INVOKE<void>('quit_confirm'),
+  quitConfirm: () => __TAURI_INVOKE<QuitAnswer>('quit_confirm'),
   /**
    *  The user pressed "Keep working". Releases the gate and **removes** the
    *  countdown; it is not a snooze.
    */
-  quitCancel: () => __TAURI_INVOKE<void>('quit_cancel'),
+  quitCancel: () => __TAURI_INVOKE<QuitAnswer>('quit_cancel'),
   /**
    *  The recent-operations feed (newest first), paged — the alpha UI's "last 50 +
    *  load 50 more" and the Debug panel's list.
@@ -4047,6 +4047,7 @@ export const events = {
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
   quickLookClosed: makeEvent<QuickLookClosed>('quick-look-closed'),
   quickLookKey: makeEvent<QuickLookKeyEvent>('quick-look-key'),
+  quitCalledOff: makeEvent<QuitCalledOff>('quit-called-off'),
   quitRequested: makeEvent<QuitRequested>('quit-requested'),
   reduceTransparencyChanged: makeEvent<ReduceTransparencyChanged>('reduce-transparency-changed'),
   restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
@@ -9148,6 +9149,33 @@ export type QuickLookKeyEvent = {
   altKey: boolean
   ctrlKey: boolean
 }
+
+/**
+ *  What [`QuitGate::confirm`] / [`QuitGate::cancel`] did with the answer.
+ *
+ *  Either answer can arrive late or never, and the gate's own deadline may have
+ *  claimed the decision first. A caller that can't see the dialog (an agent over
+ *  MCP) has nothing else to tell it whether its answer landed, so the outcome is
+ *  returned rather than dropped.
+ */
+export type QuitAnswer =
+  // The gate was holding a quit, and this answer decided it.
+  | 'answered'
+  /**
+   *  Nothing was pending: no quit was held, or the decision was already made
+   *  (the countdown ran out, or another surface answered first).
+   */
+  | 'no_quit_pending'
+
+/**
+ *  Emitted when a held quit is called off, so every window takes its prompt down.
+ *
+ *  The dialog closes itself when the person clicks "Keep working". The gate can
+ *  also be released from somewhere that isn't holding a prompt (the MCP `quit`
+ *  surface), and a dialog left counting toward a quit that will never come is a
+ *  lie. Kebab-cases to `quit-called-off`.
+ */
+export type QuitCalledOff = null
 
 /**
  *  Emitted when a quit is held: what's still running, and how long the user has.

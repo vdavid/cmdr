@@ -575,7 +575,7 @@
             "type": "string"
           },
           "type": {
-            "description": "Dialog type. Openable/focusable: settings, file-viewer, about, onboarding. Closable: any dialog id from cmdr://dialogs/available (also settings, file-viewer). Confirmable: transfer-confirmation (covers copy and move; 'copy-confirmation' is an alias) and delete-confirmation.",
+            "description": "Dialog type. Openable/focusable: settings, file-viewer, about, onboarding. Closable: any dialog id from cmdr://dialogs/available (also settings, file-viewer). Confirmable: transfer-confirmation (covers copy and move; 'copy-confirmation' is an alias), delete-confirmation, and quit-confirmation. quit-confirmation is the answer to a quit the gate is holding: 'confirm' quits now and stops what's running, 'close' calls the quit off and keeps it running. It's raised by the quit tool, never by 'open'.",
             "type": "string"
           }
         },
@@ -647,7 +647,7 @@
       "name": "open_search_dialog"
     },
     {
-      "description": "Quit the application",
+      "description": "Quit Cmdr, via the gate Cmd-Q uses. Nothing running: outcome 'quitting'. A copy, move, or delete still going: it does NOT quit; 'held' names them and the ms left. Answer with dialog confirm/close on quit-confirmation, or the countdown quits anyway.",
       "inputSchema": {
         "properties": {},
         "required": [],

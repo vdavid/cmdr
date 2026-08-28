@@ -13,7 +13,7 @@ pub fn dialog_schema() -> Value {
             },
             "type": {
                 "type": "string",
-                "description": "Dialog type. Openable/focusable: settings, file-viewer, about, onboarding. Closable: any dialog id from cmdr://dialogs/available (also settings, file-viewer). Confirmable: transfer-confirmation (covers copy and move; 'copy-confirmation' is an alias) and delete-confirmation."
+                "description": "Dialog type. Openable/focusable: settings, file-viewer, about, onboarding. Closable: any dialog id from cmdr://dialogs/available (also settings, file-viewer). Confirmable: transfer-confirmation (covers copy and move; 'copy-confirmation' is an alias), delete-confirmation, and quit-confirmation. quit-confirmation is the answer to a quit the gate is holding: 'confirm' quits now and stops what's running, 'close' calls the quit off and keeps it running. It's raised by the quit tool, never by 'open'."
             },
             "section": {
                 "type": "string",

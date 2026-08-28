@@ -21,6 +21,11 @@
 //!   dialog).
 //! - `confirm <transfer|delete>` → pane generation advances (the FE accepted the confirmation and
 //!   the underlying copy/move/delete started, producing a state push).
+//! - `confirm quit-confirmation` → no ack: the answer goes to the quit gate, which starts a
+//!   teardown that ends the process. `close quit-confirmation` is the other answer ("keep
+//!   working"); it waits for the soft dialog to go, but reports that as a typed
+//!   `promptClosed` rather than failing, since the gate already took the answer. Both in
+//!   `quit.rs`.
 //! - `open_search_dialog` → soft dialog `search` appears in `SoftDialogTracker`. The frontend
 //!   already calls `notifyDialogOpened('search')` from `SearchDialog.svelte::onMount`. If the
 //!   dialog is mid-close when the event arrives, the new mount may race; the ack times out within
@@ -148,6 +153,9 @@ async fn execute_dialog_open<R: Runtime>(
                 "Cannot open confirmation dialogs directly. Use copy, move, delete, mkdir, or mkfile tools instead.",
             ))
         }
+        "quit-confirmation" => Err(ToolError::invalid_params(
+            "Cannot open the quit confirmation directly. Call quit: the gate raises it only when operations are still running.",
+        )),
         _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
     }
 }
@@ -285,6 +293,28 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
             .await?;
             Ok(json!("OK: Cancelled confirmation dialog"))
         }
+        // Closing the quit confirmation means "keep working", the same thing Escape and
+        // the × mean in the UI. It answers the GATE, not the dialog: the backend owns the
+        // decision to exit, and routing an agent's answer through the frontend would make
+        // the webview the authority for it (`src-tauri/src/quit/CLAUDE.md`).
+        "quit-confirmation" => {
+            let mut reply = super::quit::keep_working()?;
+            // The gate announced the call-off, so the prompt takes itself down; one that
+            // was never up isn't tracked, so this returns at once rather than timing out.
+            // ❌ Don't turn a timeout into a refusal: the gate has ALREADY taken the
+            // answer and deleted the countdown, and a failure here would send the caller
+            // back to `quit` over an answer that landed. A wedged webview costs the
+            // typed `promptClosed: false`, not the outcome.
+            let closed = wait_for_ack(
+                app,
+                AckSignal::SoftDialogDisappeared("quit-confirmation".to_string()),
+                DEFAULT_ACK_TIMEOUT,
+            )
+            .await
+            .is_ok();
+            reply["promptClosed"] = closed.into();
+            Ok(reply)
+        }
         // Generic close for any OTHER registered soft dialog (whats-new, go-to-path,
         // search, feedback, drive-index-stale, …). Validate the id against the FE-
         // registered known dialogs, then emit the one generic `mcp-close-dialog` event;
@@ -353,8 +383,12 @@ async fn execute_dialog_confirm<R: Runtime>(
             .await?;
             Ok(json!("OK: Delete dialog confirmed."))
         }
+        // Confirming the quit means quitting NOW, skipping the rest of the countdown.
+        // Answered on the gate rather than the dialog, and with no ack: the process is on
+        // its way out, so there is nothing left to observe. See `quit.rs`.
+        "quit-confirmation" => super::quit::confirm_quit(),
         _ => Err(ToolError::invalid_params(format!(
-            "Cannot confirm dialog type '{}'. Only 'transfer-confirmation' and 'delete-confirmation' support confirm.",
+            "Cannot confirm dialog type '{}'. Only 'transfer-confirmation', 'delete-confirmation', and 'quit-confirmation' support confirm.",
             dialog_type
         ))),
     }

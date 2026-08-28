@@ -91,9 +91,9 @@ default; `CMDR_MCP_TIMEOUT` moves it.
 
 Most tools (resource reads, nav, search, dialog-prompting ops) need no auth. A bearer token is required ONLY for the
 calls that bypass the user's confirmation dialog: `set_setting`, `delete` / `move` / `copy` with `autoConfirm: true`,
-and `dialog` with `action: "confirm"`. Calling one of these without the token logs
-`MCP: rejected request with missing/invalid bearer token` and returns a JSON-RPC error pointing at the token file. To
-get it right on the first try:
+and `dialog` with `action: "confirm"` (including `quit-confirmation`; the matching `close`, which keeps working, is
+open). Calling one of these without the token logs `MCP: rejected request with missing/invalid bearer token` and returns
+a JSON-RPC error pointing at the token file. To get it right on the first try:
 
 - **`./scripts/mcp-call.sh` handles the token for you.** It reads `<data_dir>/mcp.token` (or `CMDR_MCP_TOKEN`) and sends
   `Authorization: Bearer <token>` on every request. Prefer it for any gated call: `./scripts/mcp-call.sh set_setting …`
@@ -181,6 +181,43 @@ answered the same clash first). A refusal carries `data.outcome` instead: `stale
 re-read `cmdr://state`), `no_pending_conflict`, or `unknown_operation`. Branch on those, never on the sentence.
 `applyToAll: true` answers the rest of the operation's clashes the same way. Both `dialog confirm` and
 `resolve_conflict` are token-gated, so route them through `./scripts/mcp-call.sh`.
+
+## Quitting the app
+
+`quit` goes through the same gate ⌘Q does, so it can't kill a running transfer by surprise. With nothing that moves data
+running it answers `{"outcome": "quitting"}` and the app goes. While a copy, move, delete, trash, or archive edit is
+still going it does **not** quit: it raises the quit confirmation, starts the 15-second countdown, and answers
+
+```json
+{
+  "outcome": "held",
+  "countdownMs": 15000,
+  "operations": [{ "operationId": "op-7", "operationType": "copy", "status": "running", "source": "…" }],
+  "total": 1,
+  "message": "…"
+}
+```
+
+Answer it, either way:
+
+```bash
+# Quit now, stopping what's running (token-gated, like every dialog confirm).
+./scripts/mcp-call.sh dialog '{"action":"confirm","type":"quit-confirmation"}'
+
+# Or leave the operations alone. The countdown is deleted, not deferred.
+./scripts/mcp-call.sh dialog '{"action":"close","type":"quit-confirmation"}'
+```
+
+`confirm` answers `{"outcome": "quitting"}`, `close` answers `{"outcome": "kept_working"}` plus `promptClosed` (whether
+the dialog left the screen; a `false` there doesn't undo the answer), and either is a refusal carrying
+`data.outcome: "no_quit_pending"` when the gate had nothing pending: the countdown ran out, or somebody answered first.
+Branch on those, never on the sentence. `dialog open quit-confirmation` is refused, since only the gate raises it.
+
+**Silence is an answer, and it's the destructive one.** A held quit nobody answers within the countdown quits the app
+anyway and stops those operations (they keep every file already copied; only the file in flight loses its partial). So
+treat an `"outcome": "held"` reply as a question you must answer in the same turn, and use
+`./scripts/mcp-call.sh --read-resource 'cmdr://state?include=operations'` if you need more than the reply's list to
+decide.
 
 ## Connection resilience
 

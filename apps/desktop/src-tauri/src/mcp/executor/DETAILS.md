@@ -4,13 +4,28 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
 
 ## Tools by category file
 
-- **`app.rs`**: `quit`, `switch_pane`, `swap_panes`, `tab` (unified action verb).
+- **`app.rs`**: `switch_pane`, `swap_panes`, `tab` (unified action verb).
+- **`quit.rs`**: the `quit` tool, plus the two answers to the quit confirmation that `dialogs.rs` routes here
+  (`confirm` / `close` on `quit-confirmation`). Everything goes through `crate::quit`'s gate, the same one ⌘Q uses: a
+  straight `app.exit(0)` here killed a running transfer with no prompt and no warning, where a person pressing ⌘Q gets
+  a dialog and 15 seconds, and an agent must not have a quieter, more destructive exit than the keyboard. Adapter
+  shape, like `queue.rs` and `conflicts.rs`: no FE action to dispatch, so no ack to invent, and the verdict is read
+  straight out of the gate rather than hoped for. `quit` answers a typed `outcome`: `quitting` (nothing to lose, the
+  app is going) or `held` (the gate is asking; the reply carries the operations holding it, `countdownMs`, and the two
+  calls that answer it). `confirm` answers `quitting`, `close` answers `kept_working` plus a typed `promptClosed` (it waits for the dialog to
+  go, but a wedged webview costs that flag, ❌ never the outcome: the gate already took the answer, and a refusal would
+  send the caller back to `quit` over an answer that landed), and either is a refusal carrying
+  `data.outcome: "no_quit_pending"` when the gate had nothing pending — the deadline claimed the decision, or another
+  surface answered first. **A held quit nobody answers ends with the app quitting anyway** at the countdown, stopping
+  those operations; the reply says so, and the trade is deliberate (`../../quit/DETAILS.md` § "Answering from outside
+  the dialog").
 - **`view.rs`**: `toggle_hidden`, `set_view_mode`, `sort`.
 - **`nav.rs`**: `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`, `select_volume`, `move_cursor`,
   `open_under_cursor`.
 - **`file_ops.rs`**: `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`, `select`.
 - **`dialogs.rs`**: unified `dialog` tool: open / focus / close / confirm for settings, file-viewer, about, and
-  confirmation dialogs.
+  confirmation dialogs. `quit-confirmation` is the one type whose `confirm` / `close` it delegates (to `quit.rs`), and
+  the one it refuses to `open`: only the gate raises it.
 - **`async_tools.rs`**: `await`, `connect_to_server`, `remove_manual_server`, `upgrade_smb_to_direct`, `set_setting`.
 - **`search.rs`**: `search` and `ai_search` (LLM-driven), both a thin wrapper on `search::run_live_collected` — the
   SAME live run the dialog starts, walking whatever the index doesn't cover, folded into one reply because a tool call

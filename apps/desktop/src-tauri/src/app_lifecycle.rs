@@ -64,7 +64,7 @@ pub fn on_window_event(window: &Window, event: &tauri::WindowEvent) {
     if let tauri::WindowEvent::CloseRequested { api, .. } = event
         && window.label() == "main"
     {
-        if quit::request_quit(window.app_handle()) == quit::QuitOutcome::Held {
+        if quit::request_quit(window.app_handle()).is_held() {
             api.prevent_close();
         } else {
             stop_background_services();
@@ -115,7 +115,7 @@ pub fn on_run_event(app: &AppHandle<Wry>, event: tauri::RunEvent) {
             // file about, so the next launch must not open with "Cmdr quit unexpectedly".
             // Free unless this session actually panicked. `crash_reporter/survival.rs`.
             crash_reporter::note_app_still_running();
-            if code != Some(tauri::RESTART_EXIT_CODE) && quit::request_quit(app) == quit::QuitOutcome::Held {
+            if code != Some(tauri::RESTART_EXIT_CODE) && quit::request_quit(app).is_held() {
                 api.prevent_exit();
             }
         }

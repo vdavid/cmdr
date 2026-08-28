@@ -48,7 +48,7 @@ use serde_json::Value;
 use super::executor::{ToolError, ToolResult};
 use super::executor::{
     app, async_tools, conflicts, dialogs, downloads, eject, favorites, file_ops, image_facts, indexing, nav,
-    operation_log, photos, queue, search, tags, view,
+    operation_log, photos, queue, quit, search, tags, view,
 };
 use super::tools::Tool;
 
@@ -439,12 +439,12 @@ mcp_tools! {
 
     // ── App ─────────────────────────────────────────────────────────────────
     "quit" => {
-        desc: "Quit the application",
+        desc: "Quit Cmdr, via the gate Cmd-Q uses. Nothing running: outcome 'quitting'. A copy, move, or delete still going: it does NOT quit; 'held' names them and the ms left. Answer with dialog confirm/close on quit-confirmation, or the countdown quits anyway.",
         schema: schemas::no_params_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient],
         access: Access::Write,
-        run: sync_app app::execute_quit
+        run: sync_app quit::execute_quit
     },
     "switch_pane" => {
         desc: "Toggle focus to the other pane. Takes no parameters (a pane arg is ignored). To focus a SPECIFIC pane, use select (with count 0 to clear) or select_volume / nav_to_path on that pane, which focus it.",

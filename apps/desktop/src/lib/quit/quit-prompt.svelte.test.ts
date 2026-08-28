@@ -9,14 +9,21 @@ import { quitPrompt, initQuitPrompt, cleanupQuitPrompt } from './quit-prompt.sve
 import type { OperationSnapshot, QuitRequested } from '$lib/ipc/bindings'
 
 let requested: ((event: QuitRequested) => void) | null = null
-const quitConfirm = vi.fn(() => Promise.resolve())
-const quitCancel = vi.fn(() => Promise.resolve())
+let calledOff: (() => void) | null = null
+const quitConfirm = vi.fn(() => Promise.resolve('answered'))
+const quitCancel = vi.fn(() => Promise.resolve('answered'))
 
 vi.mock('$lib/tauri-commands', () => ({
   onQuitRequested: vi.fn((cb: (event: QuitRequested) => void) => {
     requested = cb
     return Promise.resolve(() => {
       requested = null
+    })
+  }),
+  onQuitCalledOff: vi.fn((cb: () => void) => {
+    calledOff = cb
+    return Promise.resolve(() => {
+      calledOff = null
     })
   }),
   quitConfirm: () => quitConfirm(),
@@ -102,6 +109,23 @@ describe('the quit prompt', () => {
     // The app is about to disappear; hiding the dialog first would flash the
     // panes on the way out.
     expect(quitPrompt.open).toBe(true)
+  })
+
+  it('a quit called off elsewhere takes the prompt down without answering again', () => {
+    // An agent can answer the confirmation over MCP, and the gate answers there.
+    // Nothing else closes this prompt, and one left counting toward a quit that
+    // will never come is a lie.
+    requested?.({ operations: [operation()], countdownMs: 15_000 })
+    calledOff?.()
+
+    expect(quitPrompt.open).toBe(false)
+    expect(quitPrompt.operations).toHaveLength(0)
+    // The gate is already released; answering it again would be noise.
+    expect(quitCancel).not.toHaveBeenCalled()
+    expect(quitConfirm).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(30_000)
+    expect(quitPrompt.secondsLeft).toBe(15)
   })
 
   it('a second hold re-arms the countdown from the new deadline', () => {

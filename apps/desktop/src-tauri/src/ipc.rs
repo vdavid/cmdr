@@ -95,7 +95,7 @@ use crate::file_system::listing::DirectoryDiff;
 use crate::file_system::watcher::DirectoryDeletedEvent;
 use crate::menu::{MediaIndexFolderChoice, MediaIndexFolderExclusion, MenuSort, SettingsChanged, ViewModeChanged};
 use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
-use crate::quit::QuitRequested;
+use crate::quit::{QuitCalledOff, QuitRequested};
 use crate::restricted_paths::RestrictedPathsChangedPayload;
 use crate::system_events::{
     AccentColorChanged, DragImageSize, DragModifiers, MenuBarRebuilt, OsLocalesChanged, ReduceTransparencyChanged,
@@ -884,8 +884,10 @@ pub fn builder() -> Builder<tauri::Wry> {
             // A wake left proposals behind, so the main window can say so once
             // (agent/wake/staged.rs).
             AgentWakeStaged,
-            // The quit gate holding an exit while operations run (quit/).
+            // The quit gate holding an exit while operations run, and the same quit
+            // being called off from a surface that isn't holding the prompt (quit/).
             QuitRequested,
+            QuitCalledOff,
             // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).
             ListingOpeningEvent,
             ListingProgressEvent,

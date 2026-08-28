@@ -1,4 +1,5 @@
-//! App and tab tool handlers.
+//! Pane and tab tool handlers. `quit` lives in `quit.rs`: it routes through the
+//! quit gate and has a contract of its own.
 
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
@@ -7,12 +8,6 @@ use tauri_specta::Event as _;
 use crate::window_events::ExecuteCommand;
 
 use super::{AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, snapshot_generation, wait_for_ack};
-
-/// Execute quit command.
-pub fn execute_quit<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.exit(0);
-    Ok(json!("OK: Quitting application"))
-}
 
 /// Execute switch_pane command.
 pub fn execute_switch_pane<R: Runtime>(app: &AppHandle<R>) -> ToolResult {

@@ -30,10 +30,10 @@ commands, and notable non-obvious placements.
 - **`operations.ts`**: the operation manager (queue window): `listOperations`, `cancelOperation(s)`, `pauseOperation` /
   `resumeOperation`, `pauseAll` / `resumeAll`, `dismissFailedOperation` / `dismissAllFailedOperations`, and the
   `onOperationsChanged` membership/status event.
-- **`quit.ts`**: the quit gate's two answers (`quitConfirm` / `quitCancel`) and the `onQuitRequested` subscription.
-  There is deliberately no cancel-every-operation wrapper anywhere in this directory: that command belongs to the gate,
-  which calls it in Rust (`src-tauri/src/quit/`), and a frontend wrapper is how a window teardown once came to kill
-  backgrounded transfers.
+- **`quit.ts`**: the quit gate's two answers (`quitConfirm` / `quitCancel`, each returning the gate's typed
+  `QuitAnswer`) and the two subscriptions, `onQuitRequested` and `onQuitCalledOff`. There is deliberately no
+  cancel-every-operation wrapper anywhere in this directory: that command belongs to the gate, which calls it in Rust
+  (`src-tauri/src/quit/`), and a frontend wrapper is how a window teardown once came to kill backgrounded transfers.
 - **`storage.ts`**: `listVolumes`, `getVolumeSpace`, `watchVolumeSpace` / `unwatchVolumeSpace`, `ejectVolume`,
   `getBusyVolumeIds` (bootstrap for the eject-busy gate), `onVolumeContextAction`, `onVolumeConnectionChanged` (session
   health of any connecting volume, not just SMB), `checkFullDiskAccess`, `checkFullDiskAccessQuiet`,

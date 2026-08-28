@@ -214,9 +214,10 @@ All under `apps/desktop/src-tauri/src/`.
   the `tauri-apis` rule in `.claude/rules/`
 - `instance_lock.rs`: Single-instance guard: one process per data dir, claimed at startup. See
   `tooling/instance-isolation.md` § Instance lock
-- `quit/`: The quit gate. Both exit paths ask it first; with non-instant operations in flight it holds the exit, raises
-  the countdown dialog, and runs the teardown on its own deadline. See `apps/desktop/src-tauri/src/quit/CLAUDE.md` and
-  the frontend `apps/desktop/src/lib/quit/CLAUDE.md`
+- `quit/`: The quit gate. Every exit path asks it first (the two Tauri handlers and the MCP `quit` tool); with
+  non-instant operations in flight it holds the exit, raises the countdown dialog, and runs the teardown on its own
+  deadline. See `apps/desktop/src-tauri/src/quit/CLAUDE.md`, the frontend `apps/desktop/src/lib/quit/CLAUDE.md`, and the
+  agent-facing surface in `apps/desktop/src-tauri/src/mcp/executor/quit.rs`
 - `app_lifecycle.rs`: The two Tauri builder handlers `lib.rs` names: `on_window_event` (main-window focus, close, and
   destroy; viewer-window teardown) and `on_run_event` (ready, exit requested, exit), plus the shared
   stop-background-services path all three shutdown routes take

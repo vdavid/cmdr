@@ -3,7 +3,9 @@
  *
  * The backend owns the decision and the deadline (`src-tauri/src/quit/`). This
  * module only mirrors it: it opens the dialog on `quit-requested`, counts the
- * seconds down for display, and sends whichever answer the user picks.
+ * seconds down for display, sends whichever answer the user picks, and closes
+ * on `quit-called-off` when the answer came from somewhere else (an agent over
+ * MCP), where nothing would otherwise take the prompt down.
  *
  * **The countdown here is decoration.** It's derived from a wall-clock target
  * rather than decremented per tick, so a throttled or busy webview shows the
@@ -12,7 +14,7 @@
  */
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import { onQuitRequested, quitCancel, quitConfirm, type OperationSnapshot } from '$lib/tauri-commands'
+import { onQuitCalledOff, onQuitRequested, quitCancel, quitConfirm, type OperationSnapshot } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('quit')
@@ -63,6 +65,13 @@ class QuitPrompt {
     })
   }
 
+  /** The quit was called off from somewhere that isn't this dialog (an agent
+   *  over MCP). The gate is already released; this only takes the prompt down,
+   *  so nothing is left counting toward a quit that will never come. */
+  dismiss() {
+    this.#close()
+  }
+
   #retick() {
     this.secondsLeft = Math.max(0, Math.ceil((this.#deadlineAt - Date.now()) / 1000))
   }
@@ -79,19 +88,26 @@ class QuitPrompt {
 
 export const quitPrompt = new QuitPrompt()
 
-let unlisten: Promise<UnlistenFn> | undefined
+let unlistenRequested: Promise<UnlistenFn> | undefined
+let unlistenCalledOff: Promise<UnlistenFn> | undefined
 
-/** Starts listening for the backend holding a quit. Main window only: it's the
- *  window that owns the app's dialogs. */
+/** Starts listening for the backend holding a quit, and for one being called
+ *  off. Main window only: it's the window that owns the app's dialogs. */
 export function initQuitPrompt() {
-  unlisten ??= onQuitRequested((event) => {
+  unlistenRequested ??= onQuitRequested((event) => {
     quitPrompt.show(event.operations, event.countdownMs)
+  })
+  unlistenCalledOff ??= onQuitCalledOff(() => {
+    quitPrompt.dismiss()
   })
 }
 
 export function cleanupQuitPrompt() {
-  void unlisten?.then((stop) => {
-    stop()
-  })
-  unlisten = undefined
+  for (const pending of [unlistenRequested, unlistenCalledOff]) {
+    void pending?.then((stop) => {
+      stop()
+    })
+  }
+  unlistenRequested = undefined
+  unlistenCalledOff = undefined
 }

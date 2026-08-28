@@ -13,8 +13,17 @@ to a webview event. That asymmetry was the bug.
 
 ## The phase machine
 
-`Phase::Idle` → `Waiting(sender)` → `Quitting`, under one mutex, with `Idle` reachable again only from `Waiting` (a
-cancel).
+`Phase::Idle` → `Waiting { decisions, deadline, host }` → `Quitting`, under one mutex, with `Idle` reachable again only
+from `Waiting` (a cancel).
+
+`Waiting` carries two things beyond the sender, both there for callers that aren't the dialog:
+
+- **`deadline`**, so a second `request_quit` answers with what's LEFT of the countdown the user is watching rather than a
+  fresh one. Pinned by `tests::asking_again_reports_the_time_left_not_a_fresh_countdown`.
+- **`host`**, so `cancel` can announce the call-off. `request_quit` is the only place a host is handed in, and `cancel`
+  has to reach the windows (see "Answering from outside the dialog").
+
+Transitions:
 
 - **`Idle` → `Waiting`**: `request_quit` found at least one operation matching `blocks_quit`. It emits `quit-requested`
   and spawns the deadline thread, which owns the whole rest of the flow.
@@ -24,6 +33,25 @@ cancel).
   `claim_deadline` after `recv_timeout` times out. Both are one atomic swap, which is what settles the
   cancel-lands-as-the-deadline-fires race: whoever takes `Waiting` out of the mutex wins, and the loser is a no-op.
 - **`Quitting` → anywhere**: never. See "Why `Quitting` is terminal".
+
+### Answering from outside the dialog
+
+An MCP agent asks to quit (`../mcp/executor/quit.rs`) and answers the confirmation through the same two gate methods the
+dialog calls. That's parity with ⌘Q by design: an agent must not have a quieter, more destructive exit than the keyboard
+does. Three consequences the gate has to carry:
+
+- **`request_quit` hands the held operations back.** A window learns them from `quit-requested`; a tool call has no
+  event to listen to, and the whole point of its reply is telling the agent what it would be interrupting.
+- **`confirm` / `cancel` return `QuitAnswer`.** `NoQuitPending` is a real outcome, not a no-op: the deadline may have
+  claimed the decision, or another surface may have answered first. Dropping it is how the surface above invents a
+  success (`discarded-outcome`), and the MCP layer maps it to a refusal.
+- **`cancel` emits `quit-called-off`.** The dialog closes itself when the person clicks "Keep working"; when an agent
+  answers, nothing else takes the prompt down, and a prompt counting toward a quit that will never come is a lie. The
+  frontend's listener is idempotent, so the ordinary path (which closed the prompt first) sees a no-op. Pinned by
+  `tests::calling_a_quit_off_tells_the_windows_so_no_prompt_is_left_counting`.
+
+**An unanswered agent-initiated quit ends exactly like an unanswered human one**: the deadline fires at `COUNTDOWN` and
+the teardown runs. That is the accepted trade for UI parity, and the tool's reply says so in as many words.
 
 ### Why `Quitting` is terminal
 

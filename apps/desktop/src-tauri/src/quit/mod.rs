@@ -55,15 +55,57 @@ pub struct QuitRequested {
     pub countdown_ms: u32,
 }
 
+/// Emitted when a held quit is called off, so every window takes its prompt down.
+///
+/// The dialog closes itself when the person clicks "Keep working". The gate can
+/// also be released from somewhere that isn't holding a prompt (the MCP `quit`
+/// surface), and a dialog left counting toward a quit that will never come is a
+/// lie. Kebab-cases to `quit-called-off`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+pub struct QuitCalledOff;
+
 /// What the caller of [`QuitGate::request_quit`] should do about the quit it was
 /// handed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub(crate) enum QuitOutcome {
     /// Nothing to lose, or the decision is already made: let the exit through.
     Proceed,
     /// The gate is asking the user. Prevent the exit (and the window close);
     /// the gate ends the process itself once it has an answer or its deadline.
-    Held,
+    Held {
+        /// What's holding it, the same list the dialog is showing. A caller that
+        /// isn't a window (the `quit` tool) has no other way to learn what it
+        /// would be interrupting.
+        operations: Vec<OperationSnapshot>,
+        /// Milliseconds left before the gate quits on its own. On a second
+        /// request this is what's LEFT of the countdown already running, not a
+        /// fresh one.
+        countdown_ms: u32,
+    },
+}
+
+impl QuitOutcome {
+    /// Whether the exit has to be prevented. The two app-level entry points act
+    /// on nothing else.
+    pub(crate) fn is_held(&self) -> bool {
+        matches!(self, Self::Held { .. })
+    }
+}
+
+/// What [`QuitGate::confirm`] / [`QuitGate::cancel`] did with the answer.
+///
+/// Either answer can arrive late or never, and the gate's own deadline may have
+/// claimed the decision first. A caller that can't see the dialog (an agent over
+/// MCP) has nothing else to tell it whether its answer landed, so the outcome is
+/// returned rather than dropped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum QuitAnswer {
+    /// The gate was holding a quit, and this answer decided it.
+    Answered,
+    /// Nothing was pending: no quit was held, or the decision was already made
+    /// (the countdown ran out, or another surface answered first).
+    NoQuitPending,
 }
 
 /// The two durations, injectable so a test doesn't sit through the real ones.
@@ -90,6 +132,8 @@ pub(crate) trait QuitHost: Send + Sync + 'static {
     fn operations(&self) -> Vec<OperationSnapshot>;
     /// Tell the windows a quit is pending.
     fn announce(&self, event: QuitRequested);
+    /// Tell the windows the pending quit is off, so no prompt is left counting.
+    fn announce_called_off(&self);
     /// Tier 1: cooperative cancel of every live operation, keep-partials.
     fn cancel_all(&self);
     /// Tier 2: stop waiting on whatever didn't answer.
@@ -135,9 +179,18 @@ enum Decision {
 enum Phase {
     /// No quit pending.
     Idle,
-    /// The dialog is up and the deadline thread is counting. The sender is how
-    /// an answer reaches it; dropping it stands the thread down.
-    Waiting(mpsc::Sender<Decision>),
+    /// The dialog is up and the deadline thread is counting.
+    Waiting {
+        /// How an answer reaches the deadline thread; dropping it stands the
+        /// thread down.
+        decisions: mpsc::Sender<Decision>,
+        /// When the gate quits on its own, so a second request is told what's
+        /// left of the clock rather than a fresh countdown.
+        deadline: Instant,
+        /// Kept because [`QuitGate::cancel`] has to reach the windows and
+        /// `request_quit` is the only place a host is handed in.
+        host: Arc<dyn QuitHost>,
+    },
     /// The decision is made and the teardown is running (or done). Every
     /// further quit request sails through: the teardown ends in
     /// `AppHandle::exit(0)`, which comes straight back as `ExitRequested`, and
@@ -171,8 +224,16 @@ impl QuitGate {
         let mut phase = self.phase.lock_ignore_poison();
         match &*phase {
             Phase::Quitting => return QuitOutcome::Proceed,
-            // Pressing ⌘Q again must not restart the clock the user is watching.
-            Phase::Waiting(_) => return QuitOutcome::Held,
+            // Asking again must not restart the clock the user is watching, so
+            // this answers with what's left of the one already running.
+            Phase::Waiting { deadline, .. } => {
+                let deadline = *deadline;
+                drop(phase);
+                return QuitOutcome::Held {
+                    operations: host.operations().into_iter().filter(blocks_quit).collect(),
+                    countdown_ms: remaining_ms(deadline),
+                };
+            }
             Phase::Idle => {}
         }
 
@@ -182,12 +243,18 @@ impl QuitGate {
             return QuitOutcome::Proceed;
         }
 
-        let (decisions, answers) = mpsc::channel();
-        *phase = Phase::Waiting(decisions);
-        drop(phase);
-
         let countdown = self.timings.countdown;
         let drain = self.timings.drain;
+        let countdown_ms = u32::try_from(countdown.as_millis()).unwrap_or(u32::MAX);
+
+        let (decisions, answers) = mpsc::channel();
+        *phase = Phase::Waiting {
+            decisions,
+            deadline: Instant::now() + countdown,
+            host: Arc::clone(&host),
+        };
+        drop(phase);
+
         log::info!(
             target: "quit",
             "holding the quit: {} operation(s) still running, {}s on the clock",
@@ -195,8 +262,8 @@ impl QuitGate {
             countdown.as_secs()
         );
         host.announce(QuitRequested {
-            operations,
-            countdown_ms: u32::try_from(countdown.as_millis()).unwrap_or(u32::MAX),
+            operations: operations.clone(),
+            countdown_ms,
         });
 
         // A dedicated OS thread, not a tokio task: the deadline must not be
@@ -230,36 +297,48 @@ impl QuitGate {
             *self.phase.lock_ignore_poison() = Phase::Quitting;
             return QuitOutcome::Proceed;
         }
-        QuitOutcome::Held
+        QuitOutcome::Held {
+            operations,
+            countdown_ms,
+        }
     }
 
-    /// The user pressed Quit. Idempotent, and a no-op once the deadline already
-    /// claimed the decision.
-    pub(crate) fn confirm(&self) {
+    /// Quit now, skipping the rest of the countdown. Idempotent, and
+    /// [`QuitAnswer::NoQuitPending`] once the deadline already claimed the
+    /// decision.
+    pub(crate) fn confirm(&self) -> QuitAnswer {
         let mut phase = self.phase.lock_ignore_poison();
         match std::mem::replace(&mut *phase, Phase::Quitting) {
-            Phase::Waiting(decisions) => {
+            Phase::Waiting { decisions, .. } => {
                 let _ = decisions.send(Decision::Quit);
+                QuitAnswer::Answered
             }
             other => {
                 *phase = other;
                 log::debug!(target: "quit", "quit_confirm with no quit pending; ignoring");
+                QuitAnswer::NoQuitPending
             }
         }
     }
 
-    /// The user pressed "Keep working". The countdown is **gone**, not deferred:
-    /// a snooze would still kill the transfer seconds later, which is worse than
-    /// not having asked.
-    pub(crate) fn cancel(&self) {
+    /// Keep working. The countdown is **gone**, not deferred: a snooze would
+    /// still kill the transfer seconds later, which is worse than not having
+    /// asked.
+    pub(crate) fn cancel(&self) -> QuitAnswer {
         let mut phase = self.phase.lock_ignore_poison();
         match std::mem::replace(&mut *phase, Phase::Idle) {
-            Phase::Waiting(decisions) => {
+            Phase::Waiting { decisions, host, .. } => {
                 let _ = decisions.send(Decision::Cancel);
+                // Off the lock before touching the outside world, and only on
+                // the arm that actually took a prompt down.
+                drop(phase);
+                host.announce_called_off();
+                QuitAnswer::Answered
             }
             other => {
                 *phase = other;
                 log::debug!(target: "quit", "quit_cancel with no quit pending; ignoring");
+                QuitAnswer::NoQuitPending
             }
         }
     }
@@ -269,13 +348,19 @@ impl QuitGate {
     fn claim_deadline(&self) -> bool {
         let mut phase = self.phase.lock_ignore_poison();
         match std::mem::replace(&mut *phase, Phase::Quitting) {
-            Phase::Waiting(_) => true,
+            Phase::Waiting { .. } => true,
             other => {
                 *phase = other;
                 false
             }
         }
     }
+}
+
+/// How much of the countdown is left, clamped at zero.
+fn remaining_ms(deadline: Instant) -> u32 {
+    let left = deadline.saturating_duration_since(Instant::now());
+    u32::try_from(left.as_millis()).unwrap_or(u32::MAX)
 }
 
 /// Stop everything, leave the disk safe, and end the process — inside 2 s from
@@ -323,17 +408,20 @@ pub(crate) fn gate() -> &'static Arc<QuitGate> {
 }
 
 /// The real outside world: the operation manager, the main window, and the app.
-pub(crate) struct TauriQuitHost {
-    app: tauri::AppHandle,
+///
+/// Generic over the runtime because the MCP executor is: its handlers take an
+/// `AppHandle<R>`, and the `quit` tool has to reach the same gate ⌘Q does.
+pub(crate) struct TauriQuitHost<R: tauri::Runtime> {
+    app: tauri::AppHandle<R>,
 }
 
-impl TauriQuitHost {
-    pub(crate) fn new(app: tauri::AppHandle) -> Arc<Self> {
+impl<R: tauri::Runtime> TauriQuitHost<R> {
+    pub(crate) fn new(app: tauri::AppHandle<R>) -> Arc<Self> {
         Arc::new(Self { app })
     }
 }
 
-impl QuitHost for TauriQuitHost {
+impl<R: tauri::Runtime> QuitHost for TauriQuitHost<R> {
     fn operations(&self) -> Vec<OperationSnapshot> {
         crate::file_system::write_operations::list_operations()
     }
@@ -344,6 +432,13 @@ impl QuitHost for TauriQuitHost {
             // The dialog is the only thing lost; the deadline still fires, so the
             // app still quits. That's the whole point of owning the timer here.
             log::warn!(target: "quit", "couldn't tell the windows about the pending quit: {e}");
+        }
+    }
+
+    fn announce_called_off(&self) {
+        use tauri_specta::Event as _;
+        if let Err(e) = QuitCalledOff.emit(&self.app) {
+            log::warn!(target: "quit", "couldn't tell the windows the quit is off: {e}");
         }
     }
 
@@ -366,9 +461,9 @@ impl QuitHost for TauriQuitHost {
     }
 }
 
-/// Answers a quit request from an app-level entry point. See
+/// Answers a quit request from an app-level entry point or the `quit` tool. See
 /// [`QuitGate::request_quit`].
-pub(crate) fn request_quit(app: &tauri::AppHandle) -> QuitOutcome {
+pub(crate) fn request_quit<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> QuitOutcome {
     gate().request_quit(TauriQuitHost::new(app.clone()))
 }
 

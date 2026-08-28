@@ -5,8 +5,8 @@ The main window's view of a held quit. The backend owns the decision and the clo
 
 ## Module map
 
-- `quit-prompt.svelte.ts`: the `quitPrompt` store (opens on `quit-requested`, mirrors the countdown, sends the answer)
-  plus `initQuitPrompt` / `cleanupQuitPrompt`, wired in `routes/(main)/+layout.svelte`.
+- `quit-prompt.svelte.ts`: the `quitPrompt` store (opens on `quit-requested`, mirrors the countdown, sends the answer,
+  closes on `quit-called-off`) plus `initQuitPrompt` / `cleanupQuitPrompt`, wired in `routes/(main)/+layout.svelte`.
 - `QuitConfirmationDialog.svelte`: prop-driven and inert. Takes the operations, the seconds, and two callbacks.
 
 ## Must-knows
@@ -20,7 +20,11 @@ The main window's view of a held quit. The backend owns the decision and the clo
 - **The dialog is `topmost`** (`--z-modal-top`), so it's answerable over a modal conflict prompt or a progress dialog.
   That prop exists for this one dialog; ❌ don't spend it elsewhere (two topmost dialogs are back to racing on DOM
   order). Pinned by `QuitConfirmationDialog.svelte.test.ts`.
-- **Escape and the × mean "keep working"**, the answer that loses nothing.
+- **Escape and the × mean "keep working"**, the answer that loses nothing. So does `dialog close quit-confirmation` over
+  MCP, which answers the GATE, not this store.
+- **`quit-called-off` closes the prompt, and `dismiss()` doesn't answer back.** An agent's "keep working" releases the
+  gate directly, so re-sending `quit_cancel` here would be noise; without the listener the dialog would sit counting
+  toward a quit that will never come.
 - **Confirming leaves the dialog up.** The app is about to disappear; hiding it first flashes the file panes on the way
   out.
 - **"Keep working" is not a snooze** — the backend deletes the countdown. Keep any copy edit honest about that.
