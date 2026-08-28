@@ -1484,6 +1484,6 @@ isso claro.
 - Varredura pt-PT do lote (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o
   nome, `você` omitido): zero ocorrências. Nenhum valor é idêntico ao inglês, então nenhum precisa de
   `sameAsSourceJustification`; nenhum leva apóstrofo, então não há `''` no lote.
-- ⚠️ REVIEW FLAG (fora deste lote): `askCmdr.wakeToast.openThread` está como `Ver porquê`. Em pt-BR o substantivo pede
-  artigo (`Ver o porquê`) ou a forma separada e acentuada no fim da frase (`Ver por quê`); `porquê` avulso não é forma
-  correta. Corrigir numa varredura.
+- "See why" (o botão do aviso rápido do Ask Cmdr) · **Ver por quê** · a forma separada e acentuada, porque a pergunta
+  fecha a frase; é a mesma escolha já feita em `queue.chip.failed` ("para ver por quê") · confirmed. `porquê` avulso não
+  é forma correta em pt-BR: o substantivo pediria artigo (`Ver o porquê`). `askCmdr.wakeToast.openThread`.

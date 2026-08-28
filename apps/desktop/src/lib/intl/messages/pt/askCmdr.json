@@ -738,7 +738,7 @@
   "@askCmdr.wakeToast.action": {
     "sourceHash": "aff0766"
   },
-  "askCmdr.wakeToast.openThread": "Ver porquê",
+  "askCmdr.wakeToast.openThread": "Ver por quê",
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
