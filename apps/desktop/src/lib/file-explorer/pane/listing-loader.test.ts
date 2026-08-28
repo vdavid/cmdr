@@ -142,6 +142,7 @@ function makeHarness(over: Partial<PaneState> = {}) {
     onPathChange: vi.fn(),
     onVolumeChange: vi.fn(),
     onMtpFatalError: vi.fn(),
+    onArchiveNeedsPassword: vi.fn(),
     onCancelLoading: vi.fn(),
     renameCancel: vi.fn(),
     renameForgetChainReports: vi.fn(),
@@ -240,6 +241,7 @@ function makeHarness(over: Partial<PaneState> = {}) {
     onPathChange: spies.onPathChange,
     onVolumeChange: spies.onVolumeChange,
     onMtpFatalError: spies.onMtpFatalError,
+    onArchiveNeedsPassword: spies.onArchiveNeedsPassword,
     onCancelLoading: spies.onCancelLoading,
   }
   const loader = createListingLoader(deps)
@@ -418,6 +420,38 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     expect(state.loading).toBe(false)
     expect(state.error).toBe('device gone')
     expect(h.pathExistsChecked).not.toHaveBeenCalled()
+  })
+
+  it('prompts for an encrypted archive instead of probing whether it exists', async () => {
+    // Pre-fix this walked up out of the archive: the existence probe resolves
+    // through the same archive volume, which can't answer without the password
+    // either, so it read "gone" and the pane left before anyone was asked.
+    const { loader, state, spies } = makeHarness()
+    h.pathExistsChecked.mockResolvedValue({ data: false, timedOut: false })
+    h.resolveValidPath.mockResolvedValue('/a')
+    await loader.loadDirectory({ path: '/a/locked.7z' })
+    const idA = state.listingId
+
+    h.listeners.error[0]({
+      listingId: idA,
+      message: 'needs a password',
+      error: { reason: { reason: 'archiveNeedsPassword', wrongAttempt: false } },
+    })
+    await vi.waitFor(() => {
+      expect(spies.onArchiveNeedsPassword).toHaveBeenCalled()
+    })
+
+    expect(spies.onArchiveNeedsPassword.mock.calls[0][0]).toMatchObject({
+      archivePath: '/a/locked.7z',
+      wrongAttempt: false,
+    })
+    // No probe, so no walk-up: the pane stays put, showing the fallback the
+    // prompt sits on top of.
+    expect(h.pathExistsChecked).not.toHaveBeenCalled()
+    expect(h.resolveValidPath).not.toHaveBeenCalled()
+    expect(state.error).toBe('needs a password')
+    // And the failed path is in history, so Back goes one step, not two.
+    expect(spies.onPathChange).toHaveBeenCalledWith('/a/locked.7z')
   })
 
   it('walks up to the nearest valid parent when the listing path was deleted', async () => {

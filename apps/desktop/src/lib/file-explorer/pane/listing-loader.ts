@@ -407,6 +407,44 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
                 return
               }
 
+              // Shows the failed listing and records it in history so Cmd+[ goes
+              // back one step, not two. The success path pushes via the
+              // `onPathChange` call in `handleListingComplete`; without this an
+              // error pane would be visible but absent from history, so Back
+              // would skip over it. `pushPath` deduplicates same-path retries.
+              const showListingError = () => {
+                const rendered = payload.error ? renderListingError(payload.error) : undefined
+                resetLoadingState(payload.message, false, rendered)
+                deps.onPathChange?.(loadPath)
+              }
+
+              // A header-encrypted archive needs its password even to LIST it.
+              // Raise the browse-time password prompt ON TOP of the fallback
+              // error pane: on submit `retry` re-lists this same path (which now
+              // succeeds); on cancel the prompt closes and the "This archive
+              // needs a password" pane stays put (the user simply doesn't get in).
+              //
+              // ⚠️ Answered BEFORE the existence probe below, not inside it. That
+              // probe resolves through the same archive volume, which can't say
+              // whether an inner path exists without the password either — so it
+              // answers "gone", and the walk-up took the pane back out of the
+              // archive before anyone could be asked for the password. The typed
+              // reason is definitive; ❌ don't make it wait on a probe that
+              // cannot answer.
+              const reason = payload.error?.reason
+              if (reason?.reason === 'archiveNeedsPassword') {
+                showListingError()
+                deps.onArchiveNeedsPassword?.({
+                  volumeId: deps.getVolumeId(),
+                  archivePath: loadPath,
+                  wrongAttempt: reason.wrongAttempt,
+                  retry: () => {
+                    void loadDirectory({ path: loadPath })
+                  },
+                })
+                return
+              }
+
               // For local volumes, check if the path was deleted.
               // Use the checked variant so a connection-blip "false" doesn't get treated as
               // "deleted": show the error pane in that case instead of walking up.
@@ -421,32 +459,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
                   })
                 } else {
                   // Path exists, or we couldn't tell: show the original listing error
-                  const rendered = payload.error ? renderListingError(payload.error) : undefined
-                  resetLoadingState(payload.message, false, rendered)
-                  // Record the failed path in history so Cmd+[ goes back one step,
-                  // not two. The success path pushes via the `onPathChange` call in
-                  // `handleListingComplete`; without this call, an error pane would
-                  // be visually displayed but absent from history, so Back would
-                  // skip over it. `pushPath` deduplicates same-path retries.
-                  deps.onPathChange?.(loadPath)
-
-                  // A header-encrypted archive needs its password even to LIST it.
-                  // Raise the browse-time password prompt ON TOP of the fallback
-                  // error pane rendered above: on submit `retry` re-lists this same
-                  // path (which now succeeds); on cancel the prompt closes and the
-                  // "This archive needs a password" pane stays put (the user simply
-                  // doesn't get in).
-                  const reason = payload.error?.reason
-                  if (reason?.reason === 'archiveNeedsPassword') {
-                    deps.onArchiveNeedsPassword?.({
-                      volumeId: deps.getVolumeId(),
-                      archivePath: loadPath,
-                      wrongAttempt: reason.wrongAttempt,
-                      retry: () => {
-                        void loadDirectory({ path: loadPath })
-                      },
-                    })
-                  }
+                  showListingError()
                 }
               })
             }
