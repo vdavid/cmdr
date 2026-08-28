@@ -472,7 +472,9 @@ fn merge_source_types_from_stats(
     for item in source_items.iter_mut() {
         if let Some(entry) = by_name.get(item.name.as_str()) {
             item.is_directory = entry.is_directory;
-            if !entry.is_directory && let Some(size) = entry.size {
+            if !entry.is_directory
+                && let Some(size) = entry.size
+            {
                 item.size = size;
             }
         }
@@ -527,8 +529,8 @@ mod tests {
     };
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
     use crate::file_system::{InMemoryVolume, LocalPosixVolume, SourceItemInfo};
-    use cmdr_fs::entry::FileEntry;
     use crate::test_support::WedgedVolume;
+    use cmdr_fs::entry::FileEntry;
     use cmdr_fs::volume::Volume;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;

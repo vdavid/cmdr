@@ -19,6 +19,9 @@ callbacks. The transfers themselves: `../CLAUDE.md`.
   once.
 - **A directory expands to many leaves through ONE `on_file_progress` / `on_file_complete` pair**, and the bars are
   leaf-granular against preflight LEAF totals, so ❌ never reset the tally per inner file.
+- **Every skip credits the bars AND calls `state.note_skipped`**, ❌ never one without the other. The bars must reach
+  their totals; the rate must not see bytes nothing moved, or one big skipped file spikes the reported speed.
+  `../DETAILS.md` § "Skipped work moves the bars, and stays out of the rate".
 - **Sync and async are deliberate siblings, ❌ not one generic driver.** Boxing futures for the sync caller would cost
   an allocation per source and lose the closure's `&mut` captures.
 - **Conflict resolution is closure-owned for sync, driver-owned for async.** ❌ Don't unify without moving the sync

@@ -171,6 +171,10 @@ impl SerialLeafProgress {
         self.leaf_high_water.store(0, Ordering::Relaxed);
         let new_files = self.files_done.fetch_add(1, Ordering::Relaxed) + 1;
         self.state.note_skipped(1, leaf_bytes);
+        // The bool says whether the throttle let this tick through, and a skip has
+        // nothing to do about either answer: the counters are credited above, and
+        // the completion event carries the final tally whatever the throttle ate.
+        // allowed-discarded-outcome: whether this tick was throttled changes nothing here.
         try_emit_throttled_progress(
             &*self.events,
             &self.state,

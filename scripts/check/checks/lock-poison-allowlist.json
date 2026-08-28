@@ -17,7 +17,7 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/delete/walker.rs": 1,
     "apps/desktop/src-tauri/src/file_system/write_operations/scan_cache.rs": 13,
     "apps/desktop/src-tauri/src/file_system/write_operations/scan_preview.rs": 1,
-    "apps/desktop/src-tauri/src/file_system/write_operations/state.rs": 2,
+    "apps/desktop/src-tauri/src/file_system/write_operations/state.rs": 1,
     "apps/desktop/src-tauri/src/file_system/write_operations/status_cache.rs": 6,
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 5,
     "apps/desktop/src-tauri/src/licensing/verification.rs": 3,

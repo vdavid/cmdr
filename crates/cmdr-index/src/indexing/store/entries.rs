@@ -385,7 +385,8 @@ impl IndexStore {
                 let mut stmt = conn.prepare_cached(
                     "SELECT 1 FROM entries WHERE inode = ?1 AND logical_size IS NOT NULL AND id != ?2 LIMIT 1",
                 )?;
-                stmt.query_row(params![inode_to_sql(inode), eid], |_| Ok(())).optional()?
+                stmt.query_row(params![inode_to_sql(inode), eid], |_| Ok(()))
+                    .optional()?
             }
             None => {
                 let mut stmt =

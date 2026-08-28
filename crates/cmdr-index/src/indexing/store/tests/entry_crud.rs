@@ -388,7 +388,10 @@ fn a_high_bit_inode_round_trips_and_keeps_the_rest_of_the_batch() {
 
     // A real value sampled from a mounted QNAP share.
     let smb_inode: u64 = 16_927_209_734_986_940_580;
-    assert!(i64::try_from(smb_inode).is_err(), "the fixture has to exercise the case");
+    assert!(
+        i64::try_from(smb_inode).is_err(),
+        "the fixture has to exercise the case"
+    );
 
     let entries = vec![
         EntryRow {

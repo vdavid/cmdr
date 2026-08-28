@@ -982,11 +982,11 @@ export const commands = {
    *
    *  When `source_volume_id` and `source_paths` are both provided, each item's
    *  `is_directory` and `size` are resolved authoritatively on the source volume
-   *  via ONE batched stat (`scan_for_copy_batch`, strictly O(top-level items),
-   *  never a subtree walk), overriding whatever the caller passed in `source_items`.
-   *  This lets the dialog classify dir-vs-dir collisions as silent merges without
-   *  the FE having to plumb per-item types. Callers that don't pass the source
-   *  volume keep the legacy name-only behavior.
+   *  via one `get_metadata` per top-level path (see `stat_source_paths`: strictly
+   *  O(top-level items), never a subtree walk), overriding whatever the caller
+   *  passed in `source_items`. This lets the dialog classify dir-vs-dir collisions
+   *  as silent merges without the FE having to plumb per-item types. Callers that
+   *  don't pass the source volume keep the legacy name-only behavior.
    */
   scanVolumeForConflicts: (
     volumeId: string,
