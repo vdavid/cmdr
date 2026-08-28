@@ -562,3 +562,87 @@ async fn rollback_after_rename_keeps_preexisting_dest_file() {
         "rollback should have removed the fresh file the op created",
     );
 }
+
+/// CONCURRENT-path sibling of `rollback_of_merged_directory_preserves_preexisting_dest_files`:
+/// a directory source that finished MERGING into a pre-existing destination, on
+/// a batch wide enough to take the concurrent driver, must roll back to exactly
+/// the files it wrote.
+///
+/// Both halves matter and they fail in opposite directions. Record the merged
+/// dest ROOT and rollback can't undo anything it wrote (the delete-capability
+/// split refuses to remove a non-empty directory, so `new*.bin` survive a
+/// Rollback the user asked for); record it AND give cleanup a recursive delete
+/// and the sentinel goes with it. The serial driver's version of this has been
+/// pinned since the ledger landed; the concurrent driver reaches the same ledger
+/// through its own result arm.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn rollback_of_a_concurrently_merged_directory_preserves_preexisting_dest_files() {
+    let (source, dest) = make_volumes();
+
+    source.create_directory(Path::new("/album")).await.unwrap();
+    for i in 0..3 {
+        source
+            .create_file(Path::new(&format!("/album/new{i}.bin")), &vec![0u8; 20_000])
+            .await
+            .unwrap();
+    }
+    // Two sibling files so the batch has ≥3 sources → concurrent driver.
+    source
+        .create_file(Path::new("/sib1.bin"), &vec![1u8; 20_000])
+        .await
+        .unwrap();
+    source
+        .create_file(Path::new("/sib2.bin"), &vec![2u8; 20_000])
+        .await
+        .unwrap();
+
+    dest.create_directory(Path::new("/album")).await.unwrap();
+    dest.create_file(Path::new("/album/sentinel.txt"), b"precious user data")
+        .await
+        .unwrap();
+
+    let state = make_state();
+    // Five files in total; tripping at the last one means every source landed
+    // before the user's Rollback, so the post-loop rolls back a COMPLETED merge.
+    let events = Arc::new(TripIntentAtFilesDoneSink {
+        inner: CollectorEventSink::new(),
+        intent: Arc::clone(&state.intent),
+        trip_at_files_done: 5,
+        target_intent: 1, // RollingBack
+    });
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-rollback-merge-concurrent",
+        &state,
+        Arc::clone(&source),
+        &[
+            PathBuf::from("/album"),
+            PathBuf::from("/sib1.bin"),
+            PathBuf::from("/sib2.bin"),
+        ],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_err(), "expected a rolled-back result, got {result:?}");
+
+    assert!(
+        dest.exists(Path::new("/album/sentinel.txt")).await,
+        "rollback wrongly deleted a pre-existing dest-only file in a concurrently merged directory",
+    );
+    for i in 0..3 {
+        let leaf = format!("/album/new{i}.bin");
+        assert!(
+            !dest.exists(Path::new(&leaf)).await,
+            "rollback left behind {leaf}, a file this operation created",
+        );
+    }
+}

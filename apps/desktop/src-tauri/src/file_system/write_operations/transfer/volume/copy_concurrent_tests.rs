@@ -7,13 +7,15 @@
 //! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
 //! (`super::tests`).
 
+use super::super::super::conflict_responder_test_support::await_prompted_clash;
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress, SpaceInfo, VolumeReadStream};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::state::ConflictResolutionResponse;
 use crate::file_system::write_operations::types::{
-    WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
+    ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::AtomicU8;
 
@@ -316,4 +318,94 @@ async fn test_concurrent_copy_cancellation_mid_batch() {
         }
     }
     assert!(total < 20, "expected fewer than 20 files at dest, got {}", total);
+}
+
+/// While the driver is parked on a top-level Stop prompt, NOTHING in the batch
+/// is moving: the source before the clash was pushed into the window but never
+/// polled, and the source after it hasn't even been prepared.
+///
+/// That's the point of resolving a conflict synchronously on the driver, before
+/// the task is pushed, and of never draining the window while a prompt is
+/// outstanding. The dispatch mutex would still serialize the prompts if
+/// resolution moved into the tasks, and the "…all" latch would still collapse
+/// the queued ones — so prompt COUNTS can't tell those designs apart. What
+/// changes is what the rest of the batch does while a person is deciding: here
+/// it waits; the alternative copies other sources into a folder the user is
+/// still being asked about.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_top_level_conflict_prompt_holds_the_whole_batch_still() {
+    let (source, dest) = make_volumes();
+
+    // One source before the clash (pushed into the window, and must stay
+    // unpolled) and one after it (must not even be prepared).
+    source.create_file(Path::new("/first.bin"), b"ONE").await.unwrap();
+    source.create_file(Path::new("/clash.txt"), b"SRC").await.unwrap();
+    source.create_file(Path::new("/later.bin"), b"TWO").await.unwrap();
+    dest.create_file(Path::new("/clash.txt"), b"DEST").await.unwrap();
+
+    let state = make_state();
+    let events = Arc::new(CollectorEventSink::new());
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Stop,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    // The copy runs on its own task, so the driver is genuinely free to keep
+    // working while the prompt is outstanding — which is exactly what must not
+    // happen. Everything it borrows is moved in.
+    let sources = vec![
+        PathBuf::from("/first.bin"),
+        PathBuf::from("/clash.txt"),
+        PathBuf::from("/later.bin"),
+    ];
+    let copy = tokio::spawn({
+        let events = Arc::clone(&events);
+        let state = Arc::clone(&state);
+        let source = Arc::clone(&source);
+        let dest = Arc::clone(&dest);
+        async move {
+            copy_volumes_with_progress(
+                events,
+                "op-prompt-holds-the-batch",
+                &state,
+                source,
+                &sources,
+                dest,
+                Path::new("/"),
+                &config,
+            )
+            .await
+        }
+    });
+
+    let clash = await_prompted_clash(&events).await;
+    // A negative assertion needs a window to be worth anything: give the driver
+    // real time to do the thing it must not do. A batch of three-byte files
+    // copies in microseconds, so this is generous.
+    // allowed-test-sleep: negative assertion over a window — the claim is that
+    // NOTHING moves while the prompt is up, which needs elapsed time, not a
+    // condition to poll for.
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(
+        !dest.exists(Path::new("/first.bin")).await,
+        "a source already in the window must not stream while the user is still being asked"
+    );
+    assert!(
+        !dest.exists(Path::new("/later.bin")).await,
+        "a source after the clash must not be copied while the user is still being asked"
+    );
+    let _ = state.conflict_slot.answer(
+        clash,
+        ConflictResolutionResponse {
+            resolution: ConflictResolution::Overwrite,
+            apply_to_all: false,
+        },
+    );
+    let result = copy.await.unwrap();
+
+    assert!(result.is_ok(), "expected Ok, got {result:?}");
+    // And once the answer lands, the batch runs to completion normally.
+    assert!(dest.exists(Path::new("/first.bin")).await);
+    assert!(dest.exists(Path::new("/later.bin")).await);
 }

@@ -983,3 +983,11 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
         copy_error,
     })
 }
+
+/// The driver's own contract, asserted on what it hands back rather than on the
+/// files a finished operation left: the post-loop's delete-capability split is a
+/// second defense of the same data, so an end-to-end assertion can't tell a
+/// right rollback ledger from a wrong one.
+#[cfg(test)]
+#[path = "copy_concurrent_driver_tests.rs"]
+mod driver_tests;
