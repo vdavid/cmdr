@@ -624,43 +624,34 @@ handlers (`mcp/executor/operation_log.rs`) do the same off the MCP task.
 - **Item views resolve interned dirs to full paths.** `OperationRow` is the summary wire type (no `dir_id`s); item rows
   carry interned prefixes, so `get_operation` returns `OperationItemView`s with `source_path`/`dest_path` reconstructed —
   the frontend never sees a `dir_id`.
+- **No rendered prose crosses the wire.** Rows carry typed enums (`kind`, `status`, `initiator`, item outcomes) and
+  counts; every label and the per-operation summary are composed frontend-side, so they localize per viewer. A
+  pre-rendered English `summary` column would be unlocalizable the day it shipped.
 
 ## Alpha UI — the "Operation log" dialog
 
-The thin alpha surface (requirement 6b): a menu- and shortcut-triggered soft dialog listing recent operations, newest
-first, each expandable to its per-item rows. **Debugging/demo quality by design** (it may become a sidebar later), so it
-is deliberately un-gold-plated — but i18n, style-guide copy, and a11y basics are not optional. It lives entirely in the
-frontend (`apps/desktop/src/lib/operation-log/`) over the existing read API; no new backend command.
+The read API's one user-facing consumer: a menu- and shortcut-triggered soft dialog listing recent operations, newest
+first, each expandable to its per-item rows. It lives entirely in the frontend (`apps/desktop/src/lib/operation-log/`)
+over the existing read commands, so nothing on this side changes when the dialog does. Its state, paging, item caching,
+typed-enum labels, and rollback flow: `apps/desktop/src/lib/operation-log/DETAILS.md`.
 
-- **Modeled on the What's-new dialog** (the menu-triggered, list-rendering, App-scoped soft-dialog template):
-  - `operation-log-trigger.svelte.ts` — the reactive `$state({ open, entries, loading, loadError, hasMore, loadingMore })`
-    plus `openOperationLog()` (fetch page 1 = 50 via `getRecentOperationLogEntries`), `loadMoreOperations()` (append the
-    next 50), `closeOperationLog()`. **Paging offset is `entries.length`** (one source of truth), so an append can't
-    desync or duplicate. Opens even on a read failure (`loadError`) so the menu item never feels dead.
-  - `OperationLogDialog.svelte` — the `ModalDialog` (`dialogId="operation-log"`, registered in `dialog-registry.ts`),
-    mounted in `routes/(main)/+page.svelte` against `operationLogState.open` (and added to that page's
-    `isModalDialogOpen()` guard). One collapsible row per operation; expanding lazily fetches its items via
-    `getOperationLogDetail` (cached per `opId` for the dialog's lifetime).
-  - `operation-log-labels.ts` — PURE label mapping. **Every label derives from a TYPED enum, never a backend-rendered
-    string**: the per-operation summary ("Moved 214 items") is formatted client-side from
-    `kind` + `archiveSubkind` + `itemCount` via an ICU plural key, so it localizes per viewer and shows a thousands
-    separator (Finding 3 — the backend ships no rendered English summary for the dialog). Status, kind, initiator, and
-    item-outcome labels each map their enum to a catalog key with an exhaustive switch (a new variant is a compile error
-    until mapped). Style-guide: `failed` statuses/outcomes read "Didn't finish", never "failed".
-  - IPC wrappers: `$lib/tauri-commands/operation-log.ts` unwraps the two `Result`-returning read commands (the Debug
-    panel calls the raw bindings directly — it's dev-only and bindings-import-exempt).
-- **ALPHA badge** via `StatusBadge` keyed off the `operation-log` entry in the repo-root `feature-status.json`
-  (`"status": "alpha"`).
-- **Menu + command wiring (the "four places", plus the `COMMAND_IDS` id):** command `log.operationLog` (App scope) — the
-  `command-registry.ts` entry, the `app-dialog-handlers.ts` handler (`openOperationLog()`), the `mod.rs`
-  `menu_id_to_command`/`command_id_to_menu_id` mappings for `OPERATION_LOG_ID` + the `MenuItem::with_id` in BOTH
-  `macos.rs` and `linux.rs` (**View menu**, after the command palette), and `menuCommands` in `shortcuts-store.ts`.
-- **Default shortcut ⌘⌥L** (configurable via the registry `shortcuts` field). The plan's first pick ⌥⌘O is already bound
-  to `file.showInFinder`, so `L` (for "log") is the mnemonic. The modifier order is **Command-then-Option (⌘⌥)**, not the
-  Apple display order (⌥⌘): `formatKeyCombo` emits ⌘⌥ and the JS keydown dispatch (`shortcut-dispatch.ts`, keyed off
-  `getEffectiveShortcuts` → `toPlatformShortcut`) matches that, so the shortcut fires via the in-app dispatch on macOS
-  and Linux — an ⌥⌘-order default would fire only via the native menu accelerator. Guarded by a collision test in
-  `command-registry.test.ts`.
+**Debugging/demo quality by design** (it may become a sidebar later), so it is deliberately un-gold-plated — but i18n,
+style-guide copy, and a11y basics are not optional. It wears the ALPHA badge off the `operation-log` entry in the
+repo-root `feature-status.json`.
+
+The wiring with a foot on this side:
+
+- **The native menu item.** Command `log.operationLog` (App scope) needs the `OPERATION_LOG_ID` mappings in
+  `menu/command_map.rs` (`menu_id_to_command` + `command_id_to_menu_id`) plus the `MenuItem::with_id` in BOTH `macos.rs`
+  and `linux.rs` (**View menu**, after the command palette). The other places one command touches, and how a miss fails
+  silently: `apps/desktop/src/lib/commands/CLAUDE.md` § Gotchas.
+- **Default shortcut ⌘⌥L**, Command-then-Option in the canonical combo vocabulary rather than Apple's display order ⌥⌘
+  (`apps/desktop/src/lib/shortcuts/CLAUDE.md`), so it fires through the in-app dispatch and not only via the native
+  accelerator. ⌥⌘O is already `file.showInFinder`, so `L` (for "log") is the mnemonic; a collision test in
+  `command-registry.test.ts` guards it.
+- **The two read commands are the whole backend surface** (§ "Query API + search").
+  `$lib/tauri-commands/operation-log.ts` unwraps them for the dialog; the Debug panel calls the raw bindings instead
+  (dev-only, bindings-import-exempt).
 
 **Convergence with the agent log (Naming section / D7).** The dialog is the mutation half of a future unified timeline:
 when the in-app agent ships, its decision log (`agent_log`) joins the same user-facing surface, and whether that merged

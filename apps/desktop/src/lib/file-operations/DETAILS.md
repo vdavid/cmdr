@@ -280,10 +280,6 @@ the button reads the same on every surface.
   reasoning behind the wording is `$lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the
   inverse".
 
-**Why the split.** One body has to be wrong somewhere: "this deletes every file the operation has written" is true of a
-running copy and false of undoing a move, whose inverse restores and deletes nothing. Over-warning on a harmless
-reversal costs trust as surely as under-warning on a destructive one.
-
 **What it deliberately doesn't say.** ❌ No file count, tempting as one is: the running counter includes files the
 operation SKIPPED, so any number here would be wrong on exactly the operation that had clashes — which is most of the
 ones anybody rolls back. The undo variants say nothing about a count either, and nothing that promises completeness.
