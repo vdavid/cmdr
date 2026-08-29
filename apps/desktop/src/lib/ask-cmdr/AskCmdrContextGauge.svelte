@@ -11,6 +11,7 @@
 <script lang="ts">
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { contextUsagePercent, contextUsageState, type ContextUsage } from './ask-cmdr-context-usage'
 
     type Props = { usage: ContextUsage | null }
@@ -19,7 +20,7 @@
 
     const state = $derived(contextUsageState(usage))
     const percent = $derived(contextUsagePercent(usage))
-    const tooltip = $derived(
+    const tooltipText = $derived(
         usage
             ? tString('askCmdr.context.tooltip', {
                   usedText: formatInteger(usage.estimatedTokens),
@@ -30,7 +31,7 @@
 </script>
 
 {#if state !== 'unmeasured'}
-    <div class="gauge" data-state={state} title={tooltip}>
+    <div class="gauge" data-state={state} use:tooltip={tooltipText}>
         <!-- The meter carries BOTH the name and the value: an ARIA meter without an accessible
              name is announced as a bare number, so the label lives here, not on the wrapper. -->
         <div
@@ -40,7 +41,7 @@
             aria-valuenow={percent}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-valuetext={tooltip}
+            aria-valuetext={tooltipText}
         >
             <div class="fill" style="width: {percent}%"></div>
         </div>

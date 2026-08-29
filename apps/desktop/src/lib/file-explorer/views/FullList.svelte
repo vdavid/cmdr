@@ -744,7 +744,7 @@
                                     class="col-git"
                                     class:has-status={status !== null}
                                     aria-label={status ? labelFor(status) : ''}
-                                    title={status ? labelFor(status) : ''}
+                                    use:tooltip={status ? labelFor(status) : ''}
                                 >
                                     {status ? glyphFor(status) : ''}
                                 </span>

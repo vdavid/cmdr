@@ -10,6 +10,7 @@
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { getBadgeStatus } from '$lib/feature-status'
     import { tString } from '$lib/intl/messages.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import AskCmdrComposer from './AskCmdrComposer.svelte'
     import AskCmdrMessage from './AskCmdrMessage.svelte'
     import AskCmdrSessions from './AskCmdrSessions.svelte'
@@ -102,7 +103,7 @@
         {/if}
         <span class="header-actions">
             {#if consented}
-                <button type="button" class="icon-button" onclick={openSessions} aria-label={tString('askCmdr.threads.open')} title={tString('askCmdr.threads.open')}>
+                <button type="button" class="icon-button" onclick={openSessions} aria-label={tString('askCmdr.threads.open')} use:tooltip={tString('askCmdr.threads.open')}>
                     <Icon name="messages-square" size={16} aria-hidden="true" />
                 </button>
                 <button type="button" class="icon-button" onclick={newChat} aria-label={tString('askCmdr.newChat')}>

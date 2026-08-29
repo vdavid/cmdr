@@ -47,9 +47,12 @@ describe('AskCmdrContextGauge', () => {
 
   it('shows the real figures in the tooltip, labelled as estimates', () => {
     const target = render(usage(31_200, 60_000))
-    const tooltip = target.querySelector('.gauge')?.getAttribute('title')
+    // The hover tooltip is a `use:tooltip` action, which renders into the shared
+    // tooltip element only once hovered. The same string is the meter's
+    // `aria-valuetext`, so asserting there covers the wording for both surfaces.
+    const text = target.querySelector('[role="meter"]')?.getAttribute('aria-valuetext')
     // Thousands separators, no "k" abbreviations, and honest about being an estimate.
-    expect(tooltip).toBe('31,200 of 60,000 tokens used (estimated)')
+    expect(text).toBe('31,200 of 60,000 tokens used (estimated)')
     target.remove()
   })
 

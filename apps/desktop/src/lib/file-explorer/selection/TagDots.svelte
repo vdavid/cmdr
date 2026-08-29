@@ -11,6 +11,7 @@
     import type { TagRef } from '$lib/ipc/bindings'
     import { formatInteger } from '$lib/intl/number-format'
     import { tagDotsModel, tagColorVar } from './tag-dots-utils'
+    import { tooltip } from '$lib/tooltip/tooltip'
 
     interface Props {
         tags: TagRef[] | undefined
@@ -22,7 +23,7 @@
 </script>
 
 {#if model.dots.length > 0}
-    <span class="tag-dots" role="img" aria-label={model.label} title={model.label}>
+    <span class="tag-dots" role="img" aria-label={model.label} use:tooltip={model.label}>
         {#each model.dots as dot, i (i)}
             <span
                 class="tag-dot"

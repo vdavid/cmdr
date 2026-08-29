@@ -12,6 +12,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import TextArea from '$lib/ui/TextArea.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { getSetting, onSpecificSettingChange, type AiProvider } from '$lib/settings'
     import { askCmdrSelectionAttachments, askCmdrFakeActive } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
@@ -108,7 +109,7 @@
             class="composer-button ghost"
             onclick={attachSelection}
             aria-label={tString('askCmdr.composer.attach')}
-            title={tString('askCmdr.composer.attach')}
+            use:tooltip={tString('askCmdr.composer.attach')}
         >
             <Icon name="paperclip" size={16} aria-hidden="true" />
         </button>

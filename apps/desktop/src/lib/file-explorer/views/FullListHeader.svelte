@@ -2,6 +2,7 @@
     import SortableHeader from '../selection/SortableHeader.svelte'
     import type { SortColumn, SortOrder } from '../types'
     import { tString } from '$lib/intl/messages.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
 
     interface Props {
         /** The row's grid tracks, mirrored from the data rows so columns line up. */
@@ -89,7 +90,7 @@
         />
     {/if}
     {#if gitColumnVisible}
-        <span class="header-git" title={tString('fileExplorer.columns.gitTitle')}>{tString('fileExplorer.columns.git')}</span>
+        <span class="header-git" use:tooltip={tString('fileExplorer.columns.gitTitle')}>{tString('fileExplorer.columns.git')}</span>
     {/if}
     {#if !showExtensionInName}
         <SortableHeader

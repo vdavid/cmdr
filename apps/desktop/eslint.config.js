@@ -42,6 +42,7 @@ import noPrivateUnitFormat from './eslint-plugins/no-private-unit-format.js'
 import noRawUserFacingString from './eslint-plugins/no-raw-user-facing-string.js'
 import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
 import preferUiPrimitive from './eslint-plugins/prefer-ui-primitive.js'
+import noTitleAttribute from './eslint-plugins/no-title-attribute.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 
 /* global process */
@@ -277,6 +278,7 @@ export default tseslint.config(
           'no-raw-user-facing-string': noRawUserFacingString,
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
           'prefer-ui-primitive': preferUiPrimitive,
+          'no-title-attribute': noTitleAttribute,
         },
       },
     },
@@ -329,6 +331,13 @@ export default tseslint.config(
       // raw controls gray out on window blur, ignore theme tokens, and
       // re-implement a11y the primitive already owns.
       'cmdr/prefer-ui-primitive': 'error',
+      // Hover hints go through `use:tooltip`, never a native `title`: a native
+      // title never shows on keyboard focus (fatal in a keyboard-first app),
+      // lands about a second after ours, ignores our theme tokens, and is
+      // announced inconsistently by screen readers. Elements whose `title` is
+      // the accessible name (`iframe`/`embed`/`object`) or a term's expansion
+      // (`abbr`/`dfn`) are exempt inside the rule.
+      'cmdr/no-title-attribute': 'error',
     },
   },
   {

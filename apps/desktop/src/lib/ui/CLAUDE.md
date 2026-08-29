@@ -34,17 +34,18 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
   `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in.
 - **Per-component traps.** Each has its own section in `DETAILS.md`:
   - `Tooltip`: keep BOTH detached-trigger guards (`destroy()` cancels the timer, `showTooltip` / `positionTooltip` bail
-    on `!el.isConnected`), or a recycled virtual-scroll row fires the 400 ms timer on a dead node.
+    on `!el.isConnected`), or a recycled virtual-scroll row fires the 400 ms timer on a dead node. ❌ Never a native
+    `title` (`cmdr/no-title-attribute`): it skips keyboard focus. Keep any `aria-label`.
   - `ShortcutChip`: import `openShortcutCustomization` dynamically in the click handler — a static import drags
     `@tauri-apps/api/webviewWindow` onto a module-eval surface the capability-restricted viewer can't have. Set exactly
     one of `commandId` / `key`.
   - `Select`: the `.select-*` classes are a contract (`SettingSelect`'s `querySelector`, `dropdown_states.go`'s contrast
     matrix). Don't rename them or recolor off the accent tokens.
-  - `Combobox` is a text-field-with-suggestions, not a value-bound select: drive its text off `inputValue`, never
-    `value` / `items`, which blanks the field on an empty list or a custom name.
-  - Text fields: the chrome lives in `app.css` § "Text fields", so restyling every field is ONE edit, and `Combobox` /
-    `NumberInput` re-read the same tokens (keep all five in sync). `.text-field` / `.text-field-control` are a stable
-    selector contract, and `TextInput` is one-way `value` + `oninput`, never an internal `bind:value`.
+  - `Combobox` is a text-field-with-suggestions: drive its text off `inputValue`, never `value` / `items`, which blanks
+    the field on an empty list or a custom name.
+  - Text fields: chrome lives in `app.css` § "Text fields", so ONE edit restyles all five (keep `Combobox` /
+    `NumberInput` in sync). `.text-field` / `.text-field-control` are a selector contract, and `TextInput` is one-way
+    `value` + `oninput`, never an internal `bind:value`.
   - Toasts: pick a level by feedback kind, not wording; a full all-persistent stack silently drops new ones; a
     pane-local transient toast needs `addToastForPane(pane, …)` or that pane's navigation won't clear it.
 

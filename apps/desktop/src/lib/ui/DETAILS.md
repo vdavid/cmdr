@@ -315,6 +315,30 @@ dialog that isn't open. The effect re-registers on each change and its cleanup c
 Global tooltip system via Svelte action. Apple-style frosted glass appearance, 400ms show delay, auto-flips above/below
 viewport.
 
+### Why the native `title` attribute is banned
+
+`cmdr/no-title-attribute` rejects a `title` on any literal HTML element. Four reasons, in the order they matter here:
+
+1. A native title never appears on keyboard focus, only under a hovering mouse. In a keyboard-first app that makes the
+   hint invisible to the primary input. The action binds `focus` / `blur` alongside `mouseenter` / `mouseleave`.
+2. The engine's delay (roughly 1-2 s) can't be tuned, so a native title lands about a second after ours. Two hints one
+   span apart in the same row, appearing a second apart, reads as a bug.
+3. It's OS chrome: it ignores our dark/light tokens, type, and reduced-motion preference.
+4. Screen readers announce `title` inconsistently. The action wires `aria-describedby` to the live tooltip element.
+
+A native title also can't be dismissed with Esc or carry `shortcut` / `overflowOnly` / rich content.
+
+The action strips any `title` it finds on its node (on both init and `update`), so the two can never double up; the rule
+is about elements that never got the action, not about conflicts.
+
+**When converting, keep the element's `aria-label`.** The action sets `aria-describedby`, which DESCRIBES a named
+element rather than naming it, so dropping the label on an icon-only control would leave it anonymous. Where the title
+was the only accessible name and no label exists, add one.
+
+Exempt inside the rule: `iframe` / `embed` / `object`, whose accessible name IS the title (axe's `frame-title`), and
+`abbr` / `dfn`, where the title is the term's expansion rather than a hover hint. A `title` prop on a COMPONENT
+(`<SettingsSection title={…}>`) is an ordinary prop and never flagged.
+
 Usage:
 
 ```svelte

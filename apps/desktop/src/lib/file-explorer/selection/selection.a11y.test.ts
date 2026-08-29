@@ -302,8 +302,10 @@ describe('SortableHeader a11y', () => {
  * Tier 3 a11y tests for `TagDots.svelte`.
  *
  * The cluster is decorative pixels (colored dots), so it must expose the tag
- * names through an accessible label / title; the individual dots stay
- * `aria-hidden`. Pure, no store/icon-cache stubs needed.
+ * names through an accessible label; the individual dots stay `aria-hidden`.
+ * (The same names also ride a `use:tooltip` hover hint, which renders into the
+ * shared tooltip element only on hover and so isn't asserted here.) Pure, no
+ * store/icon-cache stubs needed.
  */
 describe('TagDots a11y', () => {
   const tag = (name: string, color: number): TagRef => ({ name, color })
@@ -321,7 +323,6 @@ describe('TagDots a11y', () => {
     const cluster = target.querySelector('[role="img"]')
     expect(cluster).not.toBeNull()
     expect(cluster?.getAttribute('aria-label')).toBe('Urgent, Review')
-    expect(cluster?.getAttribute('title')).toBe('Urgent, Review')
     await expectNoA11yViolations(target)
   })
 

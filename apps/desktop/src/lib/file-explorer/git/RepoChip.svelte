@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/ui/Icon.svelte'
+  import { tooltip } from '$lib/tooltip/tooltip'
   import type { RepoInfo } from './git-store.svelte'
 
   interface Props {
@@ -32,7 +33,7 @@
     return parts.join(' / ')
   })
 
-  const tooltip = $derived.by((): string => {
+  const tooltipText = $derived.by((): string => {
     const lines: string[] = []
     if (info.unborn) {
       lines.push(`On unborn branch ${info.branch ?? 'main'} (no commits yet).`)
@@ -51,7 +52,7 @@
   })
 </script>
 
-<span class="repo-chip" class:dirty={state === 'dirty'} class:ahead={state === 'ahead'} class:behind={state === 'behind'} class:detached={state === 'detached'} class:unborn={state === 'unborn'} title={tooltip} aria-label={tooltip} data-state={state}>
+<span class="repo-chip" class:dirty={state === 'dirty'} class:ahead={state === 'ahead'} class:behind={state === 'behind'} class:detached={state === 'detached'} class:unborn={state === 'unborn'} use:tooltip={tooltipText} aria-label={tooltipText} data-state={state}>
   <span class="icon"><Icon name="git-branch" size={12} /></span>
   <span class="label">{label}</span>
   {#if subtitle}
