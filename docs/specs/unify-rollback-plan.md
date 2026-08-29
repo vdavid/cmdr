@@ -276,36 +276,39 @@ every cross-volume directory rollback a partial.
 
 **The four gaps, correctly sized.**
 
-1. **Created directories are journaled only on the success path** (`transfer/copy/mod.rs:575`; `volume/copy.rs:1032`
-   gates on no-error-and-not-cancelled). A canceled operation has zero directory rows. Small fix. Same shape, also
-   unlisted until now: a **cross-FS local move journals no directory rows at all**, since `record_created_dirs` is
-   reached only from the copy path, so its rollback leaves empty destination trees behind even on success.
-2. **An interrupted operation's completed work is invisible.** Volume journaling happens per top-level source _at
-   completion_, so an interrupted **directory** source contributes zero rows for all of its already-fully-copied
-   children; they exist only in the in-memory ledger. Plus `volume/copy.rs:1055-1071` folds partially-written
-   destinations into the rollback set, and those never had a row. **This is the real work of the milestone**, and it is
-   bigger than "a partial file".
-3. **Volume inner leaves have no snapshot** (`journal.rs:220-243` passes `None, None`), so they skip as unverifiable.
-   **This is cheap, contrary to the first draft.** Record **size only**: the byte count is already in hand, since
-   `copy_leaf` returns it and takes a size hint from the `list_directory` the walker already performed. Threading it
-   through the created-paths record into `record_volume_transfer_source` costs **zero** extra round trips, and top-level
-   volume rows already verify on size alone. **Do not record mtime**: the volume write path doesn't preserve it (which
-   is exactly why the existing top-level row records `None`), so capturing the source's mtime would flip every leaf from
-   "unverifiable" to "drifted", which reads to the user as "you changed this file". Strictly worse. No benchmark needed.
-   Verified: `verify_snapshot` (`operation_log/rollback.rs:184-215`) is flat over the row (any recorded field must
-   match, at least one must verify) with no inner-versus-top-level branch, so a size-only leaf verifies and reverses.
-   The one cost worth knowing: the created-paths record grows a size alongside each path, which ripples mechanically
-   through the concurrent copy's path collection.
+1. ~~**Created directories are journaled only on the success path.**~~ **DONE.** Both copy paths journal their created
+   dirs on every terminal path, and the cross-FS move journals them rebased off the staging root.
+2. ~~**An interrupted operation's completed work is invisible.**~~ **DONE**, and smaller than feared: both volume
+   drivers already threaded the per-source `CreatedPaths` out of their failure arms for the in-flight rollback, so
+   journaling from the same place was a few lines each. The partially-written destinations deliberately get NO row —
+   every terminal path removes them, so a row would name a file that isn't there. One path stays open: a cross-volume
+   MOVE interrupted mid-directory (see `operation_log/DETAILS.md` § "What a volume leaf's snapshot carries").
+3. ~~**Volume inner leaves have no snapshot.**~~ **DONE** exactly as sized below: size only, no mtime. **This is cheap,
+   contrary to the first draft.** Record **size only**: the byte count is already in hand, since `copy_leaf` returns it
+   and takes a size hint from the `list_directory` the walker already performed. Threading it through the created-paths
+   record into `record_volume_transfer_source` costs **zero** extra round trips, and top-level volume rows already
+   verify on size alone. **Do not record mtime**: the volume write path doesn't preserve it (which is exactly why the
+   existing top-level row records `None`), so capturing the source's mtime would flip every leaf from "unverifiable" to
+   "drifted", which reads to the user as "you changed this file". Strictly worse. No benchmark needed. Verified:
+   `verify_snapshot` (`operation_log/rollback.rs:184-215`) is flat over the row (any recorded field must match, at least
+   one must verify) with no inner-versus-top-level branch, so a size-only leaf verifies and reverses. The one cost worth
+   knowing: the created-paths record grows a size alongside each path, which ripples mechanically through the concurrent
+   copy's path collection.
 4. **Pre-finalize eligibility.** An operation's header opens as `not_rollbackable` on purpose
    (`operation_log/writer.rs:373-378`) so a crash before finalize leaves it honestly unrollbackable, and eligibility is
    computed at finalize. Any in-flight rollback needs an answer here that doesn't weaken that property. Genuine design
    question.
 
-**Tests.** Test-first for each, since each is a data-safety claim: a canceled copy's created directories are recorded;
-an interrupted volume directory copy's completed children are recorded; a volume directory copy's inner leaves verify
-and reverse rather than skip.
+**Gap 4 (pre-finalize eligibility) is the only one left**, and it only serves M5.
 
-**Docs.** Rewrite `operation_log/DETAILS.md` § "Known snapshot-completeness limit"; it should shrink or disappear.
+**Found while closing the three, and fixed here**: reversing a cross-FS FOLDER move reported full success and restored
+nothing (a rename into the parent the move had removed reads as `ENOENT` ⇒ "already gone" ⇒ counted reversed), and a
+directory a move CREATED was renamed onto itself instead of removed. Plus the three journal-header bugs earlier agents
+found: a completed same-FS move reporting `items_done = 0`, a reversal's row finishing more items than it had, and
+same-second history entries shuffling (op ids are UUIDv7 now).
+
+**Docs.** `operation_log/DETAILS.md` § "Known snapshot-completeness limit" is replaced by § "What a volume leaf's
+snapshot carries, and what it deliberately doesn't".
 
 **Checks.** `pnpm check rust`, `pnpm check`, `pnpm check --include-slow`.
 

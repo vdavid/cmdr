@@ -152,7 +152,10 @@ cache that the same record points already write, and the `manager()` operation-m
   aggregates from the live `OperationStatus` cache (the same one the queue UI drives — `header_totals_from_status`), so
   a finished op carries the scanned leaf total and completed count, not zeros. When no status row exists (an instant
   create, an archive edit, or a direct-call test), `item_count` stays at the open value and `items_done`/`bytes_total`
-  stay 0. These fields are informational (the alpha dialog renders "Copy N items" from `item_count`), NOT the rollback
+  stay 0. **The unit differs by kind, matching that kind's row granularity**: a copy or cross-FS move reports scanned
+  LEAF files, a same-FS move reports top-level ITEMS (one rename-back reverses a whole subtree, so that's what its rows
+  count). `move_with_rename` writes the cache itself — no scan seeds it and its renames are instant — which is also what
+  keeps a finished move from journaling `items_done = 0`. These fields are informational (the alpha dialog renders "Copy N items" from `item_count`), NOT the rollback
   yardstick — completeness still compares ISSUED vs written per `row_role` (above).
 
 ### The decisions the capture layer owns (the writer doesn't)
@@ -194,8 +197,12 @@ Each point is where the op already stats the item, so journaling is near-zero ma
 
 - **copy** — per-leaf `rollback_unit` rows at `transfer/copy/single_item.rs` (right where each file commits to the
   `CopyTransaction`, carrying the free source `mtime` + the overwrite flag), plus the **created-directory rows** from
-  `CopyTransaction::created_dirs` at the success commit in `copy/mod.rs`. Files record during the op, dirs after, so dir
-  `seq` > their contents' `seq` (Finding 2); the rollback engine removes files before dirs.
+  `CopyTransaction::created_dirs`. Files record during the op, dirs after, so dir `seq` > their contents' `seq`
+  (Finding 2); the rollback engine removes files before dirs. The dir rows land on EVERY terminal path, not only the
+  successful one — a canceled copy keeps the directories it created, and without their rows a reversal puts every file
+  back and leaves the destination's empty skeleton standing. `copy/mod.rs` routes all its terminal arms through one
+  `commit_journaling_created_dirs`, so the next arm added can't forget; `volume/copy.rs` journals once post-loop, before
+  it branches on the terminal state.
 - **delete** — per-leaf at `delete/walker.rs`, one row per file, deliberately (a 1M-file delete journals ~1M rows on the
   order of tens-to-~150 MB — leaf search is the requirement, and retention, D9/D10, manages the cost, NOT a row cap).
   Delete is never rollbackable, so these rows exist purely for "when did I delete `dog.jpg`".
@@ -208,7 +215,9 @@ Each point is where the op already stats the item, so journaling is near-zero ma
   come from the **drive index**, not a filesystem walk — see § Search-leaf enumeration.
 - **cross-FS move** — per-leaf via `copy_single_item` (it stages a copy), same as copy; the op's `kind` is `move`. The
   rows name the FINAL destination, never the staging path, and a phase-3 conflict makes the op not-rollbackable — see §
-  "A staged write records where the file will LIVE".
+  "A staged write records where the file will LIVE". It records **created-directory rows** too, rebased through the same
+  `staging_dir → destination` arithmetic phase 4's flush already uses; without them a reversal restores every file and
+  leaves the moved folder's empty skeleton at the destination.
 - **batch rename** (Ask Cmdr's reviewed plans, `rename/bulk.rs::record_bulk_rename_outcomes`) — one `rollback_unit` row
   per APPLIED row, source → destination, with the size + mtime the review preflight already fingerprinted (no new stat).
   **The mtime crosses a unit boundary here and `journal_snapshot` owns the conversion**: a local fingerprint holds
@@ -288,6 +297,14 @@ transfer path's job, local included — see § "Why a directory merge isn't reve
   `overwrote` bit is the OR of these; `compute_eligibility` reads it op-wide. Per-inner-file granularity isn't tracked
   (op-wide eligibility is all that's consumed). The local paths carry the same bit on their own rows
   (`move_op.rs`'s `item_overwrote`, `copy_single_item`'s `needs_safe_overwrite`).
+
+**Per-source at completion, AND at interruption.** The volume drivers journal one top-level source's leaves when that
+source finishes. A directory source stopped mid-stream used to journal nothing, leaving every child it had already
+copied on disk and nowhere in the ledger — so a reversal from history couldn't touch them. Both drivers now journal from
+their failure arms too (`copy_serial.rs`'s `Err` arm, `copy_concurrent.rs`'s `record_failure`), off the same
+`CreatedPaths` they already thread out for the in-flight rollback. The invariant to hold: **every destination file that
+survives the operation has a row.** The partial the driver was mid-write on is not one of them — both terminal paths
+remove it, so journaling it would name a file that isn't there.
 
 Granularity mirrors local (D-granularity): cross-volume copy + cross-volume move + volume delete are per-leaf; a
 same-volume move is a same-FS-style move (top-level `rollback_unit` row + drive-index `search_only` leaves, which
@@ -426,7 +443,14 @@ The op kind + item entry-type map to one of three inverse actions (`inverse_acti
   if unchanged — a later zip-edit drifts the archive, so it's left untouched, Finding 5).
 - **create_folder** → `RemoveDirIfEmpty` (remove only if still empty — a file added since ⇒ keep, partial).
 - **move / trash / rename** → `RestoreMove` (move the item back FROM where it landed, `dest`, TO its original,
-  `source`). Trash's `dest` is the recorded in-trash location; a same-volume undo is a `rename`, a cross-volume one goes
+  `source`) — **except a directory the operation CREATED**, which is removed like a copy's. `record_created_dirs` writes
+  the created path as both source and dest, so `is_created_in_place` (source == dest) is the marker; a cross-FS move
+  creates destination folders exactly like a copy does, and restoring one renames it onto itself, a no-op counted as
+  reversed that leaves the skeleton behind. A move of an EXISTING directory records source ≠ dest and keeps its restore.
+  The executor creates the restore target's parent first: a folder move empties and removes its source tree, and a
+  rename into a missing parent fails `ENOENT`, which reads as "already gone" and counts the item as REVERSED — a
+  reversal reporting success having restored nothing. Creating a directory only ever adds.
+  Trash's `dest` is the recorded in-trash location; a same-volume undo is a `rename`, a cross-volume one goes
   through `transfer::volume::move_file_across_volumes` — the bytes land whole at the target (staged on a `.cmdr-tmp-*`
   and renamed into place) before the source side goes, so a stop mid-file leaves the source untouched and no partial
   behind. A cross-volume restore of a DIRECTORY row is refused: those are recorded per leaf, so one is a journal-shape
@@ -531,17 +555,34 @@ checkpointing for the whole file-I/O duration) — it's the `rolling_back` state
 (and its `rolls_back_op_id` target), so a live rollback's streamed source rows can't vanish mid-stream (see `writer.rs`
 `handle_prune`).
 
-### Known snapshot-completeness limit
+### What a volume leaf's snapshot carries, and what it deliberately doesn't
 
-Volume (SMB/MTP) transfers record `size`/`mtime` only for TOP-LEVEL files, not for the inner leaves of a copied/moved
-directory (the capture path doesn't cheaply have them). So a rollback of a cross-volume directory copy/move verifies
-and reverses the top-level items but SKIPS inner leaves as `UnverifiablePrecondition` — a safe partial, never a wrong
-delete. Local-FS copy/move record per-leaf mtime, so their directory rollbacks are complete. Closing this needs the capture layer to
-capture inner-leaf snapshots for volume transfers.
+Every leaf of a volume (SMB/MTP) copy records its **size**, top-level and inner alike, so a cross-volume directory
+rollback reverses the whole tree rather than skipping its contents. The byte count costs nothing extra: `copy_leaf`
+returns what it piped, off a size hint the walker's `list_directory` already paid for, and `CreatedPaths` carries a
+`CreatedFile { path, size }` per destination so it rides through to the row (`journal.rs`).
+
+❌ **A volume leaf records NO mtime, and adding one would make things worse.** The volume write path doesn't preserve
+the source's, so the live value would differ from anything captured at read time — flipping every leaf from
+`UnverifiablePrecondition` to `Drift`, which reads to the user as "you changed this file" and still refuses. Size alone
+is enough because `verify_snapshot` is flat over the row: every recorded field must verify, and at least one must, with
+no inner-versus-top-level branch. Local-FS leaves record mtime as well, since their write path preserves it.
+
+**Remaining gap, one path**: a cross-volume MOVE interrupted mid-directory journals nothing for the children it already
+finished. Unlike the copy's, those aren't a completed unit of work — the source sweep runs per top-level source after
+its whole subtree lands, so each child exists at BOTH ends. A move row's inverse is a restore, which would find the
+source occupied and skip, so the rows could only ever report a partial they can't fix. The honest answer is a per-item
+inverse the schema can't express today; the copy path, where an interrupted child IS a finished copy, journals from its
+failure arms.
 
 The case-only rename self-collision logic is unit-tested through the pure `is_self_collision` helper (inode plus
 path-fold cases) but NOT exercised end-to-end on a real case-insensitive filesystem — the `InMemoryVolume` fixtures are
 case-sensitive. A macOS-gated tempdir integration test on the real FS is the named follow-up.
+
+**`InMemoryVolume` is more permissive than the real FS in one way that hides bugs**: its `rename` creates the target's
+missing parents, where `LocalPosixVolume` fails with `ENOENT`. A reversal test written against the double can pass on
+broken code — `rollback/tests.rs::a_restore_recreates_the_folder_the_move_emptied` runs against a real tempdir for
+exactly that reason.
 
 ### Future: Cmd+Z (D-undo, designed-for, not built)
 

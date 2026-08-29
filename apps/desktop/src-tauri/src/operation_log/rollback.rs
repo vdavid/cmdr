@@ -861,6 +861,8 @@ pub use skips::SkipBreakdown;
 #[cfg(test)]
 mod control_tests;
 #[cfg(test)]
+mod lifecycle_tests;
+#[cfg(test)]
 mod test_support;
 #[cfg(test)]
 mod tests;

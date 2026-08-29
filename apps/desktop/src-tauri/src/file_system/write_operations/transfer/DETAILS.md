@@ -97,7 +97,7 @@ The split exists so the landing discipline is written once instead of once per b
 
 **A dry run answers it too**, per top-level source in `scan.rs::dry_run_scan_internal`: a self-colliding subtree lands under a name nobody holds, so nothing in it can clash and the walk carries a `lands_on_itself` flag that suppresses both conflict checks. Its files and bytes still count, the same way both engines count a self-colliding item in `files_processed`. No production frontend caller sets `dryRun` today; it's reachable over IPC and MCP.
 
-**Rollback needs nothing new, and is pinned anyway.** A duplicate is entirely the operation's own work: `created_files` / `created_dirs` hold only paths it created, so rolling back removes `photo (1).jpg` and can never reach the original. Note the pre-existing shape of user-initiated rollback: `rollback_with_progress` deletes `created_files` only, so a rolled-back FOLDER copy leaves its (now empty) directory skeleton behind, duplicates included.
+**Rollback needs nothing new, and is pinned anyway.** A duplicate is entirely the operation's own work: `created_files` / `created_dirs` hold only paths it created, so rolling back removes `photo (1).jpg` and can never reach the original. Note the shape of the IN-FLIGHT rollback: `rollback_with_progress` deletes `created_files` only, so a rolled-back FOLDER copy leaves its (now empty) directory skeleton behind, duplicates included. The journal-driven reversal doesn't: `created_dirs` is journaled as `dir` rows on every terminal path, and it removes them empty-only after the files.
 
 **Two sources sharing a basename stay consistent with the ordinary merge.** `dir_remap` is keyed by destination path, so pasting `/a/docs` (a self-collision) and `/b/docs` into `/a` lands both in `/a/docs (1)/`, merged. That's the same answer the engine already gives for `/a/docs` + `/b/docs` into `/c`, and `/a/docs` itself is untouched either way.
 
@@ -380,9 +380,10 @@ which is what makes the retry safe by construction rather than by care:
   half of that decision — that the answer is not *stale* either — is deliberate: it was given for this file, in this
   operation, seconds ago, so re-asking would be the surprising behavior, not the safe one. Pinned by
   `volume/copy_retry_tests.rs::a_retried_file_never_re_asks_the_conflict_the_user_already_answered`.
-- **The rollback ledger** (`CreatedPaths::record_file`), **the journal** (`journal::record_volume_transfer_source`),
-  and **the per-file progress milestone** are all driven from the CALLER's `Ok` arm, so a file is recorded exactly once
-  whatever it took. Pinned by `a_retried_child_is_recorded_in_the_rollback_ledger_exactly_once`.
+- **The rollback ledger** (`CreatedPaths::record_file`, which stores the destination path AND the byte count it was
+  written with — that size is the snapshot the journal row carries, and what makes a leaf inside a copied folder
+  reversible), **the journal** (`journal::record_volume_transfer_source`), and **the per-file progress milestone** are
+  all driven from the CALLER's `Ok` arm, so a file is recorded exactly once whatever it took. Pinned by `a_retried_child_is_recorded_in_the_rollback_ledger_exactly_once`.
 - **The merge invariant** is a property of the level walk, and a retry re-walks nothing: it re-runs one child's write
   into a destination the walk already resolved. A retry can never turn a merge into a replace.
 - **Overwrite** is untouched, and a retry can only improve it. A safe-replace's `finalize_safe_replace` runs after
