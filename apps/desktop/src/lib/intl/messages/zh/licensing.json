@@ -81,7 +81,7 @@
   "@licensing.about.commercialUntil": {
     "sourceHash": "eb44f8d"
   },
-  "licensing.about.fallbackOrg": "您的组织",
+  "licensing.about.fallbackOrg": "你的组织",
   "@licensing.about.fallbackOrg": {
     "sourceHash": "bb0bdf0"
   },
@@ -112,15 +112,15 @@
     "sourceHash": "e6ab7e3",
     "sameAsSourceJustification": "Copyright line \"© 2024-2026 David Veszelovszki\": the © symbol, the literal year range, and a personal name — none are translatable. The personal name stays as written; the years stay literal."
   },
-  "licensing.commercialReminder.title": "感谢您使用 Cmdr！",
+  "licensing.commercialReminder.title": "感谢你使用 Cmdr！",
   "@licensing.commercialReminder.title": {
     "sourceHash": "6898650"
   },
-  "licensing.commercialReminder.usingPersonal": "您正在使用个人版许可证。",
+  "licensing.commercialReminder.usingPersonal": "你正在使用个人版许可证。",
   "@licensing.commercialReminder.usingPersonal": {
     "sourceHash": "508c17d"
   },
-  "licensing.commercialReminder.askCommercial": "如果您在工作中使用 Cmdr，请获取商业版许可证以保持合规。",
+  "licensing.commercialReminder.askCommercial": "如果你在工作中使用 Cmdr，请获取商业版许可证以保持合规。",
   "@licensing.commercialReminder.askCommercial": {
     "sourceHash": "6bf4031"
   },
@@ -136,7 +136,7 @@
   "@licensing.commercialReminder.getCommercial": {
     "sourceHash": "07f081b"
   },
-  "licensing.expiration.title": "您的商业许可证已过期",
+  "licensing.expiration.title": "你的商业许可证已过期",
   "@licensing.expiration.title": {
     "sourceHash": "7067c40"
   },
@@ -144,11 +144,11 @@
   "@licensing.expiration.orgName": {
     "sourceHash": "a5f0bab"
   },
-  "licensing.expiration.message": "您的商业订阅已于 <strong>{date}</strong> 过期。",
+  "licensing.expiration.message": "你的商业订阅已于 <strong>{date}</strong> 过期。",
   "@licensing.expiration.message": {
     "sourceHash": "92b6b97"
   },
-  "licensing.expiration.info": "Cmdr 现已在个人使用模式下运行。如果您仍在工作中使用它，请续订您的许可证。",
+  "licensing.expiration.info": "Cmdr 现已在个人使用模式下运行。如果你仍在工作中使用它，请续订你的许可证。",
   "@licensing.expiration.info": {
     "sourceHash": "5fcebb5"
   },
@@ -236,7 +236,7 @@
   "@licensing.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "licensing.dialog.resetConfirm": "这会在此设备上停用您当前的许可证。您可以随时用有效的密钥重新激活。",
+  "licensing.dialog.resetConfirm": "这会在此设备上停用你当前的许可证。你可以随时用有效的密钥重新激活。",
   "@licensing.dialog.resetConfirm": {
     "sourceHash": "2d77d69"
   },
@@ -256,15 +256,15 @@
   "@licensing.dialog.inputPlaceholder": {
     "sourceHash": "3fb5cf9"
   },
-  "licensing.dialog.retryExhausted": "我们已尝试 {count} 次但都没成功。很抱歉给您带来麻烦。请发送消息至 <supportEmail>{email}</supportEmail>，我们会帮您解决。",
+  "licensing.dialog.retryExhausted": "我们已尝试 {count} 次但都没成功。很抱歉给你带来麻烦。请发送消息至 <supportEmail>{email}</supportEmail>，我们会帮你解决。",
   "@licensing.dialog.retryExhausted": {
     "sourceHash": "4f3331b"
   },
-  "licensing.dialog.serverInvalidHelp": "如果您认为这是误判，请发送电子邮件至 <supportEmail>{email}</supportEmail>，我们会帮您解决。",
+  "licensing.dialog.serverInvalidHelp": "如果你认为这是误判，请发送电子邮件至 <supportEmail>{email}</supportEmail>，我们会帮你解决。",
   "@licensing.dialog.serverInvalidHelp": {
     "sourceHash": "90471d2"
   },
-  "licensing.dialog.genericHelp": "如果您需要帮助，请通过 <supportEmail>{email}</supportEmail> 联系我们。",
+  "licensing.dialog.genericHelp": "如果你需要帮助，请通过 <supportEmail>{email}</supportEmail> 联系我们。",
   "@licensing.dialog.genericHelp": {
     "sourceHash": "145df34"
   },
@@ -288,15 +288,15 @@
   "@licensing.dialog.activate": {
     "sourceHash": "24433c7"
   },
-  "licensing.dialog.activatedToast": "许可证已激活。感谢您的支持！❤️",
+  "licensing.dialog.activatedToast": "许可证已激活。感谢你的支持！❤️",
   "@licensing.dialog.activatedToast": {
     "sourceHash": "af76e26"
   },
-  "licensing.dialog.activatedToastNamed": "欢迎加入，{org}！感谢您的支持。❤️",
+  "licensing.dialog.activatedToastNamed": "欢迎加入，{org}！感谢你的支持。❤️",
   "@licensing.dialog.activatedToastNamed": {
     "sourceHash": "d0c136a"
   },
-  "licensing.dialog.networkFallbackError": "无法通过服务器验证您的许可证。请稍后再试。",
+  "licensing.dialog.networkFallbackError": "无法通过服务器验证你的许可证。请稍后再试。",
   "@licensing.dialog.networkFallbackError": {
     "sourceHash": "cb2b8e0"
   },
@@ -304,7 +304,7 @@
   "@licensing.dialog.expiredOnError": {
     "sourceHash": "130a045"
   },
-  "licensing.dialog.expiredOnHelp": "您可以在 getcmdr.com 续订您的订阅或购买新的许可证。",
+  "licensing.dialog.expiredOnHelp": "你可以在 getcmdr.com 续订你的订阅或购买新的许可证。",
   "@licensing.dialog.expiredOnHelp": {
     "sourceHash": "036bb88"
   },
@@ -344,7 +344,7 @@
   "@licensing.error.shortCodeNotFound": {
     "sourceHash": "c123af8"
   },
-  "licensing.error.shortCodeNotFoundHint": "请确认您粘贴的是购买电子邮件中正确的密钥。",
+  "licensing.error.shortCodeNotFoundHint": "请确认你粘贴的是购买电子邮件中正确的密钥。",
   "@licensing.error.shortCodeNotFoundHint": {
     "sourceHash": "a2f07d2"
   },
@@ -352,7 +352,7 @@
   "@licensing.error.network": {
     "sourceHash": "63da44b"
   },
-  "licensing.error.networkHint": "请检查您的网络连接，然后重试。",
+  "licensing.error.networkHint": "请检查你的网络连接，然后重试。",
   "@licensing.error.networkHint": {
     "sourceHash": "67cba62"
   },
@@ -368,7 +368,7 @@
   "@licensing.error.generic": {
     "sourceHash": "436e264"
   },
-  "licensing.error.genericHint": "请重试。如果问题持续存在，请发送电子邮件给我们，我们会帮您。",
+  "licensing.error.genericHint": "请重试。如果问题持续存在，请发送电子邮件给我们，我们会帮你。",
   "@licensing.error.genericHint": {
     "sourceHash": "9108b68"
   },
