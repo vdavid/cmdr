@@ -144,9 +144,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "Für diesen Vorgang ist kein Rollback möglich.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "Dieser Vorgang hat Dateien ersetzt, die schon da waren. Cmdr behält keine Kopien von dem, was es ersetzt, deshalb kommen die Originale nicht zurück.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "Beim endgültigen Löschen bleibt nichts übrig, was sich zurückholen ließe.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Dieses Archiv hat ein älteres mit demselben Namen ersetzt. Cmdr behält keine Kopien von dem, was es ersetzt, deshalb kommt das ältere nicht zurück.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Änderungen innerhalb eines Archivs kann Cmdr noch nicht zurücknehmen.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdrs Aufzeichnung dieses Vorgangs ist unvollständig, deshalb könnte ein Rollback die falschen Dateien betreffen.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Beim Bewegen wurde der Ordner mit einem zusammengeführt, der schon da war. Cmdr kann nicht unterscheiden, welche Dateien mitgekommen sind und welche schon drin waren, deshalb gibt es keinen sicheren Weg zurück.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Beim Bewegen war ein Name am Ziel schon vergeben, und Cmdr hat nachgefragt, was damit passieren soll. Diese Antwort gehört jetzt zum Ergebnis, deshalb gibt es keinen eindeutigen Weg zurück.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Schließ das Laufwerk an, das dieser Vorgang benutzt hat, und versuch es dann noch einmal.",
   "@operationLog.rollback.refusalVolumeUnavailable": {

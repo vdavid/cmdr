@@ -143,9 +143,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "Ez a művelet nem görgethető vissza.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "Ez a művelet olyan fájlokat írt felül, amik már ott voltak. A Cmdr nem őriz meg másolatot arról, amit felülír, így az eredetiek nem jönnek vissza.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "A végleges törlés után nem marad semmi, amit vissza lehetne tenni.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Ez az archívum egy ugyanilyen nevű régebbit írt felül. A Cmdr nem őriz meg másolatot arról, amit felülír, így a régebbi nem jön vissza.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Az archívumon belüli változtatásokat a Cmdr még nem tudja visszavonni.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "A Cmdr feljegyzése erről a műveletről hiányos, így a visszagörgetés rossz fájlokhoz nyúlhatna.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Az áthelyezéskor a mappa összeolvadt egy ugyanilyen nevűvel, ami már ott volt. A Cmdr nem tudja megkülönböztetni, melyik fájl érkezett és melyik volt már bent, így nincs biztonságos út visszafelé.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Az áthelyezéskor a célhelyen már foglalt volt egy név, és a Cmdr rákérdezett, mi legyen vele. Ez a válasz már a végeredmény része, így nincs egyértelmű út visszafelé.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Csatlakoztasd a meghajtót, amit ez a művelet használt, aztán próbáld újra.",
   "@operationLog.rollback.refusalVolumeUnavailable": {

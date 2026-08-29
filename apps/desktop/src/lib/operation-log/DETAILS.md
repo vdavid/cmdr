@@ -87,8 +87,19 @@ press that never reached the backend). One sentence each rather than one generic
 "already rolling back" points at the queue, "a volume is missing" asks the user to reconnect, and "already rolled back"
 asks for nothing.
 
-`notRollbackable` deliberately repeats the words its badge already carries, so a row that contradicts itself for a
-moment (a stale list) at least says the same thing twice.
+`notRollbackable` goes one level deeper: `notRollbackableNotice` words each `NotRollbackableReason` separately, because
+the reasons aren't one situation. A directory merge and a resolved name clash LOST the information a reversal would
+need; an overwrite and a permanent delete kept no bytes to restore; a zip-inner edit is a gap Cmdr hasn't closed yet;
+an incomplete journal is Cmdr declining to guess. A single "this can't be rolled back" left the user unable to tell
+which, and unable to tell whether they'd done something wrong.
+
+Two copy constraints that outlive any wording pass:
+
+- **The merge line must not read as a mistake.** Merging a folder into a same-named one is what the user asked for and
+  the right outcome; only the undo is unavailable. Copy that apologizes for the merge teaches people to fear a normal
+  move.
+- **Only `volumeUnavailable` ends in an action.** Every not-rollbackable reason is permanent, so none of them may hint
+  at a retry, a setting, or a recovery. Inventing hope there costs more trust than the refusal does.
 
 ## Caching and staleness
 

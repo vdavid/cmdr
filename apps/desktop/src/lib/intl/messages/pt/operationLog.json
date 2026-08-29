@@ -143,9 +143,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "Esta operação não pode ser revertida.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "Esta operação substituiu arquivos que já estavam lá. O Cmdr não guarda cópias do que substitui, então os originais não voltam.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "Apagar em definitivo não deixa nada para colocar de volta.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Este arquivo compactado substituiu um mais antigo com o mesmo nome. O Cmdr não guarda cópias do que substitui, então o mais antigo não volta.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "O Cmdr ainda não consegue desfazer mudanças feitas dentro de um arquivo compactado.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "O registro que o Cmdr tem desta operação está incompleto, então revertê-la poderia mexer nos arquivos errados.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Ao mover, a pasta foi mesclada com outra que já estava lá. O Cmdr não consegue distinguir quais arquivos chegaram e quais já estavam dentro, então não há um caminho seguro de volta.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Ao mover, um nome já estava ocupado no destino e o Cmdr perguntou o que fazer. Essa resposta agora faz parte do resultado, então não há um único caminho de volta.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Conecte o disco que esta operação usou e tente novamente.",
   "@operationLog.rollback.refusalVolumeUnavailable": {

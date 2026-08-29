@@ -144,9 +144,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "Den här åtgärden går inte att ångra.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "Den här åtgärden ersatte filer som redan fanns där. Cmdr sparar inga kopior av det som ersätts, så originalen kommer inte tillbaka.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "En permanent radering lämnar ingenting kvar att lägga tillbaka.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Det här arkivet ersatte ett äldre med samma namn. Cmdr sparar inga kopior av det som ersätts, så det äldre kommer inte tillbaka.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr kan inte ångra ändringar inuti ett arkiv än.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdrs anteckningar om den här åtgärden är ofullständiga, så en ångring skulle kunna röra fel filer.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Vid flytten slogs mappen ihop med en som redan fanns där. Cmdr kan inte se vilka filer som följde med och vilka som redan låg där, så det finns ingen säker väg tillbaka.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Vid flytten var ett namn redan upptaget på målet, och Cmdr frågade vad som skulle hända med det. Svaret är en del av resultatet nu, så det finns ingen entydig väg tillbaka.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Anslut enheten som åtgärden använde och försök igen.",
   "@operationLog.rollback.refusalVolumeUnavailable": {

@@ -13,6 +13,7 @@ import type {
   ExecutionStatus,
   Initiator,
   ItemOutcome,
+  NotRollbackableReason,
   OpKind,
   RollbackRefusal,
   RollbackState,
@@ -147,7 +148,6 @@ describe('rollbackRefusalNotice', () => {
       [{ kind: 'unknownOperation' }, 'This operation isn’t in your history anymore.'],
       [{ kind: 'alreadyRollingBack' }, 'This one is already rolling back. Watch it in the queue.'],
       [{ kind: 'alreadyRolledBack' }, 'This one is already back the way it was.'],
-      [{ kind: 'notRollbackable', detail: 'overwrote' }, 'This operation can’t be rolled back.'],
       [
         { kind: 'volumeUnavailable', detail: { volumeId: 'smb-nas' } },
         'Connect the drive this operation used, then try again.',
@@ -160,5 +160,56 @@ describe('rollbackRefusalNotice', () => {
 
   it('falls back to a reason-free line when the press never reached the backend', () => {
     expect(tString(rollbackRefusalNotice(null))).toBe('Cmdr couldn’t start the rollback. Try again in a moment.')
+  })
+
+  it('says WHY an operation is beyond reversing, one reason at a time', () => {
+    // The whole point of the split: a merge, an overwrite, and a permanent delete
+    // are three different situations, and one shared sentence left the user guessing
+    // whether they had done something wrong.
+    const cases: [NotRollbackableReason, string][] = [
+      [
+        'overwrote',
+        'This operation replaced files that were already there. Cmdr doesn’t keep copies of what it replaces, so the originals can’t come back.',
+      ],
+      ['permanentDelete', 'A permanent delete leaves nothing to put back.'],
+      [
+        'archiveOverwrite',
+        'This archive replaced an older one with the same name. Cmdr doesn’t keep copies of what it replaces, so the older one can’t come back.',
+      ],
+      ['zipEditUnsupported', 'Cmdr can’t undo changes made inside an archive yet.'],
+      [
+        'journalIncomplete',
+        'Cmdr’s record of this operation isn’t complete, so rolling it back could touch the wrong files.',
+      ],
+      [
+        'directoryMerge',
+        'This move merged the folder into one that was already there. Cmdr can’t tell which files came along and which were already inside, so there’s no safe way back.',
+      ],
+      [
+        'stagedConflictResolved',
+        'This move ran into a name that was already taken and asked what to do about it. That answer is part of the result now, so there’s no single way back.',
+      ],
+    ]
+    for (const [reason, notice] of cases) {
+      expect(tString(rollbackRefusalNotice({ kind: 'notRollbackable', detail: reason }))).toBe(notice)
+    }
+  })
+
+  it('never blames the user or reaches for the words this app doesn’t use', () => {
+    const reasons: NotRollbackableReason[] = [
+      'overwrote',
+      'permanentDelete',
+      'archiveOverwrite',
+      'zipEditUnsupported',
+      'journalIncomplete',
+      'directoryMerge',
+      'stagedConflictResolved',
+    ]
+    for (const reason of reasons) {
+      const sentence = tString(rollbackRefusalNotice({ kind: 'notRollbackable', detail: reason })).toLowerCase()
+      for (const banned of ['error', 'failed', 'invalid', 'you should have']) {
+        expect(sentence).not.toContain(banned)
+      }
+    }
   })
 })

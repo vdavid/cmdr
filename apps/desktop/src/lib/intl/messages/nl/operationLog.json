@@ -144,9 +144,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "Deze bewerking is niet terug te draaien.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "Deze bewerking heeft bestanden vervangen die er al stonden. Cmdr bewaart geen kopieën van wat het vervangt, dus de originelen komen niet terug.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "Na definitief verwijderen blijft er niets over om terug te zetten.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Dit archief heeft een ouder archief met dezelfde naam vervangen. Cmdr bewaart geen kopieën van wat het vervangt, dus dat oudere archief komt niet terug.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr kan wijzigingen binnen een archief nog niet ongedaan maken.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdr heeft deze bewerking niet volledig vastgelegd, dus terugdraaien zou de verkeerde bestanden kunnen raken.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Bij het verplaatsen is de map samengevoegd met een map die er al stond. Cmdr kan niet zien welke bestanden zijn meegekomen en welke er al in zaten, dus er is geen veilige weg terug.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Bij het verplaatsen was een naam op de bestemming al bezet en vroeg Cmdr wat ermee moest gebeuren. Dat antwoord hoort nu bij het resultaat, dus er is geen eenduidige weg terug.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Sluit de schijf aan die deze bewerking gebruikte en probeer het opnieuw.",
   "@operationLog.rollback.refusalVolumeUnavailable": {

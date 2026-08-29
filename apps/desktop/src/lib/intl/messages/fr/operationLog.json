@@ -144,9 +144,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "Retour en arrière impossible pour cette opération.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "Cette opération a remplacé des fichiers qui étaient déjà là. Cmdr ne garde aucune copie de ce qu''il remplace, donc les originaux ne peuvent pas revenir.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "Une suppression définitive ne laisse rien à remettre en place.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Cette archive a remplacé une archive plus ancienne portant le même nom. Cmdr ne garde aucune copie de ce qu''il remplace, donc l''ancienne ne peut pas revenir.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr ne sait pas encore annuler les modifications faites à l''intérieur d''une archive.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdr n''a pas gardé une trace complète de cette opération, donc un retour en arrière risquerait de toucher les mauvais fichiers.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Ce déplacement a fusionné le dossier avec un dossier qui existait déjà. Cmdr ne peut pas distinguer les fichiers arrivés de ceux qui étaient déjà à l''intérieur, donc il n''y a pas de retour possible en toute sécurité.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Pendant ce déplacement, un nom était déjà pris à destination et Cmdr a demandé quoi en faire. Cette réponse fait maintenant partie du résultat, donc aucun retour en arrière n''est possible sans deviner.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Connectez le disque utilisé par cette opération, puis réessayez.",
   "@operationLog.rollback.refusalVolumeUnavailable": {

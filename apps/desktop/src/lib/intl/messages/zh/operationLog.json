@@ -143,9 +143,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "这项操作无法回滚。",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "这项操作替换了原本就在那里的文件。Cmdr 不会保留被替换文件的副本，所以原来的文件回不来了。",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "永久删除不会留下任何可以放回去的东西。",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "这个压缩文件替换了同名的旧文件。Cmdr 不会保留被替换文件的副本，所以旧的那个回不来了。",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr 还不能撤销在压缩文件内部所做的更改。",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdr 对这项操作的记录并不完整，回滚有可能动到不该动的文件。",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "这次移动把文件夹并入了原本就在那里的同名文件夹。Cmdr 无法分辨哪些文件是随之而来的、哪些原本就在里面，所以没有安全的回退方式。",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "这次移动遇到目标位置上已被占用的名称，Cmdr 询问过要怎么处理。那个回答已经成为结果的一部分，所以没有唯一的回退方式。",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "请连接这项操作用过的驱动器，然后重试。",
   "@operationLog.rollback.refusalVolumeUnavailable": {

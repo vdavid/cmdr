@@ -201,9 +201,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "description": "Shown on a row of the Operation log when the user presses Roll back but the operation has already been reversed, so there is nothing left to undo."
   },
-  "operationLog.rollback.refusalNotRollbackable": "This operation can’t be rolled back.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back but the operation turns out not to be reversible after all (the row on screen was out of date). The badge on the same row already carries the same words as a status, so keep the two consistent. The apostrophe is a curly typographic apostrophe (U+2019)."
+  "operationLog.rollback.refusalOverwrote": "This operation replaced files that were already there. Cmdr doesn’t keep copies of what it replaces, so the originals can’t come back.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a copy or move that overwrote files at the destination. Cmdr deliberately keeps no backup of a replaced file, so the reversal isn’t offered. Explain the limit without sounding like something went wrong; avoid the words error and failed. Apostrophes are curly typographic apostrophes (U+2019)."
+  },
+  "operationLog.rollback.refusalPermanentDelete": "A permanent delete leaves nothing to put back.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a permanent delete (not a move to the trash, which Cmdr can undo). Nothing was kept, so there’s no next step to offer. Keep it short and matter-of-fact; don’t hint at a recovery that doesn’t exist."
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "This archive replaced an older one with the same name. Cmdr doesn’t keep copies of what it replaces, so the older one can’t come back.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a compress that wrote its archive over an archive already sitting at that path. \"Archive\" is a zip/tar/7z file. Same limit as the general overwrite case: no backup of replaced bytes. Apostrophes are curly typographic apostrophes (U+2019)."
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr can’t undo changes made inside an archive yet.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back on an edit made INSIDE an archive (adding or removing files within a zip without unpacking it). Reversing that is planned but not built, so \"yet\" is honest and should survive translation. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdr’s record of this operation isn’t complete, so rolling it back could touch the wrong files.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back but Cmdr’s own history of what the operation did has gaps, so a reversal could act on files it shouldn’t. Cmdr refuses to protect the user’s data, which the sentence should convey without alarm; avoid the words error and failed. \"Record\" means Cmdr’s internal history of the operation. Apostrophes are curly typographic apostrophes (U+2019)."
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "This move merged the folder into one that was already there. Cmdr can’t tell which files came along and which were already inside, so there’s no safe way back.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a move that put a folder where a folder of the same name already existed, so the two were merged. Merging was the right thing to do and the sentence must NOT read as a mistake; only the undo is unavailable, because the merged folder now mixes files that arrived with files that were already inside. Avoid the words error and failed. Apostrophes are curly typographic apostrophes (U+2019)."
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "This move ran into a name that was already taken and asked what to do about it. That answer is part of the result now, so there’s no single way back.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a move between drives that hit a name clash at the destination and asked the user how to handle it (keep both, or skip). Because that answer changed where files ended up, a reversal has no one correct meaning. Neutral about the answer given: it isn’t a wrong choice, it’s what makes the undo ambiguous. Apostrophes are curly typographic apostrophes (U+2019)."
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Connect the drive this operation used, then try again.",
   "@operationLog.rollback.refusalVolumeUnavailable": {

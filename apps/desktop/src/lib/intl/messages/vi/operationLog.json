@@ -143,9 +143,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "Không thể hoàn tác thao tác này.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "Thao tác này đã thay thế những tệp vốn đã có ở đó. Cmdr không giữ bản sao của những gì bị thay thế, nên các tệp gốc không quay lại được.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "Xóa vĩnh viễn thì không còn gì để đưa trở lại.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Tệp nén này đã thay thế một tệp nén cũ hơn trùng tên. Cmdr không giữ bản sao của những gì bị thay thế, nên tệp cũ không quay lại được.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr chưa hoàn tác được những thay đổi thực hiện bên trong một tệp nén.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Ghi chép của Cmdr về thao tác này chưa đầy đủ, nên việc hoàn tác có thể động vào nhầm tệp.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Khi di chuyển, thư mục đã được gộp vào một thư mục trùng tên vốn đã có ở đó. Cmdr không phân biệt được tệp nào mới chuyển tới và tệp nào vốn đã nằm trong đó, nên không có cách nào quay lại một cách an toàn.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Khi di chuyển, một tên ở đích đã bị trùng và Cmdr đã hỏi bạn muốn xử lý thế nào. Câu trả lời đó giờ là một phần của kết quả, nên không có cách quay lại duy nhất.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Hãy kết nối ổ đĩa mà thao tác này đã dùng, rồi thử lại.",
   "@operationLog.rollback.refusalVolumeUnavailable": {

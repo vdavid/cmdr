@@ -14,6 +14,7 @@
 import type {
   Initiator,
   ItemOutcome,
+  NotRollbackableReason,
   OpKind,
   ArchiveSubkind,
   ExecutionStatus,
@@ -173,8 +174,37 @@ export function rollbackRefusalNotice(refusal: RollbackRefusal | null): MessageK
     case 'alreadyRolledBack':
       return 'operationLog.rollback.refusalAlreadyRolledBack'
     case 'notRollbackable':
-      return 'operationLog.rollback.refusalNotRollbackable'
+      return notRollbackableNotice(refusal.detail)
     case 'volumeUnavailable':
       return 'operationLog.rollback.refusalVolumeUnavailable'
+  }
+}
+
+/**
+ * Why THIS operation can't be reversed, one sentence per stored reason.
+ *
+ * A single "this can't be rolled back" would leave the user guessing whether they
+ * did something wrong, and the answers differ in kind: a merge and a resolved name
+ * clash lost the information a reversal would need, an overwrite and a permanent
+ * delete kept no bytes to restore, an archive edit is a gap Cmdr hasn't closed yet,
+ * and an incomplete record is Cmdr refusing to guess. None of them carry a next
+ * step, so none of them pretend to.
+ */
+function notRollbackableNotice(reason: NotRollbackableReason): MessageKey {
+  switch (reason) {
+    case 'overwrote':
+      return 'operationLog.rollback.refusalOverwrote'
+    case 'permanentDelete':
+      return 'operationLog.rollback.refusalPermanentDelete'
+    case 'archiveOverwrite':
+      return 'operationLog.rollback.refusalArchiveOverwrite'
+    case 'zipEditUnsupported':
+      return 'operationLog.rollback.refusalZipEditUnsupported'
+    case 'journalIncomplete':
+      return 'operationLog.rollback.refusalJournalIncomplete'
+    case 'directoryMerge':
+      return 'operationLog.rollback.refusalDirectoryMerge'
+    case 'stagedConflictResolved':
+      return 'operationLog.rollback.refusalStagedConflictResolved'
   }
 }

@@ -143,9 +143,33 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalNotRollbackable": "Esta operación no se puede revertir.",
-  "@operationLog.rollback.refusalNotRollbackable": {
-    "sourceHash": "921533d"
+  "operationLog.rollback.refusalOverwrote": "Esta operación reemplazó archivos que ya estaban ahí. Cmdr no guarda copias de lo que reemplaza, así que los originales no pueden volver.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "Una eliminación permanente no deja nada que devolver.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Este archivo comprimido reemplazó a uno anterior con el mismo nombre. Cmdr no guarda copias de lo que reemplaza, así que el anterior no puede volver.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr todavía no puede deshacer los cambios hechos dentro de un archivo comprimido.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "El registro que Cmdr tiene de esta operación está incompleto, así que revertirla podría tocar archivos equivocados.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Al mover, la carpeta se combinó con otra que ya estaba ahí. Cmdr no puede distinguir qué archivos llegaron y cuáles ya estaban dentro, así que no hay una forma segura de volver atrás.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Al mover, un nombre ya estaba ocupado en el destino y Cmdr preguntó qué hacer. Esa respuesta ya forma parte del resultado, así que no hay una única forma de volver atrás.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Conecta la unidad que usó esta operación y vuelve a intentarlo.",
   "@operationLog.rollback.refusalVolumeUnavailable": {
