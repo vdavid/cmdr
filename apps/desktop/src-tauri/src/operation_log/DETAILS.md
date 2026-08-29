@@ -155,13 +155,18 @@ cache that the same record points already write, and the `manager()` operation-m
   stay 0. These fields are informational (the alpha dialog renders "Copy N items" from `item_count`), NOT the rollback
   yardstick — completeness still compares ISSUED vs written per `row_role` (above).
 
-### The two decisions the capture layer owns (the writer doesn't)
+### The decisions the capture layer owns (the writer doesn't)
 
 - **Eligibility (D3), `compute_eligibility`** — pure, tested in isolation: copy/move rollbackable iff nothing overwrote;
   delete never (`permanent_delete`); trash/rename/create-folder/create-file open rollbackable (rechecked at rollback
   time, in the rollback engine); compress rollbackable iff net-new (`archive_overwrite` otherwise); zip-inner edit not yet
   (`zip_edit_unsupported`). `execution_status` is deliberately NOT an input — a failed/canceled op stays rollbackable for
   what it reached (D4).
+- **A driver's note beats the rule, `note_not_rollbackable`** — some reasons aren't derivable from the item rows at
+  all, so the DRIVER states them and `finalize` takes the note over `compute_eligibility`. Both of today's reasons are
+  move-shaped: `directory_merge` and `staged_conflict_resolved` (see §§ "Why a directory merge isn't reversible" and "A
+  staged write records where the file will LIVE"). First note wins, and it's op-wide, like every other eligibility
+  input: one merged item makes the whole operation unreversible.
 - **Completeness (D4), `apply_completeness`** — the per-`row_role` issued-vs-written check. The `WriterJournal`
   accumulates the count of `record_item` calls it ISSUED per role; `finalize` compares them to the writer's durable
   counts and, on a shortfall, downgrades: a missing `rollback_unit` row ⇒ `not_rollbackable(journal_incomplete)` (a
