@@ -456,7 +456,7 @@
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
-  "onboarding.cloudSetup.step.endpoint": "端點 URL",
+  "onboarding.cloudSetup.step.endpoint": "端點網址",
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"
   },
@@ -484,7 +484,7 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
     "sourceHash": "16f0ee4"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "你的金鑰已經存好了。輸入新的就能換掉它。",
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "你的金鑰已儲存。輸入新的就會取代它。",
   "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
     "sourceHash": "974ffdf"
   },
@@ -504,7 +504,7 @@
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },
-  "onboarding.cloudSetup.status.connected": "已連線！",
+  "onboarding.cloudSetup.status.connected": "已連線",
   "@onboarding.cloudSetup.status.connected": {
     "sourceHash": "78ae377"
   },

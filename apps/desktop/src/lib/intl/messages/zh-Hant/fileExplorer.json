@@ -779,7 +779,7 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "afb1cc2"
   },
-  "fileExplorer.tabs.limitReached": "已達到分頁數量上限",
+  "fileExplorer.tabs.limitReached": "已達分頁數量上限",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"
   },

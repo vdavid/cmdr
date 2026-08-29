@@ -11,7 +11,7 @@
   "@mtp.connectedToast.bodyOther": {
     "sourceHash": "6f42620"
   },
-  "mtp.connectedToast.dontShowAgain": "不再顯示",
+  "mtp.connectedToast.dontShowAgain": "不要再顯示",
   "@mtp.connectedToast.dontShowAgain": {
     "sourceHash": "d98ab77"
   },

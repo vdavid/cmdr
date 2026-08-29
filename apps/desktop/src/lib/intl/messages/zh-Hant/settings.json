@@ -818,7 +818,7 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新的下載項目",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新下載項目",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
@@ -1662,7 +1662,7 @@
   "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
-  "settings.operationLog.intro": "Cmdr 會記錄你的檔案操作，方便你回顧歷史並復原動作。請選擇記錄要保留多久，以及可以佔用多少磁碟空間。",
+  "settings.operationLog.intro": "Cmdr 會記錄你的檔案操作，方便你回顧歷史並還原動作。請選擇記錄要保留多久，以及可以佔用多少磁碟空間。",
   "@settings.operationLog.intro": {
     "sourceHash": "0c62f4f"
   },
@@ -2115,11 +2115,11 @@
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "查看你的收件匣來確認電子郵件。謝謝你的幫忙！",
+  "settings.updates.emailConfirmHint": "去收件匣確認一下你的電子郵件地址。謝謝你幫忙！",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "抱歉，我們現在沒辦法幫你完成註冊。要再試一次嗎？",
+  "settings.updates.emailSignupError": "抱歉，我們現在沒辦法幫你註冊。要再試一次嗎？",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
@@ -2131,7 +2131,7 @@
   "@settings.logging.openLogFile": {
     "sourceHash": "ec1bc04"
   },
-  "settings.logging.copied": "已複製！",
+  "settings.logging.copied": "已複製",
   "@settings.logging.copied": {
     "sourceHash": "ea61bc1"
   },
@@ -2183,7 +2183,7 @@
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
-  "settings.advanced.resetAllConfirm": "要把所有進階設定重設為預設值嗎？這無法復原。",
+  "settings.advanced.resetAllConfirm": "要把所有進階設定重設為預設值嗎？這無法還原。",
   "@settings.advanced.resetAllConfirm": {
     "sourceHash": "be08f2a"
   },

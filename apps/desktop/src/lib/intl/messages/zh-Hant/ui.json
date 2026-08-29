@@ -39,7 +39,7 @@
   "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
-  "ui.copyBox.copied": "已複製！",
+  "ui.copyBox.copied": "已複製",
   "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
