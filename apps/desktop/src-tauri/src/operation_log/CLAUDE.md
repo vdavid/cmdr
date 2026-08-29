@@ -12,8 +12,9 @@ MCP tools live in `mcp/executor/operation_log.rs`; UI surfaces are frontend-only
 - `writer.rs` — the ONE writer thread (+ `writer/prune.rs`, the bounded retention sweep it runs); `capture.rs` feeds
   it; `types.rs` holds the typed tokens.
 - `query.rs` — reads; `retention.rs` — startup + periodic prune; IPC in `commands/operation_log.rs`.
-- `rollback.rs` (+ `order.rs`, `skips.rs`) — the rollback engine; spawn glue and the multi-op driver live in
-  `write_operations/rollback.rs`. `mod.rs::start` opens the DB, reconciles, spawns retention.
+- `rollback.rs` (+ `order.rs`, `skips.rs`, `runner.rs`) — the rollback PLANNER; the executor it's handed, the spawn
+  glue, and the multi-op driver live in `write_operations/rollback.rs`. `mod.rs::start` opens the DB, reconciles,
+  spawns retention.
 
 ## Must-knows
 
@@ -38,6 +39,11 @@ MCP tools live in `mcp/executor/operation_log.rs`; UI surfaces are frontend-only
 - **Rollback FAILS SAFE** (data-safety-critical): recheck each item against its snapshot AND its restore target; drift,
   unverifiable, or occupied target ⇒ SKIP (→ `partially_rolled_back`), never operate. A restore-move never overwrites.
   `rolling_back` guards double-rollback and the retention race. A skip stores WHICH reason; NULL = not recorded.
+- **The engine PLANS; an injected `RollbackRunner` acts.** ❌ Never import `write_operations` from here to perform an
+  act — the reach is the whole reason the runner is injected. Pause parks at the item boundary BEFORE the snapshot is
+  verified: a park between "verified unchanged" and "delete" would let a stale verification authorize a destructive act.
+  And a reversal's "should I stop?" is NOT `is_cancelled` (`StopMeans`). `DETAILS.md` § "Planner here, executor
+  injected".
 - **Search spans every `row_role`; retention prunes whole ops only.** Name search matches `source_name_folded` across
   `rollback_unit` AND `search_only` rows, so a leaf hits inside a trashed folder. Retention never prunes a
   `rolling_back` op or its target.

@@ -410,6 +410,18 @@ pub async fn execute_rollback(
                 deferred_dirs.push(unit);
                 continue;
             }
+            // E2E-only pacing. In production both the env var and the IPC override are
+            // unset, so this is one atomic load plus one `LazyLock` deref and nothing
+            // else happens. Under E2E it opens a known window per item, which is what
+            // lets a spec watch a reversal run and press Cancel or Pause inside it
+            // without staging thousands of files. It sits ABOVE the two gates below so
+            // a click landing inside the window is honored for THIS item rather than
+            // the next one. Only the FILE loop is paced: the deferred-dir phase below
+            // removes empty leftovers, so slowing it would buy a spec dead time rather
+            // than a window.
+            if let Some(ms) = crate::test_mode::effective_rollback_throttle_ms() {
+                tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
+            }
             // Park here, BEFORE the item is verified — never between "verified
             // unchanged" and the act, where a ten-minute pause would leave a stale
             // verification authorizing a destructive one. A stop wins over a pause,
@@ -418,16 +430,6 @@ pub async fn execute_rollback(
             if runner.should_stop() {
                 canceled = true;
                 break 'pages;
-            }
-            // E2E-only pacing. In production both the env var and the IPC override are
-            // unset, so this is one atomic load plus one `LazyLock` deref and nothing
-            // else happens. Under E2E it opens a known window per item, which is what
-            // lets a spec watch a reversal run and press Cancel inside it without
-            // staging thousands of files. Only the FILE loop is paced: the deferred-dir
-            // phase below removes empty leftovers, so slowing it would buy a spec dead
-            // time rather than a window.
-            if let Some(ms) = crate::test_mode::effective_rollback_throttle_ms() {
-                tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
             }
             stand.announce(runner, Some(&unit));
             let result = reverse_item(vm, runner, original.kind, &unit).await;

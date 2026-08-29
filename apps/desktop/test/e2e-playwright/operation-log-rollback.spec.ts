@@ -39,9 +39,10 @@
  *   the transfer and the press, which costs an SMB fixture stack for a refusal that
  *   `rollback/tests.rs::entry_refuses_unknown_and_not_rollbackable_and_disconnected`
  *   already pins and `operation-log-labels.test.ts` already words.
- * - Progress, pause, and mid-file cancel: the engine has none of the three yet. The
- *   three `test.fixme`s at the bottom describe the target behavior so whoever builds
- *   it flips a keyword instead of starting from a blank file.
+ * - The ENGINE's progress, pause, and stop semantics, which are pinned in Rust
+ *   against in-memory volumes (`operation_log/rollback/control_tests.rs`) with a
+ *   real mid-file window. The three at the bottom here prove the same three reach a
+ *   real webview, a real queue row, and real files on a real disk.
  *
  * Requires `--features playwright-e2e`.
  */
@@ -594,22 +595,19 @@ test.describe('Rolling an operation back from the history dialog', () => {
     expect(fs.existsSync(doomed)).toBe(false)
   })
 
-  // ── Written ahead of the engine ────────────────────────────────────────────
+  // ── Progress, pause, and mid-file cancel, end to end ───────────────────────
   //
-  // The three below describe behavior the rollback engine does NOT have yet, so
-  // they're `fixme` and the suite stays green. Each names exactly what's missing.
-  // When that lands, change `test.fixme` to `test`: the bodies are written against
-  // the target behavior, not against today's.
+  // The engine's own suite proves these against in-memory volumes. These three
+  // prove the wiring: that the sink built at the IPC edge reaches the inverse
+  // operation, that `pause_operation` on the queue row parks the real engine, and
+  // that a cancel inside one large file leaves the disk whole.
 
   /**
-   * ❌ MISSING: the engine emits no progress at all. `execute_rollback` takes a
-   * cancel predicate and nothing else, so there's no event sink to write to; the
-   * inverse operation's queue row is built with `Duration::from_millis(0)` as its
-   * progress interval (a throttle that would never engage) and
-   * `OperationSummaryText::default()` as its name. Needed: per-item progress events
-   * on the inverse op, a real interval, and a summary the row can show.
+   * Per-item progress on the inverse operation, from a sink injected at the IPC
+   * edge. The totals come off the journal before the first act, so the bar means
+   * something from the first frame.
    */
-  test.fixme('a reversal reports honest forward progress', async ({ tauriPage }) => {
+  test('a reversal reports honest forward progress', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     const fixtureRoot = getFixtureRoot()
     const count = 6
@@ -638,7 +636,9 @@ test.describe('Rolling an operation back from the history dialog', () => {
     // transfer dialog (it drains a bar already full); a reversal launched from
     // history opens a FRESH bar, where full would mean "nothing done yet".
     const frames = await page.evaluate<{ filesDone: number; filesTotal: number }[]>(
-      `(window.__rbProgress || []).filter(function(p) { return p.phase === 'rollingBack'; })`,
+      // `WriteOperationPhase` goes over the wire snake_case (see `src/lib/ipc/bindings.ts`),
+      // unlike most of our IPC enums.
+      `(window.__rbProgress || []).filter(function(p) { return p.phase === 'rolling_back'; })`,
     )
     expect(frames.length).toBeGreaterThan(0)
     expect(frames[frames.length - 1]?.filesDone).toBe(count)
@@ -655,12 +655,11 @@ test.describe('Rolling an operation back from the history dialog', () => {
   })
 
   /**
-   * ❌ MISSING: the engine has no pause gate. Its item loop polls a cancel predicate
-   * and nothing else, so `pause_operation` on the inverse op is accepted by the
-   * manager and then ignored by the engine, which runs to completion. Needed:
-   * `pause_gate.wait_while_paused_async` at the item boundary.
+   * `pause_operation` on the inverse op reaches the engine's item-boundary gate.
+   * A copy undo is all deletes, so nothing streams: this gate is the only thing
+   * that can park it.
    */
-  test.fixme('a paused reversal stops advancing, and resumes where it left off', async ({ tauriPage }) => {
+  test('a paused reversal stops advancing, and resumes where it left off', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     const fixtureRoot = getFixtureRoot()
     const count = 6
@@ -704,17 +703,16 @@ test.describe('Rolling an operation back from the history dialog', () => {
   })
 
   /**
-   * ❌ MISSING: a reversal can only be canceled BETWEEN items. Its cross-volume
-   * restore goes through `cross_volume_restore`, whose callback reports no bytes and
-   * never answers "stop", so a cancel inside one large file isn't seen until that
-   * file has been copied in full. Needs the staged cross-volume primitives
-   * (`stream_pipe_file` / `resolve_staging`) in its place.
+   * Whichever side holds the file holds all of it. A local→local move restores by
+   * rename, so this is the wiring case rather than the streaming one; the mid-file
+   * stop itself is pinned in Rust, where a chunk delay opens a real window
+   * (`control_tests.rs::stopping_inside_one_large_file_leaves_no_partial_and_loses_nothing`).
    *
-   * Whoever enables this: the body needs a LARGE file to have a mid-file window at
-   * all, hence `left/bulk/large-1.dat` rather than the 1 KB fixtures the rest of the
-   * suite uses. `bulk/` survives `recreateFixtures`, so copying from it is cheap.
+   * The body needs a LARGE file to have any window at all, hence
+   * `left/bulk/large-1.dat` rather than the 1 KB fixtures the rest of the suite
+   * uses. `bulk/` survives `recreateFixtures`, so copying from it is cheap.
    */
-  test.fixme('cancelling inside one large file leaves no partial behind and loses nothing', async ({ tauriPage }) => {
+  test('cancelling inside one large file leaves no partial behind and loses nothing', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     const fixtureRoot = getFixtureRoot()
     const dir = path.join(fixtureRoot, 'left', 'rb-midfile')

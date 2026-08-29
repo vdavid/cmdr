@@ -302,6 +302,52 @@ each item's inverse is applied through the `Volume` trait (so local and remote r
 is itself a journaled operation linked back via `rolls_back_op_id`. The write-pipeline glue that spawns it as a
 cancelable managed op is `file_system/write_operations/rollback.rs::dispatch_rollback`.
 
+### Planner here, executor injected
+
+`rollback.rs` **plans**: it pages the journal, verifies each item, decides the inverse act, maps every failure to a
+typed skip reason, and keeps the books. It performs nothing. Each decided act goes to an injected `RollbackRunner`
+(`rollback/runner.rs`), whose production implementation is `write_operations::rollback::ReversalRunner`.
+
+Why the seam is here: the act a cross-volume restore needs is the staged, retrying, stall-detecting per-file transfer,
+and that machinery is `pub(in write_operations)` behind the `transfer::volume` facade — unreachable from
+`operation_log`, and it must stay that way (this subsystem holds no file-moving code). Injection buys the reach without
+the dependency, the same move the `spawn` hook in `rollback_operation` makes. The loop stays here, so the shared test
+rig (`rollback/test_support.rs`) stays here with it.
+
+The runner carries the loop's three live answers as well as its hands:
+
+- **Stop.** `should_stop()`, not `is_cancelled`. See "What stops a reversal" below.
+- **Pause.** `wait_while_paused()` parks at the item boundary, **before** the item is verified. Parking between
+  "verified unchanged" and "delete" would let a ten-minute-stale verification authorize a destructive act, so the order
+  is a data-safety property, not a style choice. The deferred-directory phase polls the stop too (it once polled
+  nothing, so a click during a long sweep kept removing folders).
+- **Progress.** `report_progress()` once per FILE item, with totals read from the journal
+  (`store::read_rollback_file_totals`, one indexed aggregate) before the first act — so a reversal has no scanning phase
+  and its bar means something from the first frame. Directory rows are excluded: that phase sweeps empty leftovers
+  rather than moving anything. `ReversalRunner` throttles frames to the operation's progress interval and always sends
+  the first one and the one that lands on the total; a cross-volume restore also reports its bytes mid-file, off the
+  same callback that carries the stop down to the backend.
+
+An item that fails while a stop is pending is NOT recorded as a skip: nothing was left behind for a reason the skip
+column exists to explain, and an unrecorded item is one an idempotent retry simply re-attempts.
+
+### What stops a reversal
+
+`write_operations::state::is_cancelled` answers "the intent isn't `Running`", and `RollingBack` is one of the values it
+calls cancelled. That's right for a forward transfer. It is wrong for a reversal running under an operation that is
+itself rolling back, where the same value is the instruction to reverse: a reversal inheriting that reading would bail
+on its first item, return instantly from its pause gate, and report a clean stop having reversed nothing.
+
+So a reversal names its reading — `StopMeans::IntentLeavesRunning` or `IntentReachesStopped`
+(`write_operations/operation_intent.rs`), which `PauseGate::wait_while_paused_until` also takes. Today's journal-driven
+rollback is dispatched as its OWN managed operation, opened `Running`, so it uses the first; the in-flight volume
+rollback (`transfer/volume/cleanup.rs`) runs under a `RollingBack` operation and uses the second. A future milestone
+that runs this engine against the original operation gets a named choice rather than a silent bail.
+
+**Known boundary**: the mid-file layer inside `stream_pipe_file` (retry classification, the between-chunks park) still
+reads the transfer's meaning off `state.intent` directly. That's correct for every reversal dispatched today, and it's
+what a wind-down-phase milestone would have to thread through.
+
 ### The two data-safety guards (D7)
 
 Every item passes two independent guards before anything is touched; failing either SKIPS the item (never operates on
@@ -330,8 +376,11 @@ The op kind + item entry-type map to one of three inverse actions (`inverse_acti
   if unchanged — a later zip-edit drifts the archive, so it's left untouched, Finding 5).
 - **create_folder** → `RemoveDirIfEmpty` (remove only if still empty — a file added since ⇒ keep, partial).
 - **move / trash / rename** → `RestoreMove` (move the item back FROM where it landed, `dest`, TO its original,
-  `source`). Trash's `dest` is the recorded in-trash location; a same-volume undo is a `rename`, a cross-volume one
-  streams the bytes back then deletes the source side.
+  `source`). Trash's `dest` is the recorded in-trash location; a same-volume undo is a `rename`, a cross-volume one goes
+  through `transfer::volume::move_file_across_volumes` — the bytes land whole at the target (staged on a `.cmdr-tmp-*`
+  and renamed into place) before the source side goes, so a stop mid-file leaves the source untouched and no partial
+  behind. A cross-volume restore of a DIRECTORY row is refused: those are recorded per leaf, so one is a journal-shape
+  bug.
 - **delete** → refused op-level (a permanent delete can't be restored).
 
 The inverse op's own eligibility is computed like any op: a delete-the-copies undo is `not_rollbackable`, a move/rename
@@ -352,15 +401,19 @@ skipped or unsuccessful planned rename must never make an untouched destination 
 
 ### The E2E pacing hook in the item loop
 
-The file loop pauses `crate::test_mode::effective_rollback_throttle_ms()` before each item. In production both its
+The file loop pauses `crate::test_mode::effective_rollback_throttle_ms()` before each item (above the pause gate, so a
+click landing inside the window is honored for THAT item rather than the next one). In production both its
 sources are unset, so it costs one atomic load and one `LazyLock` deref per item and changes nothing; under E2E it is
 what gives a spec a window to press Cancel on a reversal that would otherwise be over in single-digit milliseconds
 (`apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts`). Its own knob rather than a reuse of the copy
 throttle, because a spec has to stage a fast copy and then reverse it slowly. Pinned by
 `rollback/tests.rs::the_e2e_throttle_hook_paces_the_item_loop`, which measures elapsed time rather than trusting the
-helper to exist: whoever splits this loop into a planner and an executor must carry the three lines across, or every
-rollback E2E goes back to racing the engine. The deferred-directory phase is deliberately NOT paced (it polls no
-cancellation, so a pause there is dead time). Hook conventions: `docs/testing.md` § "E2E env-var hooks".
+helper to exist: whoever moves this loop must carry the three lines across, or every rollback E2E goes back to racing
+the engine. The deferred-directory phase is deliberately NOT paced (it removes empty leftovers, so a window there is
+dead time for a spec). The override is one process-wide value, so a Rust test takes it through
+`test_mode::pace_rollback_for_test`, which serializes the tests that pace a reversal — without it two of them un-pace
+each other and the one measuring a window fails for a reason nothing inside it points at. Hook conventions:
+`docs/testing.md` § "E2E env-var hooks".
 
 ### Undoing a job: several operations, newest first
 

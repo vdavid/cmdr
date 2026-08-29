@@ -28,6 +28,11 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   `copy_single_path`). `merge.rs` walks a tree (`copy_directory_streaming`, `resolve_merge_child`): a directory child
   recurses there, a file child goes to `strategy.rs`. `sequential_extract.rs` reuses the same walk in plan mode, which
   is why the merge/conflict/rollback code is not reimplemented for one-pass archives.
+- **`move_file.rs` is the per-FILE cross-volume move**, under the operation-level driver in `move.rs`: one
+  `stream_pipe_file` plus the source-side removal, no scan, no conflict resolution, no journaling. It exists because
+  the operation-log rollback restores one already-decided leaf at a time and needs the staging, retry, stall detection,
+  and mid-file cancel that only `stream_pipe_file` has — `move_volumes_with_progress` is the wrong granularity, and
+  it's `#[cfg(test)]`-only outside anyway.
 - **`strategy_*_tests.rs` are shallow engine tests**; the full merge + policy pipeline is pinned by the copy-side
   merge suite. That suite is three files split by contract, all declared from `copy.rs`: `merge_tests.rs` (per-file
   conflict resolution INSIDE a directory merge, and the fixtures `make_rich_merge` / `make_deep_clash_with_bigger_dest`

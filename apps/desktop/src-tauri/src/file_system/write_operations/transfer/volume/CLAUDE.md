@@ -1,8 +1,9 @@
 # Cross-volume transfer (copy + move)
 
 Copy and move across backends (Local ↔ MTP ↔ SMB ↔ archive): the phase runner (`copy.rs`, over `copy_serial.rs` or
-`copy_concurrent{,_source,_task}.rs`), the cross- and same-volume move paths, and the merge/staging engine (`strategy.rs`,
-`merge.rs`). Full file map: `DETAILS.md` § Files. Shared scaffolding and local-FS copy: `../CLAUDE.md`.
+`copy_concurrent{,_source,_task}.rs`), the cross-, same-volume, and single-file (`move_file.rs`) moves, and the
+merge/staging engine (`strategy.rs`, `merge.rs`). File map: `DETAILS.md` § Files. Shared scaffolding and local-FS copy:
+`../CLAUDE.md`.
 
 - **This directory is a facade: outside code reaches it only as `transfer::volume::<item>`.** A new outside caller adds
   a re-export to `mod.rs`, ❌ never widens a submodule's visibility.
@@ -18,7 +19,8 @@ Copy and move across backends (Local ↔ MTP ↔ SMB ↔ archive): the phase run
   is the ONLY copy.
 - **❌ Never fabricate a destination size for the conflict dialog**; report `None`. A fabricated `0` makes every dest
   look smaller, turning "Overwrite all smaller" into an unconditional overwrite.
-- **Skip the top-level dest pre-check ONLY for a dest dir THIS op created** (`DirectoryCreation::Created`), ❌ never one that merely looks empty.
+- **Skip the top-level dest pre-check ONLY for a dest dir THIS op created** (`DirectoryCreation::Created`), ❌ never one
+  that merely looks empty.
 
 ## Staging and cleanup
 

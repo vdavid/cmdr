@@ -687,8 +687,11 @@ E2E test hooks split along two axes:
   (`operation_log/rollback.rs`), so a spec can watch a reversal run and press Cancel inside it. Its own knob rather than
   a reuse of the copy throttle: pacing the reversal must not also pace the copy that staged it. Parsed once into a
   `LazyLock` (a rollback item can be one `unlink`, and the engine streams up to a million of them) and inert outside
-  `CMDR_E2E_MODE`, so a stray variable can never pace a user's rollback. The deferred-directory phase is deliberately
-  NOT paced: it polls no cancellation, so slowing it buys dead time rather than a window.
+  `CMDR_E2E_MODE`, so a stray variable can never pace a user's rollback. It sits ABOVE the loop's stop and pause gates,
+  so a click landing inside the window is honored for THAT item. The deferred-directory phase is deliberately NOT paced:
+  it removes empty leftovers, so slowing it buys dead time rather than a window. A RUST test takes the pacing through
+  `test_mode::pace_rollback_for_test`, which serializes the tests that use it — the override is one process-wide value,
+  and two tests setting it at once un-pace each other.
 - **`CMDR_E2E_SCAN_PREVIEW_DELAY_MS`**: Holds every scan-preview worker at its starting line before it walks, so a spec
   can act while a transfer is still counting (`background-while-scanning.spec.ts`). Fixture trees are tiny and
   `data-scan-state` signals "counting done", the opposite of what such a test needs. `set_test_scan_preview_delay`

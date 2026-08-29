@@ -21,7 +21,9 @@ Copy, move, delete, trash, and zip edits as managed background ops.
 
 - **A spawned op reserves every lane it touches or waits Queued**; the next admits on `on_settled`, ❌ not `Drop`.
 - **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it. Cancel keeps copied files, Rollback deletes them
-  in reverse. `PauseGate` is orthogonal; cancel wins.
+  in reverse. `PauseGate` is orthogonal; cancel wins. ❌ A REVERSAL never asks `is_cancelled`: `RollingBack` means
+  "reverse" to the cleanup running under it, so it names its reading (`StopMeans`, and
+  `PauseGate::wait_while_paused_until`). `rollback.rs` is also the operation-log engine's injected executor.
 - **Parking on a PERSON owes two calls** on both edges: the `human_wait.rs` clock AND
   `state.announce_human_wait(sink)`. Miss either and the ETA or the shown speed lies.
 - **Stopping has two tiers**: clicks use `backend_cancel`; `backend_abort` and `cancel_all_write_operations` are the
