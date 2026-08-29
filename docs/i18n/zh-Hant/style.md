@@ -50,8 +50,9 @@ would want to see stated.
 
 - **One catalog for TW + HK + MO, written to a pan-Traditional consensus rather than pure Apple-zh-TW.** See § The
   Apple-zh-TW outlier rule below; it is the single most consequential call in this guide.
-- **Formality: `你`, never `您`** — inherited from the `zh` ruling and independently confirmed here (Apple zh-TW 398
-  `你` / 0 `您`; zh-HK 413 / 0). See § Formality.
+- **Formality: `你` everywhere, including licensing** (Apple zh-TW 398 `你` / 0 `您`; zh-HK 413 / 0; Apple's own
+  purchase UI 110 / 0). `zh` keeps a blanket `您` carve-out over its `licensing.*` keys; on the evidence in § Formality
+  that carve-out looks wrong for `zh` too, but correcting a shipped catalog outside this locale is David's call.
 
 ## The Apple-zh-TW outlier rule (read this before picking any term)
 
@@ -109,13 +110,33 @@ modern Mandarin as written in Taiwan; not bureaucratic, not literary, not transl
 ## Formality
 
 - **Verdict: address the user as `你` (neutral), never the polite `您`.** Apple's Traditional localizations use `你`
-  exclusively: zh-TW macOS 398 `你` / 0 `您`, zh-HK macOS 413 / 0, across Finder, AppKit, and SystemSettings. This
-  matches the `zh` ruling, so both Chinese catalogs address the reader the same way.
+  exclusively: zh-TW macOS 398 `你` / 0 `您`, zh-HK macOS 413 / 0, across Finder, AppKit, and SystemSettings. `zh` rules
+  the same way for the app at large, so both Chinese catalogs address the reader identically everywhere except
+  `licensing.*`, where `zh` still carries the older blanket carve-out (24 `您`) that the bullets below retire here.
 - **The community file managers disagree, and lose.** Total Commander (78 `您` / 0 `你`), Nautilus (49 / 0), Dolphin (96
   / 0), and Thunar (47 / 0) all use the polite `您`; only Double Commander sides with Apple (1 / 25). They're Tier 3 and
   reflect an older localization register; Apple is Tier 1 and matches Cmdr's friendly consumer voice. Recorded so nobody
   re-opens it after grepping Total Commander.
-- **Exception: legal and billing copy uses the formal `您`** (licensing, payment, terms), same carve-out as `zh`.
+- **`您` belongs to AGREEMENT PROSE only, and this catalog ships none.** The boundary sits between the contract document
+  and the UI wrapped around it, never around money as a topic. Apple draws it cleanly: its live Traditional SLA is `您`
+  throughout (`您` ×107, `你` 0, archaic `閣下` 0 in Feedback Assistant's `License.rtf`), while its own purchase,
+  subscription, and billing UI is `你` with zero `您` (AppStoreKit 98, App Store.app 12, over 購買 / 訂閱 / 帳號 copy).
+  Every `licensing.*` key Cmdr ships is the second kind: "Get a license", "Enter license key", "Your commercial license
+  has expired", "Paste your license key from the email you received after purchase". They take `你`, like the rest of
+  the catalog. Cmdr's actual agreement lives on the website; the in-app consent line (`onboarding.stepBeta.terms.*`) is
+  the checkbox AROUND that document and is `你` too. (All four counts measured on the live bundles rather than the pile:
+  macOS 26.6.2, build 25G83, 2026-08-29.)
+- ❌ **Don't reinstate a "legal and billing" carve-out.** Register follows the SURFACE, not the topic. That blunter rule
+  is what made `licensing.json` ship as a 22-instance `您` island in an otherwise all-`你` catalog, so a reader walking
+  from Settings into the licensing dialog changed register mid-app.
+- **One `您` stands, on a different axis: `licensing.dialog.mailtoBody` opens `您好，`.** That value is a pre-filled
+  email the USER sends to support, so the addressee is us rather than the reader, and `您好` is the ordinary
+  Traditional-Chinese business-letter salutation. Any future string written in the user's voice to an outside recipient
+  follows it. If Cmdr ever ships real contract prose in-app, that text (and only that text) takes `您`.
+- ⚠️ **The evidence is vintage-sensitive, so re-date it before re-opening this.** macOS also carries Traditional SLAs
+  localized off a Simplified base a decade ago; they say `閣下` ×111 and `許可證` ×47, and they hand a miner the
+  opposite ruling with full confidence. An RTF header dates itself (`\cocoartf<N>`, and `\fcharset134` = Simplified
+  codepage vs `136` = Big5): `docs/i18n/reference-pile/how-to-mine.md` § Legal register.
 - **Buttons and menu items: bare verb, no politener.** `複製`, `移動`, `開啟`, `刪除`, `取消`. A bare verb isn't rude in
   Chinese; it's the correct register for a macOS action label.
 
@@ -192,6 +213,12 @@ This is a **deliberate departure from Apple**, and the one place we don't follow
 evidence rather than left to drift:
 
 - Apple zh-TW runs everything tight (`顯示iCloud進度`, `執行「%@」應用程式需要較新版的macOS。`): 384 tight vs 2 spaced.
+- **But that's Apple's UI CHROME, not Apple. Apple's own modern Traditional legal prose SPACES**: 224 spaced against 5
+  tight in Feedback Assistant's `License.rtf` (`cocoartf2761`), and all 5 tight are the single date `2024年9月9日`,
+  which is the date carve-out below. So the departure is narrower than "we don't follow Apple": on the one Apple surface
+  written as running prose rather than as labels, Apple already agrees with us, date compound included. Count Han
+  (U+4E00–U+9FFF) against `[A-Za-z0-9]` only; letting full-width `、「（` count as Han inflates the tight side to 105
+  with bracket adjacencies no spacing rule covers. (Measured on macOS 26.6.2, build 25G83, 2026-08-29.)
 - Every community Traditional catalog spaces it: Nautilus 248 spaced / 15 tight, Dolphin 108 / 2, Thunar 84 / 0, Total
   Commander 288 / 1, Double Commander 101 / 17.
 - **Cmdr's own `zh` catalog spaces it**, 845 spaced / 33 tight, and the two Chinese catalogs must not disagree on
@@ -242,7 +269,10 @@ rule drifts by definition.
 
 ❌ **Don't retighten these by citing Apple.** Apple's rendering of a brand compound is evidence about Apple's spacing
 convention, which this catalog deliberately departs from, not evidence about brand compounds. Recognition doesn't turn
-on the space: a reader who knows the Finder sidebar's `iCloud雲碟` reads `iCloud 雲碟` as the same product.
+on the space: a reader who knows the Finder sidebar's `iCloud雲碟` reads `iCloud 雲碟` as the same product. And the
+citation is weaker than it looks, because **Apple isn't self-consistent**: its UI chrome is 384 tight / 2 spaced while
+its modern legal prose is 224 spaced / 5 tight (§ Spacing). "Apple writes it tight" is therefore a claim about label
+typography in one bundle, never a house rule, and it can't outrank the four spacing sources this catalog does follow.
 
 Exception: don't add spaces _inside_ a Latin run (`64.0 MB/1.33 GB` stays as it is), and don't space a full-width
 bracket against the text it wraps.

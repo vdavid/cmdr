@@ -81,7 +81,7 @@
   "@licensing.about.commercialUntil": {
     "sourceHash": "eb44f8d"
   },
-  "licensing.about.fallbackOrg": "您的組織",
+  "licensing.about.fallbackOrg": "你的組織",
   "@licensing.about.fallbackOrg": {
     "sourceHash": "bb0bdf0"
   },
@@ -112,15 +112,15 @@
     "sourceHash": "e6ab7e3",
     "sameAsSourceJustification": "A copyright line: the `©` sign, a literal year range, and the author's personal name in Latin script. Traditional Chinese writes copyright notices exactly this way (Apple's own zh-TW About panes keep `© <years> Apple Inc.` unchanged), and none of the three parts is translatable."
   },
-  "licensing.commercialReminder.title": "感謝您使用 Cmdr！",
+  "licensing.commercialReminder.title": "感謝你使用 Cmdr！",
   "@licensing.commercialReminder.title": {
     "sourceHash": "6898650"
   },
-  "licensing.commercialReminder.usingPersonal": "您目前使用的是「個人」授權。",
+  "licensing.commercialReminder.usingPersonal": "你目前使用的是「個人」授權。",
   "@licensing.commercialReminder.usingPersonal": {
     "sourceHash": "508c17d"
   },
-  "licensing.commercialReminder.askCommercial": "如果您在工作中使用 Cmdr，請取得「商業」授權，以符合授權規範。",
+  "licensing.commercialReminder.askCommercial": "如果你在工作中使用 Cmdr，請取得「商業」授權，以符合授權規範。",
   "@licensing.commercialReminder.askCommercial": {
     "sourceHash": "6bf4031"
   },
@@ -136,7 +136,7 @@
   "@licensing.commercialReminder.getCommercial": {
     "sourceHash": "07f081b"
   },
-  "licensing.expiration.title": "您的商業授權已過期",
+  "licensing.expiration.title": "你的商業授權已過期",
   "@licensing.expiration.title": {
     "sourceHash": "7067c40"
   },
@@ -144,11 +144,11 @@
   "@licensing.expiration.orgName": {
     "sourceHash": "a5f0bab"
   },
-  "licensing.expiration.message": "您的商業訂閱已於 <strong>{date}</strong> 過期。",
+  "licensing.expiration.message": "你的商業訂閱已於 <strong>{date}</strong> 過期。",
   "@licensing.expiration.message": {
     "sourceHash": "92b6b97"
   },
-  "licensing.expiration.info": "Cmdr 現在以個人使用模式執行。如果您仍在工作中使用它，請續訂您的授權。",
+  "licensing.expiration.info": "Cmdr 現在以個人使用模式執行。如果你仍在工作中使用它，請續訂你的授權。",
   "@licensing.expiration.info": {
     "sourceHash": "5fcebb5"
   },
@@ -236,7 +236,7 @@
   "@licensing.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "licensing.dialog.resetConfirm": "這會在這部裝置上停用您目前的授權。您隨時可以用有效的授權碼重新啟用。",
+  "licensing.dialog.resetConfirm": "這會在這部裝置上停用你目前的授權。你隨時可以用有效的授權碼重新啟用。",
   "@licensing.dialog.resetConfirm": {
     "sourceHash": "2d77d69"
   },
@@ -256,11 +256,11 @@
   "@licensing.dialog.inputPlaceholder": {
     "sourceHash": "3fb5cf9"
   },
-  "licensing.dialog.retryExhausted": "我們已經試了 {count} 次都沒有成功，很抱歉造成您的困擾。請寫信到 <supportEmail>{email}</supportEmail>，我們會為您處理。",
+  "licensing.dialog.retryExhausted": "我們已經試了 {count} 次都沒有成功，很抱歉造成你的困擾。請寫信到 <supportEmail>{email}</supportEmail>，我們會為你處理。",
   "@licensing.dialog.retryExhausted": {
     "sourceHash": "4f3331b"
   },
-  "licensing.dialog.serverInvalidHelp": "如果您認為這是誤判，請寫信到 <supportEmail>{email}</supportEmail>，我們會為您處理。",
+  "licensing.dialog.serverInvalidHelp": "如果你認為這是誤判，請寫信到 <supportEmail>{email}</supportEmail>，我們會為你處理。",
   "@licensing.dialog.serverInvalidHelp": {
     "sourceHash": "90471d2"
   },
@@ -288,15 +288,15 @@
   "@licensing.dialog.activate": {
     "sourceHash": "24433c7"
   },
-  "licensing.dialog.activatedToast": "授權已啟用。感謝您的支持！❤️",
+  "licensing.dialog.activatedToast": "授權已啟用。感謝你的支持！❤️",
   "@licensing.dialog.activatedToast": {
     "sourceHash": "af76e26"
   },
-  "licensing.dialog.activatedToastNamed": "歡迎加入，{org}！感謝您的支持。❤️",
+  "licensing.dialog.activatedToastNamed": "歡迎加入，{org}！感謝你的支持。❤️",
   "@licensing.dialog.activatedToastNamed": {
     "sourceHash": "d0c136a"
   },
-  "licensing.dialog.networkFallbackError": "無法透過伺服器驗證您的授權。請稍後再試一次。",
+  "licensing.dialog.networkFallbackError": "無法透過伺服器驗證你的授權。請稍後再試一次。",
   "@licensing.dialog.networkFallbackError": {
     "sourceHash": "cb2b8e0"
   },
@@ -304,7 +304,7 @@
   "@licensing.dialog.expiredOnError": {
     "sourceHash": "130a045"
   },
-  "licensing.dialog.expiredOnHelp": "您可以在 getcmdr.com 續訂訂閱，或購買新的授權。",
+  "licensing.dialog.expiredOnHelp": "你可以在 getcmdr.com 續訂訂閱，或購買新的授權。",
   "@licensing.dialog.expiredOnHelp": {
     "sourceHash": "036bb88"
   },
@@ -344,7 +344,7 @@
   "@licensing.error.shortCodeNotFound": {
     "sourceHash": "c123af8"
   },
-  "licensing.error.shortCodeNotFoundHint": "請確認您從購買通知信裡貼上的授權碼正確無誤。",
+  "licensing.error.shortCodeNotFoundHint": "請確認你從購買通知信裡貼上的授權碼正確無誤。",
   "@licensing.error.shortCodeNotFoundHint": {
     "sourceHash": "a2f07d2"
   },
@@ -352,7 +352,7 @@
   "@licensing.error.network": {
     "sourceHash": "63da44b"
   },
-  "licensing.error.networkHint": "請檢查您的網路連線，然後再試一次。",
+  "licensing.error.networkHint": "請檢查你的網路連線，然後再試一次。",
   "@licensing.error.networkHint": {
     "sourceHash": "67cba62"
   },
@@ -368,7 +368,7 @@
   "@licensing.error.generic": {
     "sourceHash": "436e264"
   },
-  "licensing.error.genericHint": "請再試一次。如果問題持續發生，請寫信給我們，我們會協助您。",
+  "licensing.error.genericHint": "請再試一次。如果問題持續發生，請寫信給我們，我們會協助你。",
   "@licensing.error.genericHint": {
     "sourceHash": "9108b68"
   },
