@@ -522,6 +522,29 @@ async fn a_cross_fs_move_that_merged_into_an_existing_folder_is_not_reversible()
     );
 }
 
+/// The guard rail on the merge rule: a folder move with NO name clash at the
+/// destination is a plain rename, and it stays reversible — the disqualification
+/// must catch merges only, not every folder move.
+#[tokio::test]
+async fn a_folder_move_with_no_name_clash_reverses_the_whole_folder() {
+    let fixture = MoveLoop::new("op-folder-plain");
+    fixture.write("src/album/fresh.txt", b"SRC-fresh");
+    std::fs::create_dir_all(fixture.path("dst")).expect("mk dst");
+
+    fixture.move_same_fs(
+        &[fixture.path("src/album")],
+        &fixture.path("dst"),
+        &WriteOperationConfig::default(),
+    );
+
+    let report = fixture.attempt_rollback().await.expect("a plain folder move reverses");
+
+    assert_eq!(report.reversed, 1);
+    assert_eq!(report.skipped, 0);
+    assert_eq!(fixture.read("src/album/fresh.txt"), "SRC-fresh", "the folder came home");
+    assert!(!fixture.exists("dst/album"));
+}
+
 /// A move the fixture drives to completion still journals a `Done` op, so a
 /// refusal above is the gate talking, not a broken fixture.
 #[tokio::test]
