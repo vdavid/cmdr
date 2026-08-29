@@ -63,11 +63,11 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
-  "queue.row.dismiss": "Wis",
+  "queue.row.dismiss": "Sluit",
   "@queue.row.dismiss": {
     "sourceHash": "48845bf"
   },
-  "queue.row.dismissAria": "Wis deze bewerking",
+  "queue.row.dismissAria": "Sluit deze bewerking",
   "@queue.row.dismissAria": {
     "sourceHash": "ff1b528"
   },
@@ -91,7 +91,7 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
-  "queue.toolbar.dismissAll": "Wis alles",
+  "queue.toolbar.dismissAll": "Sluit alles",
   "@queue.toolbar.dismissAll": {
     "sourceHash": "97fac9e"
   },

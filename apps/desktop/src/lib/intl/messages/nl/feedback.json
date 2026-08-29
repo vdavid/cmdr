@@ -1,5 +1,5 @@
 {
-  "feedback.dialog.title": "Stuur feedback",
+  "feedback.dialog.title": "Feedback versturen",
   "@feedback.dialog.title": {
     "sourceHash": "8235980"
   },
@@ -40,7 +40,7 @@
   "@feedback.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "feedback.dialog.send": "Stuur feedback",
+  "feedback.dialog.send": "Verstuur feedback",
   "@feedback.dialog.send": {
     "sourceHash": "8235980"
   },

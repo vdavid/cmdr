@@ -122,7 +122,7 @@
   "@menu.file.delete": {
     "sourceHash": "e2d0a54"
   },
-  "menu.file.deletePermanently": "Verwijder permanent",
+  "menu.file.deletePermanently": "Verwijder definitief",
   "@menu.file.deletePermanently": {
     "sourceHash": "280b10c"
   },
@@ -337,7 +337,7 @@
   "@menu.go.goToLatestDownload": {
     "sourceHash": "492d0b6"
   },
-  "menu.go.addToFavorites": "Voeg toe aan favorieten",
+  "menu.go.addToFavorites": "Voeg aan favorieten toe",
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
   },
@@ -409,7 +409,7 @@
   "@menu.context.copyNamed": {
     "sourceHash": "e2cc661"
   },
-  "menu.context.addToFavorites": "Voeg toe aan favorieten",
+  "menu.context.addToFavorites": "Voeg aan favorieten toe",
   "@menu.context.addToFavorites": {
     "sourceHash": "7f3c078"
   },
@@ -505,7 +505,7 @@
   "@menu.volume.removeFavorite": {
     "sourceHash": "c3812fc"
   },
-  "menu.network.disconnect": "Verbreek verbinding",
+  "menu.network.disconnect": "Verbreek",
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"
   },

@@ -327,11 +327,11 @@
   "@settings.listing.directorySortMode.opt.alwaysByName": {
     "sourceHash": "7687e38"
   },
-  "settings.listing.briefColumnWidthMode.label": "Maximale kolombreedte in de weergave Kort",
+  "settings.listing.briefColumnWidthMode.label": "Maximale kolombreedte in Beknopte weergave",
   "@settings.listing.briefColumnWidthMode.label": {
     "sourceHash": "bbcab33"
   },
-  "settings.listing.briefColumnWidthMode.description": "Begrenst hoe breed kolommen in de weergave Kort mogen worden om lange bestandsnamen te tonen. Kolommen worden sowieso altijd op de paneelbreedte begrensd; de gekozen limiet treedt alleen in werking als die kleiner zou zijn dan het paneel.",
+  "settings.listing.briefColumnWidthMode.description": "Begrenst hoe breed kolommen in Beknopte weergave mogen worden om lange bestandsnamen te tonen. Kolommen worden sowieso altijd op de paneelbreedte begrensd; de gekozen limiet treedt alleen in werking als die kleiner zou zijn dan het paneel.",
   "@settings.listing.briefColumnWidthMode.description": {
     "sourceHash": "d4a47b0"
   },
@@ -343,7 +343,7 @@
   "@settings.listing.briefColumnWidthMode.opt.limited": {
     "sourceHash": "01a089f"
   },
-  "settings.listing.briefColumnWidthMaxPx.label": "Kolombreedtelimiet voor Kort",
+  "settings.listing.briefColumnWidthMaxPx.label": "Kolombreedtelimiet voor Beknopte weergave",
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "sourceHash": "9d045cd"
   },
@@ -504,7 +504,7 @@
   "@settings.mediaIndex.clip.deleteButton": {
     "sourceHash": "1957b82"
   },
-  "settings.mediaIndex.clip.deleting": "Bezig met verwijderen…",
+  "settings.mediaIndex.clip.deleting": "Verwijderen…",
   "@settings.mediaIndex.clip.deleting": {
     "sourceHash": "43b5894"
   },
@@ -1039,7 +1039,7 @@
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "834ea99"
   },
-  "settings.fileOperations.mtpConnectionWarning.label": "Waarschuwen wanneer een toestel verbinding maakt",
+  "settings.fileOperations.mtpConnectionWarning.label": "Waarschuwen wanneer een apparaat verbinding maakt",
   "@settings.fileOperations.mtpConnectionWarning.label": {
     "sourceHash": "070b984"
   },
@@ -1187,7 +1187,7 @@
   "@settings.advanced.virtualizationBufferColumns.label": {
     "sourceHash": "a9e8dba"
   },
-  "settings.advanced.virtualizationBufferColumns.description": "Extra kolommen om te renderen in de weergave Kort.",
+  "settings.advanced.virtualizationBufferColumns.description": "Extra kolommen om te renderen in Beknopte weergave.",
   "@settings.advanced.virtualizationBufferColumns.description": {
     "sourceHash": "a1cbd98"
   },
@@ -1335,7 +1335,7 @@
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
-  "settings.onboarding.completed.label": "Introductie voltooid",
+  "settings.onboarding.completed.label": "Onboarding voltooid",
   "@settings.onboarding.completed.label": {
     "sourceHash": "4730c4f"
   },
@@ -1664,7 +1664,7 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.navigationAndFileOps.card.operationLog": "Bewerkingslogboek",
+  "settings.navigationAndFileOps.card.operationLog": "Bewerkingenlogboek",
   "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
@@ -1822,7 +1822,7 @@
   "@settings.summary.noSubsections": {
     "sourceHash": "ba4b5b5"
   },
-  "settings.control.resetToDefault": "Terugzetten naar standaard",
+  "settings.control.resetToDefault": "Herstel naar standaard",
   "@settings.control.resetToDefault": {
     "sourceHash": "bc5b45a"
   },
@@ -2012,7 +2012,7 @@
   "@settings.appearance.card.namesAndIcons": {
     "sourceHash": "8386169"
   },
-  "settings.appearance.card.briefMode": "Weergave Kort",
+  "settings.appearance.card.briefMode": "Beknopte weergave",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
   },
@@ -2111,7 +2111,7 @@
   "@settings.updates.emailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "settings.updates.checkForUpdates": "Controleer op updates",
+  "settings.updates.checkForUpdates": "Zoek naar updates",
   "@settings.updates.checkForUpdates": {
     "sourceHash": "f26f327"
   },
@@ -2119,15 +2119,15 @@
   "@settings.updates.errorPrefix": {
     "sourceHash": "6170629"
   },
-  "settings.updates.sendErrorReport": "Stuur foutrapport",
+  "settings.updates.sendErrorReport": "Verstuur foutrapport",
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "Controleer je inbox om je e-mail te bevestigen. Bedankt voor het meehelpen!",
+  "settings.updates.emailConfirmHint": "Kijk in je inbox om je e-mailadres te bevestigen. Bedankt voor je hulp!",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "Sorry, we konden je nu niet aanmelden. Opnieuw proberen?",
+  "settings.updates.emailSignupError": "Sorry, het inschrijven lukte nu niet. Nog eens proberen?",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
@@ -2187,7 +2187,7 @@
   "@settings.advanced.warningBanner": {
     "sourceHash": "b1dbbf4"
   },
-  "settings.advanced.resetAll": "Alles terugzetten naar standaard",
+  "settings.advanced.resetAll": "Herstel alles naar standaard",
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },

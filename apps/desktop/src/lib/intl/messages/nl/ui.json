@@ -52,7 +52,7 @@
   "@ui.shortcutChip.customizeTooltip": {
     "sourceHash": "9a7817d"
   },
-  "ui.toast.sendErrorReport": "Foutrapport versturen…",
+  "ui.toast.sendErrorReport": "Verstuur foutrapport…",
   "@ui.toast.sendErrorReport": {
     "sourceHash": "063c94e"
   },

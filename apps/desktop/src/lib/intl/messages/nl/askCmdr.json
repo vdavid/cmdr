@@ -456,7 +456,7 @@
   "@askCmdr.renameReview.whyThisName": {
     "sourceHash": "23f0b4f"
   },
-  "askCmdr.renameReview.preview": "Voorbeeld",
+  "askCmdr.renameReview.preview": "Voorvertoning",
   "@askCmdr.renameReview.preview": {
     "sourceHash": "324b134"
   },

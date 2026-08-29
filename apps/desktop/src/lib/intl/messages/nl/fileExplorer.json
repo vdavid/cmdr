@@ -133,7 +133,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Open thuismap",
+  "fileExplorer.errorPane.goHome": "Ga naar thuismap",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -182,7 +182,7 @@
   "@fileExplorer.functionKeyBar.newFileLabel": {
     "sourceHash": "44dedd0"
   },
-  "fileExplorer.functionKeyBar.newFileAction": "Nieuw bestand aanmaken",
+  "fileExplorer.functionKeyBar.newFileAction": "Maak nieuw bestand",
   "@fileExplorer.functionKeyBar.newFileAction": {
     "sourceHash": "6e70b95"
   },
@@ -198,7 +198,7 @@
   "@fileExplorer.functionKeyBar.permanentlyLabel": {
     "sourceHash": "d06138e"
   },
-  "fileExplorer.functionKeyBar.deletePermanentlyAction": "Definitief verwijderen",
+  "fileExplorer.functionKeyBar.deletePermanentlyAction": "Verwijder definitief",
   "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
     "sourceHash": "280b10c"
   },
@@ -796,7 +796,7 @@
   "@fileExplorer.tabs.closePinnedTitle": {
     "sourceHash": "5d22e58"
   },
-  "fileExplorer.readOnly.volumeTitle": "Alleen-lezen volume",
+  "fileExplorer.readOnly.volumeTitle": "Alleen-lezenvolume",
   "@fileExplorer.readOnly.volumeTitle": {
     "sourceHash": "e2d3bf1"
   },
@@ -824,7 +824,7 @@
   "@fileExplorer.readOnly.archiveMessage": {
     "sourceHash": "32a03f0"
   },
-  "fileExplorer.readOnly.deviceTitle": "Alleen-lezen apparaat",
+  "fileExplorer.readOnly.deviceTitle": "Alleen-lezenapparaat",
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
   },
@@ -922,7 +922,7 @@
   "@fileExplorer.dirSize.noPerms": {
     "sourceHash": "bf8fb9d"
   },
-  "fileExplorer.dirSize.noPermsTooltip": "Cmdr heeft geen toestemming om deze map te lezen",
+  "fileExplorer.dirSize.noPermsTooltip": "Cmdr heeft geen bevoegdheid om deze map te lezen",
   "@fileExplorer.dirSize.noPermsTooltip": {
     "sourceHash": "4920b4f"
   },

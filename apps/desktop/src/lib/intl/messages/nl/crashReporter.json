@@ -51,7 +51,7 @@
   "@crashReporter.dialog.dismiss": {
     "sourceHash": "48845bf"
   },
-  "crashReporter.dialog.send": "Stuur rapport",
+  "crashReporter.dialog.send": "Verstuur rapport",
   "@crashReporter.dialog.send": {
     "sourceHash": "a44d353"
   },

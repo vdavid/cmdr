@@ -107,9 +107,10 @@
   "@search.walkHandoff.reopen": {
     "sourceHash": "6b49872"
   },
-  "search.walkHandoff.stop": "Stoppen",
+  "search.walkHandoff.stop": "Stop",
   "@search.walkHandoff.stop": {
-    "sourceHash": "cae7d57"
+    "sourceHash": "cae7d57",
+    "sameAsSourceJustification": "Native Dutch imperative of 'stoppen', identical to English; matches macOS Finder's own 'Stop' (kept for Quit) - a real Dutch word, not a dropped translation."
   },
   "search.walkHandoff.hideTooltip": "Dit verbergen. De zoekopdracht loopt door.",
   "@search.walkHandoff.hideTooltip": {

@@ -12,7 +12,7 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "Dit volume ondersteunt geen prullenmand.",
+  "fileOperations.delete.noTrashWarningStrong": "Dit volume ondersteunt de prullenmand niet.",
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "ef122e2"
   },
@@ -273,7 +273,7 @@
   "@fileOperations.transferDialog.scanStopped": {
     "sourceHash": "aac156c"
   },
-  "fileOperations.transferDialog.scanRetry": "Opnieuw proberen",
+  "fileOperations.transferDialog.scanRetry": "Probeer opnieuw",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
   },

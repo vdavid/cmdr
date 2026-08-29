@@ -125,7 +125,7 @@
   "@commands.navGoToPath.description": {
     "sourceHash": "fc6a00c"
   },
-  "commands.favoritesAdd.label": "Voeg toe aan favorieten",
+  "commands.favoritesAdd.label": "Voeg aan favorieten toe",
   "@commands.favoritesAdd.label": {
     "sourceHash": "7f3c078"
   },
@@ -438,7 +438,7 @@
   "@commands.fileDelete.label": {
     "sourceHash": "e2d0a54"
   },
-  "commands.fileDeletePermanently.label": "Verwijder permanent",
+  "commands.fileDeletePermanently.label": "Verwijder definitief",
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },

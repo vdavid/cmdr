@@ -3,7 +3,7 @@
   "@updates.checkToast.errorPrefix": {
     "sourceHash": "020abfd"
   },
-  "updates.checkToast.sendErrorReport": "Stuur foutrapport",
+  "updates.checkToast.sendErrorReport": "Verstuur foutrapport",
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
@@ -49,7 +49,7 @@
   "@updates.moveToApplicationsDialog.howTo": {
     "sourceHash": "76a136d"
   },
-  "updates.moveToApplicationsDialog.gotIt": "Duidelijk",
+  "updates.moveToApplicationsDialog.gotIt": "Begrepen",
   "@updates.moveToApplicationsDialog.gotIt": {
     "sourceHash": "5ad3dbd"
   },

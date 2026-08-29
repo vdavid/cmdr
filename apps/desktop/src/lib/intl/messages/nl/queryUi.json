@@ -231,7 +231,7 @@
   "@queryUi.results.loadingIndex": {
     "sourceHash": "ab62214"
   },
-  "queryUi.results.searching": "Bezig met zoeken...",
+  "queryUi.results.searching": "Zoeken...",
   "@queryUi.results.searching": {
     "sourceHash": "78c9d9f"
   },
@@ -275,9 +275,10 @@
   "@queryUi.results.live.capped": {
     "sourceHash": "7c0475d"
   },
-  "queryUi.results.live.stop": "Stoppen",
+  "queryUi.results.live.stop": "Stop",
   "@queryUi.results.live.stop": {
-    "sourceHash": "cae7d57"
+    "sourceHash": "cae7d57",
+    "sameAsSourceJustification": "Native Dutch imperative of 'stoppen', identical to English; matches macOS Finder's own 'Stop' (kept for Quit) - a real Dutch word, not a dropped translation."
   },
   "queryUi.results.live.stopTooltip": "Stop met zoeken. Alles wat al gevonden is, blijft staan.",
   "@queryUi.results.live.stopTooltip": {
