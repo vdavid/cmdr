@@ -308,10 +308,12 @@ mod tests {
         // forks English, or it's dead weight pinning a copy that will drift.
         assert!(
             entries.len() < base.len(),
+            // allowed-pluralize-noun: `{tag}` is a locale tag, never a count.
             "{tag} carries more native strings than the base catalog"
         );
         for (key, value) in entries {
             let english = find(base, key);
+            // allowed-pluralize-noun: `{tag}` is a locale tag, never a count.
             assert!(english.is_some(), "{tag} invents the native key {key}");
             assert_ne!(
                 english,
@@ -323,6 +325,7 @@ mod tests {
         assert_eq!(
             find(entries, "menu.bar.file").or_else(|| find(base, "menu.bar.file")),
             Some("File"),
+            // allowed-pluralize-noun: `{tag}` is a locale tag, never a count.
             "{tag} loses menu.bar.file entirely"
         );
     }

@@ -1347,10 +1347,10 @@ doubles as production code.
   counts catalog dirs for the success lines and nothing more, because classifying needs CLDR script data (`zh-Hant` is
   NOT an overlay of Simplified `zh`) that Node's `Intl` has and Go doesn't, and an approximate second copy would drift
   exactly where it matters. i18n-terms goes one step further and echoes the script's own last line as its success
-  message, so the untriaged-divergence total is stated once, by the layer that computed it. Then bundle-size (warn-only; builds a production-shaped frontend into a private dir and
-  compares its total against a committed baseline, since the app embeds this output so every byte ships in each silent
-  update and is parsed before first paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow),
-  e2e-playwright (slow)
+  message, so the untriaged-divergence total is stated once, by the layer that computed it. Then bundle-size (warn-only;
+  builds a production-shaped frontend into a private dir and compares its total against a committed baseline, since the
+  app embeds this output so every byte ships in each silent update and is parsed before first paint), knip, type-drift,
+  tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input

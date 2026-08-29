@@ -8767,8 +8767,9 @@ export type OperationsChanged = {
 export type OsLocales = {
   /**
    *  The catalog the UI should open while `appearance.language` is `'system'`
-   *  (`hu`, `en`). A language, never a region: `resolve_ui_locale` picks a
-   *  catalog, and the catalogs aren't regional.
+   *  (`hu`, `en`, `en-GB`). Always a tag we ship a catalog for, so it carries a
+   *  region only when a regional catalog exists. ❌ Never a formatting tag:
+   *  that's `format`, which is composed from the OS region instead.
    */
   ui: string | null
   /**

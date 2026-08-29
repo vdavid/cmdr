@@ -244,6 +244,29 @@ export function inspectLocales({
 }
 
 /**
+ * The summary sentence for a run with nothing to act on.
+ *
+ * A baselined locale exits clean on purpose: the count only ratchets down, and
+ * the check stays warn-only. What it may NOT do is imply the divergences are
+ * gone, so the all-clear names what is still waiting. The unqualified sentence
+ * survives for the day every baseline reaches zero, which is the only time it's
+ * true.
+ *
+ * @param outcomes per-locale results
+ * @returns the line to print
+ */
+function allClearLine(outcomes: readonly LocaleOutcome[]): string {
+  const awaiting = outcomes.filter(({ baseline }) => baseline !== undefined)
+  const untriaged = awaiting.reduce((total, { divergences }) => total + divergences.length, 0)
+  if (untriaged === 0) return 'Term consistency: every locale names one thing one way (or says why not).'
+  return (
+    `Term consistency: every triaged locale names one thing one way (or says why not). ` +
+    `${String(untriaged)} divergences across ${String(awaiting.length)} ` +
+    `${awaiting.length === 1 ? 'locale' : 'locales'} are still untriaged.`
+  )
+}
+
+/**
  * Renders the report and returns the process exit code.
  *
  * @param outcomes per-locale results
@@ -290,18 +313,7 @@ export function report(outcomes: readonly LocaleOutcome[], write?: (line: string
   }
 
   if (issues === 0) {
-    // A baselined locale exits clean on purpose: the count only ratchets down,
-    // and the check stays warn-only. What it may NOT do is imply the
-    // divergences are gone, so the all-clear names what is still waiting.
-    const awaiting = outcomes.filter(({ baseline }) => baseline !== undefined)
-    const untriaged = awaiting.reduce((total, { divergences }) => total + divergences.length, 0)
-    out(
-      untriaged === 0
-        ? 'Term consistency: every locale names one thing one way (or says why not).'
-        : `Term consistency: every triaged locale names one thing one way (or says why not). ` +
-            `${String(untriaged)} divergences across ${String(awaiting.length)} ` +
-            `${awaiting.length === 1 ? 'locale' : 'locales'} are still untriaged.`,
-    )
+    out(allClearLine(outcomes))
     return EXIT_CLEAN
   }
   return EXIT_ISSUES
