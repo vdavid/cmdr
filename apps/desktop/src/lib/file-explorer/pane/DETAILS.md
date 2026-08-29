@@ -563,13 +563,12 @@ birth context: the paths, the pane side, the per-type counts, the dispatch input
 own `$state` for an operation this window is only watching: an id, a type, two paths, and `reverses` off the registry
 row (set only when the adopted operation IS a reversal, and the one thing that lets the dialog title itself by what the
 undo DOES rather than by the `move` / `delete` it runs as: `$lib/file-operations/DETAILS.md` § "The running reversal is
-named from the SAME variant"). That
-factory is handed a read-only `hasBirthContext()` and nothing else, so an adoption cannot overwrite a live birth context
-— not by convention, but for want of a binding to write it with. That is the one hazard in this feature:
-`handleTransferError`'s archive branch takes the progress dialog down while keeping `transferProgressProps` alive, and
-the password submit re-dispatches from it when the user types the password. A guard that tested
-`showTransferProgressDialog` would find "no dialog shown" and let an adoption land on those props, and the submit would
-then copy the ADOPTED operation's sources to the ADOPTED operation's destination — a wrong write, out of a
+named from the SAME variant"). That factory is handed a read-only `hasBirthContext()` and nothing else, so an adoption
+cannot overwrite a live birth context — not by convention, but for want of a binding to write it with. That is the one
+hazard in this feature: `handleTransferError`'s archive branch takes the progress dialog down while keeping
+`transferProgressProps` alive, and the password submit re-dispatches from it when the user types the password. A guard
+that tested `showTransferProgressDialog` would find "no dialog shown" and let an adoption land on those props, and the
+submit would then copy the ADOPTED operation's sources to the ADOPTED operation's destination — a wrong write, out of a
 correct-looking guard. With two slots the question doesn't arise, and the occupancy test is "either slot full, or any
 dialog open", which also covers the invisible case.
 
