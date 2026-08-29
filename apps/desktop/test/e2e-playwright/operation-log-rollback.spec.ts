@@ -73,6 +73,13 @@ const CONFIRM_DIALOG = '[data-dialog-id="rollback-confirmation"]'
  */
 const ROLLBACK_THROTTLE_MS = 400
 
+/**
+ * The same, for the pause test, which spends a multiple of it proving a parked
+ * reversal isn't moving. It's the only spec whose runtime is mostly deliberate
+ * waiting, so it gets the shortest window a 25 ms poll can still land inside.
+ */
+const PAUSE_THROTTLE_MS = 120
+
 /** Small files: these tests assert on presence, never on bytes moved. */
 const FILE_BYTES = 1024
 
@@ -614,7 +621,9 @@ test.describe('Rolling an operation back from the history dialog', () => {
     makeSourceDir(fixtureRoot, 'rb-progress', count)
 
     const opId = await stageTransfer(page, 'copy', fixtureRoot, 'rb-progress')
-    await setRollbackThrottle(page, ROLLBACK_THROTTLE_MS)
+    // No pacing here on purpose: what's under test is the shape of the frames, not
+    // catching the reversal mid-flight, and the engine always sends the first frame
+    // and the one that lands on the total however fast it runs.
 
     // Collect the reversal's own progress frames.
     await page.evaluate(`(async function() {
@@ -666,7 +675,7 @@ test.describe('Rolling an operation back from the history dialog', () => {
     makeSourceDir(fixtureRoot, 'rb-pause', count)
 
     const opId = await stageTransfer(page, 'copy', fixtureRoot, 'rb-pause')
-    await setRollbackThrottle(page, ROLLBACK_THROTTLE_MS)
+    await setRollbackThrottle(page, PAUSE_THROTTLE_MS)
 
     await openOperationLog(page)
     await pressRollBack(page, opId)
@@ -687,7 +696,7 @@ test.describe('Rolling an operation back from the history dialog', () => {
     // place where waiting IS the assertion, so it's a generous multiple of the
     // per-item pause rather than a guess.
     const held = goneCount(fixtureRoot, 'rb-pause', count)
-    await new Promise((resolve) => setTimeout(resolve, ROLLBACK_THROTTLE_MS * 4))
+    await new Promise((resolve) => setTimeout(resolve, PAUSE_THROTTLE_MS * 4))
     expect(goneCount(fixtureRoot, 'rb-pause', count)).toBe(held)
 
     await page.evaluate(`(async function() {
