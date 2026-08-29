@@ -15,7 +15,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::{move_files_with_progress_inner, move_with_staging};
+use super::cross_fs::move_with_staging;
+use super::move_files_with_progress_inner;
 
 use crate::file_system::VolumeManager;
 use crate::file_system::volume::{LocalPosixVolume, Volume};

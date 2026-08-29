@@ -3,7 +3,7 @@
 //! back the journaled operation + item rows.
 //!
 //! These exercise the record points (`single_item.rs`, `walker.rs`,
-//! `move_op.rs`) plus the open/finalize bracket, complementing the pure
+//! `move_op/`) plus the open/finalize bracket, complementing the pure
 //! eligibility/completeness unit tests in `operation_log::capture`.
 
 use std::sync::Arc;
