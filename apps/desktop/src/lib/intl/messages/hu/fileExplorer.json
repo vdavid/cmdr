@@ -132,7 +132,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Saját mappa megnyitása",
+  "fileExplorer.errorPane.goHome": "Ugrás a saját mappára",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -305,7 +305,7 @@
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "fileExplorer.network.connectDialog.title": "Kapcsolódás szerverhez",
+  "fileExplorer.network.connectDialog.title": "Kapcsolódás szerverre",
   "@fileExplorer.network.connectDialog.title": {
     "sourceHash": "de6cce0"
   },
@@ -353,7 +353,7 @@
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
   },
-  "fileExplorer.network.browser.connectToServerRow": "Kapcsolódás szerverhez…",
+  "fileExplorer.network.browser.connectToServerRow": "Kapcsolódás szerverre…",
   "@fileExplorer.network.browser.connectToServerRow": {
     "sourceHash": "1bf4858"
   },
@@ -425,7 +425,7 @@
   "@fileExplorer.network.browser.status.guest": {
     "sourceHash": "5ed8944"
   },
-  "fileExplorer.network.browser.status.connected": "Csatlakozva",
+  "fileExplorer.network.browser.status.connected": "Kapcsolódva",
   "@fileExplorer.network.browser.status.connected": {
     "sourceHash": "2296556"
   },
@@ -970,7 +970,7 @@
   "@fileExplorer.selectionTooltip.ofTotal": {
     "sourceHash": "1269b5a"
   },
-  "fileExplorer.selectionTooltip.onDiskHeader": "A lemezen:",
+  "fileExplorer.selectionTooltip.onDiskHeader": "Lemezen:",
   "@fileExplorer.selectionTooltip.onDiskHeader": {
     "sourceHash": "9795f99"
   },
@@ -1334,7 +1334,7 @@
   "@fileExplorer.navigation.spaceRetryingAuto": {
     "sourceHash": "aa9f4b8"
   },
-  "fileExplorer.navigation.spaceRetrying": "Újrapróbálkozás…",
+  "fileExplorer.navigation.spaceRetrying": "Újrapróbálás…",
   "@fileExplorer.navigation.spaceRetrying": {
     "sourceHash": "a16c8b1"
   },

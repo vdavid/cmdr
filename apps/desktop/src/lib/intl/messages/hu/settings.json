@@ -1480,7 +1480,7 @@
   "@settings.section.driveIndexing": {
     "sourceHash": "38d916b"
   },
-  "settings.section.imageIndexing": "Képindexelés",
+  "settings.section.imageIndexing": "Képek indexelése",
   "@settings.section.imageIndexing": {
     "sourceHash": "442068b"
   },
@@ -2116,11 +2116,11 @@
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "Nézd meg a postaládádat az e-mailed megerősítéséhez. Köszönjük a segítséget!",
+  "settings.updates.emailConfirmHint": "Nézd meg a postaládádat, és erősítsd meg az e-mail-címedet. Köszönjük a segítséget!",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "Sajnáljuk, most nem sikerült regisztrálnunk téged. Megpróbálod újra?",
+  "settings.updates.emailSignupError": "Bocs, most nem sikerült feliratkoztatnunk. Megpróbálod újra?",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },

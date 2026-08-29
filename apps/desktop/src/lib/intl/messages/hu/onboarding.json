@@ -516,7 +516,7 @@
   "@onboarding.cloudSetup.modelAria": {
     "sourceHash": "5e2c614"
   },
-  "onboarding.cloudSetup.modelPlaceholderExample": "Például: {model}",
+  "onboarding.cloudSetup.modelPlaceholderExample": "Példa: {model}",
   "@onboarding.cloudSetup.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },

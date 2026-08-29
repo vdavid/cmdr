@@ -1,5 +1,5 @@
 {
-  "commands.appQuit.label": "Cmdr bezárása",
+  "commands.appQuit.label": "Kilépés a Cmdrből",
   "@commands.appQuit.label": {
     "sourceHash": "b3455b4"
   },
@@ -172,11 +172,11 @@
   "@commands.viewZoomSet150.label": {
     "sourceHash": "2e247da"
   },
-  "commands.viewZoomIn.label": "Nagyítás",
+  "commands.viewZoomIn.label": "Felnagyítás",
   "@commands.viewZoomIn.label": {
     "sourceHash": "0e47f09"
   },
-  "commands.viewZoomOut.label": "Kicsinyítés",
+  "commands.viewZoomOut.label": "Lekicsinyítés",
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
@@ -584,7 +584,7 @@
   "@commands.selectionSelectAll.label": {
     "sourceHash": "1fc9a38"
   },
-  "commands.selectionDeselectAll.label": "Kijelölés megszüntetése",
+  "commands.selectionDeselectAll.label": "Kijelölés törlése",
   "@commands.selectionDeselectAll.label": {
     "sourceHash": "9675494"
   },
@@ -596,7 +596,7 @@
   "@commands.selectionSelectFiles.description": {
     "sourceHash": "7695f3e"
   },
-  "commands.selectionDeselectFiles.label": "Fájlok kijelölésének megszüntetése…",
+  "commands.selectionDeselectFiles.label": "Fájlok kijelölésének törlése…",
   "@commands.selectionDeselectFiles.label": {
     "sourceHash": "6fb10d5"
   },

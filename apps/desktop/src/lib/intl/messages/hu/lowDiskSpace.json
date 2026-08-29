@@ -11,7 +11,7 @@
   "@lowDiskSpace.toast.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "lowDiskSpace.notification.title": "Kevés a szabad lemezterület",
+  "lowDiskSpace.notification.title": "Kevés lemezterület",
   "@lowDiskSpace.notification.title": {
     "sourceHash": "5b1f5bf"
   },

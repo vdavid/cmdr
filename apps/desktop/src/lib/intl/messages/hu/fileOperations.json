@@ -273,7 +273,7 @@
   "@fileOperations.transferDialog.scanStopped": {
     "sourceHash": "aac156c"
   },
-  "fileOperations.transferDialog.scanRetry": "Újrapróbálás",
+  "fileOperations.transferDialog.scanRetry": "Próbáld újra",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
   },
