@@ -1,9 +1,9 @@
 {
-  "onboarding.wizard.title": "Bienvenue dans Cmdr",
+  "onboarding.wizard.title": "Prise en main de Cmdr",
   "@onboarding.wizard.title": {
     "sourceHash": "3b97a1b"
   },
-  "onboarding.wizard.progressLabel": "Progression de la configuration",
+  "onboarding.wizard.progressLabel": "Progression de la prise en main",
   "@onboarding.wizard.progressLabel": {
     "sourceHash": "ad8a0da"
   },
@@ -339,7 +339,7 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "9821e5d"
   },
-  "onboarding.stepBeta.crashReportsNote": "Les rapports de plantage sont eux aussi activés : si Cmdr s''arrête brutalement, il envoie la version de l''app, votre version de macOS et l''endroit où le code s''est arrêté. Jamais vos fichiers. Vous pouvez désactiver les deux dans les réglages quand vous voulez.",
+  "onboarding.stepBeta.crashReportsNote": "Les rapports d''incident sont eux aussi activés : si Cmdr s''arrête brutalement, il envoie la version de l''app, votre version de macOS et l''endroit où le code s''est arrêté. Jamais vos fichiers. Vous pouvez désactiver les deux dans les réglages quand vous voulez.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "18cd0b3"
   },

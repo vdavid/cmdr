@@ -3,15 +3,15 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "Choisissez la langue utilisée par Cmdr. « Réglages Système » suit la langue de votre Mac.",
+  "settings.appearance.language.description": "Choisissez la langue utilisée par Cmdr. « Par défaut du système » suit la langue de votre Mac.",
   "@settings.appearance.language.description": {
     "sourceHash": "a290add"
   },
-  "settings.appearance.language.opt.system": "Réglages Système",
+  "settings.appearance.language.opt.system": "Par défaut du système",
   "@settings.appearance.language.opt.system": {
     "sourceHash": "b045921"
   },
-  "settings.appearance.language.opt.systemWithLanguage": "Réglages Système ({language})",
+  "settings.appearance.language.opt.systemWithLanguage": "Par défaut du système ({language})",
   "@settings.appearance.language.opt.systemWithLanguage": {
     "sourceHash": "ab10534"
   },
@@ -101,7 +101,7 @@
   "@settings.appearance.dateTimeFormat.description": {
     "sourceHash": "628571a"
   },
-  "settings.appearance.dateTimeFormat.opt.system": "Réglages Système",
+  "settings.appearance.dateTimeFormat.opt.system": "Par défaut du système",
   "@settings.appearance.dateTimeFormat.opt.system": {
     "sourceHash": "b045921"
   },
@@ -282,7 +282,7 @@
   "@settings.appearance.showFunctionKeyBar.label": {
     "sourceHash": "e80f18d"
   },
-  "settings.appearance.showFunctionKeyBar.description": "Affiche la rangée de boutons de commande des touches F (Renommer, Afficher, Copier, etc.) en bas de la fenêtre.",
+  "settings.appearance.showFunctionKeyBar.description": "Affiche la rangée de boutons de commande des touches F (Renommer, Visualiser, Copier, etc.) en bas de la fenêtre.",
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
@@ -1101,7 +1101,7 @@
   "@settings.developer.verboseLogging.label": {
     "sourceHash": "036a824"
   },
-  "settings.developer.verboseLogging.description": "Passe la console du terminal de dev et des devtools du navigateur au niveau debug. Le fichier journal sur le disque capture toujours le détail debug quoi qu''il arrive, donc les rapports d''erreur ne sont pas affectés par cette option. RUST_LOG l''emporte toujours pour le terminal.",
+  "settings.developer.verboseLogging.description": "Passe la console du terminal de dev et des devtools du navigateur au niveau debug. Le fichier journal sur le disque capture toujours le détail debug quoi qu''il arrive, donc les rapports d''incident ne sont pas affectés par cette option. RUST_LOG l''emporte toujours pour le terminal.",
   "@settings.developer.verboseLogging.description": {
     "sourceHash": "5c69c0d"
   },
@@ -1153,7 +1153,7 @@
   "@settings.updates.crashReports.description": {
     "sourceHash": "e726766"
   },
-  "settings.updates.errorReports.label": "Envoyer les rapports d''erreur automatiquement",
+  "settings.updates.errorReports.label": "Envoyer les rapports d''incident automatiquement",
   "@settings.updates.errorReports.label": {
     "sourceHash": "471575d"
   },
@@ -1165,7 +1165,7 @@
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
-  "settings.updates.attachEmailToReports.description": "Quand vous envoyez un rapport d''incident ou d''erreur, inclut votre e-mail de contact bêta pour que nous puissions répondre. Vous pouvez le changer pour chaque rapport.",
+  "settings.updates.attachEmailToReports.description": "Quand vous envoyez un rapport d''incident, inclut votre e-mail de contact bêta pour que nous puissions répondre. Vous pouvez le changer pour chaque rapport.",
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
@@ -1269,7 +1269,7 @@
   "@settings.advanced.maxLogStorageMb.label": {
     "sourceHash": "d6af6b4"
   },
-  "settings.advanced.maxLogStorageMb.description": "Espace disque maximal pour les fichiers journaux. Réglez à 0 pour désactiver le stockage des journaux ; les rapports d''erreur ne peuvent pas être envoyés sans journaux. Les changements vers une valeur non nulle prennent effet au prochain lancement de l''app.",
+  "settings.advanced.maxLogStorageMb.description": "Espace disque maximal pour les fichiers journaux. Réglez à 0 pour désactiver le stockage des journaux ; les rapports d''incident ne peuvent pas être envoyés sans journaux. Les changements vers une valeur non nulle prennent effet au prochain lancement de l''app.",
   "@settings.advanced.maxLogStorageMb.description": {
     "sourceHash": "725bb26"
   },
@@ -1329,7 +1329,7 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
-  "settings.onboarding.upgradeNudgeShown.label": "Incitation de mise à niveau d''accueil affichée",
+  "settings.onboarding.upgradeNudgeShown.label": "Incitation à la mise à niveau de la prise en main affichée",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
   },

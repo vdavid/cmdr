@@ -205,7 +205,7 @@
   "@fileExplorer.functionKeyBar.viewLabel": {
     "sourceHash": "dcc839a"
   },
-  "fileExplorer.functionKeyBar.viewAction": "Afficher le fichier",
+  "fileExplorer.functionKeyBar.viewAction": "Visualiser le fichier",
   "@fileExplorer.functionKeyBar.viewAction": {
     "sourceHash": "6ef3f36"
   },

@@ -263,8 +263,12 @@ Onboarding-specific phrasing:
   — flag for review
 - "Quit & Reopen" (macOS relaunch button) → "Quitter et rouvrir" · macOS shows this button itself; standard French label
   · tentative — verify exact macOS wording
-- onboarding (the flow) → not surfaced as a noun; rendered as "configuration" where needed ("Progression de la
-  configuration"), and the wizard title became "Bienvenue dans Cmdr" · tentative
+- onboarding (the flow, as a noun) → `prise en main`, partout · `high`. Le point de menu, la commande, la portée
+  des raccourcis, le titre de l'assistant (`onboarding.wizard.title` = « Prise en main de Cmdr »), sa barre de
+  progression (`onboarding.wizard.progressLabel` = « Progression de la prise en main ») et le réglage interne
+  `settings.onboarding.upgradeNudgeShown.label` disent tous le même mot. ❌ Ni « configuration », ni « accueil »,
+  ni un titre indépendant comme « Bienvenue dans Cmdr » : le point de menu et la fenêtre qu'il ouvre doivent se
+  reconnaître.
 - The `stuck`-banner breadcrumb keeps "Privacy &amp; Security &gt; Full Disk Access" as English literals (like the git
   pane breadcrumb), since the `{systemSettings}` token is the only OS-localized part; matches the source.
 
@@ -642,14 +646,8 @@ apostrophes are doubled in the catalog:
   cours..."), but the operation log must keep `Canceled` and `Rolled back` as DISTINCT status pills. Anchoring rollback
   to the `restaur-` family reserves `annuler`/`Annulé` exclusively for `Canceled`, preserving the
   you-canceled-before-it-ran vs you-reversed-it-after semantic split. The five rollback pills read as one concept:
-  - Can roll back → `Restauration possible`; Can''t roll back → `Restauration impossible` (macOS calm "… impossible"
-    pattern)
-  - Rolling back → `Restauration en cours`
-  - Rolled back → `Restauré` (masc., agrees with implied `élément` for the per-item outcome, kept masc. for the
-    operation status pill to match the sibling masculine pills)
-  - Partly rolled back → `Partiellement restauré`
-  - `commands.logOperationLog.description` "…and roll them back" → "…et restaurez l''état précédent" (stays in the
-    `restaur-` family; "them" rendered as "l''état précédent" = restore the prior state, which is what rollback does).
+  The live pill values are in that section, in the `retour en arrière` family; do not look for `Restauration …`
+  anywhere, it ships nowhere.
 - Status pills matched to the existing `queue.row.status` renderings (brief-mandated consistency): Queued →
   `En attente`, Running → `En cours`, Done → `Terminé`, Canceled → `Annulé` · high. `Didn''t finish` (status + item
   outcome, non-alarmist wording for a stopped op) → `Non terminé`, NOT "Échec" (brief-mandated; avoids "erreur"/"échec"
@@ -906,8 +904,10 @@ file-list badge; `settings.mediaIndex.{cards.enable,cards.folders, progressSumma
   `model → modèle`; "reclaim" reuses `reclaim.button`''s `libérer` verb (dropping its "environ" since the source has no
   "roughly" here). "Deleting…" → `Suppression…` (noun+ellipsis progress convention, sibling of `clip.downloading`
   "Téléchargement…"; single `…` char per the source) · high.
-- keyword → `mot-clé`; tag (Finder tag, in "keyword and tag search") → `tag` · settled catalog-wide (`showTags.label`
-  "Afficher les tags") · high. `deleteConfirmBody`: "Keyword and tag search keep working" → "La recherche par mot-clé et
+- keyword → `mot-clé`; tag (Finder tag) → `tag` · macOS Finder `fr` dit `tag` (« Attribuer les tags à ^0 éléments »,
+  « Aucun tag », « Créer un tag « ^0 » ») et le catalogue le suit partout : `settings.listing.showTags.label`
+  « Afficher les tags » et les quatorze `commands.tagsToggle*` · high. ❌ Pas « étiquette » : c'est le mot qu'Apple
+  réserve à la description d'accessibilité d'un fichier, pas au tag lui-même. `deleteConfirmBody`: "Keyword and tag search keep working" → "La recherche par mot-clé et
   par tag continue de fonctionner".
 - "The model couldn''t be removed just now. Try again in a moment." (non-alarmist delete-failure) →
   `Le modèle n''a pas pu être supprimé pour le moment. Réessayez dans un instant.` · reuses the calm
@@ -2118,3 +2118,50 @@ vérificateur) et sont décrites plus bas pour que la prochaine passe ne les « 
   regroupe quand même : son normalisateur retire la ponctuation FINALE, mais la typographie française met une espace
   insécable AVANT `: ! ?`, si bien que `Copié !` se réduit à `Copié ` (avec l'espace) et ne coïncide plus avec `Copié`.
   Ne touchez pas à ces quatorze valeurs : le défaut est dans le normalisateur, pas dans la traduction.
+
+## Mots qui ont divergé sans qu'aucun check puisse le voir (2026-08-30)
+
+`i18n-terms` ne regroupe que des clés dont l'anglais est IDENTIQUE. Celles-ci ont un anglais légèrement différent, donc
+seule la passe manuelle les trouve. Toutes sont corrigées.
+
+- **`System default` disait « Réglages Système », c'est-à-dire le nom de l'app macOS** ·
+  `settings.appearance.language.opt.system`, `.opt.systemWithLanguage` et
+  `settings.appearance.dateTimeFormat.opt.system` · `high`. La première option du sélecteur de langue annonçait donc
+  « Réglages Système », et sa description disait « « Réglages Système » suit la langue de votre Mac », ce qui ne veut
+  rien dire. Désormais **`Par défaut du système`**, dans la famille `par défaut` que le reste du catalogue emploie
+  (`menu.context.openWithDefault` « {app} (par défaut) », `settings.control.resetToDefault`). Ce n'était pas une
+  dérive de terme mais une erreur de traduction.
+- **`View` → `Visualiser` aussi dans les deux clés que le vérificateur ne voit pas** ·
+  `fileExplorer.functionKeyBar.viewAction` (« Afficher le fichier ») et
+  `settings.appearance.showFunctionKeyBar.description`, qui énumère les touches F comme « (Renommer, **Afficher**,
+  Copier, etc.) » alors que le bouton s'appelle maintenant `Visualiser` · `high`.
+- **`error report` → `rapport d'incident` jusque dans les réglages** · `settings.updates.errorReports.label`,
+  `settings.developer.verboseLogging.description` et `settings.advanced.maxLogStorageMb.description` disaient
+  `rapport d'erreur` · `high`. Le français fond `crash report` et `error report` dans un seul terme (c'est la décision
+  du glossaire, et le ton non alarmiste la motive), donc
+  `settings.updates.attachEmailToReports.description` n'énumère plus « un rapport d'incident ou d'erreur » : les deux
+  sont le même mot. `onboarding.stepBeta.crashReportsNote` disait encore `rapports de plantage`, une cinquième forme.
+- **`Finder tag` → `tag`, pas `étiquette`** · les quatorze `commands.tagsToggle*` disaient `étiquette` contre
+  `settings.listing.showTags.label` « Afficher les tags ». macOS Finder `fr` tranche pour `tag` · `high`.
+- **`Passer en présentation Complet` / `Bref` ne s'accordait pas** · `présentation` est féminin, donc
+  `commands.viewFullMode.label` / `.viewBriefMode.label` disent maintenant `complète` / `brève`, comme le menu
+  (`menu.view.fullView` = « Présentation complète ») · `high`. La forme masculine reste juste après `mode` : `mode
+  Complet`, `mode Bref`, où l'adjectif s'accorde avec `mode` et sert de NOM de la présentation.
+- **`entries` → `entrées`** · `indexing.scan.counters` disait `éléments` contre
+  `queryUi.results.indexReadyStatus` (« Index prêt ({countText} entrées) »), deux compteurs de la même chose · `high`.
+  `dirs` reste `rép.`, comme décidé.
+
+### Frontières confirmées lors de cette passe (ne pas uniformiser)
+
+- **`Keep` : `Garder les deux`, mais `Conserver` un fichier** · macOS `fr` ship exactement ce partage
+  (`Garder les deux`, `Garder la sélection` d'un côté ; `Conserver`, `Conserver la copie partielle`,
+  `Conserver le téléchargement` de l'autre). `garder` = laisser tel quel ou laisser tourner
+  (`downloads.warnToast.keepOn`, `fileOperations.transferProgress.backgroundAria`, `viewer.search.stopTooltip`) ;
+  `conserver` = préserver une chose ou une durée (`fileExplorer.extensionChange.keepOld`,
+  `fileOperations.rollbackConfirm.keep`, `settings.operationLog.maxAge.label`) · `high`.
+- **`Retry` : `Réessayer` est le bouton, `Nouvelle tentative` est l'état en cours** · le participe présent anglais
+  (`Retrying…`) n'a pas d'équivalent verbal court en français, donc la progression prend le groupe nominal, et
+  `fileExplorer.errorPane.retryInfo` compte les `Tentative nº {count}` · `high`.
+- **`Roll back` : `revenir en arrière` est le verbe, `retour en arrière` le nom** · le bouton et le titre de la
+  confirmation prennent le verbe (`fileOperations.rollbackConfirm.rollBack`/`.title`), les pastilles de statut et le
+  titre de progression prennent le nom · `high`. Détail du choix de famille : § « La famille `rollback` ».
