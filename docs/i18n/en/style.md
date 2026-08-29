@@ -28,7 +28,7 @@ downstream translation:
   `en-US` directory. This is a deliberate base rather than a neutral midpoint, and it's the base Apple's own model
   assumes: macOS ships `en` as US English and layers `en-GB` and `en-AU` on top as regional overlays (Finder's `MR16`
   reads "Canceled" in `en` and "Cancelled" in both `en-GB` and `en-AU`; verified in the reference pile at
-  `_ignored/i18n/<tag>/macOS/Finder/LocalizableMerged.json`, 2026-08-29). Matching that base is what lets the coming
+  `_ignored/i18n/<tag>/macOS/Finder/LocalizableMerged.json`, 2026-08-29). Matching that base is what lets the shipped
   `en-GB` and `en-AU` overlays be a clean fork: every key they carry is then a genuine US-vs-British difference, not an
   arbitrary pick against a source that never settled its own spelling. **So don't "correct" a US spelling back to
   British here.** A British form belongs in the `en-GB` overlay; `en` stays US. Confidence: high.
@@ -56,8 +56,9 @@ template each translation re-expresses in its own categories (which may be more:
 ## Notes and decisions
 
 - Roster: the source is US English (see the decision point above); British and Australian variants (`en-GB`, `en-AU`)
-  are wave-2 overlays on top of it, carrying the spelling forks (-our/-ise/-lled) plus terminology macOS renames by
-  region (Trash -> Bin). See `../language-selection-decisions.md`.
+  ship as overlays on top of it, carrying the spelling forks (-our/-ise/-lled), `licence`, and terminology macOS renames
+  by region (Trash -> Bin). What each forks and why: `../en-GB/style.md` and `../en-AU/style.md`. Roster:
+  `../language-selection-decisions.md`.
 - **Ellipsis**: the catalog uses three literal ASCII dots ("Sending...") rather than the single `…` character; several
   translations match this shape deliberately. This is a source convention every locale inherits.
 

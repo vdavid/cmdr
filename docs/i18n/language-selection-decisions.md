@@ -6,11 +6,12 @@ Which of the 139 researched languages Cmdr plans to localize, and in what order.
 - **wave 1-4**: implementation order. Waves 1-2 are driven by Cmdr's 30-day install usage (analytics, 2026-06-20); waves
   3-4 are market-size / reach estimates, to re-rank as the user base grows. `en` is the source locale (not translated).
 - **deferred**: a regional/script variant added after its base, on demand (es-ES, fr-CA, zh-HK).
-- **shipped**: ten catalogs are complete and live, every one of the 3,138 keys translated and passing
-  `desktop-i18n-coverage`: `de`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`, and `zh-Hant` (the last of them
-  finished 2026-08-29). A locale ships once it's translated, passes the checks, and is overflow-checked; human review is
-  opportunistic, not a gate (`../guides/i18n-translation.md`). Being in a wave below is a PLAN, not a ship state, so
-  check this line rather than the wave column to know what's live.
+- **shipped**: twelve catalogs are live. Ten are full translations, every one of the 3,138 keys translated and passing
+  `desktop-i18n-coverage`: `de`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`, and `zh-Hant`. Two are regional
+  OVERLAYS of `en`, carrying only the keys they fork and inheriting the rest: `en-GB` (149 keys) and `en-AU` (155). All
+  twelve finished 2026-08-29. A locale ships once it's translated, passes the checks, and is overflow-checked; human
+  review is opportunistic, not a gate (`../guides/i18n-translation.md`). Being in a wave below is a PLAN, not a ship
+  state, so check this line rather than the wave column to know what's live.
 - **exclude RTL**: set aside until Cmdr supports right-to-left layout. Decision 2026-06-20: no RTL for now.
 - **exclude long-tail**: no major-product localization ecosystem. Decision 2026-06-20: skip the long tail.
 
@@ -19,7 +20,7 @@ Order: source, waves 1 to 4, deferred variants, then exclusions. Formality and s
 
 | id      | language                  | decision          | comment                                                                                        |
 | ------- | ------------------------- | ----------------- | ---------------------------------------------------------------------------------------------- |
-| en      | English                   | source            | US English source locale (register and why: `en/style.md`); en-GB, en-AU overlay it            |
+| en      | English                   | source            | US English source locale (register and why: `en/style.md`); `en-GB` + `en-AU` overlay it       |
 | bn      | Bengali                   | wave 1            | MS terminology + GNOME; Google ships Bengali; no macOS                                         |
 | de      | German                    | wave 1            | Apple macOS + MS + Google ship German                                                          |
 | es      | Spanish                   | wave 1            | Apple macOS + MS + Google + Netflix ship Spanish; pan-regional es, es-ES deferred              |
@@ -35,7 +36,8 @@ Order: source, waves 1 to 4, deferred variants, then exclusions. Formality and s
 | cs      | Czech                     | wave 2            | Apple macOS + MS ship Czech; mainstream                                                        |
 | da      | Danish                    | wave 2            | Apple macOS + MS + Google ship Danish                                                          |
 | el      | Greek                     | wave 2            | Apple macOS + MS + Google ship Greek                                                           |
-| en-GB   | English (UK/AU)           | wave 2            | British/Australian; mainly Trash->Bin and -our/-ise spelling                                   |
+| en-AU   | English (Australia)       | wave 2, shipped   | Overlay of `en`, 155 keys: `en-GB`'s forks plus `Deselect`->`Unselect`; also serves NZ         |
+| en-GB   | English (UK)              | wave 2, shipped   | Overlay of `en`, 149 keys: Trash->Bin, -our/-ise spelling, `licence`; also serves NZ           |
 | fi      | Finnish                   | wave 2            | Apple macOS + MS + Google ship Finnish                                                         |
 | hi      | Hindi                     | wave 2            | Tier-1: Apple, MS, Google, Spotify, Netflix all ship Hindi                                     |
 | id      | Indonesian                | wave 2            | Apple + MS ship one Indonesian; macOS Finder reference                                         |

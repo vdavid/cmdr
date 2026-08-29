@@ -15,12 +15,12 @@ for them before trusting a source.
 
 1. **The base tag can be incomplete, or the WRONG variant — always look for siblings.** Run `ls -d <tag>*` and read any
    `_see-also.txt`, not just `ls <tag>/`. A language's evidence is often split across region/script siblings:
-   - **pt**: bare `pt/` is EUROPEAN (`Language: pt`, and an AppKit-only macOS with no Finder). The complete Brazilian
-     set is `pt-BR/`. Cmdr's `pt` ships Brazilian, so mining bare `pt/` is a variant trap — mine `pt-BR/`.
-   - **zh**: there is no bare `zh/` from the sources; Simplified is split across `zh-Hans/` (Microsoft) + `zh-CN/`
-     (macOS, file managers), Traditional across `zh-Hant/` + `zh-TW/`. A composed `zh/` base (symlinks to the Simplified
-     sources) exists for convenience — see `inventory.md` § Composed base folders.
-   - **bn**: bare `bn/` has Microsoft terminology + the file managers; the Microsoft style guide is under `bn-IN/`.
+    - **pt**: bare `pt/` is EUROPEAN (`Language: pt`, and an AppKit-only macOS with no Finder). The complete Brazilian
+      set is `pt-BR/`. Cmdr's `pt` ships Brazilian, so mining bare `pt/` is a variant trap — mine `pt-BR/`.
+    - **zh**: there is no bare `zh/` from the sources; Simplified is split across `zh-Hans/` (Microsoft) + `zh-CN/`
+      (macOS, file managers), Traditional across `zh-Hant/` + `zh-TW/`. A composed `zh/` base (symlinks to the
+      Simplified sources) exists for convenience — see `inventory.md` § Composed base folders.
+    - **bn**: bare `bn/` has Microsoft terminology + the file managers; the Microsoft style guide is under `bn-IN/`.
 2. **No macOS tier for every language.** Apple doesn't localize into some languages (e.g. Bengali: `bn/macOS/` doesn't
    exist). When `<tag>/macOS/` is absent, the Tier-1 "macOS wins" tiebreak is gone — Microsoft terminology becomes the
    anchor, the file managers carry the file-manager domain, and more terms honestly stay `tentative`. Don't read the
@@ -264,6 +264,38 @@ grep -iE 'könyvjelz|kedvenc|favorit|hotlist' hu/total-commander/WCMD.INC.utf8  
 To pin an English source to a TC ID, cross-reference `TOTALCMD.INC` (the English menu reference in the installer CAB);
 TC ships no English `WCMD.LNG` (English is compiled in), so there's no English-side string file to diff against — value
 grep plus the menu file is the practical path.
+
+## Legal register (Tier 1, live OS only) — `LegalText*.rtf`, `License.rtf`, `License.html`
+
+The pile's `.strings` catalogs are UI text and contain **no legal vocabulary at all**: `licence`/`license`, `warranty`,
+`indemnity`, and `agreement` are absent from every locale of `macOS/AppKit`, `macOS/Finder`, and `macOS/SystemSettings`.
+Microsoft's style guides are silent on them too. So a licensing or About screen needs a different source: Apple's
+shipped legal documents on the live Mac.
+
+Two kinds, and they answer different questions:
+
+```bash
+# 1. SLA BODIES. Apple ships exactly ONE English SLA and never localises it into en_GB / en_AU.
+ls /Library/Documentation/License.lpdf/Contents/Resources/          # English.lproj + 40 languages, no en_GB
+ls "/System/Library/CoreServices/Setup Assistant.app/Contents/Resources/en.lproj/OSXSoftwareLicense.rtf"
+# So: the contract body is US register for every English reader. Don't fork it.
+
+# 2. UI-ADJACENT LEGAL TEXT. This one IS localised per English region, which makes it a MINIMAL PAIR.
+R="/System/Library/CoreServices/Software Update.app/Contents/Resources"
+for l in en en_GB en_AU; do
+  echo "-- $l"; textutil -convert txt -stdout "$R/$l.lproj/LegalTextMacOSX.rtf" | grep -oE "[A-Za-z]*[Ll]icen[cs]e[a-z]*"
+done
+# en -> "License Agreement"; en_GB and en_AU -> "Licence Agreement".
+```
+
+**Date what you quote.** A legal RTF's file mtime is the OS install date, not the text's age, and Apple leaves stale
+bodies in place for years (`LegalTextMacOSX.rtf` still says "Mac OS X"). So:
+
+- Record the OS version and build (`sw_vers`), not the mtime, as the evidence anchor.
+- Prefer a **minimal pair** (same file, same key, `en` vs `en_GB`) over a single-locale reading. A pair is valid however
+  old the sentence is, because both sides aged together; a lone quote from a stale document proves nothing about current
+  Apple style.
+- If a document exists only in `en.lproj`, that absence IS the finding: Apple chose not to localise it.
 
 ## Confidence rubric (record this per term)
 

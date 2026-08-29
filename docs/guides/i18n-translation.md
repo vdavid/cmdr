@@ -187,11 +187,11 @@ deliberately identical, sourced like any other term decision. Example, in `messa
 
 ```jsonc
 {
-  "errors.provider.dropbox.displayName": "Dropbox",
-  "@errors.provider.dropbox.displayName": {
-    "sourceHash": "1a2b3c4",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list).",
-  },
+    "errors.provider.dropbox.displayName": "Dropbox",
+    "@errors.provider.dropbox.displayName": {
+        "sourceHash": "1a2b3c4",
+        "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list).",
+    },
 }
 ```
 
@@ -256,13 +256,20 @@ any of the nine script-split languages in `docs/i18n/script-decisions.md`. If yo
 
 1. **List what actually differs.** For `en-GB`: spelling (`colour`, `favourite`, `organise`), terminology (macOS calls
    the Trash the "Bin" in the UK), and date/measure phrasing that isn't already handled by the formatter layer. Evidence
-   first, from the same reference pile as any term decision: if you can't source it, it isn't a difference.
+   first, from the same reference pile as any term decision: if you can't source it, it isn't a difference. Legal and
+   licensing copy needs a different source than the `.strings` catalogs: `docs/i18n/reference-pile/how-to-mine.md` §
+   Legal register.
 2. **Write only those keys**, in the area files they belong to, following the layout and `@key` rules in
    `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 3. **Stamp `@key.sourceHash` from the value you override**, which is the base language's value (`pt` for `pt-PT`), not
    the English one. That's what makes a later copy edit in the base mark your fork stale.
 4. **Run the same checks** as step 5 above. Coverage is the honest signal here in reverse: it lists every key that
    matches what it overrides, meaning it forks nothing and should be deleted.
+
+**Write the overlay's style guide as you go**, at `docs/i18n/<tag>/`. For an overlay it's a record of WHAT FORKS AND
+WHY, not tone or formality, and it must also list the forks you considered and deliberately SKIPPED with their evidence,
+or the next contributor re-litigates them. `docs/i18n/en-GB/style.md` is the worked example, and
+`docs/i18n/en-AU/style.md` shows a second overlay pointing at a sibling instead of restating it.
 
 Don't record a `sameAsSourceJustification` on an overlay key. `gen-locale-skeleton.ts` refuses an overlay tag outright,
 since it mirrors the entire `en` catalog, and `sync-locale-keys.ts` skips overlays for the same reason: a new English

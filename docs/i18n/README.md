@@ -30,9 +30,13 @@ across batches: `translation-learnings.md`.
 ## Current language guides
 
 One per language (BCP-47 base tag), plus one per SCRIPT variant that ships its own catalog: a different script is a full
-translation, never an overlay, so it needs its own terminology and its own guide (`zh-Hant` alongside `zh`). A regional
-overlay (`en-GB`, `pt-PT`) does NOT get one; it forks a handful of keys against its base's guide. Each may carry a
-"Decisions to confirm with David" section, a "Decision points" section, and a sourced glossary.
+translation, never an overlay, so it needs its own terminology and its own guide (`zh-Hant` alongside `zh`). Each may
+carry a "Decisions to confirm with David" section, a "Decision points" section, and a sourced glossary.
+
+A regional overlay (`en-GB`, `en-AU`, `pt-PT`) gets one too, but a different kind: it forks only a handful of keys, so
+its guide is about WHAT FORKS AND WHY, not tone or formality. It records the rulings behind each fork, the forks it
+considered and deliberately skipped, and the evidence for both, so nobody re-litigates them. `en-GB/style.md` is the
+worked example; `en-AU/style.md` shows how a second overlay points at a sibling instead of restating it.
 
 - [`ab`](ab/style.md)
 - [`af`](af/style.md)
@@ -61,6 +65,8 @@ overlay (`en-GB`, `pt-PT`) does NOT get one; it forks a handful of keys against 
 - [`dz`](dz/style.md)
 - [`el`](el/style.md)
 - [`en`](en/style.md)
+- [`en-AU`](en-AU/style.md)
+- [`en-GB`](en-GB/style.md)
 - [`eo`](eo/style.md)
 - [`es`](es/style.md)
 - [`et`](et/style.md)
