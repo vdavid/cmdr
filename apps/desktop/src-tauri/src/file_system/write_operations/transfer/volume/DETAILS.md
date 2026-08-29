@@ -39,9 +39,16 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   it owns), `merge_dir_vs_dir_tests.rs` (the "always merge, never prompt" contract and its boundary, the type
   mismatches and fresh levels that are NOT dir-vs-dir merges), and `merge_dispatch_mutex_tests.rs` (the
   conflict-dispatch mutex across concurrent and nested merges). A new merge test adds itself to the matching contract
-  rather than growing one file. `rename_merge_tests.rs` drives `LocalPosixVolume` over a tempdir because
-  `InMemoryVolume` models neither real subtree-rename nor empty-only-delete semantics, plus a `CaseInsensitiveVolume`
-  double for the case-fold cases.
+  rather than growing one file.
+- **The same-volume rename-merge suite is six files split by subject**, all declared from `mod.rs` and sharing the
+  fixtures in `rename_merge_test_support.rs` (which also holds the reason the whole family runs on `LocalPosixVolume`
+  over a tempdir: `InMemoryVolume` models neither real subtree-rename nor empty-only-delete semantics).
+  `rename_merge_tests.rs` holds the merge semantics (prompts, file policy, source-dir cleanup, the dest-inside-source
+  guard, symlinks, and why a merged folder isn't reversible); the other five each carry the backend or rig their family
+  needs: `rename_merge_cancel_tests.rs` (a volume that cancels on the first child rename),
+  `rename_merge_case_fold_tests.rs` (a `CaseInsensitiveVolume` for the late-detected collision),
+  `rename_merge_walk_tests.rs` (a counting volume for the no-subtree-walk perf pin), `rename_merge_stat_tests.rs` (a
+  stat that refuses to answer), and `rename_merge_mtp_tests.rs` (a virtual MTP device).
 - **Naming a destination is `naming.rs`, not `conflict.rs`.** `find_unique_volume_name` (plus `resolve_local_path`, the
   root-anchoring its `O_EXCL` reservation needs) walks the shared `unique_name::NameCandidates` and owns only HOW a pick
   is held on a volume; `conflict.rs` decides POLICY and asks it for a name. Its tests are `naming_tests.rs`.

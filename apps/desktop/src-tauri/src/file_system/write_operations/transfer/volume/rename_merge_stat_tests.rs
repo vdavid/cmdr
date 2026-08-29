@@ -9,39 +9,20 @@
 //!
 //! `InMemoryVolume::set_stat_failing` can't drive these: the rename-merge needs
 //! real POSIX `rename`-moves-a-subtree and empty-only `delete`, which is why
-//! this family runs on `LocalPosixVolume` behind a wrapper.
+//! this family runs on `LocalPosixVolume` behind a wrapper
+//! (`rename_merge_test_support.rs`).
 
 use super::move_same::move_within_same_volume_with_progress;
+use super::rename_merge_test_support::{exists, make_state, read, write_file};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
-use crate::file_system::write_operations::state::WriteOperationState;
 use crate::file_system::write_operations::types::{ConflictResolution, VolumeCopyConfig, WriteOperationError};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Duration;
 use tempfile::TempDir;
-
-fn make_state() -> Arc<WriteOperationState> {
-    Arc::new(WriteOperationState::new(Duration::from_millis(0)))
-}
-
-/// Writes a file at a volume-relative path, creating parents on disk.
-fn write_file(root: &Path, rel: &str, content: &[u8]) {
-    let abs = root.join(rel);
-    std::fs::create_dir_all(abs.parent().expect("path has a parent")).expect("create parents");
-    std::fs::write(abs, content).expect("write file");
-}
-
-fn read(root: &Path, rel: &str) -> Vec<u8> {
-    std::fs::read(root.join(rel)).expect("read file")
-}
-
-fn exists(root: &Path, rel: &str) -> bool {
-    root.join(rel).exists()
-}
 
 /// Wraps a `LocalPosixVolume` and makes `is_directory` REFUSE TO ANSWER for one
 /// path (typed `IoError`), while everything else works and the path keeps

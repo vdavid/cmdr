@@ -90,9 +90,19 @@ pub(crate) use faulty_volume::{FaultyOp, FaultyVolume};
 #[cfg(test)]
 mod self_collision_tests;
 
+/// Fixtures every same-volume rename-merge suite starts from.
+#[cfg(test)]
+mod rename_merge_test_support;
+
+#[cfg(test)]
+mod rename_merge_cancel_tests;
+#[cfg(test)]
+mod rename_merge_case_fold_tests;
 #[cfg(test)]
 mod rename_merge_mtp_tests;
 #[cfg(test)]
 mod rename_merge_stat_tests;
 #[cfg(test)]
 mod rename_merge_tests;
+#[cfg(test)]
+mod rename_merge_walk_tests;
