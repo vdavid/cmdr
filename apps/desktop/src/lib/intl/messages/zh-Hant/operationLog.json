@@ -31,6 +31,10 @@
   "@operationLog.dialog.loadMore": {
     "sourceHash": "baef697"
   },
+  "operationLog.dialog.rollBack": "復原",
+  "@operationLog.dialog.rollBack": {
+    "sourceHash": "931f703"
+  },
   "operationLog.dialog.close": "關閉",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -130,6 +134,54 @@
   "operationLog.rollback.partiallyRolledBack": "已部分復原",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.refusalAlreadyRollingBack": "這一項已經在復原了。可以在「操作佇列」裡看它的進度。",
+  "@operationLog.rollback.refusalAlreadyRollingBack": {
+    "sourceHash": "282a49a"
+  },
+  "operationLog.rollback.refusalAlreadyRolledBack": "這一項已經回到原本的樣子了。",
+  "@operationLog.rollback.refusalAlreadyRolledBack": {
+    "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalOverwrote": "這項操作取代了原本就在那裡的檔案。Cmdr 不會保留被取代檔案的副本，所以原本的檔案回不來了。",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "永久刪除不會留下任何可以放回去的東西。",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "這個封存檔取代了原本同名的舊檔案。Cmdr 不會保留被取代檔案的副本，所以舊的那個回不來了。",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr 還不能復原在封存檔裡面做的更動。",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdr 對這項操作的記錄並不完整，復原有可能動到不該動的檔案。",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "這次移動把資料夾合併到原本就在那裡的同名資料夾裡了。Cmdr 分不出哪些檔案是跟著移過來的、哪些原本就在裡面，所以沒有安全的復原方式。",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "這次移動遇到已經被佔走的名稱，問過你要怎麼處理。那個回答已經是結果的一部分了，所以沒有單一的復原方式。",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
+  },
+  "operationLog.rollback.refusalVolumeUnavailable": "請連接這項操作用過的磁碟機，然後再試一次。",
+  "@operationLog.rollback.refusalVolumeUnavailable": {
+    "sourceHash": "935d109"
+  },
+  "operationLog.rollback.refusalUnknown": "這項操作已經不在你的歷史記錄裡了。",
+  "@operationLog.rollback.refusalUnknown": {
+    "sourceHash": "f94c33d"
+  },
+  "operationLog.rollback.refusalUnexpected": "Cmdr 無法開始復原。請稍後再試一次。",
+  "@operationLog.rollback.refusalUnexpected": {
+    "sourceHash": "bef54f1"
   },
   "operationLog.outcome.done": "已完成",
   "@operationLog.outcome.done": {

@@ -403,6 +403,18 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {正在把檔案放回原處} other {正在把 {countText} 個檔案放回原處}}…",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "38c2022"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {正在刪除這項操作建立的東西} other {正在刪除這項操作建立的 {countText} 個檔案}}…",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "bce7510"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {正在把原本的名稱改回去} other {正在把 {countText} 個原本的名稱改回去}}…",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "e3f6bc3"
+  },
   "fileOperations.transferProgress.titleCancelling": "正在取消…",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"
@@ -654,6 +666,22 @@
   "fileOperations.rollbackConfirm.body": "這會刪除這項操作到目前為止寫入的每一個檔案。被它取代掉的檔案回不來了。",
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "這會刪除這項操作建立的檔案和資料夾。Cmdr 會略過沒有把握的部分，所以可能會留下一些。",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "88584f4"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "這會把檔案移回它們原本的位置。Cmdr 會略過沒有把握的部分，所以可能有些會留在現在的地方。",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "7d55114"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "這會把檔案原本的名稱改回去。Cmdr 會略過沒有把握的部分，所以可能有些會保留現在的名稱。",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "819690f"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "維持原樣",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
   },
   "fileOperations.rollbackConfirm.keep": "保留它們",
   "@fileOperations.rollbackConfirm.keep": {

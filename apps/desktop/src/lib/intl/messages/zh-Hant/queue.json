@@ -19,6 +19,18 @@
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
+  "queue.row.reversalMovingBack": "正在把檔案放回原處",
+  "@queue.row.reversalMovingBack": {
+    "sourceHash": "19ac5eb"
+  },
+  "queue.row.reversalDeleting": "正在刪除這項操作建立的東西",
+  "@queue.row.reversalDeleting": {
+    "sourceHash": "f88d220"
+  },
+  "queue.row.reversalRenamingBack": "正在把原本的名稱改回去",
+  "@queue.row.reversalRenamingBack": {
+    "sourceHash": "3e00fd5"
+  },
   "queue.row.status": "{status, select, queued {等待中} running {進行中} paused {已暫停} done {已完成} cancelled {已取消} failed {無法完成} other {進行中}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"
