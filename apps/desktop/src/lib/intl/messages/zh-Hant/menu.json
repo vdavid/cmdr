@@ -231,7 +231,7 @@
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
   },
-  "menu.view.commandPalette": "命令選擇區…",
+  "menu.view.commandPalette": "指令面板…",
   "@menu.view.commandPalette": {
     "sourceHash": "6b1c93d"
   },

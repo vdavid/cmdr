@@ -1,721 +1,722 @@
 {
-  "commands.appQuit.label": "Quit Cmdr",
+  "commands.appQuit.label": "結束 Cmdr",
   "@commands.appQuit.label": {
     "sourceHash": "b3455b4"
   },
-  "commands.appHide.label": "Hide Cmdr",
+  "commands.appHide.label": "隱藏 Cmdr",
   "@commands.appHide.label": {
     "sourceHash": "8f86f89"
   },
-  "commands.appHideOthers.label": "Hide others",
+  "commands.appHideOthers.label": "隱藏其他",
   "@commands.appHideOthers.label": {
     "sourceHash": "74376e4"
   },
-  "commands.appShowAll.label": "Show all",
+  "commands.appShowAll.label": "顯示全部",
   "@commands.appShowAll.label": {
     "sourceHash": "2150d8d"
   },
-  "commands.appAbout.label": "About Cmdr",
+  "commands.appAbout.label": "關於 Cmdr",
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "Acknowledgements…",
+  "commands.appAcknowledgements.label": "致謝…",
   "@commands.appAcknowledgements.label": {
     "sourceHash": "7d0e506"
   },
-  "commands.appLicenseKey.seeDetails.label": "See license details",
+  "commands.appLicenseKey.seeDetails.label": "查看授權詳細資訊",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "Enter license key",
+  "commands.appLicenseKey.enterKey.label": "輸入授權金鑰",
   "@commands.appLicenseKey.enterKey.label": {
     "sourceHash": "357d05e"
   },
-  "commands.appCommandPalette.label": "Open command palette",
+  "commands.appCommandPalette.label": "開啟指令面板",
   "@commands.appCommandPalette.label": {
     "sourceHash": "c022b19"
   },
-  "commands.appSettings.label": "Open settings",
+  "commands.appSettings.label": "開啟設定",
   "@commands.appSettings.label": {
     "sourceHash": "ca381c1"
   },
-  "commands.appCheckForUpdates.label": "Check for updates…",
+  "commands.appCheckForUpdates.label": "檢查更新…",
   "@commands.appCheckForUpdates.label": {
     "sourceHash": "52d6f7d"
   },
-  "commands.appCheckForUpdates.description": "Check whether a newer version of Cmdr is available, and download it if so",
+  "commands.appCheckForUpdates.description": "檢查有沒有較新版本的 Cmdr，有的話就下載",
   "@commands.appCheckForUpdates.description": {
     "sourceHash": "c53dab0"
   },
-  "commands.cmdrOpenOnboarding.label": "Onboarding…",
+  "commands.cmdrOpenOnboarding.label": "入門引導…",
   "@commands.cmdrOpenOnboarding.label": {
     "sourceHash": "c4cc4aa"
   },
-  "commands.cmdrOpenOnboarding.description": "Reopen the onboarding wizard to review or change first-launch setup options",
+  "commands.cmdrOpenOnboarding.description": "重新開啟入門引導精靈，回顧或更改首次啟動時的設定選項",
   "@commands.cmdrOpenOnboarding.description": {
     "sourceHash": "a45c542"
   },
-  "commands.helpOpenShortcuts.label": "Keyboard shortcuts",
+  "commands.helpOpenShortcuts.label": "鍵盤快速鍵",
   "@commands.helpOpenShortcuts.label": {
     "sourceHash": "e9bef0b"
   },
-  "commands.helpOpenShortcuts.description": "Open a read-only window listing every keyboard shortcut, live-synced with your customizations",
+  "commands.helpOpenShortcuts.description": "開啟一個唯讀視窗，列出所有鍵盤快速鍵，並與你的自訂設定即時同步",
   "@commands.helpOpenShortcuts.description": {
     "sourceHash": "a9a1e0d"
   },
-  "commands.helpSendErrorReport.label": "Send error report…",
+  "commands.helpSendErrorReport.label": "傳送錯誤報告…",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
-  "commands.helpSendErrorReport.description": "Send Cmdr logs to the team to help fix something that went wrong",
+  "commands.helpSendErrorReport.description": "把 Cmdr 的記錄檔傳送給團隊，幫忙解決出狀況的地方",
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
-  "commands.queueShow.label": "Operation queue",
+  "commands.queueShow.label": "操作佇列",
   "@commands.queueShow.label": {
     "sourceHash": "fa91417"
   },
-  "commands.queueShow.description": "Open a window listing every running and waiting operation, where you can pause, resume, or cancel them",
+  "commands.queueShow.description": "開啟一個視窗，列出每項進行中和等待中的操作，你可以在裡面暫停、繼續或取消它們",
   "@commands.queueShow.description": {
     "sourceHash": "37b616a"
   },
-  "commands.helpWhatsNew.label": "What''s new",
+  "commands.helpWhatsNew.label": "新功能",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "aa0c54f"
   },
-  "commands.helpWhatsNew.description": "See what changed in the latest releases of Cmdr",
+  "commands.helpWhatsNew.description": "看看 Cmdr 最新幾個版本有哪些變化",
   "@commands.helpWhatsNew.description": {
     "sourceHash": "f8ad411"
   },
-  "commands.logOperationLog.label": "Operation log",
+  "commands.logOperationLog.label": "操作記錄",
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "See a history of your file operations, and roll them back",
+  "commands.logOperationLog.description": "查看你的檔案操作記錄，並把它們復原",
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
-    "sourceHash": "aafb1ce"
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name of the built-in AI panel, built on the brand word 「Cmdr」 which is do-not-translate; Chinese doesn't inflect, so the name stays bare. Kept verbatim to match the `zh` catalog and `menu.view.askCmdr`, which carries the same justification."
   },
-  "commands.askCmdrToggle.description": "Chat with an AI about your files, drives, and history",
+  "commands.askCmdrToggle.description": "和 AI 聊聊你的檔案、磁碟機和記錄",
   "@commands.askCmdrToggle.description": {
     "sourceHash": "c520468"
   },
-  "commands.feedbackSend.label": "Send feedback",
+  "commands.feedbackSend.label": "傳送意見反應",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Tell the maker of Cmdr what you think: ideas, wishes, anything",
+  "commands.feedbackSend.description": "告訴 Cmdr 的作者你的想法：點子、願望，什麼都行",
   "@commands.feedbackSend.description": {
     "sourceHash": "89d08a8"
   },
-  "commands.searchOpen.label": "Search files",
+  "commands.searchOpen.label": "搜尋檔案",
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Go to path…",
+  "commands.navGoToPath.label": "前往路徑…",
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"
   },
-  "commands.navGoToPath.description": "Jump the focused pane to a typed, pasted, or recent path.",
+  "commands.navGoToPath.description": "讓焦點窗格跳到你輸入、貼上或最近用過的路徑。",
   "@commands.navGoToPath.description": {
     "sourceHash": "fc6a00c"
   },
-  "commands.favoritesAdd.label": "Add to favorites",
+  "commands.favoritesAdd.label": "加入喜好項目",
   "@commands.favoritesAdd.label": {
     "sourceHash": "7f3c078"
   },
-  "commands.favoritesAdd.description": "Add the focused pane''s current folder to the switcher''s Favorites.",
+  "commands.favoritesAdd.description": "把焦點窗格目前的資料夾加入切換器的「喜好項目」。",
   "@commands.favoritesAdd.description": {
     "sourceHash": "84dcbf8"
   },
-  "commands.downloadsGoToLatest.label": "Go to latest download",
+  "commands.downloadsGoToLatest.label": "前往最新下載項目",
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "Open ~/Downloads and select the most recent file.",
+  "commands.downloadsGoToLatest.description": "開啟 ~/Downloads 並選取最新的檔案。",
   "@commands.downloadsGoToLatest.description": {
     "sourceHash": "42a26a2"
   },
-  "commands.viewShowHidden.label": "Toggle hidden files",
+  "commands.viewShowHidden.label": "切換隱藏檔案",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
   },
-  "commands.viewBriefMode.label": "Switch to Brief view",
+  "commands.viewBriefMode.label": "切換到簡潔顯示方式",
   "@commands.viewBriefMode.label": {
     "sourceHash": "bcf6636"
   },
-  "commands.viewFullMode.label": "Switch to Full view",
+  "commands.viewFullMode.label": "切換到完整顯示方式",
   "@commands.viewFullMode.label": {
     "sourceHash": "b44150e"
   },
-  "commands.viewSetMode.label": "Set pane view mode",
+  "commands.viewSetMode.label": "設定窗格顯示方式",
   "@commands.viewSetMode.label": {
     "sourceHash": "1e050a6"
   },
-  "commands.viewZoomSet75.label": "Zoom to 75%",
+  "commands.viewZoomSet75.label": "縮放至 75%",
   "@commands.viewZoomSet75.label": {
     "sourceHash": "70ac915"
   },
-  "commands.viewZoomSet100.label": "Zoom to 100%",
+  "commands.viewZoomSet100.label": "縮放至 100%",
   "@commands.viewZoomSet100.label": {
     "sourceHash": "c23bdb4"
   },
-  "commands.viewZoomSet125.label": "Zoom to 125%",
+  "commands.viewZoomSet125.label": "縮放至 125%",
   "@commands.viewZoomSet125.label": {
     "sourceHash": "9191980"
   },
-  "commands.viewZoomSet150.label": "Zoom to 150%",
+  "commands.viewZoomSet150.label": "縮放至 150%",
   "@commands.viewZoomSet150.label": {
     "sourceHash": "2e247da"
   },
-  "commands.viewZoomIn.label": "Zoom in",
+  "commands.viewZoomIn.label": "放大",
   "@commands.viewZoomIn.label": {
     "sourceHash": "0e47f09"
   },
-  "commands.viewZoomOut.label": "Zoom out",
+  "commands.viewZoomOut.label": "縮小",
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.sortByName.label": "Sort by name",
+  "commands.sortByName.label": "依名稱排序",
   "@commands.sortByName.label": {
     "sourceHash": "588a082"
   },
-  "commands.sortByExtension.label": "Sort by extension",
+  "commands.sortByExtension.label": "依副檔名排序",
   "@commands.sortByExtension.label": {
     "sourceHash": "bb899db"
   },
-  "commands.sortByModified.label": "Sort by date modified",
+  "commands.sortByModified.label": "依修改日期排序",
   "@commands.sortByModified.label": {
     "sourceHash": "d9349cb"
   },
-  "commands.sortBySize.label": "Sort by size",
+  "commands.sortBySize.label": "依大小排序",
   "@commands.sortBySize.label": {
     "sourceHash": "b5fa7af"
   },
-  "commands.sortByCreated.label": "Sort by date created",
+  "commands.sortByCreated.label": "依製作日期排序",
   "@commands.sortByCreated.label": {
     "sourceHash": "9bdaf4e"
   },
-  "commands.sortAscending.label": "Sort ascending",
+  "commands.sortAscending.label": "遞增排序",
   "@commands.sortAscending.label": {
     "sourceHash": "ec3c9c7"
   },
-  "commands.sortDescending.label": "Sort descending",
+  "commands.sortDescending.label": "遞減排序",
   "@commands.sortDescending.label": {
     "sourceHash": "8993b78"
   },
-  "commands.sortToggleOrder.label": "Toggle sort order",
+  "commands.sortToggleOrder.label": "切換排序方向",
   "@commands.sortToggleOrder.label": {
     "sourceHash": "e0eb85f"
   },
-  "commands.sortSet.label": "Set pane sort",
+  "commands.sortSet.label": "設定窗格排序",
   "@commands.sortSet.label": {
     "sourceHash": "64232ef"
   },
-  "commands.paneSwitch.label": "Switch pane",
+  "commands.paneSwitch.label": "切換窗格",
   "@commands.paneSwitch.label": {
     "sourceHash": "377471f"
   },
-  "commands.paneSwap.label": "Swap panes",
+  "commands.paneSwap.label": "交換窗格",
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
   },
-  "commands.paneLeftVolumeChooser.label": "Open left volume chooser",
+  "commands.paneLeftVolumeChooser.label": "開啟左側卷宗選擇器",
   "@commands.paneLeftVolumeChooser.label": {
     "sourceHash": "8682140"
   },
-  "commands.paneRightVolumeChooser.label": "Open right volume chooser",
+  "commands.paneRightVolumeChooser.label": "開啟右側卷宗選擇器",
   "@commands.paneRightVolumeChooser.label": {
     "sourceHash": "7a0268f"
   },
-  "commands.paneCopyPathLeftToRight.label": "Copy path from left to right pane",
+  "commands.paneCopyPathLeftToRight.label": "把路徑從左窗格複製到右窗格",
   "@commands.paneCopyPathLeftToRight.label": {
     "sourceHash": "d1376f6"
   },
-  "commands.paneCopyPathLeftToRight.description": "Open the left pane’s location on the right. When the left pane is focused and the cursor is on a folder, that folder opens on the right instead.",
+  "commands.paneCopyPathLeftToRight.description": "在右側開啟左窗格的位置。左窗格是焦點且游標停在某個資料夾上時，改為在右側開啟那個資料夾。",
   "@commands.paneCopyPathLeftToRight.description": {
     "sourceHash": "07ac6a1"
   },
-  "commands.paneCopyPathRightToLeft.label": "Copy path from right to left pane",
+  "commands.paneCopyPathRightToLeft.label": "把路徑從右窗格複製到左窗格",
   "@commands.paneCopyPathRightToLeft.label": {
     "sourceHash": "266a30d"
   },
-  "commands.paneCopyPathRightToLeft.description": "Open the right pane’s location on the left. When the right pane is focused and the cursor is on a folder, that folder opens on the left instead.",
+  "commands.paneCopyPathRightToLeft.description": "在左側開啟右窗格的位置。右窗格是焦點且游標停在某個資料夾上時，改為在左側開啟那個資料夾。",
   "@commands.paneCopyPathRightToLeft.description": {
     "sourceHash": "95c566f"
   },
-  "commands.paneRefresh.label": "Refresh pane",
+  "commands.paneRefresh.label": "重新整理窗格",
   "@commands.paneRefresh.label": {
     "sourceHash": "42ce075"
   },
-  "commands.tabNew.label": "New tab",
+  "commands.tabNew.label": "新增分頁",
   "@commands.tabNew.label": {
     "sourceHash": "1e08fda"
   },
-  "commands.tabClose.label": "Close tab",
+  "commands.tabClose.label": "關閉分頁",
   "@commands.tabClose.label": {
     "sourceHash": "50a3f95"
   },
-  "commands.tabReopen.label": "Reopen closed tab",
+  "commands.tabReopen.label": "重新開啟已關閉的分頁",
   "@commands.tabReopen.label": {
     "sourceHash": "5ca5397"
   },
-  "commands.tabNext.label": "Next tab",
+  "commands.tabNext.label": "下一個分頁",
   "@commands.tabNext.label": {
     "sourceHash": "1ef9522"
   },
-  "commands.tabPrev.label": "Previous tab",
+  "commands.tabPrev.label": "上一個分頁",
   "@commands.tabPrev.label": {
     "sourceHash": "c88d5e7"
   },
-  "commands.tabTogglePin.label": "Toggle pin tab",
+  "commands.tabTogglePin.label": "切換釘選分頁",
   "@commands.tabTogglePin.label": {
     "sourceHash": "3fdfcd1"
   },
-  "commands.tabCloseOthers.label": "Close other tabs",
+  "commands.tabCloseOthers.label": "關閉其他分頁",
   "@commands.tabCloseOthers.label": {
     "sourceHash": "0ddc2c5"
   },
-  "commands.tabMcpAction.label": "Pane tab action",
+  "commands.tabMcpAction.label": "窗格分頁操作",
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
-  "commands.navUp.label": "Select previous file",
+  "commands.navUp.label": "選取上一個檔案",
   "@commands.navUp.label": {
     "sourceHash": "40dca00"
   },
-  "commands.navDown.label": "Select next file",
+  "commands.navDown.label": "選取下一個檔案",
   "@commands.navDown.label": {
     "sourceHash": "61e81ee"
   },
-  "commands.navOpen.label": "Open file or folder",
+  "commands.navOpen.label": "開啟檔案或資料夾",
   "@commands.navOpen.label": {
     "sourceHash": "ef8d6a5"
   },
-  "commands.navParent.label": "Go to parent folder",
+  "commands.navParent.label": "前往上層資料夾",
   "@commands.navParent.label": {
     "sourceHash": "7d4c500"
   },
-  "commands.navHome.label": "Go to first file",
+  "commands.navHome.label": "前往第一個檔案",
   "@commands.navHome.label": {
     "sourceHash": "5750de6"
   },
-  "commands.navEnd.label": "Go to last file",
+  "commands.navEnd.label": "前往最後一個檔案",
   "@commands.navEnd.label": {
     "sourceHash": "f39205a"
   },
-  "commands.navPageUp.label": "Page up",
+  "commands.navPageUp.label": "向上捲動一頁",
   "@commands.navPageUp.label": {
     "sourceHash": "43f41b5"
   },
-  "commands.navPageDown.label": "Page down",
+  "commands.navPageDown.label": "向下捲動一頁",
   "@commands.navPageDown.label": {
     "sourceHash": "72a825f"
   },
-  "commands.navBack.label": "Go back",
+  "commands.navBack.label": "返回",
   "@commands.navBack.label": {
     "sourceHash": "6aadac2"
   },
-  "commands.navForward.label": "Go forward",
+  "commands.navForward.label": "往前",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
   },
-  "commands.navGoHome.label": "Go to home folder",
+  "commands.navGoHome.label": "前往個人專屬資料夾",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
-  "commands.errorPaneToggleTechnicalDetails.label": "Show technical details",
+  "commands.errorPaneToggleTechnicalDetails.label": "顯示技術詳細資訊",
   "@commands.errorPaneToggleTechnicalDetails.label": {
     "sourceHash": "bde0de8"
   },
-  "commands.navOpenUnderCursor.label": "Open item under cursor",
+  "commands.navOpenUnderCursor.label": "開啟游標所在的項目",
   "@commands.navOpenUnderCursor.label": {
     "sourceHash": "6b54df9"
   },
-  "commands.cursorMoveTo.label": "Move pane cursor",
+  "commands.cursorMoveTo.label": "移動窗格游標",
   "@commands.cursorMoveTo.label": {
     "sourceHash": "4c196ef"
   },
-  "commands.cursorScrollTo.label": "Scroll pane to index",
+  "commands.cursorScrollTo.label": "將窗格捲動到指定的列",
   "@commands.cursorScrollTo.label": {
     "sourceHash": "98ca70c"
   },
-  "commands.navLeft.label": "Move to left column",
+  "commands.navLeft.label": "移到左邊的直欄",
   "@commands.navLeft.label": {
     "sourceHash": "db46f08"
   },
-  "commands.navRight.label": "Move to right column",
+  "commands.navRight.label": "移到右邊的直欄",
   "@commands.navRight.label": {
     "sourceHash": "21b59f0"
   },
-  "commands.navFirstInFull.label": "Jump to first file",
+  "commands.navFirstInFull.label": "跳到第一個檔案",
   "@commands.navFirstInFull.label": {
     "sourceHash": "f0ea135"
   },
-  "commands.navLastInFull.label": "Jump to last file",
+  "commands.navLastInFull.label": "跳到最後一個檔案",
   "@commands.navLastInFull.label": {
     "sourceHash": "e6d6a52"
   },
-  "commands.fileRename.label": "Rename",
+  "commands.fileRename.label": "重新命名",
   "@commands.fileRename.label": {
     "sourceHash": "3064d79"
   },
-  "commands.fileView.label": "View",
+  "commands.fileView.label": "檢視",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"
   },
-  "commands.fileEdit.label": "Edit in default editor",
+  "commands.fileEdit.label": "用預設編輯器編輯",
   "@commands.fileEdit.label": {
     "sourceHash": "badc768"
   },
-  "commands.fileCopy.label": "Copy",
+  "commands.fileCopy.label": "複製",
   "@commands.fileCopy.label": {
     "sourceHash": "e21f935"
   },
-  "commands.fileMove.label": "Move",
+  "commands.fileMove.label": "移動",
   "@commands.fileMove.label": {
     "sourceHash": "6ecc3df"
   },
-  "commands.fileDuplicate.label": "Duplicate",
+  "commands.fileDuplicate.label": "製作副本",
   "@commands.fileDuplicate.label": {
     "sourceHash": "02cdaab"
   },
-  "commands.fileDuplicate.description": "Make a copy of the selected files in the same folder",
+  "commands.fileDuplicate.description": "在同一個資料夾裡為選取的檔案做一份副本",
   "@commands.fileDuplicate.description": {
     "sourceHash": "2c038a2"
   },
-  "commands.fileCompress.label": "Compress",
+  "commands.fileCompress.label": "壓縮",
   "@commands.fileCompress.label": {
     "sourceHash": "033fc04"
   },
-  "commands.editCopy.label": "Copy to clipboard",
+  "commands.editCopy.label": "複製到剪貼板",
   "@commands.editCopy.label": {
     "sourceHash": "b749e20"
   },
-  "commands.editCopy.description": "Copy selected files to clipboard for pasting",
+  "commands.editCopy.description": "把選取的檔案複製到剪貼板，以便貼上",
   "@commands.editCopy.description": {
     "sourceHash": "5c769a7"
   },
-  "commands.editCut.label": "Cut to clipboard",
+  "commands.editCut.label": "剪下到剪貼板",
   "@commands.editCut.label": {
     "sourceHash": "a954b4a"
   },
-  "commands.editCut.description": "Cut selected files (paste will move them)",
+  "commands.editCut.description": "剪下選取的檔案（貼上時會移動它們）",
   "@commands.editCut.description": {
     "sourceHash": "5bc3870"
   },
-  "commands.editPaste.label": "Paste",
+  "commands.editPaste.label": "貼上",
   "@commands.editPaste.label": {
     "sourceHash": "f3380f7"
   },
-  "commands.editPaste.description": "Paste files from clipboard into current folder",
+  "commands.editPaste.description": "把剪貼板裡的檔案貼到目前的資料夾",
   "@commands.editPaste.description": {
     "sourceHash": "32545d7"
   },
-  "commands.editPasteAsMove.label": "Move here",
+  "commands.editPasteAsMove.label": "移動至此",
   "@commands.editPasteAsMove.label": {
     "sourceHash": "56f1247"
   },
-  "commands.editPasteAsMove.description": "Paste files from clipboard as a move",
+  "commands.editPasteAsMove.description": "把剪貼板裡的檔案以移動的方式貼上",
   "@commands.editPasteAsMove.description": {
     "sourceHash": "961316d"
   },
-  "commands.fileNewFolder.label": "New folder",
+  "commands.fileNewFolder.label": "新增資料夾",
   "@commands.fileNewFolder.label": {
     "sourceHash": "cf28f49"
   },
-  "commands.fileNewFile.label": "Create new file",
+  "commands.fileNewFile.label": "新增檔案",
   "@commands.fileNewFile.label": {
     "sourceHash": "6e70b95"
   },
-  "commands.fileDelete.label": "Delete",
+  "commands.fileDelete.label": "刪除",
   "@commands.fileDelete.label": {
     "sourceHash": "e2d0a54"
   },
-  "commands.fileDeletePermanently.label": "Delete permanently",
+  "commands.fileDeletePermanently.label": "永久刪除",
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "Go to trash",
+  "commands.fileGoToTrash.label": "前往垃圾桶",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Open the trash of the drive you''re browsing",
+  "commands.fileGoToTrash.description": "開啟你正在瀏覽的磁碟機上的垃圾桶",
   "@commands.fileGoToTrash.description": {
     "sourceHash": "45df2c4"
   },
-  "commands.dialogConfirm.label": "Confirm open dialog",
+  "commands.dialogConfirm.label": "確認目前開啟的對話方塊",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"
   },
-  "commands.fileShowInFinder.mac.label": "Show in Finder",
+  "commands.fileShowInFinder.mac.label": "在 Finder 中顯示",
   "@commands.fileShowInFinder.mac.label": {
     "sourceHash": "c2a9c77"
   },
-  "commands.fileShowInFinder.other.label": "Show in file manager",
+  "commands.fileShowInFinder.other.label": "在檔案管理程式中顯示",
   "@commands.fileShowInFinder.other.label": {
     "sourceHash": "3ca4dad"
   },
-  "commands.fileCopyPath.label": "Copy path to clipboard",
+  "commands.fileCopyPath.label": "將路徑複製到剪貼板",
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
   },
-  "commands.fileCopyCurrentDirectoryPath.label": "Copy current directory path",
+  "commands.fileCopyCurrentDirectoryPath.label": "複製目前的目錄路徑",
   "@commands.fileCopyCurrentDirectoryPath.label": {
     "sourceHash": "ae360d1"
   },
-  "commands.fileCopyFilename.label": "Copy filename",
+  "commands.fileCopyFilename.label": "複製檔名",
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.mac.label": "Get info",
+  "commands.fileGetInfo.mac.label": "取得資訊",
   "@commands.fileGetInfo.mac.label": {
     "sourceHash": "91c64ca"
   },
-  "commands.fileGetInfo.other.label": "File properties",
+  "commands.fileGetInfo.other.label": "檔案屬性",
   "@commands.fileGetInfo.other.label": {
     "sourceHash": "5d9ebf2"
   },
-  "commands.fileQuickLook.mac.label": "Quick look",
+  "commands.fileQuickLook.mac.label": "快速查看",
   "@commands.fileQuickLook.mac.label": {
     "sourceHash": "f5616ce"
   },
-  "commands.fileQuickLook.other.label": "Preview",
+  "commands.fileQuickLook.other.label": "預覽",
   "@commands.fileQuickLook.other.label": {
     "sourceHash": "324b134"
   },
-  "commands.fileContextMenu.label": "Open context menu",
+  "commands.fileContextMenu.label": "開啟右鍵選單",
   "@commands.fileContextMenu.label": {
     "sourceHash": "c07efaf"
   },
-  "commands.fileContextMenu.description": "Opens the context menu for the file under the cursor",
+  "commands.fileContextMenu.description": "開啟游標所在檔案的右鍵選單",
   "@commands.fileContextMenu.description": {
     "sourceHash": "8fb1721"
   },
-  "commands.cloudMakeOffline.label": "Make available offline",
+  "commands.cloudMakeOffline.label": "設為離線可用",
   "@commands.cloudMakeOffline.label": {
     "sourceHash": "b75c09f"
   },
-  "commands.cloudMakeOffline.description": "Downloads a cloud-stored file so it stays available without an internet connection",
+  "commands.cloudMakeOffline.description": "下載存在雲端的檔案，讓它沒有網路也能用",
   "@commands.cloudMakeOffline.description": {
     "sourceHash": "d5cd793"
   },
-  "commands.cloudRemoveDownload.label": "Remove download",
+  "commands.cloudRemoveDownload.label": "移除下載項目",
   "@commands.cloudRemoveDownload.label": {
     "sourceHash": "5dfc369"
   },
-  "commands.cloudRemoveDownload.description": "Removes the local copy of a cloud file, leaving it available online only",
+  "commands.cloudRemoveDownload.description": "移除雲端檔案在本機的副本，只留下線上版本",
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
-  "commands.tagsToggleGrey.label": "Toggle gray tag",
+  "commands.tagsToggleGrey.label": "切換灰色標籤",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"
   },
-  "commands.tagsToggleGrey.description": "Adds or removes the gray Finder tag on the selected files",
+  "commands.tagsToggleGrey.description": "在選取的檔案上加上或移除 Finder 的灰色標籤",
   "@commands.tagsToggleGrey.description": {
     "sourceHash": "ca38860"
   },
-  "commands.tagsToggleGreen.label": "Toggle green tag",
+  "commands.tagsToggleGreen.label": "切換綠色標籤",
   "@commands.tagsToggleGreen.label": {
     "sourceHash": "397b880"
   },
-  "commands.tagsToggleGreen.description": "Adds or removes the green Finder tag on the selected files",
+  "commands.tagsToggleGreen.description": "在選取的檔案上加上或移除 Finder 的綠色標籤",
   "@commands.tagsToggleGreen.description": {
     "sourceHash": "fa8396b"
   },
-  "commands.tagsTogglePurple.label": "Toggle purple tag",
+  "commands.tagsTogglePurple.label": "切換紫色標籤",
   "@commands.tagsTogglePurple.label": {
     "sourceHash": "ee137d2"
   },
-  "commands.tagsTogglePurple.description": "Adds or removes the purple Finder tag on the selected files",
+  "commands.tagsTogglePurple.description": "在選取的檔案上加上或移除 Finder 的紫色標籤",
   "@commands.tagsTogglePurple.description": {
     "sourceHash": "c6872a8"
   },
-  "commands.tagsToggleBlue.label": "Toggle blue tag",
+  "commands.tagsToggleBlue.label": "切換藍色標籤",
   "@commands.tagsToggleBlue.label": {
     "sourceHash": "11ba925"
   },
-  "commands.tagsToggleBlue.description": "Adds or removes the blue Finder tag on the selected files",
+  "commands.tagsToggleBlue.description": "在選取的檔案上加上或移除 Finder 的藍色標籤",
   "@commands.tagsToggleBlue.description": {
     "sourceHash": "7a21c5f"
   },
-  "commands.tagsToggleYellow.label": "Toggle yellow tag",
+  "commands.tagsToggleYellow.label": "切換黃色標籤",
   "@commands.tagsToggleYellow.label": {
     "sourceHash": "2afc261"
   },
-  "commands.tagsToggleYellow.description": "Adds or removes the yellow Finder tag on the selected files",
+  "commands.tagsToggleYellow.description": "在選取的檔案上加上或移除 Finder 的黃色標籤",
   "@commands.tagsToggleYellow.description": {
     "sourceHash": "16a2608"
   },
-  "commands.tagsToggleRed.label": "Toggle red tag",
+  "commands.tagsToggleRed.label": "切換紅色標籤",
   "@commands.tagsToggleRed.label": {
     "sourceHash": "f2d314d"
   },
-  "commands.tagsToggleRed.description": "Adds or removes the red Finder tag on the selected files",
+  "commands.tagsToggleRed.description": "在選取的檔案上加上或移除 Finder 的紅色標籤",
   "@commands.tagsToggleRed.description": {
     "sourceHash": "c6e0bee"
   },
-  "commands.tagsToggleOrange.label": "Toggle orange tag",
+  "commands.tagsToggleOrange.label": "切換橙色標籤",
   "@commands.tagsToggleOrange.label": {
     "sourceHash": "d0c0702"
   },
-  "commands.tagsToggleOrange.description": "Adds or removes the orange Finder tag on the selected files",
+  "commands.tagsToggleOrange.description": "在選取的檔案上加上或移除 Finder 的橙色標籤",
   "@commands.tagsToggleOrange.description": {
     "sourceHash": "79e5c97"
   },
-  "commands.selectionToggle.label": "Toggle selection",
+  "commands.selectionToggle.label": "切換選取",
   "@commands.selectionToggle.label": {
     "sourceHash": "6cb5515"
   },
-  "commands.selectionToggleAndDown.label": "Toggle selection and move down",
+  "commands.selectionToggleAndDown.label": "切換選取並下移",
   "@commands.selectionToggleAndDown.label": {
     "sourceHash": "72ccb36"
   },
-  "commands.selectionToggleAndDown.description": "Selects or deselects the file under the cursor, then moves down (Total Commander style)",
+  "commands.selectionToggleAndDown.description": "選取或取消選取游標所在的檔案，然後往下移一列（Total Commander 風格）",
   "@commands.selectionToggleAndDown.description": {
     "sourceHash": "378bb7a"
   },
-  "commands.selectionSelectAll.label": "Select all",
+  "commands.selectionSelectAll.label": "全選",
   "@commands.selectionSelectAll.label": {
     "sourceHash": "1fc9a38"
   },
-  "commands.selectionDeselectAll.label": "Deselect all",
+  "commands.selectionDeselectAll.label": "取消全選",
   "@commands.selectionDeselectAll.label": {
     "sourceHash": "9675494"
   },
-  "commands.selectionSelectFiles.label": "Select files…",
+  "commands.selectionSelectFiles.label": "選取檔案…",
   "@commands.selectionSelectFiles.label": {
     "sourceHash": "b7f202e"
   },
-  "commands.selectionSelectFiles.description": "Opens the Select files dialog to add matching files to the selection",
+  "commands.selectionSelectFiles.description": "開啟「選取檔案」對話方塊，把符合條件的檔案加入選取範圍",
   "@commands.selectionSelectFiles.description": {
     "sourceHash": "7695f3e"
   },
-  "commands.selectionDeselectFiles.label": "Deselect files…",
+  "commands.selectionDeselectFiles.label": "取消選取檔案…",
   "@commands.selectionDeselectFiles.label": {
     "sourceHash": "6fb10d5"
   },
-  "commands.selectionDeselectFiles.description": "Opens the Deselect files dialog to remove matching files from the selection",
+  "commands.selectionDeselectFiles.description": "開啟「取消選取檔案」對話方塊，把符合條件的檔案移出選取範圍",
   "@commands.selectionDeselectFiles.description": {
     "sourceHash": "2a6f82f"
   },
-  "commands.selectionMcpSelect.label": "Select range in pane",
+  "commands.selectionMcpSelect.label": "在窗格中選取範圍",
   "@commands.selectionMcpSelect.label": {
     "sourceHash": "d8bb646"
   },
-  "commands.selectionMcpSelectByNames.label": "Select files by name in pane",
+  "commands.selectionMcpSelectByNames.label": "在窗格中依名稱選取檔案",
   "@commands.selectionMcpSelectByNames.label": {
     "sourceHash": "8cfc75d"
   },
-  "commands.networkSelectHost.label": "Select network host",
+  "commands.networkSelectHost.label": "選取網路主機",
   "@commands.networkSelectHost.label": {
     "sourceHash": "4a9ede5"
   },
-  "commands.networkRefresh.label": "Refresh network hosts",
+  "commands.networkRefresh.label": "重新整理網路主機",
   "@commands.networkRefresh.label": {
     "sourceHash": "73966bd"
   },
-  "commands.shareBack.label": "Back to host list",
+  "commands.shareBack.label": "返回主機列表",
   "@commands.shareBack.label": {
     "sourceHash": "42c44d5"
   },
-  "commands.shareSelectShare.label": "Connect to share",
+  "commands.shareSelectShare.label": "連接共享資料夾",
   "@commands.shareSelectShare.label": {
     "sourceHash": "6c48c8c"
   },
-  "commands.volumeSelect.label": "Select volume",
+  "commands.volumeSelect.label": "選取卷宗",
   "@commands.volumeSelect.label": {
     "sourceHash": "60f5ce1"
   },
-  "commands.volumeClose.label": "Close volume chooser",
+  "commands.volumeClose.label": "關閉卷宗選擇器",
   "@commands.volumeClose.label": {
     "sourceHash": "aa6a29b"
   },
-  "commands.volumeSelectByName.label": "Select pane volume by name",
+  "commands.volumeSelectByName.label": "依名稱選取窗格卷宗",
   "@commands.volumeSelectByName.label": {
     "sourceHash": "9f16865"
   },
-  "commands.aboutOpenWebsite.label": "Open website",
+  "commands.aboutOpenWebsite.label": "開啟網站",
   "@commands.aboutOpenWebsite.label": {
     "sourceHash": "3451735"
   },
-  "commands.aboutOpenUpgrade.label": "Open upgrade page",
+  "commands.aboutOpenUpgrade.label": "開啟升級頁面",
   "@commands.aboutOpenUpgrade.label": {
     "sourceHash": "9df3bf0"
   },
-  "commands.aboutClose.label": "Close About window",
+  "commands.aboutClose.label": "關閉「關於」視窗",
   "@commands.aboutClose.label": {
     "sourceHash": "d0096c3"
   },
-  "commands.paletteUp.label": "Previous result",
+  "commands.paletteUp.label": "上一個結果",
   "@commands.paletteUp.label": {
     "sourceHash": "965bc32"
   },
-  "commands.paletteDown.label": "Next result",
+  "commands.paletteDown.label": "下一個結果",
   "@commands.paletteDown.label": {
     "sourceHash": "bf56a19"
   },
-  "commands.paletteExecute.label": "Execute command",
+  "commands.paletteExecute.label": "執行指令",
   "@commands.paletteExecute.label": {
     "sourceHash": "20f9b97"
   },
-  "commands.paletteClose.label": "Close palette",
+  "commands.paletteClose.label": "關閉指令面板",
   "@commands.paletteClose.label": {
     "sourceHash": "2e75050"
   },
-  "commands.handler.favoriteAdded": "Added \"{name}\" to favorites",
+  "commands.handler.favoriteAdded": "已將「{name}」加入喜好項目",
   "@commands.handler.favoriteAdded": {
     "sourceHash": "a68dd8f"
   },
-  "commands.handler.favoriteAddFailed": "Couldn't add that folder to favorites. Try again?",
+  "commands.handler.favoriteAddFailed": "無法把那個資料夾加入喜好項目。要再試一次嗎？",
   "@commands.handler.favoriteAddFailed": {
     "sourceHash": "3f85e99"
   },
-  "commands.handler.tabLimitReached": "Tab limit reached",
+  "commands.handler.tabLimitReached": "已達分頁數量上限",
   "@commands.handler.tabLimitReached": {
     "sourceHash": "2d4205a"
   },
-  "commands.handler.noRecentlyClosedTabs": "No recently closed tabs in this pane.",
+  "commands.handler.noRecentlyClosedTabs": "這個窗格裡沒有最近關閉的分頁。",
   "@commands.handler.noRecentlyClosedTabs": {
     "sourceHash": "e560789"
   },
-  "commands.handler.cloudDownloadFailed": "Couldn't download from cloud. {detail}",
+  "commands.handler.cloudDownloadFailed": "無法從雲端下載。{detail}",
   "@commands.handler.cloudDownloadFailed": {
     "sourceHash": "70792cf"
   },
-  "commands.handler.cloudRemoveDownloadFailed": "Couldn't remove the download. {detail}",
+  "commands.handler.cloudRemoveDownloadFailed": "無法移除下載項目。{detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
   },
-  "commands.handler.zoomResetHintShortcut": "You can reset the zoom level to 100% by {shortcut}.",
+  "commands.handler.zoomResetHintShortcut": "你可以按 {shortcut} 把縮放比例重設為 100%。",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
   },
-  "commands.handler.zoomResetHintMenu": "You can reset the zoom level to 100% at View > Zoom > 100%.",
+  "commands.handler.zoomResetHintMenu": "你可以在「顯示方式 > 縮放 > 100%」把縮放比例重設為 100%。",
   "@commands.handler.zoomResetHintMenu": {
     "sourceHash": "f10315d"
   },
-  "commands.handler.zoomReset": "Zoom reset to 100%.",
+  "commands.handler.zoomReset": "縮放已重設為 100%。",
   "@commands.handler.zoomReset": {
     "sourceHash": "8c6bf82"
   },
-  "commands.handler.zoomIncreased": "Zoom increased to {size}%. {hint}",
+  "commands.handler.zoomIncreased": "縮放已放大到 {size}%。{hint}",
   "@commands.handler.zoomIncreased": {
     "sourceHash": "39fea10"
   },
-  "commands.handler.zoomDecreased": "Zoom decreased to {size}%. {hint}",
+  "commands.handler.zoomDecreased": "縮放已縮小到 {size}%。{hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
   },
-  "commands.suggestedOpsShow.label": "Suggested ops",
+  "commands.suggestedOpsShow.label": "建議的操作",
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "Review the file operations Ask Cmdr suggested, and decide what runs",
+  "commands.suggestedOpsShow.description": "檢視 Ask Cmdr 建議的檔案操作，決定要執行哪些",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "cf24a4f"
   }
