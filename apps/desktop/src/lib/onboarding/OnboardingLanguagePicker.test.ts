@@ -101,7 +101,10 @@ describe('OnboardingLanguagePicker', () => {
     expect(labelFor('en')).toBe('English')
     expect(labelFor('hu')).toBe('Magyar')
     expect(labelFor('de')).toBe('Deutsch')
-    expect(labelFor('zh')).toBe('中文')
+    // Both Chinese rows name their script, because the other one ships too: a
+    // bare 中文 left a Traditional reader unable to tell them apart.
+    expect(labelFor('zh')).toBe('简体中文')
+    expect(labelFor('zh-Hant')).toBe('繁體中文')
   })
 
   it('keeps the English row reading "English" while the app speaks another language', async () => {

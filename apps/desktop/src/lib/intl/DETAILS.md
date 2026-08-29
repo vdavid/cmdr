@@ -230,6 +230,34 @@ endonym via `Intl.DisplayNames` (`de` → "Deutsch"), so the list is self-descri
 That endonym is resolved in the option's OWN locale, so the `en` row reads "English" whatever the app currently speaks:
 the way out for a user who can't read the current language.
 
+### Why a label is computed against the whole list
+
+`locale-display-names.ts` takes the shipped set, not just one tag, because a label's only job is answering "which of
+these rows is mine?" and that question is about the list in front of the user.
+
+CLDR names a locale by DIALECT, which settles the REGION axis unaided: `en`, `en-GB`, and `en-AU` come back as
+"English", "British English", and "Australian English", three distinct strings with nothing added. It does not settle
+the SCRIPT axis. CLDR's endonym for bare `zh` is "中文", so next to "繁體中文" a Traditional reader had no way to tell
+which row was Simplified.
+
+**Decision**: name the script only when a SIBLING catalog of the same language is written in a different one, and take
+the script from `likelyScript()`. **Why**: it's general (a future `sr` beside `sr-Latn` decorates itself with no edit; a
+`pt-PT` beside `pt` correctly doesn't, since the dialect names already differ), and it reuses the very CLDR answer that
+decides catalog inheritance, so the picker and the fallback chain can't disagree about what `zh` is.
+
+**Decision**: ❌ don't decorate unconditionally. **Why**: maximizing every tag yields "Deutsch (Lateinisch)", "English
+(Latin)", "magyar (Latin)". A qualifier that distinguishes nothing is noise, and macOS agrees — System Settings >
+Language & Region writes "English", never "English (Latin)". macOS can't settle the always-vs-sometimes question on its
+own, though: it ships every variant of every language, so its list is always the both-present case and both policies
+would look identical there.
+
+**The consequence, accepted**: the label is list-dependent, so `zh` would read "中文" if we ever dropped `zh-Hant`.
+That's the honest direction — the qualifier appears exactly when it starts distinguishing something, and dropping a
+shipped catalog is not a thing that happens.
+
+❌ No two rows may share a label. `locale-display-names.test.ts` asserts distinctness across the whole shipped set, so a
+colliding new catalog fails loudly and a human picks the label, rather than the picker quietly printing one word twice.
+
 The `'system'` row names what it resolves to — "System default (Svenska)"
 (`settings.appearance.language.opt.systemWithLanguage`, with `…opt.system` as the bare fallback for English and for no
 answer at all). It's a `get label()` on a literal-label option, which `resolveOption` passes through untouched, so it

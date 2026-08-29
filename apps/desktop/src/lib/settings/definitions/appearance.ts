@@ -6,29 +6,9 @@
 import type { EnumOption, EnumOptionSource, SettingDefinitionSource } from '../types'
 import { VOLUME_TINT_COLORS } from '../types'
 import { availableLocales, tString } from '$lib/intl/messages.svelte'
+import { localeDisplayName } from '$lib/intl/locale-display-names'
 import { pickUiLocale } from '$lib/intl/os-locales'
 import type { MessageKey } from '$lib/intl/keys.gen'
-
-/**
- * Display name for a locale tag, in the locale's OWN language (`de` → "Deutsch",
- * `pt-BR` → "português (Brasil)"), so the picker is self-describing and we never
- * hardcode a language-name list. Falls back to the raw tag when `Intl` can't
- * resolve a name. `Intl.DisplayNames` is not a number/date formatter, so it's
- * exempt from the `no-raw-locale-format` rule.
- */
-function localeDisplayName(tag: string): string {
-  try {
-    const name = new Intl.DisplayNames([tag], { type: 'language' }).of(tag)
-    if (name !== undefined && name !== tag) {
-      // Capitalize the first letter: many languages lowercase their endonym, but
-      // a selector option reads better title-first. Locale-aware via the tag.
-      return name.charAt(0).toLocaleUpperCase(tag) + name.slice(1)
-    }
-  } catch {
-    // fall through to the raw tag
-  }
-  return tag
-}
 
 /**
  * The `'system'` option's label, naming what "System default" resolves to right
@@ -50,7 +30,9 @@ function systemOptionLabel(): string {
   if (resolved === null || resolved.split('-')[0] === 'en') {
     return tString('settings.appearance.language.opt.system')
   }
-  return tString('settings.appearance.language.opt.systemWithLanguage', { language: localeDisplayName(resolved) })
+  return tString('settings.appearance.language.opt.systemWithLanguage', {
+    language: localeDisplayName(resolved, availableLocales()),
+  })
 }
 
 /**
@@ -60,12 +42,17 @@ function systemOptionLabel(): string {
  * here. Per-locale options carry a literal `label` (the locale's endonym, not
  * catalogued copy), so they pass through `resolveOption` unchanged.
  *
+ * Every label is computed against the WHOLE shipped list, because whether a row
+ * needs a script qualifier ("简体中文" rather than a bare "中文") depends on what
+ * else is on offer: `locale-display-names.ts`.
+ *
  * That pass-through is what makes the `'system'` option's GETTER work: the
  * registry hands a literal-label option straight through, getter and all, so the
  * label re-evaluates on every read with no registry change (`settings-registry.ts`
  * § resolveOption).
  */
 function languageOptions(): (EnumOptionSource | EnumOption)[] {
+  const shipped = availableLocales()
   return [
     {
       value: 'system',
@@ -73,7 +60,7 @@ function languageOptions(): (EnumOptionSource | EnumOption)[] {
         return systemOptionLabel()
       },
     },
-    ...availableLocales().map((tag) => ({ value: tag, label: localeDisplayName(tag) })),
+    ...shipped.map((tag) => ({ value: tag, label: localeDisplayName(tag, shipped) })),
   ]
 }
 
