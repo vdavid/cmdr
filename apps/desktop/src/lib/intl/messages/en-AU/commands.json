@@ -35,6 +35,22 @@
   "@commands.tagsToggleGrey.description": {
     "sourceHash": "ca38860"
   },
+  "commands.selectionToggleAndDown.description": "Selects or unselects the file under the cursor, then moves down (Total Commander style)",
+  "@commands.selectionToggleAndDown.description": {
+    "sourceHash": "378bb7a"
+  },
+  "commands.selectionDeselectAll.label": "Unselect all",
+  "@commands.selectionDeselectAll.label": {
+    "sourceHash": "9675494"
+  },
+  "commands.selectionDeselectFiles.label": "Unselect files…",
+  "@commands.selectionDeselectFiles.label": {
+    "sourceHash": "6fb10d5"
+  },
+  "commands.selectionDeselectFiles.description": "Opens the Unselect files dialog to remove matching files from the selection",
+  "@commands.selectionDeselectFiles.description": {
+    "sourceHash": "2a6f82f"
+  },
   "commands.handler.favoriteAdded": "Added \"{name}\" to favourites",
   "@commands.handler.favoriteAdded": {
     "sourceHash": "a68dd8f"

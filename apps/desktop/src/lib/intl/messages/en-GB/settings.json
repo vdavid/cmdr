@@ -35,6 +35,10 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Warn when free space drops below this per cent of your startup disk.",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
+    "sourceHash": "9ed41b8"
+  },
   "settings.advanced.virtualizationBufferRows.label": "Virtualisation buffer (rows)",
   "@settings.advanced.virtualizationBufferRows.label": {
     "sourceHash": "07b7869"

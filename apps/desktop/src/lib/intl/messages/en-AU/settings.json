@@ -35,6 +35,10 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Warn when free space drops below this per cent of your startup disk.",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
+    "sourceHash": "9ed41b8"
+  },
   "settings.advanced.virtualizationBufferRows.label": "Virtualisation buffer (rows)",
   "@settings.advanced.virtualizationBufferRows.label": {
     "sourceHash": "07b7869"
@@ -42,6 +46,10 @@
   "settings.advanced.virtualizationBufferColumns.label": "Virtualisation buffer (columns)",
   "@settings.advanced.virtualizationBufferColumns.label": {
     "sourceHash": "a9e8dba"
+  },
+  "settings.selection.recentSelections.maxCount.description": "How many recent selections to keep for the Select / Unselect files dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
+  "@settings.selection.recentSelections.maxCount.description": {
+    "sourceHash": "ae04ef0"
   },
   "settings.section.colorsAndFormats": "Colours and formats",
   "@settings.section.colorsAndFormats": {

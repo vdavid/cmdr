@@ -30,6 +30,18 @@ pub(crate) const SHIPPED_LOCALES: &[ShippedLocale] = &[
         region_scripts: &[],
     },
     ShippedLocale {
+        tag: "en-AU",
+        script: "latn",
+        default_script: "latn",
+        region_scripts: &[],
+    },
+    ShippedLocale {
+        tag: "en-GB",
+        script: "latn",
+        default_script: "latn",
+        region_scripts: &[],
+    },
+    ShippedLocale {
         tag: "es",
         script: "latn",
         default_script: "latn",

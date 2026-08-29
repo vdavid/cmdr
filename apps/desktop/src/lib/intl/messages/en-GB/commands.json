@@ -19,6 +19,10 @@
   "@commands.favoritesAdd.description": {
     "sourceHash": "84dcbf8"
   },
+  "commands.navForward.label": "Go forwards",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
   "commands.fileGoToTrash.label": "Go to the Bin",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"

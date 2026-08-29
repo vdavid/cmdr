@@ -295,6 +295,30 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         ],
     },
     LocaleStrings {
+        tag: "en-AU",
+        entries: &[
+            ("menu.app.licenseDetails", "See licence details"),
+            ("menu.app.licenseEnter", "Enter licence key…"),
+            ("menu.context.addToFavorites", "Add to favourites"),
+            ("menu.go.addToFavorites", "Add to favourites"),
+            ("menu.select.deselectAll", "Unselect all"),
+            ("menu.select.deselectFiles", "Unselect files…"),
+            ("menu.tag.gray", "Grey"),
+            ("menu.window.minimize", "Minimise"),
+        ],
+    },
+    LocaleStrings {
+        tag: "en-GB",
+        entries: &[
+            ("menu.app.licenseDetails", "See licence details"),
+            ("menu.app.licenseEnter", "Enter licence key…"),
+            ("menu.context.addToFavorites", "Add to favourites"),
+            ("menu.go.addToFavorites", "Add to favourites"),
+            ("menu.tag.gray", "Grey"),
+            ("menu.window.minimize", "Minimise"),
+        ],
+    },
+    LocaleStrings {
         tag: "es",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Solo uso personal"),
