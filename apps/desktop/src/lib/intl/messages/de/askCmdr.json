@@ -160,11 +160,11 @@
   "@askCmdr.tool.nothingToSuggest.done": {
     "sourceHash": "2287381"
   },
-  "askCmdr.tool.memoryWrite.doing": "Notiz über Sie wird gespeichert",
+  "askCmdr.tool.memoryWrite.doing": "Notiz über dich wird gespeichert",
   "@askCmdr.tool.memoryWrite.doing": {
     "sourceHash": "9c2a59e"
   },
-  "askCmdr.tool.memoryWrite.done": "Notiz über Sie gespeichert",
+  "askCmdr.tool.memoryWrite.done": "Notiz über dich gespeichert",
   "@askCmdr.tool.memoryWrite.done": {
     "sourceHash": "cb3d875"
   },
