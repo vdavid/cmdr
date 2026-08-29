@@ -155,14 +155,14 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 - **skip** · `略過` · AP-TW = AP-HK, NAU, THU, DC · `confirmed`. MS says `跳過`; the zh-Hant sources are unanimous on
   `略過`.
 - **pause / resume** · `暫停` / `繼續` · AP-TW = AP-HK (`Resume` → 繼續), MS (pause) · `high`. ❗ MS renders _resume_ as
-  `履歷表` (the CV sense) — do not use MS here.
+  `履歷表` (the CV sense), so don't use MS here.
 - **overwrite** · `覆寫` · AP-TW = AP-HK (`Overwrite at Destination` → 覆寫目標), MS · `high`. TC/DC say `覆蓋`.
 - **replace** · `取代` · AP-TW = AP-HK, NAU, THU, MS · `confirmed`
 - **conflict** · `衝突` · AP-TW = AP-HK, MS · `confirmed`
 - **remaining / time remaining** · `剩餘` / `剩餘時間` · AP-TW = AP-HK (`Estimating time remaining…` →
   `正在估計剩餘時間⋯`) · `high`
 - **speed** · `速度` · AP-TW = AP-HK · `high`
-- **transfer** · `傳輸` · TC · `high`. Apple uses `傳送` for sending items. ❗ MS's `移轉` is the business sense — don't
+- **transfer** · `傳輸` · TC · `high`. Apple uses `傳送` for sending items. ❗ MS's `移轉` is the business sense; don't
   use it.
 - **copying… (in progress)** · `正在複製…` · AP-HK (`正在將「^1」複製到「^2」`); AP-TW uses 拷貝 per the override ·
   `high`
@@ -373,15 +373,15 @@ contamination** (`重復分頁`, `刷新`, `在新分頁中打開`), so weight T
 
 Read straight off the shipped OS by English-key match (`Localizable.loctable` under `System Settings.app` and
 `/System/Library/ExtensionKit/Extensions`, recipe in `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this
-machine"). All **`confirmed`** — this is what the user's own Mac says (verified on macOS 26.6.2, build 25G83, key-match,
+machine"). All **`confirmed`**: this is what the user's own Mac says (verified on macOS 26.6.2, build 25G83, key-match,
 2026-08-29).
 
 - **System Settings** · `系統設定` · TW = HK. Quote it in running text: `「系統設定」`.
-- **Full Disk Access** · `完全取用磁碟` · TW; **HK says 完整磁碟取用** — Taiwan default applies.
+- **Full Disk Access** · `完全取用磁碟` · TW; **HK says 完整磁碟取用**. The Taiwan default applies.
 - **Accessibility** · `輔助使用` · TW = HK. ❗ Not `協助工具` (that's Microsoft's Windows term).
 - **Appearance** · `外觀` · TW = HK
-- **Privacy & Security** · `隱私權與安全性` · TW; **HK says 私隱與保安** — Taiwan default applies.
-- **Displays** · `顯示器` · TW; **HK says 螢幕** — Taiwan default applies.
+- **Privacy & Security** · `隱私權與安全性` · TW; **HK says 私隱與保安**. The Taiwan default applies.
+- **Displays** · `顯示器` · TW; **HK says 螢幕**. The Taiwan default applies.
 - **Notifications** · `通知` · TW = HK
 - **General** · `一般` · TW = HK
 - **Keyboard** · `鍵盤` · TW = HK
@@ -419,7 +419,7 @@ download UI. Those surfaces are Cmdr's exact analogues, so they outrank the gene
   `high`. **Don't send** → `不要傳送`; **Ignore** → `忽略`; **Don't ask me again** → `別再詢問` (all Problem Reporter,
   TW = HK).
 - **diagnostic information** · `診斷資訊` · AP-TW (Feedback Assistant); **AP-HK says 診斷資料** · `high`. ❗ Microsoft's
-  first `diagnostic data` hit is `遙測` (telemetry) — the wrong sense.
+  first `diagnostic data` hit is `遙測` (telemetry), which is the wrong sense.
 - **stack trace** · `堆疊追蹤` · MS (HKG, TWN) · `high`. ❗ The TBX's first hit is a bare `追蹤`; the right entry is
   three entries later.
 - **details** · `詳細資訊` · AP-TW (Problem Reporter `Show Details` → 顯示詳細資訊); **AP-HK says 詳細資料** · `high`
@@ -444,10 +444,10 @@ download UI. Those surfaces are Cmdr's exact analogues, so they outrank the gene
 
 **Failure-sentence shapes** (Apple's four, for the `無法` + verb rule in `style.md` § Voice and tone):
 
-1. `無法` + verb + object `。` — `The open file operation failed.` → `無法執行開啟檔案的操作。`
-2. `無法` + verb + object `，因為` + reason `。` — the default. `無法下載軟體，因為網路發生問題。`
-3. `因為` + reason `，無法` + verb `。` — when the reason is what the user must act on.
-4. state phrase `，因此無法` + verb `。` — when a named actor is the blocker. `磁碟正由「%@」使用中，因此無法退出。`
+1. `無法` + verb + object `。`: `The open file operation failed.` → `無法執行開啟檔案的操作。`
+2. `無法` + verb + object `，因為` + reason `。`: the default. `無法下載軟體，因為網路發生問題。`
+3. `因為` + reason `，無法` + verb `。`: when the reason is what the user must act on.
+4. state phrase `，因此無法` + verb `。`: when a named actor is the blocker. `磁碟正由「%@」使用中，因此無法退出。`
 
 Recovery lines pair as `請確定你已連接網際網路，然後再試一次。` and `當目前的操作完成後，再試一次。` (AP-TW).
 
@@ -487,9 +487,9 @@ Register for this whole surface is `你`, not `您`: `style.md` § Formality.
   palette's commands and a terminal command. **`命令列`** stays the fixed compound for _command line_ (TC-attested).
 - **list (generic UI list)** · `列表` · AP-TW (53), AP-HK (58), live TW (75), live HK (71) · `high`. ❌ **Never
   `清單`**: it is ZERO in all four Apple corpora, while `列表` covers both the view mode (`列表顯示方式`) and every
-  generic list Apple ships, including our exact cases — a server list (`Finder/LocalizableMerged.json:MN3`, "clear the
+  generic list Apple ships, including our exact cases: a server list (`Finder/LocalizableMerged.json:MN3`, "clear the
   list of recent servers" → `清除…的列表`), a user list, and "remove from the list". TW and HK AGREE, so the Apple-zh-TW
-  outlier rule doesn't fire and Apple beats Microsoft (which prefers `清單` 318/7). **No context split exists** — one
+  outlier rule doesn't fire and Apple beats Microsoft (which prefers `清單` 318/7). **No context split exists**: one
   word for all of them, `檔案列表` included. `資訊清單` ("Manifest") is an unrelated fixed compound and stays.
 - **clipboard** · `剪貼板` · AP-TW (8), AP-HK (8) · `high`. TC says `剪貼簿`, which is the commoner word in Taiwan
   generally, but Apple's two Traditional locales agree and Cmdr is a Mac app.
@@ -560,9 +560,9 @@ the pile PLUS the live macOS bundles (a 12,418-string zh_TW corpus from `/System
   Pairs with `內容` (Content), exactly as English pairs "On disk" with "Content". ❗ `佔用` is **zero** in all four
   Apple corpora, so neither `佔用磁碟` nor `佔用空間` was attested; both are retired.
 - **running / in progress** · `執行中` / `進行中` · a legitimate split; **the boundary is process vs task** · `high`.
-  `執行中` when the subject is a program, server, or feature (`Finder正在執行時…`, `執行中的應用程式`) — Cmdr's local AI
-  server. `進行中` when the subject is an operation or task (`某些操作仍在進行中`, `配對進行中`) — Cmdr's background
-  file operations.
+  `執行中` when the subject is a program, server, or feature (`Finder正在執行時…`, `執行中的應用程式`), like Cmdr's
+  local AI server. `進行中` when the subject is an operation or task (`某些操作仍在進行中`, `配對進行中`), like Cmdr's
+  background file operations.
 - **view mode suffix** · `顯示方式`, never `模式` · AP-TW 49 / AP-HK 41 (live 13/11), and Apple's settings-label strings
   use it too (`總是以列表顯示方式打開`) · `high`. Apple reserves `模式` for BEHAVIOUR modes (`深色模式`, `勿擾模式`,
   `高耗電模式`). So a Settings card heading for a view is `簡潔顯示方式`, not `簡潔模式`.
@@ -607,7 +607,7 @@ this machine".
 - **navigate / navigation** · `導覽` · AP-TW = AP-HK by exact key
   (`Photos.app/IPXTouchBar.loctable:IPXEditToolNavigation` = "Navigate";
   `AccessibilitySettingsExtension.appex:switchControl.header.navigation`); AP live 197/198 · `high`. ❗ **Don't take
-  Microsoft here**: its `navigate` is 瀏覽 / 巡覽 — `瀏覽` is _browse_, `巡覽` is Windows house style.
+  Microsoft here**: its `navigate` is 瀏覽 / 巡覽, where `瀏覽` is _browse_ and `巡覽` is Windows house style.
 - **destination (of a copy/move)** · `目標位置`; `目標資料夾` when the English says "destination folder" · AP-TW/HK live
   on our exact sentences (`The destination is read-only.` → `目標位置為唯讀。`), folder form AP-HK 4/4, NAU 3, TC 8 ·
   `high`. ❗ **Not `目的地`**, though MS and NAU/DOL/THU all say it: Apple reserves 目的地 for the maps/AirPlay sense.

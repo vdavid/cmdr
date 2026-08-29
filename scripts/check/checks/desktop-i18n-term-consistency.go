@@ -14,8 +14,8 @@ import (
 // other i18n check reads one key at a time against its source, which is exactly
 // why this class kept getting through: it's only visible ACROSS keys.
 //
-// For an OVERLAY (`en-GB` over `en`) it compares what the user actually sees —
-// the overlay's value where it forks a key, the base value where it doesn't — so
+// For an OVERLAY (`en-GB` over `en`) it compares what the user actually sees:
+// the overlay's value where it forks a key, the base value where it doesn't. So
 // a half-forked term ("colour" in one file, "color" still rendering in another)
 // is caught even though each key on its own looks fine.
 //

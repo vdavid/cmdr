@@ -18,7 +18,7 @@
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
     "sourceHash": "36ca789",
-    "sameAsSourceJustification": "“{currentText} / {maxText}”: a pure character-counter fraction — two preformatted-number placeholders joined by “ / ”. There is no translatable text, and Traditional Chinese writes this fraction the same way."
+    "sameAsSourceJustification": "“{currentText} / {maxText}”: a pure character-counter fraction, two preformatted-number placeholders joined by “ / ”. There is no translatable text, and Traditional Chinese writes this fraction the same way."
   },
   "feedback.dialog.tooLong": "抱歉，內容太長了。最多 {maxText} 個字元。",
   "@feedback.dialog.tooLong": {

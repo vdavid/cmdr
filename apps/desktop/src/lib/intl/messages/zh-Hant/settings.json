@@ -66,7 +66,7 @@
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
     "sourceHash": "0d04bfe",
-    "sameAsSourceJustification": "Short option label “App” (meaning “use the app accent colour”). “App” is a fully naturalised loanword in Traditional Chinese UI — Apple’s zh-TW and zh-HK localisations write “App” verbatim rather than 應用程式 in short labels — so translating it here would read as heavier, not clearer."
+    "sameAsSourceJustification": "Short option label “App” (meaning “use the app accent colour”). “App” is a fully naturalised loanword in Traditional Chinese UI (Apple’s zh-TW and zh-HK localisations write “App” verbatim rather than 應用程式 in short labels), so translating it here would read as heavier, not clearer."
   },
   "settings.appearance.sizeColors.opt.rainbow": "彩虹",
   "@settings.appearance.sizeColors.opt.rainbow": {

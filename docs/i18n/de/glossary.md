@@ -1517,7 +1517,7 @@ Bericht angehängt wird. Es geht kein zweiter Bericht raus, und genau das muss d
 
 - **select (Dateien über ein Muster) → `auswählen`; deselect → `abwählen`** · macOS Finder `de`, `MenuBar.json`
   `172.title` = „Alles auswählen“ (Tier 1, gegengeprüft am laufenden System, macOS 26.6.2, Build 25G83, 2026-08-29).
-  Finders Gegenstück zu „Deselect All“ (`MenuBar.json` `300488.title`) ist „Auswahl aufheben“ — ein Ausdruck ohne
+  Finders Gegenstück zu „Deselect All“ (`MenuBar.json` `300488.title`) ist „Auswahl aufheben“, ein Ausdruck ohne
   Objektstelle, mit dem sich „Dateien …“ nicht bilden lässt. Das transitive Verb kommt aus Microsoft Terminology
   (`deselect` → „Abwählen“, Term-ID `2612123`, AUT/DEU/CHE/LUX) und aus Double Commander `de`, dem orthodoxen
   Zwei-Fenster-Manager in Cmdrs Linie („Unselect a Gro&up...“ → „Gru&ppe abwählen …“, „&Unselect All“ → „Alle
@@ -1525,7 +1525,7 @@ Bericht angehängt wird. Es geht kein zweiter Bericht raus, und genau das muss d
 - **„Auswahl aufheben“ und „abwählen“ stehen nebeneinander, und das ist Absicht.** `menu.select.deselectAll` bleibt
   Finders „Auswahl aufheben“ (die ganze Auswahl fällt weg), während `menu.select.deselectFiles`,
   `commands.selectionDeselectFiles.label` und `selection.dialog.title.remove` „Dateien abwählen“ sagen (ein Objekt fällt
-  weg). Wer die drei „vereinheitlicht“, bricht den Dialogtitel gegen den Menüpunkt, der ihn öffnet — genau der Fehler,
+  weg). Wer die drei „vereinheitlicht“, bricht den Dialogtitel gegen den Menüpunkt, der ihn öffnet: genau der Fehler,
   den dieser Katalogbereich behebt.
 - **recent selections → `Letzte Auswahlen`** · gespiegelt an den Geschwistern in `queryUi.recent.*` („Letzte Suchen“),
   gleiche Grammatik, nur `Suchen` → `Auswahlen`. Plural von `Auswahl` ist `Auswahlen` · `high`.

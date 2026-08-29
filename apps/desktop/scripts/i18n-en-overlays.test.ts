@@ -10,8 +10,8 @@
  *
  * This file is that missing comparison, in three parts:
  *
- *  1. The divergence set — the handful of keys where Australian English is
- *     deliberately NOT British — so any OTHER difference fails loudly as accidental
+ *  1. The divergence set: the handful of keys where Australian English is
+ *     deliberately NOT British, so any OTHER difference fails loudly as accidental
  *     drift. Adding a real AU-only fork means adding it here on purpose, with its
  *     evidence in `docs/i18n/en-AU/style.md`.
  *  2. A VOCABULARY sweep (`FORKED_TERMS`). Coverage, parity, and stale all compare

@@ -36,8 +36,8 @@ the overlay hits native surfaces.
 
 **The dialog three are why the fork has to be complete.** The menu item and the dialog it opens are the same sentence to
 a user: while the dialog's title and button were hardcoded English, `en-AU` read `Unselect files…` in the menu bar and
-`Deselect files` in the window that opened. The positive verb doesn't fork — `Select` and `Select All` are identical in
-`en-GB` and `en-AU` (`Finder/MenuBar.json`) — so only the removing side of each pair is here.
+`Deselect files` in the window that opened. The positive verb doesn't fork: `Select` and `Select All` are identical in
+`en-GB` and `en-AU` (`Finder/MenuBar.json`), so only the removing side of each pair is here.
 
 ### `Go forward` stays (1 key NOT forked)
 

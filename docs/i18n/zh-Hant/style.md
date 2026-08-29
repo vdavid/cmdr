@@ -192,7 +192,7 @@ bundle unless noted.
 - **Quote with corner brackets `「…」`, never `“…”`.** Apple zh-TW uses `「」` 620 times against 2 curly quotes (and
   those 2 are a quote-style _sample_ string, not real quoting); zh-HK matches at 592. Simplified is the opposite (`“…”`
   858), which is exactly why a converted catalog reads mainland. Quote filenames, menu names, and setting names this
-  way: `無法開啟「%@」。` `『…』` is for nesting only and is **unattested in the pile** — restructure rather than nest.
+  way: `無法開啟「%@」。` `『…』` is for nesting only and is **unattested in the pile**: restructure rather than nest.
 - **Full-width punctuation throughout**: `，` `。` `：` `？` `！` `（）`. Apple zh-TW: 371 `，`, 664 `。`, 135 `：`, 100
   full-width parens against 23 half-width.
 - **❌ Never use the full-width semicolon `；`.** Apple uses it zero times in either Traditional corpus. Split the
@@ -336,7 +336,7 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   construction for the second clause. Same mechanic the `zh` catalog documents.
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
-  doesn't inflect, so this is easy here — just don't paraphrase the label inside the aria sentence.
+  doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.
 
 ### `*Aria` containment pairs that are load-bearing
 

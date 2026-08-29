@@ -322,7 +322,7 @@ string then.
 A locale translated over several passes drifts: each pass settles the terms it personally needed, so the same English
 word ends up with two names and the app contradicts itself. Traditional Chinese shipped a menu item reading
 `命令選擇區…` that opened a palette titled `指令面板`. Run this audit when a locale is finished, and again whenever
-several passes have landed since the last one. **Doing it by reading the catalog does not work** — it's 3,138 keys.
+several passes have landed since the last one. **Doing it by reading the catalog does not work**: it's 3,138 keys.
 Script it.
 
 **Half of it is automated.** `pnpm check i18n-terms` (`desktop-i18n-term-consistency`) catches every case where two keys
@@ -353,8 +353,7 @@ high-traffic files is the worst case and the one to fix first.
 
 **Every fix earns a glossary entry.** A conflict you resolved without recording it will be re-litigated by the next
 pass, which is how these got here. Write the entry in the `chosen · sources · confidence` format, and when the two forms
-are BOTH right, say where the boundary runs — that sentence is the thing that stops the next translator "fixing" it
-back.
+are BOTH right, say where the boundary runs. That sentence is the thing that stops the next translator "fixing" it back.
 
 ## The translator-agent context (reusable system-prompt block)
 

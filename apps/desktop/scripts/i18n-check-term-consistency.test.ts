@@ -59,7 +59,7 @@ describe('findDivergences: full translation', () => {
 })
 
 describe('findDivergences: overlay', () => {
-  // `source` is what the overlay renders on top of (en, layered) — the two keys share one English value.
+  // `source` is what the overlay renders on top of (en, layered). The two keys share one English value.
   const source = cat({ 'errors.noTrash': 'no Trash here', 'ops.noTrash': 'no Trash here' })
 
   it('flags a HALF-forked term: one key forked to Bin, the sibling still renders Trash', () => {

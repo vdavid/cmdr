@@ -28,7 +28,7 @@
  * means zero judgment and no allowlist.
  *
  * Comparison ignores case, `{placeholders}`, `<tag>` names, whitespace, and
- * punctuation in both scripts, and folds the ICU doubled apostrophe — none of
+ * punctuation in both scripts, and folds the ICU doubled apostrophe: none of
  * those is what a voice-control user pronounces.
  *
  * WARN rather than an error only because violations ship today: `de` 3, `es` 1,

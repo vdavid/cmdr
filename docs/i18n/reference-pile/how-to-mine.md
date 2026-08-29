@@ -52,7 +52,7 @@ Term-choice principles. Trap 5 above is the formality instance of the macOS-over
 (Trap 1's "Double Commander directory hotlist is a different feature, not a bookmark" lives in the four mining gotchas
 in `docs/guides/i18n-translation.md` § Researching terms.)
 
-## macOS (Tier 1, strongest) — `<tag>/macOS/<bundle>/*.json`
+## macOS (Tier 1, strongest): `<tag>/macOS/<bundle>/*.json`
 
 Flat `key: value` JSON per bundle (`Finder`, `AppKit`, `CoreTypes`, `SystemSettings`). Keys are stable across languages,
 so cross-reference English→target by key. The `en/` folder is the English side.
@@ -194,7 +194,7 @@ boundaries between Han ideographs (U+4E00–U+9FFF) and `[A-Za-z0-9]` only; incl
 `（`) inflates the "tight" side with bracket adjacencies that no spacing rule covers, which is how a real measurement
 came out 105 tight before the filter and 5 after.
 
-## Microsoft terminology (Tier 2) — `<tag>/microsoft-terminology/<LANG>.tbx`
+## Microsoft terminology (Tier 2): `<tag>/microsoft-terminology/<LANG>.tbx`
 
 Pretty-printed TBX XML, no namespace. Each `<termEntry>` has two `<langSet>`: `en-US` first, then the target. So in a
 window after the English `<term>`, the next `<term>` is the translation. `termNote type="geographicalUsage"` flags
@@ -211,7 +211,7 @@ grep -i -B14 '<term[^>]*>Ordner</term>' de/microsoft-terminology/GERMAN.tbx | gr
 
 Files are large; grep (streaming) beats loading them. `xmllint --xpath` works too but reads the whole doc into memory.
 
-## Microsoft style guide (Tier 2) — `<tag>/microsoft-style-guides/StyleGuide.pdf`
+## Microsoft style guide (Tier 2): `<tag>/microsoft-style-guides/StyleGuide.pdf`
 
 Use for tone, formality (how to address the user), capitalization, and grammar conventions — not single terms. Extract
 text once, then grep; or open sections with the Read tool (it renders PDF pages).
@@ -222,7 +222,7 @@ pdftotext de/microsoft-style-guides/StyleGuide.pdf - | grep -iE -A3 'addressing 
 
 The high-value sections are the early style/tone/grammar chapters and the "addressing the user" / formality section.
 
-## GNOME / Xfce (Tier 3, cross-language parity) — `<tag>/gnome-nautilus/nautilus.po`, `<tag>/xfce-thunar/thunar.po`
+## GNOME / Xfce (Tier 3, cross-language parity): `<tag>/gnome-nautilus/nautilus.po`, `<tag>/xfce-thunar/thunar.po`
 
 gettext catalogs (`msgid` English, `msgstr` translation). Exactly the file-manager domain. Use `msggrep` (cleaner than
 grep for multi-line and plural entries):
@@ -236,7 +236,7 @@ grep -A2 'Plural-Forms' sv/gnome-nautilus/nautilus.po             # the language
 Plural entries use `msgid`/`msgid_plural` with `msgstr[0]`, `msgstr[1]`, … — good evidence for how a real catalog
 phrases counted strings in your language.
 
-## Double Commander + KDE Dolphin (Tier 3, gettext) — `<tag>/double-commander/doublecmd.po`, `<tag>/kde-dolphin/dolphin.po`
+## Double Commander + KDE Dolphin (Tier 3, gettext): `<tag>/double-commander/doublecmd.po`, `<tag>/kde-dolphin/dolphin.po`
 
 Same gettext format as GNOME/Xfce, so the same `msggrep` recipes apply — just point at the file. Pick by UI family:
 **Double Commander** is orthodox two-pane (Cmdr's lineage — the place to look for terms Finder doesn't have); **KDE
@@ -249,7 +249,7 @@ msggrep --msgid -e 'file list' -i hu/double-commander/doublecmd.po              
 msggrep --msgid -e 'Move to Trash' -i hu/kde-dolphin/dolphin.po                             # general op, broad coverage
 ```
 
-## Total Commander (Tier 3, orthodox file manager) — `<tag>/total-commander/WCMD.LNG.utf8`
+## Total Commander (Tier 3, orthodox file manager): `<tag>/total-commander/WCMD.LNG.utf8`
 
 INI-style `ID="value"` lines (numeric string IDs), already decoded to UTF-8. The IDs aren't self-describing, so mine by
 the translated VALUE rather than by key. `WCMD.INC.utf8` is the menu file (menu labels with `&` accelerators), often the
@@ -265,7 +265,7 @@ To pin an English source to a TC ID, cross-reference `TOTALCMD.INC` (the English
 TC ships no English `WCMD.LNG` (English is compiled in), so there's no English-side string file to diff against — value
 grep plus the menu file is the practical path.
 
-## Legal register (Tier 1, live OS only) — `LegalText*.rtf`, `License.rtf`, `License.html`
+## Legal register (Tier 1, live OS only): `LegalText*.rtf`, `License.rtf`, `License.html`
 
 The pile's `.strings` catalogs are UI text and contain **no legal vocabulary at all**: `licence`/`license`, `warranty`,
 `indemnity`, and `agreement` are absent from every locale of `macOS/AppKit`, `macOS/Finder`, and `macOS/SystemSettings`.

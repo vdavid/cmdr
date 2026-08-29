@@ -16,7 +16,7 @@
  *     a translation must preserve: placeholder/argument names, `<tag>` names, and
  *     the `plural`/`select` categories per argument. A single source of truth for
  *     "what tokens/structure does this message have", plus its mirror image,
- *     `visibleLiterals` — the copy with every identifier stripped, which is what a
+ *     `visibleLiterals`: the copy with every identifier stripped, which is what a
  *     vocabulary sweep must match words against.
  *  3. Source hashing: `sourceHash(value)` is a git-style 7-char hex of an English
  *     value, stamped into `@key.sourceHash` by the pseudolocale generator and
@@ -431,7 +431,7 @@ export const BRAND_WORDS: readonly string[] = Object.freeze([
   // (fr "Coup d’œil", de "Übersicht", es "Vista rápida"). They must be translated
   // to match the user's macOS, not kept verbatim. Only Apple feature/product names
   // Apple itself keeps English (Spotlight, AirDrop, Siri, Time Machine, Finder, ...)
-  // belong in this list — and none of those appear in copy yet. Verify per LOCALE
+  // belong in this list, and none of those appear in copy yet. Verify per LOCALE
   // before adding one: Apple localizes more than you'd guess (zh-TW says 指揮中心
   // for Mission Control, 空間 for Spaces), so a name that looks kept-English in one
   // language isn't in another.
