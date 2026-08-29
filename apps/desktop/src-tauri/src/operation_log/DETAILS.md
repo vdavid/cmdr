@@ -354,9 +354,9 @@ skipped or unsuccessful planned rename must never make an untouched destination 
 
 The file loop pauses `crate::test_mode::effective_rollback_throttle_ms()` before each item. In production both its
 sources are unset, so it costs one atomic load and one `LazyLock` deref per item and changes nothing; under E2E it is
-what gives a spec a window to press Cancel on a reversal that would otherwise be over in single-digit milliseconds.
-Its own knob rather than a reuse of the copy throttle, because a spec has to stage a fast copy and then reverse it
-slowly. Pinned by
+what gives a spec a window to press Cancel on a reversal that would otherwise be over in single-digit milliseconds
+(`apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts`). Its own knob rather than a reuse of the copy
+throttle, because a spec has to stage a fast copy and then reverse it slowly. Pinned by
 `rollback/tests.rs::the_e2e_throttle_hook_paces_the_item_loop`, which measures elapsed time rather than trusting the
 helper to exist: whoever splits this loop into a planner and an executor must carry the three lines across, or every
 rollback E2E goes back to racing the engine. The deferred-directory phase is deliberately NOT paced (it polls no
@@ -456,6 +456,13 @@ FE IPC surface is two thin pass-throughs (`commands/operation_log.rs`): `get_rec
 and `get_operation_log_detail(operation_id, item_limit, item_offset)`; the MCP `operations_list` / `operations_get`
 handlers (`mcp/executor/operation_log.rs`) do the same off the MCP task.
 
+- **Within one second, "newest first" has no defined order.** `get_recent_operation_log_entries` sorts
+  `started_at DESC, op_id DESC`, and `op_id` is a random UUID, so operations that start in the same second come back in
+  arbitrary order. That's invisible in normal use and a trap for anything that identifies an operation as "the top row":
+  a reversal journals its own inverse operation, which lands in the same second as whatever ran next. Identify an
+  operation by DIFFERENCE from the ids you'd already seen
+  (`apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts::stageTransfer` is the worked example) rather than
+  by position.
 - **Name search is an indexed folded-name lookup, not FTS (D8).** The product headline — "when did I delete `dog.jpg`?"
   — is exact/prefix name equality, so `search_operations` joins `operation_items` to `operations` and matches the
   indexed `source_name_folded` column. The benchmark query

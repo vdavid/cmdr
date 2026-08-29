@@ -70,6 +70,16 @@ volume inner leaf recorded with no snapshot to verify against at all. Naming eit
 unexplained, and "isn't sure about" is true of both. The clause also sets the expectation that a rollback may come out
 partial, which is the honest read today.
 
+## Where the tests live
+
+- `OperationLogDialog.test.ts` drives the rollback flow against a MOCKED backend: which rows offer the button, that
+  nothing is dispatched on a "no", the kind-aware wording, and the refusal notice.
+- `apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts` drives the same flow against the REAL engine and
+  real files, which is what pins the things a mock can't: that a real move is journaled as a move (so the question
+  really does word itself as a restore), that a wire value like `alreadyRolledBack` is one the backend actually emits,
+  and that a reversal launched from this dialog reaches the disk. Its `test.fixme`s describe the progress, pause, and
+  mid-file cancel the engine doesn't have yet.
+
 ## Refusal notices
 
 `rollbackRefusalNotice` maps each `RollbackRefusal` variant to its own line, plus a reason-free fallback for `null` (the
