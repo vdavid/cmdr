@@ -156,6 +156,21 @@ enum InverseAction {
     RestoreMove,
 }
 
+/// Whether this row names a directory the operation CREATED rather than one it
+/// moved. `record_created_dirs` writes the created path as BOTH source and dest,
+/// so the two being equal is the marker — there is no separate column for it.
+///
+/// It decides the inverse for a MOVE's created directories (a cross-FS move
+/// creates destination folders exactly like a copy does). Reading those as a
+/// move's usual restore renames a directory onto itself: a no-op the engine
+/// counts as reversed, leaving the moved folder's empty skeleton at the
+/// destination. A move of an existing directory records source ≠ dest, so it
+/// keeps its restore.
+fn is_created_in_place(unit: &RollbackUnit) -> bool {
+    unit.dest_volume_id.as_deref() == Some(unit.source_volume_id.as_str())
+        && unit.dest_path.as_deref() == Some(unit.source_path.as_path())
+}
+
 fn inverse_action(kind: OpKind, entry_type: EntryType) -> Option<InverseAction> {
     match kind {
         OpKind::Copy => Some(match entry_type {
@@ -499,8 +514,16 @@ async fn reverse_item(
     kind: OpKind,
     unit: &RollbackUnit,
 ) -> ItemResult {
-    let Some(action) = inverse_action(kind, unit.entry_type) else {
-        return ItemResult::Skipped(SkipReason::Failed);
+    let action = if unit.entry_type == EntryType::Dir && is_created_in_place(unit) {
+        // A directory the operation created, whatever the op kind (see
+        // `is_created_in_place`): the inverse is to take it away again, never to
+        // rename it onto itself.
+        InverseAction::RemoveDirIfEmpty
+    } else {
+        match inverse_action(kind, unit.entry_type) {
+            Some(action) => action,
+            None => return ItemResult::Skipped(SkipReason::Failed),
+        }
     };
     match action {
         InverseAction::RemoveFileIfUnchanged => remove_file_if_unchanged(vm, runner, unit).await,

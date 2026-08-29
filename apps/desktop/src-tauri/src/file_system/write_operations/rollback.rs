@@ -177,6 +177,17 @@ impl RollbackRunner for ReversalRunner {
                     same_volume,
                     force,
                 } => {
+                    // Put the folder back before the file. A move of a FOLDER
+                    // empties its source tree and removes it, so the original
+                    // location no longer exists — and a rename into a missing
+                    // parent fails with ENOENT, which reads as "already gone" and
+                    // counts the item as REVERSED. A reversal reporting success
+                    // having restored nothing is the one outcome this engine may
+                    // never produce. Creating a directory only ever adds, so it
+                    // can't take anything away from the user.
+                    if let Some(parent) = to_path.parent() {
+                        to.create_directory_all(parent).await?;
+                    }
                     if same_volume {
                         // A same-FS move / rename-back / trash-restore: one rename,
                         // atomic, nothing to stream.

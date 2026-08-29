@@ -841,6 +841,85 @@ async fn a_canceled_original_op_rolls_back_exactly_its_completed_items() {
 }
 
 #[tokio::test]
+async fn a_restore_recreates_the_folder_the_move_emptied() {
+    // A move of a FOLDER empties the source tree and removes it, so putting one of
+    // its files back means putting the folder back first. Without that the rename
+    // fails with ENOENT, which the engine reads as the item being already gone — an
+    // item counted as reversed while the file never moved. A reversal reporting
+    // success having restored nothing is the one outcome the engine may never
+    // produce.
+    //
+    // On a REAL filesystem deliberately: `InMemoryVolume::rename` creates the
+    // target's missing parents, so an in-memory double can't tell this bug from a
+    // fix.
+    let rig = Rig::new();
+    let work = tempfile::tempdir().expect("work");
+    let landed = work.path().join("dst/album/song.txt");
+    std::fs::create_dir_all(landed.parent().expect("a parent")).expect("mk dst");
+    std::fs::write(&landed, b"SONG").expect("write");
+    filetime::set_file_mtime(&landed, filetime::FileTime::from_unix_time(MT as i64, 0)).expect("pin mtime");
+    let original = work.path().join("src/album/song.txt");
+    rig.vm.register(
+        "root",
+        Arc::new(crate::file_system::volume::LocalPosixVolume::new("Test root", "/")) as Arc<dyn Volume>,
+    );
+    rig.seed(
+        "op",
+        OpKind::Move,
+        "root",
+        Some("root"),
+        RollbackState::Rollbackable,
+        vec![file_unit(
+            0,
+            "root",
+            &original.to_string_lossy(),
+            "root",
+            &landed.to_string_lossy(),
+            4,
+        )],
+    );
+
+    let report = rig.rollback("op").await;
+
+    assert_eq!(report.skipped, 0, "nothing to skip, got {report:?}");
+    assert!(
+        original.exists(),
+        "the file is really back, not merely reported as reversed"
+    );
+    assert!(!landed.exists());
+}
+
+#[tokio::test]
+async fn a_directory_a_move_created_is_removed_rather_than_restored_onto_itself() {
+    // A cross-FS move creates destination directories exactly like a copy does, and
+    // journals them as created-dir rows (source == dest == the created path).
+    // Reading those as a move's usual restore renames the directory onto itself: a
+    // no-op the engine счит counts as reversed, leaving the moved folder's empty
+    // skeleton at the destination. A row the operation CREATED is removed.
+    let rig = Rig::new();
+    let vol = Arc::new(InMemoryVolume::new("Root"));
+    mkdir(&vol, "/dst").await;
+    mkdir(&vol, "/dst/album").await;
+    rig.register("root", vol.clone());
+    rig.seed(
+        "op",
+        OpKind::Move,
+        "root",
+        Some("root"),
+        RollbackState::Rollbackable,
+        vec![dir_unit(0, "root", "/dst/album")],
+    );
+
+    rig.rollback("op").await;
+
+    assert!(
+        !exists(&vol, "/dst/album").await,
+        "the directory the move created is gone"
+    );
+    assert!(exists(&vol, "/dst").await, "and the folder it was created in stays");
+}
+
+#[tokio::test]
 async fn streams_a_large_op_across_pages() {
     // More units than one page (ROLLBACK_PAGE = 512) proves the paged cursor
     // advances across pages without materializing the whole list.
