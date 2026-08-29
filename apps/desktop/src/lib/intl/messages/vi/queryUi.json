@@ -134,11 +134,11 @@
   "@queryUi.ai.patternLabel.generic": {
     "sourceHash": "4288ade"
   },
-  "queryUi.ai.filter.size": "Kích thước",
+  "queryUi.ai.filter.size": "Kích cỡ",
   "@queryUi.ai.filter.size": {
     "sourceHash": "1af8519"
   },
-  "queryUi.ai.filter.modified": "Sửa đổi",
+  "queryUi.ai.filter.modified": "Đã sửa đổi",
   "@queryUi.ai.filter.modified": {
     "sourceHash": "e8ce5dc"
   },
@@ -162,11 +162,11 @@
   "@queryUi.results.col.path": {
     "sourceHash": "62fa5a5"
   },
-  "queryUi.results.col.size": "Kích thước",
+  "queryUi.results.col.size": "Kích cỡ",
   "@queryUi.results.col.size": {
     "sourceHash": "1af8519"
   },
-  "queryUi.results.col.modified": "Sửa đổi",
+  "queryUi.results.col.modified": "Đã sửa đổi",
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
@@ -206,7 +206,7 @@
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
   },
-  "queryUi.results.criteria.size": "Bộ lọc kích thước đang bật",
+  "queryUi.results.criteria.size": "Bộ lọc kích cỡ đang bật",
   "@queryUi.results.criteria.size": {
     "sourceHash": "24f552d"
   },
@@ -270,7 +270,7 @@
   "@queryUi.results.live.incompleteEmpty": {
     "sourceHash": "bfa15df"
   },
-  "queryUi.results.live.capped": "Đang hiện {shownText} kết quả đầu tiên trong {totalText}.",
+  "queryUi.results.live.capped": "Đang hiển thị {shownText} kết quả đầu tiên trong {totalText}.",
   "@queryUi.results.live.capped": {
     "sourceHash": "7c0475d"
   },
@@ -294,7 +294,7 @@
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.trailingTooltip": "Hiện tất cả tìm kiếm gần đây",
+  "queryUi.recent.trailingTooltip": "Hiển thị tất cả tìm kiếm gần đây",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
   },
@@ -384,15 +384,15 @@
   "@queryUi.recent.rowResultCount": {
     "sourceHash": "e8c3318"
   },
-  "queryUi.recent.sizeRange": "kích thước {minText}–{maxText}",
+  "queryUi.recent.sizeRange": "kích cỡ {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {
     "sourceHash": "96bd04f"
   },
-  "queryUi.recent.sizeMin": "kích thước > {minText}",
+  "queryUi.recent.sizeMin": "kích cỡ > {minText}",
   "@queryUi.recent.sizeMin": {
     "sourceHash": "0aab700"
   },
-  "queryUi.recent.sizeMax": "kích thước < {maxText}",
+  "queryUi.recent.sizeMax": "kích cỡ < {maxText}",
   "@queryUi.recent.sizeMax": {
     "sourceHash": "7850b6e"
   },
@@ -453,15 +453,15 @@
   "@queryUi.filters.chip.pattern": {
     "sourceHash": "4288ade"
   },
-  "queryUi.filters.chip.size": "Kích thước",
+  "queryUi.filters.chip.size": "Kích cỡ",
   "@queryUi.filters.chip.size": {
     "sourceHash": "1af8519"
   },
-  "queryUi.filters.chip.modified": "Sửa đổi",
+  "queryUi.filters.chip.modified": "Đã sửa đổi",
   "@queryUi.filters.chip.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.filters.chip.scope": "Tìm trong",
+  "queryUi.filters.chip.scope": "Tìm kiếm trong",
   "@queryUi.filters.chip.scope": {
     "sourceHash": "fa79255"
   },
@@ -525,11 +525,11 @@
   "@queryUi.size.customInputPlaceholder": {
     "sourceHash": "6cdfd27"
   },
-  "queryUi.size.popover.label": "Kích thước",
+  "queryUi.size.popover.label": "Kích cỡ",
   "@queryUi.size.popover.label": {
     "sourceHash": "1af8519"
   },
-  "queryUi.size.popover.aria": "Tùy chọn bộ lọc kích thước",
+  "queryUi.size.popover.aria": "Tùy chọn bộ lọc kích cỡ",
   "@queryUi.size.popover.aria": {
     "sourceHash": "087d449"
   },
@@ -537,27 +537,27 @@
   "@queryUi.size.aria.comparator": {
     "sourceHash": "9a348d5"
   },
-  "queryUi.size.aria.minValue": "Giá trị kích thước tối thiểu",
+  "queryUi.size.aria.minValue": "Giá trị kích cỡ tối thiểu",
   "@queryUi.size.aria.minValue": {
     "sourceHash": "242e7b0"
   },
-  "queryUi.size.aria.minUnit": "Đơn vị kích thước tối thiểu",
+  "queryUi.size.aria.minUnit": "Đơn vị kích cỡ tối thiểu",
   "@queryUi.size.aria.minUnit": {
     "sourceHash": "4803db9"
   },
-  "queryUi.size.aria.maxValue": "Giá trị kích thước tối đa",
+  "queryUi.size.aria.maxValue": "Giá trị kích cỡ tối đa",
   "@queryUi.size.aria.maxValue": {
     "sourceHash": "a79a52b"
   },
-  "queryUi.size.aria.maxUnit": "Đơn vị kích thước tối đa",
+  "queryUi.size.aria.maxUnit": "Đơn vị kích cỡ tối đa",
   "@queryUi.size.aria.maxUnit": {
     "sourceHash": "7ab449b"
   },
-  "queryUi.size.aria.customMin": "Giá trị kích thước tối thiểu tùy chỉnh",
+  "queryUi.size.aria.customMin": "Giá trị kích cỡ tối thiểu tùy chỉnh",
   "@queryUi.size.aria.customMin": {
     "sourceHash": "d841b6a"
   },
-  "queryUi.size.aria.customMax": "Giá trị kích thước tối đa tùy chỉnh",
+  "queryUi.size.aria.customMax": "Giá trị kích cỡ tối đa tùy chỉnh",
   "@queryUi.size.aria.customMax": {
     "sourceHash": "4761acf"
   },
@@ -581,7 +581,7 @@
   "@queryUi.date.customCell": {
     "sourceHash": "564a4d3"
   },
-  "queryUi.date.popover.label": "Sửa đổi",
+  "queryUi.date.popover.label": "Đã sửa đổi",
   "@queryUi.date.popover.label": {
     "sourceHash": "e8ce5dc"
   },
@@ -637,11 +637,11 @@
   "@queryUi.date.preset.yearStart": {
     "sourceHash": "f86a864"
   },
-  "queryUi.scope.popover.label": "Tìm trong",
+  "queryUi.scope.popover.label": "Tìm kiếm trong",
   "@queryUi.scope.popover.label": {
     "sourceHash": "fa79255"
   },
-  "queryUi.scope.popover.aria": "Tìm trong các thư mục",
+  "queryUi.scope.popover.aria": "Tìm kiếm trong các thư mục",
   "@queryUi.scope.popover.aria": {
     "sourceHash": "989db5d"
   },

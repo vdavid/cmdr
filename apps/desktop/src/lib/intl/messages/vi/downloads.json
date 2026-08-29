@@ -1,5 +1,5 @@
 {
-  "downloads.toast.downloaded": "Đã tải xuống <file>{fileName}</file>",
+  "downloads.toast.downloaded": "Đã tải về <file>{fileName}</file>",
   "@downloads.toast.downloaded": {
     "sourceHash": "7bc4ace"
   },
@@ -31,7 +31,7 @@
   "@downloads.toast.summaryGlobal": {
     "sourceHash": "1bd00be"
   },
-  "downloads.toast.expandTip": "Hiện mẹo phím tắt",
+  "downloads.toast.expandTip": "Hiển thị mẹo phím tắt",
   "@downloads.toast.expandTip": {
     "sourceHash": "9dfbe32"
   },
@@ -39,7 +39,7 @@
   "@downloads.toast.collapseTip": {
     "sourceHash": "b404794"
   },
-  "downloads.toast.stopShowing": "Ngừng hiện những thông báo này",
+  "downloads.toast.stopShowing": "Ngừng hiển thị những thông báo này",
   "@downloads.toast.stopShowing": {
     "sourceHash": "36faf9f"
   },
@@ -47,11 +47,11 @@
   "@downloads.toast.jumpToFile": {
     "sourceHash": "4511f65"
   },
-  "downloads.notification.title": "Đã tải xuống {fileName}",
+  "downloads.notification.title": "Đã tải về {fileName}",
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
-  "downloads.notification.titleMultiple": "Đã tải xuống {count, plural, other {{countText} tệp}}",
+  "downloads.notification.titleMultiple": "Đã tải về {count, plural, other {{countText} tệp}}",
   "@downloads.notification.titleMultiple": {
     "sourceHash": "f52e460"
   },
@@ -67,7 +67,7 @@
   "@downloads.empty.dismiss": {
     "sourceHash": "48845bf"
   },
-  "downloads.empty.goToDownloads": "Đến thư mục Tải về",
+  "downloads.empty.goToDownloads": "Đi tới thư mục Tải về",
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
@@ -83,7 +83,7 @@
   "@downloads.fda.openSystemSettings": {
     "sourceHash": "18196b3"
   },
-  "downloads.warnToast.message": "Phím tắt {binding} nhảy đến mục tải xuống mới nhất của bạn từ bất cứ đâu. Giữ bật chứ?",
+  "downloads.warnToast.message": "Phím tắt {binding} nhảy đến mục tải về mới nhất của bạn từ bất cứ đâu. Giữ bật chứ?",
   "@downloads.warnToast.message": {
     "sourceHash": "b174604"
   },
@@ -99,7 +99,7 @@
   "@downloads.shortcutRow.scopeTitle": {
     "sourceHash": "a258b30"
   },
-  "downloads.shortcutRow.commandName": "Đến mục tải xuống mới nhất <marker>(toàn cục)</marker>",
+  "downloads.shortcutRow.commandName": "Đi tới bản tải về mới nhất <marker>(toàn cục)</marker>",
   "@downloads.shortcutRow.commandName": {
     "sourceHash": "83f6d4b"
   },
@@ -135,11 +135,11 @@
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "28a5ba2"
   },
-  "downloads.toggleDescription.bound": "Nhấn {binding} từ bất kỳ ứng dụng nào để nhảy đến mục tải xuống gần đây nhất của bạn.",
+  "downloads.toggleDescription.bound": "Nhấn {binding} từ bất kỳ ứng dụng nào để nhảy đến mục tải về gần đây nhất của bạn.",
   "@downloads.toggleDescription.bound": {
     "sourceHash": "be43b35"
   },
-  "downloads.toggleDescription.unbound": "Nhảy đến mục tải xuống gần đây nhất của bạn từ bất kỳ ứng dụng nào.",
+  "downloads.toggleDescription.unbound": "Nhảy đến mục tải về gần đây nhất của bạn từ bất kỳ ứng dụng nào.",
   "@downloads.toggleDescription.unbound": {
     "sourceHash": "187cdec"
   }

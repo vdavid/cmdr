@@ -31,7 +31,7 @@
   "@selection.notice.snapshotPane": {
     "sourceHash": "aa4306e"
   },
-  "selection.recent.trailingTooltip": "Hiện tất cả lựa chọn gần đây",
+  "selection.recent.trailingTooltip": "Hiển thị tất cả lựa chọn gần đây",
   "@selection.recent.trailingTooltip": {
     "sourceHash": "c694665"
   },

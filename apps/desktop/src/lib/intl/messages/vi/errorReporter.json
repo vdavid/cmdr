@@ -1,5 +1,5 @@
 {
-  "errorReporter.dialog.title": "Gửi báo cáo sự cố",
+  "errorReporter.dialog.title": "Gửi báo cáo trục trặc",
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
@@ -84,7 +84,7 @@
   "@errorReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },
-  "errorReporter.dialog.sendFailedToast": "Không thể gửi báo cáo sự cố: {error}",
+  "errorReporter.dialog.sendFailedToast": "Không thể gửi báo cáo trục trặc: {error}",
   "@errorReporter.dialog.sendFailedToast": {
     "sourceHash": "38c0695"
   },
@@ -92,7 +92,7 @@
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
-  "errorReporter.amend.title": "Thêm vào báo cáo sự cố của bạn",
+  "errorReporter.amend.title": "Thêm vào báo cáo trục trặc của bạn",
   "@errorReporter.amend.title": {
     "sourceHash": "b19796b"
   },
@@ -128,7 +128,7 @@
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "69df136"
   },
-  "errorReporter.sentToast.message": "Đã gửi báo cáo sự cố. ID tham chiếu của bạn là",
+  "errorReporter.sentToast.message": "Đã gửi báo cáo trục trặc. ID tham chiếu của bạn là",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
   },
@@ -156,11 +156,11 @@
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.bundleSavedToast.reveal": "Hiện trong Finder",
+  "errorReporter.bundleSavedToast.reveal": "Hiển thị trong Finder",
   "@errorReporter.bundleSavedToast.reveal": {
     "sourceHash": "cc84938"
   },
-  "errorReporter.autoSentToast.title": "Đã gửi báo cáo sự cố",
+  "errorReporter.autoSentToast.title": "Đã gửi báo cáo trục trặc",
   "@errorReporter.autoSentToast.title": {
     "sourceHash": "b69ee37"
   },

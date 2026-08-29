@@ -69,7 +69,7 @@
   "@indexing.step.updateFileList": {
     "sourceHash": "ef0a3d2"
   },
-  "indexing.step.computeFolderSizes": "Tính kích thước thư mục",
+  "indexing.step.computeFolderSizes": "Tính kích cỡ thư mục",
   "@indexing.step.computeFolderSizes": {
     "sourceHash": "65c86f6"
   },
@@ -93,7 +93,7 @@
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
   },
-  "indexing.step.findFilesChangeCheck": "Đang so sánh từng thư mục với chỉ mục. Kích thước thư mục của bạn vẫn hiển thị trong lúc này.",
+  "indexing.step.findFilesChangeCheck": "Đang so sánh từng thư mục với chỉ mục. Kích cỡ thư mục của bạn vẫn hiển thị trong lúc này.",
   "@indexing.step.findFilesChangeCheck": {
     "sourceHash": "8c23f1f"
   },
@@ -117,11 +117,11 @@
   "@indexing.aggregation.sorting": {
     "sourceHash": "3a7c827"
   },
-  "indexing.aggregation.computing": "Đang tính kích thước thư mục...",
+  "indexing.aggregation.computing": "Đang tính kích cỡ thư mục...",
   "@indexing.aggregation.computing": {
     "sourceHash": "19f54fc"
   },
-  "indexing.aggregation.writing": "Đang lưu kích thước thư mục...",
+  "indexing.aggregation.writing": "Đang lưu kích cỡ thư mục...",
   "@indexing.aggregation.writing": {
     "sourceHash": "9466e98"
   },
@@ -190,7 +190,7 @@
   "@indexing.firstConnect.title": {
     "sourceHash": "0734a24"
   },
-  "indexing.firstConnect.body": "Cmdr có thể lập chỉ mục ổ đĩa này ở chế độ nền để kích thước thư mục và tìm kiếm hoạt động ở đây. Nó chỉ chạy khi ổ đĩa được kết nối.",
+  "indexing.firstConnect.body": "Cmdr có thể lập chỉ mục ổ đĩa này ở chế độ nền để kích cỡ thư mục và tìm kiếm hoạt động ở đây. Nó chỉ chạy khi ổ đĩa được kết nối.",
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
@@ -210,11 +210,11 @@
   "@indexing.staleDialog.title": {
     "sourceHash": "21a78ee"
   },
-  "indexing.staleDialog.body": "Trong khi {name} bị ngắt kết nối, các tệp trên đó có thể đã thay đổi. Kích thước thư mục và kết quả tìm kiếm có thể hơi lệch cho đến khi bạn quét lại. Trạng thái màu vàng bên cạnh ổ đĩa luôn hiện ra khi điều này xảy ra, và một lần quét lại sẽ làm mới nó.",
+  "indexing.staleDialog.body": "Trong khi {name} bị ngắt kết nối, các tệp trên đó có thể đã thay đổi. Kích cỡ thư mục và kết quả tìm kiếm có thể hơi lệch cho đến khi bạn quét lại. Trạng thái màu vàng bên cạnh ổ đĩa luôn hiện ra khi điều này xảy ra, và một lần quét lại sẽ làm mới nó.",
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
-  "indexing.staleDialog.neverShowAgain": "Không bao giờ hiện lại",
+  "indexing.staleDialog.neverShowAgain": "Không bao giờ hiển thị lại",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"
   },

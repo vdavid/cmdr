@@ -16,7 +16,7 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr có thể xem những gì bạn đang duyệt, ổ đĩa và lịch sử thao tác của bạn để trả lời. Cmdr chỉ đọc tên, đường dẫn và kích thước, không bao giờ đọc nội dung tệp.",
+  "askCmdr.empty.hint": "Cmdr có thể xem những gì bạn đang duyệt, ổ đĩa và lịch sử thao tác của bạn để trả lời. Cmdr chỉ đọc tên, đường dẫn và kích cỡ, không bao giờ đọc nội dung tệp.",
   "@askCmdr.empty.hint": {
     "sourceHash": "6ccad75"
   },
@@ -276,7 +276,7 @@
   "@askCmdr.sessions.noResults": {
     "sourceHash": "c53c411"
   },
-  "askCmdr.sessions.showArchived": "Hiện mục đã lưu trữ",
+  "askCmdr.sessions.showArchived": "Hiển thị mục đã lưu trữ",
   "@askCmdr.sessions.showArchived": {
     "sourceHash": "e9de9f2"
   },
@@ -324,7 +324,7 @@
   "@askCmdr.composer.providerOff": {
     "sourceHash": "e466415"
   },
-  "askCmdr.attachment.remove": "Gỡ tệp đính kèm",
+  "askCmdr.attachment.remove": "Gỡ bỏ tệp đính kèm",
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"
   },
@@ -344,7 +344,7 @@
   "@askCmdr.consent.item.names": {
     "sourceHash": "ce3259d"
   },
-  "askCmdr.consent.item.sizes": "Kích thước và ngày tháng của chúng",
+  "askCmdr.consent.item.sizes": "Kích cỡ và ngày tháng của chúng",
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
@@ -612,11 +612,11 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "Đã đặt lại {countText} {count, plural, other {tệp}}.",
+  "askCmdr.renameUndo.undone": "Đã đưa trở lại {countText} {count, plural, other {tệp}}.",
   "@askCmdr.renameUndo.undone": {
     "sourceHash": "a76ffee"
   },
-  "askCmdr.renameUndo.partial": "Đã đặt lại {countText} {count, plural, other {tệp}}.",
+  "askCmdr.renameUndo.partial": "Đã đưa trở lại {countText} {count, plural, other {tệp}}.",
   "@askCmdr.renameUndo.partial": {
     "sourceHash": "a76ffee"
   },

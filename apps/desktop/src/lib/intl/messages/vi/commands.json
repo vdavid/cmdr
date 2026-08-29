@@ -11,7 +11,7 @@
   "@commands.appHideOthers.label": {
     "sourceHash": "74376e4"
   },
-  "commands.appShowAll.label": "Hiện tất cả",
+  "commands.appShowAll.label": "Hiển thị tất cả",
   "@commands.appShowAll.label": {
     "sourceHash": "2150d8d"
   },
@@ -63,7 +63,7 @@
   "@commands.helpOpenShortcuts.description": {
     "sourceHash": "a9a1e0d"
   },
-  "commands.helpSendErrorReport.label": "Gửi báo cáo sự cố…",
+  "commands.helpSendErrorReport.label": "Gửi báo cáo trục trặc…",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
@@ -132,7 +132,7 @@
   "@commands.favoritesAdd.description": {
     "sourceHash": "84dcbf8"
   },
-  "commands.downloadsGoToLatest.label": "Đi tới tệp tải về mới nhất",
+  "commands.downloadsGoToLatest.label": "Đi tới bản tải về mới nhất",
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
@@ -192,7 +192,7 @@
   "@commands.sortByModified.label": {
     "sourceHash": "d9349cb"
   },
-  "commands.sortBySize.label": "Sắp xếp theo kích thước",
+  "commands.sortBySize.label": "Sắp xếp theo kích cỡ",
   "@commands.sortBySize.label": {
     "sourceHash": "b5fa7af"
   },
@@ -252,35 +252,35 @@
   "@commands.paneRefresh.label": {
     "sourceHash": "42ce075"
   },
-  "commands.tabNew.label": "Thẻ mới",
+  "commands.tabNew.label": "Tab mới",
   "@commands.tabNew.label": {
     "sourceHash": "1e08fda"
   },
-  "commands.tabClose.label": "Đóng thẻ",
+  "commands.tabClose.label": "Đóng tab",
   "@commands.tabClose.label": {
     "sourceHash": "50a3f95"
   },
-  "commands.tabReopen.label": "Mở lại thẻ đã đóng",
+  "commands.tabReopen.label": "Mở lại tab đã đóng",
   "@commands.tabReopen.label": {
     "sourceHash": "5ca5397"
   },
-  "commands.tabNext.label": "Thẻ tiếp theo",
+  "commands.tabNext.label": "Tab tiếp theo",
   "@commands.tabNext.label": {
     "sourceHash": "1ef9522"
   },
-  "commands.tabPrev.label": "Thẻ trước",
+  "commands.tabPrev.label": "Tab trước",
   "@commands.tabPrev.label": {
     "sourceHash": "c88d5e7"
   },
-  "commands.tabTogglePin.label": "Bật/tắt ghim thẻ",
+  "commands.tabTogglePin.label": "Bật/tắt ghim tab",
   "@commands.tabTogglePin.label": {
     "sourceHash": "3fdfcd1"
   },
-  "commands.tabCloseOthers.label": "Đóng các thẻ khác",
+  "commands.tabCloseOthers.label": "Đóng các tab khác",
   "@commands.tabCloseOthers.label": {
     "sourceHash": "0ddc2c5"
   },
-  "commands.tabMcpAction.label": "Tác vụ thẻ của khung",
+  "commands.tabMcpAction.label": "Tác vụ tab của khung",
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
@@ -316,11 +316,11 @@
   "@commands.navPageDown.label": {
     "sourceHash": "72a825f"
   },
-  "commands.navBack.label": "Quay lại",
+  "commands.navBack.label": "Trở lại",
   "@commands.navBack.label": {
     "sourceHash": "6aadac2"
   },
-  "commands.navForward.label": "Đi tới",
+  "commands.navForward.label": "Tiếp theo",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
   },
@@ -328,7 +328,7 @@
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
-  "commands.errorPaneToggleTechnicalDetails.label": "Hiện chi tiết kỹ thuật",
+  "commands.errorPaneToggleTechnicalDetails.label": "Hiển thị chi tiết kỹ thuật",
   "@commands.errorPaneToggleTechnicalDetails.label": {
     "sourceHash": "bde0de8"
   },
@@ -452,11 +452,11 @@
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"
   },
-  "commands.fileShowInFinder.mac.label": "Hiện trong Finder",
+  "commands.fileShowInFinder.mac.label": "Hiển thị trong Finder",
   "@commands.fileShowInFinder.mac.label": {
     "sourceHash": "c2a9c77"
   },
-  "commands.fileShowInFinder.other.label": "Hiện trong trình quản lý tệp",
+  "commands.fileShowInFinder.other.label": "Hiển thị trong trình quản lý tệp",
   "@commands.fileShowInFinder.other.label": {
     "sourceHash": "3ca4dad"
   },
@@ -496,11 +496,11 @@
   "@commands.fileContextMenu.description": {
     "sourceHash": "8fb1721"
   },
-  "commands.cloudMakeOffline.label": "Tải xuống để dùng ngoại tuyến",
+  "commands.cloudMakeOffline.label": "Tải về để dùng ngoại tuyến",
   "@commands.cloudMakeOffline.label": {
     "sourceHash": "b75c09f"
   },
-  "commands.cloudMakeOffline.description": "Tải xuống một tệp lưu trên đám mây để vẫn dùng được khi không có kết nối internet",
+  "commands.cloudMakeOffline.description": "Tải về một tệp lưu trên đám mây để vẫn dùng được khi không có kết nối internet",
   "@commands.cloudMakeOffline.description": {
     "sourceHash": "d5cd793"
   },
@@ -516,31 +516,31 @@
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"
   },
-  "commands.tagsToggleGrey.description": "Thêm hoặc xóa thẻ Finder Xám trên các tệp đã chọn",
+  "commands.tagsToggleGrey.description": "Thêm hoặc gỡ bỏ thẻ Finder Xám trên các tệp đã chọn",
   "@commands.tagsToggleGrey.description": {
     "sourceHash": "ca38860"
   },
-  "commands.tagsToggleGreen.label": "Bật/tắt thẻ Xanh lá",
+  "commands.tagsToggleGreen.label": "Bật/tắt thẻ Lục",
   "@commands.tagsToggleGreen.label": {
     "sourceHash": "397b880"
   },
-  "commands.tagsToggleGreen.description": "Thêm hoặc xóa thẻ Finder Xanh lá trên các tệp đã chọn",
+  "commands.tagsToggleGreen.description": "Thêm hoặc gỡ bỏ thẻ Finder Lục trên các tệp đã chọn",
   "@commands.tagsToggleGreen.description": {
     "sourceHash": "fa8396b"
   },
-  "commands.tagsTogglePurple.label": "Bật/tắt thẻ Tím",
+  "commands.tagsTogglePurple.label": "Bật/tắt thẻ Tía",
   "@commands.tagsTogglePurple.label": {
     "sourceHash": "ee137d2"
   },
-  "commands.tagsTogglePurple.description": "Thêm hoặc xóa thẻ Finder Tím trên các tệp đã chọn",
+  "commands.tagsTogglePurple.description": "Thêm hoặc gỡ bỏ thẻ Finder Tía trên các tệp đã chọn",
   "@commands.tagsTogglePurple.description": {
     "sourceHash": "c6872a8"
   },
-  "commands.tagsToggleBlue.label": "Bật/tắt thẻ Xanh dương",
+  "commands.tagsToggleBlue.label": "Bật/tắt thẻ Lam",
   "@commands.tagsToggleBlue.label": {
     "sourceHash": "11ba925"
   },
-  "commands.tagsToggleBlue.description": "Thêm hoặc xóa thẻ Finder Xanh dương trên các tệp đã chọn",
+  "commands.tagsToggleBlue.description": "Thêm hoặc gỡ bỏ thẻ Finder Lam trên các tệp đã chọn",
   "@commands.tagsToggleBlue.description": {
     "sourceHash": "7a21c5f"
   },
@@ -548,7 +548,7 @@
   "@commands.tagsToggleYellow.label": {
     "sourceHash": "2afc261"
   },
-  "commands.tagsToggleYellow.description": "Thêm hoặc xóa thẻ Finder Vàng trên các tệp đã chọn",
+  "commands.tagsToggleYellow.description": "Thêm hoặc gỡ bỏ thẻ Finder Vàng trên các tệp đã chọn",
   "@commands.tagsToggleYellow.description": {
     "sourceHash": "16a2608"
   },
@@ -556,7 +556,7 @@
   "@commands.tagsToggleRed.label": {
     "sourceHash": "f2d314d"
   },
-  "commands.tagsToggleRed.description": "Thêm hoặc xóa thẻ Finder Đỏ trên các tệp đã chọn",
+  "commands.tagsToggleRed.description": "Thêm hoặc gỡ bỏ thẻ Finder Đỏ trên các tệp đã chọn",
   "@commands.tagsToggleRed.description": {
     "sourceHash": "c6e0bee"
   },
@@ -564,7 +564,7 @@
   "@commands.tagsToggleOrange.label": {
     "sourceHash": "d0c0702"
   },
-  "commands.tagsToggleOrange.description": "Thêm hoặc xóa thẻ Finder Cam trên các tệp đã chọn",
+  "commands.tagsToggleOrange.description": "Thêm hoặc gỡ bỏ thẻ Finder Cam trên các tệp đã chọn",
   "@commands.tagsToggleOrange.description": {
     "sourceHash": "79e5c97"
   },
@@ -676,11 +676,11 @@
   "@commands.handler.favoriteAddFailed": {
     "sourceHash": "3f85e99"
   },
-  "commands.handler.tabLimitReached": "Đã đạt giới hạn số thẻ",
+  "commands.handler.tabLimitReached": "Đã đạt giới hạn số tab",
   "@commands.handler.tabLimitReached": {
     "sourceHash": "2d4205a"
   },
-  "commands.handler.noRecentlyClosedTabs": "Không có thẻ nào vừa đóng trong khung này.",
+  "commands.handler.noRecentlyClosedTabs": "Không có tab nào vừa đóng trong khung này.",
   "@commands.handler.noRecentlyClosedTabs": {
     "sourceHash": "e560789"
   },

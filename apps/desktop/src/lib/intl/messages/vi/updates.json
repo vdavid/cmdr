@@ -3,7 +3,7 @@
   "@updates.checkToast.errorPrefix": {
     "sourceHash": "020abfd"
   },
-  "updates.checkToast.sendErrorReport": "Gửi báo cáo sự cố",
+  "updates.checkToast.sendErrorReport": "Gửi báo cáo trục trặc",
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
@@ -60,7 +60,7 @@
   "@updates.status.checking": {
     "sourceHash": "ec963ff"
   },
-  "updates.status.downloading": "Đã tìm thấy cập nhật, đang tải xuống v{next} (hiện tại: v{prev})…",
+  "updates.status.downloading": "Đã tìm thấy cập nhật, đang tải về v{next} (hiện tại: v{prev})…",
   "@updates.status.downloading": {
     "sourceHash": "480c6da"
   },

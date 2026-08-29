@@ -19,9 +19,10 @@
   "@menu.bar.go": {
     "sourceHash": "6cc8519"
   },
-  "menu.bar.tab": "Thẻ",
+  "menu.bar.tab": "Tab",
   "@menu.bar.tab": {
-    "sourceHash": "90ddf19"
+    "sourceHash": "90ddf19",
+    "sameAsSourceJustification": "macOS Vietnamese keeps the loanword \"tab\" for a UI tab: Finder vi \"Hiển thị Tất cả Tab\" and \"Ẩn Thanh Tab\", Safari vi \"Tab mới\" / \"Đóng tab\" / \"Ghim tab\" (macOS 26.6.2, per-nib MenuBar.strings, verified 2026-08-30). The menu title IS that word, so it matches English by evidence, not by omission. \"Thẻ\" is reserved for a Finder tag."
   },
   "menu.bar.window": "Cửa sổ",
   "@menu.bar.window": {
@@ -211,7 +212,7 @@
   "@menu.view.briefView": {
     "sourceHash": "7bfd572"
   },
-  "menu.view.showHiddenFiles": "Hiện tệp ẩn",
+  "menu.view.showHiddenFiles": "Hiển thị tệp ẩn",
   "@menu.view.showHiddenFiles": {
     "sourceHash": "b5ede7f"
   },
@@ -328,7 +329,7 @@
   "@menu.go.goToPath": {
     "sourceHash": "936edc5"
   },
-  "menu.go.goToLatestDownload": "Đi tới tệp tải về mới nhất",
+  "menu.go.goToLatestDownload": "Đi tới bản tải về mới nhất",
   "@menu.go.goToLatestDownload": {
     "sourceHash": "492d0b6"
   },
@@ -336,35 +337,35 @@
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
   },
-  "menu.tab.newTab": "Thẻ mới",
+  "menu.tab.newTab": "Tab mới",
   "@menu.tab.newTab": {
     "sourceHash": "1e08fda"
   },
-  "menu.tab.closeTab": "Đóng thẻ",
+  "menu.tab.closeTab": "Đóng tab",
   "@menu.tab.closeTab": {
     "sourceHash": "50a3f95"
   },
-  "menu.tab.reopenClosedTab": "Mở lại thẻ đã đóng",
+  "menu.tab.reopenClosedTab": "Mở lại tab đã đóng",
   "@menu.tab.reopenClosedTab": {
     "sourceHash": "5ca5397"
   },
-  "menu.tab.nextTab": "Thẻ tiếp theo",
+  "menu.tab.nextTab": "Tab tiếp theo",
   "@menu.tab.nextTab": {
     "sourceHash": "1ef9522"
   },
-  "menu.tab.previousTab": "Thẻ trước",
+  "menu.tab.previousTab": "Tab trước",
   "@menu.tab.previousTab": {
     "sourceHash": "c88d5e7"
   },
-  "menu.tab.pinTab": "Ghim thẻ",
+  "menu.tab.pinTab": "Ghim tab",
   "@menu.tab.pinTab": {
     "sourceHash": "bf5083a"
   },
-  "menu.tab.unpinTab": "Bỏ ghim thẻ",
+  "menu.tab.unpinTab": "Bỏ ghim tab",
   "@menu.tab.unpinTab": {
     "sourceHash": "20553dd"
   },
-  "menu.tab.closeOtherTabs": "Đóng các thẻ khác",
+  "menu.tab.closeOtherTabs": "Đóng các tab khác",
   "@menu.tab.closeOtherTabs": {
     "sourceHash": "0ddc2c5"
   },
@@ -388,7 +389,7 @@
   "@menu.help.sendFeedback": {
     "sourceHash": "60e1072"
   },
-  "menu.help.sendErrorReport": "Gửi báo cáo sự cố…",
+  "menu.help.sendErrorReport": "Gửi báo cáo trục trặc…",
   "@menu.help.sendErrorReport": {
     "sourceHash": "063c94e"
   },
@@ -408,7 +409,7 @@
   "@menu.context.addToFavorites": {
     "sourceHash": "7f3c078"
   },
-  "menu.context.makeAvailableOffline": "Tải xuống để dùng ngoại tuyến",
+  "menu.context.makeAvailableOffline": "Tải về để dùng ngoại tuyến",
   "@menu.context.makeAvailableOffline": {
     "sourceHash": "b75c09f"
   },
@@ -468,7 +469,7 @@
   "@menu.mediaIndex.coveredByParent": {
     "sourceHash": "9dffdcd"
   },
-  "menu.mediaIndex.removeFolder": "Xóa khỏi thư mục được lập chỉ mục",
+  "menu.mediaIndex.removeFolder": "Gỡ bỏ khỏi thư mục được lập chỉ mục",
   "@menu.mediaIndex.removeFolder": {
     "sourceHash": "7079859"
   },

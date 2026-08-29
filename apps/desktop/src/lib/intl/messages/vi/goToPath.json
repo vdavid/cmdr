@@ -1,9 +1,9 @@
 {
-  "goToPath.dialog.title": "Đến đường dẫn",
+  "goToPath.dialog.title": "Đi tới đường dẫn",
   "@goToPath.dialog.title": {
     "sourceHash": "fb65702"
   },
-  "goToPath.dialog.inputAriaLabel": "Đường dẫn cần đến",
+  "goToPath.dialog.inputAriaLabel": "Đường dẫn cần đi tới",
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
@@ -15,7 +15,7 @@
   "@goToPath.dialog.recentsAriaLabel": {
     "sourceHash": "b698143"
   },
-  "goToPath.dialog.removeFromList": "Xóa khỏi danh sách",
+  "goToPath.dialog.removeFromList": "Gỡ bỏ khỏi danh sách",
   "@goToPath.dialog.removeFromList": {
     "sourceHash": "82963c7"
   },
@@ -23,7 +23,7 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "Đến đường dẫn",
+  "goToPath.dialog.confirm": "Đi tới đường dẫn",
   "@goToPath.dialog.confirm": {
     "sourceHash": "fb65702"
   },

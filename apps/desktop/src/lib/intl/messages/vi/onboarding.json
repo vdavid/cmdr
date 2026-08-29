@@ -416,11 +416,11 @@
   "@onboarding.stepOptional.indexing.benefit1": {
     "sourceHash": "5fa0e9f"
   },
-  "onboarding.stepOptional.indexing.benefit2": "Kích thước thư mục theo thời gian thực cho toàn bộ ổ đĩa. Bạn luôn biết mình có bao nhiêu thứ trong mỗi thư mục.",
+  "onboarding.stepOptional.indexing.benefit2": "Kích cỡ thư mục theo thời gian thực cho toàn bộ ổ đĩa. Bạn luôn biết mình có bao nhiêu thứ trong mỗi thư mục.",
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Nếu bạn tắt cái này, bạn chỉ thấy <code>&lt;DIR&gt;</code> thay cho kích thước. Cái giá là khoảng 1 GB chỉ mục trên ổ đĩa của bạn với vài triệu tệp, nhưng không tốn thêm CPU hay bộ nhớ sau 2&ndash;3 phút đầu tiên khi bạn khởi động ứng dụng lần đầu, hoặc khởi động lại sau một thời gian dài. Đây là một tính năng rẻ so với những lợi ích nó mang lại.",
+  "onboarding.stepOptional.indexing.descCost": "Nếu bạn tắt cái này, bạn chỉ thấy <code>&lt;DIR&gt;</code> thay cho kích cỡ. Cái giá là khoảng 1 GB chỉ mục trên ổ đĩa của bạn với vài triệu tệp, nhưng không tốn thêm CPU hay bộ nhớ sau 2&ndash;3 phút đầu tiên khi bạn khởi động ứng dụng lần đầu, hoặc khởi động lại sau một thời gian dài. Đây là một tính năng rẻ so với những lợi ích nó mang lại.",
   "@onboarding.stepOptional.indexing.descCost": {
     "sourceHash": "739f4f8"
   },

@@ -1,9 +1,9 @@
 {
-  "commandPalette.searchPlaceholder": "Tìm lệnh...",
+  "commandPalette.searchPlaceholder": "Tìm kiếm lệnh...",
   "@commandPalette.searchPlaceholder": {
     "sourceHash": "dd6c6ab"
   },
-  "commandPalette.searchAriaLabel": "Tìm lệnh",
+  "commandPalette.searchAriaLabel": "Tìm kiếm lệnh",
   "@commandPalette.searchAriaLabel": {
     "sourceHash": "00ff739"
   },

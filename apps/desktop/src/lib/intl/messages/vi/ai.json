@@ -3,7 +3,7 @@
   "@ai.toast.downloadingTitle": {
     "sourceHash": "453ec3b"
   },
-  "ai.toast.startingDownload": "Đang bắt đầu tải xuống...",
+  "ai.toast.startingDownload": "Đang bắt đầu tải về...",
   "@ai.toast.startingDownload": {
     "sourceHash": "d02eaf4"
   },
@@ -43,7 +43,7 @@
   "@ai.toast.startingDescription": {
     "sourceHash": "94ecf6d"
   },
-  "ai.toast.downloadCloseTooltip": "Đóng thông báo này; quá trình tải xuống sẽ tiếp tục ở chế độ nền",
+  "ai.toast.downloadCloseTooltip": "Đóng thông báo này; quá trình tải về sẽ tiếp tục ở chế độ nền",
   "@ai.toast.downloadCloseTooltip": {
     "sourceHash": "16db2bd"
   },
@@ -263,7 +263,7 @@
   "@ai.local.installStepDownloading": {
     "sourceHash": "56596cb"
   },
-  "ai.local.installStepVerifying": "Bước 3/4: Đang xác minh bản tải xuống...",
+  "ai.local.installStepVerifying": "Bước 3/4: Đang xác minh bản tải về...",
   "@ai.local.installStepVerifying": {
     "sourceHash": "4133988"
   },
@@ -271,7 +271,7 @@
   "@ai.local.installStepStarting": {
     "sourceHash": "39acba1"
   },
-  "ai.local.startingDownload": "Đang bắt đầu tải xuống...",
+  "ai.local.startingDownload": "Đang bắt đầu tải về...",
   "@ai.local.startingDownload": {
     "sourceHash": "d02eaf4"
   },

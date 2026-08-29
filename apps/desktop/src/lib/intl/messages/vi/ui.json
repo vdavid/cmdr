@@ -28,7 +28,7 @@
   "@ui.combobox.loadingSuggestions": {
     "sourceHash": "6fcf509"
   },
-  "ui.combobox.showSuggestions": "Hiện gợi ý",
+  "ui.combobox.showSuggestions": "Hiển thị gợi ý",
   "@ui.combobox.showSuggestions": {
     "sourceHash": "a80b6a6"
   },
@@ -52,7 +52,7 @@
   "@ui.shortcutChip.customizeTooltip": {
     "sourceHash": "9a7817d"
   },
-  "ui.toast.sendErrorReport": "Gửi báo cáo sự cố…",
+  "ui.toast.sendErrorReport": "Gửi báo cáo trục trặc…",
   "@ui.toast.sendErrorReport": {
     "sourceHash": "063c94e"
   },

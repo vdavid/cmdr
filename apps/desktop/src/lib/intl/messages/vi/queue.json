@@ -11,7 +11,7 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "Các thao tác sao chép, di chuyển, và xóa hiện ở đây khi đang chạy, để bạn có thể tạm dừng, tiếp tục, hoặc hủy chúng.",
+  "queue.empty.body": "Các thao tác sao chép, di chuyển, và xóa xuất hiện ở đây khi đang chạy, để bạn có thể tạm dừng, tiếp tục, hoặc hủy chúng.",
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
@@ -39,11 +39,11 @@
   "@queue.row.resume": {
     "sourceHash": "d640c74"
   },
-  "queue.row.foreground": "Hiện",
+  "queue.row.foreground": "Hiển thị",
   "@queue.row.foreground": {
     "sourceHash": "0df6f1c"
   },
-  "queue.row.foregroundAria": "Hiện thao tác này trong cửa sổ chính",
+  "queue.row.foregroundAria": "Hiển thị thao tác này trong cửa sổ chính",
   "@queue.row.foregroundAria": {
     "sourceHash": "ece64ad"
   },
@@ -103,7 +103,7 @@
   "@queue.failureToast.title": {
     "sourceHash": "a55f5df"
   },
-  "queue.failureToast.action": "Hiện trong hàng đợi thao tác",
+  "queue.failureToast.action": "Hiển thị trong hàng đợi thao tác",
   "@queue.failureToast.action": {
     "sourceHash": "607fbb1"
   },

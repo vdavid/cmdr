@@ -62,7 +62,7 @@ avoids "error"/"failed".
 - **Gender / inclusive language: a non-issue (high).** Vietnamese is analytic with no grammatical gender and no gendered
   verb/adjective agreement. `bạn` is gender-neutral. Nothing to engineer around. Confidence: high.
 - **Capitalization: sentence case everywhere (high).** Vietnamese capitalizes only the first word and proper nouns in
-  titles, labels, and buttons. English title case is wrong ("Hiện tệp ẩn", not "Hiện Tệp Ẩn"). Matches Cmdr's
+  titles, labels, and buttons. English title case is wrong ("Hiển thị tệp ẩn", not "Hiển Thị Tệp Ẩn"). Matches Cmdr's
   sentence-case rule. Confidence: high.
 - **Text expansion: plan for ~20-25% growth (high).** Vietnamese is isolating, so it spells out with separate words
   rather than affixes, and UI strings run longer than English. Overflow-check buttons and labels against the
@@ -97,6 +97,21 @@ Settled terms (sources agree):
 - **sort: `sắp xếp`** · GNOME ("Sắp xếp"). `high`.
 - **sidebar: `khung bên`** · GNOME ("khung bên"). `high`.
 - **disconnect: `ngắt kết nối`** · macOS AppKit ("Ngắt kết nối"). `high`.
+- **tab (a UI tab): `tab`; a Finder tag: `thẻ`** · macOS Finder vi ("Hiển thị Tất cả Tab", "Ẩn Thanh Tab") and Safari vi
+  ("Tab mới", "Đóng tab", "Ghim tab") keep the loanword for the UI tab, while Finder's tag menu is `Thẻ…` / `Thêm thẻ…`
+  (macOS 26.6.2, per-nib `MenuBar.strings` / `InfoWindowTaggingHeaderView.strings`, verified 2026-08-30). The catalog
+  now names them apart across all 28 tab keys; `menu.bar.tab` is deliberately identical to English and carries a
+  `sameAsSourceJustification`. `high`.
+- **show: `hiển thị`, never `hiện`** · macOS vi says `Hiển thị` 147 times across Finder/AppKit/System Settings and never
+  uses `hiện` as the verb (every `hiện` there is `hiện tại` / `hiện có` = "current"), so a label starting with `Hiện`
+  reads as "current…". `high`.
+- **size: `kích cỡ`, never `kích thước`** · macOS vi: 33 hits for `kích cỡ`, zero for `kích thước`; Microsoft
+  terminology agrees (`size → kích cỡ`). `high`. The one compound that keeps its own shape is `Cỡ chữ` ("Text size").
+- **search: `tìm kiếm`; find: `tìm`** · macOS AppKit splits them exactly this way (Search → `Tìm kiếm`, Find → `Tìm`,
+  Finder `MenuBar 300783.title`). `high`.
+- **download (noun and verb): `tải về`, never `tải xuống`** · macOS vi: 35 hits for `tải về`, zero for `tải xuống`
+  (Microsoft's `tải xuống` is the Windows convention). A downloaded item is `bản tải về` (Finder "Remove Download" →
+  `Xóa bản tải về`). `high`.
 - **get info: `Lấy thông tin`; the Locked checkbox in that panel: `Đã khóa`** · macOS Finder Tier 1 (`N165`, `TL22`, the
   `"Get Info"` key in `Localizable.json`; `AXNODE1` is the checkbox's own accessibility name, and `NE18` builds our
   exact sentence: `Chọn Tệp > Lấy thông tin, bỏ chọn “Đã khóa” rồi thử lại.`), verified 2026-08-23. Apple DOES localize
@@ -107,11 +122,6 @@ Tentative / needs a native check:
 
 - **volume: `ổ đĩa` / `phân vùng`** · no clean macOS "volume" string in the pile; "ổ đĩa" (drive) reads natural for a
   mounted volume, "phân vùng" = partition. `tentative`.
-- **tab (UI tab): the catalog ships `thẻ`; Tier 1 says `tab`.** macOS Finder vi ("Tab mới", "Hiển thị Tất cả Tab") and
-  Safari vi ("Tab mới", "Đóng tab", "Ghim tab") both use the loanword (verified on macOS 26.5.2, 2026-08-19), so the
-  evidence points at `tab`. The shipped catalog uses `thẻ` in 36 places across six files, so the native-menu pass kept
-  `thẻ` rather than leave the app half-and-half. **Owed:** one sweep changing every UI-tab `thẻ` → `tab`, after which
-  this entry becomes `high`. Don't switch a single key on its own. `tentative`.
 - **pane: `khung`** · three sources, three words: Total Commander vi says `bảng`, Microsoft says `ngăn`, and the Cmdr
   catalog uses `khung`. No macOS "pane" string exists. `khung` stays for catalog consistency. `tentative`.
 - **bookmark: `dấu trang`** · GNOME phrasing for bookmarking; "đánh dấu" is the verb. `tentative`.
@@ -170,7 +180,8 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **`sự cố` is "problem", not "crash": pick the verb that carries the quitting.** The pile shows `sự cố` used for
   ordinary problems the app survives (macOS Finder "Nếu bạn tiếp tục gặp sự cố…", AppKit "Đã có sự cố khi truy xuất…",
   verified 2026-08-23), so `gặp sự cố` is safe in a string that must NOT claim Cmdr quit. What claims quitting is the
-  verb: `thoát đột ngột`. Keep that split, because the crash-dialog body now has three variants
+  verb: `thoát bất ngờ` (macOS AppKit `AppKitErrors`). Keep that split, because the crash-dialog body now has three
+  variants
   (`crashReporter.dialog .body.ended` / `.keptRunning` / `.unknown`) and only `.ended` may say the app quit. Same trap
   in the noun: `báo cáo sự cố` means "crash report", so a string that says just "a report" must read `báo cáo` alone.
 - **Sibling copy variants share every sentence they can.** Where English varies only the first sentence across a set of
@@ -194,6 +205,17 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **Nhắc tới một menu của ứng dụng thì viết `menu <Tên>`**, lấy tên đúng như `menu.bar.*` (macOS Finder `vi`):
   `từ menu Trợ giúp`. Catalog đã có sẵn câu này trong `settings.updates.errorReports.description`; dùng lại y hệt thay
   vì viết một biến thể mới.
+- **"Back" has two right answers, and macOS draws the line.** Going back in the folder HISTORY is `Trở lại` (Finder
+  Go > Back); returning to the previous SCREEN or step inside a flow is `Quay lại` (macOS Setup Assistant, the Apple ID
+  and iCloud sheets). Don't flatten them: `glossary.md` § Rà soát trôi thuật ngữ.
+- **Two report flows, two names.** A crash report is `báo cáo sự cố` (macOS Problem Reporter), an error report is
+  `báo cáo trục trặc`. They sit next to each other as two toggles in Settings > Updates & privacy, so one word for both
+  would make the panel unreadable.
+- **`xóa` destroys, `gỡ bỏ` un-lists.** Delete (and anything that really erases bytes, like "Remove download") is
+  `xóa`; taking an item off a list while it lives on is `gỡ bỏ`. macOS says `Xóa` for both because Finder never shows
+  the two side by side; Cmdr does.
+- **"Error" as a bare status cell is `Sự cố`; as a diagnostic prefix it's `Lỗi:`.** The `@key.description` of each key
+  says which surface it is. Both are deliberate; see `glossary.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

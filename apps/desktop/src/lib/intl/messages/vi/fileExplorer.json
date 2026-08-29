@@ -72,7 +72,7 @@
     "sourceHash": "3bc0afc",
     "sameAsSourceJustification": "Punctuation only, no words: this language ends a sentence with a full stop followed by a space, exactly as English does, so the assembled tooltip is byte-identical. The key exists for languages whose sentence-final punctuation differs (Chinese uses the ideographic period)."
   },
-  "fileExplorer.pane.resizePanesAriaLabel": "Đổi kích thước khung",
+  "fileExplorer.pane.resizePanesAriaLabel": "Đổi kích cỡ khung",
   "@fileExplorer.pane.resizePanesAriaLabel": {
     "sourceHash": "ff22a46"
   },
@@ -128,11 +128,11 @@
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
   },
-  "fileExplorer.errorPane.goBack": "Quay lại",
+  "fileExplorer.errorPane.goBack": "Trở lại",
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Mở thư mục chính",
+  "fileExplorer.errorPane.goHome": "Đi tới thư mục chính",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -369,7 +369,7 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "Làm mới danh sách máy chủ trên mạng",
+  "fileExplorer.network.browser.refreshAriaLabel": "Làm mới các máy chủ mạng",
   "@fileExplorer.network.browser.refreshAriaLabel": {
     "sourceHash": "73966bd"
   },
@@ -409,7 +409,7 @@
   "@fileExplorer.network.browser.status.timeout": {
     "sourceHash": "70594d9"
   },
-  "fileExplorer.network.browser.status.unreachable": "Không kết nối được",
+  "fileExplorer.network.browser.status.unreachable": "Không tới được",
   "@fileExplorer.network.browser.status.unreachable": {
     "sourceHash": "abaa46a"
   },
@@ -461,23 +461,23 @@
   "@fileExplorer.network.browser.tooltip.errorWithType": {
     "sourceHash": "ee0fd6d"
   },
-  "fileExplorer.network.browser.cannotRemoveDiscovered": "Không thể xóa máy chủ được phát hiện tự động",
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Không thể gỡ bỏ máy chủ được phát hiện tự động",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "03fabd6"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "Xóa {hostName} khỏi danh sách máy chủ?",
+  "fileExplorer.network.browser.removeHostConfirm": "Gỡ bỏ {hostName} khỏi danh sách máy chủ?",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "8ecdf1a"
   },
-  "fileExplorer.network.browser.removeHostConfirmButton": "Xóa",
+  "fileExplorer.network.browser.removeHostConfirmButton": "Gỡ bỏ",
   "@fileExplorer.network.browser.removeHostConfirmButton": {
     "sourceHash": "c3812fc"
   },
-  "fileExplorer.network.browser.hostRemoved": "Đã xóa {hostName}",
+  "fileExplorer.network.browser.hostRemoved": "Đã gỡ bỏ {hostName}",
   "@fileExplorer.network.browser.hostRemoved": {
     "sourceHash": "9e02382"
   },
-  "fileExplorer.network.browser.hostRemoveFailed": "Không thể xóa {hostName}",
+  "fileExplorer.network.browser.hostRemoveFailed": "Không thể gỡ bỏ {hostName}",
   "@fileExplorer.network.browser.hostRemoveFailed": {
     "sourceHash": "9120dd2"
   },
@@ -781,15 +781,15 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "afb1cc2"
   },
-  "fileExplorer.tabs.limitReached": "Đã đạt giới hạn thẻ",
+  "fileExplorer.tabs.limitReached": "Đã đạt giới hạn số tab",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"
   },
-  "fileExplorer.tabs.closePinnedConfirm": "Thẻ này đã được ghim. Vẫn đóng?",
+  "fileExplorer.tabs.closePinnedConfirm": "Tab này đã được ghim. Vẫn đóng?",
   "@fileExplorer.tabs.closePinnedConfirm": {
     "sourceHash": "d5757f9"
   },
-  "fileExplorer.tabs.closePinnedTitle": "Đóng thẻ đã ghim",
+  "fileExplorer.tabs.closePinnedTitle": "Đóng tab đã ghim",
   "@fileExplorer.tabs.closePinnedTitle": {
     "sourceHash": "5d22e58"
   },
@@ -1078,11 +1078,11 @@
   "@fileExplorer.selectionInfo.noSelection": {
     "sourceHash": "beea8ac"
   },
-  "fileExplorer.tabBar.paneTabsAriaLabel": "Thẻ của khung {paneId}",
+  "fileExplorer.tabBar.paneTabsAriaLabel": "Tab của khung {paneId}",
   "@fileExplorer.tabBar.paneTabsAriaLabel": {
     "sourceHash": "d641870"
   },
-  "fileExplorer.tabBar.unreachableAriaLabel": "Không truy cập được",
+  "fileExplorer.tabBar.unreachableAriaLabel": "Không tới được",
   "@fileExplorer.tabBar.unreachableAriaLabel": {
     "sourceHash": "abaa46a"
   },
@@ -1090,11 +1090,11 @@
   "@fileExplorer.tabBar.pinnedAriaLabel": {
     "sourceHash": "f20c879"
   },
-  "fileExplorer.tabBar.closeTabTooltip": "Đóng thẻ",
+  "fileExplorer.tabBar.closeTabTooltip": "Đóng tab",
   "@fileExplorer.tabBar.closeTabTooltip": {
     "sourceHash": "50a3f95"
   },
-  "fileExplorer.tabBar.newTabAriaLabel": "Thẻ mới",
+  "fileExplorer.tabBar.newTabAriaLabel": "Tab mới",
   "@fileExplorer.tabBar.newTabAriaLabel": {
     "sourceHash": "1e08fda"
   },
@@ -1254,7 +1254,7 @@
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
     "sourceHash": "5f4fcbb"
   },
-  "fileExplorer.navigation.removeFavoriteFailed": "Không thể xóa mục ưa thích đó. Thử lại?",
+  "fileExplorer.navigation.removeFavoriteFailed": "Không thể gỡ bỏ mục ưa thích đó. Thử lại?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
     "sourceHash": "181bf36"
   },
@@ -1358,7 +1358,7 @@
   "@fileExplorer.navigation.spaceMtpHint": {
     "sourceHash": "43ec861"
   },
-  "fileExplorer.navigation.volumesStillUnreachable": "Vẫn không truy cập được. Hãy thử lại sau",
+  "fileExplorer.navigation.volumesStillUnreachable": "Vẫn không tới được. Hãy thử lại sau",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "sourceHash": "e4661d2"
   },

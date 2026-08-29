@@ -63,7 +63,7 @@
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
   },
-  "viewer.binaryWarning.suppressForever": "Không hiện cảnh báo này nữa",
+  "viewer.binaryWarning.suppressForever": "Không hiển thị cảnh báo này nữa",
   "@viewer.binaryWarning.suppressForever": {
     "sourceHash": "b85b92b"
   },
@@ -88,7 +88,7 @@
   "@viewer.search.matchPosition": {
     "sourceHash": "ec24db4"
   },
-  "viewer.search.searching": "Đang tìm...",
+  "viewer.search.searching": "Đang tìm kiếm...",
   "@viewer.search.searching": {
     "sourceHash": "78c9d9f"
   },

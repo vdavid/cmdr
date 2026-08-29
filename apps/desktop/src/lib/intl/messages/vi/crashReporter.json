@@ -31,7 +31,7 @@
   "@crashReporter.dialog.reportIdHelp": {
     "sourceHash": "c63b08a"
   },
-  "crashReporter.dialog.showDetails": "Hiện chi tiết báo cáo",
+  "crashReporter.dialog.showDetails": "Hiển thị chi tiết báo cáo",
   "@crashReporter.dialog.showDetails": {
     "sourceHash": "11756f2"
   },

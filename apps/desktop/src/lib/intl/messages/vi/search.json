@@ -7,7 +7,7 @@
   "@search.runHint": {
     "sourceHash": "406d32e"
   },
-  "search.action.showAll.label": "Hiện tất cả trong cửa sổ chính",
+  "search.action.showAll.label": "Hiển thị tất cả trong cửa sổ chính",
   "@search.action.showAll.label": {
     "sourceHash": "782075a"
   },
@@ -95,7 +95,7 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
-  "search.walkHandoff.running": "Vẫn đang tìm {label}",
+  "search.walkHandoff.running": "Vẫn đang tìm kiếm {label}",
   "@search.walkHandoff.running": {
     "sourceHash": "79a7339"
   },
@@ -135,7 +135,7 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
-  "search.coverage.uncovered.indexing": "Cmdr vẫn đang lập chỉ mục {drive} và chưa tới các thư mục này, nên lượt tìm này đã bỏ qua chúng:",
+  "search.coverage.uncovered.indexing": "Cmdr vẫn đang lập chỉ mục {drive} và chưa tới các thư mục này, nên lượt tìm kiếm này đã bỏ qua chúng:",
   "@search.coverage.uncovered.indexing": {
     "sourceHash": "f5995ea"
   },
@@ -163,7 +163,7 @@
   "@search.coverage.denied": {
     "sourceHash": "2c0eb72"
   },
-  "search.coverage.deniedFullDiskAccess": "Có quyền truy cập toàn bộ đĩa, Cmdr sẽ tìm được cả trong những thư mục như vậy.",
+  "search.coverage.deniedFullDiskAccess": "Có quyền truy cập toàn bộ đĩa, Cmdr sẽ tìm kiếm được cả trong những thư mục như vậy.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
   },

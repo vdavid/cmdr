@@ -152,7 +152,7 @@
   "@fileOperations.mkdir.timeoutMessage": {
     "sourceHash": "751aec6"
   },
-  "fileOperations.mkdir.timeoutRefresh": "Tải lại danh sách tệp",
+  "fileOperations.mkdir.timeoutRefresh": "Làm mới danh sách tệp",
   "@fileOperations.mkdir.timeoutRefresh": {
     "sourceHash": "b0e5436"
   },
@@ -256,11 +256,11 @@
   "@fileOperations.transferDialog.compressLevelCaption": {
     "sourceHash": "58924a1"
   },
-  "fileOperations.transferDialog.estimatedSize": "Kích thước ước tính",
+  "fileOperations.transferDialog.estimatedSize": "Kích cỡ ước tính",
   "@fileOperations.transferDialog.estimatedSize": {
     "sourceHash": "d5f39d7"
   },
-  "fileOperations.transferDialog.estimatedSizeTooltip": "Ước tính sơ bộ kích thước tệp zip sau khi nén. Kích thước thực tế có thể khác.",
+  "fileOperations.transferDialog.estimatedSizeTooltip": "Ước tính sơ bộ kích cỡ tệp zip sau khi nén. Kích cỡ thực tế có thể khác.",
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
@@ -496,7 +496,7 @@
   "@fileOperations.transferProgress.annotationNewer": {
     "sourceHash": "92afdbd"
   },
-  "fileOperations.transferProgress.smallerDisabledTooltip": "Không thể so sánh: không rõ kích thước thư mục đích.",
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Không thể so sánh: không rõ kích cỡ thư mục đích.",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
     "sourceHash": "3bb25be"
   },
@@ -568,7 +568,7 @@
   "@fileOperations.transferProgress.progressFiles": {
     "sourceHash": "abc7e98"
   },
-  "fileOperations.transferProgress.sizeProgressAria": "Tiến trình theo kích thước",
+  "fileOperations.transferProgress.sizeProgressAria": "Tiến trình theo kích cỡ",
   "@fileOperations.transferProgress.sizeProgressAria": {
     "sourceHash": "60ec57d"
   },
