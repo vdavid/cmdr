@@ -88,25 +88,41 @@ export interface DivergenceFinding {
 }
 
 /**
+ * Sentence punctuation that DECORATES a term rather than belonging to it, in the
+ * shapes the scripts we ship (or plan to) use: Latin and full-width terminators
+ * and separators, the ellipsis, the openers Spanish puts in FRONT of a sentence,
+ * the Arabic and Devanagari equivalents. Listed rather than taken from
+ * `\p{P}` wholesale, because Unicode files `%`, `/`, `#`, and the brackets under
+ * punctuation too, and those are part of a term: `{percent}%` must not normalize
+ * to `{percent}`.
+ */
+const EDGE_PUNCTUATION = String.raw`\s.。．!！?？:：;；,，、…⋯¡¿؟،؛।॥`
+
+/** Runs of `EDGE_PUNCTUATION` at either end of a value. */
+const EDGE_RUN = new RegExp(`^[${EDGE_PUNCTUATION}]+|[${EDGE_PUNCTUATION}]+$`, 'gu')
+
+/**
  * Normalizes a value for "is this the same string" comparison.
  *
  * ICU keys double their apostrophes (`doesn''t`) and the raw `errors.*` family
  * does not, so the same sentence in the two families is byte-different and would
- * otherwise read as a divergence. Trailing ellipsis (either shape) and sentence
- * punctuation are noise for this question too: a label and the same label with a
- * colon are one term. CASE is kept, because a sentence-case label and a Title
- * Case menu item are genuinely different house conventions.
+ * otherwise read as a divergence. Punctuation WRAPPING the term is noise for this
+ * question too: a label and the same label with a colon are one term, and so are
+ * `Copied`, `Copié !`, and `¡Copiado!`. It's stripped from BOTH ends, since where
+ * a script puts its marks is a property of the script, not of the term. CASE is
+ * kept, because a sentence-case label and a Title Case menu item are genuinely
+ * different house conventions.
+ *
+ * Gotcha: strip the ends AFTER collapsing whitespace, or French's narrow no-break
+ * space before `!` survives as a trailing blank and the term stops matching its
+ * plain sibling.
  *
  * @param value the raw catalog value
  * @param key the key it belongs to (decides ICU vs raw apostrophe handling)
  */
 export function normalizeForComparison(value: string, key: string): string {
   const unescaped = isRawKey(key) ? value : value.replace(/''/g, "'")
-  return unescaped
-    .replace(/…|⋯|\.\.\./g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/[.:!?。！：？]+$/u, '')
+  return unescaped.replace(/\s+/gu, ' ').replace(EDGE_RUN, '')
 }
 
 /**

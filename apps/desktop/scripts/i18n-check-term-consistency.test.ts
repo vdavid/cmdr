@@ -27,6 +27,19 @@ describe('normalizeForComparison', () => {
     expect(normalizeForComparison('Done.', 'a.b')).toBe('Done')
     expect(normalizeForComparison('a  b', 'a.b')).toBe('a b')
   })
+  it('ignores punctuation that WRAPS a term, whatever the script puts where', () => {
+    // French spaces its `!` and `?` off the word (with a narrow no-break space),
+    // Spanish opens with `¡` / `¿`, CJK closes with a full-width stop. All of it
+    // decorates the same term, so all of it normalizes away.
+    expect(normalizeForComparison('Copié\u202f!', 'a.b')).toBe('Copié')
+    expect(normalizeForComparison('¡Copiado!', 'a.b')).toBe('Copiado')
+    expect(normalizeForComparison('¿Eliminar?', 'a.b')).toBe('Eliminar')
+    expect(normalizeForComparison('已复制。', 'a.b')).toBe('已复制')
+  })
+  it('keeps a placeholder brace and a percent sign, which are part of the term', () => {
+    expect(normalizeForComparison('{percent}%', 'a.b')).toBe('{percent}%')
+    expect(normalizeForComparison('{count} left', 'a.b')).toBe('{count} left')
+  })
   it('keeps case, so a sentence-case label and a Title Case one stay distinct', () => {
     expect(normalizeForComparison('Hide others', 'a.b')).not.toBe(normalizeForComparison('Hide Others', 'a.b'))
   })
