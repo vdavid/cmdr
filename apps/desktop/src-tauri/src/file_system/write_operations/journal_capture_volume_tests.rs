@@ -508,10 +508,10 @@ impl OperationEventSink for StopAfterBytesSink {
     fn emit_dry_run_complete(&self, _r: crate::file_system::write_operations::types::DryRunResult) {}
 }
 
-/// **Gap 3, the user-visible one.** Reversing an SMB/MTP FOLDER copy has to put
-/// the folder's inner files back too. Inner leaves recorded no snapshot at all,
-/// so every one of them verified as `UnverifiablePrecondition` and skipped: the
-/// reversal removed the top level and left the whole tree of copies behind.
+/// Reversing an SMB/MTP FOLDER copy has to put the folder's inner files back
+/// too. Inner leaves recorded no snapshot at all, so every one of them verified
+/// as `UnverifiablePrecondition` and skipped: the reversal removed the top level
+/// and left the whole tree of copies behind.
 ///
 /// Recording the byte count each leaf already reported is enough — `verify_snapshot`
 /// is flat over the row, so a size-only leaf verifies and reverses.
@@ -557,10 +557,10 @@ async fn a_volume_folder_copy_reverses_every_file_inside_it() {
     );
 }
 
-/// **Gap 1.** A canceled copy keeps what it wrote, including the destination
-/// directories it created. Those were journaled only on the success path, so a
-/// canceled operation had zero `dir` rows and its reversal left the whole
-/// destination skeleton standing.
+/// A canceled copy keeps what it wrote, including the destination directories it
+/// created. Those were journaled only on the success path, so a canceled
+/// operation had zero `dir` rows and its reversal left the whole destination
+/// skeleton standing.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_canceled_volume_copy_still_journals_the_directories_it_created() {
     let fixture = VolumeLoop::new("op-vol-cancel-dirs");
@@ -614,7 +614,7 @@ async fn an_interrupted_concurrent_volume_copy_journals_every_child_it_finished(
     );
 }
 
-/// **Gap 2.** Volume journaling happens per top-level source at COMPLETION, so a
+/// Volume journaling happens per top-level source at COMPLETION, so a
 /// directory source interrupted mid-stream contributed no rows at all — every
 /// child it had already finished existed on disk and nowhere in the journal, and
 /// a reversal from history left them behind.

@@ -10,17 +10,14 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-08-29 `unify-rollback-plan.md` - **The journal-driven rollback reports no progress, can't pause, and can't be
-      canceled inside a large file.** Cmdr has three rollback implementations (local in-flight, volume in-flight,
-      journal-driven); the journal-driven one is the safest, since it rechecks every item against its recorded snapshot
-      before touching it. M1 fixes three live journaling bugs that already misdirect the shipped engine reachable from
-      Ask Cmdr's rename undo and MCP, the worst of which relocates files the operation never touched; it's independently
-      valuable and should land whatever happens to the rest. M2 gives the engine progress, pause, and mid-file cancel by
-      splitting planner from executor, deliberately NOT through the shared transfer driver (traced: the driver stats and
-      resolves conflicts before the per-item closure, which fights rollback's pinned never-overwrite policy). M3 (the
-      history-dialog button) is done, out of order, so the feature is reachable end to end while the rest lands. M4
-      makes the journal a faithful ledger and stands on its own. M5 collapses the three into one and is a decision to
-      take after M4, gated on three named blockers rather than on cost.
+- [ ] 2026-08-29 `unify-rollback-plan.md` - **Cmdr still carries three rollback implementations, and nobody has decided
+      whether that stays.** The journal-driven engine (the safest, since it rechecks every item against its recorded
+      snapshot before touching it) now runs behind a history-dialog button with progress, pause, and mid-file cancel;
+      the two in-memory ones (`CopyTransaction` / `MoveTransaction` and `volume_rollback_with_progress`) still handle
+      the in-flight case with no snapshot recheck. What's left is M5, collapsing the three into one, gated on three
+      named blockers rather than on cost: the cancel-predicate design (already answered by `StopMeans`), the
+      `MoveTransaction` refactor across three call paths, and the `archive_edit/move_out.rs` caller. M4's fourth gap
+      (pre-finalize eligibility) is open too, and only serves M5. Both need a go/no-go from David before anyone starts.
 
 - [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
       rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit

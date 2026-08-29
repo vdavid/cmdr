@@ -65,10 +65,10 @@ operation has written". That's true of a running copy and false of undoing a mov
 nothing. One wording has to over-warn on half the cases or under-warn on the other half.
 
 **Why the second sentence is vague on purpose.** Every undo body ends with "Cmdr skips anything it isn't sure about, so
-a few may…". Two different mechanisms produce a partial reversal: an item that drifted from its recorded snapshot, and a
-volume inner leaf recorded with no snapshot to verify against at all. Naming either one would leave the other
-unexplained, and "isn't sure about" is true of both. The clause also sets the expectation that a rollback may come out
-partial, which is the honest read today.
+a few may…". Two different mechanisms produce a partial reversal: an item that drifted from its recorded snapshot, and
+an item whose recorded snapshot the backend can't check against what sits there now. Naming either one would leave the
+other unexplained, and "isn't sure about" is true of both. The clause also sets the expectation that a rollback may come
+out partial, which is the honest read today.
 
 ## Where the tests live
 
@@ -77,8 +77,8 @@ partial, which is the honest read today.
 - `apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts` drives the same flow against the REAL engine and
   real files, which is what pins the things a mock can't: that a real move is journaled as a move (so the question
   really does word itself as a restore), that a wire value like `alreadyRolledBack` is one the backend actually emits,
-  and that a reversal launched from this dialog reaches the disk. Its `test.fixme`s describe the progress, pause, and
-  mid-file cancel the engine doesn't have yet.
+  and that a reversal launched from this dialog reaches the disk. It also covers the engine's three live controls end to
+  end: forward progress, a pause that resumes where it left off, and a cancel inside one large file.
 
 ## Refusal notices
 

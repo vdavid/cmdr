@@ -24,8 +24,8 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
   Don't turn it into a re-read.
 - **The confirmation's `variant` must match what the inverse DOES.** `rollbackConfirmVariant` mirrors the backend's
   `inverse_kind`; wording a move's reversal as a delete would scare people off an operation that takes nothing away.
-- **A rollback from history can come out PARTIAL** (it skips anything it can't verify, and volume inner leaves carry no
-  snapshot yet). ❌ No copy here may promise a complete reversal.
+- **A rollback from history can come out PARTIAL**: it skips anything it can't verify against the snapshot the journal
+  recorded. ❌ No copy here may promise a complete reversal.
 - **A refusal is typed.** Catch it with `asRollbackRefusal`, word it with `rollbackRefusalNotice`; ❌ never render the
   wire value, and never let a refused press look like nothing happened.
 - **A `notRollbackable` row explains itself on sight** (`notRollbackableNotice` off `notRollbackableReason`): it never
