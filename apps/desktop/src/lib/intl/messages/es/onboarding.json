@@ -403,7 +403,7 @@
   "@onboarding.stepOptional.networking.desc": {
     "sourceHash": "a27866b"
   },
-  "onboarding.stepOptional.indexing.title": "Indexación de la unidad",
+  "onboarding.stepOptional.indexing.title": "Indexación de unidades",
   "@onboarding.stepOptional.indexing.title": {
     "sourceHash": "38d916b"
   },

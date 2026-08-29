@@ -286,7 +286,7 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
-  "settings.listing.showHiddenFiles.label": "Mostrar los archivos ocultos",
+  "settings.listing.showHiddenFiles.label": "Mostrar archivos ocultos",
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
@@ -1870,7 +1870,7 @@
   "@settings.appearance.appColorHintLinkOther": {
     "sourceHash": "0aad057"
   },
-  "settings.appearance.datePreviewLabel": "Previsualización:",
+  "settings.appearance.datePreviewLabel": "Vista previa:",
   "@settings.appearance.datePreviewLabel": {
     "sourceHash": "75954c5"
   },
@@ -2006,7 +2006,7 @@
   "@settings.appearance.card.namesAndIcons": {
     "sourceHash": "8386169"
   },
-  "settings.appearance.card.briefMode": "Modo Breve",
+  "settings.appearance.card.briefMode": "Modo breve",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
   },
@@ -2074,7 +2074,7 @@
   "@settings.network.permissionIntroPrefix": {
     "sourceHash": "4f7f54f"
   },
-  "settings.network.permissionIntroConnectLink": "Conectar al servidor…",
+  "settings.network.permissionIntroConnectLink": "Conectarse a un servidor…",
   "@settings.network.permissionIntroConnectLink": {
     "sourceHash": "6188f47"
   },
@@ -2121,7 +2121,7 @@
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "Lo sentimos, no hemos podido darte de alta ahora mismo. ¿Lo intentas de nuevo?",
+  "settings.updates.emailSignupError": "Vaya, no hemos podido darte de alta ahora mismo. ¿Lo intentas de nuevo?",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },

@@ -215,7 +215,7 @@
   "@ai.cloud.connectionError": {
     "sourceHash": "3f378c3"
   },
-  "ai.cloud.genericError": "Algo salió mal",
+  "ai.cloud.genericError": "Algo ha ido mal",
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },

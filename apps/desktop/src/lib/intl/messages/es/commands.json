@@ -63,7 +63,7 @@
   "@commands.helpOpenShortcuts.description": {
     "sourceHash": "a9a1e0d"
   },
-  "commands.helpSendErrorReport.label": "Enviar informe de fallos…",
+  "commands.helpSendErrorReport.label": "Enviar informe de error…",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
@@ -116,7 +116,7 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Ir a una ruta…",
+  "commands.navGoToPath.label": "Ir a la ruta…",
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"
   },
@@ -468,7 +468,7 @@
   "@commands.fileCopyCurrentDirectoryPath.label": {
     "sourceHash": "ae360d1"
   },
-  "commands.fileCopyFilename.label": "Copiar el nombre del archivo",
+  "commands.fileCopyFilename.label": "Copiar nombre de archivo",
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
@@ -696,7 +696,7 @@
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
   },
-  "commands.handler.zoomResetHintMenu": "Puedes restablecer el zoom al 100% en Ver > Zoom > 100%.",
+  "commands.handler.zoomResetHintMenu": "Puedes restablecer el zoom al 100% en Visualización > Zoom > 100%.",
   "@commands.handler.zoomResetHintMenu": {
     "sourceHash": "f10315d"
   },

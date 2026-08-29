@@ -1654,3 +1654,88 @@ forma que la frase accesible ya usa de forma natural, en vez de forzar la frase 
 - **El nombre accesible envuelve la etiqueta, no la reformula**: `queryUi.scope.toggle.caseSensitiveAria` =
   `Distinguir mayúsculas y minúsculas al buscar`. Un `Coincidencia que distingue…` cambia el verbo a tercera persona y
   rompe la regla de contención.
+
+## Una palabra inglesa, una palabra española: la revisión de deriva (2026-08-30)
+
+El catálogo llevaba 36 sitios donde `es` daba dos nombres distintos al mismo texto inglés, casi siempre porque una
+pasada tardía tocó `menu.json` y dejó `commands.json` con la redacción vieja. Veintitrés eran deriva de verdad y ya no
+están; las trece restantes son fronteras DELIBERADAS y quedan anotadas abajo para que la próxima pasada no las
+"unifique".
+
+### Resuelto
+
+- **`error report` es `informe de error` también en el menú Ayuda y en la paleta** ·
+  `commands.helpSendErrorReport.label` y `menu.help.sendErrorReport` decían `Enviar informe de fallos…`, que es el
+  término de CRASH report (glosario: crash report → `informe de fallos`, error report → `informe de error`). O sea: el
+  menú prometía un informe de fallos y abría un diálogo titulado `Enviar informe de error`, y de paso llamaba "fallo" a
+  algo que no lo es · `high`. La entrada del glosario ya avisaba de esta grieta; ahora está cerrada.
+- **`Zoom in` / `Zoom out` → `Aumentar el zoom` / `Reducir el zoom`**, en el menú y en la paleta · `menu.zoom.in`/`.out`
+  decían `Ampliar`/`Reducir` y la paleta decía otra cosa · `high`. macOS `es` usa el escueto `Aumentar`/`Reducir`, y ahí
+  funciona porque el submenú Zoom ya pone el objeto; la paleta de comandos no tiene ese contexto, así que gana la forma
+  con objeto, que además concuerda con `commands.handler.zoomIncreased` (`Zoom aumentado al {size}%`).
+- **`Ver > Zoom > 100%` no existía**: `commands.handler.zoomResetHintMenu` mandaba al usuario a un menú llamado `Ver`,
+  pero la barra de menús se llama `Visualización` (`menu.bar.view`). Ahora la pista nombra el menú real · `high`.
+  (El mismo fallo estaba en `de`, y se corrigió allí.)
+- **`Go to path` → `Ir a la ruta`** en las cuatro claves · el comando y el menú decían `Ir a una ruta…` y el diálogo que
+  abren se titulaba `Ir a la ruta`. macOS `es` usa el artículo determinado en toda esta familia (`Ir a la carpeta
+  Documentos`, `Ir a la carpeta Aplicaciones`) · `high`.
+- **`Toggle` → `Activar o desactivar …`** · `menu.context.toggleSelection` decía `Alternar selección`; macOS `es` usa
+  `Activar o desactivar …` (AppKit, `Activar o desactivar el bloque de cita`) y el propio catálogo ya usa el par
+  explícito en `commands.viewShowHidden.label` (`Mostrar u ocultar archivos ocultos`) · `high`.
+- **`{dir}` / `{dirs}` estaba SIN TRADUCIR** en las tres claves de estadísticas de análisis
+  (`fileOperations.delete.scanDir`, `.transferDialog.scanDir`, `.scanPhase.scanDir`): el usuario leía `4 dirs`. Ahora
+  `carpeta`/`carpetas`, igual que `fileExplorer.summary.dirNoun` · `high`.
+- **`Modified` (fecha) → `Modificación`** en las seis claves de fecha · `fileExplorer.columns.modified` y
+  `.renameConflict.modified` decían `Modificado`, así que la columna de la lista de archivos y la de resultados de
+  búsqueda se llamaban distinto una al lado de la otra. macOS `es` da `Modificación` y `Fecha de modificación` · `high`.
+- **Sin artículo en las órdenes cortas**: `Copiar nombre de archivo` (no `Copiar el nombre del archivo`, que rompía la
+  simetría con su vecino `menu.edit.copyPath` = `Copiar ruta`), `Mostrar archivos ocultos`, `Actualizar los hosts de
+  red`, `Resultados de búsqueda` · `high`.
+- **`Preview:` → `Vista previa:`** · `settings.appearance.datePreviewLabel` decía `Previsualización:` contra el
+  `Vista previa` ya asentado · `high`.
+- **`New name` → `Nombre nuevo`** · `suggestedOps.columnNewName` decía `Nuevo nombre`; el par de `askCmdr.renameReview`
+  (`newName`, `editName` = `Nombre nuevo para {name}`) ya tenía la forma pospuesta · `high`.
+- **Registro peninsular neutro, según `style.md`**: `Algo ha ido mal` (no `Algo salió mal`) y `Límite de pestañas
+  alcanzado` (no `Se alcanzó el límite…`, que además usa el pretérito indefinido latinoamericano). Los dos pares de
+  correo beta dicen ya lo mismo: `Vaya, no hemos podido darte de alta ahora mismo. ¿Lo intentas de nuevo?` · `high`.
+- **`Stop` → `Detener`** en las tres (`search.walkHandoff.stop` decía `Parar`); **`Drive indexing` → `Indexación de
+  unidades`** en las tres; **`Create new file` → `Crear archivo nuevo`** también en el nombre hablado del botón F7;
+  **`Connect to server…` → `Conectarse a un servidor…`** también en el enlace de ajustes, que su propio `@key` mandaba
+  traducir igual que el comando; **`Brief mode` → `Modo breve`** (mayúscula inicial solo, según la guía de estilo);
+  **`Indexing now` → `Indexando ahora`** en las dos (el reflexivo `Indexándose` sobraba); **`Go to home folder` → `Ir a
+  la carpeta de inicio`** también en el botón de la pantalla de error; **`This volume doesn't support trash` → `Este
+  volumen no admite la papelera.`** en las dos · `high`.
+
+### Fronteras deliberadas (no unificar)
+
+- **`Both` concuerda en género con lo que enumera** · `queryUi.filters.type.both` = `Ambos` (archivos y carpetas, mezcla
+  → masculino); `settings.…downloadsNotifications.opt.both` = `Ambas` (notificaciones, femenino). Las dos son correctas
+  y ninguna sirve en el sitio de la otra · `high`.
+- **`Canceled`: `Operación cancelada` titula un panel, `Cancelado` es un estado** · los títulos de
+  `errors.listing.*.title` nombran el sujeto tácito (`Interrupted` → `Operación interrumpida`), mientras
+  `operationLog.status.canceled` es el estado de ciclo de vida en una celda · `high`.
+- **`Edit`: `Edición` es el MENÚ, `Editar` es el verbo** · macOS Finder `es` llama `Edición` a su menú Edit, y
+  `@menu.bar.edit` pide esa palabra exacta · `high`.
+- **`View`: `Visualización` es el MENÚ, `Ver` es la acción F3** · mismo motivo; `@menu.bar.view` pide la palabra de
+  Finder · `high`.
+- **`Error`: `Problema` es un estado que lee el usuario, `Error:` es una etiqueta de diagnóstico** · el `@key` de
+  `fileExplorer.network.browser.status.error` pide evitar la palabra literal, y el de `settings.updates.errorPrefix`
+  dice que ahí sí vale · `high`.
+- **`Modified`: `Modificación` es la FECHA, `Modificados` son los atajos que tú cambiaste** ·
+  `shortcuts.section.filterModified` filtra comandos cuyo atajo modificó el usuario, sin fecha ninguna, y concuerda en
+  masculino plural con ellos · `high`.
+- **`Search`: `Buscar` es la acción, `Búsqueda` es el tema** · en español el infinitivo titula diálogos y botones
+  (`search.dialog.title`, `queryUi.bar.runLabel`), pero un apartado de la barra lateral de Ajustes es un sustantivo:
+  `Buscar` ahí se leería como una orden · `high`.
+- **`Put back …`: `restaurar` son NOMBRES, `devolver a su sitio` son SITIOS** · el inglés reutiliza una frase para dos
+  deshacer distintos; macOS Finder `es` llama `Devolver` al Put Back de la papelera · `high`.
+- **`you@example.com`: Ajustes la deja literal, los diálogos la traducen** ·
+  `@settings.updates.emailPlaceholder` dice "keep it exactly" (y lo respalda un `sameAsSourceJustification`), mientras
+  `@common.attachEmailPlaceholder` y `@onboarding.stepBeta.emailPlaceholder` permiten una dirección de ejemplo local ·
+  `high`.
+- **Cuatro "divergencias" que no lo son, y por qué siguen apareciendo**: `Connected` / `Connected!`,
+  `Copied` / `Copied!`, `Send report` / `Send report?` y `Start using Cmdr` / `Start using Cmdr!` tienen inglés
+  DISTINTO (la exclamación o la interrogación está en el original, y los `@key` la piden). `i18n-terms` las agrupa igual
+  porque su normalizador quita la puntuación FINAL pero no la apertura española `¡` / `¿`, así que `¡Copiado!` se
+  reduce a `¡Copiado` y ya no coincide con `Copiado`. No toques estos ocho valores: el fallo está en el normalizador,
+  no en la traducción.

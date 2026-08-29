@@ -132,7 +132,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Abrir la carpeta de inicio",
+  "fileExplorer.errorPane.goHome": "Ir a la carpeta de inicio",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -181,7 +181,7 @@
   "@fileExplorer.functionKeyBar.newFileLabel": {
     "sourceHash": "44dedd0"
   },
-  "fileExplorer.functionKeyBar.newFileAction": "Crear archivo",
+  "fileExplorer.functionKeyBar.newFileAction": "Crear archivo nuevo",
   "@fileExplorer.functionKeyBar.newFileAction": {
     "sourceHash": "6e70b95"
   },
@@ -369,7 +369,7 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "Actualizar los hosts de la red",
+  "fileExplorer.network.browser.refreshAriaLabel": "Actualizar los hosts de red",
   "@fileExplorer.network.browser.refreshAriaLabel": {
     "sourceHash": "73966bd"
   },
@@ -781,7 +781,7 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "afb1cc2"
   },
-  "fileExplorer.tabs.limitReached": "Se alcanzó el límite de pestañas",
+  "fileExplorer.tabs.limitReached": "Límite de pestañas alcanzado",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"
   },
@@ -870,7 +870,7 @@
   "@fileExplorer.columns.size": {
     "sourceHash": "1af8519"
   },
-  "fileExplorer.columns.modified": "Modificado",
+  "fileExplorer.columns.modified": "Modificación",
   "@fileExplorer.columns.modified": {
     "sourceHash": "e8ce5dc"
   },
@@ -1003,7 +1003,7 @@
   "@fileExplorer.imageIndex.file.pending": {
     "sourceHash": "73eb99a"
   },
-  "fileExplorer.imageIndex.file.indexing": "Indexándose ahora",
+  "fileExplorer.imageIndex.file.indexing": "Indexando ahora",
   "@fileExplorer.imageIndex.file.indexing": {
     "sourceHash": "44501db"
   },
@@ -1144,7 +1144,7 @@
   "@fileExplorer.renameConflict.size": {
     "sourceHash": "1af8519"
   },
-  "fileExplorer.renameConflict.modified": "Modificado",
+  "fileExplorer.renameConflict.modified": "Modificación",
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },

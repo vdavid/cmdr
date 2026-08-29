@@ -170,7 +170,7 @@
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.results.listboxAria": "Resultados de la búsqueda",
+  "queryUi.results.listboxAria": "Resultados de búsqueda",
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
   },

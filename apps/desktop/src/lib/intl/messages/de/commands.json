@@ -696,7 +696,7 @@
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
   },
-  "commands.handler.zoomResetHintMenu": "Du kannst die Zoomstufe unter Ansicht > Zoom > 100 % auf 100 % zurücksetzen.",
+  "commands.handler.zoomResetHintMenu": "Du kannst die Zoomstufe unter Darstellung > Zoom > 100 % auf 100 % zurücksetzen.",
   "@commands.handler.zoomResetHintMenu": {
     "sourceHash": "f10315d"
   },

@@ -11,7 +11,7 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "Este volumen no admite papelera.",
+  "fileOperations.delete.noTrashWarningStrong": "Este volumen no admite la papelera.",
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "ef122e2"
   },
@@ -67,7 +67,7 @@
   "@fileOperations.delete.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.delete.scanDir": "{count, plural, one {dir} many {dirs} other {dirs}}",
+  "fileOperations.delete.scanDir": "{count, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
@@ -244,7 +244,7 @@
   "@fileOperations.transferDialog.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.transferDialog.scanDir": "{count, plural, one {dir} many {dirs} other {dirs}}",
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@fileOperations.transferDialog.scanDir": {
     "sourceHash": "1c5273d"
   },
@@ -368,7 +368,7 @@
   "@fileOperations.scanPhase.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.scanPhase.scanDir": "{count, plural, one {dir} many {dirs} other {dirs}}",
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },

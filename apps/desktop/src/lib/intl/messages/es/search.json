@@ -107,7 +107,7 @@
   "@search.walkHandoff.reopen": {
     "sourceHash": "6b49872"
   },
-  "search.walkHandoff.stop": "Parar",
+  "search.walkHandoff.stop": "Detener",
   "@search.walkHandoff.stop": {
     "sourceHash": "cae7d57"
   },

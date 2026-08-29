@@ -301,11 +301,11 @@
     "sourceHash": "00a4e80",
     "sameAsSourceJustification": "Placeholder-free percentage; Spanish writes the sign tight against the number exactly as English does, so only the number would ever change."
   },
-  "menu.zoom.in": "Ampliar",
+  "menu.zoom.in": "Aumentar el zoom",
   "@menu.zoom.in": {
     "sourceHash": "0e47f09"
   },
-  "menu.zoom.out": "Reducir",
+  "menu.zoom.out": "Reducir el zoom",
   "@menu.zoom.out": {
     "sourceHash": "bc7b631"
   },
@@ -325,7 +325,7 @@
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "Ir a una ruta…",
+  "menu.go.goToPath": "Ir a la ruta…",
   "@menu.go.goToPath": {
     "sourceHash": "936edc5"
   },
@@ -390,7 +390,7 @@
   "@menu.help.sendFeedback": {
     "sourceHash": "60e1072"
   },
-  "menu.help.sendErrorReport": "Enviar informe de fallos…",
+  "menu.help.sendErrorReport": "Enviar informe de error…",
   "@menu.help.sendErrorReport": {
     "sourceHash": "063c94e"
   },
@@ -398,7 +398,7 @@
   "@menu.context.edit": {
     "sourceHash": "464c4ff"
   },
-  "menu.context.toggleSelection": "Alternar selección",
+  "menu.context.toggleSelection": "Activar o desactivar la selección",
   "@menu.context.toggleSelection": {
     "sourceHash": "6cb5515"
   },
