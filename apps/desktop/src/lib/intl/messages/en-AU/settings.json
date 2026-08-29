@@ -1,0 +1,86 @@
+{
+  "settings.appearance.appColor.label": "App colour",
+  "@settings.appearance.appColor.label": {
+    "sourceHash": "b1107c8"
+  },
+  "settings.appearance.appColor.description": "To change your system theme colour, go to System Settings > Appearance.",
+  "@settings.appearance.appColor.description": {
+    "sourceHash": "7dc4ab7"
+  },
+  "settings.appearance.appColor.opt.system": "System theme colour",
+  "@settings.appearance.appColor.opt.system": {
+    "sourceHash": "5a7bc86"
+  },
+  "settings.appearance.sizeColors.label": "Size colours",
+  "@settings.appearance.sizeColors.label": {
+    "sourceHash": "7598e9a"
+  },
+  "settings.appearance.sizeColors.description": "Colour file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. App uses shades of the app colour.",
+  "@settings.appearance.sizeColors.description": {
+    "sourceHash": "ecb064a"
+  },
+  "settings.appearance.dateColors.label": "Date colours",
+  "@settings.appearance.dateColors.label": {
+    "sourceHash": "25e5672"
+  },
+  "settings.appearance.dateColors.description": "Colour modified dates in the file list by age. App fades older dates towards the default text colour. Wilting goes green for fresh files, yellow for ageing, and brown for old.",
+  "@settings.appearance.dateColors.description": {
+    "sourceHash": "382ce25"
+  },
+  "settings.appearance.useAppIconsForDocuments.description": "Show the app''s icon for documents instead of generic file type icons. More colourful but slightly slower.",
+  "@settings.appearance.useAppIconsForDocuments.description": {
+    "sourceHash": "9ae8a9c"
+  },
+  "settings.listing.showTags.description": "Show coloured dots next to names for files and folders that carry macOS Finder tags.",
+  "@settings.listing.showTags.description": {
+    "sourceHash": "005f3b0"
+  },
+  "settings.advanced.virtualizationBufferRows.label": "Virtualisation buffer (rows)",
+  "@settings.advanced.virtualizationBufferRows.label": {
+    "sourceHash": "07b7869"
+  },
+  "settings.advanced.virtualizationBufferColumns.label": "Virtualisation buffer (columns)",
+  "@settings.advanced.virtualizationBufferColumns.label": {
+    "sourceHash": "a9e8dba"
+  },
+  "settings.section.colorsAndFormats": "Colours and formats",
+  "@settings.section.colorsAndFormats": {
+    "sourceHash": "c5e0ce4"
+  },
+  "settings.section.behavior": "Behaviour",
+  "@settings.section.behavior": {
+    "sourceHash": "edf8d3f"
+  },
+  "settings.summary.colorsAndFormats": "Theme, app colour, date and size colouring, and date/time format.",
+  "@settings.summary.colorsAndFormats": {
+    "sourceHash": "ad30daf"
+  },
+  "settings.summary.navigationAndFileOps": "Double-click-to-parent navigation, and behaviour when renaming files.",
+  "@settings.summary.navigationAndFileOps": {
+    "sourceHash": "68e38d0"
+  },
+  "settings.appearance.themeColorSwatchAria": "Open System Settings to change the system theme colour",
+  "@settings.appearance.themeColorSwatchAria": {
+    "sourceHash": "4cad022"
+  },
+  "settings.appearance.appColorHintPrefix": "To change your system theme colour, go to",
+  "@settings.appearance.appColorHintPrefix": {
+    "sourceHash": "748470a"
+  },
+  "settings.appearance.tintSwatchAria": "Choose a tint colour for {label}",
+  "@settings.appearance.tintSwatchAria": {
+    "sourceHash": "b9030b5"
+  },
+  "settings.appearance.tintColorsAria": "Tint colours",
+  "@settings.appearance.tintColorsAria": {
+    "sourceHash": "c649cd7"
+  },
+  "settings.appearance.card.listColoring": "List colouring",
+  "@settings.appearance.card.listColoring": {
+    "sourceHash": "6e50578"
+  },
+  "settings.advanced.warningBanner": "These settings are for advanced users. Incorrect values may cause performance issues or unexpected behaviour.",
+  "@settings.advanced.warningBanner": {
+    "sourceHash": "b1dbbf4"
+  }
+}

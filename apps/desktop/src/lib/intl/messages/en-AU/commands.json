@@ -1,0 +1,30 @@
+{
+  "commands.helpOpenShortcuts.description": "Open a read-only window listing every keyboard shortcut, live-synced with your customisations",
+  "@commands.helpOpenShortcuts.description": {
+    "sourceHash": "a9a1e0d"
+  },
+  "commands.favoritesAdd.label": "Add to favourites",
+  "@commands.favoritesAdd.label": {
+    "sourceHash": "7f3c078"
+  },
+  "commands.favoritesAdd.description": "Add the focused pane''s current folder to the switcher''s Favourites.",
+  "@commands.favoritesAdd.description": {
+    "sourceHash": "84dcbf8"
+  },
+  "commands.tagsToggleGrey.label": "Toggle grey tag",
+  "@commands.tagsToggleGrey.label": {
+    "sourceHash": "1309c09"
+  },
+  "commands.tagsToggleGrey.description": "Adds or removes the grey Finder tag on the selected files",
+  "@commands.tagsToggleGrey.description": {
+    "sourceHash": "ca38860"
+  },
+  "commands.handler.favoriteAdded": "Added \"{name}\" to favourites",
+  "@commands.handler.favoriteAdded": {
+    "sourceHash": "a68dd8f"
+  },
+  "commands.handler.favoriteAddFailed": "Couldn't add that folder to favourites. Try again?",
+  "@commands.handler.favoriteAddFailed": {
+    "sourceHash": "3f85e99"
+  }
+}

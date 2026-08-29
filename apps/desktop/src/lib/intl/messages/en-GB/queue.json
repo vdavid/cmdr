@@ -1,0 +1,6 @@
+{
+  "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Cancelled} failed {Couldn''t finish} other {Running}}",
+  "@queue.row.status": {
+    "sourceHash": "8e9ce48"
+  }
+}

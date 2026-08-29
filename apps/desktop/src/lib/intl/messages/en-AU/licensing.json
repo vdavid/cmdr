@@ -1,0 +1,14 @@
+{
+  "licensing.about.fallbackOrg": "your organisation",
+  "@licensing.about.fallbackOrg": {
+    "sourceHash": "bb0bdf0"
+  },
+  "licensing.dialog.labelOrganization": "Organisation",
+  "@licensing.dialog.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.section.labelOrganization": "Organisation",
+  "@licensing.section.labelOrganization": {
+    "sourceHash": "d764d42"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "ui.shortcutChip.customizeAria": "Customise the {commandName} shortcut",
+  "@ui.shortcutChip.customizeAria": {
+    "sourceHash": "a1d00b2"
+  },
+  "ui.shortcutChip.customizeTooltip": "Customise this shortcut",
+  "@ui.shortcutChip.customizeTooltip": {
+    "sourceHash": "9a7817d"
+  }
+}

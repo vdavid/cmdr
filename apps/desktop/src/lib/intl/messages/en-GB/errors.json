@@ -1,0 +1,50 @@
+{
+  "errors.listing.staleConnection.explanation": "Cmdr is trying to access this folder using an old reference that the server no longer recognises. This commonly happens with network drives (NFS, SMB) after the server restarts, the share is remounted, or the connection was interrupted.",
+  "@errors.listing.staleConnection.explanation": {
+    "sourceHash": "3712df2"
+  },
+  "errors.listing.cancelledErrno.title": "Cancelled",
+  "@errors.listing.cancelledErrno.title": {
+    "sourceHash": "13ca2ee"
+  },
+  "errors.listing.cancelledErrno.explanation": "The operation was cancelled before it could finish.",
+  "@errors.listing.cancelledErrno.explanation": {
+    "sourceHash": "da19c15"
+  },
+  "errors.listing.cancelled.title": "Cancelled",
+  "@errors.listing.cancelled.title": {
+    "sourceHash": "13ca2ee"
+  },
+  "errors.listing.cancelled.explanation": "The operation was cancelled before it could finish.",
+  "@errors.listing.cancelled.explanation": {
+    "sourceHash": "da19c15"
+  },
+  "errors.listing.deviceReconnecting.explanation": "The connection to the device holding `{path}` restarted, so this action didn't go through. The device is still plugged in, and Cmdr is reopening it right now. This usually follows a cancelled or interrupted transfer.",
+  "@errors.listing.deviceReconnecting.explanation": {
+    "sourceHash": "6ba7205"
+  },
+  "errors.write.cancelled.title.copy": "Copy cancelled",
+  "@errors.write.cancelled.title.copy": {
+    "sourceHash": "7edfd40"
+  },
+  "errors.write.cancelled.title.move": "Move cancelled",
+  "@errors.write.cancelled.title.move": {
+    "sourceHash": "8b7eec1"
+  },
+  "errors.write.cancelled.title.delete": "Delete cancelled",
+  "@errors.write.cancelled.title.delete": {
+    "sourceHash": "546aac1"
+  },
+  "errors.write.cancelled.message.copy": "The copy operation was cancelled.",
+  "@errors.write.cancelled.message.copy": {
+    "sourceHash": "da308bc"
+  },
+  "errors.write.cancelled.message.move": "The move operation was cancelled.",
+  "@errors.write.cancelled.message.move": {
+    "sourceHash": "6369672"
+  },
+  "errors.write.cancelled.message.delete": "The delete operation was cancelled.",
+  "@errors.write.cancelled.message.delete": {
+    "sourceHash": "8e573dc"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "fileOperations.transferProgress.titleCancelling": "Cancelling...",
+  "@fileOperations.transferProgress.titleCancelling": {
+    "sourceHash": "37b4fbc"
+  },
+  "fileOperations.transferProgress.titleCancellingSlow": "Cancelling... (finishing USB transfers)",
+  "@fileOperations.transferProgress.titleCancellingSlow": {
+    "sourceHash": "ac2ee1a"
+  }
+}

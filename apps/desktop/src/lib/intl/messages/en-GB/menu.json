@@ -1,0 +1,18 @@
+{
+  "menu.go.addToFavorites": "Add to favourites",
+  "@menu.go.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.window.minimize": "Minimise",
+  "@menu.window.minimize": {
+    "sourceHash": "d72e311"
+  },
+  "menu.context.addToFavorites": "Add to favourites",
+  "@menu.context.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.tag.gray": "Grey",
+  "@menu.tag.gray": {
+    "sourceHash": "0d5adda"
+  }
+}

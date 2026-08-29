@@ -1,0 +1,10 @@
+{
+  "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn''t seem to have got it. You might need to restart the app (do it now, we''ll continue from here!), or go to your <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little \"+\" button at the bottom.",
+  "@onboarding.stepAi.bannerBody.stuck": {
+    "sourceHash": "79d5765"
+  },
+  "onboarding.stepBeta.feedbackIntro": "Your feedback helps me spot bugs and prioritise features. Here is how you can engage:",
+  "@onboarding.stepBeta.feedbackIntro": {
+    "sourceHash": "4e238dd"
+  }
+}
