@@ -242,13 +242,12 @@ reads; the webview exposes exactly one tag, so a user whose preferences are `[hu
 while Hungarian isn't shipped. Their own second choice was structurally unreachable. Reading the list in Rust also
 removes any dependence on what WebKit decides to do with bundle metadata, which we can't control or test cheaply.
 
-**Regional fallback is deliberate; a script boundary is not.** `pt-PT` lands on the Brazilian `pt` catalog and `en-GB`
-on US `en` ("Trash", `-ize`): reading a sibling dialect is a small friction next to reading a language you don't speak,
-and a fast-follow catalog fixes it. `zh-Hant-TW` does NOT land on the Simplified `zh` catalog, because that's not a
-dialect difference, it's a wall, and English is at least a language the user chose to list. ❌ Don't "fix" the guard by
-blocking regional fallback: the two cases pull in opposite directions on purpose. This applies BOTH to Rust's
-auto-selection and to the per-key chain above, which is why `locale-inheritance.ts` exists;
-`apps/desktop/src-tauri/src/intl/DETAILS.md` is the canonical description.
+**Regional fallback is deliberate; a script boundary is not.** `pt-PT` lands on the Brazilian `pt` catalog and `en-CA`
+on US `en`, while `zh-Hant-TW` does NOT land on the Simplified `zh` catalog. ❌ Don't "fix" the guard by blocking
+regional fallback: the two cases pull in opposite directions on purpose, and the `en-GB` / `en-AU` overlays ride on the
+regional half for every key they don't fork. This applies BOTH to Rust's auto-selection and to the per-key chain above,
+which is why `locale-inheritance.ts` exists. Why each half is the way it is:
+`apps/desktop/src-tauri/src/intl/DETAILS.md` § The script guard, and why regional fallback survives it (canonical).
 
 **Every window resolves for itself.** Each Cmdr window is its own webview with its own i18n runtime instance, so the
 main window's answer doesn't reach the Settings or Queue window. The main window awaits the answer inside

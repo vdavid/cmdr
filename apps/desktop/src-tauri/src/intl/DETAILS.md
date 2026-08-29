@@ -23,14 +23,14 @@ read. The order is the user's own fallback plan, so one preference is fully exha
 
 Matching one preference against the table is a single rule with two halves:
 
-- **Same language.** The base subtag has to match, which is what lets `fr-CA` land on `fr`, `pt-PT` on `pt`, and `en-GB`
+- **Same language.** The base subtag has to match, which is what lets `fr-CA` land on `fr`, `pt-PT` on `pt`, and `en-CA`
   on `en`.
 - **Same script.** See below.
 
 Among the catalogs that qualify, the most specific wins: `shared_subtags` counts the leading subtags a catalog tag
-shares with the preference (0 unless it's a subtag-aligned prefix), and ties break toward the SHORTER tag. With both
-`pt` and `pt-BR` shipped, `pt-BR` takes `pt-BR` and `pt-PT` takes plain `pt`. Nothing we ship today has a regional
-sibling; the rule is pinned by tests so the day one arrives it behaves.
+shares with the preference (0 unless it's a subtag-aligned prefix), and ties break toward the SHORTER tag. With `en`,
+`en-GB`, and `en-AU` all shipped, `en-GB` takes the British overlay and `en-CA` takes plain `en`. Tests pin the same
+rule against a `pt` / `pt-BR` fixture, for a language whose regional catalogs haven't landed yet.
 
 `None` means nothing matched, and the caller uses English. That is NOT the same as matching `en`, which stops the walk
 deliberately: a user who listed English above Swedish wants English, not the next-best translation.
@@ -45,11 +45,17 @@ handing it to a `zh-Hant-TW` reader is worse than handing them English: English 
 list. `docs/i18n/script-decisions.md` records nine languages with a script split (`zh`, `sr`, `uz`, `kk`, `mn`, `az`,
 `pa`, `bs`, `be`), so this is not a one-off for Chinese.
 
-Regional variants are the opposite case and DO fall back, deliberately: `pt-PT` reads the Brazilian catalog and `en-GB`
-reads "Trash" and `-ize`. Both are documented roster decisions (`docs/i18n/language-selection-decisions.md` lists them
-as wave-2 variants). Reading a sibling dialect is a small friction next to reading a language you don't speak: the first
-is a papercut a fast-follow catalog fixes, the second is a wall. ❌ Don't collapse the two by blocking regional
+Regional variants are the opposite case and DO fall back, deliberately: `pt-PT` reads the Brazilian `pt` catalog, and
+`en-CA` reads US `en`. Reading a sibling dialect is a small friction next to reading a language you don't speak: the
+first is a papercut a fast-follow catalog fixes, the second is a wall. ❌ Don't collapse the two by blocking regional
 fallback.
+
+**A regional catalog can also exist and win.** `en-GB` and `en-AU` ship as OVERLAYS: each carries only the keys it
+forks ("Bin" for "Trash", `-ise` for `-ize`), wins over plain `en` on specificity, and resolves every other key up to
+`en` through exactly the regional fallback above. So the fallback isn't the regional reader's consolation prize; it's
+what lets a 150-key overlay stand in for a 3,138-key catalog. `docs/i18n/language-selection-decisions.md` is the roster
+of which variants ship a catalog and which still fall back to their base, and `docs/guides/i18n.md` § Overlay catalogs
+is how an overlay is built and checked.
 
 ### One rule, three layers
 

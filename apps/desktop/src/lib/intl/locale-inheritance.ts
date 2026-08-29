@@ -1,8 +1,9 @@
 /**
  * WHICH CATALOG A LOCALE MAY INHERIT FROM. One rule, two halves: a catalog is
- * reachable for a locale only when it's the same LANGUAGE (so `pt-PT` reads the
- * Brazilian `pt` catalog and `en-GB` reads US `en`, deliberately) and the same
- * SCRIPT (so `zh-Hant-TW` does NOT read the Simplified `zh` one).
+ * reachable for a locale only when it's the same LANGUAGE (so `pt-PT` may reach
+ * the Brazilian `pt` catalog, and the `en-GB` overlay reaches US `en` for every
+ * key it doesn't fork, deliberately) and the same SCRIPT (so `zh-Hant-TW` does
+ * NOT reach the Simplified `zh` one).
  *
  * The script half is the guard: a fallback is only a kindness when it lands
  * somewhere the reader can actually READ. Dialect friction is a papercut a later

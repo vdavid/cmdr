@@ -18,7 +18,7 @@ Writing, code, and design styles.
     `apps/desktop/src-tauri/src/menu/DETAILS.md`.
 - Specific terms
   - **US English spelling, everywhere**: "color", "canceled", "behavior", "gray", "favorites". The app's `en` message
-    catalog is the base the coming British and Australian overlays fork from, so the register is load-bearing there; the
+    catalog is the base the British and Australian overlays fork from, so the register is load-bearing there; the
     decision, the Apple precedent behind it, and the "don't “fix” a US spelling back to British" guardrail live in
     `docs/i18n/en/style.md`. The website and the docs follow the same spelling so one voice reads across all of them.
   - **Folder vs directory**: We know these mean the same. We allow both. Use whichever feels better in each situation.

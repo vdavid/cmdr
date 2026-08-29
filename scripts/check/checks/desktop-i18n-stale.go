@@ -36,7 +36,7 @@ const staleStrictEnv = "CMDR_I18N_STALE_STRICT"
 // Review is NEVER a gate in either mode: a stale key's prior `reviewed` flag is
 // reported as no-longer-applicable, but the absence of review never fails a check.
 //
-// Nine locales ship today; the script hashes each translation's English source
+// 12 non-`en` catalogs ship today; the script hashes each translation's English source
 // and is currently clean (exit 0) in both modes. A stale finding becomes a live
 // warn (or, at release, a live error) the moment an English value drifts from a
 // translation that was made against the old wording.

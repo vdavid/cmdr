@@ -76,8 +76,9 @@ pub(crate) struct ShippedLocale {
 #[serde(rename_all = "camelCase")]
 pub struct OsLocales {
     /// The catalog the UI should open while `appearance.language` is `'system'`
-    /// (`hu`, `en`). A language, never a region: `resolve_ui_locale` picks a
-    /// catalog, and the catalogs aren't regional.
+    /// (`hu`, `en`, `en-GB`). Always a tag we ship a catalog for, so it carries a
+    /// region only when a regional catalog exists. ❌ Never a formatting tag:
+    /// that's `format`, which is composed from the OS region instead.
     pub ui: Option<String>,
     /// The tag whose conventions dates, numbers, and calendars follow (`en-SE`).
     /// Follows the OS and ❌ never the `appearance.language` setting: a
@@ -203,7 +204,7 @@ fn base_language(tag: &str) -> &str {
 /// catalog's own spelling.
 ///
 /// One rule, two halves: the catalog has to be the same LANGUAGE (so `pt-PT`
-/// reaches the Brazilian `pt` catalog and `en-GB` reaches US `en`, deliberately)
+/// reaches the Brazilian `pt` catalog and `en-CA` reaches US `en`, deliberately)
 /// and the same SCRIPT (so `zh-Hant-TW` does NOT reach the Simplified `zh` one).
 /// The script half is the guard: a fallback is only a kindness when it lands
 /// somewhere the reader can actually read, and Simplified Chinese in front of a
@@ -211,8 +212,10 @@ fn base_language(tag: &str) -> &str {
 /// list. Dialect friction is a papercut a later catalog fixes; an unreadable
 /// script is a wall. ❌ Don't "fix" this by blocking regional fallback too.
 ///
-/// Among the catalogs that qualify, the most specific one wins: with both `pt`
-/// and `pt-BR` shipped, `pt-BR` takes `pt-BR` and `pt-PT` takes plain `pt`.
+/// Among the catalogs that qualify, the most specific one wins: with `en`,
+/// `en-GB`, and `en-AU` all shipped, `en-GB` opens the British overlay while
+/// `en-CA` opens plain `en`. Canonical rationale for both halves:
+/// `DETAILS.md` § The script guard, and why regional fallback survives it.
 fn match_shipped(tag: &str, shipped: &[ShippedLocale]) -> Option<String> {
     let language = base_language(tag);
     shipped
@@ -505,8 +508,9 @@ mod tests {
 
     #[test]
     fn the_most_specific_catalog_of_a_language_wins() {
-        // Nothing we ship today has a regional sibling; this pins the rule for
-        // the day `pt-BR` or `en-GB` joins the roster as a wave-2 variant.
+        // `en-GB` and `en-AU` exercise this against the real table elsewhere in
+        // this module. The `pt` fixture pins the same rule for a language whose
+        // regional catalogs haven't landed yet.
         const PT: &[ShippedLocale] = &[
             ShippedLocale {
                 tag: "pt",

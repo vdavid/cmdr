@@ -25,7 +25,7 @@ import (
 // distinguish them in the message so a node-missing crash reads differently from
 // a real parity failure.
 //
-// Nine locales ship today and all pass; the script is a clean no-op only in a
+// The 12 non-`en` catalogs all pass today; the script is a clean no-op only in a
 // repo with no locale beyond `en`.
 func RunDesktopI18nParity(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")

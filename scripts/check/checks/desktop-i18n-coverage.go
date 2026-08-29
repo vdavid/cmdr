@@ -24,7 +24,7 @@ import (
 //
 // Exit-code contract (mirrored by `i18n-locale-check-lib.js`): 0 = clean / no
 // locales, 1 = at least one coverage gap (→ ERROR), any other code = a genuine
-// script error (→ ERROR). Nine locales ship today and all pass, so it stays
+// script error (→ ERROR). The 12 non-`en` catalogs all pass today, so it stays
 // green until a locale regresses or a new key lands untranslated.
 func RunDesktopI18nCoverage(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
