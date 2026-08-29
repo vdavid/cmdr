@@ -360,7 +360,7 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr 不會送出檔案本身：不送檔案內容、不送照片、不送縮覽圖。照片搜尋是唯一會看進你影像裡的功能，而且只在你叫它搜尋照片時：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。Ask Cmdr 可以建議重新命名、移動和整理，但在你同意之前，任何檔案都不會有變化。",
+  "askCmdr.consent.noContents": "Cmdr 不會送出檔案本身：不送檔案內容、不送照片、不送縮圖。照片搜尋是唯一會看進你影像裡的功能，而且只在你叫它搜尋照片時：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。Ask Cmdr 可以建議重新命名、移動和整理，但在你同意之前，任何檔案都不會有變化。",
   "@askCmdr.consent.noContents": {
     "sourceHash": "99f9add"
   },

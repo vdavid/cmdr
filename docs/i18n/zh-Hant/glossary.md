@@ -255,6 +255,68 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
   phrase: `向上捲動一頁` / `向下捲動一頁`.
 - **throughput** · `輸送量` · MS · `high`
 
+### Viewer, media, and image metadata
+
+Mined from the Apple apps that do these jobs (Preview, QuickTime Player, TextEdit, Photos, the Spotlight metadata
+schema), read off the live OS as `.loctable`s carrying zh_TW and zh_HK side by side (macOS 26.6.2, build 25G83,
+key-match, 2026-08-29).
+
+- **viewer** · `檢視器` · TC (`內建檢視器`), DC (`Viewer` → 檢視器) · `high`. The orthodox pair is the lineage match:
+  Apple's own viewer is the Quick Look brand and yields no generic noun.
+- **thumbnail** · `縮圖` · AP-HK (Preview), MS (HKG, TWN), DC, NAU; **AP-TW says 縮覽圖 and stands alone** · `high`.
+  Same shape as the five consensus overrides above, so the consensus form wins.
+- **zoom / zoom in / zoom out** · `縮放` / `放大` / `縮小` · AP Preview (TW = HK), MS · `high`.
+  **zoom to fit** → `縮放到適當大小`, **actual size** → `實際大小` (both AP Preview, TW = HK).
+- **rotate** · `旋轉`; left/right → `向左旋轉` / `向右旋轉` · AP Preview (TW = HK) · `high`
+- **page** · `頁面`, `第 {n} 頁` · AP Preview (TW = HK) · `high`. ❗ Never `分頁` for a document page: MS's second `page`
+  hit renders it that way, and `分頁` is this catalog's word for a TAB.
+- **full screen** · `全螢幕` · AP AppKit (TW = HK), MS · `high`
+- **encoding** · `編碼` · AP TextEdit (`純文字編碼：`, TW = HK), TC, DC · `high`
+- **Western (the encoding group)** · `西歐` · **unattested**: Apple doesn't localize the encoding-family headings in any
+  bundle on the system, and MS's `Western` entry is `復古色調`, a photo filter · `tentative`
+- **word wrap** · `自動換行` · MS (HKG, TWN), TC's Lister, DC · `high`. Apple has no toggle for it and phrases the wrap
+  TARGET instead (`依視窗大小換行`).
+- **line number** · `行號` · MS · `high`. ❗ Apple's `行數` means line COUNT, not the number of a line.
+- **hexadecimal** · `十六進位` · MS (both `hex` and `hexadecimal`, HKG + TWN), TC's Lister (`16進位`) · `high`.
+  **binary** → `二進位`. ❌ Not DC's `十六進制` / `進制`, which is the Mainland form.
+- **plain text** · `純文字` · AP Finder + TextEdit (TW = HK), MS, TC · `confirmed`
+- **image / photo** · `影像` / `照片` · AP (`JPEG影像`, Preview `影像大小：`); **AP-HK says 相片 for photo** · `high`
+- **resolution** · `解析度` · AP Preview + Spotlight; **AP-HK says 解像度** · `high`. ❗ MS's `解析` is the
+  "resolving/settlement" sense.
+- **dimensions** · `尺寸` (an image's own → `影像大小`) · AP Finder Get Info + Preview (TW = HK) · `high`
+- **aspect ratio** · `顯示比例` · AP Photos + Preview (TW = HK) · `high`. MS's `外觀比例` was passed over.
+- **metadata** · `後設資料` · AP-TW (Photos) · `tentative`. **A genuine three-way split**: AP-HK says `元數據`,
+  MS says `中繼資料` (tagged HKG + TWN). No consensus exists; macOS-first picks Apple's TW form. Worth a reviewer's eye.
+- **EXIF** · `EXIF`, kept Latin · MS (HKG, TWN); Apple ships no localized label · `high`
+- **exposure / ISO / aperture** · `曝光` / `ISO 感光度` / `光圈值` · AP Preview + Spotlight (TW = HK) · `high`
+- **duration (of media)** · `播放時間` · AP QuickTime panel label (TW = HK) · `high`. ❗ Apple has three renderings;
+  `持續時間` is the Spotlight attribute and `時間長度` the HK error text. The panel is the lineage match.
+- **frame** · `影格` · AP QuickTime (TW = HK) · `high`. Frame rate → `影格率` (AP-HK says `格率`).
+- **play / pause / mute / volume** · `播放` / `暫停` / `靜音` / `音量` · AP AppKit + QuickTime (TW = HK) · `high`.
+  ❗ MS's `mute` is `停用通知`, the silence-a-notification sense.
+- **slideshow** · `幻燈片秀` · AP-TW (AP-HK says `幻燈片`) · `high`. ❗ MS's and DC's `投影片放映` is the
+  PowerPoint-presentation sense.
+- **inspector** · `檢閱器` · AP Preview · `high` (AP-HK writes `檢閲器`, a glyph variant)
+
+### AI and chat, second pass
+
+Confirms the terms agent 3 settled, and adds what the AI rail needed. Sources as above plus the Microsoft TBX.
+
+- **API key** · `API 金鑰` · MS (HKG, TWN) · `high`
+- **prompt (the LLM noun)** · `提示詞` · already shipped in `settings.json`; MS attests only the VERB (`提示`) · `high`
+- **response** · `回應` · MS · `high`. **streaming** → `串流` (MS, HKG + TWN).
+- **generate** · `生成` · AP's own generative-AI copy (`Generated Text` → 生成的文字, `Generated Image` → 生成的影像) ·
+  `high`. ❗ MS says `產生` (`regenerate` → 重新產生). Cmdr takes Apple's AI register and uses the `生成` family
+  throughout (`停止生成`, `重新生成`) rather than mixing the two.
+- **rate limit / quota** · `速率限制` / `配額` · MS (HKG, TWN) · `high`
+- **offline** · `離線` · MS (HKG, TWN) · `high`
+- **context window** · `上下文長度` · composed from MS `context` → 上下文 · `tentative`. ❗ Three of the TBX's four
+  `context` entries give `內容`, the "content" homograph; only one is right.
+- **temperature (sampling)** · unattested; MS's `temperature` is `色溫`, colour temperature · `tentative`
+- **approve** · `同意` · already shipped in `askCmdr.decision.approved` and `askCmdr.consent.*` · `high`. Apple's own
+  register for permitting an action is `允許`, and MS's `核准` is the manager-approval sense; `同意` is kept because the
+  chat already reports the act that way and one word beats a better one.
+
 ### macOS surfaces named in onboarding
 
 - **Quit & Reopen** (the macOS relaunch button) · `結束並重新打開` · **composed** from Apple zh-TW's own pieces: `Quit`
