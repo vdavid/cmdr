@@ -1,73 +1,74 @@
 {
-  "updates.checkToast.errorPrefix": "Error: {message}",
+  "updates.checkToast.errorPrefix": "無法檢查更新：{message}",
   "@updates.checkToast.errorPrefix": {
     "sourceHash": "020abfd"
   },
-  "updates.checkToast.sendErrorReport": "Send error report",
+  "updates.checkToast.sendErrorReport": "傳送錯誤報告",
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "updates.toast.ready": "A new version of Cmdr is ready.",
+  "updates.toast.ready": "Cmdr 的新版本準備好了。",
   "@updates.toast.ready": {
     "sourceHash": "622668e"
   },
-  "updates.toast.readyDetail": "Restart now, or you''ll get it the next time you open Cmdr.",
+  "updates.toast.readyDetail": "現在重新啟動，或是等你下次開啟 Cmdr 時自動生效。",
   "@updates.toast.readyDetail": {
     "sourceHash": "aab853f"
   },
   "updates.toast.versionChange": "v{prev} → v{next}",
   "@updates.toast.versionChange": {
-    "sourceHash": "41b26f1"
+    "sourceHash": "41b26f1",
+    "sameAsSourceJustification": "Version numbers and an arrow only: the literal `v` prefix, the two placeholders, and `→` carry the whole string, and Traditional Chinese writes version numbers in exactly this Latin form (Apple zh-TW and zh-HK both render macOS versions as bare numerals). There is no translatable word here, and the spoken form lives in the sibling `updates.toast.versionChangeAria`, which IS translated."
   },
-  "updates.toast.versionChangeAria": "Updating from version {prev} to version {next}",
+  "updates.toast.versionChangeAria": "正在從版本 {prev} 更新到版本 {next}",
   "@updates.toast.versionChangeAria": {
     "sourceHash": "911d79c"
   },
-  "updates.toast.later": "Later",
+  "updates.toast.later": "稍後",
   "@updates.toast.later": {
     "sourceHash": "73b6e48"
   },
-  "updates.toast.restart": "Restart now",
+  "updates.toast.restart": "立即重新啟動",
   "@updates.toast.restart": {
     "sourceHash": "09af100"
   },
-  "updates.moveToApplicationsDialog.title": "Move Cmdr to your Applications folder",
+  "updates.moveToApplicationsDialog.title": "把 Cmdr 移到「應用程式」資料夾",
   "@updates.moveToApplicationsDialog.title": {
     "sourceHash": "97f87a0"
   },
-  "updates.moveToApplicationsDialog.translocated": "A new version is ready, but macOS is running Cmdr from a temporary read-only copy of itself. That''s what happens when you open an app straight from where you downloaded it, and it means updates have nowhere to land.",
+  "updates.moveToApplicationsDialog.translocated": "新版本準備好了，不過 macOS 正在用一份暫時的唯讀副本執行 Cmdr。直接從下載的地方開啟 App 就會這樣，更新也就沒有地方可以放。",
   "@updates.moveToApplicationsDialog.translocated": {
     "sourceHash": "510a3a6"
   },
-  "updates.moveToApplicationsDialog.readOnlyVolume": "A new version is ready, but Cmdr is running from a read-only spot, usually a disk image that''s still mounted. That means updates have nowhere to land.",
+  "updates.moveToApplicationsDialog.readOnlyVolume": "新版本準備好了，不過 Cmdr 正在一個唯讀的位置上執行，通常是還裝載著的磁碟映像檔。更新也就沒有地方可以放。",
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
     "sourceHash": "94edc89"
   },
-  "updates.moveToApplicationsDialog.howTo": "Quit Cmdr, drag it into your Applications folder, and open it from there. Every update after that arrives on its own.",
+  "updates.moveToApplicationsDialog.howTo": "結束 Cmdr，把它拖到「應用程式」資料夾，然後從那裡開啟。之後的每次更新都會自動送達。",
   "@updates.moveToApplicationsDialog.howTo": {
     "sourceHash": "76a136d"
   },
-  "updates.moveToApplicationsDialog.gotIt": "Got it",
+  "updates.moveToApplicationsDialog.gotIt": "知道了",
   "@updates.moveToApplicationsDialog.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "updates.status.noUpdates": "No updates found. Current version: v{version}",
+  "updates.status.noUpdates": "沒有找到更新。目前版本：v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"
   },
-  "updates.status.checking": "Checking…",
+  "updates.status.checking": "正在檢查…",
   "@updates.status.checking": {
     "sourceHash": "ec963ff"
   },
-  "updates.status.downloading": "Update found, downloading v{next} (current: v{prev})…",
+  "updates.status.downloading": "找到更新，正在下載 v{next}（目前：v{prev}）…",
   "@updates.status.downloading": {
     "sourceHash": "480c6da"
   },
-  "updates.status.installing": "Installing v{next} (current: v{prev})…",
+  "updates.status.installing": "正在安裝 v{next}（目前：v{prev}）…",
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
-  "updates.status.ready": "Update v{next} ready. Restart to apply.",
+  "updates.status.ready": "更新 v{next} 已準備好。重新啟動即可套用。",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"
   }
