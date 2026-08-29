@@ -120,7 +120,7 @@
   "@licensing.commercialReminder.usingPersonal": {
     "sourceHash": "508c17d"
   },
-  "licensing.commercialReminder.askCommercial": "Si usas Cmdr en el trabajo, consigue una licencia Commercial para cumplir las condiciones.",
+  "licensing.commercialReminder.askCommercial": "Si usas Cmdr en el trabajo, consigue una licencia Comercial para cumplir las condiciones.",
   "@licensing.commercialReminder.askCommercial": {
     "sourceHash": "6bf4031"
   },
@@ -192,11 +192,11 @@
   "@licensing.dialog.labelKey": {
     "sourceHash": "f73a795"
   },
-  "licensing.dialog.typeCommercialPerpetual": "Commercial perpetua",
+  "licensing.dialog.typeCommercialPerpetual": "Comercial perpetua",
   "@licensing.dialog.typeCommercialPerpetual": {
     "sourceHash": "2c6933c"
   },
-  "licensing.dialog.typeCommercialSubscription": "Suscripción Commercial",
+  "licensing.dialog.typeCommercialSubscription": "Suscripción Comercial",
   "@licensing.dialog.typeCommercialSubscription": {
     "sourceHash": "e521480"
   },
@@ -412,11 +412,11 @@
   "@licensing.section.typePersonal": {
     "sourceHash": "4af5ca9"
   },
-  "licensing.section.typeCommercialPerpetual": "Commercial perpetua",
+  "licensing.section.typeCommercialPerpetual": "Comercial perpetua",
   "@licensing.section.typeCommercialPerpetual": {
     "sourceHash": "2c6933c"
   },
-  "licensing.section.typeCommercialSubscription": "Suscripción Commercial",
+  "licensing.section.typeCommercialSubscription": "Suscripción Comercial",
   "@licensing.section.typeCommercialSubscription": {
     "sourceHash": "e521480"
   },

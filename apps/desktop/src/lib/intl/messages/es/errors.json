@@ -1205,7 +1205,7 @@
   "@errors.write.trashNotSupported.message": {
     "sourceHash": "45cf0c6"
   },
-  "errors.write.trashNotSupported.suggestion": "Usa {deletePermanentlyKey} para eliminar de forma permanente.",
+  "errors.write.trashNotSupported.suggestion": "Usa {deletePermanentlyKey} para eliminar permanentemente.",
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
@@ -1477,7 +1477,7 @@
   "@errors.mutation.notFound": {
     "sourceHash": "9a7d554"
   },
-  "errors.mutation.cantRenameVolumeRoot": "No se puede cambiar el nombre de la carpeta raíz de un volumen desde aquí.",
+  "errors.mutation.cantRenameVolumeRoot": "No se puede renombrar la carpeta raíz de un volumen desde aquí.",
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "baf4d16"
   },

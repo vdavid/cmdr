@@ -317,7 +317,7 @@
   "@menu.go.forward": {
     "sourceHash": "f1c65e1"
   },
-  "menu.go.parentFolder": "Carpeta contenedora",
+  "menu.go.parentFolder": "Carpeta superior",
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },

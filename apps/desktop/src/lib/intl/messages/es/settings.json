@@ -3,15 +3,15 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "Elige el idioma que usa Cmdr. \"Predeterminado del sistema\" sigue el idioma de tu Mac.",
+  "settings.appearance.language.description": "Elige el idioma que usa Cmdr. \"Por omisión del sistema\" sigue el idioma de tu Mac.",
   "@settings.appearance.language.description": {
     "sourceHash": "a290add"
   },
-  "settings.appearance.language.opt.system": "Predeterminado del sistema",
+  "settings.appearance.language.opt.system": "Por omisión del sistema",
   "@settings.appearance.language.opt.system": {
     "sourceHash": "b045921"
   },
-  "settings.appearance.language.opt.systemWithLanguage": "Predeterminado del sistema ({language})",
+  "settings.appearance.language.opt.systemWithLanguage": "Por omisión del sistema ({language})",
   "@settings.appearance.language.opt.systemWithLanguage": {
     "sourceHash": "ab10534"
   },
@@ -101,7 +101,7 @@
   "@settings.appearance.dateTimeFormat.description": {
     "sourceHash": "628571a"
   },
-  "settings.appearance.dateTimeFormat.opt.system": "Predeterminado del sistema",
+  "settings.appearance.dateTimeFormat.opt.system": "Por omisión del sistema",
   "@settings.appearance.dateTimeFormat.opt.system": {
     "sourceHash": "b045921"
   },
@@ -474,7 +474,7 @@
   "@settings.mediaIndex.clip.ready": {
     "sourceHash": "c17e03d"
   },
-  "settings.mediaIndex.clip.comingSoon": "Muy pronto.",
+  "settings.mediaIndex.clip.comingSoon": "Próximamente.",
   "@settings.mediaIndex.clip.comingSoon": {
     "sourceHash": "9e3090d"
   },
@@ -1025,7 +1025,7 @@
   "@settings.network.smbConcurrency.label": {
     "sourceHash": "339933f"
   },
-  "settings.network.smbConcurrency.description": "Cuántas transferencias de archivos ejecuta Cmdr en paralelo en una sola conexión SMB. Los valores más altos aceleran las copias por lotes de muchos archivos (sobre todo de muchos archivos pequeños), pero usan más recursos del servidor. El valor predeterminado de 10 es seguro para la mayoría de los NAS domésticos. Los cambios se aplican en la siguiente copia por lotes.",
+  "settings.network.smbConcurrency.description": "Cuántas transferencias de archivos ejecuta Cmdr en paralelo en una sola conexión SMB. Los valores más altos aceleran las copias por lotes de muchos archivos (sobre todo de muchos archivos pequeños), pero usan más recursos del servidor. El valor por omisión de 10 es seguro para la mayoría de los NAS domésticos. Los cambios se aplican en la siguiente copia por lotes.",
   "@settings.network.smbConcurrency.description": {
     "sourceHash": "49a590b"
   },

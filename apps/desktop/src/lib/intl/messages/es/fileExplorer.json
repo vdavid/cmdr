@@ -1148,7 +1148,7 @@
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "Sobrescribir y enviar el antiguo a la Papelera",
+  "fileExplorer.renameConflict.overwriteTrash": "Sobrescribir y enviar el antiguo a la papelera",
   "@fileExplorer.renameConflict.overwriteTrash": {
     "sourceHash": "e0192f6"
   },

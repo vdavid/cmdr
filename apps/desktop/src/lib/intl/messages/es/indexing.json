@@ -12,7 +12,7 @@
   "@indexing.scan.label": {
     "sourceHash": "3758d47"
   },
-  "indexing.scan.counters": "{entriesText} ítems, {dirsText} dirs",
+  "indexing.scan.counters": "{entriesText} entradas, {dirsText} carpetas",
   "@indexing.scan.counters": {
     "sourceHash": "fd4d242"
   },

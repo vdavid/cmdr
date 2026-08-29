@@ -590,7 +590,7 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-  "askCmdr.renameUndo.applied": "Se {count, plural, one {cambió el nombre de} many {cambiaron los nombres de} other {cambiaron los nombres de}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "askCmdr.renameUndo.applied": "Se {count, plural, one {renombró} many {renombraron} other {renombraron}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },

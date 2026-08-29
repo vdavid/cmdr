@@ -1739,3 +1739,44 @@ están; las trece restantes son fronteras DELIBERADAS y quedan anotadas abajo pa
   porque su normalizador quita la puntuación FINAL pero no la apertura española `¡` / `¿`, así que `¡Copiado!` se
   reduce a `¡Copiado` y ya no coincide con `Copiado`. No toques estos ocho valores: el fallo está en el normalizador,
   no en la traducción.
+
+## Palabras que se separaron sin que ningún check pudiera verlo (2026-08-30)
+
+`i18n-terms` solo agrupa claves cuyo inglés es IDÉNTICO. Las de abajo tienen un inglés ligeramente distinto, así que
+solo aparecen en la pasada manual. Todas están corregidas.
+
+- **`Parent folder` → `Carpeta superior` también en la barra de menús** · `menu.go.parentFolder` decía
+  `Carpeta contenedora`, o sea que el menú Ir y la paleta de comandos (`commands.navParent.label` =
+  `Ir a la carpeta superior`) nombraban distinto la misma acción, y las otras diez claves del catálogo también dicen
+  `carpeta superior` · `high`. Contraprueba, para que nadie la vuelva a descubrir: macOS `es` SÍ dice
+  `Carpeta contenedora` / `Ir a la carpeta contenedora`, pero eso traduce el inglés de Apple *Enclosing Folder*, que no
+  es la frase de Cmdr (`Parent folder`), así que la regla de "usa la palabra de Finder" no se aplica limpiamente aquí y
+  gana la coherencia interna.
+- **`default` → `por omisión`, sin excepciones** · cinco claves decían `predeterminado`
+  (`settings.appearance.language.opt.system`/`.opt.systemWithLanguage`/`.description`,
+  `settings.appearance.dateTimeFormat.opt.system`, `settings.network.smbConcurrency.description`) contra las quince que
+  ya decían `por omisión` · `high`. macOS `es` no usa `predeterminado` en ningún sitio (cero coincidencias en
+  `es/macOS/`; sí `Ajuste por omisión`, `Restaurar ajustes por omisión`, `Usar por omisión`), y el glosario ya lo tenía
+  decidido dos veces.
+- **`Commercial` se había quedado en inglés en los nombres de tipo de licencia** ·
+  `licensing.dialog.typeCommercialPerpetual` decía `Commercial perpetua` y `.typeCommercialSubscription`
+  `Suscripción Commercial`, en la misma pantalla donde `licensing.about.perpetual` dice `Licencia comercial perpetua` ·
+  `high`. Regla: **sigue la mayúscula del inglés**, que ya distingue el nombre del NIVEL de la descripción. Inglés
+  `Commercial license` → `licencia Comercial`; inglés `commercial subscription` → `suscripción comercial`.
+- **`rename` (verbo) → `renombrar`, incluso en prosa** · `errors.mutation.cantRenameVolumeRoot` y
+  `askCmdr.renameUndo.applied` usaban la perífrasis `cambiar el nombre`, que el glosario reserva para el SUSTANTIVO
+  (`cambio de nombre`) · `high`.
+- **`entries` → `entradas` y `dirs` → `carpetas`** · `indexing.scan.counters` decía `{entriesText} ítems, {dirsText}
+  dirs`: dos palabras distintas para lo mismo que `queryUi.results.indexReadyStatus` llama `entradas`, y un `dirs` sin
+  traducir · `high`.
+- **`permanently` → `permanentemente`** · `errors.write.trashNotSupported.suggestion` decía `de forma permanente` ·
+  `high`. La etiqueta corta de la barra de teclas F sigue siendo `Permanente`: es el hueco más estrecho de la interfaz
+  y ahí cabe solo el adjetivo.
+- **`trash` → `papelera` en minúscula dentro de una frase** · `fileExplorer.renameConflict.overwriteTrash` decía
+  `a la Papelera`; macOS `es` escribe `Trasladar a la papelera`, `Ir a la papelera`, `Vaciar papelera`, y reserva la
+  mayúscula para cuando `Papelera` va sola como nombre del sitio · `high`.
+- **`Coming soon` → `Próximamente`** · `settings.mediaIndex.clip.comingSoon` decía `Muy pronto` · `high`.
+
+Revisado y NO tocado a propósito: `Queued` → `Esperando` (`operationLog.status.queued`) concuerda con la rama `queued`
+de `queue.row.status`, así que las dos superficies que muestran ese estado ya dicen lo mismo; `Cola` traduce el
+sustantivo `Queue`, que es otra cosa.
