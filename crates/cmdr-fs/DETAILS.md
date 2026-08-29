@@ -343,6 +343,10 @@ models something a real backend genuinely does:
   which can't signal a same-name collision at all.
 - **`with_read_range_unsupported()`** — positioned reads return `NotSupported`, modeling a remote backend without the
   primitive.
+- **`with_read_chunk_delay(d)`** — each read chunk takes `d` to arrive. Not a fault so much as the passage of time: an
+  in-memory read otherwise completes without ever yielding, so a whole file lands inside one poll and a test that has to
+  CATCH a transfer mid-file (a cancel that must leave no partial, a pause that must park mid-stream) is racing something
+  that never gives it a turn.
 
 A fault the caller wants to arm on a call COUNT rather than on a path belongs one layer up, in the app's `FaultyVolume`
 wrapper (`file_system/write_operations/transfer/volume/faulty_volume_test_support.rs`): it wraps any volume and fails

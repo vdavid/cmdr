@@ -17,6 +17,8 @@ use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 
+use super::super::store::RollbackUnit;
+use super::removal_target;
 use crate::file_system::volume::{Volume, VolumeError};
 
 /// One decided inverse act. The planner has already resolved both volumes,
@@ -104,3 +106,52 @@ pub trait RollbackRunner: Sync {
     /// making sure the frame that reaches the total goes out.
     fn report_progress(&self, progress: RollbackProgress<'_>);
 }
+
+/// Where the reversal stands, and the one place a progress frame is built from
+/// it. The totals arrive from the journal before the first act, so the bar is
+/// honest from the first frame and there's nothing to scan.
+///
+/// An item counts as done once it has been DECIDED — reversed or skipped — since
+/// both are equally over, and a bar that stalled on skips would misreport a run
+/// that legitimately left files alone.
+pub(super) struct ProgressStand {
+    files_done: u64,
+    files_total: u64,
+    bytes_done: u64,
+    bytes_total: u64,
+}
+
+impl ProgressStand {
+    pub(super) fn over((files_total, bytes_total): (u64, u64)) -> Self {
+        ProgressStand {
+            files_done: 0,
+            files_total,
+            bytes_done: 0,
+            bytes_total,
+        }
+    }
+
+    /// Tell the runner where things stand. `next` is the item about to be
+    /// reversed (`None` for the closing frame, which reports the position the run
+    /// finished at).
+    pub(super) fn announce(&self, runner: &dyn RollbackRunner, next: Option<&RollbackUnit>) {
+        let acting_on = next.map(|unit| removal_target(unit).1);
+        let current_name = acting_on
+            .as_deref()
+            .and_then(|path| path.file_name())
+            .map(|name| name.to_string_lossy());
+        runner.report_progress(RollbackProgress {
+            files_done: self.files_done,
+            files_total: self.files_total,
+            bytes_done: self.bytes_done,
+            bytes_total: self.bytes_total,
+            current_name: current_name.as_deref(),
+        });
+    }
+
+    pub(super) fn credit(&mut self, unit: &RollbackUnit) {
+        self.files_done += 1;
+        self.bytes_done += unit.size.unwrap_or(0).max(0) as u64;
+    }
+}
+
