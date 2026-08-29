@@ -93,6 +93,15 @@ need; an overwrite and a permanent delete kept no bytes to restore; a zip-inner 
 incomplete journal is Cmdr declining to guess. A single "this can't be rolled back" left the user unable to tell which,
 and unable to tell whether they'd done something wrong.
 
+**The ROW is where those sentences actually land.** The Roll back button renders only on a `rollbackable` row, so a
+`notRollbackable` one never offers a press to refuse: routed only through the refusal path, every reason above would be
+unreachable, and the user would face a bare "Can't roll back" badge. So the row renders `notRollbackableNotice` from the
+`notRollbackableReason` it already carries over the wire, as a quiet `.op-reason` line under the row, and the row's own
+button points at it with `aria-describedby` so a screen reader hears the badge and the why together. A NULL reason (an
+operation still running, which opens `not_rollbackable` until finalize decides) renders NOTHING: the badge stands on its
+own, and a dangling label would be worse than silence. The refusal notice still wins the slot when a press earned one,
+since a race the user just lost outranks a standing explanation.
+
 Two copy constraints that outlive any wording pass:
 
 - **The merge line must not read as a mistake.** Merging a folder into a same-named one is what the user asked for and

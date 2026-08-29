@@ -189,8 +189,12 @@ export function rollbackRefusalNotice(refusal: RollbackRefusal | null): MessageK
  * delete kept no bytes to restore, an archive edit is a gap Cmdr hasn't closed yet,
  * and an incomplete record is Cmdr refusing to guess. None of them carry a next
  * step, so none of them pretend to.
+ *
+ * Shared by the refusal a press earns and the line a `notRollbackable` ROW carries
+ * on sight. The row is the surface that matters: it never offers the button, so
+ * without it the reason would have no way to reach the person reading the history.
  */
-function notRollbackableNotice(reason: NotRollbackableReason): MessageKey {
+export function notRollbackableNotice(reason: NotRollbackableReason): MessageKey {
   switch (reason) {
     case 'overwrote':
       return 'operationLog.rollback.refusalOverwrote'

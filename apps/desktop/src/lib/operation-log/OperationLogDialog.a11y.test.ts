@@ -6,7 +6,8 @@
  * rows, and each reversible one carrying a Roll back button beside it. Covers the
  * empty state, a populated collapsed list, an expanded operation (whose revealed
  * region must satisfy the `aria-controls` reference), the confirmation stacked over
- * the log, and the refusal notice a lost race leaves on a row.
+ * the log, the refusal notice a lost race leaves on a row, and the stored reason a
+ * not-rollbackable row explains itself with.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -148,6 +149,32 @@ describe('OperationLogDialog a11y', () => {
       expect(target.querySelector('.op-refusal')).not.toBeNull()
     })
 
+    await expectNoA11yViolations(target)
+  })
+
+  it('a row explaining why it can’t be rolled back has no a11y violations, and the row points at it', async () => {
+    const merged = { ...op('op-merge', 'move'), rollbackState: 'notRollbackable' as const }
+    resetState([{ ...merged, notRollbackableReason: 'directoryMerge' as const }])
+    const target = mountDialog()
+    await tick()
+
+    // The explanation is `aria-describedby` from the row's own button, so a screen
+    // reader hears "Can't roll back" and the reason together instead of meeting an
+    // orphaned paragraph after the row it belongs to.
+    const head = target.querySelector<HTMLButtonElement>('.op-head')
+    expect(head?.getAttribute('aria-describedby')).toBe('op-reason-op-merge')
+    expect(target.querySelector('#op-reason-op-merge')).not.toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  it('a row with no recorded reason leaves no dangling description behind', async () => {
+    resetState([{ ...op('op-fresh', 'copy'), rollbackState: 'notRollbackable' as const }])
+    const target = mountDialog()
+    await tick()
+
+    // An `aria-describedby` pointing at an element that was never rendered is exactly
+    // the violation the axe run below catches; the attribute has to be absent, not empty.
+    expect(target.querySelector('.op-head')?.hasAttribute('aria-describedby')).toBe(false)
     await expectNoA11yViolations(target)
   })
 

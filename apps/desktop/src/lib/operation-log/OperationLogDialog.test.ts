@@ -7,7 +7,7 @@
 
 import { describe, it, vi, expect, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
-import type { OperationRow } from '$lib/ipc/bindings'
+import type { NotRollbackableReason, OperationRow } from '$lib/ipc/bindings'
 import type { OperationLogDetail } from '$lib/tauri-commands'
 import OperationLogDialog from './OperationLogDialog.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
@@ -274,5 +274,89 @@ describe('OperationLogDialog rollback', () => {
     })
     // A lost race leaves the row exactly as it was, so the user can act on the notice.
     expect(rollbackButtons(target)).toHaveLength(1)
+  })
+})
+
+describe('OperationLogDialog not-rollbackable reasons', () => {
+  beforeEach(() => {
+    closeOperationLog()
+    document.body.innerHTML = ''
+    rollbackOperationMock.mockReset()
+  })
+
+  /** The quiet explanatory lines under the rows, in list order. */
+  function reasonLines(target: HTMLElement): string[] {
+    return [...target.querySelectorAll('.op-reason')].map((el) => el.textContent.trim())
+  }
+
+  it('tells the user WHY a row can’t be rolled back, without making them press anything', async () => {
+    // The button never appears on these rows, so the press-then-refuse path can't
+    // reach them: the stored reason is the only way the user learns what happened.
+    setEntries([
+      opRow({
+        opId: 'op-merge',
+        kind: 'move',
+        rollbackState: 'notRollbackable',
+        notRollbackableReason: 'directoryMerge',
+      }),
+      opRow({
+        opId: 'op-gone',
+        kind: 'delete',
+        rollbackState: 'notRollbackable',
+        notRollbackableReason: 'permanentDelete',
+      }),
+    ])
+    const target = await mountDialog()
+
+    const lines = reasonLines(target)
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toBe(
+      'This move merged the folder into one that was already there. Cmdr can’t tell which files came along and which were already inside, so there’s no safe way back.',
+    )
+    expect(lines[1]).toBe('A permanent delete leaves nothing to put back.')
+  })
+
+  it('gives every stored reason its own line', async () => {
+    const reasons: NotRollbackableReason[] = [
+      'overwrote',
+      'permanentDelete',
+      'archiveOverwrite',
+      'zipEditUnsupported',
+      'journalIncomplete',
+      'directoryMerge',
+      'stagedConflictResolved',
+    ]
+    setEntries(
+      reasons.map((reason) =>
+        opRow({ opId: `op-${reason}`, rollbackState: 'notRollbackable', notRollbackableReason: reason }),
+      ),
+    )
+    const target = await mountDialog()
+
+    const lines = reasonLines(target)
+    expect(lines).toHaveLength(reasons.length)
+    expect(new Set(lines).size).toBe(reasons.length)
+    for (const line of lines) expect(line.length).toBeGreaterThan(0)
+  })
+
+  it('stays silent when no reason was recorded, rather than inventing one', async () => {
+    // A fresh operation sits at `notRollbackable` with a NULL reason until finalize
+    // decides. The badge already says "Can't roll back"; a dangling label would be worse
+    // than nothing.
+    setEntries([opRow({ opId: 'op-fresh', rollbackState: 'notRollbackable', notRollbackableReason: null })])
+    const target = await mountDialog()
+
+    expect(reasonLines(target)).toHaveLength(0)
+    expect(target.textContent).toContain('Can’t roll back')
+  })
+
+  it('explains nothing on a row that CAN be rolled back', async () => {
+    setEntries([
+      opRow({ opId: 'op-can', rollbackState: 'rollbackable' }),
+      opRow({ opId: 'op-done', rollbackState: 'rolledBack' }),
+    ])
+    const target = await mountDialog()
+
+    expect(reasonLines(target)).toHaveLength(0)
   })
 })

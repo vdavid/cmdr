@@ -171,6 +171,7 @@ interface LogRow {
   opId: string
   executionStatus: string
   rollbackState: string
+  notRollbackableReason: string | null
 }
 
 /** The newest `limit` operations, straight from the journal (the same read the
@@ -261,6 +262,16 @@ function rowRefusalNotice(page: TauriPage, opId: string): Promise<string> {
     var head = document.getElementById('op-head-' + ${JSON.stringify(opId)});
     var li = head && head.closest('li.op');
     var notice = li && li.querySelector('.op-refusal');
+    return notice ? notice.textContent.trim() : '';
+  })()`)
+}
+
+/** The explanatory line a not-rollbackable row carries on sight (no button to press). */
+function rowReasonNotice(page: TauriPage, opId: string): Promise<string> {
+  return page.evaluate<string>(`(function() {
+    var head = document.getElementById('op-head-' + ${JSON.stringify(opId)});
+    var li = head && head.closest('li.op');
+    var notice = li && li.querySelector('.op-reason');
     return notice ? notice.textContent.trim() : '';
   })()`)
 }
@@ -600,6 +611,20 @@ test.describe('Rolling an operation back from the history dialog', () => {
       .toBe(true)
     expect((await dispatchRollback(page, deleteId)).refusal).toBe('notRollbackable')
     expect(fs.existsSync(doomed)).toBe(false)
+
+    // The reason has to survive the whole chain, because the DIALOG is where it
+    // matters and no mock can prove that join: the engine has to store it, the row
+    // has to carry it over the wire, and the row has to say it on sight. This row
+    // never offers a button, so the refusal path above can't reach a user at all —
+    // if the reason stopped being journaled or stopped being rendered, a person
+    // would see "Can't roll back" and no explanation, and every test above would
+    // still pass.
+    const deleteRow = (await recentEntries(page, 30)).find((r) => r.opId === deleteId)
+    expect(deleteRow?.notRollbackableReason).toBe('permanentDelete')
+    await openOperationLog(page)
+    await expect
+      .poll(() => rowReasonNotice(page, deleteId), { timeout: 5000 })
+      .toBe('A permanent delete leaves nothing to put back.')
   })
 
   // ── Progress, pause, and mid-file cancel, end to end ───────────────────────

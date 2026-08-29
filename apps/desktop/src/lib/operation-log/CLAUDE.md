@@ -28,6 +28,8 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
   snapshot yet). ❌ No copy here may promise a complete reversal.
 - **A refusal is typed.** Catch it with `asRollbackRefusal`, word it with `rollbackRefusalNotice`; ❌ never render the
   wire value, and never let a refused press look like nothing happened.
+- **A `notRollbackable` row explains itself on sight** (`notRollbackableNotice` off `notRollbackableReason`): it never
+  offers the button whose refusal would otherwise carry the reason. Pinned by the component, a11y, and E2E suites.
 - **`entries.length` is the paging offset**, one source of truth, so an append can't desync from what's shown.
 
 Flows, the routing decision, the copy contract, and the caching rules: `DETAILS.md`.

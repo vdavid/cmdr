@@ -44,6 +44,7 @@
         itemOutcomeLabel,
         rollbackConfirmVariant,
         rollbackRefusalNotice,
+        notRollbackableNotice,
     } from './operation-log-labels'
 
     const log = getAppLogger('operationLogDialog')
@@ -169,6 +170,13 @@
                         {@const isOpen = expanded.has(op.opId)}
                         {@const items = itemsByOp.get(op.opId)}
                         {@const refusal = refusals.get(op.opId)}
+                        <!-- One expression drives both the line and the `aria-describedby` that
+                             points at it, so the two can't drift into an orphaned reference. A
+                             refusal the user just earned outranks the standing explanation. -->
+                        {@const reasonNotice =
+                            refusal == null && op.rollbackState === 'notRollbackable' && op.notRollbackableReason != null
+                                ? notRollbackableNotice(op.notRollbackableReason)
+                                : null}
                         <li class="op">
                             <div class="op-row">
                                 <button
@@ -177,6 +185,7 @@
                                     id="op-head-{op.opId}"
                                     aria-expanded={isOpen}
                                     aria-controls="op-items-{op.opId}"
+                                    aria-describedby={reasonNotice != null ? `op-reason-${op.opId}` : undefined}
                                     onclick={() => void toggleOperation(op)}
                                 >
                                     <Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={16} />
@@ -213,6 +222,12 @@
 
                             {#if refusal != null}
                                 <p class="op-refusal" role="status">{tString(refusal)}</p>
+                            {:else if reasonNotice != null}
+                                <!-- The badge says a row can't be reversed; this says why. It renders
+                                     on sight because such a row never offers the button whose refusal
+                                     would otherwise carry the sentence. A NULL reason (an operation
+                                     still running) renders nothing rather than a dangling label. -->
+                                <p class="op-reason" id="op-reason-{op.opId}">{tString(reasonNotice)}</p>
                             {/if}
 
                             {#if isOpen}
@@ -414,7 +429,8 @@
         color: var(--color-text-primary);
     }
 
-    .op-refusal {
+    .op-refusal,
+    .op-reason {
         margin: 0;
         padding: 0 var(--spacing-md) var(--spacing-sm) var(--spacing-2xl);
         font-size: var(--font-size-xs);
