@@ -731,13 +731,9 @@ test.describe('Rolling an operation back from the history dialog', () => {
     await confirmRollBack(page)
 
     // Cancel while the single file is still travelling back.
-    await expect
-      .poll(() => fs.existsSync(big), { timeout: 15000, intervals: [25] })
-      .toBe(true)
+    await expect.poll(() => fs.existsSync(big), { timeout: 15000, intervals: [25] }).toBe(true)
     await cancelEverything(page)
-    await expect
-      .poll(async () => (await rollbackStateOf(page, opId)) !== 'rollingBack', { timeout: 20000 })
-      .toBe(true)
+    await expect.poll(async () => (await rollbackStateOf(page, opId)) !== 'rollingBack', { timeout: 20000 }).toBe(true)
 
     // Whichever side holds the file, it holds ALL of it, and no half-written copy
     // survives on the other. A truncated file at either end is the failure.
