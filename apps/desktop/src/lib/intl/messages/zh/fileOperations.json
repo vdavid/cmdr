@@ -619,7 +619,7 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "发送到操作队列",
+  "fileOperations.transferProgress.queueAria": "加入队列，转到后台，在“操作队列”窗口中管理",
   "@fileOperations.transferProgress.queueAria": {
     "sourceHash": "2bc3bd9"
   },
