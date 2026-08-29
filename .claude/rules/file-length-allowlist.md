@@ -21,5 +21,6 @@ prints the table, and its allowlist stays hand-bumpable with no need to ask.
 file, re-run the check, no need to ask. The warn at the moment of growth is the signal, and you still report it; the
 stored number only records where the bundle stands.
 
-Per-allowlist mechanics and the `exempt` section (generated files like `bindings.ts`):
-`scripts/check/checks/DETAILS.md`.
+Per-allowlist mechanics and the `exempt` sections (`file-length` and both `jscpd` lanes carry one, for tracked generated
+files like `bindings.ts` and `shipped_locales.gen.rs`): `scripts/check/checks/DETAILS.md`. An `exempt` entry needs
+consent too.

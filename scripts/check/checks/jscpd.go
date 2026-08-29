@@ -120,9 +120,22 @@ type jscpdReport struct {
 // both regressions that matter: a new duplicated block between the same two files
 // raises it, and an existing block growing raises it too. A clone count would miss
 // the second entirely.
+//
+// **`Exempt` is the escape hatch `Pairs` can't express**: a GENERATED file, whose
+// duplication belongs to the generator's output shape rather than to anybody's
+// copy-paste. A number there would be a lie twice over — nobody can act on it,
+// and it would have to be re-approved every time the generator's input grows. So
+// exempt pairs never warn and never carry a count, and each needs a reason.
 type jscpdAllowlist struct {
-	Comment string         `json:"$comment,omitempty"`
-	Pairs   map[string]int `json:"pairs"`
+	Comment string            `json:"$comment,omitempty"`
+	Exempt  map[string]string `json:"exempt,omitempty"`
+	Pairs   map[string]int    `json:"pairs"`
+}
+
+// jscpdPairPaths splits a pair key back into the file paths behind it: two for a
+// cross-file pair, one for a clone with both ends in the same file.
+func jscpdPairPaths(key string) []string {
+	return strings.Split(key, jscpdPairSeparator)
 }
 
 func jscpdAllowlistRelPath(name string) string {
@@ -136,13 +149,16 @@ func jscpdAllowlistPath(rootDir, name string) string {
 // loadJscpdAllowlist reads a lane's allowlist. A missing or unparsable file yields
 // an empty allowlist, which reports every pair as unlisted.
 func loadJscpdAllowlist(rootDir, name string) jscpdAllowlist {
-	list := jscpdAllowlist{Pairs: map[string]int{}}
+	list := jscpdAllowlist{Exempt: map[string]string{}, Pairs: map[string]int{}}
 	data, err := os.ReadFile(jscpdAllowlistPath(rootDir, name))
 	if err != nil {
 		return list
 	}
 	if err := json.Unmarshal(data, &list); err != nil {
-		return jscpdAllowlist{Pairs: map[string]int{}}
+		return jscpdAllowlist{Exempt: map[string]string{}, Pairs: map[string]int{}}
+	}
+	if list.Exempt == nil {
+		list.Exempt = map[string]string{}
 	}
 	if list.Pairs == nil {
 		list.Pairs = map[string]int{}
@@ -269,18 +285,37 @@ func parseJscpdReport(data []byte) ([]jscpdClone, jscpdTotals, error) {
 // a duplicated-line count only moves when duplication is added or removed, so
 // there's no drift for a buffer to absorb — and a buffer would let a clone grow
 // for free. It mutates list in place and returns one line per change.
-func shrinkwrapJscpdAllowlist(list *jscpdAllowlist, report jscpdReport) []string {
+func shrinkwrapJscpdAllowlist(rootDir string, list *jscpdAllowlist, report jscpdReport) []string {
 	var changes []string
 	for _, key := range sortedKeys(list.Pairs) {
 		allowed := list.Pairs[key]
 		current := report.linesByPair[key]
 		switch {
+		// An exempt pair needs no number beside it, and a stale one would read as
+		// a live budget somebody has to defend.
+		case list.Exempt[key] != "":
+			delete(list.Pairs, key)
+			changes = append(changes, fmt.Sprintf("removed %s (the exempt section already covers it)", key))
 		case current == 0:
 			delete(list.Pairs, key)
 			changes = append(changes, fmt.Sprintf("removed %s (no duplication left)", key))
 		case current < allowed:
 			list.Pairs[key] = current
 			changes = append(changes, fmt.Sprintf("ratcheted %s: %d → %d duplicated lines", key, allowed, current))
+		}
+	}
+	// Exempt entries survive a run that found no duplication for them: a generated
+	// file that happens to emit no clone this time is still generated, and dropping
+	// the entry would just warn on the next regeneration. Only a path that's GONE
+	// makes one dead — and a dead exemption silently suppresses whatever moves in
+	// under the old name, so it has to go.
+	for _, key := range sortedKeys(list.Exempt) {
+		for _, path := range jscpdPairPaths(key) {
+			if !fileExists(filepath.Join(rootDir, filepath.FromSlash(path))) {
+				delete(list.Exempt, key)
+				changes = append(changes, fmt.Sprintf("removed exempt %s (%s no longer exists)", key, path))
+				break
+			}
 		}
 	}
 	return changes
@@ -295,10 +330,14 @@ type jscpdRegression struct {
 
 // findJscpdRegressions returns every pair over its allowed line count, worst
 // overshoot first. A pair missing from the allowlist is a regression too: entries
-// are added deliberately, never by a check.
+// are added deliberately, never by a check. An EXEMPT pair is never a regression
+// at any size — that's what the section means.
 func findJscpdRegressions(report jscpdReport, list jscpdAllowlist) []jscpdRegression {
 	var out []jscpdRegression
 	for _, pair := range report.pairs {
+		if list.Exempt[pair.key] != "" {
+			continue
+		}
 		allowed, listed := list.Pairs[pair.key]
 		if listed && pair.lines <= allowed {
 			continue
@@ -448,7 +487,7 @@ func runJscpdLane(ctx *CheckContext, lane jscpdLane) (CheckResult, error) {
 	report.totals = totals
 
 	allowlist := loadJscpdAllowlist(ctx.RootDir, lane.allowlistName)
-	staleChanges := shrinkwrapJscpdAllowlist(&allowlist, report)
+	staleChanges := shrinkwrapJscpdAllowlist(ctx.RootDir, &allowlist, report)
 	madeChanges := false
 	if len(staleChanges) > 0 && !ctx.CI {
 		if err := writeJSONAllowlist(jscpdAllowlistPath(ctx.RootDir, lane.allowlistName), allowlist); err != nil {

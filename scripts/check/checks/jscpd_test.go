@@ -1,9 +1,20 @@
 package checks
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// writeJscpdSourceFile plants a file the shrink-wrap can see, so an exempt entry
+// pointing at it reads as live rather than dead.
+func writeJscpdSourceFile(t *testing.T, rootDir, relPath string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(rootDir, filepath.FromSlash(relPath)), []byte("// present\n"), 0o644); err != nil {
+		t.Fatalf("write %s: %v", relPath, err)
+	}
+}
 
 func TestJscpdPairKeySortsPathsSoOrderDoesNotMintASecondEntry(t *testing.T) {
 	forward := jscpdPairKey("b.rs", "a.rs")
@@ -55,7 +66,7 @@ func TestShrinkwrapJscpdAllowlistDropsGonePairsAndRatchetsShrunkOnes(t *testing.
 		"gone.rs ↔ x.rs": 9,
 	}}
 
-	changes := shrinkwrapJscpdAllowlist(&list, report)
+	changes := shrinkwrapJscpdAllowlist(t.TempDir(), &list, report)
 
 	if list.Pairs["a.rs ↔ b.rs"] != 12 {
 		t.Fatalf("ratcheted entry = %d, want 12", list.Pairs["a.rs ↔ b.rs"])
@@ -194,5 +205,88 @@ func TestFormatJscpdInventoryShowsTheWorstPairsWithALocation(t *testing.T) {
 	}
 	if !strings.Contains(out, "aa.rs:1-30") {
 		t.Fatalf("inventory must carry a file:line for each pair:\n%s", out)
+	}
+}
+
+func TestFindJscpdRegressionsSkipsAnExemptPair(t *testing.T) {
+	report := summarizeJscpdClones([]jscpdClone{
+		{Format: "rust", Lines: 39, A: jscpdLocation{"gen.rs", 128, 166}, B: jscpdLocation{"gen.rs", 88, 126}},
+		{Format: "rust", Lines: 12, A: jscpdLocation{"a.rs", 1, 12}, B: jscpdLocation{"b.rs", 1, 12}},
+	})
+	list := jscpdAllowlist{
+		Pairs:  map[string]int{"a.rs ↔ b.rs": 12},
+		Exempt: map[string]string{"gen.rs": "generated; the duplication is the generator's, not a hand-written copy"},
+	}
+
+	if got := findJscpdRegressions(report, list); len(got) != 0 {
+		t.Fatalf("regressions = %v, want none (the only over-limit pair is exempt)", got)
+	}
+}
+
+func TestFindJscpdRegressionsStillFlagsAnUnlistedPairBesideAnExemptOne(t *testing.T) {
+	report := summarizeJscpdClones([]jscpdClone{
+		{Format: "rust", Lines: 39, A: jscpdLocation{"gen.rs", 128, 166}, B: jscpdLocation{"gen.rs", 88, 126}},
+		{Format: "rust", Lines: 12, A: jscpdLocation{"a.rs", 1, 12}, B: jscpdLocation{"b.rs", 1, 12}},
+	})
+	list := jscpdAllowlist{Exempt: map[string]string{"gen.rs": "generated"}}
+
+	got := findJscpdRegressions(report, list)
+	if len(got) != 1 || got[0].pair.key != "a.rs ↔ b.rs" {
+		t.Fatalf("regressions = %v, want only a.rs ↔ b.rs", got)
+	}
+}
+
+func TestShrinkwrapJscpdAllowlistKeepsAnExemptPairWithNoDuplicationLeft(t *testing.T) {
+	rootDir := t.TempDir()
+	writeJscpdSourceFile(t, rootDir, "gen.rs")
+	// A `pairs` entry with no duplication left is stale and gets dropped. An
+	// `exempt` one is a standing decision about a generated file, so it survives a
+	// regeneration that happens to leave no clone this time.
+	list := jscpdAllowlist{Exempt: map[string]string{"gen.rs": "generated"}}
+
+	changes := shrinkwrapJscpdAllowlist(rootDir, &list, summarizeJscpdClones(nil))
+
+	if _, ok := list.Exempt["gen.rs"]; !ok {
+		t.Fatalf("dropped a live exempt entry; changes = %v", changes)
+	}
+}
+
+func TestShrinkwrapJscpdAllowlistDropsAnExemptPairWhoseFileIsGone(t *testing.T) {
+	rootDir := t.TempDir()
+	writeJscpdSourceFile(t, rootDir, "kept.rs")
+	list := jscpdAllowlist{Exempt: map[string]string{
+		"kept.rs":              "generated",
+		"gone.rs":              "generated",
+		"kept.rs ↔ missing.rs": "generated",
+	}}
+
+	changes := shrinkwrapJscpdAllowlist(rootDir, &list, summarizeJscpdClones(nil))
+
+	if _, ok := list.Exempt["gone.rs"]; ok {
+		t.Fatalf("kept an exempt entry whose file is gone; changes = %v", changes)
+	}
+	if _, ok := list.Exempt["kept.rs ↔ missing.rs"]; ok {
+		t.Fatalf("kept an exempt pair whose second file is gone; changes = %v", changes)
+	}
+	if _, ok := list.Exempt["kept.rs"]; !ok {
+		t.Fatalf("dropped a live exempt entry; changes = %v", changes)
+	}
+}
+
+func TestShrinkwrapJscpdAllowlistDropsAPairsEntryTheExemptSectionAlreadyCovers(t *testing.T) {
+	rootDir := t.TempDir()
+	writeJscpdSourceFile(t, rootDir, "gen.rs")
+	report := summarizeJscpdClones([]jscpdClone{
+		{Format: "rust", Lines: 39, A: jscpdLocation{"gen.rs", 128, 166}, B: jscpdLocation{"gen.rs", 88, 126}},
+	})
+	list := jscpdAllowlist{
+		Pairs:  map[string]int{"gen.rs": 39},
+		Exempt: map[string]string{"gen.rs": "generated"},
+	}
+
+	changes := shrinkwrapJscpdAllowlist(rootDir, &list, report)
+
+	if _, ok := list.Pairs["gen.rs"]; ok {
+		t.Fatalf("kept a redundant pairs entry beside an exempt one; changes = %v", changes)
 	}
 }
