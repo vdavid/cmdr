@@ -102,8 +102,7 @@ All under `apps/desktop/src/lib/`.
   dialog, and the manual Help reopen. See `whats-new/CLAUDE.md`
 - `operation-log/`: The alpha "Operation log" dialog (View menu / ⌘⌥L) over the read API — trigger + paging state, the
   soft dialog, the pure typed-enum→i18n label mapping, and the per-row Roll back button that hands a reversal to the
-  operation queue. See `apps/desktop/src/lib/operation-log/CLAUDE.md`, and the backend `operation_log/DETAILS.md` §
-  Alpha UI
+  operation queue. See `apps/desktop/src/lib/operation-log/CLAUDE.md`
 - `suggested-ops/`: The "Suggested ops" dialog (View menu) where the user reviews what Ask Cmdr proposed and decides
   what runs, over the proposal spine. Windowed op paging and the disclosure rules: its `CLAUDE.md`
 - `utils/`: Filename validation, confirm dialog utilities
