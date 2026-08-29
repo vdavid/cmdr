@@ -259,6 +259,13 @@ to the key itself. That's the whole thing. No ICU, no plurals, no formatting:
   an `NSUserDefaults` read each time. `refresh_active_locale()` is the only thing that moves it, and it reports whether
   it moved, which is exactly the signal a rebuild needs.
 
+**Gotcha: `menu_t`'s fallback is two steps, `<locale>` then `en`, while the frontend walks the full inheritance chain**
+(`inheritableAncestors`, `apps/desktop/src/lib/intl/locale-inheritance.ts`). The two agree for every catalog shipped
+today, because `en-GB` and `en-AU` are overlays of `en` and their chain IS `en`. They will DISAGREE for the first
+overlay whose base is not English: a `pt-PT` reader would get Portuguese everywhere except the native menu bar, which
+would drop straight past `pt` to English for every key `pt-PT` doesn't fork. Teach `menu_t` the intermediate hop before
+shipping `pt-PT` (the script and region facts it needs are already in `SHIPPED_LOCALES`).
+
 ### Which locale, and who decides
 
 `LANGUAGE_PREFERENCE` holds the raw `appearance.language` SETTING, not a resolved tag, so `'system'` keeps meaning "the

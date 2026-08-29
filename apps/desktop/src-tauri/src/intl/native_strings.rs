@@ -269,18 +269,54 @@ mod tests {
 
     #[test]
     fn every_shipped_locale_speaks_its_own_menu_bar() {
-        // All nine translated locales carry the native strings, so no user reads
-        // a Cmdr menu bar in English while the rest of the app is translated.
+        // No user reads a Cmdr menu bar in English while the rest of the app is
+        // translated. A full translation earns that by carrying every native
+        // string itself; an OVERLAY earns it differently, by forking the few it
+        // means to and inheriting the rest, which for `en-GB` / `en-AU` are
+        // English on purpose. So the two shapes are checked against different
+        // contracts, and the table's own size is what tells them apart.
+        let base = NATIVE_STRINGS
+            .iter()
+            .find(|locale| locale.tag == BASE_LOCALE)
+            .expect("the base catalog is always in the table")
+            .entries;
         for locale in NATIVE_STRINGS {
             assert!(
                 !locale.entries.is_empty(),
                 "{} has no native strings; run `pnpm intl:native-strings`",
                 locale.tag
             );
-            assert_ne!(
-                lookup(locale.tag, "menu.bar.file"),
-                None,
-                "{} is missing menu.bar.file",
+            if locale.entries.len() == base.len() {
+                assert_ne!(
+                    lookup(locale.tag, "menu.bar.file"),
+                    None,
+                    "{} is missing menu.bar.file",
+                    locale.tag
+                );
+                continue;
+            }
+            // An overlay: a strict subset, every entry of which must genuinely
+            // fork English, or it's dead weight pinning a copy that will drift.
+            assert!(
+                locale.entries.len() < base.len(),
+                "{} carries more native strings than the base catalog",
+                locale.tag
+            );
+            for (key, value) in locale.entries {
+                let english = lookup(BASE_LOCALE, key);
+                assert_ne!(english, None, "{} invents the native key {key}", locale.tag);
+                assert_ne!(
+                    english,
+                    Some(*value),
+                    "{}'s {key} matches English, so it forks nothing",
+                    locale.tag
+                );
+            }
+            // And a key it does NOT fork still reaches the menu bar, in English.
+            assert_eq!(
+                lookup(locale.tag, "menu.bar.file").or_else(|| lookup(BASE_LOCALE, "menu.bar.file")),
+                Some("File"),
+                "{} loses menu.bar.file entirely",
                 locale.tag
             );
         }

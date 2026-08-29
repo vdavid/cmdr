@@ -303,7 +303,55 @@ mod tests {
     fn a_regional_variant_falls_back_to_its_base_language() {
         assert_eq!(resolve_ui_locale(&prefs(&["fr-CA"]), SHIPPED), Some("fr".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["pt-PT"]), SHIPPED), Some("pt".to_string()));
-        assert_eq!(resolve_ui_locale(&prefs(&["en-GB"]), SHIPPED), Some("en".to_string()));
+        assert_eq!(resolve_ui_locale(&prefs(&["en-IE"]), SHIPPED), Some("en".to_string()));
+    }
+
+    #[test]
+    fn a_uk_or_australian_mac_reaches_its_own_english_overlay() {
+        // The whole point of shipping the two overlays: a Mac set to English (UK)
+        // or English (Australia) must land on that catalog, not on US English.
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["en-GB"]), SHIPPED),
+            Some("en-GB".to_string())
+        );
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["en-AU"]), SHIPPED),
+            Some("en-AU".to_string())
+        );
+        // The POSIX path on Linux spells it with an underscore, and casing isn't
+        // guaranteed on either path.
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["en_GB"]), SHIPPED),
+            Some("en-GB".to_string())
+        );
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["EN-au"]), SHIPPED),
+            Some("en-AU".to_string())
+        );
+        // A script subtag WEDGED between the language and the region defeats the
+        // match, because subtags are compared by position: `en-latn-au` shares
+        // only `en` with `en-au`, exactly as `fr-Latn-CA` shares only `fr` with
+        // `fr` below, so the shortest-tag tiebreak takes base English. Neither
+        // macOS nor a POSIX `LANG` emits that shape, so this pins the behavior
+        // rather than blessing it.
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["en-Latn-AU"]), SHIPPED),
+            Some("en".to_string())
+        );
+        // A US Mac is untouched by their arrival.
+        assert_eq!(resolve_ui_locale(&prefs(&["en-US"]), SHIPPED), Some("en".to_string()));
+    }
+
+    #[test]
+    fn a_new_zealand_tag_lands_on_base_english_rather_than_guessing() {
+        // macOS ships no en-NZ UI localization, so a New Zealand user picks
+        // English (UK) or English (Australia) and is served by that overlay. A
+        // literal `en-NZ` tag can still arrive from a POSIX `LANG`, and it shares
+        // exactly one subtag with `en`, `en-GB`, and `en-AU` alike, so the
+        // shortest-tag tiebreak takes base English. Picking a side for them would
+        // be a guess. Evidence for the no-en-NZ claim: `docs/i18n/en-GB/style.md`
+        // § New Zealand.
+        assert_eq!(resolve_ui_locale(&prefs(&["en-NZ"]), SHIPPED), Some("en".to_string()));
     }
 
     #[test]
@@ -419,11 +467,12 @@ mod tests {
     #[test]
     fn the_guard_is_about_legibility_not_dialect() {
         // Regional fallback is WANTED: `pt-PT` reading Brazilian Portuguese, or
-        // `en-GB` reading "Trash" and `-ize`, is a papercut a later catalog
-        // fixes. An unreadable script is a wall. Don't "fix" this by blocking
-        // regional fallback.
+        // `en-IE` reading "Trash" and `-ize`, is a papercut a later catalog
+        // fixes (`en-GB` and `en-AU` are exactly that later catalog, and now
+        // resolve to themselves). An unreadable script is a wall. Don't "fix"
+        // this by blocking regional fallback.
         assert_eq!(resolve_ui_locale(&prefs(&["pt-PT"]), SHIPPED), Some("pt".to_string()));
-        assert_eq!(resolve_ui_locale(&prefs(&["en-GB"]), SHIPPED), Some("en".to_string()));
+        assert_eq!(resolve_ui_locale(&prefs(&["en-IE"]), SHIPPED), Some("en".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["de-AT"]), SHIPPED), Some("de".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["es-419"]), SHIPPED), Some("es".to_string()));
         assert_eq!(
