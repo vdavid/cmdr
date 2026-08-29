@@ -1,373 +1,376 @@
 {
-  "viewer.window.fallbackTitle": "Viewer",
+  "viewer.window.fallbackTitle": "檢視器",
   "@viewer.window.fallbackTitle": {
     "sourceHash": "678bfa6"
   },
-  "viewer.window.titleSuffix": "{fileName} | Viewer",
+  "viewer.window.titleSuffix": "{fileName} | 檢視器",
   "@viewer.window.titleSuffix": {
     "sourceHash": "5ebd7f4"
   },
-  "viewer.srHeading": "File viewer",
+  "viewer.srHeading": "檔案檢視器",
   "@viewer.srHeading": {
     "sourceHash": "b32f632"
   },
-  "viewer.loading": "Loading...",
+  "viewer.loading": "正在載入…",
   "@viewer.loading": {
     "sourceHash": "47d2a51"
   },
-  "viewer.error.noPath": "No file path specified",
+  "viewer.error.noPath": "沒有指定檔案路徑",
   "@viewer.error.noPath": {
     "sourceHash": "2b069fc"
   },
-  "viewer.error.readFailed": "Failed to read file",
+  "viewer.error.readFailed": "無法讀取檔案",
   "@viewer.error.readFailed": {
     "sourceHash": "ea7d976"
   },
-  "viewer.error.timeout": "Couldn't load the file. The volume may be slow or unresponsive.",
+  "viewer.error.timeout": "無法載入這個檔案。這個卷宗可能很慢或沒有回應。",
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
-  "viewer.error.archiveTooLarge": "This file is too big to preview from inside the archive. Copy it out first, then open it.",
+  "viewer.error.archiveTooLarge": "這個檔案太大，沒辦法直接從封存檔裡預覽。請先把它複製出來，再開啟。",
   "@viewer.error.archiveTooLarge": {
     "sourceHash": "1bf7d91"
   },
-  "viewer.error.archiveUnreadable": "Couldn't open this file from the archive. It may be encrypted, damaged, or use a format Cmdr can''t read.",
+  "viewer.error.archiveUnreadable": "無法從封存檔裡開啟這個檔案。它可能已加密、已損壞，或用了 Cmdr 讀不了的格式。",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "01490a6"
   },
-  "viewer.error.retry": "Retry",
+  "viewer.error.retry": "再試一次",
   "@viewer.error.retry": {
     "sourceHash": "942087c"
   },
-  "viewer.error.cancel": "Cancel",
+  "viewer.error.cancel": "取消",
   "@viewer.error.cancel": {
     "sourceHash": "19766ed"
   },
-  "viewer.content.ariaLabel": "File content: {fileName}",
+  "viewer.content.ariaLabel": "檔案內容：{fileName}",
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "This is the raw view of the file. You might want to view the actual <kindName>{kind}</kindName> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open the quick view, or press <openKey></openKey> (or double-click the file) to open it in the associated app.",
+  "viewer.binaryWarning.body": "這是這個檔案的原始內容檢視。你可能會想看實際的<kindName>{kind}</kindName>。如果要這樣做，請關閉這個視窗，按 <quickLookKey></quickLookKey> 開啟快速查看，或按 <openKey></openKey>（或連按兩下檔案）用對應的 App 開啟。",
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
-  "viewer.binaryWarning.kind.image": "image",
+  "viewer.binaryWarning.kind.image": "影像",
   "@viewer.binaryWarning.kind.image": {
     "sourceHash": "6105d6c"
   },
-  "viewer.binaryWarning.kind.document": "document",
+  "viewer.binaryWarning.kind.document": "文件",
   "@viewer.binaryWarning.kind.document": {
     "sourceHash": "43cc23f"
   },
-  "viewer.binaryWarning.dismiss": "Close",
+  "viewer.binaryWarning.dismiss": "關閉",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
   },
-  "viewer.binaryWarning.suppressForever": "Never show this warning again",
+  "viewer.binaryWarning.suppressForever": "不要再顯示這個警告",
   "@viewer.binaryWarning.suppressForever": {
     "sourceHash": "b85b92b"
   },
-  "viewer.search.placeholder": "Find in file...",
+  "viewer.search.placeholder": "在檔案中尋找…",
   "@viewer.search.placeholder": {
     "sourceHash": "c1dc89b"
   },
-  "viewer.search.ariaLabel": "Search text",
+  "viewer.search.ariaLabel": "搜尋文字",
   "@viewer.search.ariaLabel": {
     "sourceHash": "38d268a"
   },
-  "viewer.search.caseSensitive": "Case sensitive",
+  "viewer.search.caseSensitive": "區分大小寫",
   "@viewer.search.caseSensitive": {
     "sourceHash": "e124ba4"
   },
-  "viewer.search.regex": "Regex",
+  "viewer.search.regex": "正規表示式",
   "@viewer.search.regex": {
     "sourceHash": "0f27125"
   },
-  "viewer.search.matchPosition": "{current} of {total}{more, select, yes {+} other {}}",
+  "viewer.search.matchPosition": "第 {current} 個，共 {total} 個{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
     "sourceHash": "ec24db4"
   },
-  "viewer.search.searching": "Searching...",
+  "viewer.search.searching": "正在搜尋…",
   "@viewer.search.searching": {
     "sourceHash": "78c9d9f"
   },
-  "viewer.search.partial": "(partial)",
+  "viewer.search.partial": "（部分）",
   "@viewer.search.partial": {
     "sourceHash": "d0ffde3"
   },
-  "viewer.search.noMatches": "No matches",
+  "viewer.search.noMatches": "沒有相符項目",
   "@viewer.search.noMatches": {
     "sourceHash": "2df01a0"
   },
-  "viewer.search.stop": "Stop searching",
+  "viewer.search.stop": "停止搜尋",
   "@viewer.search.stop": {
     "sourceHash": "c48cf72"
   },
-  "viewer.search.stopTooltip": "Stop scanning and keep results",
+  "viewer.search.stopTooltip": "停止掃描並保留結果",
   "@viewer.search.stopTooltip": {
     "sourceHash": "b86629c"
   },
-  "viewer.search.previous": "Previous match",
+  "viewer.search.previous": "上一個相符項目",
   "@viewer.search.previous": {
     "sourceHash": "daa2f8c"
   },
-  "viewer.search.next": "Next match",
+  "viewer.search.next": "下一個相符項目",
   "@viewer.search.next": {
     "sourceHash": "825e5ab"
   },
-  "viewer.search.close": "Close search",
+  "viewer.search.close": "關閉搜尋",
   "@viewer.search.close": {
     "sourceHash": "55656b5"
   },
-  "viewer.search.closeTooltip": "Close",
+  "viewer.search.closeTooltip": "關閉",
   "@viewer.search.closeTooltip": {
     "sourceHash": "7d9eb7a"
   },
-  "viewer.toolbar.viewMode.ariaLabel": "View mode",
+  "viewer.toolbar.viewMode.ariaLabel": "顯示方式",
   "@viewer.toolbar.viewMode.ariaLabel": {
     "sourceHash": "18997f2"
   },
-  "viewer.toolbar.viewMode.text": "Text",
+  "viewer.toolbar.viewMode.text": "文字",
   "@viewer.toolbar.viewMode.text": {
     "sourceHash": "71988c4"
   },
-  "viewer.toolbar.viewMode.viewAsText": "View as text",
+  "viewer.toolbar.viewMode.viewAsText": "以文字檢視",
   "@viewer.toolbar.viewMode.viewAsText": {
     "sourceHash": "a0059b8"
   },
-  "viewer.toolbar.viewMode.viewAsImage": "View as image",
+  "viewer.toolbar.viewMode.viewAsImage": "以影像檢視",
   "@viewer.toolbar.viewMode.viewAsImage": {
     "sourceHash": "ae04259"
   },
-  "viewer.toolbar.viewMode.viewAsPdf": "View as PDF",
+  "viewer.toolbar.viewMode.viewAsPdf": "以 PDF 檢視",
   "@viewer.toolbar.viewMode.viewAsPdf": {
     "sourceHash": "ee89800"
   },
-  "viewer.kind.image": "Image",
+  "viewer.kind.image": "影像",
   "@viewer.kind.image": {
     "sourceHash": "1aa4cb0"
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "Format name \"PDF\", kept Latin in every Traditional Chinese source: Apple writes `PDF文件` and `PDF` bare across zh-TW and zh-HK, and Microsoft zh-Hant keeps it too. The word names an ISO standard, so translating it would break recognition. Its sibling kinds (`viewer.kind.image`, `viewer.kind.text`) ARE translated, which is why this one stands out."
   },
-  "viewer.kind.text": "Text",
+  "viewer.kind.text": "文字",
   "@viewer.kind.text": {
     "sourceHash": "71988c4"
   },
-  "viewer.toolbar.encoding.placeholder": "Encoding",
+  "viewer.toolbar.encoding.placeholder": "編碼",
   "@viewer.toolbar.encoding.placeholder": {
     "sourceHash": "4d25a47"
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "Standard name \"Unicode\", kept Latin in Traditional Chinese: it names the character-encoding standard itself and is the term the encodings under it (UTF-8, UTF-16) are branded with. Microsoft zh-Hant keeps `Unicode` verbatim. The sibling group heading `viewer.toolbar.encoding.group.western` is a descriptive word and IS translated."
   },
-  "viewer.toolbar.encoding.group.western": "Western",
+  "viewer.toolbar.encoding.group.western": "西歐",
   "@viewer.toolbar.encoding.group.western": {
     "sourceHash": "d7d2f0f"
   },
-  "viewer.toolbar.encoding.detectedSuffix": "{label} (Detected)",
+  "viewer.toolbar.encoding.detectedSuffix": "{label}（偵測到）",
   "@viewer.toolbar.encoding.detectedSuffix": {
     "sourceHash": "2096536"
   },
-  "viewer.toolbar.tail.label": "Tail",
+  "viewer.toolbar.tail.label": "跟隨",
   "@viewer.toolbar.tail.label": {
     "sourceHash": "ae9c3bd"
   },
-  "viewer.toolbar.tail.ariaLabel": "Tail mode: follow file changes",
+  "viewer.toolbar.tail.ariaLabel": "跟隨模式：跟著檔案變更",
   "@viewer.toolbar.tail.ariaLabel": {
     "sourceHash": "af0477f"
   },
-  "viewer.toolbar.tail.tooltip": "Auto-follow file changes",
+  "viewer.toolbar.tail.tooltip": "自動跟隨檔案變更",
   "@viewer.toolbar.tail.tooltip": {
     "sourceHash": "733e57f"
   },
-  "viewer.toolbar.reindexing": "Reindexing…",
+  "viewer.toolbar.reindexing": "正在重建索引…",
   "@viewer.toolbar.reindexing": {
     "sourceHash": "f668818"
   },
-  "viewer.statusBar.ariaLabel": "File information",
+  "viewer.statusBar.ariaLabel": "檔案資訊",
   "@viewer.statusBar.ariaLabel": {
     "sourceHash": "375b97d"
   },
-  "viewer.statusBar.lineCount": "{count} {count, plural, one {line} other {lines}}",
+  "viewer.statusBar.lineCount": "{count} {count, plural, other {行}}",
   "@viewer.statusBar.lineCount": {
     "sourceHash": "1af08ec"
   },
-  "viewer.statusBar.badge.inMemory": "in memory",
+  "viewer.statusBar.badge.inMemory": "在記憶體中",
   "@viewer.statusBar.badge.inMemory": {
     "sourceHash": "d9b8483"
   },
-  "viewer.statusBar.badge.inMemoryTooltip": "You have the file entirely in memory. You can quickly scroll to any line.",
+  "viewer.statusBar.badge.inMemoryTooltip": "整個檔案都在記憶體裡，你可以快速捲動到任何一行。",
   "@viewer.statusBar.badge.inMemoryTooltip": {
     "sourceHash": "4eb50b8"
   },
-  "viewer.statusBar.badge.indexed": "indexed",
+  "viewer.statusBar.badge.indexed": "已建立索引",
   "@viewer.statusBar.badge.indexed": {
     "sourceHash": "658a3e8"
   },
-  "viewer.statusBar.badge.indexedTooltip": "You have the file indexed, so the line numbers are accurate, and you can quickly scroll to any point.",
+  "viewer.statusBar.badge.indexedTooltip": "這個檔案已經建立索引，所以行號是準確的，你也可以快速捲動到任何位置。",
   "@viewer.statusBar.badge.indexedTooltip": {
     "sourceHash": "2604f1a"
   },
-  "viewer.statusBar.badge.streamingIndexing": "streaming, indexing...",
+  "viewer.statusBar.badge.streamingIndexing": "串流中，正在建立索引…",
   "@viewer.statusBar.badge.streamingIndexing": {
     "sourceHash": "506ef27"
   },
-  "viewer.statusBar.badge.streamingIndexingTooltip": "This is a large file in streaming mode. We''re building an index in background (max {seconds} sec)... Line numbers are currently approximate.",
+  "viewer.statusBar.badge.streamingIndexingTooltip": "這是一個以串流模式顯示的大型檔案。我們正在背景建立索引（最多 {seconds} 秒）…目前的行號是估算值。",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
     "sourceHash": "6407733"
   },
-  "viewer.statusBar.badge.streaming": "streaming",
+  "viewer.statusBar.badge.streaming": "串流中",
   "@viewer.statusBar.badge.streaming": {
     "sourceHash": "b304adc"
   },
-  "viewer.statusBar.badge.streamingTooltip": "This is a large file in streaming mode. Indexing would''ve taken longer than {seconds} sec, so we didn''t do it. The line numbers are estimates.",
+  "viewer.statusBar.badge.streamingTooltip": "這是一個以串流模式顯示的大型檔案。建立索引會花上超過 {seconds} 秒，所以我們沒有做。行號是估算值。",
   "@viewer.statusBar.badge.streamingTooltip": {
     "sourceHash": "1752e59"
   },
-  "viewer.statusBar.badge.wrap": "wrap",
+  "viewer.statusBar.badge.wrap": "自動換行",
   "@viewer.statusBar.badge.wrap": {
     "sourceHash": "f0a2899"
   },
-  "viewer.statusBar.badge.wrapTooltip": "Lines wrap at the window edge",
+  "viewer.statusBar.badge.wrapTooltip": "文字會在視窗邊緣換行",
   "@viewer.statusBar.badge.wrapTooltip": {
     "sourceHash": "af2ca76"
   },
-  "viewer.statusBar.hint.image": "Click 100% / fit · Scroll zoom · Drag pan",
+  "viewer.statusBar.hint.image": "按一下切換 100% / 符合視窗 · 捲動縮放 · 拖曳平移",
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.text": "W wrap · F tail · ⌘F search",
+  "viewer.statusBar.hint.text": "W 自動換行 · F 跟隨 · ⌘F 搜尋",
   "@viewer.statusBar.hint.text": {
     "sourceHash": "3ecf215"
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Placeholder-only string: two already-formatted pixel numbers joined by the multiplication sign `×`. Apple's Traditional localizations write image dimensions the same way (`1,920 × 1,080`), so there is no word to translate; the label naming what it is lives in `viewer.statusBar.ariaLabel`."
   },
-  "viewer.image.loading": "Loading image",
+  "viewer.image.loading": "正在載入影像",
   "@viewer.image.loading": {
     "sourceHash": "65999b8"
   },
-  "viewer.image.error": "Sorry, we couldn''t show this image. The file may be damaged or in a format we can''t display.",
+  "viewer.image.error": "抱歉，我們沒辦法顯示這張影像。檔案可能已損壞，或是我們無法顯示的格式。",
   "@viewer.image.error": {
     "sourceHash": "9a24fe8"
   },
-  "viewer.pdf.loading": "Loading PDF",
+  "viewer.pdf.loading": "正在載入 PDF",
   "@viewer.pdf.loading": {
     "sourceHash": "7f9acf3"
   },
-  "viewer.contextMenu.ariaLabel": "Viewer actions",
+  "viewer.contextMenu.ariaLabel": "檢視器動作",
   "@viewer.contextMenu.ariaLabel": {
     "sourceHash": "4cf8e51"
   },
-  "viewer.contextMenu.copy": "Copy",
+  "viewer.contextMenu.copy": "複製",
   "@viewer.contextMenu.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.contextMenu.selectAll": "Select all",
+  "viewer.contextMenu.selectAll": "全選",
   "@viewer.contextMenu.selectAll": {
     "sourceHash": "1fc9a38"
   },
-  "viewer.copyDialog.confirmTitleKnown": "Copy {size} to the clipboard?",
+  "viewer.copyDialog.confirmTitleKnown": "要把 {size} 複製到剪貼板嗎？",
   "@viewer.copyDialog.confirmTitleKnown": {
     "sourceHash": "7f97ebf"
   },
-  "viewer.copyDialog.confirmTitleUnknown": "Copy this selection to the clipboard?",
+  "viewer.copyDialog.confirmTitleUnknown": "要把這段選取內容複製到剪貼板嗎？",
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Large pastes can slow down other apps. Try search (⌘F) to narrow it down.",
+  "viewer.copyDialog.confirmBody": "一次貼上大量內容可能會拖慢其他 App。試試用搜尋（⌘F）縮小範圍。",
   "@viewer.copyDialog.confirmBody": {
     "sourceHash": "c1f2927"
   },
-  "viewer.copyDialog.cancel": "Cancel",
+  "viewer.copyDialog.cancel": "取消",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "viewer.copyDialog.saveAsFile": "Save as file…",
+  "viewer.copyDialog.saveAsFile": "儲存成檔案…",
   "@viewer.copyDialog.saveAsFile": {
     "sourceHash": "7b9b279"
   },
-  "viewer.copyDialog.copy": "Copy",
+  "viewer.copyDialog.copy": "複製",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseBody": "That''s larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the selection as a file.",
+  "viewer.copyDialog.refuseBody": "這超過了剪貼板 100 MB 的上限。試試用搜尋（⌘F）找到你要的部分，或把選取內容儲存成檔案。",
   "@viewer.copyDialog.refuseBody": {
     "sourceHash": "75f3043"
   },
-  "viewer.reloadToast.grew": "File changed on disk. Reload?",
+  "viewer.reloadToast.grew": "檔案在磁碟上有變動。要重新載入嗎？",
   "@viewer.reloadToast.grew": {
     "sourceHash": "d66b013"
   },
-  "viewer.reloadToast.rotated": "File replaced on disk. Reload to see the new content.",
+  "viewer.reloadToast.rotated": "檔案在磁碟上被換掉了。重新載入才會看到新內容。",
   "@viewer.reloadToast.rotated": {
     "sourceHash": "50804c2"
   },
-  "viewer.reloadToast.reload": "Reload",
+  "viewer.reloadToast.reload": "重新載入",
   "@viewer.reloadToast.reload": {
     "sourceHash": "bdc090e"
   },
-  "viewer.reloadToast.dismissTooltip": "Dismiss without reloading",
+  "viewer.reloadToast.dismissTooltip": "忽略，不重新載入",
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
-  "viewer.copy.onClipboard": "{size} on your clipboard",
+  "viewer.copy.onClipboard": "{size} 已在你的剪貼板上",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
-  "viewer.copy.clipboardUnreachable": "Couldn''t reach the clipboard. Try again?",
+  "viewer.copy.clipboardUnreachable": "無法存取剪貼板。要再試一次嗎？",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "c0382ba"
   },
-  "viewer.copy.readTooLong": "The read took too long. Try a smaller selection?",
+  "viewer.copy.readTooLong": "讀取花的時間太久了。要不要選少一點？",
   "@viewer.copy.readTooLong": {
     "sourceHash": "2275e83"
   },
-  "viewer.copy.copyFailed": "Couldn''t copy the selection. Try again?",
+  "viewer.copy.copyFailed": "無法複製選取內容。要再試一次嗎？",
   "@viewer.copy.copyFailed": {
     "sourceHash": "6a1ab41"
   },
-  "viewer.copy.readFailed": "Couldn''t read the selection. Try again?",
+  "viewer.copy.readFailed": "無法讀取選取內容。要再試一次嗎？",
   "@viewer.copy.readFailed": {
     "sourceHash": "bde5f85"
   },
-  "viewer.saveAs.title": "Save selection",
+  "viewer.saveAs.title": "儲存選取內容",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"
   },
-  "viewer.saveAs.defaultName": "selection",
+  "viewer.saveAs.defaultName": "選取內容",
   "@viewer.saveAs.defaultName": {
     "sourceHash": "6504513"
   },
-  "viewer.saveAs.panelFailed": "Couldn''t open the save panel. Try again?",
+  "viewer.saveAs.panelFailed": "無法開啟儲存面板。要再試一次嗎？",
   "@viewer.saveAs.panelFailed": {
     "sourceHash": "70c3f76"
   },
-  "viewer.saveAs.saved": "Selection saved to {name}",
+  "viewer.saveAs.saved": "選取內容已儲存到 {name}",
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
-  "viewer.saveAs.tooLong": "Saving took too long. Try a smaller selection?",
+  "viewer.saveAs.tooLong": "儲存花的時間太久了。要不要選少一點？",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"
   },
-  "viewer.saveAs.saveFailed": "Couldn''t save the selection. Try again?",
+  "viewer.saveAs.saveFailed": "無法儲存選取內容。要再試一次嗎？",
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
-  "viewer.selection.toEndOfFile": "Selected from line {line} to the end of the file",
+  "viewer.selection.toEndOfFile": "已選取從第 {line} 行到檔案結尾",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
-  "viewer.selection.singleLine": "Selected {chars} characters on line {line}",
+  "viewer.selection.singleLine": "已在第 {line} 行選取 {chars} 個字元",
   "@viewer.selection.singleLine": {
     "sourceHash": "bb320d5"
   },
-  "viewer.selection.multiLine": "Selected lines {startLine} to {endLine}, {chars} characters",
+  "viewer.selection.multiLine": "已選取第 {startLine} 行到第 {endLine} 行，共 {chars} 個字元",
   "@viewer.selection.multiLine": {
     "sourceHash": "074c687"
   }
