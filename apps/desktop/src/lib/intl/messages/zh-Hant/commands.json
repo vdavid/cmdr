@@ -100,7 +100,7 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name of the built-in AI panel, built on the brand word 「Cmdr」 which is do-not-translate; Chinese doesn't inflect, so the name stays bare. Kept verbatim to match the `zh` catalog and `menu.view.askCmdr`, which carries the same justification."
   },
-  "commands.askCmdrToggle.description": "和 AI 聊聊你的檔案、磁碟機和記錄",
+  "commands.askCmdrToggle.description": "和 AI 聊聊你的檔案、磁碟機和歷史記錄",
   "@commands.askCmdrToggle.description": {
     "sourceHash": "c520468"
   },

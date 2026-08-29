@@ -201,6 +201,15 @@ It also earns its keep functionally: several placeholders arrive **pre-formatted
 `45s` / `2m 30s`, sizes render `4.2 GB`), so they land mid-sentence as a Latin run. `剩餘約 {duration}` is legible;
 `剩餘約{duration}` is not. Space both sides of every placeholder that renders Latin.
 
+**Carve-out: a Chinese date compound is one unit.** Write `8月1日`, `2026 年7月1日`, `今天 0:00`, never `8月 1 日`. The
+generic rule above exists to keep a Latin RUN legible inside Han text; a date is a fixed Chinese compound where the
+digits are structural, and spacing it apart reads as broken. A bare four-digit `{year}` placeholder still takes its
+space (`2026 年`), because that one really is a Latin run arriving from outside. Instances: `queryUi.date.preset.*`.
+
+**Carve-out: a `{placeholder}` the OS fills still gets its spaces.** `{systemSettings}` and friends follow the SYSTEM
+language, not the app language, so a `zh-Hant` user on an English macOS gets a Latin word in that slot. Space it
+(`開啟 {systemSettings}`), which is what `fileExplorer.restrictedFolder.tooltip` and `errors.*` already do.
+
 Exception: don't add spaces _inside_ a Latin run (`64.0 MB/1.33 GB` stays as it is), and don't space a full-width
 bracket against the text it wraps.
 
@@ -263,6 +272,32 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here — just don't paraphrase the label inside the aria sentence.
+
+### `*Aria` containment pairs that are load-bearing
+
+WCAG 2.5.3 asks an accessible name to CONTAIN its visible label verbatim. Chinese doesn't inflect, so this is usually
+free, but four pairs in this catalog only hold because the aria sentence was shaped around the label rather than the
+other way round. Re-wording either half alone breaks it silently, and no check catches it:
+
+- `fileOperations.transferProgress.background` = `背景執行` ⊂ `backgroundAria` = `讓它繼續在背景執行`
+- `fileOperations.transferProgress.queue` = `加入佇列` ⊂ `queueAria` = `加入佇列，移到「操作佇列」視窗管理`
+- `queryUi.filters.chip.scope` / `queryUi.scope.popover.label` = `搜尋範圍` ⊂ `queryUi.scope.popover.aria` =
+  `搜尋範圍：選擇資料夾` (a literal `在資料夾中搜尋` would NOT have contained it)
+- `queryUi.scope.toggle.caseSensitive` = `區分大小寫` ⊂ `caseSensitiveAria` = `比對時區分大小寫`
+
+The fix shape, whenever a new pair appears: open the aria with the label's exact words, then continue the sentence.
+
+### The `verbName` family assembles with `把`
+
+`askCmdr.decision.rejected` / `.approved` drop `askCmdr.decision.verb*` into a `verbName` slot. English puts the verb
+BEFORE the count ("You turned down moving 5 items"); Chinese can't, because a bare verb has nothing to govern. The
+family is written so the object comes first with `把`:
+
+`你拒絕了把 {countText} 個項目` + `移到垃圾桶` → `你拒絕了把 5 個項目移到垃圾桶`
+
+So every `verb*` value is a verb PHRASE that completes a `把` construction (`移到別的資料夾`, `複製到別的資料夾`,
+`移到垃圾桶`, `永久刪除`, `重新命名`, `壓縮成封存檔`, `解壓縮`), not a bare verb. The nine keys are one unit: changing
+either sentence means re-checking all seven verbs against it.
 
 ### ICU mechanics (catalog-level, easy to miss)
 

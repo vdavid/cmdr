@@ -263,7 +263,7 @@
   "@onboarding.stepAi.local.help": {
     "sourceHash": "fd47d34"
   },
-  "onboarding.stepAi.local.note": "已經開始在背景下載本機模型了。你現在就可以把入門引導走完；角落的通知會告訴你進度。",
+  "onboarding.stepAi.local.note": "已經開始在背景下載本機模型了。你現在就可以把入門引導走完，角落的通知會告訴你進度。",
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },

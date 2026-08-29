@@ -195,6 +195,72 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
   = device is standard · `tentative`
 - **eject / device removal** · see `退出` above.
 
+### Search, filters, and the query UI
+
+- **regular expression** · `正規表示式` (tight chip: `正規`) · TC (`正規表示式`), and already shipped in
+  `settings.search.autoApply.description` · `high`. MS and DC say `規則運算式`, which is Windows house style; TC is the
+  lineage match, `正規表示式` is what Taiwanese developers write, and it's the only candidate that yields a natural
+  two-character chip clipping the way the `zh` catalog's `正则` does.
+- **wildcard** · `萬用字元` · MS, THU · `high`. ❌ Not `通配符`, which is the Simplified form.
+- **comparator / comparison operator** · `比較運算子` · MS · `high`
+- **byte (the unit word)** · `位元組` · MS · `high`. ❗ Simplified writes `字节`; Traditional does NOT.
+- **scope** · `範圍` · MS · `high`
+- **glob** · `Glob`, kept verbatim · **unattested**: 0 hits in AP-TW, AP-HK, MS, TC, and DC · `tentative`. Justified on
+  `queryUi.ai.patternLabel.glob`.
+- **entry (an index record)** · `項目` · reuses the `item` ruling; MS's `輸入` is the data-entry sense (trap 4) · `high`
+- **cursor (the file-list cursor)** · `游標` · TC (`游標所在的檔案` = the file under the cursor, `游標顏色`) · `high`.
+  ❗ MS's `資料指標` is the mouse-pointer sense; TC names exactly Cmdr's concept.
+- **context menu** · `右鍵選單` · THU, DOL · `high`. AP-TW's `特色選單` (from `Show Contextual Menu`) is opaque, and
+  MS's + TC's `操作功能表` carries the Windows `功能表`; NAU's `情境選單` was the runner-up. `右鍵` is already the
+  catalog's word for a right-click (`fileExplorer.navigation.favoriteTooltip`).
+
+### AI, chat, and the agent
+
+- **agent (the AI acting for the user)** · `代理程式` · MS · `high`. ❗ Not `代理人`, which is a human proxy.
+- **provider (an AI provider)** · `提供者` · MS; also what agent 1 shipped in `settings.askCmdr.provider.title` · `high`
+- **endpoint** · `端點` · MS · `high`
+- **model** · `模型` · MS · `confirmed`
+- **token** · `token`, kept verbatim · unattested in every Traditional source, and the app already writes it bare in
+  `askCmdr.error.localWindowTooSmall` · `tentative`. Always spaced: `1,234 個 token`.
+- **chat (the noun, one conversation)** · `對話` · standard Traditional usage; `聊天` stays the verb ("to chat") ·
+  `high`. The chat LIST is `對話記錄`.
+- **archive (a chat, verb)** · `封存` · AP-TW = AP-HK (`Archive` → 封存) · `high`. Same word as the archive-file noun,
+  and unambiguous in context.
+- **wizard** · `精靈` · MS · `high`
+- **repository (a GitHub repo)** · `儲存庫` · GitHub's own zh-TW UI; unattested in the pile, and MS's `儲存機制` is the
+  abstract data-store sense · `tentative`
+
+### Progress, rollback, and destructive actions
+
+- **roll back / rollback** · `復原` · MS · `high`. ❗ Deliberately NOT `還原`, which this catalog spends on _undo_
+  (`menu.edit.undo`, `fileOperations.trash.undoAction`, `askCmdr.renameUndo.undo`). Cmdr ships both concepts on the same
+  progress dialog, so they must stay two words.
+- **background (running out of sight)** · `背景` · MS, AP-TW (`背景` in AppKit) · `high`. ❗ The `*Aria` pair
+  constraint: `fileOperations.transferProgress.background` = `背景執行` must stay a verbatim substring of
+  `backgroundAria` = `讓它繼續在背景執行` (WCAG 2.5.3). Reword neither alone.
+- **queue (the button that sends a transfer to the queue)** · `加入佇列` · composed on MS's `佇列` · `high`. ❗ Same
+  containment pair: `加入佇列` opens `queueAria` = `加入佇列，移到「操作佇列」視窗管理`.
+- **hard link** · `硬式連結` · DC (exact `Create hard link` msgid match) · `high`. ❗ MS's `永久連結` is the permalink
+  sense (trap 4).
+- **absolute path** · `絕對路徑` · THU · `high`. MS's `完整路徑` is taken: Cmdr uses it for the English "full path"
+  (`fileOperations.validation.pathTooLong`).
+- **null character** · `Null 字元` · MS · `high`
+- **scroll** · `捲動` · AP-TW (`scroll up by a page` → `向上捲動一頁`) · `high`. Page Up / Page Down take Apple's whole
+  phrase: `向上捲動一頁` / `向下捲動一頁`.
+- **throughput** · `輸送量` · MS · `high`
+
+### macOS surfaces named in onboarding
+
+- **Quit & Reopen** (the macOS relaunch button) · `結束並重新打開` · **composed** from Apple zh-TW's own pieces: `Quit`
+  → `結束` and `Reopen` → `重新打開` (AppKit `AppKitErrors`), plus SystemSettings'
+  `必須先結束「系統設定」，然後將它重新打開` · `tentative`. The button string itself is in no bundle in the pile.
+- **Spotlight** · `Spotlight`, kept English · AP-TW = AP-HK (`NSTouchBarControlStripSpotlightTemplate` = `Spotlight` in
+  both) · `confirmed`. Verified rather than assumed, since Apple DOES localize it into some other languages.
+- **Local network (the macOS permission)** · `本機網路` · agent 1 shipped it in `settings.network.enabled.description`;
+  MS agrees on `本機` · `high`
+- **Accepting incoming connections (the macOS prompt)** · `接受傳入連線` · **composed** from `連線` plus standard
+  Traditional `傳入`; unattested as a whole string · `tentative`
+
 ### Two-pane vocabulary (Total Commander + Double Commander, the orthodox lineage)
 
 The concepts Finder has no word for. TC is the richer and cleaner source; **DC's zh-TW file carries Simplified

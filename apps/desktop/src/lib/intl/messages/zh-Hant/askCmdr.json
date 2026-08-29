@@ -1,781 +1,782 @@
 {
   "askCmdr.title": "Ask Cmdr",
   "@askCmdr.title": {
-    "sourceHash": "aafb1ce"
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name of the built-in AI panel, built on the brand word 「Cmdr」 which is do-not-translate; Chinese doesn't inflect, so the name stays bare. Kept verbatim to match the `zh` catalog, `menu.view.askCmdr`, and `commands.askCmdrToggle.label`, which all carry the same justification. Every other key in this file that MENTIONS the name (`askCmdr.close`, `askCmdr.consent.accept`) is translated around it."
   },
-  "askCmdr.close": "Close Ask Cmdr",
+  "askCmdr.close": "關閉 Ask Cmdr",
   "@askCmdr.close": {
     "sourceHash": "d34225d"
   },
-  "askCmdr.newChat": "New chat",
+  "askCmdr.newChat": "新的對話",
   "@askCmdr.newChat": {
     "sourceHash": "db18382"
   },
-  "askCmdr.empty.title": "Ask about your files",
+  "askCmdr.empty.title": "問問你的檔案",
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr can look at what you’re browsing, your drives, and your file history to answer. It only reads names, paths, and sizes, never file contents.",
+  "askCmdr.empty.hint": "Cmdr 可以看你正在瀏覽的內容、你的磁碟機和檔案記錄來回答你。它只讀取名稱、路徑和大小，絕不讀取檔案內容。",
   "@askCmdr.empty.hint": {
     "sourceHash": "6ccad75"
   },
-  "askCmdr.composer.placeholder": "Ask about your files…",
+  "askCmdr.composer.placeholder": "問問你的檔案…",
   "@askCmdr.composer.placeholder": {
     "sourceHash": "77e2636"
   },
-  "askCmdr.composer.send": "Send message",
+  "askCmdr.composer.send": "傳送訊息",
   "@askCmdr.composer.send": {
     "sourceHash": "93a26b1"
   },
-  "askCmdr.composer.stop": "Stop",
+  "askCmdr.composer.stop": "停止",
   "@askCmdr.composer.stop": {
     "sourceHash": "cae7d57"
   },
-  "askCmdr.thinking": "Thinking…",
+  "askCmdr.thinking": "正在思考…",
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
-  "askCmdr.stalled": "This is taking longer than usual. You can keep waiting or stop.",
+  "askCmdr.stalled": "這次比平常久一些。你可以繼續等，也可以停止。",
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
-  "askCmdr.softCap.message": "This chat is getting long. A fresh one keeps replies fast and focused.",
+  "askCmdr.softCap.message": "這段對話有點長了。開一段新的能讓回覆更快、更聚焦。",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
   },
-  "askCmdr.softCap.action": "Start a fresh chat",
+  "askCmdr.softCap.action": "開始新的對話",
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
-  "askCmdr.tool.appState.doing": "Checking what you’re looking at",
+  "askCmdr.tool.appState.doing": "正在看你目前在看的東西",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
   },
-  "askCmdr.tool.appState.done": "Looked at what you’re looking at",
+  "askCmdr.tool.appState.done": "已看過你目前在看的東西",
   "@askCmdr.tool.appState.done": {
     "sourceHash": "155621e"
   },
-  "askCmdr.tool.listDir.doing": "Listing a folder",
+  "askCmdr.tool.listDir.doing": "正在列出一個資料夾",
   "@askCmdr.tool.listDir.doing": {
     "sourceHash": "64aa697"
   },
-  "askCmdr.tool.listDir.done": "Listed a folder",
+  "askCmdr.tool.listDir.done": "已列出一個資料夾",
   "@askCmdr.tool.listDir.done": {
     "sourceHash": "5746fef"
   },
-  "askCmdr.tool.importantFolders.doing": "Finding your important folders",
+  "askCmdr.tool.importantFolders.doing": "正在找你的重要資料夾",
   "@askCmdr.tool.importantFolders.doing": {
     "sourceHash": "866aa38"
   },
-  "askCmdr.tool.importantFolders.done": "Found your important folders",
+  "askCmdr.tool.importantFolders.done": "已找到你的重要資料夾",
   "@askCmdr.tool.importantFolders.done": {
     "sourceHash": "1fd5db6"
   },
-  "askCmdr.tool.folderImportance.doing": "Checking a folder’s importance",
+  "askCmdr.tool.folderImportance.doing": "正在看一個資料夾有多重要",
   "@askCmdr.tool.folderImportance.doing": {
     "sourceHash": "594deff"
   },
-  "askCmdr.tool.folderImportance.done": "Checked a folder’s importance",
+  "askCmdr.tool.folderImportance.done": "已看過一個資料夾有多重要",
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
-  "askCmdr.tool.listVolumes.doing": "Checking your drives",
+  "askCmdr.tool.listVolumes.doing": "正在查看你的磁碟機",
   "@askCmdr.tool.listVolumes.doing": {
     "sourceHash": "2ed1808"
   },
-  "askCmdr.tool.listVolumes.done": "Checked your drives",
+  "askCmdr.tool.listVolumes.done": "已查看你的磁碟機",
   "@askCmdr.tool.listVolumes.done": {
     "sourceHash": "b13a0b3"
   },
-  "askCmdr.tool.operationsList.doing": "Searching your file history",
+  "askCmdr.tool.operationsList.doing": "正在搜尋你的檔案記錄",
   "@askCmdr.tool.operationsList.doing": {
     "sourceHash": "4e8c41a"
   },
-  "askCmdr.tool.operationsList.done": "Searched your file history",
+  "askCmdr.tool.operationsList.done": "已搜尋你的檔案記錄",
   "@askCmdr.tool.operationsList.done": {
     "sourceHash": "03021d5"
   },
-  "askCmdr.tool.operationsGet.doing": "Looking up an operation",
+  "askCmdr.tool.operationsGet.doing": "正在查一項操作",
   "@askCmdr.tool.operationsGet.doing": {
     "sourceHash": "10be41f"
   },
-  "askCmdr.tool.operationsGet.done": "Looked up an operation",
+  "askCmdr.tool.operationsGet.done": "已查過一項操作",
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
-  "askCmdr.tool.searchPhotos.doing": "Searching your photos",
+  "askCmdr.tool.searchPhotos.doing": "正在搜尋你的照片",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
   },
-  "askCmdr.tool.searchPhotos.done": "Searched your photos",
+  "askCmdr.tool.searchPhotos.done": "已搜尋你的照片",
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
-  "askCmdr.tool.imageFacts.doing": "Reading what’s in your photos",
+  "askCmdr.tool.imageFacts.doing": "正在讀取你照片裡的內容",
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
   },
-  "askCmdr.tool.imageFacts.done": "Read what’s in your photos",
+  "askCmdr.tool.imageFacts.done": "已讀取你照片裡的內容",
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
   },
-  "askCmdr.tool.proposeRenamePlan.doing": "Preparing a rename plan",
+  "askCmdr.tool.proposeRenamePlan.doing": "正在準備重新命名的計畫",
   "@askCmdr.tool.proposeRenamePlan.doing": {
     "sourceHash": "540f1d9"
   },
-  "askCmdr.tool.proposeRenamePlan.done": "Prepared a rename plan",
+  "askCmdr.tool.proposeRenamePlan.done": "已備好重新命名的計畫",
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
-  "askCmdr.tool.listSuggestions.doing": "Checking suggestions",
+  "askCmdr.tool.listSuggestions.doing": "正在查看建議",
   "@askCmdr.tool.listSuggestions.doing": {
     "sourceHash": "8eddcd5"
   },
-  "askCmdr.tool.listSuggestions.done": "Checked suggestions",
+  "askCmdr.tool.listSuggestions.done": "已查看建議",
   "@askCmdr.tool.listSuggestions.done": {
     "sourceHash": "073df6b"
   },
-  "askCmdr.tool.getSuggestionGroup.doing": "Looking at a suggestion",
+  "askCmdr.tool.getSuggestionGroup.doing": "正在看其中一項建議",
   "@askCmdr.tool.getSuggestionGroup.doing": {
     "sourceHash": "791e75c"
   },
-  "askCmdr.tool.getSuggestionGroup.done": "Looked at a suggestion",
+  "askCmdr.tool.getSuggestionGroup.done": "已看過其中一項建議",
   "@askCmdr.tool.getSuggestionGroup.done": {
     "sourceHash": "2373235"
   },
-  "askCmdr.tool.proposeSuggestions.doing": "Preparing suggestions",
+  "askCmdr.tool.proposeSuggestions.doing": "正在準備建議",
   "@askCmdr.tool.proposeSuggestions.doing": {
     "sourceHash": "aa27c17"
   },
-  "askCmdr.tool.proposeSuggestions.done": "Prepared suggestions",
+  "askCmdr.tool.proposeSuggestions.done": "已備好建議",
   "@askCmdr.tool.proposeSuggestions.done": {
     "sourceHash": "42457d2"
   },
-  "askCmdr.tool.nothingToSuggest.doing": "Deciding whether it’s worth raising",
+  "askCmdr.tool.nothingToSuggest.doing": "正在判斷值不值得提",
   "@askCmdr.tool.nothingToSuggest.doing": {
     "sourceHash": "51ef519"
   },
-  "askCmdr.tool.nothingToSuggest.done": "Found nothing worth raising",
+  "askCmdr.tool.nothingToSuggest.done": "沒有找到值得一提的事",
   "@askCmdr.tool.nothingToSuggest.done": {
     "sourceHash": "2287381"
   },
-  "askCmdr.tool.memoryWrite.doing": "Saving a note about you",
+  "askCmdr.tool.memoryWrite.doing": "正在記下關於你的事",
   "@askCmdr.tool.memoryWrite.doing": {
     "sourceHash": "9c2a59e"
   },
-  "askCmdr.tool.memoryWrite.done": "Saved a note about you",
+  "askCmdr.tool.memoryWrite.done": "已記下關於你的事",
   "@askCmdr.tool.memoryWrite.done": {
     "sourceHash": "cb3d875"
   },
-  "askCmdr.tool.memoryEdit.doing": "Updating its notes",
+  "askCmdr.tool.memoryEdit.doing": "正在更新它自己的筆記",
   "@askCmdr.tool.memoryEdit.doing": {
     "sourceHash": "9cfe004"
   },
-  "askCmdr.tool.memoryEdit.done": "Updated its notes",
+  "askCmdr.tool.memoryEdit.done": "已更新它自己的筆記",
   "@askCmdr.tool.memoryEdit.done": {
     "sourceHash": "5fdfbdc"
   },
-  "askCmdr.tool.unknown.doing": "Working",
+  "askCmdr.tool.unknown.doing": "正在處理",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"
   },
-  "askCmdr.tool.unknown.done": "Used a tool",
+  "askCmdr.tool.unknown.done": "已使用一項工具",
   "@askCmdr.tool.unknown.done": {
     "sourceHash": "05cc2be"
   },
-  "askCmdr.tool.refused": "That request wasn’t available",
+  "askCmdr.tool.refused": "那個要求目前做不到",
   "@askCmdr.tool.refused": {
     "sourceHash": "f5e6dcc"
   },
-  "askCmdr.error.noKey": "Add your API key in settings to start chatting.",
+  "askCmdr.error.noKey": "在設定裡加上你的 API 金鑰，就可以開始聊了。",
   "@askCmdr.error.noKey": {
     "sourceHash": "0a78f37"
   },
-  "askCmdr.error.notConfigured": "Turn on an AI provider in settings to use Ask Cmdr.",
+  "askCmdr.error.notConfigured": "在設定裡開啟一個 AI 提供者，就能使用 Ask Cmdr。",
   "@askCmdr.error.notConfigured": {
     "sourceHash": "b84c5f4"
   },
-  "askCmdr.error.noConsent": "Turn Ask Cmdr on to start chatting. You choose what it can see first.",
+  "askCmdr.error.noConsent": "開啟 Ask Cmdr 就能開始聊。你先決定它能看到哪些東西。",
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr needs a bigger context window than your local model has. Pick 16,384 tokens or more in settings, under AI.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要的上下文視窗比你的本機模型大。請到設定的「AI」裡選 16,384 個 token 以上。",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "d546a0c"
   },
-  "askCmdr.error.unavailable": "Couldn’t reach the AI provider. Check your connection and try again.",
+  "askCmdr.error.unavailable": "連不上這個 AI 提供者。檢查一下你的連線再試一次。",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"
   },
-  "askCmdr.error.timeout": "That took too long. Try again?",
+  "askCmdr.error.timeout": "這次等太久了。要再試一次嗎？",
   "@askCmdr.error.timeout": {
     "sourceHash": "22cd775"
   },
-  "askCmdr.error.authFailed": "The provider didn’t accept your API key. Check it in settings.",
+  "askCmdr.error.authFailed": "提供者不接受你的 API 金鑰。到設定裡檢查一下。",
   "@askCmdr.error.authFailed": {
     "sourceHash": "a2302ca"
   },
-  "askCmdr.error.rateLimited": "The provider is busy or you’re out of quota. Try again in a bit.",
+  "askCmdr.error.rateLimited": "提供者正忙，或是你的額度用完了。過一會兒再試試。",
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
-  "askCmdr.error.budgetExhausted": "This one hit its limit before finishing. Try asking something more specific.",
+  "askCmdr.error.budgetExhausted": "這一次還沒答完就到上限了。試著問得更具體一點。",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.error.unfinishedReply": "The reply didn’t finish. Try again?",
+  "askCmdr.error.unfinishedReply": "回覆沒有寫完。要再試一次嗎？",
   "@askCmdr.error.unfinishedReply": {
     "sourceHash": "7cc85f5"
   },
-  "askCmdr.error.provider": "Something went wrong on the provider’s side. Try again?",
+  "askCmdr.error.provider": "提供者那邊出了點狀況。要再試一次嗎？",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
-  "askCmdr.event.contextTrimmed": "Trimmed {count, plural, one {# earlier lookup} other {# earlier lookups}} to fit the model’s context.",
+  "askCmdr.event.contextTrimmed": "已移除{count, plural, other {早前的 # 次查詢}}，好讓這次對話裝得進模型的上下文。",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"
   },
-  "askCmdr.event.modelChanged": "Switched to {model}",
+  "askCmdr.event.modelChanged": "已改用 {model}",
   "@askCmdr.event.modelChanged": {
     "sourceHash": "dd0a934"
   },
-  "askCmdr.loadEarlier": "Load earlier messages",
+  "askCmdr.loadEarlier": "載入更早的訊息",
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"
   },
-  "askCmdr.threads.open": "Chats",
+  "askCmdr.threads.open": "對話記錄",
   "@askCmdr.threads.open": {
     "sourceHash": "ef5b404"
   },
-  "askCmdr.sessions.title": "Chats",
+  "askCmdr.sessions.title": "對話記錄",
   "@askCmdr.sessions.title": {
     "sourceHash": "ef5b404"
   },
-  "askCmdr.sessions.back": "Back to chat",
+  "askCmdr.sessions.back": "回到對話",
   "@askCmdr.sessions.back": {
     "sourceHash": "5978844"
   },
-  "askCmdr.sessions.searchPlaceholder": "Search your chats…",
+  "askCmdr.sessions.searchPlaceholder": "搜尋你的對話記錄…",
   "@askCmdr.sessions.searchPlaceholder": {
     "sourceHash": "2de9074"
   },
-  "askCmdr.sessions.searchLabel": "Search chats",
+  "askCmdr.sessions.searchLabel": "搜尋對話記錄",
   "@askCmdr.sessions.searchLabel": {
     "sourceHash": "02a39c4"
   },
-  "askCmdr.sessions.empty": "No chats yet",
+  "askCmdr.sessions.empty": "還沒有對話記錄",
   "@askCmdr.sessions.empty": {
     "sourceHash": "269208e"
   },
-  "askCmdr.sessions.emptyArchived": "No archived chats",
+  "askCmdr.sessions.emptyArchived": "沒有已封存的對話",
   "@askCmdr.sessions.emptyArchived": {
     "sourceHash": "272c9ab"
   },
-  "askCmdr.sessions.noResults": "No chats match your search",
+  "askCmdr.sessions.noResults": "沒有對話符合你的搜尋",
   "@askCmdr.sessions.noResults": {
     "sourceHash": "c53c411"
   },
-  "askCmdr.sessions.showArchived": "Show archived",
+  "askCmdr.sessions.showArchived": "顯示已封存的",
   "@askCmdr.sessions.showArchived": {
     "sourceHash": "e9de9f2"
   },
-  "askCmdr.sessions.hideArchived": "Hide archived",
+  "askCmdr.sessions.hideArchived": "隱藏已封存的",
   "@askCmdr.sessions.hideArchived": {
     "sourceHash": "dd1c793"
   },
-  "askCmdr.sessions.loadMore": "Load more",
+  "askCmdr.sessions.loadMore": "載入更多",
   "@askCmdr.sessions.loadMore": {
     "sourceHash": "ac8991e"
   },
-  "askCmdr.sessions.searching": "Searching…",
+  "askCmdr.sessions.searching": "正在搜尋…",
   "@askCmdr.sessions.searching": {
     "sourceHash": "c31723a"
   },
-  "askCmdr.sessions.rename": "Rename",
+  "askCmdr.sessions.rename": "重新命名",
   "@askCmdr.sessions.rename": {
     "sourceHash": "3064d79"
   },
-  "askCmdr.sessions.renameLabel": "Chat title",
+  "askCmdr.sessions.renameLabel": "對話標題",
   "@askCmdr.sessions.renameLabel": {
     "sourceHash": "17a3048"
   },
-  "askCmdr.sessions.archive": "Archive",
+  "askCmdr.sessions.archive": "封存",
   "@askCmdr.sessions.archive": {
     "sourceHash": "66f4804"
   },
-  "askCmdr.sessions.unarchive": "Unarchive",
+  "askCmdr.sessions.unarchive": "取消封存",
   "@askCmdr.sessions.unarchive": {
     "sourceHash": "f565318"
   },
-  "askCmdr.sessions.archivedBadge": "Archived",
+  "askCmdr.sessions.archivedBadge": "已封存",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
   },
-  "askCmdr.composer.attach": "Ask about selection",
+  "askCmdr.composer.attach": "問問選取的項目",
   "@askCmdr.composer.attach": {
     "sourceHash": "3e812c7"
   },
-  "askCmdr.composer.dropHint": "Drop to attach",
+  "askCmdr.composer.dropHint": "放開就能附加",
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
   },
-  "askCmdr.composer.providerOff": "Turn on an AI provider in settings to start chatting.",
+  "askCmdr.composer.providerOff": "在設定裡開啟一個 AI 提供者，就可以開始聊了。",
   "@askCmdr.composer.providerOff": {
     "sourceHash": "e466415"
   },
-  "askCmdr.attachment.remove": "Remove attachment",
+  "askCmdr.attachment.remove": "移除附件",
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"
   },
-  "askCmdr.consent.title": "Talk to Cmdr about your files",
+  "askCmdr.consent.title": "和 Cmdr 聊聊你的檔案",
   "@askCmdr.consent.title": {
     "sourceHash": "59b4ca9"
   },
-  "askCmdr.consent.intro": "Ask Cmdr sends your questions to the AI provider you choose, using your own API key. Here’s exactly what leaves your Mac when you chat:",
+  "askCmdr.consent.intro": "Ask Cmdr 會用你自己的 API 金鑰，把你的問題傳給你選的 AI 提供者。你聊天時離開你 Mac 的，就是這些：",
   "@askCmdr.consent.intro": {
     "sourceHash": "4366272"
   },
-  "askCmdr.consent.item.messages": "Your messages",
+  "askCmdr.consent.item.messages": "你的訊息",
   "@askCmdr.consent.item.messages": {
     "sourceHash": "befc6e9"
   },
-  "askCmdr.consent.item.names": "The names and paths of files and folders Cmdr looks at to answer you",
+  "askCmdr.consent.item.names": "Cmdr 為了回答你而查看的檔案和資料夾名稱與路徑",
   "@askCmdr.consent.item.names": {
     "sourceHash": "ce3259d"
   },
-  "askCmdr.consent.item.sizes": "Their sizes and dates",
+  "askCmdr.consent.item.sizes": "它們的大小和日期",
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
-  "askCmdr.consent.item.envelope": "What you’re looking at right now: your current folder, cursor, selection, and connected drives",
+  "askCmdr.consent.item.envelope": "你此刻正在看的東西：目前的資料夾、游標、選取的項目，以及已連接的磁碟機",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
   },
-  "askCmdr.consent.item.attachments": "Any file or folder you attach to a question, by its name and path only",
+  "askCmdr.consent.item.attachments": "你附加到問題裡的任何檔案或資料夾，只送名稱和路徑",
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.item.memory": "The notes Ask Cmdr keeps about you, sent again with every message",
+  "askCmdr.consent.item.memory": "Ask Cmdr 記下的關於你的筆記，每一則訊息都會再送一次",
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr doesn’t send the files themselves: no file contents, no photos, no thumbnails. Photo search is the one thing that reaches inside your images, and only when you have it search them: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
+  "askCmdr.consent.noContents": "Cmdr 不會送出檔案本身：不送檔案內容、不送照片、不送縮覽圖。照片搜尋是唯一會看進你影像裡的功能，而且只在你叫它搜尋照片時：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。Ask Cmdr 可以建議重新命名、移動和整理，但在你同意之前，任何檔案都不會有變化。",
   "@askCmdr.consent.noContents": {
     "sourceHash": "99f9add"
   },
-  "askCmdr.consent.memory": "Ask Cmdr writes itself notes about you: how you like things organized, what you’ve turned down before, anything you ask it to remember. Those notes ride along with every message you send, for as long as they exist, and they can include text Cmdr recognized inside your photos. You can read them, or wipe them, any time in the Ask Cmdr settings.",
+  "askCmdr.consent.memory": "Ask Cmdr 會給自己記下關於你的筆記：你喜歡怎麼整理東西、你以前拒絕過什麼，還有任何你要它記住的事。只要這些筆記還在，你送出的每一則訊息都會帶著它們一起走，其中也可能包含 Cmdr 在你照片裡辨識出的文字。你隨時可以在 Ask Cmdr 的設定裡讀它們，或是全部清掉。",
   "@askCmdr.consent.memory": {
     "sourceHash": "80facfd"
   },
-  "askCmdr.consent.proactive": "Ask Cmdr also watches the folders you use and starts a conversation when it has something to suggest, so messages can reach your provider without you asking first. You can turn that off in the Ask Cmdr settings, under “On its own”.",
+  "askCmdr.consent.proactive": "Ask Cmdr 還會留意你正在使用的資料夾，有東西可以建議時就主動開啟對話，所以訊息可能在你沒開口的情況下就送到提供者那裡。你可以在 Ask Cmdr 設定的「主動提醒」裡把它關掉。",
   "@askCmdr.consent.proactive": {
     "sourceHash": "1d0b671"
   },
-  "askCmdr.consent.local": "Your chats stay on your Mac, in a local database you can open and read. You pick the provider and model, and you can see what each conversation costs.",
+  "askCmdr.consent.local": "你的對話留在你的 Mac 上，存在一個你打得開、讀得到的本機資料庫裡。提供者和模型由你選，每次對話花了多少錢你也看得到。",
   "@askCmdr.consent.local": {
     "sourceHash": "f7d4075"
   },
-  "askCmdr.consent.logsNote": "If you turn on LLM call logging in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those logs stay local too, never sent anywhere.",
+  "askCmdr.consent.logsNote": "如果你在「進階」設定裡開啟 AI 模型呼叫的記錄，Cmdr 還會把每次的請求和回覆存到你 Mac 上的一個資料夾裡。這些記錄一樣只留在本機，絕不會送到任何地方。",
   "@askCmdr.consent.logsNote": {
     "sourceHash": "7e211fc"
   },
-  "askCmdr.consent.accept": "Turn on Ask Cmdr",
+  "askCmdr.consent.accept": "開啟 Ask Cmdr",
   "@askCmdr.consent.accept": {
     "sourceHash": "0d656c4"
   },
-  "askCmdr.consent.decline": "Not now",
+  "askCmdr.consent.decline": "現在不要",
   "@askCmdr.consent.decline": {
     "sourceHash": "a0e63d7"
   },
-  "askCmdr.consent.whatsNew.title": "What’s changed since you turned this on",
+  "askCmdr.consent.whatsNew.title": "自你開啟以來有哪些變化",
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr now keeps notes about you between chats, and it can start a conversation on its own when it notices something worth mentioning. That’s a bigger promise than the one you agreed to, so here it all is again.",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr 現在會在不同對話之間記住關於你的筆記，而且注意到值得一提的事情時，會自己開啟一段對話。這比你當初同意的範圍更大，所以整份說明再給你看一次。",
   "@askCmdr.consent.whatsNew.body": {
     "sourceHash": "88751a5"
   },
-  "askCmdr.forget.title": "Forget everything Ask Cmdr remembers?",
+  "askCmdr.forget.title": "要忘掉 Ask Cmdr 記住的所有東西嗎？",
   "@askCmdr.forget.title": {
     "sourceHash": "95f576a"
   },
-  "askCmdr.forget.message": "Ask Cmdr throws away its notes about you and starts from a blank page. Your chats and your files stay exactly as they are.",
+  "askCmdr.forget.message": "Ask Cmdr 會丟掉關於你的筆記，從一張白紙重新開始。你的對話和你的檔案都維持原樣。",
   "@askCmdr.forget.message": {
     "sourceHash": "5687160"
   },
-  "askCmdr.forget.confirm": "Forget everything",
+  "askCmdr.forget.confirm": "忘掉全部",
   "@askCmdr.forget.confirm": {
     "sourceHash": "11d164a"
   },
-  "askCmdr.forget.cancel": "Cancel",
+  "askCmdr.forget.cancel": "取消",
   "@askCmdr.forget.cancel": {
     "sourceHash": "19766ed"
   },
-  "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {tokens}}",
+  "askCmdr.cost.tokens": "{countText} 個 {count, plural, other {token}}",
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
-  "askCmdr.cost.free": "free, on-device",
+  "askCmdr.cost.free": "免費，在裝置上跑",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
   },
-  "askCmdr.cost.estimate": "about {amount}",
+  "askCmdr.cost.estimate": "大約 {amount}",
   "@askCmdr.cost.estimate": {
     "sourceHash": "e448a4a"
   },
-  "askCmdr.cost.unknown": "cost unknown",
+  "askCmdr.cost.unknown": "費用不明",
   "@askCmdr.cost.unknown": {
     "sourceHash": "d05144e"
   },
-  "askCmdr.cost.label": "This chat’s usage",
+  "askCmdr.cost.label": "這次對話的用量",
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
   },
-  "askCmdr.renameReview.title": "Review file renames",
+  "askCmdr.renameReview.title": "檢視檔案的重新命名",
   "@askCmdr.renameReview.title": {
     "sourceHash": "f923506"
   },
-  "askCmdr.renameReview.description": "Cmdr will rename only the files you allow.",
+  "askCmdr.renameReview.description": "Cmdr 只會重新命名你允許的檔案。",
   "@askCmdr.renameReview.description": {
     "sourceHash": "de95869"
   },
-  "askCmdr.renameReview.originalName": "Current name",
+  "askCmdr.renameReview.originalName": "目前的名稱",
   "@askCmdr.renameReview.originalName": {
     "sourceHash": "0619bd6"
   },
-  "askCmdr.renameReview.newName": "New name",
+  "askCmdr.renameReview.newName": "新名稱",
   "@askCmdr.renameReview.newName": {
     "sourceHash": "04eea2a"
   },
-  "askCmdr.renameReview.whyThisName": "Why this name",
+  "askCmdr.renameReview.whyThisName": "為什麼取這個名稱",
   "@askCmdr.renameReview.whyThisName": {
     "sourceHash": "23f0b4f"
   },
-  "askCmdr.renameReview.preview": "Preview",
+  "askCmdr.renameReview.preview": "預覽",
   "@askCmdr.renameReview.preview": {
     "sourceHash": "324b134"
   },
-  "askCmdr.renameReview.openPreview": "Open {name}",
+  "askCmdr.renameReview.openPreview": "開啟 {name}",
   "@askCmdr.renameReview.openPreview": {
     "sourceHash": "f687d18"
   },
-  "askCmdr.renameReview.openPreviewTooltip": "Open the file to check the name (Space)",
+  "askCmdr.renameReview.openPreviewTooltip": "開啟檔案來核對名稱（空白鍵）",
   "@askCmdr.renameReview.openPreviewTooltip": {
     "sourceHash": "17163aa"
   },
-  "askCmdr.renameReview.editName": "New name for {name}",
+  "askCmdr.renameReview.editName": "{name} 的新名稱",
   "@askCmdr.renameReview.editName": {
     "sourceHash": "862a5b7"
   },
-  "askCmdr.renameReview.nameRejected": "Cmdr can’t use that name. Try a different one.",
+  "askCmdr.renameReview.nameRejected": "Cmdr 沒辦法用這個名稱。換一個試試。",
   "@askCmdr.renameReview.nameRejected": {
     "sourceHash": "028029d"
   },
-  "askCmdr.renameReview.evidence.imageText": "Text in the image",
+  "askCmdr.renameReview.evidence.imageText": "影像裡的文字",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"
   },
-  "askCmdr.renameReview.evidence.imageTags": "What Cmdr sees in the image",
+  "askCmdr.renameReview.evidence.imageTags": "Cmdr 在影像裡看到的東西",
   "@askCmdr.renameReview.evidence.imageTags": {
     "sourceHash": "9adc5f7"
   },
-  "askCmdr.renameReview.evidence.filename": "The old name",
+  "askCmdr.renameReview.evidence.filename": "原本的名稱",
   "@askCmdr.renameReview.evidence.filename": {
     "sourceHash": "3930e00"
   },
-  "askCmdr.renameReview.evidence.metadata": "File details, not contents",
+  "askCmdr.renameReview.evidence.metadata": "檔案資訊，不是內容",
   "@askCmdr.renameReview.evidence.metadata": {
     "sourceHash": "8c7b303"
   },
-  "askCmdr.renameReview.evidence.userInstruction": "What you asked for",
+  "askCmdr.renameReview.evidence.userInstruction": "你要求的內容",
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
-  "askCmdr.renameReview.evidence.userEdited": "You typed this name",
+  "askCmdr.renameReview.evidence.userEdited": "這個名稱是你自己打的",
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "Matched {matchedText} of {totalText} characters",
+  "askCmdr.renameReview.coverage": "在 {totalText} 個字元中對上了 {matchedText} 個",
   "@askCmdr.renameReview.coverage": {
     "sourceHash": "d8845cb"
   },
-  "askCmdr.renameReview.coverageThin": "That’s a small part of the text Cmdr read here. Open the file to check the name.",
+  "askCmdr.renameReview.coverageThin": "這只是 Cmdr 在這裡讀到的文字裡的一小部分。開啟檔案核對一下名稱。",
   "@askCmdr.renameReview.coverageThin": {
     "sourceHash": "2b8bec1"
   },
-  "askCmdr.renameReview.allow": "Allow",
+  "askCmdr.renameReview.allow": "允許",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"
   },
-  "askCmdr.renameReview.deny": "Deny",
+  "askCmdr.renameReview.deny": "拒絕",
   "@askCmdr.renameReview.deny": {
     "sourceHash": "05a2d73"
   },
-  "askCmdr.renameReview.allowAll": "Allow all",
+  "askCmdr.renameReview.allowAll": "全部允許",
   "@askCmdr.renameReview.allowAll": {
     "sourceHash": "56ac845"
   },
-  "askCmdr.renameReview.denyAll": "Deny all",
+  "askCmdr.renameReview.denyAll": "全部拒絕",
   "@askCmdr.renameReview.denyAll": {
     "sourceHash": "5a41803"
   },
-  "askCmdr.renameReview.cancel": "Cancel",
+  "askCmdr.renameReview.cancel": "取消",
   "@askCmdr.renameReview.cancel": {
     "sourceHash": "19766ed"
   },
-  "askCmdr.renameReview.rename": "Rename {count, plural, one {# file} other {# files}}",
+  "askCmdr.renameReview.rename": "重新命名{count, plural, other { # 個檔案}}",
   "@askCmdr.renameReview.rename": {
     "sourceHash": "d4b5c18"
   },
-  "askCmdr.renameReview.blocked": "This rename needs attention before it can continue.",
+  "askCmdr.renameReview.blocked": "這項重新命名要先處理一下才能繼續。",
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
-  "askCmdr.renameReview.overwriteBadge": "(overwrite!)",
+  "askCmdr.renameReview.overwriteBadge": "（會覆寫！）",
   "@askCmdr.renameReview.overwriteBadge": {
     "sourceHash": "762fd52"
   },
-  "askCmdr.renameReview.overwriteTooltip": "Another file already uses this name and isn''t part of this rename plan. This rename is blocked to protect it.",
+  "askCmdr.renameReview.overwriteTooltip": "已經有另一個檔案在用這個名稱，而且它不在這次的重新命名計畫裡。為了保護它，這項重新命名被擋下來了。",
   "@askCmdr.renameReview.overwriteTooltip": {
     "sourceHash": "f3448fc"
   },
-  "askCmdr.renameReview.sourceMissingBadge": "(doesn''t exist)",
+  "askCmdr.renameReview.sourceMissingBadge": "（不存在）",
   "@askCmdr.renameReview.sourceMissingBadge": {
     "sourceHash": "fbb0106"
   },
-  "askCmdr.renameReview.sourceMissingTooltip": "This source file no longer exists. It may have been deleted or renamed outside Cmdr.",
+  "askCmdr.renameReview.sourceMissingTooltip": "這個來源檔案已經不在了。它可能在 Cmdr 之外被刪掉或改了名字。",
   "@askCmdr.renameReview.sourceMissingTooltip": {
     "sourceHash": "acd6306"
   },
-  "askCmdr.renameReview.extensionBadge": "(extension)",
+  "askCmdr.renameReview.extensionBadge": "（副檔名）",
   "@askCmdr.renameReview.extensionBadge": {
     "sourceHash": "bcc0b2c"
   },
-  "askCmdr.renameReview.extensionTooltip": "Extension changed. The file contents will not be converted.",
+  "askCmdr.renameReview.extensionTooltip": "副檔名改了。檔案內容不會跟著轉換。",
   "@askCmdr.renameReview.extensionTooltip": {
     "sourceHash": "7da4864"
   },
-  "askCmdr.renameReview.cycleBadge": "(cycle)",
+  "askCmdr.renameReview.cycleBadge": "（循環）",
   "@askCmdr.renameReview.cycleBadge": {
     "sourceHash": "5a2772b"
   },
-  "askCmdr.renameReview.cycleTooltip": "Rename cycle. Cmdr will use one temporary name while rotating these files.",
+  "askCmdr.renameReview.cycleTooltip": "重新命名形成了循環。輪換這些檔案時，Cmdr 會借用一個暫時的名稱。",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
   },
-  "askCmdr.renameReview.nothingReadBadge": "(nothing read)",
+  "askCmdr.renameReview.nothingReadBadge": "（沒讀內容）",
   "@askCmdr.renameReview.nothingReadBadge": {
     "sourceHash": "6308780"
   },
-  "askCmdr.renameReview.nothingReadTooltip": "Cmdr read nothing inside this file. This name comes from the old name, the file’s details, or what you asked for.",
+  "askCmdr.renameReview.nothingReadTooltip": "Cmdr 沒有讀這個檔案裡面的內容。這個名稱來自原本的名稱、檔案資訊，或是你的要求。",
   "@askCmdr.renameReview.nothingReadTooltip": {
     "sourceHash": "850f6ce"
   },
-  "askCmdr.renameReview.nameKeptBadge": "(name kept)",
+  "askCmdr.renameReview.nameKeptBadge": "（保留原名）",
   "@askCmdr.renameReview.nameKeptBadge": {
     "sourceHash": "08f1bc7"
   },
-  "askCmdr.renameReview.nameKeptTooltip": "Cmdr kept the current name and read nothing inside this file.",
+  "askCmdr.renameReview.nameKeptTooltip": "Cmdr 保留了目前的名稱，也沒有讀這個檔案裡面的內容。",
   "@askCmdr.renameReview.nameKeptTooltip": {
     "sourceHash": "d27a078"
   },
-  "askCmdr.renameReview.expired": "This review expired. Ask Cmdr to prepare it again.",
+  "askCmdr.renameReview.expired": "這次檢視已經過期了。請 Ask Cmdr 重新準備一份。",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },
-  "askCmdr.renameReview.status": "{allowed, plural, one {# rename allowed} other {# renames allowed}}; {blocked, plural, one {# blocked} other {# blocked}}",
+  "askCmdr.renameReview.status": "{allowed, plural, other {已允許 # 項重新命名}}，{blocked, plural, other {已擋下 # 項}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-  "askCmdr.renameUndo.applied": "Renamed {countText} {count, plural, one {file} other {files}}.",
+  "askCmdr.renameUndo.applied": "已重新命名 {countText} 個{count, plural, other {檔案}}。",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
-  "askCmdr.renameUndo.undo": "Undo",
+  "askCmdr.renameUndo.undo": "還原",
   "@askCmdr.renameUndo.undo": {
     "sourceHash": "a8283ad"
   },
-  "askCmdr.renameUndo.undoLabel": "Undo renaming {countText} {count, plural, one {file} other {files}}",
+  "askCmdr.renameUndo.undoLabel": "還原 {countText} 個{count, plural, other {檔案}}的重新命名",
   "@askCmdr.renameUndo.undoLabel": {
     "sourceHash": "fc1c08a"
   },
-  "askCmdr.renameUndo.undoJob": "Undo all {countText} {count, plural, one {batch} other {batches}}",
+  "askCmdr.renameUndo.undoJob": "還原全部 {countText} {count, plural, other {批}}",
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
-  "askCmdr.renameUndo.undoJobLabel": "Undo every rename in this run: {filesText} {files, plural, one {file} other {files}} across {batches, plural, one {# batch} other {# batches}}",
+  "askCmdr.renameUndo.undoJobLabel": "還原這次執行的每一項重新命名：{batches, plural, other {# 批}}裡的 {filesText} 個{files, plural, other {檔案}}",
   "@askCmdr.renameUndo.undoJobLabel": {
     "sourceHash": "9d2e84e"
   },
-  "askCmdr.renameUndo.undoing": "Putting the old names back…",
+  "askCmdr.renameUndo.undoing": "正在把原本的名稱改回去…",
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "Put back {countText} {count, plural, one {file} other {files}}.",
+  "askCmdr.renameUndo.undone": "已還原 {countText} 個{count, plural, other {檔案}}。",
   "@askCmdr.renameUndo.undone": {
     "sourceHash": "a76ffee"
   },
-  "askCmdr.renameUndo.partial": "Put back {countText} {count, plural, one {file} other {files}}.",
+  "askCmdr.renameUndo.partial": "已還原 {countText} 個{count, plural, other {檔案}}。",
   "@askCmdr.renameUndo.partial": {
     "sourceHash": "a76ffee"
   },
-  "askCmdr.renameUndo.skipped": "Left {countText} {count, plural, one {file} other {files}} alone: {count, plural, one {it changed} other {they changed}} since the rename, or the old name is taken again.",
+  "askCmdr.renameUndo.skipped": "有 {countText} 個{count, plural, other {檔案}}維持原樣：它們在重新命名之後有過更動，或是原本的名稱又被佔走了。",
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
-  "askCmdr.renameUndo.skipReason.drift.named": "Left {name} alone: it changed since the rename.",
+  "askCmdr.renameUndo.skipReason.drift.named": "{name} 維持原樣：它在重新命名之後有過更動。",
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Left {countText} {count, plural, one {file} other {files}} alone: they changed since the rename.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "有 {countText} 個{count, plural, other {檔案}}維持原樣：它們在重新命名之後有過更動。",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
     "sourceHash": "217d1e8"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.named": "Left {name} alone: its old name is taken again.",
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} 維持原樣：它原本的名稱又被佔走了。",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Left {countText} {count, plural, one {file} other {files}} alone: their old names are taken again.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "有 {countText} 個{count, plural, other {檔案}}維持原樣：它們原本的名稱又被佔走了。",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "sourceHash": "2fd2e7a"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.named": "Left {name} alone: Cmdr couldn’t check whether it changed.",
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} 維持原樣：Cmdr 無法確認它有沒有更動過。",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Left {countText} {count, plural, one {file} other {files}} alone: Cmdr couldn’t check whether they changed.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "有 {countText} 個{count, plural, other {檔案}}維持原樣：Cmdr 無法確認它們有沒有更動過。",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
     "sourceHash": "5964166"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Left the folder {name} alone: it has something in it now.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "資料夾 {name} 維持原樣：它裡面現在有東西了。",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Left {countText} {count, plural, one {folder} other {folders}} alone: they have something in them now.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "有 {countText} 個{count, plural, other {資料夾}}維持原樣：它們裡面現在有東西了。",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
     "sourceHash": "d2c9f56"
   },
-  "askCmdr.renameUndo.skipReason.failed.named": "Left {name} alone: Cmdr couldn’t put its old name back.",
+  "askCmdr.renameUndo.skipReason.failed.named": "{name} 維持原樣：Cmdr 無法把它原本的名稱改回去。",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Left {countText} {count, plural, one {file} other {files}} alone: Cmdr couldn’t put their old names back.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "有 {countText} 個{count, plural, other {檔案}}維持原樣：Cmdr 無法把它們原本的名稱改回去。",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
     "sourceHash": "f13c021"
   },
-  "askCmdr.renameUndo.refusedBatches": "Cmdr couldn’t undo {countText} {count, plural, one {batch} other {batches}}. The operation log has the details.",
+  "askCmdr.renameUndo.refusedBatches": "Cmdr 無法還原 {countText} {count, plural, other {批}}。詳情在操作記錄裡。",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"
   },
-  "askCmdr.renameUndo.unavailable": "Nothing to put back. This batch may already be undone, or its drive isn’t connected.",
+  "askCmdr.renameUndo.unavailable": "沒有東西可以還原。這一批可能已經還原過了，或是它需要的磁碟機沒有連接。",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
   },
-  "askCmdr.context.label": "How full this chat is",
+  "askCmdr.context.label": "這次對話用掉多少",
   "@askCmdr.context.label": {
     "sourceHash": "8451f61"
   },
-  "askCmdr.context.tooltip": "{usedText} of {budgetText} tokens used (estimated)",
+  "askCmdr.context.tooltip": "已用 {usedText} / {budgetText} 個 token（估算）",
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
   },
-  "askCmdr.wake.thinking": "Ask Cmdr is having a look at what changed. Open the chat.",
+  "askCmdr.wake.thinking": "Ask Cmdr 正在看看有什麼變化。開啟對話。",
   "@askCmdr.wake.thinking": {
     "sourceHash": "c4367ad"
   },
-  "askCmdr.wake.stop": "Stop what Ask Cmdr is doing",
+  "askCmdr.wake.stop": "停止 Ask Cmdr 正在做的事",
   "@askCmdr.wake.stop": {
     "sourceHash": "6559df8"
   },
-  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr can only watch folders it can see. Set up full disk access.",
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr 只看得到它看得見的資料夾。設定「完全取用磁碟」。",
   "@askCmdr.wake.needsFullDiskAccess": {
     "sourceHash": "fd24fd2"
   },
-  "askCmdr.wake.needsApiKey": "Ask Cmdr is watching, but it needs an API key to think. Open settings.",
+  "askCmdr.wake.needsApiKey": "Ask Cmdr 正在留意，但它需要 API 金鑰才能思考。開啟設定。",
   "@askCmdr.wake.needsApiKey": {
     "sourceHash": "e9b96e6"
   },
-  "askCmdr.wakeDigest.summary": "What changed in {foldersText} {folders, plural, one {folder} other {folders}}",
+  "askCmdr.wakeDigest.summary": "{foldersText} 個{folders, plural, other {資料夾}}裡有什麼變化",
   "@askCmdr.wakeDigest.summary": {
     "sourceHash": "07a2ce7"
   },
-  "askCmdr.wakeDigest.created": "{countText} {count, plural, one {new item} other {new items}}",
+  "askCmdr.wakeDigest.created": "{countText} 個{count, plural, other {新項目}}",
   "@askCmdr.wakeDigest.created": {
     "sourceHash": "2d0353f"
   },
-  "askCmdr.wakeDigest.modified": "{countText} {count, plural, one {changed item} other {changed items}}",
+  "askCmdr.wakeDigest.modified": "{countText} 個{count, plural, other {項目有更動}}",
   "@askCmdr.wakeDigest.modified": {
     "sourceHash": "6aa21c5"
   },
-  "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {removed item} other {removed items}}",
+  "askCmdr.wakeDigest.removed": "{countText} 個{count, plural, other {項目不見了}}",
   "@askCmdr.wakeDigest.removed": {
     "sourceHash": "9711102"
   },
-  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {renamed item} other {renamed items}}",
+  "askCmdr.wakeDigest.renamed": "{countText} 個{count, plural, other {項目改了名稱}}",
   "@askCmdr.wakeDigest.renamed": {
     "sourceHash": "2cf9f0f"
   },
-  "askCmdr.wakeDigest.noChanges": "Nothing changed",
+  "askCmdr.wakeDigest.noChanges": "沒有變化",
   "@askCmdr.wakeDigest.noChanges": {
     "sourceHash": "0ba2a57"
   },
-  "askCmdr.wakeDigest.rollup": "{foldersText} more {folders, plural, one {folder} other {folders}} in {ancestor}: {changesText} {changes, plural, one {change} other {changes}}",
+  "askCmdr.wakeDigest.rollup": "{ancestor} 裡還有 {foldersText} 個{folders, plural, other {資料夾}}：共 {changesText} {changes, plural, other {處變化}}",
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
   },
-  "askCmdr.sessions.wakeThread": "Ask Cmdr started this chat",
+  "askCmdr.sessions.wakeThread": "這段對話是 Ask Cmdr 開的",
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ba3d8fa"
   },
-  "askCmdr.wakeToast.title": "Ask Cmdr has {countText} {count, plural, one {suggestion} other {suggestions}} for you",
+  "askCmdr.wakeToast.title": "Ask Cmdr 有 {countText} {count, plural, other {項建議}}要給你",
   "@askCmdr.wakeToast.title": {
     "sourceHash": "08b3d32"
   },
-  "askCmdr.wakeToast.action": "Review",
+  "askCmdr.wakeToast.action": "檢視",
   "@askCmdr.wakeToast.action": {
     "sourceHash": "aff0766"
   },
-  "askCmdr.wakeToast.openThread": "See why",
+  "askCmdr.wakeToast.openThread": "看看原因",
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "You turned down {verbName} {countText} {count, plural, one {item} other {items}}",
+  "askCmdr.decision.rejected": "你拒絕了把 {countText} 個{count, plural, other {項目}}{verbName}",
   "@askCmdr.decision.rejected": {
     "sourceHash": "19d12c1"
   },
-  "askCmdr.decision.approved": "You approved {verbName} {countText} {count, plural, one {item} other {items}}",
+  "askCmdr.decision.approved": "你同意了把 {countText} 個{count, plural, other {項目}}{verbName}",
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} done, {skippedText} skipped, {failedText} failed",
+  "askCmdr.decision.result": "完成 {doneText} 個，略過 {skippedText} 個，未完成 {failedText} 個",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },
-  "askCmdr.decision.verbMove": "moving",
+  "askCmdr.decision.verbMove": "移到別的資料夾",
   "@askCmdr.decision.verbMove": {
     "sourceHash": "6e86294"
   },
-  "askCmdr.decision.verbCopy": "copying",
+  "askCmdr.decision.verbCopy": "複製到別的資料夾",
   "@askCmdr.decision.verbCopy": {
     "sourceHash": "20a184a"
   },
-  "askCmdr.decision.verbTrash": "trashing",
+  "askCmdr.decision.verbTrash": "移到垃圾桶",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "ea05c85"
   },
-  "askCmdr.decision.verbDelete": "deleting",
+  "askCmdr.decision.verbDelete": "永久刪除",
   "@askCmdr.decision.verbDelete": {
     "sourceHash": "8901f3f"
   },
-  "askCmdr.decision.verbRename": "renaming",
+  "askCmdr.decision.verbRename": "重新命名",
   "@askCmdr.decision.verbRename": {
     "sourceHash": "c4b4eea"
   },
-  "askCmdr.decision.verbCompress": "compressing",
+  "askCmdr.decision.verbCompress": "壓縮成封存檔",
   "@askCmdr.decision.verbCompress": {
     "sourceHash": "45391ae"
   },
-  "askCmdr.decision.verbExtract": "extracting",
+  "askCmdr.decision.verbExtract": "解壓縮",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
   }
