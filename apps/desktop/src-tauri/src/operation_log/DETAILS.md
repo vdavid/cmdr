@@ -195,10 +195,15 @@ Each point is where the op already stats the item, so journaling is near-zero ma
   order of tens-to-~150 MB — leaf search is the requirement, and retention, D9/D10, manages the cost, NOT a row cap).
   Delete is never rollbackable, so these rows exist purely for "when did I delete `dog.jpg`".
 - **same-FS move + trash** — the **top-level** `rollback_unit` row (one rename-back / one restore reverses the whole
-  subtree) at `transfer/move_op.rs` / `delete/trash.rs`. Trash also captures the OS `resultingItemURL` (the in-trash
+  subtree) at `transfer/move_op.rs` / `delete/trash.rs`. A move records where the item LANDED (a conflict can send it
+  aside to a fresh `name (N)`), for the unit row and the search-leaf rebase alike; recording the name that was taken
+  aims the reversal at a file the operation never touched. A merge is not reversible at all — see § "Why a directory
+  merge isn't reversible". Trash also captures the OS `resultingItemURL` (the in-trash
   location) as the row's dest, so the rollback restore knows where to move it back from. The subtree's `search_only` leaves
   come from the **drive index**, not a filesystem walk — see § Search-leaf enumeration.
-- **cross-FS move** — per-leaf via `copy_single_item` (it stages a copy), same as copy; the op's `kind` is `move`.
+- **cross-FS move** — per-leaf via `copy_single_item` (it stages a copy), same as copy; the op's `kind` is `move`. The
+  rows name the FINAL destination, never the staging path, and a phase-3 conflict makes the op not-rollbackable — see §
+  "A staged write records where the file will LIVE".
 - **batch rename** (Ask Cmdr's reviewed plans, `rename/bulk.rs::record_bulk_rename_outcomes`) — one `rollback_unit` row
   per APPLIED row, source → destination, with the size + mtime the review preflight already fingerprinted (no new stat).
   **The mtime crosses a unit boundary here and `journal_snapshot` owns the conversion**: a local fingerprint holds
@@ -260,7 +265,8 @@ Numbers + the cap-tuning rationale: `docs/notes/operation-log-capture-bench.md`.
 
 ### Volume capture — carrying the real volume id + honest overwrite
 
-Two things the volume paths need that the local paths don't:
+The real volume id is the thing the volume paths need that the local paths don't (overwrite detection is every
+transfer path's job, local included — see § "Why a directory merge isn't reversible"):
 
 - **The real volume id, threaded via op state.** `journal.rs` gained `open_volume_op` + `record_volume_leaf` /
   `record_volume_transfer_source` / `record_created_dirs_on` / `record_search_leaf` — the volume-aware siblings of the
@@ -269,17 +275,56 @@ Two things the volume paths need that the local paths don't:
   (`Some((src, dst))`, set by the deferred; `None` in tests / the both-local shortcut ⇒ no journaling). Honesty invariant,
   TDD-guarded: a volume op's rows carry the real id, never `"root"` (a wrong id silently corrupts history —
   `volume_copy_journals_under_the_real_volume_ids_not_root`, `cross_volume_move_journals_per_leaf_move_rows`).
-- **Overwrite detection for eligibility.** A copy/move that overwrote isn't rollbackable (deleting the copies can't
-  restore the overwritten original), so the volume paths surface "did anything overwrite": the top-level file→file
-  safe-replace is known at the call site; deep-merge child overwrites are counted in `CreatedPaths::overwrote_files`
-  (copy/cross-volume-move) or a `RenameMergeCtx::overwrote` flag (same-volume move), and the same-volume resolver records
-  a top-level file overwrite in a shared `overwritten_sources` set (it runs in a separate driver callback from the record
-  point). The recorded row's `overwrote` bit is the OR of these; `compute_eligibility` reads it op-wide. Per-inner-file
-  granularity isn't tracked (op-wide eligibility is all that's consumed).
+- **How the volume paths surface overwrite.** A copy/move that overwrote isn't rollbackable (deleting the copies can't
+  restore the overwritten original). The top-level file→file safe-replace is known at the call site; deep-merge child
+  overwrites are counted in `CreatedPaths::overwrote_files` (copy/cross-volume-move) or a `RenameMergeCtx::overwrote`
+  flag (same-volume move), and the same-volume resolver records a top-level file overwrite in a shared
+  `overwritten_sources` set (it runs in a separate driver callback from the record point). The recorded row's
+  `overwrote` bit is the OR of these; `compute_eligibility` reads it op-wide. Per-inner-file granularity isn't tracked
+  (op-wide eligibility is all that's consumed). The local paths carry the same bit on their own rows
+  (`move_op.rs`'s `item_overwrote`, `copy_single_item`'s `needs_safe_overwrite`).
 
 Granularity mirrors local (D-granularity): cross-volume copy + cross-volume move + volume delete are per-leaf; a
 same-volume move is a same-FS-style move (top-level `rollback_unit` row + drive-index `search_only` leaves, which
 downgrade to `index_absent` on a volume with no index — verified by the gate in `enumerate_subtree_for_search`).
+
+### Why a directory merge isn't reversible
+
+A move whose source folder collides with a folder at the destination MERGES, child by child, and journals ONE
+`rollback_unit` row whose destination is that pre-existing folder. That folder also holds files this operation never
+touched, so reversing the row (a rename-back of the whole folder) would carry them to the source and leave nothing at
+the destination. Both merging paths therefore call `journal::note_not_rollbackable(DirectoryMerge)` at the merge
+branch: `transfer/move_op.rs` (same-FS and the cross-FS phase-3 merge) and `transfer/volume/move_same.rs` (same-volume
+rename-merge).
+
+**The disqualifying condition is "merged", NOT "overwrote something".** A merge that overwrites nothing has the same
+single row and the same failure: pre-existing `B/A` holding a dest-only `x`, source `A/` holding only `y`, the merge
+moves `y` in, the emptied source is removed, and the reversal takes `x` away. Flagging only merges whose children
+replaced a dest file leaves that live. Pinned by a pair of tests per path (`move_op.rs`'s `journal_tests`,
+`volume/rename_merge_tests.rs`), one shape each.
+
+**Decision/Why**: the honest flag over per-child rows, for now. Per-child rows (one row per child the merge actually
+moved) are the better end state — they'd let the reversal put back exactly what moved and nothing else, and "we merged
+into your folder so we can't undo it" is a poor answer for a common operation. They cost a real redesign of the merge
+record point on three paths; the flag is honest today. Revisit when merge-undo is worth that.
+
+### A staged write records where the file will LIVE
+
+A cross-FS move copies into `.cmdr-staging-<op_id>/` and renames the tree into place in phase 3, so the paths
+`copy_single_item` writes are gone moments later. Journaling them would leave name search pointing into a directory
+that no longer exists, and a reversal would read every item as already gone and count a phantom success. So the caller
+hands `copy_single_item` a `JournalDestUnder { write_root, final_root }` and the record points rebase (`transfer/copy/single_item.rs`).
+Rows land exactly when they always did — only WHAT path they carry changed. A plain copy passes `None`: it writes where
+it records.
+
+The rebase is the conflict-free answer, and phase 3 can still resolve a conflict at the real destination after phase 2
+journaled. So **any phase-3 conflict resolution marks the operation not-rollbackable**: `Overwrote` when it replaced the
+destination (phase 2 can't see that overwrite at all, since nothing collides inside a fresh staging directory),
+`DirectoryMerge` for a merge, `StagedConflictResolved` for a rename-aside or a Skip. Without that, a row would name a
+path holding a STRANGER's file, and since a move's inverse is a restore-move, a size-and-mtime match (plausible for a
+duplicate) would carry that stranger's file off to the source. **Known limit**: those rows still name the naive final
+path, so history and name search for such an operation point at a location the file isn't at. Correcting them needs an
+amend-a-row writer message; the not-rollbackable flag keeps it from doing harm meanwhile.
 
 ### Provenance — initiator threads through every write-start command
 

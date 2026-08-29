@@ -8529,6 +8529,18 @@ export type NotRollbackableReason =
    *  incomplete record of what to reverse (D4 completeness).
    */
   | 'journalIncomplete'
+  /**
+   *  A move merged a source folder into a folder that already existed, so
+   *  the one directory row names a destination holding files the operation
+   *  never touched. Renaming it back would carry those files away with it.
+   */
+  | 'directoryMerge'
+  /**
+   *  A cross-FS move resolved a conflict at the FINAL destination, after
+   *  its rows were already journaled against the staging area — so the
+   *  recorded destinations aren't where the files landed.
+   */
+  | 'stagedConflictResolved'
 
 /**
  *  One OCR search hit: the matched image's path and a highlighted snippet of the

@@ -31,7 +31,8 @@ MCP tools live in `mcp/executor/operation_log.rs`; UI surfaces are frontend-only
   `outcome`, and `rollback_skip_reason` is a `types.rs` enum with a stable token, mapped ONLY there. Renaming a token is
   a schema change; renaming a variant is free.
 - **The writer stores terminal state; it does NOT compute eligibility.** That reasoning lives in `capture.rs` — keep
-  business logic out of `writer.rs`.
+  business logic out of `writer.rs`. A driver can also NOTE a reason the rows can't express
+  (`note_not_rollbackable`, e.g. a directory merge); a note beats the per-kind rule.
 - **Capture is a process-global journal reached by `op_id`, NOT threaded through the pipeline.** ❌ Never extend
   `OperationEventSink`. Install via `set_journal` (production `start` only; tests use `TestJournalGuard`).
 - **A multi-operation undo reverses NEWEST FIRST, one at a time** (`undo_order`): a later rename batch can take a name

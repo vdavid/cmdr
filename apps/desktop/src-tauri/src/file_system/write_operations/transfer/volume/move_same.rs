@@ -627,6 +627,18 @@ pub(crate) async fn move_within_same_volume_with_progress(
                             note_pending_for_local_volume(&volume, to);
                         };
                         rename_merge_directory(&merge_ctx, &source_path, &dest_item_path, &note).await?;
+                        // The row below names the PRE-EXISTING destination folder,
+                        // which also holds files this operation never touched, so
+                        // renaming it back would carry them off to the source. The
+                        // disqualifying condition is "merged", not "overwrote
+                        // something" — a merge that overwrote nothing fails the
+                        // same way. Mirrors the local path in `move_op.rs`;
+                        // rationale in `operation_log/DETAILS.md` § "Why a
+                        // directory merge isn't reversible".
+                        journal::note_not_rollbackable(
+                            &operation_id,
+                            crate::operation_log::types::NotRollbackableReason::DirectoryMerge,
+                        );
                         journal_same_volume_moved_item(
                             &operation_id,
                             journal_volumes.as_ref(),

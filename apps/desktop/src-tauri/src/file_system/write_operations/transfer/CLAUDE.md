@@ -20,6 +20,9 @@ map: `DETAILS.md` § Files.
   source before either engine's loop (copy seeds `dir_remap` with a free ` (N)` name, move drops the item), because
   every answer the conflict machinery can give destroys the original or refuses the user. `DETAILS.md` §
   "Self-collision (duplicating in place)".
+- **A MERGED move is NOT rollbackable, and a cross-FS move journals FINAL paths, never staging ones**
+  (`note_not_rollbackable` at every merge and phase-3 conflict; `JournalDestUnder` rebases). Both are easy to drop in a
+  refactor. `operation_log/DETAILS.md` § "Why a directory merge isn't reversible".
 - **Cross-volume copy parks and yields between chunks** (`CheckpointStream`): park in place, ❌ no release/reopen. TWO
   opt-ins, ❌ don't merge them: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB only) is capped.
 - **Every phase announces itself to `transfer_probe.rs`, on ALL THREE streaming paths** (both copy drivers and the

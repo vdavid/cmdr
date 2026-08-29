@@ -969,3 +969,153 @@ async fn rename_merge_moves_symlink_as_opaque_entry() {
     assert_eq!(read(root, "dst/album/real.txt"), b"REAL");
     assert!(!exists(root, "src/album"), "fully-moved source spine deleted");
 }
+
+// ============================================================================
+// A merged folder is not reversible
+// ============================================================================
+
+/// Run a same-volume move against a fresh journal DB and hand back the operation
+/// row it finalized. The guard and the DB's own tempdir ride along in the tuple
+/// so the caller keeps them alive: dropping the journal dir would delete
+/// `operation-log.db` out from under the writer thread.
+async fn journaled_same_volume_move(
+    op_id: &str,
+    volume: &Arc<dyn Volume>,
+    sources: &[PathBuf],
+    destination: &Path,
+    config: &VolumeCopyConfig,
+) -> (
+    crate::operation_log::store::OperationRow,
+    crate::operation_log::TestJournalGuard,
+    TempDir,
+) {
+    use crate::file_system::write_operations::journal;
+    use crate::operation_log::capture::WriterJournal;
+    use crate::operation_log::store::{open_read_connection, operation_log_db_path, read_operation};
+    use crate::operation_log::types::{ExecutionStatus, Initiator, OpKind};
+    use crate::operation_log::writer::OperationLogWriter;
+
+    let journal_dir = TempDir::new().unwrap();
+    let db = operation_log_db_path(journal_dir.path());
+    let writer = OperationLogWriter::spawn(&db).expect("spawn writer");
+    let guard = crate::operation_log::TestJournalGuard::install(Arc::new(WriterJournal::new(writer)));
+
+    // A same-volume move journals under the REAL volume id on both sides.
+    let state =
+        Arc::new(WriteOperationState::new(Duration::from_millis(0)).with_journal_volumes("v".into(), "v".into()));
+    journal::open_volume_op(
+        op_id,
+        OpKind::Move,
+        Initiator::User,
+        "v",
+        Some("v"),
+        sources.len() as u64,
+    );
+    let events = Arc::new(CollectorEventSink::new());
+    let result =
+        move_within_same_volume_with_progress(events, op_id, &state, Arc::clone(volume), sources, destination, config)
+            .await;
+    journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let conn = open_read_connection(&db).expect("read conn");
+    let row = read_operation(&conn, op_id).expect("read op").expect("op row");
+    (row, guard, journal_dir)
+}
+
+/// The same-volume twin of the local merge rule: a folder collision merges, and
+/// the ONE row it journals names the pre-existing destination folder — which also
+/// holds files this operation never touched. Reversing that row would rename the
+/// merged folder back to the source and carry them along.
+///
+/// Nothing is overwritten here, which is the point: the disqualifying condition
+/// is "merged", not "overwrote something".
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn same_volume_merge_that_overwrote_nothing_is_not_rollbackable() {
+    use crate::operation_log::types::{NotRollbackableReason, RollbackState};
+
+    let (volume, dir) = local_volume();
+    let root = dir.path();
+    write_file(root, "src/album/fresh.txt", b"SRC-fresh");
+    write_file(root, "dst/album/keep.txt", b"DEST-keep");
+
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Stop,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+    let (row, _journal, _journal_dir) = journaled_same_volume_move(
+        "op-merge-journal-clean",
+        &volume,
+        &[PathBuf::from("src/album")],
+        Path::new("dst"),
+        &config,
+    )
+    .await;
+
+    assert_eq!(read(root, "dst/album/keep.txt"), b"DEST-keep", "the merge ran");
+    assert_eq!(row.rollback_state, RollbackState::NotRollbackable);
+    assert_eq!(row.not_rollbackable_reason, Some(NotRollbackableReason::DirectoryMerge));
+}
+
+/// The same verdict when a merge child DID replace a destination file. The
+/// overwrite alone already ruled this one out; the merge is why the reason names
+/// the merge.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn same_volume_merge_that_replaced_a_destination_file_is_not_rollbackable() {
+    use crate::operation_log::types::RollbackState;
+
+    let (volume, dir) = local_volume();
+    let root = dir.path();
+    write_file(root, "src/album/shared.txt", b"SRC-shared");
+    write_file(root, "dst/album/shared.txt", b"DEST-shared");
+    write_file(root, "dst/album/keep.txt", b"DEST-keep");
+
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+    let (row, _journal, _journal_dir) = journaled_same_volume_move(
+        "op-merge-journal-overwrite",
+        &volume,
+        &[PathBuf::from("src/album")],
+        Path::new("dst"),
+        &config,
+    )
+    .await;
+
+    assert_eq!(read(root, "dst/album/shared.txt"), b"SRC-shared", "the merge ran");
+    assert_eq!(read(root, "dst/album/keep.txt"), b"DEST-keep");
+    assert_eq!(row.rollback_state, RollbackState::NotRollbackable);
+}
+
+/// The guard rail on the rule above: a same-volume move with NO folder collision
+/// stays reversible, so the merge verdict can't quietly swallow every move.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_same_volume_move_with_no_folder_collision_stays_rollbackable() {
+    use crate::operation_log::types::RollbackState;
+
+    let (volume, dir) = local_volume();
+    let root = dir.path();
+    write_file(root, "src/album/fresh.txt", b"SRC-fresh");
+    mkdir(root, "dst");
+
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Stop,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+    let (row, _journal, _journal_dir) = journaled_same_volume_move(
+        "op-move-journal-plain",
+        &volume,
+        &[PathBuf::from("src/album")],
+        Path::new("dst"),
+        &config,
+    )
+    .await;
+
+    assert_eq!(read(root, "dst/album/fresh.txt"), b"SRC-fresh");
+    assert_eq!(row.rollback_state, RollbackState::Rollbackable);
+    assert_eq!(row.not_rollbackable_reason, None);
+}

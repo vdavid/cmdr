@@ -80,6 +80,50 @@ fn record_file_done(
     );
 }
 
+/// Where a landed file should be RECORDED when the write goes somewhere else
+/// first.
+///
+/// A cross-FS move copies into `.cmdr-staging-<op_id>/` and renames the tree into
+/// place only afterwards, so a journal row naming the write path names a
+/// directory that is gone moments later: name search points into nothing, and a
+/// reversal reads the item as already gone and counts a phantom success. The
+/// caller hands over the two roots and the record points rebase.
+///
+/// Rebasing rather than taking a ready-made final path is deliberate: it keeps a
+/// landing that DEVIATED inside [`copy_single_item`] (a conflict, a `dir_remap`
+/// redirect) pointing at the matching final path.
+///
+/// It records where the file will live if nothing else moves it. Phase 3 of a
+/// cross-FS move can still resolve a conflict at the real destination and land
+/// the file elsewhere — that operation marks itself not-rollbackable, because no
+/// row written here can be corrected after the fact.
+#[derive(Clone, Copy)]
+pub(in crate::file_system::write_operations::transfer) struct JournalDestUnder<'a> {
+    /// The root the bytes are written under (the staging directory).
+    pub write_root: &'a Path,
+    /// The root the file will live under once the caller renames it into place.
+    pub final_root: &'a Path,
+}
+
+impl JournalDestUnder<'_> {
+    /// The destination to record for a write that landed at `written`.
+    fn rebase(&self, written: &Path) -> PathBuf {
+        match written.strip_prefix(self.write_root) {
+            Ok(rel) => self.final_root.join(rel),
+            // Can't happen (every write lands under `write_root`), and recording
+            // the written path beats dropping the row.
+            Err(_) => written.to_path_buf(),
+        }
+    }
+}
+
+/// The destination `record_local_leaf` should carry for a file that landed at
+/// `written`: the rebased path when the caller staged the write, else the path
+/// itself.
+fn journal_dest(remap: Option<JournalDestUnder<'_>>, written: &Path) -> PathBuf {
+    remap.map_or_else(|| written.to_path_buf(), |r| r.rebase(written))
+}
+
 /// Copies a single file or symlink to its destination.
 /// Ensures parent directories exist before copying.
 /// Used by both copy and cross-filesystem move operations.
@@ -95,6 +139,10 @@ fn record_file_done(
 pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
     source: &Path,
     dest_path: PathBuf,
+    // `Some` when the write is staged and the caller renames it into place
+    // afterwards, so the journal records the final path instead of the staging
+    // one. `None` for a plain copy, which writes where it records.
+    journal_dest_under: Option<JournalDestUnder<'_>>,
     is_symlink: bool,
     // `write_weight` = the bytes this file contributes to copy's `bytes_total`
     // denominator, which is the write footprint: the file's full `size`, even
@@ -380,7 +428,7 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             operation_id,
             crate::operation_log::types::EntryType::File,
             source,
-            Some(&actual_dest),
+            Some(&journal_dest(journal_dest_under, &actual_dest)),
             Some(write_weight as i64),
             source_mtime,
             needs_safe_overwrite,
@@ -517,7 +565,7 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             operation_id,
             crate::operation_log::types::EntryType::File,
             source,
-            Some(&actual_dest),
+            Some(&journal_dest(journal_dest_under, &actual_dest)),
             Some(write_weight as i64),
             source_mtime,
             needs_safe_overwrite,

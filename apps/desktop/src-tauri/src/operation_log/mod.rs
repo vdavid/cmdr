@@ -27,7 +27,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::ignore_poison::RwLockIgnorePoison;
 use capture::{FinalizeInputs, OperationJournal, WriterJournal};
-use types::{SearchCoverage, SearchCoverageReason};
+use types::{NotRollbackableReason, SearchCoverage, SearchCoverageReason};
 use writer::{FinalizeOutcome, JournalItem, OpenOperation};
 
 /// The process-global journal handle. The write pipeline reaches it BY `op_id`
@@ -152,6 +152,15 @@ pub fn journal_record_items(op_id: &str, items: Vec<JournalItem>) {
 pub fn journal_note_coverage(op_id: &str, coverage: SearchCoverage, reason: Option<SearchCoverageReason>) {
     if let Some(j) = current_journal() {
         j.note_search_coverage(op_id, coverage, reason);
+    }
+}
+
+/// Rule an op out of rollback for a reason only the driver can see (a directory
+/// merge, a conflict resolved after the rows were written). Beats the per-kind
+/// eligibility at finalize. No-op when no journal.
+pub fn journal_note_not_rollbackable(op_id: &str, reason: NotRollbackableReason) {
+    if let Some(j) = current_journal() {
+        j.note_not_rollbackable(op_id, reason);
     }
 }
 

@@ -23,7 +23,7 @@ use super::super::types::{
 use super::super::validation::{
     is_same_file, is_same_filesystem, path_exists_or_is_symlink, validate_file_sizes_for_filesystem,
 };
-use super::copy::copy_single_item;
+use super::copy::{JournalDestUnder, copy_single_item};
 
 // ============================================================================
 // Move rollback tracking
@@ -253,6 +253,12 @@ fn move_with_rename(
             let source_mtime = source_meta.as_ref().and_then(super::super::journal::mtime_secs);
             let source_size = source_meta.as_ref().map(|m| m.len() as i64);
             let mut item_overwrote = false;
+            // Where the item ends up, which is `dest_path` unless a conflict sends
+            // it aside to a fresh `name (N)`. The journal records THIS, not the
+            // name that was taken: a row naming the pre-existing file aims the
+            // reversal at a file this operation never touched, and a duplicate
+            // (same size, same mtime) passes the snapshot recheck.
+            let mut landed_path = dest_path.clone();
 
             // Enumerate the subtree's `search_only` leaves from the drive index
             // BEFORE the rename — the reconciler prunes the moved subtree on its
@@ -286,6 +292,18 @@ fn move_with_rename(
                     &mut files_skipped,
                     &mut None,
                 )?;
+                // The one row this item journals names the PRE-EXISTING
+                // destination folder, which also holds files this operation never
+                // touched — renaming it back would carry them off to the source.
+                // The disqualifying condition is "merged", not "overwrote
+                // something": a merge that overwrote nothing has the same row and
+                // the same failure. Per-child rows would make it reversible;
+                // `operation_log/DETAILS.md` § "Why a directory merge isn't
+                // reversible" holds that decision.
+                super::super::journal::note_not_rollbackable(
+                    operation_id,
+                    crate::operation_log::types::NotRollbackableReason::DirectoryMerge,
+                );
             } else if path_exists_or_is_symlink(&dest_path) {
                 // File-to-file (or type mismatch) conflict
                 match resolve_conflict(
@@ -307,6 +325,7 @@ fn move_with_rename(
                         // Landing on the original dest name replaced a pre-existing
                         // file; a rename-aside (different name) did not.
                         item_overwrote = resolved.path == dest_path;
+                        landed_path = resolved.path.clone();
                         move_resolved_into_place(source, &dest_path, &resolved, &mut move_tx)?;
                     }
                     None => {
@@ -336,7 +355,7 @@ fn move_with_rename(
                 operation_id,
                 entry_type,
                 source,
-                Some(&dest_path),
+                Some(&landed_path),
                 source_size,
                 source_mtime,
                 item_overwrote,
@@ -351,7 +370,7 @@ fn move_with_rename(
                     crate::file_system::volume::DEFAULT_VOLUME_ID,
                     source,
                     crate::file_system::volume::DEFAULT_VOLUME_ID,
-                    Some(&dest_path),
+                    Some(&landed_path),
                     buffered,
                 );
             }
@@ -671,6 +690,12 @@ fn move_with_staging(
             copy_single_item(
                 &file_info.path,
                 file_info.dest_path(&staging_dir),
+                // Phase 3 renames the staging tree into place, so the journal
+                // records where each file will live, not where it's written.
+                Some(JournalDestUnder {
+                    write_root: &staging_dir,
+                    final_root: destination,
+                }),
                 file_info.is_symlink,
                 // Write footprint: a cross-FS move stages a full copy of every
                 // file (including hardlink dupes) before deleting the sources.
@@ -785,6 +810,12 @@ fn move_with_staging(
                         skipped_source_paths.insert(source.join(rel));
                     }
                 }
+                // Same rule as the same-FS merge: the destination folder also
+                // holds files this operation never touched.
+                super::super::journal::note_not_rollbackable(
+                    operation_id,
+                    crate::operation_log::types::NotRollbackableReason::DirectoryMerge,
+                );
             } else if final_path.exists() {
                 // File conflict (or type mismatch)
                 match resolve_conflict(
@@ -807,6 +838,20 @@ fn move_with_staging(
                         // file-vs-dir decision correctly. The local `staging_move_tx`
                         // is throwaway here (staging cleanup handles rollback).
                         let mut throwaway_tx = MoveTransaction::new();
+                        // Phase 2 already journaled this item against the staging
+                        // area, rebased onto the CONFLICT-FREE final path. This
+                        // resolution moves it somewhere else (a fresh `name (N)`)
+                        // or over a file whose bytes are now gone, and rows can't
+                        // be amended after the fact — so the operation says
+                        // honestly that it can't be reversed.
+                        super::super::journal::note_not_rollbackable(
+                            operation_id,
+                            if resolved.path == final_path {
+                                crate::operation_log::types::NotRollbackableReason::Overwrote
+                            } else {
+                                crate::operation_log::types::NotRollbackableReason::StagedConflictResolved
+                            },
+                        );
                         move_resolved_into_place(&staged_path, &final_path, &resolved, &mut throwaway_tx)?;
                     }
                     None => {
@@ -819,6 +864,14 @@ fn move_with_staging(
                         }
                         skipped_source_paths.insert(source.clone());
                         files_skipped += 1;
+                        // The rows phase 2 wrote for this source name a
+                        // destination that now holds the file the user chose to
+                        // keep. Reversing them would carry THAT file to the
+                        // source.
+                        super::super::journal::note_not_rollbackable(
+                            operation_id,
+                            crate::operation_log::types::NotRollbackableReason::StagedConflictResolved,
+                        );
                         continue;
                     }
                 }
@@ -1014,3 +1067,7 @@ fn delete_dir_preserving_skipped(
 #[cfg(test)]
 #[path = "move_op_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "move_journal_tests.rs"]
+mod journal_tests;

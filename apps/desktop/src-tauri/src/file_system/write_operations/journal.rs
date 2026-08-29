@@ -15,7 +15,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
 use crate::operation_log::capture::FinalizeInputs;
 use crate::operation_log::types::RowRole;
-use crate::operation_log::types::{ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
+use crate::operation_log::types::{
+    ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind,
+};
 use crate::operation_log::writer::{JournalItem, OpenOperation};
 use crate::operation_log::{journal_finalize, journal_open, journal_record_items};
 
@@ -378,6 +380,16 @@ pub(super) fn journal_instant_create(
         }
         None => finalize_op(op_id, kind, ExecutionStatus::Failed),
     }
+}
+
+/// Rule this op out of rollback with a typed reason the item rows can't carry —
+/// the driver saw something `compute_eligibility` can't derive. Today: a
+/// directory MERGE (its one row names a destination that also holds files the op
+/// never touched, so reversing it would carry them away) and a cross-FS move
+/// whose phase-3 conflict resolution landed the files somewhere other than the
+/// destinations phase 2 journaled. No-ops when no journal is installed.
+pub(super) fn note_not_rollbackable(op_id: &str, reason: NotRollbackableReason) {
+    crate::operation_log::journal_note_not_rollbackable(op_id, reason);
 }
 
 /// The op's terminal header aggregates — planned total, completed items, and

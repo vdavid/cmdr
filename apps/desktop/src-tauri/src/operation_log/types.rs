@@ -131,6 +131,14 @@ token_enum! {
         /// A `rollback_unit` row was dropped/errored, so the journal is an
         /// incomplete record of what to reverse (D4 completeness).
         JournalIncomplete => "journal_incomplete",
+        /// A move merged a source folder into a folder that already existed, so
+        /// the one directory row names a destination holding files the operation
+        /// never touched. Renaming it back would carry those files away with it.
+        DirectoryMerge => "directory_merge",
+        /// A cross-FS move resolved a conflict at the FINAL destination, after
+        /// its rows were already journaled against the staging area — so the
+        /// recorded destinations aren't where the files landed.
+        StagedConflictResolved => "staged_conflict_resolved",
     }
 }
 
@@ -274,7 +282,9 @@ mod tests {
                 PermanentDelete,
                 ArchiveOverwrite,
                 ZipEditUnsupported,
-                JournalIncomplete
+                JournalIncomplete,
+                DirectoryMerge,
+                StagedConflictResolved
             ]
         );
         check!(SearchCoverage, [Full, TopLevelOnly]);

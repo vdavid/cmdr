@@ -35,7 +35,7 @@ mod single_item;
 
 use rollback::rollback_with_progress;
 pub(super) use scanned_dirs::create_scanned_dirs_at_destination;
-pub(super) use single_item::copy_single_item;
+pub(super) use single_item::{JournalDestUnder, copy_single_item};
 
 // ============================================================================
 // Cancellation-aware helpers
@@ -434,6 +434,8 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             copy_single_item(
                 &file_info.path,
                 file_info.dest_path(destination),
+                // A plain copy writes where it records.
+                None,
                 file_info.is_symlink,
                 file_info.size,
                 &mut local_files,

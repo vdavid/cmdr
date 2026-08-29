@@ -61,6 +61,14 @@ pub trait OperationJournal: Send + Sync {
     /// needs no call.
     fn note_search_coverage(&self, op_id: &str, coverage: SearchCoverage, reason: Option<SearchCoverageReason>);
 
+    /// Record that this op can't be reversed, for a reason only the DRIVER can
+    /// see — the per-kind rule in [`compute_eligibility`] can't derive it from
+    /// the item rows. A directory merge is the case that matters: its one row
+    /// names a destination that also holds files the op never touched, and no
+    /// `overwrote` bit says so. First note wins (every note reaches the same
+    /// verdict), and a note always beats the computed eligibility.
+    fn note_not_rollbackable(&self, op_id: &str, reason: NotRollbackableReason);
+
     /// Finalize the operation: compute eligibility (D3) from the accumulated
     /// overwrote flags plus `inputs`, apply the per-`row_role` completeness
     /// downgrade (D4), store the terminal state, and return the durable per-role
@@ -213,13 +221,16 @@ pub fn apply_completeness(
 const RECORD_BATCH: usize = 512;
 
 /// The per-op state the journal accumulates between `open` and `finalize`: the
-/// issued counts (D4 yardstick), whether any item overwrote (D3), the worst
-/// search-coverage the driver noted (D-granularity), and a small buffer that
-/// batches item rows before they cross to the writer thread.
+/// issued counts (D4 yardstick), whether any item overwrote (D3), the reason a
+/// driver ruled the op unreversible, the worst search-coverage the driver noted
+/// (D-granularity), and a small buffer that batches item rows before they cross
+/// to the writer thread.
 #[derive(Debug)]
 struct OpAccum {
     issued: IssuedCounts,
     any_overwrote: bool,
+    /// Set by `note_not_rollbackable`; overrides the computed eligibility.
+    noted_not_rollbackable: Option<NotRollbackableReason>,
     coverage: SearchCoverage,
     coverage_reason: Option<SearchCoverageReason>,
     buffer: Vec<JournalItem>,
@@ -235,6 +246,7 @@ impl Default for OpAccum {
         Self {
             issued: IssuedCounts::default(),
             any_overwrote: false,
+            noted_not_rollbackable: None,
             coverage: SearchCoverage::Full,
             coverage_reason: None,
             buffer: Vec::new(),
@@ -353,6 +365,12 @@ impl OperationJournal for WriterJournal {
         }
     }
 
+    fn note_not_rollbackable(&self, op_id: &str, reason: NotRollbackableReason) {
+        let mut ops = self.ops.lock_ignore_poison();
+        let accum = ops.entry(op_id.to_string()).or_default();
+        accum.noted_not_rollbackable.get_or_insert(reason);
+    }
+
     fn finalize(&self, op_id: &str, inputs: FinalizeInputs) -> FinalizeOutcome {
         let accum = self.ops.lock_ignore_poison().remove(op_id).unwrap_or_default();
 
@@ -364,8 +382,13 @@ impl OperationJournal for WriterJournal {
             log::warn!(target: "operation_log", "journal finalize flush failed: {e}");
         }
 
-        let (state, reason) =
-            compute_eligibility(inputs.kind, accum.any_overwrote, inputs.archive_subkind, inputs.net_new);
+        // A driver's note wins over the per-kind rule: it saw something the item
+        // rows can't express (a directory merge, a conflict resolved after the
+        // rows were written).
+        let (state, reason) = match accum.noted_not_rollbackable {
+            Some(noted) => (RollbackState::NotRollbackable, Some(noted)),
+            None => compute_eligibility(inputs.kind, accum.any_overwrote, inputs.archive_subkind, inputs.net_new),
+        };
 
         let finalize = FinalizeOperation {
             op_id: op_id.to_string(),
@@ -430,6 +453,7 @@ pub struct CapturingJournal {
     pub items: Mutex<Vec<JournalItem>>,
     pub finalizes: Mutex<Vec<(String, FinalizeInputs)>>,
     pub coverage_notes: Mutex<Vec<(String, SearchCoverage, Option<SearchCoverageReason>)>>,
+    pub not_rollbackable_notes: Mutex<Vec<(String, NotRollbackableReason)>>,
 }
 
 #[cfg(test)]
@@ -451,6 +475,11 @@ impl OperationJournal for CapturingJournal {
         self.coverage_notes
             .lock_ignore_poison()
             .push((op_id.to_string(), coverage, reason));
+    }
+    fn note_not_rollbackable(&self, op_id: &str, reason: NotRollbackableReason) {
+        self.not_rollbackable_notes
+            .lock_ignore_poison()
+            .push((op_id.to_string(), reason));
     }
     fn finalize(&self, op_id: &str, inputs: FinalizeInputs) -> FinalizeOutcome {
         let counts = {
