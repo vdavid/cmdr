@@ -1,14 +1,170 @@
 {
+  "licensing.acknowledgements.fullTexts": "The full licence texts ship with Cmdr in <notices>THIRD-PARTY-NOTICES.md</notices>.",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "1760aeb"
+  },
+  "licensing.about.noLicense": "No licence – only personal use allowed",
+  "@licensing.about.noLicense": {
+    "sourceHash": "e2ce8da"
+  },
+  "licensing.about.perpetual": "Perpetual commercial licence for {org}",
+  "@licensing.about.perpetual": {
+    "sourceHash": "591d7a8"
+  },
+  "licensing.about.commercial": "Commercial licence for {org}",
+  "@licensing.about.commercial": {
+    "sourceHash": "577f55b"
+  },
+  "licensing.about.commercialUntil": "Commercial licence for {org}, valid until {date}",
+  "@licensing.about.commercialUntil": {
+    "sourceHash": "eb44f8d"
+  },
   "licensing.about.fallbackOrg": "your organisation",
   "@licensing.about.fallbackOrg": {
     "sourceHash": "bb0bdf0"
+  },
+  "licensing.about.linkGetLicense": "Get a licence",
+  "@licensing.about.linkGetLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.commercialReminder.usingPersonal": "You''re using a Personal licence.",
+  "@licensing.commercialReminder.usingPersonal": {
+    "sourceHash": "508c17d"
+  },
+  "licensing.commercialReminder.askCommercial": "If you''re using Cmdr at work, please get a Commercial licence to stay compliant.",
+  "@licensing.commercialReminder.askCommercial": {
+    "sourceHash": "6bf4031"
+  },
+  "licensing.commercialReminder.priceInfo": "Commercial licences are $59/year/user and support continued development.",
+  "@licensing.commercialReminder.priceInfo": {
+    "sourceHash": "a7099b3"
+  },
+  "licensing.commercialReminder.getCommercial": "Get commercial licence",
+  "@licensing.commercialReminder.getCommercial": {
+    "sourceHash": "07f081b"
+  },
+  "licensing.expiration.title": "Your commercial licence has expired",
+  "@licensing.expiration.title": {
+    "sourceHash": "7067c40"
+  },
+  "licensing.expiration.orgName": "Licence for: <strong>{org}</strong>",
+  "@licensing.expiration.orgName": {
+    "sourceHash": "a5f0bab"
+  },
+  "licensing.expiration.info": "Cmdr is now running in personal use mode. If you''re still using it for work, please renew your licence.",
+  "@licensing.expiration.info": {
+    "sourceHash": "5fcebb5"
+  },
+  "licensing.expiration.renew": "Renew licence",
+  "@licensing.expiration.renew": {
+    "sourceHash": "1ee8746"
+  },
+  "licensing.dialog.detailsTitle": "Licence details",
+  "@licensing.dialog.detailsTitle": {
+    "sourceHash": "57327bb"
+  },
+  "licensing.dialog.enterTitle": "Enter licence key",
+  "@licensing.dialog.enterTitle": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.dialog.labelType": "Licence type",
+  "@licensing.dialog.labelType": {
+    "sourceHash": "72f256a"
   },
   "licensing.dialog.labelOrganization": "Organisation",
   "@licensing.dialog.labelOrganization": {
     "sourceHash": "d764d42"
   },
+  "licensing.dialog.labelKey": "Licence key",
+  "@licensing.dialog.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.dialog.resetConfirm": "This will deactivate your current licence on this device. You can reactivate anytime with a valid key.",
+  "@licensing.dialog.resetConfirm": {
+    "sourceHash": "2d77d69"
+  },
+  "licensing.dialog.enterPrompt": "Paste your licence key from the email you received after purchase. Don''t have one yet? <getLicense>Get a licence</getLicense>.",
+  "@licensing.dialog.enterPrompt": {
+    "sourceHash": "f6fb47a"
+  },
+  "licensing.dialog.activatedToast": "Licence activated. Thanks for your support! ❤️",
+  "@licensing.dialog.activatedToast": {
+    "sourceHash": "af76e26"
+  },
+  "licensing.dialog.networkFallbackError": "Couldn''t verify your licence with the server. Please try again later.",
+  "@licensing.dialog.networkFallbackError": {
+    "sourceHash": "cb2b8e0"
+  },
+  "licensing.dialog.expiredOnError": "This licence expired on {date}.",
+  "@licensing.dialog.expiredOnError": {
+    "sourceHash": "130a045"
+  },
+  "licensing.dialog.expiredOnHelp": "You can renew your subscription or purchase a new licence at getcmdr.com.",
+  "@licensing.dialog.expiredOnHelp": {
+    "sourceHash": "036bb88"
+  },
+  "licensing.dialog.emptyKeyError": "Please enter a licence key",
+  "@licensing.dialog.emptyKeyError": {
+    "sourceHash": "2b36779"
+  },
+  "licensing.dialog.mailtoSubject": "Licence key issue",
+  "@licensing.dialog.mailtoSubject": {
+    "sourceHash": "685a80d"
+  },
+  "licensing.dialog.mailtoBody": "Hi,\n\nI''m having trouble activating my licence key:\n{key}\n\n",
+  "@licensing.dialog.mailtoBody": {
+    "sourceHash": "bcdc2b6"
+  },
+  "licensing.error.badSignature": "This licence key failed our signature verification, meaning that it doesn''t look like a valid key.",
+  "@licensing.error.badSignature": {
+    "sourceHash": "e9842df"
+  },
+  "licensing.error.badFormat": "Our licence key format is different from this.",
+  "@licensing.error.badFormat": {
+    "sourceHash": "6012f8b"
+  },
+  "licensing.error.badFormatHint": "Licence keys are either a short code (CMDR-XXXX-XXXX-XXXX) or a longer cryptographic key from your purchase email.",
+  "@licensing.error.badFormatHint": {
+    "sourceHash": "a62b901"
+  },
+  "licensing.error.shortCodeNotFound": "This licence looks good, but we looked hard and couldn''t find it in our database.",
+  "@licensing.error.shortCodeNotFound": {
+    "sourceHash": "c123af8"
+  },
+  "licensing.error.network": "Ouch, we couldn''t reach the licence server this time.",
+  "@licensing.error.network": {
+    "sourceHash": "63da44b"
+  },
+  "licensing.error.server": "Hmm, the licence server responded with something weird. We''re sorry about that.",
+  "@licensing.error.server": {
+    "sourceHash": "6ca76c0"
+  },
+  "licensing.section.title": "Licence",
+  "@licensing.section.title": {
+    "sourceHash": "c011d60"
+  },
+  "licensing.section.labelType": "Licence type",
+  "@licensing.section.labelType": {
+    "sourceHash": "72f256a"
+  },
   "licensing.section.labelOrganization": "Organisation",
   "@licensing.section.labelOrganization": {
     "sourceHash": "d764d42"
+  },
+  "licensing.section.labelKey": "Licence key",
+  "@licensing.section.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.section.manageKey": "Manage licence key",
+  "@licensing.section.manageKey": {
+    "sourceHash": "501cc54"
+  },
+  "licensing.section.enterKey": "Enter licence key",
+  "@licensing.section.enterKey": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.section.getLicense": "Get a licence",
+  "@licensing.section.getLicense": {
+    "sourceHash": "fab19d3"
   }
 }

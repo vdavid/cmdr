@@ -6,5 +6,9 @@
   "onboarding.stepBeta.feedbackIntro": "Your feedback helps me spot bugs and prioritise features. Here is how you can engage:",
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
+  },
+  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central licence server at each app start plus once every 24 hours, and you always get the latest updates. If disabled, you''ll keep your current version, and zero automated network requests (except for periodic licence checks, if you have a commercial licence).",
+  "@onboarding.stepOptional.updates.desc": {
+    "sourceHash": "81147a5"
   }
 }

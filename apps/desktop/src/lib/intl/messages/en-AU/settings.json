@@ -51,6 +51,10 @@
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
+  "settings.section.license": "Licence",
+  "@settings.section.license": {
+    "sourceHash": "c011d60"
+  },
   "settings.summary.colorsAndFormats": "Theme, app colour, date and size colouring, and date/time format.",
   "@settings.summary.colorsAndFormats": {
     "sourceHash": "ad30daf"

@@ -1,4 +1,12 @@
 {
+  "commands.appLicenseKey.seeDetails.label": "See licence details",
+  "@commands.appLicenseKey.seeDetails.label": {
+    "sourceHash": "0e660e8"
+  },
+  "commands.appLicenseKey.enterKey.label": "Enter licence key",
+  "@commands.appLicenseKey.enterKey.label": {
+    "sourceHash": "357d05e"
+  },
   "commands.helpOpenShortcuts.description": "Open a read-only window listing every keyboard shortcut, live-synced with your customisations",
   "@commands.helpOpenShortcuts.description": {
     "sourceHash": "a9a1e0d"

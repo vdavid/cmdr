@@ -1,4 +1,12 @@
 {
+  "menu.app.licenseDetails": "See licence details",
+  "@menu.app.licenseDetails": {
+    "sourceHash": "0e660e8"
+  },
+  "menu.app.licenseEnter": "Enter licence key…",
+  "@menu.app.licenseEnter": {
+    "sourceHash": "24a8d77"
+  },
   "menu.go.addToFavorites": "Add to favourites",
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
