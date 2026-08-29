@@ -233,13 +233,26 @@ fn match_shipped(tag: &str, shipped: &[ShippedLocale]) -> Option<String> {
 /// Three sources, most explicit first: the tag's own script subtag
 /// (`zh-hant-tw`), then its region when that region implies a different script
 /// (`zh-tw`), then the language's default (`zh` alone is Simplified).
+///
+/// ❌ Don't read the subtags by POSITION. An extended-language subtag shifts
+/// everything right (`zh-yue-hant-hk`), so peeking only at slot two sees `yue`,
+/// matches neither shape, and quietly answers "Simplified" for a tag that says
+/// `hant` out loud. Scanning is also why a singleton ends the walk: `x-hant` is
+/// private-use payload, not a script.
 fn script_of<'a>(tag: &'a str, entry: &'a ShippedLocale) -> &'a str {
-    let mut subtags = tag.split('-').skip(1).peekable();
-    if let Some(script) = subtags.next_if(|part| part.len() == 4 && part.chars().all(|c| c.is_ascii_alphabetic())) {
-        return script;
+    let mut region = None;
+    for part in tag.split('-').skip(1) {
+        if part.len() == 1 {
+            break; // A singleton opens an extension or private-use sequence.
+        }
+        if is_script_subtag(part) {
+            return part;
+        }
+        if region.is_none() && is_region_subtag(part) {
+            region = Some(part);
+        }
     }
-    subtags
-        .next_if(|part| is_region_subtag(part))
+    region
         .and_then(|region| {
             entry
                 .region_scripts
@@ -247,6 +260,12 @@ fn script_of<'a>(tag: &'a str, entry: &'a ShippedLocale) -> &'a str {
                 .find(|(candidate, _)| candidate.eq_ignore_ascii_case(region))
         })
         .map_or(entry.default_script, |(_, script)| script)
+}
+
+/// Whether a subtag is a script: four letters (`hant`). Unambiguous, because a
+/// four-character BCP-47 variant has to start with a digit.
+fn is_script_subtag(part: &str) -> bool {
+    part.len() == 4 && part.chars().all(|c| c.is_ascii_alphabetic())
 }
 
 /// Whether a subtag is a region: two letters (`tw`) or three digits (`419`).
@@ -485,10 +504,33 @@ mod tests {
     }
 
     #[test]
+    fn an_extended_language_subtag_does_not_hide_the_script() {
+        // `zh-yue-Hant-HK` says `Hant` out loud, with an extlang in the way.
+        // Reading the script positionally would see `yue`, match neither script
+        // nor region, and fall through to the language default (Simplified),
+        // handing a Traditional reader the one catalog the guard exists to
+        // block. Same for the region half: `zh-yue-HK` still implies `Hant`.
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-yue-Hant-HK"]), SHIPPED),
+            Some("zh-Hant".to_string())
+        );
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-yue-HK"]), SHIPPED),
+            Some("zh-Hant".to_string())
+        );
+        // A private-use or extension sequence is not a script, however
+        // script-shaped its subtags look: `hant` here is `x`'s payload.
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-CN-x-hant"]), SHIPPED),
+            Some("zh".to_string())
+        );
+    }
+
+    #[test]
     fn a_catalog_that_names_its_own_script_guards_against_the_language_default() {
-        // Nothing we ship today names a script, so this pins the mirror case a
-        // future `zh-Hant` catalog would need: a Simplified reader must not
-        // land on it just because the base language matches.
+        // The mirror case, on a fixture where the Traditional catalog is the
+        // ONLY one: a Simplified reader must not land on it just because the
+        // base language matches.
         const ZH_HANT: &[ShippedLocale] = &[ShippedLocale {
             tag: "zh-Hant",
             script: "hant",
