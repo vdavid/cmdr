@@ -11,6 +11,14 @@
   "@commands.favoritesAdd.description": {
     "sourceHash": "84dcbf8"
   },
+  "commands.fileGoToTrash.label": "Go to the Bin",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "Open the Bin of the drive you''re browsing",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "45df2c4"
+  },
   "commands.tagsToggleGrey.label": "Toggle grey tag",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"

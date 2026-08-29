@@ -1,4 +1,12 @@
 {
+  "fileExplorer.pane.trashUnconfirmedToast": "Couldn''t confirm the file was moved to the Bin. The volume may be slow, but the file may still have been moved. Please check your Bin to be sure.",
+  "@fileExplorer.pane.trashUnconfirmedToast": {
+    "sourceHash": "844ccc1"
+  },
+  "fileExplorer.renameConflict.overwriteTrash": "Overwrite and bin old file",
+  "@fileExplorer.renameConflict.overwriteTrash": {
+    "sourceHash": "e0192f6"
+  },
   "fileExplorer.navigation.groupFavorites": "Favourites",
   "@fileExplorer.navigation.groupFavorites": {
     "sourceHash": "7a1f2a8"

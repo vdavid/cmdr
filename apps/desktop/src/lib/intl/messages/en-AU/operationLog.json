@@ -1,4 +1,8 @@
 {
+  "operationLog.summary.trash": "{count, plural, one {Moved {countText} item to the Bin} other {Moved {countText} items to the Bin}}",
+  "@operationLog.summary.trash": {
+    "sourceHash": "34b4457"
+  },
   "operationLog.status.canceled": "Cancelled",
   "@operationLog.status.canceled": {
     "sourceHash": "13ca2ee"

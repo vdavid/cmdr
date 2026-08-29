@@ -1,6 +1,14 @@
 {
+  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} other {Working}}",
+  "@queue.row.label": {
+    "sourceHash": "9f18acf"
+  },
   "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Cancelled} failed {Couldn''t finish} other {Running}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"
+  },
+  "queue.failureToast.title": "{type, select, copy {Couldn''t finish copying} move {Couldn''t finish moving} delete {Couldn''t finish deleting} trash {Couldn''t finish moving to the Bin} rename {Couldn''t finish renaming} create_folder {Couldn''t finish creating the folder} create_file {Couldn''t finish creating the file} archive_edit {Couldn''t finish editing the archive} other {Couldn''t finish}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
   }
 }

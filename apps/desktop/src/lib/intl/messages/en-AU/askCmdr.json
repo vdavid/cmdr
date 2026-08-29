@@ -6,5 +6,9 @@
   "askCmdr.consent.memory": "Ask Cmdr writes itself notes about you: how you like things organised, what you’ve turned down before, anything you ask it to remember. Those notes ride along with every message you send, for as long as they exist, and they can include text Cmdr recognised inside your photos. You can read them, or wipe them, any time in the Ask Cmdr settings.",
   "@askCmdr.consent.memory": {
     "sourceHash": "80facfd"
+  },
+  "askCmdr.decision.verbTrash": "binning",
+  "@askCmdr.decision.verbTrash": {
+    "sourceHash": "ea05c85"
   }
 }

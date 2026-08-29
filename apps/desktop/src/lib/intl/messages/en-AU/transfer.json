@@ -1,0 +1,6 @@
+{
+  "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to the Bin",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  }
+}

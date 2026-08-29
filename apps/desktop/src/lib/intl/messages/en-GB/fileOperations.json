@@ -1,4 +1,44 @@
 {
+  "fileOperations.delete.noTrashWarningStrong": "This volume doesn''t have a Bin.",
+  "@fileOperations.delete.noTrashWarningStrong": {
+    "sourceHash": "ef122e2"
+  },
+  "fileOperations.delete.archiveWarningStrong": "There''s no Bin inside an archive.",
+  "@fileOperations.delete.archiveWarningStrong": {
+    "sourceHash": "29efc59"
+  },
+  "fileOperations.trash.goToTrashAction": "Go to the Bin",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undonePartial": "Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Bin.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.noTrashHere": "This drive doesn''t keep a Bin.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "91d7462"
+  },
+  "fileOperations.delete.trashSwitch": "Move to Bin",
+  "@fileOperations.delete.trashSwitch": {
+    "sourceHash": "b250a45"
+  },
+  "fileOperations.delete.confirmMoveToTrash": "Move to Bin",
+  "@fileOperations.delete.confirmMoveToTrash": {
+    "sourceHash": "b250a45"
+  },
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to Bin}}",
+  "@fileOperations.transferDialog.titleVerbOnly": {
+    "sourceHash": "b18b6e3"
+  },
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to Bin}} {phrase}",
+  "@fileOperations.transferDialog.titleWithCounts": {
+    "sourceHash": "d21c910"
+  },
+  "fileOperations.transferProgress.scanTitleTrash": "Counting items to bin...",
+  "@fileOperations.transferProgress.scanTitleTrash": {
+    "sourceHash": "d11467e"
+  },
   "fileOperations.transferProgress.titleCancelling": "Cancelling...",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"
@@ -6,5 +46,9 @@
   "fileOperations.transferProgress.titleCancellingSlow": "Cancelling... (finishing USB transfers)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "sourceHash": "ac2ee1a"
+  },
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Bin}}...",
+  "@fileOperations.transferProgress.titleActive": {
+    "sourceHash": "fe64f70"
   }
 }

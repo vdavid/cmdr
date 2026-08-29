@@ -11,6 +11,10 @@
   "@errors.listing.cancelledErrno.explanation": {
     "sourceHash": "da19c15"
   },
+  "errors.listing.diskFullErrno.suggestion": "Here's what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Bin (right-click the Bin icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume\n- Check **{system_settings} > General > Storage** for a breakdown of what's using space",
+  "@errors.listing.diskFullErrno.suggestion": {
+    "sourceHash": "bf54d66"
+  },
   "errors.listing.cancelled.title": "Cancelled",
   "@errors.listing.cancelled.title": {
     "sourceHash": "13ca2ee"
@@ -22,6 +26,14 @@
   "errors.listing.deviceReconnecting.explanation": "The connection to the device holding `{path}` restarted, so this action didn't go through. The device is still plugged in, and Cmdr is reopening it right now. This usually follows a cancelled or interrupted transfer.",
   "@errors.listing.deviceReconnecting.explanation": {
     "sourceHash": "6ba7205"
+  },
+  "errors.listing.storageFull.suggestion": "Here's what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Bin (right-click the Bin icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume",
+  "@errors.listing.storageFull.suggestion": {
+    "sourceHash": "fcdd42d"
+  },
+  "errors.write.sourceNotFound.message.trash": "The file or folder you tried to move to the Bin no longer exists.",
+  "@errors.write.sourceNotFound.message.trash": {
+    "sourceHash": "dbc0bbe"
   },
   "errors.write.cancelled.title.copy": "Copy cancelled",
   "@errors.write.cancelled.title.copy": {
@@ -35,6 +47,10 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
+  "errors.write.cancelled.title.trash": "Move to Bin cancelled",
+  "@errors.write.cancelled.title.trash": {
+    "sourceHash": "52a8954"
+  },
   "errors.write.cancelled.message.copy": "The copy operation was cancelled.",
   "@errors.write.cancelled.message.copy": {
     "sourceHash": "da308bc"
@@ -46,5 +62,57 @@
   "errors.write.cancelled.message.delete": "The delete operation was cancelled.",
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
+  },
+  "errors.write.cancelled.message.trash": "The move to the Bin was cancelled.",
+  "@errors.write.cancelled.message.trash": {
+    "sourceHash": "9585f1b"
+  },
+  "errors.write.deviceDisconnected.message.trash": "The device was disconnected during the move to the Bin.",
+  "@errors.write.deviceDisconnected.message.trash": {
+    "sourceHash": "9d5a47a"
+  },
+  "errors.write.trashNotSupported.title": "Bin not supported",
+  "@errors.write.trashNotSupported.title": {
+    "sourceHash": "af90a02"
+  },
+  "errors.write.trashNotSupported.message": "This volume doesn't have a Bin.",
+  "@errors.write.trashNotSupported.message": {
+    "sourceHash": "45cf0c6"
+  },
+  "errors.write.readError.title.trash": "Couldn't move to the Bin",
+  "@errors.write.readError.title.trash": {
+    "sourceHash": "c2d75cc"
+  },
+  "errors.write.writeError.title.trash": "Couldn't move to the Bin",
+  "@errors.write.writeError.title.trash": {
+    "sourceHash": "c2d75cc"
+  },
+  "errors.write.ioError.title.trash": "Couldn't move to the Bin",
+  "@errors.write.ioError.title.trash": {
+    "sourceHash": "c2d75cc"
+  },
+  "errors.write.ioError.message.trash": "Couldn't move the file to the Bin.",
+  "@errors.write.ioError.message.trash": {
+    "sourceHash": "db053da"
+  },
+  "errors.write.permissionDenied.message.trash": "You don't have permission to move files to the Bin here.",
+  "@errors.write.permissionDenied.message.trash": {
+    "sourceHash": "8381d02"
+  },
+  "errors.write.fallback.title.trash": "Couldn't move to the Bin",
+  "@errors.write.fallback.title.trash": {
+    "sourceHash": "c2d75cc"
+  },
+  "errors.write.fallback.message.trash": "Something went wrong while moving to the Bin.",
+  "@errors.write.fallback.message.trash": {
+    "sourceHash": "63f8393"
+  },
+  "errors.mutation.trashNotSupported": "This volume has no Bin, so the only way is to delete permanently.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS wouldn't move this to the Bin.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "6d8a1b6"
   }
 }
