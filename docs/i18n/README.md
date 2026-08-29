@@ -29,8 +29,10 @@ across batches: `translation-learnings.md`.
 
 ## Current language guides
 
-One per language (BCP-47 base tag). Each may carry a "Decisions to confirm with David" section, a "Decision points"
-section, and a sourced glossary.
+One per language (BCP-47 base tag), plus one per SCRIPT variant that ships its own catalog: a different script is a full
+translation, never an overlay, so it needs its own terminology and its own guide (`zh-Hant` alongside `zh`). A regional
+overlay (`en-GB`, `pt-PT`) does NOT get one; it forks a handful of keys against its base's guide. Each may carry a
+"Decisions to confirm with David" section, a "Decision points" section, and a sourced glossary.
 
 - [`ab`](ab/style.md)
 - [`af`](af/style.md)
@@ -170,6 +172,7 @@ section, and a sourced glossary.
 - [`yi`](yi/style.md)
 - [`yo`](yo/style.md)
 - [`zh`](zh/style.md)
+- [`zh-Hant`](zh-Hant/style.md)
 - [`zu`](zu/style.md)
 
 ## Starting a new language

@@ -7,7 +7,7 @@ point to this table. Decisions made 2026-06-20.
 
 | id  | language    | script decision                           | notes                                                                                          |
 | --- | ----------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| zh  | Chinese     | Simplified `zh-Hans` only for now         | Traditional `zh-Hant` (Taiwan norm) is a fast-follow; never auto-convert (vocabulary differs). |
+| zh  | Chinese     | Both: `zh` (Simplified) and `zh-Hant`     | Independent full translations; never auto-convert. `zh-Hant` serves TW + HK + MO. |
 | sr  | Serbian     | Latin `sr-Latn` first                     | Cyrillic `sr-Cyrl` an optional fast-follow; the two are 1:1 transliterable.                    |
 | be  | Belarusian  | Cyrillic, official наркамаўка orthography | Not classical тарашкевіца; `be-Latn` (Łacinka) out of scope.                                   |
 | uz  | Uzbek       | Latin (`uz`)                              | Cyrillic `uz-Cyrl` only on real demand; Latin is the official direction.                       |

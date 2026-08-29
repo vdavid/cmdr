@@ -15,9 +15,11 @@ written, add it here.
 
 These are calls a translator can't make alone. The rest of this guide assumes them.
 
-- **Which script variant(s) to ship: RESOLVED to Simplified `zh-Hans` only for now** (Traditional `zh-Hant`, Taiwan
-  norm, is a fast-follow; never auto-convert, vocabulary differs). See the script decision point below and
-  `../script-decisions.md`. No longer open.
+- **Which script variant(s) to ship: RESOLVED to BOTH.** This catalog is Simplified; Traditional ships separately as
+  `zh-Hant`, with its own guide at `../zh-Hant/style.md`. The two are independent full translations that never inherit
+  from each other (the script guard blocks it in all three layers), so **never auto-convert one into the other**: the
+  vocabulary differs, not just the character shapes. See the script decision point below and `../script-decisions.md`.
+  No longer open.
 - **Formal vs neutral "you" (`您` vs `你`): RESOLVED to `你`** (consumer-brand evidence; legal/billing copy uses formal
   `您`; see Formality and `../formal-informal-decisions.md`). No longer open.
 
@@ -59,27 +61,27 @@ naturally and isn't cryptically clipped.
 
 ### Script: Simplified vs Traditional (the big one), and which region
 
-**RESOLVED: ship Simplified `zh-Hans` only for now** (Traditional `zh-Hant`, Taiwan norm, is a fast-follow; never
-auto-convert, the vocabulary differs). Recorded in `../script-decisions.md`. The structure and evidence below stand.
+**RESOLVED: ship both scripts as separate catalogs.** This one is Simplified (`zh`); Traditional is `zh-Hant`, written
+to a pan-Traditional consensus that serves Taiwan, Hong Kong, and Macau from one catalog. Recorded in
+`../script-decisions.md`; the Traditional terminology rulings live in `../zh-Hant/style.md` and `../zh-Hant/glossary.md`,
+not here. The structure and evidence below stand.
 
 - **Two written standards, not mutually substitutable.** Simplified Chinese (`zh-Hans`) is the standard in Mainland
   China and Singapore; Traditional Chinese (`zh-Hant`) is standard in Taiwan, Hong Kong, and Macau. They differ in
   character shapes AND, importantly, in vocabulary and term choices (not a font swap). Serving Simplified to a Taiwan
   user, or vice versa, is a recognized localization miss (a Hong Kong `zh-HK` browser locale wrongly falling back to
   `zh-CN` is a documented bug class). `high`.
-- **Within Traditional, Taiwan vs Hong Kong diverge on real terms.** Mined from macOS: folder is `檔案夾` in zh-TW but
-  `資料夾` in zh-HK (100% consistent split: 233 vs 0 and 0 vs 228 occurrences, verified against the reference pile,
-  2026-06-20). So `zh-Hant` written to the Taiwan norm is the mainstream Traditional default, but a Hong Kong user will
-  notice term differences. Ship one `zh-Hant` to the Taiwan norm unless David wants a separate `zh-HK`.
+- **Within Traditional, Taiwan and Hong Kong diverge on real terms**, so one `zh-Hant` catalog serving both had to rule
+  on each split. Those rulings are `zh-Hant`'s to make and live in `../zh-Hant/style.md`; don't restate them here.
 - **Majors:** Apple ships zh-Hans (China), zh-Hant (Taiwan), and a distinct zh-HK; Microsoft ships zh-Hans and zh-Hant
   terminology + style guides; Google, Spotify, and Netflix all offer separate Simplified and Traditional (unverified for
   the latter three, web-evidenced, not in the pile). Everyone treats them as two locales, never one.
 - **Tag convention:** use script subtags `zh-Hans` / `zh-Hant`, not region tags, as the base catalogs (region only if a
   zh-HK or zh-SG override is later needed). This matches Cmdr's base-preferred BCP-47 convention and the reference
   pile's own sibling-folder layout (`zh-Hans`, `zh-Hant`, `zh-CN`, `zh-TW`, `zh-HK`).
-- **Recommendation:** ship `zh-Hans` (Simplified, Taiwan-norm-independent) first; add `zh-Hant` written to the Taiwan
-  norm as a fast follow; treat `zh-HK` as a later optional override. `high` on the structure; the scope/priority is the
-  David call flagged above.
+- **Shipped shape:** `zh` (Simplified) and `zh-Hant` (Traditional) both ship, as independent full translations.
+  `zh-HK` stays a later optional overlay of `zh-Hant`, wanted only if Hong Kong readers ask for the handful of terms
+  `zh-Hant` decided the Taiwan way.
 - **Don't auto-convert one into the other.** Simplified↔Traditional is NOT a safe character-by-character mapping:
   one-to-many mappings (e.g. 干/乾/幹 all simplify to 干) and divergent term choices mean a naive conversion produces
   wrong words. Each variant is its own translation pass, cross-checked against that variant's macOS source.
@@ -89,11 +91,10 @@ auto-convert, the vocabulary differs). Recorded in `../script-decisions.md`. The
 - Chinese has mature, universally-understood native IT vocabulary, so prefer the established Chinese term over an
   English loan or a transliteration. macOS is the highest-authority source (what a user literally sees in Finder); use
   it to break ties, with Microsoft and GNOME as cross-checks.
-- The main Simplified-vs-Traditional term differences beyond character shape (verified against the reference pile,
-  2026-06-20): Trash is `废纸篓` (Simplified) but `垃圾桶` (Traditional); copy is `拷贝`/`拷貝`; move is `移动`
-  (Simplified) vs `搬移` (Traditional, Apple's preferred); search is `搜索` (Simplified) vs `搜尋` (Traditional).
-  Settings is `设置` (Simplified) vs `設定` (Traditional). Keep each variant's terms self-consistent against its own
-  macOS source.
+- Simplified and Traditional differ in TERMS, not just character shapes (Trash is `废纸篓` here but `垃圾桶` there;
+  save is `保存` vs `儲存`; search is `搜索` vs `搜尋`; settings is `设置` vs `設定`). Keep this catalog self-consistent
+  against its own zh-CN macOS source; the Traditional side of every such pair is `zh-Hant`'s call, recorded in
+  `../zh-Hant/glossary.md`.
 
 ### Gender and inclusive language: inherently neutral
 
@@ -120,26 +121,30 @@ auto-convert, the vocabulary differs). Recorded in `../script-decisions.md`. The
 
 ## Terminology and glossary
 
-Format per term: `chosen (Simplified / Traditional) · sources · confidence`. Sources are read to decide the term, never
-copied verbatim (Apple/Microsoft copyrighted; GNOME GPL). Top source is macOS; Microsoft and GNOME cross-check. Evidence
-verified against the reference pile (`_ignored/i18n/zh-CN`, `zh-TW`, `zh-HK`) on 2026-06-20.
+Format per term: `chosen · sources · confidence`. Sources are read to decide the term, never copied verbatim
+(Apple/Microsoft copyrighted; GNOME GPL). Top source is macOS zh-CN; Microsoft and GNOME cross-check. Evidence verified
+against the reference pile (`_ignored/i18n/zh-CN`) on 2026-06-20.
 
-| English term  | Simplified (zh-Hans) | Traditional (zh-Hant)     | Notes                                                                                       |
-| ------------- | -------------------- | ------------------------- | ------------------------------------------------------------------------------------------- |
-| file          | 文件                 | 檔案                      | macOS. Note: Simplified `文件` = file; Traditional uses `檔案`. `high`.                     |
-| folder        | 文件夹               | 檔案夾 (TW) / 資料夾 (HK) | macOS. TW vs HK split is real; ship TW norm for zh-Hant. `high`.                            |
-| copy          | 拷贝                 | 拷貝                      | macOS Finder. Imperative on buttons. `high`.                                                |
-| move          | 移动                 | 搬移                      | macOS (Apple prefers `搬移` in Traditional). `high`.                                        |
-| delete        | 删除                 | 刪除                      | macOS. `high`.                                                                              |
-| open          | 打开                 | 打開                      | macOS. `high`.                                                                              |
-| cancel        | 取消                 | 取消                      | macOS. Same both scripts. `high`.                                                           |
-| Trash         | 废纸篓               | 垃圾桶                    | macOS. Real term split (not just character shape). `high`.                                  |
-| eject         | 推出                 | 退出                      | macOS (`推出` Simplified, `退出` Traditional). Verify against Cmdr's eject context. `high`. |
-| search        | 搜索                 | 搜尋                      | macOS. `high`.                                                                              |
-| settings      | 设置                 | 設定                      | macOS. `high`.                                                                              |
-| volume (disk) | 宗卷                 | 卷宗                      | macOS (mounted-disk sense, NOT audio loudness `音量`). `high`.                              |
-| tab           | 标签页               | 標籤頁                    | macOS. `high`.                                                                              |
-| new folder    | 新建文件夹           | 新增檔案夾                | macOS. `high`.                                                                              |
+**Simplified only.** The Traditional rendering of each term is a separate decision with its own evidence and its own
+Taiwan-vs-Hong-Kong rulings, and it lives in `../zh-Hant/glossary.md`. A second column here would be a copy that rots:
+several Traditional terms are deliberately NOT Apple's zh-TW word.
+
+| English term  | Simplified (zh) | Notes                                                                        |
+| ------------- | --------------- | ---------------------------------------------------------------------------- |
+| file          | 文件            | macOS. `high`.                                                               |
+| folder        | 文件夹          | macOS. `high`.                                                               |
+| copy          | 拷贝            | macOS Finder. Imperative on buttons. `high`.                                 |
+| move          | 移动            | macOS. `high`.                                                               |
+| delete        | 删除            | macOS. `high`.                                                               |
+| open          | 打开            | macOS. `high`.                                                               |
+| cancel        | 取消            | macOS. `high`.                                                               |
+| Trash         | 废纸篓          | macOS. A real term split from Traditional, not just character shape. `high`. |
+| eject         | 推出            | macOS. `high`.                                                               |
+| search        | 搜索            | macOS. `high`.                                                               |
+| settings      | 设置            | macOS. `high`.                                                               |
+| volume (disk) | 宗卷            | macOS (mounted-disk sense, NOT audio loudness `音量`). `high`.               |
+| tab           | 标签页          | macOS. `high`.                                                               |
+| new folder    | 新建文件夹      | macOS. `high`.                                                               |
 
 Pane, listing, transfer, bookmark, viewer: triangulate during the first pass and record here with sources + confidence.
 
@@ -185,8 +190,8 @@ inflection.
   brand words (Cmdr, macOS) as-is.
 - **Each script is its own pass.** Never machine-convert Simplified↔Traditional (one-to-many mappings + divergent
   terms); cross-check each variant against its own macOS source.
-- **Quotation marks:** Simplified uses `“…”`; Traditional uses `「…」` (and `『…』` nested). Follow the variant's macOS
-  Finder pattern when quoting filenames.
+- **Quotation marks:** this catalog quotes filenames with `“…”`, following macOS zh-CN. Traditional uses corner
+  brackets instead, which is one more reason a converted catalog reads wrong; its rule is in `../zh-Hant/style.md`.
 
 ### ICU mechanics (catalog-level, easy to miss)
 
