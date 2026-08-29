@@ -756,7 +756,7 @@
   "@askCmdr.decision.verbMove": {
     "sourceHash": "6e86294"
   },
-  "askCmdr.decision.verbCopy": "复制",
+  "askCmdr.decision.verbCopy": "拷贝",
   "@askCmdr.decision.verbCopy": {
     "sourceHash": "20a184a"
   },

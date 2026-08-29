@@ -55,7 +55,7 @@
   "@ui.toast.sendErrorReport": {
     "sourceHash": "063c94e"
   },
-  "ui.toast.dismissAria": "忽略通知",
+  "ui.toast.dismissAria": "关闭通知",
   "@ui.toast.dismissAria": {
     "sourceHash": "b7bb3f3"
   },

@@ -15,7 +15,7 @@
   "@fileExplorer.archiveEnterMenu.configure": {
     "sourceHash": "37d7822"
   },
-  "fileExplorer.breadcrumb.navigateTooltip": "点击前往 {path}",
+  "fileExplorer.breadcrumb.navigateTooltip": "点按前往 {path}",
   "@fileExplorer.breadcrumb.navigateTooltip": {
     "sourceHash": "9d08428"
   },
@@ -127,7 +127,7 @@
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
   },
-  "fileExplorer.errorPane.goBack": "后退",
+  "fileExplorer.errorPane.goBack": "返回",
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
@@ -1288,7 +1288,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "1cb249f"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr 可以复用 macOS 已为“{displayName}”保存的密码。你会看到一个系统提示，请求允许访问钥匙串。这是正常的，点击“允许”即可。",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr 可以复用 macOS 已为“{displayName}”保存的密码。你会看到一个系统提示，请求允许访问钥匙串。这是正常的，点按“允许”即可。",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "sourceHash": "6bb2c1d"
   },
@@ -1340,11 +1340,11 @@
   "@fileExplorer.navigation.spaceRetryingText": {
     "sourceHash": "f8fe6f8"
   },
-  "fileExplorer.navigation.spaceStillUnavailable": "仍然不可用。点击重试",
+  "fileExplorer.navigation.spaceStillUnavailable": "仍然不可用。点按重试",
   "@fileExplorer.navigation.spaceStillUnavailable": {
     "sourceHash": "1c37064"
   },
-  "fileExplorer.navigation.spaceFetchFailed": "无法获取磁盘空间。点击重试",
+  "fileExplorer.navigation.spaceFetchFailed": "无法获取磁盘空间。点按重试",
   "@fileExplorer.navigation.spaceFetchFailed": {
     "sourceHash": "6fe88d7"
   },

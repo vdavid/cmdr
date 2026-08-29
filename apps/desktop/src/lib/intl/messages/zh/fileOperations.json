@@ -127,7 +127,7 @@
   "@fileOperations.mkfile.nameAria": {
     "sourceHash": "3efed3d"
   },
-  "fileOperations.mkfile.placeholder": "例如：notes.txt",
+  "fileOperations.mkfile.placeholder": "示例：notes.txt",
   "@fileOperations.mkfile.placeholder": {
     "sourceHash": "f6b4613"
   },
@@ -143,7 +143,7 @@
   "@fileOperations.mkdir.nameAria": {
     "sourceHash": "14d34ed"
   },
-  "fileOperations.mkdir.placeholder": "例如：my-project",
+  "fileOperations.mkdir.placeholder": "示例：my-project",
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
@@ -343,7 +343,7 @@
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "sourceHash": "1030a7a"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "归档名称必须以 \".zip\" 结尾。",
+  "fileOperations.transferDialog.pathErrorNotZip": "压缩文件名称必须以 \".zip\" 结尾。",
   "@fileOperations.transferDialog.pathErrorNotZip": {
     "sourceHash": "c85c6f8"
   },

@@ -111,7 +111,7 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.indicatorTooltip": "Ask Cmdr 有建议在等你。点击即可查看。",
+  "suggestedOps.indicatorTooltip": "Ask Cmdr 有建议在等你。点按即可查看。",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "dc423e6"
   }

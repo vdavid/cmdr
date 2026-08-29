@@ -316,7 +316,7 @@
   "@commands.navPageDown.label": {
     "sourceHash": "72a825f"
   },
-  "commands.navBack.label": "后退",
+  "commands.navBack.label": "返回",
   "@commands.navBack.label": {
     "sourceHash": "6aadac2"
   },

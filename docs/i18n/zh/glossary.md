@@ -1559,3 +1559,48 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 - 改了某个可见标签，**必须同时看它的 `*Aria` 兄弟键**。把 `queue.row.dismiss` 从 `忽略` 改成 `关闭` 时，
   `queue.row.dismissAria` 仍写着 `忽略这项操作`，`desktop-i18n-aria-label` 立刻报 WCAG 2.5.3 不达标。
 - 占位符示例键的英文自带尾部 `...`（`Example: sk-abc123...`），改写译文时别把它抹掉。
+
+## 术语漂移审计：英文不同、中文该同的那一半（手工排查，2026-08-30）
+
+`desktop-i18n-term-consistency` 只看得见**英文完全相同**的键。英文稍有出入的漂移它一概看不到，而这一半往往更难看：
+菜单栏和命令面板本来就用不同的英文措辞指同一个动作。按 `docs/guides/i18n-translation.md` 的三趟脚本排查后：
+
+### 收敛掉的（脚本看不见，但用户看得见）
+
+- **Go back / Back（历史导航）** · `返回` · macOS `zh-CN` 把 `Back`、`Go Back`、`go back` 一律译作 `返回`，Finder
+  更是把 `Back/Forward` 直接给成 `返回/前进`；整份 macOS 语料里 `后退` 出现 **0 次**（macOS 26.6.2 语料，2026-08-30
+  核对） · `confirmed`。`commands.navBack.label`（命令面板）与 `fileExplorer.errorPane.goBack` 原写 `后退`，而
+  `menu.go.back`（菜单栏）写 `返回` —— **同一个动作，菜单栏和命令面板各叫各的**。兄弟键 `commands.navForward.label`
+  早就是 `前进`，本来就该配 `返回`。
+- **Dismiss 的两个漏网键** · `queue.toolbar.dismissAll` `全部忽略` → `全部关闭`，`ui.toast.dismissAria` `忽略通知` →
+  `关闭通知`。英文分别是 `Dismiss all` 和 `Dismiss notification`，与 `Dismiss` 不是同一条串，所以脚本报不出来。
+- **Example: 的两个漏网键** · `fileOperations.mkdir.placeholder`／`mkfile.placeholder` 的 `例如：` → `示例：`。
+- **copying** · `拷贝` · `askCmdr.decision.verbCopy` 原写 `复制`，而目录里 43 处 copy 都是 `拷贝`，`复制` 是留给
+  **duplicate** 的（`commands.fileDuplicate.label`、`menu.file.duplicate`） · `confirmed`。这个词会落进 Ask Cmdr
+  的批准／拒绝句里（「要…这些文件吗」），在一句确认提示里把 copy 说成 `复制` 正好撞上「制作副本」那个命令。
+  同组其余六个动词（`移动`、`删除`、`重命名`、`压缩`、`解压`、`移到废纸篓`）本来就都跟目录一致，只有它跑偏。
+- **archive（压缩包，名词）** · `压缩文件` · `fileOperations.transferDialog.pathErrorNotZip` 原写 `归档名称`，
+  与词汇表既定的 `压缩文件` 不一致 · `high`。注意 askCmdr 的 `存档`／`已存档` 是**另一个义项**（把聊天收起来），不动。
+- **click** · `点按` · 风格指南早就定了（macOS `zh-CN` 全用 `点按`，`Click Calculate to show` → `点按“计算”以显示`
+  等多处，`点击` 0 次），并留了「其余的顺手收敛」的话。这一趟把 8 个键的 `点击` 收敛为 `点按`，`点击` 作为单独的词从
+  目录里消失。
+
+### 顺手修掉的一处英文残留
+
+- `settings.fileViewer.suppressBinaryWarning.description` 里写着 `Cmdr''s 文件查看器` —— 中文句子里夹了个英文所有格
+  `'s`。改为 `Cmdr 的文件查看器`。
+
+### 有意不动的（有证据支持的边界）
+
+- **`双击` 与 `右键点击` 不跟着 `点按` 走。** 单独的 click 用 Apple 的 `点按`（Tier 1）；但复合词 double-click /
+  right-click 在 macOS 语料里查无实据，而 Tier 3 四家（GNOME、Xfce、KDE、Double Commander）**一致**写 `双击`、
+  `右键点击`。没有 Tier 1 反证就不要动它们，尤其别凭印象改成 `连按`／`右键点按`。 · `high`
+- **`Queued` = `等待中`**（`operationLog.status.queued`），不写 `已排队`。它跟 `进行中`／`已完成` 是同一组状态值，
+  跟队列这个名词（`队列`）不必同形。 · `high`
+
+### 排查结论：这几对近义词目前是干净的
+
+`copy 拷贝` / `duplicate 复制`、`undo 撤销` / `roll back 回滚`、`tab 标签页` / `tag 标签`、
+`API key 密钥` / `license key 许可证密钥`、`remove 移除` / `delete 删除`、`folder 文件夹` / `dir 目录`、
+`cancel 取消` / `stop 停止`、`open 打开` / `go to 前往` —— 全目录逐键对照，除上面那条 `verbCopy` 外没有互串。
+下次复审可以从这份清单接着往下走。

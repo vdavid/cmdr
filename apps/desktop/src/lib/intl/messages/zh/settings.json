@@ -883,7 +883,7 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "在你输入时自动运行文件名和正则表达式搜索（停止输入 1 秒后）。AI 搜索因为会产生费用，所以始终等待按 Enter 键。关闭时，按 Enter 键或点击运行按钮来搜索。",
+  "settings.search.autoApply.description": "在你输入时自动运行文件名和正则表达式搜索（停止输入 1 秒后）。AI 搜索因为会产生费用，所以始终等待按 Enter 键。关闭时，按 Enter 键或点按运行按钮来搜索。",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
@@ -1207,7 +1207,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 会打开 Cmdr''s 文件查看器，它显示原始字节（非文本内容采用有损的 UTF-8）。当你打开图像、PDF、归档或其他二进制文件时，查看器会显示一条红色横幅，说明 ⇧Space（快速查看）或 Enter（在关联 App 中打开）很可能才是你想要的。打开此项（或点击横幅中的''不再显示此警告''）即可永久关闭该警告。",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 会打开 Cmdr 的文件查看器，它显示原始字节（非文本内容采用有损的 UTF-8）。当你打开图像、PDF、归档或其他二进制文件时，查看器会显示一条红色横幅，说明 ⇧Space（快速查看）或 Enter（在关联 App 中打开）很可能才是你想要的。打开此项（或点按横幅中的''不再显示此警告''）即可永久关闭该警告。",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "b3711da"
   },
@@ -1215,7 +1215,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切换文件选择，用 ⇧Space 触发快速查看（Finder 用单独的 Space 触发快速查看）。每次你在文件列表中按 Space，Cmdr 都会显示一段简短的提醒说明这一差别。打开此项（或点击提示中的''不再显示''）即可永久关闭该提醒。",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切换文件选择，用 ⇧Space 触发快速查看（Finder 用单独的 Space 触发快速查看）。每次你在文件列表中按 Space，Cmdr 都会显示一段简短的提醒说明这一差别。打开此项（或点按提示中的''不再显示''）即可永久关闭该提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },

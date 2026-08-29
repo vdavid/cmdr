@@ -91,7 +91,7 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
-  "queue.toolbar.dismissAll": "全部忽略",
+  "queue.toolbar.dismissAll": "全部关闭",
   "@queue.toolbar.dismissAll": {
     "sourceHash": "97fac9e"
   },
