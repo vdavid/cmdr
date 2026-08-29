@@ -31,6 +31,14 @@ pub(super) struct RunAcc {
 }
 
 impl RunAcc {
+    /// What this run did, for the inverse operation's header.
+    pub(super) fn totals(&self) -> InverseTotals {
+        InverseTotals {
+            reversed: self.reversed,
+            walked: self.reversed + self.skipped,
+        }
+    }
+
     pub(super) fn record(&mut self, unit: &RollbackUnit, result: ItemResult) {
         // A skip that counts as reversed (`AlreadyGone` — the end state already holds)
         // is NOT a skip, so it reports no reason: the column explains items the undo
@@ -82,6 +90,22 @@ impl RunAcc {
     }
 }
 
+/// What a reversal did, for the inverse operation's own header.
+///
+/// Both numbers have to come from the same count or the header contradicts
+/// itself. The open-time `item_count` is the ORIGINAL's `items_done`, which
+/// counts files; the reversal walks every `rollback_unit` row, directory rows
+/// included — so a copy of two files into one created folder finished as "3 of 2
+/// done". Finalize therefore restates `item_count` from what the run actually
+/// walked, rather than leaving the open-time guess in place.
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct InverseTotals {
+    /// Items reversed (an already-gone item counts: the end state holds).
+    pub(super) reversed: u64,
+    /// Every item the run walked, reversed or skipped.
+    pub(super) walked: u64,
+}
+
 /// Finalize the inverse op's journal row, computing its own eligibility (a
 /// delete-the-copies undo is not rollbackable; a move/rename undo is — redo).
 pub(super) fn finalize_inverse(
@@ -89,7 +113,7 @@ pub(super) fn finalize_inverse(
     inverse_op_id: &str,
     inv_kind: OpKind,
     execution_status: ExecutionStatus,
-    reversed: u64,
+    totals: InverseTotals,
 ) {
     // The inverse never overwrites (pinned Skip), so `any_overwrote = false`.
     let (state, reason) = compute_eligibility(inv_kind, false, None, false);
@@ -102,8 +126,8 @@ pub(super) fn finalize_inverse(
         search_coverage: SearchCoverage::Full,
         search_coverage_reason: None,
         ended_at: super::super::now_secs(),
-        item_count: None,
-        items_done: reversed,
+        item_count: Some(totals.walked),
+        items_done: totals.reversed,
         bytes_total: 0,
         dev_summary: None,
     }) {

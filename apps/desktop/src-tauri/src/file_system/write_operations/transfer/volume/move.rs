@@ -12,7 +12,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
-use uuid::Uuid;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
@@ -140,7 +139,7 @@ pub async fn move_between_volumes(
         source_paths.len()
     );
 
-    let operation_id = Uuid::new_v4().to_string();
+    let operation_id = crate::operation_log::new_operation_id();
 
     // The per-leaf record points inside `move_volumes_with_progress` journal under
     // these REAL volume ids (carried on the op state so the test call sites stay

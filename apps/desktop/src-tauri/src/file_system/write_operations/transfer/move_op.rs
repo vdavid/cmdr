@@ -229,6 +229,23 @@ fn move_with_rename(
     let mut files_skipped = 0usize;
     let mut apply_to_all_resolution = ApplyToAll::default();
     let mut move_tx = MoveTransaction::new();
+    // A same-FS move is journaled and reversed at TOP-LEVEL granularity (one
+    // rename-back takes a whole subtree), so its status counts ITEMS, not leaves.
+    // There's no scan to seed it from and the renames are instant, so the totals
+    // are known up front. Without this the status row stays at zeros, the queue
+    // row shows no progress, and — because `finalize_op` reads its header
+    // aggregates from this cache — a finished move journals `items_done = 0`,
+    // which then seeds the inverse operation's `item_count` with a zero.
+    let total_items = sources.len() + already_in_place;
+    update_operation_status(
+        operation_id,
+        WriteOperationPhase::Copying,
+        None,
+        already_in_place,
+        total_items,
+        0,
+        0,
+    );
 
     let result: Result<(), WriteOperationError> = (|| {
         for source in sources {
@@ -376,6 +393,15 @@ fn move_with_rename(
             }
 
             files_done += 1;
+            update_operation_status(
+                operation_id,
+                WriteOperationPhase::Copying,
+                Some(file_name.to_string_lossy().into_owned()),
+                files_done + already_in_place,
+                total_items,
+                0,
+                0,
+            );
 
             events.emit_source_item_done(WriteSourceItemDoneEvent {
                 operation_id: operation_id.to_string(),

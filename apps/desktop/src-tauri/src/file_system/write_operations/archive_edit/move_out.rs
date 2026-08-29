@@ -11,8 +11,6 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use uuid::Uuid;
-
 use super::super::OperationEventSink;
 use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::super::operation_intent::is_cancelled;
@@ -98,7 +96,7 @@ pub(crate) async fn route_archive_move_out(
         inner_by_source.push((source.clone(), normalize_inner_path(&inner)));
     }
 
-    let operation_id = Uuid::new_v4().to_string();
+    let operation_id = crate::operation_log::new_operation_id();
     let progress_interval_ms = config.progress_interval_ms;
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
 

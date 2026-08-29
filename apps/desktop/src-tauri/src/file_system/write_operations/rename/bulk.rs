@@ -82,7 +82,7 @@ pub(crate) fn start_bulk_rename(
         )
     };
 
-    let operation_id = Uuid::new_v4().to_string();
+    let operation_id = crate::operation_log::new_operation_id();
     let summary = OperationSummaryText {
         source: Some(format!("{} files", rows.len())),
         destination: None,

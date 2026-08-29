@@ -22,7 +22,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
-use uuid::Uuid;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
@@ -186,7 +185,7 @@ pub async fn copy_between_volumes(
         .await;
     }
 
-    let operation_id = Uuid::new_v4().to_string();
+    let operation_id = crate::operation_log::new_operation_id();
     log::info!(
         "copy_between_volumes: operation_id={}, source_volume={}, dest_volume={}, {} sources, dest={}",
         operation_id,

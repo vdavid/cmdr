@@ -360,6 +360,44 @@ fn recent_paging_is_stable() {
     writer.shutdown();
 }
 
+/// Two operations in the SAME second come back newest-first.
+///
+/// The journal's clock is whole seconds, so a reversal and whatever ran next
+/// routinely tie on `started_at` and the feed falls back to `op_id`. That
+/// tiebreak is only meaningful if an op id sorts chronologically, which is what
+/// `new_operation_id` mints them for.
+#[test]
+fn same_second_operations_come_back_newest_first() {
+    let (store, writer, _dir) = fresh();
+    // Six, not two: a random id would land in the right order half the time with
+    // two, and once in 720 runs with six.
+    let minted: Vec<String> = (0..6).map(|_| crate::operation_log::new_operation_id()).collect();
+    for id in &minted {
+        journal_op(
+            &writer,
+            id,
+            OpKind::Delete,
+            Initiator::User,
+            7,
+            7,
+            SearchCoverage::Full,
+            None,
+            vec![],
+        );
+    }
+
+    let feed = recent_operations(store.conn(), 10, 0).expect("feed");
+
+    let newest_first: Vec<&str> = minted.iter().rev().map(String::as_str).collect();
+    assert_eq!(
+        feed.iter().map(|o| o.op_id.as_str()).collect::<Vec<_>>(),
+        newest_first,
+        "later operations come first, even when every one of them started in the same second"
+    );
+
+    writer.shutdown();
+}
+
 /// `get_operation` returns the header plus a page of items in seq order with dir
 /// prefixes resolved to full paths, and reports the total item count so a paged UI
 /// knows more remain.

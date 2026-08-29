@@ -133,6 +133,23 @@ pub(crate) fn now_secs() -> i64 {
         .unwrap_or(0)
 }
 
+/// Mint an operation id.
+///
+/// **UUIDv7, never v4, and that is load-bearing.** This clock is whole seconds,
+/// so two operations started in the same second tie on `started_at` and every
+/// ordered read falls back to `op_id` — the history feed, the retention
+/// watermark, and the startup reconcile's "which inverse op is the latest one".
+/// A v7's leading 48 bits are a big-endian millisecond timestamp, so its hex
+/// rendering sorts chronologically and that fallback becomes the right answer
+/// instead of a coin flip. A v4 id makes the same-second order random: history
+/// showing a reversal above the operation it reversed, and a reconcile that can
+/// read the WRONG inverse op's outcomes.
+///
+/// Every managed operation, and every inverse operation, takes its id from here.
+pub fn new_operation_id() -> String {
+    uuid::Uuid::now_v7().to_string()
+}
+
 /// Open an operation row. No-op when no journal is installed.
 pub fn journal_open(open: OpenOperation) {
     if let Some(j) = current_journal() {

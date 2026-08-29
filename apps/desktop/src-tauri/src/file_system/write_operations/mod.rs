@@ -65,7 +65,6 @@ use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
-use uuid::Uuid;
 
 use crate::file_system::volume::LaneKey;
 use crate::operation_log::types::Initiator;
@@ -285,7 +284,7 @@ where
         + Send
         + 'static,
 {
-    let operation_id = Uuid::new_v4().to_string();
+    let operation_id = crate::operation_log::new_operation_id();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
 
     let descriptor = OperationDescriptor {

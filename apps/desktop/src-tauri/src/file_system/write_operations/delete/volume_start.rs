@@ -11,8 +11,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
-use uuid::Uuid;
-
 use super::super::event_sinks::OperationEventSink;
 use super::super::manager::{self, OperationDescriptor};
 use super::super::source_binding::{ExpectedSources, retain_bound_sources_on};
@@ -41,7 +39,7 @@ pub(in crate::file_system::write_operations) fn start_volume_delete(
     initiator: Initiator,
     expected_sources: Option<ExpectedSources>,
 ) -> WriteOperationStartResult {
-    let operation_id = Uuid::new_v4().to_string();
+    let operation_id = crate::operation_log::new_operation_id();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(
         config.progress_interval_ms,
     )));

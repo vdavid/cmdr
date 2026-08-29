@@ -375,7 +375,13 @@ pub async fn execute_rollback(
         Err(e) => {
             log::warn!(target: "operation_log", "rollback: read connection failed: {e}");
             // Can't stream — resolve back to rollbackable (nothing reversed).
-            finalize_inverse(writer, inverse_op_id, inv_kind, ExecutionStatus::Failed, 0);
+            finalize_inverse(
+                writer,
+                inverse_op_id,
+                inv_kind,
+                ExecutionStatus::Failed,
+                InverseTotals::default(),
+            );
             let _ = writer.set_rollback_state(&original.op_id, RollbackState::Rollbackable, None);
             return RollbackReport {
                 reversed: 0,
@@ -488,7 +494,7 @@ pub async fn execute_rollback(
     } else {
         ExecutionStatus::Done
     };
-    finalize_inverse(writer, inverse_op_id, inv_kind, inv_status, acc.reversed);
+    finalize_inverse(writer, inverse_op_id, inv_kind, inv_status, acc.totals());
 
     let final_state = resolve_final_state(acc.reversed, acc.skipped, canceled);
     if let Err(e) = writer.set_rollback_state(&original.op_id, final_state, None) {
@@ -764,7 +770,7 @@ where
 
     let plan = InversePlan {
         original: op,
-        inverse_op_id: uuid::Uuid::new_v4().to_string(),
+        inverse_op_id: super::new_operation_id(),
         summary,
     };
     // Set `rolling_back` as late as possible — right before the spawn — to shrink
@@ -846,7 +852,7 @@ mod bookkeeping;
 mod order;
 mod runner;
 mod skips;
-use bookkeeping::{RunAcc, finalize_inverse};
+use bookkeeping::{InverseTotals, RunAcc, finalize_inverse};
 pub use order::undo_order;
 use runner::ProgressStand;
 pub use runner::{InverseAct, RollbackProgress, RollbackRunner};

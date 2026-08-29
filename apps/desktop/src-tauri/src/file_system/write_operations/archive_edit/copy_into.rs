@@ -12,7 +12,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
-use uuid::Uuid;
 use walkdir::WalkDir;
 
 use super::super::OperationEventSink;
@@ -562,7 +561,7 @@ async fn archive_copy_into_start(
     preview_id: Option<String>,
     prov: super::super::journal::ArchiveProvenance,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let operation_id = Uuid::new_v4().to_string();
+    let operation_id = crate::operation_log::new_operation_id();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
 
     let lane = get_volume_manager()

@@ -87,6 +87,40 @@ fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
     );
 }
 
+/// The header-aggregate rider for a same-FS MOVE. A move is journaled at
+/// top-level granularity (one rename-back reverses a whole subtree), so its
+/// header counts top-level ITEMS, not leaves — and a finished one has to say how
+/// many of them it moved. Reporting `items_done = 0` against `item_count = 1`
+/// makes a completed move read as "nothing done" in history, and seeds the
+/// inverse operation's own header with a zero.
+#[test]
+fn a_finished_same_fs_move_reports_the_items_it_moved() {
+    let (_journal, _jdir, jdb) = install_journal();
+    let work = tempfile::tempdir().expect("work");
+    let src = work.path().join("src");
+    std::fs::create_dir_all(&src).expect("mk src");
+    std::fs::write(src.join("a.txt"), b"data").expect("write");
+    let dst = work.path().join("dst");
+    std::fs::create_dir_all(&dst).expect("mk dst");
+
+    let op_id = "op-move-header";
+    register_operation_status(op_id, WriteOperationType::Move, vec![]);
+    journal::open_local_op(op_id, OpKind::Move, Initiator::User, 1, Some("root"));
+    let events = CollectorEventSink::new();
+    let cfg = WriteOperationConfig::default();
+    move_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("move");
+    journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
+    unregister_operation_status(op_id);
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, op_id).expect("read op").expect("op row");
+    assert_eq!(row.item_count, 1, "one top-level item was moved");
+    assert_eq!(
+        row.items_done, 1,
+        "and the move finished it — a completed move may never report zero done"
+    );
+}
+
 /// Header-aggregate rider: the op HEADER carries the real planned count, the completed count,
 /// and the destination volume — not the zeros an earlier local-FS open left. The
 /// count is refined at finalize from the status cache the queue UI drives, so it

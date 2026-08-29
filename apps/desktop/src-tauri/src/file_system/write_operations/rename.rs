@@ -16,8 +16,6 @@
 
 use std::path::{Path, PathBuf};
 
-use uuid::Uuid;
-
 use super::archive_edit::{self, ArchiveEditRequest};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::mutation_error::MutationError;
@@ -321,7 +319,7 @@ fn rename_descriptor(from: &Path, to: &Path, volume_id: &str) -> OperationDescri
         vec![volume_id.to_string()]
     };
     OperationDescriptor {
-        operation_id: Uuid::new_v4().to_string(),
+        operation_id: crate::operation_log::new_operation_id(),
         operation_type: WriteOperationType::Rename,
         lanes: vec![],
         volume_ids,
