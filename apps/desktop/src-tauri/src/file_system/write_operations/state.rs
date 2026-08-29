@@ -32,7 +32,7 @@ pub use super::conflict_slot::{ConflictResolutionResponse, ConflictSlot};
 // caller can seed or read an entry that skipped the coherence canary and the
 // request binding.
 pub use super::operation_intent::PauseGate;
-pub(crate) use super::operation_intent::{OperationIntent, is_cancelled, load_intent};
+pub(crate) use super::operation_intent::{OperationIntent, StopMeans, is_cancelled, load_intent};
 #[cfg(test)]
 pub(super) use super::scan_cache::insert_scan_result;
 pub(super) use super::scan_cache::{CachedScanResult, FileInfo, ScanPreviewState, ScanResult};

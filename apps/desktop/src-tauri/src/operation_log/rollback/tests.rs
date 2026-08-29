@@ -18,6 +18,7 @@ use super::test_support::*;
 use super::*;
 use crate::file_system::VolumeManager;
 use crate::file_system::volume::{InMemoryVolume, Volume};
+use crate::file_system::write_operations::rollback::Reversal;
 use crate::operation_log::store::{open_read_connection, read_inverse_op, read_operation, read_operation_items};
 use crate::operation_log::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState, RowRole,
@@ -726,9 +727,10 @@ async fn cancel_stops_and_keeps_what_was_reversed() {
             .map(|i| file_unit(i, "src", &format!("/f{i}.txt"), "dst", &format!("/f{i}.txt"), 1))
             .collect(),
     );
-    // Cancel immediately: the predicate is already true when the run starts.
-    let original = rig.read_op("op");
-    let report = execute_rollback(&rig.vm, &rig.writer, &original, "inv-1", Initiator::User, &|| true).await;
+    // Stop it before it starts, the way the queue window would.
+    let reversal = Reversal::new("cancel-before-any-item");
+    crate::file_system::write_operations::cancel_write_operation(reversal.op_id(), false);
+    let report = rig.rollback_driven_by("op", "inv-1", &reversal).await;
     assert!(report.canceled);
     assert_eq!(report.reversed, 0, "canceled before any item ran");
     assert_eq!(

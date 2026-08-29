@@ -71,6 +71,13 @@ pub struct InMemoryVolume {
     /// failure never fails the surrounding edit (the edit commits via a
     /// rename-overwrite swap, which doesn't call `delete`). Default `false`.
     delete_fails: bool,
+    /// How long each read chunk takes to arrive. `None` (the default) means an
+    /// in-memory read completes without ever yielding, which is right for the
+    /// hundreds of tests that only care about the bytes — and useless for a test
+    /// that has to CATCH a transfer mid-file, because the whole file lands inside
+    /// one poll. Set via [`Self::with_read_chunk_delay`] to model a stream that
+    /// arrives over time, so a cancel or a pause has somewhere to land.
+    read_chunk_delay: Option<std::time::Duration>,
     /// When set, [`Volume::rename`] returns this error instead of moving the entry,
     /// and the store is left exactly as it was. The variant matters: a caller that
     /// clears the destination on ANY rename failure deletes the user's file over a
@@ -116,6 +123,7 @@ impl InMemoryVolume {
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
             delete_fails: false,
+            read_chunk_delay: None,
             rename_failure: None,
             create_directory_not_found: false,
             stat_failing: RwLock::new(HashSet::new()),
@@ -154,6 +162,14 @@ impl InMemoryVolume {
     /// delete failure never fails or blocks the edit.
     pub fn with_delete_failing(mut self) -> Self {
         self.delete_fails = true;
+        self
+    }
+
+    /// Makes every read chunk take `delay` to arrive, so a reader spends real time
+    /// inside one file. That's what gives a test a window to cancel or pause a
+    /// transfer MID-FILE, instead of racing a read that finishes in one poll.
+    pub fn with_read_chunk_delay(mut self, delay: std::time::Duration) -> Self {
+        self.read_chunk_delay = Some(delay);
         self
     }
 
@@ -370,6 +386,8 @@ const IN_MEMORY_STREAM_CHUNK_SIZE: usize = 64 * 1024;
 struct InMemoryReadStream {
     data: Vec<u8>,
     offset: usize,
+    /// See [`InMemoryVolume::with_read_chunk_delay`]. `None` ⇒ no await ever pends.
+    chunk_delay: Option<std::time::Duration>,
 }
 
 impl VolumeReadStream for InMemoryReadStream {
@@ -377,6 +395,9 @@ impl VolumeReadStream for InMemoryReadStream {
         Box::pin(async move {
             if self.offset >= self.data.len() {
                 return None;
+            }
+            if let Some(delay) = self.chunk_delay {
+                tokio::time::sleep(delay).await;
             }
             let end = (self.offset + IN_MEMORY_STREAM_CHUNK_SIZE).min(self.data.len());
             let chunk = self.data[self.offset..end].to_vec();
@@ -840,7 +861,11 @@ impl Volume for InMemoryVolume {
             }
 
             let data = entry.content.clone().unwrap_or_default();
-            Ok(Box::new(InMemoryReadStream { data, offset: 0 }) as Box<dyn VolumeReadStream>)
+            Ok(Box::new(InMemoryReadStream {
+                data,
+                offset: 0,
+                chunk_delay: self.read_chunk_delay,
+            }) as Box<dyn VolumeReadStream>)
         })
     }
 

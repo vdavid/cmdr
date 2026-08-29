@@ -122,8 +122,12 @@ pub async fn execute_operations_rollback<R: Runtime>(app: &AppHandle<R>, params:
     // blocking DB touch. The token was already validated by the `IfAutoConfirm`
     // gate in `server.rs` before dispatch reached here.
     let app = app.clone();
+    // The sink is built at the edge like every other managed op's; this edge is
+    // generic over the runtime, so it takes the startup-wired handle.
+    let events = crate::file_system::write_operations::global_tauri_sink()
+        .ok_or_else(|| ToolError::internal("the app isn't wired up to report operation progress yet"))?;
     let outcome = tokio::task::spawn_blocking(move || {
-        crate::file_system::write_operations::rollback::dispatch_rollback(&app, &op_id, Initiator::AiClient)
+        crate::file_system::write_operations::rollback::dispatch_rollback(&app, &op_id, Initiator::AiClient, events)
     })
     .await
     .map_err(|e| ToolError::internal(e.to_string()))?;

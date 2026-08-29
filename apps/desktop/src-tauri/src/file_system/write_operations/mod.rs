@@ -82,6 +82,10 @@ use trash::trash_files_with_progress;
 // IPC command layer can build `Arc::new(TauriEventSink::new(app))` at the edge
 // and inject it into the managed pipeline; the pipeline itself never constructs
 // a sink (grep confirms zero `TauriEventSink::new` under `write_operations/`).
+/// A sink over the STARTUP-WIRED app handle, for an edge that is generic over the
+/// Tauri runtime (`AppHandle<R>`, which the MCP tools are) and so can't build a
+/// concrete one from the handle it holds. `None` before wiring (unit tests).
+pub(crate) use archive_edit::global_tauri_sink;
 pub use event_sinks::{OperationEventSink, TauriEventSink};
 #[cfg(not(test))]
 use validation::{

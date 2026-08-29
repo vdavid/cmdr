@@ -54,6 +54,38 @@ pub(crate) fn is_cancelled(intent: &AtomicU8) -> bool {
     intent.load(Ordering::Relaxed) != OperationIntent::Running as u8
 }
 
+/// Whose stop a REVERSAL watches — and therefore what a non-`Running` intent
+/// means to it.
+///
+/// [`is_cancelled`] answers "the intent isn't `Running`", and `RollingBack` is one
+/// of the values it calls cancelled. That's right for a forward transfer, which
+/// must stop and undo itself. It is WRONG for a reversal running under an
+/// operation that is itself rolling back: there the same value is the instruction
+/// to reverse, so a reversal inheriting the transfer's reading would bail on its
+/// first item, park on nothing, and report a clean stop having reversed nothing.
+/// A reversal therefore names which reading it means, and both of Cmdr's
+/// reversals do (the in-flight volume rollback, and the operation-log engine).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StopMeans {
+    /// The reversal is its own managed operation, opened `Running`: any move off
+    /// `Running` is somebody stopping the REVERSAL. The operation-log rollback,
+    /// dispatched from history or over MCP, is this one.
+    IntentLeavesRunning,
+    /// The reversal is the wind-down of the operation it reverses, whose intent
+    /// already reads `RollingBack`. Only `Stopped` stops it. A cancelled
+    /// transfer's own cleanup is this one.
+    IntentReachesStopped,
+}
+
+impl StopMeans {
+    pub(crate) fn requested(self, intent: &AtomicU8) -> bool {
+        match self {
+            StopMeans::IntentLeavesRunning => is_cancelled(intent),
+            StopMeans::IntentReachesStopped => load_intent(intent) == OperationIntent::Stopped,
+        }
+    }
+}
+
 // ============================================================================
 // Pause gate
 // ============================================================================
@@ -186,12 +218,25 @@ impl PauseGate {
     /// the op resumes OR cancellation is observed. Call from the async volume
     /// drivers, AFTER their `is_cancelled` loop-top check.
     pub async fn wait_while_paused_async(&self, intent: &AtomicU8) {
+        self.wait_while_paused_until(&|| is_cancelled(intent)).await;
+    }
+
+    /// [`wait_while_paused_async`](Self::wait_while_paused_async) with the
+    /// caller's own reading of "stop".
+    ///
+    /// A forward transfer's reading is [`is_cancelled`] — intent isn't `Running`
+    /// — and that's what the sibling passes. An operation-log REVERSAL running
+    /// under an op whose intent already says `RollingBack` needs a different one,
+    /// or its park would return instantly and a pause would hold nothing. Whoever
+    /// parks names what stops them
+    /// (`write_operations::rollback::StopMeans`).
+    pub async fn wait_while_paused_until(&self, should_stop: &(dyn Fn() -> bool + Sync)) {
         loop {
             // Register interest BEFORE the flag check so a `resume()` /
             // `notify_waiters()` racing between the check and the await can't be
             // lost (tokio's documented `Notify` pattern).
             let notified = self.notify.notified();
-            if !self.is_paused() || is_cancelled(intent) {
+            if !self.is_paused() || should_stop() {
                 return;
             }
             notified.await;
@@ -246,6 +291,37 @@ mod tests {
 
         let stopped = AtomicU8::new(OperationIntent::Stopped as u8);
         assert!(is_cancelled(&stopped), "Stopped must be reported as cancelled");
+    }
+
+    /// The whole reason [`StopMeans`] exists: `RollingBack` reads as "stop" to a
+    /// forward transfer and as "reverse" to the reversal running under it.
+    ///
+    /// A reversal that inherited `is_cancelled` and ran against an operation whose
+    /// intent already says `RollingBack` would stop on its first item, park on
+    /// nothing, and report a clean stop having reversed nothing. Pinning both
+    /// readings means a caller gets a named choice rather than a silent one.
+    #[test]
+    fn the_two_readings_of_a_rolling_back_intent_disagree_on_purpose() {
+        let rolling_back = AtomicU8::new(OperationIntent::RollingBack as u8);
+        assert!(
+            StopMeans::IntentLeavesRunning.requested(&rolling_back),
+            "a reversal that is its own operation never sees RollingBack; anything but Running stops it"
+        );
+        assert!(
+            !StopMeans::IntentReachesStopped.requested(&rolling_back),
+            "a reversal running UNDER a rolling-back operation reads that value as its instruction, not as a stop"
+        );
+
+        let stopped = AtomicU8::new(OperationIntent::Stopped as u8);
+        assert!(StopMeans::IntentLeavesRunning.requested(&stopped));
+        assert!(
+            StopMeans::IntentReachesStopped.requested(&stopped),
+            "Stopped stops either way"
+        );
+
+        let running = AtomicU8::new(OperationIntent::Running as u8);
+        assert!(!StopMeans::IntentLeavesRunning.requested(&running));
+        assert!(!StopMeans::IntentReachesStopped.requested(&running));
     }
 
     // ---- PauseGate -----------------------------------------------------------

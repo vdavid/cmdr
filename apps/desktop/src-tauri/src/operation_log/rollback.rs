@@ -23,6 +23,14 @@
 //! before anything ran) returns to `rollbackable` so a retry can resume — every
 //! per-item inverse is an idempotent recheck-then-act, so re-issuing is safe.
 //!
+//! **Planner here, executor injected.** This module decides: it pages the
+//! journal, rechecks each item, works out the inverse act, and keeps the books.
+//! It never touches a file itself — an injected [`RollbackRunner`] performs each
+//! decided act, answers "should I stop?", parks while paused, and turns the
+//! per-item progress into events. That keeps `operation_log` free of file-moving
+//! code and lets the acting side use the cross-volume primitives that only
+//! `write_operations` can reach. See `rollback/runner.rs`.
+//!
 //! Reversal streams the original op's `rollback_unit` rows `seq DESC` through a
 //! paged cursor (`store::read_rollback_units_page`), so a 1M-item op never
 //! materializes its list. The `seq DESC` order removes copied files before the
@@ -35,12 +43,12 @@ use std::path::{Path, PathBuf};
 
 use crate::file_system::VolumeManager;
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{Volume, VolumeError};
+use crate::file_system::volume::VolumeError;
 
 use super::capture::compute_eligibility;
 use super::store::{
     OperationRow, RollbackUnit, fold_name, open_read_connection, ops_in_rolling_back, read_inverse_op, read_operation,
-    read_operation_items, read_rollback_units_page,
+    read_operation_items, read_rollback_file_totals, read_rollback_units_page,
 };
 use super::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState, RowRole,
@@ -303,7 +311,7 @@ pub fn check_rollbackable(vm: &VolumeManager, op: &OperationRow) -> Result<(), R
     Ok(())
 }
 
-// ── The executor ─────────────────────────────────────────────────────────────
+// ── The planner: the item loop ───────────────────────────────────────────────
 
 /// Reverse `original` as its inverse operation, streaming `rollback_unit` rows
 /// `seq DESC` and rechecking each against its snapshot. Journals the inverse op
@@ -311,19 +319,22 @@ pub fn check_rollbackable(vm: &VolumeManager, op: &OperationRow) -> Result<(), R
 /// original's items `rolled_back`/`skipped`, and resolves the original's
 /// `rollback_state`. Returns the tally.
 ///
-/// `cancel` is polled between items (a rollback is cancelable like any op): a
-/// canceled run keeps what it reversed and records the rest as untouched.
+/// `runner` performs each decided act and carries the loop's three live answers:
+/// stop, pause, and progress. It's polled BETWEEN items (a rollback is stoppable
+/// and pausable like any op), and a run that stops keeps what it reversed and
+/// leaves the rest untouched for a retry.
 ///
 /// This is the awaitable core the managed rollback entry point spawns; it takes only
-/// the `VolumeManager` and the `writer` (which yields the read connection via its
-/// db path), so it's driven directly in tests without a live manager/runtime.
+/// the `VolumeManager`, the `writer` (which yields the read connection via its
+/// db path), and the runner, so it's driven directly in tests without a live
+/// manager/runtime.
 pub async fn execute_rollback(
     vm: &VolumeManager,
     writer: &OperationLogWriter,
     original: &OperationRow,
     inverse_op_id: &str,
     initiator: Initiator,
-    is_canceled: &(dyn Fn() -> bool + Sync),
+    runner: &dyn RollbackRunner,
 ) -> RollbackReport {
     let inv_kind = inverse_kind(original.kind);
 
@@ -363,6 +374,12 @@ pub async fn execute_rollback(
         }
     };
 
+    // The bar's totals, straight off the journal: one indexed count before the
+    // first act, so a reversal has no scanning phase and its bar means something
+    // from the first frame. Only FILE rows count — the deferred dir phase below
+    // removes leftovers rather than moving anything a person is waiting on.
+    let mut stand = ProgressStand::over(read_rollback_file_totals(&conn, &original.op_id).unwrap_or_default());
+
     // Reverse in two phases, matching `CopyTransaction::rollback`: first every
     // FILE (streamed `seq DESC`, so the 1M-row list is never materialized), then
     // the created DIRECTORY rows deepest-first — a dir can only be removed once its
@@ -385,7 +402,7 @@ pub async fn execute_rollback(
         before = page.last().map(|u| u.seq).unwrap_or(before);
 
         for unit in page {
-            if is_canceled() {
+            if runner.should_stop() {
                 canceled = true;
                 break 'pages;
             }
@@ -393,17 +410,36 @@ pub async fn execute_rollback(
                 deferred_dirs.push(unit);
                 continue;
             }
+            // Park here, BEFORE the item is verified — never between "verified
+            // unchanged" and the act, where a ten-minute pause would leave a stale
+            // verification authorizing a destructive one. A stop wins over a pause,
+            // so re-ask the moment the park lets go.
+            runner.wait_while_paused().await;
+            if runner.should_stop() {
+                canceled = true;
+                break 'pages;
+            }
             // E2E-only pacing. In production both the env var and the IPC override are
             // unset, so this is one atomic load plus one `LazyLock` deref and nothing
             // else happens. Under E2E it opens a known window per item, which is what
             // lets a spec watch a reversal run and press Cancel inside it without
             // staging thousands of files. Only the FILE loop is paced: the deferred-dir
-            // phase below polls no cancellation, so slowing it would buy a spec dead
+            // phase below removes empty leftovers, so slowing it would buy a spec dead
             // time rather than a window.
             if let Some(ms) = crate::test_mode::effective_rollback_throttle_ms() {
                 tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
             }
-            let result = reverse_item(vm, original.kind, &unit).await;
+            stand.announce(runner, Some(&unit));
+            let result = reverse_item(vm, runner, original.kind, &unit).await;
+            // A stop observed INSIDE an item (a cancel during a cross-volume stream)
+            // ends the run instead of recording a skip: nothing was left behind for a
+            // reason the skip column exists to explain, and an unrecorded item is one
+            // an idempotent retry simply re-attempts.
+            if matches!(result, ItemResult::Skipped(_)) && runner.should_stop() {
+                canceled = true;
+                break 'pages;
+            }
+            stand.credit(&unit);
             acc.record(&unit, result);
         }
         // Flush this page's side-effects durably (bounded memory: never buffer the
@@ -411,13 +447,22 @@ pub async fn execute_rollback(
         // recorded outcomes for the reconcile to read).
         acc.flush(writer, inverse_op_id, &original.op_id);
     }
+    // The frame that lands on the total (or wherever a stop left it), so a bar that
+    // was throttled mid-item still ends where the run ended.
+    stand.announce(runner, None);
 
     // Phase two: the buffered directory rows, deepest path first (so a child dir is
-    // removed before its parent). Skipped entirely if the run was canceled.
+    // removed before its parent). Skipped entirely if the run was canceled — and it
+    // polls the stop itself, so a reversal of a directory-heavy op stops on the
+    // click rather than at the end of the sweep.
     if !canceled {
         deferred_dirs.sort_by_key(|u| std::cmp::Reverse(u.source_path.components().count()));
         for unit in &deferred_dirs {
-            let result = reverse_item(vm, original.kind, unit).await;
+            if runner.should_stop() {
+                canceled = true;
+                break;
+            }
+            let result = reverse_item(vm, runner, original.kind, unit).await;
             acc.record(unit, result);
         }
     }
@@ -441,6 +486,54 @@ pub async fn execute_rollback(
         skips: acc.skips.into_breakdowns(),
         canceled,
         final_state,
+    }
+}
+
+/// Where the reversal stands, and the one place a progress frame is built from
+/// it. The totals arrive from the journal before the first act, so the bar is
+/// honest from the first frame and there's nothing to scan.
+///
+/// An item counts as done once it has been DECIDED — reversed or skipped — since
+/// both are equally over, and a bar that stalled on skips would misreport a run
+/// that legitimately left files alone.
+struct ProgressStand {
+    files_done: u64,
+    files_total: u64,
+    bytes_done: u64,
+    bytes_total: u64,
+}
+
+impl ProgressStand {
+    fn over((files_total, bytes_total): (u64, u64)) -> Self {
+        ProgressStand {
+            files_done: 0,
+            files_total,
+            bytes_done: 0,
+            bytes_total,
+        }
+    }
+
+    /// Tell the runner where things stand. `next` is the item about to be
+    /// reversed (`None` for the closing frame, which reports the position the run
+    /// finished at).
+    fn announce(&self, runner: &dyn RollbackRunner, next: Option<&RollbackUnit>) {
+        let acting_on = next.map(|unit| removal_target(unit).1);
+        let current_name = acting_on
+            .as_deref()
+            .and_then(|path| path.file_name())
+            .map(|name| name.to_string_lossy());
+        runner.report_progress(RollbackProgress {
+            files_done: self.files_done,
+            files_total: self.files_total,
+            bytes_done: self.bytes_done,
+            bytes_total: self.bytes_total,
+            current_name: current_name.as_deref(),
+        });
+    }
+
+    fn credit(&mut self, unit: &RollbackUnit) {
+        self.files_done += 1;
+        self.bytes_done += unit.size.unwrap_or(0).max(0) as u64;
     }
 }
 
@@ -583,16 +676,22 @@ fn split(path: &Path) -> (String, String) {
 }
 
 /// Reverse one item: derive the inverse action, recheck against the snapshot, and
-/// (only if it verifies AND the target is clear) act — always through the `Volume`
-/// trait, so local and remote reverse uniformly.
-async fn reverse_item(vm: &VolumeManager, kind: OpKind, unit: &RollbackUnit) -> ItemResult {
+/// (only if it verifies AND the target is clear) hand the decided act to the
+/// runner. Every read here goes through the `Volume` trait, so local and remote
+/// verify uniformly.
+async fn reverse_item(
+    vm: &VolumeManager,
+    runner: &dyn RollbackRunner,
+    kind: OpKind,
+    unit: &RollbackUnit,
+) -> ItemResult {
     let Some(action) = inverse_action(kind, unit.entry_type) else {
         return ItemResult::Skipped(SkipReason::Failed);
     };
     match action {
-        InverseAction::RemoveFileIfUnchanged => remove_file_if_unchanged(vm, unit).await,
-        InverseAction::RemoveDirIfEmpty => remove_dir_if_empty(vm, unit).await,
-        InverseAction::RestoreMove => restore_move(vm, unit).await,
+        InverseAction::RemoveFileIfUnchanged => remove_file_if_unchanged(vm, runner, unit).await,
+        InverseAction::RemoveDirIfEmpty => remove_dir_if_empty(vm, runner, unit).await,
+        InverseAction::RestoreMove => restore_move(vm, runner, unit).await,
     }
 }
 
@@ -605,7 +704,7 @@ fn removal_target(unit: &RollbackUnit) -> (String, PathBuf) {
     }
 }
 
-async fn remove_file_if_unchanged(vm: &VolumeManager, unit: &RollbackUnit) -> ItemResult {
+async fn remove_file_if_unchanged(vm: &VolumeManager, runner: &dyn RollbackRunner, unit: &RollbackUnit) -> ItemResult {
     let (vol_id, path) = removal_target(unit);
     let Some(volume) = vm.get(&vol_id) else {
         return ItemResult::Skipped(SkipReason::Failed);
@@ -617,7 +716,13 @@ async fn remove_file_if_unchanged(vm: &VolumeManager, unit: &RollbackUnit) -> It
         Err(_) => return ItemResult::Skipped(SkipReason::Failed),
     };
     match verify_snapshot(unit.size, unit.mtime, &live) {
-        SnapshotVerdict::Match => match volume.delete(&path).await {
+        SnapshotVerdict::Match => match runner
+            .perform(InverseAct::RemoveFile {
+                volume: &volume,
+                path: &path,
+            })
+            .await
+        {
             Ok(()) => ItemResult::Reversed,
             Err(VolumeError::NotFound(_)) => ItemResult::Skipped(SkipReason::AlreadyGone),
             Err(_) => ItemResult::Skipped(SkipReason::Failed),
@@ -627,7 +732,7 @@ async fn remove_file_if_unchanged(vm: &VolumeManager, unit: &RollbackUnit) -> It
     }
 }
 
-async fn remove_dir_if_empty(vm: &VolumeManager, unit: &RollbackUnit) -> ItemResult {
+async fn remove_dir_if_empty(vm: &VolumeManager, runner: &dyn RollbackRunner, unit: &RollbackUnit) -> ItemResult {
     let (vol_id, path) = removal_target(unit);
     let Some(volume) = vm.get(&vol_id) else {
         return ItemResult::Skipped(SkipReason::Failed);
@@ -640,7 +745,13 @@ async fn remove_dir_if_empty(vm: &VolumeManager, unit: &RollbackUnit) -> ItemRes
     // since must not be swept away (D3). A `seq DESC` stream removes the dir's own
     // (unchanged) contents first, so a genuinely-restored tree is empty here.
     match volume.list_directory(&path, None).await {
-        Ok(entries) if entries.is_empty() => match volume.delete(&path).await {
+        Ok(entries) if entries.is_empty() => match runner
+            .perform(InverseAct::RemoveDir {
+                volume: &volume,
+                path: &path,
+            })
+            .await
+        {
             Ok(()) => ItemResult::Reversed,
             Err(VolumeError::NotFound(_)) => ItemResult::Skipped(SkipReason::AlreadyGone),
             Err(_) => ItemResult::Skipped(SkipReason::Failed),
@@ -650,7 +761,7 @@ async fn remove_dir_if_empty(vm: &VolumeManager, unit: &RollbackUnit) -> ItemRes
     }
 }
 
-async fn restore_move(vm: &VolumeManager, unit: &RollbackUnit) -> ItemResult {
+async fn restore_move(vm: &VolumeManager, runner: &dyn RollbackRunner, unit: &RollbackUnit) -> ItemResult {
     if unit.outcome != ItemOutcome::Done {
         return ItemResult::Skipped(SkipReason::Failed);
     }
@@ -703,23 +814,24 @@ async fn restore_move(vm: &VolumeManager, unit: &RollbackUnit) -> ItemResult {
         }
     }
 
-    // Same volume ⇒ a plain rename (also the same-FS move / rename-back / same-FS
-    // trash-restore path). Cross-volume ⇒ stream the bytes across then delete the
-    // source side (per-leaf; cross-volume dirs never reach here — they're recorded
-    // per file, and cross-volume can't be a self-collision so the target is clear).
-    let acted = if same_volume {
-        from_volume.rename(from_path, to_path, force).await
-    } else {
-        cross_volume_restore(
-            from_volume.as_ref(),
+    // A cross-volume restore is always per-leaf (directories are recorded per file,
+    // and cross-volume can't be a self-collision, so the target is clear); a
+    // directory row reaching the streaming path would be a journal-shape bug, so
+    // refuse it here rather than asking the executor to guess.
+    if !same_volume && from_entry.is_directory {
+        return ItemResult::Skipped(SkipReason::Failed);
+    }
+    match runner
+        .perform(InverseAct::Restore {
+            from: &from_volume,
             from_path,
-            to_volume.as_ref(),
+            to: &to_volume,
             to_path,
-            &from_entry,
-        )
+            same_volume,
+            force,
+        })
         .await
-    };
-    match acted {
+    {
         Ok(()) => ItemResult::Reversed,
         Err(VolumeError::AlreadyExists(_)) => ItemResult::Skipped(SkipReason::RestoreTargetOccupied),
         Err(VolumeError::NotFound(_)) => ItemResult::Skipped(SkipReason::AlreadyGone),
@@ -727,35 +839,58 @@ async fn restore_move(vm: &VolumeManager, unit: &RollbackUnit) -> ItemResult {
     }
 }
 
-/// Move a single file across volumes: stream its bytes to the target, then delete
-/// the source side. Cross-volume restores are always per-file (directories are
-/// recorded per leaf), so a directory here is a journal-shape bug — refuse safe.
-async fn cross_volume_restore(
-    from_volume: &dyn Volume,
-    from_path: &Path,
-    to_volume: &dyn Volume,
-    to_path: &Path,
-    from_entry: &FileEntry,
-) -> Result<(), VolumeError> {
-    if from_entry.is_directory {
-        return Err(VolumeError::NotSupported);
-    }
-    let size = from_entry.size.unwrap_or(0);
-    let stream = from_volume.open_read_stream(from_path).await?;
-    let noop = |_written: u64, _total: u64| std::ops::ControlFlow::Continue(());
-    to_volume.write_from_stream(to_path, size, stream, &noop).await?;
-    from_volume.delete(from_path).await
-}
-
 // ── Entry point: gate + set rolling_back + spawn (state machine) ──────────────
 
 /// Everything the caller needs to actually run the inverse op after the gate
-/// passed and `rolling_back` was set: the original op's row and the fresh id for
-/// its inverse.
+/// passed and `rolling_back` was set: the original op's row, the fresh id for its
+/// inverse, and where the reversal will act.
 #[derive(Debug, Clone)]
 pub struct InversePlan {
     pub original: OperationRow,
     pub inverse_op_id: String,
+    pub summary: InverseSummary,
+}
+
+/// Where a reversal will act, so its queue row can say so instead of sitting
+/// nameless. Read off the newest journal row at dispatch — one row, never the
+/// list.
+#[derive(Debug, Clone, Default)]
+pub struct InverseSummary {
+    /// The folder the reversal takes items FROM (for a removal, the folder it
+    /// cleans; for a created directory, that directory itself).
+    pub from: Option<String>,
+    /// Where a restore puts them back. `None` for a removal inverse, which has
+    /// nowhere to put anything.
+    pub to: Option<String>,
+}
+
+/// Summarize what reversing `op` will do, from its newest `rollback_unit` row.
+///
+/// The newest row is the cheapest honest sample: for a copy it's the created
+/// directory (the exact folder the undo cleans), and for anything else it's a
+/// leaf whose parent folder is the place the user is watching.
+fn summarize_inverse(conn: &rusqlite::Connection, op: &OperationRow) -> InverseSummary {
+    let Ok(page) = read_rollback_units_page(conn, &op.op_id, i64::MAX, 1) else {
+        return InverseSummary::default();
+    };
+    let Some(unit) = page.first() else {
+        return InverseSummary::default();
+    };
+    let (_, acting_on) = removal_target(unit);
+    // A directory row IS the thing being removed; a file row names its folder.
+    let from = if unit.entry_type == EntryType::Dir {
+        Some(acting_on)
+    } else {
+        acting_on.parent().map(Path::to_path_buf)
+    };
+    let to = match inverse_action(op.kind, unit.entry_type) {
+        Some(InverseAction::RestoreMove) => unit.source_path.parent().map(Path::to_path_buf),
+        _ => None,
+    };
+    InverseSummary {
+        from: from.map(|p| p.to_string_lossy().into_owned()),
+        to: to.map(|p| p.to_string_lossy().into_owned()),
+    }
 }
 
 /// The entry point (D7 state machine): read the op, gate it (unknown / already
@@ -784,13 +919,16 @@ where
     let op = read_operation(&conn, op_id)
         .map_err(|_| RollbackRefusal::UnknownOperation)?
         .ok_or(RollbackRefusal::UnknownOperation)?;
-    drop(conn);
 
     check_rollbackable(vm, &op)?;
+
+    let summary = summarize_inverse(&conn, &op);
+    drop(conn);
 
     let plan = InversePlan {
         original: op,
         inverse_op_id: uuid::Uuid::new_v4().to_string(),
+        summary,
     };
     // Set `rolling_back` as late as possible — right before the spawn — to shrink
     // the window in which a crash leaves it set with no inverse row (the reconcile
@@ -868,11 +1006,15 @@ fn reconcile_one(conn: &rusqlite::Connection, op_id: &str) -> RollbackState {
 }
 
 mod order;
+mod runner;
 mod skips;
 pub use order::undo_order;
+pub use runner::{InverseAct, RollbackProgress, RollbackRunner};
 pub use skips::SkipBreakdown;
 use skips::SkipTally;
 
+#[cfg(test)]
+mod control_tests;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]

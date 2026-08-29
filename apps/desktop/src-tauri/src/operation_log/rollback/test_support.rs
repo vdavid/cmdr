@@ -12,6 +12,7 @@ use super::*;
 use crate::file_system::VolumeManager;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{InMemoryVolume, Volume};
+use crate::file_system::write_operations::rollback::Reversal;
 use crate::operation_log::store::{
     OperationItemRow, OperationRow, open_read_connection, operation_log_db_path, read_operation, read_operation_items,
 };
@@ -132,6 +133,18 @@ impl Rig {
     /// [`Self::rollback`] with an explicit inverse op id, so one rig can reverse
     /// several operations in a chosen order (the multi-batch cases).
     pub(super) async fn rollback_as(&self, op_id: &str, inverse_op_id: &str) -> RollbackReport {
+        self.rollback_driven_by(op_id, inverse_op_id, &Reversal::new("rollback"))
+            .await
+    }
+
+    /// [`Self::rollback_as`] against a [`Reversal`] the test holds, so it can stop
+    /// it, pause it, or read the frames it emitted while it runs.
+    pub(super) async fn rollback_driven_by(
+        &self,
+        op_id: &str,
+        inverse_op_id: &str,
+        reversal: &Reversal,
+    ) -> RollbackReport {
         let original = self.read_op(op_id);
         execute_rollback(
             &self.vm,
@@ -139,7 +152,7 @@ impl Rig {
             &original,
             inverse_op_id,
             Initiator::User,
-            &|| false,
+            reversal.runner(),
         )
         .await
     }

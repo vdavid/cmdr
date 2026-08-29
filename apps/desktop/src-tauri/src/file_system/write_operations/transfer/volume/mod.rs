@@ -22,6 +22,7 @@ mod merge;
 /// `move` is a Rust keyword, so the module is `r#move`. Nothing outside this
 /// facade names it: the move entry points are re-exported below.
 mod r#move;
+mod move_file;
 mod move_same;
 mod naming;
 mod preflight;
@@ -42,6 +43,9 @@ pub(in crate::file_system::write_operations) use cleanup::{TreeRemoval, remove_t
 /// move (`archive_edit`).
 pub(crate) use conflict::is_the_same_item;
 pub(crate) use copy::copy_volumes_with_progress;
+/// Move ONE file across two volumes, staged and mid-file cancelable, with no
+/// driver above it (the operation-log rollback's cross-volume restore).
+pub(in crate::file_system::write_operations) use move_file::move_file_across_volumes;
 /// Pull a remote path down to a local scratch copy (remote zip edits).
 pub(in crate::file_system::write_operations) use strategy::pull_path_to_local;
 /// The one place a `VolumeError` becomes a typed `WriteOperationError`; the

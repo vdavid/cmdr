@@ -16,7 +16,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::super::event_sinks::OperationEventSink;
-use super::super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
+use super::super::super::state::{StopMeans, WriteOperationState, update_operation_status};
 use super::super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
@@ -95,8 +95,10 @@ pub(super) async fn volume_rollback_with_progress(
 
     // Delete in reverse order (newest first)
     for path in copied_paths.iter().rev() {
-        // Check if user cancelled the rollback (RollingBack → Stopped)
-        if load_intent(&state.intent) == OperationIntent::Stopped {
+        // Check if the user cancelled the rollback itself. This runs UNDER an
+        // operation whose intent already reads `RollingBack`, so only `Stopped`
+        // means stop (see `StopMeans`).
+        if StopMeans::IntentReachesStopped.requested(&state.intent) {
             log::info!(
                 "volume_rollback_with_progress: rollback cancelled at {}/{} paths, keeping remaining",
                 paths_deleted,
@@ -158,7 +160,7 @@ pub(super) async fn volume_rollback_with_progress(
     // `created_dirs` is in creation order (shallowest first), so iterating in
     // reverse empties leaves before their parents are tried.
     for dir in created_dirs.iter().rev() {
-        if load_intent(&state.intent) == OperationIntent::Stopped {
+        if StopMeans::IntentReachesStopped.requested(&state.intent) {
             return false;
         }
         prune_created_dir_if_empty(volume, dir).await;

@@ -125,6 +125,36 @@ pub fn effective_rollback_throttle_ms() -> Option<u64> {
     *ROLLBACK_THROTTLE_ENV_MS
 }
 
+/// Paces the rollback engine at `ms` per item for one test, and clears the pacing
+/// on drop.
+///
+/// The override is ONE process-wide value and `cargo test` runs a crate's tests as
+/// threads in one process, so two tests setting it at once would each un-pace the
+/// other's reversal — and the one measuring a window would fail for a reason
+/// nothing inside it points at. Taking the lock serializes them instead. Held
+/// across awaits, hence the async mutex.
+#[cfg(test)]
+pub(crate) async fn pace_rollback_for_test(ms: u64) -> RollbackPacing {
+    static LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let held = LOCK.lock().await;
+    set_rollback_throttle_override(Some(ms));
+    RollbackPacing { _held: held }
+}
+
+/// The pacing [`pace_rollback_for_test`] holds. Keep it on the stack for as long
+/// as the reversal under test runs.
+#[cfg(test)]
+pub(crate) struct RollbackPacing {
+    _held: tokio::sync::MutexGuard<'static, ()>,
+}
+
+#[cfg(test)]
+impl Drop for RollbackPacing {
+    fn drop(&mut self) {
+        set_rollback_throttle_override(None);
+    }
+}
+
 /// `CMDR_E2E_MODE=1` signals that the running binary is under an E2E run.
 /// Subsystems may use this to enable diagnostics or skip behaviors that don't
 /// make sense during automated tests (popping the AI offer, mDNS, etc.).

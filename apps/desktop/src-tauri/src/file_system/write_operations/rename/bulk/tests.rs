@@ -184,13 +184,14 @@ impl UndoLoop {
             "an applied batch rename must be rollbackable"
         );
         drop(conn);
+        let reversal = crate::file_system::write_operations::rollback::Reversal::new("bulk-rename-undo");
         crate::operation_log::rollback::execute_rollback(
             &self.vm,
             writer,
             &original,
             "inv-undo",
             Initiator::User,
-            &|| false,
+            reversal.runner(),
         )
         .await
     }

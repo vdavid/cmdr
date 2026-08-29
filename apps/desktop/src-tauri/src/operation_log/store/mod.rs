@@ -513,6 +513,31 @@ pub fn read_rollback_units_page(
     items.iter().map(|item| map_rollback_unit(conn, item)).collect()
 }
 
+/// What a reversal of `op_id` has ahead of it: how many FILE `rollback_unit` rows
+/// it will stream, and how many bytes they carry. One indexed aggregate, so a
+/// reversal gets honest totals without a scanning phase and without materializing
+/// the list [`read_rollback_units_page`] pages through.
+///
+/// The filters mirror that page query exactly (same `row_role`, same `outcome`),
+/// or the bar would count rows the loop never visits. Directory rows are left out
+/// on purpose: they're removed in a trailing sweep of empty leftovers, not moved.
+pub fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Result<(u64, u64), OperationLogStoreError> {
+    let mut stmt = conn.prepare_cached(
+        "SELECT COUNT(*), COALESCE(SUM(MAX(size, 0)), 0) FROM operation_items \
+         WHERE op_id = ?1 AND row_role = ?2 AND outcome = ?3 AND entry_type = ?4",
+    )?;
+    let totals = stmt.query_row(
+        rusqlite::params![
+            op_id,
+            RowRole::RollbackUnit.as_token(),
+            ItemOutcome::Done.as_token(),
+            EntryType::File.as_token()
+        ],
+        |row| Ok((row.get::<_, i64>(0)?.max(0) as u64, row.get::<_, i64>(1)?.max(0) as u64)),
+    )?;
+    Ok(totals)
+}
+
 /// Every operation currently in `rolling_back` — the startup-reconcile input (rollback,
 /// Finding 7): each resolves deterministically from its (unfinalized) inverse op's
 /// recorded outcomes, or straight back to `rollbackable` when no inverse row exists.

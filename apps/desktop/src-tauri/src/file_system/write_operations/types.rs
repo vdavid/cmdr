@@ -782,8 +782,13 @@ impl Default for WriteOperationConfig {
     }
 }
 
+/// How often a running operation is allowed to speak: the cadence every
+/// transfer's progress events are throttled to, and what any other long-running
+/// op (an operation-log reversal) uses so its bar behaves like the rest.
+pub(super) const DEFAULT_PROGRESS_INTERVAL_MS: u64 = 200;
+
 fn default_progress_interval() -> u64 {
-    200
+    DEFAULT_PROGRESS_INTERVAL_MS
 }
 
 fn default_max_conflicts_to_show() -> usize {
@@ -953,7 +958,7 @@ pub struct VolumeCopyConfig {
 impl Default for VolumeCopyConfig {
     fn default() -> Self {
         Self {
-            progress_interval_ms: 200,
+            progress_interval_ms: DEFAULT_PROGRESS_INTERVAL_MS,
             conflict_resolution: ConflictResolution::Stop,
             max_conflicts_to_show: 100,
             preview_id: None,
