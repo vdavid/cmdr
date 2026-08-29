@@ -571,6 +571,88 @@ the pile PLUS the live macOS bundles (a 12,418-string zh_TW corpus from `/System
 - **`總是` vs `永遠允許` on the permission strings.** If the Taiwan-default rule is applied literally rather than the
   both-audiences argument above, "Always allow" specifically has an exact Apple-TW key match at `永遠允許`.
 
+### Terms the catalog uses that had no entry
+
+Sourced in one pass after the consistency audit, to close the gap between "what the catalog says" and "what the glossary
+can defend". **Every shipped form below was already correct**; these entries exist so the next pass can't re-decide
+them. Evidence is the pile plus **AP live**: 112,961 English→zh_TW→zh_HK rows from every `Localizable*.loctable` under
+`/System/Library/ExtensionKit/Extensions/`, `/System/Applications`, and `/System/Library/CoreServices` (macOS 26.6.2,
+build 25G83, key-matched, 2026-08-29). Rebuild it in ~2 minutes from `../reference-pile/how-to-mine.md` § "No pile on
+this machine".
+
+- **command palette** · `指令面板` · **composed**, unattested as a compound anywhere, but both halves are ruled here:
+  `指令` = command (TC + the file managers 78, MS 66) and `面板` = panel (AP live TW 280: `儲存面板`,
+  `「取得資訊」面板`; MS `panel` → 面板) · `tentative`. ❌ **Never Microsoft's `命令選擇區`**, even though the TBX has
+  that exact entry: it re-imports `命令` against this glossary's `指令` ruling, and `選擇區` is a Windows/VS-Code-ism
+  with ZERO occurrences across the 112,961-string live Apple corpus and zero in TC, DC, and Thunar, while the `X面板`
+  shape is what DC (52), DOL (46), and THU (7) all use. No internal collision: a pane is `窗格` here, so `面板` is free
+  for a real panel.
+- **action (a UI action)** · `動作` · AP live TW 24/24 on exact `Action` / `Actions` keys, HK 23/24; AP-TW pile 40,
+  AP-HK 36; MS (HKG, TWN) · `high`. ❗ **No collision with `操作`** (operation): Apple keeps them apart on exact-key
+  evidence, `Operation` → `操作` 6/6 TW = HK against `Action` → `動作` 24/24.
+- **location (a place in the filesystem)** · `位置` · AP-TW = AP-HK (Finder `Localizable.json:Location`,
+  `LocalizableMerged.json:FI9`/`SD5` = the "Locations" sidebar header); AP live 41/41 exact; MS; all five file managers
+  · `high`. ❗ `地點` is the calendar/physical-place sense (Calendar's `Location-XX01` is TW 地點 / HK 位置); never for
+  a path.
+- **navigate / navigation** · `導覽` · AP-TW = AP-HK by exact key
+  (`Photos.app/IPXTouchBar.loctable:IPXEditToolNavigation` = "Navigate";
+  `AccessibilitySettingsExtension.appex:switchControl.header.navigation`); AP live 197/198 · `high`. ❗ **Don't take
+  Microsoft here**: its `navigate` is 瀏覽 / 巡覽 — `瀏覽` is _browse_, `巡覽` is Windows house style.
+- **destination (of a copy/move)** · `目標位置`; `目標資料夾` when the English says "destination folder" · AP-TW/HK live
+  on our exact sentences (`The destination is read-only.` → `目標位置為唯讀。`), folder form AP-HK 4/4, NAU 3, TC 8 ·
+  `high`. ❗ **Not `目的地`**, though MS and NAU/DOL/THU all say it: Apple reserves 目的地 for the maps/AirPlay sense.
+  Pairs with `目標窗格` and `覆寫目標`.
+- **recent (recently used)** · `最近` as a prefix, `最近使用` as a standalone heading · AP-TW = AP-HK (Finder
+  `LocalizableMerged.json:GT6`/`NE91` = "Recents" on the Go menu → 最近使用; `FI1` = "Recent Places" → 最近使用過的位置)
+  · `high`. ❗ MS's `recent` → `最新動向` is the news sense; ignore it.
+- **result (a search result)** · `結果` · AP-TW = AP-HK (Finder `LocalizableMerged.json:QK28`; `Search Results` →
+  `搜尋結果`), 337/339 live; MS (60); TC 9, DOL 12, NAU 8 · `high`
+- **scan (verb + noun)** · `掃描` · AP-TW = AP-HK on exact keys (`Preview.app:Scan`,
+  `Disk Utility.app:Scan image confirm`), 161/160 live; MS (85) · `high`. Progress form `正在掃描…` is Apple's own
+  (`Wireless Diagnostics.app:kWDLocStatusScanning`).
+- **toggle (verb, on a command label)** · `切換` · AP-TW = AP-HK in exactly our command shape (`Toggle Sidebar`
+  →切換側邊欄, `Toggle Flag` → 切換旗標), 615/606 live; MS; all five file managers · `high`. Unanimous.
+- **reset (to defaults)** · `重設` · **AP-HK 28/28** on exact `Reset` keys, MS all six TBX entries, NAU 7/0, DOL 2/0,
+  THU 2/0; **AP-TW says `重置` and stands alone** (28/28, and `重設` is ZERO across 112,961 live TW strings) · `high`.
+  ❌ **Don't "fix" this to `重置` by citing macOS-first**: it's a textbook § Apple-zh-TW outlier, the second one found
+  outside the original five (after `thumbnail`). Minimal pair: `Keychain Access.app/…/Localizable.loctable:Reset` → TW
+  `重置` / HK `重設`.
+- **turn on / turn off (a feature)** · `開啟` / `關閉` · AP live TW = HK (`Turn On` → 開啟 in 299 of ~314 rows,
+  `Turn Off` → 關閉 unanimously); MS agrees · `high`. ❗ Both words are already spent here (`開啟` = _open_, `關閉` =
+  _close_ AND _dismiss_); the overload is Apple's own and reads fine in context. ❌ Don't reach for `啟用` / `停用`,
+  which this catalog spends on enable/disable and on activating a licence.
+- **level (a setting's steps)** · `層級`; the compound is `壓縮層級` · MS TBX has the exact `compression level` →
+  `壓縮層級` entry (HKG, TWN), and TC ships it three times in literally this feature (`WCMD.LNG` 5235, 5495, 6754);
+  Apple uses 層級 as its generic graded-setting word (75 TW / 47 HK: `安全層級`, `Zoom Level` → 縮放層級) · `high`. ❗
+  `等級` is the rating/grade sense, not a setting's steps.
+- **password** · `密碼` · AP-TW = AP-HK (Finder `Localizable.json:Password`), pile 48/48, live 1,187/1,139; MS; TC 40 ·
+  `high`. ❗ MS's FIRST `password` hit is `存取碼`, the passcode sense; take the second.
+- **host (a network machine)** · `主機`; **hostname** · `主機名稱` · AP-TW = AP-HK on exact keys
+  (`ADCertificate…:str_ADCertificate_Detail_Server` = "Host" 3/3; `Sharing.appex:NAME_SHEET_HOSTNAME_LABEL` 2/2), 63/63
+  live; MS (146); TC 9 · `high`
+- **network connection** · `網路連線`; **internet connection** · `網際網路連線` · AP-TW, exact matches for our own
+  strings (`Check your network connection and try again.` → `請檢查你的網路連線，然後再試一次。`, 243 live). Internet is
+  a real TW/HK split (AP-TW `網際網路` vs AP-HK `互聯網`, 176 live) and Taiwan-default picks `網際網路` · `high`. ❗
+  **The rule is the English word, not the vibe**: English "network" → `網路`, English "internet" → `網際網路`. Three
+  keys had drifted to `網路` for "internet" and were corrected.
+- **version** · `版本` · AP-TW = AP-HK (Finder `LocalizableMerged.json:N226`, `N169.34`), live 23/23 exact; MS (91); TC
+  24 · `high`
+- **edit (verb and menu title)** · `編輯` · AP-TW = AP-HK (AppKit `Document.json:Edit`, Finder
+  `MenuBar.json:163.title`), live 71/71 exact plus the verb shape (`Edit Name` → 編輯名稱); MS (132); TC 35, DC 37 ·
+  `high`. One word covers both.
+
+### Finder tag colours
+
+Read off the exact strings Finder's own Tags UI shows (`macOS/Finder/LocalizableMerged.json`, keys
+`TG_COLOR_1`–`TG_COLOR_7`). **zh-TW and zh-HK are byte-identical on all seven**, and all seven match what Cmdr ships, so
+`commands.tagsToggle*` and `menu.tag.*` name the colours the user's own Finder does · `high`.
+
+- **red** `紅色` (`TG_COLOR_6`) · **orange** `橙色` (`TG_COLOR_7`) · **yellow** `黃色` (`TG_COLOR_5`) · **green** `綠色`
+  (`TG_COLOR_2`) · **blue** `藍色` (`TG_COLOR_4`) · **purple** `紫色` (`TG_COLOR_3`) · **gray** `灰色` (`TG_COLOR_1`)
+- ❌ **Don't "Taiwanize" orange to `橘色`**: Finder itself says `橙色` in Taiwan (33 TW / 28 HK live, against `橘色`
+  2/2). `灰色` has no competitor (49/50). Both are TW = HK on exact-key matches too.
+- `TG_COLOR_0` = "No Color" → `沒有顏色` (TW = HK), if a clear-tags string ever needs it.
+
 ## Notes
 
 - **AP-TW's ellipsis glyph is `⋯` (U+22EF)** in strings quoted throughout this file (`連接伺服器⋯`). That's Apple's

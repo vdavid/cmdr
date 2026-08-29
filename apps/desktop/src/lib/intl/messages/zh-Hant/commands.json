@@ -500,7 +500,7 @@
   "@commands.cloudMakeOffline.label": {
     "sourceHash": "b75c09f"
   },
-  "commands.cloudMakeOffline.description": "下載存在雲端的檔案，讓它沒有網路也能用",
+  "commands.cloudMakeOffline.description": "下載存在雲端的檔案，讓它沒有網際網路連線也能用",
   "@commands.cloudMakeOffline.description": {
     "sourceHash": "d5cd793"
   },

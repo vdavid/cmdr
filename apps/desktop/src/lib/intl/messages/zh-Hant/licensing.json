@@ -352,7 +352,7 @@
   "@licensing.error.network": {
     "sourceHash": "63da44b"
   },
-  "licensing.error.networkHint": "請檢查你的網路連線，然後再試一次。",
+  "licensing.error.networkHint": "請檢查你的網際網路連線，然後再試一次。",
   "@licensing.error.networkHint": {
     "sourceHash": "67cba62"
   },

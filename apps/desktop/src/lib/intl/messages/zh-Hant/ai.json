@@ -91,7 +91,7 @@
   "@ai.translateError.unavailable.title": {
     "sourceHash": "e684bc4"
   },
-  "ai.translateError.unavailable.body": "檢查你的網路或提供者的服務狀態，然後再試一次。",
+  "ai.translateError.unavailable.body": "檢查你的網際網路或提供者的服務狀態，然後再試一次。",
   "@ai.translateError.unavailable.body": {
     "sourceHash": "ba30402"
   },
