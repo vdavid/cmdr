@@ -660,7 +660,7 @@
   "@queryUi.scope.toggle.caseSensitive": {
     "sourceHash": "9d15f82"
   },
-  "queryUi.scope.toggle.caseSensitiveAria": "Übereinstimmung mit Groß-/Kleinschreibung",
+  "queryUi.scope.toggle.caseSensitiveAria": "Beim Abgleich Groß-/Kleinschreibung beachten",
   "@queryUi.scope.toggle.caseSensitiveAria": {
     "sourceHash": "2700434"
   },

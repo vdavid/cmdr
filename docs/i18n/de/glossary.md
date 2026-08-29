@@ -1547,3 +1547,21 @@ Bericht angehängt wird. Es geht kein zweiter Bericht raus, und genau das muss d
   beruhigend, keine Warnung, wie das `@key` verlangt; `der vollständige Pfad` ist die Katalogform (siehe
   `errors.listing.nameTooLongErrno.explanation`) · `high`.
 - Kein `sameAsSourceJustification` nötig: alle fünfzehn Werte unterscheiden sich vom Englischen.
+
+## Der zugängliche Name muss die sichtbare Beschriftung enthalten (WCAG 2.5.3, 2026-08-30)
+
+`desktop-i18n-aria-label` verlangt, dass ein `*Aria`-Wert seine sichtbare Beschriftung wörtlich enthält (Groß-/
+Kleinschreibung, Satzzeichen und Leerraum werden ignoriert, `/` aber NICHT). Wer per Sprachsteuerung „Anhalten“ sagt,
+muss damit genau die Taste treffen, auf der „Anhalten“ steht. Der richtige Weg dahin ist, der BESCHRIFTUNG die Form zu
+geben, die der natürliche Aria-Satz ohnehin benutzt, und den Aria-Satz nicht zu verbiegen.
+
+- **pause (Taste) → `Anhalten`; resume → `Fortsetzen`; paused → `Angehalten`** · macOS Podcasts
+  (`PLAY_BUTTON_PAUSE`/`AX_PAUSE` = „Anhalten“, `EPISODE_ACTION_RESUME` = „Fortsetzen“, geprüft auf macOS 26.6.2,
+  Build 25G83, 2026-08-30); macOS Finder (`NE101`/`PE108.1` = „Fortsetzen“) · `high`. ❌ Nicht das Lehnwort „Pause“ auf
+  der Taste: der restliche Katalog sagt durchgehend „anhalten“ (`queue.toolbar.pauseAll` = „Alle anhalten“,
+  `queue.row.status` = „Angehalten“), und die beiden Aria-Sätze („Diese Übertragung anhalten“, „Diesen Vorgang
+  anhalten“) verlangen genau dieses Wort.
+- **case-sensitive → `Groß-/Kleinschreibung beachten`** · macOS zeigt die Verneinung „Groß-/Kleinschreibung ignorieren“,
+  also ist „beachten“ die positive Form · `high`. Der zugängliche Name wickelt die Beschriftung ein, statt sie zu
+  ersetzen: `queryUi.scope.toggle.caseSensitiveAria` = „Beim Abgleich Groß-/Kleinschreibung beachten“. Ein
+  umformuliertes „Übereinstimmung mit …“ bricht die Enthaltensregel.

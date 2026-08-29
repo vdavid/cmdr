@@ -31,7 +31,7 @@
   "@queue.row.awaitingAnswerTooltip": {
     "sourceHash": "bf51776"
   },
-  "queue.row.pause": "Pause",
+  "queue.row.pause": "Anhalten",
   "@queue.row.pause": {
     "sourceHash": "858e4ba",
     "sameAsSourceJustification": "Style guide glossary: pause -> button 'Pause' (noun, macOS NSPauseTemplate); the visible button stays 'Pause', identical to English. Matches queue.row.resume='Fortsetzen' pairing."

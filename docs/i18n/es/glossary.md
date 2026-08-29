@@ -1637,3 +1637,20 @@ lleva ninguno.
   · `coincidir` es el verbo del catálogo para "match" (`commands.selectionSelectFiles.description` "los archivos
   coincidentes") y `ruta completa` ya está fijado (`fileOperations.validation.pathTooLong`) · high. Sujeto tácito (el
   patrón), que es lo que mantiene el aviso corto y tranquilo en vez de sonar a advertencia.
+
+## El nombre accesible tiene que contener la etiqueta visible (WCAG 2.5.3, 2026-08-30)
+
+`desktop-i18n-aria-label` exige que un valor `*Aria` contenga literalmente su etiqueta visible (se ignoran mayúsculas,
+puntuación y espacios). Quien usa control por voz dice lo que LEE, así que el camino correcto es dar a la ETIQUETA la
+forma que la frase accesible ya usa de forma natural, en vez de forzar la frase accesible.
+
+- **case-sensitive → `Distinguir mayúsculas y minúsculas`** (forma completa, la de macOS) · macOS es
+  (`Distinguir mayúsculas y minúsculas` en el panel de búsqueda de AppKit; la negativa es `Ignorar
+  mayúsculas/minúsculas`), verificado en el montón de referencia 2026-08-30 · `high`. La forma recortada
+  `Distinguir mayúsculas` queda descartada: `viewer.search.caseSensitive` ya publicaba la completa, así que el mismo
+  interruptor se llamaba de dos maneras según dónde lo abrieras. En texto corrido el adjetivo va en tercera persona y
+  minúscula (`queryUi.recent.caseSensitive` = `distingue mayúsculas y minúsculas`), porque se suma a una lista de datos
+  separados por comas.
+- **El nombre accesible envuelve la etiqueta, no la reformula**: `queryUi.scope.toggle.caseSensitiveAria` =
+  `Distinguir mayúsculas y minúsculas al buscar`. Un `Coincidencia que distingue…` cambia el verbo a tercera persona y
+  rompe la regla de contención.
