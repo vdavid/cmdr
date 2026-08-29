@@ -326,7 +326,8 @@
   },
   "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
   "@ai.local.ramLegendCmdrAi": {
-    "sourceHash": "93e2741"
+    "sourceHash": "93e2741",
+    "sameAsSourceJustification": "The brand word `Cmdr` plus `AI` plus a formatted size placeholder. Both words are kept Latin in this catalog: `Cmdr` is on the do-not-translate list, and `AI` is what `settings.section.ai` already ships as the section's own name in Traditional Chinese. Chinese doesn't inflect, so the name stays bare and nothing is left to translate. The sibling legend items that DO contain a word are translated (`系統 {size}`, `可用 {size}`, `預計增加`, `釋出`)."
   },
   "ai.local.ramLegendProjected": "預計增加",
   "@ai.local.ramLegendProjected": {
