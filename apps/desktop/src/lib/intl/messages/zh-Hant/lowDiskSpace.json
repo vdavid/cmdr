@@ -1,21 +1,21 @@
 {
-  "lowDiskSpace.toast.message": "Your startup disk is running low on space: {freeText} free ({percentText}%).",
+  "lowDiskSpace.toast.message": "你的啟動磁碟空間快用完了：剩餘 {freeText}（{percentText}%）。",
   "@lowDiskSpace.toast.message": {
     "sourceHash": "44b701f"
   },
-  "lowDiskSpace.toast.disable": "Disable these notifications",
+  "lowDiskSpace.toast.disable": "停用這些通知",
   "@lowDiskSpace.toast.disable": {
     "sourceHash": "1b085f6"
   },
-  "lowDiskSpace.toast.closeTooltip": "Dismiss",
+  "lowDiskSpace.toast.closeTooltip": "關閉",
   "@lowDiskSpace.toast.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "lowDiskSpace.notification.title": "Low disk space",
+  "lowDiskSpace.notification.title": "磁碟空間不足",
   "@lowDiskSpace.notification.title": {
     "sourceHash": "5b1f5bf"
   },
-  "lowDiskSpace.notification.body": "{freeText} free ({percentText}%) on your startup disk.",
+  "lowDiskSpace.notification.body": "你的啟動磁碟剩餘 {freeText}（{percentText}%）。",
   "@lowDiskSpace.notification.body": {
     "sourceHash": "b17ee43"
   }

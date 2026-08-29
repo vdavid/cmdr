@@ -1,89 +1,89 @@
 {
-  "ui.alertDialog.defaultButton": "OK",
+  "ui.alertDialog.defaultButton": "好",
   "@ui.alertDialog.defaultButton": {
     "sourceHash": "565339b"
   },
-  "ui.alertDialog.copyPathAria": "Copy path to clipboard",
+  "ui.alertDialog.copyPathAria": "將路徑複製到剪貼板",
   "@ui.alertDialog.copyPathAria": {
     "sourceHash": "333608a"
   },
-  "ui.modalDialog.close": "Close",
+  "ui.modalDialog.close": "關閉",
   "@ui.modalDialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "ui.popover.defaultAriaLabel": "Options",
+  "ui.popover.defaultAriaLabel": "選項",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"
   },
-  "ui.select.placeholder": "Select...",
+  "ui.select.placeholder": "請選擇…",
   "@ui.select.placeholder": {
     "sourceHash": "1339bdd"
   },
-  "ui.combobox.emptyText": "No matches. Keep typing to use your own value.",
+  "ui.combobox.emptyText": "沒有相符的項目。繼續輸入就能使用你自己的值。",
   "@ui.combobox.emptyText": {
     "sourceHash": "d41f776"
   },
-  "ui.combobox.loadingSuggestions": "Loading suggestions",
+  "ui.combobox.loadingSuggestions": "正在載入建議",
   "@ui.combobox.loadingSuggestions": {
     "sourceHash": "6fcf509"
   },
-  "ui.combobox.showSuggestions": "Show suggestions",
+  "ui.combobox.showSuggestions": "顯示建議",
   "@ui.combobox.showSuggestions": {
     "sourceHash": "a80b6a6"
   },
-  "ui.copyBox.copyAria": "Copy command to clipboard",
+  "ui.copyBox.copyAria": "將指令複製到剪貼板",
   "@ui.copyBox.copyAria": {
     "sourceHash": "334c24c"
   },
-  "ui.copyBox.copy": "Copy",
+  "ui.copyBox.copy": "複製",
   "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
-  "ui.copyBox.copied": "Copied!",
+  "ui.copyBox.copied": "已複製！",
   "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
-  "ui.shortcutChip.customizeAria": "Customize the {commandName} shortcut",
+  "ui.shortcutChip.customizeAria": "自訂 {commandName} 快速鍵",
   "@ui.shortcutChip.customizeAria": {
     "sourceHash": "a1d00b2"
   },
-  "ui.shortcutChip.customizeTooltip": "Customize this shortcut",
+  "ui.shortcutChip.customizeTooltip": "自訂這個快速鍵",
   "@ui.shortcutChip.customizeTooltip": {
     "sourceHash": "9a7817d"
   },
-  "ui.toast.sendErrorReport": "Send error report…",
+  "ui.toast.sendErrorReport": "傳送錯誤報告…",
   "@ui.toast.sendErrorReport": {
     "sourceHash": "063c94e"
   },
-  "ui.toast.dismissAria": "Dismiss notification",
+  "ui.toast.dismissAria": "關閉通知",
   "@ui.toast.dismissAria": {
     "sourceHash": "b7bb3f3"
   },
-  "ui.loadingIcon.finalizing": "All {countText} {count, plural, one {file} other {files}} loaded. Sorting your files, preparing view...",
+  "ui.loadingIcon.finalizing": "已載入全部 {countText} 個{count, plural, other {檔案}}。正在排序你的檔案並準備顯示…",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "2aac2cb"
   },
-  "ui.loadingIcon.loaded": "Loaded {countText} {count, plural, one {file} other {files}}...",
+  "ui.loadingIcon.loaded": "已載入 {countText} 個{count, plural, other {檔案}}…",
   "@ui.loadingIcon.loaded": {
     "sourceHash": "93e45fc"
   },
-  "ui.loadingIcon.openingFolder": "Opening folder...",
+  "ui.loadingIcon.openingFolder": "正在開啟資料夾…",
   "@ui.loadingIcon.openingFolder": {
     "sourceHash": "818cbbb"
   },
-  "ui.loadingIcon.loading": "Loading...",
+  "ui.loadingIcon.loading": "正在載入…",
   "@ui.loadingIcon.loading": {
     "sourceHash": "47d2a51"
   },
-  "ui.loadingIcon.cancelHint": "Press <key></key> to cancel and go back",
+  "ui.loadingIcon.cancelHint": "按 <key></key> 取消並返回",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "400dd28"
   },
-  "ui.numberInput.decrease": "Decrease {label}",
+  "ui.numberInput.decrease": "減少{label}",
   "@ui.numberInput.decrease": {
     "sourceHash": "995a5d6"
   },
-  "ui.numberInput.increase": "Increase {label}",
+  "ui.numberInput.increase": "增加{label}",
   "@ui.numberInput.increase": {
     "sourceHash": "bbf5fc9"
   }

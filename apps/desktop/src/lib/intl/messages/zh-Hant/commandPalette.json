@@ -1,25 +1,25 @@
 {
-  "commandPalette.searchPlaceholder": "Search commands...",
+  "commandPalette.searchPlaceholder": "搜尋指令…",
   "@commandPalette.searchPlaceholder": {
     "sourceHash": "dd6c6ab"
   },
-  "commandPalette.searchAriaLabel": "Search commands",
+  "commandPalette.searchAriaLabel": "搜尋指令",
   "@commandPalette.searchAriaLabel": {
     "sourceHash": "00ff739"
   },
-  "commandPalette.noResults": "No commands found",
+  "commandPalette.noResults": "找不到指令",
   "@commandPalette.noResults": {
     "sourceHash": "eac0d09"
   },
-  "commandPalette.resultsAriaLabel": "Commands",
+  "commandPalette.resultsAriaLabel": "指令",
   "@commandPalette.resultsAriaLabel": {
     "sourceHash": "b269dc4"
   },
-  "commandPalette.groupRecent": "Recent",
+  "commandPalette.groupRecent": "最近使用",
   "@commandPalette.groupRecent": {
     "sourceHash": "690dbe9"
   },
-  "commandPalette.groupAll": "All commands",
+  "commandPalette.groupAll": "所有指令",
   "@commandPalette.groupAll": {
     "sourceHash": "f9c4287"
   }

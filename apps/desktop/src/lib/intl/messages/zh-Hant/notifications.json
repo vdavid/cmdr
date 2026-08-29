@@ -1,5 +1,5 @@
 {
-  "notifications.permissionDenied": "macOS notifications are off. Open System Settings to allow them.",
+  "notifications.permissionDenied": "macOS 通知已關閉。開啟「系統設定」來允許通知。",
   "@notifications.permissionDenied": {
     "sourceHash": "4fef9ce"
   }

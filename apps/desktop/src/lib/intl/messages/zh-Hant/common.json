@@ -1,25 +1,26 @@
 {
-  "common.attachEmail": "Attach my email address ({emailAddress} – <change>change</change>) so you can follow up",
+  "common.attachEmail": "附上我的電子郵件地址（{emailAddress} – <change>更改</change>），以便你回覆",
   "@common.attachEmail": {
     "sourceHash": "6ce573e"
   },
-  "common.attachEmailInputLabel": "Your email address",
+  "common.attachEmailInputLabel": "你的電子郵件地址",
   "@common.attachEmailInputLabel": {
     "sourceHash": "3fa7c5e"
   },
-  "common.attachEmailInvalid": "That doesn''t look like an email address",
+  "common.attachEmailInvalid": "這看起來不像電子郵件地址",
   "@common.attachEmailInvalid": {
     "sourceHash": "515c7cf"
   },
   "common.attachEmailPlaceholder": "you@example.com",
   "@common.attachEmailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Example email address “you@example.com”: a recognizable placeholder shape whose @-pattern is what hints “email”. Apple keeps example addresses in this Latin form in its Traditional Chinese localizations too, so translating it would make the hint less readable, not more."
   },
-  "common.attachEmailPrompt": "Attach my email address so you can follow up",
+  "common.attachEmailPrompt": "附上我的電子郵件地址，以便你回覆",
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",
+  "common.downloadsFdaHint": "Cmdr 需要「完全取用磁碟」權限才能監視你的「下載項目」資料夾。<settingsLink>開啟「系統設定」</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
   }

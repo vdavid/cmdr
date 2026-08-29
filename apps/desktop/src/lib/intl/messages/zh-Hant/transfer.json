@@ -1,49 +1,49 @@
 {
-  "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
+  "transfer.trash": "已將 {countText} {count, plural, other {個檔案}}移至垃圾桶",
   "@transfer.trash": {
     "sourceHash": "0be2310"
   },
-  "transfer.delete": "Delete complete: {countText} {count, plural, one {file} other {files}}",
+  "transfer.delete": "刪除完成：{countText} {count, plural, other {個檔案}}",
   "@transfer.delete": {
     "sourceHash": "dc69b52"
   },
-  "transfer.compress.split": "Compressed {phrase}.",
+  "transfer.compress.split": "已壓縮 {phrase}。",
   "@transfer.compress.split": {
     "sourceHash": "daf7381"
   },
-  "transfer.compress.fileOnly": "Compressed {countText} {count, plural, one {file} other {files}}.",
+  "transfer.compress.fileOnly": "已壓縮 {countText} {count, plural, other {個檔案}}。",
   "@transfer.compress.fileOnly": {
     "sourceHash": "af9d928"
   },
-  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {file} other {files}} and {foldersText} {folders, plural, one {folder} other {folders}}} foldersOnly {{foldersText} {folders, plural, one {folder} other {folders}}} other {{filesText} {files, plural, one {file} other {files}}}}",
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, other {個檔案}}和 {foldersText} {folders, plural, other {個資料夾}}} foldersOnly {{foldersText} {folders, plural, other {個資料夾}}} other {{filesText} {files, plural, other {個檔案}}}}",
   "@transfer.movedPhrase": {
     "sourceHash": "e43d866"
   },
-  "transfer.split.clean": "{verb, select, copy {Copied} other {Moved}} {phrase}.",
+  "transfer.split.clean": "已{verb, select, copy {複製} other {移動}} {phrase}。",
   "@transfer.split.clean": {
     "sourceHash": "5241e2a"
   },
-  "transfer.split.skipped": "{verb, select, copy {Copied} other {Moved}} {phrase}, skipped {skippedText} {skipped, plural, one {file} other {files}} (already at the target).",
+  "transfer.split.skipped": "已{verb, select, copy {複製} other {移動}} {phrase}，略過 {skippedText} {skipped, plural, other {個檔案}}（已在目標位置）。",
   "@transfer.split.skipped": {
     "sourceHash": "5fe3ee2"
   },
-  "transfer.fileOnly.allDone": "{verb, select, copy {Copy} other {Move}} complete: {verb, select, copy {copied} other {moved}} {transferredText} {transferred, plural, one {file} other {files}}.",
+  "transfer.fileOnly.allDone": "{verb, select, copy {複製} other {移動}}完成：已{verb, select, copy {複製} other {移動}} {transferredText} {transferred, plural, other {個檔案}}。",
   "@transfer.fileOnly.allDone": {
     "sourceHash": "19c9b7d"
   },
-  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Copy} other {Move}} complete: file already at the target, not {verb, select, copy {copied} other {moved}}.",
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {複製} other {移動}}完成：檔案已在目標位置，未{verb, select, copy {複製} other {移動}}。",
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copy} other {Move}} complete: skipped all {skippedText} files (already at the target), nothing was {verb, select, copy {copied} other {moved}}.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {複製} other {移動}}完成：已略過全部 {skippedText} 個檔案（已在目標位置），未{verb, select, copy {複製} other {移動}}任何項目。",
   "@transfer.fileOnly.allSkippedMany": {
     "sourceHash": "ae39c4b"
   },
-  "transfer.fileOnly.mixedCopy": "Copy complete: copied {transferredText}, skipped {skippedText}. All {processedText} of your selected {processed, plural, one {file} other {files}} are now at the target.",
+  "transfer.fileOnly.mixedCopy": "複製完成：已複製 {transferredText}，略過 {skippedText}。你所選的全部 {processedText} {processed, plural, other {個檔案}}現在都在目標位置。",
   "@transfer.fileOnly.mixedCopy": {
     "sourceHash": "b00606b"
   },
-  "transfer.fileOnly.mixedMove": "Move complete: moved {transferredText}, skipped {skippedText}. {skippedText} {skipped, plural, one {file} other {files}} {skipped, plural, one {was} other {were}} already at the target.",
+  "transfer.fileOnly.mixedMove": "移動完成：已移動 {transferredText}，略過 {skippedText}。{skippedText} {skipped, plural, other {個檔案}}原本就在目標位置。",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
   }

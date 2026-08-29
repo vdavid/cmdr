@@ -221,11 +221,51 @@ contamination** (`重復分頁`, `刷新`, `在新分頁中打開`), so weight T
 - TC menu roots, useful for section names: `檔案操作`, `設定`, `網路`, `剪貼簿`, `瀏覽`, `工具`, `檢視`, `排序`,
   `標記`, `說明`, `使用者`.
 
+### macOS feature and System Settings names
+
+Read straight off the shipped OS by English-key match (`Localizable.loctable` under `System Settings.app` and
+`/System/Library/ExtensionKit/Extensions`, recipe in `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this
+machine"). All **`confirmed`** — this is what the user's own Mac says (verified on macOS 26.6.2, build 25G83,
+key-match, 2026-08-29).
+
+- **System Settings** · `系統設定` · TW = HK. Quote it in running text: `「系統設定」`.
+- **Full Disk Access** · `完全取用磁碟` · TW; **HK says 完整磁碟取用** — Taiwan default applies.
+- **Accessibility** · `輔助使用` · TW = HK. ❗ Not `協助工具` (that's Microsoft's Windows term).
+- **Appearance** · `外觀` · TW = HK
+- **Privacy & Security** · `隱私權與安全性` · TW; **HK says 私隱與保安** — Taiwan default applies.
+- **Displays** · `顯示器` · TW; **HK says 螢幕** — Taiwan default applies.
+- **Notifications** · `通知` · TW = HK
+- **General** · `一般` · TW = HK
+- **Keyboard** · `鍵盤` · TW = HK
+- **Sound** · `聲音` · TW = HK
+- **Storage** · `儲存空間` · TW = HK
+- **Text size** · `文字大小` · TW = HK
+- **Login Items** · `登入項目` · TW = HK
+- **Language & Region** · `語言與地區` · TW = HK
+- **Desktop & Dock** · `桌面與 Dock` · TW = HK (Apple writes it tight, `桌面與Dock`; we space the Latin per
+  `style.md` § Spacing)
+- **Downloads (the folder)** · `下載項目` · AP-TW (12), AP-HK (11) · `confirmed`
+- **Documents (the folder)** · `文件` · AP-TW/HK · `confirmed`
+
 ### Miscellaneous
 
 - **user** · `使用者` · AP-TW (36), TC (51) · `high`. AP-HK avoids the noun entirely (0 for 使用者, 用戶, and 用家),
   phrasing in second person instead; when a sentence reads naturally with `你`, prefer that over the noun.
-- **clipboard** · `剪貼簿` · TC (`剪貼簿`) · `high`
+- **quit (the app)** · `結束` · AP-TW = AP-HK, by key match (`"Quit"` → `結束`) · `confirmed`. ❗ Not `退出`, which is
+  taken by *eject*.
+- **command** · `指令` · TC + the file managers (78) and MS (66); Apple has none · `high`. Used for both the command
+  palette's commands and a terminal command. **`命令列`** stays the fixed compound for *command line* (TC-attested).
+- **list (generic UI list)** · `列表` · AP-TW (53), AP-HK (58) · `high`. MS and TC prefer `清單`, and `檔案清單`
+  stays the orthodox two-pane term for *file list*; Apple wins for a plain "list".
+- **clipboard** · `剪貼板` · AP-TW (8), AP-HK (8) · `high`. TC says `剪貼簿`, which is the commoner word in Taiwan
+  generally, but Apple's two Traditional locales agree and Cmdr is a Mac app.
+- **feedback** · `意見反應` · MS (22) · `high`. The standard Taiwanese product term; `回饋` means feedback in the
+  control-loop sense. Not in Apple's bundles.
+- **Terminal (the app)** · `終端機` · TC + file managers (58), MS (86) · `high`
+- **process (a running OS process)** · `程序` · AP-TW (2), AP-HK (2), MS (109) · `high`. No collision with *program*,
+  which is `程式`.
+- **email address** · `電子郵件地址` · MS (`電子郵件` 129, `地址` 47) · `high`. ❗ `位址` is the network-address sense
+  (an IP or URL), not an email one.
 - **cache** · `快取` · MS · `high`
 - **default** · `預設` · AP-TW = AP-HK (27/27) · `confirmed`. ❗ Collides with "preset"; see `style.md` § Notes.
 - **custom** · `自訂` · MS, standard Traditional usage · `high`

@@ -1,53 +1,54 @@
 {
-  "feedback.dialog.title": "Send feedback",
+  "feedback.dialog.title": "傳送意見反應",
   "@feedback.dialog.title": {
     "sourceHash": "8235980"
   },
-  "feedback.dialog.description": "What''s working? What''s missing? Your note goes straight to the maker of Cmdr.",
+  "feedback.dialog.description": "哪些好用？還缺什麼？你的留言會直接送到 Cmdr 作者的手上。",
   "@feedback.dialog.description": {
     "sourceHash": "fe435e3"
   },
-  "feedback.dialog.label": "Your feedback",
+  "feedback.dialog.label": "你的意見反應",
   "@feedback.dialog.label": {
     "sourceHash": "cdb1c0a"
   },
-  "feedback.dialog.placeholder": "Example: I''d love a shortcut for jumping between tabs.",
+  "feedback.dialog.placeholder": "例如：希望能有在分頁之間跳轉的快速鍵。",
   "@feedback.dialog.placeholder": {
     "sourceHash": "dd0214b"
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "“{currentText} / {maxText}”: a pure character-counter fraction — two preformatted-number placeholders joined by “ / ”. There is no translatable text, and Traditional Chinese writes this fraction the same way."
   },
-  "feedback.dialog.tooLong": "Sorry, that''s too long. Maximum is {maxText} characters.",
+  "feedback.dialog.tooLong": "抱歉，內容太長了。最多 {maxText} 個字元。",
   "@feedback.dialog.tooLong": {
     "sourceHash": "60a59ec"
   },
-  "feedback.dialog.moreWays": "You can also <github>browse and vote on GitHub</github> or <call>book a call</call> with David.",
+  "feedback.dialog.moreWays": "你也可以<github>在 GitHub 上瀏覽和投票</github>，或者<call>預約通話</call>和 David 聊聊。",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
   },
-  "feedback.dialog.invalid": "That note didn''t go through. Shorten it and try again?",
+  "feedback.dialog.invalid": "這則留言沒能送出。把它縮短一點再試一次？",
   "@feedback.dialog.invalid": {
     "sourceHash": "c379ff8"
   },
-  "feedback.dialog.softFailure": "Sorry, we couldn''t send your feedback right now. Try again?",
+  "feedback.dialog.softFailure": "抱歉，現在沒辦法傳送你的意見反應。要再試一次嗎？",
   "@feedback.dialog.softFailure": {
     "sourceHash": "21012f3"
   },
-  "feedback.dialog.cancel": "Cancel",
+  "feedback.dialog.cancel": "取消",
   "@feedback.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "feedback.dialog.send": "Send feedback",
+  "feedback.dialog.send": "傳送意見反應",
   "@feedback.dialog.send": {
     "sourceHash": "8235980"
   },
-  "feedback.dialog.sending": "Sending…",
+  "feedback.dialog.sending": "正在傳送…",
   "@feedback.dialog.sending": {
     "sourceHash": "b8ed527"
   },
-  "feedback.sentToast": "Thanks for the feedback! We read every note.",
+  "feedback.sentToast": "感謝你的意見反應！我們每一則都會讀。",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
   }

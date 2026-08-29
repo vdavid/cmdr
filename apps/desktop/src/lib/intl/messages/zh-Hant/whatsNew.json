@@ -1,33 +1,33 @@
 {
-  "whatsNew.dialog.title": "What’s new in Cmdr",
+  "whatsNew.dialog.title": "Cmdr 的新功能",
   "@whatsNew.dialog.title": {
     "sourceHash": "12b2a68"
   },
-  "whatsNew.dialog.empty": "Nothing to see here yet. New changes will show up here after an update.",
+  "whatsNew.dialog.empty": "這裡暫時還沒有內容。有新的變更時，更新後就會顯示在這裡。",
   "@whatsNew.dialog.empty": {
     "sourceHash": "31a5a2e"
   },
-  "whatsNew.dialog.showMore": "Show more",
+  "whatsNew.dialog.showMore": "顯示更多",
   "@whatsNew.dialog.showMore": {
     "sourceHash": "f5c9bd1"
   },
-  "whatsNew.dialog.showLess": "Show less",
+  "whatsNew.dialog.showLess": "顯示較少",
   "@whatsNew.dialog.showLess": {
     "sourceHash": "94ea9b1"
   },
-  "whatsNew.dialog.seeFullChangelog": "See full changelog",
+  "whatsNew.dialog.seeFullChangelog": "查看完整的更新日誌",
   "@whatsNew.dialog.seeFullChangelog": {
     "sourceHash": "66a59ed"
   },
-  "whatsNew.dialog.optOut": "Not interested in changelogs",
+  "whatsNew.dialog.optOut": "不想看更新日誌",
   "@whatsNew.dialog.optOut": {
     "sourceHash": "f1259e9"
   },
-  "whatsNew.dialog.close": "Close",
+  "whatsNew.dialog.close": "關閉",
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "Got it, no more update notes. Re-enable them anytime in Settings > Updates & privacy.",
+  "whatsNew.optOutToast": "好的，之後不再顯示更新說明。你隨時可以在「設定 > 更新與隱私」中重新開啟。",
   "@whatsNew.optOutToast": {
     "sourceHash": "368591b"
   }

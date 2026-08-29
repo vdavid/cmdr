@@ -1,89 +1,89 @@
 {
-  "mtp.connectedToast.title": "Connected to {deviceName}",
+  "mtp.connectedToast.title": "已連接到 {deviceName}",
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.",
+  "mtp.connectedToast.bodyMac": "Cmdr 已暫停 macOS 的相機常駐程式（ptpcamerad）以便存取這個裝置。若要在其他應用程式中使用它，請在設定中關閉 MTP 支援。",
   "@mtp.connectedToast.bodyMac": {
     "sourceHash": "3ace37b"
   },
-  "mtp.connectedToast.bodyOther": "To use this device in another app, disable MTP support in settings.",
+  "mtp.connectedToast.bodyOther": "若要在其他應用程式中使用這個裝置，請在設定中關閉 MTP 支援。",
   "@mtp.connectedToast.bodyOther": {
     "sourceHash": "6f42620"
   },
-  "mtp.connectedToast.dontShowAgain": "Don''t show again",
+  "mtp.connectedToast.dontShowAgain": "不再顯示",
   "@mtp.connectedToast.dontShowAgain": {
     "sourceHash": "d98ab77"
   },
-  "mtp.connectedToast.disableMtp": "Disable MTP...",
+  "mtp.connectedToast.disableMtp": "關閉 MTP…",
   "@mtp.connectedToast.disableMtp": {
     "sourceHash": "2057a3d"
   },
-  "mtp.connectedToast.ok": "OK",
+  "mtp.connectedToast.ok": "好",
   "@mtp.connectedToast.ok": {
     "sourceHash": "565339b"
   },
-  "mtp.permissionDialog.title": "Can''t access USB device",
+  "mtp.permissionDialog.title": "無法存取 USB 裝置",
   "@mtp.permissionDialog.title": {
     "sourceHash": "96130bf"
   },
-  "mtp.permissionDialog.description": "Cmdr doesn''t have permission to access this device. Linux needs udev rules to grant MTP device access.",
+  "mtp.permissionDialog.description": "Cmdr 沒有存取這個裝置的權限。Linux 需要 udev 規則才能授予 MTP 裝置的存取權。",
   "@mtp.permissionDialog.description": {
     "sourceHash": "c11f0e8"
   },
-  "mtp.permissionDialog.explanation": "Run this command in your terminal to install the rules and reload them:",
+  "mtp.permissionDialog.explanation": "在終端機中執行這個指令來安裝並重新載入規則：",
   "@mtp.permissionDialog.explanation": {
     "sourceHash": "6bc70dd"
   },
-  "mtp.permissionDialog.helpText": "After running the command, unplug and replug the device, then retry.",
+  "mtp.permissionDialog.helpText": "執行指令後，拔除並重新插上裝置，然後再試一次。",
   "@mtp.permissionDialog.helpText": {
     "sourceHash": "519f195"
   },
-  "mtp.permissionDialog.close": "Close",
+  "mtp.permissionDialog.close": "關閉",
   "@mtp.permissionDialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "mtp.permissionDialog.retry": "Retry connection",
+  "mtp.permissionDialog.retry": "重新連接",
   "@mtp.permissionDialog.retry": {
     "sourceHash": "eccee4e"
   },
-  "mtp.ptpcameradDialog.title": "Can''t connect to MTP device",
+  "mtp.ptpcameradDialog.title": "無法連接到 MTP 裝置",
   "@mtp.ptpcameradDialog.title": {
     "sourceHash": "058de77"
   },
-  "mtp.ptpcameradDialog.inUseBy": "The device is in use by <processName>{process}</processName>.",
+  "mtp.ptpcameradDialog.inUseBy": "這個裝置正由 <processName>{process}</processName> 使用中。",
   "@mtp.ptpcameradDialog.inUseBy": {
     "sourceHash": "5b97c25"
   },
-  "mtp.ptpcameradDialog.inUseGeneric": "Another process has exclusive access to the device.",
+  "mtp.ptpcameradDialog.inUseGeneric": "另一個程序對這個裝置擁有獨佔存取權。",
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "On macOS, the system daemon <code>ptpcamerad</code> automatically claims Android devices. To work around this, run the following command in Terminal (keep it running while using Cmdr):",
+  "mtp.ptpcameradDialog.explanation": "在 macOS 上，系統常駐程式 <code>ptpcamerad</code> 會自動佔用 Android 裝置。要繞過這一點，請在「終端機」中執行以下指令（使用 Cmdr 期間讓它保持執行）：",
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "This command continuously stops ptpcamerad while running. Press <key>Ctrl+C</key> in Terminal to stop it when done.",
+  "mtp.ptpcameradDialog.helpText": "這個指令在執行期間會持續停止 ptpcamerad。完成後在「終端機」中按 <key>Ctrl+C</key> 就能停止它。",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },
-  "mtp.ptpcameradDialog.close": "Close",
+  "mtp.ptpcameradDialog.close": "關閉",
   "@mtp.ptpcameradDialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "mtp.ptpcameradDialog.retry": "Retry connection",
+  "mtp.ptpcameradDialog.retry": "重新連接",
   "@mtp.ptpcameradDialog.retry": {
     "sourceHash": "eccee4e"
   },
-  "mtp.deviceFallbackName": "MTP device",
+  "mtp.deviceFallbackName": "MTP 裝置",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
   },
-  "mtp.error.exclusiveAccess": "Another process has exclusive access{blocking, select, none {} other { (blocked by {blocking})}}",
+  "mtp.error.exclusiveAccess": "另一個程序擁有獨佔存取權{blocking, select, none {} other {（被 {blocking} 佔用）}}",
   "@mtp.error.exclusiveAccess": {
     "sourceHash": "a81f306"
   },
-  "mtp.error.permissionDenied": "USB permission denied. Install udev rules and reconnect",
+  "mtp.error.permissionDenied": "USB 存取權限遭拒。請安裝 udev 規則並重新連接",
   "@mtp.error.permissionDenied": {
     "sourceHash": "3362501"
   }
