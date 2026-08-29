@@ -103,6 +103,10 @@
   "@licensing.dialog.expiredOnHelp": {
     "sourceHash": "036bb88"
   },
+  "licensing.dialog.serverInvalidError": "We know this key but when we checked it with our payment provider, it didn''t recognise it. This can happen if the purchase was refunded or not cleared.",
+  "@licensing.dialog.serverInvalidError": {
+    "sourceHash": "4beeef1"
+  },
   "licensing.dialog.emptyKeyError": "Please enter a licence key",
   "@licensing.dialog.emptyKeyError": {
     "sourceHash": "2b36779"

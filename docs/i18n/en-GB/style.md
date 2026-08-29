@@ -107,7 +107,8 @@ it.
 **Fork what a British reader would misread or read as foreign. Skip what merely differs in house style.** Applying that:
 
 - `go forward` → **`go forwards`** forks: the adverbial `-s` is a real BrE/AmE grammatical difference, and Apple forks
-  it on the identical navigation control (`AppKit/AccessibilityImageDescriptions.json:NSGoForwardTemplate`).
+  it on the identical navigation control (`AppKit/AccessibilityImageDescriptions.json:NSGoForwardTemplate`). The bare
+  NOUN doesn't: `menu.go.forward` stays `Forward`, matching `Finder/MenuBar.json:249.title`.
 - `percent` → **`per cent`** forks: one word reads American. Apple writes two in both `en-GB` and `en-AU`
   (`Finder/LocalizableMerged.json:PW13.2`).
 
@@ -123,9 +124,17 @@ Considered and deliberately NOT forked, so nobody re-litigates them:
 - **Date and time formats.** `en-GB` day-first, 24-hour is real (`Finder/LocalizableMerged.json:DATE_FORMATTER1`), but
   Cmdr formats dates through `$lib/intl/number-format.ts` and the OS region, not through catalog strings. Nothing to
   fork.
-- **`checkbox` → `tickbox`, `webpages` → `web pages`, `signed into` → `signed in to`, `period` → `full stop`,
-  `show less` → `show fewer`.** All genuine `en-GB` forks with no matching string in Cmdr's catalog today. If copy ever
-  introduces one of these words, fork it then.
+- **`checkbox` → `tickbox`, `webpages` → `web pages`, `signed into` → `signed in to`, `period` → `full stop`.** All
+  genuine `en-GB` forks with no matching string in Cmdr's catalog today. If copy ever introduces one of these words,
+  fork it then.
+- **`Show less` → `Show fewer`.** Not a fork at all. `en-GB` Finder keeps `Show Less` on the button in all four
+  attestations (`LocalizableMerged.json:GV6`, `:PV2`, `ColumnPreview.json:4jc-Hy-JNJ.alternateTitle`,
+  `IconCollectionGroupHeaderView.json:Y6z-b0-II4.title`); the single flip, `show less options` → `show fewer options`
+  (`:FI8.1`), is `fewer` in front of a countable plural noun, which is a grammar rule both dialects share. Cmdr's
+  `whatsNew.dialog.showLess` is a bare button, so it inherits base `en`.
+- **`Forward` → `Forwards` on the Go menu.** The adverbial `-s` rides the verb phrase only. `en-GB` writes `Forward` on
+  the menu item (`Finder/MenuBar.json:249.title`, `SystemSettings/MainMenu.json:448.title`) while writing `go forwards`
+  in the accessibility description, so `menu.go.forward` inherits and `commands.navForward.label` forks.
 
 ## New Zealand
 

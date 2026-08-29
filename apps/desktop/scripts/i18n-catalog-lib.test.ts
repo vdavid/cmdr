@@ -6,6 +6,8 @@
  *  - catalog split/merge (messages vs `@key` metadata),
  *  - ICU AST extraction (placeholders, `<tag>`s, plural/select categories) on
  *    representative shapes: plain, `{name}`, `<tag>`, `plural`, `select`, nested,
+ *  - literal-text extraction (`visibleLiterals`), the identifiers-stripped mirror
+ *    of that walk,
  *  - invalid-ICU detection (`ok: false`),
  *  - `sourceHash` determinism + 7-char hex shape,
  *  - locale classification (`resolveLocaleSource`) and catalog layering, the
@@ -20,6 +22,7 @@ import {
   splitCatalogFile,
   mergeCatalogFiles,
   parseMessage,
+  visibleLiterals,
   sourceHash,
   isMetadataKey,
   isRawKey,
@@ -167,6 +170,35 @@ describe('parseMessage', () => {
 
   it('flags a stray unescaped < (parsed as an unclosed tag) as invalid', () => {
     expect(parseMessage('Size <dir>').ok).toBe(false)
+  })
+})
+
+describe('visibleLiterals', () => {
+  it('returns a plain message unchanged', () => {
+    expect(visibleLiterals('Move to Bin')).toBe('Move to Bin')
+  })
+
+  it('drops placeholder NAMES but keeps the copy around them', () => {
+    // The trap this exists for: tintTriggerAria's only "color" is `{colorName}`,
+    // an identifier, so a "color" sweep must not see it.
+    expect(visibleLiterals('{label} (currently: {colorName})')).not.toMatch(/color/i)
+    expect(visibleLiterals('{label} (currently: {colorName})')).toContain('(currently: ')
+  })
+
+  it('drops select/plural category LABELS but keeps each branch body', () => {
+    const literals = visibleLiterals('{k, select, trash {Moving to trash} other {Working}}') ?? ''
+    // `trash {` is the selector; `Moving to trash` is copy. One survives, one does not.
+    expect(literals).toContain('Moving to trash')
+    expect(literals).toContain('Working')
+    expect(literals.match(/trash/g)).toHaveLength(1)
+  })
+
+  it('drops <tag> NAMES but keeps their children', () => {
+    expect(visibleLiterals('Read the <colorNote>tint guide</colorNote>.')).toBe('Read the  tint guide .')
+  })
+
+  it('returns undefined on invalid ICU, so callers fall back explicitly', () => {
+    expect(visibleLiterals('Unclosed {arg')).toBeUndefined()
   })
 })
 

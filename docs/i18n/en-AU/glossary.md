@@ -31,6 +31,24 @@ macOS 26.6.2 (build 25G83), 2026-08-29.
 | tickbox       | tick box       | `Finder/LocalizableMerged.json:BN43`                                     |
 | pop-over      | popover        | `AppKit/TouchBar.json:Dismiss Popover` (AU keeps the `en` form)          |
 
+## Judgment calls
+
+Every ruling in `docs/i18n/en-GB/glossary.md` § Judgment calls applies here unchanged: the `licence` (noun) / `license`
+(verb) split, capital `Bin` as a count noun, ignoring `AppKit/Common.json:Trash` (`Bin` in `en-AU`, `Delete` in `en-GB`,
+and generic-destructive-button in both), and keeping the Oxford comma. Two calls land differently here:
+
+- **`go forward` stays** (so `commands.navForward.label` is absent from this catalog and inherits), while `en-GB` forks
+  the verb phrase to `go forwards`. Apple leaves `AppKit/AccessibilityImageDescriptions.json:NSGoForwardTemplate` and
+  `:NSTouchBarGoForwardTemplate` as `go forward` in `en-AU`. The Go-MENU noun stays `Forward` in both variants
+  (`Finder/MenuBar.json:249.title`, identical in `en-GB` and `en-AU`; the base-`en` pile ships no `MenuBar.json`), so
+  `menu.go.forward` is forked nowhere.
+- **`Show less` stays**, and more plainly than in `en-GB`: `en-AU` doesn't even take the countable-noun correction, so
+  `Finder/LocalizableMerged.json:FI8.1` still reads `show less options` where `en-GB` says `show fewer options`. The
+  bare button is `Show Less` in every locale, so `whatsNew.dialog.showLess` inherits.
+
+`recognize` → `recognise` is shared, not Australian-only: `Finder/LocalizableMerged.json:BN6` reads `recognised` in both
+`en-GB` and `en-AU`.
+
 ## Traps
 
 - **`Finder/LocalizableMerged.json:KIND_FORMATTER_9_1` is `Postcode` in `en-AU`** where `en` and `en-GB` say `ZIP`. It's

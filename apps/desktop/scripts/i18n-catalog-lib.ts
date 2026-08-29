@@ -15,7 +15,9 @@
  *     runtime uses (`intl-messageformat`, see below), then extract the structure
  *     a translation must preserve: placeholder/argument names, `<tag>` names, and
  *     the `plural`/`select` categories per argument. A single source of truth for
- *     "what tokens/structure does this message have".
+ *     "what tokens/structure does this message have", plus its mirror image,
+ *     `visibleLiterals` — the copy with every identifier stripped, which is what a
+ *     vocabulary sweep must match words against.
  *  3. Source hashing: `sourceHash(value)` is a git-style 7-char hex of an English
  *     value, stamped into `@key.sourceHash` by the pseudolocale generator and
  *     compared by the stale check.
@@ -353,6 +355,44 @@ export function parseMessage(value: string, locale = 'en'): MessageStructure & {
   } catch (err) {
     return { ...acc, ok: false, error: err instanceof Error ? err.message : String(err) }
   }
+}
+
+/**
+ * Collects the LITERAL text of an ICU message: everything a reader actually sees,
+ * with every identifier removed. Placeholder names (`{count}`), `<tag>` names, and
+ * `plural`/`select` category labels are dropped, while the text INSIDE a branch or
+ * a tag is kept, because that text is copy and the identifiers are not.
+ *
+ * That distinction is what a vocabulary sweep needs. `settings.appearance.tintTriggerAria`
+ * (`{label} (currently: {colorName})`) has no visible "color" at all, and
+ * `queue.row.label`'s ` trash {` is the operation-kind discriminator Rust sends over
+ * IPC; forking either would break rendering. Matching a word against the raw value
+ * would flag both.
+ *
+ * On invalid ICU (or a RAW `isRawKey` family, which never reaches the ICU engine)
+ * the caller should fall back to stripping `{token}` spans instead; this returns
+ * `undefined` so that fallback is explicit rather than silent.
+ *
+ * @param value the ICU message string
+ * @param locale locale tag for parsing (see `parseMessage`)
+ * @returns the literal runs joined by a space, or `undefined` when the value is not parseable ICU
+ */
+export function visibleLiterals(value: string, locale = 'en'): string | undefined {
+  const runs: string[] = []
+  const collect = (ast: readonly AstElement[]): void => {
+    for (const el of ast) {
+      if (el.type === TYPE.literal) runs.push(el.value)
+      else if (el.type === TYPE.select || el.type === TYPE.plural) {
+        for (const branch of Object.values(el.options ?? {})) collect(branch.value)
+      } else if (el.type === TYPE.tag) collect(el.children ?? [])
+    }
+  }
+  try {
+    collect(new IntlMessageFormat(value, locale).getAst() as unknown as readonly AstElement[])
+  } catch {
+    return undefined
+  }
+  return runs.join(' ')
 }
 
 /**
