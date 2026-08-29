@@ -27,7 +27,7 @@
   "@queue.row.reversalDeleting": {
     "sourceHash": "f88d220"
   },
-  "queue.row.reversalRenamingBack": "Alte Namen werden zurückgegeben",
+  "queue.row.reversalRenamingBack": "Alte Namen werden zurückgesetzt",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
   },

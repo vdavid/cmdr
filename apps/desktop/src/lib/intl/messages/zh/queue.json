@@ -27,7 +27,7 @@
   "@queue.row.reversalDeleting": {
     "sourceHash": "f88d220"
   },
-  "queue.row.reversalRenamingBack": "正在还原旧名字",
+  "queue.row.reversalRenamingBack": "正在恢复原来的名称",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
   },
