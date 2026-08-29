@@ -61,7 +61,7 @@ All verified in the pile, all absent from Cmdr's catalog. Fork them if the copy 
 
 ## Claims about `en-AU` that are WRONG
 
-Recorded because they were carried into this milestone as leads and cost time to disprove:
+Recorded because each looked plausible enough to chase, and cost time to disprove:
 
 - **"`en-AU` lowercases `bin` where `en-GB` capitalises `Bin`."** No. Both write capital `Bin` as the proper noun.
   `en-AU` mirrors base `en`'s sentence case exactly (100% over 104 trash-bearing strings), so it writes lowercase `bin`

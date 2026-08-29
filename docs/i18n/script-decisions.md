@@ -3,7 +3,8 @@
 The authoritative record of which SCRIPT each digraphic or transliteration-flexible language ships in, mirroring
 `formal-informal-decisions.md` for register. These calls are David's, not a translator's: each picks one shipped script
 as the catalog base, with any second script a later sibling locale. Reconcile each `<tag>/style.md` script Decision
-point to this table. Decisions made 2026-06-20.
+point to this table. Decided 2026-06-20, except `zh`, which moved from Simplified-only to shipping both scripts on
+2026-08-29 when the `zh-Hant` catalog landed.
 
 | id  | language    | script decision                           | notes                                                                             |
 | --- | ----------- | ----------------------------------------- | --------------------------------------------------------------------------------- |

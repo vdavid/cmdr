@@ -12,22 +12,22 @@ call, no register to establish, no plural categories to rework. What this file o
 `en-GB` inherits from `en` only. There is no `en-AU` → `en-GB` chain: `inheritableAncestors`
 (`apps/desktop/src/lib/intl/locale-inheritance.ts`) walks a tag's own ancestors by dropping subtags, and `en-GB` is not
 an ancestor of `en-AU`. **So every shared British form has to be written into BOTH catalogs.** `en-AU` is not a thin
-patch on this one; it's a sibling that happens to agree with it about 96% of the time.
+patch on this one; it's a sibling that happens to agree with it on 149 of the 160 keys either one forks.
 
 Keep the two in step by hand when you edit either. `docs/i18n/en-AU/style.md` records only where AU diverges.
 
 ## What forks
 
-149 keys of 3,138 (4.7%). Four groups:
+150 keys of 3,153 (4.8%). Four groups:
 
 - **Bin (37 keys)**, the loudest one: the Trash is a destination people navigate to, and their Mac calls it the Bin.
-- **Spelling (64 keys)**: `-our`, `-ise`, `-ll-`, plus `grey`, `ageing`, `towards`, and `got` for `gotten`.
+- **Spelling (65 keys)**: `-our`, `-ise`, `-ll-`, plus `grey`, `ageing`, `towards`, and `got` for `gotten`.
 - **`licence` (45 keys)**: the whole licensing surface.
 - **Three odds and ends**: `per cent` (2 keys) and `Go forwards` (1, `en-GB` only).
 
 ## Rulings
 
-### Bin, always capitalised, and it's a count noun
+### `Bin` the NOUN is always capitalised, and it's a count noun
 
 Apple's British Finder writes **`Bin`** with a capital B in every attestation, including running prose: `Move to Bin`,
 `Empty Bin…`, `Go to the Bin`, `Emptying the Bin…`, `You can recover or remove from the Bin within 30 days`,
@@ -40,6 +40,9 @@ Two things a mechanical `Trash` → `Bin` replace gets wrong:
   `This volume doesn't have a Bin.`, not the ungrammatical `...support bin`. Add the article the grammar needs.
 - **Apple's article convention**: no article when the string names the command (`Move to Bin`), an article in running
   prose (`moved to the Bin`, `stayed in the Bin`).
+- **The VERB stays lowercase**, because it's an ordinary verb rather than the name of a place: `Counting items to
+  bin…`, `Overwrite and bin old file`, `binning`. Those three are correct as they stand. ❌ Don't "fix" them up to
+  `Bin` to match the noun.
 
 **Gotcha: AppKit and Finder disagree, and Finder wins here.** `AppKit/Common.json:Trash` is `Delete` in `en-GB` (and
 `Bin` in `en-AU`), and the Touch Bar accessibility labels `NSTouchBarTrashTemplate` / `NSTrashEmpty` say `delete` in
@@ -158,7 +161,7 @@ lists `en_NZ` as a formatting region. So en-NZ exists to macOS as a _region_ and
 - **A value identical to base `en` is a coverage finding**, and the fix is always to delete the key. `@key.sourceHash`
   and `reviewed` apply; `sameAsSourceJustification` does not.
 - `gen-locale-skeleton.ts` refuses overlay tags and `sync-locale-keys.ts` skips them, both on purpose: they'd mirror all
-  3,138 English keys. These catalogs are written by hand, which is what keeps them small.
+  3,153 English keys. These catalogs are written by hand, which is what keeps them small.
 - ICU rules are inherited from the source: double every apostrophe (`''`) in ICU families, keep them single in the raw
   `errors.*` and native `menu.*` families, and match every `{placeholder}` and `<tag>` name to base `en` exactly.
   `settings.appearance.tintTriggerAria` is the trap: its only "color" is the `{colorName}` placeholder NAME, so it must

@@ -1,7 +1,8 @@
 /**
  * Drift guard for the two English overlays, `en-GB` and `en-AU`.
  *
- * These two catalogs are written BY HAND and are 96% duplicates of each other,
+ * These two catalogs are written BY HAND and agree on 149 of the 160 keys either
+ * one forks,
  * because `en-AU` inherits from `en` and never from `en-GB` (`inheritableAncestors`
  * walks a tag's own ancestors, and `en-GB` is not one of `en-AU`'s). So a shared
  * British form has to be typed into both, and nothing else in the pipeline notices
@@ -117,6 +118,26 @@ const FORKED_TERMS: readonly { term: string; pattern: RegExp; locales: readonly 
   // GB-only: the adverbial `-s` on the VERB phrase. The Go-menu noun ("Forward",
   // `menu.go.forward`) stays put in both, matching `Finder/MenuBar.json:249.title`.
   { term: 'go forward', pattern: /\b(go|goes|going|went)\s+forward\b/i, locales: ['en-GB'] },
+
+  // Families base `en` doesn't use TODAY. Listed anyway, so the guard is armed
+  // BEFORE the copy that introduces one: a term only reaches this list after
+  // someone notices a half-fork, which is the failure the list exists to
+  // prevent. Zero matches costs one regex per value and buys the first
+  // occurrence being caught on the commit that adds it.
+  //
+  // Each pattern matches the AMERICAN form only. A British form here would make
+  // the correctly-forked overlay value read as a leftover: `catalogue` must not
+  // match, or `en-GB` fails the sweep for spelling it right.
+  { term: 'authorize', pattern: /\bauthoriz(e|es|ed|ing|ation|ations)\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'initialize', pattern: /\binitializ(e|es|ed|ing|ation)\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'analyze', pattern: /\banalyz(e|es|ed|ing)\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'center', pattern: /\bcenter(s|ed|ing)?\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'defense', pattern: /\bdefens(e|es|ive)\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'catalog', pattern: /\bcatalog(s|ed|ing)?\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'installment', pattern: /\binstallment(s)?\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'judgment', pattern: /\bjudgment(s)?\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'labeled', pattern: /\blabel(ed|ing)\b/i, locales: ['en-GB', 'en-AU'] },
+  { term: 'traveled', pattern: /\btravel(ed|ing|er|ers)\b/i, locales: ['en-GB', 'en-AU'] },
 ]
 
 describe('en-GB and en-AU are overlays of en, not full translations', () => {

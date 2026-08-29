@@ -5,7 +5,7 @@ process, and the app-wide `docs/style-guide.md` for the English voice these note
 
 `zh-Hant` is a **full translation of `en`**, not an overlay of `zh`. The Simplified `zh` catalog is unreadable to this
 locale's readers, so the script guard blocks every inheritance path: a missing key falls through to English, never to
-`zh`. Every one of the 3,138 keys has to be written here. Rule and its three enforcing layers:
+`zh`. Every one of the 3,153 keys has to be written here. Rule and its three enforcing layers:
 `apps/desktop/src/lib/intl/locale-inheritance.ts`.
 
 One catalog serves **Taiwan, Hong Kong, and Macau**. That single fact drives most of the rulings below, and it's why the
