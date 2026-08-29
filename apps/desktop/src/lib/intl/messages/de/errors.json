@@ -1001,11 +1001,11 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Dieser Ordner liegt auf **pCloud**s virtuellem Laufwerk. Das kannst du versuchen:\n- Stelle sicher, dass die pCloud-App läuft und du angemeldet bist\n- Prüfe deine Internetverbindung\n- Genehmige nach einem macOS-Update pCloud's Systemerweiterung erneut unter **Systemeinstellungen > Allgemein > Anmeldeobjekte & Erweiterungen**",
+  "errors.provider.pCloudFuse.needsAction": "Dieser Ordner liegt auf **pCloud**s virtuellem Laufwerk. Das kannst du versuchen:\n- Stelle sicher, dass die pCloud-App läuft und du angemeldet bist\n- Prüfe deine Internetverbindung\n- Genehmige nach einem macOS-Update die Systemerweiterung von pCloud erneut unter **Systemeinstellungen > Allgemein > Anmeldeobjekte & Erweiterungen**",
   "@errors.provider.pCloudFuse.needsAction": {
     "sourceHash": "afea03d"
   },
-  "errors.provider.pCloudFuse.serious": "Dieser Ordner liegt auf **pCloud**s virtuellem Laufwerk. Der pCloud-FUSE-Prozess ist vielleicht abgestürzt. Das kannst du versuchen:\n- Beende die pCloud-App und öffne sie erneut\n- Wenn das Laufwerk nicht wieder erscheint, hänge es zwangsweise aus: führe im Terminal `umount -f /Volumes/pCloudDrive` aus\n- Genehmige nach einem macOS-Update pCloud's Systemerweiterung erneut unter **Systemeinstellungen > Allgemein > Anmeldeobjekte & Erweiterungen**",
+  "errors.provider.pCloudFuse.serious": "Dieser Ordner liegt auf **pCloud**s virtuellem Laufwerk. Der pCloud-FUSE-Prozess ist vielleicht abgestürzt. Das kannst du versuchen:\n- Beende die pCloud-App und öffne sie erneut\n- Wenn das Laufwerk nicht wieder erscheint, hänge es zwangsweise aus: führe im Terminal `umount -f /Volumes/pCloudDrive` aus\n- Genehmige nach einem macOS-Update die Systemerweiterung von pCloud erneut unter **Systemeinstellungen > Allgemein > Anmeldeobjekte & Erweiterungen**",
   "@errors.provider.pCloudFuse.serious": {
     "sourceHash": "d7e6926"
   },
