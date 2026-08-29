@@ -185,6 +185,12 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 - **remote** · `遠端` · AP-TW, MS, THU; AP-HK says 遙距 · `high`
 - **local** · `本機` · AP-TW = AP-HK, MS, NAU · `confirmed`
 - **cloud** · `雲端` · AP-TW = AP-HK (`Cloud Storage` → 雲端儲存空間), MS · `confirmed`
+- **iCloud Drive** · `iCloud 雲碟` · AP-TW = AP-HK (both render it `iCloud雲碟`, 49 occurrences each; AP-CN says
+  `iCloud云盘`) · `high`. Apple localizes the descriptor, so this is NOT a kept-English brand like the sibling
+  `errors.provider.*` names. **Spaced**, against Apple's tight rendering: a brand + Han descriptor is a Latin run
+  like any other, and the sources that share our spacing convention space these compounds (Microsoft zh-Hant 7,667
+  spaced / 11 tight, including `Office LTSC 專業版` and `USB 磁碟機`). Full ruling and the counterargument it
+  answers: `style.md` § Spacing.
 - **memory (RAM)** · `記憶體` · AP-TW = AP-HK (Info window `記憶體：`), MS · `confirmed`. AP-CN says 内存.
 - **storage** · `儲存空間` · AP-TW = AP-HK (`Manage Storage…` → 管理儲存空間⋯), MS · `confirmed`
 - **free space** · `可用空間` · AP-TW (`因為可用空間不足`), MS; AP-HK says 未使用空間 · `high`
