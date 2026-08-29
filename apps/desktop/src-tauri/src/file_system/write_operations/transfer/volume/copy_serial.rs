@@ -525,7 +525,9 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                         source_overwrote,
                                     );
                                 }
-                                copied_paths.lock_ignore_poison().extend(files);
+                                copied_paths
+                                    .lock_ignore_poison()
+                                    .extend(files.into_iter().map(|f| f.path));
                                 created_dirs.lock_ignore_poison().extend(dirs);
                             } else {
                                 if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
@@ -578,7 +580,31 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                 *last_dest_cell.lock_ignore_poison() = None;
                                 let files = std::mem::take(&mut *created.files.lock_ignore_poison());
                                 let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
-                                copied_paths.lock_ignore_poison().extend(files);
+                                // Journal the children this source DID finish.
+                                // They're committed files at the destination that
+                                // a cancel keeps, and the journal is the only
+                                // record a reversal from history has. Without
+                                // this they existed on disk and nowhere in the
+                                // ledger. `dest_item_path` is the dest dir root
+                                // for a directory source (safe-replace is
+                                // file→file only), which is what the leaf sources
+                                // rebase off.
+                                if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
+                                    journal::record_volume_transfer_source(
+                                        &operation_id,
+                                        src_vol,
+                                        &source_path,
+                                        dst_vol,
+                                        &dest_item_path,
+                                        true,
+                                        &files,
+                                        None,
+                                        created.any_overwrote(),
+                                    );
+                                }
+                                copied_paths
+                                    .lock_ignore_poison()
+                                    .extend(files.into_iter().map(|f| f.path));
                                 created_dirs.lock_ignore_poison().extend(dirs);
                             }
                             // Report the path the walker actually failed on (for a

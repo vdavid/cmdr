@@ -9,7 +9,7 @@
 //! `operation_log/DETAILS.md` § Capture). Every function no-ops when no journal
 //! is installed, and never fails the operation.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
@@ -196,13 +196,30 @@ pub(super) fn record_volume_leaf(
     );
 }
 
+/// One destination FILE a transfer created, with the byte count it was written
+/// with.
+///
+/// The size is the point. It is the snapshot a reversal rechecks the destination
+/// against, and without one an item is `UnverifiablePrecondition` — safe, but
+/// never reversible. The volume paths get it for free (the leaf copier returns
+/// the bytes it piped), so carrying it alongside the path is what makes a file
+/// INSIDE a copied folder as reversible as a top-level one.
+///
+/// ❌ Don't add an mtime here. The volume write path doesn't preserve the
+/// source's, so recording it would flip every leaf from "unverifiable" to
+/// "drifted", which reads to the user as "you changed this file".
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) struct CreatedFile {
+    pub(super) path: PathBuf,
+    pub(super) size: u64,
+}
+
 /// Record the per-file `rollback_unit` rows a volume copy / cross-volume move
 /// landed for ONE top-level source. A FILE source records one leaf (`created_files`
 /// empty, `dest_root` = the landed dest path, `file_size` known). A DIRECTORY
 /// source records one leaf per `created_files` entry (a dest path under
 /// `dest_root`), its source rebased onto `source_root` from the tail under
-/// `dest_root`; per-inner-file size isn't cheaply available here, so it records
-/// `None`. `overwrote` applies to the whole source's leaves — op-wide rollback
+/// `dest_root`, carrying the size the leaf was written with. `overwrote` applies to the whole source's leaves — op-wide rollback
 /// eligibility is the OR of these, so marking a source that overwrote anything is
 /// honest (deleting the copies can't restore an overwritten original). The created
 /// directories are journaled separately, after all files, via
@@ -215,21 +232,21 @@ pub(super) fn record_volume_transfer_source(
     dest_volume_id: &str,
     dest_root: &Path,
     source_is_dir: bool,
-    created_files: &[std::path::PathBuf],
+    created_files: &[CreatedFile],
     file_size: Option<i64>,
     overwrote: bool,
 ) {
     if source_is_dir {
-        for dest_leaf in created_files {
-            let rel = dest_leaf.strip_prefix(dest_root).unwrap_or(dest_leaf);
+        for leaf in created_files {
+            let rel = leaf.path.strip_prefix(dest_root).unwrap_or(&leaf.path);
             let source_leaf = source_root.join(rel);
             record_volume_leaf(
                 op_id,
                 EntryType::File,
                 source_volume_id,
                 &source_leaf,
-                Some((dest_volume_id, dest_leaf)),
-                None,
+                Some((dest_volume_id, &leaf.path)),
+                i64::try_from(leaf.size).ok(),
                 None,
                 overwrote,
                 ItemOutcome::Done,
@@ -327,14 +344,14 @@ fn record_row(
 /// contents in `seq`; the rollback removes files before their dirs. The
 /// created path is both source and dest (a copy's rollback removes the dest dir
 /// when empty; search matches its name).
-pub(super) fn record_created_dirs(op_id: &str, dirs: &[std::path::PathBuf]) {
+pub(super) fn record_created_dirs(op_id: &str, dirs: &[PathBuf]) {
     record_created_dirs_on(op_id, DEFAULT_VOLUME_ID, dirs);
 }
 
 /// The volume-aware sibling of [`record_created_dirs`]: the created dirs live on
 /// the destination volume `dest_volume_id` (may be SMB / MTP). Both the source
 /// and dest of each row are the created path on that volume.
-pub(super) fn record_created_dirs_on(op_id: &str, dest_volume_id: &str, dirs: &[std::path::PathBuf]) {
+pub(super) fn record_created_dirs_on(op_id: &str, dest_volume_id: &str, dirs: &[PathBuf]) {
     for dir in dirs {
         record_row(
             op_id,

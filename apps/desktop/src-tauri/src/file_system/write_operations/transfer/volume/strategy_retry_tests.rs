@@ -319,7 +319,12 @@ async fn a_retried_child_is_recorded_in_the_rollback_ledger_exactly_once() {
     .await
     .expect("the retried child must not fail the directory copy");
 
-    let files = created.files.lock_ignore_poison().clone();
+    let files: Vec<_> = created
+        .files
+        .lock_ignore_poison()
+        .iter()
+        .map(|f| f.path.clone())
+        .collect();
     let mut sorted = files.clone();
     sorted.sort();
     sorted.dedup();

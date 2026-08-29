@@ -160,7 +160,7 @@ pub(super) async fn extract_sequential_subtree(
             }
             None => planned.dest_path,
         };
-        created.record_file(recorded);
+        created.record_file(recorded, bytes);
         total_bytes += bytes;
         on_file_complete(bytes);
     }

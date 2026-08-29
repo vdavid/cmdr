@@ -372,7 +372,9 @@ impl<'a> ConcurrentDriver<'a> {
         // original after a safe-replace finalize, else the dest); `created_*`
         // are empty.
         if source_is_dir {
-            ctx.copied_paths.lock_ignore_poison().extend(created_files);
+            ctx.copied_paths
+                .lock_ignore_poison()
+                .extend(created_files.into_iter().map(|f| f.path));
             ctx.created_dirs.lock_ignore_poison().extend(task_created_dirs);
         } else {
             ctx.copied_paths.lock_ignore_poison().push(recorded_path);
@@ -416,9 +418,11 @@ impl<'a> ConcurrentDriver<'a> {
         let CopyTaskFailure {
             failed_path: failed_dest,
             reported_path,
+            source_path: done_source,
             error: e,
             cleanup_temp,
             source_is_dir,
+            overwrote,
             created_files,
             created_dirs: task_created_dirs,
         } = failure;
@@ -434,7 +438,28 @@ impl<'a> ConcurrentDriver<'a> {
             // prunes created dirs empty-only), so a merged dir holding a
             // pre-existing dest-only file survives — recursively deleting the
             // root would be silent data loss.
-            ctx.copied_paths.lock_ignore_poison().extend(created_files);
+            //
+            // Journal those same children: a cancel keeps every one this task
+            // finished, and the journal is the only record a later reversal from
+            // history has. `failed_dest` is the dest dir ROOT for a directory
+            // source (safe-replace is file→file only), which is the root the leaf
+            // sources rebase off.
+            if let Some((src_vol, dst_vol)) = ctx.journal_volumes.as_ref() {
+                journal::record_volume_transfer_source(
+                    ctx.operation_id,
+                    src_vol,
+                    &done_source,
+                    dst_vol,
+                    &failed_dest,
+                    true,
+                    &created_files,
+                    None,
+                    overwrote,
+                );
+            }
+            ctx.copied_paths
+                .lock_ignore_poison()
+                .extend(created_files.into_iter().map(|f| f.path));
             ctx.created_dirs.lock_ignore_poison().extend(task_created_dirs);
         } else if cleanup_temp {
             // FILE source stream failure: `failed_dest` is the single

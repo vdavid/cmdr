@@ -17,6 +17,7 @@ use std::time::Duration;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
+use super::super::super::journal::CreatedFile;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::VolumeCopyConfig;
 use super::super::checkpoint_stream::CheckpointStream;
@@ -216,8 +217,10 @@ pub(super) struct MergeCtx<'a> {
 /// merge for dirs"), so recording the top-level dest directory and recursively
 /// deleting it on rollback would destroy the user's untouched files. Instead we
 /// record:
-/// - `files`: every destination FILE path the copy streamed, in write order.
-///   Rollback deletes these individually.
+/// - `files`: every destination FILE the copy streamed, in write order, each with
+///   the byte count it was written with. Rollback deletes these individually; the
+///   size is what lets the operation log record a verifiable snapshot for a leaf
+///   INSIDE a copied folder (see [`CreatedFile`]).
 /// - `dirs`: every destination DIRECTORY this copy newly created (i.e. the
 ///   `create_directory` call returned `Ok`, not `AlreadyExists`), in
 ///   creation order (shallowest first). Rollback removes these with a
@@ -227,7 +230,7 @@ pub(super) struct MergeCtx<'a> {
 // one state where rollback correctly has nothing to undo.
 #[derive(Default)]
 pub(super) struct CreatedPaths {
-    pub files: Mutex<Vec<PathBuf>>,
+    pub files: Mutex<Vec<CreatedFile>>,
     pub dirs: Mutex<Vec<PathBuf>>,
     // Children a DEEP merge resolved to Skip (a conflict the user/policy
     // declined). Invisible to the top-level driver, so tallied here; the
@@ -248,8 +251,8 @@ pub(super) struct CreatedPaths {
 }
 
 impl CreatedPaths {
-    pub(super) fn record_file(&self, path: PathBuf) {
-        self.files.lock_ignore_poison().push(path);
+    pub(super) fn record_file(&self, path: PathBuf, size: u64) {
+        self.files.lock_ignore_poison().push(CreatedFile { path, size });
     }
 
     pub(super) fn record_dir(&self, path: PathBuf) {

@@ -94,6 +94,24 @@ pub(super) fn apply_dir_remap(dest: &Path, dir_remap: &HashMap<PathBuf, PathBuf>
     }
 }
 
+/// Close out the copy's ledger: journal the destination directories it created,
+/// then commit so the `Drop` safety net doesn't remove what the user keeps.
+///
+/// The dir rows land AFTER the leaf files (which recorded themselves as they
+/// landed), so a `seq DESC` reversal removes files before their dirs (D2,
+/// Finding 2).
+///
+/// Every terminal path goes through here, not only the successful one: a
+/// canceled copy KEEPS the directories it created, and without their rows a
+/// reversal from history puts every file back and leaves the destination's empty
+/// skeleton standing. An in-flight rollback removes them again, and the reversal
+/// reads those rows as already gone — the same way it already reads the file rows
+/// this copy journaled as they landed.
+fn commit_journaling_created_dirs(transaction: CopyTransaction, operation_id: &str) {
+    crate::file_system::write_operations::journal::record_created_dirs(operation_id, &transaction.created_dirs);
+    transaction.commit();
+}
+
 // ============================================================================
 // Copy implementation
 // ============================================================================
@@ -509,7 +527,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                     file_count,
                     total_bytes,
                 );
-                transaction.commit();
+                commit_journaling_created_dirs(transaction, operation_id);
 
                 events.emit_cancelled(WriteCancelledEvent {
                     operation_id: operation_id.to_string(),
@@ -536,7 +554,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 &dir_remap,
             ) {
                 if matches!(e, WriteOperationError::Cancelled { .. }) {
-                    transaction.commit();
+                    commit_journaling_created_dirs(transaction, operation_id);
                     events.emit_cancelled(WriteCancelledEvent {
                         operation_id: operation_id.to_string(),
                         operation_type: WriteOperationType::Copy,
@@ -571,11 +589,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 &transaction.created_files,
                 &already_synced,
             );
-            // Journal the directories this copy created as `dir` rows, after the
-            // leaf files (which recorded themselves as they landed), so a `seq
-            // DESC` rollback removes files before their dirs (D2, Finding 2).
-            crate::file_system::write_operations::journal::record_created_dirs(operation_id, &transaction.created_dirs);
-            transaction.commit();
+            commit_journaling_created_dirs(transaction, operation_id);
 
             log::info!(
                 "copy_files_with_progress: completed op={} files={} bytes={}",
@@ -618,7 +632,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                         file_count,
                         total_bytes,
                     );
-                    transaction.commit();
+                    commit_journaling_created_dirs(transaction, operation_id);
                     events.emit_cancelled(WriteCancelledEvent {
                         operation_id: operation_id.to_string(),
                         operation_type: WriteOperationType::Copy,
@@ -635,7 +649,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                         operation_id,
                         transaction.created_files.len()
                     );
-                    transaction.commit();
+                    commit_journaling_created_dirs(transaction, operation_id);
                     events.emit_cancelled(WriteCancelledEvent {
                         operation_id: operation_id.to_string(),
                         operation_type: WriteOperationType::Copy,

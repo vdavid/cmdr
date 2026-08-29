@@ -22,6 +22,7 @@ use std::time::{Duration, Instant};
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
+use super::super::super::journal::CreatedFile;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{VolumeCopyConfig, WriteOperationType};
 use super::super::transfer_driver::make_concurrent_per_file_progress;
@@ -51,7 +52,7 @@ pub(super) struct CopyTaskSuccess {
     /// safe-replace, or a deep-merge child overwrite). Feeds the operation-log
     /// eligibility: a copy that overwrote isn't rollbackable (the original is gone).
     pub(super) overwrote: bool,
-    pub(super) created_files: Vec<PathBuf>,
+    pub(super) created_files: Vec<CreatedFile>,
     pub(super) created_dirs: Vec<PathBuf>,
     /// The top-level source this task copied, and how many children a deep
     /// merge skipped in its subtree. `skipped_count == 0` means the whole
@@ -81,13 +82,20 @@ pub(super) struct CopyTaskSuccess {
 /// directory ROOT — which on a merge destroys pre-existing dest-only files. With
 /// it, the partials are cleaned per-file and the newly-created dirs pruned
 /// empty-only, so a merged dir holding a sentinel survives.
+///
+/// `source_path` and `overwrote` are here for the same reason the success
+/// payload carries them: the children this task DID finish are committed files
+/// at the destination, so they get journaled exactly like a completed source's.
+/// An interrupted operation is still a ledger of what it wrote.
 pub(super) struct CopyTaskFailure {
     pub(super) failed_path: PathBuf,
     pub(super) reported_path: PathBuf,
+    pub(super) source_path: PathBuf,
     pub(super) error: VolumeError,
     pub(super) cleanup_temp: bool,
     pub(super) source_is_dir: bool,
-    pub(super) created_files: Vec<PathBuf>,
+    pub(super) overwrote: bool,
+    pub(super) created_files: Vec<CreatedFile>,
     pub(super) created_dirs: Vec<PathBuf>,
 }
 
@@ -282,10 +290,12 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
                     // directory ledger to carry.
                     return Err(CopyTaskFailure {
                         failed_path: dest_path,
-                        reported_path: source_path,
+                        reported_path: source_path.clone(),
+                        source_path,
                         error: e,
                         cleanup_temp: false,
                         source_is_dir: false,
+                        overwrote: task_overwrote,
                         created_files,
                         created_dirs,
                     });
@@ -329,9 +339,11 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
         Err(e) => Err(CopyTaskFailure {
             failed_path: dest_path,
             reported_path: e.path,
+            source_path,
             error: e.error,
             cleanup_temp: true,
             source_is_dir,
+            overwrote: task_overwrote,
             created_files,
             created_dirs,
         }),

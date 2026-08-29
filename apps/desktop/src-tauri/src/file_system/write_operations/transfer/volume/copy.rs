@@ -1000,6 +1000,21 @@ pub(crate) async fn copy_volumes_with_progress(
         .map(|m| m.into_inner().unwrap_or_default())
         .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
 
+    // Journal the directories the copy created as `dir` rows on the dest volume,
+    // AFTER every file leaf (so their `seq` follows the contents and a reversal
+    // removes files before their dirs). Mirrors the local copy's
+    // `record_created_dirs`.
+    //
+    // Whatever the terminal state: a canceled or failed copy KEEPS the
+    // directories it created, so a reversal from history needs them or it puts
+    // every file back and leaves the destination's empty skeleton standing. An
+    // in-flight rollback removes them again, and a later reversal reads those
+    // rows as already gone — the same way it already reads the file rows this
+    // operation journaled as they landed.
+    if let Some((_, dst_vol)) = journal_volumes.as_ref() {
+        journal::record_created_dirs_on(operation_id, dst_vol, &created_dirs);
+    }
+
     // Post-loop: handle success, cancellation, or error
     let intent = load_intent(&state.intent);
 
@@ -1028,14 +1043,6 @@ pub(crate) async fn copy_volumes_with_progress(
             bytes_done,
             format_skipped_suffix(files_skipped, bytes_skipped),
         );
-
-        // Journal the directories the copy created as `dir` rows on the dest
-        // volume, AFTER all the file leaves (so their `seq` follows the contents
-        // and the rollback removes files before their dirs). Mirrors the local
-        // copy's post-success `record_created_dirs`.
-        if let Some((_, dst_vol)) = journal_volumes.as_ref() {
-            journal::record_created_dirs_on(operation_id, dst_vol, &created_dirs);
-        }
 
         events.emit_complete(WriteCompleteEvent {
             operation_id: operation_id.to_string(),

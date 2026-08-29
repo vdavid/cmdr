@@ -564,3 +564,49 @@ async fn the_fixture_journals_a_finished_move() {
     assert_eq!(row.execution_status, ExecutionStatus::Done);
     assert_eq!(row.rollback_state, RollbackState::Rollbackable);
 }
+
+/// A cross-FS move stages a whole tree and renames it into place, creating
+/// destination directories on the way. Those directories need `dir` rows like a
+/// copy's do, or the reversal puts every file back and leaves the empty skeleton
+/// of the moved folder sitting at the destination.
+///
+/// The rows must name where each directory LIVES, not the `.cmdr-staging-<op>/`
+/// path it was created under — the same rule the leaf rows follow.
+#[tokio::test]
+async fn a_cross_fs_move_reverses_the_directories_it_created_too() {
+    let fixture = MoveLoop::new("op-cross-fs-dirs");
+    fixture.write("src/album/inner/song.txt", b"SONG");
+    std::fs::create_dir_all(fixture.path("dst")).expect("mk dst");
+
+    fixture.move_cross_fs(
+        &[fixture.path("src/album")],
+        &fixture.path("dst"),
+        &WriteOperationConfig::default(),
+    );
+    assert_eq!(fixture.read("dst/album/inner/song.txt"), "SONG", "the move ran");
+
+    let items = fixture.items();
+    let dirs: Vec<_> = items.iter().filter(|i| i.entry_type == EntryType::Dir).collect();
+    assert_eq!(
+        dirs.len(),
+        2,
+        "the two created destination directories owe a row each, got {items:?}"
+    );
+    for dir in &dirs {
+        assert!(
+            !dest_of(dir).contains(".cmdr-staging-"),
+            "a dir row must name where the directory lives, not the staging path: {dir:?}"
+        );
+    }
+
+    let report = fixture
+        .attempt_rollback()
+        .await
+        .expect("a conflict-free cross-FS move is reversible");
+    assert_eq!(report.skipped, 0, "nothing should be skipped, got {report:?}");
+    assert_eq!(fixture.read("src/album/inner/song.txt"), "SONG", "the file is back");
+    assert!(
+        !fixture.exists("dst/album"),
+        "the reversal must not leave the moved folder's empty skeleton behind"
+    );
+}

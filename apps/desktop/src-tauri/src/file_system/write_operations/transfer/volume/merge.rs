@@ -251,7 +251,7 @@ async fn copy_leaf<'a>(
         }
         None => write_dest,
     };
-    created.record_file(recorded);
+    created.record_file(recorded, bytes);
     on_file_complete(bytes);
     Ok(bytes)
 }

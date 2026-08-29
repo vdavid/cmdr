@@ -921,6 +921,18 @@ fn move_with_staging(
     };
     let final_dests: Vec<PathBuf> = transaction.created_files.iter().map(|p| remap(p)).collect();
     let final_already_synced: HashSet<PathBuf> = already_synced.iter().map(|p| remap(p)).collect();
+    // Journal the destination directories this move created, under the paths they
+    // LIVE at — the same staging→final rebase the leaf rows already got, since
+    // phase 3 renamed the tree out of `.cmdr-staging-<op>/` moments ago. Without
+    // these rows a reversal puts every file back and leaves the moved folder's
+    // empty skeleton at the destination. They land after every leaf row (phase 2
+    // wrote those), so a `seq DESC` reversal still removes files before dirs.
+    let final_dirs: Vec<PathBuf> = transaction.created_dirs.iter().map(|p| remap(p)).collect();
+    super::super::journal::record_created_dirs(operation_id, &final_dirs);
+    // The staging tree is renamed into place, so nothing this transaction recorded
+    // is still a partial to clean up: commit, or the `Drop` net runs a pointless
+    // rollback over paths that moved.
+    transaction.commit();
     flush_created_destinations(
         events,
         operation_id,
