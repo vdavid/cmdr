@@ -88,7 +88,7 @@
   "@viewer.search.matchPosition": {
     "sourceHash": "ec24db4"
   },
-  "viewer.search.searching": "Pesquisando…",
+  "viewer.search.searching": "Buscando…",
   "@viewer.search.searching": {
     "sourceHash": "78c9d9f"
   },
@@ -100,7 +100,7 @@
   "@viewer.search.noMatches": {
     "sourceHash": "2df01a0"
   },
-  "viewer.search.stop": "Parar pesquisa",
+  "viewer.search.stop": "Parar busca",
   "@viewer.search.stop": {
     "sourceHash": "c48cf72"
   },

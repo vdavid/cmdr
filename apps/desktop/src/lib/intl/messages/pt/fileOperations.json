@@ -12,7 +12,7 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "Este volume não tem suporte ao Lixo.",
+  "fileOperations.delete.noTrashWarningStrong": "Este volume não oferece suporte ao Lixo.",
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "ef122e2"
   },
@@ -68,7 +68,7 @@
   "@fileOperations.delete.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.delete.scanDir": "{count, plural, one {dir} many {dirs} other {dirs}}",
+  "fileOperations.delete.scanDir": "{count, plural, one {pasta} many {pastas} other {pastas}}",
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
@@ -245,7 +245,7 @@
   "@fileOperations.transferDialog.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.transferDialog.scanDir": "{count, plural, one {dir} many {dirs} other {dirs}}",
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {pasta} many {pastas} other {pastas}}",
   "@fileOperations.transferDialog.scanDir": {
     "sourceHash": "1c5273d"
   },
@@ -273,7 +273,7 @@
   "@fileOperations.transferDialog.scanStopped": {
     "sourceHash": "aac156c"
   },
-  "fileOperations.transferDialog.scanRetry": "Tentar de novo",
+  "fileOperations.transferDialog.scanRetry": "Tentar novamente",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
   },
@@ -345,7 +345,7 @@
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "sourceHash": "1030a7a"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "O nome do arquivo precisa terminar em \".zip\".",
+  "fileOperations.transferDialog.pathErrorNotZip": "O nome do arquivo compactado precisa terminar em \".zip\".",
   "@fileOperations.transferDialog.pathErrorNotZip": {
     "sourceHash": "c85c6f8"
   },
@@ -369,7 +369,7 @@
   "@fileOperations.scanPhase.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.scanPhase.scanDir": "{count, plural, one {dir} many {dirs} other {dirs}}",
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {pasta} many {pastas} other {pastas}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },

@@ -7,7 +7,7 @@
   "@lowDiskSpace.toast.disable": {
     "sourceHash": "1b085f6"
   },
-  "lowDiskSpace.toast.closeTooltip": "Descartar",
+  "lowDiskSpace.toast.closeTooltip": "Dispensar",
   "@lowDiskSpace.toast.closeTooltip": {
     "sourceHash": "48845bf"
   },

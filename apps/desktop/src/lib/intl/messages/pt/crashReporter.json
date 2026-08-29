@@ -47,7 +47,7 @@
   "@crashReporter.dialog.alwaysSend": {
     "sourceHash": "8306c0e"
   },
-  "crashReporter.dialog.dismiss": "Descartar",
+  "crashReporter.dialog.dismiss": "Dispensar",
   "@crashReporter.dialog.dismiss": {
     "sourceHash": "48845bf"
   },

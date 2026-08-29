@@ -936,7 +936,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
             ("menu.go.parentFolder", "Pasta superior"),
             ("menu.help.keyboardShortcuts", "Atalhos de teclado"),
             ("menu.help.sendErrorReport", "Enviar relatório de problema…"),
-            ("menu.help.sendFeedback", "Enviar comentário…"),
+            ("menu.help.sendFeedback", "Enviar feedback…"),
             ("menu.help.whatsNew", "Novidades"),
             ("menu.mediaIndex.addFolder", "Adicionar às pastas indexadas"),
             ("menu.mediaIndex.addFolderExcluded", "Adicionar às pastas indexadas (excluída)"),

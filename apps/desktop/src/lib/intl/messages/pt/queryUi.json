@@ -367,7 +367,7 @@
   "@queryUi.recent.scopeSummary": {
     "sourceHash": "e5e6dff"
   },
-  "queryUi.recent.caseSensitive": "diferencia maiúsculas",
+  "queryUi.recent.caseSensitive": "diferencia maiúsculas de minúsculas",
   "@queryUi.recent.caseSensitive": {
     "sourceHash": "3934758"
   },
@@ -657,11 +657,11 @@
   "@queryUi.scope.toggle.hideBoring": {
     "sourceHash": "972df96"
   },
-  "queryUi.scope.toggle.caseSensitive": "Diferenciar maiúsculas",
+  "queryUi.scope.toggle.caseSensitive": "Diferenciar maiúsculas de minúsculas",
   "@queryUi.scope.toggle.caseSensitive": {
     "sourceHash": "9d15f82"
   },
-  "queryUi.scope.toggle.caseSensitiveAria": "Correspondência diferenciando maiúsculas",
+  "queryUi.scope.toggle.caseSensitiveAria": "Diferenciar maiúsculas de minúsculas na correspondência",
   "@queryUi.scope.toggle.caseSensitiveAria": {
     "sourceHash": "2700434"
   },

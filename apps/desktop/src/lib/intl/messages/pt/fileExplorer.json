@@ -104,7 +104,7 @@
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "sourceHash": "0440df9"
   },
-  "fileExplorer.pane.trashUnconfirmedToast": "Não foi possível confirmar que o arquivo foi movido para a Lixeira. O volume pode estar lento, mas o arquivo pode ter sido movido mesmo assim. Confira sua Lixeira para ter certeza.",
+  "fileExplorer.pane.trashUnconfirmedToast": "Não foi possível confirmar que o arquivo foi movido para o Lixo. O volume pode estar lento, mas o arquivo pode ter sido movido mesmo assim. Confira seu Lixo para ter certeza.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
@@ -132,7 +132,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Abrir pasta pessoal",
+  "fileExplorer.errorPane.goHome": "Ir para a pasta pessoal",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -1149,7 +1149,7 @@
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "Substituir e mover o antigo para a Lixeira",
+  "fileExplorer.renameConflict.overwriteTrash": "Substituir e mover o antigo para o Lixo",
   "@fileExplorer.renameConflict.overwriteTrash": {
     "sourceHash": "e0192f6"
   },

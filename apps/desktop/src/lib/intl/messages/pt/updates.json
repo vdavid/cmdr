@@ -3,7 +3,7 @@
   "@updates.checkToast.errorPrefix": {
     "sourceHash": "020abfd"
   },
-  "updates.checkToast.sendErrorReport": "Enviar relatório de erro",
+  "updates.checkToast.sendErrorReport": "Enviar relatório de problema",
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },

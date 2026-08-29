@@ -96,7 +96,7 @@
   "@errorReporter.amend.title": {
     "sourceHash": "b19796b"
   },
-  "errorReporter.amend.description": "O Cmdr já enviou este relatório. Escreva uma nota, ou anexe seu email, e isso entra no mesmo relatório que a equipe já tem.",
+  "errorReporter.amend.description": "O Cmdr já enviou este relatório. Escreva uma nota, ou anexe seu e-mail, e isso entra no mesmo relatório que a equipe já tem.",
   "@errorReporter.amend.description": {
     "sourceHash": "276771e"
   },

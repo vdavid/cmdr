@@ -108,7 +108,7 @@
   "@downloads.shortcutRow.modifiedTooltip": {
     "sourceHash": "3d86215"
   },
-  "downloads.shortcutRow.resetTooltip": "Redefinir para o padrão",
+  "downloads.shortcutRow.resetTooltip": "Restaurar para o padrão",
   "@downloads.shortcutRow.resetTooltip": {
     "sourceHash": "bc5b45a"
   },

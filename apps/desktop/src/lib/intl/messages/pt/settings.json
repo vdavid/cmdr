@@ -819,7 +819,7 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ir para o download mais recente",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ir para o último download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
@@ -1069,7 +1069,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
-  "settings.viewer.wordWrap.label": "Quebra de linha",
+  "settings.viewer.wordWrap.label": "Quebra automática de linha",
   "@settings.viewer.wordWrap.label": {
     "sourceHash": "9e210f3"
   },
@@ -1133,7 +1133,7 @@
   "@settings.analytics.enabled.description": {
     "sourceHash": "7c67750"
   },
-  "settings.analytics.email.label": "Email de contato do beta",
+  "settings.analytics.email.label": "E-mail de contato do beta",
   "@settings.analytics.email.label": {
     "sourceHash": "71e5c9a"
   },
@@ -1157,7 +1157,7 @@
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
   },
-  "settings.updates.attachEmailToReports.label": "Anexar meu email aos relatórios por padrão",
+  "settings.updates.attachEmailToReports.label": "Anexar meu e-mail aos relatórios por padrão",
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
@@ -1817,7 +1817,7 @@
   "@settings.summary.noSubsections": {
     "sourceHash": "ba4b5b5"
   },
-  "settings.control.resetToDefault": "Restaurar padrão",
+  "settings.control.resetToDefault": "Restaurar para o padrão",
   "@settings.control.resetToDefault": {
     "sourceHash": "bc5b45a"
   },
@@ -2112,15 +2112,15 @@
   "@settings.updates.errorPrefix": {
     "sourceHash": "6170629"
   },
-  "settings.updates.sendErrorReport": "Enviar relatório de erro",
+  "settings.updates.sendErrorReport": "Enviar relatório de problema",
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "Veja sua caixa de entrada para confirmar seu email. Obrigado por ajudar!",
+  "settings.updates.emailConfirmHint": "Confira sua caixa de entrada para confirmar seu e-mail. Obrigado pela ajuda!",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "Desculpe, não conseguimos cadastrar você agora. Tentar de novo?",
+  "settings.updates.emailSignupError": "Desculpe, não conseguimos inscrever você agora. Tentar novamente?",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },

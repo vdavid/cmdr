@@ -216,11 +216,11 @@
   "@shortcuts.section.addShortcutTooltip": {
     "sourceHash": "239314a"
   },
-  "shortcuts.section.resetToDefaultTooltip": "Redefinir para o padrão",
+  "shortcuts.section.resetToDefaultTooltip": "Restaurar para o padrão",
   "@shortcuts.section.resetToDefaultTooltip": {
     "sourceHash": "bc5b45a"
   },
-  "shortcuts.section.resetAll": "Redefinir tudo para os padrões",
+  "shortcuts.section.resetAll": "Restaurar tudo para os padrões",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
   },
