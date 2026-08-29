@@ -438,6 +438,32 @@ download UI. Those surfaces are Cmdr's exact analogues, so they outrank the gene
 
 Recovery lines pair as `請確定你已連接網際網路，然後再試一次。` and `當目前的操作完成後，再試一次。` (AP-TW).
 
+### Licensing and purchase
+
+Register for this whole surface is `你`, not `您`: `style.md` § Formality.
+
+- **license (the entitlement)** · `授權` · AP-TW legal (`授權` ×59 in Feedback Assistant's `License.rtf`,
+  `cocoartf2761`), and already the shipped form catalog-wide (53 in `licensing.json`, plus `menu.app.license*` and
+  `settings.section.license`) · `high`
+- **license agreement (the document)** · `軟體授權合約`; Apple titles its own 軟體授權與保密協議 · `tentative`. Cmdr
+  ships no agreement text in the catalog, so nothing depends on this yet.
+- ❌ **Never `許可證`** for either sense. It's the Simplified-derived form, correct in `zh` (`许可证`) and wrong here.
+  Its only Traditional footprint is the decade-old `zh_TW` SLAs localized off a Simplified base (`許可證` ×47 in the
+  Install Command Line Developer Tools one), which is exactly the stale source a future miner will find first;
+  `docs/i18n/reference-pile/how-to-mine.md` § Legal register says how to date those before quoting them. Zero
+  occurrences in this catalog, and it stays that way.
+- **license key** · `授權碼` · the short `CMDR-XXXX-XXXX-XXXX` code the user actually pastes · `high`
+- ❌ **Never `授權金鑰` for a license key.** `金鑰` is reserved catalog-wide for cryptographic and API keys (`API 金鑰`,
+  `加密金鑰`, `金鑰環` = keychain), and `licensing.error.badFormatHint` leans on that contrast to tell the short
+  `授權碼` apart from the longer `加密金鑰` a purchase email may carry. All four keys sharing the English "Enter license
+  key" (`menu.app.licenseEnter`, `commands.appLicenseKey.enterKey.label`, `licensing.dialog.enterTitle`,
+  `licensing.section.enterKey`) render `輸入授權碼`.
+- **activate / deactivate (a license)** · `啟用` / `停用` · AP-TW = AP-HK · `high`
+- **subscription** · `訂閱` · AP-TW App Store and AppStoreKit (訂閱項目 for a subscription as an item) · `high`
+- **perpetual** · `永久` · shipped (`商業永久授權`) · `high`
+- **renew** · `續訂` for a subscription; `更新` stays the word for a software update · `high`
+- **commercial / personal license** · `商業授權` / `個人授權` · `high`
+
 ### Miscellaneous
 
 - **user** · `使用者` · AP-TW (36), TC (51) · `high`. AP-HK avoids the noun entirely (0 for 使用者, 用戶, and 用家),

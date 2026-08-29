@@ -27,7 +27,7 @@
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "輸入授權金鑰",
+  "commands.appLicenseKey.enterKey.label": "輸入授權碼",
   "@commands.appLicenseKey.enterKey.label": {
     "sourceHash": "357d05e"
   },

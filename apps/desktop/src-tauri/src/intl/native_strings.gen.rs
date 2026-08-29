@@ -1403,7 +1403,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
             ("menu.app.hide", "隱藏 Cmdr"),
             ("menu.app.hideOthers", "隱藏其他"),
             ("menu.app.licenseDetails", "查看授權詳細資訊"),
-            ("menu.app.licenseEnter", "輸入授權金鑰…"),
+            ("menu.app.licenseEnter", "輸入授權碼…"),
             ("menu.app.onboarding", "入門引導…"),
             ("menu.app.quit", "結束 Cmdr"),
             ("menu.app.services", "服務"),

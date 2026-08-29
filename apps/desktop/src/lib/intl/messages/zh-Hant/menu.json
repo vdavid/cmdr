@@ -43,7 +43,7 @@
   "@menu.app.licenseDetails": {
     "sourceHash": "0e660e8"
   },
-  "menu.app.licenseEnter": "輸入授權金鑰…",
+  "menu.app.licenseEnter": "輸入授權碼…",
   "@menu.app.licenseEnter": {
     "sourceHash": "24a8d77"
   },
