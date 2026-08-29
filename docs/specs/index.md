@@ -10,6 +10,15 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-08-29 `unify-rollback-plan.md` - **The journal-driven rollback has no button, no progress, no pause, and no
+      mid-file cancel.** Cmdr has three rollback implementations (local in-flight, volume in-flight, journal-driven);
+      the journal-driven one is the safest (it rechecks every item against its snapshot) and is the only one users
+      can't reach from the history dialog. M0 fixes two live journaling bugs that already misdirect the shipped rollback
+      used by Ask Cmdr, trash undo, and MCP. M1-M3 route it through the shared transfer driver and add the button.
+      Unifying all three onto the journal is M4-M5 and is **gated**: the journal isn't yet a faithful ledger (created
+      dirs go unrecorded on the cancel path, partials have no row, volume inner leaves have no snapshot), so switching
+      today would lose guarantees rather than gain them.
+
 - [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
       rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit
       only ~101 plan rows per reply and each reply is staged and reviewed on its own. The fix is presentational:
