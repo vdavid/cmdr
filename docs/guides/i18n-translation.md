@@ -315,6 +315,45 @@ This is a forward discipline only: existing English-only strings need no retrofi
 is broken). If a future translation ever surfaces an English string that genuinely can't be restructured, fix that one
 string then.
 
+## Auditing a finished locale for term drift
+
+A locale translated over several passes drifts: each pass settles the terms it personally needed, so the same English
+word ends up with two names and the app contradicts itself. Traditional Chinese shipped a menu item reading
+`命令選擇區…` that opened a palette titled `指令面板`. Run this audit when a locale is finished, and again whenever
+several passes have landed since the last one. **Doing it by reading the catalog does not work** — it's 3,138 keys.
+Script it.
+
+**Half of it is automated.** `pnpm check i18n-terms` (`desktop-i18n-term-consistency`) catches every case where two keys
+share one English string and the locale renders them differently, and for an overlay it catches a half-fork. Fix what it
+reports, or record the split with its reason in `apps/desktop/scripts/i18n-term-consistency-allowlist.json`. See
+`i18n.md` § Term consistency.
+
+**The other half is manual, because no check can do it.** The drift that hurts most is a term rendered two ways across
+keys whose ENGLISH differs ("Show thumbnails" vs "Thumbnail size"), and deciding which English words are "terms" is
+judgment. Three passes, each a short script over `loadCatalog('en')` and `loadCatalog('<tag>')`:
+
+1. **Align short labels.** Restrict to keys whose English value is ≤ ~40 characters (labels and buttons, where a term
+   maps almost 1:1 onto a translated substring; long prose legitimately paraphrases). For each English word appearing in
+   ≥3 such keys, collect the substrings of the translations that correlate with it, and flag any word where two
+   different substrings each cover a distinct set of keys. This is what surfaced Traditional Chinese rendering "list" as
+   both `清單` and `列表`, and "operation" as `操作` everywhere except `errors.json`, which said `作業`.
+2. **Probe in reverse.** For each term already in `glossary.md`, list every key whose translation contains the chosen
+   form, and every key whose English contains the headword but whose translation does NOT. The second list is either
+   drift or a glossary entry that has gone stale. This is how `theme → 佈景主題` was caught: the glossary claimed it,
+   the catalog used `主題` in all eight keys.
+3. **Probe the near-miss pairs.** For any two terms a translator could confuse, list both and read the English beside
+   them. Traditional Chinese needed `複製` (copy) vs `製作副本` (duplicate), `還原` (undo) vs `復原` (roll back), `標籤`
+   (tag) vs `分頁` (tab), and `金鑰` (an API key) vs `授權碼` (a licence key). Two of those had already gone wrong.
+
+**Rank by how visible the finding is, and fix in that order.** A term in `menu.json` or `commands.json` is read on every
+session and sits next to the dialog it opens; one in `errors.json` may never be seen. A divergence spanning two
+high-traffic files is the worst case and the one to fix first.
+
+**Every fix earns a glossary entry.** A conflict you resolved without recording it will be re-litigated by the next
+pass, which is how these got here. Write the entry in the `chosen · sources · confidence` format, and when the two forms
+are BOTH right, say where the boundary runs — that sentence is the thing that stops the next translator "fixing" it
+back.
+
 ## The translator-agent context (reusable system-prompt block)
 
 Hand an agent the block below as its system prompt, then feed it batches of keys with each key's `@key.description`,

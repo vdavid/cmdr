@@ -476,6 +476,22 @@ var AllChecks = []CheckDefinition{
 		Run:       RunDesktopI18nParity,
 	},
 	{
+		ID:          "desktop-i18n-term-consistency",
+		Nickname:    "i18n-terms",
+		DisplayName: "i18n-terms",
+		App:         AppDesktop,
+		Tech:        "\U0001F3A8 Svelte",
+		// WARN class: one English string rendered two ways inside one locale (the
+		// menu item and the dialog it opens disagreeing). A maintenance signal, not
+		// a build breaker, and nine locales still carry an untriaged baseline, so a
+		// CI step would be noise rather than a gate.
+		NotInCI:   "warn-only maintenance signal; nine locales still carry a notYetReviewed baseline",
+		DependsOn: nil,
+		IsFast:    true,
+		Inputs:    inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts", "apps/desktop/scripts/i18n-term-consistency-allowlist.json"}),
+		Run:       RunDesktopI18nTermConsistency,
+	},
+	{
 		ID:          "desktop-i18n-icu",
 		Nickname:    "i18n-icu",
 		DisplayName: "i18n-icu",

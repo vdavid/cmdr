@@ -1,0 +1,75 @@
+{
+  "reviewed": {
+    "en-AU": [],
+    "en-GB": [],
+    "zh-Hant": [
+      {
+        "source": "{count, plural, one {dir} other {dirs}}",
+        "reason": "The status-bar selection summary drops the measure word (`{目錄}`) because it composes as `3 / 10 目錄` with a `/` connector already separating the numbers; the scan stats render a bare tally (`4 個目錄`) and need it. Same word, two grammatical frames."
+      },
+      {
+        "source": "{count, plural, one {file} other {files}}",
+        "reason": "Same frame split as the `dirs` noun above: `{檔案}` in the `/`-connected status-bar summary, `{個檔案}` after a bare tally in the delete and transfer scan stats."
+      },
+      {
+        "source": "App",
+        "reason": "Two senses of one English word. The Settings colour options mean the app AS A SOURCE of a colour (kept as the Latin `App`, per the brand-word rule); the shortcuts scope means `in-app`, which needs `App 內` to contrast with the system-wide scope beside it."
+      },
+      {
+        "source": "Back",
+        "reason": "`返回` is navigation back (history, network browser, the Go menu). The onboarding wizard's `上一步` is the previous STEP of a sequence, which Traditional Chinese names differently; `返回` there would suggest leaving the wizard."
+      },
+      {
+        "source": "Both",
+        "reason": "`兩者` answers `which of these two?` in the search type filter. The notification setting asks WHERE to notify and picks both channels, so it reads as `兩者都用` (use both), which is a verb phrase, not an enumeration."
+      },
+      {
+        "source": "Done",
+        "reason": "`完成` is the visually-hidden word a screen reader appends to a finished checklist step (`Find files. Done.`), where a bare adjective is right. `已完成` is an operation's lifecycle status in the log, where the perfective aspect marks a finished run."
+      },
+      {
+        "source": "Error",
+        "reason": "`出現問題` is the network browser's connection STATUS, written conversationally per the house rule that user-facing copy avoids the word `error`. `settings.updates.errorPrefix` is a literal `Error:` label prefixed to a raw updater string, where `錯誤：` is the honest technical label."
+      },
+      {
+        "source": "Modified",
+        "reason": "`修改日期` is the Finder column header and the date filters, where `Modified` abbreviates `Date modified`. The keyboard-shortcuts filter chip means `commands whose shortcut YOU changed`, with no date involved, so it takes `已修改`."
+      },
+      {
+        "source": "Put back {countText} {count, plural, one {file} other {files}}",
+        "reason": "English reuses one sentence for two undos. Ask Cmdr's is undoing a RENAME, so `已還原` (restored the previous names). The file-operations one is restoring items from the Trash, which macOS Traditional names `放回原處` (put back where it came from). Swapping either would describe the wrong action."
+      },
+      {
+        "source": "Running",
+        "reason": "`執行中` is a local AI server PROCESS that is up. `進行中` is an operation in progress in the log. Traditional Chinese splits these; a running process is not a task making progress."
+      },
+      {
+        "source": "Scanning",
+        "reason": "The spinner tooltip renders `Scanning…` and takes the progressive `正在掃描…`. The progress dialog's step chip is a two-word stage NAME in a fixed-width indicator, so it takes the bare `掃描`, matching the other stage chips beside it."
+      },
+      {
+        "source": "Select",
+        "reason": "`選取` is the menu-bar Select menu and the verb. `ui.select.placeholder` is the empty state of a dropdown, which Traditional Chinese phrases as an invitation (`請選擇`, please choose) rather than a bare verb."
+      },
+      {
+        "source": "Send report",
+        "reason": "The crash dialog's TITLE asks the question (`要傳送報告嗎`), which is the house pattern for a confirming dialog title in this catalog; the button below it is the bare action `傳送報告`. English reuses one string for both surfaces."
+      },
+      {
+        "source": "View",
+        "reason": "The canonical split. `檢視` is the verb: open the file viewer (F3), which is `commands.fileView` and `menu.file.view`. `menu.bar.view` is the View MENU, which macOS Traditional calls `顯示方式` (display mode) because it holds the view-mode choices. Merging them would rename either the F3 command or the menu."
+      }
+    ]
+  },
+  "notYetReviewed": {
+    "de": 20,
+    "es": 36,
+    "fr": 38,
+    "hu": 28,
+    "nl": 38,
+    "pt": 26,
+    "sv": 25,
+    "vi": 24,
+    "zh": 28
+  }
+}
