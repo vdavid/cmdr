@@ -25,7 +25,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use super::test_support::*;
-use super::{InverseAct, RollbackProgress, RollbackRunner, execute_rollback};
+use super::{InverseAct, RollbackProgress, RollbackRunner, execute_rollback, rollback_operation};
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
 use crate::file_system::write_operations::rollback::Reversal;
 use crate::operation_log::types::{Initiator, OpKind, RollbackState};
@@ -341,4 +341,38 @@ async fn a_stop_during_the_directory_sweep_ends_the_run() {
         "a stopped sweep removes no further folders"
     );
     assert!(!exists(&dst, "/outer/inner").await, "deepest-first: that one went");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_dispatch_names_where_the_reversal_will_act() {
+    // The queue row would otherwise be nameless while it works. The name is read
+    // off the NEWEST journal row at dispatch — one row, never the list.
+
+    // A copy undo removes things and puts nothing anywhere, and its newest row is
+    // the directory it created: that folder IS what the undo cleans.
+    let rig = Rig::new();
+    let dst = Arc::new(InMemoryVolume::new("Dst"));
+    put(&dst, "/landed/f.txt", &[b'x'; FILE_BYTES]).await;
+    rig.register("src", Arc::new(InMemoryVolume::new("Src")));
+    rig.register("dst", Arc::clone(&dst));
+    rig.seed(
+        "copy-op",
+        OpKind::Copy,
+        "src",
+        Some("dst"),
+        RollbackState::Rollbackable,
+        vec![
+            file_unit(0, "src", "/f.txt", "dst", "/landed/f.txt", FILE_BYTES as i64),
+            dir_unit(1, "dst", "/landed"),
+        ],
+    );
+    let plan = rollback_operation(&rig.vm, &rig.writer, "copy-op", |_plan| Ok(())).expect("dispatch");
+    assert_eq!(plan.summary.from.as_deref(), Some("/landed"));
+    assert_eq!(plan.summary.to, None, "a removal has nowhere to put anything");
+
+    // A move undo takes items FROM where they landed and puts them back.
+    let (rig, _src, _dst) = moved_across(1, Duration::ZERO).await;
+    let plan = rollback_operation(&rig.vm, &rig.writer, "op", |_plan| Ok(())).expect("dispatch");
+    assert_eq!(plan.summary.from.as_deref(), Some("/"));
+    assert_eq!(plan.summary.to.as_deref(), Some("/"));
 }
