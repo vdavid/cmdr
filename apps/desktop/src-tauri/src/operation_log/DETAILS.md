@@ -408,12 +408,12 @@ on its first item, return instantly from its pause gate, and report a clean stop
 So a reversal names its reading — `StopMeans::IntentLeavesRunning` or `IntentReachesStopped`
 (`write_operations/operation_intent.rs`), which `PauseGate::wait_while_paused_until` also takes. Today's journal-driven
 rollback is dispatched as its OWN managed operation, opened `Running`, so it uses the first; the in-flight volume
-rollback (`transfer/volume/cleanup.rs`) runs under a `RollingBack` operation and uses the second. A future milestone
-that runs this engine against the original operation gets a named choice rather than a silent bail.
+rollback (`transfer/volume/cleanup.rs`) runs under a `RollingBack` operation and uses the second. A later change that
+runs this engine against the original operation gets a named choice rather than a silent bail.
 
 **Known boundary**: the mid-file layer inside `stream_pipe_file` (retry classification, the between-chunks park) still
 reads the transfer's meaning off `state.intent` directly. That's correct for every reversal dispatched today, and it's
-what a wind-down-phase milestone would have to thread through.
+what running a reversal under the original operation's own wind-down would have to thread through.
 
 ### The two data-safety guards (D7)
 

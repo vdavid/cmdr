@@ -89,9 +89,9 @@ asks for nothing.
 
 `notRollbackable` goes one level deeper: `notRollbackableNotice` words each `NotRollbackableReason` separately, because
 the reasons aren't one situation. A directory merge and a resolved name clash LOST the information a reversal would
-need; an overwrite and a permanent delete kept no bytes to restore; a zip-inner edit is a gap Cmdr hasn't closed yet;
-an incomplete journal is Cmdr declining to guess. A single "this can't be rolled back" left the user unable to tell
-which, and unable to tell whether they'd done something wrong.
+need; an overwrite and a permanent delete kept no bytes to restore; a zip-inner edit is a gap Cmdr hasn't closed yet; an
+incomplete journal is Cmdr declining to guess. A single "this can't be rolled back" left the user unable to tell which,
+and unable to tell whether they'd done something wrong.
 
 Two copy constraints that outlive any wording pass:
 
