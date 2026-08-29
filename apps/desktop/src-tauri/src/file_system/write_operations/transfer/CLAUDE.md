@@ -16,22 +16,21 @@ are `volume/CLAUDE.md`. All four cores run through `transfer_driver/CLAUDE.md`. 
   abandoning a wedged worker safe. A non-overwrite landing REFUSES an occupied destination (`RENAME_EXCL` /
   `RENAME_NOREPLACE`), keeping the guarantee the old direct `O_EXCL` create gave.
 - **A source that would land on ITSELF is a duplicate, ❌ never a conflict**: settled by `dev+ino` per TOP-LEVEL source
-  before either engine's loop (copy seeds `dir_remap` with a free ` (N)` name, move drops the item), because every
-  answer the conflict machinery can give destroys the original or refuses the user. `DETAILS.md` § "Self-collision (duplicating in place)".
+  before either engine's loop (copy seeds `dir_remap` with a free ` (N)` name, move drops the item): every answer the
+  conflict machinery can give destroys the original or refuses the user. `DETAILS.md` § "Self-collision (duplicating in place)".
 - **A MERGED move is NOT rollbackable, and a cross-FS move journals FINAL paths, never staging ones**
   (`note_not_rollbackable` at every merge and phase-3 conflict; `JournalDestUnder` rebases, created-dir rows included).
   All easy to drop in a refactor. `operation_log/DETAILS.md` § "Why a directory merge isn't reversible".
 - **Created-dir rows journal on EVERY terminal path**: a canceled transfer keeps the dirs it made, so a reversal needs
-  them or it leaves an empty skeleton. ❌ Don't call `CopyTransaction::commit` from a new arm; go through
-  `commit_journaling_created_dirs`.
+  them or it leaves an empty skeleton. ❌ A new `copy/` arm commits through `commit_journaling_created_dirs`, never
+  bare. `move_with_staging` is the ONE bare committer and stays one (it rebases dir paths off the staging root first).
+  `DETAILS.md` § "Who may commit a `CopyTransaction` bare".
 - **Cross-volume copy parks and yields between chunks** (`CheckpointStream`): park in place, ❌ no release/reopen. TWO
   opt-ins, ❌ don't merge: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB only) is capped.
 - **Every phase announces itself to `transfer_probe.rs`, on ALL THREE streaming paths** (both copy drivers and the
   cross-volume move): ❌ no `.await` on a transfer path without a phase, ❌ never derive a stall from FE timing. A new
-  streaming path owes BOTH `register_operation` and a `CURRENT_TASK_PROBE` scope — registering without binding looks
-  wired and reports nothing — plus the SAME width and a `MergeCtx.op_probe` if it opens a `FileWindow`, or its leaves
-  share one row and clobber its stall-abort token (`volume/DETAILS.md` § "One in-flight-table row per leaf").
-  `DETAILS.md` § "The stall signal".
+  streaming path owes BOTH `register_operation` and a `CURRENT_TASK_PROBE` scope (registering without binding looks
+  wired and reports nothing), plus a `MergeCtx.op_probe` if it opens a `FileWindow`. `DETAILS.md` § "The stall signal".
 - **The stall watchdog judges movement by the byte total the UI is showing** (`state.last_progress_bytes()`); ❌ the
   probe never gets a byte counter of its own. One the drivers must feed is one a driver forgets: the serial path
   forgetting it called every 1–2-source (and every MTP) transfer stalled.
