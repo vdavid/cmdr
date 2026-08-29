@@ -34,7 +34,7 @@
 
   "queue.row.reversalMovingBack": "Putting files back",
   "@queue.row.reversalMovingBack": {
-    "description": "Names an operation row that is UNDOING a finished move or a finished move-to-trash: the files are travelling back to where they came from, and nothing is being deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack), so use the same verb family: nothing here may sound like a deletion.",
+    "description": "Names an operation row that is UNDOING a finished move or a finished move-to-trash: the files are traveling back to where they came from, and nothing is being deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack), so use the same verb family: nothing here may sound like a deletion.",
     "screenshot": "queue.png"
   },
 
