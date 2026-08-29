@@ -467,7 +467,7 @@
   "@onboarding.cloudSetup.step.pasteKey": {
     "sourceHash": "e35b296"
   },
-  "onboarding.cloudSetup.apiKeyAria": "Clé API",
+  "onboarding.cloudSetup.apiKeyAria": "Clé d''API",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
   },
@@ -479,7 +479,7 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
     "sourceHash": "5a4d18d"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "Clé API",
+  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "Clé d''API",
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
     "sourceHash": "16f0ee4"
   },

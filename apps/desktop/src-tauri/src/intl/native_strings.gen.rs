@@ -511,7 +511,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
             ("menu.file.move", "Déplacer…"),
             ("menu.file.newFolder", "Nouveau dossier…"),
             ("menu.file.open", "Ouvrir"),
-            ("menu.file.quickLook", "Coup d’œil"),
+            ("menu.file.quickLook", "Coup d'œil"),
             ("menu.file.rename", "Renommer"),
             ("menu.file.showInFileManager", "Afficher dans le gestionnaire de fichiers"),
             ("menu.file.showInFinder", "Afficher dans le Finder"),

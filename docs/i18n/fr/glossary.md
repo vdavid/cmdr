@@ -2018,3 +2018,103 @@ donc les apostrophes se doubleraient ; aucune valeur du lot n'en contient (les t
   » (`commands.selectionSelectFiles.description` « les fichiers correspondants ») et `chemin complet` est déjà posé
   (`errors.listing.nameTooLongErrno.*`) · high. Sujet sous-entendu (le motif), et `la liste affiche` plutôt que
   `ce qui s'affiche dans la liste` : actif, plus court, et aucune apostrophe à doubler.
+
+## Un mot anglais, un mot français : la revue de dérive (2026-08-30)
+
+Le catalogue portait 38 endroits où `fr` donnait deux noms différents au même texte anglais, le plus souvent parce
+qu'une passe tardive avait touché `menu.json` en laissant `commands.json` sur l'ancienne formulation. Treize étaient de
+vraies dérives et ont disparu ; les vingt-cinq restantes sont des frontières VOLONTAIRES (ou des angles morts du
+vérificateur) et sont décrites plus bas pour que la prochaine passe ne les « uniformise » pas.
+
+### Corrigé
+
+- **`View` (l'action F3, ouvrir le fichier dans la visionneuse intégrée) → `Visualiser`**, partout :
+  `commands.fileView.label`, `menu.file.view`, `fileExplorer.functionKeyBar.viewLabel` (qui disait `Afficher`) ·
+  `high`. ❌ Pas `Afficher` : c'est le verbe SHOW du catalogue (`commands.viewShowHidden.label` =
+  `Afficher ou masquer les fichiers cachés`), et confondre les deux est exactement ce que cette entrée empêche.
+  ❌ Pas `Présentation` : c'est le MENU (voir la frontière plus bas). Double Commander `fr` dit `Voir` pour la même
+  action (`tfrmmain.actview.caption`) — correct, mais Tier 3, plus vague dans une palette de commandes, et deux clés sur
+  trois disaient déjà `Visualiser`. À surveiller au contrôle de débordement : 10 caractères sur la barre F-touches.
+- **`menu.file.quickLook` = `Coup d'œil`, avec UNE apostrophe ASCII** · la famille `menu.*` est NATIVE : Rust la lit
+  par simple recherche dans une table, sans moteur ICU, donc un `''` s'affiche littéralement comme deux apostrophes
+  dans la barre de menus de macOS (`isRawKey` dans `i18n-catalog-lib.ts`). La clé jumelle
+  `commands.fileQuickLook.mac.label` est ICU et s'écrit donc `Coup d''œil` · `high`. Elle portait aussi l'apostrophe
+  courbe U+2019, contre la règle « toujours U+0027 » de `style.md`.
+- **`error report` → `rapport d'incident` partout** · `settings.updates.sendErrorReport` disait
+  `rapport d'erreur`, seul contre cinq · `high`.
+- **`Check for updates` → `Rechercher les mises à jour`** · `settings.updates.checkForUpdates` disait `Vérifier` alors
+  que la commande et le menu disaient `Rechercher`. macOS `fr` tranche : Software Update rend
+  `Checking for updates…` par `Recherche des mises à jour en cours…` et `Check for Updates` par
+  `Rechercher les mises à jour` (vérifié sur macOS 26.6.2, build 25G83, 2026-08-30) · `high`.
+- **`Operation log` → `Historique des opérations`** · `settings.navigationAndFileOps.card.operationLog` disait
+  `Journal des opérations`, contre la commande, le menu et le titre de la fenêtre · `high`.
+- **`Reset to default` → `Réinitialiser au réglage par défaut`** et **`Reset all to defaults` → `Tout réinitialiser aux
+  réglages par défaut`** · `settings.control.resetToDefault` et `settings.advanced.resetAll` disaient
+  `Réinitialiser par défaut`, qui ne veut pas dire la même chose (« par défaut » y devient un adverbe) · `high`.
+- **`API key` → `Clé d'API`** aussi dans l'assistant (`onboarding.cloudSetup.apiKeyAria`, `.apiKeyPlaceholder.generic`
+  disaient `Clé API`), conformément à l'entrée de glossaire déjà en place · `high`.
+- **`Got it` → `D'accord`** dans les deux · macOS `fr` traduit « Got It » par `D'accord` (vérifié sur macOS 26.6.2,
+  2026-08-30) ; le catalogue disait `Compris` d'un côté et `J'ai compris` de l'autre · `high`.
+- **`Press Enter to search` → `Appuyez sur Entrée pour rechercher`** dans les deux (`search.runHint` disait
+  `pour lancer la recherche`) ; **`Word wrap` → `Retour à la ligne automatique`** dans les deux
+  (`settings.viewer.wordWrap.label` inversait l'ordre des mots) ; **`Go to home folder` → `Aller au dossier
+  personnel`** aussi sur le bouton de l'écran d'erreur ; **`Check your inbox…`** dit la même chose dans l'assistant et
+  dans les réglages · `high`.
+- **`{dir}` / `{dirs}` → `rép.` partout**, y compris `fileExplorer.summary.dirNoun` qui disait
+  `dossier`/`dossiers` · `high`. C'est la décision déjà prise pour les statistiques d'analyse, et le voisin immédiat
+  dans la barre d'état (`fileExplorer.selectionInfo.dir`) affiche `RÉP.`.
+- **`From:` devant un chemin → `De :`** · `fileOperations.scanPhase.fromLabel` disait `Depuis :` alors que le couple du
+  dialogue de transfert est `De` / `À`. `De :` est aussi la forme des en-têtes de courrier · `high`.
+
+### Frontières volontaires (ne pas uniformiser)
+
+- **`Connect to server` : `Connexion au serveur` titre le dialogue, `Se connecter au serveur` est la commande** ·
+  macOS `fr` ship les DEUX, exactement ainsi (le point du menu Aller est `Se connecter au serveur…`, le titre de la
+  fenêtre est `Connexion au serveur`). `fileExplorer.network.browser.connectToServerRow` est une ligne qui déclenche
+  l'action, donc verbe ; `connectDialog.title` est le titre, donc nom · `high`.
+- **`Back` : `Précédent` dans le menu Aller, `Retour` sur les boutons de l'app** · `@menu.go.back` demande le mot exact
+  du Finder, et macOS `fr` n'utilise que `Précédent` (6 occurrences dans `fr/macOS/`, aucun `Retour` isolé). Les
+  boutons réseau et l'assistant sont des surfaces Cmdr et gardent `Retour` · `high`.
+- **`View` : `Présentation` est le MENU, `Visualiser` est l'action** · macOS Finder `fr` nomme son menu View
+  `Présentation`, et `@menu.bar.view` demande ce mot · `high`.
+- **`Edit` : `Édition` est le MENU, `Modifier` est le verbe** · même raison, `@menu.bar.edit` · `high`.
+- **`Zoom` : `Zoom` est la taille du texte, `Réduire/agrandir` est la fenêtre** · macOS `fr` nomme l'action de la
+  pastille verte `Réduire/agrandir`, et le `@key` dit d'employer le mot de macOS ICI même s'il diffère · `high`.
+- **`(unknown)` s'accorde avec ce qu'il remplace** · `fileExplorer.network.browser.unknown` = `(inconnu)` (le nombre de
+  partages, masculin) ; `fileOperations.transferProgress.sizeUnknown` = `(inconnue)` (la taille, féminin). Les deux
+  sont justes et aucune ne va à la place de l'autre · `high`.
+- **`App` : `App` est la couleur de l'app, `Application` est la portée** · les options de couleurs désignent l'app comme
+  SOURCE d'une teinte (étiquette de bouton très courte) ; `shortcuts.scope.app` désigne les raccourcis valables dans
+  toute l'application · `high`.
+- **`Running` : `En cours d'exécution` est un PROCESSUS, `En cours` est une tâche** · le serveur d'IA local tourne ;
+  une opération du journal progresse. Le français distingue les deux · `high`.
+- **`Rolling back` : le titre du dialogue prend les points de suspension, le statut prend `en cours`** ·
+  `fileOperations.transferProgress.titleRollingBack` = `Retour en arrière...` (les points disent la progression) ;
+  `operationLog.rollback.rollingBack` est une cellule de statut sans points, qui doit donc le dire en toutes lettres,
+  en parallèle de `operationLog.status.running` = `En cours` · `high`.
+- **`Canceled` : `Opération annulée` titre un panneau, `Annulé` est un statut** · les titres `errors.listing.*.title`
+  nomment le sujet sous-entendu, comme `Interrupted` → `Opération interrompue` · `high`.
+- **`Send feedback` : le TITRE et la commande disent `un retour`, le BOUTON d'envoi dit `le retour`** · c'est le motif
+  déjà en place dans tout le catalogue : `errorReporter.dialog.title` = `Envoyer un rapport d'incident` contre
+  `errorReporter.dialog.send` = `Envoyer le rapport`. Le titre nomme l'action en général ; le bouton agit sur l'objet
+  précis qui est devant vous · `high`.
+- **`Ask about your files` : le titre invite à plusieurs questions, le champ en attend une** · `askCmdr.empty.title`
+  est l'état vide d'une conversation (`Posez des questions…`), `askCmdr.composer.placeholder` est le champ d'un seul
+  message (`Posez une question…`). Le français explicite un nombre que l'anglais laisse ouvert · `high`.
+- **`Modified` : `Modifié` est la DATE, `Modifiés` sont les raccourcis que vous avez changés** ·
+  `shortcuts.section.filterModified` s'accorde au masculin pluriel avec les commandes, sans aucune date · `high`.
+- **`Error` : `Problème` est un état lu par l'utilisateur, `Erreur :` est une étiquette de diagnostic** · les deux
+  `@key` le disent explicitement · `high`.
+- **`Search` : `Rechercher` est l'action, `Recherche` est le thème** · en français l'infinitif titre les dialogues et
+  les boutons, mais une sous-section de la barre latérale des réglages est un nom · `high`.
+- **`Put back …` : `restauré` concerne des NOMS, `remis en place` concerne des EMPLACEMENTS** · l'anglais réutilise une
+  phrase pour deux annulations différentes · `high`.
+- **`you@example.com` : les réglages gardent l'adresse telle quelle, les dialogues la traduisent** ·
+  `@settings.updates.emailPlaceholder` dit « keep it exactly » (avec un `sameAsSourceJustification` à l'appui) ·
+  `high`.
+- **Sept « divergences » n'en sont pas, et voici pourquoi elles reviendront** : `AI suggestions` / `AI suggestions:`,
+  `Connected` / `Connected!`, `Copied` / `Copied!`, `On disk` / `On disk:`, `Preview` / `Preview:`,
+  `Send report` / `Send report?` et `Start using Cmdr` / `Start using Cmdr!` ont un anglais DIFFÉRENT. `i18n-terms` les
+  regroupe quand même : son normalisateur retire la ponctuation FINALE, mais la typographie française met une espace
+  insécable AVANT `: ! ?`, si bien que `Copié !` se réduit à `Copié ` (avec l'espace) et ne coïncide plus avec `Copié`.
+  Ne touchez pas à ces quatorze valeurs : le défaut est dans le normalisateur, pas dans la traduction.

@@ -132,7 +132,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Ouvrir le dossier personnel",
+  "fileExplorer.errorPane.goHome": "Aller au dossier personnel",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -201,7 +201,7 @@
   "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
     "sourceHash": "280b10c"
   },
-  "fileExplorer.functionKeyBar.viewLabel": "Afficher",
+  "fileExplorer.functionKeyBar.viewLabel": "Visualiser",
   "@fileExplorer.functionKeyBar.viewLabel": {
     "sourceHash": "dcc839a"
   },
@@ -353,7 +353,7 @@
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
   },
-  "fileExplorer.network.browser.connectToServerRow": "Connexion au serveur...",
+  "fileExplorer.network.browser.connectToServerRow": "Se connecter au serveur...",
   "@fileExplorer.network.browser.connectToServerRow": {
     "sourceHash": "1bf4858"
   },
@@ -1104,7 +1104,7 @@
   "@fileExplorer.summary.fileNoun": {
     "sourceHash": "46012b1"
   },
-  "fileExplorer.summary.dirNoun": "{count, plural, one {dossier} many {dossiers} other {dossiers}}",
+  "fileExplorer.summary.dirNoun": "{count, plural, one {rép.} many {rép.} other {rép.}}",
   "@fileExplorer.summary.dirNoun": {
     "sourceHash": "1c5273d"
   },

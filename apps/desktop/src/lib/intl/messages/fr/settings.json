@@ -1072,7 +1072,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
-  "settings.viewer.wordWrap.label": "Retour automatique à la ligne",
+  "settings.viewer.wordWrap.label": "Retour à la ligne automatique",
   "@settings.viewer.wordWrap.label": {
     "sourceHash": "9e210f3"
   },
@@ -1669,7 +1669,7 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.navigationAndFileOps.card.operationLog": "Journal des opérations",
+  "settings.navigationAndFileOps.card.operationLog": "Historique des opérations",
   "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
@@ -1827,7 +1827,7 @@
   "@settings.summary.noSubsections": {
     "sourceHash": "ba4b5b5"
   },
-  "settings.control.resetToDefault": "Réinitialiser par défaut",
+  "settings.control.resetToDefault": "Réinitialiser au réglage par défaut",
   "@settings.control.resetToDefault": {
     "sourceHash": "bc5b45a"
   },
@@ -2115,7 +2115,7 @@
     "sourceHash": "53e6cdc",
     "sameAsSourceJustification": "Placeholder example address ('you@example.com'); 'example.com' is the reserved example domain, kept verbatim as a sample value."
   },
-  "settings.updates.checkForUpdates": "Vérifier les mises à jour",
+  "settings.updates.checkForUpdates": "Rechercher les mises à jour",
   "@settings.updates.checkForUpdates": {
     "sourceHash": "f26f327"
   },
@@ -2123,11 +2123,11 @@
   "@settings.updates.errorPrefix": {
     "sourceHash": "6170629"
   },
-  "settings.updates.sendErrorReport": "Envoyer un rapport d''erreur",
+  "settings.updates.sendErrorReport": "Envoyer un rapport d''incident",
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "Vérifiez votre boîte de réception pour confirmer votre e-mail. Merci de votre aide !",
+  "settings.updates.emailConfirmHint": "Consultez votre boîte de réception pour confirmer votre adresse e-mail. Merci de votre aide !",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
@@ -2191,7 +2191,7 @@
   "@settings.advanced.warningBanner": {
     "sourceHash": "b1dbbf4"
   },
-  "settings.advanced.resetAll": "Tout réinitialiser par défaut",
+  "settings.advanced.resetAll": "Tout réinitialiser aux réglages par défaut",
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
