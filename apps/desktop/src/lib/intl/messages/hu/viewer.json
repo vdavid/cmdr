@@ -75,7 +75,7 @@
   "@viewer.search.ariaLabel": {
     "sourceHash": "38d268a"
   },
-  "viewer.search.caseSensitive": "Kis- és nagybetűk megkülönböztetése",
+  "viewer.search.caseSensitive": "Kis- és nagybetűérzékeny",
   "@viewer.search.caseSensitive": {
     "sourceHash": "e124ba4"
   },
@@ -315,7 +315,7 @@
   "@viewer.reloadToast.reload": {
     "sourceHash": "bdc090e"
   },
-  "viewer.reloadToast.dismissTooltip": "Eltüntetés újratöltés nélkül",
+  "viewer.reloadToast.dismissTooltip": "Elvetés újratöltés nélkül",
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },

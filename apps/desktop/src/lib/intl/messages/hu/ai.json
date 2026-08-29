@@ -199,7 +199,7 @@
   "@ai.cloud.connected": {
     "sourceHash": "2296556"
   },
-  "ai.cloud.connectedNoModels": "Csatlakozva (a modell-lista nem érhető el)",
+  "ai.cloud.connectedNoModels": "Kapcsolódva (a modell-lista nem érhető el)",
   "@ai.cloud.connectedNoModels": {
     "sourceHash": "54f2b6f"
   },

@@ -368,7 +368,7 @@
   "@queryUi.recent.scopeSummary": {
     "sourceHash": "e5e6dff"
   },
-  "queryUi.recent.caseSensitive": "kis- és nagybetűre érzékeny",
+  "queryUi.recent.caseSensitive": "kis- és nagybetűérzékeny",
   "@queryUi.recent.caseSensitive": {
     "sourceHash": "3934758"
   },
@@ -656,11 +656,11 @@
   "@queryUi.scope.toggle.hideBoring": {
     "sourceHash": "972df96"
   },
-  "queryUi.scope.toggle.caseSensitive": "Kis- és nagybetűre érzékeny",
+  "queryUi.scope.toggle.caseSensitive": "Kis- és nagybetűérzékeny",
   "@queryUi.scope.toggle.caseSensitive": {
     "sourceHash": "9d15f82"
   },
-  "queryUi.scope.toggle.caseSensitiveAria": "Kis- és nagybetűre érzékeny illesztés",
+  "queryUi.scope.toggle.caseSensitiveAria": "Kis- és nagybetűérzékeny illesztés",
   "@queryUi.scope.toggle.caseSensitiveAria": {
     "sourceHash": "2700434"
   },

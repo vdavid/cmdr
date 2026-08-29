@@ -124,8 +124,9 @@ Settled while translating `queryUi.json` + `commands.json` (2026-06-21):
   (accusative `Gyorsnézetet`, e.g. "a ⇧Space-szel a Gyorsnézetet"). Preview (non-mac) = `Előnézet`.
 - Show in Finder (macOS) → `Megjelenítés a Finderben` · mac ("…megjelenítése a Finderben") · high. Finder kept verbatim.
 - context menu → `helyi menü` · ms · high. "Open context menu" = `Helyi menü megnyitása`.
-- zoom in / out → `Nagyítás` / `Kicsinyítés` (noun labels); verbs `nagyít` / `kicsinyít` · ms · high. "Zoom to 100%" =
-  `Nagyítás 100%-ra`; zoom level = `nagyítási szint`.
+- zoom (the level, and the View submenu holding it) → `Nagyítás` · ms · high. "Zoom to 100%" = `Nagyítás 100%-ra`;
+  zoom level = `nagyítási szint`. The zoom in/out STEPS are `Felnagyítás` / `Lekicsinyítés` (see § Natív menük), which
+  keeps `Nagyítás` free as the submenu's own title.
 - ascending / descending (sort order) → `növekvő` / `csökkenő` · gn/dolphin ("növekvő", "Csökkenő") · high.
 - hidden files → `rejtett fájlok` · gn, dolphin · high. "Toggle hidden files" = `Rejtett fájlok ki-be`.
 - wildcard → `helyettesítő karakter` · ms · high. glob/regex pattern row labels: glob → `Glob` (kept, no common HU
@@ -1880,12 +1881,11 @@ Natív anyanyelvi ellenőrzésre megjelölve:
   `Kijelölés törlése`; ellenőrizve 2026-08-29) · high. Ez a natív menük szakaszának `Deselect all` döntését erősíti meg,
   és innen jön a párbeszéd két címe: `Fájlok kijelölése` / `Fájlok kijelölésének törlése`, szóról szóra a
   `menu.select.files` / `menu.select.deselectFiles` alakja, hogy a cím és az őt megnyitó menüpont ne mondjon mást.
-- **A katalógus drift, amit ez a menet NEM javított**: a `commands.selectionDeselectFiles.label`
-  (`Fájlok kijelölésének megszüntetése…`) és a `commands.selectionDeselectAll.label` (`Kijelölés megszüntetése`) még a
-  `megszüntetése` alakot viszi. Ez a Tier-3 ortodox pár szava (Total Commander `hu` „Csoportkijelölés megszüntetése”,
-  `WCMD.INC` 522; Double Commander `hu` „Csoport kijelölésének megszüntetése”), a Tier-1 Finderé viszont a `törlése`. A
-  Finder nyer, tehát a `commands.json` két kulcsát egy külön menetben a `törlése` alakra kell hozni. Addig a
-  parancspaletta és a menü két szót használ ugyanarra.
+- **A `megszüntetése` alak sehol nem maradt**: a `commands.selectionDeselectFiles.label` és a
+  `commands.selectionDeselectAll.label` is a `törlése` alakot viszi, tehát a parancspaletta, a menüsor és a párbeszéd
+  ugyanazt a szót mondja. A Tier-3 ortodox pár ugyan a `megszüntetése` szót használja (Total Commander `hu`
+  „Csoportkijelölés megszüntetése”, `WCMD.INC` 522; Double Commander `hu` „Csoport kijelölésének megszüntetése”), de a
+  Tier-1 Finder a `törlése`, és a Finder nyer. ❌ Ne told vissza a `megszüntetése` alakra.
 - **A súgóbuboréknak NEM kell tartalmaznia a feliratot** (`selection.action.*`). A gomb hozzáférhető neve a felirat
   kulcsából jön (`QueryDialog.svelte`: `aria-label={config.primaryAction.ariaLabel ?? config.primaryAction.label}`), a
   súgóbuborék pedig egy belső `span` `use:tooltip` akciója, tehát a WCAG 2.5.3 már a felépítésből adódóan teljesül. A
@@ -1913,3 +1913,69 @@ Natív anyanyelvi ellenőrzésre megjelölve:
   kettőspont után áll, így bármi elfér benne.
 - Mind a 15 érték eltér az angoltól, tehát nincs szükség `sameAsSourceJustification`-re. Egyik értékben sincs aposztróf,
   így az ICU `''` szabálya nem lép be; a `{mode}` és a `{query}` változatlan.
+
+## Belső driftszedés: egy fogalom, egy név (2026-08-30)
+
+A `desktop-i18n-term-consistency` 28 divergenciát talált a `hu` katalógusban (egy angol érték, két magyar alak). Tizenhat
+valódi drift volt, tizenkettő szándékos határvonal. A drift két oka: (a) egy szót menet közben újradöntöttünk, de csak a
+hívóhelyek egy részét írtuk át, és (b) a menüsoros passz csak a `menu.json`-t frissítette, így a parancspaletta a régi
+szót vitte tovább. A határvonalakat ez a szakasz írja le, hogy a következő passz ne lapítsa el őket.
+
+### A javított driftek
+
+- **Quit Cmdr → `Kilépés a Cmdrből`** · macOS AppKit `hu` (`Quit` = `Kilépés`) és Finder `hu` (`Kilépés a Finderből`) ·
+  high. A `commands.appQuit.label` `Cmdr bezárása` alakja a `close`-t mondta a `quit` helyett.
+- **zoom in / out → `Felnagyítás` / `Lekicsinyítés`** · Safari `hu` `MainMenu.strings` `438.title` / `439.title` (a
+  telepített macOS 26.x-ből, ellenőrizve 2026-08-30) · high. A `commands.viewZoom*` a régi `Nagyítás` / `Kicsinyítés`
+  alakot vitte, ami ütközött volna a zoom-almenü saját címével.
+- **Connect to server → `Kapcsolódás szerverre`** · macOS Finder `hu` `N84` = `Kapcsolódás szerverre…`, `FR15` =
+  `Kapcsolódás a szerverre` · high. ❗ A katalógus két kulcsa a nyelvtanilag „helyesebbnek” tűnő `szerverhez` alakot
+  vitte; a Tier-1 Apple-szóhasználat a `-ra/-re`, és az nyer.
+- **Connected → `Kapcsolódva`** · macOS AppKit `hu` `SavePanel` (`Connected` = `Kapcsolódva`) · high. A `Csatlakozva`
+  alak három kulcsból eltűnt (`ai.cloud.connected`, `ai.cloud.connectedNoModels`,
+  `fileExplorer.network.browser.status.connected`). A folyamatban lévő `Connecting…` marad `Csatlakozás…`, mert az
+  Apple is ezt az igét használja rá (`SavePanel`).
+- **Try again → `Próbáld újra`, Retrying → `Újrapróbálás`** · a katalógus tegező regisztere · high. A két fogalom külön
+  alakot kap: a gomb felszólít, a folyamatjelző főnévvel nevez. Az `Újrapróbálkozás` alak megszűnt.
+- **case-sensitive → `Kis- és nagybetűérzékeny`** · macOS `hu` (`Kis- és nagybetűérzékeny`, egybeírt összetétel) ·
+  high. A `Kis- és nagybetűre érzékeny` és a `Kis- és nagybetűk megkülönböztetése` alak is erre cserélődött, a
+  `queryUi.scope.toggle.caseSensitiveAria` is (`… illesztés`), hogy a WCAG 2.5.3 tartalmazása megmaradjon.
+- **Dismiss → `Elvetés`** mindenütt, a `viewer.reloadToast.dismissTooltip` `Eltüntetés` alakja is.
+- **`settings.section.imageIndexing` → `Képek indexelése`**, mint a testvére, a `settings.section.driveIndexing`
+  (`Meghajtó indexelése`) és az `indexing.enrich.label`.
+- Egy-egy alakra hozva: `Go to home folder` → `Ugrás a saját mappára` (a paletta, a Ugrás menü és a hibapanel gombja),
+  `Low disk space` → `Kevés lemezterület`, `On disk` → `Lemezen(:)`, `Example: {model}` → `Példa: {model}`, és a két
+  béta-feliratkozós mondat (siker + kudarc) az onboarding alakjára.
+
+### A határvonalak, amiket NEM szabad elsimítani
+
+- **Cancel**: `Mégsem` a párbeszéd elvető gombja (macOS Finder), `Megszakítás` az, ami egy FUTÓ műveletet állít le
+  (`queue.row.cancel`, `transferProgress.titleCancelling`, `errors.write.cancelled.*`, `operationLog.status.canceled`).
+  A `Leállítás` a harmadik: egy szolgáltatást állít le (szerver, indexelés, Ask Cmdr).
+- **View**: `Nézet` a menüsor NÉVSZÓI menücíme, `Megtekintés` az IGE, ami az F3 megjelenítőt nyitja
+  (`menu.file.view`, `commands.fileView.label`). Az angol `@key` leírás is így különbözteti meg őket.
+- **Zoom**: `Nagyítás` a szövegnagyítás (View almenü), `Méretezés` a Window > Zoom ablakművelet (macOS AppKit `hu`
+  `Zoom All` = `Összes méretezése`). Az angol leírás külön kiemeli, hogy a kettő nem ugyanaz.
+- **Select**: `Kijelölés` a fájlkijelölő menü és művelet, `Válassz` a legördülő lista helyőrzője (`ui.select.placeholder`)
+  — ott a felhasználót szólítjuk meg, nem fájlt jelölünk ki.
+- **Error**: `Probléma` a felhasználónak szóló állapotcella (az angol `@key` maga kéri a barátságosabb szót),
+  `Hiba` a diagnosztikai előtag (`settings.updates.errorPrefix`, ahol az angol leírás kifejezetten megengedi).
+- **Bytes**: `Bájtok` a folyamatsáv címkéje, mert a párja a `Fájlok`; `Bájt` a mértékegység-választó gombja, mert a
+  szomszédjai `kB`, `MB`, `GB`.
+- **From**: `Forrás` a `Cél` párja az átviteli párbeszéd fejlécében; `Innen:` a beágyazott útvonal előtti címke.
+- **Purple**: `Bíbor` a Finder hét címkeszínének EGYIKE (macOS Finder `TG_COLOR_3`, szó szerint kell), `Lila` a Cmdr
+  saját 12 színű kötetszínezőjében, ahol a köznyelvi színnév a helyes.
+- **Put back**: `visszaállítva` a RÉGI NÉV visszaadása (`askCmdr.renameUndo.*`), `visszahelyezve` a Kukából való
+  visszatétel (`fileOperations.trash.undone`). A `style.md` szótára már ezt írja elő; az angol mindkettőt „Put back”-nek
+  mondja, ami az ANGOL pontatlansága, nem a miénk.
+- **Rolling back**: `Visszagörgetés…` a folyamatablak címe (a három pont viszi a folyamatban-lévőséget),
+  `Visszagörgetés folyamatban` az `operationLog` állapotcellája, ahol nincs három pont, és a szomszédai a KÉPESSÉGET
+  nevezik meg (`Visszagörgethető`, `Nem görgethető vissza`) — ott a puszta főnév félreérthető lenne.
+- **Send report**: `Elküldöd a jelentést` a párbeszéd CÍME (a felhasználót kérdezi), `Jelentés küldése` a GOMB.
+- **`errors.eject.unexpected` ≠ `errors.mutation.unexpected`**: külön blokk indokolja fent (a kiadás-buborék burkolója
+  már `Nem sikerült kiadni:`-val kezdődik, tehát a settled alak szóismétlést adna).
+- **Az átnézés/átvizsgálás/keresés hármas**: `átnézés` az élő mappabejárás (`queryUi.results.live.*`,
+  `search.walkHandoff.*`), `átvizsgálás` az index- és méret-átvizsgálás (`indexing.*`, `fileExplorer.dirSize.*`) meg az
+  Ask Cmdr „végigmegy egy gyűjteményen” sorai, `keresés` maga a keresés funkció. Három fogalom, három szó.
+- **memory**: `memória` a RAM (`ai.local.*`), `jegyzet` az Ask Cmdr emlékezete (`settings.askCmdr.memory.*`,
+  `askCmdr.tool.memory*`).

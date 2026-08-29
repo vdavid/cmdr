@@ -902,7 +902,7 @@
   "@fileExplorer.dirSize.updatingIndexTooltip": {
     "sourceHash": "2689358"
   },
-  "fileExplorer.dirSize.scanProgressTooltip": "A méretek a vizsgálat előrehaladtával jelennek meg",
+  "fileExplorer.dirSize.scanProgressTooltip": "A méretek az átvizsgálás előrehaladtával jelennek meg",
   "@fileExplorer.dirSize.scanProgressTooltip": {
     "sourceHash": "8151629"
   },
