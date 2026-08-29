@@ -40,6 +40,10 @@ for them before trusting a source.
 6. **A Cmdr catalog tag may not equal the pile folder to mine.** `pt` → mine `pt-BR/`; `zh` → mine the composed `zh/`
    (Simplified). When substituting the tag into the translator-agent prompt's "mine `_ignored/i18n/<tag>/`" line, use
    the variant-correct folder, which each language's `style.md` names.
+7. **A `License.rtf` on disk can be a decade stale, and stale legal text has a DIFFERENT register from live legal
+   text.** macOS ships SLAs from many vintages side by side, and some were localized off a Simplified base into a
+   `zh_TW.lproj`. Mining the wrong one hands you an archaic pronoun and a mainland term set with full confidence. Always
+   date the file before quoting it: § Legal register below.
 
 For WHICH term to pick once you've mined the candidates (localize the Apple feature names Apple localizes; prefer the
 macOS Finder term over the Windows/Microsoft one; let brand names inflect), see `docs/guides/i18n-translation.md` §
@@ -135,6 +139,60 @@ for l in de es fr hu nl pt_BR sv vi zh_CN; do
   printf '%s=%s\n' "$l" "$(plutil -convert json -o - $l.lproj/MenuBar.strings | jq -r '."300666.title"')"
 done   # -> de=Im Dock ablegen, sv=Minimera, hu=Minimalizálás, ...
 ```
+
+### Legal register
+
+A bundle's `<lang>.lproj/License.rtf` is the only on-disk sample of Apple's LEGAL register, which is a different
+register from UI chrome (Apple's Traditional-Chinese SLA says `您`; its purchase and account UI says `你`). That makes
+these files worth mining, and it makes their vintage load-bearing: macOS ships SLAs from many years side by side, they
+are never retranslated in place, and an old one will state a register Apple abandoned.
+
+**Read the RTF header first. Two fields date the file, and neither needs decoding:**
+
+- `\cocoartf<N>` is the writer version. Higher is newer, and the jump is obvious once you compare two (`2761` vs
+  `1348`).
+- `\fcharset<N>` in the `\fonttbl` names the CODEPAGE, which is the sharper tell: **134 = GB2312/Simplified, 136 =
+  Big5/Traditional**. A `zh_TW.lproj` file carrying `\fcharset134` was localized off a Simplified base, so its
+  terminology is mainland no matter what the folder name says. The font name says the same thing (`PingFangTC-*` is
+  modern, `STHeiti` is legacy).
+
+```sh
+head -c 200 "<bundle>/Contents/Resources/zh_TW.lproj/License.rtf"   # \cocoartf, \fonttbl, \fcharset all live here
+```
+
+Worked example (verified on macOS 26.6.2, build 25G83, 2026-08-29):
+
+- **Modern** (`cocoartf2761` + `fcharset136` + PingFang TC):
+  `/System/Library/CoreServices/Applications/Feedback Assistant.app/…/zh_TW.lproj/License.rtf`: `您` ×107, `你` 0,
+  `閣下` 0, `授權` ×59, `許可證` 0, and it titles itself 軟體授權與保密協議.
+- **Stale** (`cocoartf1348` + `fcharset134` + STHeiti):
+  `/System/Library/CoreServices/Install Command Line Developer Tools.app/…/zh_TW.lproj/License.rtf`: `閣下` ×111, `您`
+  0, `許可證` ×47. Archaic pronoun, mainland term for the agreement. ❌ Don't mine it.
+
+**Decoding.** The CJK isn't stored as text: every byte is a `\'XX` hex escape in the `\fcharset` codepage. So a plain
+`grep 您` on the file returns nothing and reads as "Apple doesn't use it here". Strip the control words, turn the
+escapes back into bytes, then decode in that codepage:
+
+```sh
+node -e '
+const fs=require("fs"); const [f,enc]=process.argv.slice(1); const S="@@HX@@";
+let s=fs.readFileSync(f,"latin1").replace(/\\'"'"'([0-9a-fA-F]{2})/g,(m,h)=>S+h+S)
+       .replace(/\\\*|\\[a-zA-Z]+-?\d* ?/g,"").replace(/[{}]/g,"");
+const b=[]; for(let i=0;i<s.length;i++){ if(s.startsWith(S,i)){b.push(parseInt(s.substr(i+S.length,2),16)); i+=S.length*2+1;} else b.push(s.charCodeAt(i)&0xff); }
+process.stdout.write(new TextDecoder(enc).decode(Buffer.from(b)));
+' "<path>/License.rtf" big5 > /tmp/sla.txt      # gbk for fcharset134
+grep -o 您 /tmp/sla.txt | wc -l
+```
+
+> [!CAUTION] **Big5 trail bytes collide with RTF backslash escaping**, so a decoded Big5 file can carry mojibake in
+> spots. Character COUNTS stay trustworthy: corruption DROPS occurrences, it never invents them, so a count is a lower
+> bound and a clean 0 against a large positive is still a clean split. Individual quoted FRAGMENTS are what you have to
+> re-check before pasting one into a style guide.
+
+Beyond pronouns, these files are the place to measure how the legal register handles **CJK/Latin spacing**. Count
+boundaries between Han ideographs (U+4E00–U+9FFF) and `[A-Za-z0-9]` only; including full-width punctuation (`、`, `「`,
+`（`) inflates the "tight" side with bracket adjacencies that no spacing rule covers, which is how a real measurement
+came out 105 tight before the filter and 5 after.
 
 ## Microsoft terminology (Tier 2) — `<tag>/microsoft-terminology/<LANG>.tbx`
 
