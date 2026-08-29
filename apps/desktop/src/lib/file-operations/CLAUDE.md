@@ -24,26 +24,26 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
 - **The foreground slot is released on EVERY route out of the dialog**, Queue and auto-queue included: that handoff is
   when ambient surfaces start speaking. Release with `clearForegroundOperation(id)`, ❌ never a bare
   `setForegroundOperationId(null)` (a late teardown silences the next dialog's operation).
-- **A rename / mkdir / mkfile refusal stays TYPED to the surface.** Throw it with `throwMutationError` (a
-  `TypedFailure`; ❌ `throwIpcError` flattens it to JSON), read it back with `asMutationError`, word it with
-  `renderMutationError`. ❌ Never render `Unexpected.detail` or a `VolumeError` diagnostic as the message;
-  `technicalDetail()` returns those separately. `timedOut` means the write may STILL LAND. DETAILS § "Mutation
+- **A rename / mkdir / mkfile refusal stays TYPED to the surface.** `throwMutationError` (a `TypedFailure`; ❌
+  `throwIpcError` flattens it to JSON) → `asMutationError` → `renderMutationError`. ❌ Never render `Unexpected.detail`
+  or a `VolumeError` diagnostic as the message. `timedOut` means the write may STILL LAND. DETAILS § "Mutation
   refusals".
 - **An error dialog is a HANDOVER, not a release.** `handleTransferError` passes the id to `setForegroundFailureId`
-  while the dialog still owns it; closing releases it and dismisses the failure. Skip it and the chip and toast announce
-  what the user is already reading.
-- **Rollback asks first, Cancel doesn't.** Every surface offering Rollback stacks `RollbackConfirmDialog` and calls
-  nothing until the answer lands: rollback deletes everything written, and an OVERWRITTEN destination has no backup. ❌
-  Never a native `ask`, ❌ never a file count in it. DETAILS § "Rollback asks first".
+  while the dialog still owns it; closing releases it. Skip it and the chip and toast announce what the user is already
+  reading.
+- **Rollback asks first, Cancel doesn't.** Every surface stacks `RollbackConfirmDialog` and calls nothing until the
+  answer lands. ❌ Never a native `ask`, ❌ never a file count in it.
+- **Its `variant` says what the reversal DOES; wrong is a data-safety lie in copy.** `stopAndDelete` while an operation
+  RUNS, the three `undo*` values for undoing a finished one (mirroring `inverse_kind`). ❌ Never word a move's reversal
+  as a delete: it deletes nothing. DETAILS § "Rollback asks first".
 - **A conflict no dialog owns is answered on the MAIN window** (`operation-conflict.svelte.ts`): pause what's running,
   prompt, resume exactly the ids paused. ❌ Never `resumeAll()` (it restarts a USER pause); ❌ never decide ownership
   while `isForegroundClaimPending()` — defer, or you double-prompt or re-wedge it.
 - **A clash answered ANYWHERE takes every surface's prompt down** (`write-conflict-resolved`): another window or an
-  agent over MCP may have answered. Drop only the clash the event NAMES — the operation raises its next one the moment
-  it takes an answer.
+  agent over MCP may have answered. Drop only the clash the event NAMES.
 - **The answer names WHICH clash.** `session.resolveConflict(conflictId, ...)` with the id off the event on screen:
-  anything but `resolved` means it settled without us, so take the prompt down and release the hold, ❌ never surface it
-  as a failure. Only `null` (the call never landed) keeps it up. DETAILS § "Conflict prompts".
+  anything but `resolved` settled without us, so take the prompt down and release the hold, ❌ never surface it as a
+  failure. Only `null` keeps it up. DETAILS § "Conflict prompts".
 - **Journal rows become readable at `write-settled`, not at the terminal event** (the buffered tail flushes in the later
   finalize barrier). Reading on complete silently hands back an EMPTY page. Wait through `whenOperationSettled(id)`.
 - **`ScanThroughput` is SCAN-phase only** (the backend `EtaEstimator` owns every write phase), returns nulls until two

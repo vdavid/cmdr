@@ -10,14 +10,17 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-08-29 `unify-rollback-plan.md` - **The journal-driven rollback has no button, no progress, no pause, and no
-      mid-file cancel.** Cmdr has three rollback implementations (local in-flight, volume in-flight, journal-driven);
-      the journal-driven one is the safest (it rechecks every item against its snapshot) and is the only one users
-      can't reach from the history dialog. M0 fixes two live journaling bugs that already misdirect the shipped rollback
-      used by Ask Cmdr, trash undo, and MCP. M1-M3 route it through the shared transfer driver and add the button.
-      Unifying all three onto the journal is M4-M5 and is **gated**: the journal isn't yet a faithful ledger (created
-      dirs go unrecorded on the cancel path, partials have no row, volume inner leaves have no snapshot), so switching
-      today would lose guarantees rather than gain them.
+- [ ] 2026-08-29 `unify-rollback-plan.md` - **The journal-driven rollback reports no progress, can't pause, and can't be
+      canceled inside a large file.** Cmdr has three rollback implementations (local in-flight, volume in-flight,
+      journal-driven); the journal-driven one is the safest, since it rechecks every item against its recorded snapshot
+      before touching it. M1 fixes three live journaling bugs that already misdirect the shipped engine reachable from
+      Ask Cmdr's rename undo and MCP, the worst of which relocates files the operation never touched; it's independently
+      valuable and should land whatever happens to the rest. M2 gives the engine progress, pause, and mid-file cancel by
+      splitting planner from executor, deliberately NOT through the shared transfer driver (traced: the driver stats and
+      resolves conflicts before the per-item closure, which fights rollback's pinned never-overwrite policy). M3 (the
+      history-dialog button) is done, out of order, so the feature is reachable end to end while the rest lands. M4
+      makes the journal a faithful ledger and stands on its own. M5 collapses the three into one and is a decision to
+      take after M4, gated on three named blockers rather than on cost.
 
 - [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
       rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit

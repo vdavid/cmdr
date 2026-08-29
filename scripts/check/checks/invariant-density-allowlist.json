@@ -5,13 +5,13 @@
     "apps/analytics-dashboard": 3,
     "apps/api-server": 24,
     "apps/desktop": 2,
-    "apps/desktop/src": 299,
+    "apps/desktop/src": 306,
     "apps/desktop/src-tauri": 426,
-    "apps/desktop/test": 24,
+    "apps/desktop/test": 25,
     "apps/website": 1,
     "crates/cmdr-archive": 4,
     "crates/cmdr-fs": 14,
-    "crates/cmdr-index": 387,
+    "crates/cmdr-index": 389,
     "crates/cmdr-sftp": 59,
     "crates/cmdr-smb": 20
   }

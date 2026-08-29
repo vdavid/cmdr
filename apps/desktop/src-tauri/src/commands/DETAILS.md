@@ -128,6 +128,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   delete and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`), and `rename_file` passes the id
   through and skips permission checks. The local rename notifies the listing cache via `notify_rename_in_listing`, the
   volume one via its own `notify_mutation`.
+- **`operation_log.rs`**: the journal's read side (`get_recent_operation_log_entries`, `get_operation_log_detail`, both
+  thin pass-throughs over `operation_log::query` on a short-lived read-only connection) plus two write entries over the
+  same rollback engine. `rollback_operation` reverses ONE and returns after DISPATCH, so the history dialog's Roll back
+  button hands the reversal to the operation queue; `undo_operations` reverses SEVERAL and awaits each, because Ask
+  Cmdr's rename undo has to report a tally. Both refuse with the typed `RollbackRefusal`, never a sentence.
 - **`restricted_paths.rs`**: `get_restricted_paths`: read-only snapshot for the frontend store bootstrap. See
   `crate::restricted_paths` for the state machine and the `restricted-paths-changed` event payload.
 - **`file_viewer.rs`**: session lifecycle, regex/literal search with mode flags, word wrap, menu state, encoding pickers

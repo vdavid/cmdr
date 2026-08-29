@@ -148,7 +148,10 @@ describe('rollbackRefusalNotice', () => {
       [{ kind: 'alreadyRollingBack' }, 'This one is already rolling back. Watch it in the queue.'],
       [{ kind: 'alreadyRolledBack' }, 'This one is already back the way it was.'],
       [{ kind: 'notRollbackable', detail: 'overwrote' }, 'This operation can’t be rolled back.'],
-      [{ kind: 'volumeUnavailable', detail: { volumeId: 'smb-nas' } }, 'Connect the drive this operation used, then try again.'],
+      [
+        { kind: 'volumeUnavailable', detail: { volumeId: 'smb-nas' } },
+        'Connect the drive this operation used, then try again.',
+      ],
     ]
     for (const [refusal, notice] of cases) {
       expect(tString(rollbackRefusalNotice(refusal))).toBe(notice)

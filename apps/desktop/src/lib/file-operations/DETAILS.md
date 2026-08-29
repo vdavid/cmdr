@@ -34,7 +34,8 @@ Umbrella-level files:
   waits for `write-settled`".
 - `operation-conflict.svelte.ts` + `OperationConflictDialog.svelte`: the main window's conflict prompt for an operation
   no progress dialog is showing; its two rules are pure, in `operation-conflict-rules.ts` (§ below).
-- `RollbackConfirmDialog.svelte`: the question every Rollback goes through (§ below).
+- `RollbackConfirmDialog.svelte` + `rollback-confirm-variant.ts`: the question every Rollback goes through, and the
+  typed variant that decides what it says (§ below).
 - `mutation-error.ts` + `mutation-error-messages.ts`: the rename / New Folder / New File refusal path (§ below).
 
 ## Mutation refusals (rename, New Folder, New File, single trash)
@@ -260,27 +261,50 @@ that's free to narrow later.
 Every Rollback raises `RollbackConfirmDialog` and deletes nothing until the user answers it. Cancel, its neighbour on
 every one of those surfaces, still fires immediately: it keeps what was written.
 
-**Why this one button earns a question.** Rollback deletes every destination the operation has written, and a
+**Why this one button earns a question.** Rolling back a copy deletes every destination the operation has written, and a
 destination it OVERWROTE is one of those — no copy of the replaced original is kept
 (`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Overwrite isn't reversible").
 So the harm isn't "the copy has to run again": a mis-click on the button beside Cancel can take away a file the user had
 before the operation started, and nothing brings it back. Against that, every other confirmation the app already shows
-(deleting the re-downloadable AI model, copying 10 MB out of the viewer, closing tabs) sits at a far lower bar.
+(deleting the re-downloadable AI model, copying 10 MB out of the viewer, closing tabs) sits at a far lower bar. The
+question stays in front of the reversals that delete nothing too, because Rollback moves the user's files either way and
+the button reads the same on every surface.
 
-**What it says, and what it deliberately doesn't.** Two facts: it removes everything written so far (not only the
-half-written file a plain Cancel drops), and a file it replaced won't come back. ❌ No file count, tempting as one is:
-the running counter includes files the operation SKIPPED, so any number here would be wrong on exactly the operation
-that had clashes — which is most of the ones anybody rolls back.
+**What it says depends on what the reversal DOES** (`variant`, in `rollback-confirm-variant.ts`):
 
-**Raised by the surface, not the session.** Three hosts hold the pending question in their own `$state`
-(`TransferProgressDialog`, `OperationConflictDialog`, `QueueRow`), each stacking the dialog over itself; the session
-stays a command surface with no view in it. In the first two the question stacks over a dialog from the same subtree,
-which is what DOM order and the trap stack already handle (`$lib/ui/DETAILS.md` § ModalDialog). The queue window raises
-its own copy — a soft dialog, ❌ never a native `ask`, which would need a capability the queue window deliberately drops
-and would be undriveable from the E2E suite.
+- `stopAndDelete`, for a copy or move still RUNNING. Two facts: it removes everything written so far (not only the
+  half-written file a plain Cancel drops), and a file it replaced won't come back.
+- `undoByDeleting` / `undoByMovingBack` / `undoByRenamingBack`, for undoing a FINISHED operation from the history
+  dialog. Each names the inverse action, then admits the reversal may come out partial. They mirror the backend's
+  `inverse_kind`; the picker is `rollbackConfirmVariant` in `$lib/operation-log/operation-log-labels.ts`, and the
+  reasoning behind the wording is `$lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the
+  inverse".
+
+**Why the split.** One body has to be wrong somewhere: "this deletes every file the operation has written" is true of a
+running copy and false of undoing a move, whose inverse restores and deletes nothing. Over-warning on a harmless
+reversal costs trust as surely as under-warning on a destructive one.
+
+**What it deliberately doesn't say.** ❌ No file count, tempting as one is: the running counter includes files the
+operation SKIPPED, so any number here would be wrong on exactly the operation that had clashes — which is most of the
+ones anybody rolls back. The undo variants say nothing about a count either, and nothing that promises completeness.
+
+**The two deleting variants get `danger`; the other two get `primary`.** Red on "put my files back" cries wolf, and this
+app spends that colour on operations that take something away. The safe answer holds focus in every variant, so a reflex
+Enter never reverses anything.
+
+**Raised by the surface, not the session.** Four hosts hold the pending question in their own `$state`
+(`TransferProgressDialog`, `OperationConflictDialog`, `QueueRow`, and `$lib/operation-log/OperationLogDialog.svelte`),
+each stacking the dialog over itself; the session stays a command surface with no view in it. In the first two the
+question stacks over a dialog from the same subtree, which is what DOM order and the trap stack already handle
+(`$lib/ui/DETAILS.md` § ModalDialog). The queue window raises its own copy — a soft dialog, ❌ never a native `ask`,
+which would need a capability the queue window deliberately drops and would be undriveable from the E2E suite.
+
+**All four variants sit in the dialog gallery** (Debug > Soft dialogs), one state each, because getting one of four
+confirmations wrong is a copy problem you can only catch by reading them side by side.
 
 **A settled operation withdraws the question** rather than leaving one that answers to nothing: the progress dialog
-gates on `operationSettled`, the row on `canRollback`.
+gates on `operationSettled`, the queue row on `canRollback`, and the history row on the operation still reading
+`rollbackable` (a reversal started in another window, by the agent, or over MCP takes the question down with it).
 
 **The Rollback tooltip is part of this.** It used to read "Cancel and delete any partial target files created", which
 describes CANCEL. A user who reads that and clicks has been misled before the question ever appears, so the tooltip

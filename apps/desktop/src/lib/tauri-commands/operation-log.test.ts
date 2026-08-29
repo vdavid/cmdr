@@ -29,12 +29,7 @@ vi.mock('$lib/ipc/bindings', () => ({
   },
 }))
 
-import {
-  getRecentOperationLogEntries,
-  getOperationLogDetail,
-  undoOperations,
-  rollbackOperation,
-} from './operation-log'
+import { getRecentOperationLogEntries, getOperationLogDetail, undoOperations, rollbackOperation } from './operation-log'
 import { asRollbackRefusal } from '$lib/operation-log/rollback-refusal'
 
 describe('getRecentOperationLogEntries', () => {

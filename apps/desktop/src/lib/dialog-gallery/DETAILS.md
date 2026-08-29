@@ -361,6 +361,15 @@ default) and reports nothing to the dialog tracker; `NetworkLoginForm` isn't mod
 which is why it's the one sanctioned opt-out from the dialog focus trap); the pane volume chooser is a pane-owned
 dropdown (⌥F1 / ⌥F2). Keep the shortcuts honest: they're user-rebindable defaults.
 
+## A prop that IS the state: `rollback-confirmation`
+
+Its rollback lives in the `onConfirm` prop, which the gallery leaves empty, so it looks callback-only. It isn't: its
+`variant` prop decides the body, the cancel wording, and whether the confirming button reads as destructive, and all
+four values get a row state and a fixture. That's deliberate rather than tidy. Undoing a copy deletes and undoing a move
+doesn't, so the four confirmations have to be read SIDE BY SIDE to catch one that over-warns or under-warns; a single
+`idle` state would hide exactly the mistake the split exists to prevent. Reasoning behind the wording:
+`$lib/file-operations/DETAILS.md` § "Rollback asks first".
+
 ## Rows that can't be fixtures
 
 `about` and `license` take only callbacks and read the licensing store's cached status plus an on-mount IPC, so a

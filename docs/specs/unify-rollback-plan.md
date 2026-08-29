@@ -9,7 +9,7 @@ be canceled inside a large file. Fix that. Then, if it's worth it, collapse the 
    touched, on both the local and the volume path. They have to be fixed before a button puts this engine in front of
    users, and they're worth fixing whatever happens to the rest of this plan. That's M1.
 2. **The obvious reuse is the wrong reuse.** The first draft routed the rollback through the shared transfer driver.
-   Traced properly, the driver stats the destination and runs conflict resolution *before* it calls the per-item
+   Traced properly, the driver stats the destination and runs conflict resolution _before_ it calls the per-item
    closure, which fights rollback's pinned never-overwrite policy and buys an extra round trip per item on SMB. The
    right reuse is one level down (the volume move, for cross-volume restores). That removes a whole milestone of churn
    across shared, heavily-pinned code.
@@ -32,7 +32,7 @@ They agree on meaning, so both being called "Rollback" in the UI is correct and 
 Two footnotes for later milestones: `archive_edit/move_out.rs` runs its extract phase through the volume copy, so it
 **inherits mechanism 2** and is a caller any removal has to account for (pinned by
 `move_out_tests.rs::move_out_rollback_deletes_nothing_from_the_archive`). And `overwrite::safe_overwrite_dir` is a
-genuine per-item aside-and-restore that `move_resolved_into_place` depends on; it's small, it *is* a rollback, and it
+genuine per-item aside-and-restore that `move_resolved_into_place` depends on; it's small, it _is_ a rollback, and it
 survives all of this untouched.
 
 Scope corrections worth carrying: `supports_rollback` is not simply "copy and move". The local starter sets it that way,
@@ -44,11 +44,11 @@ undo is reachable over MCP, not from the frontend; Ask Cmdr's batch rename is th
 
 ## M1: The live journaling bugs
 
-**Intent.** The engine we're about to expose is already wrong in three places, and the worst of them moves files the user
-never asked to touch. Nothing else in this plan matters until these are fixed. All three affect **shipped** behavior
-reachable today from Ask Cmdr's rename undo and MCP.
+**Intent.** The engine we're about to expose is already wrong in three places, and the worst of them moves files the
+user never asked to touch. Nothing else in this plan matters until these are fixed. All three affect **shipped**
+behavior reachable today from Ask Cmdr's rename undo and MCP.
 
-### Bug 1 (worst): a directory *merge* move finalizes as rollbackable, and its rollback relocates untouched files. Both on the local path and the volume path.
+### Bug 1 (worst): a directory _merge_ move finalizes as rollbackable, and its rollback relocates untouched files. Both on the local path and the volume path.
 
 `transfer/move_op.rs:273` takes the merge branch when source and dest are both directories. The journal writes **one**
 directory row whose dest is the **pre-existing** destination directory (`:335-343`). Directories are existence-only
@@ -61,7 +61,7 @@ module docs promise never happens.
 
 **The disqualifying condition is "took the merge branch", not "overwrote something".** This matters, because the
 tempting fix is wrong. Setting `item_overwrote` for merge children (which the local path never does, since it's only
-assigned at `:309` inside the file-conflict branch) catches merges where a child *replaced* a dest file, and leaves the
+assigned at `:309` inside the file-conflict branch) catches merges where a child _replaced_ a dest file, and leaves the
 bug fully live otherwise: pre-existing `B/A` holding a dest-only file `x`, source `A/` holding only `y`, merge moves `y`
 in, nothing is overwritten, source is removed, and rollback still relocates `x`.
 
@@ -101,12 +101,12 @@ engine relies on. So: **pass `copy_single_item` a journal-as path distinct from 
 `Option<&Path>`, two call sites and two journal sites inside), computing it with the `staging_dir → destination`
 arithmetic the remap closure at `move_op.rs:862-869` already does.
 
-**But that arithmetic alone gives the wrong answer, and would trade a phantom success for bug 1's failure mode.** Phase 2
-journals; phase 3 resolves conflicts. `staging_dir → destination` is the true final path only when phase 3 hits no
+**But that arithmetic alone gives the wrong answer, and would trade a phantom success for bug 1's failure mode.** Phase
+2 journals; phase 3 resolves conflicts. `staging_dir → destination` is the true final path only when phase 3 hits no
 conflict. Under a rename-aside the file lands at `name (2)`; under Skip the staged copy is deleted; inside a phase-3
 merge, children get their own rename-aside or skip. Recording the naive final path therefore names a location holding a
-**stranger's** file, and since a move's inverse is `RestoreMove`, a size-and-mtime match (very plausible for a duplicate)
-would move the pre-existing destination file back to the source.
+**stranger's** file, and since a move's inverse is `RestoreMove`, a size-and-mtime match (very plausible for a
+duplicate) would move the pre-existing destination file back to the source.
 
 So the fix has to fold phase-3 resolution in. **Simplest honest answer: any phase-3 conflict resolution marks the
 operation not-rollbackable.** Related and also unlisted until now: phase 3 never sets `overwrote` at all, so a cross-FS
@@ -114,7 +114,7 @@ move that overwrites at the final destination journals `overwrote = false` and f
 both.
 
 **Watch for.** Retention, reconcile, and name search all assume rows land as they land. The fix must preserve that;
-changing *what path* is recorded is fine, changing *when* is not.
+changing _what path_ is recorded is fine, changing _when_ is not.
 
 **Tests.** Test-first, real red→green:
 
@@ -144,9 +144,9 @@ metadata fetcher, run driver-owned conflict resolution, then call the per-item c
 (`transfer_driver/async_driver.rs:167-190`). Rollback has no shared destination root; two of its three inverse actions
 are deletes with no destination to stat; that stat is a wasted round trip per item on SMB; and driver-owned conflict
 resolution fights the pinned "never overwrite, always skip" policy, which cannot be enforced from inside the closure
-because the driver has already decided by then. Adapting the driver would mean changing ~24 call sites across
-production and tests on a hot component whose whole purpose is three pinned data-safety properties, in exchange for
-scaffolding that doesn't fit. Not worth it.
+because the driver has already decided by then. Adapting the driver would mean changing ~24 call sites across production
+and tests on a hot component whose whole purpose is three pinned data-safety properties, in exchange for scaffolding
+that doesn't fit. Not worth it.
 
 **The structural move this milestone actually needs: split planner from executor.** The cross-volume machinery worth
 reusing is not reachable from `operation_log`. `move_volumes_with_progress` is exported `pub(crate)` **only under
@@ -168,7 +168,7 @@ discover the hard way:
   closure, mirroring the `spawn` hook `rollback_operation` already takes (`operation_log/rollback.rs:761`) precisely to
   keep `operation_log` from depending on `write_operations`. Moving the loop out instead relocates all of
   `rollback/tests.rs` and `undo_tests.rs`, since their rig is `pub(super)` inside `operation_log::rollback`.
-- **Interleave per item, and pause *before* verifying.** Don't verify a whole 512-item page and then act on it: that
+- **Interleave per item, and pause _before_ verifying.** Don't verify a whole 512-item page and then act on it: that
   widens the verify-to-act window, and a pause landing between "verified unchanged" and "delete" would let a
   ten-minute-stale verification authorize a destructive act.
 - **The sink is injected at the edge.** `write_operations/mod.rs:82-84` pins (grep-enforced) that the pipeline never
@@ -216,7 +216,7 @@ Written after: progress events are monotonic and reach their totals; the summary
 
 **On the existing suites**: the shared rig (`operation_log/rollback/test_support.rs:136`) calls `execute_rollback`
 directly with no sink and no state, so widening the signature forces the rig to change and `rollback/tests.rs` and
-`undo_tests.rs` recompile against it. Every *assertion* must survive unedited; they pin the skip-on-drift contract.
+`undo_tests.rs` recompile against it. Every _assertion_ must survive unedited; they pin the skip-on-drift contract.
 
 **Docs.** `operation_log/CLAUDE.md` (the rollback must-know) and `DETAILS.md` (the rollback contract).
 
@@ -243,7 +243,7 @@ The gap was only that the engine emitted nothing.
 **Design decisions, with the why.**
 
 - **The bar counts forward here.** The backwards bar earns its meaning on the transfer dialog because it drains a bar
-  already on screen and full. A rollback from history opens a *fresh* bar, where "full" would mean "nothing done yet",
+  already on screen and full. A rollback from history opens a _fresh_ bar, where "full" would mean "nothing done yet",
   inverted from every other bar in the app, with rate and ETA hanging off a shrinking number. So: a forward bar marked
   as a reversal (distinct treatment, undo icon, wording like "Putting 1,240 files back"). Confirmed with David.
 - **`RollbackConfirmDialog` cannot be reused verbatim.** Its body says rollback "deletes every destination the operation
@@ -254,8 +254,8 @@ The gap was only that the engine emitted nothing.
 
 **Tests.** Component tests: the button shows only for a rollbackable row, routes through the confirm dialog, fires with
 the right id. Per `docs/testing.md`, a **new user-visible flow owes one E2E happy-path spec**, and a **destructive
-`#[tauri::command]` owes an IPC contract test** in `lib/ipc/`; both apply here and the first draft skipped both. Merge new
-a11y cases into the existing `OperationLogDialog.a11y.test.ts` rather than adding a file.
+`#[tauri::command]` owes an IPC contract test** in `lib/ipc/`; both apply here and the first draft skipped both. Merge
+new a11y cases into the existing `OperationLogDialog.a11y.test.ts` rather than adding a file.
 
 **Docs and generated surface.** A new `CLAUDE.md` + `DETAILS.md` pair for `src/lib/operation-log/` (it has neither),
 **linked into the doc graph** or `docs-reachable` fails, which is an error rather than a warning. Update
@@ -280,8 +280,8 @@ every cross-volume directory rollback a partial.
    gates on no-error-and-not-cancelled). A canceled operation has zero directory rows. Small fix. Same shape, also
    unlisted until now: a **cross-FS local move journals no directory rows at all**, since `record_created_dirs` is
    reached only from the copy path, so its rollback leaves empty destination trees behind even on success.
-2. **An interrupted operation's completed work is invisible.** Volume journaling happens per top-level source *at
-   completion*, so an interrupted **directory** source contributes zero rows for all of its already-fully-copied
+2. **An interrupted operation's completed work is invisible.** Volume journaling happens per top-level source _at
+   completion_, so an interrupted **directory** source contributes zero rows for all of its already-fully-copied
    children; they exist only in the in-memory ledger. Plus `volume/copy.rs:1055-1071` folds partially-written
    destinations into the rollback set, and those never had a row. **This is the real work of the milestone**, and it is
    bigger than "a partial file".
@@ -292,18 +292,18 @@ every cross-volume directory rollback a partial.
    volume rows already verify on size alone. **Do not record mtime**: the volume write path doesn't preserve it (which
    is exactly why the existing top-level row records `None`), so capturing the source's mtime would flip every leaf from
    "unverifiable" to "drifted", which reads to the user as "you changed this file". Strictly worse. No benchmark needed.
-   Verified: `verify_snapshot` (`operation_log/rollback.rs:184-215`) is flat over the row (any recorded field must match,
-   at least one must verify) with no inner-versus-top-level branch, so a size-only leaf verifies and reverses. The one
-   cost worth knowing: the created-paths record grows a size alongside each path, which ripples mechanically through the
-   concurrent copy's path collection.
+   Verified: `verify_snapshot` (`operation_log/rollback.rs:184-215`) is flat over the row (any recorded field must
+   match, at least one must verify) with no inner-versus-top-level branch, so a size-only leaf verifies and reverses.
+   The one cost worth knowing: the created-paths record grows a size alongside each path, which ripples mechanically
+   through the concurrent copy's path collection.
 4. **Pre-finalize eligibility.** An operation's header opens as `not_rollbackable` on purpose
    (`operation_log/writer.rs:373-378`) so a crash before finalize leaves it honestly unrollbackable, and eligibility is
    computed at finalize. Any in-flight rollback needs an answer here that doesn't weaken that property. Genuine design
    question.
 
-**Tests.** Test-first for each, since each is a data-safety claim: a canceled copy's created directories are recorded; an
-interrupted volume directory copy's completed children are recorded; a volume directory copy's inner leaves verify and
-reverse rather than skip.
+**Tests.** Test-first for each, since each is a data-safety claim: a canceled copy's created directories are recorded;
+an interrupted volume directory copy's completed children are recorded; a volume directory copy's inner leaves verify
+and reverse rather than skip.
 
 **Docs.** Rewrite `operation_log/DETAILS.md` § "Known snapshot-completeness limit"; it should shrink or disappear.
 
@@ -321,16 +321,16 @@ capture is too expensive") doesn't apply. What the decision should turn on is th
 
 **Blocker 1, and it belongs in M2's interface, not here.** `is_cancelled` is `intent != Running`
 (`operation_intent.rs:53-55`), with a pinned test asserting `RollingBack` reads as cancelled. Today's journal rollback
-survives only because it runs as a *separate* managed operation with a fresh `Running` state. Run the engine against the
+survives only because it runs as a _separate_ managed operation with a fresh `Running` state. Run the engine against the
 original operation, whose intent is `RollingBack`, and the loop bails on its first iteration while the pause gate
 returns instantly: **nothing is reversed and the app reports a successful rollback.** Use a fresh state instead and the
 `RollingBack → Stopped` transition ("stop undoing, keep the rest") no longer reaches the rollback. The cancel predicate
 must distinguish "the original operation is rolling back" from "stop the rollback". **Design that into M2's signature**
 so M5 doesn't reopen it.
 
-**Blocker 2.** `MoveTransaction` is not a pure ledger; it's a required `&mut` parameter of `move_resolved_into_place` and
-the merge walker, with two throwaway instances on the staging path existing only to satisfy the signature. Removing it
-is a refactor across three call paths.
+**Blocker 2.** `MoveTransaction` is not a pure ledger; it's a required `&mut` parameter of `move_resolved_into_place`
+and the merge walker, with two throwaway instances on the staging path existing only to satisfy the signature. Removing
+it is a refactor across three call paths.
 
 **Blocker 3.** `volume_rollback_with_progress` has a caller beyond the copy and move paths: `archive_edit/move_out.rs`
 inherits it through the volume copy, pinned by an existing test.
@@ -348,14 +348,14 @@ no cleanup where `Drop` cleans today. Keep the backwards bar by inverting in the
 the dialog subtracts from its cancel-point values); after M4 the journal has real sizes, so that bar becomes exact
 rather than linearly interpolated.
 
-**Unresolved.** Whether archive and zip-edit operations join the unified engine. Compress is journal-rollbackable but has
-no in-flight path and spawns outside the normal starter, and routing "delete one file inside an archive on an SMB
+**Unresolved.** Whether archive and zip-edit operations join the unified engine. Compress is journal-rollbackable but
+has no in-flight path and spawns outside the normal starter, and routing "delete one file inside an archive on an SMB
 volume" through a transfer-shaped engine is a poor fit. Decide in or out before starting.
 
 **Tests.** Test-first: a destination modified after the copy wrote it is **not** deleted by rollback (the data-safety
-win; fails today). Panic cleanup: write it before deleting the `Drop` impl, confirm green with the old net, confirm still
-green on the new path (green-then-green is correct here, because the behavior must not change). Plus: a canceled copy
-leaves no empty directory tree, and no truncated partial survives.
+win; fails today). Panic cleanup: write it before deleting the `Drop` impl, confirm green with the old net, confirm
+still green on the new path (green-then-green is correct here, because the behavior must not change). Plus: a canceled
+copy leaves no empty directory tree, and no truncated partial survives.
 
 **Docs.** `write_operations/CLAUDE.md`, `transfer/CLAUDE.md`, `transfer/volume/CLAUDE.md` + `DETAILS.md` (the cleanup
 helpers and § "Overwrite isn't reversible"), the frontend `file-operations/transfer/` docs, `docs/architecture.md`. Any
@@ -383,13 +383,13 @@ alone. M5 is a decision to make after M4, not a commitment now.
 
 ## Questions for David
 
-1. **M3 before or after M4?** Shipping the button at M3 means a history rollback of an SMB *folder* copy reverses the top
-   level and skips every inner file, honestly reported but confusing. Options: (a) ship M3 with wording that explains the
-   partial, (b) ship M3 with the button disabled for that case, (c) hold M3 until M4 closes the gap. Recommendation: (a),
-   since the same limitation already applies to the MCP and Ask Cmdr paths shipping today.
+1. **M3 before or after M4?** Shipping the button at M3 means a history rollback of an SMB _folder_ copy reverses the
+   top level and skips every inner file, honestly reported but confusing. Options: (a) ship M3 with wording that
+   explains the partial, (b) ship M3 with the button disabled for that case, (c) hold M3 until M4 closes the gap.
+   Recommendation: (a), since the same limitation already applies to the MCP and Ask Cmdr paths shipping today.
 2. **Commit to M5 now, or decide after M4?** Recommendation: decide after M4. The blockers are the cancel-predicate
    design, the `MoveTransaction` refactor, and the archive caller, none of which get cheaper by committing early.
 3. **Copy** for the reversal phase, the queue row ("Putting 1,240 files back"?), and a confirmation that words undoing a
-   *move* correctly rather than reusing the delete-flavored one. Human-facing, so yours per principle 4.
+   _move_ correctly rather than reusing the delete-flavored one. Human-facing, so yours per principle 4.
 4. **Foreground dialog or straight to the queue** for a rollback launched from history? Recommendation: straight to the
    queue, since the user is in a history dialog rather than watching a transfer.

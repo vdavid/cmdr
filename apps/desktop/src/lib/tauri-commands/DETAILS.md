@@ -34,6 +34,11 @@ commands, and notable non-obvious placements.
 - **`operations.ts`**: the operation manager (queue window): `listOperations`, `cancelOperation(s)`, `pauseOperation` /
   `resumeOperation`, `pauseAll` / `resumeAll`, `dismissFailedOperation` / `dismissAllFailedOperations`, and the
   `onOperationsChanged` membership/status event.
+- **`operation-log.ts`**: the operation journal's read API (`getRecentOperationLogEntries`, `getOperationLogDetail`)
+  plus its two write entries. `rollbackOperation` reverses ONE operation and resolves as soon as the inverse is queued,
+  throwing a typed `RollbackRefusalFailure` on a refusal; `undoOperations` reverses SEVERAL and resolves only with the
+  whole tally, which is what Ask Cmdr's rename undo reports. ❌ Don't reorder the ids handed to `undoOperations`: the
+  backend reverses them newest-first and the apply order breaks a same-second tie.
 - **`quit.ts`**: the quit gate's two answers (`quitConfirm` / `quitCancel`, each returning the gate's typed
   `QuitAnswer`) and the two subscriptions, `onQuitRequested` and `onQuitCalledOff`. There is deliberately no
   cancel-every-operation wrapper anywhere in this directory: that command belongs to the gate, which calls it in Rust

@@ -412,8 +412,11 @@ suite. Covered by `tooltip.test.ts`.
 
 ## Button
 
-Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. Extends
-`HTMLButtonAttributes` so all native button attributes pass through.
+Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. ⚠️ Props are declared one
+by one, so a native attribute only reaches the `<button>` if `Props` names it: `aria-label` and `aria-describedby` do,
+anything else needs adding. `aria-describedby` is for the button repeated once per row, where it keeps the NAME short
+("Roll back") while still telling a screen reader which row the button belongs to; the operation log's rows point it at
+the row's own head button.
 
 **`disabled` vs `ariaDisabled` ("blocked").** `disabled` is the inert one: no click, no focus, `pointer-events: none`.
 `ariaDisabled` renders the same dimmed look and `not-allowed` cursor but keeps the button focusable, in the tab order,

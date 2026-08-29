@@ -322,12 +322,7 @@ export type { SendFeedbackResult } from './feedback'
 export { getWhatsNew, whatsNewDevOverride } from './whats-new'
 export type { WhatsNewRelease, WhatsNewSection } from './whats-new'
 
-export {
-  getRecentOperationLogEntries,
-  getOperationLogDetail,
-  rollbackOperation,
-  undoOperations,
-} from './operation-log'
+export { getRecentOperationLogEntries, getOperationLogDetail, rollbackOperation, undoOperations } from './operation-log'
 export type {
   OperationRow,
   OperationItemView,
