@@ -45,14 +45,22 @@ locale dirs under `messages/` and is globbed too, so it MUST be filtered out (it
 pseudolocale is globbed when present and simply absent in prod (gitignored). The result is `catalogs`: a
 `localeTag → merged metadata-stripped Catalog` map.
 
-`resolveRaw(locale, key)` resolves with BCP-47 fallback: `catalog[locale]` → `catalog[baseLanguage]` (`de-DE` → `de`) →
-`catalog.en` (the base, always present) → the key string itself. A missing key renders as its own key (visible, never a
-crash). The active locale is `getUiLocale()`. The split is on the FIRST `-` only, so the chain is exactly two rungs deep
-above `en`: `zh-Hant-TW` reads `zh`, never a `zh-Hant` in between.
+`resolveRaw(locale, key)` walks a fallback CHAIN, first hit wins: the locale's own catalog, then each ancestor tag it
+may inherit from, then `en` (the base, always present), then the key string itself, so a missing key renders as its own
+key (visible, never a crash). The active locale is `getUiLocale()`. The chain is built by `fallbackChain()` and cached
+per locale, because deriving it asks `Intl` for CLDR data and `t()` is a hot path; `_setCatalogForTests` clears that
+cache along with the compiled-message one, since the chain depends on which catalogs exist.
 
-That middle rung is what makes an OVERLAY catalog possible: a regional variant (`en-GB`, `pt-PT`) ships only the keys
-that genuinely differ and inherits the rest per key, so it costs ~60 strings rather than a full catalog. The i18n checks
-know the same rule and validate a variant against the catalog it overrides; definition, rule table, and how to add one:
+"May inherit from" is `inheritableAncestors()` in `locale-inheritance.ts`: an ancestor that EXISTS and reads the SAME
+SCRIPT. So `pt-PT` reads `pt` before English, `zh-Hant-TW` reads `zh-Hant` when we ship it, and no Chinese variant ever
+reads across the Simplified/Traditional line. That one function is shared with the i18n check layer, and the Rust
+resolver applies the same rule to auto-selection from its generated table; the canonical statement of the rule and why
+all three must agree is `apps/desktop/src-tauri/src/intl/DETAILS.md` § The script guard, and why regional fallback
+survives it.
+
+The inheritable rung is what makes an OVERLAY catalog possible: a regional variant (`en-GB`, `pt-PT`) ships only the
+keys that genuinely differ and inherits the rest per key, so it costs ~60 strings rather than a full catalog. A
+different-SCRIPT variant inherits nothing, so it isn't an overlay at all; definition, rule table, and how to add one:
 `docs/guides/i18n.md` § Overlay catalogs. The exact-locale rung is also exercised by the `_setCatalogForTests` seam (a
 synthetic test-only locale).
 
@@ -160,7 +168,8 @@ is preferred (in which case `formatNumber` arguably should match it).
 
 Human-friendly sizes (`formatFileSizeWithFormat`, in `$lib/units`) use `useGrouping: false`, so en-US stays
 byte-identical there: the old `toFixed(2)`/`String(value)` never grouped, and a forced-unit `10000.00 MB` must not
-become `10,000.00 MB`. Only the decimal separator localizes (`1.02 MB` → `1,02 MB`).
+become `10,000.00 MB`. Only the decimal separator localizes (`1.02 MB` → `1,02 MB`). `en-us-parity.test.ts` pins both
+halves of this split, and is the net if a refactor ever reaches for a shared `useGrouping`.
 
 ## Value↔unit spacing invariant
 
@@ -236,8 +245,9 @@ removes any dependence on what WebKit decides to do with bundle metadata, which 
 **Regional fallback is deliberate; a script boundary is not.** `pt-PT` lands on the Brazilian `pt` catalog and `en-GB`
 on US `en` ("Trash", `-ize`): reading a sibling dialect is a small friction next to reading a language you don't speak,
 and a fast-follow catalog fixes it. `zh-Hant-TW` does NOT land on the Simplified `zh` catalog, because that's not a
-dialect difference, it's a wall — and English is at least a language the user chose to list. ❌ Don't "fix" the guard by
-blocking regional fallback: the two cases pull in opposite directions on purpose. The rule and its data live in Rust;
+dialect difference, it's a wall, and English is at least a language the user chose to list. ❌ Don't "fix" the guard by
+blocking regional fallback: the two cases pull in opposite directions on purpose. This applies BOTH to Rust's
+auto-selection and to the per-key chain above, which is why `locale-inheritance.ts` exists;
 `apps/desktop/src-tauri/src/intl/DETAILS.md` is the canonical description.
 
 **Every window resolves for itself.** Each Cmdr window is its own webview with its own i18n runtime instance, so the

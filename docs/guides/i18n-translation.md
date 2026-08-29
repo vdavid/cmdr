@@ -248,6 +248,12 @@ A variant whose language base already ships (`en-GB` over `en`, `pt-PT` over `pt
 strings that genuinely differ in that region, and every other key keeps rendering the base language's translation. So
 it's a much smaller job than a language, and a different one.
 
+One thing to settle first: a variant in a DIFFERENT SCRIPT is not an overlay. Traditional Chinese (`zh-Hant`, or a
+region that implies it like `zh-TW`) inherits nothing from the Simplified `zh` catalog, because a reader who needs
+Traditional can't read Simplified. It's a full translation, and everything it doesn't carry renders in English. Same for
+any of the nine script-split languages in `docs/i18n/script-decisions.md`. If you're unsure which you're writing, run
+`pnpm check desktop-i18n-coverage`: it tells you which contract it's holding your catalog to.
+
 1. **List what actually differs.** For `en-GB`: spelling (`colour`, `favourite`, `organise`), terminology (macOS calls
    the Trash the "Bin" in the UK), and date/measure phrasing that isn't already handled by the formatter layer. Evidence
    first, from the same reference pile as any term decision: if you can't source it, it isn't a difference.

@@ -9,6 +9,11 @@
  * free from `Intl.Locale.maximize()` and Rust does not. So we ask Node's `Intl`
  * here, at build time, and emit the answer as a Rust table.
  *
+ * The `likelyScript` we ask with is the SAME function the message runtime and the
+ * i18n checks use (`src/lib/intl/locale-inheritance.ts`), so all three layers
+ * answer "can this reader read that catalog?" identically, and Rust inherits that
+ * answer through this table.
+ *
  * Two facts per shipped catalog:
  *  - the script its readers read (`zh` → `Hans`, everything Latin → `Latn`), and
  *  - the regions whose likely script DIFFERS from the language's default
@@ -17,6 +22,9 @@
  * Everything is emitted lowercase, because the resolver lowercases the tags it
  * compares (macOS reports `zh-Hant-TW`, a POSIX-ish path reports `zh_HANT_tw`).
  */
+
+import { likelyScript } from '../src/lib/intl/locale-inheritance.ts'
+import { baseLanguageOf } from './i18n-catalog-lib.ts'
 
 /** One shipped catalog's script facts, mirroring Rust's `ShippedLocale`. */
 export interface ShippedLocaleEntry {
@@ -59,24 +67,6 @@ function allRegionSubtags(): string[] {
   }
   for (let code = 0; code < 1000; code++) regions.push(String(code).padStart(3, '0'))
   return regions
-}
-
-/**
- * The likely script of a BCP-47 tag per CLDR, lowercased, or `''` when `Intl`
- * can't resolve one (a malformed tag, or a language with no likely script).
- * @param tag a BCP-47 tag
- */
-function likelyScript(tag: string): string {
-  try {
-    return new Intl.Locale(tag).maximize().script?.toLowerCase() ?? ''
-  } catch {
-    return ''
-  }
-}
-
-/** The base language subtag of a BCP-47 tag (`zh-Hant-TW` → `zh`). */
-function baseLanguageOf(tag: string): string {
-  return tag.split('-')[0]
 }
 
 /**

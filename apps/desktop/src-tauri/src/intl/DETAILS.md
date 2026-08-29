@@ -51,8 +51,27 @@ as wave-2 variants). Reading a sibling dialect is a small friction next to readi
 is a papercut a fast-follow catalog fixes, the second is a wall. ❌ Don't collapse the two by blocking regional
 fallback.
 
-The guard applies to AUTO-selection only. An explicit pick in the Settings picker is the user's business and carries no
-such check.
+### One rule, three layers
+
+This section is the canonical statement of the rule; the other layers point here rather than restating it. All three
+have to agree, or one of them puts text on screen that another has already ruled unreadable:
+
+1. **Rust auto-selection** (`match_shipped`, below): which catalog an OS preference list opens.
+2. **The frontend per-key fallback** (`resolveRaw` in `src/lib/intl/messages.svelte.ts`): a catalog with a gap resolves
+   that key up its ancestor chain, and the chain skips a different-script ancestor. Without this, shipping `zh-Hant`
+   would silently serve Simplified text for every key it hadn't translated yet.
+3. **The i18n check layer** (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`): whether a catalog is
+   an OVERLAY of another (carrying only its forks) or a full translation. A different-script variant is a full
+   translation, precisely because it can't inherit. See `docs/guides/i18n.md` § Overlay catalogs.
+
+Layers 2 and 3 share one implementation, `inheritableAncestors` in `apps/desktop/src/lib/intl/locale-inheritance.ts`
+("the ancestors that exist AND read the same script"). Layer 1 can't call `Intl`, so it reads the same CLDR answers off
+the generated table below, which the codegen builds with that module's `likelyScript`. So the script facts have one
+source, and `shipped-locales-fresh` keeps Rust's copy of them current.
+
+The AUTO-SELECTION guard applies to auto-selection only: an explicit pick in the Settings picker is the user's business
+and carries no such check. The per-key fallback chain (layer 2) is not a selection and always applies, however the
+locale was chosen: once a reader is on `zh-Hant`, no missing key may fall through to Simplified.
 
 `script_of(tag, entry)` reads the preference's script from three sources, most explicit first:
 

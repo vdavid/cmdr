@@ -1337,11 +1337,14 @@ doubles as production code.
   `@key.sameAsSourceJustification`, either of which ships a half-translated locale; for an OVERLAY the rules invert, and
   a key identical to what it overrides, or unknown to it, is the finding), i18n-dont-translate (warn-only; a curated
   brand/system token English carries but the locale dropped). Those six locale checks share one classification of every
-  locale as a full translation or an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`),
-  which the Go `localeCounts` helper mirrors for its success lines only; the rule table is `docs/guides/i18n.md` §
-  Overlay catalogs. Then bundle-size (warn-only; builds a production-shaped frontend into a private dir and compares its
-  total against a committed baseline, since the app embeds this output so every byte ships in each silent update and is
-  parsed before first paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+  locale as a full translation or an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`; rule
+  table in `docs/guides/i18n.md` § Overlay catalogs). The Go side deliberately doesn't mirror it: `nonEnLocaleCount`
+  counts catalog dirs for the success lines and nothing more, because classifying needs CLDR script data (`zh-Hant` is
+  NOT an overlay of Simplified `zh`) that Node's `Intl` has and Go doesn't, and an approximate second copy would drift
+  exactly where it matters. Then bundle-size (warn-only; builds a production-shaped frontend into a private dir and
+  compares its total against a committed baseline, since the app embeds this output so every byte ships in each silent
+  update and is parsed before first paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow),
+  e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input

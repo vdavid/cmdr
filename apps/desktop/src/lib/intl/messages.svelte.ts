@@ -29,6 +29,7 @@
 
 import { IntlMessageFormat, type PrimitiveType, type FormatXMLElementFn } from 'intl-messageformat'
 import { getUiLocale, setUiLocaleOverride } from './locale'
+import { inheritableAncestors } from './locale-inheritance'
 import type { MessageKey } from './keys.gen'
 
 const BASE_LOCALE = 'en'
@@ -122,19 +123,39 @@ let localeVersion = $state(0)
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state; a pure parse-once perf cache. Reactivity comes from the `localeVersion` rune, not the cache; a SvelteMap would add tracking overhead for no behavior change.
 const compiledCache = new Map<string, IntlMessageFormat>()
 
-/** The base language subtag of a BCP 47 tag (`de-DE` → `de`), lowercased. */
-function baseLanguageOf(locale: string): string {
-  return locale.split('-')[0].toLowerCase()
+/**
+ * Per-locale fallback chain cache. Building a chain asks `Intl` for CLDR likely
+ * subtags, which is far too much work for a hot `t()` call; the answer only
+ * changes when the catalog map does, which outside tests is never.
+ */
+// eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state; a pure resolve-once perf cache, cleared by `_setCatalogForTests`. Reactivity comes from the `localeVersion` rune.
+const chainCache = new Map<string, string[]>()
+
+/**
+ * The catalogs to try for `locale`, in order: itself, then the ancestors it may
+ * inherit from (same language AND same script, see `locale-inheritance.ts`), then
+ * `en`. So `pt-PT` reads `pt` before English, while `zh-Hant` skips Simplified
+ * `zh` entirely rather than putting text its reader can't read on screen.
+ */
+function fallbackChain(locale: string): string[] {
+  const cached = chainCache.get(locale)
+  if (cached) return cached
+  const chain = [locale, ...inheritableAncestors(locale, Object.keys(catalogs)), BASE_LOCALE]
+  chainCache.set(locale, chain)
+  return chain
 }
 
 /**
- * Resolves a key's raw catalog string via the fallback chain
- * locale → base language → `en` → the key itself (so a missing key is visible,
- * never a crash). Does NOT read the version rune; callers must read it first.
+ * Resolves a key's raw catalog string down the fallback chain, ending at the key
+ * itself (so a missing key is visible, never a crash). Does NOT read the version
+ * rune; callers must read it first.
  */
 function resolveRaw(locale: string, key: string): string {
-  const lang = baseLanguageOf(locale)
-  return catalogs[locale]?.[key] ?? catalogs[lang]?.[key] ?? catalogs[BASE_LOCALE]?.[key] ?? key
+  for (const tag of fallbackChain(locale)) {
+    const value = catalogs[tag]?.[key]
+    if (value !== undefined) return value
+  }
+  return key
 }
 
 // ── Capture mode (capture build only; absent everywhere else) ─────────────────
@@ -371,4 +392,6 @@ export function _setCatalogForTests(locale: string, catalog: Catalog | null): vo
     catalogs[locale] = catalog
   }
   compiledCache.clear()
+  // The chains are derived from which catalogs exist, so seeding one invalidates them.
+  chainCache.clear()
 }

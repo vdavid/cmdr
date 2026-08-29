@@ -45,6 +45,7 @@ import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { IntlMessageFormat } from 'intl-messageformat'
 import { isNativeKey } from './gen-native-strings-lib.ts'
+import { inheritableAncestors } from '../src/lib/intl/locale-inheritance.ts'
 
 /** AST element `type` constants (the `@formatjs` `TYPE` enum, inlined to avoid a deep import). */
 const TYPE = Object.freeze({
@@ -144,10 +145,9 @@ export const BASE_LOCALE = 'en'
 
 /**
  * The language base of a BCP-47 tag (`pt-PT` → `pt`, `zh-Hant-TW` → `zh`),
- * lowercased. Mirrors `messages.svelte.ts`'s `baseLanguageOf`, which splits on
- * the FIRST `-` only: the runtime's fallback chain is locale → language base →
- * `en`, with nothing in between, so a checker that resolved a deeper parent would
- * validate a catalog the runtime never reads.
+ * lowercased. This is the LANGUAGE half of the inheritance rule only; whether a
+ * locale may actually inherit from that base is `resolveLocaleSource`'s answer,
+ * because the script half can rule it out.
  */
 export function baseLanguageOf(tag: string): string {
   return tag.split('-')[0].toLowerCase()
@@ -183,24 +183,32 @@ export interface LocaleSource {
 /**
  * Decides whether a locale is an OVERLAY and which catalog it's checked against.
  *
- * A locale is an overlay when its language base ALSO ships a catalog: `en-GB`
- * overlays `en`, `pt-PT` overlays `pt`. Such a catalog carries only the keys it
- * deliberately forks, because the runtime resolves everything else through
- * locale → language base → `en` (`messages.svelte.ts` `resolveRaw`). A locale
- * whose base doesn't ship (`fr-CA` with no `fr`) is a FULL translation, checked
- * against `en` like any other.
+ * A locale is an overlay when it can INHERIT from a shipped catalog, which is the
+ * runtime's own rule: the nearest ancestor tag that exists and reads the same
+ * script (`inheritableAncestors` in `src/lib/intl/locale-inheritance.ts`, shared
+ * verbatim with `messages.svelte.ts`). `en-GB` overlays `en` and `pt-PT` overlays
+ * `pt`, carrying only the keys they fork, because the runtime resolves the rest
+ * through that same chain.
  *
- * Two carve-outs, both structural: a bare language tag is never an overlay (its
- * base IS itself), and a GENERATED locale (`en-XA`) is never one either, since
- * the generator renders every English key.
+ * Everything else is a FULL translation, checked against `en`, and the reason is
+ * always "nothing to inherit from":
+ *  - a bare language tag (its ancestor set is empty),
+ *  - a variant whose base doesn't ship (`fr-CA` with no `fr`),
+ *  - a DIFFERENT-SCRIPT variant (`zh-Hant`, or `zh-TW`, against Simplified `zh`).
+ *    Treating that as an overlay would tell a translator "the keys you skip fall
+ *    back to your base", where the base is text their readers can't read. The
+ *    check layer must not be more permissive than the resolver.
+ *  - a GENERATED locale (`en-XA`): the generator renders every English key, so
+ *    it's a full translation however variant-shaped its tag looks.
  *
  * @param locale the locale dir tag
  * @param availableLocales every shipped locale tag (`listLocales`)
  */
 export function resolveLocaleSource(locale: string, availableLocales: readonly string[]): LocaleSource {
-  const base = baseLanguageOf(locale)
-  const isOverlay = base !== locale && !GENERATED_LOCALES.has(locale) && availableLocales.includes(base)
-  return { overrides: isOverlay ? base : BASE_LOCALE, isOverlay }
+  if (GENERATED_LOCALES.has(locale)) return { overrides: BASE_LOCALE, isOverlay: false }
+  const inheritable = inheritableAncestors(locale, availableLocales)
+  if (inheritable.length === 0) return { overrides: BASE_LOCALE, isOverlay: false }
+  return { overrides: inheritable[0], isOverlay: true }
 }
 
 /**

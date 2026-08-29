@@ -13,16 +13,16 @@ boundary: `../CLAUDE.md`.
   those `@key` fields or commit PNGs; regenerate with `pnpm i18n:shots`. `DETAILS.md` § Screenshots.
 - `en-XA/`: the generated **pseudolocale** (accented, expanded, structure-preserving) for overflow testing.
   **Gitignored, regenerable** with `pnpm i18n:pseudo`; never hand-edit or hand-justify it (it auto-emits
-  `sameAsSourceJustification`). Committed fixture: `test/fixtures/i18n-pseudolocale/`. `docs/guides/i18n.md` §
-  Pseudolocale.
+  `sameAsSourceJustification`). Fixture: `test/fixtures/i18n-pseudolocale/`. `docs/guides/i18n.md` § Pseudolocale.
 - `<lang>-<REGION>/` (`en-GB`, `pt-PT`): an **overlay**. It holds ONLY the keys that differ from its language base;
   everything else resolves through the fallback chain. A key identical to what it overrides fails `i18n-coverage`
-  (delete it), and `sameAsSourceJustification` doesn't apply. Rules: `docs/guides/i18n.md` § Overlay catalogs.
+  (delete it), and `sameAsSourceJustification` doesn't apply. A different-SCRIPT variant (`zh-Hant`) is a full
+  translation instead. Rules: `docs/guides/i18n.md` § Overlay catalogs.
 
 ## Must-knows
 
-- **Key shape: `area.feature.leaf`**: lowerCamel segments, dot-separated, at least two, first segment a known area.
-  Enforced by `desktop-message-key-naming`. Add an area only by adding both a catalog file AND the area there.
+- **Key shape: `area.feature.leaf`**: lowerCamel segments, dot-separated, at least two, first segment a known area
+  (`desktop-message-key-naming`). Add an area by adding both a catalog file AND the area there.
 - **Double every apostrophe (`''`).** ICU treats `'` as an escape char; a lone `'` before `{`/`<`/`#` opens a quoted
   section and swallows text. `''` always collapses to `'`, so double it everywhere, even where a lone `'` would render
   fine.
@@ -33,10 +33,10 @@ boundary: `../CLAUDE.md`.
 - **A `<tag>` name must never equal a param name in the same message.** `Trans.svelte` merges the tag snippets into the
   interpolation params, so a shared name resolves to the tag handler and the sentence renders a stringified function
   instead of the value. Name the tag for its role, the param for its content: `<processName>{process}</processName>`.
-  Enforced by `i18n-tag-param-collision` (ERROR) across every locale: nothing else catches it, since the message is
-  valid ICU and renders without throwing.
-- **Embed counts as preformatted `*Text` STRING params, not ICU `{n, number}`.** Formatting is single-sourced in
-  `$lib/intl`. Pass the raw integer alongside ONLY to drive `plural` selection. See `transfer.json`.
+  Enforced by `i18n-tag-param-collision` (ERROR): nothing else catches it, since the message is valid ICU and renders
+  without throwing.
+- **Embed counts as preformatted `*Text` STRING params, not ICU `{n, number}`** (formatting is single-sourced in
+  `$lib/intl`). Pass the raw integer alongside ONLY to drive `plural` selection. See `transfer.json`.
 - **`@key` metadata is ARB-style sibling entries** (`@transfer.trash`), holding `description` + a `placeholders` map +
   optional `screenshot`. The runtime and codegen strip every `@`-prefixed entry, so it never reaches `format()`. Keep
   the twin in sync on a rename. **Write the `description` to set a translator up for excellence** (surface + trigger +

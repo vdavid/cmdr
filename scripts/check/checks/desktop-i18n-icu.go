@@ -25,8 +25,7 @@ func RunDesktopI18nIcu(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
-		if translations, overlays := localeCounts(ctx.RootDir); translations+overlays > 0 {
-			n := translations + overlays
+		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
 			return Success(fmt.Sprintf("valid ICU across all %d %s", n, Pluralize(n, "locale", "locales"))), nil
 		}
 		return Success("every locale message is valid ICU (English-only: no locales to check yet)"), nil

@@ -264,14 +264,36 @@ describe('resolveLocaleSource', () => {
     expect(resolveLocaleSource('fr-CA', shipped)).toEqual({ overrides: 'en', isOverlay: false })
   })
 
-  it('resolves a script+region tag to its LANGUAGE base, mirroring the runtime chain', () => {
-    // `resolveRaw` splits on the first `-` only, so `zh-Hant-TW` falls back to
-    // `zh`, never to a `zh-Hant` in between.
-    expect(resolveLocaleSource('zh-Hant-TW', [...shipped, 'zh-Hant'])).toEqual({ overrides: 'zh', isOverlay: true })
-  })
-
   it('never treats the generated pseudolocale as an overlay', () => {
     expect(resolveLocaleSource('en-XA', shipped)).toEqual({ overrides: 'en', isOverlay: false })
+  })
+
+  // A script boundary is a wall, not a papercut: a catalog a reader can't read is
+  // never something to inherit from. Same rule as the Rust resolver's guard; see
+  // `apps/desktop/src-tauri/src/intl/DETAILS.md`
+  // § The script guard, and why regional fallback survives it.
+  it('never treats a different-script variant as an overlay of its language base', () => {
+    // `zh` is Simplified. A Traditional catalog forks NOTHING from it: it's a
+    // full translation, and its missing keys must fall back to English.
+    expect(resolveLocaleSource('zh-Hant', shipped)).toEqual({ overrides: 'en', isOverlay: false })
+  })
+
+  it('reads the script off the REGION when the tag names no script', () => {
+    // CLDR: zh-TW is Traditional, so `zh` (Simplified) is still a wall.
+    expect(resolveLocaleSource('zh-TW', shipped)).toEqual({ overrides: 'en', isOverlay: false })
+  })
+
+  it('keeps a same-script variant an overlay', () => {
+    expect(resolveLocaleSource('zh-CN', shipped)).toEqual({ overrides: 'zh', isOverlay: true })
+  })
+
+  it('overlays the nearest SAME-SCRIPT ancestor, not the language base', () => {
+    // With a Traditional catalog shipped, `zh-Hant-TW` forks it; `zh` stays out
+    // of reach, mirroring the runtime chain.
+    expect(resolveLocaleSource('zh-Hant-TW', [...shipped, 'zh-Hant'])).toEqual({
+      overrides: 'zh-Hant',
+      isOverlay: true,
+    })
   })
 })
 

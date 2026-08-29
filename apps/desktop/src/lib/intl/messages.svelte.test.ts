@@ -124,6 +124,44 @@ describe('t() resolution', () => {
   })
 })
 
+describe('the script boundary in the fallback chain', () => {
+  // The rule the Rust resolver already enforces for auto-selection, now enforced
+  // per key at runtime too: a fallback is only a kindness when it lands somewhere
+  // the reader can READ. Simplified Chinese in front of a Traditional reader is
+  // worse than English. Canonical rationale:
+  // `apps/desktop/src-tauri/src/intl/DETAILS.md`
+  // § The script guard, and why regional fallback survives it.
+  afterEach(() => {
+    for (const tag of ['zh', 'zh-Hant', 'zh-Hant-TW', 'zh-TW']) _setCatalogForTests(tag, null)
+  })
+
+  it('never resolves a Traditional reader through the Simplified catalog', () => {
+    _setCatalogForTests('zh', { 'transfer.trash': 'SIMPLIFIED' })
+    _setLocaleForTests('zh-Hant')
+    // `zh` is the language base, but it's Hans: English is the honest answer.
+    expect(tString('transfer.trash', { countText: '2', count: 2 })).toBe('Moved 2 files to trash')
+  })
+
+  it('blocks the Simplified catalog for a region tag that implies Traditional', () => {
+    _setCatalogForTests('zh', { 'transfer.trash': 'SIMPLIFIED' })
+    _setLocaleForTests('zh-TW') // no script subtag; CLDR says TW is Hant
+    expect(tString('transfer.trash', { countText: '2', count: 2 })).toBe('Moved 2 files to trash')
+  })
+
+  it('walks to a same-script ancestor instead of stopping at the language base', () => {
+    _setCatalogForTests('zh', { 'transfer.trash': 'SIMPLIFIED' })
+    _setCatalogForTests('zh-Hant', { 'transfer.trash': 'TRADITIONAL' })
+    _setLocaleForTests('zh-Hant-TW') // → zh-Hant (Hant), never zh (Hans)
+    expect(tString('transfer.trash', { countText: '2', count: 2 })).toBe('TRADITIONAL')
+  })
+
+  it('keeps regional fallback working, which is a papercut and not a wall', () => {
+    _setCatalogForTests('zh', { 'transfer.trash': 'SIMPLIFIED' })
+    _setLocaleForTests('zh-CN') // same script as `zh`
+    expect(tString('transfer.trash', { countText: '2', count: 2 })).toBe('SIMPLIFIED')
+  })
+})
+
 describe('fallback chain (locale → base language → en → key)', () => {
   it('prefers an exact-locale catalog entry when present', () => {
     _setCatalogForTests(TEST_LOCALE, { 'transfer.trash': 'EXACT' })

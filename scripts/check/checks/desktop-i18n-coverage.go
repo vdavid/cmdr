@@ -33,14 +33,11 @@ func RunDesktopI18nCoverage(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
-		translations, overlays := localeCounts(ctx.RootDir)
-		switch {
-		case overlays > 0:
-			return Success(fmt.Sprintf("full coverage: %d %s cover the catalog, %d overlay %s carry only their forks",
-				translations, Pluralize(translations, "locale", "locales"),
-				overlays, Pluralize(overlays, "locale", "locales"))), nil
-		case translations > 0:
-			return Success(fmt.Sprintf("full coverage: all %d %s cover the catalog", translations, Pluralize(translations, "locale", "locales"))), nil
+		// "Covers the catalog" would be false for an overlay, which deliberately
+		// carries only its forks, so the line states what actually held: every
+		// locale met the contract for its own kind.
+		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
+			return Success(fmt.Sprintf("full coverage across %d %s", n, Pluralize(n, "locale", "locales"))), nil
 		}
 		return Success("full translation coverage (English-only: no locales to check yet)"), nil
 	}
@@ -59,31 +56,31 @@ func RunDesktopI18nCoverage(ctx *CheckContext) (CheckResult, error) {
 	)
 }
 
-// localeCounts counts the non-`en` locale directories under `messages/` the way
-// the JS `listLocales` does (a subdirectory holding at least one `.json`,
-// excluding `en` and the reserved `screenshots/` sibling), split by KIND:
+// nonEnLocaleCount counts the non-`en` locale directories under `messages/` the
+// way the JS `listLocales` does: a subdirectory holding at least one `.json`,
+// excluding `en` and the reserved `screenshots/` sibling. It lets the locale
+// checks report the real locale count instead of implying no locales exist (exit
+// 0 means "no locales OR all clean"). Source of truth for the rules:
+// `i18n-catalog-lib.ts` (`listLocales` / `NON_LOCALE_DIRS`). Returns 0 on any
+// read error, so a passing check degrades to the English-only phrasing and never
+// fails on this.
 //
-//   - translations: full catalogs of every English key (`de`, `hu`, and the
-//     generated pseudolocale `en-XA`).
-//   - overlays: regional variants whose language base also ships (`en-GB` over
-//     `en`, `pt-PT` over `pt`), carrying ONLY the keys they fork.
-//
-// The split keeps the success messages honest: an overlay deliberately does NOT
-// cover the catalog, so counting it as one that does would state something false.
-// Source of truth for both rules: `i18n-catalog-lib.ts` (`listLocales`,
-// `GENERATED_LOCALES`) and `i18n-locale-check-lib.ts` (`resolveLocaleSource`);
-// this is a cosmetic count for the success line, never a classification the
-// checks act on. Returns zeroes on any read error, so a passing check degrades to
-// the English-only phrasing and never fails on this.
-func localeCounts(rootDir string) (translations, overlays int) {
+// It deliberately does NOT split full translations from overlays, though the
+// success lines would read a little richer if it did. Deciding that needs CLDR
+// likely-subtags data (a `zh-Hant` catalog is NOT an overlay of Simplified `zh`,
+// and neither is `zh-TW`), which Node's `Intl` answers for free and Go can't
+// without a new dependency. A second, approximate copy of the rule would drift
+// from the real one in `src/lib/intl/locale-inheritance.ts` exactly where it
+// matters, so the classification lives in ONE language and this stays a count.
+func nonEnLocaleCount(rootDir string) int {
 	messagesDir := filepath.Join(rootDir, "apps", "desktop", "src", "lib", "intl", "messages")
 	entries, err := os.ReadDir(messagesDir)
 	if err != nil {
-		return 0, 0
+		return 0
 	}
-	shipped := map[string]bool{}
+	count := 0
 	for _, entry := range entries {
-		if !entry.IsDir() || entry.Name() == "screenshots" {
+		if !entry.IsDir() || entry.Name() == "en" || entry.Name() == "screenshots" {
 			continue
 		}
 		files, err := os.ReadDir(filepath.Join(messagesDir, entry.Name()))
@@ -92,36 +89,10 @@ func localeCounts(rootDir string) (translations, overlays int) {
 		}
 		for _, f := range files {
 			if strings.HasSuffix(f.Name(), ".json") {
-				shipped[entry.Name()] = true
+				count++
 				break
 			}
 		}
 	}
-	for tag := range shipped {
-		if tag == "en" {
-			continue
-		}
-		if isOverlayLocale(tag, shipped) {
-			overlays++
-		} else {
-			translations++
-		}
-	}
-	return translations, overlays
-}
-
-// generatedLocales are locale dirs a generator writes as FULL translations, so
-// they're never overlays however variant-shaped the tag looks. Mirrors
-// `GENERATED_LOCALES` in `apps/desktop/scripts/i18n-catalog-lib.ts`.
-var generatedLocales = map[string]bool{"en-XA": true}
-
-// isOverlayLocale reports whether `tag` is an overlay: a variant whose language
-// base (the part before the first `-`) also ships a catalog. Mirrors
-// `resolveLocaleSource` in `apps/desktop/scripts/i18n-locale-check-lib.ts`.
-func isOverlayLocale(tag string, shipped map[string]bool) bool {
-	base, _, found := strings.Cut(tag, "-")
-	if !found || generatedLocales[tag] {
-		return false
-	}
-	return shipped[strings.ToLower(base)]
+	return count
 }
