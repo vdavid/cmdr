@@ -414,7 +414,8 @@
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, other {token}}",
   "@askCmdr.cost.tokens": {
-    "sourceHash": "6718764"
+    "sourceHash": "6718764",
+    "sameAsSourceJustification": "'token' is the established Vietnamese loanword for an LLM token, used across the rest of the catalog (askCmdr.context.tooltip, settings.ai.localContextSize.description, settings.askCmdr.spend.empty). Vietnamese has one CLDR category and no plural marking, so the single branch reads 'token'."
   },
   "askCmdr.cost.free": "miễn phí, cục bộ",
   "@askCmdr.cost.free": {

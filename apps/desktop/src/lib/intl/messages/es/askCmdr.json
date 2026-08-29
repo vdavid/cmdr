@@ -416,7 +416,8 @@
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {token} many {tokens} other {tokens}}",
   "@askCmdr.cost.tokens": {
-    "sourceHash": "6718764"
+    "sourceHash": "6718764",
+    "sameAsSourceJustification": "'token' is the established Spanish loanword for an LLM token, used across the rest of the catalog (askCmdr.context.tooltip, settings.ai.localContextSize.description, settings.askCmdr.spend.empty). Only the CLDR `many` category is new here; the words are the same in both numbers."
   },
   "askCmdr.cost.free": "gratis, en el dispositivo",
   "@askCmdr.cost.free": {

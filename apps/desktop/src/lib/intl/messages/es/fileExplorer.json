@@ -379,7 +379,8 @@
   },
   "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} host} many {{countText} hosts} other {{countText} hosts}}",
   "@fileExplorer.network.browser.hostCount": {
-    "sourceHash": "41843ee"
+    "sourceHash": "41843ee",
+    "sameAsSourceJustification": "'host' is the Spanish networking term this catalog uses throughout (browser.colHostname, browser.noHostsTitle, browser.tooltip.requiresLogin, share.noSharesMessage), and its plural is the same 'hosts'. Only the CLDR `many` category is new here."
   },
   "fileExplorer.network.browser.status.resolving": "Resolviendo...",
   "@fileExplorer.network.browser.status.resolving": {

@@ -414,7 +414,8 @@
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {token}}",
   "@askCmdr.cost.tokens": {
-    "sourceHash": "6718764"
+    "sourceHash": "6718764",
+    "sameAsSourceJustification": "'token' is the established Hungarian loanword for an LLM token, used across the rest of the catalog (askCmdr.context.tooltip, settings.ai.localContextSize.description, settings.askCmdr.spend.empty). Hungarian keeps the noun singular after a number, so both branches read 'token'."
   },
   "askCmdr.cost.free": "ingyenes, az eszközön",
   "@askCmdr.cost.free": {

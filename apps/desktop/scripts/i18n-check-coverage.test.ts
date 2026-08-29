@@ -41,6 +41,30 @@ describe('coverageStatus: pure classifier', () => {
       'identical',
     )
   })
+  it('sourceTextOnly when only the plural CATEGORIES differ and every branch reads as English', () => {
+    // The blind spot this closes: Portuguese needs a `many` English lacks, so a
+    // verbatim-English counter is never byte-identical and used to pass as covered.
+    const en = '{countText} {count, plural, one {dir} other {dirs}}'
+    const pt = '{countText} {count, plural, one {dir} many {dirs} other {dirs}}'
+    expect(coverageStatus('a.b', en, { 'a.b': pt })).toBe('sourceTextOnly')
+  })
+  it("null once the richer plural carries the locale's own words", () => {
+    const en = '{countText} {count, plural, one {dir} other {dirs}}'
+    const pt = '{countText} {count, plural, one {pasta} many {pastas} other {pastas}}'
+    expect(coverageStatus('a.b', en, { 'a.b': pt })).toBeNull()
+  })
+  it('null when the locale only respaced the text (German writes `50 %`)', () => {
+    expect(coverageStatus('a.b', '{percent}%, {eta}', { 'a.b': '{percent} %, {eta}' })).toBeNull()
+  })
+  it('a sameAsSourceJustification exempts the plural-shaped case too', () => {
+    const en = '{countText} {count, plural, one {token} other {tokens}}'
+    const vi = '{countText} {count, plural, other {token}}'
+    expect(coverageStatus('a.b', en, { 'a.b': vi }, { 'a.b': { sameAsSourceJustification: 'loanword' } })).toBeNull()
+  })
+  it('leaves the raw errors.* family a byte comparison (it never reaches the ICU engine)', () => {
+    expect(coverageStatus('errors.a', "doesn't {x}", { 'errors.a': "doesn't {x}" })).toBe('identical')
+    expect(coverageStatus('errors.a', "doesn't {x}", { 'errors.a': 'geht nicht {x}' })).toBeNull()
+  })
   it('a justification never excuses a MISSING key', () => {
     expect(coverageStatus('a.b', 'Cancel', {}, { 'a.b': { sameAsSourceJustification: 'brand name' } })).toBe('missing')
   })

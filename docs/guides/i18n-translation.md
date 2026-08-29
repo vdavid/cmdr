@@ -182,10 +182,13 @@ Some keys are CORRECTLY identical to English in your language and must never be 
 string (`{width} × {height}`, `{systemSettings} > {appearance}`), or a real word the language genuinely shares with
 English (German `Server`, French `Type`, Swedish `Smart`). Translating these would be a regression, not an improvement.
 
-The `desktop-i18n-coverage` check flags every identical-to-English value as "possibly untranslated". To keep an honest,
-clean coverage signal — every warning is a real gap, every deliberate identical is silenced WITH a recorded reason —
-record a `@key.sameAsSourceJustification` on that key in YOUR locale catalog: a short, non-empty string saying why it's
-deliberately identical, sourced like any other term decision. Example, in `messages/de/errors.json`:
+The `desktop-i18n-coverage` check flags every still-English value as "possibly untranslated", and it sees past the
+plural shape: a counter whose branch set is your language's own but whose branch text is English
+(`one {token} many {tokens} other {tokens}}`) is flagged like a byte-identical value, because the reader gets English
+either way. To keep an honest, clean coverage signal — every warning is a real gap, every deliberate identical is
+silenced WITH a recorded reason — record a `@key.sameAsSourceJustification` on that key in YOUR locale catalog: a short,
+non-empty string saying why it's deliberately identical, sourced like any other term decision. Example, in
+`messages/de/errors.json`:
 
 ```jsonc
 {

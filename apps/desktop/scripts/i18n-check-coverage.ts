@@ -13,6 +13,13 @@
  *  - IDENTICAL: a locale value byte-identical to English. Usually means
  *    untranslated (copied through), though a few keys legitimately match (a bare
  *    brand token, a symbol), which is what the justification below is for.
+ *  - SOURCE-TEXT-ONLY: a value that isn't byte-identical, yet shows the reader
+ *    nothing but English, because the ONLY thing it changed is which plural/select
+ *    categories it branches on (`showsOnlySourceText`). Portuguese requires a
+ *    `many` category English doesn't have, so a verbatim-English Portuguese counter
+ *    (`one {dir} many {dirs} other {dirs}}`) has a CORRECT branch set and English
+ *    branch TEXT. Byte comparison alone reads that as translated, which is how
+ *    English counters shipped inside a locale this check called fully covered.
  *
  * A key that legitimately stays identical (a brand name, a unit symbol, a
  * placeholder-only string, or a word the locale genuinely shares with English) is
@@ -49,19 +56,21 @@
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { BASE_LOCALE } from './i18n-catalog-lib.ts'
+import { BASE_LOCALE, isRawKey, showsOnlySourceText } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
- * Classifies one English key against a locale's catalog: `missing`,
- * `identical`, or `null` (translated, or deliberately-identical-and-justified).
+ * Classifies one English key against a locale's catalog: `missing`, `identical`,
+ * `sourceTextOnly`, or `null` (translated, or deliberately-English-and-justified).
  * Exposed for unit tests.
  *
- * An identical value is EXEMPT (returns `null`) when the locale's `@key` metadata
+ * `identical` is a byte match; `sourceTextOnly` is a value that shows the reader
+ * only English text under a different plural/select branch set (see the file
+ * header). Both are EXEMPT (return `null`) when the locale's `@key` metadata
  * carries a non-empty `sameAsSourceJustification` string — the translator's reason
- * it's correctly identical (a brand, a unit, a placeholder-only string, a shared
- * word). The exemption applies ONLY to the identical case: a missing key is still
- * `missing` even with a justification recorded.
+ * it's correctly English (a brand, a unit, a placeholder-only string, a loanword
+ * the locale genuinely shares). The exemption never applies to a missing key: that
+ * stays `missing` even with a justification recorded.
  *
  * @param key the English message key
  * @param englishValue the English value
@@ -73,17 +82,24 @@ export function coverageStatus(
   englishValue: string,
   localeMessages: Record<string, string>,
   localeMetadata: Record<string, Record<string, unknown>> = {},
-): 'missing' | 'identical' | null {
+): 'missing' | 'identical' | 'sourceTextOnly' | null {
   if (!(key in localeMessages)) return 'missing'
-  if (localeMessages[key] === englishValue) {
-    // The record index types as non-nullish, but a key with no `@key` metadata is
-    // undefined at runtime; the optional chain guards that.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const justification = localeMetadata[key]?.['sameAsSourceJustification']
-    if (typeof justification === 'string' && justification !== '') return null
-    return 'identical'
-  }
-  return null
+  const localeValue = localeMessages[key]
+  const untranslated =
+    localeValue === englishValue
+      ? 'identical'
+      : // The raw `errors.*` family never reaches the ICU engine, so "is this still
+        // English" is a byte question there and an ICU parse would only misread it.
+        !isRawKey(key) && showsOnlySourceText(englishValue, localeValue)
+        ? 'sourceTextOnly'
+        : null
+  if (untranslated === null) return null
+  // The record index types as non-nullish, but a key with no `@key` metadata is
+  // undefined at runtime; the optional chain guards that.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const justification = localeMetadata[key]?.['sameAsSourceJustification']
+  if (typeof justification === 'string' && justification !== '') return null
+  return untranslated
 }
 
 /**
@@ -146,6 +162,9 @@ export function runCoverageCheck(opts: { messagesRoot?: string; write?: (line: s
         const status = coverageStatus(key, englishValue, catalog.messages, catalog.metadata)
         if (status === 'missing') findings.add(key, 'missing; renders the English fallback')
         else if (status === 'identical') findings.add(key, 'identical to English; possibly untranslated')
+        else if (status === 'sourceTextOnly') {
+          findings.add(key, 'every branch reads as English (only the plural categories differ); possibly untranslated')
+        }
       }
     },
   })

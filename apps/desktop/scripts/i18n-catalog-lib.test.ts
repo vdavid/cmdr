@@ -23,6 +23,7 @@ import {
   mergeCatalogFiles,
   parseMessage,
   visibleLiterals,
+  showsOnlySourceText,
   sourceHash,
   isMetadataKey,
   isRawKey,
@@ -199,6 +200,52 @@ describe('visibleLiterals', () => {
 
   it('returns undefined on invalid ICU, so callers fall back explicitly', () => {
     expect(visibleLiterals('Unclosed {arg')).toBeUndefined()
+  })
+})
+
+describe('showsOnlySourceText', () => {
+  const EN_TOKENS = '{countText} {count, plural, one {token} other {tokens}}'
+
+  it('sees through a plural category English does not have', () => {
+    // Portuguese needs `many`; filling it with English text leaves the reader
+    // English, even though the branch SET is right and the bytes differ.
+    expect(
+      showsOnlySourceText(EN_TOKENS, '{countText} {count, plural, one {token} many {tokens} other {tokens}}'),
+    ).toBe(true)
+  })
+
+  it('sees through a locale that COLLAPSES English branches without translating them', () => {
+    expect(showsOnlySourceText(EN_TOKENS, '{countText} {count, plural, other {token}}')).toBe(true)
+  })
+
+  it("is false once a single branch carries the locale's own word", () => {
+    expect(
+      showsOnlySourceText(EN_TOKENS, '{countText} {count, plural, one {token} many {fichas} other {fichas}}'),
+    ).toBe(false)
+  })
+
+  it('is false when the text AROUND the plural changed', () => {
+    // German spaces its percent sign off the number. That's a translation.
+    expect(showsOnlySourceText('{percent}%, {eta}', '{percent} %, {eta}')).toBe(false)
+  })
+
+  it('is false when the locale reorders the placeholders', () => {
+    expect(showsOnlySourceText('{a} of {b}', '{b} of {a}')).toBe(false)
+  })
+
+  it('is true for a byte-identical message, plural or not', () => {
+    expect(showsOnlySourceText('Cancel', 'Cancel')).toBe(true)
+    expect(showsOnlySourceText(EN_TOKENS, EN_TOKENS)).toBe(true)
+  })
+
+  it('compares <tag> children too', () => {
+    expect(showsOnlySourceText('Read the <b>guide</b>.', 'Read the <b>guide</b>.')).toBe(true)
+    expect(showsOnlySourceText('Read the <b>guide</b>.', 'Lies den <b>Leitfaden</b>.')).toBe(false)
+  })
+
+  it('falls back to a byte comparison when either side is not parseable ICU', () => {
+    expect(showsOnlySourceText('Unclosed {arg', 'Unclosed {arg')).toBe(true)
+    expect(showsOnlySourceText('Unclosed {arg', 'Nicht geschlossen {arg')).toBe(false)
   })
 })
 

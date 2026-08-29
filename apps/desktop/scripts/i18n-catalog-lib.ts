@@ -378,21 +378,111 @@ export function parseMessage(value: string, locale = 'en'): MessageStructure & {
  * @returns the literal runs joined by a space, or `undefined` when the value is not parseable ICU
  */
 export function visibleLiterals(value: string, locale = 'en'): string | undefined {
+  const ast = astOrUndefined(value, locale)
+  if (!ast) return undefined
   const runs: string[] = []
-  const collect = (ast: readonly AstElement[]): void => {
-    for (const el of ast) {
+  const collect = (elements: readonly AstElement[]): void => {
+    for (const el of elements) {
       if (el.type === TYPE.literal) runs.push(el.value)
       else if (el.type === TYPE.select || el.type === TYPE.plural) {
         for (const branch of Object.values(el.options ?? {})) collect(branch.value)
       } else if (el.type === TYPE.tag) collect(el.children ?? [])
     }
   }
+  collect(ast)
+  return runs.join(' ')
+}
+
+/** Parses to an AST, or `undefined` when the value isn't valid ICU. */
+function astOrUndefined(value: string, locale: string): readonly AstElement[] | undefined {
   try {
-    collect(new IntlMessageFormat(value, locale).getAst() as unknown as readonly AstElement[])
+    return new IntlMessageFormat(value, locale).getAst() as unknown as readonly AstElement[]
   } catch {
     return undefined
   }
-  return runs.join(' ')
+}
+
+/**
+ * Compares two element lists for "shows the same text", position by position.
+ * See `showsOnlySourceText`.
+ */
+function showsSameText(source: readonly AstElement[], locale: readonly AstElement[]): boolean {
+  return source.length === locale.length && source.every((el, index) => showsSameElement(el, locale[index]))
+}
+
+/** One element pair of `showsSameText`. Unknown element types answer `false`. */
+function showsSameElement(source: AstElement, locale: AstElement): boolean {
+  if (source.type !== locale.type) return false
+  switch (source.type) {
+    case TYPE.literal:
+    case TYPE.argument:
+    case TYPE.number:
+    case TYPE.date:
+    case TYPE.time:
+      return source.value === locale.value
+    case TYPE.pound:
+      // `#` renders the number itself; it carries no words either way.
+      return true
+    case TYPE.tag:
+      return source.value === locale.value && showsSameText(source.children ?? [], locale.children ?? [])
+    case TYPE.select:
+    case TYPE.plural:
+      return showsSameBranches(source, locale)
+    default:
+      return false
+  }
+}
+
+/**
+ * One `plural`/`select` pair of `showsSameElement`. Categories are matched by
+ * CONTENT, not by name: the locale's branch set is its own language's business
+ * (Portuguese adds `many`, Vietnamese collapses to `other` alone), so a branch
+ * reads as the source when it repeats ANY of the source's branches for this
+ * argument. Whether the SET is right is the plural-coverage check's question.
+ */
+function showsSameBranches(source: AstElement, locale: AstElement): boolean {
+  if (source.value !== locale.value) return false
+  const sourceBranches = Object.values(source.options ?? {})
+  return Object.values(locale.options ?? {}).every((branch) =>
+    sourceBranches.some((sourceBranch) => showsSameText(sourceBranch.value, branch.value)),
+  )
+}
+
+/**
+ * Whether `localeValue` shows the reader nothing but text `sourceValue` already
+ * shows, allowing the ONE difference a language is entitled to: which
+ * plural/select categories the message branches on.
+ *
+ * Byte equality can't answer this. Portuguese requires a `many` category English
+ * doesn't have, so an untranslated Portuguese counter
+ * (`one {dir} many {dirs} other {dirs}}`) differs from English byte-wise while
+ * every word in it is English. The branch SET is correct and the branch TEXT is
+ * not, and the coverage check's "identical to English" signal used to miss exactly
+ * that, letting English text ship inside a locale the check called fully covered.
+ *
+ * So the comparison runs over the two ASTs: literals, placeholder names, and
+ * `<tag>` names must match in order, while each of the locale's plural/select
+ * branches only has to repeat SOME branch of the source's same argument, whatever
+ * the two category sets are. One translated branch, one changed word between the
+ * placeholders, or one reordered placeholder makes it `false`.
+ *
+ * Style arguments (a `number`/`date` skeleton) are deliberately not compared: they
+ * change formatting, never words, so a message whose only change is a skeleton
+ * still shows the reader English.
+ *
+ * Invalid ICU on either side (or a RAW `isRawKey` family value, which never
+ * reaches the ICU engine) falls back to byte equality.
+ *
+ * @param sourceValue the source (usually English) message
+ * @param localeValue the locale's message
+ * @param locale locale tag for parsing (see `parseMessage`)
+ */
+export function showsOnlySourceText(sourceValue: string, localeValue: string, locale = 'en'): boolean {
+  if (sourceValue === localeValue) return true
+  const sourceAst = astOrUndefined(sourceValue, BASE_LOCALE)
+  const localeAst = astOrUndefined(localeValue, locale)
+  if (!sourceAst || !localeAst) return false
+  return showsSameText(sourceAst, localeAst)
 }
 
 /**

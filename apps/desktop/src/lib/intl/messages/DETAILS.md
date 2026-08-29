@@ -140,10 +140,12 @@ The shape:
   REPORTS that a stale key's prior sign-off no longer applies; a missing or `false` flag never fails anything. Likely
   lightly used; it exists so the review state has a home if David wants it.
 
-- `sameAsSourceJustification` (non-`en` locales only): an OPTIONAL non-empty string recording WHY a value that is
-  byte-identical to English is deliberately identical in this locale, not a missed translation — a brand name
-  (`Dropbox`), a unit symbol (`GB`), a placeholder-only string (`{width} × {height}`), or a word the locale genuinely
-  shares with English (German `Server`, Swedish `Smart`). Present and non-empty → the `desktop-i18n-coverage` check
+- `sameAsSourceJustification` (non-`en` locales only): an OPTIONAL non-empty string recording WHY a value that still
+  shows the reader English is deliberately English in this locale, not a missed translation — a brand name (`Dropbox`),
+  a unit symbol (`GB`), a placeholder-only string (`{width} × {height}`), or a word the locale genuinely shares with
+  English (German `Server`, Swedish `Smart`, Portuguese `token`). "Still English" covers a byte-identical value AND one
+  whose only difference is its plural/select branch SET, since a Portuguese counter reading
+  `one {token} many {tokens} other {tokens}` is English text under a correct Portuguese branch set. Present and non-empty → the `desktop-i18n-coverage` check
   stops flagging that key as "possibly untranslated" (see `i18n-check-coverage.ts`). It is a per-LOCALE judgment (German
   keeps `Server`; Spanish translates it to `Servidor`), so it lives in the locale catalog, never in `en`, and is
   repeated per locale even for universal brands (the repetition is accepted: each translator vouches for each identical
