@@ -154,4 +154,3 @@ impl ProgressStand {
         self.bytes_done += unit.size.unwrap_or(0).max(0) as u64;
     }
 }
-

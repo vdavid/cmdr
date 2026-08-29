@@ -152,4 +152,3 @@ fn split(path: &Path) -> (String, String) {
         .unwrap_or_default();
     (dir, name)
 }
-

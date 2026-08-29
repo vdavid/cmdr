@@ -823,10 +823,10 @@ mod bookkeeping;
 mod order;
 mod runner;
 mod skips;
-pub use order::undo_order;
-pub use runner::{InverseAct, RollbackProgress, RollbackRunner};
 use bookkeeping::{RunAcc, finalize_inverse};
+pub use order::undo_order;
 use runner::ProgressStand;
+pub use runner::{InverseAct, RollbackProgress, RollbackRunner};
 pub use skips::SkipBreakdown;
 
 #[cfg(test)]
