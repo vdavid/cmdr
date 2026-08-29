@@ -15,7 +15,7 @@
   "@errorReporter.dialog.copy": {
     "sourceHash": "e21f935"
   },
-  "errorReporter.dialog.copied": "Kopierad",
+  "errorReporter.dialog.copied": "Kopierat",
   "@errorReporter.dialog.copied": {
     "sourceHash": "8d525e5"
   },
@@ -141,7 +141,7 @@
   "@errorReporter.sentToast.copyId": {
     "sourceHash": "72ac0d5"
   },
-  "errorReporter.sentToast.copied": "Kopierad",
+  "errorReporter.sentToast.copied": "Kopierat",
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
   },

@@ -280,7 +280,7 @@
   "@askCmdr.sessions.showArchived": {
     "sourceHash": "e9de9f2"
   },
-  "askCmdr.sessions.hideArchived": "Dölj arkiverade",
+  "askCmdr.sessions.hideArchived": "Göm arkiverade",
   "@askCmdr.sessions.hideArchived": {
     "sourceHash": "dd1c793"
   },
@@ -689,7 +689,7 @@
   "@askCmdr.wake.stop": {
     "sourceHash": "6559df8"
   },
-  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr kan bara bevaka mappar den kan se. Ställ in fullständig åtkomst till skivan.",
+  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr kan bara bevaka mappar den kan se. Ställ in full skivtillgång.",
   "@askCmdr.wake.needsFullDiskAccess": {
     "sourceHash": "fd24fd2"
   },

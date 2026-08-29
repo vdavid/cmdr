@@ -190,7 +190,7 @@
   "@indexing.firstConnect.title": {
     "sourceHash": "0734a24"
   },
-  "indexing.firstConnect.body": "Cmdr kan indexera den här enheten i bakgrunden så att katalogstorlekar och sökning fungerar här. Det körs bara medan enheten är ansluten.",
+  "indexing.firstConnect.body": "Cmdr kan indexera den här enheten i bakgrunden så att mappstorlekar och sökning fungerar här. Det körs bara medan enheten är ansluten.",
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
@@ -210,7 +210,7 @@
   "@indexing.staleDialog.title": {
     "sourceHash": "21a78ee"
   },
-  "indexing.staleDialog.body": "Medan {name} var frånkopplad kan filer på den ha ändrats. Katalogstorlekar och sökresultat kan vara lite missvisande tills du söker igenom på nytt. Den gula statusen bredvid enheten visar alltid när det här händer, och en ny genomsökning uppdaterar den.",
+  "indexing.staleDialog.body": "Medan {name} var frånkopplad kan filer på den ha ändrats. Mappstorlekar och sökresultat kan vara lite missvisande tills du söker igenom på nytt. Den gula statusen bredvid enheten visar alltid när det här händer, och en ny genomsökning uppdaterar den.",
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },

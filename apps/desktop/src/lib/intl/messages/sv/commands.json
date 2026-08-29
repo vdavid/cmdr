@@ -140,7 +140,7 @@
   "@commands.downloadsGoToLatest.description": {
     "sourceHash": "42a26a2"
   },
-  "commands.viewShowHidden.label": "Visa eller dölj dolda filer",
+  "commands.viewShowHidden.label": "Visa eller göm dolda filer",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
   },
@@ -276,7 +276,7 @@
   "@commands.tabTogglePin.label": {
     "sourceHash": "3fdfcd1"
   },
-  "commands.tabCloseOthers.label": "Stäng andra flikar",
+  "commands.tabCloseOthers.label": "Stäng övriga flikar",
   "@commands.tabCloseOthers.label": {
     "sourceHash": "0ddc2c5"
   },
@@ -432,7 +432,7 @@
   "@commands.fileNewFile.label": {
     "sourceHash": "6e70b95"
   },
-  "commands.fileDelete.label": "Ta bort",
+  "commands.fileDelete.label": "Radera",
   "@commands.fileDelete.label": {
     "sourceHash": "e2d0a54"
   },
@@ -580,11 +580,11 @@
   "@commands.selectionToggleAndDown.description": {
     "sourceHash": "378bb7a"
   },
-  "commands.selectionSelectAll.label": "Markera alla",
+  "commands.selectionSelectAll.label": "Markera allt",
   "@commands.selectionSelectAll.label": {
     "sourceHash": "1fc9a38"
   },
-  "commands.selectionDeselectAll.label": "Avmarkera alla",
+  "commands.selectionDeselectAll.label": "Avmarkera allt",
   "@commands.selectionDeselectAll.label": {
     "sourceHash": "9675494"
   },
@@ -696,7 +696,7 @@
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
   },
-  "commands.handler.zoomResetHintMenu": "Du kan återställa zoomnivån till 100 % under Visa > Zooma > 100 %.",
+  "commands.handler.zoomResetHintMenu": "Du kan återställa zoomnivån till 100 % under Innehåll > Zoom > 100 %.",
   "@commands.handler.zoomResetHintMenu": {
     "sourceHash": "f10315d"
   },

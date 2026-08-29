@@ -43,7 +43,7 @@
   "@suggestedOps.review": {
     "sourceHash": "b8d04b3"
   },
-  "suggestedOps.collapse": "Dölj filerna",
+  "suggestedOps.collapse": "Göm filerna",
   "@suggestedOps.collapse": {
     "sourceHash": "ced24ea"
   },

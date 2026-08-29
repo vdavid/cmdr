@@ -451,7 +451,7 @@
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
   },
-  "settings.indexing.enabled.description": "Indexera din enhet i bakgrunden för omedelbara katalogstorlekar.",
+  "settings.indexing.enabled.description": "Indexera din enhet i bakgrunden för omedelbara mappstorlekar.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
@@ -479,15 +479,15 @@
   "@settings.mediaIndex.clip.comingSoon": {
     "sourceHash": "9e3090d"
   },
-  "settings.mediaIndex.clip.download": "Ladda ner modell (~{sizeText} MB)",
+  "settings.mediaIndex.clip.download": "Hämta modell (~{sizeText} MB)",
   "@settings.mediaIndex.clip.download": {
     "sourceHash": "1eced44"
   },
-  "settings.mediaIndex.clip.downloading": "Laddar ner…",
+  "settings.mediaIndex.clip.downloading": "Hämtar…",
   "@settings.mediaIndex.clip.downloading": {
     "sourceHash": "a778d34"
   },
-  "settings.mediaIndex.clip.failed": "Nedladdningen slutfördes inte. Kontrollera din anslutning och försök igen.",
+  "settings.mediaIndex.clip.failed": "Hämtningen slutfördes inte. Kontrollera din anslutning och försök igen.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
   },
@@ -495,27 +495,27 @@
   "@settings.mediaIndex.clip.notSupported": {
     "sourceHash": "8ef7848"
   },
-  "settings.mediaIndex.clip.offButInstalled": "Modellen är nedladdad, men sökning med beskrivning är avstängd.",
+  "settings.mediaIndex.clip.offButInstalled": "Modellen är hämtad, men sökning med beskrivning är avstängd.",
   "@settings.mediaIndex.clip.offButInstalled": {
     "sourceHash": "d70c2fe"
   },
-  "settings.mediaIndex.clip.deleteButton": "Ta bort modell (frigör {size})",
+  "settings.mediaIndex.clip.deleteButton": "Radera modell (frigör {size})",
   "@settings.mediaIndex.clip.deleteButton": {
     "sourceHash": "1957b82"
   },
-  "settings.mediaIndex.clip.deleting": "Tar bort…",
+  "settings.mediaIndex.clip.deleting": "Raderar…",
   "@settings.mediaIndex.clip.deleting": {
     "sourceHash": "43b5894"
   },
-  "settings.mediaIndex.clip.deleteConfirmTitle": "Ta bort modellen för semantisk sökning?",
+  "settings.mediaIndex.clip.deleteConfirmTitle": "Radera modellen för semantisk sökning?",
   "@settings.mediaIndex.clip.deleteConfirmTitle": {
     "sourceHash": "f55b160"
   },
-  "settings.mediaIndex.clip.deleteConfirmBody": "Det frigör {size} och stänger av sökning med beskrivning. Nyckelords- och taggsökning fortsätter fungera, och du kan ladda ner modellen igen när du vill.",
+  "settings.mediaIndex.clip.deleteConfirmBody": "Det frigör {size} och stänger av sökning med beskrivning. Nyckelords- och taggsökning fortsätter fungera, och du kan hämta modellen igen när du vill.",
   "@settings.mediaIndex.clip.deleteConfirmBody": {
     "sourceHash": "f3703a7"
   },
-  "settings.mediaIndex.clip.deleteFailed": "Modellen gick inte att ta bort just nu. Försök igen om en stund.",
+  "settings.mediaIndex.clip.deleteFailed": "Modellen gick inte att radera just nu. Försök igen om en stund.",
   "@settings.mediaIndex.clip.deleteFailed": {
     "sourceHash": "6c9ced5"
   },
@@ -824,7 +824,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Tryck ⌃⌥⌘J från valfri app för att hoppa till din senaste hämtning. Kräver Fullständig åtkomst till skivan.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Tryck ⌃⌥⌘J från valfri app för att hoppa till din senaste hämtning. Kräver Full skivtillgång.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
@@ -957,11 +957,11 @@
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
-  "settings.network.shareCacheDuration.label": "Cachetid för resurser",
+  "settings.network.shareCacheDuration.label": "Cachetid för delade mappar",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
   },
-  "settings.network.shareCacheDuration.description": "Hur länge listan över tillgängliga resurser på en server cachas innan den uppdateras.",
+  "settings.network.shareCacheDuration.description": "Hur länge listan över tillgängliga delade mappar på en server cachas innan den uppdateras.",
   "@settings.network.shareCacheDuration.description": {
     "sourceHash": "18190c5"
   },
@@ -1069,7 +1069,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
-  "settings.viewer.wordWrap.label": "Radbrytning",
+  "settings.viewer.wordWrap.label": "Automatiskt radbyte",
   "@settings.viewer.wordWrap.label": {
     "sourceHash": "9e210f3"
   },
@@ -1944,7 +1944,7 @@
   "@settings.ai.loading": {
     "sourceHash": "47d2a51"
   },
-  "settings.ai.tooltipOff": "AI-funktioner är avstängda. Cmdr fungerar fullt ut utan AI: förslag och smarta funktioner döljs helt enkelt.",
+  "settings.ai.tooltipOff": "AI-funktioner är avstängda. Cmdr fungerar fullt ut utan AI: förslag och smarta funktioner göms helt enkelt.",
   "@settings.ai.tooltipOff": {
     "sourceHash": "2b31468"
   },
@@ -2076,7 +2076,7 @@
   "@settings.network.localNetworkAccessLabel": {
     "sourceHash": "61ce300"
   },
-  "settings.network.permissionIntroPrefix": "Cmdr behöver {localNetwork} för att hitta SMB-servrar, lista tillgängliga resurser och ansluta direkt för snabbare filöverföringar. Första gången du öppnar Nätverk eller använder ",
+  "settings.network.permissionIntroPrefix": "Cmdr behöver {localNetwork} för att hitta SMB-servrar, lista tillgängliga delade mappar och ansluta direkt för snabbare filöverföringar. Första gången du öppnar Nätverk eller använder ",
   "@settings.network.permissionIntroPrefix": {
     "sourceHash": "4f7f54f"
   },
@@ -2097,7 +2097,7 @@
     "sourceHash": "b87dc1e",
     "sameAsSourceJustification": "Placeholder-only value: three OS-localized navigation tokens joined by '> ' arrows. No translatable text."
   },
-  "settings.network.permissionWithout": "Utan det kan Cmdr fortfarande läsa och skriva filer på resurser som redan är monterade, men du kan inte upptäcka nya servrar eller använda vår snabbare direkta anslutning.",
+  "settings.network.permissionWithout": "Utan det kan Cmdr fortfarande läsa och skriva filer i delade mappar som redan är monterade, men du kan inte upptäcka nya servrar eller använda vår snabbare direkta anslutning.",
   "@settings.network.permissionWithout": {
     "sourceHash": "4beca45"
   },
@@ -2105,7 +2105,7 @@
   "@settings.network.customTimeoutUnit": {
     "sourceHash": "59f006d"
   },
-  "settings.updates.emailPlaceholder": "du@exempel.se",
+  "settings.updates.emailPlaceholder": "du@example.com",
   "@settings.updates.emailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
@@ -2121,11 +2121,11 @@
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "Kolla din inkorg för att bekräfta din e-post. Tack för att du hjälper till!",
+  "settings.updates.emailConfirmHint": "Kolla din inkorg för att bekräfta din e-postadress. Tack för att du hjälper till!",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "Vi kunde tyvärr inte registrera dig just nu. Försök igen?",
+  "settings.updates.emailSignupError": "Tyvärr, vi kunde inte registrera dig just nu. Försök igen?",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },

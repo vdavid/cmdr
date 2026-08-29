@@ -59,17 +59,29 @@ server, bokmärke, etc.) live in `style.md` § Terminology; this list is the set
   förval", "Använd som förval"). `high`.
 - **item: `objekt`** · macOS Finder/CoreTypes throughout ("Objekt", "markerade objekt"). NOT MS's "artikel". Neuter,
   plural unchanged ("objekt"). `high`.
-- **word wrap: `radbrytning`** · standard Swedish IT term; MS's "omslutning" is the wrong sense. `tentative`
-  (convention, no direct UI source).
+- **word wrap: `automatiskt radbyte`** · MS terminology has the exact headword (term-id `134172`, SWE, noun); MS's
+  "omslutning" is the generic `wrap` sense and the wrong fit. macOS has no "word wrap" of its own, so Tier 2 decides.
+  See § Termdriftsgranskning. `high`.
 - **branch (git): `gren`** · standard Swedish git term; MS's "förgrena" is the verb sense. `tentative`.
 - **repository (git): `git-repository`** · keep the git loanword; MS's "centrallager" is the generic-storage sense.
   `tentative`.
 - **startup disk: `startskiva`** · macOS Finder ("Startskiva", "Startskivevärde"). Boot drive. `high`.
 - **Privacy & Security (macOS pane): `Integritet och säkerhet`** · macOS SystemSettings. `high`.
-- **Full Disk Access (macOS permission): `Fullständig åtkomst till skivan`** · Apple's standard Swedish name; NOT in
-  this pile's SystemSettings bundle, taken from Apple convention. `tentative` (flag for native review).
-- **Local Network (macOS permission): `Lokalt nätverk`** · Apple's standard Swedish name; same pile-gap caveat.
-  `tentative`.
+- **Full Disk Access (macOS permission): `Full skivtillgång`** · three live macOS bundles agree, including the very
+  pane the user lands in: `Security.prefPane`, `SecurityPrivacyExtension.appex`, and `Sharing.appex`
+  (`Localizable.loctable`, macOS 26.6.2 build 25G83, verified 2026-08-30). `high`. ❌ Not the descriptive
+  `fullständig åtkomst till skivan`: the runtime already substitutes Apple's real label into `{full_disk_access}`
+  (`system-strings.svelte.ts` hydrates it from the OS), so a paraphrase elsewhere left the app calling one setting two
+  names. Capitalized in English ("Requires Full Disk Access") = the setting name, so `Full skivtillgång`; lowercase in
+  running prose keeps the same words uncapitalized (`full skivtillgång`), which is what makes the setting findable.
+  Agreement note: `tillgång` is an en-word, so `Full skivtillgång är ganska kraftfull`, never `kraftfullt`.
+- **Local Network (macOS permission): `Lokalt nätverk`** · live macOS `SecurityPrivacyExtension.appex` (2026-08-30).
+  `high`.
+- **Privacy & Security (macOS pane): `Integritet och säkerhet`; Quick Look: `Överblick`** · both re-verified live on
+  macOS 26.6.2 (2026-08-30). `high`.
+- **Disk Utility > First Aid: `Skivverktyg > Skivkontroll`** · live `Disk Utility.app` `sv` (`First Aid` →
+  `Skivkontroll`, `Disk Utility — First Aid` → `Skivverktyg – Skivkontroll`, 2026-08-30). `high`. ❌ Not `Skivhjälpen`,
+  which names no menu item Apple ships.
 
 ### Cmdr-internal UI names (keep consistent across files)
 
@@ -1608,3 +1620,169 @@ en notering som fästs på **samma** rapport (inget skickas en andra gång). Åt
   en varning, som `@key` kräver; `hela sökvägen` är katalogens form (se `errors.listing.nameTooLongErrno.explanation`) ·
   `high`.
 - Inga `sameAsSourceJustification` · alla femton värden skiljer sig från engelskan.
+
+## Termdriftsgranskning: en sak, ett namn (2026-08-30)
+
+Hela katalogen gicks igenom med `i18n-check-term-consistency` plus de tre manuella passen i
+`docs/guides/i18n-translation.md` § "Auditing a finished locale for term drift". macOS-belägg är kontrollerade mot det
+körande systemet (macOS 26.6.2, build 25G83, 2026-08-30) via `Finder.app`/`Safari.app` per-nib `.strings` och
+`.loctable`, med `en_GB.lproj` som engelsk sida; pilen (`_ignored/i18n/sv/`) står för Microsofts terminologi och Tier 3.
+
+### Fixat: samma engelska sa två saker på svenska
+
+- **Delete (F8, till papperskorgen) → `Radera`** · macOS AppKit `sv` `"Delete": "Radera"` i fyra buntar (`Common`,
+  `Document`, `FontManager`, `MenuCommands`), plus Finder `Radera direkt…` (`300770.title`) · `high`. `menu.file.delete`
+  och `commands.fileDelete.label` sa `Ta bort` medan funktionstangentraden och raderingsdialogen sa `Radera` om samma
+  åtgärd: menyraden och kommandopaletten döpte alltså F8 till ett annat verb än tangenten själv. `style.md` reserverar
+  redan `ta bort` för att plocka bort något ur en lista. Paret ska dessutom skilja sig i STYRKA, inte i verb: `Radera` /
+  `Radera permanent` gör det, `Ta bort` / `Radera permanent` gör det inte.
+- **Delete (den hämtade AI-modellen) → `Radera`** · samma regel; `settings.mediaIndex.clip.*` var en `ta bort`-ö bredvid
+  `ai.local.*` som redan sa `Radera modell` om exakt samma handling. `settings.mediaIndex.reclaim.*` behåller `ta bort`:
+  där plockas rader ur ett index, inte filer från disken. `ai.local.deletingStatus` behåller också `tar bort filer`,
+  eftersom engelskan där säger `removing`, precis som i `errors.listing.folderNotEmpty.suggestion` ("Radera innehållet i
+  mappen först, och prova sedan att ta bort mappen igen").
+- **Select all / Deselect all → `Markera allt` / `Avmarkera allt`** · macOS Finder `MenuBar.strings` `172.title` och
+  `300488.title`, plus AppKit `MenuCommands` och `FindPanel` (`"Select All": "Markera allt"`) · `high`. Se
+  `allt`-konventionen nedan.
+- **Close other tabs → `Stäng övriga flikar`** · Safari 26 `sv` `MainMenu.strings` `686.title` · `high`. Samma `övriga`
+  som Finders `Göm övriga`; `andra` är inte Apples ord här.
+- **word wrap → `Automatiskt radbyte`** · Microsofts terminologi, term-id `134172` (SWE, substantiv) · `high`. Ersätter
+  den `tentative`-markerade `radbrytning` i § Terms. macOS har ingen egen "word wrap": TextEdit `sv` säger
+  `Anpassa texten till fönstret` om en annan funktion (Wrap to Window) och `Radbrytning` bara inne i utskriftspanelens
+  `Radbrytning efter sidans storlek`. Tier 1 saknar termen, alltså avgör Tier 2.
+- **Dismiss → `Avfärda`** · macOS `sv` `"Dismiss Popover": "Avfärda popover"` · `high`. Microsoft säger `stäng` (term-id
+  `1633537`), men Tier 1 vinner, och `Stäng` är dessutom upptaget av Close.
+- **Copied → `Kopierat`** · `high` (grammatik; ingen källa har en naken "Copied"-knapp). Supinformen fungerar oavsett
+  vad som kopierades, och de två avvikarna kopierar ett `referens-id` — `ett id` är neutrum, så `Kopierad` var fel även
+  på kongruensen.
+- **Go to home folder → `Gå till hemmappen`** · `commands.nav*`-familjens satta `Gå till …` (`Gå till sökväg…`,
+  `Gå till överordnad mapp`) · `high`. `fileExplorer.errorPane.goHome` är bokstavligen samma knapp som
+  `commands.navGoHome.label`, så `Öppna hemmappen` var ren dubblering.
+- **Reset all to defaults → `Återställ allt till förval`** · se `allt`-konventionen nedan · `high`. macOS
+  tangentbordsinställningar säger `Återställ förval` (`KeyboardSettings.appex`, `Restore Defaults`) helt utan
+  kvantifierare, så bara formen på `all` behövde avgöras.
+- **dir / dirs → `mapp` / `mappar`** · `high`. `kat.` stod bredvid ett utskrivet `filer` i samma statusrad ("123 filer,
+  4 kat."), och `fileExplorer.summary.dirNoun` sa redan `mapp`. Förkortningen tjänade ingen bredd som `mappar` inte
+  klarar.
+- **you@example.com → `du@example.com`** · macOS lokaliserar bara lokaldelen: `name@example.com` → `namn@example.com`
+  (`GameCenterSettingsDeviceExpertExtension.appex` och `UsersGroupsIntentsExtension.appex`, `Localizable.loctable`) ·
+  `high`. `exempel.se` är dessutom en riktig registrerbar domän, medan `example.com` är reserverad för dokumentation
+  (RFC 2606).
+- **"This volume doesn't support trash." → `Den här volymen saknar papperskorg.`** · obestämd form bär "det finns ingen
+  sådan här", enligt § Papperskorgen i namnbytesspärrarna · `high`. Rubriken ovanför säger redan
+  `Papperskorgen stöds inte`, så meningen ska inte upprepa den.
+- **"Sorry, we couldn''t …" → `Tyvärr, vi kunde inte …`** · katalogens satta ram i `feedback.dialog.softFailure`,
+  `viewer.image.error` och `feedback.dialog.tooLong` · `high`.
+- **"confirm your email" → `bekräfta din e-postadress`** · det är adressen som bekräftas, och katalogen kallar den
+  `e-postadress` (`common.attachEmailInputLabel`, `common.attachEmail`, `onboarding.stepBeta.emailNote`) · `high`.
+
+### Fixat i den manuella passningen (engelskan skiljer sig, så checken ser det inte)
+
+- **Hide (imperativ) → `Göm`; hidden (adjektiv) → `dold`** · `high`. macOS Finder `sv` säger `Göm X` i elva levande
+  strängar (`Göm sidofältet`, `Göm verktygsfältet`, `Göm förhandsvisning`, `Göm tillägg`, `Göm statusfältet`, …) och
+  noll `Dölj`; pilen ger fjorton till, inklusive naket `"Hide": "Göm"`. Microsoft (`dölja`, term-id `61374`) och KDE
+  Dolphin (`Dölj filterrad`) säger tvärtom, alltså en macOS-mot-Windows-delning där macOS vinner. Adjektivet stannar
+  däremot på `dold`: Nautilus ("Om dolda filer ska visas"), Thunar ("Sortera dolda filer efter andra filer") och Total
+  Commander (`5154="Visa &dolda filer …"`) är eniga, och `dolda filer` är den etablerade svenska filsystemtermen. ⚠️
+  `Suppress` är ett annat engelskt verb och behåller `Dölj` (`settings.fileViewer.suppressBinaryWarning.label`,
+  `settings.fileExplorer.suppressQuickLookHint.label`). Bonus: `commands.viewShowHidden.label` slipper stamupprepningen
+  `dölj dolda` och heter nu `Visa eller göm dolda filer`.
+- **download → `hämta` / `hämtning`** · glossarets satta term (macOS `Hämtade filer`) · `high`.
+  `settings.mediaIndex.clip.*` var den enda ön av `ladda ner` / `nedladdning`, och den låg bredvid
+  `ai.local.downloadModel` = `Hämta modell` för exakt samma handling.
+- **"folder sizes" → `mappstorlekar`** · `high`. Fem nycklar sa redan `mappstorlekar`, tre sa `katalogstorlekar`.
+  `katalog` är kvar där engelskan verkligen menar `directory` i teknisk mening (`settings.listing.directorySortMode.*`,
+  `errors.git.bareRepo.suggestion`, `commands.fileCopyCurrentDirectoryPath.label`). ⚠️ Engelskan växlar själv mellan
+  "folder sizes" och "directory sizes" om samma funktion; det är en `en`-sida att städa, inte en svensk.
+- **share → `delad mapp`** · macOS Finder `sv` `1069.title` = `Delad mapp`, och `"Manage Shared Folder"` →
+  `"Hantera delad mapp"` · `high`. Katalogen hade tre ord för en sak: `delad mapp` i prosa, `delning` i
+  nätverksbläddraren, `resurs` i inställningarna. Se gränsen nedan för vad som får stå kvar.
+- **Genitiv på namn som slutar på konsonant: rakt `-s`, aldrig `:s`** · `high` · `style.md` § Notes and decisions.
+  `errors.provider.pCloudFuse.*` skrev `pCloud:s` i samma mening som `pClouds`. Kolon-genitiv hör till förkortningar
+  (`SVT:s`), inte till ett namn som `pCloud`.
+
+### Gränser: båda formerna är rätt, platta inte ut dem
+
+Var och en av de tio första raderna motsvarar en post i `i18n-term-consistency-allowlist.json`; den engelska
+källsträngen står i parentes.
+
+- **`Checking` → `Kontrollerar` när något verifieras, `Söker` när något letas fram** (`"Checking"`) · `high`.
+  `ai.cloud.checking` och `licensing.dialog.checking` prövar en nyckel man redan har; `updates.status.checking` letar
+  efter en uppdatering som kanske finns. Hela uppdateringsfamiljen säger redan `Sök efter uppdateringar`
+  (`menu.app.checkForUpdates`, `settings.updates.checkForUpdates`, `commands.appCheckForUpdates.label`), och
+  `fileOperations.transferDialog.checkingConflicts` säger `Söker efter konflikter` av samma skäl. macOS
+  `Kontrollera stavning` är verifieringssidan. Syntaktisk regel: `Checking for X` → `Söker efter X`; `Checking X` →
+  `Kontrollerar X`. (`indexing.run.changeCheck` är nominal av rubrikskäl, se § Enhetsindex.)
+- **`Running` → `Körs` om en process kör, `Pågår` om en åtgärd är i gång** (`"Running"`) · `high`. macOS Finder `sv` har
+  minimalparet: `”^0” kan inte öppnas medan Finder körs` (`N144`) mot `en annan åtgärd pågår` (`NE82`, `RN11`) och
+  `några aktiviteter fortfarande pågår` (`A17`). `ai.local.statusRunning` är servern, `operationLog.status.running` är
+  filoperationen.
+- **`Error` → `Fel` bara i diagnostikkontext, annars `Problem`** (`"Error"`) · `high`. `settings.updates.errorPrefix` är
+  en diagnostikrad och engelskans `@key` säger rakt ut att ordet är okej där;
+  `fileExplorer.network.browser.status.error` står bland `Kan inte nås`, `Tidsgränsen nåddes` och
+  `Inloggningen gick inte`, där `style.md` förbjuder etiketten `fel`.
+- **`(unknown)` böjs efter det underförstådda huvudordet** (`"(unknown)"`) · `high`.
+  `fileExplorer.network.browser.unknown` ersätter ett `antal` (neutrum) → `(okänt)`;
+  `fileOperations.transferProgress.sizeUnknown` ersätter en `storlek` (utrum) → `(okänd)`. Katalogen gör redan samma sak
+  utanför checkens synfält: `ai.cloud.unknownError` = `Okänt fel`, `ai.local.modelUnknown` = `Okänd`,
+  `askCmdr.cost.unknown` = `kostnad okänd`.
+- **`Modified` → `Ändrad` som attribut, `Ändrade` som filterpastill** (`"Modified"`) · `high`.
+  `fileExplorer.columns.modified` och syskonen beskriver EN fils datum; `shortcuts.section.filterModified` står bredvid
+  `Alla` och `Konflikter` och filtrerar en mängd kommandon, så pluralen kongruerar med mängden. Radmärket intill heter
+  fortfarande `Ändrad från förval`, singular, för att det gäller en rad.
+- **`Put back …` → `Lade tillbaka …` ur papperskorgen, `… återställdes` för namn**
+  (`"Put back {countText} {count, plural, one {file} other {files}}"`) · `high`. Redan satt i § Papperskorgs-toasten:
+  `lägga tillbaka` är Finders `Put Back` (`N153.1`), och `återställa` är reserverat för `askCmdr.renameUndo.*`, där de
+  gamla NAMNEN kommer tillbaka och ingenting flyttas. Engelskan använder en sträng för två olika handlingar; svenskan
+  får inte.
+- **`File` → `Arkiv` som menyradsrubrik, `Fil` överallt annars** (`"File"`) · `high`. Redan satt i § Inbyggda menyer
+  (Finder `300764.title`/`83.title`, AppKit `MenuCommands`). `suggestedOps.columnFile` är en kolumnrubrik, inte en meny.
+- **`View` → `Innehåll` som menyradsrubrik, `Visa` som åtgärd** (`"View"`) · `high`. Redan satt i § Inbyggda menyer
+  (Finder `206.title`/`207.title` OCH Safari `200.title`). `menu.file.view`, `commands.fileView.label` och
+  funktionstangentraden är F3-åtgärden.
+- **`Select` → `Markera` för objekt, `Välj` för ett alternativ** (`"Select"`) · `high`. Redan satt i § Select-menyn och
+  § Markeringsdialogen; `ui.select.placeholder` är en rullgardins platshållare.
+- **`Zoom` → `Zoom` (substantiv, textzoom-undermenyn) mot `Zooma` (verb, Fönster-menyn)** (`"Zoom"`) · `high`. Redan
+  satt i § Inbyggda menyer (Finder `300667.title`).
+- **`share` → `delad mapp` fritt stående, `-resurs` bara inne i en sammansättning, `Delningar` bara i värdlistans
+  kolumn** · `high`. Svenskan kan inte sammansätta en tvåordsfras, så Microsofts `-resurs` står kvar där en
+  sammansättning krävs: `settings.section.smbNetworkShares` (`SMB-/nätverksresurser`),
+  `settings.appearance.tintSmb.description`, `settings.network.directSmbConnection.*`,
+  `settings.network.timeoutMode.description`, `settings.advanced.mountTimeout.description`,
+  `settings.summary.smbNetworkShares` (`resurscache`), `settings.indexing.askForEachDrive.description`. Kolumnrubriken
+  `fileExplorer.network.browser.colShares` (`Delningar`) och dess räknare `fileExplorer.network.share.shareCount`
+  behåller kortformen av breddskäl, precis som § Terms redan tillåter. Allt annat är `delad mapp` / `delade mappar`.
+
+### Konvention: ett naket engelskt `All` blir `allt`, inte `alla`
+
+macOS `sv` säger `Markera allt` och `Avmarkera allt`, aldrig `alla`. Utan utsatt huvudord dinglar `alla` (alla vad?),
+medan neutrumformen `allt` står för sig själv. Gäller `Select all`, `Deselect all` och `Reset all to defaults`. Med
+huvudord böjs det förstås normalt (`Stäng övriga flikar`, `Ångra alla omgångar`). Också noterad i `style.md`.
+
+### Apples egna namn: kontrollera dem mot det körande systemet, inte mot minnet
+
+Den dyraste klassen av drift i det här passet var inte två svenska ord för en engelsk term, utan ett svenskt ord för
+något Apple redan har döpt. Copy som PEKAR på en systemyta måste stava ytan som macOS stavar den, annars skickas
+användaren att leta efter ett menyalternativ som inte finns. Tre rättade, alla verifierade live på macOS 26.6.2 (build
+`25G83`, 2026-08-30):
+
+- **`Full Disk Access` → `Full skivtillgång`** i 19 nycklar (`onboarding.stepFda.*`, `onboarding.stepAi.banner*`,
+  `search.coverage.*`, `downloads.fda.message`, `common.downloadsFdaHint`, `askCmdr.wake.needsFullDiskAccess`,
+  `settings.behavior.…globalGoToLatestShortcut.enabled.description`). Se § Terms för belägget och kongruensen. Det som
+  gjorde felet osynligt: `{full_disk_access}` i `errors.*` hämtas från OS:et i körningen, så appen visade Apples namn på
+  ett ställe och en egen omskrivning på nitton andra.
+- **`View > Zoom > 100%` → `Innehåll > Zoom > 100 %`** (`commands.handler.zoomResetHintMenu`). Tipset pekade på
+  `Visa > Zooma`, alltså två menyer som inte finns: menyradsrubriken heter `Innehåll` och textzoom-undermenyn `Zoom`
+  (`Zooma` är verbet i Fönster-menyn). Båda gränserna stod redan i § Inbyggda menyer; det var bara den här strängen som
+  inte följde dem.
+- **`Cmdr > Onboarding…` → `Cmdr > Introduktion…`** (`main.upgradeNudge.mac`). `menu.app.onboarding` heter
+  `Introduktion…`, så aviseringen namngav menyposten på engelska.
+- **`Disk Utility > First Aid` → `Skivverktyg > Skivkontroll`** (`errors.listing.ioSerious.suggestion`).
+
+Kontrollerade och redan rätt: `Systeminställningar > AI`, `Indexering > Enhetsindexering`,
+`Hjälp > Skicka återkoppling…`, `Inställningar > Tangentbordsgenvägar`, `Inställningar > Uppdateringar och integritet`,
+`Visa info` (Get Info), `Nyckelhanterare`, `Integritet och säkerhet`.
+
+**Regel:** varje gång en sträng skriver ut ett menyalternativ, en inställningspanel eller ett Apple-funktionsnamn, slå
+upp det i det körande systemet (`how-to-mine.md` § "Menu-bar labels" och `.loctable`-receptet) och datera fyndet. Ett
+namn som "låter rätt" är den enda sortens fel användaren kan följa rakt in i en återvändsgränd.

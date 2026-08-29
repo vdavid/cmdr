@@ -68,7 +68,7 @@
   "@fileOperations.delete.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.delete.scanDir": "{count, plural, one {kat.} other {kat.}}",
+  "fileOperations.delete.scanDir": "{count, plural, one {mapp} other {mappar}}",
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
@@ -156,7 +156,7 @@
   "@fileOperations.mkdir.timeoutRefresh": {
     "sourceHash": "b0e5436"
   },
-  "fileOperations.mkdir.timeoutDismiss": "Stäng",
+  "fileOperations.mkdir.timeoutDismiss": "Avfärda",
   "@fileOperations.mkdir.timeoutDismiss": {
     "sourceHash": "48845bf"
   },
@@ -245,7 +245,7 @@
   "@fileOperations.transferDialog.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.transferDialog.scanDir": "{count, plural, one {kat.} other {kat.}}",
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {mapp} other {mappar}}",
   "@fileOperations.transferDialog.scanDir": {
     "sourceHash": "1c5273d"
   },
@@ -369,7 +369,7 @@
   "@fileOperations.scanPhase.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.scanPhase.scanDir": "{count, plural, one {kat.} other {kat.}}",
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {mapp} other {mappar}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },

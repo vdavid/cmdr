@@ -631,7 +631,7 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Försök igen\n- Om det här fortsätter, prova att köra **Skivverktyg > Skivhjälpen** på den här volymen",
+  "errors.listing.ioSerious.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Försök igen\n- Om det här fortsätter, prova att köra **Skivverktyg > Skivkontroll** på den här volymen",
   "@errors.listing.ioSerious.suggestion": {
     "sourceHash": "6c5be6d"
   },
@@ -675,7 +675,7 @@
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"
   },
-  "errors.listing.emptyRootICloud.explanation": "Cmdr öppnade iCloud Drive men fick inga filer tillbaka. macOS döljer innehållet i iCloud Drive för appar som inte har **{full_disk_access}**, så att ge Cmdr den behörigheten är den troligaste lösningen.\n\nOm din iCloud Drive verkligen är tom kan du strunta i det här tipset.",
+  "errors.listing.emptyRootICloud.explanation": "Cmdr öppnade iCloud Drive men fick inga filer tillbaka. macOS gömmer innehållet i iCloud Drive för appar som inte har **{full_disk_access}**, så att ge Cmdr den behörigheten är den troligaste lösningen.\n\nOm din iCloud Drive verkligen är tom kan du strunta i det här tipset.",
   "@errors.listing.emptyRootICloud.explanation": {
     "sourceHash": "d095f83"
   },
@@ -1001,11 +1001,11 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Den här mappen ligger på **pCloud**s virtuella enhet. Så här kan du prova:\n- Se till att pCloud-appen är igång och att du är inloggad\n- Kontrollera din internetanslutning\n- Efter en macOS-uppdatering, godkänn pCloud:s systemtillägg på nytt i **Systeminställningar > Allmänt > Inloggningsobjekt och tillägg**",
+  "errors.provider.pCloudFuse.needsAction": "Den här mappen ligger på **pCloud**s virtuella enhet. Så här kan du prova:\n- Se till att pCloud-appen är igång och att du är inloggad\n- Kontrollera din internetanslutning\n- Efter en macOS-uppdatering, godkänn pClouds systemtillägg på nytt i **Systeminställningar > Allmänt > Inloggningsobjekt och tillägg**",
   "@errors.provider.pCloudFuse.needsAction": {
     "sourceHash": "afea03d"
   },
-  "errors.provider.pCloudFuse.serious": "Den här mappen ligger på **pCloud**s virtuella enhet. pCloud:s FUSE-process kan ha kraschat. Så här kan du prova:\n- Avsluta och öppna pCloud-appen igen\n- Om enheten inte dyker upp igen, tvinga fram en avmontering: kör `umount -f /Volumes/pCloudDrive` i Terminal\n- Efter en macOS-uppdatering, godkänn pCloud:s systemtillägg på nytt i **Systeminställningar > Allmänt > Inloggningsobjekt och tillägg**",
+  "errors.provider.pCloudFuse.serious": "Den här mappen ligger på **pCloud**s virtuella enhet. pClouds FUSE-process kan ha kraschat. Så här kan du prova:\n- Avsluta och öppna pCloud-appen igen\n- Om enheten inte dyker upp igen, tvinga fram en avmontering: kör `umount -f /Volumes/pCloudDrive` i Terminal\n- Efter en macOS-uppdatering, godkänn pClouds systemtillägg på nytt i **Systeminställningar > Allmänt > Inloggningsobjekt och tillägg**",
   "@errors.provider.pCloudFuse.serious": {
     "sourceHash": "d7e6926"
   },
@@ -1201,7 +1201,7 @@
   "@errors.write.trashNotSupported.title": {
     "sourceHash": "af90a02"
   },
-  "errors.write.trashNotSupported.message": "Den här volymen stöder inte papperskorgen.",
+  "errors.write.trashNotSupported.message": "Den här volymen saknar papperskorg.",
   "@errors.write.trashNotSupported.message": {
     "sourceHash": "45cf0c6"
   },

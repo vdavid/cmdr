@@ -31,7 +31,7 @@
   "@onboarding.wizard.restart": {
     "sourceHash": "e62c550"
   },
-  "onboarding.stepFda.granted.title": "Du gav fullständig åtkomst till skivan!",
+  "onboarding.stepFda.granted.title": "Du gav full skivtillgång!",
   "@onboarding.stepFda.granted.title": {
     "sourceHash": "6740141"
   },
@@ -43,7 +43,7 @@
   "@onboarding.stepFda.granted.hint": {
     "sourceHash": "e0e33a3"
   },
-  "onboarding.stepFda.alreadyGranted.title": "Cmdr har just nu fullständig åtkomst till skivan",
+  "onboarding.stepFda.alreadyGranted.title": "Cmdr har just nu full skivtillgång",
   "@onboarding.stepFda.alreadyGranted.title": {
     "sourceHash": "403273d"
   },
@@ -55,11 +55,11 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "Det ser ut som att du accepterade fullständig åtkomst till skivan tidigare men sedan återkallade den.",
+  "onboarding.stepFda.revoked.intro": "Det ser ut som att du accepterade full skivtillgång tidigare men sedan återkallade den.",
   "@onboarding.stepFda.revoked.intro": {
     "sourceHash": "9087914"
   },
-  "onboarding.stepFda.revoked.noAccess": "Appen har just nu ingen fullständig åtkomst till skivan.",
+  "onboarding.stepFda.revoked.noAccess": "Appen har just nu ingen full skivtillgång.",
   "@onboarding.stepFda.revoked.noAccess": {
     "sourceHash": "415a3f3"
   },
@@ -67,7 +67,7 @@
   "@onboarding.stepFda.revoked.ifIntentional": {
     "sourceHash": "9709b73"
   },
-  "onboarding.stepFda.revoked.ifNot": "Om det <em>inte</em> var med avsikt, fundera på att tillåta fullständig åtkomst till skivan igen. Här är för- och nackdelarna:",
+  "onboarding.stepFda.revoked.ifNot": "Om det <em>inte</em> var med avsikt, fundera på att tillåta full skivtillgång igen. Här är för- och nackdelarna:",
   "@onboarding.stepFda.revoked.ifNot": {
     "sourceHash": "24667ee"
   },
@@ -79,7 +79,7 @@
   "@onboarding.stepFda.firstAsk.explain": {
     "sourceHash": "f60c41b"
   },
-  "onboarding.stepFda.firstAsk.askPermission": "Vill du ge den här appen fullständig åtkomst till skivan? Så här fungerar det:",
+  "onboarding.stepFda.firstAsk.askPermission": "Vill du ge den här appen full skivtillgång? Så här fungerar det:",
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
@@ -87,7 +87,7 @@
   "@onboarding.stepFda.pro": {
     "sourceHash": "e00bada"
   },
-  "onboarding.stepFda.con": "<strong>Nackdel:</strong> Fullständig åtkomst till skivan är ganska kraftfullt. Det låter appen läsa vilken fil som helst på din Mac. Ge bara detta om du litar på Cmdr. Cmdr använder den här rätten respektfullt och är <sourceLink>källtillgänglig</sourceLink> om du känner dig osäker.",
+  "onboarding.stepFda.con": "<strong>Nackdel:</strong> Full skivtillgång är ganska kraftfull. Den låter appen läsa vilken fil som helst på din Mac. Ge bara detta om du litar på Cmdr. Cmdr använder den här rätten respektfullt och är <sourceLink>källtillgänglig</sourceLink> om du känner dig osäker.",
   "@onboarding.stepFda.con": {
     "sourceHash": "745753e"
   },
@@ -131,27 +131,27 @@
   "@onboarding.stepFda.postAction.body": {
     "sourceHash": "f87a5fc"
   },
-  "onboarding.stepAi.bannerTitle.granted": "Fullständig åtkomst till skivan beviljad",
+  "onboarding.stepAi.bannerTitle.granted": "Full skivtillgång beviljad",
   "@onboarding.stepAi.bannerTitle.granted": {
     "sourceHash": "f5872be"
   },
-  "onboarding.stepAi.bannerBody.granted": "Tack för att du gav fullständig åtkomst till skivan! Nu kan appen komma åt din skiva. Toppen!",
+  "onboarding.stepAi.bannerBody.granted": "Tack för att du gav full skivtillgång! Nu kan appen komma åt din skiva. Toppen!",
   "@onboarding.stepAi.bannerBody.granted": {
     "sourceHash": "236f3f5"
   },
-  "onboarding.stepAi.bannerTitle.denied": "Ingen fullständig åtkomst till skivan",
+  "onboarding.stepAi.bannerTitle.denied": "Ingen full skivtillgång",
   "@onboarding.stepAi.bannerTitle.denied": {
     "sourceHash": "0aa10cf"
   },
-  "onboarding.stepAi.bannerBody.denied": "Du valde att inte aktivera fullständig åtkomst till skivan. Vi respekterar det. Du får då snart några behörighetsförfrågningar från macOS för att Cmdr ska komma åt ditt Skrivbord, Hämtade filer och liknande mappar. Acceptera eller avvisa dem som du vill. Du kan ändra allt det här senare i {systemSettings}.",
+  "onboarding.stepAi.bannerBody.denied": "Du valde att inte aktivera full skivtillgång. Vi respekterar det. Du får då snart några behörighetsförfrågningar från macOS för att Cmdr ska komma åt ditt Skrivbord, Hämtade filer och liknande mappar. Acceptera eller avvisa dem som du vill. Du kan ändra allt det här senare i {systemSettings}.",
   "@onboarding.stepAi.bannerBody.denied": {
     "sourceHash": "ccb4ae5"
   },
-  "onboarding.stepAi.bannerTitle.stuck": "Cmdr verkar inte ha fullständig åtkomst till skivan ännu",
+  "onboarding.stepAi.bannerTitle.stuck": "Cmdr verkar inte ha full skivtillgång ännu",
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Du sa att du ville aktivera fullständig åtkomst till skivan, men Cmdr verkar inte ha fått den. Du kan behöva starta om appen (gör det nu, vi fortsätter härifrån!), eller gå till <settingsLink>{systemSettings} > Integritet och säkerhet > Fullständig åtkomst till skivan</settingsLink> och hitta Cmdr, eller lägg till den manuellt med den lilla ”+”-knappen längst ner.",
+  "onboarding.stepAi.bannerBody.stuck": "Du sa att du ville aktivera full skivtillgång, men Cmdr verkar inte ha fått den. Du kan behöva starta om appen (gör det nu, vi fortsätter härifrån!), eller gå till <settingsLink>{systemSettings} > Integritet och säkerhet > Full skivtillgång</settingsLink> och hitta Cmdr, eller lägg till den manuellt med den lilla ”+”-knappen längst ner.",
   "@onboarding.stepAi.bannerBody.stuck": {
     "sourceHash": "79d5765"
   },

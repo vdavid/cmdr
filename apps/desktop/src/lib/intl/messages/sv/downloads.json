@@ -71,7 +71,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr behöver fullständig åtkomst till skivan för att bevaka din mapp Hämtade filer.",
+  "downloads.fda.message": "Cmdr behöver Full skivtillgång för att bevaka din mapp Hämtade filer.",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },

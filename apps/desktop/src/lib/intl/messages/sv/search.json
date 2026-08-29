@@ -111,7 +111,7 @@
   "@search.walkHandoff.stop": {
     "sourceHash": "cae7d57"
   },
-  "search.walkHandoff.hideTooltip": "Dölj det här. Sökningen fortsätter.",
+  "search.walkHandoff.hideTooltip": "Göm det här. Sökningen fortsätter.",
   "@search.walkHandoff.hideTooltip": {
     "sourceHash": "7ee94f1"
   },
@@ -163,11 +163,11 @@
   "@search.coverage.denied": {
     "sourceHash": "2c0eb72"
   },
-  "search.coverage.deniedFullDiskAccess": "Med fullständig åtkomst till skivan kan Cmdr söka i sådana mappar också.",
+  "search.coverage.deniedFullDiskAccess": "Med full skivtillgång kan Cmdr söka i sådana mappar också.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
   },
-  "search.coverage.setUpFullDiskAccess": "Ställ in fullständig åtkomst till skivan",
+  "search.coverage.setUpFullDiskAccess": "Ställ in full skivtillgång",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
   },

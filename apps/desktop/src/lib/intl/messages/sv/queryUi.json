@@ -653,7 +653,7 @@
   "@queryUi.scope.textareaAria": {
     "sourceHash": "0d82c92"
   },
-  "queryUi.scope.toggle.hideBoring": "Dölj tråkiga mappar",
+  "queryUi.scope.toggle.hideBoring": "Göm tråkiga mappar",
   "@queryUi.scope.toggle.hideBoring": {
     "sourceHash": "972df96"
   },

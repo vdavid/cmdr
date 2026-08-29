@@ -88,19 +88,19 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionUnreachableToast": "Det går inte att nå {server} just nu, så den här delningen ligger kvar på systemanslutningen.",
+  "fileExplorer.pane.directConnectionUnreachableToast": "Det går inte att nå {server} just nu, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "7f4ea98"
   },
-  "fileExplorer.pane.directConnectionTooSlowToast": "{server} tog för lång tid på sig att svara, så den här delningen ligger kvar på systemanslutningen.",
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} tog för lång tid på sig att svara, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
     "sourceHash": "bb5baea"
   },
-  "fileExplorer.pane.directConnectionUnexpectedToast": "Det gick inte att upprätta en direktanslutning till {server}, så den här delningen ligger kvar på systemanslutningen.",
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Det gick inte att upprätta en direktanslutning till {server}, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
     "sourceHash": "cce5742"
   },
-  "fileExplorer.pane.directConnectionUnavailableToast": "Det gick inte att upprätta en direktanslutning just nu, så den här delningen ligger kvar på systemanslutningen.",
+  "fileExplorer.pane.directConnectionUnavailableToast": "Det gick inte att upprätta en direktanslutning just nu, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "sourceHash": "0440df9"
   },
@@ -132,7 +132,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Öppna hemmappen",
+  "fileExplorer.errorPane.goHome": "Gå till hemmappen",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -438,7 +438,7 @@
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
     "sourceHash": "81ac569"
   },
-  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Dubbelklicka för att ansluta och visa delningar",
+  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Dubbelklicka för att ansluta och visa delade mappar",
   "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
     "sourceHash": "a068f74"
   },
@@ -494,7 +494,7 @@
   "@fileExplorer.network.browser.disconnected": {
     "sourceHash": "6cb30d3"
   },
-  "fileExplorer.network.browser.noMountedShares": "Inga monterade delningar från {hostName}",
+  "fileExplorer.network.browser.noMountedShares": "Inga monterade delade mappar från {hostName}",
   "@fileExplorer.network.browser.noMountedShares": {
     "sourceHash": "913c7e6"
   },
@@ -546,7 +546,7 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "Delningen ''{shareName}'' hittades inte på {hostName}",
+  "fileExplorer.network.share.notFound": "Den delade mappen ''{shareName}'' hittades inte på {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
@@ -570,11 +570,11 @@
   "@fileExplorer.network.share.connectFailedTitle": {
     "sourceHash": "06f5c62"
   },
-  "fileExplorer.network.share.noSharesTitle": "Inga delningar tillgängliga",
+  "fileExplorer.network.share.noSharesTitle": "Inga delade mappar tillgängliga",
   "@fileExplorer.network.share.noSharesTitle": {
     "sourceHash": "56890aa"
   },
-  "fileExplorer.network.share.noSharesMessage": "Den här värden har inga åtkomliga delningar, eller så krävs inloggning.",
+  "fileExplorer.network.share.noSharesMessage": "Den här värden har inga åtkomliga delade mappar, eller så krävs inloggning.",
   "@fileExplorer.network.share.noSharesMessage": {
     "sourceHash": "6633416"
   },
@@ -650,11 +650,11 @@
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "222982d"
   },
-  "fileExplorer.networkMount.shareFallback": "delning",
+  "fileExplorer.networkMount.shareFallback": "delad mapp",
   "@fileExplorer.networkMount.shareFallback": {
     "sourceHash": "c3bc45a"
   },
-  "fileExplorer.networkMount.mountFailedTitle": "Det gick inte att montera delningen",
+  "fileExplorer.networkMount.mountFailedTitle": "Det gick inte att montera den delade mappen",
   "@fileExplorer.networkMount.mountFailedTitle": {
     "sourceHash": "d59f414"
   },
@@ -1450,7 +1450,7 @@
     "sourceHash": "fde82d3",
     "sameAsSourceJustification": "Unit symbol 's' (seconds) is identical in Swedish; '{seconds}' is a preformatted placeholder. No translatable text."
   },
-  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr kunde inte ansluta direkt till {name}, vilket krävs för att indexera den här delningen. Kontrollera att delningen går att nå och försök igen.",
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr kunde inte ansluta direkt till {name}, vilket krävs för att indexera den här delade mappen. Kontrollera att den går att nå och försök igen.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "e7ac9b4"
   },

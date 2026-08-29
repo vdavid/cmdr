@@ -220,7 +220,7 @@
   "@shortcuts.section.resetToDefaultTooltip": {
     "sourceHash": "bc5b45a"
   },
-  "shortcuts.section.resetAll": "Återställ alla till förval",
+  "shortcuts.section.resetAll": "Återställ allt till förval",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
   },
@@ -232,7 +232,7 @@
   "@shortcuts.window.edit": {
     "sourceHash": "7d9889d"
   },
-  "shortcuts.window.hideEmpty": "Dölj funktioner utan genväg",
+  "shortcuts.window.hideEmpty": "Göm funktioner utan genväg",
   "@shortcuts.window.hideEmpty": {
     "sourceHash": "d3cb18e"
   },

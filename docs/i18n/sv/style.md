@@ -170,6 +170,19 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **Inbyggda menyer följer Finders ordval, inte katalogens.** Där macOS har en motsvarighet vinner den — inklusive det
   överraskande `Innehåll` för View-menyn, som både Finder och Safari använder. Belägg och undantag: `glossary.md` §
   Inbyggda menyer.
+- **Copy som pekar på en systemyta stavas som macOS stavar den.** Ett menyalternativ, en inställningspanel eller ett
+  Apple-funktionsnamn slås upp i det KÖRANDE systemet innan det skrivs ut, och fyndet dateras. En omskrivning som "låter
+  rätt" skickar användaren att leta efter något som inte finns; det var den dyraste feltypen i 2026-08-30-passet
+  (`Fullständig åtkomst till skivan` mot Apples `Full skivtillgång`, `Visa > Zooma` mot `Innehåll > Zoom`). Belägg och
+  listan: `glossary.md` § Apples egna namn.
+- **Ett naket engelskt `All` blir `allt`, inte `alla`.** macOS `sv` säger `Markera allt` och `Avmarkera allt`; utan
+  utsatt huvudord dinglar `alla` (alla vad?), medan neutrumformen står för sig själv. Gäller `Select all`,
+  `Deselect all`, `Reset all to defaults`. Med huvudord böjs det normalt (`Stäng övriga flikar`). Belägg: `glossary.md`
+  § Termdriftsgranskning.
+- **`Hide` är `Göm`, men `hidden` är `dold`.** Apples svenska verb är `gömma` (elva `Göm …`-strängar i Finder, noll
+  `Dölj`), medan `dolda filer` är den etablerade svenska filsystemtermen som Nautilus, Thunar och Total Commander delar.
+  Microsofts `dölja` är Windows-konventionen och gäller inte här. Engelskans `Suppress` är ett annat verb och behåller
+  `Dölj`. Belägg och nyckellista: `glossary.md` § Termdriftsgranskning.
 - **Sentence case is native.** Swedish doesn't capitalize common nouns, days, or months, so the app's sentence-case rule
   applies without friction. Don't title-case.
 - **Quotation marks: `”…”`** (right double quote both sides) is the standard Swedish form. Avoid English `"…"`.

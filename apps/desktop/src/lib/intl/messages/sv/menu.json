@@ -115,7 +115,7 @@
   "@menu.file.newFolder": {
     "sourceHash": "6cca529"
   },
-  "menu.file.delete": "Ta bort",
+  "menu.file.delete": "Radera",
   "@menu.file.delete": {
     "sourceHash": "e2d0a54"
   },

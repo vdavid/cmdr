@@ -7,7 +7,7 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "140c57d"
   },
-  "main.upgradeNudge.mac": "Vi har lagt till nya alternativ för att komma igång. Öppna Cmdr > Onboarding… för att se dem.",
+  "main.upgradeNudge.mac": "Vi har lagt till nya alternativ för att komma igång. Öppna Cmdr > Introduktion… för att se dem.",
   "@main.upgradeNudge.mac": {
     "sourceHash": "477f3a5"
   },
