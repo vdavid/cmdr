@@ -476,6 +476,21 @@ var AllChecks = []CheckDefinition{
 		Run:       RunDesktopI18nParity,
 	},
 	{
+		ID:          "desktop-i18n-aria-label",
+		Nickname:    "i18n-aria",
+		DisplayName: "i18n-aria",
+		App:         AppDesktop,
+		Tech:        "\U0001F3A8 Svelte",
+		// WARN class: a translated accessible name that stopped containing its
+		// visible label (WCAG 2.5.3). Known violations ship in `de`, `es`, `pt`, and
+		// `zh`, so it can't gate CI yet; escalate to ERROR once those are fixed.
+		NotInCI:   "warn-only until the four locales with known broken pairs are fixed",
+		DependsOn: nil,
+		IsFast:    true,
+		Inputs:    inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),
+		Run:       RunDesktopI18nAriaLabel,
+	},
+	{
 		ID:          "desktop-i18n-term-consistency",
 		Nickname:    "i18n-terms",
 		DisplayName: "i18n-terms",

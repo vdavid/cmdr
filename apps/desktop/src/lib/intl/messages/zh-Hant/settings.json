@@ -2247,7 +2247,7 @@
   "@settings.mediaIndex.chosenFolders.remove": {
     "sourceHash": "c3812fc"
   },
-  "settings.mediaIndex.chosenFolders.removeAria": "把 {folder} 移出索引",
+  "settings.mediaIndex.chosenFolders.removeAria": "從索引中移除 {folder}",
   "@settings.mediaIndex.chosenFolders.removeAria": {
     "sourceHash": "338e30a"
   },

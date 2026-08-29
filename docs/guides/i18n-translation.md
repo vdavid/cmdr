@@ -171,7 +171,9 @@ aria around an awkward label. Two consequences worth knowing: the pair is ONE un
 break containment, and a later "make these consistent" pass over the aria can break it too, so record the constraint in
 the glossary next to both terms.
 
-No check enforces this today; it's on the translator and the reviewer.
+`desktop-i18n-aria-label` (`pnpm check i18n-aria`) enforces it. A pair counts only when English's own `fooAria` already
+contains `foo`, so there's nothing to allowlist: if it fires, the translation genuinely broke it. It's warn-only while
+`de`, `es`, `pt`, and `zh` still carry known breaks.
 
 ## Deliberately-identical strings (the `sameAsSourceJustification` field)
 
