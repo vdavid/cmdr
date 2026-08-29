@@ -1,237 +1,239 @@
 {
-  "shortcuts.list.noShortcut": "No shortcut",
+  "shortcuts.list.noShortcut": "沒有快速鍵",
   "@shortcuts.list.noShortcut": {
     "sourceHash": "f22dbb1"
   },
-  "shortcuts.list.addedTooltip": "Added",
+  "shortcuts.list.addedTooltip": "已新增",
   "@shortcuts.list.addedTooltip": {
     "sourceHash": "6b02e0d"
   },
-  "shortcuts.list.disabledTooltip": "Disabled",
+  "shortcuts.list.disabledTooltip": "已停用",
   "@shortcuts.list.disabledTooltip": {
     "sourceHash": "75081b5"
   },
-  "shortcuts.scope.app": "App",
+  "shortcuts.scope.app": "App 內",
   "@shortcuts.scope.app": {
     "sourceHash": "0d04bfe"
   },
-  "shortcuts.scope.mainWindow": "Main window",
+  "shortcuts.scope.mainWindow": "主視窗",
   "@shortcuts.scope.mainWindow": {
     "sourceHash": "89dd3f3"
   },
-  "shortcuts.scope.fileList": "File list",
+  "shortcuts.scope.fileList": "檔案清單",
   "@shortcuts.scope.fileList": {
     "sourceHash": "0728b8e"
   },
-  "shortcuts.scope.briefMode": "Brief mode",
+  "shortcuts.scope.briefMode": "簡潔顯示方式",
   "@shortcuts.scope.briefMode": {
     "sourceHash": "b75e4b3"
   },
-  "shortcuts.scope.fullMode": "Full mode",
+  "shortcuts.scope.fullMode": "完整顯示方式",
   "@shortcuts.scope.fullMode": {
     "sourceHash": "c284afc"
   },
-  "shortcuts.scope.volumeChooser": "Volume chooser",
+  "shortcuts.scope.volumeChooser": "卷宗選擇器",
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.network": "Network",
+  "shortcuts.scope.network": "網路",
   "@shortcuts.scope.network": {
     "sourceHash": "1744b96"
   },
-  "shortcuts.scope.errorScreen": "Error screen",
+  "shortcuts.scope.errorScreen": "錯誤畫面",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.shareBrowser": "Share browser",
+  "shortcuts.scope.shareBrowser": "共享資料夾瀏覽器",
   "@shortcuts.scope.shareBrowser": {
     "sourceHash": "5cec2a6"
   },
-  "shortcuts.scope.commandPalette": "Command palette",
+  "shortcuts.scope.commandPalette": "指令面板",
   "@shortcuts.scope.commandPalette": {
     "sourceHash": "0347f79"
   },
-  "shortcuts.scope.aboutWindow": "About window",
+  "shortcuts.scope.aboutWindow": "關於視窗",
   "@shortcuts.scope.aboutWindow": {
     "sourceHash": "615b547"
   },
-  "shortcuts.scope.onboarding": "Onboarding",
+  "shortcuts.scope.onboarding": "入門引導",
   "@shortcuts.scope.onboarding": {
     "sourceHash": "a2198f4"
   },
-  "shortcuts.conflict.reservedByMacOs": "{combo} is reserved by macOS ({command}) and won''t reach Cmdr. Pick a different combo.",
+  "shortcuts.conflict.reservedByMacOs": "{combo} 由 macOS 保留（{command}），傳不到 Cmdr。請換一組組合鍵。",
   "@shortcuts.conflict.reservedByMacOs": {
     "sourceHash": "4aad26f"
   },
-  "shortcuts.conflict.fixedKey": "{combo} is a fixed key in Cmdr ({command}) and can''t be reassigned. Pick a different combo.",
+  "shortcuts.conflict.fixedKey": "{combo} 是 Cmdr 的固定按鍵（{command}），無法重新指定。請換一組組合鍵。",
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "2c2c76f"
   },
-  "shortcuts.conflict.systemShortcut": "{combo} is usually taken by macOS ({label}), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.",
+  "shortcuts.conflict.systemShortcut": "{combo} 通常由 macOS 使用（{label}），所以可能永遠傳不到 Cmdr。你可以在「系統設定 > 鍵盤」裡把它空出來。",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "Apple keeps `Spotlight` in Latin in its Traditional Chinese localizations, verified rather than assumed: the Keyboard-Shortcuts table renders `Spotlight` bare and `Show Spotlight search` as `顯示Spotlight搜尋` in zh-TW, and Finder's `RV_SPOTLIGHT_ITEMS_SLICE_NAME` is `Spotlight項目` in zh-TW and zh-HK alike. This string names the macOS feature inside a conflict warning, so it must read as the user's own Keyboard settings do. Its siblings that Apple DOES localize are translated (`指揮中心`, `截圖`, `空間`)."
   },
-  "shortcuts.system.finderSearch": "Finder search window",
+  "shortcuts.system.finderSearch": "Finder 搜尋視窗",
   "@shortcuts.system.finderSearch": {
     "sourceHash": "8b2f1c8"
   },
-  "shortcuts.system.characterViewer": "Character Viewer",
+  "shortcuts.system.characterViewer": "表情符號和其他符號",
   "@shortcuts.system.characterViewer": {
     "sourceHash": "1a43164"
   },
-  "shortcuts.system.inputSourceSwitching": "input source switching",
+  "shortcuts.system.inputSourceSwitching": "切換輸入方式",
   "@shortcuts.system.inputSourceSwitching": {
     "sourceHash": "11c5d7a"
   },
-  "shortcuts.system.appSwitcher": "the app switcher",
+  "shortcuts.system.appSwitcher": "App 切換器",
   "@shortcuts.system.appSwitcher": {
     "sourceHash": "5b8be44"
   },
-  "shortcuts.system.missionControl": "Mission Control",
+  "shortcuts.system.missionControl": "指揮中心",
   "@shortcuts.system.missionControl": {
     "sourceHash": "1a9a658"
   },
-  "shortcuts.system.appWindows": "App windows",
+  "shortcuts.system.appWindows": "應用程式視窗",
   "@shortcuts.system.appWindows": {
     "sourceHash": "a480ccd"
   },
-  "shortcuts.system.spaces": "Spaces",
+  "shortcuts.system.spaces": "空間",
   "@shortcuts.system.spaces": {
     "sourceHash": "077a293"
   },
-  "shortcuts.system.screenshots": "screenshots",
+  "shortcuts.system.screenshots": "截圖",
   "@shortcuts.system.screenshots": {
     "sourceHash": "98d875b"
   },
-  "shortcuts.system.screenRecording": "screen recording",
+  "shortcuts.system.screenRecording": "螢幕錄製",
   "@shortcuts.system.screenRecording": {
     "sourceHash": "fac7b60"
   },
-  "shortcuts.system.loggingOut": "logging out",
+  "shortcuts.system.loggingOut": "登出",
   "@shortcuts.system.loggingOut": {
     "sourceHash": "de70b14"
   },
-  "shortcuts.system.lockingScreen": "locking the screen",
+  "shortcuts.system.lockingScreen": "鎖定螢幕",
   "@shortcuts.system.lockingScreen": {
     "sourceHash": "b54447c"
   },
-  "shortcuts.system.forceQuit": "Force Quit",
+  "shortcuts.system.forceQuit": "強制結束",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
   },
-  "shortcuts.section.title": "Keyboard shortcuts",
+  "shortcuts.section.title": "鍵盤快速鍵",
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "Search by action name...",
+  "shortcuts.section.searchByNamePlaceholder": "依動作名稱搜尋…",
   "@shortcuts.section.searchByNamePlaceholder": {
     "sourceHash": "3dae3b6"
   },
-  "shortcuts.section.filterByKeysPlaceholder": "Filter by keys...",
+  "shortcuts.section.filterByKeysPlaceholder": "依按鍵篩選…",
   "@shortcuts.section.filterByKeysPlaceholder": {
     "sourceHash": "87cd416"
   },
-  "shortcuts.section.pressEscToClear": "Press ESC to clear",
+  "shortcuts.section.pressEscToClear": "按 Esc 鍵清除",
   "@shortcuts.section.pressEscToClear": {
     "sourceHash": "3d32f9c"
   },
-  "shortcuts.section.filterAll": "All",
+  "shortcuts.section.filterAll": "全部",
   "@shortcuts.section.filterAll": {
     "sourceHash": "a52ace4"
   },
-  "shortcuts.section.filterModified": "Modified",
+  "shortcuts.section.filterModified": "已修改",
   "@shortcuts.section.filterModified": {
     "sourceHash": "e8ce5dc"
   },
-  "shortcuts.section.filterConflicts": "Conflicts",
+  "shortcuts.section.filterConflicts": "衝突",
   "@shortcuts.section.filterConflicts": {
     "sourceHash": "9f5ea35"
   },
-  "shortcuts.section.cancel": "Cancel",
+  "shortcuts.section.cancel": "取消",
   "@shortcuts.section.cancel": {
     "sourceHash": "19766ed"
   },
-  "shortcuts.section.useAnyway": "Use anyway",
+  "shortcuts.section.useAnyway": "仍要使用",
   "@shortcuts.section.useAnyway": {
     "sourceHash": "aa19f9e"
   },
-  "shortcuts.section.keepBoth": "Keep both",
+  "shortcuts.section.keepBoth": "兩個都保留",
   "@shortcuts.section.keepBoth": {
     "sourceHash": "9367221"
   },
-  "shortcuts.section.removeFromOther": "Remove from other",
+  "shortcuts.section.removeFromOther": "從另一個移除",
   "@shortcuts.section.removeFromOther": {
     "sourceHash": "f154164"
   },
-  "shortcuts.section.alreadyBound": "<b>{combo}</b> is already bound to ''{command}''",
+  "shortcuts.section.alreadyBound": "<b>{combo}</b> 已經指定給「{command}」",
   "@shortcuts.section.alreadyBound": {
     "sourceHash": "5c29fcb"
   },
-  "shortcuts.section.modifiedTooltip": "Modified from default",
+  "shortcuts.section.modifiedTooltip": "已從預設值更改",
   "@shortcuts.section.modifiedTooltip": {
     "sourceHash": "3d86215"
   },
-  "shortcuts.section.hasConflictsTooltip": "Has conflicting shortcuts",
+  "shortcuts.section.hasConflictsTooltip": "有衝突的快速鍵",
   "@shortcuts.section.hasConflictsTooltip": {
     "sourceHash": "089c74f"
   },
-  "shortcuts.section.noneShortcut": "(none)",
+  "shortcuts.section.noneShortcut": "（無）",
   "@shortcuts.section.noneShortcut": {
     "sourceHash": "552e423"
   },
-  "shortcuts.section.macOsTooltip": "macOS handles this shortcut. Cmdr can''t change it.",
+  "shortcuts.section.macOsTooltip": "這個快速鍵由 macOS 處理，Cmdr 無法更改。",
   "@shortcuts.section.macOsTooltip": {
     "sourceHash": "262b2cc"
   },
-  "shortcuts.section.fixedTooltip": "This key is built into Cmdr and can''t be changed.",
+  "shortcuts.section.fixedTooltip": "這個按鍵內建於 Cmdr，無法更改。",
   "@shortcuts.section.fixedTooltip": {
     "sourceHash": "f07b460"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Apple's OS name, never localized in any locale, and on the do-not-translate list (`BRAND_WORDS` in `apps/desktop/scripts/i18n-catalog-lib.ts`). The badge is the bare product name; the tooltip that explains it, `shortcuts.section.macOsTooltip`, IS translated."
   },
-  "shortcuts.section.fixedBadge": "Fixed",
+  "shortcuts.section.fixedBadge": "固定",
   "@shortcuts.section.fixedBadge": {
     "sourceHash": "1246fc9"
   },
-  "shortcuts.section.pressKeys": "Press keys...",
+  "shortcuts.section.pressKeys": "請按鍵…",
   "@shortcuts.section.pressKeys": {
     "sourceHash": "37aa30c"
   },
-  "shortcuts.section.removeShortcutTooltip": "Remove shortcut",
+  "shortcuts.section.removeShortcutTooltip": "移除快速鍵",
   "@shortcuts.section.removeShortcutTooltip": {
     "sourceHash": "aea0ad8"
   },
-  "shortcuts.section.addShortcutTooltip": "Add shortcut",
+  "shortcuts.section.addShortcutTooltip": "新增快速鍵",
   "@shortcuts.section.addShortcutTooltip": {
     "sourceHash": "239314a"
   },
-  "shortcuts.section.resetToDefaultTooltip": "Reset to default",
+  "shortcuts.section.resetToDefaultTooltip": "重設為預設值",
   "@shortcuts.section.resetToDefaultTooltip": {
     "sourceHash": "bc5b45a"
   },
-  "shortcuts.section.resetAll": "Reset all to defaults",
+  "shortcuts.section.resetAll": "全部重設為預設值",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
   },
-  "shortcuts.window.title": "Keyboard shortcuts",
+  "shortcuts.window.title": "鍵盤快速鍵",
   "@shortcuts.window.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.window.edit": "Edit shortcuts",
+  "shortcuts.window.edit": "編輯快速鍵",
   "@shortcuts.window.edit": {
     "sourceHash": "7d9889d"
   },
-  "shortcuts.window.hideEmpty": "Hide features with no shortcut",
+  "shortcuts.window.hideEmpty": "隱藏沒有快速鍵的功能",
   "@shortcuts.window.hideEmpty": {
     "sourceHash": "d3cb18e"
   },
-  "shortcuts.window.editInSettings": "Edit shortcuts in Settings",
+  "shortcuts.window.editInSettings": "在「設定」中編輯快速鍵",
   "@shortcuts.window.editInSettings": {
     "sourceHash": "847b526"
   }

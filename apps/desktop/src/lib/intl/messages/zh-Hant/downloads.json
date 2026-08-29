@@ -131,7 +131,7 @@
   "@downloads.shortcutRow.registerFailed": {
     "sourceHash": "2e6fb97"
   },
-  "downloads.shortcutRow.addModifier": "請加上一個輔助按鍵（⌘、⌃、⌥ 或 ⇧）",
+  "downloads.shortcutRow.addModifier": "請加上一個變更鍵（⌘、⌃、⌥ 或 ⇧）",
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "28a5ba2"
   },
