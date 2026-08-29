@@ -1499,7 +1499,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
             ("menu.tag.yellow", "黃色"),
             ("menu.view.askCmdr", "Ask Cmdr"),
             ("menu.view.briefView", "簡潔顯示方式"),
-            ("menu.view.commandPalette", "命令選擇區…"),
+            ("menu.view.commandPalette", "指令面板…"),
             ("menu.view.fullView", "完整顯示方式"),
             ("menu.view.leftPane", "左窗格"),
             ("menu.view.operationLog", "操作記錄"),
