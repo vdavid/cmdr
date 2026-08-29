@@ -162,7 +162,13 @@ Format, the confidence scale, and the full process: `docs/guides/i18n-translatio
   common DE dev term, consistent with "Symlink" · high
 - existing / new (conflict comparison labels) → Bestehend / Neu · standard DE; pairs naturally for the side-by-side
   conflict rows · high
-- permanently (delete) → dauerhaft ("Dauerhaft löschen", "dauerhaft gelöscht") · MS terminology, standard DE · high
+- permanently (delete) → endgültig ("Endgültig löschen", "endgültig gelöscht") · der Katalog durchgehend
+  (`menu.file.deletePermanently`, `commands.fileDeletePermanently.label`,
+  `fileExplorer.functionKeyBar.deletePermanentlyAction`/`.permanentlyLabel`, `errors.mutation.trashNotSupported`)
+  · high. ❌ Nicht "dauerhaft" für das Löschen: das Wort ist im Katalog für den ANDEREN Sinn von "permanently"
+  reserviert, nämlich "for good" bei einer Einstellung ("die Warnung dauerhaft unterdrücken",
+  `settings.fileViewer.suppressBinaryWarning.description`). Der Löschdialog sagte als Einziger "dauerhaft
+  gelöscht" direkt neben der Taste "Endgültig löschen".
 - under cursor → unter dem Cursor · standard DE; "Cursor" kept (common DE UI term) · high
 - full disk access (macOS permission) → vollständiger Festplattenzugriff; System Settings pane → "Vollständiger
   Festplattenzugriff", "Privacy & Security"→"Datenschutz & Sicherheit" · macOS SystemSettings (Festplattenzugriff; de
@@ -357,6 +363,8 @@ Format, the confidence scale, and the full process: `docs/guides/i18n-translatio
   format name verbatim · high
 - too large (a file for a filesystem) → "zu groß" ("Datei zu groß für dieses Laufwerk") · standard DE; pairs with
   drive→Laufwerk · high
+- limit (Substantiv, allgemein) → Limit ("Tab-Limit", "kein Limit", "Spaltenbreitenlimit", "Verlauf und Limits");
+  das Verb "limit to" → "begrenzen auf" · der Katalog durchgehend · high. Die eine Ausnahme steht direkt darunter.
 - limit (filesystem size cap) → Begrenzung ("keine solche Begrenzung") · KDE Dolphin ("No limit" → "Keine Begrenzung"),
   MS terminology (Begrenzung) · high
 - "and N more files" (trailing line under a truncated file list) → "und {countText} weitere {count, plural, one {Datei}
@@ -459,9 +467,13 @@ confirms `Vorgang`).
 
 - operation → `Vorgang` (plural `Vorgänge`) · macOS Finder ("Der Vorgang kann nicht abgeschlossen werden.",
   "Kopiervorgang"/"Löschvorgang") + the settled Cmdr `de` catalog (`errors.listing.*` use `Vorgang` throughout,
-  `settings.operationLog.maxSize.description` "die ältesten Vorgänge") · high. NOT the loanword "Operation": Cmdr
-  reserves "Operation(en)" for the concurrent low-level SMB sense (`settings.network.smbConcurrency`) and the Settings
-  SECTION name "Dateioperationen"; the individual logged op is a `Vorgang`.
+  `settings.operationLog.maxSize.description` "die ältesten Vorgänge") · high. NOT the loanword "Operation", with
+  exactly two carve-outs, and they are the whole list: (a) the PROTOCOL-level sense, where an "Operation" is one
+  request on the wire (`settings.network.smbConcurrency.label`, `settings.network.customTimeout.description`), and
+  (b) the Settings section and card TITLES that are named after that heritage
+  (`settings.section.navigationAndFileOps`, `settings.navigationAndFileOps.card.fileOperations`,
+  `settings.advanced.card.fileOperations` = "Dateioperationen"). Anything a USER started is a `Vorgang`, including
+  in a tooltip or a settings DESCRIPTION: those had leaked to "Operationen" and are back.
 - operation log → `Vorgangsprotokoll` · already settled with the retention settings (`settings.section.operationLog` →
   "Vorgangsprotokoll", log → Protokoll) · high. The dialog title (`operationLog.dialog.title`) and the command label
   (`commands.logOperationLog.label`) MUST match this Settings-section name.
@@ -1654,3 +1666,25 @@ nächste Durchgang sie nicht „vereinheitlicht“.
   `@onboarding.stepBeta.emailPlaceholder` erlauben eine sprachtypische Beispieladresse. Deshalb „you@example.com“ dort
   und „du@example.com“ hier · `high`. ❌ Kein „du@beispiel.de“: `beispiel.de` ist eine echte registrierte Domain,
   `example.com` ist von der IANA für Beispiele reserviert.
+
+## Wörter, die auseinandergelaufen sind, ohne dass ein Check es sehen konnte (2026-08-30)
+
+`i18n-terms` sieht nur Schlüsselpaare mit IDENTISCHEM Englisch. Diese hier haben leicht unterschiedliche Quelltexte und
+sind deshalb nur beim Handdurchgang aufgefallen. Alle sind behoben.
+
+- **`allow` → `erlauben`, auch in den Einstellungen** · `settings.fileOperations.allowFileExtensionChanges.label`/
+  `.opt.yes`/`.opt.no` sagten „zulassen“ / „Immer zulassen“ / „Nie zulassen“, während der Dialog, der genau diese
+  Einstellung schreibt (`fileExplorer.extensionChange.alwaysAllow`), „erlauben“ sagt — ebenso
+  `askCmdr.renameReview.allow`, `onboarding.stepFda.ifAllow` und `notifications.permissionDenied` · `high`.
+- **`Stop` → `stoppen`, nie `anhalten`** · `askCmdr.wake.stop` sagte „Anhalten, was Ask Cmdr gerade tut“, und
+  „anhalten“ ist im Katalog das Wort für PAUSE (`queue.row.pause` = „Anhalten“, `queue.row.status` = „Angehalten“). In
+  einer Sitzung, in der man eine Übertragung wirklich anhalten kann, ist das kein Stilproblem, sondern eine falsche
+  Zusage · `high`.
+- **`Coming soon` → `Bald verfügbar`** · `settings.mediaIndex.clip.comingSoon` sagte als Einziges „Demnächst
+  verfügbar“ · `high`.
+- **`changelog` → `Änderungsprotokoll`, auch im Kompositum** · `settings.whatsNew.lastSeenVersion.label` sagte
+  „Changelog-Version“; jetzt „Zuletzt gesehene Version des Änderungsprotokolls“ · `high`.
+
+Nicht angefasst, weil bereits als Grenze dokumentiert und korrekt angewendet: `Recent` → „Zuletzt verwendet“ nur als
+Gruppentitel der Befehlspalette (sonst „Letzte“), und `notification` → „Hinweis“, wenn es Cmdrs eigener Toast ist,
+gegenüber „Benachrichtigung“ für die Einstellungskategorie.

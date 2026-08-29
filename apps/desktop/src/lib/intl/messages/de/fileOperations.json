@@ -16,7 +16,7 @@
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "ef122e2"
   },
-  "fileOperations.delete.noTrashWarningRest": "Dateien werden dauerhaft gelöscht.",
+  "fileOperations.delete.noTrashWarningRest": "Dateien werden endgültig gelöscht.",
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },

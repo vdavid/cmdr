@@ -1277,7 +1277,7 @@
   "@fileExplorer.navigation.locationUnreachableToast": {
     "sourceHash": "20126a6"
   },
-  "fileExplorer.navigation.connectionTooltipDirect": "Direkt verbunden für schnelle Dateioperationen",
+  "fileExplorer.navigation.connectionTooltipDirect": "Direkt verbunden für schnelle Dateivorgänge",
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
@@ -1325,7 +1325,7 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Auswerfen nicht möglich, während Operationen auf diesem Gerät laufen",
+  "fileExplorer.navigation.ejectBusyTooltip": "Auswerfen nicht möglich, während auf diesem Gerät Vorgänge laufen",
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "sourceHash": "7165c58"
   },

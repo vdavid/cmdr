@@ -347,7 +347,7 @@
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "sourceHash": "9d045cd"
   },
-  "settings.fileOperations.allowFileExtensionChanges.label": "Änderungen der Dateiendung zulassen",
+  "settings.fileOperations.allowFileExtensionChanges.label": "Änderungen der Dateiendung erlauben",
   "@settings.fileOperations.allowFileExtensionChanges.label": {
     "sourceHash": "9bc0b3a"
   },
@@ -355,11 +355,11 @@
   "@settings.fileOperations.allowFileExtensionChanges.description": {
     "sourceHash": "e331325"
   },
-  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "Immer zulassen",
+  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "Immer erlauben",
   "@settings.fileOperations.allowFileExtensionChanges.opt.yes": {
     "sourceHash": "977618b"
   },
-  "settings.fileOperations.allowFileExtensionChanges.opt.no": "Nie zulassen",
+  "settings.fileOperations.allowFileExtensionChanges.opt.no": "Nie erlauben",
   "@settings.fileOperations.allowFileExtensionChanges.opt.no": {
     "sourceHash": "bbf0cfa"
   },
@@ -475,7 +475,7 @@
   "@settings.mediaIndex.clip.ready": {
     "sourceHash": "c17e03d"
   },
-  "settings.mediaIndex.clip.comingSoon": "Demnächst verfügbar.",
+  "settings.mediaIndex.clip.comingSoon": "Bald verfügbar.",
   "@settings.mediaIndex.clip.comingSoon": {
     "sourceHash": "9e3090d"
   },
@@ -953,7 +953,7 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "Wenn aktiviert, stellt Cmdr eine direkte Verbindung zu SMB-Freigaben her, für schnellere Dateioperationen. Die Systemeinbindung bleibt für Finder und andere Apps erhalten.",
+  "settings.network.directSmbConnection.description": "Wenn aktiviert, stellt Cmdr eine direkte Verbindung zu SMB-Freigaben her, für schnellere Dateivorgänge. Die Systemeinbindung bleibt für Finder und andere Apps erhalten.",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
@@ -1119,7 +1119,7 @@
   "@settings.whatsNew.showOnUpdate.description": {
     "sourceHash": "4d4d7e6"
   },
-  "settings.whatsNew.lastSeenVersion.label": "Zuletzt gesehene Changelog-Version",
+  "settings.whatsNew.lastSeenVersion.label": "Zuletzt gesehene Version des Änderungsprotokolls",
   "@settings.whatsNew.lastSeenVersion.label": {
     "sourceHash": "4790ce6"
   },
@@ -1251,7 +1251,7 @@
   "@settings.fileOperations.maxConflictsToShow.label": {
     "sourceHash": "d9cdb0c"
   },
-  "settings.fileOperations.maxConflictsToShow.description": "Maximale Anzahl an Dateikonflikten, die in der Vorschau vor einer Operation angezeigt werden.",
+  "settings.fileOperations.maxConflictsToShow.description": "Maximale Anzahl an Dateikonflikten, die in der Vorschau vor einem Vorgang angezeigt werden.",
   "@settings.fileOperations.maxConflictsToShow.description": {
     "sourceHash": "1f6bcb9"
   },
@@ -1259,7 +1259,7 @@
   "@settings.fileOperations.progressUpdateInterval.label": {
     "sourceHash": "6bcefed"
   },
-  "settings.fileOperations.progressUpdateInterval.description": "Wie oft der Fortschritt während Dateioperationen aktualisiert wird. Niedrigere Werte wirken reaktionsschneller, brauchen aber mehr CPU.",
+  "settings.fileOperations.progressUpdateInterval.description": "Wie oft der Fortschritt während Dateivorgängen aktualisiert wird. Niedrigere Werte wirken reaktionsschneller, brauchen aber mehr CPU.",
   "@settings.fileOperations.progressUpdateInterval.description": {
     "sourceHash": "84e4876"
   },
@@ -2049,7 +2049,7 @@
   "@settings.advanced.card.fileOperations": {
     "sourceHash": "ed23515"
   },
-  "settings.advanced.card.historyAndLimits": "Verlauf und Grenzwerte",
+  "settings.advanced.card.historyAndLimits": "Verlauf und Limits",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
   },

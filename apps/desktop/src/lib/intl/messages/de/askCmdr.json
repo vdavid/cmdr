@@ -686,7 +686,7 @@
   "@askCmdr.wake.thinking": {
     "sourceHash": "c4367ad"
   },
-  "askCmdr.wake.stop": "Anhalten, was Ask Cmdr gerade tut",
+  "askCmdr.wake.stop": "Stoppen, was Ask Cmdr gerade tut",
   "@askCmdr.wake.stop": {
     "sourceHash": "6559df8"
   },
