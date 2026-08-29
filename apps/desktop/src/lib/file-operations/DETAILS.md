@@ -328,8 +328,8 @@ word, since it really is deleting the partials.
 **What the surfaces do with it.**
 
 - The queue row swaps its label AND its type glyph (the undo arrow, ❌ not the op type's own: undoing a copy runs as a
-  delete and would fly a trash can). Its status cell then keeps the plain lifecycle word, which is how a PAUSED
-  reversal can read "Paused" instead of a "Rolling back..." that hides the pause.
+  delete and would fly a trash can). Its status cell then keeps the plain lifecycle word, which is how a PAUSED reversal
+  can read "Paused" instead of a "Rolling back..." that hides the pause.
 - The corner chip swaps its action word, which its tooltip and `aria-label` both lead with.
 - The progress dialog (reachable by pressing Show on the row) swaps its title and drops the Rollback button entirely:
   the operation's own registry row says `supportsRollback: false`, and a button there would offer to re-apply what the

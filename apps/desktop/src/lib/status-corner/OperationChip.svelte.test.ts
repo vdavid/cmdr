@@ -187,9 +187,7 @@ describe('OperationChip', () => {
     renderChip()
     expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Deleting what it created')
     // The tooltip leads with the same fact, so hovering can't contradict the chip.
-    expect(target.querySelector('.tooltip-content')?.textContent).toBe(
-      'Deleting what it created · 214 items · 42%',
-    )
+    expect(target.querySelector('.tooltip-content')?.textContent).toBe('Deleting what it created · 214 items · 42%')
   })
 
   it('counts files when the operation moves no bytes', () => {
