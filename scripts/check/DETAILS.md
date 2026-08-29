@@ -31,12 +31,6 @@ pnpm check --fast
 
 # CI mode (no auto-fixing, stop on first failure)
 pnpm check --ci --fail-fast
-
-# Run compat checks on freestyle VM, incompat checks locally, in parallel
-pnpm check --prefer-freestyle
-
-# Run only freestyle-compatible checks on the VM (skip Rust, Docker)
-pnpm check --only-freestyle
 ```
 
 ## Command-line options
@@ -57,8 +51,6 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 - **`--only-slow`**: Run only slow checks
 - **`--fast`**: Run only the curated fast pre-commit check set
 - **`--fresh`**: Bypass the input-fingerprint cache: run everything selected, then refresh it
-- **`--only-freestyle`**: Run freestyle-compatible checks on a VM (skip the rest)
-- **`--prefer-freestyle`**: Run compat checks on VM + the rest locally in parallel
 - **`--fail-fast`**: Stop on first failure
 - **`--no-log`**: Disable CSV stats logging
 - **`--graph`**: Render the check dependency graph (weights + lanes + median wall-time) and exit
@@ -132,15 +124,8 @@ pnpm check [flags]
     -> ValidateCheckNames()          # startup: catch ID/nickname collisions + reserved-keyword shadows
     -> parseFlags()                  # flags + positional selectors (checks, apps, groups), interspersed
     -> findRootDir()                 # walk up to repo root
-    -> handleFreestyleFlags():
-        --prefer-freestyle:          # parallel: VM (compat) + local (incompat)
-          goroutine: freestyleRun()  #   push sync branch, run on VM
-          local: Runner.Run()        #   FreestyleIncompat checks only
-          wait + reconcile results
-        --only-freestyle:            # VM only, skip incompat
-          freestyleRun()
     -> selectChecks()                # filter AllChecks by flags
-    -> applyLaneFilters()            # FilterSlow/CIOnly/Fast/Freestyle/onlySlow, in order
+    -> applyLaneFilters()            # FilterSlow/CIOnly/Fast/onlySlow, in order
     -> planCache() (plan.go)         # input-fingerprint cache, BEFORE pnpm+SMB:
         CollectRepoFingerprintData() #   one repo-wide `git ls-files`+`git status` pass
           LoadRunnerSources()        #   parse the checks package: which runner files each check reaches
@@ -191,7 +176,6 @@ pnpm check [flags]
   worktrees. `registry.go` holds the registered stacks (`smb`, `sftp`); everything else is per-`Stack` methods
 - **`stack-lease/`**: Thin `package main` CLI onto `stacklease` (`acquire`/`release`/`reconcile`/`status`, each taking
   the stack name first) that the bash scripts shell out to
-- **`freestyle.go`**: All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`
 - **`checks/`**: One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)
 
 ## Runner-level patterns
@@ -760,53 +744,12 @@ boolean default, same colocated style). Mutually exclusive with `--include-slow`
 unambiguous: "give me the fast lane" and "give me the slow lane" can't both be true. Named check invocations bypass the
 filter (same escape hatch as `IsSlow` and `CIOnly`).
 
-**Decision**: `CIOnly` field on `CheckDefinition` (mirrors `IsSlow` and `FreestyleIncompat`). **Why**: Keeps "this check
-runs only in CI" colocated with the check definition rather than as a hardcoded list elsewhere. `FilterCIOnlyChecks` in
-`registry.go` drops them outside `--ci`, with a named-check escape hatch so devs can verify locally before pushing.
-Orthogonal to `IsSlow`: `--include-slow` and `--only-slow` do NOT pull in CI-only checks (you'd otherwise lose the
-ability to run "all slow checks locally without the CI-only ones"). Negative-sense default (`false` = runs locally)
-matches the other gating fields.
-
-## Freestyle.sh remote execution
-
-Two modes for offloading checks to a freestyle.sh VM:
-
-- `--only-freestyle`: runs only freestyle-compatible checks on the VM, skips the rest entirely.
-- `--prefer-freestyle`: runs freestyle-compatible checks on the VM and the rest locally, in parallel. This is the "run
-  everything as fast as possible" mode: Rust checks run on your Mac while Node/Go checks run on the VM simultaneously.
-
-**How it works:** Creates a temporary git commit of the full working tree (without modifying the local index/worktree),
-pushes it to a temp branch, fetches on the VM, runs checks, cleans up the branch.
-
-**What's freestyle-compatible:** Node/TS checks (Svelte, Astro, API server), Go checks, and metrics; any check without
-`FreestyleIncompat: true`. The VM uses `--freestyle-remote` internally to filter to only these checks.
-
-**What's not:** Rust checks (dep compilation exceeds freestyle's ~15 min API timeout) and Docker checks (no Docker
-daemon on freestyle VMs). With `--prefer-freestyle` these run locally in parallel; with `--only-freestyle` they're
-skipped.
-
-**VM lifecycle:** The VM is created once (toolchain setup), then uses `persistent` storage so it survives freestyle's
-resource management. It auto-suspends after 5 min idle but resumes in <1s. VM ID is stored in `.freestyle-vm-id`
-(gitignored). On wake, a health check verifies the toolchain; if it fails, the VM is replaced. Setup parallelizes pnpm +
-Playwright install and uses a shallow clone.
-
-**Key files:** `freestyle.go` (all freestyle logic including `preferFreestyleRun`), `main.go` (`handleFreestyleFlags`
-dispatches to the right mode).
-
-**Decision**: `FreestyleIncompat` field on `CheckDefinition` instead of hardcoded check lists. **Why**: Keeps freestyle
-compatibility co-located with each check's definition. Easy to flip when freestyle constraints change. Negative-sense
-boolean means the Go zero value (`false`) = compatible, so only the few incompatible checks (Rust, Docker) need to opt
-out.
-
-**Decision**: Skip Rust checks entirely on freestyle (not just slow ones). **Why**: Freestyle's free tier has a hard ~15
-min server-side timeout on `exec-await`. Compiling the full Tauri dependency tree (clippy, cargo-udeps, etc.) on 4 x86
-vCPUs exceeds this. The 8 GB RAM also causes swap pressure when Rust and Node run in parallel. Attempted workarounds
-(2-VM split, nohup background builds) all failed due to VM lifecycle issues (auto-suspend kills background processes,
-`stopped` VMs lose disk state).
-
-**Decision**: mise's standalone pnpm disabled on freestyle VMs. **Why**: The pnpm binary mise installs ships a baked-in
-V8 snapshot that crashes on freestyle's x86 Linux VMs. We install pnpm via `npm install -g pnpm@10` instead, configured
-via `[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
+**Decision**: `CIOnly` field on `CheckDefinition` (mirrors `IsSlow`). **Why**: Keeps "this check runs only in CI"
+colocated with the check definition rather than as a hardcoded list elsewhere. `FilterCIOnlyChecks` in `registry.go`
+drops them outside `--ci`, with a named-check escape hatch so devs can verify locally before pushing. Orthogonal to
+`IsSlow`: `--include-slow` and `--only-slow` do NOT pull in CI-only checks (you'd otherwise lose the ability to run "all
+slow checks locally without the CI-only ones"). Negative-sense default (`false` = runs locally) matches the other gating
+fields.
 
 ## Gotchas
 

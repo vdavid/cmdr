@@ -34,8 +34,8 @@ func findRootDir() (string, error) {
 // clone without the override. The checks auto-fix and reformat files, and the
 // solo-dev workflow only ever does that in a worktree. CI is exempt (it runs
 // with --ci in the main checkout); pass --allow-main / -m for a deliberate local
-// run. Call this AFTER the read-only early-exit flags (--help, freestyle,
-// --docs-graph), so those still work in the main clone.
+// run. Call this AFTER the read-only early-exit flags (--help, --docs-graph),
+// so those still work in the main clone.
 func enforceMainCloneGuard(flags *cliFlags, rootDir string) {
 	if flags.ciMode || flags.allowMain || !isMainWorkingTree(rootDir) {
 		return

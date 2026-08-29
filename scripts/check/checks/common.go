@@ -123,15 +123,14 @@ type CheckFunc func(ctx *CheckContext) (CheckResult, error)
 
 // CheckDefinition defines a check's metadata and implementation.
 type CheckDefinition struct {
-	ID                string
-	Nickname          string // Short alias shown in --help and accepted by --check (if empty, ID is used)
-	DisplayName       string
-	App               App
-	Tech              string
-	IsSlow            bool
-	IsFast            bool // true = included in --fast (pre-commit lane). Curated, not derived.
-	CIOnly            bool // true = run only when --ci is set (or when explicitly named via --check)
-	FreestyleIncompat bool // true = can NOT run on freestyle.sh VMs (Rust compilation, Docker, etc.)
+	ID          string
+	Nickname    string // Short alias shown in --help and accepted by --check (if empty, ID is used)
+	DisplayName string
+	App         App
+	Tech        string
+	IsSlow      bool
+	IsFast      bool // true = included in --fast (pre-commit lane). Curated, not derived.
+	CIOnly      bool // true = run only when --ci is set (or when explicitly named via --check)
 	// NeedsContainers declares the Docker fixture stacks this check needs
 	// running, and the service set it needs from each. The check runner manages
 	// every named stack's lifecycle for the union of selected checks (see

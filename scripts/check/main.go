@@ -36,27 +36,24 @@ func (s *stringSlice) Set(value string) error {
 
 // cliFlags holds the parsed command-line flags.
 type cliFlags struct {
-	rustOnly        bool
-	svelteOnly      bool
-	goOnly          bool
-	appNames        []string
-	checkNames      []string
-	ciMode          bool
-	includeSlow     bool
-	onlySlow        bool
-	fast            bool
-	failFast        bool
-	noLog           bool
-	quiet           bool // the default: collapse passing checks into a one-line count; stream only warns, failures, skips, and changes. `-v` turns it off
-	allowMain       bool // permit running in the main clone instead of a worktree (checks mutate the tree)
-	fresh           bool // bypass the input-fingerprint cache: run everything selected, then refresh its entries
-	onlyFreestyle   bool
-	preferFreestyle bool
-	freestyleRemote bool   // set on the VM side to filter freestyle-compatible checks
-	graph           bool   // render the DependsOn graph (with weights + lanes) and exit
-	graphFormat     string // tree (default) | mermaid | dot
-	docsGraph       bool   // render the doc-discoverability tree (rooted at AGENTS.md) and exit
-	printNightly    bool   // print the pinned nightly toolchain (used by CI) and exit
+	rustOnly     bool
+	svelteOnly   bool
+	goOnly       bool
+	appNames     []string
+	checkNames   []string
+	ciMode       bool
+	includeSlow  bool
+	onlySlow     bool
+	fast         bool
+	failFast     bool
+	noLog        bool
+	quiet        bool   // the default: collapse passing checks into a one-line count; stream only warns, failures, skips, and changes. `-v` turns it off
+	allowMain    bool   // permit running in the main clone instead of a worktree (checks mutate the tree)
+	fresh        bool   // bypass the input-fingerprint cache: run everything selected, then refresh its entries
+	graph        bool   // render the DependsOn graph (with weights + lanes) and exit
+	graphFormat  string // tree (default) | mermaid | dot
+	docsGraph    bool   // render the doc-discoverability tree (rooted at AGENTS.md) and exit
+	printNightly bool   // print the pinned nightly toolchain (used by CI) and exit
 }
 
 func main() {
@@ -110,10 +107,6 @@ func main() {
 	if err != nil {
 		printError("Error: %v", err)
 		os.Exit(1)
-	}
-
-	if handled := handleFreestyleFlags(rootDir, flags); handled {
-		return
 	}
 
 	// --docs-graph renders the doc-discoverability tree (independent of check
@@ -190,16 +183,13 @@ func ensurePnpmIfNeeded(ctx *checks.CheckContext, checksToRun []checks.CheckDefi
 	}
 }
 
-// applyLaneFilters narrows the selected checks by the slow/CI-only/fast/freestyle
-// lane flags, in the established order. Extracted from main() to keep it under
-// the gocyclo threshold.
+// applyLaneFilters narrows the selected checks by the slow/CI-only/fast lane
+// flags, in the established order. Extracted from main() to keep it under the
+// gocyclo threshold.
 func applyLaneFilters(checksToRun []checks.CheckDefinition, flags *cliFlags) []checks.CheckDefinition {
 	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
 	checksToRun = checks.FilterCIOnlyChecks(checksToRun, flags.ciMode, flags.checkNames)
 	checksToRun = checks.FilterFastChecks(checksToRun, flags.fast, flags.checkNames)
-	if flags.freestyleRemote {
-		checksToRun = checks.FilterFreestyleCompat(checksToRun)
-	}
 	return filterOnlySlow(checksToRun, flags.onlySlow)
 }
 
@@ -252,33 +242,6 @@ func setupStackOrchestratorIfNeeded(rootDir string, checksToRun []checks.CheckDe
 	return fixtures
 }
 
-// handleFreestyleFlags dispatches --only-freestyle / --prefer-freestyle if set.
-// Returns true if a freestyle mode was handled (caller should return).
-func handleFreestyleFlags(rootDir string, flags *cliFlags) bool {
-	if !flags.onlyFreestyle && !flags.preferFreestyle {
-		return false
-	}
-
-	args := os.Args
-	if len(args) > 1 {
-		args = args[1:]
-	} else {
-		args = nil
-	}
-
-	if flags.preferFreestyle {
-		os.Exit(preferFreestyleRun(rootDir, args, flags))
-		return true // unreachable, but keeps the compiler happy
-	}
-
-	// --only-freestyle
-	if err := freestyleRun(rootDir, args); err != nil {
-		printError("Freestyle error: %v", err)
-		os.Exit(1)
-	}
-	return true
-}
-
 // reservedSelectorNames are the app and tech-group keywords accepted as
 // positional selectors (and by --app / the group flags). ValidateCheckNames
 // rejects any check ID/nickname that would shadow one, because positional
@@ -292,32 +255,29 @@ func parseFlags(args []string) (*cliFlags, error) {
 	fs := flag.NewFlagSet("pnpm check", flag.ContinueOnError)
 	fs.SetOutput(io.Discard) // Errors are returned, not printed; main owns the output
 	var (
-		rustOnly        = fs.Bool("rust", false, "Run only Rust checks")
-		rustOnly2       = fs.Bool("rust-only", false, "Run only Rust checks")
-		svelteOnly      = fs.Bool("svelte", false, "Run only Svelte/desktop checks")
-		svelteOnly2     = fs.Bool("svelte-only", false, "Run only Svelte/desktop checks")
-		goOnly          = fs.Bool("go", false, "Run only Go checks (scripts)")
-		goOnly2         = fs.Bool("go-only", false, "Run only Go checks (scripts)")
-		appNames        stringSlice
-		checkNames      stringSlice
-		ciMode          = fs.Bool("ci", false, "Disable auto-fixing (for CI)")
-		verbose         = fs.Bool("verbose", false, "Print a line per check instead of the collapsed summary")
-		includeSlow     = fs.Bool("include-slow", false, "Include slow checks (excluded by default)")
-		onlySlow        = fs.Bool("only-slow", false, "Run only slow checks")
-		fast            = fs.Bool("fast", false, "Run only the curated fast pre-commit check set")
-		failFast        = fs.Bool("fail-fast", false, "Stop on first failure")
-		noLog           = fs.Bool("no-log", false, "Disable CSV stats logging")
-		allowMain       = fs.Bool("allow-main", false, "Allow running in the main clone instead of a worktree")
-		fresh           = fs.Bool("fresh", false, "Bypass the input-fingerprint cache: run everything selected, then refresh the cache")
-		onlyFreestyle   = fs.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
-		preferFreestyle = fs.Bool("prefer-freestyle", false, "Run freestyle-compatible checks on VM + the rest locally in parallel")
-		freestyleRemote = fs.Bool("freestyle-remote", false, "Filter to freestyle-compatible checks only (used internally on the VM)")
-		graph           = fs.Bool("graph", false, "Render the check dependency graph (with CPU weights + size lanes) and exit")
-		graphFormat     = fs.String("graph-format", "tree", "Graph output format: tree | mermaid | dot")
-		docsGraph       = fs.Bool("docs-graph", false, "Render the doc-discoverability tree (CLAUDE.md / DETAILS.md / docs, rooted at AGENTS.md) and exit")
-		printNightly    = fs.Bool("print-nightly", false, "Print the pinned nightly toolchain cargo-udeps runs on, and exit")
-		help            = fs.Bool("help", false, "Show help message")
-		h               = fs.Bool("h", false, "Show help message")
+		rustOnly     = fs.Bool("rust", false, "Run only Rust checks")
+		rustOnly2    = fs.Bool("rust-only", false, "Run only Rust checks")
+		svelteOnly   = fs.Bool("svelte", false, "Run only Svelte/desktop checks")
+		svelteOnly2  = fs.Bool("svelte-only", false, "Run only Svelte/desktop checks")
+		goOnly       = fs.Bool("go", false, "Run only Go checks (scripts)")
+		goOnly2      = fs.Bool("go-only", false, "Run only Go checks (scripts)")
+		appNames     stringSlice
+		checkNames   stringSlice
+		ciMode       = fs.Bool("ci", false, "Disable auto-fixing (for CI)")
+		verbose      = fs.Bool("verbose", false, "Print a line per check instead of the collapsed summary")
+		includeSlow  = fs.Bool("include-slow", false, "Include slow checks (excluded by default)")
+		onlySlow     = fs.Bool("only-slow", false, "Run only slow checks")
+		fast         = fs.Bool("fast", false, "Run only the curated fast pre-commit check set")
+		failFast     = fs.Bool("fail-fast", false, "Stop on first failure")
+		noLog        = fs.Bool("no-log", false, "Disable CSV stats logging")
+		allowMain    = fs.Bool("allow-main", false, "Allow running in the main clone instead of a worktree")
+		fresh        = fs.Bool("fresh", false, "Bypass the input-fingerprint cache: run everything selected, then refresh the cache")
+		graph        = fs.Bool("graph", false, "Render the check dependency graph (with CPU weights + size lanes) and exit")
+		graphFormat  = fs.String("graph-format", "tree", "Graph output format: tree | mermaid | dot")
+		docsGraph    = fs.Bool("docs-graph", false, "Render the doc-discoverability tree (CLAUDE.md / DETAILS.md / docs, rooted at AGENTS.md) and exit")
+		printNightly = fs.Bool("print-nightly", false, "Print the pinned nightly toolchain cargo-udeps runs on, and exit")
+		help         = fs.Bool("help", false, "Show help message")
+		h            = fs.Bool("h", false, "Show help message")
 	)
 	fs.Var(&appNames, "app", "Run checks for specific apps (repeatable or comma-separated)")
 	fs.Var(&checkNames, "check", "Run specific checks by ID (same as naming them positionally)")
@@ -357,16 +317,13 @@ func parseFlags(args []string) (*cliFlags, error) {
 		// Quiet is the default; `-v` / `--verbose` opts into the per-check lines.
 		// CI is verbose unconditionally: log volume is free there, and a collapsed
 		// run is much harder to debug after the fact from a job log.
-		quiet:           !(*verbose || *ciMode),
-		allowMain:       *allowMain,
-		fresh:           *fresh,
-		onlyFreestyle:   *onlyFreestyle,
-		preferFreestyle: *preferFreestyle,
-		freestyleRemote: *freestyleRemote,
-		graph:           *graph,
-		graphFormat:     *graphFormat,
-		docsGraph:       *docsGraph,
-		printNightly:    *printNightly,
+		quiet:        !(*verbose || *ciMode),
+		allowMain:    *allowMain,
+		fresh:        *fresh,
+		graph:        *graph,
+		graphFormat:  *graphFormat,
+		docsGraph:    *docsGraph,
+		printNightly: *printNightly,
 	}
 
 	if err := applyPositionalSelectors(flags, positionals); err != nil {
@@ -623,10 +580,8 @@ func summarizeRun(runner *Runner) (ok, warn, skipped int) {
 	return ok, warn, skipped
 }
 
-// printFailure prints the failure banner with rerun instructions. Runtime-free
-// so freestyle.go can reuse it under its own "Local checks runtime" line; the
-// failed checks' output already streamed verbatim (quiet mode never suppresses
-// it).
+// printFailure prints the failure banner with rerun instructions. The failed
+// checks output already streamed verbatim (quiet mode never suppresses it).
 func printFailure(failedChecks []string) {
 	fmt.Printf("%s❌ Some checks failed.%s\n", colorRed, colorReset)
 	printRerunHint(failedChecks, true)
@@ -713,8 +668,6 @@ func showUsage() {
 	fmt.Println("    --include-slow           Include slow checks (excluded by default)")
 	fmt.Println("    --only-slow              Run only slow checks")
 	fmt.Println("    --fast                   Run only the curated fast pre-commit check set")
-	fmt.Println("    --only-freestyle         Run freestyle-compatible checks on a VM (skip the rest)")
-	fmt.Println("    --prefer-freestyle       Run compat checks on VM + the rest locally in parallel")
 	fmt.Println("    --fresh                  Bypass the input-fingerprint cache: run everything selected, then refresh it")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")

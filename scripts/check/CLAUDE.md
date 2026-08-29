@@ -10,8 +10,8 @@ Authoring a check: `checks/CLAUDE.md`.
   input-fingerprint cache).
 - `checks/inputs.go` (shared `Inputs` blocks), `checks/cargo-workspace.go` (the geometry every Rust check scopes from),
   `stack_orchestrator.go` + `stacklease/` (each Docker fixture stack behind a machine-wide lease).
-- `freestyle.go` (remote-VM runs), `graph.go` / `docs_graph_render.go` (the two renderers), `stats.go` (the CSV logs),
-  `autofix_notice.go` (names the committed files auto-fixers rewrote).
+- `graph.go` / `docs_graph_render.go` (the two renderers), `stats.go` (the CSV logs), `autofix_notice.go` (names the
+  committed files auto-fixers rewrote).
 
 ## Must-knows
 
@@ -49,5 +49,5 @@ Authoring a check: `checks/CLAUDE.md`.
 - **Two CSV logs, never merged**: `~/cmdr-check-log.csv` per run, `~/cmdr-test-log.csv` per test. A tenth column breaks
   every reader of the first's ~148 000 rows.
 
-Flow diagram, CLI options, freestyle.sh, exclusive resources, the per-test log, and decisions: `DETAILS.md`. Read it
-before non-trivial work here.
+Flow diagram, CLI options, exclusive resources, the per-test log, and decisions: `DETAILS.md`. Read it before
+non-trivial work here.

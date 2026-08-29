@@ -1,8 +1,8 @@
 # Check authoring details
 
 Pull-tier docs for `scripts/check/checks/`: architecture, flows, and decision rationale. Must-know invariants and
-gotchas live in `CLAUDE.md`. For the runner architecture (parallel executor, dependency graph, CLI flags, freestyle.sh
-remote execution), see `../CLAUDE.md`.
+gotchas live in `CLAUDE.md`. For the runner architecture (parallel executor, dependency graph, CLI flags), see
+`../CLAUDE.md`.
 
 ## Key files
 
@@ -36,19 +36,18 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
 
 ```go
 CheckDefinition{
-    ID:                "desktop-svelte-eslint", // unique, always accepted as a CLI selector
-    Nickname:          "",                      // short alias, also accepted as a selector (optional)
-    DisplayName:       "eslint",                // shown in output
-    App:               AppDesktop,
-    Tech:              "🎨 Svelte",
-    IsSlow:            false,
-    IsFast:            false, // true = included in --fast (curated pre-commit lane)
-    CIOnly:            false, // true = run only in --ci mode (or when named explicitly)
-    FreestyleIncompat: true,  // can NOT run on freestyle.sh VMs (Rust, Docker)
-    CpuWeight:         2,      // avg cores busy; 0/unset = 1. Governs concurrent admission.
-    Inputs:            svelteInputs, // path globs this check reads (for the input-fingerprint cache)
-    DependsOn:         []string{"desktop-svelte-prettier"},
-    Run:               RunDesktopESLint,
+    ID:          "desktop-svelte-eslint", // unique, always accepted as a CLI selector
+    Nickname:    "",                      // short alias, also accepted as a selector (optional)
+    DisplayName: "eslint",                // shown in output
+    App:         AppDesktop,
+    Tech:        "🎨 Svelte",
+    IsSlow:      false,
+    IsFast:      false, // true = included in --fast (curated pre-commit lane)
+    CIOnly:      false, // true = run only in --ci mode (or when named explicitly)
+    CpuWeight:   2,     // avg cores busy; 0/unset = 1. Governs concurrent admission.
+    Inputs:      svelteInputs, // path globs this check reads (for the input-fingerprint cache)
+    DependsOn:   []string{"desktop-svelte-prettier"},
+    Run:         RunDesktopESLint,
 }
 ```
 
@@ -66,8 +65,6 @@ CheckDefinition{
 - **`CIOnly: true`** runs the check only under `--ci` (or when named explicitly). Two uses: the slow-but-authoritative
   variant of a check whose fast local variant lives elsewhere (`cargo-udeps` paired with `cargo-machete`), and a check
   whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, `groq-smoke`).
-- **`FreestyleIncompat: true`** opts out of freestyle.sh remote VM runs. Set for any Rust-compiling check or anything
-  that needs Docker. Negative-sense default (`false` = compatible) keeps the field absent in the common case.
 - **`DependsOn`** is a flat slice of IDs. Formatters before linters, linters before tests, type checkers before tests.
   Blocked checks (dep failed) get `StatusBlocked` automatically.
 - **`CpuWeight`** is the average number of CPU cores the check keeps busy while running (cold/working profile, rounded).
