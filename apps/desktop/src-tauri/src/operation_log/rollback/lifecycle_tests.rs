@@ -341,7 +341,7 @@ async fn retention_cannot_prune_a_rollbacks_source_mid_stream() {
         .expect("set");
     // ...and a retention pass runs that WOULD prune it by age (ended_at 200 is well
     // before the cutoff). It must skip a `rolling_back` op so the source rows a live
-    // rollback is streaming can't vanish out from under it (Finding 6).
+    // rollback is streaming can't vanish out from under it.
     rig.writer
         .prune(PruneRequest {
             max_age_secs: Some(0),

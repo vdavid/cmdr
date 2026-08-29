@@ -6,7 +6,7 @@
 //! ## Search is index-served and spans every `row_role`
 //!
 //! The product headline — "when did I delete `dog.jpg`?" — is an exact folded-name
-//! lookup, not full-text (D8). A name filter joins `operation_items` to
+//! lookup, not full-text. A name filter joins `operation_items` to
 //! `operations` and matches the indexed `source_name_folded` column, so the
 //! benchmark query
 //! (`source_name_folded = ? AND kind IN (delete, trash) ORDER BY ended_at DESC`)
@@ -15,7 +15,8 @@
 //!
 //! Search deliberately spans ALL rows regardless of `row_role`: a trashed folder
 //! records the top-level `rollback_unit` plus its subtree's `search_only` leaves
-//! (D-granularity), so "when did I trash `dog.jpg`" hits even when `dog.jpg` sat
+//! (`DETAILS.md` § "Per-kind record points and granularity"), so "when did I
+//! trash `dog.jpg`" hits even when `dog.jpg` sat
 //! inside a trashed folder. An op that couldn't enumerate its subtree carries
 //! `search_coverage = top_level_only` — a queryable known gap, not a silent miss.
 //!

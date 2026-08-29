@@ -1,12 +1,11 @@
-//! Tests for the capture layer: the pure eligibility (D3) and completeness (D4)
-//! logic, and the `WriterJournal` round-trip including the dropped-row
+//! Tests for the capture layer: the pure eligibility and completeness logic, and the `WriterJournal` round-trip including the dropped-row
 //! completeness downgrade.
 
 use super::*;
 use crate::operation_log::store::{open_read_connection, operation_log_db_path, read_operation};
 use crate::operation_log::types::{EntryType, Initiator, ItemOutcome};
 
-// ── Pure eligibility (D3 per-kind table) ─────────────────────────────────────
+// ── Pure eligibility (the per-kind table) ───────────────────────────────────
 
 #[test]
 fn copy_that_overwrote_is_not_rollbackable() {
@@ -69,7 +68,7 @@ fn zip_inner_edit_is_not_rollbackable_in_v1() {
     assert_eq!(reason, Some(NotRollbackableReason::ZipEditUnsupported));
 }
 
-// ── Pure completeness (D4 per-row_role) ──────────────────────────────────────
+// ── Pure completeness (per `row_role`) ──────────────────────────────────────
 
 #[test]
 fn rollback_unit_shortfall_forces_journal_incomplete() {
@@ -288,7 +287,7 @@ fn writer_journal_dropped_rollback_row_finalizes_journal_incomplete() {
 fn writer_journal_canceled_op_stays_rollbackable_for_reached_items() {
     // 300 items reached and written; planned was larger (item_count), but the
     // completeness check compares issued-vs-written, so the op stays rollbackable
-    // for what it reached (Finding 1).
+    // for what it reached.
     let (_dir, writer, path) = temp_writer();
     let journal = WriterJournal::new(writer.clone());
 

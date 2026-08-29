@@ -167,7 +167,7 @@ fn open_record_finalize_round_trips_one_operation() {
 
 /// Finalize returns counts split by `row_role`: a trash-shaped op with a
 /// top-level rollback unit plus search-only leaves reports both populations
-/// separately (the D4 completeness input the capture layer splits its checks on).
+/// separately (the completeness input the capture layer splits its checks on).
 #[test]
 fn finalize_counts_split_by_row_role() {
     let (_store, writer, _dir) = fresh();

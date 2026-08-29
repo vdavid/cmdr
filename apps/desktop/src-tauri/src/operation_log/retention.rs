@@ -1,5 +1,5 @@
 //! Retention enforcement: run the writer's `Prune` on startup and on a
-//! periodic timer, driven by the age/size limits from settings (D9/D10).
+//! periodic timer, driven by the age/size limits from settings.
 //!
 //! The prune MECHANISM (whole-op pruning, dir GC, size-budget loop, vacuum) lives
 //! in [`writer`](super::writer); this module owns the POLICY: when to prune and

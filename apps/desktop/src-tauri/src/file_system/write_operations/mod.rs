@@ -356,7 +356,7 @@ where
             // Journal the terminal state BEFORE cache cleanup (finalize computes
             // eligibility + the completeness downgrade from what actually
             // happened). A failed/canceled op stays rollbackable for the items it
-            // reached (D4).
+            // reached.
             let execution_status = match &result {
                 Ok(Ok(())) => crate::operation_log::types::ExecutionStatus::Done,
                 Ok(Err(WriteOperationError::Cancelled { .. })) => {

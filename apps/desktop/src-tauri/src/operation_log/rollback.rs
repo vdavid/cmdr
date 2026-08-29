@@ -4,7 +4,7 @@
 //!
 //! **Data-safety-critical.** A rollback must never destroy data — least of all
 //! data the user created AFTER the operation. Two independent guards enforce that
-//! (D7):
+//! (`DETAILS.md` § "The two data-safety guards"):
 //!
 //! - **Snapshot recheck.** Before reversing an item, verify it still matches the
 //!   size/mtime the journal recorded ([`verify_snapshot`]). Any drift (a changed
@@ -55,7 +55,7 @@ use super::types::{
 use super::writer::{OpenOperation, OperationLogWriter};
 
 /// Rows streamed per page from the journal — bounded so a huge op never
-/// materializes its full item list in memory (D7).
+/// materializes its full item list in memory.
 const ROLLBACK_PAGE: u32 = 512;
 
 /// Why a rollback request is refused at the operation level (before any item
@@ -70,7 +70,7 @@ const ROLLBACK_PAGE: u32 = 512;
 pub enum RollbackRefusal {
     /// No operation with this id in the journal.
     UnknownOperation,
-    /// The op is already being rolled back — the double-rollback guard (Finding 7).
+    /// The op is already being rolled back — the double-rollback guard.
     AlreadyRollingBack,
     /// The op was already fully reversed; there's nothing to undo.
     AlreadyRolledBack,
@@ -78,7 +78,7 @@ pub enum RollbackRefusal {
     /// archive-overwrite, zip-edit-unsupported, journal-incomplete).
     NotRollbackable(NotRollbackableReason),
     /// A volume the rollback needs isn't currently connected. Computed at rollback
-    /// time from mount state, never stored (D3); names the missing volume so the
+    /// time from mount state, never stored; names the missing volume so the
     /// UI/agent can say "Volume 'Backup' is not connected".
     VolumeUnavailable { volume_id: String },
 }
@@ -142,7 +142,7 @@ pub fn inverse_kind(kind: OpKind) -> OpKind {
 }
 
 /// The shape of the inverse for one item, derived purely from the op kind and the
-/// item's entry type (D7's per-kind table).
+/// item's entry type (`DETAILS.md` § "Per-kind inverse table").
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InverseAction {
     /// Remove the created/copied file at its dest, only if it still matches the
@@ -197,7 +197,7 @@ enum SnapshotVerdict {
     Unverifiable,
 }
 
-/// Recheck a live entry against the recorded snapshot (D7). Every snapshot field
+/// Recheck a live entry against the recorded snapshot. Every snapshot field
 /// that was recorded (`Some`) must have a present, equal live value; a recorded
 /// field whose live counterpart is absent is Unverifiable (fail safe). At least
 /// one field must have been recorded and verified, else there's nothing to prove
@@ -248,7 +248,7 @@ fn fold_path(path: &Path) -> PathBuf {
 }
 
 /// Is the entry occupying the restore target actually the SAME entry we're
-/// restoring — a case-only or identity rename, not a real collision (Finding 8)?
+/// restoring — a case-only or identity rename, not a real collision?
 ///
 /// Where real inodes exist (`LocalPosixVolume`), same inode ⇒ same entry (an inode
 /// match already implies the same device). On the trait level (MTP/SMB have no
@@ -269,7 +269,7 @@ fn is_self_collision(same_volume: bool, from: &Path, to: &Path, from_entry: &Fil
 /// Resolve the state the original op lands in from the run tally.
 ///
 /// `Rollbackable` (a clean retry) is reserved for a run that was CANCELED with
-/// nothing reversed — a deliberate stop, not a completed attempt (D7). A run that
+/// nothing reversed — a deliberate stop, not a completed attempt. A run that
 /// actually attempted the items resolves by outcome: no skips ⇒ `RolledBack`
 /// (including a vacuously-empty op); any skip (drift, unverifiable, occupied
 /// target) ⇒ `PartiallyRolledBack`, even if nothing could be reversed — the honest
@@ -295,7 +295,7 @@ fn resolve_final_state(reversed: u64, skipped: u64, canceled: bool) -> RollbackS
 /// Check whether `op` may be rolled back right now: its stored `rollback_state`
 /// and (for a connected-volume requirement) whether every volume it touches is
 /// registered. Returns `Ok(())` to proceed, or the typed refusal. Does NOT mutate
-/// anything — the caller sets `rolling_back` only on a successful spawn (D7).
+/// anything — the caller sets `rolling_back` only on a successful spawn.
 pub fn check_rollbackable(vm: &VolumeManager, op: &OperationRow) -> Result<(), RollbackRefusal> {
     match op.rollback_state {
         RollbackState::RollingBack => return Err(RollbackRefusal::AlreadyRollingBack),
@@ -310,7 +310,7 @@ pub fn check_rollbackable(vm: &VolumeManager, op: &OperationRow) -> Result<(), R
         RollbackState::Rollbackable | RollbackState::PartiallyRolledBack => {}
     }
 
-    // Every volume the op touches must be connected NOW (cross-volume gate, D3).
+    // Every volume the op touches must be connected NOW (the cross-volume gate).
     for volume_id in [op.source_volume_id.as_deref(), op.dest_volume_id.as_deref()]
         .into_iter()
         .flatten()
@@ -585,7 +585,7 @@ async fn remove_dir_if_empty(vm: &VolumeManager, runner: &dyn RollbackRunner, un
         return ItemResult::Skipped(SkipReason::AlreadyGone);
     }
     // Only remove a directory the undo created if it's still empty — a file added
-    // since must not be swept away (D3). A `seq DESC` stream removes the dir's own
+    // since must not be swept away. A `seq DESC` stream removes the dir's own
     // (unchanged) contents first, so a genuinely-restored tree is empty here.
     match volume.list_directory(&path, None).await {
         Ok(entries) if entries.is_empty() => match runner
@@ -736,15 +736,16 @@ fn summarize_inverse(conn: &rusqlite::Connection, op: &OperationRow) -> InverseS
     }
 }
 
-/// The entry point (D7 state machine): read the op, gate it (unknown / already
-/// rolling back / not rollbackable / a volume disconnected), then — as late as
-/// possible — set it `rolling_back` and hand the plan to `spawn`, which launches
-/// the inverse operation. If `spawn` fails synchronously (a volume dropped between
-/// the gate and the spawn, so the inverse never starts), reset `rolling_back →
-/// rollbackable` in the SAME call before returning the error, so the op isn't
-/// wedged behind the `AlreadyRollingBack` guard and an immediate retry is accepted
-/// (Finding 3). The double-rollback guard is automatic: a second call reads the op
-/// as `rolling_back` and refuses.
+/// The entry point of the `rolling_back` state machine (`DETAILS.md` § "The
+/// `rolling_back` state machine + startup reconcile"): read the op, gate it
+/// (unknown / already rolling back / not rollbackable / a volume disconnected),
+/// then — as late as possible — set it `rolling_back` and hand the plan to
+/// `spawn`, which launches the inverse operation. If `spawn` fails synchronously
+/// (a volume dropped between the gate and the spawn, so the inverse never
+/// starts), reset `rolling_back → rollbackable` in the SAME call before
+/// returning the error, so the op isn't wedged behind the `AlreadyRollingBack`
+/// guard and an immediate retry is accepted. The double-rollback guard is
+/// automatic: a second call reads the op as `rolling_back` and refuses.
 ///
 /// `spawn` is injected so the manager wiring (which lives in `write_operations`,
 /// where the `OperationManager` is reachable) supplies the real managed-op spawn,
@@ -783,7 +784,7 @@ where
         Ok(()) => Ok(plan),
         Err(refusal) => {
             // The inverse never started — undo the `rolling_back` mark so a retry
-            // isn't refused, BEFORE returning the typed error (Finding 3).
+            // isn't refused, BEFORE returning the typed error.
             if let Err(e) = writer.set_rollback_state(op_id, RollbackState::Rollbackable, None) {
                 log::warn!(target: "operation_log", "rollback: reset after failed spawn failed: {e}");
             }
@@ -795,7 +796,7 @@ where
 // ── Startup reconcile: resolve ops left mid-rollback by a crash ───────────────
 
 /// On open, resolve every operation left `rolling_back` by a crash mid-rollback
-/// (Finding 7 + 3), deterministically:
+/// deterministically:
 ///
 /// - An **inverse op row exists** (crashed mid-stream, so it's unfinalized):
 ///   reconcile from its recorded per-item outcomes — `partially_rolled_back` if it

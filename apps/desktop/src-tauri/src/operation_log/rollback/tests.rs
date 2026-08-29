@@ -6,8 +6,8 @@
 //! operation would have recorded (with realistic size/mtime snapshots — the
 //! capture layer's correctness is the capture layer's concern; here the engine is under test) and
 //! the post-op filesystem state, run `execute_rollback`, and assert the invariant
-//! **apply-then-rollback == original state**, plus the specific data-loss traps
-//! D7 surfaced.
+//! **apply-then-rollback == original state**, plus the data-loss traps the two
+//! guards exist for (`../DETAILS.md` § "The two data-safety guards").
 //!
 //! The rig and its seeding helpers live in `test_support`, shared with `undo_tests`.
 
@@ -791,7 +791,7 @@ async fn the_e2e_throttle_hook_paces_the_item_loop() {
 async fn a_canceled_original_op_rolls_back_exactly_its_completed_items() {
     // A copy canceled mid-way journals only the files it actually completed (capture),
     // so rolling it back reverses exactly those — a canceled `execution_status`
-    // never blocks rollback (D4). Here only one of the two intended files landed.
+    // never blocks rollback. Here only one of the two intended files landed.
     let rig = Rig::new();
     let dst = Arc::new(InMemoryVolume::new("Dst"));
     put(&dst, "/done.txt", b"1").await; // the completed copy

@@ -5,8 +5,8 @@
 //! The journal is a process-global reached by `op_id` (see
 //! [`crate::operation_log`]), mirroring the op-keyed `update_operation_status`
 //! status cache written at these same record points — so these are thin free
-//! functions, not threaded state (the D4 deviation recorded in
-//! `operation_log/DETAILS.md` § Capture). Every function no-ops when no journal
+//! functions, not threaded state (`operation_log/DETAILS.md` § "The seam: a
+//! global journal reached by `op_id`"). Every function no-ops when no journal
 //! is installed, and never fails the operation.
 
 use std::path::{Path, PathBuf};
@@ -25,7 +25,7 @@ use super::types::{WriteOperationError, WriteOperationType};
 
 /// Map the pipeline's op type to the journal taxonomy (1:1). The `archive_edit`
 /// subkind + net-new flag are supplied separately by the compress/zip driver
-/// (Finding 3), not derivable here.
+/// which the journal can't derive here.
 pub(super) fn op_kind_of(t: WriteOperationType) -> OpKind {
     match t {
         WriteOperationType::Copy => OpKind::Copy,
@@ -42,7 +42,7 @@ pub(super) fn op_kind_of(t: WriteOperationType) -> OpKind {
 /// Map a write op's terminal `Result` error into the journal's `ExecutionStatus`:
 /// `None` (success) ⇒ `Done`, a `Cancelled` error ⇒ `Canceled`, anything else ⇒
 /// `Failed`. A failed / canceled op still finalizes and stays rollbackable for
-/// what it reached (D4). The caller passes `result.as_ref().err()` (or, for a
+/// what it reached. The caller passes `result.as_ref().err()` (or, for a
 /// `WriteFailure`, `.map(|f| &f.error)`).
 pub(super) fn execution_status_from_error(err: Option<&WriteOperationError>) -> ExecutionStatus {
     match err {
@@ -268,7 +268,7 @@ pub(super) fn record_volume_transfer_source(
 }
 
 /// Record one `search_only` row (a leaf beneath a trashed / same-FS-moved
-/// top-level unit — searchable but never a reversal unit, D-granularity).
+/// top-level unit — searchable but never a reversal unit).
 /// Volume-aware: `source_volume_id` and the optional `dest` volume carry the real
 /// ids (the local callers pass `"root"`).
 #[allow(clippy::too_many_arguments, reason = "the natural fields of a journal row")]
@@ -339,8 +339,8 @@ fn record_row(
     );
 }
 
-/// Record the directories a copy created as first-class `dir` rows (D2, Finding
-/// 2). Called after the leaf files are recorded, so the dir rows land AFTER their
+/// Record the directories a copy created as first-class `dir` rows. Called after
+/// the leaf files are recorded, so the dir rows land AFTER their
 /// contents in `seq`; the rollback removes files before their dirs. The
 /// created path is both source and dest (a copy's rollback removes the dest dir
 /// when empty; search matches its name).
@@ -449,7 +449,7 @@ pub(super) fn finalize_op(op_id: &str, kind: OpKind, execution_status: Execution
 }
 
 /// Finalize an `archive_edit` op, carrying the driver-supplied subkind + net-new
-/// flag into eligibility (Finding 3).
+/// flag into eligibility.
 pub(super) fn finalize_archive_op(
     op_id: &str,
     subkind: ArchiveSubkind,
@@ -476,7 +476,7 @@ pub(super) fn finalize_archive_op(
 
 /// The journaling facts an archive-edit driver supplies that the generic pipeline
 /// can't derive: the `archive_edit` subkind (compress vs zip-inner edit — both
-/// cross IPC as `ArchiveEdit`, Finding 3), whether the archive was net-new (for
+/// cross IPC as `ArchiveEdit`), whether the archive was net-new (for
 /// compress rollback eligibility), and the provenance. Threaded from the command
 /// down into the archive-copy-into deferred, where open + finalize bracket the op.
 #[derive(Debug, Clone, Copy)]
@@ -500,7 +500,7 @@ impl ArchiveProvenance {
     }
 
     /// A compress: create a NEW archive and pack the sources in. Rollbackable iff
-    /// `net_new` (and, at rollback time, unchanged — the rollback engine, Finding 5).
+    /// `net_new` (and, at rollback time, unchanged — the rollback engine rechecks).
     pub(crate) fn compress(net_new: bool, initiator: Initiator) -> Self {
         Self {
             subkind: ArchiveSubkind::Compress,
@@ -530,7 +530,7 @@ pub(super) fn open_archive_op(op_id: &str, initiator: Initiator, parent_volume_i
 
 /// Record the archive a compress created as the single `rollback_unit` item: the
 /// compress rollback deletes THIS archive if it's still net-new and unchanged
-/// (the `size`/`mtime` snapshot is the drift check, Finding 5). The archive lives
+/// (the `size`/`mtime` snapshot is the drift check). The archive lives
 /// on `parent_volume_id` (may be remote); `overwrote` is `!net_new`.
 pub(super) fn record_compress_archive(
     op_id: &str,

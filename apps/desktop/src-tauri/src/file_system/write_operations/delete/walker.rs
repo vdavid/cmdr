@@ -159,7 +159,7 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
 
         // Journal the deleted leaf so "when did I delete dog.jpg" is searchable.
         // Delete is never rollbackable (the op finalizes `permanent_delete`), so
-        // these rows exist purely for search — one per leaf, deliberately (D4).
+        // these rows exist purely for search — one per leaf, deliberately.
         super::super::journal::record_local_leaf(
             operation_id,
             crate::operation_log::types::EntryType::File,
@@ -889,7 +889,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
         // Journal the deleted leaf under the REAL volume id so "when did I delete
         // dog.jpg" is searchable for SMB / MTP too. Delete is never rollbackable
         // (the op finalizes `permanent_delete`), so these rows exist purely for
-        // search — one per leaf, deliberately (D4).
+        // search — one per leaf, deliberately.
         super::super::journal::record_volume_leaf(
             operation_id,
             crate::operation_log::types::EntryType::File,

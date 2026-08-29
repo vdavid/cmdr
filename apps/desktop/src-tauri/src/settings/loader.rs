@@ -607,13 +607,13 @@ pub fn early_load_global_go_to_latest_shortcut() -> Option<(bool, String)> {
     Some((enabled, binding))
 }
 
-/// The operation log's default size budget: 3 GB (D10). Applied when
+/// The operation log's default size budget: 3 GB. Applied when
 /// `operationLog.maxSize` isn't persisted.
 pub const DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES: u64 = 3 * 1024 * 1024 * 1024;
 
 /// The operation log's retention limits, read fresh from `settings.json` each call
 /// so a retention settings change takes effect on the next retention tick. Defaults
-/// (D10): age = forever (`None`), size = 3 GB.
+/// are age = forever (`None`) and size = 3 GB.
 #[derive(Debug, Clone, Copy)]
 pub struct OperationLogRetentionLimits {
     /// Prune ops older than this many seconds. `None` = keep forever (the default,

@@ -4,9 +4,9 @@
 //! owns the single write connection, and all writes cross a bounded channel. The
 //! handle is cloneable; every clone shares the one channel and thread. **Unlike
 //! importance there is NO per-volume registry** — the operation log is a single
-//! cross-volume DB, so one `OperationLogWriter` lives in managed state (D1).
+//! cross-volume DB, so one `OperationLogWriter` lives in managed state.
 //!
-//! ## Send discipline (D4)
+//! ## Send discipline
 //!
 //! The channel is a bounded `sync_channel`, so `record_items` BLOCKS briefly if
 //! the writer is behind rather than dropping — lossless with backpressure,
@@ -26,7 +26,7 @@
 //! why finalize returns per-`row_role` durable-row counts: the capture layer
 //! compares them against the items it issued and, on a shortfall, downgrades a
 //! `rollback_unit` gap to `not_rollbackable(journal_incomplete)` or a
-//! `search_only` gap to `search_coverage = top_level_only` (D4). This writer
+//! `search_only` gap to `search_coverage = top_level_only`. This writer
 //! provides the counts; it does not itself compute eligibility (that's the capture layer and rollback engine).
 
 use std::path::{Path, PathBuf};
@@ -49,7 +49,7 @@ use crate::ignore_poison::IgnorePoison;
 const CHANNEL_CAPACITY: usize = 1024;
 
 /// The header of an operation, known when it opens. The subkind and terminal
-/// state arrive later at finalize (Finding 3): `open` stays generic.
+/// state arrive later at finalize: `open` stays generic.
 #[derive(Debug, Clone)]
 pub struct OpenOperation {
     /// The pipeline's `operation_id` UUID, reused as the journal PK so the row
@@ -60,7 +60,7 @@ pub struct OpenOperation {
     pub source_volume_id: Option<String>,
     pub dest_volume_id: Option<String>,
     /// The planned total from the scan (informational — NOT the completeness
-    /// yardstick; see D4).
+    /// yardstick — the capture layer compares ISSUED rows against written ones).
     pub item_count: u64,
     /// When the op started (opaque epoch integer; the caller owns the clock).
     pub started_at: i64,
@@ -101,8 +101,8 @@ pub struct FinalizeOperation {
     pub execution_status: ExecutionStatus,
     pub rollback_state: RollbackState,
     pub not_rollbackable_reason: Option<NotRollbackableReason>,
-    /// The `archive_edit` subkind, supplied by the capturing driver (Finding 3);
-    /// `None` for non-archive ops.
+    /// The `archive_edit` subkind, supplied by the capturing driver (the journal
+    /// can't derive it); `None` for non-archive ops.
     pub archive_subkind: Option<ArchiveSubkind>,
     pub search_coverage: SearchCoverage,
     pub search_coverage_reason: Option<SearchCoverageReason>,
@@ -116,7 +116,7 @@ pub struct FinalizeOperation {
     pub bytes_total: u64,
     /// An optional dev-only summary for the Debug panel / dump bin. NEVER shown
     /// in the alpha dialog (that label is formatted client-side from typed
-    /// fields so it localizes — D2).
+    /// fields so it localizes).
     pub dev_summary: Option<String>,
 }
 
@@ -134,14 +134,14 @@ pub struct ItemOutcomeUpdate {
 }
 
 /// Durable row counts per `row_role`, returned by finalize — the input to the capture
-/// completeness check (D4).
+/// completeness check.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FinalizeOutcome {
     pub rollback_unit_rows: u64,
     pub search_only_rows: u64,
 }
 
-/// A retention request (D9). Prunes whole operations by age and/or a size budget,
+/// A retention request. Prunes whole operations by age and/or a size budget,
 /// GCs the interned dirs the pruned ops orphaned, then reclaims freed pages.
 #[derive(Debug, Clone)]
 pub struct PruneRequest {
@@ -398,8 +398,8 @@ fn apply_open(conn: &Connection, open: &OpenOperation) -> Result<(), OperationLo
 }
 
 /// Insert an item batch in ONE transaction, interning dirs and folding names. A
-/// per-row error logs and drops that row (D4: a journal problem never fails the
-/// op); the surviving rows still commit.
+/// per-row error logs and drops that row (a journal problem never fails the op);
+/// the surviving rows still commit.
 fn apply_record_items(conn: &mut Connection, op_id: &str, items: &[JournalItem]) {
     let tx = match conn.unchecked_transaction() {
         Ok(tx) => tx,

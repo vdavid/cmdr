@@ -107,7 +107,7 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
 
 /// The compress driver supplies the `archive_edit` subkind + net-new flag the
 /// journal can't derive from `WriteOperationType` (both compress and zip-inner
-/// edit cross IPC as `ArchiveEdit`, Finding 3). A net-new compress finalizes with
+/// edit cross IPC as `ArchiveEdit`). A net-new compress finalizes with
 /// `subkind = compress`, records the created archive as its single `rollback_unit`
 /// item, and computes `rollbackable` eligibility — proving the subkind came from
 /// the driver, not the op type.

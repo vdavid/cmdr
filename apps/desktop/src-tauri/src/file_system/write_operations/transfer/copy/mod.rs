@@ -98,8 +98,7 @@ pub(super) fn apply_dir_remap(dest: &Path, dir_remap: &HashMap<PathBuf, PathBuf>
 /// then commit so the `Drop` safety net doesn't remove what the user keeps.
 ///
 /// The dir rows land AFTER the leaf files (which recorded themselves as they
-/// landed), so a `seq DESC` reversal removes files before their dirs (D2,
-/// Finding 2).
+/// landed), so a `seq DESC` reversal removes files before their dirs.
 ///
 /// Every terminal path goes through here, not only the successful one: a
 /// canceled copy KEEPS the directories it created, and without their rows a

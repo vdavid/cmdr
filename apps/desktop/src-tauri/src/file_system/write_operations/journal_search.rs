@@ -5,9 +5,9 @@
 //! `journal.rs`). But leaf search ("when did I trash `dog.jpg`") still needs the
 //! descendants, so this module enumerates the subtree's leaves from the DRIVE
 //! INDEX (zero extra filesystem I/O — the tree is already indexed) and records
-//! them as `search_only` rows beneath the top-level unit (D-granularity).
+//! them as `search_only` rows beneath the top-level unit.
 //!
-//! Two hard rules from the plan, both load-bearing for honesty:
+//! Two hard rules, both load-bearing for honesty:
 //!
 //! - **Enumerate BEFORE the OS mutation.** The index reconciler prunes the subtree
 //!   the moment it sees the trash/rename FSEvent, so a finalize-time read would

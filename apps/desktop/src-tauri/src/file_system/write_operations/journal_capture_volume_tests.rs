@@ -216,7 +216,7 @@ async fn cross_volume_move_journals_per_leaf_move_rows() {
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read").expect("op row");
     assert_eq!(row.kind, OpKind::Move);
-    // A cross-volume move is per-leaf (D-granularity): no overwrite ⇒ rollbackable.
+    // A cross-volume move is journaled per leaf: no overwrite ⇒ rollbackable.
     assert_eq!(row.rollback_state, RollbackState::Rollbackable);
 
     // Per-leaf rows: one `rollback_unit` per moved FILE, source on the source

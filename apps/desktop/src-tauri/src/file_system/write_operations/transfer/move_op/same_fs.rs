@@ -82,7 +82,7 @@ pub(super) fn move_with_rename(
 
             // Snapshot the source (kind + mtime) BEFORE the rename for the
             // journal's top-level `rollback_unit` row; `item_overwrote` records
-            // whether we replaced an existing dest (⇒ not rollbackable, D3).
+            // whether we replaced an existing dest (⇒ not rollbackable).
             let source_meta = fs::symlink_metadata(source).ok();
             let source_is_dir = source_meta.as_ref().map(|m| m.is_dir()).unwrap_or(false);
             let source_mtime = source_meta.as_ref().and_then(journal::mtime_secs);
@@ -178,7 +178,7 @@ pub(super) fn move_with_rename(
             }
 
             // Journal the top-level moved item as the rollback unit: one
-            // rename-back reverses the whole subtree (D-granularity). The
+            // rename-back reverses the whole subtree. The
             // subtree's `search_only` leaves are enumerated from the drive index
             // (search-leaf enumeration).
             let entry_type = if source_is_dir {

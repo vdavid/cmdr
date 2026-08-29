@@ -180,7 +180,7 @@ fn filters_are_empty(f: &OperationSearchFilters) -> bool {
 
 /// A `name` filter, defaulting to prefix match. The name is an exact/prefix match
 /// on the folded item name (index-served), NOT a substring search — the schema
-/// description says so, since a `contains` scan isn't index-backed (D8).
+/// description says so, since a `contains` scan isn't index-backed.
 fn parse_name_filter(params: &Value) -> Result<Option<NameFilter>, ToolError> {
     let Some(text) = params.get("name").and_then(|v| v.as_str()) else {
         return Ok(None);

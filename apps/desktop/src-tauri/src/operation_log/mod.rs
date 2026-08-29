@@ -35,9 +35,8 @@ use writer::{FinalizeOutcome, JournalItem, OpenOperation};
 /// `update_operation_status(op_id, …)` status cache written at the very same
 /// record points and the `manager()` operation-manager singleton — rather than
 /// threading an `OperationObservers` context through the whole transfer/delete
-/// signature chain. This is a recorded deviation from D4's threaded-observers
-/// mechanism (its hard constraint — never extend `OperationEventSink` — is kept),
-/// chosen for consistency with those two established patterns and to keep the
+/// signature chain. Chosen for consistency with those two established patterns,
+/// to keep `OperationEventSink` unextended, and to keep the
 /// safety-critical pipeline signatures untouched. See `capture.rs` +
 /// `DETAILS.md` § Capture. `None` until `start` (or a test) installs one, so a
 /// build whose journal DB failed to open simply doesn't journal.
@@ -196,7 +195,7 @@ pub fn journal_finalize(op_id: &str, inputs: FinalizeInputs) -> FinalizeOutcome 
 /// Open `operation-log.db` and spawn its single writer thread, placing the
 /// [`OperationLogWriter`](writer::OperationLogWriter) handle in managed state so
 /// the capture layer can journal through it. A single cross-volume writer,
-/// no per-volume registry (D1). Failure is non-fatal: the app runs without the
+/// no per-volume registry. Failure is non-fatal: the app runs without the
 /// journal rather than refusing to start.
 pub fn start(app: &AppHandle) {
     let data_dir = match crate::config::resolved_app_data_dir(app) {
@@ -217,7 +216,7 @@ pub fn start(app: &AppHandle) {
     }
     match writer::OperationLogWriter::spawn(&db_path) {
         Ok(writer) => {
-            // Resolve any operation a crash left mid-rollback (Finding 7): from its
+            // Resolve any operation a crash left mid-rollback: from its
             // unfinalized inverse op's recorded outcomes, or straight back to
             // rollbackable when no inverse ever opened. Runs before anything can
             // journal, so a re-issued rollback resumes cleanly.

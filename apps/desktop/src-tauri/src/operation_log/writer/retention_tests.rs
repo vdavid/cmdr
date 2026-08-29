@@ -323,7 +323,7 @@ fn size_prune_brings_db_under_budget_and_shrinks_the_file() {
 
 /// A size prune never touches an op in `rolling_back` (nor its rows), even under
 /// budget pressure — a live rollback streams its source, so pruning it would
-/// under-restore (Finding 6/7).
+/// under-restore.
 #[test]
 fn size_prune_skips_a_rolling_back_op() {
     let (store, writer, _dir) = fresh();

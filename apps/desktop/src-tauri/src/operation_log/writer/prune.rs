@@ -38,7 +38,7 @@ pub(super) fn pick_vacuum_cap(freelist: i64) -> Option<i64> {
 /// consistent: a pruned op's dangling `rolls_back_op_id` links (in surviving ops)
 /// are nulled, never left dangling. Ops a live rollback touches are never pruned
 /// (see [`prunable_ops_fragment`]) so its streamed source rows can't vanish
-/// mid-stream (Finding 6/7).
+/// mid-stream (`DETAILS.md` § "The retention race it closes").
 pub(super) fn handle_prune(conn: &mut Connection, request: &PruneRequest) -> Result<(), OperationLogStoreError> {
     if let Some(max_age) = request.max_age_secs {
         let cutoff = request.now_secs.saturating_sub(max_age) as i64;
@@ -232,7 +232,7 @@ fn reclaim_fully(conn: &Connection) {
 /// no item AND no child dir, until stable. This deletes exactly the complement
 /// of the referenced-dirs-plus-their-ancestors closure — a referenced dir's
 /// whole parent chain survives (path reconstruction walks it), and a pruned
-/// dir's ancestors fall away only once nothing live remains under them (D9).
+/// dir's ancestors fall away only once nothing live remains under them.
 fn gc_orphan_dirs(conn: &Connection) -> Result<(), OperationLogStoreError> {
     loop {
         let deleted = conn.execute(

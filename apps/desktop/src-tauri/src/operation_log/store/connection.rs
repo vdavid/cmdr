@@ -3,7 +3,7 @@
 //! Mirrors the index/importance stores' pragmas (WAL, incremental auto-vacuum,
 //! 5 s busy timeout, `synchronous = NORMAL`) so the durable journal behaves
 //! identically under contention — but **registers NO `platform_case`
-//! collation**. That's deliberate (D2): the journal stores a precomputed
+//! collation**. That's deliberate: the journal stores a precomputed
 //! `name_folded` column and queries plain b-tree equality, so the file stays
 //! openable and correct in any stock `sqlite3` browser (the inspectability the
 //! index/importance caches gave up).

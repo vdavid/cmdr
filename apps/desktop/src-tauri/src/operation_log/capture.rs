@@ -1,9 +1,9 @@
 //! The capture layer: the `OperationJournal` trait and its production
 //! (`WriterJournal`), disabled (`NoopJournal`), and test (`CapturingJournal`)
-//! implementations, plus the pure eligibility (D3) and completeness (D4) logic.
+//! implementations, plus the pure eligibility and completeness logic.
 //!
 //! Capture rides the managed operation pipeline through a per-item observer at
-//! the sink's altitude, NOT by decorating `OperationEventSink` (D4). The write
+//! the sink's altitude, NOT by decorating `OperationEventSink`. The write
 //! pipeline bundles this trait with the sink into an `OperationObservers` context
 //! (defined in `write_operations`, which holds the sink) and threads it down the
 //! same seam. This module owns the journal half: it feeds the
@@ -11,16 +11,16 @@
 //! crucially, computes the two data-safety decisions the writer deliberately does
 //! NOT (`writer.rs` stores terminal state, never judges it):
 //!
-//! - **Eligibility** ([`compute_eligibility`]): the per-kind rollback rule (D3),
+//! - **Eligibility** ([`compute_eligibility`]): the per-kind rollback rule,
 //!   from the op `kind`, whether any item overwrote, and — for `archive_edit` —
-//!   the driver-supplied subkind + net-new flag (Finding 3).
+//!   the driver-supplied subkind + net-new flag.
 //! - **Completeness** ([`apply_completeness`]): the per-`row_role` issued-vs-
-//!   written check (D4). A dropped/errored `rollback_unit` row degrades the op to
+//!   written check. A dropped/errored `rollback_unit` row degrades the op to
 //!   `not_rollbackable(journal_incomplete)`; a dropped `search_only` row degrades
 //!   `search_coverage` to `top_level_only(search_row_incomplete)`. This compares
 //!   the `record_item` calls the op actually ISSUED (items reached) against the
 //!   rows durably written — NOT the planned `item_count`, which a canceled op
-//!   never reaches (Finding 1). So a canceled/failed op stays rollbackable for
+//!   never reaches. So a canceled/failed op stays rollbackable for
 //!   what it reached.
 
 use std::collections::HashMap;
@@ -38,15 +38,16 @@ use super::writer::{FinalizeOperation, FinalizeOutcome, JournalItem, OpenOperati
 /// `OperationEventSink` (UI events). The write pipeline reaches the installed
 /// journal by `op_id` through the free functions in [`super`] (`journal_open` /
 /// `journal_record_items` / `journal_finalize`), mirroring the op-keyed
-/// `update_operation_status` status cache written at the same record points — a
-/// recorded deviation from D4's threaded `OperationObservers` (whose hard
-/// constraint, never extending `OperationEventSink`, is kept). Production installs
+/// `update_operation_status` status cache written at the same record points
+/// rather than riding a context threaded down the pipeline, which is what keeps
+/// `OperationEventSink` unextended (`DETAILS.md` § "The seam: a global journal
+/// reached by `op_id`"). Production installs
 /// a [`WriterJournal`]; a test installs a `CapturingJournal`; when no journal is
 /// installed (the DB failed to open), the free functions no-op.
 ///
 /// The journal NEVER fails the operation: every method swallows its own errors
 /// (logged), because the file operation's data safety outranks the journal's
-/// completeness (D4).
+/// completeness.
 pub trait OperationJournal: Send + Sync {
     /// Open the operation row (typically `Running`). Called once at op start.
     fn open(&self, open: OpenOperation);
@@ -57,7 +58,7 @@ pub trait OperationJournal: Send + Sync {
 
     /// Downgrade this op's search coverage (worst-wins, idempotent). The trash /
     /// same-FS-move drivers call this when the `search_only` leaf subtree is
-    /// capped / index-absent / stale / not-live (D-granularity). Default `Full`
+    /// capped / index-absent / stale / not-live. Default `Full`
     /// needs no call.
     fn note_search_coverage(&self, op_id: &str, coverage: SearchCoverage, reason: Option<SearchCoverageReason>);
 
@@ -69,9 +70,9 @@ pub trait OperationJournal: Send + Sync {
     /// verdict), and a note always beats the computed eligibility.
     fn note_not_rollbackable(&self, op_id: &str, reason: NotRollbackableReason);
 
-    /// Finalize the operation: compute eligibility (D3) from the accumulated
+    /// Finalize the operation: compute eligibility from the accumulated
     /// overwrote flags plus `inputs`, apply the per-`row_role` completeness
-    /// downgrade (D4), store the terminal state, and return the durable per-role
+    /// downgrade, store the terminal state, and return the durable per-role
     /// counts. Acts as a barrier for this op's prior records.
     fn finalize(&self, op_id: &str, inputs: FinalizeInputs) -> FinalizeOutcome;
 }
@@ -83,11 +84,11 @@ pub trait OperationJournal: Send + Sync {
 pub struct FinalizeInputs {
     /// The op's lifecycle result (`done` / `failed` / `canceled`). A failed or
     /// canceled op still journals and stays rollbackable for what it reached
-    /// (D4), so this does NOT force `not_rollbackable`.
+    /// so this does NOT force `not_rollbackable`.
     pub execution_status: ExecutionStatus,
     pub kind: OpKind,
-    /// The `archive_edit` subkind, supplied by the capturing driver (Finding 3);
-    /// `None` for non-archive ops.
+    /// The `archive_edit` subkind, supplied by the capturing driver (the journal
+    /// can't derive it); `None` for non-archive ops.
     pub archive_subkind: Option<ArchiveSubkind>,
     /// For `archive_edit`/`compress`: was the archive net-new (vs overwriting a
     /// prior archive)? Ignored for other kinds.
@@ -103,7 +104,7 @@ pub struct FinalizeInputs {
 }
 
 /// Per-`row_role` count of `record_item` calls the op ISSUED (items reached).
-/// The D4 completeness yardstick — compared against the durably-written rows,
+/// The completeness yardstick — compared against the durably-written rows,
 /// NOT the planned `item_count`.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct IssuedCounts {
@@ -120,13 +121,13 @@ impl IssuedCounts {
     }
 }
 
-/// Compute the stored rollback eligibility from what actually happened (D3). Pure
+/// Compute the stored rollback eligibility from what actually happened. Pure
 /// so the per-kind table is tested in isolation. `any_overwrote` is true iff some
 /// recorded item overwrote an existing destination; `archive_subkind` + `net_new`
-/// are the driver-supplied archive facts (Finding 3, `None`/false otherwise).
+/// are the driver-supplied archive facts (`None`/false otherwise).
 ///
 /// Note: `execution_status` is deliberately NOT an input — a failed or canceled
-/// op stays rollbackable for the items it reached (D4). Only the per-kind rule
+/// op stays rollbackable for the items it reached. Only the per-kind rule
 /// and the overwrite/net-new facts decide eligibility.
 pub fn compute_eligibility(
     kind: OpKind,
@@ -157,7 +158,7 @@ pub fn compute_eligibility(
         OpKind::ArchiveEdit => match archive_subkind {
             // Compress: deleting the archive is safe only if it was net-new (an
             // overwrite discarded the prior bytes). The rollback rechecks the
-            // archive is unchanged before deleting (the rollback engine, Finding 5).
+            // archive is unchanged before deleting (the rollback engine's drift check).
             Some(ArchiveSubkind::Compress) => {
                 if net_new {
                     (RollbackState::Rollbackable, None)
@@ -178,7 +179,7 @@ pub fn compute_eligibility(
     }
 }
 
-/// Apply the per-`row_role` completeness downgrade (D4). A `rollback_unit`
+/// Apply the per-`row_role` completeness downgrade. A `rollback_unit`
 /// shortfall (a dropped/errored reversal row) forces
 /// `not_rollbackable(journal_incomplete)` — a missing row is invisible to
 /// rollback, so a lossy journal must never claim rollbackability. A `search_only`
@@ -216,14 +217,14 @@ pub fn apply_completeness(
 // ── Per-op accumulator ───────────────────────────────────────────────────────
 
 /// Flush the per-op record buffer to the writer once it reaches this many rows,
-/// so a huge op coalesces its inserts into batched transactions (D4) instead of
+/// so a huge op coalesces its inserts into batched transactions instead of
 /// one writer message per leaf. The remainder flushes at finalize.
 const RECORD_BATCH: usize = 512;
 
 /// The per-op state the journal accumulates between `open` and `finalize`: the
-/// issued counts (D4 yardstick), whether any item overwrote (D3), the reason a
+/// issued counts (the completeness yardstick), whether any item overwrote, the reason a
 /// driver ruled the op unreversible, the worst search-coverage the driver noted
-/// (D-granularity), and a small buffer that batches item rows before they cross
+/// and a small buffer that batches item rows before they cross
 /// to the writer thread.
 #[derive(Debug)]
 struct OpAccum {
@@ -236,8 +237,8 @@ struct OpAccum {
     buffer: Vec<JournalItem>,
     /// Monotonic per-op sequence, assigned in recording order so callers never
     /// track it. Files recorded during the op precede dirs recorded from the
-    /// transaction at the end, so the dir rows land AFTER their contents (D2,
-    /// Finding 2) and a `seq DESC` rollback removes files before their dirs.
+    /// transaction at the end, so the dir rows land AFTER their contents and a
+    /// `seq DESC` rollback removes files before their dirs.
     next_seq: i64,
 }
 
@@ -289,7 +290,7 @@ impl WriterJournal {
     }
 
     /// Test seam: drop the next `rollback_unit` row on the floor (still counted
-    /// as issued), to exercise the D4 `journal_incomplete` downgrade.
+    /// as issued), to exercise the `journal_incomplete` downgrade.
     #[cfg(test)]
     pub fn arm_drop_next_rollback_row(&self) {
         self.drop_next_rollback_row
@@ -313,7 +314,7 @@ impl OperationJournal for WriterJournal {
         }
         // Accumulate the issued counts + overwrote signal for the finalize
         // decisions, buffer the rows, and drain a full batch out under the lock
-        // (a batched writer message instead of one per leaf — D4).
+        // (a batched writer message instead of one per leaf).
         let batch = {
             let mut ops = self.ops.lock_ignore_poison();
             let accum = ops.entry(op_id.to_string()).or_default();
@@ -416,7 +417,7 @@ impl OperationJournal for WriterJournal {
             }
         };
 
-        // Completeness (D4): downgrade if the durable rows fall short of issued.
+        // Completeness: downgrade if the durable rows fall short of issued.
         // Rare (only a real drop/DB error), so the correcting re-finalize is rare.
         let (rb, rr, cov, cvr) = apply_completeness(
             state,

@@ -77,7 +77,7 @@ fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
     assert!(dirs.len() >= 2, "expected created-dir rows, got {items:?}");
     // Every item is a rollback_unit row for a copy.
     assert!(items.iter().all(|i| i.row_role == RowRole::RollbackUnit));
-    // Dir rows are sequenced AFTER their contents (Finding 2): every dir seq is
+    // Dir rows are sequenced AFTER their contents: every dir seq is
     // greater than every file seq.
     let max_file_seq = files.iter().map(|i| i.seq).max().unwrap();
     let min_dir_seq = dirs.iter().map(|i| i.seq).min().unwrap();
@@ -248,7 +248,7 @@ fn same_fs_move_journals_the_top_level_item_as_rollback_unit() {
 #[test]
 fn initiator_threads_from_the_op_into_the_journal_row() {
     // An AI-client-initiated copy records `ai_client`; the default path records
-    // `user`. Provenance (D5) crosses as a typed enum, not a string.
+    // `user`. Provenance crosses as a typed enum, not a string.
     for initiator in [Initiator::User, Initiator::AiClient] {
         let (journal, jdir, jdb) = install_journal();
         let work = tempfile::tempdir().expect("work");

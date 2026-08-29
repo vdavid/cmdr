@@ -1,4 +1,4 @@
-//! Query-API tests: the D8 name-search benchmark (index-served, asserted via
+//! Query-API tests: the name-search benchmark (index-served, asserted via
 //! `EXPLAIN QUERY PLAN`), leaf search through `search_only` rows, the
 //! `top_level_only` known-gap flag, composed filters, stable paging, and the
 //! paged operation detail.

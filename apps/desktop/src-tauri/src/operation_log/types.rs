@@ -9,7 +9,7 @@
 //! carries a compact, stable, human-readable **token** stored as TEXT in the DB.
 //!
 //! The tokens are a serialization contract, not a display string: they stay
-//! `sqlite3`-inspectable (D2) and are the ONE place enum ↔ storage mapping lives.
+//! `sqlite3`-inspectable and are the ONE place enum ↔ storage mapping lives.
 //! Renaming a token is a schema change (needs a migration to rewrite stored
 //! rows); renaming a *variant* is free. Tokens are lowercase snake_case so a DB
 //! browser reads them plainly.
@@ -53,7 +53,7 @@ token_enum! {
     /// The operation taxonomy, mirroring `WriteOperationType`. Archive variants
     /// (compress vs zip-edit vs future extract) share `ArchiveEdit` and are
     /// distinguished by [`ArchiveSubkind`], so a new archive flavor is an
-    /// additive subkind, not a new `kind` (D2 extensibility).
+    /// additive subkind, not a new `kind`.
     pub enum OpKind {
         Copy => "copy",
         Move => "move",
@@ -69,7 +69,7 @@ token_enum! {
 token_enum! {
     /// The `archive_edit` subkind, supplied by the capturing driver (compress vs
     /// zip-inner edit), NOT derivable from `WriteOperationType` — both cross IPC
-    /// as `ArchiveEdit` (D2, Finding 3). Stored only when `kind = ArchiveEdit`.
+    /// as `ArchiveEdit`. Stored only when `kind = ArchiveEdit`.
     pub enum ArchiveSubkind {
         Compress => "compress",
         Edit => "edit",
@@ -78,7 +78,7 @@ token_enum! {
 }
 
 token_enum! {
-    /// Who initiated the operation (provenance, D5). `AgentEdited` is mixed provenance: the
+    /// Who initiated the operation. `AgentEdited` is mixed provenance: the
     /// in-app agent proposed the batch and the user retyped at least one name while reviewing
     /// it, so crediting the agent alone would be a lie about who chose those names.
     pub enum Initiator {
@@ -91,7 +91,7 @@ token_enum! {
 
 token_enum! {
     /// The operation's lifecycle axis, mirrored from the manager's
-    /// `LifecycleStatus` (D3). Independent of [`RollbackState`].
+    /// `LifecycleStatus`. Independent of [`RollbackState`].
     pub enum ExecutionStatus {
         Queued => "queued",
         Running => "running",
@@ -102,7 +102,7 @@ token_enum! {
 }
 
 token_enum! {
-    /// Whether and how the operation can be / has been reversed (D3). Independent
+    /// Whether and how the operation can be / has been reversed. Independent
     /// of [`ExecutionStatus`]. `RollingBack` is the transient in-flight guard
     /// (rollback); a fresh op sits at `NotRollbackable` until finalize proves otherwise.
     pub enum RollbackState {
@@ -116,7 +116,7 @@ token_enum! {
 
 token_enum! {
     /// Why an operation is not rollbackable, set alongside
-    /// `RollbackState::NotRollbackable` (D3). A nullable column: `None` when the
+    /// `RollbackState::NotRollbackable`. A nullable column: `None` when the
     /// op is rollbackable. Cross-volume disconnection is NOT here — that's
     /// computed at rollback time from mount state, never stored.
     pub enum NotRollbackableReason {
@@ -129,7 +129,7 @@ token_enum! {
         /// Zip-inner editing rollback isn't supported yet (v1).
         ZipEditUnsupported => "zip_edit_unsupported",
         /// A `rollback_unit` row was dropped/errored, so the journal is an
-        /// incomplete record of what to reverse (D4 completeness).
+        /// incomplete record of what to reverse (the completeness downgrade).
         JournalIncomplete => "journal_incomplete",
         /// A move merged a source folder into a folder that already existed, so
         /// the one directory row names a destination holding files the operation
@@ -143,8 +143,8 @@ token_enum! {
 }
 
 token_enum! {
-    /// Whether the journal holds every leaf of the operation (search honesty,
-    /// D-granularity). `Full` requires the drive index to have been present AND
+    /// Whether the journal holds every leaf of the operation (search honesty).
+    /// `Full` requires the drive index to have been present AND
     /// current for the whole subtree.
     pub enum SearchCoverage {
         Full => "full",
@@ -154,7 +154,7 @@ token_enum! {
 
 token_enum! {
     /// Why coverage is only `TopLevelOnly`, set when `search_coverage =
-    /// top_level_only` (D2). Kept distinct so the future agent can tell a
+    /// top_level_only`. Kept distinct so the future agent can tell a
     /// too-big-to-index subtree from a stale index.
     pub enum SearchCoverageReason {
         /// The subtree exceeded the per-op `search_only` leaf cap.
@@ -165,7 +165,7 @@ token_enum! {
         IndexStale => "index_stale",
         /// The volume's index phase wasn't `Live`.
         VolumeNotLive => "volume_not_live",
-        /// A `search_only` leaf row was dropped/errored (D4 completeness).
+        /// A `search_only` leaf row was dropped/errored (the completeness downgrade).
         SearchRowIncomplete => "search_row_incomplete",
     }
 }
@@ -173,7 +173,7 @@ token_enum! {
 token_enum! {
     /// Whether an item row is a file or a directory. Directories the op created
     /// are first-class rows so a `seq DESC` rollback removes files before the
-    /// dirs that held them (D2, Finding 2).
+    /// dirs that held them.
     pub enum EntryType {
         File => "file",
         Dir => "dir",
@@ -181,7 +181,7 @@ token_enum! {
 }
 
 token_enum! {
-    /// An item row's role (D-granularity). `RollbackUnit` rows are the reversal
+    /// An item row's role. `RollbackUnit` rows are the reversal
     /// units and are also searchable; `SearchOnly` rows exist purely so leaf
     /// search hits inside a top-level move/trash unit, and are never reversed.
     pub enum RowRole {
@@ -192,7 +192,7 @@ token_enum! {
 
 token_enum! {
     /// The per-item outcome. A canceled/failed op keeps `Done` rows for what it
-    /// reached — exactly what a rollback needs (D4).
+    /// reached — exactly what a rollback needs.
     pub enum ItemOutcome {
         Done => "done",
         Skipped => "skipped",
@@ -223,10 +223,10 @@ token_enum! {
         /// The item changed since the op (size/mtime drift) — never touch a changed file.
         Drift => "drift",
         /// The restore target is occupied by a DIFFERENT entry — the pinned
-        /// non-destructive policy skips rather than overwrite (D7).
+        /// non-destructive policy skips rather than overwrite.
         RestoreTargetOccupied => "restore_target_occupied",
         /// A directory the undo would remove isn't empty (a file was added since) — the
-        /// create-folder / copied-dir recheck (D3).
+        /// create-folder / copied-dir recheck.
         DirNotEmpty => "dir_not_empty",
         /// The thing to reverse is already gone (trash emptied, item already restored):
         /// the desired end state already holds, so this is an idempotent no-op success.

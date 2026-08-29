@@ -6,7 +6,7 @@
 //! delete-and-recreate on a schema bump), this DB lives for years, so it carries
 //! two things nothing else here has: a forward-migration ladder
 //! (the `migrations` submodule) and app-side case folding with NO custom collation, keeping
-//! the file `sqlite3`-inspectable (D1/D2). Full rationale: `DETAILS.md`.
+//! the file `sqlite3`-inspectable. Full rationale: `DETAILS.md`.
 //!
 //! One writer thread owns the single write connection
 //! ([`OperationLogWriter`](super::writer)); reads go through short-lived
@@ -32,7 +32,7 @@ use super::types::{
 };
 
 /// The durable journal's file name in the app data dir. Single (not per-volume):
-/// a cross-volume operation is one operation with one identity (D1).
+/// a cross-volume operation is one operation with one identity.
 pub const OPERATION_LOG_DB_FILE: &str = "operation-log.db";
 
 /// Resolve the `operation-log.db` path inside `data_dir`.
@@ -41,7 +41,7 @@ pub fn operation_log_db_path(data_dir: &Path) -> PathBuf {
 }
 
 /// Fold a leaf name to its case-insensitive, normalized search/identity key:
-/// Unicode lowercase, then NFC. Done once in Rust at insert (D2), so the DB
+/// Unicode lowercase, then NFC. Done once in Rust at insert, so the DB
 /// needs no custom collation and stays inspectable. It's a *record* key, not a
 /// live filesystem mirror, so it may differ slightly from a given filesystem's
 /// exact case rules — acceptable for history.
@@ -483,7 +483,7 @@ fn map_rollback_unit(conn: &Connection, item: &OperationItemRow) -> Result<Rollb
 /// a rollback undoes in inverse order and removes created files before the
 /// `entry_type = dir` rows that held them). Streaming: pass `i64::MAX` for the
 /// first page, then the smallest `seq` of the returned page (exclusive) as
-/// `before_seq` for the next — so the engine never materializes a 1M-row op (D7).
+/// `before_seq` for the next — so the engine never materializes a 1M-row op.
 /// `search_only` rows are excluded (they're for search, never reversal).
 pub fn read_rollback_units_page(
     conn: &Connection,
@@ -538,8 +538,8 @@ pub fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Result<(u64,
     Ok(totals)
 }
 
-/// Every operation currently in `rolling_back` — the startup-reconcile input (rollback,
-/// Finding 7): each resolves deterministically from its (unfinalized) inverse op's
+/// Every operation currently in `rolling_back` — the startup-reconcile input
+/// (`rollback.rs`): each resolves deterministically from its (unfinalized) inverse op's
 /// recorded outcomes, or straight back to `rollbackable` when no inverse row exists.
 pub fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>, OperationLogStoreError> {
     let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE rollback_state = ?1");

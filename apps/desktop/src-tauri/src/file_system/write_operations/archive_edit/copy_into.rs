@@ -93,7 +93,7 @@ pub(crate) async fn route_archive_copy_into(
 
 /// Like [`route_archive_copy_into`] but with an explicit [`ArchiveProvenance`](super::super::journal::ArchiveProvenance), so
 /// the compress driver can supply `subkind = compress` + the net-new flag the
-/// journal can't derive (Finding 3).
+/// journal can't derive.
 #[allow(
     clippy::too_many_arguments,
     reason = "same seam as route_archive_copy_into plus provenance"
@@ -730,7 +730,7 @@ async fn archive_copy_into_start(
             // its single `rollback_unit` item (the rollback deletes it if still
             // net-new and unchanged), then finalizes with the driver's subkind +
             // net-new flag so eligibility is computed from what the driver knows
-            // (Finding 3). A plain into-archive edit records no item — it's not
+            // A plain into-archive edit records no item — it's not
             // rollbackable in v1 — just the header's terminal state.
             if prov.subkind == ArchiveSubkind::Compress && execution_status == ExecutionStatus::Done {
                 // Snapshot the finished archive (size + mtime) for the rollback drift

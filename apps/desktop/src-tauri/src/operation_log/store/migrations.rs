@@ -139,7 +139,7 @@ pub(super) fn read_schema_version(conn: &Connection) -> Result<u32, OperationLog
 
 /// Version 1: the initial schema. Interned `dirs`, grouped `operations`, per-item
 /// `operation_items`. All classification columns are TEXT tokens
-/// ([`super::super::types`]) so the DB stays `sqlite3`-inspectable (D2).
+/// ([`super::super::types`]) so the DB stays `sqlite3`-inspectable.
 fn migrate_v1_initial(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     tx.execute_batch(
         "

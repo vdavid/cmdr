@@ -1,7 +1,7 @@
 # Operation log — details
 
 Depth for the operation-log subsystem. Must-knows and the module map: `CLAUDE.md`. This doc captures what shipped and
-the durable rationale a future agent needs on hand, including every decision (D1–D10).
+the durable rationale a future agent needs on hand, including every decision behind it.
 
 ## What this is
 
@@ -12,7 +12,7 @@ the chokepoint, the rollback engine, the read/search API + retention enforcement
 (`operations_list` / `operations_get` / `operations_rollback` — see `mcp/DETAILS.md`). The UI (the Debug panel and the
 alpha dialog) builds on the read side.
 
-## Why a separate durable DB (D1)
+## Why a separate durable DB
 
 Every other on-disk store here is a disposable cache: the drive index and `importance.db` live in `~/Library/Caches/`,
 are per-volume, and delete-and-recreate on any schema change (Time Machine skips them, the OS may purge them). A mutation
@@ -27,7 +27,7 @@ identified reversible lever.
 It is itself sensitive: a map of the user's file activity. It stays local, never transmitted (noted in
 `docs/security.md`).
 
-## The migration ladder (D2) — the reusable template
+## The migration ladder — the reusable template
 
 This is the codebase's **first forward-migration system**, and the template every future durable DB should copy. It
 lives in `store/migrations.rs`.
@@ -57,7 +57,7 @@ read side), which is what actually happened.
 because their data is regenerable derived state. The operation log's data is the user's history — wiping it loses
 undo-ability, which is exactly what makes the log valuable. So it migrates.
 
-## Case folding, not a collation (D2)
+## Case folding, not a collation
 
 The index and importance stores register a `platform_case` collation for case-insensitive `UNIQUE`, which is why the
 `index-query` tool exists at all (stock `sqlite3` can't read those columns). The operation log wants
@@ -85,7 +85,7 @@ non-obvious choices:
   `rolls_back_op_id` (the rollback linkage), source/dest volume ids, timestamps, `item_count` (the **planned** total,
   informational — NOT the completeness yardstick), `items_done`, `bytes_total`, `search_coverage` +
   `search_coverage_reason`, and an optional dev-only `dev_summary`. **No stored rendered summary**: the UI label is
-  formatted client-side from the typed fields so it localizes per viewer (D2); `dev_summary` is dev-only and never shown
+  formatted client-side from the typed fields so it localizes per viewer; `dev_summary` is dev-only and never shown
   in the alpha dialog.
 - **`operation_items` — per-item rows.** `seq` (order within the op, for grouped display and reverse-order rollback),
   typed `entry_type` (file/dir) and `row_role` (`rollback_unit` / `search_only`), interned `source_dir_id` +
@@ -106,7 +106,7 @@ Message surface: `OpenOperation` (insert the header, `Running`), `RecordItems` (
 transaction, interning dirs + folding names), `FinalizeOperation` (write terminal state, return per-`row_role` durable
 counts), `Prune` (retention), `Flush` (barrier), `Shutdown`.
 
-- **Lossless with backpressure (D4).** The channel is a bounded `sync_channel`; `record_items` blocks briefly if the
+- **Lossless with backpressure.** The channel is a bounded `sync_channel`; `record_items` blocks briefly if the
   writer falls behind rather than dropping. Safe for "logging never slows an op": a batched row insert is far cheaper
   than the per-item file I/O the op already does, so the writer outpaces every real op and the block is a theoretical
   backstop. A DB *error* on one row (not fullness) logs and drops THAT row — the op never fails for a journal problem.
@@ -116,7 +116,7 @@ counts), `Prune` (retention), `Flush` (barrier), `Shutdown`.
   `item_count`, which a canceled op never reaches) and, on a shortfall, degrades: a missing `rollback_unit` row ⇒
   `not_rollbackable(journal_incomplete)`; a missing `search_only` row ⇒ `search_coverage = top_level_only`
   (`search_row_incomplete`). The writer supplies the numbers; it does not itself compute eligibility.
-- **Eligibility lives upstream.** The net-new flag and `archive_edit` subkind the capturing driver knows (Finding 3) feed
+- **Eligibility lives upstream.** The net-new flag and `archive_edit` subkind the capturing driver knows feed
   the capture layer's eligibility computation, which passes the already-typed `rollback_state` + reason + subkind into
   `FinalizeOperation`. `writer.rs` stores what it's given — keeping data-safety-critical business logic in the TDD'd
   capture/rollback layers, not the writer. (This is a deliberate divergence from a "finalize computes eligibility"
@@ -125,23 +125,22 @@ counts), `Prune` (retention), `Flush` (barrier), `Shutdown`.
 
 ## Capture — journaling every mutation at the chokepoint
 
-`capture.rs` is the journal half of the pipeline observer seam (D4); the write pipeline's glue lives in
+`capture.rs` is the journal half of the pipeline observer seam; the write pipeline's glue lives in
 `file_system/write_operations/journal.rs`. Together they make every managed mutation journal itself with per-item rows,
 two-axis status, and computed rollback eligibility — without measurably slowing the op.
 
-### The seam: a global journal reached by `op_id` (recorded deviation from D4)
+### The seam: a global journal reached by `op_id`
 
-**D4's plan bundles the journal WITH the sink into an `OperationObservers` context threaded down the pipeline. This
-implementation does NOT do that.** Instead the journal is a **process-global singleton** (`operation_log::JOURNAL`,
-installed at `start`) reached BY `op_id` through free functions — `journal_open`, `journal_record_items`,
+**The journal is a process-global singleton** (`operation_log::JOURNAL`, installed at `start`) reached BY `op_id`
+through free functions — `journal_open`, `journal_record_items`,
 `journal_note_coverage`, `journal_finalize` — exactly mirroring the op-keyed `update_operation_status(op_id, …)` status
 cache that the same record points already write, and the `manager()` operation-manager singleton.
 
-- **Why the deviation.** Threading an observers context replaces `Arc<dyn OperationEventSink>` through the entire
+- **Why a global rather than a context threaded down the pipeline.** Threading one replaces `Arc<dyn OperationEventSink>` through the entire
   transfer/delete signature chain (`copy_single_item`, the transfer driver, the volume paths, …) — a large, high-risk
   refactor of the app's most data-safety-critical code. The op-id-keyed global is (a) how `update_operation_status`
   already works at the identical call sites, (b) how `manager()` already works, and (c) zero-churn to those signatures.
-  D4's HARD constraint — never extend `OperationEventSink` — is kept; only its suggested *mechanism* changed.
+  The hard constraint holds either way: the sink stays a sink, and nothing here extends `OperationEventSink`.
 - **Testability holds.** `set_journal` / `clear_journal` install a `CapturingJournal` or a temp-DB `WriterJournal` per
   test; nextest isolates each test in its own process, so the global is hermetic.
 - **Lifecycle.** `journal_open` is called when the op actually STARTS (inside the manager's deferred), not at
@@ -160,21 +159,21 @@ cache that the same record points already write, and the `manager()` operation-m
 
 ### The decisions the capture layer owns (the writer doesn't)
 
-- **Eligibility (D3), `compute_eligibility`** — pure, tested in isolation: copy/move rollbackable iff nothing overwrote;
+- **Eligibility, `compute_eligibility`** — pure, tested in isolation: copy/move rollbackable iff nothing overwrote;
   delete never (`permanent_delete`); trash/rename/create-folder/create-file open rollbackable (rechecked at rollback
   time, in the rollback engine); compress rollbackable iff net-new (`archive_overwrite` otherwise); zip-inner edit not yet
   (`zip_edit_unsupported`). `execution_status` is deliberately NOT an input — a failed/canceled op stays rollbackable for
-  what it reached (D4).
+  what it reached.
 - **A driver's note beats the rule, `note_not_rollbackable`** — some reasons aren't derivable from the item rows at
   all, so the DRIVER states them and `finalize` takes the note over `compute_eligibility`. Both of today's reasons are
   move-shaped: `directory_merge` and `staged_conflict_resolved` (see §§ "Why a directory merge isn't reversible" and "A
   staged write records where the file will LIVE"). First note wins, and it's op-wide, like every other eligibility
   input: one merged item makes the whole operation unreversible.
-- **Completeness (D4), `apply_completeness`** — the per-`row_role` issued-vs-written check. The `WriterJournal`
+- **Completeness, `apply_completeness`** — the per-`row_role` issued-vs-written check. The `WriterJournal`
   accumulates the count of `record_item` calls it ISSUED per role; `finalize` compares them to the writer's durable
   counts and, on a shortfall, downgrades: a missing `rollback_unit` row ⇒ `not_rollbackable(journal_incomplete)` (a
   lossy journal must never claim rollbackability); a missing `search_only` row ⇒ `search_coverage = top_level_only`
-  (`search_row_incomplete`). Compared against ISSUED, never the planned `item_count` (Finding 1). The correcting
+  (`search_row_incomplete`). Compared against ISSUED, never the planned `item_count`. The correcting
   re-finalize fires only on a real drop, so it's rare.
 
 The `WriterJournal` also **batches** rows (a per-op buffer flushed at `RECORD_BATCH` or finalize, so a huge op coalesces
@@ -191,23 +190,23 @@ drop and emit `write-settled`. So a frontend reading `get_operation_log_detail` 
 for any ordinary-sized op. The frontend side of this contract lives in
 `apps/desktop/src/lib/file-operations/settled-operations.ts`.
 
-### Per-kind record points and granularity (D-granularity)
+### Per-kind record points and granularity
 
 Each point is where the op already stats the item, so journaling is near-zero marginal cost (no new syscalls):
 
 - **copy** — per-leaf `rollback_unit` rows at `transfer/copy/single_item.rs` (right where each file commits to the
   `CopyTransaction`, carrying the free source `mtime` + the overwrite flag), plus the **created-directory rows** from
   `CopyTransaction::created_dirs`. Files record during the op, dirs after, so dir `seq` > their contents' `seq`
-  (Finding 2); the rollback engine removes files before dirs. The dir rows land on EVERY terminal path, not only the
+  the rollback engine removes files before dirs. The dir rows land on EVERY terminal path, not only the
   successful one — a canceled copy keeps the directories it created, and without their rows a reversal puts every file
   back and leaves the destination's empty skeleton standing. `copy/mod.rs` routes all its terminal arms through one
   `commit_journaling_created_dirs`, so the next arm added can't forget; `volume/copy.rs` journals once post-loop, before
   it branches on the terminal state.
 - **delete** — per-leaf at `delete/walker.rs`, one row per file, deliberately (a 1M-file delete journals ~1M rows on the
-  order of tens-to-~150 MB — leaf search is the requirement, and retention, D9/D10, manages the cost, NOT a row cap).
+  order of tens-to-~150 MB — leaf search is the requirement, and retention (§ "Retention") manages the cost, NOT a row cap).
   Delete is never rollbackable, so these rows exist purely for "when did I delete `dog.jpg`".
 - **same-FS move + trash** — the **top-level** `rollback_unit` row (one rename-back / one restore reverses the whole
-  subtree) at `transfer/move_op.rs` / `delete/trash.rs`. A move records where the item LANDED (a conflict can send it
+  subtree) at `transfer/move_op/` / `delete/trash.rs`. A move records where the item LANDED (a conflict can send it
   aside to a fresh `name (N)`), for the unit row and the search-leaf rebase alike; recording the name that was taken
   aims the reversal at a file the operation never touched. A merge is not reversible at all — see § "Why a directory
   merge isn't reversible". Trash also captures the OS `resultingItemURL` (the in-trash
@@ -230,7 +229,7 @@ Each point is where the op already stats the item, so journaling is near-zero ma
 - **compress** (`archive_edit`) — spawns directly (not through `start_write_operation`), so `copy_into.rs`'s deferred
   carries its OWN open/finalize bracket. The compress driver supplies the `archive_edit` subkind + a net-new flag
   (probed before the seed overwrites the target) via `ArchiveProvenance` — the journal can't derive them, both compress
-  and zip-inner edit cross IPC as `ArchiveEdit` (Finding 3). A net-new compress records the created archive as its single
+  and zip-inner edit cross IPC as `ArchiveEdit`. A net-new compress records the created archive as its single
   `rollback_unit` item (with a size/mtime snapshot for the rollback drift recheck) and finalizes `rollbackable`; an overwrite
   of a prior archive is `not_rollbackable`; a plain into-archive edit journals its header only (not rollbackable in v1).
 
@@ -296,7 +295,7 @@ transfer path's job, local included — see § "Why a directory merge isn't reve
   `overwritten_sources` set (it runs in a separate driver callback from the record point). The recorded row's
   `overwrote` bit is the OR of these; `compute_eligibility` reads it op-wide. Per-inner-file granularity isn't tracked
   (op-wide eligibility is all that's consumed). The local paths carry the same bit on their own rows
-  (`move_op.rs`'s `item_overwrote`, `copy_single_item`'s `needs_safe_overwrite`).
+  (`transfer/move_op/same_fs.rs`'s `item_overwrote`, `copy_single_item`'s `needs_safe_overwrite`).
 
 **Per-source at completion, AND at interruption.** The volume drivers journal one top-level source's leaves when that
 source finishes. A directory source stopped mid-stream used to journal nothing, leaving every child it had already
@@ -306,7 +305,7 @@ their failure arms too (`copy_serial.rs`'s `Err` arm, `copy_concurrent.rs`'s `re
 survives the operation has a row.** The partial the driver was mid-write on is not one of them — both terminal paths
 remove it, so journaling it would name a file that isn't there.
 
-Granularity mirrors local (D-granularity): cross-volume copy + cross-volume move + volume delete are per-leaf; a
+Granularity mirrors local (§ "Per-kind record points and granularity"): cross-volume copy + cross-volume move + volume delete are per-leaf; a
 same-volume move is a same-FS-style move (top-level `rollback_unit` row + drive-index `search_only` leaves, which
 downgrade to `index_absent` on a volume with no index — verified by the gate in `enumerate_subtree_for_search`).
 
@@ -316,13 +315,13 @@ A move whose source folder collides with a folder at the destination MERGES, chi
 `rollback_unit` row whose destination is that pre-existing folder. That folder also holds files this operation never
 touched, so reversing the row (a rename-back of the whole folder) would carry them to the source and leave nothing at
 the destination. Both merging paths therefore call `journal::note_not_rollbackable(DirectoryMerge)` at the merge
-branch: `transfer/move_op.rs` (same-FS and the cross-FS phase-3 merge) and `transfer/volume/move_same.rs` (same-volume
+branch: `transfer/move_op/` (same-FS and the cross-FS phase-3 merge) and `transfer/volume/move_same.rs` (same-volume
 rename-merge).
 
 **The disqualifying condition is "merged", NOT "overwrote something".** A merge that overwrites nothing has the same
 single row and the same failure: pre-existing `B/A` holding a dest-only `x`, source `A/` holding only `y`, the merge
 moves `y` in, the emptied source is removed, and the reversal takes `x` away. Flagging only merges whose children
-replaced a dest file leaves that live. Pinned by a pair of tests per path (`move_op.rs`'s `journal_tests`,
+replaced a dest file leaves that live. Pinned by a pair of tests per path (`move_op/move_journal_tests.rs`,
 `volume/rename_merge_tests.rs`), one shape each.
 
 **Decision/Why**: the honest flag over per-child rows, for now. Per-child rows (one row per child the merge actually
@@ -359,7 +358,7 @@ a volume command defaults to `user` (see the bypass boundary above).
 ### Row-volume tradeoff
 
 Per-leaf delete/copy rows are the search requirement, so there is **no row cap** on them; the only cap is the
-`search_only` leaf enumeration for trash/same-FS-move (search-leaf enumeration, a per-op tunable). Retention (D9/D10) reclaims the space, not
+`search_only` leaf enumeration for trash/same-FS-move (search-leaf enumeration, a per-op tunable). Retention (§ "Retention") reclaims the space, not
 a row cap.
 
 ## Rollback — reversing an operation as recheck-then-act inverses
@@ -415,7 +414,7 @@ runs this engine against the original operation gets a named choice rather than 
 reads the transfer's meaning off `state.intent` directly. That's correct for every reversal dispatched today, and it's
 what running a reversal under the original operation's own wind-down would have to thread through.
 
-### The two data-safety guards (D7)
+### The two data-safety guards
 
 Every item passes two independent guards before anything is touched; failing either SKIPS the item (never operates on
 it), feeding a `partially_rolled_back` result:
@@ -440,7 +439,7 @@ The op kind + item entry-type map to one of three inverse actions (`inverse_acti
 - **copy** → file: `RemoveFileIfUnchanged` (delete the copied dest if it still matches the snapshot); dir: the created
   dir is `RemoveDirIfEmpty`. A copy of a whole tree removes its copied files, then its created dirs.
 - **create_file / compress** (`archive_edit`) → `RemoveFileIfUnchanged` (delete the created file / net-new archive only
-  if unchanged — a later zip-edit drifts the archive, so it's left untouched, Finding 5).
+  if unchanged — a later zip-edit drifts the archive, so it's left untouched).
 - **create_folder** → `RemoveDirIfEmpty` (remove only if still empty — a file added since ⇒ keep, partial).
 - **move / trash / rename** → `RestoreMove` (move the item back FROM where it landed, `dest`, TO its original,
   `source`) — **except a directory the operation CREATED**, which is removed like a copy's. `record_created_dirs` writes
@@ -458,7 +457,7 @@ The op kind + item entry-type map to one of three inverse actions (`inverse_acti
 - **delete** → refused op-level (a permanent delete can't be restored).
 
 The inverse op's own eligibility is computed like any op: a delete-the-copies undo is `not_rollbackable`, a move/rename
-undo is `rollbackable` again (redo falls out — D-undo).
+undo is `rollbackable` again, so redo falls out (§ "Future: Cmd+Z").
 
 ### Streaming + ordering
 
@@ -526,7 +525,7 @@ exists for the Ask Cmdr rename rail, where one run can approve several batches.
   still reports the count. Retention and the startup reconcile only ever read `outcome`, so both behave identically
   whether the column is set or NULL.
 
-### The `rolling_back` state machine + startup reconcile (Finding 7 + 3)
+### The `rolling_back` state machine + startup reconcile
 
 `rollback_operation` (the entry) reads the op, gates it (`check_rollbackable`: `UnknownOperation` / `AlreadyRollingBack`
 / `NotRollbackable(reason)` / `VolumeUnavailable{volume_id}` — the cross-volume gate is computed from live mount state,
@@ -547,7 +546,7 @@ resolves any op a crash left `rolling_back`: from its unfinalized inverse op's r
 idempotently: every per-item inverse is a recheck-then-act, and an already-reversed item reads as `AlreadyGone` (counted
 as a no-op success).
 
-### The retention race it closes (Finding 6)
+### The retention race it closes
 
 The paged cursor spans successive short-lived read connections, not one WAL snapshot, so a concurrent `Prune` could
 delete rows between pages and silently under-restore. The fix is NOT a long read transaction (it would block WAL
@@ -584,7 +583,7 @@ missing parents, where `LocalPosixVolume` fails with `ENOENT`. A reversal test w
 broken code — `rollback/tests.rs::a_restore_recreates_the_folder_the_move_emptied` runs against a real tempdir for
 exactly that reason.
 
-### Future: Cmd+Z (D-undo, designed-for, not built)
+### Future: Cmd+Z (designed for, not built)
 
 A later Cmd+Z is `SELECT op_id FROM operations WHERE initiator='user' AND rollback_state='rollbackable' ORDER BY
 ended_at DESC LIMIT 1` then `dispatch_rollback`. The two-axis status + `rolls_back_op_id` linkage make it a query, not a
@@ -607,14 +606,14 @@ handlers (`mcp/executor/operation_log.rs`) do the same off the MCP task.
   operation by DIFFERENCE from the ids you'd already seen
   (`apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts::stageTransfer` is the worked example) rather than
   by position.
-- **Name search is an indexed folded-name lookup, not FTS (D8).** The product headline — "when did I delete `dog.jpg`?"
+- **Name search is an indexed folded-name lookup, not FTS.** The product headline — "when did I delete `dog.jpg`?"
   — is exact/prefix name equality, so `search_operations` joins `operation_items` to `operations` and matches the
   indexed `source_name_folded` column. The benchmark query
   (`source_name_folded = ? AND kind IN (delete, trash) ORDER BY ended_at DESC`) is served by
   `operation_items_source_name` + the `operations` PK, never a full table scan — pinned by an `EXPLAIN QUERY PLAN` test
   (`query::tests::delete_dog_jpg_is_index_served`). FTS5 stays a clean later add if substring/fuzzy is ever wanted.
 - **Search spans every `row_role`, deliberately.** A trashed folder records the top-level `rollback_unit` plus its
-  subtree's `search_only` leaves (D-granularity), so "when did I trash `dog.jpg`" hits even when `dog.jpg` sat inside a
+  subtree's `search_only` leaves (§ "Per-kind record points and granularity"), so "when did I trash `dog.jpg`" hits even when `dog.jpg` sat inside a
   trashed folder — the asymmetry a uniform-granularity design would leave as a silent miss. The one uncovered case (a
   subtree that couldn't be enumerated) is flagged `search_coverage = top_level_only`, a queryable known gap
   (`coverage_is_complete`), not a false negative.
@@ -653,17 +652,17 @@ The wiring with a foot on this side:
   `$lib/tauri-commands/operation-log.ts` unwraps them for the dialog; the Debug panel calls the raw bindings instead
   (dev-only, bindings-import-exempt).
 
-**Convergence with the agent log (Naming section / D7).** The dialog is the mutation half of a future unified timeline:
+**Convergence with the agent log.** The dialog is the mutation half of a future unified timeline:
 when the in-app agent ships, its decision log (`agent_log`) joins the same user-facing surface, and whether that merged
 surface is later *labelled* "Activity" is a UI-copy call for then. "Operation" stays the entity/row name; "action" stays
 reserved for the agent spec's navigation/intent stream. The dialog is intentionally throwaway so that convergence can
 reshape it (likely into a sidebar) without sunk cost.
 
-## Retention (D9) — prune by age + size, GC dirs, reclaim
+## Retention — prune by age + size, GC dirs, reclaim
 
 Retention runs the writer's `Prune` on startup and on a periodic timer (`retention.rs`, every 6 h), with the age/size
 limits read fresh from settings each tick (`load_operation_log_retention_limits`) so a settings change takes effect on
-the next tick with no restart or applier case. Defaults: **age = forever, size = 3 GB** (D10). The settings contract:
+the next tick with no restart or applier case. Defaults: **age = forever, size = 3 GB**. The settings contract:
 `operationLog.maxAge` (duration ms; `0` = forever; absent ⇒ forever) and `operationLog.maxSize` (bytes; absent ⇒ 3 GB;
 `0` = unlimited). The user-facing controls are the "Operation log" settings section (`OperationLogSection.svelte` + the
 `operationLog.*` entries in `settings-registry.ts`), which persist exactly these keys — see
@@ -678,7 +677,7 @@ oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim**.
   nulled.
 - **Never prune an in-flight rollback's rows.** `protected_ops_fragment` excludes any op in `rolling_back` (the original,
   which a live rollback streams across successive read connections) and its `rolls_back_op_id` target; the unfinished
-  inverse is separately excluded by the `ended_at IS NOT NULL` gate. This closes the Finding 6/7 race without a long read
+  inverse is separately excluded by the `ended_at IS NOT NULL` gate. This closes the prune-versus-live-rollback race (§ "The retention race it closes") without a long read
   transaction.
 - **Size budget is measured as live bytes.** `live_size_bytes = (page_count - freelist) * page_size` — the size the file
   would have after a full vacuum — so the delete loop makes progress before pages are physically reclaimed (each delete
