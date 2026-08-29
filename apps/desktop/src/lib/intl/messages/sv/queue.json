@@ -19,6 +19,18 @@
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
+  "queue.row.reversalMovingBack": "Flyttar tillbaka filerna",
+  "@queue.row.reversalMovingBack": {
+    "sourceHash": "19ac5eb"
+  },
+  "queue.row.reversalDeleting": "Raderar det som skapades",
+  "@queue.row.reversalDeleting": {
+    "sourceHash": "f88d220"
+  },
+  "queue.row.reversalRenamingBack": "Ger tillbaka de gamla namnen",
+  "@queue.row.reversalRenamingBack": {
+    "sourceHash": "3e00fd5"
+  },
   "queue.row.status": "{status, select, queued {Väntar} running {Pågår} paused {Pausad} done {Klar} cancelled {Avbruten} failed {Gick inte att slutföra} other {Pågår}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"

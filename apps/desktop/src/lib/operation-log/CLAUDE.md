@@ -10,7 +10,8 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
 - `operation-log-trigger.svelte.ts`: `operationLogState` plus open / close / page-more, and `markOperationRollingBack`.
 - `OperationLogDialog.svelte`: the soft dialog. Owns the pending rollback question and stacks
   `$lib/file-operations/RollbackConfirmDialog.svelte` over itself.
-- `operation-log-labels.ts`: the pure typed-enum → UI mappings (labels, the confirmation variant, the refusal notice).
+- `operation-log-labels.ts`: the pure typed-enum → UI mappings (labels, the refusal notice). The confirmation variant is
+  `$lib/file-operations/reversal-wording.ts`, which words the RUNNING reversal off the same map.
 - `rollback-refusal.ts`: the `TypedFailure` that carries a `RollbackRefusal` from the command wrapper to the row.
 
 ## Must-knows
@@ -23,7 +24,9 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
   synchronously before the dispatch returns, so `markOperationRollingBack` repeats what the journal already says. ❌
   Don't turn it into a re-read.
 - **The confirmation's `variant` must match what the inverse DOES.** `rollbackConfirmVariant` mirrors the backend's
-  `inverse_kind`; wording a move's reversal as a delete would scare people off an operation that takes nothing away.
+  `inverse_kind`; wording a move's reversal as a delete would scare people off an operation that takes nothing away. The
+  queue row, corner chip, and progress dialog name the running reversal off that SAME variant, so they can't contradict
+  the answer the user just gave.
 - **A rollback from history can come out PARTIAL**: it skips anything it can't verify against the snapshot the journal
   recorded. ❌ No copy here may promise a complete reversal.
 - **A refusal is typed.** Catch it with `asRollbackRefusal`, word it with `rollbackRefusalNotice`; ❌ never render the

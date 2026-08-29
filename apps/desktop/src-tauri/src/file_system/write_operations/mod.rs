@@ -298,6 +298,7 @@ where
         // to put back, and everything else that reaches here is neither.
         supports_rollback: matches!(operation_type, WriteOperationType::Copy | WriteOperationType::Move),
         preview_id,
+        reverses: None,
     };
 
     let events_for_op = Arc::clone(&events);

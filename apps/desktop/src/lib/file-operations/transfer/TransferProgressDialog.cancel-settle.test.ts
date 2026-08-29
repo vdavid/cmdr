@@ -85,6 +85,7 @@ vi.mock('$lib/tauri-commands', () => ({
         source: '/Users/test',
         destination: null,
         supportsRollback: false,
+        reverses: null,
         error: null,
       },
     ]),

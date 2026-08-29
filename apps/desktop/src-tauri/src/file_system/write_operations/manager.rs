@@ -68,6 +68,7 @@ use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 
 use crate::file_system::volume::LaneKey;
 use crate::ignore_poison::IgnorePoison;
+use crate::operation_log::types::OpKind;
 
 use super::scan_cache;
 use super::state::{
@@ -187,6 +188,16 @@ pub(crate) struct OperationDescriptor {
     /// of racing a second one down the same tree. `None` for an op with no
     /// preview (MCP, drag-and-drop, an instant op).
     pub preview_id: Option<String>,
+    /// Set only when this op IS the reversal of a finished one, to the kind of
+    /// the operation it reverses. `None` on every ordinary op, and on the
+    /// in-flight `RollingBack` phase of a cancelled copy (that one reverses
+    /// ITSELF, and the transfer dialog it already sits in says so).
+    ///
+    /// The ORIGINAL kind, not the inverse: the frontend feeds it to the same
+    /// `rollbackConfirmVariant` map that worded the confirmation, so the
+    /// running bar cannot contradict what the question promised.
+    /// `apps/desktop/src/lib/file-operations/reversal-wording.ts`.
+    pub reverses: Option<OpKind>,
 }
 
 /// Best-effort human-readable source/destination summary for the queue window.
@@ -245,6 +256,10 @@ pub struct OperationSnapshot {
     pub destination: Option<String>,
     /// See [`OperationDescriptor::supports_rollback`].
     pub supports_rollback: bool,
+    /// See [`OperationDescriptor::reverses`]. Static for the op's whole life,
+    /// which is why it rides the thin snapshot rather than the 200 ms progress
+    /// tick.
+    pub reverses: Option<OpKind>,
     /// Why the operation stopped, on a retained `Failed` row only; `None` on
     /// every live row. The typed variant, never rendered prose: the frontend's
     /// `transfer-error-messages.ts` owns the wording. DETAILS § "Retained
@@ -325,6 +340,7 @@ impl ManagerInner {
                 source: rec.descriptor.summary.source.clone(),
                 destination: rec.descriptor.summary.destination.clone(),
                 supports_rollback: rec.descriptor.supports_rollback,
+                reverses: rec.descriptor.reverses,
                 error: None,
             });
         let settled_failures = self
@@ -854,14 +870,15 @@ impl OperationManager {
             // Prefer the live record's descriptor, so the failed row reads like the
             // running row it replaces. It's gone only if the op settled before its
             // own error event landed, and then the event's own type is all there is.
-            let (operation_type, source, destination, record_gone) = match inner.records.get(operation_id) {
+            let (operation_type, source, destination, reverses, record_gone) = match inner.records.get(operation_id) {
                 Some(rec) => (
                     rec.descriptor.operation_type,
                     rec.descriptor.summary.source.clone(),
                     rec.descriptor.summary.destination.clone(),
+                    rec.descriptor.reverses,
                     false,
                 ),
-                None => (operation_type, None, None, true),
+                None => (operation_type, None, None, None, true),
             };
 
             if inner.failures.len() == FAILURE_CAPACITY {
@@ -876,6 +893,9 @@ impl OperationManager {
                 // A settled failure offers no rollback from this row: the op is over,
                 // and there's no live intent machine left to reverse it.
                 supports_rollback: false,
+                // Kept from the live record: a reversal that stopped early is still
+                // a reversal, and the row that explains it must not rename itself.
+                reverses,
                 error: Some(error.clone()),
             });
             record_gone

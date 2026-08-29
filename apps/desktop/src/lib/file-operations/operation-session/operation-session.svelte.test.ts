@@ -54,6 +54,7 @@ function snapshot(
     source: '/src',
     destination: '/dst',
     supportsRollback: true,
+    reverses: null,
     error: null,
     ...over,
   }

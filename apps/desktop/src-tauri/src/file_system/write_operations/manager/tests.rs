@@ -37,6 +37,7 @@ fn descriptor(op_id: &str, lanes: Vec<&str>) -> OperationDescriptor {
         summary: OperationSummaryText::default(),
         supports_rollback: true,
         preview_id: None,
+        reverses: None,
     }
 }
 
@@ -51,6 +52,7 @@ fn instant_descriptor(op_id: &str, op_type: WriteOperationType, volume_ids: Vec<
         summary: OperationSummaryText::default(),
         supports_rollback: false,
         preview_id: None,
+        reverses: None,
     }
 }
 
@@ -829,6 +831,7 @@ async fn run_instant_does_not_reserve_a_lane() {
         summary: OperationSummaryText::default(),
         supports_rollback: false,
         preview_id: None,
+        reverses: None,
     };
     let h = tokio::spawn(async move {
         manager()

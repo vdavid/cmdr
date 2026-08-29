@@ -8681,6 +8681,12 @@ export type OperationSnapshot = {
   // See [`OperationDescriptor::supports_rollback`].
   supportsRollback: boolean
   /**
+   *  See [`OperationDescriptor::reverses`]. Static for the op's whole life,
+   *  which is why it rides the thin snapshot rather than the 200 ms progress
+   *  tick.
+   */
+  reverses: OpKind | null
+  /**
    *  Why the operation stopped, on a retained `Failed` row only; `None` on
    *  every live row. The typed variant, never rendered prose: the frontend's
    *  `transfer-error-messages.ts` owns the wording. DETAILS § "Retained

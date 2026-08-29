@@ -17,6 +17,7 @@ function snapshot(error: WriteOperationError | null, over: Partial<OperationSnap
     source: '/Users/me/Documents/report.pdf',
     destination: '/Volumes/Backup',
     supportsRollback: false,
+    reverses: null,
     error,
     ...over,
   }

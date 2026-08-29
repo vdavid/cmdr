@@ -98,6 +98,7 @@ pub(crate) fn start_bulk_rename(
         supports_rollback: false,
         // No scan preview: nothing walked a tree to plan this op.
         preview_id: None,
+        reverses: None,
     };
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
     let events_for_task = Arc::clone(&events);

@@ -332,6 +332,7 @@ fn rename_descriptor(from: &Path, to: &Path, volume_id: &str) -> OperationDescri
         supports_rollback: false,
         // No scan preview: nothing walked a tree to plan this op.
         preview_id: None,
+        reverses: None,
     }
 }
 

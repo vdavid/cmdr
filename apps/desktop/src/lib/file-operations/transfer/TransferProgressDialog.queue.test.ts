@@ -127,6 +127,7 @@ function snapshot(status: OperationSnapshot['status'], extra: OperationSnapshot[
       source: '/Users/test/things',
       destination: '/Users/test/dest',
       supportsRollback: true,
+      reverses: null,
       error: null,
     },
     ...extra,
@@ -289,6 +290,7 @@ function otherOp(
     source: '/Users/test/other',
     destination: '/Users/test/dest',
     supportsRollback: true,
+    reverses: null,
     error: null,
   }
 }
@@ -455,6 +457,7 @@ describe('TransferProgressDialog auto-queue surfacing', () => {
           source: '/Users/test/other',
           destination: '/Users/test/dest',
           supportsRollback: true,
+          reverses: null,
           error: null,
         },
       ]),

@@ -38,6 +38,7 @@ function operation(): OperationSnapshot {
     source: 'Holiday.mov',
     destination: 'Backup',
     supportsRollback: true,
+    reverses: null,
     error: null,
   }
 }

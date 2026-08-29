@@ -792,6 +792,7 @@ fn descriptor_on_lane(op_id: &str, lane: &str, preview_id: Option<String>) -> su
         summary: super::manager::OperationSummaryText::default(),
         supports_rollback: true,
         preview_id,
+        reverses: None,
     }
 }
 

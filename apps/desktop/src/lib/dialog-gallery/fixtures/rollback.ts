@@ -9,7 +9,7 @@
  * reading them side by side.
  */
 
-import type { RollbackConfirmVariant } from '$lib/file-operations/rollback-confirm-variant'
+import type { RollbackConfirmVariant } from '$lib/file-operations/reversal-wording'
 
 export interface RollbackConfirmFixture {
   variant: RollbackConfirmVariant

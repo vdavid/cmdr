@@ -76,6 +76,7 @@ describe('OperationConflictDialog a11y', () => {
       source: '/Users/me/Pictures/2026',
       destination: '/Volumes/Naspolya/Backup',
       supportsRollback: true,
+      reverses: null,
       error: null,
     }
     const event: WriteConflictEvent = {

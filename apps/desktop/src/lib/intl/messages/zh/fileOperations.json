@@ -403,6 +403,18 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {正在把文件挪回原处} other {正在把 {countText} 个文件挪回原处}}…",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "38c2022"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {正在删除新建的内容} other {正在删除新建的 {countText} 个文件}}…",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "bce7510"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {正在还原旧名字} other {正在还原 {countText} 个旧名字}}…",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "e3f6bc3"
+  },
   "fileOperations.transferProgress.titleCancelling": "正在取消…",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"

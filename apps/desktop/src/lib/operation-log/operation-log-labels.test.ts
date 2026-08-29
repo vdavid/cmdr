@@ -18,14 +18,12 @@ import type {
   RollbackRefusal,
   RollbackState,
 } from '$lib/ipc/bindings'
-import type { RollbackConfirmVariant } from '$lib/file-operations/rollback-confirm-variant'
 import {
   operationSummary,
   initiatorLabel,
   executionStatusLabel,
   rollbackStateLabel,
   itemOutcomeLabel,
-  rollbackConfirmVariant,
   rollbackRefusalNotice,
 } from './operation-log-labels'
 
@@ -112,33 +110,6 @@ describe('enum labels', () => {
     for (const [value, label] of Object.entries(cases)) {
       expect(itemOutcomeLabel(value as ItemOutcome)).toBe(label)
     }
-  })
-})
-
-describe('rollbackConfirmVariant', () => {
-  it('picks the wording by what the inverse DOES, mirroring the backend’s inverse_kind', () => {
-    const cases: Record<OpKind, RollbackConfirmVariant> = {
-      copy: 'undoByDeleting',
-      createFolder: 'undoByDeleting',
-      createFile: 'undoByDeleting',
-      archiveEdit: 'undoByDeleting',
-      // Never reachable: a permanent delete is gated as not-rollbackable, so no
-      // button ever appears on one. Mapped anyway so a new kind is a compile error.
-      delete: 'undoByDeleting',
-      move: 'undoByMovingBack',
-      trash: 'undoByMovingBack',
-      rename: 'undoByRenamingBack',
-    }
-    for (const [kind, variant] of Object.entries(cases)) {
-      expect(rollbackConfirmVariant(kind as OpKind)).toBe(variant)
-    }
-  })
-
-  it('never words a move or a rename as a delete', () => {
-    // The one mistake this mapping exists to prevent: reusing the copy wording on
-    // an operation whose reversal takes nothing away.
-    expect(rollbackConfirmVariant('move')).not.toBe('undoByDeleting')
-    expect(rollbackConfirmVariant('rename')).not.toBe('undoByDeleting')
   })
 })
 

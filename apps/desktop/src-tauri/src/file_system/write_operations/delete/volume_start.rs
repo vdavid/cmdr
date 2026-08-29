@@ -58,6 +58,7 @@ pub(in crate::file_system::write_operations) fn start_volume_delete(
         // Deleted is deleted; there's nothing for a rollback to put back.
         supports_rollback: false,
         preview_id: config.preview_id.clone(),
+        reverses: None,
     };
 
     let deferred_state = Arc::clone(&state);

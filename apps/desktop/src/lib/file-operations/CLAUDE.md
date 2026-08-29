@@ -17,37 +17,35 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
 - **Dialog copy lives in the i18n catalog, not the components**: `messages/en/fileOperations.json` via `t()` /
   `tString()` / `<Trans>`; hardcoding one fails `cmdr/no-raw-user-facing-string`. ⚠️ The transfer ERROR prose
   (`transfer-error-messages.ts`) is NOT ICU: it's the `errors.write.*` pipeline (`$lib/error-messages/CLAUDE.md`), keyed
-  per operation type, and its en output is parity-pinned, so a copy edit lands in the catalog AND the test.
+  per operation type, its en output parity-pinned, so a copy edit lands in the catalog AND the test.
 - **One dual-bar readout, two surfaces.** The progress dialog and the queue rows both render
-  `TransferProgressReadout.svelte`; its fixed-width cells are by design, and are why the queue's `MIN_WIDTH` and the
-  dialog's 580 px exist.
+  `TransferProgressReadout.svelte`; its fixed-width cells are why the queue's `MIN_WIDTH` and the dialog's 580 px exist.
 - **The foreground slot is released on EVERY route out of the dialog**, Queue and auto-queue included: that handoff is
-  when ambient surfaces start speaking. Release with `clearForegroundOperation(id)`, ❌ never a bare
+  when ambient surfaces start speaking. Use `clearForegroundOperation(id)`, ❌ never a bare
   `setForegroundOperationId(null)` (a late teardown silences the next dialog's operation).
 - **A rename / mkdir / mkfile refusal stays TYPED to the surface.** `throwMutationError` (a `TypedFailure`; ❌
   `throwIpcError` flattens it to JSON) → `asMutationError` → `renderMutationError`. ❌ Never render `Unexpected.detail`
-  or a `VolumeError` diagnostic as the message. `timedOut` means the write may STILL LAND. DETAILS § "Mutation
-  refusals".
+  or a `VolumeError` as the message. `timedOut` means the write may STILL LAND. DETAILS § "Mutation refusals".
 - **An error dialog is a HANDOVER, not a release.** `handleTransferError` passes the id to `setForegroundFailureId`
-  while the dialog still owns it; closing releases it. Skip it and the chip and toast announce what the user is already
-  reading.
+  while the dialog still owns it; closing releases it. Skip it and the chip and toast announce what the user is reading.
 - **Rollback asks first, Cancel doesn't.** Every surface stacks `RollbackConfirmDialog` and calls nothing until the
-  answer lands. ❌ Never a native `ask`, ❌ never a file count in it.
-- **Its `variant` says what the reversal DOES; wrong is a data-safety lie in copy.** `stopAndDelete` while an operation
-  RUNS, the three `undo*` values for undoing a finished one (mirroring `inverse_kind`). ❌ Never word a move's reversal
-  as a delete: it deletes nothing. DETAILS § "Rollback asks first".
+  answer lands. ❌ Never a native `ask`, ❌ no file count in it.
+- **Its `variant` says what the reversal DOES, in the question AND on the running bar; wrong is a data-safety lie in
+  copy.** `stopAndDelete` while one RUNS, the three `undo*` for undoing a finished one (mirroring `inverse_kind`). One
+  picker feeds every surface (`reversal-wording.ts`), keyed off `snapshot.reverses`. ❌ Never word a move's reversal as
+  a delete, ❌ never infer one from `phase === 'rolling_back'` (a cancelled copy wears it too). DETAILS § Rollback.
 - **A conflict no dialog owns is answered on the MAIN window** (`operation-conflict.svelte.ts`): pause what's running,
   prompt, resume exactly the ids paused. ❌ Never `resumeAll()` (it restarts a USER pause); ❌ never decide ownership
-  while `isForegroundClaimPending()` — defer, or you double-prompt or re-wedge it.
-- **A clash answered ANYWHERE takes every surface's prompt down** (`write-conflict-resolved`): another window or an
-  agent over MCP may have answered. Drop only the clash the event NAMES.
+  while `isForegroundClaimPending()`: defer, or you double-prompt or re-wedge it.
+- **A clash answered ANYWHERE takes every surface's prompt down** (`write-conflict-resolved`): another window or an MCP
+  agent may have answered. Drop only the clash the event NAMES.
 - **The answer names WHICH clash.** `session.resolveConflict(conflictId, ...)` with the id off the event on screen:
   anything but `resolved` settled without us, so take the prompt down and release the hold, ❌ never surface it as a
   failure. Only `null` keeps it up. DETAILS § "Conflict prompts".
-- **Journal rows become readable at `write-settled`, not at the terminal event** (the buffered tail flushes in the later
-  finalize barrier). Reading on complete silently hands back an EMPTY page. Wait through `whenOperationSettled(id)`.
+- **Journal rows become readable at `write-settled`, not at the terminal event** (the buffered tail flushes in the
+  finalize barrier). Reading on complete hands back an EMPTY page. Wait through `whenOperationSettled(id)`.
 - **`ScanThroughput` is SCAN-phase only** (the backend `EtaEstimator` owns every write phase), returns nulls until two
-  samples land, and needs `reset()` between scans.
+  samples land, needs `reset()` between scans.
 
 Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 

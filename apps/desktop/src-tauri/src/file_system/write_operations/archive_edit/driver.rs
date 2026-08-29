@@ -134,6 +134,7 @@ pub(crate) async fn archive_edit_start(
         // it doesn't, so there's no half-written state to reverse.
         supports_rollback: false,
         preview_id: request.preview_id.clone(),
+        reverses: None,
     };
 
     let events_for_op = Arc::clone(&events);

@@ -209,6 +209,7 @@ function snapshot(
     source: '/s',
     destination: '/d',
     supportsRollback: true,
+    reverses: null,
     error: null,
   }
 }

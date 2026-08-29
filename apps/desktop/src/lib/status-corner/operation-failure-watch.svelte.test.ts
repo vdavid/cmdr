@@ -46,6 +46,7 @@ function failedRow(operationId: string): OperationRow {
     source: '/Users/me/Documents/report.pdf',
     destination: '/Volumes/Backup',
     supportsRollback: false,
+    reverses: null,
     error: { type: 'source_not_found', path: '/Users/me/Documents/report.pdf' },
   }
   return { snapshot, progress: null }

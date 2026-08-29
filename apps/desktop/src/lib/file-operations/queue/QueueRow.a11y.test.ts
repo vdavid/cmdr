@@ -23,6 +23,7 @@ function row(
       source: '/Users/me/Documents/report.pdf',
       destination: opType === 'delete' || opType === 'trash' ? null : '/Volumes/Backup/report.pdf',
       supportsRollback,
+      reverses: null,
       error: null,
     },
     progress,

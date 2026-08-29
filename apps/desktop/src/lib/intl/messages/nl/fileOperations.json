@@ -405,6 +405,18 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Bezig met bestanden terugzetten} one {Bezig met het bestand terugzetten} other {Bezig met {countText} bestanden terugzetten}}...",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "38c2022"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Bezig met het aangemaakte verwijderen} one {Bezig met het aangemaakte bestand verwijderen} other {Bezig met de {countText} aangemaakte bestanden verwijderen}}...",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "bce7510"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Bezig met oude namen terugzetten} one {Bezig met de oude naam terugzetten} other {Bezig met {countText} oude namen terugzetten}}...",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "e3f6bc3"
+  },
   "fileOperations.transferProgress.titleCancelling": "Bezig met annuleren...",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"

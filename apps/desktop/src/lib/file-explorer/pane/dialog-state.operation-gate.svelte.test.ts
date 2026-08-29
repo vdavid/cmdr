@@ -263,6 +263,7 @@ describe('steering the operation that IS running', () => {
       operationType: 'copy',
       sourcePath: '/Volumes/Card/DCIM',
       destinationPath: '/Users/me/import',
+      reverses: null,
     })
 
     expect(dialogs.startTransferProgress(copyProps())).toBe('started')

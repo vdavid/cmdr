@@ -32,6 +32,24 @@
     "screenshot": "quit-confirmation-one-copy.png"
   },
 
+  "queue.row.reversalMovingBack": "Putting files back",
+  "@queue.row.reversalMovingBack": {
+    "description": "Names an operation row that is UNDOING a finished move or a finished move-to-trash: the files are travelling back to where they came from, and nothing is being deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack), so use the same verb family: nothing here may sound like a deletion.",
+    "screenshot": "queue.png"
+  },
+
+  "queue.row.reversalDeleting": "Deleting what it created",
+  "@queue.row.reversalDeleting": {
+    "description": "Names an operation row that is UNDOING a finished copy, a new file or folder, or a compress: the reversal deletes what that operation created. \"it\" is the operation being undone. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByDeleting), so keep the deleting verb: this one really does take files away.",
+    "screenshot": "queue.png"
+  },
+
+  "queue.row.reversalRenamingBack": "Putting the old names back",
+  "@queue.row.reversalRenamingBack": {
+    "description": "Names an operation row that is UNDOING a finished rename: the files get their old names back, and nothing moves or is deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRenamingBack).",
+    "screenshot": "queue.png"
+  },
+
   "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Canceled} failed {Couldn''t finish} other {Running}}",
   "@queue.row.status": {
     "description": "Short status word for an operation row in the operation queue. \"Waiting\" means it''s queued behind another operation on the same drive; \"Paused\" means the user paused it; \"Couldn''t finish\" is the gentle wording for a failed operation (avoid the words error/failed).",

@@ -225,6 +225,7 @@ pub async fn copy_between_volumes(
         // with rollback can delete them again (`cleanup.rs`).
         supports_rollback: true,
         preview_id: config.preview_id.clone(),
+        reverses: None,
     };
 
     // Deferred start: the manager spawns this only once both lanes are free.

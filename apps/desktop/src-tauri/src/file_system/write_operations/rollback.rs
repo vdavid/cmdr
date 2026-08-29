@@ -365,6 +365,12 @@ fn spawn_managed_inverse(
         supports_rollback: false,
         // No scan preview: nothing walked a tree to plan this op.
         preview_id: None,
+        // The ORIGINAL kind, so every surface naming this op words it by what the
+        // reversal will DO ("Putting files back" for a move, not "Moving"). The
+        // inverse kind alone can't say that: `Move` covers undoing a move AND
+        // undoing a trash, and `Delete` covers undoing a copy, a new folder, and
+        // a compress.
+        reverses: Some(original.kind),
     };
     // The cadence every other transfer's bar runs at. A zero interval would mean
     // no throttle at all, and a million-item reversal emitting an event per item.

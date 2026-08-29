@@ -85,6 +85,7 @@ function snapshot(operationId: string, status: OperationSnapshot['status'] = 'ru
     source: '/Users/me/Documents/report.pdf',
     destination: '/Volumes/Backup/report.pdf',
     supportsRollback: true,
+    reverses: null,
     error: null,
   }
 }

@@ -29,6 +29,7 @@ function operation(
     source,
     destination,
     supportsRollback: operationType === 'copy' || operationType === 'move',
+    reverses: null,
     error: null,
   }
 }

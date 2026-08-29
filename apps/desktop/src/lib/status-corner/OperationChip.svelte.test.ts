@@ -70,6 +70,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     source: '/Users/me/Documents',
     destination: '/Volumes/Naspolya/Backup',
     supportsRollback: true,
+    reverses: null,
     error: null,
     ...over,
   }
@@ -81,6 +82,7 @@ function failedSnapshot(operationId = 'op-1'): OperationSnapshot {
     operationId,
     status: 'failed',
     supportsRollback: false,
+    reverses: null,
     error: { type: 'source_not_found', path: '/Users/me/Documents/report.pdf' },
   })
 }
@@ -158,6 +160,36 @@ describe('OperationChip', () => {
     expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Copying')
     expect(chip()?.getAttribute('aria-label')).toBe('Copying, 42 percent. Open the operation queue.')
     expect(target.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('42')
+  })
+
+  it('names a reversal by what it does to the files, in the corner and in what a screen reader hears', () => {
+    // Undoing a move is registered AS a move. Without `reverses` the corner
+    // would read "Moving", which is what the person asked to undo.
+    store?._testApplySnapshot([snapshot({ operationType: 'move', reverses: 'move', supportsRollback: false })])
+    emitProgress(progress({ operationType: 'move' }))
+    renderChip()
+    expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Putting files back')
+    expect(chip()?.getAttribute('aria-label')).toBe('Putting files back, 42 percent. Open the operation queue.')
+  })
+
+  it('never says Deleting in the corner over an undo that deletes nothing', () => {
+    store?._testApplySnapshot([snapshot({ operationType: 'move', reverses: 'trash', supportsRollback: false })])
+    emitProgress(progress({ operationType: 'move' }))
+    renderChip()
+    expect(chip()?.querySelector('.chip-label')?.textContent).not.toContain('Deleting')
+  })
+
+  it('does say Deleting for the reversal that really does delete', () => {
+    store?._testApplySnapshot([
+      snapshot({ operationType: 'delete', destination: null, reverses: 'copy', supportsRollback: false }),
+    ])
+    emitProgress(progress({ operationType: 'delete', etaSeconds: null }))
+    renderChip()
+    expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Deleting what it created')
+    // The tooltip leads with the same fact, so hovering can't contradict the chip.
+    expect(target.querySelector('.tooltip-content')?.textContent).toBe(
+      'Deleting what it created · 214 items · 42%',
+    )
   })
 
   it('counts files when the operation moves no bytes', () => {

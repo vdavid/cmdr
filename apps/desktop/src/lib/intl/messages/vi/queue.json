@@ -19,6 +19,18 @@
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
+  "queue.row.reversalMovingBack": "Đang đưa các tệp về chỗ cũ",
+  "@queue.row.reversalMovingBack": {
+    "sourceHash": "19ac5eb"
+  },
+  "queue.row.reversalDeleting": "Đang xóa những gì đã tạo",
+  "@queue.row.reversalDeleting": {
+    "sourceHash": "f88d220"
+  },
+  "queue.row.reversalRenamingBack": "Đang trả lại tên cũ",
+  "@queue.row.reversalRenamingBack": {
+    "sourceHash": "3e00fd5"
+  },
   "queue.row.status": "{status, select, queued {Đang chờ} running {Đang chạy} paused {Đã tạm dừng} done {Xong} cancelled {Đã hủy} failed {Chưa hoàn tất được} other {Đang chạy}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"

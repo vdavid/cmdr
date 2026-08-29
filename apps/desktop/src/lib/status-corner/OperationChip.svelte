@@ -16,6 +16,7 @@
     import { getForegroundFailureId, getForegroundOperationId } from '$lib/file-operations/foreground-operation.svelte'
     import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
     import { bindOperationSession } from '$lib/file-operations/operation-session/bind-operation-session.svelte'
+    import { rollbackConfirmVariant, reversalLabelKey } from '$lib/file-operations/reversal-wording'
     import { CHIP_SETTLE_MS, destinationName, pickChipState } from './operation-chip'
 
     const chipState = $derived(
@@ -80,9 +81,25 @@
     const visible = $derived(chipState !== null && settledId === candidateId)
 
     /** The action word: "Copying", "Moving to trash". Only the running chip
-     *  shows it; `chipLabel` is what any surface describing the chip leads with. */
+     *  shows it; `chipLabel` is what any surface describing the chip leads with.
+     *
+     *  A REVERSAL is named by what it will do to the files ("Putting files
+     *  back"), ❌ never by the operation type it runs as: undoing a copy is
+     *  journaled as a delete, and a corner chip reading "Deleting" over an undo
+     *  the person just asked for is the one thing this wording exists to
+     *  prevent. Same variant the confirmation was worded from, and the same
+     *  string the queue row shows, so no two surfaces can disagree. */
+    const reversalVariant = $derived(
+        candidate === null || candidate.row.snapshot.reverses === null
+            ? null
+            : rollbackConfirmVariant(candidate.row.snapshot.reverses),
+    )
     const verb = $derived(
-        candidate === null ? '' : tString('queue.row.label', { type: candidate.row.snapshot.operationType }),
+        candidate === null
+            ? ''
+            : reversalVariant !== null
+              ? tString(reversalLabelKey(reversalVariant))
+              : tString('queue.row.label', { type: candidate.row.snapshot.operationType }),
     )
     const pausedWord = $derived(tString('queue.row.status', { status: 'paused' }))
     /** The same "Couldn't finish" the failed queue row shows, so the two

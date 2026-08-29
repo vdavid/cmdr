@@ -18,6 +18,7 @@ function row(operationId: string, operationType: OperationSnapshot['operationTyp
       source: '/Volumes/Card/DCIM',
       destination: '/Users/me/import',
       supportsRollback: true,
+      reverses: null,
       error: null,
     },
     progress: null,
@@ -33,7 +34,17 @@ describe('adoptedOperationFor', () => {
       operationType: 'move',
       sourcePath: '/Volumes/Card/DCIM',
       destinationPath: '/Users/me/import',
+      reverses: null,
     })
+  })
+
+  it('carries the reversal fact through, so the dialog can title itself honestly', () => {
+    // Undoing a move runs AS a move. Drop `reverses` here and the adopted dialog
+    // titles itself "Moving...", naming the thing the person asked to undo.
+    const reversal = row('op-3', 'move')
+    reversal.snapshot.reverses = 'move'
+
+    expect(adoptedOperationFor([reversal], 'op-3')?.reverses).toBe('move')
   })
 
   it('has nothing for an operation this window no longer lists', () => {

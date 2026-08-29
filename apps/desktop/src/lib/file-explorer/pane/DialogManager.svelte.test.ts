@@ -160,6 +160,7 @@ describe('DialogManager progress dialog', () => {
     operationType: 'copy',
     sourcePath: '/src',
     destinationPath: '/dst',
+    reverses: null,
   }
 
   const dispatching: TransferProgressPropsData = {

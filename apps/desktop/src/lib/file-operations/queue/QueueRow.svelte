@@ -13,6 +13,7 @@
     import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
     import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
+    import { rollbackConfirmVariant, reversalLabelKey } from '../reversal-wording'
     import { requestForegroundOperation } from '$lib/tauri-commands'
 
     interface Props {
@@ -63,7 +64,22 @@
      *  so it goes through `{@html}` exactly as the dialog's body does. */
     const reason = $derived(failureReasonFor(snapshot))
 
-    const typeIcon = $derived(operationTypeIcon(snapshot.operationType))
+    /** This operation IS the reversal of a finished one, and `reverses` names
+     *  what that one DID, so the row can say what this one will do to the files
+     *  rather than which syscall it uses. Null on every ordinary operation.
+     *  Same variant the confirmation was worded from a moment ago, so the two
+     *  can't contradict each other. `../reversal-wording.ts`. */
+    const reversalVariant = $derived(
+        snapshot.reverses === null ? null : rollbackConfirmVariant(snapshot.reverses),
+    )
+
+    /** ❌ Not the op-type glyph a reversal would otherwise wear: undoing a copy
+     *  registers as a delete, so the row would fly a trash can over an operation
+     *  the user asked to UNDO. The undo arrow is the one the Roll back button
+     *  in this same window already uses. */
+    const typeIcon = $derived(
+        reversalVariant === null ? operationTypeIcon(snapshot.operationType) : 'rotate-ccw',
+    )
 
     /** The backend switched this op to undoing what it wrote. The lifecycle
      *  status stays `running` throughout (rollback is an INTENT, not a
@@ -98,17 +114,30 @@
      *  backend's own wait classification, through the session. */
     const awaitingAnswer = $derived(op?.awaitingAnswer ?? false)
 
-    const label = $derived(tString('queue.row.label', { type: snapshot.operationType }))
+    /** A reversal is named by what it will DO to the files ("Putting files
+     *  back"), ❌ never by the operation type it runs as: undoing a move is
+     *  journaled as a move and undoing a copy as a delete, so the plain action
+     *  word would tell a person their undo is deleting things. */
+    const label = $derived(
+        reversalVariant === null
+            ? tString('queue.row.label', { type: snapshot.operationType })
+            : tString(reversalLabelKey(reversalVariant)),
+    )
 
-    /** The status cell names the LIFECYCLE, and twice it doesn't: a rollback and
-     *  an unanswered clash both leave the operation `running` while it does
-     *  something a person needs to recognize. This column is what somebody
-     *  reads down when they're looking for the operation that isn't moving, so
-     *  it carries the most specific true thing, with the lifecycle word as its
-     *  default vocabulary. Why here rather than in the readout: DETAILS §
-     *  "A row parked on a clash". */
+    /** The status cell names the LIFECYCLE, and twice it doesn't: an in-flight
+     *  rollback and an unanswered clash both leave the operation `running` while
+     *  they do something a person needs to recognize. This column is what
+     *  somebody reads down when they're looking for the operation that isn't
+     *  moving, so it carries the most specific true thing, with the lifecycle
+     *  word as its default vocabulary. Why here rather than in the readout:
+     *  DETAILS § "A row parked on a clash".
+     *
+     *  A reversal launched from history is the exception to the exception: its
+     *  LABEL already says it's a reversal, so the status cell is free to keep
+     *  the lifecycle word. That's what lets a paused reversal read "Paused"
+     *  instead of a "Rolling back..." that hides the pause. */
     const statusLabel = $derived(
-        isRollingBack
+        isRollingBack && reversalVariant === null
             ? tString('fileOperations.transferProgress.titleRollingBack')
             : awaitingAnswer
               ? tString('queue.row.statusAwaitingAnswer')

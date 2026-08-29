@@ -406,6 +406,18 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Remise en place des fichiers} one {Remise en place du fichier} many {Remise en place de {countText} fichiers} other {Remise en place de {countText} fichiers}}...",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "38c2022"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Suppression de ce qui a été créé} one {Suppression du fichier créé} many {Suppression des {countText} fichiers créés} other {Suppression des {countText} fichiers créés}}...",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "bce7510"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Restauration des anciens noms} one {Restauration de l''ancien nom} many {Restauration de {countText} anciens noms} other {Restauration de {countText} anciens noms}}...",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "e3f6bc3"
+  },
   "fileOperations.transferProgress.titleCancelling": "Annulation...",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"

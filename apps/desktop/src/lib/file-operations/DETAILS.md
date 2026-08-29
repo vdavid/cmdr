@@ -34,8 +34,8 @@ Umbrella-level files:
   waits for `write-settled`".
 - `operation-conflict.svelte.ts` + `OperationConflictDialog.svelte`: the main window's conflict prompt for an operation
   no progress dialog is showing; its two rules are pure, in `operation-conflict-rules.ts` (§ below).
-- `RollbackConfirmDialog.svelte` + `rollback-confirm-variant.ts`: the question every Rollback goes through, and the
-  typed variant that decides what it says (§ below).
+- `RollbackConfirmDialog.svelte` + `reversal-wording.ts`: the question every Rollback goes through, the typed variant
+  that decides what it says, and the same variant's catalog keys for the running bar (§ below).
 - `mutation-error.ts` + `mutation-error-messages.ts`: the rename / New Folder / New File refusal path (§ below).
 
 ## Mutation refusals (rename, New Folder, New File, single trash)
@@ -270,15 +270,14 @@ before the operation started, and nothing brings it back. Against that, every ot
 question stays in front of the reversals that delete nothing too, because Rollback moves the user's files either way and
 the button reads the same on every surface.
 
-**What it says depends on what the reversal DOES** (`variant`, in `rollback-confirm-variant.ts`):
+**What it says depends on what the reversal DOES** (`variant`, in `reversal-wording.ts`):
 
 - `stopAndDelete`, for a copy or move still RUNNING. Two facts: it removes everything written so far (not only the
   half-written file a plain Cancel drops), and a file it replaced won't come back.
 - `undoByDeleting` / `undoByMovingBack` / `undoByRenamingBack`, for undoing a FINISHED operation from the history
   dialog. Each names the inverse action, then admits the reversal may come out partial. They mirror the backend's
-  `inverse_kind`; the picker is `rollbackConfirmVariant` in `$lib/operation-log/operation-log-labels.ts`, and the
-  reasoning behind the wording is `$lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the
-  inverse".
+  `inverse_kind`; the picker is `rollbackConfirmVariant` in `reversal-wording.ts`, and the reasoning behind the wording
+  is `$lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the inverse".
 
 **What it deliberately doesn't say.** ❌ No file count, tempting as one is: the running counter includes files the
 operation SKIPPED, so any number here would be wrong on exactly the operation that had clashes — which is most of the
@@ -297,6 +296,45 @@ which would need a capability the queue window deliberately drops and would be u
 
 **All four variants sit in the dialog gallery** (Debug > Soft dialogs), one state each, because getting one of four
 confirmations wrong is a copy problem you can only catch by reading them side by side.
+
+### The running reversal is named from the SAME variant as the question
+
+**The defect this closes.** A rollback launched from the history dialog used to reuse the in-flight cancel-rollback's
+title verbatim, "Rolling back...", on every surface. For undoing a move that is wrong twice over: nothing is being
+deleted (the files are travelling home), and the ten locales were about to be translated against a `@key` description
+that said "deleting the partial files it created". The confirmation had already been made kind-aware; the progress
+hadn't, so the two could contradict each other two seconds apart.
+
+**How they're kept in agreement.** `reversal-wording.ts` owns one classifier and every surface's key for it:
+
+- `rollbackConfirmVariant(kind)`: `OpKind` → `RollbackConfirmVariant`, mirroring `inverse_kind`. Moved here from
+  `$lib/operation-log/operation-log-labels.ts` so `queue/` and `$lib/status-corner/` can reach it without depending on
+  the operation-log module (which depends on this one).
+- `reversalLabelKey(variant)`: the count-free name, for the queue row's label and the corner chip's action word. Both
+  sit next to a readout or tooltip that already carries the numbers, so a count here would only repeat them.
+- `reversalTitleKey(variant)`: the counted progress-dialog title ("Putting 1,240 files back..."), with a `=0` arm for
+  the frames before the journal count lands, so it never reads "0 files".
+
+Because the confirmation body and both progress keys are picked from ONE variant, the only way they can disagree is a
+copy edit to one of them, which `reversal-wording.test.ts` asserts against per `OpKind`.
+
+**Where the variant comes from at runtime.** `OperationSnapshot.reverses` (`Option<OpKind>` on the wire), set by the
+backend only on an operation that IS the reversal of a finished one (`write_operations/rollback.rs`'s
+`spawn_managed_inverse`). It carries the ORIGINAL kind, not the inverse: `Move` alone can't tell undoing a move from
+undoing a trash, and `Delete` can't tell undoing a copy from undoing a compress. ❌ Never infer a reversal from
+`phase === 'rolling_back'` instead: a CANCELLED copy wears that phase too, and there "Rolling back..." is the honest
+word, since it really is deleting the partials.
+
+**What the surfaces do with it.**
+
+- The queue row swaps its label AND its type glyph (the undo arrow, ❌ not the op type's own: undoing a copy runs as a
+  delete and would fly a trash can). Its status cell then keeps the plain lifecycle word, which is how a PAUSED
+  reversal can read "Paused" instead of a "Rolling back..." that hides the pause.
+- The corner chip swaps its action word, which its tooltip and `aria-label` both lead with.
+- The progress dialog (reachable by pressing Show on the row) swaps its title and drops the Rollback button entirely:
+  the operation's own registry row says `supportsRollback: false`, and a button there would offer to re-apply what the
+  person just chose to undo.
+- The in-flight cancel-rollback path is untouched on all three.
 
 **A settled operation withdraws the question** rather than leaving one that answers to nothing: the progress dialog
 gates on `operationSettled`, the queue row on `canRollback`, and the history row on the operation still reading

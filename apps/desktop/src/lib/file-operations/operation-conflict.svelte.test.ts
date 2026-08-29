@@ -98,6 +98,7 @@ function snapshot(
     source: '/src/folder',
     destination: '/dst/folder',
     supportsRollback: true,
+    reverses: null,
     error: null,
     ...over,
   }

@@ -26,6 +26,7 @@ function row(
       source: '/src/file',
       destination: '/dst/file',
       supportsRollback: true,
+      reverses: null,
       error: null,
     },
     progress: null,

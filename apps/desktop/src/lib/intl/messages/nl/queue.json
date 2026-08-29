@@ -19,6 +19,18 @@
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
+  "queue.row.reversalMovingBack": "Bezig met bestanden terugzetten",
+  "@queue.row.reversalMovingBack": {
+    "sourceHash": "19ac5eb"
+  },
+  "queue.row.reversalDeleting": "Bezig met het aangemaakte verwijderen",
+  "@queue.row.reversalDeleting": {
+    "sourceHash": "f88d220"
+  },
+  "queue.row.reversalRenamingBack": "Bezig met oude namen terugzetten",
+  "@queue.row.reversalRenamingBack": {
+    "sourceHash": "3e00fd5"
+  },
   "queue.row.status": "{status, select, queued {Wachten} running {Bezig} paused {Gepauzeerd} done {Gereed} cancelled {Geannuleerd} failed {Niet voltooid} other {Bezig}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"

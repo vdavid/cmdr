@@ -405,6 +405,18 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Levando os arquivos de volta} one {Levando o arquivo de volta} many {Levando {countText} arquivos de volta} other {Levando {countText} arquivos de volta}}...",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "38c2022"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Apagando o que foi criado} one {Apagando o arquivo criado} many {Apagando os {countText} arquivos criados} other {Apagando os {countText} arquivos criados}}...",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "bce7510"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Devolvendo os nomes antigos} one {Devolvendo o nome antigo} many {Devolvendo {countText} nomes antigos} other {Devolvendo {countText} nomes antigos}}...",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "e3f6bc3"
+  },
   "fileOperations.transferProgress.titleCancelling": "Cancelando...",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"

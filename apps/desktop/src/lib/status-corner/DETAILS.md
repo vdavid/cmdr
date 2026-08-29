@@ -76,8 +76,11 @@ without a modal in front of it, and clicking it opens (or raises) the queue wind
 - **The bar**: bytes (`bytesDone / bytesTotal`), falling back to the file count when `bytesTotal` is 0, clamped to 0–1.
   The zero-bytes case is real rather than defensive: a same-volume move renames server-side and moves no bytes, so a
   bytes bar would sit at 0% for the whole operation. With neither metric it reads 0% rather than dividing by zero.
-- **The label**: the verb from `queue.row.label` (the queue rows' own vocabulary), except while paused, where it becomes
-  the status word "Paused" — a frozen bar under "Copying" is ambiguous. It's capped at `12em` and ellipsized, because a
+- **The label**: the verb from `queue.row.label` (the queue rows' own vocabulary), except twice. While PAUSED it becomes
+  the status word "Paused" — a frozen bar under "Copying" is ambiguous. On an operation that IS a REVERSAL
+  (`snapshot.reverses` set) it comes from `$lib/file-operations/reversal-wording.ts` instead, the same string the queue
+  row shows, because the wire `operationType` names the syscall: undoing a copy runs as a delete, and a corner reading
+  "Deleting" over an undo the person just asked for is the one thing this label must never say. It's capped at `12em` and ellipsized, because a
   localized verb runs to twice English's longest ("Wird in den Papierkorb bewegt"), and the corner must not grow across
   the pane; the tooltip carries the full text. The tooltip and the spoken label both lead with this same label.
 - **Nothing else**: no percentage text, no "+N" affix for the operations it isn't showing. Both were considered and cut

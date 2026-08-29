@@ -15,22 +15,23 @@ with any `children` to their left. The chip's pick-and-measure rules are pure, i
 - **A member opens NO subscription at mount.** `StatusCorner.svelte.test.ts` and `StatusCorner.a11y.test.ts` mount the
   real corner and stub neither the suggestions badge nor the wake indicator, so a listener in a member's `onMount`
   breaks both suites. Each member's state lives in its own `*.svelte.ts`, started from `routes/(main)/`.
-- **No positioned ancestor, on purpose**: `.main-content` stays static, or the corner moves with it.
-- **The row is always mounted, so it's `pointer-events: none`** with `auto` on its children, or an empty box over the
-  pane eats clicks.
+- **No positioned ancestor**: `.main-content` stays static, or the corner moves with it.
+- **The row is always mounted, so it's `pointer-events: none`** with `auto` on its children, or an empty box eats
+  clicks over the pane.
 - **The chip is a PREVIEW, not a queue**: one operation (first running, else first paused), a verb and an 80 px bar, no
-  percentage, no "+N". ❌ Not `TransferProgressReadout` — its fixed-width cells blow past the corner.
-- **Both gates are pure and live in `operation-chip.ts`** (`pickChipOperation`, `pickChipState`), so add and test one
-  there, not in the markup. The bar is bytes, falling back to the file count when `bytesTotal` is 0 (a same-volume move
-  moves no bytes); instant ops are excluded by TYPED `operationType`, ❌ never a substring test.
+  percentage, no "+N". ❌ Not `TransferProgressReadout` — its fixed-width cells blow past the corner. A REVERSAL's verb
+  comes from `$lib/file-operations/reversal-wording.ts` (`snapshot.reverses` set), ❌ never `queue.row.label` (undoing a
+  copy runs as a delete, so the corner would say "Deleting" over an undo).
+- **Both gates are pure, in `operation-chip.ts`** (`pickChipOperation`, `pickChipState`): add and test one there, not in
+  the markup. The bar is bytes, falling back to the file count when `bytesTotal` is 0 (a same-volume move
+  moves none); instant ops are excluded by TYPED `operationType`, ❌ never a substring test.
 - **A scanning operation gets a SPINNER and "Scanning…", never a bar** (both totals are 0). Its spoken label is
-  `queue.chip.scanningAriaLabel`, ❌ never the tooltip's string: that one drops the verb and the "Open the operation
-  queue" tail.
-- **A paused-only queue KEEPS the chip**, still bar, label "Paused": hiding it would re-hide the work the chip exists to
-  surface. Tooltip and aria-label lead with that label, ❌ never the verb, so every `queue.chip.tooltip` clause carries
-  its own leading `·`.
+  `queue.chip.scanningAriaLabel`, ❌ never the tooltip's: that drops the verb and the "Open the operation queue" tail.
+- **A paused-only queue KEEPS the chip**, still bar, label "Paused": hiding it would re-hide the work the chip exists
+  to surface. Tooltip and aria-label lead with that label, ❌ never the verb, so every `queue.chip.tooltip` clause
+  carries its own leading `·`.
 - **Render the session's `etaSecondsDisplay`, ❌ never `progress.etaSeconds`**: the raw value once read "8m 12s" in one
-  window and "5m 46s" in the other.
+  window, "5m 46s" in the other.
 - **The FIRST appearance waits `CHIP_SETTLE_MS`** (blink-long work never flashes the corner, and the beat closes a race
   with the foreground modal's claim); a handover to the next operation is immediate.
 - **The failure toast NEVER auto-dismisses**, and past three they collapse into one summary. A stack full of persistent

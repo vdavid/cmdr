@@ -23,6 +23,7 @@ function operation(operationId: string, operationType: OperationSnapshot['operat
     source: '/Volumes/Naspolya/media/Holiday.mov',
     destination: '/Users/dave/Backup',
     supportsRollback: true,
+    reverses: null,
     error: null,
   }
 }

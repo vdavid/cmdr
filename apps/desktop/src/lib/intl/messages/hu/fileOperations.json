@@ -405,6 +405,18 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Fájlok visszavitele} one {A fájl visszavitele} other {{countText} fájl visszavitele}}…",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "38c2022"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {A létrehozottak törlése} one {A létrehozott fájl törlése} other {A létrehozott {countText} fájl törlése}}…",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "bce7510"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Régi nevek visszaadása} one {A régi név visszaadása} other {{countText} régi név visszaadása}}…",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "e3f6bc3"
+  },
   "fileOperations.transferProgress.titleCancelling": "Megszakítás…",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"

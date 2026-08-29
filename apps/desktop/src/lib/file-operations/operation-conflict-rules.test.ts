@@ -23,6 +23,7 @@ function row(id: string, status: OperationSnapshot['status'], type: OperationSna
       source: '/s',
       destination: '/d',
       supportsRollback: true,
+      reverses: null,
       error: null,
     },
     progress: null,

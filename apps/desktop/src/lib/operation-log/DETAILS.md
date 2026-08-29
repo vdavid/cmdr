@@ -12,7 +12,9 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
 - `OperationLogDialog.svelte`: the dialog. Lazily fetches an operation's item rows on first expand and caches them for
   the dialog's lifetime, holds the pending rollback question, and renders per-row refusal notices.
 - `operation-log-labels.ts`: pure, no I/O. Summary formatting (ICU plural over `kind` + `itemCount`), the four enum
-  label mappings, `rollbackConfirmVariant`, and `rollbackRefusalNotice`.
+  label mappings, and `rollbackRefusalNotice`. `rollbackConfirmVariant` is NOT here: it lives in
+  `$lib/file-operations/reversal-wording.ts` with the type it returns, so `queue/` and `$lib/status-corner/` (which name
+  the running reversal off the same variant) can reach it without depending on this module, which depends on that one.
 - `rollback-refusal.ts`: `RollbackRefusalFailure` / `throwRollbackRefusal` / `asRollbackRefusal`, the three-line
   `TypedFailure` family (`$lib/ipc/typed-failure.ts` is the pattern).
 - `operation-log-shortcut.test.ts` pins the ⌥⌘L route; `operation-log-trigger.test.ts` owns the paging assertions, so
@@ -49,9 +51,12 @@ operation's settle event rather than polling.
 
 ### Decision: the confirmation is worded by the inverse, not by the operation
 
-`RollbackConfirmDialog` takes a `RollbackConfirmVariant` (`$lib/file-operations/rollback-confirm-variant.ts`), and
+`RollbackConfirmDialog` takes a `RollbackConfirmVariant` (`$lib/file-operations/reversal-wording.ts`), and
 `rollbackConfirmVariant` maps `OpKind` to it with an exhaustive switch that mirrors the backend's `inverse_kind` arm for
-arm:
+arm. The SAME variant names the reversal while it runs, on the queue row, the corner chip, and the progress dialog:
+`$lib/file-operations/DETAILS.md` § "The running reversal is named from the SAME variant".
+
+The arms:
 
 - copy / createFolder / createFile / archiveEdit → `undoByDeleting`
 - move / trash → `undoByMovingBack`

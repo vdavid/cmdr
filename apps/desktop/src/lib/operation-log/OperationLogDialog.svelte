@@ -42,10 +42,10 @@
         executionStatusLabel,
         rollbackStateLabel,
         itemOutcomeLabel,
-        rollbackConfirmVariant,
         rollbackRefusalNotice,
         notRollbackableNotice,
     } from './operation-log-labels'
+    import { rollbackConfirmVariant } from '$lib/file-operations/reversal-wording'
 
     const log = getAppLogger('operationLogDialog')
 

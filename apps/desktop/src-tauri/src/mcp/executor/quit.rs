@@ -148,6 +148,7 @@ mod tests {
             source: Some("Holiday.mov".to_string()),
             destination: Some("Backup".to_string()),
             supports_rollback: true,
+            reverses: None,
             error: None,
         }
     }

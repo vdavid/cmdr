@@ -46,6 +46,7 @@ function row(
       source: '/Users/me/Documents',
       destination: '/Volumes/Naspolya/Backup',
       supportsRollback: true,
+      reverses: null,
       error: null,
       ...over,
     },

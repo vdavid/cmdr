@@ -50,5 +50,6 @@ export function adoptedOperationFor(rows: OperationRow[], operationId: string): 
     operationType,
     sourcePath: snapshot.source,
     destinationPath: snapshot.destination,
+    reverses: snapshot.reverses,
   }
 }

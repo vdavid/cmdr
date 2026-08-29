@@ -22,7 +22,6 @@ import type {
   RollbackState,
 } from '$lib/ipc/bindings'
 import type { MessageKey } from '$lib/intl/keys.gen'
-import type { RollbackConfirmVariant } from '$lib/file-operations/rollback-confirm-variant'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
 
@@ -126,32 +125,6 @@ export function itemOutcomeLabel(outcome: ItemOutcome): string {
       return tString('operationLog.outcome.failed')
     case 'rolledBack':
       return tString('operationLog.outcome.rolledBack')
-  }
-}
-
-/**
- * Which confirmation to put in front of Roll back, because what a rollback DOES
- * depends on what was done: undoing a copy deletes, undoing a move carries the files
- * home, undoing a rename only changes names back.
- *
- * Mirrors the backend's `inverse_kind` (`operation_log/rollback.rs`) arm for arm,
- * including its `delete → delete` arm: a permanent delete is never rollbackable, so
- * the button never appears on one, and the arm exists so a NEW `OpKind` is a compile
- * error here rather than a confidently wrong sentence in front of a user.
- */
-export function rollbackConfirmVariant(kind: OpKind): RollbackConfirmVariant {
-  switch (kind) {
-    case 'copy':
-    case 'createFolder':
-    case 'createFile':
-    case 'archiveEdit':
-    case 'delete':
-      return 'undoByDeleting'
-    case 'move':
-    case 'trash':
-      return 'undoByMovingBack'
-    case 'rename':
-      return 'undoByRenamingBack'
   }
 }
 

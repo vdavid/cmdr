@@ -404,6 +404,18 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Đang đưa các tệp về chỗ cũ} other {Đang đưa {countText} tệp về chỗ cũ}}...",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "38c2022"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Đang xóa những gì đã tạo} other {Đang xóa {countText} tệp đã tạo}}...",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "bce7510"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Đang trả lại tên cũ} other {Đang trả lại {countText} tên cũ}}...",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "e3f6bc3"
+  },
   "fileOperations.transferProgress.titleCancelling": "Đang hủy...",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"

@@ -292,6 +292,7 @@ mod tests {
             source: Some("/Users/me/photos".to_string()),
             destination: Some("Naspolya".to_string()),
             supports_rollback: false,
+            reverses: None,
             error: None,
         }
     }

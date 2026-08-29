@@ -87,6 +87,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     source: '/Users/me/Documents',
     destination: '/Volumes/Naspolya/Backup',
     supportsRollback: true,
+    reverses: null,
     error: null,
     ...over,
   }
@@ -98,6 +99,7 @@ function failed(operationId: string): OperationSnapshot {
     operationId,
     status: 'failed',
     supportsRollback: false,
+    reverses: null,
     error: { type: 'io_error', path: '/Users/me/Documents/report.pdf', message: 'disk went away' },
   })
 }

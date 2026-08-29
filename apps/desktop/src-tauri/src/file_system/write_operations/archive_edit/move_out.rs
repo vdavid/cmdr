@@ -118,6 +118,7 @@ pub(crate) async fn route_archive_move_out(
         // rewrite is all-or-nothing, so there's nothing partial to reverse.
         supports_rollback: false,
         preview_id: config.preview_id.clone(),
+        reverses: None,
     };
 
     let events_for_op = Arc::clone(&events);

@@ -102,6 +102,7 @@ pub(super) async fn move_within_same_volume(
         // progress dialog disables Rollback for exactly this case.
         supports_rollback: false,
         preview_id: config.preview_id.clone(),
+        reverses: None,
     };
 
     let events_for_op = Arc::clone(&events);

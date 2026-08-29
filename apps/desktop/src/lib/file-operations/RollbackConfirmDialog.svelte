@@ -18,7 +18,7 @@
     import Button from '$lib/ui/Button.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { tString } from '$lib/intl/messages.svelte'
-    import type { RollbackConfirmVariant } from './rollback-confirm-variant'
+    import type { RollbackConfirmVariant } from './reversal-wording'
 
     interface Props {
         variant: RollbackConfirmVariant

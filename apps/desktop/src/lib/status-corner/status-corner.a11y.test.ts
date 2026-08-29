@@ -130,6 +130,7 @@ describe('OperationChip a11y', () => {
       source: '/Users/me/Documents',
       destination: '/Volumes/Naspolya/Backup',
       supportsRollback: true,
+      reverses: null,
       error: null,
     }
   }
@@ -211,6 +212,7 @@ describe('OperationFailedToastContent a11y', () => {
     source: '/Users/me/Documents/report.pdf',
     destination: '/Volumes/Backup',
     supportsRollback: false,
+    reverses: null,
     error: { type: 'insufficient_space', required: 1073741824, available: 1024, volumeName: 'Backup' },
   }
 

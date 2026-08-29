@@ -33,10 +33,34 @@ function buildRow(
       source: '/Users/me/Documents/report.pdf',
       destination: '/Volumes/Backup/report.pdf',
       supportsRollback,
+      reverses: null,
       error: null,
     },
     progress,
   }
+}
+
+/** A row for an operation that IS the reversal of a finished one. The backend
+ *  registers it as its INVERSE type (undoing a move runs as a move, undoing a
+ *  copy as a delete) and hangs the original kind off `reverses`, which is the
+ *  only thing telling the row it's an undo rather than the real thing. */
+function buildReversalRow(
+  reverses: NonNullable<OperationSnapshot['reverses']>,
+  opType: OperationSnapshot['operationType'],
+  status: OperationSnapshot['status'] = 'running',
+): OperationRow {
+  const progress: WriteProgressEvent = {
+    operationId: 'op-1',
+    operationType: opType,
+    phase: 'rolling_back',
+    currentFile: 'report.pdf',
+    filesDone: 12,
+    filesTotal: 1240,
+    bytesDone: 25,
+    bytesTotal: 100,
+  }
+  const base = buildRow(status, opType, progress, false)
+  return { ...base, snapshot: { ...base.snapshot, reverses } }
 }
 
 /** A retained failure as the backend hands it over: settled, unrollbackable,
@@ -187,6 +211,59 @@ describe('QueueRow', () => {
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Rolling back...')
     expect(rollbackButton()).toBeNull()
     expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
+  })
+
+  it('names a reversal by what it does to the files, not by the op type it runs as', () => {
+    // Undoing a move is journaled AS a move, so the plain action word would say
+    // "Moving" over an operation the person asked to undo.
+    render({ row: buildReversalRow('move', 'move') })
+    expect(target.querySelector('.op-label')?.textContent.trim()).toBe('Putting files back')
+  })
+
+  it('never tells someone their undo is deleting when it is putting files back', () => {
+    for (const kind of ['move', 'trash'] as const) {
+      render({ row: buildReversalRow(kind, 'move') })
+      expect(target.querySelector('.op-label')?.textContent).not.toContain('Deleting')
+    }
+  })
+
+  it('says plainly that undoing a copy deletes, because it does', () => {
+    // The inverse of a copy runs as a delete, and here that IS the honest word:
+    // under-warning on this one would be the mirror-image lie.
+    render({ row: buildReversalRow('copy', 'delete') })
+    expect(target.querySelector('.op-label')?.textContent.trim()).toBe('Deleting what it created')
+  })
+
+  it('words a reversal of a rename as putting the old names back', () => {
+    render({ row: buildReversalRow('rename', 'rename') })
+    expect(target.querySelector('.op-label')?.textContent.trim()).toBe('Putting the old names back')
+  })
+
+  it('flies the undo glyph on a reversal instead of the op type’s own', () => {
+    // Both rows are `operationType: 'delete'`; only one of them is an undo. If
+    // the row ever goes back to reading `operationType` for its glyph, these two
+    // become the same drawing and a reversal of a copy wears a trash can.
+    render({ row: buildReversalRow('copy', 'delete') })
+    const reversalGlyph = target.querySelector('.type-cell svg')?.innerHTML
+    render({ row: buildRow('running', 'delete') })
+    const deleteGlyph = target.querySelector('.type-cell svg')?.innerHTML
+
+    expect(reversalGlyph).toBeTruthy()
+    expect(deleteGlyph).toBeTruthy()
+    expect(reversalGlyph).not.toBe(deleteGlyph)
+  })
+
+  it('lets a paused reversal say Paused, which the in-flight wording hides', () => {
+    // The status cell is free here because the LABEL already says it's a
+    // reversal. On the in-flight path it isn't, which is why that one still
+    // spends the cell on "Rolling back...".
+    render({ row: buildReversalRow('move', 'move', 'paused') })
+    expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Paused')
+  })
+
+  it('offers no Rollback on a reversal: there is nothing left to undo', () => {
+    render({ row: buildReversalRow('move', 'move') })
+    expect(rollbackButton()).toBeNull()
   })
 
   it("a failed row says it couldn't finish and drops every live control", () => {

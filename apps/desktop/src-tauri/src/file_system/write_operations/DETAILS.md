@@ -459,6 +459,16 @@ A live RECORD only ever holds `Queued` / `Running` / `Paused`: `Done` and `Cance
 
 **Decision: runtime-only, capped at 20. Why.** The cap and its reasoning mirror `mcp::terminal_ops::CAPACITY`: enough that a user returning from lunch still finds what went wrong, bounded so a long batch session can't grow memory without limit. A restart clears the list, which is consistent with the rest of the manager's state and correct in kind — the operation log is where a failure lives permanently; this list only exists to make one visible right now.
 
+### Naming a reversal on screen (`reverses`)
+
+`OperationDescriptor::reverses` is `Some(original.kind)` on exactly one construction site, `rollback.rs`'s `spawn_managed_inverse`, and `None` everywhere else. It rides to `OperationSnapshot` (a static per-operation fact, so it belongs on the thin registry snapshot rather than the 200 ms tick) and is the only thing that tells a window "this running operation is an UNDO of a finished one, of THIS kind".
+
+**Why the ORIGINAL kind and not the inverse.** `write_op_type(inverse_kind(kind))` is what the op RUNS as, and it can't say what the user gets: `Move` covers both undoing a move and undoing a trash, and `Delete` covers undoing a copy, a new file or folder, and a compress. The frontend feeds `reverses` to the same `OpKind` → variant map that worded the confirmation the user just answered, so the running bar cannot promise something different from the question (`apps/desktop/src/lib/file-operations/DETAILS.md` § "The running reversal is named from the SAME variant").
+
+**Why not a phase.** `WriteOperationPhase::RollingBack` is NOT the signal: a cancelled copy cleaning up its own partials wears that phase too, and there the existing "Rolling back..." wording is honest, because it really is deleting. Reading the phase instead of this field is how a history reversal of a MOVE ends up telling someone their files are being deleted.
+
+A retained failure keeps the field (`record_failure` copies it off the live record), so a reversal that stopped early still reads as a reversal on the row that explains why.
+
 ### Rollback availability (`supports_rollback`)
 
 `OperationDescriptor::supports_rollback` says whether cancelling this op can also UNDO what it has written

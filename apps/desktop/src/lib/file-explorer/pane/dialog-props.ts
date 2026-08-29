@@ -9,6 +9,7 @@
  */
 
 import type { Initiator } from '$lib/tauri-commands'
+import type { OpKind } from '$lib/ipc/bindings'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
@@ -102,7 +103,7 @@ export interface TransferProgressPropsData {
  * An operation this window did NOT start, shown in the progress dialog because
  * the user pressed Show on its queue row.
  *
- * Everything live comes from the operation's session; these four fields are the
+ * Everything live comes from the operation's session; these fields are the
  * dialog's chrome, and they are exactly what the registry snapshot carries.
  * There is deliberately nothing else here: no `sourcePaths`, no pane side, no
  * counts: `DETAILS.md` § "Birth context" argues why an adopted view must not
@@ -115,6 +116,12 @@ export interface AdoptedOperationData {
   sourcePath: string | null
   /** The operation's destination, from its registry row. Display only. */
   destinationPath: string | null
+  /** Set when this operation IS the reversal of a finished one, to the kind of
+   *  the operation it reverses, straight off the registry row. The dialog titles
+   *  itself by what the reversal will DO rather than by `operationType`, which
+   *  for a reversal names the syscall (undoing a copy runs as a delete).
+   *  `$lib/file-operations/reversal-wording.ts`. */
+  reverses: OpKind | null
 }
 
 /** What came of a request to show a running operation in the progress dialog.

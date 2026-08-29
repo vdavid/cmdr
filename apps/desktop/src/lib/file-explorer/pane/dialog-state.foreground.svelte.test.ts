@@ -116,6 +116,7 @@ function adopted(operationId = 'op-42'): AdoptedOperationData {
     operationType: 'copy',
     sourcePath: '/Volumes/Card/DCIM',
     destinationPath: '/Users/me/import',
+    reverses: null,
   }
 }
 

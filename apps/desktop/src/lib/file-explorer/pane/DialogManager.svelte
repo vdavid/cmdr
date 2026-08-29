@@ -194,6 +194,7 @@
         <TransferProgressDialog
             adoptOperationId={adoptedProgressProps.operationId}
             operationType={adoptedProgressProps.operationType}
+            reverses={adoptedProgressProps.reverses}
             sourceFolderPath={adoptedProgressProps.sourcePath ?? ''}
             destinationPath={adoptedProgressProps.destinationPath ?? undefined}
             onComplete={onAdoptedComplete}

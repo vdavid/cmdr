@@ -9,6 +9,7 @@
         SortOrder,
         ConflictResolution,
     } from '$lib/file-explorer/types'
+    import type { OpKind } from '$lib/ipc/bindings'
     import type { TransferCompletePayload } from '$lib/file-explorer/pane/dialog-props'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import DirectionIndicator from './DirectionIndicator.svelte'
@@ -26,8 +27,10 @@
     import TransferProgressReadout from '../TransferProgressReadout.svelte'
     import RollbackConfirmDialog from '../RollbackConfirmDialog.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { stallNoticeFor } from './transfer-stall'
+    import { rollbackConfirmVariant, reversalTitleKey } from '../reversal-wording'
     import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
     import { hasOtherQueuedWork } from '$lib/file-operations/queue/queue-backlog'
 
@@ -38,6 +41,13 @@
          *  two paths below — and nothing else: the dispatch props marked
          *  "started only" are absent, because nobody dispatches on this path. */
         adoptOperationId?: string
+        /** Adopted only. Set when the adopted operation IS the reversal of a
+         *  finished one, to the kind of the operation it reverses. It retitles
+         *  the dialog by what the reversal will DO; `operationType` names only
+         *  the syscall it runs as, which for a reversal misleads (undoing a copy
+         *  runs as a delete). ❌ Never inferred from the `rolling_back` phase:
+         *  a CANCELLED copy wears that phase too, and it really is deleting. */
+        reverses?: OpKind | null
         operationType: TransferOperationType
         /** Started only. */
         sourcePaths?: string[]
@@ -86,6 +96,7 @@
     // unused. They exist so this component keeps one flat prop list.
     const {
         adoptOperationId,
+        reverses = null,
         operationType,
         sourcePaths = [],
         sourceFolderPath,
@@ -204,6 +215,12 @@
     // session's through it), so the template updates exactly as before.
     const phase = $derived(progress.phase)
     const isRollingBack = $derived(progress.isRollingBack)
+
+    /** The dialog is showing a reversal launched from the operation history, and
+     *  `reverses` says what the operation it undoes DID. Null on an in-flight
+     *  rollback (a cancelled copy cleaning up after itself), which keeps its own
+     *  title: there the bar drains backwards and "Rolling back..." is honest. */
+    const reversalVariant = $derived(reverses === null ? null : rollbackConfirmVariant(reverses))
     const rollbackUnavailable = $derived(progress.rollbackUnavailable)
     const isCancelling = $derived(progress.isCancelling)
     const cancelEventReceived = $derived(progress.cancelEventReceived)
@@ -325,7 +342,17 @@
     resizable="horizontal"
 >
     {#snippet title()}
-        {#if isRollingBack}
+        {#if reversalVariant !== null}
+            <!-- Named by what the reversal DOES, with the scope the journal
+                 already counted, so the title agrees with the confirmation the
+                 user answered a moment ago. It outranks every phase below: a
+                 reversal is `rolling_back` from its first frame, and it has no
+                 scan. -->
+            {tString(reversalTitleKey(reversalVariant), {
+                count: filesTotal,
+                countText: formatInteger(filesTotal),
+            })}
+        {:else if isRollingBack}
             {tString('fileOperations.transferProgress.titleRollingBack')}
         {:else if isCancelling || cancelEventReceived}
             {#if settleSlow}
@@ -540,7 +567,11 @@
                     >{tString('fileOperations.transferProgress.close')}</Button
                 >
             {/if}
-            {#if isCopy || isMove}
+            <!-- ❌ No Rollback affordance on a reversal, not even the disabled
+                 one: this operation IS the undo, and its registry row says
+                 `supportsRollback: false`. A red button here would offer to
+                 re-apply what the person just chose to undo. -->
+            {#if (isCopy || isMove) && reversalVariant === null}
                 {#if isRollingBack}
                     <Button variant="danger" disabled>{tString('fileOperations.transferProgress.titleRollingBack')}</Button
                     >

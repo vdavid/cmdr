@@ -203,6 +203,7 @@ impl QueuedOperationFixture {
                     summary: OperationSummaryText::default(),
                     supports_rollback: false,
                     preview_id: None,
+                    reverses: None,
                 },
                 Arc::new(WriteOperationState::new(Duration::from_millis(50))),
                 Box::new(move || {

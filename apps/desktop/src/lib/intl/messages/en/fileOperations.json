@@ -698,9 +698,42 @@
 
   "fileOperations.transferProgress.titleRollingBack": "Rolling back...",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "description": "Progress-dialog title while undoing a canceled copy/move (deleting the partial files it created). Keep the trailing ellipsis.",
+    "description": "Progress-dialog title while Cmdr cleans up after a copy or move the user CANCELED mid-flight, deleting the partial files that copy or move had written. This is the in-flight case only. Undoing a FINISHED operation from the history log is a different thing, with its own titles (fileOperations.transferProgress.titleReversal*), because undoing a finished move deletes nothing: it carries the files back. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Putting files back} one {Putting the file back} other {Putting {countText} files back}}...",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "description": "Progress-dialog title while UNDOING a finished move or move-to-trash the user asked to roll back from their operation history: the files are travelling back to where they came from, and nothing is being deleted. The bar under it fills forwards, like every other bar in the app. The =0 branch covers the first frames, before the count is known. Keep the trailing ellipsis. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack): nothing here may sound like a deletion.",
+    "placeholders": {
+      "count": "how many files the reversal will move back (drives the plural form); 0 means the count isn''t known yet",
+      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
+  },
+
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Deleting what it created} one {Deleting the file it created} other {Deleting the {countText} files it created}}...",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "description": "Progress-dialog title while UNDOING a finished copy, a new file or folder, or a compress that the user asked to roll back from their operation history: the reversal deletes what that operation created. \"it\" is the operation being undone. The bar under it fills forwards, like every other bar in the app. The =0 branch covers the first frames, before the count is known. Keep the trailing ellipsis. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByDeleting), so keep the deleting verb: this one really does take files away.",
+    "placeholders": {
+      "count": "how many files the reversal will delete (drives the plural form); 0 means the count isn''t known yet",
+      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
+  },
+
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Putting the old names back} one {Putting the old name back} other {Putting {countText} old names back}}...",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "description": "Progress-dialog title while UNDOING a finished rename the user asked to roll back from their operation history: the files get their old names back, and nothing moves or is deleted. The bar under it fills forwards, like every other bar in the app. The =0 branch covers the first frames, before the count is known. Keep the trailing ellipsis. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRenamingBack).",
+    "placeholders": {
+      "count": "how many names the reversal will restore (drives the plural form); 0 means the count isn''t known yet",
+      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
   },
 
   "fileOperations.transferProgress.titleCancelling": "Canceling...",

@@ -405,6 +405,18 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Flyttar tillbaka filerna} one {Flyttar tillbaka filen} other {Flyttar tillbaka {countText} filer}}...",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "38c2022"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Raderar det som skapades} one {Raderar filen som skapades} other {Raderar de {countText} filer som skapades}}...",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "bce7510"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Ger tillbaka de gamla namnen} one {Ger tillbaka det gamla namnet} other {Ger tillbaka {countText} gamla namn}}...",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "e3f6bc3"
+  },
   "fileOperations.transferProgress.titleCancelling": "Avbryter...",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "37b4fbc"

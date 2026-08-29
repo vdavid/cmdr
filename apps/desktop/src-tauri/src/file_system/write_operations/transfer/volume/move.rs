@@ -172,6 +172,7 @@ pub async fn move_between_volumes(
         // it would also mean re-creating source files it has already deleted.
         supports_rollback: false,
         preview_id: config.preview_id.clone(),
+        reverses: None,
     };
 
     let events_for_op = Arc::clone(&events);

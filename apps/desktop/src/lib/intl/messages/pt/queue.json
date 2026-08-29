@@ -19,6 +19,18 @@
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
+  "queue.row.reversalMovingBack": "Levando os arquivos de volta",
+  "@queue.row.reversalMovingBack": {
+    "sourceHash": "19ac5eb"
+  },
+  "queue.row.reversalDeleting": "Apagando o que foi criado",
+  "@queue.row.reversalDeleting": {
+    "sourceHash": "f88d220"
+  },
+  "queue.row.reversalRenamingBack": "Devolvendo os nomes antigos",
+  "@queue.row.reversalRenamingBack": {
+    "sourceHash": "3e00fd5"
+  },
   "queue.row.status": "{status, select, queued {Aguardando} running {Em andamento} paused {Pausado} done {Concluído} cancelled {Cancelado} failed {Não foi possível concluir} other {Em andamento}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"

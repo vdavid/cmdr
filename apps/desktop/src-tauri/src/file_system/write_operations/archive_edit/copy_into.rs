@@ -585,6 +585,7 @@ async fn archive_copy_into_start(
         // it doesn't, so there's no half-written state to reverse.
         supports_rollback: false,
         preview_id,
+        reverses: None,
     };
 
     let events_for_op = Arc::clone(&events);
