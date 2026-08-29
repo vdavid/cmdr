@@ -244,8 +244,9 @@ From the `queryUi.json` + `commands.json` pass (mined `_ignored/i18n/nl/`, 2026-
 - page up / down → Pagina omhoog / Pagina omlaag · standard NL · high
 - scroll → schuiven · MS ("scroll"→"schuiven") · tentative
 - toggle (X aan/uit) → "X aan/uit" · standard NL toggle phrasing (e.g. "Verborgen bestanden aan/uit") · tentative
-- view mode: Brief / Full → Beknopte weergave / Volledige weergave · compositional ("Weergave" from glossary +
-  beknopt/volledig) · tentative
+- view mode: Brief / Full → **Beknopte weergave** / **Volledige weergave** · compositional ("Weergave" from glossary +
+  beknopt/volledig), and it's the name in the View menu (`menu.view.briefView`) · high. ❌ NOT `Kort`: Settings used to
+  say `de weergave Kort`, which named a view the menu bar doesn't have. Every key says `Beknopte weergave` now.
 - switcher (volume/location) → wisselaar · compositional from "wissel" (no source term) · tentative
 - properties (file, non-mac) → eigenschappen · standard NL ("Bestandseigenschappen") · high
 - license key → licentiesleutel · NL compound (licentie + sleutel) · high
@@ -300,8 +301,10 @@ mined `_ignored/i18n/nl/`, 2026-06-21):
 
 - close → Sluit (button) / sluiten · macOS Finder ("Close"→"Sluit", key FR26); same form as "dismiss" → Sluit (glossary
   above) · high
-- send → Stuur (button) / versturen · macOS Finder ("Send"→"Verstuur"); chose "Stuur" (shorter imperative, parallel to
-  macOS pattern) for "Send feedback"→"Stuur feedback", "Send report"→"Stuur rapport" · high
+- send → **Verstuur** (button) / **X versturen** (dialog title) / versturen (verb) · macOS Finder ("Send"→"Verstuur") ·
+  high. ❌ NOT `Stuur`: an earlier pass picked it for being shorter and forked the Send family three ways. The
+  catalog-wide form is macOS's `Verstuur` (see the top-of-file glossary entry), and the button-vs-title split is the
+  one legitimate variation. See § Eén ding, één naam.
 - remove from list → Verwijder uit lijst · macOS Finder pattern ("Verwijder uit navigatiekolom"/"Verwijder uit
   bibliotheek") · high
 - path → pad · standard NL; "Ga naar pad" (macOS Finder "Ga naar map"); "~/Documents" sample kept verbatim · high
@@ -1922,3 +1925,77 @@ DATZELFDE rapport wordt gehangen. Er gaat niets een tweede keer omhoog. Gemijnd 
   geruststellend, geen waarschuwing, zoals het `@key` vraagt; `het volledige pad` is de catalogusvorm (zie
   `errors.listing.nameTooLongErrno.explanation`) · `high`.
 - Geen `sameAsSourceJustification` nodig: alle vijftien waarden verschillen van het Engels.
+
+## Eén ding, één naam: de interne driftronde (2026-08-30)
+
+`desktop-i18n-term-consistency` vond 38 divergenties in `nl` (één Engelse waarde, twee of meer Nederlandse vormen) — het
+hoogste aantal van alle locales. Eenentwintig waren echte drift, zeventien zijn bewuste grenzen. De drift kwam bijna
+altijd doordat een latere ronde een woord opnieuw besliste en alleen de eigen bestanden bijwerkte. De regel die de meeste
+gevallen beslecht stond al in `style.md`: **knoppen en menu-items krijgen de kale gebiedende wijs van macOS**.
+
+### De gerepareerde drift
+
+- **send → `Verstuur` (knop) / `X versturen` (venstertitel)** · macOS Finder (`Send` → `Verstuur`) · high. `Stuur` is
+  weg. `Send error report` had vijf vindplaatsen en drie vormen; `Send feedback` en `Send report` splitsten hetzelfde.
+- **`queue.row.dismiss` → `Sluit`** (was `Wis`), plus `dismissAria` en `queue.toolbar.dismissAll`. ❗ `Wis` betekent
+  "uitvegen", terwijl de `@key` juist zegt dat er níets ongedaan wordt gemaakt, opnieuw geprobeerd of verwijderd. Dit is
+  precies de klasse fout die in `zh-Hant` een Dismiss-knop als *Negeren* liet lezen.
+- **Delete permanently → `Verwijder definitief`** · macOS Finder `nl` gebruikt `definitief verwijderen` in lopende tekst
+  en `Verwijder onmiddellijk…` als menu-item (dus werkwoord eerst) · high. Drie sleutels, één vorm; `permanent` is weg.
+- **disconnect (netwerk) → `Verbreek`** · macOS Finder `nl` (`MR10.1`, `N200`, AppKit `SavePanel`) · high. De `@key`
+  vraagt letterlijk om Finders eigen woord, en dat is de kale vorm.
+- **alleen-lezen samenstellingen sluiten**: `alleen-lezenvolume`, `alleen-lezenapparaat` · macOS `nl` ("bevindt zich op
+  een alleen-lezenvolume") · high.
+- **Preview → `Voorvertoning`** · macOS AppKit + Finder `TL45` · high. `Voorbeeld` is weg.
+- **Got it → `Begrepen`** · macOS · high (stond al in deze lijst; `Duidelijk` was de uitschieter).
+- **operation log → `Bewerkingenlogboek`** · sluit aan op `Bewerkingenwachtrij` uit de wachtrijronde · high.
+- **device → `apparaat`** (niet `toestel`), **permission (bestandsrechten) → `bevoegdheid`** (niet `toestemming`) ·
+  macOS `nl` ("leesbevoegdheden", "bevoegdhedenfout"); `toestemming` houdt Apple voor toestemming-tot-delen · high.
+- **Stop → `Stop`** overal · macOS Finder `nl` (`BN62`, `PE107`, `SD23`) · high. De twee sleutels die daardoor gelijk
+  aan het Engels werden, dragen nu dezelfde `sameAsSourceJustification` als `askCmdr.composer.stop`.
+- **`Voeg aan favorieten toe`** in alle drie de sleutels: `style.md` § Formality mechanics eist het scheidbare
+  partikel aan het EINDE, en `Voeg toe aan favorieten` overtrad dat.
+- Verder op één vorm gebracht: `Try again` → `Probeer opnieuw`, `Check for updates` → `Zoek naar updates`,
+  `Reset (all) to default(s)` → `Herstel …`, `Create new file` → `Maak nieuw bestand`, `Go to home folder` →
+  `Ga naar thuismap`, `Searching…` → `Zoeken…`, `Deleting…` → `Verwijderen…`, `This volume doesn't support trash` →
+  `Dit volume ondersteunt de prullenmand niet`, en de twee bèta-aanmeldzinnen.
+
+### De grenzen die je NIET moet gladstrijken
+
+- **Gebiedende wijs vs. infinitief is een echte grens**, geen slordigheid:
+  - **Knop / menu-item → kale gebiedende wijs**: `Verstuur foutrapport`, `Toon verborgen bestanden`, `Herstel naar
+    standaard`, `Verwijder definitief`.
+  - **Venstertitel → `X versturen`**: `Foutrapport versturen`, `Feedback versturen`, `Rapport versturen?`.
+  - **Instellingslabel (aankruisvakje / veld) → infinitief achteraan**: `Verborgen bestanden tonen`,
+    `Bestandsextensies in de naamkolom tonen`. Dit is de huisvorm van de hele `settings.*`-familie.
+- **Menubalktitels zijn Apple's woorden, ook als ze raar lijken**: `Archief` (File), `Wijzig` (Edit), `Weergave` (View),
+  `Vergroot/verklein` (Window > Zoom). Naast elke titel staat het gewone woord voor hetzelfde begrip — `Bestand` voor
+  een bestand, `Bewerk` voor het bewerken van een bestand (F4), `Toon` voor het tonen van een bestand (F3), `Zoom` voor
+  tekstzoom. Beide zijn goed. ❌ Vervang een menubalktitel nooit door het gewone woord.
+- **Undo heeft drie correcte vormen, want het zijn drie handelingen**: `Herstel` = macOS' ⌘Z-tekstherstel
+  (`menu.edit.undo`, Tier 1, moet letterlijk kloppen); `Zet terug` = Finders "Put Back", en `fileOperations.trash.undo
+  Action` dóét letterlijk een put-back; `Ongedaan maken` = het ongedaan maken van een Ask Cmdr-hernoemronde, en dat is
+  het werkwoord van de hele `askCmdr.renameUndo.*`-familie (`undoLabel`, `undoJob`, `refusedBatches`, `unavailable`).
+- **`Vorige`/`Volgende` vs. `Terug`**: `Vorige` hoort bij een gekoppeld vorige/volgende-paar (het menu Ga, de
+  onboarding-wizard); `Terug` is de losse terugknop in een lijst waar je in afdaalt (netwerkbrowser). macOS `nl` levert
+  `Vorige` voor het paar en `Ga terug` voor de navigatieopdracht, die `commands.navBack.label` overneemt.
+- **Datums vs. deelwoorden**: kolomkoppen dragen Finders `Aanmaakdatum` / `Bewerkingsdatum`; de datumballon draagt de
+  deelwoordfamilie `Aangemaakt` / `Laatst geopend` / `Laatst verplaatst` / `Laatst gewijzigd`.
+- **`Gewijzigd` ≠ `Bewerkingsdatum`**: `shortcuts.section.filterModified` filtert op sneltoetsen die de gebruiker heeft
+  veranderd, niet op de wijzigingsdatum van een bestand.
+- **`Actief` (server draait) vs. `Bezig` (taak loopt)** voor `Running`, en **`Gereed` (levenscyclusstatus) vs. `Klaar`
+  (wat een schermlezer na een afgevinkte stap voorleest)** voor `Done`. Beide splitsingen noemt de check zelf als
+  voorbeelden van terechte splitsingen.
+- **`Selecteer` (bestanden) vs. `Kies` (een optie uit een keuzelijst)**: `ui.select.placeholder` en
+  `onboarding.stepAi.cloud.pickerTitle` kiezen, ze selecteren geen bestanden.
+- **`Zoek` (de knop die de zoekopdracht start) vs. `Zoeken` (de naam van de functie)**: venstertitel,
+  instellingssectie en de rij in de onboarding-tabel zijn zelfstandige naamwoorden.
+- **`Van` / `Naar`** zijn een gekoppeld kopjespaar in het overdrachtsvenster; `Vanuit:` is het inline label vóór een pad.
+- **`Bezig met …`** blijft de vorm voor een lopende bewerking in de wachtrijlijst (`queue.row.label`); een korte inline
+  voortgangsaanduiding mét beletselteken gebruikt het kale `Zoeken…` / `Verwijderen…`.
+
+### Wat deze ronde bewust NIET heeft aangeraakt
+
+`bewaren` en `opslaan` staan allebei in de catalogus (24 resp. 31 waarden). Dat is grotendeels een terecht verschil —
+macOS' knop is `Bewaar`, terwijl `opgeslagen` het gangbare bijvoeglijke deelwoord is ("Opgeslagen wachtwoord") — maar
+niet overal. Een aparte ronde moet dit uitzoeken; het is te groot om er in een driftronde half doorheen te lopen.
