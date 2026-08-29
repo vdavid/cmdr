@@ -185,6 +185,38 @@ they read the same locale, so a localized separator is produced identically in b
 digits (modeling `font-variant-numeric: tabular-nums`), so a localized separator is measured at its real width, which is
 correct. Never add a second formatting path for measurement.
 
+## `<html lang>`: which language the DOM is told it holds
+
+`app.html` ships a static `lang="en"` and one template serves every window, so nothing in `src/` used to correct it and
+all 13 catalogs served English's language tag. That's a WCAG 3.1.1 (Level A) failure, and the practical cost is larger
+than the letter of it: a screen reader picks voice, pronunciation, and prosody from this attribute, so a Swedish UI
+announced as English gets an English voice spelling out Swedish words.
+
+**Decision**: the write hangs off `setLocale()`, in `document-language.ts`. **Why**: Cmdr is multi-window and each
+webview runs its own i18n runtime, so "set it at mount" is six call sites that drift the moment one window is added
+without the line. `setLocale()` is already the one seam every window's init AND every live change funnels through (the
+main window through `settings-applier.ts::applyLanguage`, the others through
+`window-settings.ts::initWindowLanguageSync`, and an OS-locale move through both of those via `watchSystemLocales`). One
+write there covers startup, the picker, and the OS moving underneath us, for every window, for free.
+`routes/window-route-coverage.test.ts` therefore needs no new assertion: its existing "a window that gates on
+`initWindowSettings()` must also call `initWindowLanguageSync()`" rule already guarantees every window reaches
+`setLocale()`.
+
+**Decision**: it carries the RESOLVED catalog tag (`resolvedCatalogLocale()`), not the requested locale. **Why**: the
+two differ exactly when we don't ship what was asked for. A Japanese Mac with no `ja` catalog reads English text, and
+announcing `lang="ja-JP"` over it hands a screen reader a Japanese voice for English words — measurably worse than the
+blunt-but-true `en`. The resolver is the head of the fallback chain that has a catalog, so it answers `zh-Hant` →
+`zh-Hant` (never Simplified `zh`, the script guard holds), `pt-PT` → `pt`, `en-GB` → `en-GB` (an overlay is still a
+language), `ja-JP` → `en`. Per-KEY resolution can still walk further down the chain for a key an overlay doesn't fork;
+the chain head is the honest answer for the window as a whole.
+
+**`'system'` never reaches it.** `setLocale()` is fed `pickUiLocale(setting)`, which has already mapped `'system'` to
+the OS's tag or to `null`; on `null` the write reads back through `getUiLocale()`, so it announces the webview's own
+resolved tag rather than going stale on the previous language.
+
+Layout DIRECTION is deliberately not set: Cmdr ships no RTL catalog, and a `dir` derived from a language tag would be an
+untested guess. `document-language.ts` is where it lands when an RTL locale does.
+
 ## The locale source seam + the Language picker
 
 `getUiLocale()` is intentionally a single function, not a locale-management system: `setLocale()` (in

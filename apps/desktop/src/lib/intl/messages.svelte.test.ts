@@ -16,6 +16,7 @@ import {
   getMessage,
   setLocale,
   availableLocales,
+  resolvedCatalogLocale,
   _setCatalogForTests,
   _clearCompiledCacheForTests,
   _resetCaptureForTests,
@@ -41,6 +42,7 @@ const TEST_LANG = 'zz'
 
 afterEach(() => {
   setLocale(null)
+  document.documentElement.lang = 'en'
   _setLocaleForTests(null)
   _setCatalogForTests(TEST_LOCALE, null)
   _setCatalogForTests(TEST_LANG, null)
@@ -131,10 +133,10 @@ describe('the script boundary in the fallback chain', () => {
   // worse than English. Canonical rationale:
   // `apps/desktop/src-tauri/src/intl/DETAILS.md`
   // § The script guard, and why regional fallback survives it.
-  // `zh` and `zh-Hant` are REAL shipped catalogs, so this teardown drops them for
-  // the rest of the file. Nothing later reads them (`availableLocales()` runs in an
-  // earlier describe), but keep any test that needs the real Chinese catalogs above
-  // this block.
+  // `zh` and `zh-Hant` are REAL shipped catalogs, and these tests stand fakes up
+  // in their place. `_setCatalogForTests(tag, null)` RESTORES the shipped one, so
+  // this teardown leaves the runtime as it found it and no later test in the file
+  // depends on sitting above this block.
   afterEach(() => {
     for (const tag of ['zh', 'zh-Hant', 'zh-Hant-TW', 'zh-TW']) _setCatalogForTests(tag, null)
   })
@@ -246,5 +248,53 @@ describe('reactivity in markup (read-rune-before-cache invariant)', () => {
     expect(span?.textContent).toBe('Moved 1 file to trash')
 
     void unmount(component)
+  })
+})
+
+describe('the catalog actually supplying the text', () => {
+  it('resolves a shipped tag to itself', () => {
+    expect(resolvedCatalogLocale('hu')).toBe('hu')
+  })
+
+  it('keeps a script variant rather than collapsing it to the base language', () => {
+    // `zh-Hant` must NOT resolve to Simplified `zh`: the fallback chain refuses
+    // to cross a script boundary, so the text on screen really is Traditional.
+    expect(resolvedCatalogLocale('zh-Hant')).toBe('zh-Hant')
+  })
+
+  it('resolves an overlay tag to the overlay, not to its base', () => {
+    expect(resolvedCatalogLocale('en-GB')).toBe('en-GB')
+  })
+
+  it('falls back to the regional parent we do ship', () => {
+    // We ship `pt`, not `pt-PT`, so `pt` is what a European Portuguese speaker reads.
+    expect(resolvedCatalogLocale('pt-PT')).toBe('pt')
+  })
+
+  it('falls back to English for a language we ship nothing for', () => {
+    expect(resolvedCatalogLocale('ja-JP')).toBe('en')
+  })
+})
+
+describe('the document language attribute', () => {
+  it('follows a language switch', () => {
+    setLocale('zh-Hant')
+    expect(document.documentElement.lang).toBe('zh-Hant')
+
+    setLocale('hu')
+    expect(document.documentElement.lang).toBe('hu')
+  })
+
+  it('announces the catalog on screen, not the language that was asked for', () => {
+    // A Japanese Mac with no Japanese catalog reads English text. Announcing
+    // `ja-JP` would hand a screen reader a Japanese voice for English words.
+    setLocale('ja-JP')
+    expect(document.documentElement.lang).toBe('en')
+  })
+
+  it('re-resolves when the override is dropped rather than going stale', () => {
+    setLocale('hu')
+    setLocale(null)
+    expect(document.documentElement.lang).not.toBe('hu')
   })
 })

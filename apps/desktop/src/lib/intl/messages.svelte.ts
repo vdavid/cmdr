@@ -30,6 +30,7 @@
 import { IntlMessageFormat, type PrimitiveType, type FormatXMLElementFn } from 'intl-messageformat'
 import { getUiLocale, setUiLocaleOverride } from './locale'
 import { inheritableAncestors } from './locale-inheritance'
+import { setDocumentLanguage } from './document-language'
 import type { MessageKey } from './keys.gen'
 
 const BASE_LOCALE = 'en'
@@ -143,6 +144,26 @@ function fallbackChain(locale: string): string[] {
   const chain = [locale, ...inheritableAncestors(locale, Object.keys(catalogs)), BASE_LOCALE]
   chainCache.set(locale, chain)
   return chain
+}
+
+/**
+ * The catalog actually supplying this locale's text: the first tag in the
+ * fallback chain that has a loaded catalog. `zh-Hant` stays `zh-Hant` (the chain
+ * refuses to cross a script boundary), `pt-PT` becomes `pt`, and `ja-JP` becomes
+ * `en` because we ship no Japanese at all.
+ *
+ * This is a different question from "what did the user ask for", and `<html
+ * lang>` wants THIS one: announcing `lang="ja-JP"` over English text hands a
+ * screen reader a Japanese voice for English words, which is worse than the
+ * blunt-but-true `en`. Per-key resolution can still reach further down the chain
+ * for a key an overlay doesn't fork; the head of the chain is the honest answer
+ * for the window as a whole.
+ */
+export function resolvedCatalogLocale(locale: string): string {
+  for (const tag of fallbackChain(locale)) {
+    if (catalogs[tag] !== undefined) return tag
+  }
+  return BASE_LOCALE
 }
 
 /**
@@ -367,11 +388,18 @@ export function tString(key: MessageKey, params?: TranslationParams): string {
  * Reaches the UI half ONLY. Numbers, sizes, and dates keep following the OS
  * through `getFormatLocale()`, so a Hungarian speaker in Sweden keeps their
  * Swedish dates (`locale.ts`).
+ *
+ * Also announces the language to the DOM (`document-language.ts`). This is the
+ * seam every window and every live change funnels through, which is what makes
+ * one write here cover all of them.
  */
 export function setLocale(locale: string | null): void {
   setUiLocaleOverride(locale)
   compiledCache.clear()
   localeVersion += 1
+  // Read back through `getUiLocale()` rather than using `locale`: a `null` here
+  // means "no override", and the effective tag is then the webview's own.
+  setDocumentLanguage(resolvedCatalogLocale(getUiLocale()))
 }
 
 /** Test seam: drop the compiled-message cache so a memoization assertion starts clean. */
@@ -380,18 +408,42 @@ export function _clearCompiledCacheForTests(): void {
 }
 
 /**
- * Test seam: register (or clear, with `null`) an extra locale catalog so a test
- * can observe a real cross-locale resolution and re-render. Only `en` ships;
- * this lets the reactivity/fallback tests prove behavior without a real second
- * locale catalog in the repo. Clears the compiled cache for that locale's keys.
+ * What a shipped catalog held before a test replaced it, so `null` puts the real
+ * one back. Keyed by tag; an entry with `undefined` means nothing shipped under
+ * that tag, so restoring means removing it again.
+ */
+// eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state; a test-only stash with no renderable content.
+const shippedCatalogBackups = new Map<string, Catalog | undefined>()
+
+/**
+ * Test seam: register (or restore, with `null`) a locale catalog so a test can
+ * observe a real cross-locale resolution and re-render, including against tags
+ * that DO ship (the script-guard tests stand a fake `zh` up against a fake
+ * `zh-Hant`).
+ *
+ * `null` restores whatever shipped under that tag rather than deleting it, so a
+ * teardown can't strip a real catalog out of the runtime for every test that
+ * follows it in the file. Ordering between describes then carries no meaning,
+ * which is the only way this stays true as tests get added.
+ *
+ * Clears the compiled cache, and the chain cache with it: a chain is derived
+ * from which catalogs exist, so seeding or restoring one invalidates them.
  */
 export function _setCatalogForTests(locale: string, catalog: Catalog | null): void {
+  if (!shippedCatalogBackups.has(locale)) {
+    shippedCatalogBackups.set(locale, catalogs[locale])
+  }
   if (catalog === null) {
-    Reflect.deleteProperty(catalogs, locale)
+    const shipped = shippedCatalogBackups.get(locale)
+    shippedCatalogBackups.delete(locale)
+    if (shipped === undefined) {
+      Reflect.deleteProperty(catalogs, locale)
+    } else {
+      catalogs[locale] = shipped
+    }
   } else {
     catalogs[locale] = catalog
   }
   compiledCache.clear()
-  // The chains are derived from which catalogs exist, so seeding one invalidates them.
   chainCache.clear()
 }
