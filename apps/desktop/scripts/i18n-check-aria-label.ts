@@ -97,12 +97,21 @@ export function ariaPairs(source: Catalog): AriaPair[] {
     const match = /^(.*?)(?:Aria|AriaLabel)$/.exec(ariaKey)
     if (!match || match[1].length === 0) continue
     const labelKey = match[1]
-    const label = source.messages[labelKey]
-    if (label === undefined) continue
-    if (!containsLabel(source.messages[ariaKey], label)) continue
+    if (!(labelKey in source.messages)) continue
+    if (!containsLabel(source.messages[ariaKey], source.messages[labelKey])) continue
     pairs.push({ labelKey, ariaKey })
   }
   return pairs.sort((a, b) => a.ariaKey.localeCompare(b.ariaKey))
+}
+
+/**
+ * What a locale actually renders for a key: its own value, or for an OVERLAY the
+ * source value it falls through to. `undefined` when nothing renders.
+ */
+function effectiveValue(source: Catalog, catalog: Catalog, key: string, isOverlay: boolean): string | undefined {
+  if (key in catalog.messages) return catalog.messages[key]
+  if (isOverlay && key in source.messages) return source.messages[key]
+  return undefined
 }
 
 /** One locale's broken pair, with the two values that no longer line up. */
@@ -121,8 +130,8 @@ export interface AriaFinding extends AriaPair {
 export function checkLocale(source: Catalog, catalog: Catalog, isOverlay = false): AriaFinding[] {
   const findings: AriaFinding[] = []
   for (const { labelKey, ariaKey } of ariaPairs(source)) {
-    const label = catalog.messages[labelKey] ?? (isOverlay ? source.messages[labelKey] : undefined)
-    const aria = catalog.messages[ariaKey] ?? (isOverlay ? source.messages[ariaKey] : undefined)
+    const label = effectiveValue(source, catalog, labelKey, isOverlay)
+    const aria = effectiveValue(source, catalog, ariaKey, isOverlay)
     if (label === undefined || aria === undefined) continue
     if (containsLabel(aria, label)) continue
     findings.push({ labelKey, ariaKey, label, aria })

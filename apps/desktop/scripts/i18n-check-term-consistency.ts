@@ -146,9 +146,13 @@ export function findDivergences(source: Catalog, catalog: Catalog, isOverlay: bo
     // genuinely missing is the coverage check's problem, not ours, so we skip it.
     const byRendering = new Map<string, string[]>()
     for (const key of keys) {
-      const own = catalog.messages[key]
-      const effective = own ?? (isOverlay ? source.messages[key] : undefined)
-      if (effective === undefined) continue
+      // What the locale renders: its own value, or for an overlay the source value
+      // it falls through to. A full translation missing a key is the coverage
+      // check's problem, not ours.
+      let effective: string
+      if (key in catalog.messages) effective = catalog.messages[key]
+      else if (isOverlay && key in source.messages) effective = source.messages[key]
+      else continue
       const normalized = normalizeForComparison(effective, key)
       const bucket = byRendering.get(normalized)
       if (bucket) bucket.push(key)
@@ -225,12 +229,12 @@ export function inspectLocales({
     const source = isOverlay ? layerCatalogs(load(BASE_LOCALE), load(overrides)) : load(BASE_LOCALE)
     const divergences = findDivergences(source, load(locale), isOverlay)
 
-    const baseline = allowlist.notYetReviewed[locale]
+    const baseline = locale in allowlist.notYetReviewed ? allowlist.notYetReviewed[locale] : undefined
     if (baseline !== undefined) {
       outcomes.push({ locale, isOverlay, divergences, unallowed: [], staleAllows: [], baseline })
       continue
     }
-    const entries = allowlist.reviewed[locale] ?? []
+    const entries = locale in allowlist.reviewed ? allowlist.reviewed[locale] : []
     const unallowed = divergences.filter((finding) => !isAllowed(finding.source, entries))
     const live = new Set(divergences.map((finding) => finding.source))
     const staleAllows = entries.map((entry) => entry.source).filter((source) => !live.has(source))
@@ -246,7 +250,11 @@ export function inspectLocales({
  * @param write sink for one line at a time (default `console.log`)
  */
 export function report(outcomes: readonly LocaleOutcome[], write?: (line: string) => void): number {
-  const out = write ?? ((line: string) => void console.log(line))
+  const out =
+    write ??
+    ((line: string) => {
+      console.log(line)
+    })
   if (outcomes.length === 0) {
     out(`Term consistency: no non-${BASE_LOCALE} locales to check.`)
     return EXIT_CLEAN
