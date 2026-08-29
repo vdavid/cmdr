@@ -131,12 +131,17 @@ describe('the script boundary in the fallback chain', () => {
   // worse than English. Canonical rationale:
   // `apps/desktop/src-tauri/src/intl/DETAILS.md`
   // § The script guard, and why regional fallback survives it.
+  // `zh` and `zh-Hant` are REAL shipped catalogs, so this teardown drops them for
+  // the rest of the file. Nothing later reads them (`availableLocales()` runs in an
+  // earlier describe), but keep any test that needs the real Chinese catalogs above
+  // this block.
   afterEach(() => {
     for (const tag of ['zh', 'zh-Hant', 'zh-Hant-TW', 'zh-TW']) _setCatalogForTests(tag, null)
   })
 
   it('never resolves a Traditional reader through the Simplified catalog', () => {
     _setCatalogForTests('zh', { 'transfer.trash': 'SIMPLIFIED' })
+    _setCatalogForTests('zh-Hant', {}) // a GAP in the Traditional catalog, so the chain has to walk
     _setLocaleForTests('zh-Hant')
     // `zh` is the language base, but it's Hans: English is the honest answer.
     expect(tString('transfer.trash', { countText: '2', count: 2 })).toBe('Moved 2 files to trash')
