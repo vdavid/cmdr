@@ -200,7 +200,7 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr a besoin d’une fenêtre de contexte plus grande que celle de votre modèle local. Choisissez 16 384 jetons ou plus dans les réglages, sous IA.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr a besoin d''une fenêtre de contexte plus grande que celle de votre modèle local. Choisissez 16 384 jetons ou plus dans les réglages, sous IA.",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "d546a0c"
   },
@@ -500,7 +500,7 @@
   "@askCmdr.renameReview.coverage": {
     "sourceHash": "d8845cb"
   },
-  "askCmdr.renameReview.coverageThin": "Ce n’est qu’une petite partie du texte que Cmdr a lu ici. Ouvre le fichier pour vérifier le nom.",
+  "askCmdr.renameReview.coverageThin": "Ce n''est qu''une petite partie du texte que Cmdr a lu ici. Ouvrez le fichier pour vérifier le nom.",
   "@askCmdr.renameReview.coverageThin": {
     "sourceHash": "2b8bec1"
   },
@@ -570,7 +570,7 @@
   "@askCmdr.renameReview.nothingReadBadge": {
     "sourceHash": "6308780"
   },
-  "askCmdr.renameReview.nothingReadTooltip": "Cmdr n’a rien lu à l’intérieur de ce fichier. Ce nom vient de l’ancien nom, des détails du fichier ou de ce que vous avez demandé.",
+  "askCmdr.renameReview.nothingReadTooltip": "Cmdr n''a rien lu à l''intérieur de ce fichier. Ce nom vient de l''ancien nom, des détails du fichier ou de ce que vous avez demandé.",
   "@askCmdr.renameReview.nothingReadTooltip": {
     "sourceHash": "850f6ce"
   },
@@ -578,7 +578,7 @@
   "@askCmdr.renameReview.nameKeptBadge": {
     "sourceHash": "08f1bc7"
   },
-  "askCmdr.renameReview.nameKeptTooltip": "Cmdr a conservé le nom actuel et n’a rien lu à l’intérieur de ce fichier.",
+  "askCmdr.renameReview.nameKeptTooltip": "Cmdr a conservé le nom actuel et n''a rien lu à l''intérieur de ce fichier.",
   "@askCmdr.renameReview.nameKeptTooltip": {
     "sourceHash": "d27a078"
   },
@@ -622,7 +622,7 @@
   "@askCmdr.renameUndo.partial": {
     "sourceHash": "a76ffee"
   },
-  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tel {count, plural, one {quel} many {quels} other {quels}} : {count, plural, one {il a changé} many {ils ont changé} other {ils ont changé}} depuis le renommage, ou l’ancien nom est de nouveau pris.",
+  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tel {count, plural, one {quel} many {quels} other {quels}} : {count, plural, one {il a changé} many {ils ont changé} other {ils ont changé}} depuis le renommage, ou l''ancien nom est de nouveau pris.",
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
@@ -642,11 +642,11 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "sourceHash": "2fd2e7a"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} laissé tel quel : Cmdr n’a pas pu vérifier s’il avait changé.",
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} laissé tel quel : Cmdr n''a pas pu vérifier s''il avait changé.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : Cmdr n''a pas pu vérifier s''ils avaient changé.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
     "sourceHash": "5964166"
   },
@@ -658,19 +658,19 @@
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
     "sourceHash": "d2c9f56"
   },
-  "askCmdr.renameUndo.skipReason.failed.named": "{name} laissé tel quel : Cmdr n’a pas pu lui rendre son ancien nom.",
+  "askCmdr.renameUndo.skipReason.failed.named": "{name} laissé tel quel : Cmdr n''a pas pu lui rendre son ancien nom.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : Cmdr n’a pas pu leur rendre leurs anciens noms.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : Cmdr n''a pas pu leur rendre leurs anciens noms.",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
     "sourceHash": "f13c021"
   },
-  "askCmdr.renameUndo.refusedBatches": "Cmdr n’a pas pu annuler {countText} {count, plural, one {lot} many {lots} other {lots}}. Le journal des opérations donne les détails.",
+  "askCmdr.renameUndo.refusedBatches": "Cmdr n''a pas pu annuler {countText} {count, plural, one {lot} many {lots} other {lots}}. Le journal des opérations donne les détails.",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"
   },
-  "askCmdr.renameUndo.unavailable": "Rien à restaurer. Ce lot a peut-être déjà été annulé, ou son disque n’est pas connecté.",
+  "askCmdr.renameUndo.unavailable": "Rien à restaurer. Ce lot a peut-être déjà été annulé, ou son disque n''est pas connecté.",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
   },
@@ -730,7 +730,7 @@
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ba3d8fa"
   },
-  "askCmdr.wakeToast.title": "Ask Cmdr a {countText} {count, plural, one {suggestion} many {suggestions} other {suggestions}} pour toi",
+  "askCmdr.wakeToast.title": "Ask Cmdr a {countText} {count, plural, one {suggestion} many {suggestions} other {suggestions}} pour vous",
   "@askCmdr.wakeToast.title": {
     "sourceHash": "08b3d32"
   },
@@ -742,11 +742,11 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "Tu as refusé de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}",
+  "askCmdr.decision.rejected": "Vous avez refusé de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}",
   "@askCmdr.decision.rejected": {
     "sourceHash": "19d12c1"
   },
-  "askCmdr.decision.approved": "Tu as accepté de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}",
+  "askCmdr.decision.approved": "Vous avez accepté de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}",
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },

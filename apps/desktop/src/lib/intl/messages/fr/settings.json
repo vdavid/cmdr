@@ -711,7 +711,7 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Tu as {totalText} images indexées ; ton réglage couvre {coveredText}. {doomed, plural, one {L''entrée supplémentaire reste consultable jusqu''à ce que tu la supprimes} other {Les {doomedText} entrées supplémentaires restent consultables jusqu''à ce que tu les supprimes} many {Les {doomedText} entrées supplémentaires restent consultables jusqu''à ce que tu les supprimes}}.",
+  "settings.mediaIndex.reclaim.line": "Vous avez {totalText} images indexées ; votre réglage couvre {coveredText}. {doomed, plural, one {L''entrée supplémentaire reste consultable jusqu''à ce que vous la supprimiez} other {Les {doomedText} entrées supplémentaires restent consultables jusqu''à ce que vous les supprimiez} many {Les {doomedText} entrées supplémentaires restent consultables jusqu''à ce que vous les supprimiez}}.",
   "@settings.mediaIndex.reclaim.line": {
     "sourceHash": "aaef941"
   },
@@ -723,7 +723,7 @@
   "@settings.mediaIndex.reclaim.confirmTitle": {
     "sourceHash": "778e9c6"
   },
-  "settings.mediaIndex.reclaim.confirmBody": "Supprimer {doomed, plural, one {{doomedText} entrée indexée} other {{doomedText} entrées indexées} many {{doomedText} entrées indexées}} pour libérer environ {size} ? Tu peux réindexer ces images plus tard, mais les relire prend du temps.",
+  "settings.mediaIndex.reclaim.confirmBody": "Supprimer {doomed, plural, one {{doomedText} entrée indexée} other {{doomedText} entrées indexées} many {{doomedText} entrées indexées}} pour libérer environ {size} ? Vous pourrez réindexer ces images plus tard, mais les relire prend du temps.",
   "@settings.mediaIndex.reclaim.confirmBody": {
     "sourceHash": "1491b12"
   },
