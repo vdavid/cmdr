@@ -388,9 +388,11 @@ docs/guides/i18n-translation.md § Deliberately-identical strings.
 
 TERM CHOICE (three principles):
 1. APPLE FEATURE NAMES — localize what Apple localizes. Some Apple feature names are translated per-OS (Quick Look ->
-   "Coup d'oeil"/"Übersicht"/"Vista rápida"); others Apple keeps English everywhere (Spotlight, Mission Control,
-   AirDrop, Siri, Time Machine, Finder). Decide by checking <tag>/macOS/ in the pile: use the term Apple's localized
-   macOS shows, so it matches the user's Finder. (That's why Quick Look is NOT in the don't-translate list.)
+   "Coup d'oeil"/"Übersicht"/"Vista rápida"); others Apple keeps English in most locales (Spotlight, AirDrop, Siri,
+   Time Machine, Finder). Verify per LOCALE, never from this list: Apple localizes more than you'd guess, and it
+   varies by language. zh-TW renders Mission Control as 指揮中心, Spaces as 空間, and Screenshots as 截圖 while
+   keeping Spotlight Latin. Decide by checking <tag>/macOS/ in the pile: use the term Apple's localized macOS shows,
+   so it matches the user's Finder. (That's why Quick Look is NOT in the don't-translate list.)
 2. PREFER THE macOS FINDER TERM when macOS and Windows/Microsoft differ — Cmdr is a macOS app. E.g. pt-BR delete =
    "Apagar" (Finder), not "Excluir" (Windows); German move = "Bewegen" (Finder), not "Verschieben" (Microsoft).
 3. BRANDS MAY INFLECT. In inflecting languages, let the brand take its natural suffix ("Cmdrben" in Hungarian, "Cmdrs"

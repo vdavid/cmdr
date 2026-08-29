@@ -390,9 +390,12 @@ export const BRAND_WORDS: readonly string[] = Object.freeze([
   // NOT here: "Quick Look" and other Apple FEATURE names Apple localizes per-OS
   // (fr "Coup d’œil", de "Übersicht", es "Vista rápida"). They must be translated
   // to match the user's macOS, not kept verbatim. Only Apple feature/product names
-  // Apple itself keeps English (Spotlight, Mission Control, AirDrop, Siri, Time
-  // Machine, Finder, ...) belong in this list — and none of those appear in copy
-  // yet. See docs/guides/i18n-translation.md § Term-choice principles, principle 1.
+  // Apple itself keeps English (Spotlight, AirDrop, Siri, Time Machine, Finder, ...)
+  // belong in this list — and none of those appear in copy yet. Verify per LOCALE
+  // before adding one: Apple localizes more than you'd guess (zh-TW says 指揮中心
+  // for Mission Control, 空間 for Spaces), so a name that looks kept-English in one
+  // language isn't in another.
+  // See docs/guides/i18n-translation.md § Term-choice principles, principle 1.
 ])
 
 /**

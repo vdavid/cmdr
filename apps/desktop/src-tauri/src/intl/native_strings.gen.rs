@@ -1393,7 +1393,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
     LocaleStrings {
         tag: "zh-Hant",
         entries: &[
-            ("licensing.windowTitle.personalUse", "Cmdr – Personal use only"),
+            ("licensing.windowTitle.personalUse", "Cmdr – 僅限個人使用"),
             ("main.instanceLock.alertBody", "另一個 Cmdr 副本正在使用這個資料夾。請切換到正在執行的那一個，或是先結束它再試一次。"),
             ("main.instanceLock.alertTitle", "Cmdr 已經在執行中"),
             ("menu.app.about", "關於 Cmdr"),
