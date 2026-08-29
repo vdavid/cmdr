@@ -1,145 +1,145 @@
 {
-  "downloads.toast.downloaded": "Downloaded <file>{fileName}</file>",
+  "downloads.toast.downloaded": "已下載 <file>{fileName}</file>",
   "@downloads.toast.downloaded": {
     "sourceHash": "7bc4ace"
   },
-  "downloads.toast.inSubdir": "in {subdir}",
+  "downloads.toast.inSubdir": "位於 {subdir}",
   "@downloads.toast.inSubdir": {
     "sourceHash": "eea56f4"
   },
-  "downloads.toast.learnIntro": "Something cool to learn about jumping to downloads",
+  "downloads.toast.learnIntro": "教你一個跳到下載項目的妙招",
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "In-app: Press <chip>{key}</chip> to jump here",
+  "downloads.toast.inAppHint": "App 內：按 <chip>{key}</chip> 就能跳到這裡",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
-  "downloads.toast.globalHint": "In <em>any</em> app (global shortcut), press <chip>{key}</chip>",
+  "downloads.toast.globalHint": "在<em>任何</em> App 中（全域快速鍵），按 <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
-  "downloads.toast.summaryBoth": "Jump with <inApp>{inAppKey}</inApp> in-app, <global>{globalKey}</global> globally.",
+  "downloads.toast.summaryBoth": "App 內按 <inApp>{inAppKey}</inApp> 跳過去，全域則按 <global>{globalKey}</global>。",
   "@downloads.toast.summaryBoth": {
     "sourceHash": "59c4131"
   },
-  "downloads.toast.summaryInApp": "Jump with <inApp>{inAppKey}</inApp> in-app.",
+  "downloads.toast.summaryInApp": "App 內按 <inApp>{inAppKey}</inApp> 跳過去。",
   "@downloads.toast.summaryInApp": {
     "sourceHash": "2c0fd22"
   },
-  "downloads.toast.summaryGlobal": "Jump with <global>{globalKey}</global> globally.",
+  "downloads.toast.summaryGlobal": "全域按 <global>{globalKey}</global> 跳過去。",
   "@downloads.toast.summaryGlobal": {
     "sourceHash": "1bd00be"
   },
-  "downloads.toast.expandTip": "Show the shortcut tip",
+  "downloads.toast.expandTip": "顯示快速鍵提示",
   "@downloads.toast.expandTip": {
     "sourceHash": "9dfbe32"
   },
-  "downloads.toast.collapseTip": "Make this notification more compact",
+  "downloads.toast.collapseTip": "讓這則通知更精簡",
   "@downloads.toast.collapseTip": {
     "sourceHash": "b404794"
   },
-  "downloads.toast.stopShowing": "Stop showing these",
+  "downloads.toast.stopShowing": "不要再顯示這些",
   "@downloads.toast.stopShowing": {
     "sourceHash": "36faf9f"
   },
-  "downloads.toast.jumpToFile": "Jump to file",
+  "downloads.toast.jumpToFile": "跳到檔案",
   "@downloads.toast.jumpToFile": {
     "sourceHash": "4511f65"
   },
-  "downloads.notification.title": "Downloaded {fileName}",
+  "downloads.notification.title": "已下載 {fileName}",
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
-  "downloads.notification.titleMultiple": "Downloaded {count, plural, one {{countText} file} other {{countText} files}}",
+  "downloads.notification.titleMultiple": "已下載 {count, plural, other {{countText} 個檔案}}",
   "@downloads.notification.titleMultiple": {
     "sourceHash": "f52e460"
   },
-  "downloads.notification.mostRecent": "Most recent: {fileName}",
+  "downloads.notification.mostRecent": "最新：{fileName}",
   "@downloads.notification.mostRecent": {
     "sourceHash": "4aa3b6e"
   },
-  "downloads.empty.message": "Your Downloads folder is empty. Go there anyway?",
+  "downloads.empty.message": "你的「下載項目」資料夾是空的。還是要過去看看嗎？",
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"
   },
-  "downloads.empty.dismiss": "Dismiss",
+  "downloads.empty.dismiss": "忽略",
   "@downloads.empty.dismiss": {
     "sourceHash": "48845bf"
   },
-  "downloads.empty.goToDownloads": "Go to Downloads",
+  "downloads.empty.goToDownloads": "前往「下載項目」",
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr needs Full Disk Access to watch your Downloads folder.",
+  "downloads.fda.message": "Cmdr 需要「完全取用磁碟」權限才能監視你的「下載項目」資料夾。",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },
-  "downloads.fda.dismiss": "Dismiss",
+  "downloads.fda.dismiss": "忽略",
   "@downloads.fda.dismiss": {
     "sourceHash": "48845bf"
   },
-  "downloads.fda.openSystemSettings": "Open System Settings",
+  "downloads.fda.openSystemSettings": "開啟「系統設定」",
   "@downloads.fda.openSystemSettings": {
     "sourceHash": "18196b3"
   },
-  "downloads.warnToast.message": "The {binding} shortcut jumps to your latest download from anywhere. Keep it on?",
+  "downloads.warnToast.message": "{binding} 這組快速鍵可以從任何地方跳到你最新的下載項目。要繼續開著嗎？",
   "@downloads.warnToast.message": {
     "sourceHash": "b174604"
   },
-  "downloads.warnToast.turnOff": "Turn it off",
+  "downloads.warnToast.turnOff": "關掉它",
   "@downloads.warnToast.turnOff": {
     "sourceHash": "74039ed"
   },
-  "downloads.warnToast.keepOn": "Keep it on",
+  "downloads.warnToast.keepOn": "繼續開著",
   "@downloads.warnToast.keepOn": {
     "sourceHash": "cbfff78"
   },
-  "downloads.shortcutRow.scopeTitle": "Global",
+  "downloads.shortcutRow.scopeTitle": "全域",
   "@downloads.shortcutRow.scopeTitle": {
     "sourceHash": "a258b30"
   },
-  "downloads.shortcutRow.commandName": "Go to latest download <marker>(global)</marker>",
+  "downloads.shortcutRow.commandName": "前往最新下載項目 <marker>（全域）</marker>",
   "@downloads.shortcutRow.commandName": {
     "sourceHash": "83f6d4b"
   },
-  "downloads.shortcutRow.modifiedTooltip": "Modified from default",
+  "downloads.shortcutRow.modifiedTooltip": "已從預設值更改",
   "@downloads.shortcutRow.modifiedTooltip": {
     "sourceHash": "3d86215"
   },
-  "downloads.shortcutRow.resetTooltip": "Reset to default",
+  "downloads.shortcutRow.resetTooltip": "重設為預設值",
   "@downloads.shortcutRow.resetTooltip": {
     "sourceHash": "bc5b45a"
   },
-  "downloads.shortcutRow.pressKeys": "Press keys...",
+  "downloads.shortcutRow.pressKeys": "請按鍵…",
   "@downloads.shortcutRow.pressKeys": {
     "sourceHash": "37aa30c"
   },
-  "downloads.shortcutRow.registered": "Registered",
+  "downloads.shortcutRow.registered": "已註冊",
   "@downloads.shortcutRow.registered": {
     "sourceHash": "2351ee9"
   },
-  "downloads.shortcutRow.notRegistered": "Not registered",
+  "downloads.shortcutRow.notRegistered": "未註冊",
   "@downloads.shortcutRow.notRegistered": {
     "sourceHash": "ca374c2"
   },
-  "downloads.shortcutRow.invalidCombo": "Couldn''t register: invalid combo",
+  "downloads.shortcutRow.invalidCombo": "無法註冊：按鍵組合無效",
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "32c3532"
   },
-  "downloads.shortcutRow.registerFailed": "Couldn''t register: {reason}",
+  "downloads.shortcutRow.registerFailed": "無法註冊：{reason}",
   "@downloads.shortcutRow.registerFailed": {
     "sourceHash": "2e6fb97"
   },
-  "downloads.shortcutRow.addModifier": "Add a modifier (⌘, ⌃, ⌥, or ⇧)",
+  "downloads.shortcutRow.addModifier": "請加上一個輔助按鍵（⌘、⌃、⌥ 或 ⇧）",
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "28a5ba2"
   },
-  "downloads.toggleDescription.bound": "Press {binding} from any app to jump to your most recent download.",
+  "downloads.toggleDescription.bound": "在任何 App 中按 {binding} 就能跳到你最近的下載項目。",
   "@downloads.toggleDescription.bound": {
     "sourceHash": "be43b35"
   },
-  "downloads.toggleDescription.unbound": "Jump to your most recent download from any app.",
+  "downloads.toggleDescription.unbound": "從任何 App 跳到你最近的下載項目。",
   "@downloads.toggleDescription.unbound": {
     "sourceHash": "187cdec"
   }
