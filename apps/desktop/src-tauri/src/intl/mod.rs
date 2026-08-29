@@ -274,6 +274,36 @@ fn is_region_subtag(part: &str) -> bool {
         || (part.len() == 3 && part.chars().all(|c| c.is_ascii_digit()))
 }
 
+/// The shipped catalog `tag` is an OVERLAY of, if any: the nearest catalog it
+/// can inherit from, meaning a shipped ancestor written in the same script.
+/// `None` for a full translation, which owes every key itself.
+///
+/// The same rule as the frontend's `inheritableAncestors`
+/// (`apps/desktop/src/lib/intl/locale-inheritance.ts`), so the two layers can't
+/// disagree about what a catalog owes: `en-GB` inherits `en` and forks a
+/// handful of keys, while `zh-Hant` inherits NOTHING (Simplified is a wall) and
+/// is therefore a full translation despite reading like a variant of `zh`.
+///
+/// ❌ Don't classify a catalog by how many keys it carries. A full translation
+/// that lost one key would reclassify itself as an overlay and start being
+/// held to the weaker contract.
+///
+/// Test-only: nothing at RUNTIME needs the answer, because Rust resolves a
+/// catalog and the per-key inheritance happens in the frontend. It lives here,
+/// beside the table it reads, so the guard in `native_strings.rs` derives the
+/// classification from the shipped facts instead of guessing at one.
+#[cfg(test)]
+pub(crate) fn overlay_base(tag: &str, shipped: &[ShippedLocale]) -> Option<&'static str> {
+    let entry = shipped.iter().find(|entry| entry.tag.eq_ignore_ascii_case(tag))?;
+    shipped
+        .iter()
+        .filter(|candidate| !candidate.tag.eq_ignore_ascii_case(entry.tag))
+        .filter(|candidate| shared_subtags(entry.tag, candidate.tag) > 0)
+        .filter(|candidate| candidate.script.eq_ignore_ascii_case(entry.script))
+        .max_by_key(|candidate| candidate.tag.len())
+        .map(|candidate| candidate.tag)
+}
+
 /// How specifically `entry_tag` matches `tag`: the count of leading subtags they
 /// share, or 0 unless `entry_tag` is a subtag-aligned prefix of `tag`. Against
 /// `pt-BR`, the `pt-BR` catalog scores 2 and `pt` scores 1; against `pt-PT`,

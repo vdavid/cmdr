@@ -267,59 +267,125 @@ mod tests {
         );
     }
 
+    /// One locale's half of [`every_shipped_locale_speaks_its_own_menu_bar`],
+    /// over plain slices so a synthetic table can exercise it.
+    ///
+    /// `is_overlay` comes from the shipped table's script and region facts, ❌
+    /// never from how many entries the locale carries: a full translation that
+    /// lost one string would otherwise reclassify itself into the weaker
+    /// contract, where English satisfies the `menu.bar.file` assertion and the
+    /// guard silently stops guarding.
+    fn assert_speaks_its_menu_bar<'a>(
+        tag: &str,
+        entries: &[(&'a str, &'a str)],
+        base: &[(&'a str, &'a str)],
+        is_overlay: bool,
+    ) {
+        fn find<'a>(table: &[(&'a str, &'a str)], key: &str) -> Option<&'a str> {
+            table
+                .iter()
+                .find(|(candidate, _)| *candidate == key)
+                .map(|(_, value)| *value)
+        }
+        assert!(
+            !entries.is_empty(),
+            "{tag} has no native strings; run `pnpm intl:native-strings`"
+        );
+
+        if !is_overlay {
+            // A full translation earns its menu bar by carrying every native
+            // string itself. No fallback is allowed to stand in.
+            assert!(
+                find(entries, "menu.bar.file").is_some(),
+                "{tag} is missing menu.bar.file"
+            );
+            return;
+        }
+
+        // An overlay earns it differently: by forking the few strings it means
+        // to and inheriting the rest, which for `en-GB` / `en-AU` are English on
+        // purpose. So it must be a strict subset, every entry of which genuinely
+        // forks English, or it's dead weight pinning a copy that will drift.
+        assert!(
+            entries.len() < base.len(),
+            "{tag} carries more native strings than the base catalog"
+        );
+        for (key, value) in entries {
+            let english = find(base, key);
+            assert!(english.is_some(), "{tag} invents the native key {key}");
+            assert_ne!(
+                english,
+                Some(*value),
+                "{tag}'s {key} matches English, so it forks nothing"
+            );
+        }
+        // And a key it does NOT fork still reaches the menu bar, in English.
+        assert_eq!(
+            find(entries, "menu.bar.file").or_else(|| find(base, "menu.bar.file")),
+            Some("File"),
+            "{tag} loses menu.bar.file entirely"
+        );
+    }
+
     #[test]
     fn every_shipped_locale_speaks_its_own_menu_bar() {
         // No user reads a Cmdr menu bar in English while the rest of the app is
-        // translated. A full translation earns that by carrying every native
-        // string itself; an OVERLAY earns it differently, by forking the few it
-        // means to and inheriting the rest, which for `en-GB` / `en-AU` are
-        // English on purpose. So the two shapes are checked against different
-        // contracts, and the table's own size is what tells them apart.
+        // translated. Which contract a locale owes is a fact about the CATALOG
+        // (`overlay_base`), not about the size of its native-string table.
         let base = NATIVE_STRINGS
             .iter()
             .find(|locale| locale.tag == BASE_LOCALE)
             .expect("the base catalog is always in the table")
             .entries;
         for locale in NATIVE_STRINGS {
-            assert!(
-                !locale.entries.is_empty(),
-                "{} has no native strings; run `pnpm intl:native-strings`",
-                locale.tag
-            );
-            if locale.entries.len() == base.len() {
-                assert_ne!(
-                    lookup(locale.tag, "menu.bar.file"),
-                    None,
-                    "{} is missing menu.bar.file",
-                    locale.tag
-                );
-                continue;
-            }
-            // An overlay: a strict subset, every entry of which must genuinely
-            // fork English, or it's dead weight pinning a copy that will drift.
-            assert!(
-                locale.entries.len() < base.len(),
-                "{} carries more native strings than the base catalog",
-                locale.tag
-            );
-            for (key, value) in locale.entries {
-                let english = lookup(BASE_LOCALE, key);
-                assert_ne!(english, None, "{} invents the native key {key}", locale.tag);
-                assert_ne!(
-                    english,
-                    Some(*value),
-                    "{}'s {key} matches English, so it forks nothing",
-                    locale.tag
-                );
-            }
-            // And a key it does NOT fork still reaches the menu bar, in English.
-            assert_eq!(
-                lookup(locale.tag, "menu.bar.file").or_else(|| lookup(BASE_LOCALE, "menu.bar.file")),
-                Some("File"),
-                "{} loses menu.bar.file entirely",
-                locale.tag
-            );
+            let is_overlay = super::super::overlay_base(locale.tag, super::super::SHIPPED_LOCALES).is_some();
+            assert_speaks_its_menu_bar(locale.tag, locale.entries, base, is_overlay);
         }
+    }
+
+    #[test]
+    fn the_overlays_are_the_only_locales_held_to_the_overlay_contract() {
+        // Pins the classification the guard above depends on. `zh-Hant` is the
+        // interesting one: it reads like a variant of `zh`, but a Simplified
+        // catalog is unreadable to it, so it inherits nothing and owes every
+        // key like any other full translation.
+        let overlays: Vec<&str> = NATIVE_STRINGS
+            .iter()
+            .map(|locale| locale.tag)
+            .filter(|tag| super::super::overlay_base(tag, super::super::SHIPPED_LOCALES).is_some())
+            .collect();
+        assert_eq!(overlays, vec!["en-AU", "en-GB"]);
+        assert_eq!(
+            super::super::overlay_base("en-GB", super::super::SHIPPED_LOCALES),
+            Some("en")
+        );
+        assert_eq!(
+            super::super::overlay_base("zh-Hant", super::super::SHIPPED_LOCALES),
+            None
+        );
+        assert_eq!(super::super::overlay_base("en", super::super::SHIPPED_LOCALES), None);
+    }
+
+    #[test]
+    #[should_panic(expected = "hu is missing menu.bar.file")]
+    fn a_full_translation_that_lost_the_menu_bar_still_fails_the_guard() {
+        // The regression this guard exists to catch, and the one a size-based
+        // classification let through: a full translation short one string is
+        // still a full translation, so English must NOT satisfy it for it.
+        let base = &[("menu.bar.edit", "Edit"), ("menu.bar.file", "File")];
+        assert_speaks_its_menu_bar("hu", &[("menu.bar.edit", "Szerkesztés")], base, false);
+    }
+
+    #[test]
+    fn the_overlay_contract_accepts_the_very_gap_a_full_translation_may_not() {
+        // Why the classification can't be read off the table's SIZE: the same
+        // input the test above rejects passes here, because an overlay is
+        // allowed to reach `menu.bar.file` through English. A size check called
+        // any full translation short one string an overlay, which is exactly how
+        // a Hungarian user could have ended up with an English menu bar and a
+        // green guard.
+        let base = &[("menu.bar.edit", "Edit"), ("menu.bar.file", "File")];
+        assert_speaks_its_menu_bar("en-GB", &[("menu.bar.edit", "Szerkesztés")], base, true);
     }
 
     #[test]
