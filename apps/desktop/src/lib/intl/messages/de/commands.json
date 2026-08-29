@@ -364,7 +364,7 @@
   "@commands.fileRename.label": {
     "sourceHash": "3064d79"
   },
-  "commands.fileView.label": "Vorschau",
+  "commands.fileView.label": "Ansehen",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"
   },

@@ -361,7 +361,7 @@
   "@fileOperations.transferDialog.confirmCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.scanPhase.fromLabel": "Aus:",
+  "fileOperations.scanPhase.fromLabel": "Von:",
   "@fileOperations.scanPhase.fromLabel": {
     "sourceHash": "dc45d36"
   },

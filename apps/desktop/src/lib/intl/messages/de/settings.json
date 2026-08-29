@@ -287,11 +287,11 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
-  "settings.listing.showHiddenFiles.label": "Versteckte Dateien anzeigen",
+  "settings.listing.showHiddenFiles.label": "Verborgene Dateien einblenden",
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "Zeigt Dot-Dateien (wie .zshrc) und Objekte an, die das System als versteckt markiert. Gilt für beide Bereiche.",
+  "settings.listing.showHiddenFiles.description": "Zeigt Dot-Dateien (wie .zshrc) und Objekte an, die das System als verborgen markiert. Gilt für beide Bereiche.",
   "@settings.listing.showHiddenFiles.description": {
     "sourceHash": "8e77c67"
   },
@@ -820,7 +820,7 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Zum neuesten Download springen",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Zum neuesten Download gehen",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
@@ -1516,7 +1516,7 @@
   "@settings.askCmdr.status.off": {
     "sourceHash": "0420c9a"
   },
-  "settings.askCmdr.status.needsReview": "Ask Cmdr ist pausiert",
+  "settings.askCmdr.status.needsReview": "Ask Cmdr ist angehalten",
   "@settings.askCmdr.status.needsReview": {
     "sourceHash": "9b7a74e"
   },
@@ -2108,9 +2108,10 @@
   "@settings.network.customTimeoutUnit": {
     "sourceHash": "59f006d"
   },
-  "settings.updates.emailPlaceholder": "du@beispiel.de",
+  "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "'you@example.com' is a literal example email address; kept exactly per the @key description. 'example.com' is IANA-reserved for examples, unlike a localized 'beispiel.de', which is a real registered domain."
   },
   "settings.updates.checkForUpdates": "Nach Updates suchen",
   "@settings.updates.checkForUpdates": {
@@ -2124,11 +2125,11 @@
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "Sieh in deinem Postfach nach, um deine E-Mail zu bestätigen. Danke fürs Mithelfen!",
+  "settings.updates.emailConfirmHint": "Sieh in deinem Postfach nach, um deine E-Mail-Adresse zu bestätigen. Danke fürs Mithelfen!",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "Tut uns leid, wir konnten dich gerade nicht anmelden. Erneut versuchen?",
+  "settings.updates.emailSignupError": "Tut uns leid, die Anmeldung hat gerade nicht geklappt. Erneut versuchen?",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },

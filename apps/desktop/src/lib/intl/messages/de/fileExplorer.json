@@ -132,7 +132,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Persönlichen Ordner öffnen",
+  "fileExplorer.errorPane.goHome": "Zum persönlichen Ordner gehen",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -201,7 +201,7 @@
   "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
     "sourceHash": "280b10c"
   },
-  "fileExplorer.functionKeyBar.viewLabel": "Anzeigen",
+  "fileExplorer.functionKeyBar.viewLabel": "Ansehen",
   "@fileExplorer.functionKeyBar.viewLabel": {
     "sourceHash": "dcc839a"
   },
@@ -352,7 +352,7 @@
   "@fileExplorer.network.browser.unknown": {
     "sourceHash": "8fe7794"
   },
-  "fileExplorer.network.browser.searching": "Suche läuft …",
+  "fileExplorer.network.browser.searching": "Wird gesucht …",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
   },
@@ -732,7 +732,7 @@
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
-  "fileExplorer.unreachable.retrying": "Erneuter Versuch läuft …",
+  "fileExplorer.unreachable.retrying": "Erneuter Versuch …",
   "@fileExplorer.unreachable.retrying": {
     "sourceHash": "84a657b"
   },

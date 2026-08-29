@@ -88,7 +88,7 @@
   "@menu.file.open": {
     "sourceHash": "ed077f3"
   },
-  "menu.file.view": "Vorschau",
+  "menu.file.view": "Ansehen",
   "@menu.file.view": {
     "sourceHash": "dcc839a"
   },
@@ -128,7 +128,7 @@
   "@menu.file.rename": {
     "sourceHash": "3064d79"
   },
-  "menu.file.showInFinder": "Im Finder zeigen",
+  "menu.file.showInFinder": "Im Finder anzeigen",
   "@menu.file.showInFinder": {
     "sourceHash": "c2a9c77"
   },

@@ -187,7 +187,7 @@
   "@onboarding.stepAi.table.colWith": {
     "sourceHash": "c83835a"
   },
-  "onboarding.stepAi.table.rowSearch": "Suchen",
+  "onboarding.stepAi.table.rowSearch": "Suche",
   "@onboarding.stepAi.table.rowSearch": {
     "sourceHash": "49c266b"
   },
@@ -351,11 +351,11 @@
   "@onboarding.stepBeta.emailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "onboarding.stepBeta.signup.success": "Schau in dein Postfach, um deine E-Mail-Adresse zu bestätigen. Danke fürs Mithelfen!",
+  "onboarding.stepBeta.signup.success": "Sieh in deinem Postfach nach, um deine E-Mail-Adresse zu bestätigen. Danke fürs Mithelfen!",
   "@onboarding.stepBeta.signup.success": {
     "sourceHash": "b96010e"
   },
-  "onboarding.stepBeta.signup.failure": "Sorry, die Anmeldung hat gerade nicht geklappt. Nochmal versuchen?",
+  "onboarding.stepBeta.signup.failure": "Tut uns leid, die Anmeldung hat gerade nicht geklappt. Erneut versuchen?",
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },

@@ -1565,3 +1565,92 @@ geben, die der natürliche Aria-Satz ohnehin benutzt, und den Aria-Satz nicht zu
   also ist „beachten“ die positive Form · `high`. Der zugängliche Name wickelt die Beschriftung ein, statt sie zu
   ersetzen: `queryUi.scope.toggle.caseSensitiveAria` = „Beim Abgleich Groß-/Kleinschreibung beachten“. Ein
   umformuliertes „Übereinstimmung mit …“ bricht die Enthaltensregel.
+
+## Ein englisches Wort, ein deutsches Wort: die Drift-Prüfung (2026-08-30)
+
+Der Katalog trug 20 Stellen, an denen `de` denselben englischen Text zweimal verschieden benannte, meist weil ein
+späterer Durchgang nur die Menüleiste anfasste und die Befehlspalette auf der alten Formulierung stehen ließ. Zehn davon
+waren echte Drift und sind unten aufgelöst; die anderen zehn sind ABSICHTLICHE Grenzen und stehen darunter, damit der
+nächste Durchgang sie nicht „vereinheitlicht“.
+
+### Aufgelöst
+
+- **`View` (die F3-Aktion, Datei im eingebauten Betrachter öffnen) → `Ansehen`**, überall:
+  `commands.fileView.label`, `menu.file.view`, `fileExplorer.functionKeyBar.viewLabel` · der Katalog hatte sich längst
+  festgelegt, ohne dass die Tasten es mitbekamen: `settings.appearance.showFunctionKeyBar.description` zählt die Tasten
+  der F-Tasten-Reihe als „(Umbenennen, **Ansehen**, Kopieren usw.)“ auf, während die Taste selbst „Anzeigen“ hieß. Dazu
+  `askCmdr.wakeToast.action` und `suggestedOps.review` (= „Ansehen“ / „Dateien ansehen“) und der Glossareintrag
+  view/see → ansehen · `high`. ❌ Nicht `Anzeigen`: das ist im Katalog der SHOW-Sinn (etwas sichtbar machen), und die
+  beiden auseinanderzuhalten ist der ganze Zweck des Eintrags. ❌ Nicht `Vorschau`: das ist das Substantiv für das
+  Betrachter-Fenster, kein Imperativ, und `menu.file.view` verlangt laut `@key` ausdrücklich ein Verb. Double Commander
+  `de` sagt für dieselbe Aktion `Betrachten` (`tfrmmain.actview.caption`) — richtig, aber Tier 3, und der Katalog hat
+  schon ein Wort.
+- **`Show in Finder` → `Im Finder anzeigen`**, auch im Menü (`menu.file.showInFinder`, vorher „Im Finder zeigen“) · der
+  Glossareintrag trennt die beiden englischen Quellverben schon: `Reveal in Finder` → „Im Finder zeigen“,
+  `Show in Finder` → „Im Finder anzeigen“ (beides in `de/macOS/` belegt). Das Menü hatte die Reveal-Form für die
+  Show-Quelle übernommen, sodass Menüleiste und Befehlspalette denselben Befehl verschieden nannten · `high`.
+- **`Go to …` bleibt `Zum … gehen`, auch auf Tasten und in Einstellungen** ·
+  `settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label` sagte „springen“,
+  `fileExplorer.errorPane.goHome` sagte „öffnen“. Beide heißen jetzt wie ihr Befehl in der Palette („Zum neuesten
+  Download gehen“, „Zum persönlichen Ordner gehen“), passend zu `commands.navParent.label` · `high`.
+- **`hidden files` bleibt `verborgene Dateien`, und `show hidden files` → `Verborgene Dateien einblenden`** ·
+  `settings.listing.showHiddenFiles.label`/`.description` sagten als Einzige „versteckt“ und „anzeigen“, gegen
+  `menu.view.showHiddenFiles` und `commands.viewShowHidden.label` („ein-/ausblenden“) · `high`. Die Dateiverwaltungen
+  (Double Commander, Nautilus, Dolphin) sagen mehrheitlich „versteckte Dateien anzeigen“, aber das ist Tier 3 gegen eine
+  bereits getroffene Katalogentscheidung.
+- **`Search` als Aufgabenname ist das Substantiv `Suche`** · `onboarding.stepAi.table.rowSearch` ist laut `@key` ein
+  „short noun“ und sagte „Suchen“ · `high`.
+- **In-Arbeit-Zustände nehmen die `Wird …`-Passivform**: `fileExplorer.network.browser.searching` = „Wird gesucht …“
+  (vorher „Suche läuft …“), gleich wie `askCmdr.sessions.searching`, `queryUi.results.searching`,
+  `viewer.search.searching` · `high`. Ausnahme mit Grund: `Retrying` bleibt die kürzere Nominalform „Erneuter Versuch
+  …“, weil `fileExplorer.navigation.spaceRetryingText` an die Stelle einer Zahl im schmalen Speicherplatz-Balken tritt;
+  `fileExplorer.unreachable.retrying` gab dafür sein „läuft“ auf.
+- **`Got it` → `Alles klar`** · macOS `de` übersetzt „Got It“ genau so (geprüft auf macOS 26.6.2, Build 25G83,
+  2026-08-30) · `high`. `ai.toast.gotIt` sagte „Verstanden“.
+- **`From:` vor einem Pfad → `Von:`** · `fileOperations.scanPhase.fromLabel` sagte „Aus:“, während das Gegenstück
+  `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle` schon das Paar „Von“/„Nach“ führt · `high`.
+- **`paused` (Zustand) → `angehalten`, auch im Satz** · `settings.askCmdr.status.needsReview` sagte „Ask Cmdr ist
+  pausiert“, `queue.row.status` sagt „Angehalten“ · `high`.
+- **Die beiden Beta-E-Mail-Paare sagen wieder dasselbe** · `onboarding.stepBeta.signup.success` und
+  `settings.updates.emailConfirmHint` teilen sich einen englischen Satz, ebenso
+  `onboarding.stepBeta.signup.failure` und `settings.updates.emailSignupError`. Gewählt: „Sieh in deinem Postfach nach,
+  …“ (idiomatischer als „Schau in dein Postfach“) und „Tut uns leid, die Anmeldung hat gerade nicht geklappt. Erneut
+  versuchen?“ — natives Bedauern statt des Lehnworts „Sorry“, die schuldfreie Formulierung („hat nicht geklappt“ statt
+  „wir konnten dich nicht anmelden“), und das im Glossar festgelegte „Erneut versuchen“ · `high`.
+
+### Absichtliche Grenzen (bitte nicht vereinheitlichen)
+
+- **`File`: `Ablage` ist die Menüleiste, `Datei` ist alles andere** · macOS Finder nennt sein File-Menü „Ablage“, und
+  `@menu.bar.file` verlangt ausdrücklich Finders eigenes Wort. Eine Tabellenspalte (`suggestedOps.columnFile`) heißt
+  natürlich „Datei“ · `high`.
+- **`View`: `Darstellung` ist der MENÜTITEL, `Ansehen` ist die Aktion** · macOS Finder nennt sein View-Menü
+  „Darstellung“ (Substantiv, es hält die Ansichtsoptionen), `@menu.bar.view` verlangt genau dieses Wort. Siehe oben ·
+  `high`.
+- **`Zoom`: `Zoom` ist die Textgröße, `Zoomen` ist das Fenster** · `menu.window.zoom` ist macOS' Fenster-Menüpunkt
+  (grüner Knopf), den macOS `de` „Zoomen“ nennt; `menu.view.zoom` ist das Untermenü für Cmdrs Textgröße. Das `@key`
+  sagt selbst, dass hier macOS' Wort gilt, auch wenn es vom Textzoom abweicht · `high`.
+- **`Purple`: `Lila` ist die Finder-Tag-Farbe, `Violett` ist die Farbpalette** · `@menu.tag.purple` verlangt den
+  exakten macOS-Namen dieser Tag-Farbe, und macOS `de` sagt „Lila“; `settings.tint.purple` ist Cmdrs eigene
+  Volume-Einfärbung und folgt dem Glossar-Farbnamen „Violett“ · `high`.
+- **`Checking`: `Wird geprüft` prüft etwas nach, `Wird gesucht` sucht nach Updates** · macOS `de` übersetzt „Checking
+  for updates…“ als „Nach Updates suchen …“ (Software Update, geprüft auf macOS 26.6.2, 2026-08-30), also ist Suchen
+  hier das Idiom. `ai.cloud.checking` und `licensing.dialog.checking` prüfen dagegen eine Verbindung bzw. einen
+  Schlüssel · `high`.
+- **`Dismiss`: `Schließen` schließt ein Fenster, `Ausblenden` blendet eine Zeile aus** · alle acht
+  Dialog-/Toast-Tasten schließen etwas. `queue.row.dismiss` entfernt laut `@key` nur die Zeile aus der Liste: nichts
+  wird widerrufen, wiederholt oder gelöscht. Eine Zeile kann man nicht „schließen“, und „Ausblenden“ sagt genau, was
+  passiert · `high`.
+- **`Indexing now`: `Wird gerade indiziert` meint DIESE Datei, `Indizierung läuft` meint den Durchlauf** ·
+  `fileExplorer.imageIndex.file.indexing` ist der Tooltip auf dem Abzeichen EINES Bildes, also ein Passivzustand;
+  `settings.mediaIndex.progressSummary.title` ist die Überschrift über der Fortschrittsliste, also nominal · `high`.
+- **`Search`: `Suche` ist das Substantiv, `Suchen` ist die Taste** · `queryUi.bar.runLabel` ist der Auslöser neben dem
+  Eingabefeld und braucht den Imperativ; Dialogtitel, Tab-Name, Einstellungsabschnitt und Aufgabenname sind Substantive
+  · `high`.
+- **`Put back …`: `zurückgesetzt` sind NAMEN, `zurückgelegt` sind ORTE** · schon im Papierkorb-Abschnitt (2026-08-27)
+  entschieden: macOS Finder `N153.1` gibt „Put Back“ als „Zurücklegen“, und der Katalog benutzt „zurücksetzen“ für das
+  Umbenennen-Widerrufen. Englisch teilt sich einen Satz für zwei verschiedene Rücknahmen · `high`.
+- **`you@example.com`: Einstellungen halten die Adresse wörtlich, die Dialoge übersetzen sie** ·
+  `@settings.updates.emailPlaceholder` sagt ausdrücklich „keep it exactly“, `@common.attachEmailPlaceholder` und
+  `@onboarding.stepBeta.emailPlaceholder` erlauben eine sprachtypische Beispieladresse. Deshalb „you@example.com“ dort
+  und „du@example.com“ hier · `high`. ❌ Kein „du@beispiel.de“: `beispiel.de` ist eine echte registrierte Domain,
+  `example.com` ist von der IANA für Beispiele reserviert.
