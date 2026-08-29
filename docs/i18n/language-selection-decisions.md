@@ -8,9 +8,9 @@ Which of the 139 researched languages Cmdr plans to localize, and in what order.
 - **deferred**: a regional/script variant added after its base, on demand (es-ES, fr-CA, zh-HK).
 - **shipped**: ten catalogs are complete and live, every one of the 3,138 keys translated and passing
   `desktop-i18n-coverage`: `de`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`, and `zh-Hant` (the last of them
-  finished 2026-08-29). A locale ships once it's translated, passes the checks, and is overflow-checked; human
-  review is opportunistic, not a gate (`../guides/i18n-translation.md`). Being in a wave below is a PLAN, not a
-  ship state, so check this line rather than the wave column to know what's live.
+  finished 2026-08-29). A locale ships once it's translated, passes the checks, and is overflow-checked; human review is
+  opportunistic, not a gate (`../guides/i18n-translation.md`). Being in a wave below is a PLAN, not a ship state, so
+  check this line rather than the wave column to know what's live.
 - **exclude RTL**: set aside until Cmdr supports right-to-left layout. Decision 2026-06-20: no RTL for now.
 - **exclude long-tail**: no major-product localization ecosystem. Decision 2026-06-20: skip the long tail.
 
@@ -19,7 +19,7 @@ Order: source, waves 1 to 4, deferred variants, then exclusions. Formality and s
 
 | id      | language                  | decision          | comment                                                                                        |
 | ------- | ------------------------- | ----------------- | ---------------------------------------------------------------------------------------------- |
-| en      | English                   | source            | Reference English, region-neutral; the source locale; en-GB is a wave-2 variant                |
+| en      | English                   | source            | US English source locale (register and why: `en/style.md`); en-GB, en-AU overlay it            |
 | bn      | Bengali                   | wave 1            | MS terminology + GNOME; Google ships Bengali; no macOS                                         |
 | de      | German                    | wave 1            | Apple macOS + MS + Google ship German                                                          |
 | es      | Spanish                   | wave 1            | Apple macOS + MS + Google + Netflix ship Spanish; pan-regional es, es-ES deferred              |

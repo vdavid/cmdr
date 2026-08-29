@@ -23,10 +23,15 @@ This is exactly why each target-language style guide must settle formality expli
 There's essentially nothing to decide for `en` as a localization target, but two source-side facts shape every
 downstream translation:
 
-- **`en` is the reference English, written in a region-neutral register.** It isn't tagged `en-US` or `en-GB`. Spelling
-  leans American ("color", "canceled", "behavior") because that's the larger macOS audience and Apple's default English,
-  but the copy avoids region-loud idioms. No `en-GB` / `en-AU` variant is planned; add one only if British/Australian
-  spelling ("colour", "cancelled") becomes a real ask. Confidence: high.
+- **`en` is US English.** The catalog spells "color", "canceled", "behavior", "favorites", and "gray". The register is
+  US; the tag stays the bare `en` because this catalog is also the final fallback for every other locale, so there's no
+  `en-US` directory. This is a deliberate base rather than a neutral midpoint, and it's the base Apple's own model
+  assumes: macOS ships `en` as US English and layers `en-GB` and `en-AU` on top as regional overlays (Finder's `MR16`
+  reads "Canceled" in `en` and "Cancelled" in both `en-GB` and `en-AU`; verified in the reference pile at
+  `_ignored/i18n/<tag>/macOS/Finder/LocalizableMerged.json`, 2026-08-29). Matching that base is what lets the coming
+  `en-GB` and `en-AU` overlays be a clean fork: every key they carry is then a genuine US-vs-British difference, not an
+  arbitrary pick against a source that never settled its own spelling. **So don't "correct" a US spelling back to
+  British here.** A British form belongs in the `en-GB` overlay; `en` stays US. Confidence: high.
 - **Gender-neutral by construction.** Source copy already uses "they/them" and avoids gendered nouns, so translators
   inherit gender-neutral intent. When a target language forces grammatical gender on a word the English left neutral,
   that's a target-language decision point (see each language's file), not something the source resolves.
@@ -50,8 +55,9 @@ template each translation re-expresses in its own categories (which may be more:
 
 ## Notes and decisions
 
-- Roster: the source is region-neutral en; a British/Australian variant (en-GB) is a wave-2 follow-on (mainly Trash->Bin
-  and -our/-ise spelling). See `../language-selection-decisions.md`.
+- Roster: the source is US English (see the decision point above); British and Australian variants (`en-GB`, `en-AU`)
+  are wave-2 overlays on top of it, carrying the spelling forks (-our/-ise/-lled) plus terminology macOS renames by
+  region (Trash -> Bin). See `../language-selection-decisions.md`.
 - **Ellipsis**: the catalog uses three literal ASCII dots ("Sending...") rather than the single `…` character; several
   translations match this shape deliberately. This is a source convention every locale inherits.
 

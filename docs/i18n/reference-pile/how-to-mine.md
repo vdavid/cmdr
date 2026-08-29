@@ -86,14 +86,14 @@ plutil -convert json -o - sv.lproj/LocalizableMerged.strings | jq -r '."N154"'  
 ```
 
 `LocalizableMerged.strings` holds the short menu and progress strings (opaque keys like `N154`, `DU3_V1`);
-`Localizable.strings` holds the English-sentence-keyed ones. Anchor what you find with the OS version (`sw_vers`),
-since Apple rewords between releases.
+`Localizable.strings` holds the English-sentence-keyed ones. Anchor what you find with the OS version (`sw_vers`), since
+Apple rewords between releases.
 
-> [!IMPORTANT] **On macOS 26, most system strings moved OUT of `.lproj` into `.loctable`.** AppKit's
-> `<lang>.lproj/` now holds only a couple of plists, and whole apps ship empty `zh_TW.lproj` directories, so the
-> per-`.lproj` recipe above silently finds nothing and reads as "Apple doesn't localize this". A `.loctable` is one
-> binary plist per resource holding EVERY language at once, keyed by language then by string key, with the ENGLISH
-> string usually serving as the key:
+> [!IMPORTANT] **On macOS 26, most system strings moved OUT of `.lproj` into `.loctable`.** AppKit's `<lang>.lproj/` now
+> holds only a couple of plists, and whole apps ship empty `zh_TW.lproj` directories, so the per-`.lproj` recipe above
+> silently finds nothing and reads as "Apple doesn't localize this". A `.loctable` is one binary plist per resource
+> holding EVERY language at once, keyed by language then by string key, with the ENGLISH string usually serving as the
+> key:
 >
 > ```sh
 > F=/System/Library/ExtensionKit/Extensions/KeyboardSettings.appex/Contents/Resources/DefaultShortcutsTable.loctable
@@ -105,8 +105,8 @@ since Apple rewords between releases.
 >
 > `grep -l "<English string>"` works directly on the binary file, so grepping a bundle's `Resources/*.loctable` finds
 > which one holds a term. High-value bundles beyond Finder/AppKit: `KeyboardSettings.appex` (shortcut and key names),
-> `Problem Reporter.app` and `CrashReporterSupport` (crash copy), `Software Update`, `App Store.app`, `CommerceKit`
-> and `AppStoreDaemon` (licensing, purchase, refund), Preview / QuickTime / TextEdit / Photos (viewer and media), and
+> `Problem Reporter.app` and `CrashReporterSupport` (crash copy), `Software Update`, `App Store.app`, `CommerceKit` and
+> `AppStoreDaemon` (licensing, purchase, refund), Preview / QuickTime / TextEdit / Photos (viewer and media), and
 > `Keychain Access.app` (`CFBundleDisplayName` gives the localized app name). Verified on macOS 26.6.2, build 25G83,
 > 2026-08-29.
 
