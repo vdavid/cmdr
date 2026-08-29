@@ -93,9 +93,12 @@ into a single `nonTransient` key (they rendered identical copy for both). The `n
   `__fixtures__/friendly_error_golden.json` byte-for-byte (one assertion per golden key). The golden was generated once
   by a temporary Rust test that recorded the exact pre-change rendered strings for a representative matrix (every errno
   arm, every typed `VolumeError` variant, every git kind, the empty-root case, every provider × category). The fixture
-  is FROZEN: if the test fails, the FE copy drifted, so fix the factory, never regenerate the fixture. It also never
-  grows: the test iterates the golden's own keys, and a reason added after the move (`remotePermissionDenied`) has no
-  pre-change output to be pinned against, so it lives in the style matrix only.
+  is FROZEN: if the test fails, the FE copy drifted, so fix the factory, never regenerate the fixture. The one exception
+  is a DELIBERATE copy change (a reword, or the US-English register pass that turned "Cancelled" into "Canceled"): then
+  hand-edit just the affected values in the golden and say so in the commit. Never regenerate it wholesale even then,
+  because that would relabel an accidental drift elsewhere in the matrix as intended. It also never grows: the test
+  iterates the golden's own keys, and a reason added after the move (`remotePermissionDenied`) has no pre-change output
+  to be pinned against, so it lives in the style matrix only.
 - **`friendly-error-style.test.ts`**: iterates every listing reason × representative params, every git kind, and every
   provider × category, asserting the rendered output obeys the writing rules (no "error" / "failed" / trivializing
   words). Strictly better coverage than the old Rust string test: it checks the actual rendered output. The one

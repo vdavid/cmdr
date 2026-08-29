@@ -145,11 +145,11 @@
   },
   "errors.listing.cancelledErrno.title": "Geannuleerd",
   "@errors.listing.cancelledErrno.title": {
-    "sourceHash": "d353a99"
+    "sourceHash": "13ca2ee"
   },
   "errors.listing.cancelledErrno.explanation": "De bewerking werd geannuleerd voordat ze kon worden voltooid.",
   "@errors.listing.cancelledErrno.explanation": {
-    "sourceHash": "2b85cbc"
+    "sourceHash": "da19c15"
   },
   "errors.listing.cancelledErrno.suggestion": "Navigeer hier opnieuw heen wanneer je het nog eens wilt proberen.",
   "@errors.listing.cancelledErrno.suggestion": {
@@ -517,11 +517,11 @@
   },
   "errors.listing.cancelled.title": "Geannuleerd",
   "@errors.listing.cancelled.title": {
-    "sourceHash": "d353a99"
+    "sourceHash": "13ca2ee"
   },
   "errors.listing.cancelled.explanation": "De bewerking werd geannuleerd voordat ze kon worden voltooid.",
   "@errors.listing.cancelled.explanation": {
-    "sourceHash": "2b85cbc"
+    "sourceHash": "da19c15"
   },
   "errors.listing.cancelled.suggestion": "Navigeer hier opnieuw heen wanneer je het nog eens wilt proberen.",
   "@errors.listing.cancelled.suggestion": {
@@ -545,7 +545,7 @@
   },
   "errors.listing.deviceReconnecting.explanation": "De verbinding met het apparaat waarop `{path}` staat, is opnieuw gestart, dus deze actie is niet doorgegaan. Het apparaat is nog steeds aangesloten en Cmdr opent het nu opnieuw. Dit gebeurt meestal na een geannuleerde of onderbroken overdracht.",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "28b864d"
+    "sourceHash": "6ba7205"
   },
   "errors.listing.deviceReconnecting.suggestion": "Wacht een paar seconden en probeer het dan opnieuw. Je hoeft niets los te koppelen.",
   "@errors.listing.deviceReconnecting.suggestion": {
@@ -1139,35 +1139,35 @@
   },
   "errors.write.cancelled.title.copy": "Kopiëren geannuleerd",
   "@errors.write.cancelled.title.copy": {
-    "sourceHash": "0a1cddf"
+    "sourceHash": "7edfd40"
   },
   "errors.write.cancelled.title.move": "Verplaatsen geannuleerd",
   "@errors.write.cancelled.title.move": {
-    "sourceHash": "8c4d24d"
+    "sourceHash": "8b7eec1"
   },
   "errors.write.cancelled.title.delete": "Verwijderen geannuleerd",
   "@errors.write.cancelled.title.delete": {
-    "sourceHash": "49eaa41"
+    "sourceHash": "546aac1"
   },
   "errors.write.cancelled.title.trash": "Verplaatsen naar prullenmand geannuleerd",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "cee684b"
+    "sourceHash": "52a8954"
   },
   "errors.write.cancelled.message.copy": "Het kopiëren is geannuleerd.",
   "@errors.write.cancelled.message.copy": {
-    "sourceHash": "a71bf80"
+    "sourceHash": "da308bc"
   },
   "errors.write.cancelled.message.move": "Het verplaatsen is geannuleerd.",
   "@errors.write.cancelled.message.move": {
-    "sourceHash": "5a7ae6f"
+    "sourceHash": "6369672"
   },
   "errors.write.cancelled.message.delete": "Het verwijderen is geannuleerd.",
   "@errors.write.cancelled.message.delete": {
-    "sourceHash": "bb97fee"
+    "sourceHash": "8e573dc"
   },
   "errors.write.cancelled.message.trash": "Het verplaatsen naar de prullenmand is geannuleerd.",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "d8c3182"
+    "sourceHash": "9585f1b"
   },
   "errors.write.cancelled.suggestion": "Je kunt het opnieuw proberen wanneer je klaar bent.",
   "@errors.write.cancelled.suggestion": {

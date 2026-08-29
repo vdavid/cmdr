@@ -145,11 +145,11 @@
   },
   "errors.listing.cancelledErrno.title": "Operación cancelada",
   "@errors.listing.cancelledErrno.title": {
-    "sourceHash": "d353a99"
+    "sourceHash": "13ca2ee"
   },
   "errors.listing.cancelledErrno.explanation": "La operación se canceló antes de poder terminar.",
   "@errors.listing.cancelledErrno.explanation": {
-    "sourceHash": "2b85cbc"
+    "sourceHash": "da19c15"
   },
   "errors.listing.cancelledErrno.suggestion": "Vuelve a abrir esta carpeta cuando quieras reintentarlo.",
   "@errors.listing.cancelledErrno.suggestion": {
@@ -517,11 +517,11 @@
   },
   "errors.listing.cancelled.title": "Operación cancelada",
   "@errors.listing.cancelled.title": {
-    "sourceHash": "d353a99"
+    "sourceHash": "13ca2ee"
   },
   "errors.listing.cancelled.explanation": "La operación se canceló antes de poder terminar.",
   "@errors.listing.cancelled.explanation": {
-    "sourceHash": "2b85cbc"
+    "sourceHash": "da19c15"
   },
   "errors.listing.cancelled.suggestion": "Vuelve a abrir esta carpeta cuando quieras reintentarlo.",
   "@errors.listing.cancelled.suggestion": {
@@ -545,7 +545,7 @@
   },
   "errors.listing.deviceReconnecting.explanation": "La conexión con el dispositivo que contiene `{path}` se reinició, así que esta acción no se completó. El dispositivo sigue conectado y Cmdr lo está reabriendo ahora mismo. Suele ocurrir después de una transferencia cancelada o interrumpida.",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "28b864d"
+    "sourceHash": "6ba7205"
   },
   "errors.listing.deviceReconnecting.suggestion": "Espera unos segundos y vuelve a intentarlo. No hace falta desconectar nada.",
   "@errors.listing.deviceReconnecting.suggestion": {
@@ -1139,35 +1139,35 @@
   },
   "errors.write.cancelled.title.copy": "Copia cancelada",
   "@errors.write.cancelled.title.copy": {
-    "sourceHash": "0a1cddf"
+    "sourceHash": "7edfd40"
   },
   "errors.write.cancelled.title.move": "Movimiento cancelado",
   "@errors.write.cancelled.title.move": {
-    "sourceHash": "8c4d24d"
+    "sourceHash": "8b7eec1"
   },
   "errors.write.cancelled.title.delete": "Eliminación cancelada",
   "@errors.write.cancelled.title.delete": {
-    "sourceHash": "49eaa41"
+    "sourceHash": "546aac1"
   },
   "errors.write.cancelled.title.trash": "Movimiento a la papelera cancelado",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "cee684b"
+    "sourceHash": "52a8954"
   },
   "errors.write.cancelled.message.copy": "Se canceló la operación de copia.",
   "@errors.write.cancelled.message.copy": {
-    "sourceHash": "a71bf80"
+    "sourceHash": "da308bc"
   },
   "errors.write.cancelled.message.move": "Se canceló la operación de movimiento.",
   "@errors.write.cancelled.message.move": {
-    "sourceHash": "5a7ae6f"
+    "sourceHash": "6369672"
   },
   "errors.write.cancelled.message.delete": "Se canceló la operación de eliminación.",
   "@errors.write.cancelled.message.delete": {
-    "sourceHash": "bb97fee"
+    "sourceHash": "8e573dc"
   },
   "errors.write.cancelled.message.trash": "Se canceló el movimiento a la papelera.",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "d8c3182"
+    "sourceHash": "9585f1b"
   },
   "errors.write.cancelled.suggestion": "Puedes volver a intentarlo cuando quieras.",
   "@errors.write.cancelled.suggestion": {

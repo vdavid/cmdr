@@ -21,7 +21,7 @@
   },
   "queue.row.status": "{status, select, queued {Wachten} running {Bezig} paused {Gepauzeerd} done {Gereed} cancelled {Geannuleerd} failed {Niet voltooid} other {Bezig}}",
   "@queue.row.status": {
-    "sourceHash": "2bbdaaa"
+    "sourceHash": "8e9ce48"
   },
   "queue.row.statusAwaitingAnswer": "Antwoord nodig",
   "@queue.row.statusAwaitingAnswer": {

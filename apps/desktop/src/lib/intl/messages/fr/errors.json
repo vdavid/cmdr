@@ -145,11 +145,11 @@
   },
   "errors.listing.cancelledErrno.title": "Opération annulée",
   "@errors.listing.cancelledErrno.title": {
-    "sourceHash": "d353a99"
+    "sourceHash": "13ca2ee"
   },
   "errors.listing.cancelledErrno.explanation": "L'opération a été annulée avant de pouvoir se terminer.",
   "@errors.listing.cancelledErrno.explanation": {
-    "sourceHash": "2b85cbc"
+    "sourceHash": "da19c15"
   },
   "errors.listing.cancelledErrno.suggestion": "Revenez ici dès que vous êtes prêt à réessayer.",
   "@errors.listing.cancelledErrno.suggestion": {
@@ -517,11 +517,11 @@
   },
   "errors.listing.cancelled.title": "Opération annulée",
   "@errors.listing.cancelled.title": {
-    "sourceHash": "d353a99"
+    "sourceHash": "13ca2ee"
   },
   "errors.listing.cancelled.explanation": "L'opération a été annulée avant de pouvoir se terminer.",
   "@errors.listing.cancelled.explanation": {
-    "sourceHash": "2b85cbc"
+    "sourceHash": "da19c15"
   },
   "errors.listing.cancelled.suggestion": "Revenez ici dès que vous êtes prêt à réessayer.",
   "@errors.listing.cancelled.suggestion": {
@@ -545,7 +545,7 @@
   },
   "errors.listing.deviceReconnecting.explanation": "La connexion à l'appareil contenant `{path}` a redémarré, donc cette action n'a pas abouti. L'appareil est toujours branché et Cmdr le rouvre en ce moment. Cela arrive généralement après un transfert annulé ou interrompu.",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "28b864d"
+    "sourceHash": "6ba7205"
   },
   "errors.listing.deviceReconnecting.suggestion": "Patientez quelques secondes, puis réessayez. Il n'y a rien à débrancher.",
   "@errors.listing.deviceReconnecting.suggestion": {
@@ -1139,35 +1139,35 @@
   },
   "errors.write.cancelled.title.copy": "Copie annulée",
   "@errors.write.cancelled.title.copy": {
-    "sourceHash": "0a1cddf"
+    "sourceHash": "7edfd40"
   },
   "errors.write.cancelled.title.move": "Déplacement annulé",
   "@errors.write.cancelled.title.move": {
-    "sourceHash": "8c4d24d"
+    "sourceHash": "8b7eec1"
   },
   "errors.write.cancelled.title.delete": "Suppression annulée",
   "@errors.write.cancelled.title.delete": {
-    "sourceHash": "49eaa41"
+    "sourceHash": "546aac1"
   },
   "errors.write.cancelled.title.trash": "Mise à la corbeille annulée",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "cee684b"
+    "sourceHash": "52a8954"
   },
   "errors.write.cancelled.message.copy": "La copie a été annulée.",
   "@errors.write.cancelled.message.copy": {
-    "sourceHash": "a71bf80"
+    "sourceHash": "da308bc"
   },
   "errors.write.cancelled.message.move": "Le déplacement a été annulé.",
   "@errors.write.cancelled.message.move": {
-    "sourceHash": "5a7ae6f"
+    "sourceHash": "6369672"
   },
   "errors.write.cancelled.message.delete": "La suppression a été annulée.",
   "@errors.write.cancelled.message.delete": {
-    "sourceHash": "bb97fee"
+    "sourceHash": "8e573dc"
   },
   "errors.write.cancelled.message.trash": "La mise à la corbeille a été annulée.",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "d8c3182"
+    "sourceHash": "9585f1b"
   },
   "errors.write.cancelled.suggestion": "Vous pouvez réessayer quand vous êtes prêt.",
   "@errors.write.cancelled.suggestion": {

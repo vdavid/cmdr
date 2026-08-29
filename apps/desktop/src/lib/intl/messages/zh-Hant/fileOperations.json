@@ -405,11 +405,11 @@
   },
   "fileOperations.transferProgress.titleCancelling": "正在取消…",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "7b26131"
+    "sourceHash": "37b4fbc"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "正在取消…（正在完成 USB 傳輸）",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "f849d68"
+    "sourceHash": "ac2ee1a"
   },
   "fileOperations.transferProgress.close": "關閉",
   "@fileOperations.transferProgress.close": {

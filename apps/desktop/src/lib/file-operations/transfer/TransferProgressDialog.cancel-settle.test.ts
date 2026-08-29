@@ -1,5 +1,5 @@
 /**
- * Two-condition cancel close: the dialog must stay in "Cancelling…" until
+ * Two-condition cancel close: the dialog must stay in "Canceling…" until
  * both `write-cancelled` AND `write-settled` have arrived. Reversing order,
  * or closing on either alone, is wrong. See `lib/file-operations/CLAUDE.md`
  * § "Cancel close" for the contract.
@@ -169,7 +169,7 @@ async function mountDialog(): Promise<{
 }
 
 describe('TransferProgressDialog cancel-settle gate', () => {
-  it('stays in "Cancelling…" until both write-cancelled and write-settled arrive', async () => {
+  it('stays in "Canceling…" until both write-cancelled and write-settled arrive', async () => {
     const { component, onCancelled, target } = await mountDialog()
     vi.useFakeTimers({ shouldAdvanceTime: false })
     try {
@@ -188,8 +188,8 @@ describe('TransferProgressDialog cancel-settle gate', () => {
       await tick()
       expect(onCancelled, 'onCancelled must not fire on write-cancelled alone').not.toHaveBeenCalled()
 
-      // Title should now reflect cancelling state.
-      expect(target.textContent).toContain('Cancelling')
+      // Title should now reflect canceling state.
+      expect(target.textContent).toContain('Canceling')
 
       // Now fire write-settled. The dialog applies MIN_DISPLAY_MS (400 ms)
       // gate; advance time past it.

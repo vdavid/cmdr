@@ -21,7 +21,7 @@
   },
   "queue.row.status": "{status, select, queued {Aguardando} running {Em andamento} paused {Pausado} done {Concluído} cancelled {Cancelado} failed {Não foi possível concluir} other {Em andamento}}",
   "@queue.row.status": {
-    "sourceHash": "2bbdaaa"
+    "sourceHash": "8e9ce48"
   },
   "queue.row.statusAwaitingAnswer": "Precisa de resposta",
   "@queue.row.statusAwaitingAnswer": {

@@ -407,11 +407,11 @@
   },
   "fileOperations.transferProgress.titleCancelling": "Wird abgebrochen …",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "7b26131"
+    "sourceHash": "37b4fbc"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Wird abgebrochen … (USB-Übertragungen werden abgeschlossen)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "f849d68"
+    "sourceHash": "ac2ee1a"
   },
   "fileOperations.transferProgress.close": "Schließen",
   "@fileOperations.transferProgress.close": {

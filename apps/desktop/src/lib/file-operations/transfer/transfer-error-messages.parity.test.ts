@@ -139,8 +139,8 @@ const cases: Case[] = [
     name: 'cancelled (copy)',
     error: { type: 'cancelled', message: 'm' },
     expected: {
-      title: 'Copy cancelled',
-      message: 'The copy operation was cancelled.',
+      title: 'Copy canceled',
+      message: 'The copy operation was canceled.',
       suggestion: 'You can try again when ready.',
     },
   },
@@ -149,8 +149,8 @@ const cases: Case[] = [
     error: { type: 'cancelled', message: 'm' },
     op: 'trash',
     expected: {
-      title: 'Move to trash cancelled',
-      message: 'The move to trash operation was cancelled.',
+      title: 'Move to trash canceled',
+      message: 'The move to trash operation was canceled.',
       suggestion: 'You can try again when ready.',
     },
   },
@@ -386,8 +386,8 @@ const cases: Case[] = [
     error: { type: 'cancelled', message: 'm' },
     op: 'move',
     expected: {
-      title: 'Move cancelled',
-      message: 'The move operation was cancelled.',
+      title: 'Move canceled',
+      message: 'The move operation was canceled.',
       suggestion: 'You can try again when ready.',
     },
   },
@@ -396,8 +396,8 @@ const cases: Case[] = [
     error: { type: 'cancelled', message: 'm' },
     op: 'delete',
     expected: {
-      title: 'Delete cancelled',
-      message: 'The delete operation was cancelled.',
+      title: 'Delete canceled',
+      message: 'The delete operation was canceled.',
       suggestion: 'You can try again when ready.',
     },
   },

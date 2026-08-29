@@ -426,7 +426,7 @@
 
   "menu.tab.reopenClosedTab": "Reopen closed tab",
   "@menu.tab.reopenClosedTab": {
-    "description": "VERB phrase (imperative). Brings back the tab that was closed most recently (⇧⌘T), and stays greyed out until something has been closed. Use the phrasing your language's browsers use for reopening a closed tab; people already know that wording."
+    "description": "VERB phrase (imperative). Brings back the tab that was closed most recently (⇧⌘T), and stays grayed out until something has been closed. Use the phrasing your language's browsers use for reopening a closed tab; people already know that wording."
   },
 
   "menu.tab.nextTab": "Next tab",
@@ -572,17 +572,17 @@
 
   "menu.mediaIndex.addFolder": "Add to indexed folders",
   "@menu.mediaIndex.addFolder": {
-    "description": "VERB phrase (imperative). A folder's right-click menu: adds this folder to the list Cmdr scans so its photos become searchable. \"indexed\" means catalogued for search. Its opposite is menu.mediaIndex.removeFolder, and the two must read as a pair."
+    "description": "VERB phrase (imperative). A folder's right-click menu: adds this folder to the list Cmdr scans so its photos become searchable. \"indexed\" means cataloged for search. Its opposite is menu.mediaIndex.removeFolder, and the two must read as a pair."
   },
 
   "menu.mediaIndex.addFolderExcluded": "Add to indexed folders (excluded)",
   "@menu.mediaIndex.addFolderExcluded": {
-    "description": "The greyed-out form of menu.mediaIndex.addFolder, shown when the user has told Cmdr never to index this folder: adding it would do nothing, so the item names the blocker in parentheses instead of pretending to work. Keep the base wording identical to menu.mediaIndex.addFolder so the two read as one item in two states, and keep the parenthetical short. The way out sits directly below it (menu.mediaIndex.includeFolder)."
+    "description": "The grayed-out form of menu.mediaIndex.addFolder, shown when the user has told Cmdr never to index this folder: adding it would do nothing, so the item names the blocker in parentheses instead of pretending to work. Keep the base wording identical to menu.mediaIndex.addFolder so the two read as one item in two states, and keep the parenthetical short. The way out sits directly below it (menu.mediaIndex.includeFolder)."
   },
 
   "menu.mediaIndex.coveredByParent": "Indexed through a parent folder",
   "@menu.mediaIndex.coveredByParent": {
-    "description": "The greyed-out form of menu.mediaIndex.addFolder, shown when a folder ABOVE this one is already on the indexed list, so this folder is covered and adding it would change nothing. It states a fact, not a command. \"parent folder\" is the containing folder."
+    "description": "The grayed-out form of menu.mediaIndex.addFolder, shown when a folder ABOVE this one is already on the indexed list, so this folder is covered and adding it would change nothing. It states a fact, not a command. \"parent folder\" is the containing folder."
   },
 
   "menu.mediaIndex.removeFolder": "Remove from indexed folders",
@@ -597,7 +597,7 @@
 
   "menu.mediaIndex.includeFolder": "Index images here again",
   "@menu.mediaIndex.includeFolder": {
-    "description": "VERB phrase (imperative). A folder's right-click menu: lifts the privacy veto, so this folder's images can be scanned again. \"Index\" is the VERB (catalogue for search), and \"again\" says the veto is being undone. The opposite of menu.mediaIndex.excludeFolder; the same slot shows one or the other."
+    "description": "VERB phrase (imperative). A folder's right-click menu: lifts the privacy veto, so this folder's images can be scanned again. \"Index\" is the VERB (catalog for search), and \"again\" says the veto is being undone. The opposite of menu.mediaIndex.excludeFolder; the same slot shows one or the other."
   },
 
   "menu.breadcrumb.copyPath": "Copy path",
@@ -615,7 +615,7 @@
 
   "menu.volume.ejectBusy": "Eject ({name}) (busy)",
   "@menu.volume.ejectBusy": {
-    "description": "The greyed-out form of menu.volume.eject, shown while a copy or move is still reading from or writing to that disk, so ejecting now would break it. \"busy\" means occupied with work. Keep the base wording identical to menu.volume.eject so the two read as one item in two states, and keep the trailing parenthetical short. Keep the {name} token exactly as written.",
+    "description": "The grayed-out form of menu.volume.eject, shown while a copy or move is still reading from or writing to that disk, so ejecting now would break it. \"busy\" means occupied with work. Keep the base wording identical to menu.volume.eject so the two read as one item in two states, and keep the trailing parenthetical short. Keep the {name} token exactly as written.",
     "placeholders": {
       "name": "the disk's own name as the system reports it, uncontrolled and possibly long (e.g. \"Backup Drive\")"
     }

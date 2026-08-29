@@ -407,11 +407,11 @@
   },
   "fileOperations.transferProgress.titleCancelling": "Cancelando...",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "7b26131"
+    "sourceHash": "37b4fbc"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Cancelando... (concluindo transferências USB)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "f849d68"
+    "sourceHash": "ac2ee1a"
   },
   "fileOperations.transferProgress.close": "Fechar",
   "@fileOperations.transferProgress.close": {

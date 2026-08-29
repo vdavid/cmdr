@@ -1,6 +1,6 @@
 /**
  * E2E test for the cancel + settle contract: when an MTP delete is cancelled
- * mid-flight, the progress dialog stays in "Cancelling…" until the backend
+ * mid-flight, the progress dialog stays in "Canceling…" until the backend
  * emits `write-settled`, then clears. Immediately after that the next F8 must
  * dispatch a new delete cleanly (no wedge).
  *
@@ -113,7 +113,7 @@ test.afterEach(() => {
   restoreFixtureTree(getFixtureRoot())
 })
 
-test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets down', () => {
+test.describe('MTP cancel: settle gate keeps "Canceling…" until BE quiets down', () => {
   test('first cancel clears via settle, then immediately F8 again dispatches successfully', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)

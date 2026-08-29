@@ -145,11 +145,11 @@
   },
   "errors.listing.cancelledErrno.title": "Megszakítva",
   "@errors.listing.cancelledErrno.title": {
-    "sourceHash": "d353a99"
+    "sourceHash": "13ca2ee"
   },
   "errors.listing.cancelledErrno.explanation": "A művelet megszakadt, mielőtt befejeződhetett volna.",
   "@errors.listing.cancelledErrno.explanation": {
-    "sourceHash": "2b85cbc"
+    "sourceHash": "da19c15"
   },
   "errors.listing.cancelledErrno.suggestion": "Lépj ide újra, amikor készen állsz az ismételt próbára.",
   "@errors.listing.cancelledErrno.suggestion": {
@@ -517,11 +517,11 @@
   },
   "errors.listing.cancelled.title": "Megszakítva",
   "@errors.listing.cancelled.title": {
-    "sourceHash": "d353a99"
+    "sourceHash": "13ca2ee"
   },
   "errors.listing.cancelled.explanation": "A művelet megszakadt, mielőtt befejeződhetett volna.",
   "@errors.listing.cancelled.explanation": {
-    "sourceHash": "2b85cbc"
+    "sourceHash": "da19c15"
   },
   "errors.listing.cancelled.suggestion": "Lépj ide újra, amikor készen állsz az ismételt próbára.",
   "@errors.listing.cancelled.suggestion": {
@@ -545,7 +545,7 @@
   },
   "errors.listing.deviceReconnecting.explanation": "A `{path}` elemet tároló eszközzel megszakadt és újraindult a kapcsolat, ezért ez a művelet nem ment végbe. Az eszköz továbbra is csatlakoztatva van, és a Cmdr éppen újra megnyitja. Ez általában megszakított vagy félbeszakadt átvitel után fordul elő.",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "28b864d"
+    "sourceHash": "6ba7205"
   },
   "errors.listing.deviceReconnecting.suggestion": "Várj néhány másodpercet, majd próbáld újra. Semmit nem kell kihúznod.",
   "@errors.listing.deviceReconnecting.suggestion": {
@@ -1139,35 +1139,35 @@
   },
   "errors.write.cancelled.title.copy": "A másolás megszakítva",
   "@errors.write.cancelled.title.copy": {
-    "sourceHash": "0a1cddf"
+    "sourceHash": "7edfd40"
   },
   "errors.write.cancelled.title.move": "Az áthelyezés megszakítva",
   "@errors.write.cancelled.title.move": {
-    "sourceHash": "8c4d24d"
+    "sourceHash": "8b7eec1"
   },
   "errors.write.cancelled.title.delete": "A törlés megszakítva",
   "@errors.write.cancelled.title.delete": {
-    "sourceHash": "49eaa41"
+    "sourceHash": "546aac1"
   },
   "errors.write.cancelled.title.trash": "A Kukába helyezés megszakítva",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "cee684b"
+    "sourceHash": "52a8954"
   },
   "errors.write.cancelled.message.copy": "A másolási műveletet megszakítottad.",
   "@errors.write.cancelled.message.copy": {
-    "sourceHash": "a71bf80"
+    "sourceHash": "da308bc"
   },
   "errors.write.cancelled.message.move": "Az áthelyezési műveletet megszakítottad.",
   "@errors.write.cancelled.message.move": {
-    "sourceHash": "5a7ae6f"
+    "sourceHash": "6369672"
   },
   "errors.write.cancelled.message.delete": "A törlési műveletet megszakítottad.",
   "@errors.write.cancelled.message.delete": {
-    "sourceHash": "bb97fee"
+    "sourceHash": "8e573dc"
   },
   "errors.write.cancelled.message.trash": "A Kukába helyezést megszakítottad.",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "d8c3182"
+    "sourceHash": "9585f1b"
   },
   "errors.write.cancelled.suggestion": "Próbálhatod újra, amikor készen állsz.",
   "@errors.write.cancelled.suggestion": {

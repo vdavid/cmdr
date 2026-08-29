@@ -81,7 +81,7 @@ describe('getUserFriendlyMessage', () => {
       const error: WriteOperationError = { type: 'cancelled', message: 'User cancelled' }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.title).toBe('Copy cancelled')
+      expect(result.title).toBe('Copy canceled')
       expect(result.message).toContain('copy')
     })
 
@@ -125,11 +125,11 @@ describe('getUserFriendlyMessage', () => {
       expect(result.suggestion).toContain('moving')
     })
 
-    it('uses "Move cancelled" for cancelled error', () => {
+    it('uses "Move canceled" for cancelled error', () => {
       const error: WriteOperationError = { type: 'cancelled', message: 'User cancelled' }
       const result = getUserFriendlyMessage(error, 'move')
 
-      expect(result.title).toBe('Move cancelled')
+      expect(result.title).toBe('Move canceled')
       expect(result.message).toContain('move')
     })
 
@@ -483,11 +483,11 @@ describe('getUserFriendlyMessage: trash operation', () => {
     expect(result.suggestion).toContain('Shift+F8')
   })
 
-  it('uses "Move to trash cancelled" for cancelled error', () => {
+  it('uses "Move to trash canceled" for cancelled error', () => {
     const error: WriteOperationError = { type: 'cancelled', message: 'User cancelled' }
     const result = getUserFriendlyMessage(error, 'trash')
 
-    expect(result.title).toBe('Move to trash cancelled')
+    expect(result.title).toBe('Move to trash canceled')
   })
 })
 

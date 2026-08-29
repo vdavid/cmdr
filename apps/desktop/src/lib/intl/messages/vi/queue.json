@@ -21,7 +21,7 @@
   },
   "queue.row.status": "{status, select, queued {Đang chờ} running {Đang chạy} paused {Đã tạm dừng} done {Xong} cancelled {Đã hủy} failed {Chưa hoàn tất được} other {Đang chạy}}",
   "@queue.row.status": {
-    "sourceHash": "2bbdaaa"
+    "sourceHash": "8e9ce48"
   },
   "queue.row.statusAwaitingAnswer": "Cần bạn trả lời",
   "@queue.row.statusAwaitingAnswer": {

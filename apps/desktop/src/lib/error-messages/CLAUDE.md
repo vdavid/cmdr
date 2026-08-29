@@ -41,9 +41,10 @@ files. Writing rules: `docs/style-guide.md` (active voice, friendly, never the w
   variant, and `FriendlyGitErrorKind` must match its Rust counterpart member-for-member. Drift breaks the parity test
   (and silently mis-renders at runtime).
 - **The frozen golden fixture + parity test is the behavior-preservation net.** `friendly-error-parity.test.ts` asserts
-  these factories reproduce `__fixtures__/friendly_error_golden.json` byte-for-byte (one case per golden key). If it
-  fails, the FE copy drifted: fix the factory, do NOT regenerate the fixture. `friendly-error-style.test.ts` enforces
-  the writing rules over every reason, every provider × category, and every git kind.
+  these factories reproduce `__fixtures__/friendly_error_golden.json` byte-for-byte. If it fails, the FE copy drifted:
+  fix the factory, never regenerate the fixture (a DELIBERATE reword hand-edits just the affected values: `DETAILS.md`).
+  `friendly-error-style.test.ts` enforces the writing rules over every reason, every provider × category, and every git
+  kind.
 - **This is a behavior-preserving home, not a copy redesign.** Don't reword / merge / "improve" messages here as a side
   effect; a copy pass is separate. (One known pre-existing nit, "for just this folder" in `tccRestricted`, is preserved
   verbatim and exempted in the style test.)

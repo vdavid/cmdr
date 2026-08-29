@@ -612,9 +612,9 @@ non-prompting policy: that would turn "nobody looked" into a silent overwrite.
   whose operation state was already removed, so it's a no-op but briefly flashes "Rolling back..." giving false
   feedback. `operationSettled` reads the session's `settled`, which flips the moment a terminal event lands.
 - **Cancel close is two-condition: `write-cancelled` + `write-settled`.** When the user clicks Cancel (without
-  rollback), `TransferProgressDialog` does NOT close immediately. It keeps the "Cancelling…" label up until both events
+  rollback), `TransferProgressDialog` does NOT close immediately. It keeps the "Canceling…" label up until both events
   have arrived for this `operationId`, then applies the existing `MIN_DISPLAY_MS` floor and closes via
-  `onCancelled(filesProcessed)`. After 200 ms of waiting, the label gains a clarifying tail: "Cancelling… (finishing USB
+  `onCancelled(filesProcessed)`. After 200 ms of waiting, the label gains a clarifying tail: "Canceling… (finishing USB
   transfers)". The BE-side contract — settle fires after a fully-torn-down spawn task, even on panic — lives in the BE
   doc § "Settle contract". Race protection comes free from reading state rather than events: the view closes when the
   session reports BOTH an outcome of `cancelled` and `settleEventReceived`, whichever order they land in. Complete /

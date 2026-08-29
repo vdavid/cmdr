@@ -21,7 +21,7 @@
   },
   "queue.row.status": "{status, select, queued {等待中} running {進行中} paused {已暫停} done {已完成} cancelled {已取消} failed {無法完成} other {進行中}}",
   "@queue.row.status": {
-    "sourceHash": "2bbdaaa"
+    "sourceHash": "8e9ce48"
   },
   "queue.row.statusAwaitingAnswer": "需要你回答",
   "@queue.row.statusAwaitingAnswer": {

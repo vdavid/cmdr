@@ -10,10 +10,10 @@
   "Cancelled": {
     "actionKind": null,
     "category": "transient",
-    "explanation": "The operation was cancelled before it could finish.",
+    "explanation": "The operation was canceled before it could finish.",
     "retryHint": true,
     "suggestion": "Navigate here again whenever you're ready to retry.",
-    "title": "Cancelled"
+    "title": "Canceled"
   },
   "ConnectionTimeout": {
     "actionKind": null,
@@ -394,10 +394,10 @@
   "errno:89": {
     "actionKind": null,
     "category": "transient",
-    "explanation": "The operation was cancelled before it could finish.",
+    "explanation": "The operation was canceled before it could finish.",
     "retryHint": true,
     "suggestion": "Navigate here again whenever you're ready to retry.",
-    "title": "Cancelled"
+    "title": "Canceled"
   },
   "errno:93": {
     "actionKind": null,

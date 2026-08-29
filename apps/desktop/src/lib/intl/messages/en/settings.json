@@ -1970,7 +1970,7 @@
   },
   "settings.askCmdr.interactiveModel.placeholder": "Same as Cmdr’s AI",
   "@settings.askCmdr.interactiveModel.placeholder": {
-    "description": "Placeholder text in the empty Ask Cmdr model field, signalling that blank means the shared AI model is used. The apostrophe is U+2019.",
+    "description": "Placeholder text in the empty Ask Cmdr model field, signaling that blank means the shared AI model is used. The apostrophe is U+2019.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.chatMemorySize.label": "Chat memory size",

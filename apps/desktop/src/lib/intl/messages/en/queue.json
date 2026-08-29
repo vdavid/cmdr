@@ -32,7 +32,7 @@
     "screenshot": "quit-confirmation-one-copy.png"
   },
 
-  "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Cancelled} failed {Couldn''t finish} other {Running}}",
+  "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Canceled} failed {Couldn''t finish} other {Running}}",
   "@queue.row.status": {
     "description": "Short status word for an operation row in the operation queue. \"Waiting\" means it''s queued behind another operation on the same drive; \"Paused\" means the user paused it; \"Couldn''t finish\" is the gentle wording for a failed operation (avoid the words error/failed).",
     "placeholders": {
@@ -112,7 +112,7 @@
 
   "queue.row.selectAria": "Select this operation",
   "@queue.row.selectAria": {
-    "description": "Screen-reader label for the checkbox that selects an operation row so it can be cancelled together with others via \"Cancel selected\".",
+    "description": "Screen-reader label for the checkbox that selects an operation row so it can be canceled together with others via \"Cancel selected\".",
     "screenshot": "queue.png"
   },
 

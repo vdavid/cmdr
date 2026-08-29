@@ -215,21 +215,21 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.cancelledErrno.title": "Cancelled",
-  "errors.listing.cancelledErrno.explanation": "The operation was cancelled before it could finish.",
+  "errors.listing.cancelledErrno.title": "Canceled",
+  "errors.listing.cancelledErrno.explanation": "The operation was canceled before it could finish.",
   "errors.listing.cancelledErrno.suggestion": "Navigate here again whenever you're ready to retry.",
   "@errors.listing.cancelledErrno.title": {
-    "description": "Title of the listing error panel when a folder read was cancelled (errno path). Plain text.",
+    "description": "Title of the listing error panel when a folder read was canceled (errno path). Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.cancelledErrno.explanation": {
-    "description": "Body of the listing error panel for a cancelled read (errno path). Markdown.",
+    "description": "Body of the listing error panel for a canceled read (errno path). Markdown.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.cancelledErrno.suggestion": {
-    "description": "Recovery suggestion for a cancelled read (errno path). Markdown.",
+    "description": "Recovery suggestion for a canceled read (errno path). Markdown.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -775,21 +775,21 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.cancelled.title": "Cancelled",
-  "errors.listing.cancelled.explanation": "The operation was cancelled before it could finish.",
+  "errors.listing.cancelled.title": "Canceled",
+  "errors.listing.cancelled.explanation": "The operation was canceled before it could finish.",
   "errors.listing.cancelled.suggestion": "Navigate here again whenever you're ready to retry.",
   "@errors.listing.cancelled.title": {
-    "description": "Title of the listing error panel when a folder read was cancelled (typed VolumeError variant). Plain text.",
+    "description": "Title of the listing error panel when a folder read was canceled (typed VolumeError variant). Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.cancelled.explanation": {
-    "description": "Body of the listing error panel for a cancelled read (typed variant). Markdown.",
+    "description": "Body of the listing error panel for a canceled read (typed variant). Markdown.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.cancelled.suggestion": {
-    "description": "Recovery suggestion for a cancelled read (typed variant). Markdown.",
+    "description": "Recovery suggestion for a canceled read (typed variant). Markdown.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -812,7 +812,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.listing.deviceReconnecting.title": "Reconnecting to the device",
-  "errors.listing.deviceReconnecting.explanation": "The connection to the device holding `{path}` restarted, so this action didn't go through. The device is still plugged in, and Cmdr is reopening it right now. This usually follows a cancelled or interrupted transfer.",
+  "errors.listing.deviceReconnecting.explanation": "The connection to the device holding `{path}` restarted, so this action didn't go through. The device is still plugged in, and Cmdr is reopening it right now. This usually follows a canceled or interrupted transfer.",
   "errors.listing.deviceReconnecting.suggestion": "Give it a few seconds, then try again. There's nothing to unplug.",
   "@errors.listing.deviceReconnecting.title": {
     "description": "Title of the listing error panel when the device's session restarted and Cmdr is reopening it. The device is still connected. Plain text.",
@@ -1648,55 +1648,55 @@
     "description": "Recovery suggestion when symbolic links form an infinite loop. Plain text.",
     "screenshot": "transfer-error-symlink_loop.png"
   },
-  "errors.write.cancelled.title.copy": "Copy cancelled",
-  "errors.write.cancelled.title.move": "Move cancelled",
-  "errors.write.cancelled.title.delete": "Delete cancelled",
-  "errors.write.cancelled.title.trash": "Move to trash cancelled",
-  "errors.write.cancelled.message.copy": "The copy operation was cancelled.",
-  "errors.write.cancelled.message.move": "The move operation was cancelled.",
-  "errors.write.cancelled.message.delete": "The delete operation was cancelled.",
-  "errors.write.cancelled.message.trash": "The move to trash operation was cancelled.",
+  "errors.write.cancelled.title.copy": "Copy canceled",
+  "errors.write.cancelled.title.move": "Move canceled",
+  "errors.write.cancelled.title.delete": "Delete canceled",
+  "errors.write.cancelled.title.trash": "Move to trash canceled",
+  "errors.write.cancelled.message.copy": "The copy operation was canceled.",
+  "errors.write.cancelled.message.move": "The move operation was canceled.",
+  "errors.write.cancelled.message.delete": "The delete operation was canceled.",
+  "errors.write.cancelled.message.trash": "The move to trash operation was canceled.",
   "errors.write.cancelled.suggestion": "You can try again when ready.",
   "@errors.write.cancelled.title.copy": {
-    "description": "Title of the copy/move/delete error dialog when the user cancelled the operation (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
+    "description": "Title of the copy/move/delete error dialog when the user canceled the operation (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
     "screenshot": "transfer-error-cancelled.png"
   },
   "@errors.write.cancelled.title.move": {
-    "description": "Title of the copy/move/delete error dialog when the user cancelled the operation (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
+    "description": "Title of the copy/move/delete error dialog when the user canceled the operation (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.cancelled.title.delete": {
-    "description": "Title of the copy/move/delete error dialog when the user cancelled the operation (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
+    "description": "Title of the copy/move/delete error dialog when the user canceled the operation (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.cancelled.title.trash": {
-    "description": "Title of the copy/move/delete error dialog when the user cancelled the operation (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "description": "Title of the copy/move/delete error dialog when the user canceled the operation (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.cancelled.message.copy": {
-    "description": "Body of the copy/move/delete error dialog when the operation was cancelled (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
+    "description": "Body of the copy/move/delete error dialog when the operation was canceled (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
     "screenshot": "transfer-error-cancelled.png"
   },
   "@errors.write.cancelled.message.move": {
-    "description": "Body of the copy/move/delete error dialog when the operation was cancelled (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
+    "description": "Body of the copy/move/delete error dialog when the operation was canceled (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.cancelled.message.delete": {
-    "description": "Body of the copy/move/delete error dialog when the operation was cancelled (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
+    "description": "Body of the copy/move/delete error dialog when the operation was canceled (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.cancelled.message.trash": {
-    "description": "Body of the copy/move/delete error dialog when the operation was cancelled (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "description": "Body of the copy/move/delete error dialog when the operation was canceled (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.cancelled.suggestion": {
-    "description": "Recovery suggestion when the operation was cancelled. Plain text.",
+    "description": "Recovery suggestion when the operation was canceled. Plain text.",
     "screenshot": "transfer-error-cancelled.png"
   },
   "errors.write.deviceDisconnected.title": "Device disconnected",
@@ -2206,7 +2206,7 @@
   },
   "errors.mutation.timedOut": "The volume hasn't answered yet, so the change may still land.",
   "@errors.mutation.timedOut": {
-    "description": "Shown when the drive or share didn't reply inside Cmdr's wait. IMPORTANT: the operation was NOT cancelled and may still succeed, so don't word this as a failure. \"Volume\" means a drive, disk, or network share. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when the drive or share didn't reply inside Cmdr's wait. IMPORTANT: the operation was NOT canceled and may still succeed, so don't word this as a failure. \"Volume\" means a drive, disk, or network share. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
@@ -2281,7 +2281,7 @@
   },
   "errors.volume.cancelled": "Cmdr stopped this at your request.",
   "@errors.volume.cancelled": {
-    "description": "Shown when the person cancelled the operation themselves. Neutral, not apologetic: nothing went wrong. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when the person canceled the operation themselves. Neutral, not apologetic: nothing went wrong. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
@@ -2386,7 +2386,7 @@
   },
   "errors.eject.timedOut": "The drive hasn't answered yet, so it may still eject on its own.",
   "@errors.eject.timedOut": {
-    "description": "Shown when the drive didn't reply inside Cmdr's wait. IMPORTANT: the eject was NOT cancelled and may still finish, so don't word this as a failure. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when the drive didn't reply inside Cmdr's wait. IMPORTANT: the eject was NOT canceled and may still finish, so don't word this as a failure. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },

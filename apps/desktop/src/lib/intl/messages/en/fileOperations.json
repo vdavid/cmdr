@@ -389,7 +389,7 @@
 
   "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use \"Connect directly\" in the volume picker for faster transfers and reliable cancel.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that cancelling a transfer may lag. Keep the quoted \"Connect directly\" matching that picker action's label."
+    "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that canceling a transfer may lag. Keep the quoted \"Connect directly\" matching that picker action's label."
   },
 
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "This folder doesn''t exist yet. Cmdr will create it during the copy.",
@@ -698,19 +698,19 @@
 
   "fileOperations.transferProgress.titleRollingBack": "Rolling back...",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "description": "Progress-dialog title while undoing a cancelled copy/move (deleting the partial files it created). Keep the trailing ellipsis.",
+    "description": "Progress-dialog title while undoing a canceled copy/move (deleting the partial files it created). Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.titleCancelling": "Cancelling...",
+  "fileOperations.transferProgress.titleCancelling": "Canceling...",
   "@fileOperations.transferProgress.titleCancelling": {
     "description": "Progress-dialog title right after the user cancels, while the operation stops. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.titleCancellingSlow": "Cancelling... (finishing USB transfers)",
+  "fileOperations.transferProgress.titleCancellingSlow": "Canceling... (finishing USB transfers)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "description": "Progress-dialog title shown when cancellation takes a moment because an in-flight USB transfer must finish first. Keep the trailing ellipsis on the first part. 'USB' is the connection type.",
     "screenshot": "transfer-dialog.png",
@@ -719,7 +719,7 @@
 
   "fileOperations.transferProgress.close": "Close",
   "@fileOperations.transferProgress.close": {
-    "description": "Button on the copy/move progress dialog that closes the window while the transfer is still finishing in the background. Shown once cancelling is under way, so the person never has to wait for a slow device to respond. Keep it short; it sits next to Cancel.",
+    "description": "Button on the copy/move progress dialog that closes the window while the transfer is still finishing in the background. Shown once canceling is under way, so the person never has to wait for a slow device to respond. Keep it short; it sits next to Cancel.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
@@ -964,7 +964,7 @@
 
   "fileOperations.transferProgress.progressBytes": "Bytes",
   "@fileOperations.transferProgress.progressBytes": {
-    "description": "Label for the bytes-progress bar in the transfer progress dialog (how many bytes are done out of the total), sitting directly above the file-count bar labelled \"Files\". \"Bytes\" is the unit of data, and pairs with that label; keep it short, it sits in a narrow column.",
+    "description": "Label for the bytes-progress bar in the transfer progress dialog (how many bytes are done out of the total), sitting directly above the file-count bar labeled \"Files\". \"Bytes\" is the unit of data, and pairs with that label; keep it short, it sits in a narrow column.",
     "screenshot": "conflict-dialog.png"
   },
 
