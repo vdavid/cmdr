@@ -1,325 +1,326 @@
 {
-  "ai.toast.downloadingTitle": "Downloading AI model...",
+  "ai.toast.downloadingTitle": "正在下載 AI 模型…",
   "@ai.toast.downloadingTitle": {
     "sourceHash": "453ec3b"
   },
-  "ai.toast.startingDownload": "Starting download...",
+  "ai.toast.startingDownload": "正在開始下載…",
   "@ai.toast.startingDownload": {
     "sourceHash": "d02eaf4"
   },
-  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · {eta} remaining}}",
+  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · 剩餘 {eta}}}",
   "@ai.toast.progress": {
     "sourceHash": "93d798b"
   },
-  "ai.toast.cancel": "Cancel",
+  "ai.toast.cancel": "取消",
   "@ai.toast.cancel": {
     "sourceHash": "19766ed"
   },
-  "ai.toast.installingTitle": "Setting up AI...",
+  "ai.toast.installingTitle": "正在設定 AI…",
   "@ai.toast.installingTitle": {
     "sourceHash": "509f6c1"
   },
-  "ai.toast.installingDescription": "Starting server",
+  "ai.toast.installingDescription": "正在啟動伺服器",
   "@ai.toast.installingDescription": {
     "sourceHash": "8a0f9d9"
   },
-  "ai.toast.readyTitle": "AI ready",
+  "ai.toast.readyTitle": "AI 準備好了",
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescription": "Try creating a new folder (F7) to see AI-powered name suggestions.",
+  "ai.toast.readyDescription": "試試新增一個資料夾（F7），看看 AI 建議的名稱。",
   "@ai.toast.readyDescription": {
     "sourceHash": "b3ae1b2"
   },
-  "ai.toast.gotIt": "Got it",
+  "ai.toast.gotIt": "知道了",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "ai.toast.startingTitle": "AI starting...",
+  "ai.toast.startingTitle": "AI 正在啟動…",
   "@ai.toast.startingTitle": {
     "sourceHash": "29fdbca"
   },
-  "ai.toast.startingDescription": "Loading the model, this takes a few seconds",
+  "ai.toast.startingDescription": "正在載入模型，需要幾秒鐘",
   "@ai.toast.startingDescription": {
     "sourceHash": "94ecf6d"
   },
-  "ai.toast.downloadCloseTooltip": "Close this notification; the download will continue in the background",
+  "ai.toast.downloadCloseTooltip": "關閉這則通知；下載會在背景繼續",
   "@ai.toast.downloadCloseTooltip": {
     "sourceHash": "16db2bd"
   },
-  "ai.translateError.off.title": "AI is turned off",
+  "ai.translateError.off.title": "AI 已關閉",
   "@ai.translateError.off.title": {
     "sourceHash": "99ce709"
   },
-  "ai.translateError.off.body": "Turn on a provider in Settings > AI to use AI search.",
+  "ai.translateError.off.body": "到「設定 > AI」開啟一個提供者，就能使用 AI 搜尋。",
   "@ai.translateError.off.body": {
     "sourceHash": "d8d6368"
   },
-  "ai.translateError.notConfigured.title": "AI needs a bit more setup",
+  "ai.translateError.notConfigured.title": "AI 還需要設定一下",
   "@ai.translateError.notConfigured.title": {
     "sourceHash": "bf5688a"
   },
-  "ai.translateError.notConfigured.body": "Finish your provider setup in Settings > AI, then try again.",
+  "ai.translateError.notConfigured.body": "請在「設定 > AI」把提供者設定完成，然後再試一次。",
   "@ai.translateError.notConfigured.body": {
     "sourceHash": "65133a8"
   },
-  "ai.translateError.authFailed.title": "That API key got turned down",
+  "ai.translateError.authFailed.title": "那把 API 金鑰被拒絕了",
   "@ai.translateError.authFailed.title": {
     "sourceHash": "93e6261"
   },
-  "ai.translateError.authFailed.body": "Check your key in Settings > AI - it might be wrong or revoked.",
+  "ai.translateError.authFailed.body": "到「設定 > AI」檢查你的金鑰，它可能不對，也可能已經被撤銷。",
   "@ai.translateError.authFailed.body": {
     "sourceHash": "2159d5e"
   },
-  "ai.translateError.rateLimited.title": "Your AI provider is out of room",
+  "ai.translateError.rateLimited.title": "你的 AI 提供者沒有餘裕了",
   "@ai.translateError.rateLimited.title": {
     "sourceHash": "26e286e"
   },
-  "ai.translateError.rateLimited.body": "It''s rate-limiting requests or your plan is out of quota. Check your plan and billing, then try again.",
+  "ai.translateError.rateLimited.body": "它正在限制請求速率，或是你的方案配額用完了。看看你的方案和帳單，然後再試一次。",
   "@ai.translateError.rateLimited.body": {
     "sourceHash": "9b296d7"
   },
-  "ai.translateError.timeout.title": "The AI took too long",
+  "ai.translateError.timeout.title": "AI 花了太久時間",
   "@ai.translateError.timeout.title": {
     "sourceHash": "d684e3f"
   },
-  "ai.translateError.timeout.body": "The request timed out. Give it another go in a moment.",
+  "ai.translateError.timeout.body": "這次請求逾時了。等一下再試一次吧。",
   "@ai.translateError.timeout.body": {
     "sourceHash": "249b720"
   },
-  "ai.translateError.unavailable.title": "Can''t reach your AI provider",
+  "ai.translateError.unavailable.title": "連不到你的 AI 提供者",
   "@ai.translateError.unavailable.title": {
     "sourceHash": "e684bc4"
   },
-  "ai.translateError.unavailable.body": "Check your internet or the provider''s status, then try again.",
+  "ai.translateError.unavailable.body": "檢查你的網路或提供者的服務狀態，然後再試一次。",
   "@ai.translateError.unavailable.body": {
     "sourceHash": "ba30402"
   },
-  "ai.translateError.emptyResponse.title": "The AI came back empty",
+  "ai.translateError.emptyResponse.title": "AI 回了空白",
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Your model may need a bigger budget for this. Try a faster model like gpt-4.1-mini in Settings > AI.",
+  "ai.translateError.emptyResponse.body": "你的模型可能需要更多預算才能處理這個。到「設定 > AI」換一個比較快的模型，像是 gpt-4.1-mini。",
   "@ai.translateError.emptyResponse.body": {
     "sourceHash": "f1704cc"
   },
-  "ai.translateError.serverError.title": "Your AI provider hit a snag",
+  "ai.translateError.serverError.title": "你的 AI 提供者遇到了狀況",
   "@ai.translateError.serverError.title": {
     "sourceHash": "1b98f6a"
   },
-  "ai.translateError.serverError.body": "It returned something unexpected. Try again in a moment.",
+  "ai.translateError.serverError.body": "它回了預期外的東西。等一下再試一次。",
   "@ai.translateError.serverError.body": {
     "sourceHash": "3f4af5c"
   },
-  "ai.translateError.parseError.title": "Couldn''t read the AI''s answer",
+  "ai.translateError.parseError.title": "無法讀懂 AI 的回答",
   "@ai.translateError.parseError.title": {
     "sourceHash": "a509880"
   },
-  "ai.translateError.parseError.body": "Try again, or pick a different model in Settings > AI.",
+  "ai.translateError.parseError.body": "再試一次，或到「設定 > AI」換一個模型。",
   "@ai.translateError.parseError.body": {
     "sourceHash": "c299ec6"
   },
-  "ai.translateError.unknownProvider.title": "That AI provider isn''t recognized",
+  "ai.translateError.unknownProvider.title": "無法辨識那個 AI 提供者",
   "@ai.translateError.unknownProvider.title": {
     "sourceHash": "3b70b46"
   },
-  "ai.translateError.unknownProvider.body": "Pick a provider in Settings > AI.",
+  "ai.translateError.unknownProvider.body": "請到「設定 > AI」選一個提供者。",
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
-  "ai.cloud.serviceAria": "Cloud AI service",
+  "ai.cloud.serviceAria": "雲端 AI 服務",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.endpointLabel": "Endpoint",
+  "ai.cloud.endpointLabel": "端點",
   "@ai.cloud.endpointLabel": {
     "sourceHash": "3df9726"
   },
-  "ai.cloud.endpointDescription": "API endpoint URL for the selected service.",
+  "ai.cloud.endpointDescription": "所選服務的 API 端點網址。",
   "@ai.cloud.endpointDescription": {
     "sourceHash": "884632b"
   },
-  "ai.cloud.endpointPlaceholder": "Example: https://api.example.com/v1",
+  "ai.cloud.endpointPlaceholder": "例如：https://api.example.com/v1",
   "@ai.cloud.endpointPlaceholder": {
     "sourceHash": "dbc7343"
   },
-  "ai.cloud.endpointAria": "Endpoint URL",
+  "ai.cloud.endpointAria": "端點網址",
   "@ai.cloud.endpointAria": {
     "sourceHash": "2578179"
   },
-  "ai.cloud.apiKeyLabel": "API key",
+  "ai.cloud.apiKeyLabel": "API 金鑰",
   "@ai.cloud.apiKeyLabel": {
     "sourceHash": "16f0ee4"
   },
-  "ai.cloud.apiKeyDescription": "Your API key for this service.",
+  "ai.cloud.apiKeyDescription": "你在這個服務的 API 金鑰。",
   "@ai.cloud.apiKeyDescription": {
     "sourceHash": "6a95580"
   },
-  "ai.cloud.apiKeyPlaceholderOpenai": "Example: sk-abc123...",
+  "ai.cloud.apiKeyPlaceholderOpenai": "例如：sk-abc123...",
   "@ai.cloud.apiKeyPlaceholderOpenai": {
     "sourceHash": "f9701a2"
   },
-  "ai.cloud.apiKeyPlaceholderAnthropic": "Example: sk-ant-abc123...",
+  "ai.cloud.apiKeyPlaceholderAnthropic": "例如：sk-ant-abc123...",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
   },
-  "ai.cloud.apiKeyPlaceholderGeneric": "API key",
+  "ai.cloud.apiKeyPlaceholderGeneric": "API 金鑰",
   "@ai.cloud.apiKeyPlaceholderGeneric": {
     "sourceHash": "16f0ee4"
   },
-  "ai.cloud.apiKeyPlaceholderSaved": "Your key is saved. Type a new one to replace it.",
+  "ai.cloud.apiKeyPlaceholderSaved": "你的金鑰已儲存。輸入新的就會取代它。",
   "@ai.cloud.apiKeyPlaceholderSaved": {
     "sourceHash": "974ffdf"
   },
-  "ai.cloud.modelLabel": "Model",
+  "ai.cloud.modelLabel": "模型",
   "@ai.cloud.modelLabel": {
     "sourceHash": "5e2c614"
   },
-  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr uses its own model ({model}) instead of this one. Change it in the Ask Cmdr section.",
+  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr 用的是它自己的模型（{model}），不是這一個。可以在「Ask Cmdr」區段裡更改。",
   "@ai.cloud.askCmdrOverrideHint": {
     "sourceHash": "0d278f6"
   },
-  "ai.cloud.modelDescription": "The model name to use for completions.",
+  "ai.cloud.modelDescription": "用來生成回應的模型名稱。",
   "@ai.cloud.modelDescription": {
     "sourceHash": "809fa50"
   },
-  "ai.cloud.modelPlaceholderExample": "Example: {model}",
+  "ai.cloud.modelPlaceholderExample": "例如：{model}",
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },
-  "ai.cloud.modelPlaceholderGeneric": "Model name",
+  "ai.cloud.modelPlaceholderGeneric": "模型名稱",
   "@ai.cloud.modelPlaceholderGeneric": {
     "sourceHash": "a3c3370"
   },
-  "ai.cloud.checking": "Checking...",
+  "ai.cloud.checking": "正在檢查…",
   "@ai.cloud.checking": {
     "sourceHash": "2e5f79b"
   },
-  "ai.cloud.connected": "Connected",
+  "ai.cloud.connected": "已連線",
   "@ai.cloud.connected": {
     "sourceHash": "2296556"
   },
-  "ai.cloud.connectedNoModels": "Connected (model list not available)",
+  "ai.cloud.connectedNoModels": "已連線（沒有可用的模型清單）",
   "@ai.cloud.connectedNoModels": {
     "sourceHash": "54f2b6f"
   },
-  "ai.cloud.recheck": "Recheck",
+  "ai.cloud.recheck": "重新檢查",
   "@ai.cloud.recheck": {
     "sourceHash": "1f47d83"
   },
-  "ai.cloud.authError": "API key is invalid",
+  "ai.cloud.authError": "API 金鑰無效",
   "@ai.cloud.authError": {
     "sourceHash": "74a88e4"
   },
-  "ai.cloud.connectionError": "Can''t reach server",
+  "ai.cloud.connectionError": "連不到伺服器",
   "@ai.cloud.connectionError": {
     "sourceHash": "3f378c3"
   },
-  "ai.cloud.genericError": "Something went wrong",
+  "ai.cloud.genericError": "出了點狀況",
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.testConnection": "Test connection",
+  "ai.cloud.testConnection": "測試連線",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"
   },
-  "ai.cloud.unknownError": "Unknown error",
+  "ai.cloud.unknownError": "不明的狀況",
   "@ai.cloud.unknownError": {
     "sourceHash": "27c2ccd"
   },
-  "ai.local.memoryWarningAria": "Memory warning",
+  "ai.local.memoryWarningAria": "記憶體警告",
   "@ai.local.memoryWarningAria": {
     "sourceHash": "7688d6a"
   },
-  "ai.local.warningDanger": "This exceeds your available memory. Your system may slow down significantly.",
+  "ai.local.warningDanger": "這超過了你可用的記憶體。你的系統可能會明顯變慢。",
   "@ai.local.warningDanger": {
     "sourceHash": "dd5c518"
   },
-  "ai.local.warningCaution": "This uses most of your available memory. Other apps may slow down.",
+  "ai.local.warningCaution": "這會用掉你大部分的可用記憶體。其他 App 可能會變慢。",
   "@ai.local.warningCaution": {
     "sourceHash": "f8070e9"
   },
-  "ai.local.statusRestarting": "Restarting...",
+  "ai.local.statusRestarting": "正在重新啟動…",
   "@ai.local.statusRestarting": {
     "sourceHash": "2c5bfcb"
   },
-  "ai.local.statusStarting": "Starting...",
+  "ai.local.statusStarting": "正在啟動…",
   "@ai.local.statusStarting": {
     "sourceHash": "82b9363"
   },
-  "ai.local.statusRunning": "Running",
+  "ai.local.statusRunning": "執行中",
   "@ai.local.statusRunning": {
     "sourceHash": "f4ccae2"
   },
-  "ai.local.statusStopped": "Stopped",
+  "ai.local.statusStopped": "已停止",
   "@ai.local.statusStopped": {
     "sourceHash": "1a4f630"
   },
-  "ai.local.installStepExtracting": "Step 1 of 4: Extracting runtime...",
+  "ai.local.installStepExtracting": "第 1 步（共 4 步）：正在解壓縮執行環境…",
   "@ai.local.installStepExtracting": {
     "sourceHash": "941db20"
   },
-  "ai.local.installStepDownloading": "Step 2 of 4: Downloading model...",
+  "ai.local.installStepDownloading": "第 2 步（共 4 步）：正在下載模型…",
   "@ai.local.installStepDownloading": {
     "sourceHash": "56596cb"
   },
-  "ai.local.installStepVerifying": "Step 3 of 4: Verifying download...",
+  "ai.local.installStepVerifying": "第 3 步（共 4 步）：正在驗證下載內容…",
   "@ai.local.installStepVerifying": {
     "sourceHash": "4133988"
   },
-  "ai.local.installStepStarting": "Step 4 of 4: Starting server...",
+  "ai.local.installStepStarting": "第 4 步（共 4 步）：正在啟動伺服器…",
   "@ai.local.installStepStarting": {
     "sourceHash": "39acba1"
   },
-  "ai.local.startingDownload": "Starting download...",
+  "ai.local.startingDownload": "正在開始下載…",
   "@ai.local.startingDownload": {
     "sourceHash": "d02eaf4"
   },
-  "ai.local.etaSeconds": "~{value} sec left",
+  "ai.local.etaSeconds": "約剩 {value} 秒",
   "@ai.local.etaSeconds": {
     "sourceHash": "045b712"
   },
-  "ai.local.etaMinutes": "~{value} min left",
+  "ai.local.etaMinutes": "約剩 {value} 分鐘",
   "@ai.local.etaMinutes": {
     "sourceHash": "978afd8"
   },
-  "ai.local.etaHours": "~{value} hr left",
+  "ai.local.etaHours": "約剩 {value} 小時",
   "@ai.local.etaHours": {
     "sourceHash": "b1944ec"
   },
-  "ai.local.modelLabel": "Model",
+  "ai.local.modelLabel": "模型",
   "@ai.local.modelLabel": {
     "sourceHash": "5e2c614"
   },
-  "ai.local.serverLabel": "Server",
+  "ai.local.serverLabel": "伺服器",
   "@ai.local.serverLabel": {
     "sourceHash": "aef7de2"
   },
-  "ai.local.modelUnknown": "Unknown",
+  "ai.local.modelUnknown": "不明",
   "@ai.local.modelUnknown": {
     "sourceHash": "b764cdc"
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "A single question mark, shown in parentheses where a model's size would go when the backend reported none. The full-width `？` is for sentence-final questions, and Traditional Chinese uses the same half-width `?` glyph as a bare unknown-value placeholder (Apple writes unknown numeric fields as `--` or `?` without localizing the glyph). There is no word to translate; the sibling `ai.local.modelUnknown` handles the case where a WORD is wanted and IS translated (`不明`)."
   },
-  "ai.local.notInstalled": "Not installed. The local model ({modelName}, {modelSize}) runs entirely on your device for maximum privacy. Requires Apple Silicon.",
+  "ai.local.notInstalled": "尚未安裝。本機模型（{modelName}，{modelSize}）完全在你的裝置上執行，隱私最有保障。需要 Apple Silicon。",
   "@ai.local.notInstalled": {
     "sourceHash": "163bf42"
   },
-  "ai.local.applyContextSize": "Apply",
+  "ai.local.applyContextSize": "套用",
   "@ai.local.applyContextSize": {
     "sourceHash": "31e392d"
   },
-  "ai.local.ramGaugeAria": "Memory usage gauge",
+  "ai.local.ramGaugeAria": "記憶體用量計量表",
   "@ai.local.ramGaugeAria": {
     "sourceHash": "d6d09e9"
   },
-  "ai.local.ramLegendSystem": "System {size}",
+  "ai.local.ramLegendSystem": "系統 {size}",
   "@ai.local.ramLegendSystem": {
     "sourceHash": "1497c04"
   },
-  "ai.local.ramLegendApps": "Apps {size}",
+  "ai.local.ramLegendApps": "App {size}",
   "@ai.local.ramLegendApps": {
     "sourceHash": "d02b14c"
   },
@@ -327,83 +328,83 @@
   "@ai.local.ramLegendCmdrAi": {
     "sourceHash": "93e2741"
   },
-  "ai.local.ramLegendProjected": "Projected",
+  "ai.local.ramLegendProjected": "預計增加",
   "@ai.local.ramLegendProjected": {
     "sourceHash": "e394afa"
   },
-  "ai.local.ramLegendFreed": "Freed",
+  "ai.local.ramLegendFreed": "釋出",
   "@ai.local.ramLegendFreed": {
     "sourceHash": "c8affca"
   },
-  "ai.local.ramLegendFree": "Free {size}",
+  "ai.local.ramLegendFree": "可用 {size}",
   "@ai.local.ramLegendFree": {
     "sourceHash": "afe9c0d"
   },
-  "ai.local.cancel": "Cancel",
+  "ai.local.cancel": "取消",
   "@ai.local.cancel": {
     "sourceHash": "19766ed"
   },
-  "ai.local.stopServer": "Stop server",
+  "ai.local.stopServer": "停止伺服器",
   "@ai.local.stopServer": {
     "sourceHash": "a21bf60"
   },
-  "ai.local.startServer": "Start server",
+  "ai.local.startServer": "啟動伺服器",
   "@ai.local.startServer": {
     "sourceHash": "7b7da6f"
   },
-  "ai.local.deleteModel": "Delete model",
+  "ai.local.deleteModel": "刪除模型",
   "@ai.local.deleteModel": {
     "sourceHash": "b7828ba"
   },
-  "ai.local.downloadModel": "Download model",
+  "ai.local.downloadModel": "下載模型",
   "@ai.local.downloadModel": {
     "sourceHash": "9979bea"
   },
-  "ai.local.deleteDialogTitleDeleting": "Deleting model...",
+  "ai.local.deleteDialogTitleDeleting": "正在刪除模型…",
   "@ai.local.deleteDialogTitleDeleting": {
     "sourceHash": "413e1b9"
   },
-  "ai.local.deleteDialogTitle": "Delete AI model?",
+  "ai.local.deleteDialogTitle": "要刪除 AI 模型嗎？",
   "@ai.local.deleteDialogTitle": {
     "sourceHash": "c486f0c"
   },
-  "ai.local.deletingStatus": "Stopping server and removing files...",
+  "ai.local.deletingStatus": "正在停止伺服器並移除檔案…",
   "@ai.local.deletingStatus": {
     "sourceHash": "6671ac7"
   },
-  "ai.local.deleteConfirmMessage": "This frees up {modelSize} of disk space. You''ll need to re-download it to use local AI again.",
+  "ai.local.deleteConfirmMessage": "這會釋出 {modelSize} 的磁碟空間。之後要再用本機 AI 的話，得重新下載。",
   "@ai.local.deleteConfirmMessage": {
     "sourceHash": "1a6ca0d"
   },
-  "ai.local.deleteButtonDeleting": "Deleting...",
+  "ai.local.deleteButtonDeleting": "正在刪除…",
   "@ai.local.deleteButtonDeleting": {
     "sourceHash": "685ecb9"
   },
-  "ai.local.deleteButton": "Delete",
+  "ai.local.deleteButton": "刪除",
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.keychainTitle": "{op, select, save {Couldn''t save your API key: macOS Keychain denied access} other {Couldn''t read your saved API key: macOS Keychain denied access}}",
+  "ai.secretError.keychainTitle": "{op, select, save {無法儲存你的 API 金鑰：macOS 鑰匙圈拒絕存取} other {無法讀取你已儲存的 API 金鑰：macOS 鑰匙圈拒絕存取}}",
   "@ai.secretError.keychainTitle": {
     "sourceHash": "ec77588"
   },
-  "ai.secretError.keychainBody": "{op, select, save {Open Keychain Access and check the \"Cmdr\" entry, or delete it and try saving again.} other {Open Keychain Access, find the \"Cmdr\" entry, grant access, or delete it and re-enter your key.}}",
+  "ai.secretError.keychainBody": "{op, select, save {請開啟「鑰匙圈存取」，檢查其中的「Cmdr」項目，或是把它刪掉再儲存一次。} other {請開啟「鑰匙圈存取」，找到「Cmdr」項目並授予存取權，或是把它刪掉，重新輸入你的金鑰。}}",
   "@ai.secretError.keychainBody": {
     "sourceHash": "2a0fe5e"
   },
-  "ai.secretError.keyringTitle": "{op, select, save {Couldn''t save your API key: your system keyring denied access} other {Couldn''t read your saved API key: your system keyring denied access}}",
+  "ai.secretError.keyringTitle": "{op, select, save {無法儲存你的 API 金鑰：系統金鑰環拒絕存取} other {無法讀取你已儲存的 API 金鑰：系統金鑰環拒絕存取}}",
   "@ai.secretError.keyringTitle": {
     "sourceHash": "8c9df45"
   },
-  "ai.secretError.keyringBody": "Unlock your keyring (Passwords / Keyrings app) and try again.",
+  "ai.secretError.keyringBody": "請解鎖你的金鑰環（「密碼」或「金鑰環」App），然後再試一次。",
   "@ai.secretError.keyringBody": {
     "sourceHash": "023bde3"
   },
-  "ai.secretError.genericTitle": "{op, select, save {Couldn''t save your API key.} other {Couldn''t read your saved API key.}}",
+  "ai.secretError.genericTitle": "{op, select, save {無法儲存你的 API 金鑰。} other {無法讀取你已儲存的 API 金鑰。}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "a93c4f0"
   },
-  "ai.secretError.genericBody": "Check that your system keyring is available, then try again. If it persists, restart the app.",
+  "ai.secretError.genericBody": "請確認你的系統金鑰環可以使用，然後再試一次。如果還是這樣，請重新啟動 App。",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
   }
