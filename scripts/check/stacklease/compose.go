@@ -113,15 +113,42 @@ func (d dockerComposer) Up(services []string) error {
 	if err != nil {
 		return err
 	}
-	args := []string{"compose", "-p", d.stack.ProjectName}
-	args = append(args, fileArgs...)
-	args = append(args, "up", "-d")
-	args = append(args, services...)
-	out, err := runDocker(args...)
+	out, err := runDocker(d.upArgs(services, fileArgs)...)
 	if err != nil {
 		return fmt.Errorf("docker compose up: %w\n%s", err, out)
 	}
 	return nil
+}
+
+// Restart stops and starts the named services, which re-runs each container's
+// entrypoint. Bare (no `-f`): compose reconstructs config from container labels,
+// and a restart changes nothing about the config anyway.
+func (d dockerComposer) Restart(services []string) error {
+	if len(services) == 0 {
+		return nil
+	}
+	args := append([]string{"compose", "-p", d.stack.ProjectName, "restart"}, services...)
+	out, err := runDocker(args...)
+	if err != nil {
+		return fmt.Errorf("docker compose restart: %w\n%s", err, out)
+	}
+	return nil
+}
+
+// upArgs builds the `docker compose … up` argv, split out so the one decision in
+// it is testable without a daemon.
+func (d dockerComposer) upArgs(services, fileArgs []string) []string {
+	args := []string{"compose", "-p", d.stack.ProjectName}
+	args = append(args, fileArgs...)
+	args = append(args, "up", "-d")
+	// ❗ A first-party image gets rebuilt on every up. Without it, an edit to the
+	// Dockerfile or the entrypoint never reaches a container that's already
+	// running, and the stack quietly keeps serving the old one. Docker's layer
+	// cache makes the no-change case a few hundred milliseconds.
+	if d.stack.buildContextRel != "" {
+		args = append(args, "--build")
+	}
+	return append(args, services...)
 }
 
 // Down tears the whole project down (matches stop.sh).

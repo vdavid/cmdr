@@ -21,8 +21,14 @@ type fakeComposer struct {
 	statusErr error
 	downErr   error
 
-	upCalls   [][]string
-	downCalls int
+	upCalls      [][]string
+	downCalls    int
+	restartCalls [][]string
+	restartErr   error
+	// restartWrites stands in for the entrypoint re-running: a real restart is
+	// what republishes a container's key pair, and a fake that only records the
+	// call would let a broken wait pass.
+	restartWrites func(services []string)
 }
 
 func newFakeComposer() *fakeComposer {
@@ -55,6 +61,19 @@ func (f *fakeComposer) Up(services []string) error {
 	for _, s := range services {
 		f.running[s] = true
 		f.healthy[s] = true
+	}
+	return nil
+}
+
+func (f *fakeComposer) Restart(services []string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.restartCalls = append(f.restartCalls, services)
+	if f.restartErr != nil {
+		return f.restartErr
+	}
+	if f.restartWrites != nil {
+		f.restartWrites(services)
 	}
 	return nil
 }
@@ -652,12 +671,12 @@ func TestEnsureKeysDirCreatesEveryLeafAndPinsTheEnv(t *testing.T) {
 
 	// Every leaf up front: Docker auto-creates a missing bind source root-owned
 	// on Linux, and the container's own write into it then fails.
-	for _, leaf := range SFTP.KeysSubdirs() {
-		if st, err := os.Stat(filepath.Join(want, leaf)); err != nil || !st.IsDir() {
-			t.Fatalf("EnsureKeysDir left %s/%s uncreated (%v)", want, leaf, err)
+	for _, leaf := range SFTP.KeysLeaves() {
+		if st, err := os.Stat(filepath.Join(want, leaf.Dir)); err != nil || !st.IsDir() {
+			t.Fatalf("EnsureKeysDir left %s/%s uncreated (%v)", want, leaf.Dir, err)
 		}
 	}
-	if len(SFTP.KeysSubdirs()) == 0 {
+	if len(SFTP.KeysLeaves()) == 0 {
 		t.Fatal("the SFTP stack lists no keys leaves, so the loop above asserts nothing")
 	}
 	// Pinned in the env, so compose binds what this process resolved rather than

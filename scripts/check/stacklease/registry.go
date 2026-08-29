@@ -78,12 +78,25 @@ var SFTP = &Stack{
 	// `start.sh`, and `cmdr_sftp::volume::testing::fixture_key_path` read the
 	// same `CMDR_SFTP_KEYS_DIR` with the same default; `TestSftpFixturePathsAgree`
 	// is what keeps those four copies equal.
-	keysDirName:   "cmdr-sftp-keys",
-	keysSubdirs:   []string{"keyonly", "passphrase"},
+	keysDirName: "cmdr-sftp-keys",
+	keysLeaves: []KeysLeaf{
+		{Dir: "keyonly", Service: "sftp-fixture-keyonly"},
+		{Dir: "passphrase", Service: "sftp-fixture-passphrase"},
+	},
+	// What each of those two containers publishes into its leaf, and what the
+	// suite opens back. ❗ A fifth copy of a shared name: the entrypoint's
+	// `ssh-keygen -f /keys/id_ed25519` and `fixture_key_path`'s `.join(...)` are
+	// the others, and `TestSftpFixturePathsAgree` fails the run if they drift.
+	keysFileName:  "id_ed25519",
 	keysDirEnv:    "CMDR_SFTP_KEYS_DIR",
 	composeDirRel: "apps/desktop/test/sftp-servers",
 	composeDirEnv: "CMDR_SFTP_COMPOSE_DIR",
 	composeFiles:  []string{"docker-compose.yml"},
+	// First-party image, edited in this repo, so `up` rebuilds it and its
+	// contents fold into the config hash. The entrypoint is what provisions each
+	// key-auth server's pair, and an edit to it that never reaches a running
+	// container is a change that silently doesn't happen.
+	buildContextRel: "image",
 	// Host ports live in their own pinned range, clear of SMB's 11480+ and
 	// smb2's 10480+.
 	portEnvPrefix: "SFTP_FIXTURE_",

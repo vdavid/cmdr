@@ -114,7 +114,22 @@ file's own directory, which bakes the **starting** worktree's absolute path into
 resolves against its **own** checkout. Delete the starting worktree and `/keys` no longer exists inside the containers:
 every key-auth cell fails, in every worktree at once, pointing at the backend rather than at the fixture.
 
-Four places name the path, and they have to agree:
+⚠️ **The pair is disposable, and the fixture treats it that way.** `/tmp` is exactly right for it (a throwaway key for a
+server on loopback), but macOS empties `/tmp` on reboot while the containers come back on their own
+(`restart: unless-stopped`) holding the `authorized_keys` they wrote _before_ it. A server left naming a public key
+whose private half exists nowhere refuses every key-auth cell while `docker ps` and the `HEALTHCHECK` both call it
+healthy: `sftp-fixture-keyonly` answers `NeedsCredentials` (no rung left to try) and `sftp-fixture-passphrase` answers
+`AuthenticationRejected` (the ladder falls through to the password rung that server refuses). Two things keep that from
+being permanent:
+
+- **`provision_client_key` runs on every start**, not once. It byte-compares `/keys/id_ed25519.pub` against
+  `authorized_keys` and regenerates both when they disagree, so a plain restart puts the halves back in agreement.
+  `TestTheFixtureEntrypointRegeneratesAKeyItCanNoLongerBack` pins that the guarded restart path still calls it.
+- **The lease stats the key files before it hands the stack over** (`Stack.healKeyMaterial`). A gap is invisible to
+  every other signal it reads (running, healthy, config hash matching), so it restarts exactly the services whose leaf
+  is empty and waits for the pair to reappear rather than letting a suite race the regeneration.
+
+Five places name this key material, and they have to agree:
 
 - `keysDirName` in `scripts/check/stacklease/registry.go` is the canonical one, beside the lock and lease paths. The
   library creates the directory and its per-service leaves before bring-up, and exports `CMDR_SFTP_KEYS_DIR`.
@@ -122,9 +137,21 @@ Four places name the path, and they have to agree:
   runner around it. `start.sh` creates the leaves itself, because Docker auto-creates a missing bind source root-owned
   on Linux and the container's own write into it then fails.
 - `cmdr_sftp::volume::testing::fixture_key_path` reads the same variable with the same default.
+- `keysFileName` in the same registry entry is the private key's basename, which `image/entrypoint.sh` writes and
+  `fixture_key_path` joins. The lease stats that exact path to tell a stack that lost its published keys from one that
+  never had any, so a rename in one place alone would leave it healing forever.
 
-`TestSftpFixturePathsAgree` (`scripts/check/checks/sftp_fixture_paths_test.go`) reads all four and fails on any drift;
+`TestSftpFixturePathsAgree` (`scripts/check/checks/sftp_fixture_paths_test.go`) reads all five and fails on any drift;
 `TestSftpFixturePortsMatchComposeDefaults` does the same for the port defaults below.
+
+## The image is rebuilt on every bring-up
+
+`image/` is first-party and edited here, so the SFTP stack declares it as a build context: its contents fold into the
+lease's config hash, and `up` passes `--build`. ❗ Both halves are needed. `up -d` never rebuilds on its own and never
+recreates a healthy container, so without them an edit to the `Dockerfile` or the entrypoint would never reach a stack
+that's already running, and that stack outlives reboots. Docker's layer cache makes the no-change case a few hundred
+milliseconds. SMB declares no build context: its images come out of a vendored harness, where a rebuild is somebody
+else's call.
 
 ## Host keys are fresh per container
 

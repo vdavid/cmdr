@@ -19,6 +19,21 @@ import (
 // not a per-shell one.
 const leaseRootEnv = "CMDR_FIXTURE_LEASE_ROOT"
 
+// KeysLeaf is one per-service leaf under a stack's KeysDir: the directory the
+// compose file binds into that container's key mount, and the service whose
+// entrypoint generates the pair into it.
+//
+// ❗ Pairing the two here, rather than keeping a list of directories beside a
+// list of services, is what lets a leaf that lost its key material name the ONE
+// container to restart: healing is surgical instead of a stack-wide bounce under
+// whoever else is running against it.
+type KeysLeaf struct {
+	// Dir is the leaf's basename under KeysDir, and the compose bind source.
+	Dir string
+	// Service is the compose service that fills it at start.
+	Service string
+}
+
 // Stack is one Docker Compose fixture stack: which containers it holds, where
 // its compose files live, and the lock + lease namespace that keeps its users
 // refcounted. Fields are unexported so the registry is the only source of
@@ -39,9 +54,10 @@ type Stack struct {
 
 	// keysDirName is the third machine-wide /tmp basename: the host directory a
 	// stack's containers bind-mount generated key material into, with
-	// keysSubdirs the per-service leaves under it and keysDirEnv the var that
-	// overrides the whole path. All three are empty on a stack that mounts
-	// nothing from the host, where KeysDir answers "".
+	// keysLeaves the per-service leaves under it, keysFileName the file each
+	// container publishes there, and keysDirEnv the var that overrides the whole
+	// path. All of them are empty on a stack that mounts nothing from the host,
+	// where KeysDir answers "".
 	//
 	// ❗ Machine-wide, beside the lock and the lease dir, for exactly the reason
 	// they are: the stack is machine-wide and a sibling worktree ADOPTS a
@@ -50,9 +66,10 @@ type Stack struct {
 	// that worktree takes key auth down for every worktree at once, and the
 	// reader (which resolves against its OWN checkout) can't even see that the
 	// two scopes disagree.
-	keysDirName string
-	keysSubdirs []string
-	keysDirEnv  string
+	keysDirName  string
+	keysLeaves   []KeysLeaf
+	keysFileName string
+	keysDirEnv   string
 
 	// composeDirEnv is the env var that overrides compose-dir resolution;
 	// composeDirRel is the slash-separated repo-relative fallback.
@@ -61,6 +78,17 @@ type Stack struct {
 	// composeFiles are the files `up` layers, in order. SMB layers a vendored
 	// compose under a cmdr-owned override; a first-party stack needs one file.
 	composeFiles []string
+	// buildContextRel is the stack's image build context, relative to the
+	// compose dir, for a stack whose Dockerfile is FIRST-PARTY and edited in
+	// this repo. Declaring it does two things: the context's contents fold into
+	// the config hash, and `up` passes `--build`.
+	//
+	// ❗ Without both, an edit to the image is invisible. `up -d` never rebuilds
+	// on its own and never recreates a healthy container, so a stack brought up
+	// before the edit keeps serving the old entrypoint for as long as it lives —
+	// which is across reboots. Empty for a stack whose images are vendored, where
+	// a rebuild is somebody else's call.
+	buildContextRel string
 
 	// modeServices maps a mode to the exact service set the stack's start.sh
 	// brings up for it, and must stay in lock-step with that script. A nil
@@ -108,9 +136,50 @@ func (s *Stack) KeysDir() string {
 // dir.
 func (s *Stack) KeysDirEnv() string { return s.keysDirEnv }
 
-// KeysSubdirs are the per-service leaves under KeysDir that the compose file
+// KeysLeaves are the per-service leaves under KeysDir that the compose file
 // binds, in registry order.
-func (s *Stack) KeysSubdirs() []string { return s.keysSubdirs }
+func (s *Stack) KeysLeaves() []KeysLeaf { return s.keysLeaves }
+
+// KeyMaterialPath is where the host reads back the private key a leaf's
+// container generated. It has to equal what the suite opens
+// (`cmdr_sftp::volume::testing::fixture_key_path`); `TestSftpFixturePathsAgree`
+// is what keeps the two equal.
+func (s *Stack) KeyMaterialPath(leaf KeysLeaf) string {
+	return filepath.Join(s.KeysDir(), leaf.Dir, s.keysFileName)
+}
+
+// KeysFileName is the private-key basename each container publishes into its
+// leaf. "" on a stack that mounts nothing.
+func (s *Stack) KeysFileName() string { return s.keysFileName }
+
+// servicesMissingKeyMaterial names the requested services whose leaf holds no
+// private key, in registry order.
+//
+// ❗ The one staleness the lease can't see any other way. `compose ps` reports
+// running and healthy, the config hash still matches, and the containers are
+// genuinely fine: what's gone is the HOST half of a bind mount under /tmp, which
+// macOS empties on reboot while the containers come back holding the
+// `authorized_keys` they wrote before it. The only other symptom is an auth rung
+// refusing, which reads as a backend bug.
+func (s *Stack) servicesMissingKeyMaterial(requested []string) []string {
+	if s.KeysDir() == "" {
+		return nil
+	}
+	wanted := make(map[string]bool, len(requested))
+	for _, svc := range requested {
+		wanted[svc] = true
+	}
+	var missing []string
+	for _, leaf := range s.keysLeaves {
+		if !wanted[leaf.Service] {
+			continue
+		}
+		if _, err := os.Stat(s.KeyMaterialPath(leaf)); err != nil {
+			missing = append(missing, leaf.Service)
+		}
+	}
+	return missing
+}
 
 // EnsureKeysDir creates the keys dir and its leaves, then pins the resolved path
 // in this process's environment so compose — which reads
@@ -124,12 +193,25 @@ func (s *Stack) EnsureKeysDir() error {
 	if dir == "" {
 		return nil
 	}
-	for _, leaf := range s.keysSubdirs {
-		if err := os.MkdirAll(filepath.Join(dir, leaf), 0o755); err != nil {
-			return fmt.Errorf("create %s keys dir %s: %w", s.Name, filepath.Join(dir, leaf), err)
+	for _, leaf := range s.keysLeaves {
+		if err := os.MkdirAll(filepath.Join(dir, leaf.Dir), 0o755); err != nil {
+			return fmt.Errorf("create %s keys dir %s: %w", s.Name, filepath.Join(dir, leaf.Dir), err)
 		}
 	}
 	return os.Setenv(s.keysDirEnv, dir)
+}
+
+// BuildContextDir resolves this stack's first-party image build context, or ""
+// when it declares none or the compose dir can't be found.
+func (s *Stack) BuildContextDir() string {
+	if s.buildContextRel == "" {
+		return ""
+	}
+	cd := s.composeDir()
+	if cd == "" {
+		return ""
+	}
+	return filepath.Join(cd, filepath.FromSlash(s.buildContextRel))
 }
 
 // Modes lists the modes this stack serves, sorted, for error messages and the

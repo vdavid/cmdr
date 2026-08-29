@@ -313,9 +313,10 @@ func goTreeGlobs(suffixes ...string) []string {
 // (`fixture_key_path`, `fixture_port`). `TestSftpFixturePathsAgree` and
 // `TestSftpFixturePortsMatchComposeDefaults` are what keep the copies equal.
 const (
-	sftpComposeRel = "apps/desktop/test/sftp-servers/docker-compose.yml"
-	sftpStartRel   = "apps/desktop/test/sftp-servers/start.sh"
-	sftpTestingRel = "crates/cmdr-sftp/src/volume/testing.rs"
+	sftpComposeRel    = "apps/desktop/test/sftp-servers/docker-compose.yml"
+	sftpStartRel      = "apps/desktop/test/sftp-servers/start.sh"
+	sftpTestingRel    = "crates/cmdr-sftp/src/volume/testing.rs"
+	sftpEntrypointRel = "apps/desktop/test/sftp-servers/image/entrypoint.sh"
 )
 
 // goTestsInputs is what `scripts-go-tests` reads, which is far more than the Go
@@ -332,7 +333,7 @@ const (
 //   - the frontend source roots (`TestNoFrontendSourceLoadsAgentDocs`, which is
 //     what makes `agentDocExclusions` safe),
 //   - `apps/desktop/package.json` (`TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes`),
-//   - the SFTP fixture trio the fixture-path tests compare.
+//   - the SFTP fixture quartet the fixture-path tests compare.
 //
 // ❗ No `agentDocExclusions` here. An exclusion vetoes across the whole union, so
 // borrowing one from `rustCompileInputs` would take `scripts/check/CLAUDE.md`
@@ -347,7 +348,7 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel},
+	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

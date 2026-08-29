@@ -1098,6 +1098,15 @@ back to the compose file's own default so a bare `start.sh` works. The canonical
 `scripts/check/checks/sftp_ports.go` (the ports); `TestSftpFixturePathsAgree` and
 `TestSftpFixturePortsMatchComposeDefaults` read every copy and fail on a drift.
 
+⚠️ **A key-auth cell failing an auth rung is a fixture symptom before it is a backend one.** The private key lives on
+the host side of a bind mount under `/tmp`, which macOS empties on reboot, while the containers come back on their own
+holding the `authorized_keys` they wrote before it. What that looks like from here: `sftp-fixture-keyonly` reports
+`NeedsCredentials` (the ladder runs out of rungs) and `sftp-fixture-passphrase` reports `AuthenticationRejected` (it
+falls through to the password rung that server refuses), all four cells at once, while every other cell in the binary
+passes. Two guards make it self-correcting rather than permanent, and both live with the fixture: the entrypoint
+re-provisions the pair on every start, and the lease stats the key files before it hands the stack over. Before
+suspecting `auth.rs`, check that `/tmp/cmdr-sftp-keys/<service>/id_ed25519` exists.
+
 The servers themselves: `apps/desktop/test/sftp-servers/README.md`.
 
 ## The public surface is capped

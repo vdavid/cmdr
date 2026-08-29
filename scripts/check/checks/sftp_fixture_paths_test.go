@@ -69,8 +69,8 @@ func TestSftpFixturePathsAgree(t *testing.T) {
 		gotLeaves[m[2]] = true
 	}
 	wantLeaves := map[string]bool{}
-	for _, leaf := range stacklease.SFTP.KeysSubdirs() {
-		wantLeaves[leaf] = true
+	for _, leaf := range stacklease.SFTP.KeysLeaves() {
+		wantLeaves[leaf.Dir] = true
 	}
 	if !sameStringSet(gotLeaves, wantLeaves) {
 		t.Errorf("%s binds the leaves %s; stacklease creates %s. A leaf nobody creates is auto-made root-owned by Docker on Linux, and the container's own write into it fails",
@@ -96,6 +96,65 @@ func TestSftpFixturePathsAgree(t *testing.T) {
 	}
 	if regexp.MustCompile(`CARGO_MANIFEST_DIR[\s\S]{0,400}?sftp-servers`).MatchString(testingRS) {
 		t.Errorf("%s derives a fixture stack path from CARGO_MANIFEST_DIR again. That resolves against the READING worktree while the container holds the STARTING one's path, and the two need not be the same checkout", sftpTestingRel)
+	}
+
+	// 4. The private key's BASENAME, a fifth copy of a shared name. The
+	//    entrypoint writes it, the Rust fixtures open it, and the lease now
+	//    stats it to tell a stack that lost its published key material from one
+	//    that never had any. A drift leaves the lease healing forever and the
+	//    suite reading a file nobody writes.
+	wantFile := stacklease.SFTP.KeysFileName()
+	if wantFile == "" {
+		t.Fatal("the SFTP stack declares no key filename, so the lease cannot tell whether a container republished its pair")
+	}
+	entrypoint := readRepoFile(t, root, sftpEntrypointRel)
+	if !strings.Contains(entrypoint, "/keys/"+wantFile) {
+		t.Errorf("%s never writes /keys/%s; stacklease stats that path to decide whether a container republished its pair", sftpEntrypointRel, wantFile)
+	}
+	if !regexp.MustCompile(`\.join\("` + regexp.QuoteMeta(wantFile) + `"\)`).MatchString(testingRS) {
+		t.Errorf("%s no longer joins %q onto the keys dir; stacklease and the entrypoint both name that file", sftpTestingRel, wantFile)
+	}
+}
+
+// TestTheFixtureEntrypointRegeneratesAKeyItCanNoLongerBack pins the self-heal
+// itself, because the failure it prevents is silent and expensive.
+//
+// The keys dir is a bind SOURCE under /tmp, which macOS empties on reboot, while
+// the containers come back (`restart: unless-stopped`) still holding the
+// `authorized_keys` they wrote before it. If the entrypoint provisions the pair
+// only on its first run, that server spends the rest of its life naming a public
+// key whose private half exists nowhere: healthy to `docker ps`, healthy to the
+// HEALTHCHECK, and refusing every key-auth cell.
+func TestTheFixtureEntrypointRegeneratesAKeyItCanNoLongerBack(t *testing.T) {
+	root := repoRootForTest(t)
+	entrypoint := readRepoFile(t, root, sftpEntrypointRel)
+
+	// The `if` line itself, ❌ never a bare "/etc/fixture-configured": the file
+	// names the marker in prose above the guard too.
+	guard := strings.Index(entrypoint, "if [ -f /etc/fixture-configured ]")
+	if guard < 0 {
+		t.Fatalf("%s no longer guards on `if [ -f /etc/fixture-configured ]`; this test reads that line to find the once-per-container section", sftpEntrypointRel)
+	}
+	provision := strings.Index(entrypoint, "provision_client_key()")
+	if provision < 0 {
+		t.Fatalf("%s declares no provision_client_key; the key pair has to be provisionable on any start, not only the first", sftpEntrypointRel)
+	}
+	if provision > guard {
+		t.Errorf("%s declares provision_client_key after the /etc/fixture-configured guard, so a restarted container can't call it", sftpEntrypointRel)
+	}
+	// The guard's own branch has to call it: that branch IS the restart path.
+	branch := entrypoint[guard:]
+	if end := strings.Index(branch, "\nfi\n"); end > 0 {
+		branch = branch[:end]
+	}
+	if !strings.Contains(branch, "provision_client_key") {
+		t.Errorf("%s short-circuits on /etc/fixture-configured without re-provisioning the client key. A container that outlived a wipe of the host keys dir would then serve an authorized_keys whose private half is gone, and every key-auth cell fails with an auth refusal that reads like a backend bug", sftpEntrypointRel)
+	}
+	// Byte-comparing the pair against authorized_keys is what makes it a
+	// consistency check rather than a presence check; a half-written pair and a
+	// previous container's pair both have to count as missing.
+	if !strings.Contains(entrypoint, "cmp -s /keys/") {
+		t.Errorf("%s decides whether to regenerate without comparing the public half against authorized_keys; a stale pair from an earlier container would then be kept and refused", sftpEntrypointRel)
 	}
 }
 

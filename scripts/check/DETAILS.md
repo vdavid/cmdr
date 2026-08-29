@@ -709,8 +709,17 @@ teardown are one implementation over that value.
   and deleting that worktree breaks key auth for all of them at once. `Stack.EnsureKeysDir` creates the leaves before
   bring-up (Docker would auto-create a missing bind source root-owned on Linux, which then fails the container's own
   write) and exports `CMDR_SFTP_KEYS_DIR` so compose binds what this process resolved. The resolved dir folds into the
-  config hash next to the ports, so adopting a stack bound to a different one reconciles instead. Why, and the four
+  config hash next to the ports, so adopting a stack bound to a different one reconciles instead. Why, and the five
   copies of the default: `apps/desktop/test/sftp-servers/README.md` § Keys.
+- **Host state can go missing under a stack that still reports healthy**, and `Stack.healKeyMaterial` is the only thing
+  that notices. The keys dir is a bind SOURCE under `/tmp`, which macOS empties on reboot while the containers come back
+  holding the `authorized_keys` they wrote before it; running, healthy, and config-hash-matching all still say "fine".
+  So `Acquire` and `Reconcile` stat each leaf's private key before handing the stack over, restart exactly the services
+  whose leaf is empty (re-running an entrypoint is the only thing that can put the two halves back in agreement), and
+  wait for the pair to reappear. It reports rather than returning to a caller whose key-auth cells would all fail.
+- **A stack with a FIRST-PARTY image declares `buildContextRel`**, which folds the context's contents into the config
+  hash and puts `--build` on `up`. ❗ Both, or an edited entrypoint never reaches a running container: `up -d` neither
+  rebuilds nor recreates a healthy one. SFTP declares it; SMB's images are vendored and don't.
 - **A check declares `NeedsContainers []StackMode`**, so it can ask for several stacks. Both strings resolve against the
   registry, and `TestEveryDeclaredStackModeResolves` (`stack_orchestrator_test.go`) turns a typo into a millisecond
   failure rather than one minutes into a run, after planning and `pnpm install`.

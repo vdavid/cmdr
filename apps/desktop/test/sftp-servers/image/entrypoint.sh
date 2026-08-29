@@ -9,28 +9,89 @@
 #   QUIRK_*     see sftp-quirk.py
 set -e
 
-# Idempotent: `restart: unless-stopped` re-runs this on the same filesystem, and
-# a second `adduser` or `ssh-keygen -f <existing>` would abort under `set -e`.
-# Alpine ships the PAM build as its own binary, and only the
-# keyboard-interactive fixture needs it.
-sshd_binary() {
-    if [ "${AUTH:-password+key}" = "keyboard-interactive" ]; then
-        echo /usr/sbin/sshd.pam
-    else
-        echo /usr/sbin/sshd
-    fi
-}
-
-if [ -f /etc/fixture-configured ]; then
-    exec "$(sshd_binary)" -D -e
-fi
-
 USER_NAME="${USER_NAME:-ada}"
 USER_PASSWORD="${USER_PASSWORD:-openthedoor}"
 AUTH="${AUTH:-password+key}"
 HOST_KEYS="${HOST_KEYS:-ed25519}"
 SEED="${SEED:-small}"
 EXPORT_DIR=/srv/data
+
+# Alpine ships the PAM build as its own binary, and only the
+# keyboard-interactive fixture needs it.
+sshd_binary() {
+    if [ "$AUTH" = "keyboard-interactive" ]; then
+        echo /usr/sbin/sshd.pam
+    else
+        echo /usr/sbin/sshd
+    fi
+}
+
+# Which servers accept a client key at all, so which ones have a `/keys` bind
+# mount to fill. ❗ An explicit list: a `case "$AUTH" in *key*)` glob also matches
+# `keyboard-interactive`, which offers `PubkeyAuthentication no` and mounts
+# nothing, and would leave a pair nobody can reach in a container-local `/keys`.
+offers_key_auth() {
+    case "$AUTH" in
+        key | passphrase | password+key) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# ── The client key every key-auth fixture accepts ────────────────────
+#
+# Generated at start rather than baked into the image, because a private key in
+# the repo is a private key on the internet. The private half lands in `/keys`,
+# the bind mount the suite reads it back from.
+#
+# ❗ Re-checked on EVERY start, ❌ never once. `/keys` is host state under `/tmp`,
+# which macOS empties on reboot, while this container's own filesystem — the
+# `authorized_keys` and the `/etc/fixture-configured` guard below — survives it.
+# The server is then left naming a public key whose private half exists nowhere,
+# and it does that while `docker ps` and the HEALTHCHECK both call it healthy: no
+# rung answers, so `sftp-fixture-keyonly` reports `NeedsCredentials` and
+# `sftp-fixture-passphrase` falls through to the password rung it refuses and
+# reports `AuthenticationRejected`. Comparing the pair against `authorized_keys`
+# on every start is what lets a plain restart heal that.
+provision_client_key() {
+    authorized="/home/$USER_NAME/.ssh/authorized_keys"
+    mkdir -p /keys "/home/$USER_NAME/.ssh"
+    chmod 700 "/home/$USER_NAME/.ssh"
+
+    # Byte-equal, because `authorized_keys` is a copy of the public half: this
+    # catches a half-written pair and a pair from a previous container just as
+    # well as an empty mount.
+    if [ -f /keys/id_ed25519 ] && cmp -s /keys/id_ed25519.pub "$authorized"; then
+        return 0
+    fi
+
+    # `ssh-keygen` stops on an interactive overwrite prompt, so clear whatever is
+    # there before generating.
+    rm -f /keys/id_ed25519 /keys/id_ed25519.pub
+    if [ "$AUTH" = "passphrase" ]; then
+        ssh-keygen -q -t ed25519 -N "${KEY_PASSPHRASE:-letmein}" -f /keys/id_ed25519
+    else
+        ssh-keygen -q -t ed25519 -N '' -f /keys/id_ed25519
+    fi
+    cp /keys/id_ed25519.pub "$authorized"
+    chmod 600 "$authorized"
+    # ❗ World-readable, deliberately. `/keys` is a bind mount, the container runs
+    # as root, and the integration lane runs on Linux — where a 600 root-owned
+    # file is unreadable to the test process that has to load it. It's a
+    # throwaway key generated at container start for a server reachable only on
+    # localhost, and nothing here checks file modes the way `ssh` does.
+    chmod 644 /keys/id_ed25519 /keys/id_ed25519.pub
+    chown -R "$USER_NAME":"$USER_NAME" "/home/$USER_NAME/.ssh"
+    echo "provisioned a fresh client key pair for AUTH=$AUTH" >&2
+}
+
+# Everything below the guard runs once per container: `restart: unless-stopped`
+# re-runs this script on the same filesystem, and a second `adduser` or
+# `ssh-keygen -f <existing>` would abort under `set -e`. The key pair is the one
+# thing that is NOT once-per-container, for the reason above.
+if [ -f /etc/fixture-configured ]; then
+    if offers_key_auth; then provision_client_key; fi
+    exec "$(sshd_binary)" -D -e
+fi
 
 adduser -D -h /home/"$USER_NAME" "$USER_NAME"
 echo "$USER_NAME:$USER_PASSWORD" | chpasswd
@@ -54,31 +115,7 @@ for kind in $(echo "$HOST_KEYS" | tr ',' ' '); do
     echo "HostKey $key" >> /etc/ssh/sshd_config.fixture
 done
 
-# ── The client key every key-auth fixture accepts ────────────────────
-#
-# Baked into the image at build time would mean a private key in the repo; this
-# generates the pair at start and writes the private half where the suite can
-# read it, on the volume the compose file shares with the host.
-if [ "${AUTH#*key}" != "$AUTH" ] || [ "$AUTH" = "passphrase" ]; then
-    mkdir -p /keys
-    # `/keys` is bind-mounted from the host, so a previous run's pair is still
-    # there; ssh-keygen would stop on an interactive overwrite prompt.
-    rm -f /keys/id_ed25519 /keys/id_ed25519.pub
-    if [ "$AUTH" = "passphrase" ]; then
-        ssh-keygen -q -t ed25519 -N "${KEY_PASSPHRASE:-letmein}" -f /keys/id_ed25519
-    else
-        ssh-keygen -q -t ed25519 -N '' -f /keys/id_ed25519
-    fi
-    cp /keys/id_ed25519.pub /home/"$USER_NAME"/.ssh/authorized_keys
-    chmod 600 /home/"$USER_NAME"/.ssh/authorized_keys
-    # ❗ World-readable, deliberately. `/keys` is a bind mount, the container runs
-    # as root, and the integration lane runs on Linux — where a 600 root-owned
-    # file is unreadable to the test process that has to load it. It's a
-    # throwaway key generated at container start for a server reachable only on
-    # localhost, and nothing here checks file modes the way `ssh` does.
-    chmod 644 /keys/id_ed25519 /keys/id_ed25519.pub
-    chown -R "$USER_NAME":"$USER_NAME" /home/"$USER_NAME"/.ssh
-fi
+if offers_key_auth; then provision_client_key; fi
 
 # ── Which rungs this server offers ───────────────────────────────────
 case "$AUTH" in
