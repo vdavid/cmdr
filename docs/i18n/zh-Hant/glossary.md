@@ -509,6 +509,10 @@ Register for this whole surface is `你`, not `您`: `style.md` § Formality.
 - **image / photo** · `影像` (image) / `照片` (photo) · standard Traditional usage; Apple uses 圖像 in AppKit
   accessibility strings · `high`. Cmdr's `zh` catalog settled on 图像 over 图片 for "image"; keep the parallel and use
   `影像` consistently rather than mixing in `圖片`.
+- **icon** · `圖像` · AP-TW Finder's view menu reads `圖像 / 列表 / 直欄` for Icons / List / Columns, and `圖像顯示方式`
+  for Icon view; `圖示` appears 0 times in the macOS zh-TW pile against 50 for `圖像` (verified in the reference pile,
+  2026-08-29) · `high`. ❌ Don't reach for `圖示`: it's the Microsoft/Windows term, and mixing it in makes `名稱和圖像`
+  and a warning-icon sentence disagree on one Settings pane.
 - **screen** · `螢幕` · standard Traditional usage · `high`
 - **font** · `字體` / `字型` · TC (`檔案清單字型`) · `high`. Prefer `字型` for a typeface.
 - **percent / number formatting** · Arabic numerals, half-width digits, `%` directly after the number · AP · `high`

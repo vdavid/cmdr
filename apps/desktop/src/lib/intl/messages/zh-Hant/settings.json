@@ -265,7 +265,7 @@
   "@settings.listing.sizeMismatchWarning.label": {
     "sourceHash": "791c344"
   },
-  "settings.listing.sizeMismatchWarning.description": "當資料夾的內容大小和磁碟上大小相差超過 50% 且超過 200 MB 時，顯示一個警告圖示。",
+  "settings.listing.sizeMismatchWarning.description": "當資料夾的內容大小和磁碟上大小相差超過 50% 且超過 200 MB 時，顯示一個警告圖像。",
   "@settings.listing.sizeMismatchWarning.description": {
     "sourceHash": "1b232eb"
   },
