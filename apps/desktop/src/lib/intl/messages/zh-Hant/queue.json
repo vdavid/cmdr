@@ -1,129 +1,129 @@
 {
-  "queue.windowTitle": "Operation queue",
+  "queue.windowTitle": "操作佇列",
   "@queue.windowTitle": {
     "sourceHash": "fa91417"
   },
-  "queue.heading": "Operations",
+  "queue.heading": "操作",
   "@queue.heading": {
     "sourceHash": "358cc20"
   },
-  "queue.empty.title": "Nothing in the queue",
+  "queue.empty.title": "佇列裡沒有東西",
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "Copies, moves, and deletes show up here while they run, so you can pause, resume, or cancel them.",
+  "queue.empty.body": "複製、移動和刪除進行時會顯示在這裡，你可以暫停、繼續或取消它們。",
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
-  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} other {Working}}",
+  "queue.row.label": "{type, select, copy {正在複製} move {正在移動} delete {正在刪除} trash {正在移到垃圾桶} rename {正在重新命名} create_folder {正在新增資料夾} create_file {正在新增檔案} archive_edit {正在編輯封存檔} other {正在處理}}",
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
-  "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Cancelled} failed {Couldn''t finish} other {Running}}",
+  "queue.row.status": "{status, select, queued {等待中} running {進行中} paused {已暫停} done {已完成} cancelled {已取消} failed {無法完成} other {進行中}}",
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
-  "queue.row.statusAwaitingAnswer": "Needs your answer",
+  "queue.row.statusAwaitingAnswer": "需要你回答",
   "@queue.row.statusAwaitingAnswer": {
     "sourceHash": "84ec74a"
   },
-  "queue.row.awaitingAnswerTooltip": "Answer the prompt in the main window and this operation carries on.",
+  "queue.row.awaitingAnswerTooltip": "在主視窗回答那個問題，這項操作就會繼續。",
   "@queue.row.awaitingAnswerTooltip": {
     "sourceHash": "bf51776"
   },
-  "queue.row.pause": "Pause",
+  "queue.row.pause": "暫停",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"
   },
-  "queue.row.resume": "Resume",
+  "queue.row.resume": "繼續",
   "@queue.row.resume": {
     "sourceHash": "d640c74"
   },
-  "queue.row.foreground": "Show",
+  "queue.row.foreground": "顯示",
   "@queue.row.foreground": {
     "sourceHash": "0df6f1c"
   },
-  "queue.row.foregroundAria": "Show this operation in the main window",
+  "queue.row.foregroundAria": "在主視窗中顯示這項操作",
   "@queue.row.foregroundAria": {
     "sourceHash": "ece64ad"
   },
-  "queue.row.cancel": "Cancel",
+  "queue.row.cancel": "取消",
   "@queue.row.cancel": {
     "sourceHash": "19766ed"
   },
-  "queue.row.pauseAria": "Pause this operation",
+  "queue.row.pauseAria": "暫停這項操作",
   "@queue.row.pauseAria": {
     "sourceHash": "a836434"
   },
-  "queue.row.resumeAria": "Resume this operation",
+  "queue.row.resumeAria": "繼續這項操作",
   "@queue.row.resumeAria": {
     "sourceHash": "be841fc"
   },
-  "queue.row.cancelAria": "Cancel this operation",
+  "queue.row.cancelAria": "取消這項操作",
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
-  "queue.row.dismiss": "Dismiss",
+  "queue.row.dismiss": "忽略",
   "@queue.row.dismiss": {
     "sourceHash": "48845bf"
   },
-  "queue.row.dismissAria": "Dismiss this operation",
+  "queue.row.dismissAria": "忽略這項操作",
   "@queue.row.dismissAria": {
     "sourceHash": "ff1b528"
   },
-  "queue.row.selectAria": "Select this operation",
+  "queue.row.selectAria": "選取這項操作",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
   },
-  "queue.list.aria": "Operations",
+  "queue.list.aria": "操作",
   "@queue.list.aria": {
     "sourceHash": "358cc20"
   },
-  "queue.toolbar.pauseAll": "Pause all",
+  "queue.toolbar.pauseAll": "全部暫停",
   "@queue.toolbar.pauseAll": {
     "sourceHash": "0b6258b"
   },
-  "queue.toolbar.resumeAll": "Resume all",
+  "queue.toolbar.resumeAll": "全部繼續",
   "@queue.toolbar.resumeAll": {
     "sourceHash": "43e673c"
   },
-  "queue.toolbar.cancelSelected": "Cancel selected",
+  "queue.toolbar.cancelSelected": "取消所選",
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
-  "queue.toolbar.dismissAll": "Dismiss all",
+  "queue.toolbar.dismissAll": "全部忽略",
   "@queue.toolbar.dismissAll": {
     "sourceHash": "97fac9e"
   },
-  "queue.toolbar.selectedCount": "{count, plural, one {# selected} other {# selected}}",
+  "queue.toolbar.selectedCount": "{count, plural, other {已選取 # 個}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },
-  "queue.failureToast.title": "{type, select, copy {Couldn''t finish copying} move {Couldn''t finish moving} delete {Couldn''t finish deleting} trash {Couldn''t finish moving to trash} rename {Couldn''t finish renaming} create_folder {Couldn''t finish creating the folder} create_file {Couldn''t finish creating the file} archive_edit {Couldn''t finish editing the archive} other {Couldn''t finish}}",
+  "queue.failureToast.title": "{type, select, copy {無法完成複製操作} move {無法完成移動操作} delete {無法完成刪除操作} trash {無法完成移到垃圾桶的操作} rename {無法完成重新命名操作} create_folder {無法完成新增資料夾的操作} create_file {無法完成新增檔案的操作} archive_edit {無法完成編輯封存檔的操作} other {無法完成這項操作}}",
   "@queue.failureToast.title": {
     "sourceHash": "a55f5df"
   },
-  "queue.failureToast.action": "Show in operation queue",
+  "queue.failureToast.action": "在「操作佇列」中顯示",
   "@queue.failureToast.action": {
     "sourceHash": "607fbb1"
   },
-  "queue.failureToast.summary": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}",
+  "queue.failureToast.summary": "{count, plural, other {{countText} 項操作無法完成}}",
   "@queue.failureToast.summary": {
     "sourceHash": "6207914"
   },
-  "queue.chip.failed": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}. Open the operation queue to see why.",
+  "queue.chip.failed": "{count, plural, other {{countText} 項操作無法完成}}。開啟「操作佇列」就能看到原因。",
   "@queue.chip.failed": {
     "sourceHash": "336ad46"
   },
-  "queue.chip.ariaLabel": "{label}, {percentText} percent. Open the operation queue.",
+  "queue.chip.ariaLabel": "{label}，已完成 {percentText}%。開啟「操作佇列」。",
   "@queue.chip.ariaLabel": {
     "sourceHash": "3ff7a01"
   },
-  "queue.chip.scanningAriaLabel": "{label}, scanning. Open the operation queue.",
+  "queue.chip.scanningAriaLabel": "{label}，正在掃描。開啟「操作佇列」。",
   "@queue.chip.scanningAriaLabel": {
     "sourceHash": "791fc9f"
   },
-  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} item} other { · {countText} items}}{hasDestination, select, yes { · to {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} other { · 共 {countText} 個項目}}{hasDestination, select, yes { · 目標：「{destination}」} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
     "sourceHash": "6680100"
   }
