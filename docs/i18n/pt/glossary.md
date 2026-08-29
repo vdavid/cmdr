@@ -69,7 +69,9 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - default (value) · **padrão** · macOS/MS standard · high
 - threshold · **limite** · MS terminology · high
 - buffer · **buffer** · MS terminology (kept verbatim) · high
-- word wrap · **quebra de linha** · MS "quebra automática de linha", shortened for toggle · high
+- word wrap · **quebra automática de linha** · MS terminology pt-BR · high. ❌ NOT the shortened "quebra de linha": an
+  earlier pass clipped it for the Settings toggle only, so the viewer's View menu and Settings named the same setting
+  differently. Both keys carry the full term now.
 - toast (transient notification) · **notificação** (running text) · rendered descriptively · tentative
 - shortcut (keyboard) · **atalho** · macOS standard · high
 - timeout · **tempo limite** · standard pt-BR tech · high
@@ -98,8 +100,11 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - hidden files · **arquivos ocultos** · macOS Finder ("oculto"), Nautilus ("arquivos ocultos") · confirmed
 - Quit (app) · **Encerrar Cmdr** · macOS Finder "Encerrar Finder" pattern · high
 - About (app) · **Sobre o Cmdr** · macOS Finder "Sobre o Finder" pattern · confirmed
-- zoom in / out / reset · **Aumentar zoom** / **Reduzir zoom** / **redefinir o zoom** · standard pt-BR; macOS Finder
-  uses "Aumentar/Diminuir Tamanho do Ícone" but **zoom** is kept for the UI-scale feature · high
+- zoom in / out · **Ampliar** / **Reduzir** · Safari pt-BR `MainMenu.strings` `438.title`/`439.title`, read off the
+  installed macOS 26.x (2026-08-30) · high. ❌ NOT `Aumentar zoom` / `Reduzir zoom`: that was this line's earlier
+  ruling, the menu-bar pass superseded it, and only `menu.json` followed. Zoom reset stays **redefinir o zoom**, and
+  "Zoom to N%" stays **Zoom em N%** · standard pt-BR; macOS Finder uses "Aumentar/Diminuir Tamanho do Ícone" but
+  **zoom** is kept for the UI-scale feature · high
 - command palette · **paleta de comandos** · standard pt-BR app term · high
 - onboarding · **introdução** (wizard: **assistente de introdução**) · standard pt-BR · high
 - What's new · **Novidades** · standard pt-BR app term · high
@@ -782,9 +787,10 @@ main Terms list (**operação** / **Fila de operações**); this section only ad
   `reloadToast.dismissTooltip` "Dispensar sem recarregar") · high. ❌ **Never MS terminology's `dismiss` → "ignorar"**
   (id 780443/1044462, BRA): **Ignorar is this catalog's Skip** (`transferProgress.conflictSkip`,
   `transferDialog.policySkip` "Ignorar todos"), so a Dismiss button labelled "Ignorar" would sit two rows from a Skip
-  button meaning something else. KDE Dolphin pt-BR's "Descartar lembrete" is the runner-up and is why two stragglers
-  still say "Descartar" (see the flag below). `queue.row.dismiss`; the aria takes the sibling row shape, **Dispensar
-  esta operação** (matching "Pausar / Retomar / Cancelar / Selecionar esta operação").
+  button meaning something else. KDE Dolphin pt-BR's "Descartar lembrete" is the runner-up, and the two stragglers that
+  still said "Descartar" (`crashReporter.dialog.dismiss`, `lowDiskSpace.toast.closeTooltip`) now say `Dispensar` too.
+  `queue.row.dismiss`; the aria takes the sibling row shape, **Dispensar esta operação** (matching "Pausar / Retomar /
+  Cancelar / Selecionar esta operação").
 - Dismiss all (toolbar) · **Dispensar tudo** · parallel to the shipped `Pausar tudo` / `Retomar tudo`, and "tudo" is the
   catalog's settled bare-all-object pattern (`Selecionar tudo`, `Permitir tudo`), which also sidesteps agreement with
   the feminine "operações" · high. `queue.toolbar.dismissAll`.
@@ -1531,3 +1537,63 @@ apóstrofos seriam duplos; nenhum valor do lote tem apóstrofo.
   vez de soar como alerta.
 - Varredura pt-PT do lote (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
   `alterar o nome`): zero ocorrências.
+
+## Uma coisa, um nome: a rodada de deriva interna (2026-08-30)
+
+O `desktop-i18n-term-consistency` encontrou 26 divergências em `pt` (um valor em inglês, duas ou mais formas em
+português). Dezoito eram deriva de verdade; oito são fronteiras legítimas, quase todas de concordância — e é justamente
+por isso que uma varredura automática nunca poderá decidir sozinha em português.
+
+### As derivas corrigidas
+
+- **case-sensitive → `diferenciar maiúsculas de minúsculas`** · terminologia da Microsoft pt-BR (id 28521 → 28529, BRA)
+  · high. Havia QUATRO formas em duas telas de busca. A forma do rótulo agora entra inteira no nome acessível
+  (`… na correspondência`), o que resolve a violação de WCAG 2.5.3 que o `desktop-i18n-aria` apontava. ❗ Ao mexer em
+  `queryUi.scope.toggle.caseSensitive`, mexa junto no `…Aria`: o nome acessível TEM de conter o rótulo visível, senão
+  quem usa controle por voz não consegue acionar a caixa.
+- **trash → `Lixo`, nunca `Lixeira`** (a regra já estava no topo deste arquivo; duas chaves ainda diziam `Lixeira`,
+  incluindo o aviso de que o Cmdr não conseguiu confirmar a ida do arquivo para o Lixo).
+- **zoom in / out → `Ampliar` / `Reduzir`** na paleta de comandos também, não só no menu.
+- **Dismiss → `Dispensar`** nas duas chaves que ainda diziam `Descartar`.
+- **Send feedback → `Enviar feedback`** · toda a família `feedback.*` já dizia `feedback`; só a paleta e o menu Ajuda
+  diziam `Enviar comentário` · high.
+- **Reset → `Restaurar`** · macOS Finder pt-BR (`Restaurar aos Padrões`) · high. `Restaurar tudo para os padrões` /
+  `Restaurar para o padrão`; `Redefinir` saiu (menos em `redefinir o zoom`, que é outra coisa).
+- **error report → `relatório de problema`** · o `style-guide.md` do app pede que mensagens ao usuário evitem "erro", e
+  `errorReporter.dialog.title` já seguia isso · high.
+- **`dir`/`dirs` nunca deveria ter ficado em inglês**: as três chaves de contagem da varredura agora dizem
+  `pasta`/`pastas`, como a barra de status. ❗ Elas passaram pelo `i18n-coverage` porque o ramo plural `many` deixa o
+  valor estruturalmente diferente do inglês — a checagem não flagra isso, então confira contadores plurais à mão.
+- **delete → `Apagar`** também no botão de apagar modelo de IA; **Searching → `Buscando`** também no visualizador;
+  **`Ir para o último download`**, **`Não mostrar novamente`**, **`Quebra automática de linha`** nas duas telas, e a
+  grafia `e-mail` (três chaves diziam `email`).
+- **`fileOperations.transferDialog.pathErrorNotZip`**: `nome do arquivo` virou `nome do arquivo compactado`. Em
+  português, `arquivo` sozinho quer dizer "file", então a frase pedia o nome errado.
+
+### As fronteiras que NÃO se devem achatar
+
+- **Concordância de gênero e número não é deriva**, é gramática. Nunca unifique estes pares:
+  - `Ambos` (arquivos e pastas, `queryUi.filters.type.both`) vs `Ambas` (notificações,
+    `…downloadsNotifications.opt.both`).
+  - `Revertida` (a operação, `operationLog.rollback.rolledBack`) vs `Revertido` (o item,
+    `operationLog.outcome.rolledBack`).
+  - `Modificado` (a data de um arquivo) vs `Modificados` (o filtro de atalhos que o usuário mudou,
+    `shortcuts.section.filterModified`).
+- **Substantivo vs verbo**: `Pré-visualização` (o rótulo do painel) vs `Pré-visualizar` (o comando na paleta); `Busca`
+  (o nome da seção em Ajustes, entre irmãos como `Aparência` e `Indexação`) vs `Buscar` (o botão que dispara a busca e o
+  título do diálogo).
+- **`Tentar novamente` (botão) vs `tente de novo` (texto corrido)**: o botão segue o Finder pt-BR (`NE106`, `PE110` =
+  `Tentar Novamente`); a prosa do catálogo usa `de novo` em cerca de cem valores, e é o idioma natural ali. ❌ Não faça
+  uma varredura trocando `de novo` por `novamente`.
+- **`Problema` (o que o usuário lê) vs `Erro` (prefixo de diagnóstico em `settings.updates.errorPrefix`, onde o próprio
+  `@key` inglês libera a palavra)**.
+- **`Em execução` (um servidor rodando) vs `Em andamento` (uma tarefa em progresso)** para `Running`; a própria checagem
+  cita esse par como divergência legítima.
+- **`restaurado` (devolver o NOME anterior, `askCmdr.renameUndo.*`) vs `colocado de volta` (devolver o arquivo do Lixo,
+  `fileOperations.trash.undone`)**. O inglês diz "Put back" nos dois casos; a imprecisão é dele.
+- **`memória` (RAM, `ai.local.*`) vs `anotações` (a memória do Ask Cmdr, `settings.askCmdr.memory.*`)**.
+- **`viewer.saveAs.defaultName` fica `selecao`, sem cedilha**, de propósito: é um nome de arquivo padrão, e o `@key`
+  pede algo seguro para usar como nome de arquivo.
+
+O guarda contra o português europeu continua valendo: esta rodada não empurrou nenhuma forma brasileira na direção de
+pt-PT. Varredura pt-PT dos valores alterados (`ficheiro`, `estar a` + infinitivo, `ecrã`, `Rever`): zero ocorrências.
