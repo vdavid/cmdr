@@ -213,10 +213,10 @@ language, not the app language, so a `zh-Hant` user on an English macOS gets a L
 **Ruled: a Latin brand + Han descriptor stays SPACED too (`iCloud 雲碟`), like every other Latin run.** This one looks
 like it should be a carve-out and isn't, so the reasoning is recorded here to stop it being flipped back and forth.
 
-The tempting argument: Apple writes `iCloud雲碟` tight in 49 of 49 occurrences across zh-TW and zh-HK (and
-`iCloud云盘` 49 times in zh-CN), with the spaced form appearing nowhere. Same shape for `Word文件`, `Zip封存檔`,
-`iCloud設定`. So a brand fused with a Han descriptor into one product name looks like a single lexical unit that ought
-to follow Apple tight, distinct from a Latin word merely sitting in a Chinese sentence.
+The tempting argument: Apple writes `iCloud雲碟` tight in 49 of 49 occurrences across zh-TW and zh-HK (and `iCloud云盘`
+49 times in zh-CN), with the spaced form appearing nowhere. Same shape for `Word文件`, `Zip封存檔`, `iCloud設定`. So a
+brand fused with a Han descriptor into one product name looks like a single lexical unit that ought to follow Apple
+tight, distinct from a Latin word merely sitting in a Chinese sentence.
 
 **That argument doesn't survive contact with the counts, because Apple's tightness isn't about compounds at all.** Apple
 runs EVERY Latin/Han junction together, 384 tight against 2 spaced corpus-wide (§ Spacing). `iCloud雲碟` is just that
@@ -226,9 +226,10 @@ rejects that convention wholesale; re-importing it for one word class would be t
 The discriminating test is what a source that DOES space generally does when it hits a brand compound. Both such sources
 space them, and it isn't close:
 
-- **Microsoft zh-Hant is 7,667 spaced against 11 tight** across the whole terminology database, and the 11 are truncation
-  glitches (`P位址` = a mangled `IP 位址`). Its spaced entries include canonical product names of exactly the contested
-  shape: `Office LTSC 專業版`, `Microsoft 知識庫`, `Windows 連絡人`, `SQL 資料庫`, `USB 磁碟機`, `Web 應用程式`.
+- **Microsoft zh-Hant is 7,667 spaced against 11 tight** across the whole terminology database, and the 11 are
+  truncation glitches (`P位址` = a mangled `IP 位址`). Its spaced entries include canonical product names of exactly the
+  contested shape: `Office LTSC 專業版`, `Microsoft 知識庫`, `Windows 連絡人`, `SQL 資料庫`, `USB 磁碟機`,
+  `Web 應用程式`.
 - **The zh-TW file managers space them too**: `KDE 軟體`, `GNOME 桌面`, `USB 磁碟`, `ZIP 指令`, `SSH 檔案傳輸協定`. A
   scan for genuine tight compounds in those catalogs returns nothing but escape-sequence artifacts (`\n動態`, `\t取消`).
 - **Cmdr's own `zh` catalog writes `iCloud 云盘` spaced** in `errors.provider.iCloud.needsAction`, and the two Chinese
@@ -236,8 +237,8 @@ space them, and it isn't close:
 
 There's also no boundary anyone could apply later. This catalog already ships `MTP 裝置`, `SMB 伺服器`, `USB 連接埠`,
 `AI 提供者`, and `AI 模型` spaced, all of them a Latin token fused to a Han descriptor. A rule that tightened "brand
-compounds" would leave a future agent unable to say which side `Zip 封存檔` or `SMB 伺服器` falls on, and an
-unappliable rule drifts by definition.
+compounds" would leave a future agent unable to say which side `Zip 封存檔` or `SMB 伺服器` falls on, and an unappliable
+rule drifts by definition.
 
 ❌ **Don't retighten these by citing Apple.** Apple's rendering of a brand compound is evidence about Apple's spacing
 convention, which this catalog deliberately departs from, not evidence about brand compounds. Recognition doesn't turn

@@ -6,6 +6,11 @@ Which of the 139 researched languages Cmdr plans to localize, and in what order.
 - **wave 1-4**: implementation order. Waves 1-2 are driven by Cmdr's 30-day install usage (analytics, 2026-06-20); waves
   3-4 are market-size / reach estimates, to re-rank as the user base grows. `en` is the source locale (not translated).
 - **deferred**: a regional/script variant added after its base, on demand (es-ES, fr-CA, zh-HK).
+- **shipped**: ten catalogs are complete and live, every one of the 3,138 keys translated and passing
+  `desktop-i18n-coverage`: `de`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`, and `zh-Hant` (the last of them
+  finished 2026-08-29). A locale ships once it's translated, passes the checks, and is overflow-checked; human
+  review is opportunistic, not a gate (`../guides/i18n-translation.md`). Being in a wave below is a PLAN, not a
+  ship state, so check this line rather than the wave column to know what's live.
 - **exclude RTL**: set aside until Cmdr supports right-to-left layout. Decision 2026-06-20: no RTL for now.
 - **exclude long-tail**: no major-product localization ecosystem. Decision 2026-06-20: skip the long tail.
 
@@ -25,7 +30,7 @@ Order: source, waves 1 to 4, deferred variants, then exclusions. Formality and s
 | sv      | Swedish                   | wave 1            | Mainstream; macOS/Windows ship Swedish                                                         |
 | vi      | Vietnamese                | wave 1            | Mainstream; macOS/MS ship Vietnamese                                                           |
 | zh      | Chinese                   | wave 1            | Mainstream; macOS/MS ship zh; Simplified/Traditional split                                     |
-| zh-Hant | Chinese (Traditional)     | wave 1            | Ships alongside `zh`; a full translation, never an overlay (script guard). Serves TW + HK + MO |
+| zh-Hant | Chinese (Traditional)     | wave 1, shipped   | Ships alongside `zh`; a full translation, never an overlay (script guard). Serves TW + HK + MO |
 | ca      | Catalan                   | wave 2            | Apple macOS + MS + GNOME ship Catalan                                                          |
 | cs      | Czech                     | wave 2            | Apple macOS + MS ship Czech; mainstream                                                        |
 | da      | Danish                    | wave 2            | Apple macOS + MS + Google ship Danish                                                          |

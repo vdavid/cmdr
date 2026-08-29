@@ -187,10 +187,10 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 - **cloud** · `雲端` · AP-TW = AP-HK (`Cloud Storage` → 雲端儲存空間), MS · `confirmed`
 - **iCloud Drive** · `iCloud 雲碟` · AP-TW = AP-HK (both render it `iCloud雲碟`, 49 occurrences each; AP-CN says
   `iCloud云盘`) · `high`. Apple localizes the descriptor, so this is NOT a kept-English brand like the sibling
-  `errors.provider.*` names. **Spaced**, against Apple's tight rendering: a brand + Han descriptor is a Latin run
-  like any other, and the sources that share our spacing convention space these compounds (Microsoft zh-Hant 7,667
-  spaced / 11 tight, including `Office LTSC 專業版` and `USB 磁碟機`). Full ruling and the counterargument it
-  answers: `style.md` § Spacing.
+  `errors.provider.*` names. **Spaced**, against Apple's tight rendering: a brand + Han descriptor is a Latin run like
+  any other, and the sources that share our spacing convention space these compounds (Microsoft zh-Hant 7,667 spaced /
+  11 tight, including `Office LTSC 專業版` and `USB 磁碟機`). Full ruling and the counterargument it answers: `style.md`
+  § Spacing.
 - **memory (RAM)** · `記憶體` · AP-TW = AP-HK (Info window `記憶體：`), MS · `confirmed`. AP-CN says 内存.
 - **storage** · `儲存空間` · AP-TW = AP-HK (`Manage Storage…` → 管理儲存空間⋯), MS · `confirmed`
 - **free space** · `可用空間` · AP-TW (`因為可用空間不足`), MS; AP-HK says 未使用空間 · `high`
@@ -265,11 +265,11 @@ key-match, 2026-08-29).
   Apple's own viewer is the Quick Look brand and yields no generic noun.
 - **thumbnail** · `縮圖` · AP-HK (Preview), MS (HKG, TWN), DC, NAU; **AP-TW says 縮覽圖 and stands alone** · `high`.
   Same shape as the five consensus overrides above, so the consensus form wins.
-- **zoom / zoom in / zoom out** · `縮放` / `放大` / `縮小` · AP Preview (TW = HK), MS · `high`.
-  **zoom to fit** → `縮放到適當大小`, **actual size** → `實際大小` (both AP Preview, TW = HK).
+- **zoom / zoom in / zoom out** · `縮放` / `放大` / `縮小` · AP Preview (TW = HK), MS · `high`. **zoom to fit** →
+  `縮放到適當大小`, **actual size** → `實際大小` (both AP Preview, TW = HK).
 - **rotate** · `旋轉`; left/right → `向左旋轉` / `向右旋轉` · AP Preview (TW = HK) · `high`
-- **page** · `頁面`, `第 {n} 頁` · AP Preview (TW = HK) · `high`. ❗ Never `分頁` for a document page: MS's second `page`
-  hit renders it that way, and `分頁` is this catalog's word for a TAB.
+- **page** · `頁面`, `第 {n} 頁` · AP Preview (TW = HK) · `high`. ❗ Never `分頁` for a document page: MS's second
+  `page` hit renders it that way, and `分頁` is this catalog's word for a TAB.
 - **full screen** · `全螢幕` · AP AppKit (TW = HK), MS · `high`
 - **encoding** · `編碼` · AP TextEdit (`純文字編碼：`, TW = HK), TC, DC · `high`
 - **Western (the encoding group)** · `西歐` · **unattested**: Apple doesn't localize the encoding-family headings in any
@@ -285,15 +285,15 @@ key-match, 2026-08-29).
   "resolving/settlement" sense.
 - **dimensions** · `尺寸` (an image's own → `影像大小`) · AP Finder Get Info + Preview (TW = HK) · `high`
 - **aspect ratio** · `顯示比例` · AP Photos + Preview (TW = HK) · `high`. MS's `外觀比例` was passed over.
-- **metadata** · `後設資料` · AP-TW (Photos) · `tentative`. **A genuine three-way split**: AP-HK says `元數據`,
-  MS says `中繼資料` (tagged HKG + TWN). No consensus exists; macOS-first picks Apple's TW form. Worth a reviewer's eye.
+- **metadata** · `後設資料` · AP-TW (Photos) · `tentative`. **A genuine three-way split**: AP-HK says `元數據`, MS says
+  `中繼資料` (tagged HKG + TWN). No consensus exists; macOS-first picks Apple's TW form. Worth a reviewer's eye.
 - **EXIF** · `EXIF`, kept Latin · MS (HKG, TWN); Apple ships no localized label · `high`
 - **exposure / ISO / aperture** · `曝光` / `ISO 感光度` / `光圈值` · AP Preview + Spotlight (TW = HK) · `high`
 - **duration (of media)** · `播放時間` · AP QuickTime panel label (TW = HK) · `high`. ❗ Apple has three renderings;
   `持續時間` is the Spotlight attribute and `時間長度` the HK error text. The panel is the lineage match.
 - **frame** · `影格` · AP QuickTime (TW = HK) · `high`. Frame rate → `影格率` (AP-HK says `格率`).
-- **play / pause / mute / volume** · `播放` / `暫停` / `靜音` / `音量` · AP AppKit + QuickTime (TW = HK) · `high`.
-  ❗ MS's `mute` is `停用通知`, the silence-a-notification sense.
+- **play / pause / mute / volume** · `播放` / `暫停` / `靜音` / `音量` · AP AppKit + QuickTime (TW = HK) · `high`. ❗
+  MS's `mute` is `停用通知`, the silence-a-notification sense.
 - **slideshow** · `幻燈片秀` · AP-TW (AP-HK says `幻燈片`) · `high`. ❗ MS's and DC's `投影片放映` is the
   PowerPoint-presentation sense.
 - **inspector** · `檢閱器` · AP Preview · `high` (AP-HK writes `檢閲器`, a glyph variant)
@@ -388,26 +388,27 @@ Mined from the live macOS bundles this catalog's readers actually run (macOS 26.
 2026-08-29): `CrashReporterSupport`, `Problem Reporter`, `Console`, `Software Update`, `App Store`, and Safari's
 download UI. Those surfaces are Cmdr's exact analogues, so they outrank the general pile here.
 
-- **crash (noun)** · `當機` · AP-TW (Console `Crash Reports` → 當機報告; the Privacy pane's 「…共享當機和使用狀況資料」);
-  **AP-HK says 故障** · `high`. ❗ Microsoft's `損毀` is a false friend: in Apple's Traditional localizations 損毀 means
-  _corrupt/damaged_ (「%@」已損毀，無法開啟), so using it for a crash would say Cmdr is corrupted.
-- **quit unexpectedly** · `意外結束` · AP-HK (`AppKitErrors`: 「…它於重新開啟視窗時意外結束」) · `high`. AP-TW's
-  crash reporter writes `未預期的結束` (`CrashReporterSupport/unexpectedly_quit_header`) and AP-HK's writes `突然結束`.
-  All three are read in both regions, so this is register rather than the TW/HK vocabulary split the Taiwan-default rule
+- **crash (noun)** · `當機` · AP-TW (Console `Crash Reports` → 當機報告; the Privacy
+  pane's 「…共享當機和使用狀況資料」); **AP-HK says 故障** · `high`. ❗ Microsoft's `損毀` is a false friend: in Apple's
+  Traditional localizations 損毀 means _corrupt/damaged_ (「%@」已損毀，無法開啟), so using it for a crash would say
+  Cmdr is corrupted.
+- **quit unexpectedly** · `意外結束` · AP-HK (`AppKitErrors`: 「…它於重新開啟視窗時意外結束」) · `high`. AP-TW's crash
+  reporter writes `未預期的結束` (`CrashReporterSupport/unexpectedly_quit_header`) and AP-HK's writes `突然結束`. All
+  three are read in both regions, so this is register rather than the TW/HK vocabulary split the Taiwan-default rule
   governs, and `未預期的` is exactly the bureaucratic register `style.md` § Voice and tone rules out. Chosen for the
   spoken voice, recorded so it isn't "corrected" to Apple-TW's nominalization later.
-- **error report** · `錯誤報告` · already shipped in `settings.json`, `updates.json`, and `errorReporter.json` ·
-  `high`. Apple's nearest term is `問題報告` (Problem Reporter, TW = HK) and it's the more Apple-native pick, but
-  `錯誤報告` is the name three shipped files already give the feature and a single name beats a better one. `錯誤` as a
-  terminal-state NOUN is Apple's own practice (`Install Error` → 安裝錯誤); the house ban is on `錯誤`/`失敗` as the
-  verb of a sentence about what went wrong.
+- **error report** · `錯誤報告` · already shipped in `settings.json`, `updates.json`, and `errorReporter.json` · `high`.
+  Apple's nearest term is `問題報告` (Problem Reporter, TW = HK) and it's the more Apple-native pick, but `錯誤報告` is
+  the name three shipped files already give the feature and a single name beats a better one. `錯誤` as a terminal-state
+  NOUN is Apple's own practice (`Install Error` → 安裝錯誤); the house ban is on `錯誤`/`失敗` as the verb of a sentence
+  about what went wrong.
 - **report / send a report** · `報告` / `傳送報告` · AP-TW = AP-HK (`CrashReporterSupport`: 「…並傳送報告給Apple」) ·
   `high`. **Don't send** → `不要傳送`; **Ignore** → `忽略`; **Don't ask me again** → `別再詢問` (all Problem Reporter,
   TW = HK).
 - **diagnostic information** · `診斷資訊` · AP-TW (Feedback Assistant); **AP-HK says 診斷資料** · `high`. ❗ Microsoft's
   first `diagnostic data` hit is `遙測` (telemetry) — the wrong sense.
-- **stack trace** · `堆疊追蹤` · MS (HKG, TWN) · `high`. ❗ The TBX's first hit is a bare `追蹤`; the right entry is three
-  entries later.
+- **stack trace** · `堆疊追蹤` · MS (HKG, TWN) · `high`. ❗ The TBX's first hit is a bare `追蹤`; the right entry is
+  three entries later.
 - **details** · `詳細資訊` · AP-TW (Problem Reporter `Show Details` → 顯示詳細資訊); **AP-HK says 詳細資料** · `high`
 - **anonymously** · `以匿名方式` · AP-TW = AP-HK (Problem Reporter: 「此資訊是以匿名方式收集。」) · `high`
 - **personal data** · `個人資料` · AP-TW = AP-HK · `high`
@@ -415,15 +416,15 @@ download UI. Those surfaces are Cmdr's exact analogues, so they outrank the gene
 - **log** · `記錄` (log file `記錄檔`) · AP-TW = AP-HK (Console `Log File` → 記錄檔), MS, TC · `high`. ❌ Never `日誌`,
   which is the Mainland form; DC's zh-TW leaks it once as conversion residue.
 - **history** · `歷史記錄` · TC (`歷史記錄`, `資料夾歷史記錄`) · `high`. MS's `歷程記錄` is Windows house style.
-- **update (an available one, noun)** · `更新項目` · AP-TW (`Check for Updates` → 檢查更新項目; `Unable to check for
-  updates` → 無法檢查更新項目; App Store `Updates` → 更新項目) · `high`. AP-HK trends shorter (`更新`). The bare verb
-  stays `更新`.
+- **update (an available one, noun)** · `更新項目` · AP-TW (`Check for Updates` → 檢查更新項目;
+  `Unable to check for updates` → 無法檢查更新項目; App Store `Updates` → 更新項目) · `high`. AP-HK trends shorter
+  (`更新`). The bare verb stays `更新`.
 - **up to date** · `已是最新狀態` · AP-TW; **AP-HK says 是最新版本** · `high`
 - **restart** · `重新啟動` for relaunching an APP, which is all Cmdr does · `high`. ❗ AP-TW says `重新開機` where the
   MACHINE restarts (Software Update); don't carry that over, and note AP-HK uses `重新啟動` for both.
 - **release notes** · `發行備註` · MS (HKG, TWN) · `high`. Apple ships `更多資訊⋯` instead and has no term.
-- **operation** · `操作` · AP-TW = AP-HK (`The operation could not be completed.` → 無法完成操作。), DC · `high`.
-  ❗ AP-TW sometimes writes `作業` and MS renders _operation_ as `作業`; take `操作`, the form both Apple locales use in
+- **operation** · `操作` · AP-TW = AP-HK (`The operation could not be completed.` → 無法完成操作。), DC · `high`. ❗
+  AP-TW sometimes writes `作業` and MS renders _operation_ as `作業`; take `操作`, the form both Apple locales use in
   the canonical string and the only one AP-HK ever uses.
 - **client** · `用戶端` · MS (HKG, TWN) · `high`
 - **manifest** · `資訊清單` · MS (`application manifest` → 應用程式資訊清單) · `high`
