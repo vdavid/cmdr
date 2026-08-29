@@ -124,9 +124,9 @@ Settled while translating `queryUi.json` + `commands.json` (2026-06-21):
   (accusative `Gyorsnézetet`, e.g. "a ⇧Space-szel a Gyorsnézetet"). Preview (non-mac) = `Előnézet`.
 - Show in Finder (macOS) → `Megjelenítés a Finderben` · mac ("…megjelenítése a Finderben") · high. Finder kept verbatim.
 - context menu → `helyi menü` · ms · high. "Open context menu" = `Helyi menü megnyitása`.
-- zoom (the level, and the View submenu holding it) → `Nagyítás` · ms · high. "Zoom to 100%" = `Nagyítás 100%-ra`;
-  zoom level = `nagyítási szint`. The zoom in/out STEPS are `Felnagyítás` / `Lekicsinyítés` (see § Natív menük), which
-  keeps `Nagyítás` free as the submenu's own title.
+- zoom (the level, and the View submenu holding it) → `Nagyítás` · ms · high. "Zoom to 100%" = `Nagyítás 100%-ra`; zoom
+  level = `nagyítási szint`. The zoom in/out STEPS are `Felnagyítás` / `Lekicsinyítés` (see § Natív menük), which keeps
+  `Nagyítás` free as the submenu's own title.
 - ascending / descending (sort order) → `növekvő` / `csökkenő` · gn/dolphin ("növekvő", "Csökkenő") · high.
 - hidden files → `rejtett fájlok` · gn, dolphin · high. "Toggle hidden files" = `Rejtett fájlok ki-be`.
 - wildcard → `helyettesítő karakter` · ms · high. glob/regex pattern row labels: glob → `Glob` (kept, no common HU
@@ -1916,10 +1916,11 @@ Natív anyanyelvi ellenőrzésre megjelölve:
 
 ## Belső driftszedés: egy fogalom, egy név (2026-08-30)
 
-A `desktop-i18n-term-consistency` 28 divergenciát talált a `hu` katalógusban (egy angol érték, két magyar alak). Tizenhat
-valódi drift volt, tizenkettő szándékos határvonal. A drift két oka: (a) egy szót menet közben újradöntöttünk, de csak a
-hívóhelyek egy részét írtuk át, és (b) a menüsoros passz csak a `menu.json`-t frissítette, így a parancspaletta a régi
-szót vitte tovább. A határvonalakat ez a szakasz írja le, hogy a következő passz ne lapítsa el őket.
+A `desktop-i18n-term-consistency` 28 divergenciát talált a `hu` katalógusban (egy angol érték, két magyar alak).
+Tizenhat valódi drift volt, tizenkettő szándékos határvonal. A drift két oka: (a) egy szót menet közben újradöntöttünk,
+de csak a hívóhelyek egy részét írtuk át, és (b) a menüsoros passz csak a `menu.json`-t frissítette, így a
+parancspaletta a régi szót vitte tovább. A határvonalakat ez a szakasz írja le, hogy a következő passz ne lapítsa el
+őket.
 
 ### A javított driftek
 
@@ -1933,12 +1934,12 @@ szót vitte tovább. A határvonalakat ez a szakasz írja le, hogy a következő
   vitte; a Tier-1 Apple-szóhasználat a `-ra/-re`, és az nyer.
 - **Connected → `Kapcsolódva`** · macOS AppKit `hu` `SavePanel` (`Connected` = `Kapcsolódva`) · high. A `Csatlakozva`
   alak három kulcsból eltűnt (`ai.cloud.connected`, `ai.cloud.connectedNoModels`,
-  `fileExplorer.network.browser.status.connected`). A folyamatban lévő `Connecting…` marad `Csatlakozás…`, mert az
-  Apple is ezt az igét használja rá (`SavePanel`).
+  `fileExplorer.network.browser.status.connected`). A folyamatban lévő `Connecting…` marad `Csatlakozás…`, mert az Apple
+  is ezt az igét használja rá (`SavePanel`).
 - **Try again → `Próbáld újra`, Retrying → `Újrapróbálás`** · a katalógus tegező regisztere · high. A két fogalom külön
   alakot kap: a gomb felszólít, a folyamatjelző főnévvel nevez. Az `Újrapróbálkozás` alak megszűnt.
-- **case-sensitive → `Kis- és nagybetűérzékeny`** · macOS `hu` (`Kis- és nagybetűérzékeny`, egybeírt összetétel) ·
-  high. A `Kis- és nagybetűre érzékeny` és a `Kis- és nagybetűk megkülönböztetése` alak is erre cserélődött, a
+- **case-sensitive → `Kis- és nagybetűérzékeny`** · macOS `hu` (`Kis- és nagybetűérzékeny`, egybeírt összetétel) · high.
+  A `Kis- és nagybetűre érzékeny` és a `Kis- és nagybetűk megkülönböztetése` alak is erre cserélődött, a
   `queryUi.scope.toggle.caseSensitiveAria` is (`… illesztés`), hogy a WCAG 2.5.3 tartalmazása megmaradjon.
 - **Dismiss → `Elvetés`** mindenütt, a `viewer.reloadToast.dismissTooltip` `Eltüntetés` alakja is.
 - **`settings.section.imageIndexing` → `Képek indexelése`**, mint a testvére, a `settings.section.driveIndexing`
@@ -1952,14 +1953,14 @@ szót vitte tovább. A határvonalakat ez a szakasz írja le, hogy a következő
 - **Cancel**: `Mégsem` a párbeszéd elvető gombja (macOS Finder), `Megszakítás` az, ami egy FUTÓ műveletet állít le
   (`queue.row.cancel`, `transferProgress.titleCancelling`, `errors.write.cancelled.*`, `operationLog.status.canceled`).
   A `Leállítás` a harmadik: egy szolgáltatást állít le (szerver, indexelés, Ask Cmdr).
-- **View**: `Nézet` a menüsor NÉVSZÓI menücíme, `Megtekintés` az IGE, ami az F3 megjelenítőt nyitja
-  (`menu.file.view`, `commands.fileView.label`). Az angol `@key` leírás is így különbözteti meg őket.
+- **View**: `Nézet` a menüsor NÉVSZÓI menücíme, `Megtekintés` az IGE, ami az F3 megjelenítőt nyitja (`menu.file.view`,
+  `commands.fileView.label`). Az angol `@key` leírás is így különbözteti meg őket.
 - **Zoom**: `Nagyítás` a szövegnagyítás (View almenü), `Méretezés` a Window > Zoom ablakművelet (macOS AppKit `hu`
   `Zoom All` = `Összes méretezése`). Az angol leírás külön kiemeli, hogy a kettő nem ugyanaz.
-- **Select**: `Kijelölés` a fájlkijelölő menü és művelet, `Válassz` a legördülő lista helyőrzője (`ui.select.placeholder`)
-  — ott a felhasználót szólítjuk meg, nem fájlt jelölünk ki.
-- **Error**: `Probléma` a felhasználónak szóló állapotcella (az angol `@key` maga kéri a barátságosabb szót),
-  `Hiba` a diagnosztikai előtag (`settings.updates.errorPrefix`, ahol az angol leírás kifejezetten megengedi).
+- **Select**: `Kijelölés` a fájlkijelölő menü és művelet, `Válassz` a legördülő lista helyőrzője
+  (`ui.select.placeholder`) — ott a felhasználót szólítjuk meg, nem fájlt jelölünk ki.
+- **Error**: `Probléma` a felhasználónak szóló állapotcella (az angol `@key` maga kéri a barátságosabb szót), `Hiba` a
+  diagnosztikai előtag (`settings.updates.errorPrefix`, ahol az angol leírás kifejezetten megengedi).
 - **Bytes**: `Bájtok` a folyamatsáv címkéje, mert a párja a `Fájlok`; `Bájt` a mértékegység-választó gombja, mert a
   szomszédjai `kB`, `MB`, `GB`.
 - **From**: `Forrás` a `Cél` párja az átviteli párbeszéd fejlécében; `Innen:` a beágyazott útvonal előtti címke.
