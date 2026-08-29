@@ -183,10 +183,11 @@ func ensurePnpmIfNeeded(ctx *checks.CheckContext, checksToRun []checks.CheckDefi
 	}
 }
 
-// applyLaneFilters narrows the selected checks by the slow/CI-only/fast lane
-// flags, in the established order. Extracted from main() to keep it under the
-// gocyclo threshold.
+// applyLaneFilters narrows the selected checks by the disabled/slow/CI-only/fast
+// lane rules, in the established order. Extracted from main() to keep it under
+// the gocyclo threshold.
 func applyLaneFilters(checksToRun []checks.CheckDefinition, flags *cliFlags) []checks.CheckDefinition {
+	checksToRun = checks.FilterDisabledChecks(checksToRun, flags.checkNames)
 	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
 	checksToRun = checks.FilterCIOnlyChecks(checksToRun, flags.ciMode, flags.checkNames)
 	checksToRun = checks.FilterFastChecks(checksToRun, flags.fast, flags.checkNames)
@@ -651,7 +652,7 @@ func showUsage() {
 	fmt.Println("Run code quality checks for the Cmdr project.")
 	fmt.Println()
 	fmt.Println("Name what to run as positional args, in any mix (flags can go anywhere):")
-	fmt.Println("    - Check IDs or nicknames (run even if slow/CI-only): oxfmt, clippy, website-build, ...")
+	fmt.Println("    - Check IDs or nicknames (run even if slow/CI-only/disabled): oxfmt, clippy, website-build, ...")
 	fmt.Println("    - App names: desktop, website, api-server, dashboard, scripts")
 	fmt.Println("    - Tech groups: rust, svelte, go")
 	fmt.Println("Comma-separated works too: pnpm check oxfmt,clippy")
@@ -713,7 +714,12 @@ func showUsage() {
 			groupOrder = append(groupOrder, key)
 		}
 		name := check.CLIName()
-		if check.IsSlow {
+		switch {
+		case check.Disabled != "":
+			// Listed, not hidden: it's still runnable by name, and someone
+			// scanning for it should learn it's mothballed rather than missing.
+			name += " (disabled, run by name only)"
+		case check.IsSlow:
 			name += " (slow)"
 		}
 		groupMap[key].ids = append(groupMap[key].ids, name)

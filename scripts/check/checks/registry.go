@@ -1269,10 +1269,16 @@ var AllChecks = []CheckDefinition{
 		App:         AppOther,
 		Tech:        "📏 Metrics",
 		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
-		DependsOn:   nil,
-		IsFast:      true,
-		Inputs:      wholeRepoInputs, // counts markers in every agent doc, lines in every source file
-		Run:         RunInvariantDensity,
+		// Mothballed, kept whole: the gauge counts `❌` markers, and a count can't
+		// tell a rule that earns its place from one that doesn't. In practice it
+		// warned on every doc edit that added a guardrail, including ones we
+		// wanted, so the signal was noise on a lane that already can't fail.
+		// `pnpm check invariant-density` still prints the full table on demand,
+		// which is how the number is worth reading: occasionally, deliberately.
+		Disabled:  "noisy and low value: a `❌` count can't judge whether an invariant is worth stating",
+		DependsOn: nil,
+		Inputs:    wholeRepoInputs, // counts markers in every agent doc, lines in every source file
+		Run:       RunInvariantDensity,
 	},
 	{
 		ID:          "docs-reachable",
@@ -1563,6 +1569,28 @@ func GetChecksByTech(app App, tech string) []CheckDefinition {
 	for _, check := range AllChecks {
 		if check.App == app && check.Tech == tech {
 			result = append(result, check)
+		}
+	}
+	return result
+}
+
+// FilterDisabledChecks removes mothballed checks (those carrying a Disabled
+// reason) unless the user named one explicitly. Unlike the slow / CI-only
+// lanes, there's no flag that brings them back in bulk: naming the check is the
+// only way to run it, so a disabled check can never rejoin a suite by accident.
+// Runs before every other lane filter, so `--fast` / `--include-slow` /
+// `--only-slow` / `--ci` all see a set the disabled ones have already left.
+func FilterDisabledChecks(defs []CheckDefinition, namedChecks []string) []CheckDefinition {
+	named := make(map[string]bool, len(namedChecks))
+	for _, name := range namedChecks {
+		if c := GetCheckByID(name); c != nil {
+			named[c.ID] = true
+		}
+	}
+	var result []CheckDefinition
+	for _, def := range defs {
+		if def.Disabled == "" || named[def.ID] {
+			result = append(result, def)
 		}
 	}
 	return result

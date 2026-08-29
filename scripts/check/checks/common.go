@@ -165,6 +165,17 @@ type CheckDefinition struct {
 	// and a check that has a reason AND a workflow reference also fails (the
 	// reason went stale — remove it). Empty = must be referenced in a workflow.
 	NotInCI string
+	// Disabled, when non-empty, holds the REASON this check is mothballed and
+	// takes it out of every lane: a bare `pnpm check`, an app or tech group,
+	// `--fast`, `--include-slow`, `--only-slow`, and `--ci` alike. Naming it
+	// explicitly (`pnpm check <id>`) still runs it, which is the whole point:
+	// the check keeps working and keeps its tests, it just stops gating anyone.
+	// Use it for a check whose signal stopped earning its noise, when deleting
+	// it outright would throw away work we may want back. A disabled check is
+	// never referenced by a workflow, so it also needs a NotInCI reason.
+	// ❌ Don't reach for this to silence a check that's merely failing: fix the
+	// check or fix the code. It's for lanes we've decided not to gate on.
+	Disabled string
 	// Inputs lists path globs (relative to repo root) describing what this check
 	// reads. The input-fingerprint cache (see scripts/check/checks/fingerprint.go)
 	// hashes the union of these plus the global inputs (GlobalInputs) and skips

@@ -250,10 +250,15 @@ change. Adding or raising an entry needs David's OK (`.claude/rules/file-length-
 
 ## Invariant density
 
-`invariant-density` (warn-only, `IsFast`, ~140 ms) gauges how many `❌` "never do X" rules each subsystem's agent docs
-carry. A rule in a doc is an invariant with no enforcement, so the count is a bill: read the whole thesis in
-`docs/doc-system.md` § The rule budget. Read the gauge with `pnpm check invariant-density -v` (a passing check's message
-is suppressed in the default quiet mode).
+`invariant-density` (warn-only, ~140 ms) gauges how many `❌` "never do X" rules each subsystem's agent docs carry. A
+rule in a doc is an invariant with no enforcement, so the count is a bill: read the whole thesis in `docs/doc-system.md`
+§ The rule budget.
+
+**It's mothballed** (`Disabled` in the registry), so no lane runs it: a count can't tell a rule that earns its place
+from one that doesn't, so it warned on guardrails we deliberately added, on a lane that could never fail anyway. Run it
+by name when you actually want the table: `pnpm check invariant-density -v` (a passing check's message is suppressed in
+the default quiet mode). Everything below still describes what it does when you do. How mothballing works:
+`scripts/check/DETAILS.md` § "Mothballing a check".
 
 What it counts:
 
@@ -1351,14 +1356,14 @@ doubles as production code.
   bare-poll (no Playwright helpers).
 - **Scripts / Go**: gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck
 - **Other / Metrics**: file-length (warn-only), CLAUDE.md-reminder (warn-only), claude-md-length (warn-only),
-  invariant-density (warn-only; `❌` rules per subsystem, absolute and per 1,000 source lines, on a strict ratchet),
-  resident-doc-budget (warn-only; caps the always-resident root-CLAUDE.md + @-imports + rules bundle), docs-reachable
-  (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md), docs-dead-links (errors on a
-  doc link, or a bare backtick path naming a doc, whose local target doesn't exist), docs-link-text (errors on a
-  Markdown link whose text is its own target path), claude-md-details-sibling (errors when a non-root CLAUDE.md
-  lacks/doesn't reference a sibling DETAILS.md), analytics-event-catalog (errors when an emitted PostHog event has no
-  catalog bullet, or a bullet has no emitter), docs-table-hygiene (errors on any 2-column table or any table column
-  wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids
+  invariant-density (warn-only and MOTHBALLED, run by name only; `❌` rules per subsystem, absolute and per 1,000 source
+  lines, on a strict ratchet), resident-doc-budget (warn-only; caps the always-resident root-CLAUDE.md + @-imports +
+  rules bundle), docs-reachable (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md),
+  docs-dead-links (errors on a doc link, or a bare backtick path naming a doc, whose local target doesn't exist),
+  docs-link-text (errors on a Markdown link whose text is its own target path), claude-md-details-sibling (errors when a
+  non-root CLAUDE.md lacks/doesn't reference a sibling DETAILS.md), analytics-event-catalog (errors when an emitted
+  PostHog event has no catalog bullet, or a bullet has no emitter), docs-table-hygiene (errors on any 2-column table or
+  any table column wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids
   `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract)
 - **Other / Go**: go-version-single-source (errors when anything but `.mise.toml` names a Go toolchain version, when the
   `go.mod` floors disagree with each other, or when a floor exceeds the pinned toolchain)

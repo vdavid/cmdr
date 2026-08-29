@@ -193,6 +193,24 @@ checks (e.g. `svelte-tests` w11 + `clippy`-cold w8) from piling up and oversubsc
 (the `eslint-typecheck-{svelte,typescript}` passes w2, the Docker checks) overlap freely. See the Key decision below and
 `docs/notes/check-cpu-contention.md`.
 
+**Mothballing a check:** `CheckDefinition.Disabled` holds the REASON a check stopped gating anyone, and
+`FilterDisabledChecks` (first in `applyLaneFilters`, so every later lane sees a set it has already left) drops it from a
+bare `pnpm check`, an app or tech group, `--fast`, `--include-slow`, `--only-slow`, and `--ci` alike. Naming it
+(`pnpm check <id>`) still runs it, and `--help` lists it as `(disabled, run by name only)`.
+
+**Decision**: no flag re-enables the disabled set in bulk, unlike `--include-slow` for slow lanes. **Why**: a bulk flag
+would put a mothballed check back into somebody's routine run, which is the exact thing disabling it was meant to stop;
+and a check worth running as a group again is a check worth un-disabling in the registry, where the reason is reviewed.
+The asymmetry is the point.
+
+The check keeps its code, its tests, and its allowlist, so re-enabling is deleting one field. A disabled check must
+clear `IsFast` / `IsSlow` / `CIOnly` and carry a `NotInCI` reason (`TestDisabledChecksClaimNoLane`): a leftover lane
+flag reads as "runs there" and would come back the moment `Disabled` is lifted. ❌ Never reach for `Disabled` to quiet a
+check that's going red — fix the check or the code. It's for a lane we've decided not to gate on.
+
+Mothballed today: `invariant-density` (a `❌` count can't tell a rule that earns its place from one that doesn't, so it
+warned on guardrails we wanted; the table is still worth reading deliberately via `pnpm check invariant-density`).
+
 **Exclusive resources:** `CheckDefinition.Exclusive` names a resource a check needs to itself; two checks naming the
 same one never overlap, whatever the weight budget allows. It sits between the dependency gate and the weight gate in
 `tryStartPending`, and the holder releases it on every exit path (deferred), so a red or panicking check can't strand

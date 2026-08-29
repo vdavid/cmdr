@@ -241,3 +241,50 @@ func TestSelectChecks_PositionalGroupPlusCheckName(t *testing.T) {
 		t.Errorf("additive selection broke: oxfmt=%v clippy=%v", hasOxfmt, hasClippy)
 	}
 }
+
+// TestApplyLaneFilters_DropsDisabledFromEveryLane is the end-to-end guard for
+// mothballing: a Disabled check must survive none of the lane combinations that
+// a suite run can produce, and must survive being named. This exercises the real
+// registry through the real filter pipeline, so it catches an ordering mistake
+// in applyLaneFilters that the per-filter unit tests can't see.
+func TestApplyLaneFilters_DropsDisabledFromEveryLane(t *testing.T) {
+	var disabledID string
+	for _, c := range checks.AllChecks {
+		if c.Disabled != "" {
+			disabledID = c.ID
+			break
+		}
+	}
+	if disabledID == "" {
+		t.Skip("no check is currently mothballed; nothing to assert")
+	}
+
+	lanes := map[string]*cliFlags{
+		"default":      {},
+		"include-slow": {includeSlow: true},
+		"only-slow":    {includeSlow: true, onlySlow: true},
+		"fast":         {fast: true},
+		"ci":           {ciMode: true},
+		"ci+slow":      {ciMode: true, includeSlow: true},
+	}
+	for name, flags := range lanes {
+		kept := applyLaneFilters(checks.AllChecks, flags)
+		for _, c := range kept {
+			if c.ID == disabledID {
+				t.Errorf("lane %q kept disabled check %q", name, disabledID)
+			}
+		}
+	}
+
+	// Naming it is the one way back in.
+	named := &cliFlags{checkNames: []string{disabledID}, includeSlow: true}
+	var found bool
+	for _, c := range applyLaneFilters(checks.AllChecks, named) {
+		if c.ID == disabledID {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("naming %q explicitly did not bring it back", disabledID)
+	}
+}

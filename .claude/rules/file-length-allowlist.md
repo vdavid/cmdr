@@ -13,10 +13,9 @@ splitting (for a `CLAUDE.md`, by moving depth into its `DETAILS.md`; for the jsc
 code). These checks are warn-only, so leaving a warn is always safe: surface it to David rather than silencing it.
 `docs-reachable` is an error, so connect an orphan rather than exempt it.
 
-**`invariant-density` is exempt from that rule**: add entries and raise numbers freely, no need to ask. It counts `❌`
-rules per subsystem, and a rule earns its place on whether the invariant is worth stating, which the number can't judge.
-Encoding an invariant in a type is still better than writing a rule about it; the count just isn't the thing that
-decides.
+**`invariant-density` is mothballed**, for the reason it was exempt from that rule: a rule earns its place on whether
+the invariant is worth stating, which a count can't judge. No lane runs it now. `pnpm check invariant-density` still
+prints the table, and its allowlist stays hand-bumpable with no need to ask.
 
 **The two bundle-size baselines are exempt too** (`desktop-bundle-size`, `website-bundle-size`): delete the baseline
 file, re-run the check, no need to ask. The warn at the moment of growth is the signal, and you still report it; the

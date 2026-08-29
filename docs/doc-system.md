@@ -85,11 +85,12 @@ value, a constructor that can't build the wrong shape, a check that fails the bu
 the honest fallback, which is why the gauge warns rather than fails.
 
 `invariant-density` measures the bill per subsystem, absolute and per 1,000 source lines of the code the docs sit beside
-(the normalization is what makes a small crate comparable to a big one). Read it with `pnpm check invariant-density -v`.
-It's a strict ratchet, so de-tangling work shows up as the number going down, and a subsystem whose density runs several
-times the rest of the repo is telling you where the type system is doing too little. `⚠️` cautions are counted but never
-gated: a gotcha note is often the right answer when the platform is genuinely weird, while a prohibition rarely is. What
-the check counts and how the buckets are derived: `scripts/check/checks/DETAILS.md`.
+(the normalization is what makes a small crate comparable to a big one). It's mothballed, so nothing runs it for you:
+read it deliberately with `pnpm check invariant-density -v`, which is the cadence the gauge suits anyway. It's a strict
+ratchet, so de-tangling work shows up as the number going down, and a subsystem whose density runs several times the
+rest of the repo is telling you where the type system is doing too little. `⚠️` cautions are counted but never gated: a
+gotcha note is often the right answer when the platform is genuinely weird, while a prohibition rarely is. What the
+check counts and how the buckets are derived: `scripts/check/checks/DETAILS.md`.
 
 ## Enforcement (the checks that keep it honest)
 
@@ -101,8 +102,9 @@ Convention rots; checks don't. Each invariant is a check (sources in `scripts/ch
 - **`claude-md-length`** (warn): warns past 600 words per `CLAUDE.md`; shrink-wraps its allowlist. The authored target
   is 300-400 (see § C vs D), so the warn catches files that drifted well past where they should sit, not files that are
   merely at their limit.
-- **`invariant-density`** (warn): counts the `❌` rules each subsystem's docs carry, absolute and per 1,000 source
-  lines; a strict ratchet, so the number can only go down. See § The rule budget.
+- **`invariant-density`** (warn, MOTHBALLED): counts the `❌` rules each subsystem's docs carry, absolute and per 1,000
+  source lines; a strict ratchet, so the number can only go down. No lane runs it; `pnpm check invariant-density` does.
+  See § The rule budget.
 - **`claude-md-details-sibling`** (error): every non-root `CLAUDE.md` has a sibling `DETAILS.md` and links it.
 - **`docs-reachable`** (error): every doc reachable from the root `CLAUDE.md` by link-walking (no orphans).
 - **`docs-dead-links`** (error): no relative link points at a missing file.
