@@ -47,9 +47,14 @@ pseudolocale is globbed when present and simply absent in prod (gitignored). The
 
 `resolveRaw(locale, key)` resolves with BCP-47 fallback: `catalog[locale]` → `catalog[baseLanguage]` (`de-DE` → `de`) →
 `catalog.en` (the base, always present) → the key string itself. A missing key renders as its own key (visible, never a
-crash). The active locale is `getUiLocale()`. `en` is the only TRANSLATED catalog that ships today; the base-language
-and exact-locale rungs are real (any added locale dir resolves through them) and also exercised by the
-`_setCatalogForTests` seam (a synthetic test-only locale).
+crash). The active locale is `getUiLocale()`. The split is on the FIRST `-` only, so the chain is exactly two rungs deep
+above `en`: `zh-Hant-TW` reads `zh`, never a `zh-Hant` in between.
+
+That middle rung is what makes an OVERLAY catalog possible: a regional variant (`en-GB`, `pt-PT`) ships only the keys
+that genuinely differ and inherits the rest per key, so it costs ~60 strings rather than a full catalog. The i18n checks
+know the same rule and validate a variant against the catalog it overrides; definition, rule table, and how to add one:
+`docs/guides/i18n.md` § Overlay catalogs. The exact-locale rung is also exercised by the `_setCatalogForTests` seam (a
+synthetic test-only locale).
 
 `availableLocales()` returns the loaded catalog tags (sorted, `en` first) and drives the Settings > Appearance >
 Language picker, so a newly-added locale dir auto-appears with no code edit. The non-locale `screenshots/` dir never

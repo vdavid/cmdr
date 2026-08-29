@@ -1325,19 +1325,23 @@ doubles as production code.
   known-area first segment), message-keys-unused (catalog keys never referenced in `src/`; error-level, with a closed
   dynamic-prefix allowlist for runtime-built keys), message-screenshots-fresh (warn-only; drift between the committed
   i18n capture report and the catalogs' `@key.screenshot` couplings; runs the coupler's `--check`, reads no PNGs),
-  i18n-stale (warn-only; a non-`en` translation whose `@key.sourceHash` no longer matches the English value),
-  i18n-parity (ERROR; each locale key's `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must equal
-  English's, since a mismatch crashes at runtime), i18n-icu (ERROR; every non-`errors.*` locale message must compile via
-  `intl-messageformat`), i18n-tag-param-collision (ERROR; a message naming a `<tag>` and a `{param}` alike renders the
-  param as a stringified handler, because `Trans` lets the tag win the merged lookup), i18n-trans-snippets (ERROR; a
-  message `<tag>` with no matching `snippets={{ … }}` key at the call site renders as nothing, so its inner text
-  silently vanishes; catches a rename finished on only one side), i18n-plural (ERROR; each plural covers its locale's
-  required CLDR categories, gated on the English source's plural shape), i18n-coverage (ERROR; keys missing from a
-  locale, or byte-identical to English without a `@key.sameAsSourceJustification`, either of which ships a
-  half-translated locale), i18n-dont-translate (warn-only; a curated brand/system token English carries but the locale
-  dropped), bundle-size (warn-only; builds a production-shaped frontend into a private dir and compares its total
-  against a committed baseline, since the app embeds this output so every byte ships in each silent update and is parsed
-  before first paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+  i18n-stale (warn-only; a non-`en` translation whose `@key.sourceHash` no longer matches the value it was translated
+  from), i18n-parity (ERROR; each locale key's `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must
+  equal that of the value it renders instead of, since a mismatch crashes at runtime), i18n-icu (ERROR; every
+  non-`errors.*` locale message must compile via `intl-messageformat`), i18n-tag-param-collision (ERROR; a message
+  naming a `<tag>` and a `{param}` alike renders the param as a stringified handler, because `Trans` lets the tag win
+  the merged lookup), i18n-trans-snippets (ERROR; a message `<tag>` with no matching `snippets={{ … }}` key at the call
+  site renders as nothing, so its inner text silently vanishes; catches a rename finished on only one side), i18n-plural
+  (ERROR; each plural covers its locale's required CLDR categories, gated on the English source's plural shape),
+  i18n-coverage (ERROR; for a full translation, keys missing from the locale or byte-identical to English without a
+  `@key.sameAsSourceJustification`, either of which ships a half-translated locale; for an OVERLAY the rules invert, and
+  a key identical to what it overrides, or unknown to it, is the finding), i18n-dont-translate (warn-only; a curated
+  brand/system token English carries but the locale dropped). Those six locale checks share one classification of every
+  locale as a full translation or an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`),
+  which the Go `localeCounts` helper mirrors for its success lines only; the rule table is `docs/guides/i18n.md` §
+  Overlay catalogs. Then bundle-size (warn-only; builds a production-shaped frontend into a private dir and compares its
+  total against a committed baseline, since the app embeds this output so every byte ships in each silent update and is
+  parsed before first paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input

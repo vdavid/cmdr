@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * PLACEHOLDER / TAG PARITY check (i18n maintenance, M3): ERROR class.
+ * PLACEHOLDER / TAG PARITY check (i18n maintenance): ERROR class.
  *
- * A translation must preserve EXACTLY the substitution structure of its English
- * source: the same set of `{placeholders}` and `<tags>`. A missing, renamed, or
+ * A translation must preserve EXACTLY the substitution structure of the value it
+ * renders instead of: the same set of `{placeholders}` and `<tags>`. That source
+ * is `en` for a full translation, and for an OVERLAY the catalog it overrides
+ * (`pt` for `pt-PT`), which the harness resolves and hands over. A missing, renamed, or
  * extra `{arg}`/`<tag>` is the #1 runtime CRASH class: `intl-messageformat`
  * throws on a `{name}` it has no value for, and the raw error pipeline silently
  * drops or mis-substitutes a token. So this is the one locale check that FAILS
@@ -18,9 +20,9 @@
  *    compare the `{token}` brace sets (`rawTokens`) instead: the raw-pipeline
  *    analogue of placeholder parity.
  *
- * A key MISSING from the locale isn't a parity failure (the runtime falls back to
- * English, no crash); the key-parity check surfaces missing keys as a warn. Here
- * we only inspect keys the locale actually defines.
+ * A key MISSING from the locale isn't a parity failure (the runtime falls back
+ * through the chain, no crash); the coverage check owns missing keys. Here we
+ * only inspect keys the locale actually defines.
  *
  * Run: `pnpm i18n:check-parity` (desktop) or `node scripts/i18n-check-parity.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
@@ -101,11 +103,11 @@ export function runParityCheck(opts: RunParityCheckOptions = {}): number {
     messagesRoot: opts.messagesRoot,
     write: opts.write,
     summaryLine: (count) => `${String(count)} key(s) with a placeholder/tag mismatch (would crash at runtime):`,
-    inspectLocale: ({ base, locale_catalog: localeCatalog, findings }) => {
-      for (const [key, localeValue] of Object.entries(localeCatalog.messages)) {
-        const englishValue = base.messages[key]
+    inspectLocale: ({ source, catalog, findings }) => {
+      for (const [key, localeValue] of Object.entries(catalog.messages)) {
+        const englishValue = source.messages[key]
         // The record index is `string` to the types, but undefined at runtime when the key is absent.
-        // missing-from-en is the key-parity/stale check's concern.
+        // A key the source catalog doesn't have is the coverage/stale check's concern.
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (englishValue === undefined) continue
         const detail = parityDetail(key, englishValue, localeValue)

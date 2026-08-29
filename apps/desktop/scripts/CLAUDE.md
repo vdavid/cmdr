@@ -5,26 +5,26 @@ launch boundary, plus the llama-server fetch and the type-drift check.
 
 ## Module map
 
-- **`tauri-wrapper.ts`**: what `pnpm dev` / `pnpm build` actually call. Resolves `CMDR_INSTANCE_ID`, reserves ephemeral
-  ports (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports env, spawns Tauri.
-  Dev-only: with `CMDR_VIRTUAL_MTP` set, appends `--features virtual-mtp` (`docs/tooling/virtual-mtp.md`)
+- **`tauri-wrapper.ts`**: what `pnpm dev` / `pnpm build` call. Resolves `CMDR_INSTANCE_ID`, reserves ephemeral ports
+  (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports env, spawns Tauri.
+  Dev-only: `CMDR_VIRTUAL_MTP` appends `--features virtual-mtp` (`docs/tooling/virtual-mtp.md`)
 - **`instance-id.ts`**: pure helpers (slug sanitization, instance resolution, per-OS data-dir, bundle-id + productName
-  - config-payload composition, port reservation, port-file write)
-- **`instance-id.test.ts`**: Vitest suite (~45 cases) for `instance-id.ts`
+  - config-payload composition, port reservation, port-file write); `instance-id.test.ts` is its ~45-case suite
 - **`download-llama-server.go`**: build-time llama-server downloader, invoked from `src-tauri/build.rs`
 - **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`
 - **`gen-shipped-locales.ts`** (+ `-lib.ts`): the Rust locale resolver's table of shipped catalogs and their CLDR
   scripts (`pnpm intl:shipped-locales`, guarded by `shipped-locales-fresh`)
 - **`gen-native-strings.ts`** (+ `-lib.ts`): the catalog subset Rust draws itself (`menu.`, the window title, the
   already-running alert), read by `menu_t`. `pnpm intl:native-strings`, guarded by `native-strings-fresh`
+- **`i18n-*.ts`**: the catalog lib, the six locale checks, the pseudolocale/skeleton generators, key sync
 - **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves
   absent config keys against (`pnpm analytics:defaults`, guarded by `settings-defaults`); DETAILS § "The defaults
   manifest"
 - **`marketing-shots.ts`** (+ `-thread.ts`): reshoots the brand masters (`pnpm marketing:shots`); guide in
-  `docs/guides/screenshots.md`. Needs ImageMagick; a missing `magick` fails up front
+  `docs/guides/screenshots.md`. Needs ImageMagick, and a missing `magick` fails up front
 - **`capture-runtime.ts`**: launch primitives shared by the two capture orchestrators, plus `createTrackedArtifactGuard`
   (only a green run keeps its rewrite of tracked artifacts; DETAILS § "The capture guard")
-- **`e2e-linux.sh`**: Linux Docker E2E launcher (`playwright-e2e,virtual-mtp`, single shard, legacy fixture path)
+- **`e2e-linux.sh`**: Linux Docker E2E launcher (`playwright-e2e,virtual-mtp`, single shard, legacy fixture)
 
 Wrapper architecture, decisions, and the instance-isolation reference: `DETAILS.md` and
 `docs/tooling/instance-isolation.md`.
@@ -32,12 +32,12 @@ Wrapper architecture, decisions, and the instance-isolation reference: `DETAILS.
 ## Must-knows
 
 - **Scripts are TypeScript run directly by Node** (`node scripts/foo.ts`); Node 25's native type stripping handles them,
-  no build step. Two rules this imposes: relative sibling imports MUST carry the real `.ts` extension
-  (`from './instance-id.ts'`, not `.js` — bare Node won't resolve a `.js` specifier to a `.ts` file), enabled by
-  `allowImportingTsExtensions` in `tsconfig.json`; and stripping can't emit, so no `enum`/`namespace`/parameter
-  properties/decorators (plain types only). `console` is allowed here (CLI tools) via an `eslint.config.js` override.
-  The Go check runner invokes these by path (`exec.Command("node", "scripts/foo.ts")`), so renaming a script means
-  updating its caller there and in `package.json`.
+  no build step. Two rules this imposes: sibling imports MUST carry the real `.ts` extension (`from './instance-id.ts'`;
+  bare Node won't resolve a `.js` specifier to a `.ts` file), enabled by `allowImportingTsExtensions` in
+  `tsconfig.json`; and stripping can't emit, so no `enum`/`namespace`/parameter properties/decorators. `console` is
+  allowed here (CLI tools) via an `eslint.config.js` override. The Go check runner invokes these by path
+  (`exec.Command("node", "scripts/foo.ts")`), so renaming a script means updating its caller there and in
+  `package.json`.
 - **Don't bypass the wrapper.** Raw `cargo tauri dev` / `cargo build` skips the env composition AND the
   `beforeBuildCommand` chain (llama-server download + frontend build), so the app launches with the prod identifier or
   no embedded frontend. See the `rust` rule in `.claude/rules/`.

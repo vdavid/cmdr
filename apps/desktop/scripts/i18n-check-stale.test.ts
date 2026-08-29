@@ -275,7 +275,7 @@ describe('no-locales path (only en)', () => {
   })
 })
 
-describe('reportFindings: the shared report core (reused by M3)', () => {
+describe('reportFindings: the shared report core (reused by every locale check)', () => {
   it('returns clean with no locales', () => {
     expect(reportFindings({ title: 'X', findings: [], write: () => {} })).toBe(EXIT_CLEAN)
   })

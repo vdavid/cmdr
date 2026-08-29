@@ -7,7 +7,9 @@
  *  - ICU AST extraction (placeholders, `<tag>`s, plural/select categories) on
  *    representative shapes: plain, `{name}`, `<tag>`, `plural`, `select`, nested,
  *  - invalid-ICU detection (`ok: false`),
- *  - `sourceHash` determinism + 7-char hex shape.
+ *  - `sourceHash` determinism + 7-char hex shape,
+ *  - locale classification (`resolveLocaleSource`) and catalog layering, the
+ *    overlay vocabulary every i18n tool reads.
  *
  * All inputs are in-memory; no real catalog or filesystem is touched (the I/O
  * wrappers `loadCatalog`/`listLocales` are thin `node:fs` over these pure cores
@@ -24,6 +26,8 @@ import {
   rawTokens,
   hasWholeWord,
   hasBrandPresent,
+  resolveLocaleSource,
+  layerCatalogs,
 } from './i18n-catalog-lib.ts'
 
 describe('isMetadataKey', () => {
@@ -237,5 +241,54 @@ describe('hasBrandPresent (suffix-aware locale-side test)', () => {
 
   it('does NOT match when the brand is absent', () => {
     expect(hasBrandPresent('Megnyitás a fájlkezelőben', 'Cmdr')).toBe(false)
+  })
+})
+
+describe('resolveLocaleSource', () => {
+  const shipped = ['de', 'en', 'en-GB', 'en-XA', 'pt', 'pt-BR', 'pt-PT', 'zh', 'zh-Hant-TW']
+
+  it('treats a language-base catalog as a full translation of en', () => {
+    expect(resolveLocaleSource('de', shipped)).toEqual({ overrides: 'en', isOverlay: false })
+  })
+
+  it('treats a variant whose base language ships as an overlay of that base', () => {
+    expect(resolveLocaleSource('pt-PT', shipped)).toEqual({ overrides: 'pt', isOverlay: true })
+    expect(resolveLocaleSource('pt-BR', shipped)).toEqual({ overrides: 'pt', isOverlay: true })
+  })
+
+  it('treats an en variant as an overlay of en', () => {
+    expect(resolveLocaleSource('en-GB', shipped)).toEqual({ overrides: 'en', isOverlay: true })
+  })
+
+  it('treats a variant whose base language does NOT ship as a full translation', () => {
+    expect(resolveLocaleSource('fr-CA', shipped)).toEqual({ overrides: 'en', isOverlay: false })
+  })
+
+  it('resolves a script+region tag to its LANGUAGE base, mirroring the runtime chain', () => {
+    // `resolveRaw` splits on the first `-` only, so `zh-Hant-TW` falls back to
+    // `zh`, never to a `zh-Hant` in between.
+    expect(resolveLocaleSource('zh-Hant-TW', [...shipped, 'zh-Hant'])).toEqual({ overrides: 'zh', isOverlay: true })
+  })
+
+  it('never treats the generated pseudolocale as an overlay', () => {
+    expect(resolveLocaleSource('en-XA', shipped)).toEqual({ overrides: 'en', isOverlay: false })
+  })
+})
+
+describe('layerCatalogs', () => {
+  const en = { messages: { a: 'A', b: 'B' }, metadata: { a: { description: 'first' } } }
+  const pt = { messages: { a: 'Á' }, metadata: { a: { sourceHash: '1234567' } } }
+
+  it('lets the more specific catalog win, key by key', () => {
+    expect(layerCatalogs(en, pt).messages).toEqual({ a: 'Á', b: 'B' })
+  })
+
+  it('layers metadata the same way', () => {
+    expect(layerCatalogs(en, pt).metadata).toEqual({ a: { sourceHash: '1234567' } })
+  })
+
+  it('leaves the inputs untouched', () => {
+    layerCatalogs(en, pt)
+    expect(en.messages).toEqual({ a: 'A', b: 'B' })
   })
 })

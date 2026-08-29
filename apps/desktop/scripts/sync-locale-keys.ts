@@ -33,6 +33,16 @@
  * gen-locale-skeleton.ts (which scaffolds a fresh locale and refuses to clobber),
  * this MERGES into a translated locale and preserves its work.
  *
+ * ## OVERLAY locales are skipped
+ *
+ * A regional variant whose language base ships (`en-GB`, `pt-PT`) carries ONLY
+ * the keys it forks, so "bring it into key-parity with `en`" is precisely the
+ * wrong thing to do: it would balloon a 60-key overlay into a full clone, and
+ * `desktop-i18n-coverage` would then flag every cloned key as dead weight. So
+ * `syncableLocales` filters them out of the sweep AND out of an explicit tag
+ * list, with a note. A new key needs no overlay work: the variant inherits the
+ * base language's translation. See `docs/guides/i18n.md` § Overlay catalogs.
+ *
  * Run: node scripts/sync-locale-keys.ts <tag> [<tag> …]   (omit tags = every non-en locale)
  * Pass `--messages-root <dir>` to point at a fixture, `--restamp <key>` to refresh
  * one key's stored hash across the synced locales.
@@ -41,9 +51,15 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
-import { isMetadataKey, listLocales, readLocaleFiles, resolveMessagesRoot, sourceHash } from './i18n-catalog-lib.ts'
-
-const SOURCE_LOCALE = 'en'
+import {
+  BASE_LOCALE,
+  isMetadataKey,
+  listLocales,
+  readLocaleFiles,
+  resolveLocaleSource,
+  resolveMessagesRoot,
+  sourceHash,
+} from './i18n-catalog-lib.ts'
 
 /**
  * `@key` fields that vouch for one specific English value and so can't outlive it:
@@ -139,9 +155,9 @@ export interface SyncLocaleResult {
  * their `@key` blocks preserved, plus any deliberate `restampKeys` refresh.
  */
 export function syncLocale(tag: string, opts: SyncLocaleOptions = {}): SyncLocaleResult {
-  if (tag === SOURCE_LOCALE) throw new Error(`Refusing to sync the source locale '${SOURCE_LOCALE}'.`)
+  if (tag === BASE_LOCALE) throw new Error(`Refusing to sync the source locale '${BASE_LOCALE}'.`)
   const root = resolveMessagesRoot(opts.messagesRoot)
-  const enFiles = readLocaleFiles(SOURCE_LOCALE, root)
+  const enFiles = readLocaleFiles(BASE_LOCALE, root)
   const localeDir = join(root, tag)
   const restampKeys = new Set(opts.restampKeys ?? [])
   let added = 0
@@ -198,10 +214,43 @@ export function parseSyncArgs(argv: string[]): SyncArgs {
   return { tags: positionals, messagesRoot: values['messages-root'], restampKeys: values.restamp ?? [] }
 }
 
+/**
+ * The tags a sync run should actually touch: every non-base locale (or the ones
+ * asked for), minus the OVERLAY catalogs, which must never be key-synced (see the
+ * file header). Reports each skip through `note` so a run is never silently
+ * partial.
+ * Takes one object, not three positionals: `requested` and `available` are both
+ * lists of tags and would be trivially swappable.
+ * @param opts.requested explicit tags, or an empty list to sweep every non-base locale
+ * @param opts.available every locale dir present (`listLocales`)
+ * @param opts.note sink for one skip message per overlay
+ */
+export function syncableLocales(opts: {
+  requested: readonly string[]
+  available: readonly string[]
+  note: (line: string) => void
+}): string[] {
+  const { requested, available, note } = opts
+  const tags = requested.length > 0 ? requested : available.filter((tag) => tag !== BASE_LOCALE)
+  return tags.filter((tag) => {
+    if (!resolveLocaleSource(tag, available).isOverlay) return true
+    note(
+      `Skipped ${tag}/: it's an overlay, so it carries only the keys it forks (docs/guides/i18n.md § Overlay catalogs).`,
+    )
+    return false
+  })
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = parseSyncArgs(process.argv.slice(2))
   const { messagesRoot, restampKeys } = args
-  const tags = args.tags.length > 0 ? args.tags : listLocales(messagesRoot).filter((l) => l !== SOURCE_LOCALE)
+  const tags = syncableLocales({
+    requested: args.tags,
+    available: listLocales(messagesRoot),
+    note: (line) => {
+      console.log(line)
+    },
+  })
   const restampedAnywhere = new Set<string>()
   for (const tag of tags) {
     const {

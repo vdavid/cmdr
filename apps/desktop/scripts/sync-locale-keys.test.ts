@@ -16,7 +16,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { parseSyncArgs, syncLocale } from './sync-locale-keys.ts'
+import { parseSyncArgs, syncLocale, syncableLocales } from './sync-locale-keys.ts'
 import { sourceHash } from './i18n-catalog-lib.ts'
 
 const AREA = 'fixture.json'
@@ -224,5 +224,29 @@ describe('parseSyncArgs', () => {
 
   it('defaults to no tags, no root, and no restamps', () => {
     expect(parseSyncArgs([])).toEqual({ tags: [], messagesRoot: undefined, restampKeys: [] })
+  })
+})
+
+describe('syncableLocales', () => {
+  const available = ['de', 'en', 'en-GB', 'en-XA', 'pt', 'pt-PT']
+  const runWith = (requested: string[]) => {
+    const notes: string[] = []
+    const tags = syncableLocales({ requested, available, note: (line) => void notes.push(line) })
+    return { tags, notes }
+  }
+
+  it('sweeps every full translation and skips the overlays', () => {
+    const { tags, notes } = runWith([])
+    expect(tags).toEqual(['de', 'en-XA', 'pt'])
+    expect(notes).toHaveLength(2)
+    expect(notes.join('\n')).toMatch(/Skipped en-GB\/: it's an overlay/)
+  })
+
+  it('skips an overlay even when it was asked for by name', () => {
+    // Syncing `pt-PT` would clone every `en` key into a catalog that must carry
+    // only its forks, and coverage would then flag every one of them.
+    const { tags, notes } = runWith(['pt-PT', 'de'])
+    expect(tags).toEqual(['de'])
+    expect(notes.join('\n')).toMatch(/Skipped pt-PT\//)
   })
 })

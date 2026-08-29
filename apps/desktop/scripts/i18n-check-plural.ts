@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PLURAL-CATEGORY COVERAGE check (i18n maintenance, M3): ERROR class.
+ * PLURAL-CATEGORY COVERAGE check (i18n maintenance): ERROR class.
  *
  * Each language has its own set of CLDR plural categories: English needs `one`
  * and `other`; Polish needs `one`, `few`, `many`, and `other`; Japanese needs
@@ -120,9 +120,9 @@ export function runPluralCheck(opts: RunPluralCheckOptions = {}): number {
     messagesRoot: opts.messagesRoot,
     write: opts.write,
     summaryLine: (count) => `${String(count)} plural message(s) missing a required CLDR category for this locale:`,
-    inspectLocale: ({ locale, base, locale_catalog: localeCatalog, findings }) => {
-      for (const [key, localeValue] of Object.entries(localeCatalog.messages)) {
-        const englishValue = base.messages[key]
+    inspectLocale: ({ locale, source, catalog, findings }) => {
+      for (const [key, localeValue] of Object.entries(catalog.messages)) {
+        const englishValue = source.messages[key]
         // Parse English to learn its plural shape (degenerate vs full); absent en
         // key → leave undefined so the strict default applies. The record index is
         // `string` to the types, but undefined at runtime when the key is absent.

@@ -126,7 +126,7 @@ func RunI18nTagParamCollision(ctx *CheckContext) (CheckResult, error) {
 
 	for _, locale := range locales {
 		// `screenshots/` sits beside the locales but holds capture reports, not
-		// messages (same exclusion as `nonEnLocaleCount`).
+		// messages (same exclusion as `localeCounts`).
 		if !locale.IsDir() || locale.Name() == "screenshots" {
 			continue
 		}

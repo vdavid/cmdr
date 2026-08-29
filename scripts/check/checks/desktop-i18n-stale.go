@@ -14,9 +14,11 @@ import (
 const staleStrictEnv = "CMDR_I18N_STALE_STRICT"
 
 // RunDesktopI18nStale flags a non-`en` locale that holds a translation whose
-// stored `@key.sourceHash` no longer matches the current English value's hash
-// (the English source changed since the string was translated, so the
-// translation is STALE). It also flags a present translation with no stored hash,
+// stored `@key.sourceHash` no longer matches the hash of the value it was
+// translated from (that source changed since, so the translation is STALE). The
+// source is the English value for a full translation, and for an OVERLAY
+// (`pt-PT` over `pt`) the value it overrides, so a `pt` copy edit correctly
+// marks the `pt-PT` fork of that key stale. It also flags a present translation with no stored hash,
 // a translated key whose English source was removed, and a stale key still
 // carrying `reviewed: true` (the human sign-off no longer applies). See
 // `apps/desktop/scripts/i18n-check-stale.ts`.
@@ -55,7 +57,8 @@ func RunDesktopI18nStale(ctx *CheckContext) (CheckResult, error) {
 	output, err := RunCommand(cmd, true)
 	if err == nil {
 		// Exit 0: every translation is fresh (or there are no non-en locales yet).
-		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
+		if translations, overlays := localeCounts(ctx.RootDir); translations+overlays > 0 {
+			n := translations + overlays
 			return Success(fmt.Sprintf("no stale translations across %d %s", n, Pluralize(n, "locale", "locales"))), nil
 		}
 		return Success("no stale translations (English-only: no locales to check yet)"), nil

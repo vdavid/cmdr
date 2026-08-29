@@ -8,9 +8,11 @@ import (
 )
 
 // RunDesktopI18nParity FAILS (error, not warn) when a non-`en` translation's
-// substitution structure doesn't match its English source: a missing, renamed,
-// or extra `{placeholder}` or `<tag>` (ICU keys), or a dropped/changed `{token}`
-// (the raw `errors.*` family). This is the #1 runtime CRASH class:
+// substitution structure doesn't match the value it renders instead of: a
+// missing, renamed, or extra `{placeholder}` or `<tag>` (ICU keys), or a
+// dropped/changed `{token}` (the raw `errors.*` family). That value is the
+// English one for a full translation, and for an OVERLAY (`pt-PT` over `pt`) the
+// one in the catalog it overrides. This is the #1 runtime CRASH class:
 // `intl-messageformat` throws on a `{name}` it has no value for, and the raw
 // error pipeline mis-substitutes a token. So unlike the maintenance-signal
 // checks (stale, key parity, don't-translate), a parity break MUST fail the
@@ -23,8 +25,8 @@ import (
 // distinguish them in the message so a node-missing crash reads differently from
 // a real parity failure.
 //
-// In today's English-only repo there are no non-`en` locales, so the script is a
-// clean no-op (exit 0). It becomes a real CI gate the moment a locale lands.
+// Nine locales ship today and all pass; the script is a clean no-op only in a
+// repo with no locale beyond `en`.
 func RunDesktopI18nParity(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
 
@@ -32,8 +34,9 @@ func RunDesktopI18nParity(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
-		// Exit 0: every translation's placeholders/tags match English (or there are no non-en locales yet).
-		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
+		// Exit 0: every locale's placeholders/tags match the catalog it renders instead of (or there are no non-en locales yet).
+		if translations, overlays := localeCounts(ctx.RootDir); translations+overlays > 0 {
+			n := translations + overlays
 			return Success(fmt.Sprintf("placeholder/tag parity holds across %d %s", n, Pluralize(n, "locale", "locales"))), nil
 		}
 		return Success("placeholder/tag parity holds (English-only: no locales to check yet)"), nil

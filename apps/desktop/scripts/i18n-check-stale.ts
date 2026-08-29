@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 /**
- * STALE-TRANSLATION check (i18n maintenance, M2).
+ * STALE-TRANSLATION check (i18n maintenance): WARN class, ERROR at release.
  *
  * A translated value in a non-`en` locale records, in `@key.sourceHash`, a hash
- * of the EXACT English value it was translated from (written by the pseudolocale
+ * of the EXACT value it was translated from (written by the pseudolocale
  * generator / a locale skeleton; see `i18n-catalog-lib.ts` `sourceHash()` and
- * `messages/DETAILS.md` § `@key` schema). When the English source later changes,
- * the stored hash no longer matches the current English value's hash, so the
- * translation is STALE: it renders text translated from a sentence that no longer
- * exists. This check flags those.
+ * `messages/DETAILS.md` § `@key` schema). When that source later changes, the
+ * stored hash no longer matches, so the translation is STALE: it renders text
+ * translated from a sentence that no longer exists. This check flags those.
+ *
+ * The source is `en` for a full translation. For an OVERLAY (`pt-PT` over `pt`)
+ * it's the value the overlay overrides, so a `pt` copy edit correctly marks the
+ * `pt-PT` fork of that key stale (and clears its `reviewed` flag), while an
+ * unrelated `en` edit that `pt` already absorbed doesn't.
  *
  * For every NON-`en` locale, for every key present in that locale:
- *  - the English key is gone           → stale ("English source removed").
+ *  - the source key is gone            → stale ("English source removed").
  *  - no `@key.sourceHash` is stored    → stale ("no source hash recorded").
  *  - stored hash ≠ hash(current `en`)  → stale ("source changed since translation").
  *  - stale AND `reviewed: true`         → ALSO flagged (the human sign-off no longer
@@ -35,9 +39,7 @@
  *    not a gate in either mode.
  *
  * A genuine error (can't read a catalog) throws and exits 2 in both modes (the
- * Go wrapper tells the two-exit-2 cases apart by whether the env var is set). In
- * today's English-only repo there are no non-`en` locales, so it's a clean no-op
- * either way.
+ * Go wrapper tells the two-exit-2 cases apart by whether the env var is set).
  *
  * Run: `pnpm i18n:check-stale` (desktop) or `node scripts/i18n-check-stale.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
@@ -50,29 +52,32 @@ import { EXIT_ERROR, EXIT_ISSUES, runLocaleCheck } from './i18n-locale-check-lib
 export const STALE_STRICT_ENV = 'CMDR_I18N_STALE_STRICT'
 
 /**
- * Classifies one locale key against the current English catalog. Returns a short
- * stale reason, or `null` if the key is fresh.
+ * Classifies one locale key against the catalog it was translated from. Returns a
+ * short stale reason, or `null` if the key is fresh.
  * @param key the message key present in the locale
- * @param enMessages current English messages
+ * @param sourceMessages the current messages of the catalog this locale renders
+ *   instead of (`en`, or for an overlay the catalog it overrides)
  * @param keyMetadata the locale's `@key` metadata (absent for a key with no metadata)
+ * @param sourceLabel how to name that catalog in a finding (default `English`)
  * @returns stale detail, or null if fresh
  */
 export function staleReason(
   key: string,
-  enMessages: Record<string, string>,
+  sourceMessages: Record<string, string>,
   keyMetadata: Record<string, unknown> | undefined,
+  sourceLabel = 'English',
 ): string | null {
-  const englishValue = enMessages[key]
+  const sourceValue = sourceMessages[key]
   // The record index is `string` to the types, but undefined at runtime when the key is absent.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (englishValue === undefined) return 'English source removed; drop this translated key'
+  if (sourceValue === undefined) return `${sourceLabel} source removed; drop this translated key`
 
   const stored = keyMetadata && typeof keyMetadata === 'object' ? keyMetadata['sourceHash'] : undefined
   if (typeof stored !== 'string' || stored === '') {
     return 'no source hash recorded; re-translate and stamp @key.sourceHash'
   }
 
-  if (stored !== sourceHash(englishValue)) {
+  if (stored !== sourceHash(sourceValue)) {
     const meta = keyMetadata && typeof keyMetadata === 'object' ? keyMetadata : {}
     const reviewed = meta['reviewed'] === true
     const justified = typeof meta['sameAsSourceJustification'] === 'string' && meta['sameAsSourceJustification'] !== ''
@@ -112,9 +117,10 @@ export function runStaleCheck(opts: RunStaleCheckOptions = {}): number {
     messagesRoot: opts.messagesRoot,
     write: opts.write,
     summaryLine: (count) => `${String(count)} stale key(s) (source changed since translation):`,
-    inspectLocale: ({ base, locale_catalog: localeCatalog, findings }) => {
-      for (const key of Object.keys(localeCatalog.messages)) {
-        const reason = staleReason(key, base.messages, localeCatalog.metadata[key])
+    inspectLocale: ({ source, overrides, isOverlay, catalog, findings }) => {
+      const sourceLabel = isOverlay ? overrides : 'English'
+      for (const key of Object.keys(catalog.messages)) {
+        const reason = staleReason(key, source.messages, catalog.metadata[key], sourceLabel)
         if (reason !== null) findings.add(key, reason)
       }
     },

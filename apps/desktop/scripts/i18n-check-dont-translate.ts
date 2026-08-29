@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * DON'T-TRANSLATE TOKENS check (i18n maintenance, M3): WARN class.
+ * DON'T-TRANSLATE TOKENS check (i18n maintenance): WARN class.
  *
  * Some tokens must survive translation verbatim: brand and product names, and the
  * system-label substitution tokens. If an English value contains one and the
@@ -22,8 +22,7 @@
  *     ALSO guarded structurally by the parity check (raw `{token}` parity); listing
  *     them here adds a clearer, token-specific message for the common case.
  *
- * Warn-only by design (a judgment-call quality signal, per the spec's WARN class
- * with a `NotInCI` reason). English-only today → a clean no-op.
+ * Warn-only by design: a judgment-call quality signal, so it never blocks a build.
  *
  * Run: `pnpm i18n:check-dont-translate` (desktop) or
  * `node scripts/i18n-check-dont-translate.ts`. Pass `--messages-root <dir>` to
@@ -69,10 +68,10 @@ export function runDontTranslateCheck(opts: { messagesRoot?: string; write?: (li
     messagesRoot: opts.messagesRoot,
     write: opts.write,
     summaryLine: (count) => `${String(count)} key(s) dropped a brand/system token that must stay verbatim:`,
-    inspectLocale: ({ base, locale_catalog: localeCatalog, findings }) => {
-      for (const [key, localeValue] of Object.entries(localeCatalog.messages)) {
-        const englishValue = base.messages[key]
-        // A locale key with no English counterpart can't drop an English token; skip it.
+    inspectLocale: ({ source, catalog, findings }) => {
+      for (const [key, localeValue] of Object.entries(catalog.messages)) {
+        const englishValue = source.messages[key]
+        // A locale key with no counterpart in the catalog it overrides can't drop one of its tokens; skip it.
         // The record index is `string` to the types, but undefined at runtime when the key is absent.
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (englishValue === undefined) continue

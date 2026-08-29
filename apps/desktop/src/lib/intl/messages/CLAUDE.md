@@ -8,21 +8,24 @@ boundary: `../CLAUDE.md`.
 
 - `en/<area>.json`: messages for one area. The key prefix maps 1:1 to the filename (`settings.fsWatch.title` →
   `settings.json`), so an agent editing one feature touches one file. `common.json` holds truly shared strings.
-- `screenshots/`: capture artifacts referenced by `@key.screenshot` (and `@key.screenshotNote` for stand-ins); one file
-  serves many keys. PNGs are **gitignored** and regenerable; `capture-report.json` + `coverage-report.md` are tracked.
-  Don't hand-edit those two `@key` fields or commit PNGs; regenerate with `pnpm i18n:shots`. `DETAILS.md` § Screenshots.
-- `en-XA/`: the generated **pseudolocale** (accented, expanded, structure-preserving) for overflow testing and the
-  i18n-check fixture. **Gitignored + fully regenerable** with `pnpm i18n:pseudo`; never hand-edit it. Values it keeps
-  verbatim get an auto-emitted `sameAsSourceJustification`, so a regenerated `en-XA` passes `i18n-coverage` — don't
-  hand-justify them. Committed fixture: `test/fixtures/i18n-pseudolocale/`. `docs/guides/i18n.md` § Pseudolocale.
+- `screenshots/`: capture artifacts referenced by `@key.screenshot` (`@key.screenshotNote` for stand-ins); one file
+  serves many keys. PNGs are **gitignored**; `capture-report.json` + `coverage-report.md` are tracked. Don't hand-edit
+  those `@key` fields or commit PNGs; regenerate with `pnpm i18n:shots`. `DETAILS.md` § Screenshots.
+- `en-XA/`: the generated **pseudolocale** (accented, expanded, structure-preserving) for overflow testing.
+  **Gitignored, regenerable** with `pnpm i18n:pseudo`; never hand-edit or hand-justify it (it auto-emits
+  `sameAsSourceJustification`). Committed fixture: `test/fixtures/i18n-pseudolocale/`. `docs/guides/i18n.md` §
+  Pseudolocale.
+- `<lang>-<REGION>/` (`en-GB`, `pt-PT`): an **overlay**. It holds ONLY the keys that differ from its language base;
+  everything else resolves through the fallback chain. A key identical to what it overrides fails `i18n-coverage`
+  (delete it), and `sameAsSourceJustification` doesn't apply. Rules: `docs/guides/i18n.md` § Overlay catalogs.
 
 ## Must-knows
 
 - **Key shape: `area.feature.leaf`**: lowerCamel segments, dot-separated, at least two, first segment a known area.
   Enforced by `desktop-message-key-naming`. Add an area only by adding both a catalog file AND the area there.
 - **Double every apostrophe (`''`).** ICU treats `'` as an escape char; a lone `'` before `{`/`<`/`#` opens a quoted
-  section and swallows text. `''` always collapses to `'` and is always safe, so it's the rule everywhere, even where a
-  lone `'` would happen to render fine.
+  section and swallows text. `''` always collapses to `'`, so double it everywhere, even where a lone `'` would render
+  fine.
 - **The RAW families never meet ICU**, so their apostrophes stay SINGLE and their `{token}`s are literal replacement
   targets: `errors.*`, plus the NATIVE ones Rust draws (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)
   through `menu_t`, never `t()`. No capture can photograph a native surface, so its `@key` description is the whole
@@ -38,13 +41,13 @@ boundary: `../CLAUDE.md`.
   optional `screenshot`. The runtime and codegen strip every `@`-prefixed entry, so it never reaches `format()`. Keep
   the twin in sync on a rename. **Write the `description` to set a translator up for excellence** (surface + trigger +
   constraints + do-not-translate tokens; plain-language placeholder meanings via `placeholders`; NO ICU plumbing, NO
-  tone, which lives in the per-language style guide). Litmus test: `DETAILS.md` § `@key` metadata schema. Every key
-  SHOULD carry a `description`.
+  tone, which lives in the per-language style guide). Every key SHOULD carry one. Litmus test: `DETAILS.md` § `@key`
+  metadata schema.
 - **Never hand-edit `../keys.gen.ts`.** It's generated from these files by `pnpm intl:keys`; run that after any key
   add/remove/rename. The `desktop-message-keys-fresh` check fails if it's stale.
 - **A new key needs a real call site, or it fails `desktop-message-keys-unused`.** A catalog key referenced in neither
   `apps/desktop/src/` nor `src-tauri/src/` is an orphan (dead translation work) and an ERROR, not just the codegen's
-  dead-key warning. Runtime-built keys are carried by that check's closed dynamic-prefix allowlist; don't add a key with
-  no call site expecting it to cover you. `DETAILS.md` § Dead-key honesty.
+  dead-key warning. Runtime-built keys are carried by that check's closed dynamic-prefix allowlist. `DETAILS.md` §
+  Dead-key honesty.
 
 Depth (the `@key` schema, screenshots-by-filename, the dead-key honesty caveat, parity rules): `DETAILS.md`.

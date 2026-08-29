@@ -26,7 +26,8 @@ func RunDesktopI18nPlural(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
-		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
+		if translations, overlays := localeCounts(ctx.RootDir); translations+overlays > 0 {
+			n := translations + overlays
 			return Success(fmt.Sprintf("plural CLDR categories covered across %d %s", n, Pluralize(n, "locale", "locales"))), nil
 		}
 		return Success("every plural covers its locale's CLDR categories (English-only: no locales to check yet)"), nil

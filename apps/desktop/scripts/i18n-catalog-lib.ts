@@ -6,9 +6,11 @@
  * Three responsibilities, all pure/deterministic (no app/runtime imports beyond
  * the ICU parser, no `window`/DOM, no time/RNG):
  *
- *  1. Catalog I/O: load a locale's merged catalog (`messages/<locale>/*.json`),
- *     stripping the ARB-style `@key` metadata into a separate map; enumerate the
- *     available locales and each locale's key set.
+ *  1. Catalog I/O + locale vocabulary: load a locale's merged catalog
+ *     (`messages/<locale>/*.json`), stripping the ARB-style `@key` metadata into a
+ *     separate map; enumerate the available locales; and classify each one as a
+ *     full translation or an OVERLAY of its language base (`resolveLocaleSource`,
+ *     the single source of truth every i18n tool reads).
  *  2. ICU parsing: parse each message to its AST with the SAME engine the
  *     runtime uses (`intl-messageformat`, see below), then extract the structure
  *     a translation must preserve: placeholder/argument names, `<tag>` names, and
@@ -130,6 +132,28 @@ export function resolveMessagesRoot(messagesRoot?: string): string {
 export const NON_LOCALE_DIRS: Set<string> = new Set(['screenshots'])
 
 /**
+ * Locale dirs that are GENERATED full translations, not hand-written catalogs.
+ * Today just `en-XA`, the pseudolocale (`pnpm i18n:pseudo`, gitignored): it's a
+ * real locale the checks must inspect, but it renders every English key, so it's
+ * never an overlay however much its tag looks like one. See `resolveLocaleSource`.
+ */
+export const GENERATED_LOCALES: Set<string> = new Set(['en-XA'])
+
+/** The base (source) locale, and the final fallback of every other locale. */
+export const BASE_LOCALE = 'en'
+
+/**
+ * The language base of a BCP-47 tag (`pt-PT` → `pt`, `zh-Hant-TW` → `zh`),
+ * lowercased. Mirrors `messages.svelte.ts`'s `baseLanguageOf`, which splits on
+ * the FIRST `-` only: the runtime's fallback chain is locale → language base →
+ * `en`, with nothing in between, so a checker that resolved a deeper parent would
+ * validate a catalog the runtime never reads.
+ */
+export function baseLanguageOf(tag: string): string {
+  return tag.split('-')[0].toLowerCase()
+}
+
+/**
  * Lists the locale directories under `messages/` (each holding `<area>.json`
  * files), sorted. A locale is any direct subdirectory that holds at least one
  * `*.json` and isn't a reserved non-locale dir (`NON_LOCALE_DIRS`).
@@ -146,6 +170,52 @@ export function listLocales(messagesRoot?: string): string[] {
     if (hasJson) locales.push(entry.name)
   }
   return locales.sort()
+}
+
+/** Which catalog a locale is checked against, and how. See `resolveLocaleSource`. */
+export interface LocaleSource {
+  /** the tag whose catalog this locale overrides: `en` for a full translation */
+  overrides: string
+  /** true when the locale is an OVERLAY (a variant carrying only the keys it forks) */
+  isOverlay: boolean
+}
+
+/**
+ * Decides whether a locale is an OVERLAY and which catalog it's checked against.
+ *
+ * A locale is an overlay when its language base ALSO ships a catalog: `en-GB`
+ * overlays `en`, `pt-PT` overlays `pt`. Such a catalog carries only the keys it
+ * deliberately forks, because the runtime resolves everything else through
+ * locale → language base → `en` (`messages.svelte.ts` `resolveRaw`). A locale
+ * whose base doesn't ship (`fr-CA` with no `fr`) is a FULL translation, checked
+ * against `en` like any other.
+ *
+ * Two carve-outs, both structural: a bare language tag is never an overlay (its
+ * base IS itself), and a GENERATED locale (`en-XA`) is never one either, since
+ * the generator renders every English key.
+ *
+ * @param locale the locale dir tag
+ * @param availableLocales every shipped locale tag (`listLocales`)
+ */
+export function resolveLocaleSource(locale: string, availableLocales: readonly string[]): LocaleSource {
+  const base = baseLanguageOf(locale)
+  const isOverlay = base !== locale && !GENERATED_LOCALES.has(locale) && availableLocales.includes(base)
+  return { overrides: isOverlay ? base : BASE_LOCALE, isOverlay }
+}
+
+/**
+ * Layers a more specific catalog OVER a less specific one, key by key, the way
+ * the runtime's fallback chain resolves them: the result is what a reader of the
+ * more specific locale actually sees. Used to build the catalog an overlay is
+ * compared against (`en` with its language base layered on top).
+ * @param under the less specific catalog (`en`)
+ * @param over the more specific catalog (the language base)
+ */
+export function layerCatalogs(under: Catalog, over: Catalog): Catalog {
+  return {
+    messages: { ...under.messages, ...over.messages },
+    metadata: { ...under.metadata, ...over.metadata },
+  }
 }
 
 /**
@@ -254,7 +324,7 @@ function walkAst(ast: readonly AstElement[], acc: MessageStructure): void {
  *
  * On invalid ICU (a stray `'`/`{`/`<`, an unclosed tag, etc.) `IntlMessageFormat`
  * construction throws; this returns `{ ok: false, error }` with empty sets so
- * the ICU-validity check (M3) can flag it without crashing the run.
+ * the ICU-validity check can flag it without crashing the run.
  *
  * @param value the ICU message string
  * @param locale locale tag for parsing (default `en`; the AST shape
@@ -280,8 +350,8 @@ export function parseMessage(value: string, locale = 'en'): MessageStructure & {
 /**
  * A git-style short content hash of an English source value: the first 7 lowercase
  * hex chars of its SHA-256. Stamped into a non-`en` `@key.sourceHash` by the
- * pseudolocale generator (M1) to record which English value a translation was made
- * from, and compared by the stale check (M2): stored hash ≠ current English value's
+ * pseudolocale generator to record which English value a translation was made
+ * from, and compared by the stale check: stored hash ≠ current English value's
  * hash ⇒ the translation is stale. Deterministic and git-independent (survives
  * rebases/reformats); hashes the exact string, so any byte change flips it.
  * @param englishValue the exact English message value

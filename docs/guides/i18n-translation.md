@@ -208,6 +208,8 @@ Rules:
 - The bar is the SAME as a translation: only record a justification you can defend from the reference pile / glossary.
   "I couldn't be bothered" is not a justification. If a key actually needs translating, translate it — the field is for
   genuinely-identical strings only, and the goal is a clean coverage warn output WITHOUT lowering the quality bar.
+- It does NOT apply to an OVERLAY catalog (`en-GB`, `pt-PT`). There, a value identical to what it overrides is dead
+  weight and the fix is always to delete the key, so the field is ignored: `i18n.md` § Overlay catalogs.
 
 Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
 
@@ -215,7 +217,8 @@ Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` me
 
 1. **Pick the BCP-47 tag.** A language base (`xx`) for the universal set, or a region variant (`xx-YY`) when a region
    needs overrides. The tag is a format identifier, not translatable. The base is the fallback for its variants; `en` is
-   the final fallback. Convention + resolution order: `i18n.md` § Locale-format convention.
+   the final fallback. Convention + resolution order: `i18n.md` § Locale-format convention. If the base language already
+   ships, you're writing an OVERLAY, not a translation: skip to the next section.
 2. **Create the skeleton.** Run `node apps/desktop/scripts/gen-locale-skeleton.ts <tag>`: it mirrors `en/`'s files and
    keys under `messages/<tag>/` with the English values in place and each `@key.sourceHash` = the 7-char hash of the
    exact English value it was translated from (computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.ts`;
@@ -238,6 +241,27 @@ Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` me
    appear in the picker, with the documented `<tag>` → base → `en` fallback per key. A locale ships once it's
    translated, passes the checks, and is overflow-checked — human review is opportunistic, not a gate (see the override
    above). The runtime mechanism is in `i18n.md` § "Add a new locale".
+
+## Add a regional variant (an overlay)
+
+A variant whose language base already ships (`en-GB` over `en`, `pt-PT` over `pt`) is an **overlay**: it holds ONLY the
+strings that genuinely differ in that region, and every other key keeps rendering the base language's translation. So
+it's a much smaller job than a language, and a different one.
+
+1. **List what actually differs.** For `en-GB`: spelling (`colour`, `favourite`, `organise`), terminology (macOS calls
+   the Trash the "Bin" in the UK), and date/measure phrasing that isn't already handled by the formatter layer. Evidence
+   first, from the same reference pile as any term decision: if you can't source it, it isn't a difference.
+2. **Write only those keys**, in the area files they belong to, following the layout and `@key` rules in
+   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+3. **Stamp `@key.sourceHash` from the value you override**, which is the base language's value (`pt` for `pt-PT`), not
+   the English one. That's what makes a later copy edit in the base mark your fork stale.
+4. **Run the same checks** as step 5 above. Coverage is the honest signal here in reverse: it lists every key that
+   matches what it overrides, meaning it forks nothing and should be deleted.
+
+Don't record a `sameAsSourceJustification` on an overlay key. `gen-locale-skeleton.ts` refuses an overlay tag outright,
+since it mirrors the entire `en` catalog, and `sync-locale-keys.ts` skips overlays for the same reason: a new English
+key needs no work here, the variant inherits the base language's translation. Full rules, and what each check does:
+`i18n.md` § Overlay catalogs.
 
 ## New feature → add strings and translate to ALL languages
 

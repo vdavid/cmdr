@@ -119,20 +119,21 @@ The shape:
   explains how a stand-in screenshot maps to this key ("this shows a different error, but your string is the
   title/explanation in this same pane"). Absent on direct (captured) couplings. Like `screenshot`, it's harness-written,
   never hand-authored, and stripped before runtime/codegen.
-- `sourceHash` (non-`en` locales only): a 7-char lowercase hex hash (git-style; the SHA-256 prefix of the EXACT English
-  value the translation was made from), computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.ts`. The
-  pseudolocale generator and any locale skeleton write it; the `desktop-i18n-stale` check compares the stored hash
-  against the current English value's hash and flags a translation whose source has since changed as STALE.
-  Deterministic and git-independent (survives rebases/reformats); not present in `en` (the source has no source). **Only
-  a human-judged act refreshes it.** A translator stamps it when they re-translate; `sync-locale-keys.ts` carries a kept
-  key's whole `@key` block across untouched, so routine key propagation can't clear a warning nobody answered. The one
-  exception is explicit: `sync-locale-keys.ts --restamp <key>`, for an `en` edit that left every translation accurate.
-  See `docs/guides/i18n-translation.md` § New feature. **Release-strict gate:** the stale check is warn-only in normal
+- `sourceHash` (non-`en` locales only): a 7-char lowercase hex hash (git-style; the SHA-256 prefix of the EXACT value
+  the translation was made from), computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.ts`. That value
+  is the English one for a full translation; for an OVERLAY (`en-GB`, `pt-PT`) it's the value the key overrides, so a
+  copy edit in the base language marks the fork stale (`docs/guides/i18n.md` § Overlay catalogs). The pseudolocale
+  generator and any locale skeleton write it; the `desktop-i18n-stale` check compares the stored hash against the
+  current source value's hash and flags a translation whose source has since changed as STALE. Deterministic and
+  git-independent (survives rebases/reformats); not present in `en` (the source has no source). **Only a human-judged
+  act refreshes it.** A translator stamps it when they re-translate; `sync-locale-keys.ts` carries a kept key's whole
+  `@key` block across untouched, so routine key propagation can't clear a warning nobody answered. The one exception is
+  explicit: `sync-locale-keys.ts --restamp <key>`, for an `en` edit that left every translation accurate. See
+  `docs/guides/i18n-translation.md` § New feature. **Release-strict gate:** the stale check is warn-only in normal
   `pnpm check` (a maintenance signal, not a daily-dev build breaker), but at release time it escalates a stale finding
   to a build-failing ERROR. The release flow (`scripts/release.sh`) sets `CMDR_I18N_STALE_STRICT=1` before its
-  `pnpm check i18n-stale`, so a release can NOT ship a stale translation: the fix lands first. English-only today, so
-  it's a clean no-op until a real locale exists. The gate fires locally in `scripts/release.sh`, not a GitHub workflow;
-  see `docs/guides/releasing.md`.
+  `pnpm check i18n-stale`, so a release can NOT ship a stale translation: the fix lands first. The gate fires locally in
+  `scripts/release.sh`, not a GitHub workflow; see `docs/guides/releasing.md`.
 - `reviewed` (non-`en` locales only): an OPTIONAL boolean human sign-off (principle 6: a human reviewed this translated
   copy). Reset to absent/`false` by a human when the stale check reports that `sourceHash` changed, because a
   re-translation needs a fresh review. NOT a gate: no check requires `reviewed: true` to pass. The stale check only
@@ -149,8 +150,10 @@ The shape:
   key in their language). It only suppresses the IDENTICAL signal — a MISSING key still reports. Tie it to the source
   like `reviewed`: the stale check flags a stale key that still carries it, because a justification vouched for the OLD
   English value must be re-confirmed once the source changes. Write it as the translator's reason, sourced where the
-  term came from (e.g. "brand name; do not translate" or "macOS Swedish Finder uses 'Smart'"). Full translator workflow:
-  `docs/guides/i18n-translation.md` § Deliberately-identical strings.
+  term came from (e.g. "brand name; do not translate" or "macOS Swedish Finder uses 'Smart'"). It applies to FULL
+  translations only: on an overlay a value identical to what it overrides is dead weight, the fix is always to delete
+  the key, and the coverage check ignores the field there (`docs/guides/i18n.md` § Overlay catalogs). Full translator
+  workflow: `docs/guides/i18n-translation.md` § Deliberately-identical strings.
 
 `reviewed` and `sameAsSourceJustification` are SOURCE-BOUND: each vouches for one specific English value. So the stale
 check reports both as no-longer-applicable on a stale key, and `--restamp` deletes them from the keys it refreshes

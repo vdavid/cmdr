@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ICU VALIDITY check (i18n maintenance, M3): ERROR class.
+ * ICU VALIDITY check (i18n maintenance): ERROR class.
  *
  * Every NON-`en` ICU message must compile via `intl-messageformat` (the exact
  * engine the runtime uses). A stray unescaped `'`/`{`/`<`, an unclosed tag, or a
@@ -48,8 +48,8 @@ export function runIcuCheck(opts: { messagesRoot?: string; write?: (line: string
     messagesRoot: opts.messagesRoot,
     write: opts.write,
     summaryLine: (count) => `${String(count)} message(s) that don't compile as ICU (would crash at runtime):`,
-    inspectLocale: ({ locale_catalog: localeCatalog, findings }) => {
-      for (const [key, localeValue] of Object.entries(localeCatalog.messages)) {
+    inspectLocale: ({ catalog, findings }) => {
+      for (const [key, localeValue] of Object.entries(catalog.messages)) {
         const detail = icuError(key, localeValue)
         if (detail !== null) findings.add(key, detail)
       }

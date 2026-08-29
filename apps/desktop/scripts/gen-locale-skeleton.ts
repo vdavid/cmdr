@@ -24,13 +24,24 @@
  * Idempotent for keys: re-running overwrites each area file from `en` again, so
  * run it ONLY on a fresh locale (it would clobber existing translations). It
  * refuses to overwrite a non-empty existing locale dir unless `--force`.
+ *
+ * It also refuses an OVERLAY tag outright (`en-GB`, or `pt-PT` once `pt` ships):
+ * a variant whose language base already ships carries ONLY the keys it forks, so
+ * a full mirror of `en` would be 100% dead weight, and every mirrored key would
+ * fail `desktop-i18n-coverage`. See `docs/guides/i18n.md` § Overlay catalogs.
  */
 
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { isMetadataKey, readLocaleFiles, resolveMessagesRoot, sourceHash } from './i18n-catalog-lib.ts'
-
-const SOURCE_LOCALE = 'en'
+import {
+  BASE_LOCALE,
+  isMetadataKey,
+  listLocales,
+  readLocaleFiles,
+  resolveLocaleSource,
+  resolveMessagesRoot,
+  sourceHash,
+} from './i18n-catalog-lib.ts'
 
 /**
  * Builds the skeleton content for ONE area file: every English message paired
@@ -59,13 +70,20 @@ export function generateSkeleton(
   tag: string,
   opts: { messagesRoot?: string; force?: boolean } = {},
 ): { files: number; keys: number } {
-  if (tag === SOURCE_LOCALE) throw new Error(`Refusing to scaffold the source locale '${SOURCE_LOCALE}'.`)
+  if (tag === BASE_LOCALE) throw new Error(`Refusing to scaffold the source locale '${BASE_LOCALE}'.`)
   const root = resolveMessagesRoot(opts.messagesRoot)
+  const { overrides, isOverlay } = resolveLocaleSource(tag, listLocales(root))
+  if (isOverlay) {
+    throw new Error(
+      `'${tag}' is an overlay of '${overrides}': it carries only the keys it forks, so there's nothing to scaffold. ` +
+        `Create '${tag}/' with just those keys (docs/guides/i18n.md § Overlay catalogs).`,
+    )
+  }
   const outDir = join(root, tag)
   if (!opts.force && existsSync(outDir) && readdirSync(outDir).some((n) => n.endsWith('.json'))) {
     throw new Error(`'${tag}/' already has catalog files; refusing to clobber. Pass --force to overwrite.`)
   }
-  const enFiles = readLocaleFiles(SOURCE_LOCALE, root)
+  const enFiles = readLocaleFiles(BASE_LOCALE, root)
   mkdirSync(outDir, { recursive: true })
   let keys = 0
   let files = 0

@@ -1,21 +1,23 @@
 #!/usr/bin/env node
 /**
- * KEY PARITY / UNTRANSLATED VISIBILITY check (i18n maintenance, M3): WARN class.
+ * TRANSLATION COVERAGE check (i18n maintenance): ERROR class.
  *
  * Honest-coverage signal so a "100% translated" claim can be trusted (mirrors the
- * screenshot coverage report's "say what's covered, list what isn't" stance). Two
- * gaps, both warn-only (neither crashes, since the runtime falls back to English):
+ * screenshot coverage report's "say what's covered, list what isn't" stance). It
+ * reads a locale by KIND, and the two kinds have opposite rules.
+ *
+ * ## A FULL TRANSLATION (`de`, `hu`, and `en-XA`) must cover every English key
+ *
  *  - MISSING: an English key with no entry in the locale. The runtime silently
  *    renders English, so the gap is invisible without this check.
  *  - IDENTICAL: a locale value byte-identical to English. Usually means
  *    untranslated (copied through), though a few keys legitimately match (a bare
- *    brand token, a symbol). Reported as a softer "possibly untranslated" note so
- *    a human can confirm; it never fails anything.
+ *    brand token, a symbol), which is what the justification below is for.
  *
  * A key that legitimately stays identical (a brand name, a unit symbol, a
  * placeholder-only string, or a word the locale genuinely shares with English) is
  * EXEMPTED from the IDENTICAL signal by recording a non-empty
- * `@key.sameAsSourceJustification` on it in the locale catalog — the translator's
+ * `@key.sameAsSourceJustification` on it in the locale catalog: the translator's
  * one-line reason it's deliberately identical. Present + non-empty → not a
  * finding. The exemption only suppresses IDENTICAL, never MISSING (a justification
  * can't excuse an absent key). See `messages/DETAILS.md` § `@key` schema and
@@ -24,14 +26,30 @@
  * `sourceHash` stops matching), so it can't silently outlive the text it vouched
  * for.
  *
- * Warn-only by design: coverage is a maintenance/visibility metric, not a build
- * breaker (the spec lists it in the WARN class with a `NotInCI` reason like the
- * stale check). English-only today → a clean no-op.
+ * ## An OVERLAY (`en-GB` over `en`, `pt-PT` over `pt`) must carry ONLY its forks
+ *
+ * A variant whose language base also ships is an overlay (`resolveLocaleSource`):
+ * it holds the handful of keys that genuinely differ, and the runtime resolves
+ * the rest through locale → language base → `en`. So the rules invert:
+ *
+ *  - A key ABSENT from an overlay is correct and expected, never a finding.
+ *  - A value IDENTICAL to the catalog it overrides IS a finding: it forks nothing,
+ *    so it's dead weight that also freezes a copy of a string that will drift.
+ *    There's no justification escape hatch here, deliberately: the fix is always
+ *    "delete the key", and a justification could only argue for keeping something
+ *    that changes nothing.
+ *  - A key in NEITHER the catalog it overrides nor `en` is a finding: an overlay
+ *    must not invent keys (nothing would ever render it).
+ *
+ * ERROR, not a warn: a translation feature is exactly the kind of headline a
+ * warn-only signal lets slip past a release, so coverage gaps block the build.
+ * The full rule table across the checks: `docs/guides/i18n.md` § Overlay catalogs.
  *
  * Run: `pnpm i18n:check-coverage` (desktop) or `node scripts/i18n-check-coverage.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
+import { BASE_LOCALE } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
@@ -69,6 +87,34 @@ export function coverageStatus(
 }
 
 /**
+ * Classifies one key of an OVERLAY catalog against the catalog it overrides:
+ * `redundant` (byte-identical, so it forks nothing), `unknown` (the key exists in
+ * neither the overridden catalog nor `en`, so nothing would render it), or `null`
+ * (a genuine fork). Exposed for unit tests.
+ *
+ * `sameAsSourceJustification` is deliberately NOT honoured here: for a full
+ * translation an identical value can be correct and needs vouching for, while on
+ * an overlay it's always deletable, so an exemption would only preserve dead
+ * weight. See the file header.
+ *
+ * @param key the overlay's message key
+ * @param overlayValue the overlay's value
+ * @param sourceMessages the messages of the catalog it overrides (its language
+ *   base layered over `en`)
+ */
+export function overlayStatus(
+  key: string,
+  overlayValue: string,
+  sourceMessages: Record<string, string>,
+): 'redundant' | 'unknown' | null {
+  const sourceValue = sourceMessages[key]
+  // The record index is `string` to the types, but undefined at runtime when the key is absent.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (sourceValue === undefined) return 'unknown'
+  return overlayValue === sourceValue ? 'redundant' : null
+}
+
+/**
  * Runs the coverage check over the catalogs under `messagesRoot`.
  * @param opts.messagesRoot override the `messages/` root (for tests)
  * @param opts.write output sink, one line at a time (for tests)
@@ -78,11 +124,26 @@ export function runCoverageCheck(opts: { messagesRoot?: string; write?: (line: s
     title: 'Translation coverage',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
-    summaryLine: (count) =>
-      `${String(count)} key(s) not translated (missing → English fallback, or identical to English):`,
-    inspectLocale: ({ base, locale_catalog: localeCatalog, findings }) => {
-      for (const [key, englishValue] of Object.entries(base.messages)) {
-        const status = coverageStatus(key, englishValue, localeCatalog.messages, localeCatalog.metadata)
+    summaryLine: (count, { isOverlay }) =>
+      isOverlay
+        ? `${String(count)} key(s) an overlay shouldn't carry (identical to what it overrides, or unknown):`
+        : `${String(count)} key(s) not translated (missing → English fallback, or identical to English):`,
+    inspectLocale: ({ source, overrides, isOverlay, catalog, findings }) => {
+      if (isOverlay) {
+        // `en-GB` overrides `en` itself, so name one catalog, not "neither en nor en".
+        const where = overrides === BASE_LOCALE ? BASE_LOCALE : `${overrides} or ${BASE_LOCALE}`
+        for (const [key, overlayValue] of Object.entries(catalog.messages)) {
+          const status = overlayStatus(key, overlayValue, source.messages)
+          if (status === 'redundant') {
+            findings.add(key, `identical to ${overrides}; delete it, the fallback already renders this`)
+          } else if (status === 'unknown') {
+            findings.add(key, `unknown key; it's not in ${where}, so nothing renders it`)
+          }
+        }
+        return
+      }
+      for (const [key, englishValue] of Object.entries(source.messages)) {
+        const status = coverageStatus(key, englishValue, catalog.messages, catalog.metadata)
         if (status === 'missing') findings.add(key, 'missing; renders the English fallback')
         else if (status === 'identical') findings.add(key, 'identical to English; possibly untranslated')
       }
