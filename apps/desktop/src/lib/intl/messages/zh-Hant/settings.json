@@ -1,2241 +1,2261 @@
 {
-  "settings.appearance.language.label": "Language",
+  "settings.appearance.language.label": "語言",
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "Choose the language Cmdr uses. \"System default\" follows your Mac's language.",
+  "settings.appearance.language.description": "選擇 Cmdr 使用的語言。「跟隨系統」會採用你 Mac 的語言。",
   "@settings.appearance.language.description": {
     "sourceHash": "a290add"
   },
-  "settings.appearance.language.opt.system": "System default",
+  "settings.appearance.language.opt.system": "跟隨系統",
   "@settings.appearance.language.opt.system": {
     "sourceHash": "b045921"
   },
-  "settings.appearance.language.opt.systemWithLanguage": "System default ({language})",
+  "settings.appearance.language.opt.systemWithLanguage": "跟隨系統（{language}）",
   "@settings.appearance.language.opt.systemWithLanguage": {
     "sourceHash": "ab10534"
   },
-  "settings.theme.mode.label": "Theme mode",
+  "settings.theme.mode.label": "主題模式",
   "@settings.theme.mode.label": {
     "sourceHash": "0f79f19"
   },
-  "settings.theme.mode.description": "Choose between light, dark, or system-based theme.",
+  "settings.theme.mode.description": "在淺色、深色或跟隨系統的主題之間選擇。",
   "@settings.theme.mode.description": {
     "sourceHash": "42b18b9"
   },
-  "settings.theme.mode.opt.light": "Light",
+  "settings.theme.mode.opt.light": "淺色",
   "@settings.theme.mode.opt.light": {
     "sourceHash": "dbcd5e7"
   },
-  "settings.theme.mode.opt.dark": "Dark",
+  "settings.theme.mode.opt.dark": "深色",
   "@settings.theme.mode.opt.dark": {
     "sourceHash": "60acc53"
   },
-  "settings.theme.mode.opt.system": "System",
+  "settings.theme.mode.opt.system": "系統",
   "@settings.theme.mode.opt.system": {
     "sourceHash": "6725e7b"
   },
-  "settings.appearance.appColor.label": "App color",
+  "settings.appearance.appColor.label": "App 顏色",
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "To change your system theme color, go to System Settings > Appearance.",
+  "settings.appearance.appColor.description": "若要更改系統主題色，請前往「系統設定 > 外觀」。",
   "@settings.appearance.appColor.description": {
     "sourceHash": "7dc4ab7"
   },
-  "settings.appearance.appColor.opt.system": "System theme color",
+  "settings.appearance.appColor.opt.system": "系統主題色",
   "@settings.appearance.appColor.opt.system": {
     "sourceHash": "5a7bc86"
   },
-  "settings.appearance.appColor.opt.cmdrGold": "Cmdr gold",
+  "settings.appearance.appColor.opt.cmdrGold": "Cmdr 金",
   "@settings.appearance.appColor.opt.cmdrGold": {
     "sourceHash": "3ae5711"
   },
-  "settings.appearance.sizeColors.label": "Size colors",
+  "settings.appearance.sizeColors.label": "大小顏色",
   "@settings.appearance.sizeColors.label": {
     "sourceHash": "7598e9a"
   },
-  "settings.appearance.sizeColors.description": "Color file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. App uses shades of the app color.",
+  "settings.appearance.sizeColors.description": "依等級為檔案清單中的檔案大小上色。彩虹使用綠/黃/橙/紅/紫。App 使用 App 顏色的不同深淺。",
   "@settings.appearance.sizeColors.description": {
     "sourceHash": "ecb064a"
   },
-  "settings.appearance.sizeColors.opt.none": "None",
+  "settings.appearance.sizeColors.opt.none": "無",
   "@settings.appearance.sizeColors.opt.none": {
     "sourceHash": "dc937b5"
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "Short option label “App” (meaning “use the app accent colour”). “App” is a fully naturalised loanword in Traditional Chinese UI — Apple’s zh-TW and zh-HK localisations write “App” verbatim rather than 應用程式 in short labels — so translating it here would read as heavier, not clearer."
   },
-  "settings.appearance.sizeColors.opt.rainbow": "Rainbow",
+  "settings.appearance.sizeColors.opt.rainbow": "彩虹",
   "@settings.appearance.sizeColors.opt.rainbow": {
     "sourceHash": "b1f7b2e"
   },
-  "settings.appearance.dateColors.label": "Date colors",
+  "settings.appearance.dateColors.label": "日期顏色",
   "@settings.appearance.dateColors.label": {
     "sourceHash": "25e5672"
   },
-  "settings.appearance.dateColors.description": "Color modified dates in the file list by age. App fades older dates toward the default text color. Wilting goes green for fresh files, yellow for aging, and brown for old.",
+  "settings.appearance.dateColors.description": "依新舊程度為檔案清單中的修改日期上色。App 讓較舊的日期逐漸淡向預設的文字顏色。枯萎讓最新的檔案顯綠、漸舊顯黃、最舊顯棕。",
   "@settings.appearance.dateColors.description": {
     "sourceHash": "382ce25"
   },
-  "settings.appearance.dateColors.opt.none": "None",
+  "settings.appearance.dateColors.opt.none": "無",
   "@settings.appearance.dateColors.opt.none": {
     "sourceHash": "dc937b5"
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "Short option label “App” (meaning “use the app accent colour”). Same call as its sibling settings.appearance.sizeColors.opt.app: Apple’s Traditional Chinese keeps “App” verbatim in short labels."
   },
-  "settings.appearance.dateColors.opt.wilting": "Wilting",
+  "settings.appearance.dateColors.opt.wilting": "枯萎",
   "@settings.appearance.dateColors.opt.wilting": {
     "sourceHash": "2aa30f1"
   },
-  "settings.appearance.dateTimeFormat.label": "Date and time format",
+  "settings.appearance.dateTimeFormat.label": "日期和時間格式",
   "@settings.appearance.dateTimeFormat.label": {
     "sourceHash": "fcfc2a6"
   },
-  "settings.appearance.dateTimeFormat.description": "How to display dates and times in the file list.",
+  "settings.appearance.dateTimeFormat.description": "檔案清單中日期和時間的顯示方式。",
   "@settings.appearance.dateTimeFormat.description": {
     "sourceHash": "628571a"
   },
-  "settings.appearance.dateTimeFormat.opt.system": "System default",
+  "settings.appearance.dateTimeFormat.opt.system": "跟隨系統",
   "@settings.appearance.dateTimeFormat.opt.system": {
     "sourceHash": "b045921"
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "“ISO 8601” is the proper name of the date-format standard, kept verbatim in Traditional Chinese UI. Its sibling options (簡短, 自訂…) ARE translated, so this is a name, not an untranslated leftover."
   },
-  "settings.appearance.dateTimeFormat.optDesc.iso": "e.g., 2025-01-25 14:30",
+  "settings.appearance.dateTimeFormat.optDesc.iso": "例如 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
     "sourceHash": "63c1f1d"
   },
-  "settings.appearance.dateTimeFormat.opt.short": "Short",
+  "settings.appearance.dateTimeFormat.opt.short": "簡短",
   "@settings.appearance.dateTimeFormat.opt.short": {
     "sourceHash": "f5d61ea"
   },
-  "settings.appearance.dateTimeFormat.optDesc.short": "e.g., 01/25 14:30",
+  "settings.appearance.dateTimeFormat.optDesc.short": "例如 01/25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.short": {
     "sourceHash": "4475197"
   },
-  "settings.appearance.dateTimeFormat.opt.custom": "Custom...",
+  "settings.appearance.dateTimeFormat.opt.custom": "自訂…",
   "@settings.appearance.dateTimeFormat.opt.custom": {
     "sourceHash": "b497c0b"
   },
-  "settings.appearance.customDateTimeFormat.label": "Custom date/time format",
+  "settings.appearance.customDateTimeFormat.label": "自訂日期/時間格式",
   "@settings.appearance.customDateTimeFormat.label": {
     "sourceHash": "620b7a0"
   },
-  "settings.appearance.customDateTimeFormat.description": "Format string for custom date/time display. Use placeholders like YYYY, MM, DD, HH, mm, ss.",
+  "settings.appearance.customDateTimeFormat.description": "用於自訂日期/時間顯示的格式字串。使用 YYYY、MM、DD、HH、mm、ss 等預留位置。",
   "@settings.appearance.customDateTimeFormat.description": {
     "sourceHash": "577dee6"
   },
-  "settings.listing.stripedRows.label": "Striped rows",
+  "settings.listing.stripedRows.label": "條紋橫列",
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Alternate row shading for easier line tracking. Applies to both Full and Brief view modes.",
+  "settings.listing.stripedRows.description": "交替的橫列底色，方便逐列查看。完整和簡潔顯示方式都適用。",
   "@settings.listing.stripedRows.description": {
     "sourceHash": "e95776a"
   },
-  "settings.appearance.tintLocal.label": "Tint local-volume panes",
+  "settings.appearance.tintLocal.label": "為本機卷宗窗格著色",
   "@settings.appearance.tintLocal.label": {
     "sourceHash": "d907724"
   },
-  "settings.appearance.tintLocal.description": "Background tint applied to panes showing a local drive.",
+  "settings.appearance.tintLocal.description": "為顯示本機磁碟機的窗格加上的背景著色。",
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Tint SMB/network panes",
+  "settings.appearance.tintSmb.label": "為 SMB/網路窗格著色",
   "@settings.appearance.tintSmb.label": {
     "sourceHash": "66fd4a8"
   },
-  "settings.appearance.tintSmb.description": "Background tint applied to panes showing an SMB or network share.",
+  "settings.appearance.tintSmb.description": "為顯示 SMB 或網路共享的窗格加上的背景著色。",
   "@settings.appearance.tintSmb.description": {
     "sourceHash": "cf3a857"
   },
-  "settings.appearance.tintMtp.label": "Tint MTP panes",
+  "settings.appearance.tintMtp.label": "為 MTP 窗格著色",
   "@settings.appearance.tintMtp.label": {
     "sourceHash": "2054351"
   },
-  "settings.appearance.tintMtp.description": "Background tint applied to panes showing an Android, Kindle, or camera device.",
+  "settings.appearance.tintMtp.description": "為顯示 Android、Kindle 或相機裝置的窗格加上的背景著色。",
   "@settings.appearance.tintMtp.description": {
     "sourceHash": "a09d99a"
   },
-  "settings.appearance.textSize.label": "Text size",
+  "settings.appearance.textSize.label": "文字大小",
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "Scales text and UI throughout the app. Compounds with the macOS Accessibility text size, where 100% means \"exactly the system size\".",
+  "settings.appearance.textSize.description": "縮放整個 App 的文字和介面。與 macOS「輔助使用」的文字大小疊加，其中 100% 表示「與系統大小完全一致」。",
   "@settings.appearance.textSize.description": {
     "sourceHash": "232df24"
   },
-  "settings.appearance.uiDensity.label": "UI density",
+  "settings.appearance.uiDensity.label": "介面密度",
   "@settings.appearance.uiDensity.label": {
     "sourceHash": "81344d8"
   },
-  "settings.appearance.uiDensity.description": "Controls the spacing and size of UI elements throughout the app.",
+  "settings.appearance.uiDensity.description": "控制整個 App 中介面元素的間距和大小。",
   "@settings.appearance.uiDensity.description": {
     "sourceHash": "e7ead7a"
   },
-  "settings.appearance.uiDensity.opt.compact": "Compact",
+  "settings.appearance.uiDensity.opt.compact": "緊湊",
   "@settings.appearance.uiDensity.opt.compact": {
     "sourceHash": "9945264"
   },
-  "settings.appearance.uiDensity.opt.comfortable": "Comfortable",
+  "settings.appearance.uiDensity.opt.comfortable": "舒適",
   "@settings.appearance.uiDensity.opt.comfortable": {
     "sourceHash": "459a23a"
   },
-  "settings.appearance.uiDensity.opt.spacious": "Spacious",
+  "settings.appearance.uiDensity.opt.spacious": "寬鬆",
   "@settings.appearance.uiDensity.opt.spacious": {
     "sourceHash": "57edf23"
   },
-  "settings.listing.sizeDisplay.label": "Size display",
+  "settings.listing.sizeDisplay.label": "大小顯示",
   "@settings.listing.sizeDisplay.label": {
     "sourceHash": "114b4a5"
   },
-  "settings.listing.sizeDisplay.description": "Smart shows the smaller of content and on-disk size. This helps with disk images and compressed files where the two differ.",
+  "settings.listing.sizeDisplay.description": "智慧會顯示內容大小和佔用空間中較小的一個。這對兩者不同的磁碟映像檔和壓縮檔很有幫助。",
   "@settings.listing.sizeDisplay.description": {
     "sourceHash": "52567b4"
   },
-  "settings.listing.sizeDisplay.opt.smart": "Smart",
+  "settings.listing.sizeDisplay.opt.smart": "智慧",
   "@settings.listing.sizeDisplay.opt.smart": {
     "sourceHash": "9e6ad6d"
   },
-  "settings.listing.sizeDisplay.opt.logical": "Content",
+  "settings.listing.sizeDisplay.opt.logical": "內容",
   "@settings.listing.sizeDisplay.opt.logical": {
     "sourceHash": "47bd290"
   },
-  "settings.listing.sizeDisplay.opt.physical": "On disk",
+  "settings.listing.sizeDisplay.opt.physical": "佔用空間",
   "@settings.listing.sizeDisplay.opt.physical": {
     "sourceHash": "00ca4da"
   },
-  "settings.listing.sizeUnit.label": "Size unit",
+  "settings.listing.sizeUnit.label": "大小單位",
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
   },
-  "settings.listing.sizeUnit.description": "Dynamic picks the friendliest unit per file (1.02 MB). Fixed units make sizes apples-to-apples across the list. Bytes shows the exact count for precise comparison.",
+  "settings.listing.sizeUnit.description": "動態會為每個檔案挑選最易讀的單位（1.02 MB）。固定單位讓整個列表的大小可以直接比較。位元組顯示精確的數值，方便精準比較。",
   "@settings.listing.sizeUnit.description": {
     "sourceHash": "702a201"
   },
-  "settings.listing.sizeUnit.opt.dynamic": "Dynamic",
+  "settings.listing.sizeUnit.opt.dynamic": "動態",
   "@settings.listing.sizeUnit.opt.dynamic": {
     "sourceHash": "b6ee7b3"
   },
-  "settings.listing.sizeUnit.opt.bytes": "Bytes",
+  "settings.listing.sizeUnit.opt.bytes": "位元組",
   "@settings.listing.sizeUnit.opt.bytes": {
     "sourceHash": "4d80003"
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "“kB” is an international unit symbol, kept verbatim. Traditional Chinese UI shows storage units in Latin letters. The sibling options (動態, 位元組) ARE translated."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "“MB” is an international unit symbol, kept verbatim. Traditional Chinese UI shows storage units in Latin letters. The sibling options (動態, 位元組) ARE translated."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "“GB” is an international unit symbol, kept verbatim. Traditional Chinese UI shows storage units in Latin letters. The sibling options (動態, 位元組) ARE translated."
   },
-  "settings.appearance.fileSizeFormat.label": "File size format",
+  "settings.appearance.fileSizeFormat.label": "檔案大小格式",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "How to show file sizes in the file list: binary (KiB, MiB, where 1 KiB = 1,024 bytes) or SI decimal (KB, MB, where 1 KB = 1,000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "檔案清單中檔案大小的顯示方式：二進位（KiB、MiB，其中 1 KiB = 1,024 位元組）或 SI 十進位（KB、MB，其中 1 KB = 1,000 位元組）。",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },
-  "settings.appearance.fileSizeFormat.opt.binary": "Binary (KiB, MiB, GiB)",
+  "settings.appearance.fileSizeFormat.opt.binary": "二進位（KiB、MiB、GiB）",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.opt.si": "SI decimal (KB, MB, GB)",
+  "settings.appearance.fileSizeFormat.opt.si": "SI 十進位（KB、MB、GB）",
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "8984a13"
   },
-  "settings.listing.sizeMismatchWarning.label": "Size mismatch warning",
+  "settings.listing.sizeMismatchWarning.label": "大小不一致警告",
   "@settings.listing.sizeMismatchWarning.label": {
     "sourceHash": "791c344"
   },
-  "settings.listing.sizeMismatchWarning.description": "Shows a warning icon on folders where content and on-disk sizes differ by more than 50% and 200 MB.",
+  "settings.listing.sizeMismatchWarning.description": "當資料夾的內容大小和佔用空間相差超過 50% 且超過 200 MB 時，顯示一個警告圖示。",
   "@settings.listing.sizeMismatchWarning.description": {
     "sourceHash": "1b232eb"
   },
-  "settings.appearance.useAppIconsForDocuments.label": "Use app icons for documents",
+  "settings.appearance.useAppIconsForDocuments.label": "文件使用 App 圖像",
   "@settings.appearance.useAppIconsForDocuments.label": {
     "sourceHash": "71561ae"
   },
-  "settings.appearance.useAppIconsForDocuments.description": "Show the app''s icon for documents instead of generic file type icons. More colorful but slightly slower.",
+  "settings.appearance.useAppIconsForDocuments.description": "為文件顯示其所屬 App 的圖像，而不是通用的檔案類型圖像。更豐富多彩，但會稍慢一些。",
   "@settings.appearance.useAppIconsForDocuments.description": {
     "sourceHash": "9ae8a9c"
   },
-  "settings.appearance.showFunctionKeyBar.label": "Show function key bar",
+  "settings.appearance.showFunctionKeyBar.label": "顯示功能鍵列",
   "@settings.appearance.showFunctionKeyBar.label": {
     "sourceHash": "e80f18d"
   },
-  "settings.appearance.showFunctionKeyBar.description": "Show the row of F-key command buttons (Rename, View, Copy, and so on) at the bottom of the window.",
+  "settings.appearance.showFunctionKeyBar.description": "在視窗底部顯示一排 F 鍵指令按鈕（重新命名、檢視、複製等）。",
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
-  "settings.listing.showHiddenFiles.label": "Show hidden files",
+  "settings.listing.showHiddenFiles.label": "顯示隱藏檔案",
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "Show dotfiles (like .zshrc) and items the system marks as hidden. Applies to both panes.",
+  "settings.listing.showHiddenFiles.description": "顯示以點開頭的檔案（如 .zshrc）以及系統標記為隱藏的項目。對兩個窗格都生效。",
   "@settings.listing.showHiddenFiles.description": {
     "sourceHash": "8e77c67"
   },
-  "settings.listing.showExtensionInName.label": "Show file extensions in the name column",
+  "settings.listing.showExtensionInName.label": "在名稱欄中顯示副檔名",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"
   },
-  "settings.listing.showExtensionInName.description": "Show the full filename (like launch.json) in the Name column and hide the separate Ext column. Affects Full view only.",
+  "settings.listing.showExtensionInName.description": "在名稱欄中顯示完整檔名（如 launch.json），並隱藏獨立的副檔名欄。僅影響完整顯示方式。",
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
-  "settings.listing.showTags.label": "Show tags",
+  "settings.listing.showTags.label": "顯示標籤",
   "@settings.listing.showTags.label": {
     "sourceHash": "e352cad"
   },
-  "settings.listing.showTags.description": "Show colored dots next to names for files and folders that carry macOS Finder tags.",
+  "settings.listing.showTags.description": "在帶有 macOS Finder 標籤的檔案和資料夾名稱旁顯示彩色圓點。",
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
-  "settings.listing.directorySortMode.label": "Sort directories",
+  "settings.listing.directorySortMode.label": "目錄排序",
   "@settings.listing.directorySortMode.label": {
     "sourceHash": "7f0a1e4"
   },
-  "settings.listing.directorySortMode.description": "How directories are sorted when changing the sort column.",
+  "settings.listing.directorySortMode.description": "更改排序欄位時，目錄的排序方式。",
   "@settings.listing.directorySortMode.description": {
     "sourceHash": "fe5f12a"
   },
-  "settings.listing.directorySortMode.opt.likeFiles": "Like files",
+  "settings.listing.directorySortMode.opt.likeFiles": "與檔案一致",
   "@settings.listing.directorySortMode.opt.likeFiles": {
     "sourceHash": "d888403"
   },
-  "settings.listing.directorySortMode.opt.alwaysByName": "Always by name",
+  "settings.listing.directorySortMode.opt.alwaysByName": "永遠按名稱",
   "@settings.listing.directorySortMode.opt.alwaysByName": {
     "sourceHash": "7687e38"
   },
-  "settings.listing.briefColumnWidthMode.label": "Maximum column width in Brief mode",
+  "settings.listing.briefColumnWidthMode.label": "簡潔模式下的最大欄寬",
   "@settings.listing.briefColumnWidthMode.label": {
     "sourceHash": "bbcab33"
   },
-  "settings.listing.briefColumnWidthMode.description": "Limits how wide Brief mode columns can grow to fit long filenames. Columns are always capped at the pane width regardless; the chosen limit only kicks in when it would be smaller than the pane.",
+  "settings.listing.briefColumnWidthMode.description": "限制簡潔模式的欄位為了容納長檔名最多能加寬多少。無論如何欄寬都不會超過窗格寬度；所選的限制只在比窗格更窄時才生效。",
   "@settings.listing.briefColumnWidthMode.description": {
     "sourceHash": "d4a47b0"
   },
-  "settings.listing.briefColumnWidthMode.opt.paneWidth": "Pane width (no limit)",
+  "settings.listing.briefColumnWidthMode.opt.paneWidth": "窗格寬度（不限制）",
   "@settings.listing.briefColumnWidthMode.opt.paneWidth": {
     "sourceHash": "8127854"
   },
-  "settings.listing.briefColumnWidthMode.opt.limited": "Limit to",
+  "settings.listing.briefColumnWidthMode.opt.limited": "限制為",
   "@settings.listing.briefColumnWidthMode.opt.limited": {
     "sourceHash": "01a089f"
   },
-  "settings.listing.briefColumnWidthMaxPx.label": "Brief column width limit",
+  "settings.listing.briefColumnWidthMaxPx.label": "簡潔欄寬限制",
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "sourceHash": "9d045cd"
   },
-  "settings.fileOperations.allowFileExtensionChanges.label": "Allow file extension changes",
+  "settings.fileOperations.allowFileExtensionChanges.label": "允許更改副檔名",
   "@settings.fileOperations.allowFileExtensionChanges.label": {
     "sourceHash": "9bc0b3a"
   },
-  "settings.fileOperations.allowFileExtensionChanges.description": "What to do when you rename a file and the extension changes.",
+  "settings.fileOperations.allowFileExtensionChanges.description": "當你重新命名檔案而副檔名有所改變時的處理方式。",
   "@settings.fileOperations.allowFileExtensionChanges.description": {
     "sourceHash": "e331325"
   },
-  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "Always allow",
+  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "永遠允許",
   "@settings.fileOperations.allowFileExtensionChanges.opt.yes": {
     "sourceHash": "977618b"
   },
-  "settings.fileOperations.allowFileExtensionChanges.opt.no": "Never allow",
+  "settings.fileOperations.allowFileExtensionChanges.opt.no": "永不允許",
   "@settings.fileOperations.allowFileExtensionChanges.opt.no": {
     "sourceHash": "bbf0cfa"
   },
-  "settings.fileOperations.allowFileExtensionChanges.opt.ask": "Always ask",
+  "settings.fileOperations.allowFileExtensionChanges.opt.ask": "每次詢問",
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
-  "settings.fileOperations.pasteClipboardAsFile.label": "Paste clipboard content as a file",
+  "settings.fileOperations.pasteClipboardAsFile.label": "將剪貼板內容貼上為檔案",
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "What ⌘V does in a folder when the clipboard holds text, an image, or a PDF instead of copied files.",
+  "settings.fileOperations.pasteClipboardAsFile.description": "當剪貼板中存放的是文字、影像或 PDF，而不是已複製的檔案時，在資料夾中按 ⌘V 的行為。",
   "@settings.fileOperations.pasteClipboardAsFile.description": {
     "sourceHash": "7513ae5"
   },
-  "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Do nothing",
+  "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "什麼都不做",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
   },
-  "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Create file",
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "建立檔案",
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFile": {
     "sourceHash": "6990d32"
   },
-  "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "Create and rename",
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "建立並重新命名",
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Opening archives and bundles",
+  "settings.archives.enterBehavior.label": "開啟壓縮檔和套件",
   "@settings.archives.enterBehavior.label": {
     "sourceHash": "554e1f7"
   },
-  "settings.archives.enterBehavior.description": "Choose what pressing Enter does for each format: browse inside it like a folder, open it in another app, or ask each time.",
+  "settings.archives.enterBehavior.description": "選擇每種格式按 Enter 鍵時的行為：像資料夾一樣瀏覽它、用其他 App 開啟它，或者每次都詢問。",
   "@settings.archives.enterBehavior.description": {
     "sourceHash": "26dfc0c"
   },
-  "settings.archives.card.archives": "Archives",
+  "settings.archives.card.archives": "壓縮檔",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
   },
-  "settings.archives.card.bundles": "App bundles",
+  "settings.archives.card.bundles": "App 套件",
   "@settings.archives.card.bundles": {
     "sourceHash": "4a5e902"
   },
-  "settings.archives.zip.label": "Zip archives",
+  "settings.archives.zip.label": "Zip 壓縮檔",
   "@settings.archives.zip.label": {
     "sourceHash": "ec0fd54"
   },
-  "settings.archives.zip.description": "What pressing Enter does on a zip file.",
+  "settings.archives.zip.description": "在 zip 檔案上按 Enter 鍵時的行為。",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
-  "settings.archives.bundle.label": "App bundles",
+  "settings.archives.bundle.label": "App 套件",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
   },
-  "settings.archives.bundle.description": "What pressing Enter does on a .app, .bundle, or .framework.",
+  "settings.archives.bundle.description": "在 .app、.bundle 或 .framework 上按 Enter 鍵時的行為。",
   "@settings.archives.bundle.description": {
     "sourceHash": "9d30dcc"
   },
-  "settings.archives.opt.browse": "Browse",
+  "settings.archives.opt.browse": "瀏覽",
   "@settings.archives.opt.browse": {
     "sourceHash": "3227aa9"
   },
-  "settings.archives.opt.open": "Open",
+  "settings.archives.opt.open": "開啟",
   "@settings.archives.opt.open": {
     "sourceHash": "ed077f3"
   },
-  "settings.archives.opt.ask": "Ask",
+  "settings.archives.opt.ask": "詢問",
   "@settings.archives.opt.ask": {
     "sourceHash": "b8c209c"
   },
-  "settings.archives.compressionLevel.label": "Compression level",
+  "settings.archives.compressionLevel.label": "壓縮層級",
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
-  "settings.archives.compressionLevel.description": "How hard to compress when Cmdr makes a zip. Higher levels make a smaller file but take longer to pack. This applies to the Compress command and to copying or moving files into a zip.",
+  "settings.archives.compressionLevel.description": "Cmdr 製作 zip 時的壓縮強度。層級越高，檔案越小，但打包耗時越長。這個設定適用於壓縮指令，以及將檔案複製或移動到 zip 中。",
   "@settings.archives.compressionLevel.description": {
     "sourceHash": "0ebedaf"
   },
-  "settings.archives.compressionLevel.faster": "Faster",
+  "settings.archives.compressionLevel.faster": "更快",
   "@settings.archives.compressionLevel.faster": {
     "sourceHash": "8d0160c"
   },
-  "settings.archives.compressionLevel.smaller": "Smaller",
+  "settings.archives.compressionLevel.smaller": "更小",
   "@settings.archives.compressionLevel.smaller": {
     "sourceHash": "0041719"
   },
-  "settings.indexing.enabled.label": "Drive indexing",
+  "settings.indexing.enabled.label": "磁碟機索引",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
   },
-  "settings.indexing.enabled.description": "Index your drive in the background for instant directory sizes.",
+  "settings.indexing.enabled.description": "在背景為你的磁碟機建立索引，以便即時顯示目錄大小。",
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
-  "settings.mediaIndex.card": "Image search",
+  "settings.mediaIndex.card": "影像搜尋",
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
-  "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple''s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
+  "settings.mediaIndex.privacyNote": "這一切完全在你的 Mac 上，透過 Apple 內建的 Vision 框架執行。你的影像絕不離開你的電腦，也不涉及任何 AI 提供者或 API 金鑰。",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
   },
-  "settings.mediaIndex.clip.title": "Semantic search",
+  "settings.mediaIndex.clip.title": "語意搜尋",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "Find photos by describing what''s in them, like ''beach sunset'', using an on-device AI model.",
+  "settings.mediaIndex.clip.description": "透過描述照片中的內容來尋找照片，例如「海灘日落」，使用裝置本機的 AI 模型。",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
-  "settings.mediaIndex.clip.ready": "Ready — search your photos by description.",
+  "settings.mediaIndex.clip.ready": "已就緒 — 透過描述搜尋你的照片。",
   "@settings.mediaIndex.clip.ready": {
     "sourceHash": "c17e03d"
   },
-  "settings.mediaIndex.clip.comingSoon": "Coming soon.",
+  "settings.mediaIndex.clip.comingSoon": "即將推出。",
   "@settings.mediaIndex.clip.comingSoon": {
     "sourceHash": "9e3090d"
   },
-  "settings.mediaIndex.clip.download": "Download model (~{sizeText} MB)",
+  "settings.mediaIndex.clip.download": "下載模型（~{sizeText} MB）",
   "@settings.mediaIndex.clip.download": {
     "sourceHash": "1eced44"
   },
-  "settings.mediaIndex.clip.downloading": "Downloading…",
+  "settings.mediaIndex.clip.downloading": "正在下載…",
   "@settings.mediaIndex.clip.downloading": {
     "sourceHash": "a778d34"
   },
-  "settings.mediaIndex.clip.failed": "The download didn''t finish. Check your connection and try again.",
+  "settings.mediaIndex.clip.failed": "下載沒有完成。請檢查你的網路連線後再試一次。",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
   },
-  "settings.mediaIndex.clip.notSupported": "Search by description needs a Mac with Apple silicon.",
+  "settings.mediaIndex.clip.notSupported": "「透過描述搜尋」需要搭載 Apple 晶片的 Mac。",
   "@settings.mediaIndex.clip.notSupported": {
     "sourceHash": "8ef7848"
   },
-  "settings.mediaIndex.clip.offButInstalled": "The model is downloaded, but search by description is off.",
+  "settings.mediaIndex.clip.offButInstalled": "模型已下載，但「透過描述搜尋」已關閉。",
   "@settings.mediaIndex.clip.offButInstalled": {
     "sourceHash": "d70c2fe"
   },
-  "settings.mediaIndex.clip.deleteButton": "Delete model (reclaim {size})",
+  "settings.mediaIndex.clip.deleteButton": "刪除模型（釋出 {size}）",
   "@settings.mediaIndex.clip.deleteButton": {
     "sourceHash": "1957b82"
   },
-  "settings.mediaIndex.clip.deleting": "Deleting…",
+  "settings.mediaIndex.clip.deleting": "正在刪除…",
   "@settings.mediaIndex.clip.deleting": {
     "sourceHash": "43b5894"
   },
-  "settings.mediaIndex.clip.deleteConfirmTitle": "Delete the semantic search model?",
+  "settings.mediaIndex.clip.deleteConfirmTitle": "要刪除語意搜尋模型嗎？",
   "@settings.mediaIndex.clip.deleteConfirmTitle": {
     "sourceHash": "f55b160"
   },
-  "settings.mediaIndex.clip.deleteConfirmBody": "This frees {size} and turns off search by description. Keyword and tag search keep working, and you can download the model again anytime.",
+  "settings.mediaIndex.clip.deleteConfirmBody": "這會釋出 {size}，並關閉「透過描述搜尋」。關鍵字搜尋和標籤搜尋仍可正常使用，你隨時可以重新下載模型。",
   "@settings.mediaIndex.clip.deleteConfirmBody": {
     "sourceHash": "f3703a7"
   },
-  "settings.mediaIndex.clip.deleteFailed": "The model couldn''t be removed just now. Try again in a moment.",
+  "settings.mediaIndex.clip.deleteFailed": "現在沒辦法移除模型。請稍後再試一次。",
   "@settings.mediaIndex.clip.deleteFailed": {
     "sourceHash": "6c9ced5"
   },
-  "settings.mediaIndex.cards.enable": "Enable indexing",
+  "settings.mediaIndex.cards.enable": "啟用索引",
   "@settings.mediaIndex.cards.enable": {
     "sourceHash": "3dc7ddf"
   },
-  "settings.mediaIndex.cards.folders": "Folders to index",
+  "settings.mediaIndex.cards.folders": "要建立索引的資料夾",
   "@settings.mediaIndex.cards.folders": {
     "sourceHash": "1aa33d2"
   },
-  "settings.mediaIndex.semanticSearch.label": "Search photos by description",
+  "settings.mediaIndex.semanticSearch.label": "透過描述搜尋照片",
   "@settings.mediaIndex.semanticSearch.label": {
     "sourceHash": "8cbf6af"
   },
-  "settings.mediaIndex.progressSummary.title": "Indexing now",
+  "settings.mediaIndex.progressSummary.title": "正在建立索引",
   "@settings.mediaIndex.progressSummary.title": {
     "sourceHash": "44501db"
   },
-  "settings.mediaIndex.enabled.label": "Index image contents",
+  "settings.mediaIndex.enabled.label": "為影像內容建立索引",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
   },
-  "settings.mediaIndex.enabled.description": "Read the text inside your images so you can search it. Runs on your Mac and never leaves it. Covers local drives for now.",
+  "settings.mediaIndex.enabled.description": "讀取影像中的文字，方便你搜尋。在你的 Mac 上執行，絕不外傳。目前支援本機磁碟機。",
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
-  "settings.mediaIndex.showFileStatusIcons.label": "Show status badges on image files",
+  "settings.mediaIndex.showFileStatusIcons.label": "在影像檔案上顯示狀態標記",
   "@settings.mediaIndex.showFileStatusIcons.label": {
     "sourceHash": "a0a2372"
   },
-  "settings.mediaIndex.showFileStatusIcons.description": "Add a small badge to each image in the file list showing whether it''s been indexed for search.",
+  "settings.mediaIndex.showFileStatusIcons.description": "在檔案清單中為每張影像加上一個小標記，顯示它是否已建立搜尋索引。",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
   },
-  "settings.mediaIndex.networkVolumes.label": "Network drive image indexing",
+  "settings.mediaIndex.networkVolumes.label": "網路磁碟機影像索引",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"
   },
-  "settings.mediaIndex.networkVolumes.description": "Internal: network (SMB) drives the user opted into background image indexing.",
+  "settings.mediaIndex.networkVolumes.description": "內部：使用者已開啟背景影像索引的網路（SMB）磁碟機。",
   "@settings.mediaIndex.networkVolumes.description": {
     "sourceHash": "8f3c883"
   },
-  "settings.mediaIndex.alwaysIndexVolumes.label": "Always-index drives",
+  "settings.mediaIndex.alwaysIndexVolumes.label": "永遠建立索引的磁碟機",
   "@settings.mediaIndex.alwaysIndexVolumes.label": {
     "sourceHash": "a975b70"
   },
-  "settings.mediaIndex.alwaysIndexVolumes.description": "Internal: drives the user marked to always index their photos.",
+  "settings.mediaIndex.alwaysIndexVolumes.description": "內部：使用者標記為永遠為其照片建立索引的磁碟機。",
   "@settings.mediaIndex.alwaysIndexVolumes.description": {
     "sourceHash": "b543f01"
   },
-  "settings.mediaIndex.alwaysIndexFolders.label": "Always-index folders",
+  "settings.mediaIndex.alwaysIndexFolders.label": "永遠建立索引的資料夾",
   "@settings.mediaIndex.alwaysIndexFolders.label": {
     "sourceHash": "5b2f6b5"
   },
-  "settings.mediaIndex.alwaysIndexFolders.description": "Internal: folders the user marked to always index their photos.",
+  "settings.mediaIndex.alwaysIndexFolders.description": "內部：使用者標記為永遠為其照片建立索引的資料夾。",
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
-  "settings.mediaIndex.excludedFolders.label": "Excluded folders",
+  "settings.mediaIndex.excludedFolders.label": "已排除的資料夾",
   "@settings.mediaIndex.excludedFolders.label": {
     "sourceHash": "7ec409b"
   },
-  "settings.mediaIndex.excludedFolders.description": "Internal: folders the user excluded from image indexing.",
+  "settings.mediaIndex.excludedFolders.description": "內部：使用者從影像索引中排除的資料夾。",
   "@settings.mediaIndex.excludedFolders.description": {
     "sourceHash": "af670b1"
   },
-  "settings.mediaIndex.networkVolumes.intro": "Network drives are indexed only when you turn them on here. Cmdr reads photos over the network gently: only while you''re not busy, at a limited speed, and it pauses when the drive disconnects.",
+  "settings.mediaIndex.networkVolumes.intro": "只有在這裡開啟後，網路磁碟機才會建立索引。Cmdr 透過網路讀取照片時很克制：只在你不忙的時候讀取，速度有限，並會在磁碟機中斷連線時暫停。",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"
   },
-  "settings.mediaIndex.networkVolumes.none": "Connect a network drive to index the photos on it.",
+  "settings.mediaIndex.networkVolumes.none": "連接一部網路磁碟機，就能為上面的照片建立索引。",
   "@settings.mediaIndex.networkVolumes.none": {
     "sourceHash": "badb753"
   },
-  "settings.mediaIndex.networkVolumes.optInLabel": "Index photos on {name}",
+  "settings.mediaIndex.networkVolumes.optInLabel": "為 {name} 上的照片建立索引",
   "@settings.mediaIndex.networkVolumes.optInLabel": {
     "sourceHash": "0a536c8"
   },
-  "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr reads the text inside these photos so you can search it. It runs on your Mac, and the photos never leave your network.",
+  "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr 會讀取這些照片中的文字，方便你搜尋。整個過程都在你的 Mac 上執行，照片不會離開你的網路。",
   "@settings.mediaIndex.networkVolumes.optInHelp": {
     "sourceHash": "a2da6d4"
   },
-  "settings.mediaIndex.networkVolumes.alwaysLabel": "Always index this drive",
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "永遠為這部磁碟機建立索引",
   "@settings.mediaIndex.networkVolumes.alwaysLabel": {
     "sourceHash": "123af5e"
   },
-  "settings.mediaIndex.networkVolumes.alwaysHelp": "Turn this on for a photo archive you rarely browse, so its photos get indexed anyway.",
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "如果有個照片封存你很少瀏覽，可以開啟這一項，讓其中的照片也能建立索引。",
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Always index photos on {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "永遠為 {name} 上的照片建立索引",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
     "sourceHash": "10ee003"
   },
-  "settings.mediaIndex.networkVolumes.paused": "Paused, resumes when this drive reconnects",
+  "settings.mediaIndex.networkVolumes.paused": "已暫停，將在這部磁碟機重新連線時繼續",
   "@settings.mediaIndex.networkVolumes.paused": {
     "sourceHash": "4df8d65"
   },
-  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} photo indexed} other {{countText} photos indexed}}",
+  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, other {已為 {countText} 張照片建立索引}}",
   "@settings.mediaIndex.networkVolumes.indexed": {
     "sourceHash": "3c6ee39"
   },
-  "settings.mediaIndex.networkVolumes.notIndexedYet": "Not indexed yet",
+  "settings.mediaIndex.networkVolumes.notIndexedYet": "尚未建立索引",
   "@settings.mediaIndex.networkVolumes.notIndexedYet": {
     "sourceHash": "808e81b"
   },
-  "settings.mediaIndex.importanceThreshold.label": "How much to index",
+  "settings.mediaIndex.importanceThreshold.label": "索引範圍",
   "@settings.mediaIndex.importanceThreshold.label": {
     "sourceHash": "dfe67c2"
   },
-  "settings.mediaIndex.importanceThreshold.description": "Cmdr indexes the folders you use most first. Choose how deep to go.",
+  "settings.mediaIndex.importanceThreshold.description": "Cmdr 會優先為你最常用的資料夾建立索引。選擇要深入到什麼程度。",
   "@settings.mediaIndex.importanceThreshold.description": {
     "sourceHash": "2dc9c8b"
   },
-  "settings.mediaIndex.parallelism.label": "Parallel workers",
+  "settings.mediaIndex.parallelism.label": "平行工作程序",
   "@settings.mediaIndex.parallelism.label": {
     "sourceHash": "ded85c9"
   },
-  "settings.mediaIndex.parallelism.description": "How many workers image indexing runs at once. More can be faster, but on Apple Silicon the gain flattens out past two, and higher settings back off on their own when your Mac heats up.",
+  "settings.mediaIndex.parallelism.description": "影像索引同時執行多少個工作程序。數量越多可能越快，但在 Apple 晶片上超過兩個之後提升就趨於平緩，而且當你的 Mac 變熱時，較高的設定會自動回落。",
   "@settings.mediaIndex.parallelism.description": {
     "sourceHash": "12ecc91"
   },
-  "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Only my most-used folders",
+  "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "只有我最常用的資料夾",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "sourceHash": "1db4208"
   },
-  "settings.mediaIndex.importanceThreshold.bucket.often": "Folders I use often",
+  "settings.mediaIndex.importanceThreshold.bucket.often": "我經常使用的資料夾",
   "@settings.mediaIndex.importanceThreshold.bucket.often": {
     "sourceHash": "c53b31d"
   },
-  "settings.mediaIndex.importanceThreshold.bucket.sometimes": "Folders I open now and then",
+  "settings.mediaIndex.importanceThreshold.bucket.sometimes": "我偶爾開啟的資料夾",
   "@settings.mediaIndex.importanceThreshold.bucket.sometimes": {
     "sourceHash": "0c32ab7"
   },
-  "settings.mediaIndex.importanceThreshold.bucket.most": "Most folders",
+  "settings.mediaIndex.importanceThreshold.bucket.most": "大多數資料夾",
   "@settings.mediaIndex.importanceThreshold.bucket.most": {
     "sourceHash": "8f4c535"
   },
-  "settings.mediaIndex.importanceThreshold.bucket.everywhere": "Everywhere, even folders I rarely open",
+  "settings.mediaIndex.importanceThreshold.bucket.everywhere": "所有位置，連我很少開啟的資料夾也算",
   "@settings.mediaIndex.importanceThreshold.bucket.everywhere": {
     "sourceHash": "14b0e89"
   },
-  "settings.mediaIndex.importanceThreshold.preview": "{images, plural, one {Indexes about {imagesText} image} other {Indexes about {imagesText} images}} {folders, plural, one {in {foldersText} folder} other {across {foldersText} folders}}",
+  "settings.mediaIndex.importanceThreshold.preview": "{images, plural, other {為約 {imagesText} 張影像建立索引}}{folders, plural, other {，涉及 {foldersText} 個資料夾}}",
   "@settings.mediaIndex.importanceThreshold.preview": {
     "sourceHash": "487dc79"
   },
-  "settings.mediaIndex.importanceThreshold.previewNone": "Nothing matches at this level yet. Drag right to index more.",
+  "settings.mediaIndex.importanceThreshold.previewNone": "這個層級下暫時沒有相符的內容。向右拖曳可以索引更多。",
   "@settings.mediaIndex.importanceThreshold.previewNone": {
     "sourceHash": "c015ea6"
   },
-  "settings.mediaIndex.importanceThreshold.previewCounting": "Working out how much this covers…",
+  "settings.mediaIndex.importanceThreshold.previewCounting": "正在計算這會涵蓋多少內容…",
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "sourceHash": "659de34"
   },
-  "settings.mediaIndex.importanceThreshold.waitingForImportance": "Working out which folders matter. Image indexing starts right after.",
+  "settings.mediaIndex.importanceThreshold.waitingForImportance": "正在判斷哪些資料夾重要。影像索引會緊接著開始。",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
   },
-  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "The drive scan is still running. Image indexing starts as soon as it finishes.",
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "磁碟機掃描仍在進行中。影像索引會在掃描完成後立刻開始。",
   "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
     "sourceHash": "1d50f92"
   },
-  "settings.mediaIndex.importanceThreshold.pending": "Some drives are still scanning, so these numbers will grow.",
+  "settings.mediaIndex.importanceThreshold.pending": "有些磁碟機仍在掃描中，所以這些數字還會增加。",
   "@settings.mediaIndex.importanceThreshold.pending": {
     "sourceHash": "c144f80"
   },
-  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, one {Adds about {imagesText} image} other {Adds about {imagesText} images}}",
+  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, other {新增約 {imagesText} 張影像}}",
   "@settings.mediaIndex.importanceThreshold.deltaAdd": {
     "sourceHash": "d5fcbb4"
   },
-  "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, one {Leaves out about {imagesText} image} other {Leaves out about {imagesText} images}}",
+  "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, other {少了約 {imagesText} 張影像}}",
   "@settings.mediaIndex.importanceThreshold.deltaRemove": {
     "sourceHash": "1c1486e"
   },
-  "settings.mediaIndex.importanceThreshold.floor": "Junk like node_modules and system caches is always skipped.",
+  "settings.mediaIndex.importanceThreshold.floor": "像 node_modules 和系統快取這類垃圾內容，一律會略過。",
   "@settings.mediaIndex.importanceThreshold.floor": {
     "sourceHash": "8839d14"
   },
-  "settings.mediaIndex.progress.local": "This Mac",
+  "settings.mediaIndex.progress.local": "這部 Mac",
   "@settings.mediaIndex.progress.local": {
     "sourceHash": "79a4aef"
   },
-  "settings.mediaIndex.progress.ofTotal": "{total, plural, one {{enrichedText} of {totalText} image indexed} other {{enrichedText} of {totalText} images indexed}}",
+  "settings.mediaIndex.progress.ofTotal": "{total, plural, other {{totalText} 張影像中已有 {enrichedText} 張建立索引}}",
   "@settings.mediaIndex.progress.ofTotal": {
     "sourceHash": "2acda74"
   },
-  "settings.mediaIndex.progress.counting": "Counting images…",
+  "settings.mediaIndex.progress.counting": "正在統計影像數量…",
   "@settings.mediaIndex.progress.counting": {
     "sourceHash": "fa08ea7"
   },
-  "settings.mediaIndex.progress.done": "{total, plural, one {{totalText} image indexed} other {{totalText} images indexed}}",
+  "settings.mediaIndex.progress.done": "{total, plural, other {已為全部 {totalText} 張影像建立索引}}",
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "You have {totalText} images indexed; your setting covers {coveredText}. The extra {doomed, plural, one {{doomedText} entry stays} other {{doomedText} entries stay}} searchable until you delete them.",
+  "settings.mediaIndex.reclaim.line": "你已為 {totalText} 張影像建立索引；目前的設定涵蓋 {coveredText} 張。{doomed, plural, other {其餘 {doomedText} 個項目在你刪除之前仍可搜尋}}。",
   "@settings.mediaIndex.reclaim.line": {
     "sourceHash": "aaef941"
   },
-  "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Delete the extra entry and free about {size}} other {Delete the extra entries and free about {size}}}",
+  "settings.mediaIndex.reclaim.button": "{doomed, plural, other {刪除多餘的項目並釋出約 {size}}}",
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Delete extra indexed entries",
+  "settings.mediaIndex.reclaim.confirmTitle": "刪除多餘的已建立索引項目",
   "@settings.mediaIndex.reclaim.confirmTitle": {
     "sourceHash": "778e9c6"
   },
-  "settings.mediaIndex.reclaim.confirmBody": "Delete {doomed, plural, one {{doomedText} indexed entry} other {{doomedText} indexed entries}} to free about {size}? You can index these images again later, but re-reading them takes time.",
+  "settings.mediaIndex.reclaim.confirmBody": "要刪除 {doomed, plural, other {{doomedText} 個已建立索引的項目}} 以釋出約 {size} 嗎？你之後可以重新為這些影像建立索引，但重新讀取需要時間。",
   "@settings.mediaIndex.reclaim.confirmBody": {
     "sourceHash": "1491b12"
   },
-  "settings.mediaIndex.reclaim.freed": "Freed about {size}",
+  "settings.mediaIndex.reclaim.freed": "已釋出約 {size}",
   "@settings.mediaIndex.reclaim.freed": {
     "sourceHash": "8606f6b"
   },
-  "settings.mediaIndex.reclaim.alreadyCleared": "Those entries are already cleared",
+  "settings.mediaIndex.reclaim.alreadyCleared": "這些項目已經清除了",
   "@settings.mediaIndex.reclaim.alreadyCleared": {
     "sourceHash": "742a715"
   },
-  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr couldn''t delete the extra entries. Please try again.",
+  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr 無法刪除多餘的項目。請再試一次。",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
     "sourceHash": "3295df4"
   },
-  "settings.indexing.askForEachDrive.label": "Ask for each drive",
+  "settings.indexing.askForEachDrive.label": "為每部磁碟機詢問",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"
   },
-  "settings.indexing.askForEachDrive.description": "When you first open a network share or device, ask whether to index it.",
+  "settings.indexing.askForEachDrive.description": "當你首次開啟網路共享或裝置時，詢問是否要為它建立索引。",
   "@settings.indexing.askForEachDrive.description": {
     "sourceHash": "189552c"
   },
-  "settings.indexing.staleNotify.label": "Notify me if any external drive index goes stale",
+  "settings.indexing.staleNotify.label": "任一外接磁碟機的索引過期時通知我",
   "@settings.indexing.staleNotify.label": {
     "sourceHash": "690692a"
   },
-  "settings.indexing.staleNotify.description": "You''ll still see the yellow status if you turn this off.",
+  "settings.indexing.staleNotify.description": "即使你關閉這一項，仍會看到黃色狀態。",
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
-  "settings.indexing.masterOffNote": "Drive indexing is off, so no drive is indexed and folder sizes stay hidden. Each drive keeps its own on or off choice, ready for when you turn this back on.",
+  "settings.indexing.masterOffNote": "磁碟機索引已關閉，因此沒有磁碟機在建立索引，資料夾大小也不會顯示。每部磁碟機都會記住自己的開關選擇，等你重新開啟時就會再次生效。",
   "@settings.indexing.masterOffNote": {
     "sourceHash": "311f02a"
   },
-  "settings.indexing.overriddenBadge": "Off with drive indexing",
+  "settings.indexing.overriddenBadge": "已隨磁碟機索引關閉",
   "@settings.indexing.overriddenBadge": {
     "sourceHash": "89db71f"
   },
-  "settings.indexing.reEnableNotifications.label": "Re-enable notifications for all drives",
+  "settings.indexing.reEnableNotifications.label": "為所有磁碟機重新啟用通知",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"
   },
-  "settings.indexing.reEnableNotifications.button": "Re-enable",
+  "settings.indexing.reEnableNotifications.button": "重新啟用",
   "@settings.indexing.reEnableNotifications.button": {
     "sourceHash": "63de421"
   },
-  "settings.indexing.reEnableNotifications.description": "Ask again about indexing each drive you turned the prompt off for.",
+  "settings.indexing.reEnableNotifications.description": "對你關閉過提示的每部磁碟機，重新詢問是否要建立索引。",
   "@settings.indexing.reEnableNotifications.description": {
     "sourceHash": "a332527"
   },
-  "settings.indexing.reEnableNotifications.disabledTooltip": "You haven''t turned off the prompt for any drive yet.",
+  "settings.indexing.reEnableNotifications.disabledTooltip": "你還沒有為任何磁碟機關閉提示。",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
     "sourceHash": "3a5a54b"
   },
-  "settings.indexing.silencedDrives.label": "Silenced drive prompts",
+  "settings.indexing.silencedDrives.label": "已靜音的磁碟機提示",
   "@settings.indexing.silencedDrives.label": {
     "sourceHash": "b7b9bc4"
   },
-  "settings.indexing.silencedDrives.description": "Internal: drives the user silenced the indexing prompt for.",
+  "settings.indexing.silencedDrives.description": "內部：使用者已靜音索引提示的磁碟機。",
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Stale dialog shown",
+  "settings.indexing.firstStaleDialogShown.label": "已顯示過期對話框",
   "@settings.indexing.firstStaleDialogShown.label": {
     "sourceHash": "5734f1a"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Internal: whether the one-time stale-drive dialog has been shown.",
+  "settings.indexing.firstStaleDialogShown.description": "內部：是否已顯示過一次性的過期磁碟機對話框。",
   "@settings.indexing.firstStaleDialogShown.description": {
     "sourceHash": "a879dbb"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Notify on downloads",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.label": "下載時通知",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
     "sourceHash": "55efff7"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.description": "How to surface new files arriving in your Downloads folder.",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.description": "如何提示有新檔案送達你的「下載項目」資料夾。",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.description": {
     "sourceHash": "dd701c5"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "In-app",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "App 內",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list). Its sibling options (App 內, 兩者都用, 都不用) ARE translated."
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Both",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "兩者都用",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
     "sourceHash": "b6c1d86"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": "Neither",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": "都不用",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Go to latest download",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新的下載項目",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "在任何 App 中按 ⌃⌥⌘J 就能跳到你最近的下載項目。需要「完全取用磁碟」權限。",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": "Global go-to-latest-download binding",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": "全域「前往最新下載項目」的按鍵組合",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": {
     "sourceHash": "cf811fe"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "The system-wide combo that triggers go-to-latest-download. Edited under Keyboard shortcuts.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "觸發「前往最新下載項目」的系統層級組合鍵。在「鍵盤快速鍵」底下編輯。",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
     "sourceHash": "77e5c31"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Global go-to-latest-download warn-toast acknowledged",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "已確認全域「前往最新下載項目」的警告提示",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
     "sourceHash": "f45f095"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Internal. Suppresses the first-trigger warning toast.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "內部。抑制首次觸發的警告提示。",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
     "sourceHash": "5f4247c"
   },
-  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": "Downloads toast collapsed",
+  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": "下載提示已收合",
   "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": {
     "sourceHash": "8294731"
   },
-  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.description": "Internal. Remembers whether the downloads toast was last collapsed.",
+  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.description": "內部。記住下載提示上次是否處於收合狀態。",
   "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.description": {
     "sourceHash": "aab60b8"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "Low disk space warning",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "磁碟空間不足警告",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "How to warn you when your startup disk runs low on free space.",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "當你的啟動磁碟可用空間不足時，要如何向你發出警告。",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
     "sourceHash": "32b852d"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "In-app",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "App 內",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list). Its sibling options (App 內, 關閉) ARE translated."
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Off",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "關閉",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
     "sourceHash": "ca7981b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "Warning threshold",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "警告閾值",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Warn when free space drops below this percent of your startup disk.",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "當可用空間低於啟動磁碟的這個百分比時發出警告。",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "sourceHash": "9ed41b8"
   },
-  "settings.search.autoApply.label": "Auto-apply searches",
+  "settings.search.autoApply.label": "自動套用搜尋",
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or click the run button to search.",
+  "settings.search.autoApply.description": "在你輸入時自動執行檔名和正規表示式搜尋（停止輸入 1 秒後）。AI 搜尋因為會產生費用，所以一律等你按 Enter 鍵。關閉時，按 Enter 鍵或點按執行按鈕來搜尋。",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
-  "settings.ai.provider.label": "Provider",
+  "settings.ai.provider.label": "提供者",
   "@settings.ai.provider.label": {
     "sourceHash": "472590a"
   },
-  "settings.ai.provider.description": "Choose how AI features are powered.",
+  "settings.ai.provider.description": "選擇 AI 功能由什麼來驅動。",
   "@settings.ai.provider.description": {
     "sourceHash": "f8c0f5d"
   },
-  "settings.ai.provider.opt.off": "Off",
+  "settings.ai.provider.opt.off": "關閉",
   "@settings.ai.provider.opt.off": {
     "sourceHash": "ca7981b"
   },
-  "settings.ai.provider.opt.cloud": "Cloud AI",
+  "settings.ai.provider.opt.cloud": "雲端 AI",
   "@settings.ai.provider.opt.cloud": {
     "sourceHash": "457588a"
   },
-  "settings.ai.provider.opt.local": "Local LLM",
+  "settings.ai.provider.opt.local": "本機 LLM",
   "@settings.ai.provider.opt.local": {
     "sourceHash": "6689271"
   },
-  "settings.ai.cloudProvider.label": "Service",
+  "settings.ai.cloudProvider.label": "服務",
   "@settings.ai.cloudProvider.label": {
     "sourceHash": "d677190"
   },
-  "settings.ai.cloudProvider.description": "Which cloud AI service to use.",
+  "settings.ai.cloudProvider.description": "要使用哪一個雲端 AI 服務。",
   "@settings.ai.cloudProvider.description": {
     "sourceHash": "3300ce9"
   },
-  "settings.ai.cloudProviderConfigs.label": "Provider configurations",
+  "settings.ai.cloudProviderConfigs.label": "提供者設定組合",
   "@settings.ai.cloudProviderConfigs.label": {
     "sourceHash": "7b73e56"
   },
-  "settings.ai.cloudProviderConfigs.description": "Per-provider API keys and model settings.",
+  "settings.ai.cloudProviderConfigs.description": "各提供者的 API 金鑰和模型設定。",
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
-  "settings.ai.localContextSize.label": "Context window",
+  "settings.ai.localContextSize.label": "脈絡視窗",
   "@settings.ai.localContextSize.label": {
     "sourceHash": "7696d08"
   },
-  "settings.ai.localContextSize.description": "Number of tokens the local model can process at once. Larger values use more memory.",
+  "settings.ai.localContextSize.description": "本機模型一次能處理的 token 數。數值越大，佔用的記憶體越多。",
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
-  "settings.network.enabled.label": "Enable networking",
+  "settings.network.enabled.label": "啟用網路功能",
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
-  "settings.network.enabled.description": "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won''t ask macOS for Local Network access.",
+  "settings.network.enabled.description": "在你的本機網路上探索 SMB 伺服器並連接它們。關閉時，Cmdr 仍可在已裝載的共享上讀寫檔案，但不會向 macOS 要求本機網路的存取權。",
   "@settings.network.enabled.description": {
     "sourceHash": "3500345"
   },
-  "settings.network.firstTriggerDone.label": "Network discovery started",
+  "settings.network.firstTriggerDone.label": "網路探索已啟動",
   "@settings.network.firstTriggerDone.label": {
     "sourceHash": "06aa851"
   },
-  "settings.network.firstTriggerDone.description": "Internal: tracks whether discovery has been triggered at least once. Hidden from the UI.",
+  "settings.network.firstTriggerDone.description": "內部：記錄是否已至少觸發過一次探索。對介面隱藏。",
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
-  "settings.network.directSmbConnection.label": "Connect directly to SMB shares",
+  "settings.network.directSmbConnection.label": "直接連接到 SMB 共享",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.",
+  "settings.network.directSmbConnection.description": "啟用後，Cmdr 會與 SMB 共享建立直接連線，讓檔案操作更快。系統裝載仍會保留，供 Finder 和其他 App 使用。",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
-  "settings.network.shareCacheDuration.label": "Share cache duration",
+  "settings.network.shareCacheDuration.label": "共享快取時間",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
   },
-  "settings.network.shareCacheDuration.description": "How long to cache the list of available shares on a server before refreshing.",
+  "settings.network.shareCacheDuration.description": "在重新整理之前，要把伺服器上可用共享的列表快取多久。",
   "@settings.network.shareCacheDuration.description": {
     "sourceHash": "18190c5"
   },
-  "settings.network.shareCacheDuration.opt.s30": "30 seconds",
+  "settings.network.shareCacheDuration.opt.s30": "30 秒",
   "@settings.network.shareCacheDuration.opt.s30": {
     "sourceHash": "f3d1954"
   },
-  "settings.network.shareCacheDuration.opt.min5": "5 minutes",
+  "settings.network.shareCacheDuration.opt.min5": "5 分鐘",
   "@settings.network.shareCacheDuration.opt.min5": {
     "sourceHash": "3170543"
   },
-  "settings.network.shareCacheDuration.opt.hour1": "1 hour",
+  "settings.network.shareCacheDuration.opt.hour1": "1 小時",
   "@settings.network.shareCacheDuration.opt.hour1": {
     "sourceHash": "f8b8883"
   },
-  "settings.network.shareCacheDuration.opt.day1": "1 day",
+  "settings.network.shareCacheDuration.opt.day1": "1 天",
   "@settings.network.shareCacheDuration.opt.day1": {
     "sourceHash": "fa665d9"
   },
-  "settings.network.shareCacheDuration.opt.days30": "30 days",
+  "settings.network.shareCacheDuration.opt.days30": "30 天",
   "@settings.network.shareCacheDuration.opt.days30": {
     "sourceHash": "ffd7280"
   },
-  "settings.network.timeoutMode.label": "Network timeout mode",
+  "settings.network.timeoutMode.label": "網路逾時模式",
   "@settings.network.timeoutMode.label": {
     "sourceHash": "5d1c989"
   },
-  "settings.network.timeoutMode.description": "How long to wait when connecting to network shares.",
+  "settings.network.timeoutMode.description": "連接網路共享時要等多久。",
   "@settings.network.timeoutMode.description": {
     "sourceHash": "9f6de9d"
   },
-  "settings.network.timeoutMode.opt.normal": "Normal",
+  "settings.network.timeoutMode.opt.normal": "正常",
   "@settings.network.timeoutMode.opt.normal": {
     "sourceHash": "a7248ee"
   },
-  "settings.network.timeoutMode.optDesc.normal": "For typical local networks (15s timeout)",
+  "settings.network.timeoutMode.optDesc.normal": "適用於一般的本機網路（15s 逾時）",
   "@settings.network.timeoutMode.optDesc.normal": {
     "sourceHash": "e20eca1"
   },
-  "settings.network.timeoutMode.opt.slow": "Slow network",
+  "settings.network.timeoutMode.opt.slow": "慢速網路",
   "@settings.network.timeoutMode.opt.slow": {
     "sourceHash": "3f940f4"
   },
-  "settings.network.timeoutMode.optDesc.slow": "For VPNs or high-latency connections (45s timeout)",
+  "settings.network.timeoutMode.optDesc.slow": "適用於 VPN 或高延遲的連線（45s 逾時）",
   "@settings.network.timeoutMode.optDesc.slow": {
     "sourceHash": "f8ebf3c"
   },
-  "settings.network.timeoutMode.opt.custom": "Custom",
+  "settings.network.timeoutMode.opt.custom": "自訂",
   "@settings.network.timeoutMode.opt.custom": {
     "sourceHash": "494ca78"
   },
-  "settings.network.customTimeout.label": "Custom timeout",
+  "settings.network.customTimeout.label": "自訂逾時",
   "@settings.network.customTimeout.label": {
     "sourceHash": "ea49e01"
   },
-  "settings.network.customTimeout.description": "Custom timeout in seconds for network operations.",
+  "settings.network.customTimeout.description": "網路操作的自訂逾時（以秒為單位）。",
   "@settings.network.customTimeout.description": {
     "sourceHash": "28a8d46"
   },
-  "settings.network.smbConcurrency.label": "Concurrent operations per SMB connection",
+  "settings.network.smbConcurrency.label": "每個 SMB 連線的同時操作數",
   "@settings.network.smbConcurrency.label": {
     "sourceHash": "339933f"
   },
-  "settings.network.smbConcurrency.description": "How many file transfers Cmdr runs in parallel on a single SMB connection. Higher values speed up batch copies of many files (especially many small files) but use more server resources. Default 10 is safe for most home NAS hardware. Changes apply on the next batch copy.",
+  "settings.network.smbConcurrency.description": "Cmdr 在單一 SMB 連線上平行執行多少個檔案傳輸。數值越高，批次複製大量檔案（尤其是大量小檔案）越快，但會佔用更多伺服器資源。預設值 10 對大多數家用 NAS 硬體都很穩妥。更改會在下次批次複製時生效。",
   "@settings.network.smbConcurrency.description": {
     "sourceHash": "49a590b"
   },
-  "settings.fileOperations.mtpEnabled.label": "Android/Kindle/camera support (PTP and MTP)",
+  "settings.fileOperations.mtpEnabled.label": "Android/Kindle/相機支援（PTP 和 MTP）",
   "@settings.fileOperations.mtpEnabled.label": {
     "sourceHash": "6a315a8"
   },
-  "settings.fileOperations.mtpEnabled.description": "Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you''ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to \"File transfer\", \"Android Auto\", or similar. (Varies by device.)",
+  "settings.fileOperations.mtpEnabled.description": "透過 USB 連接線偵測並連接 Android 及其他裝置，以瀏覽和傳輸檔案。要在 Android 手機上使用這個功能，你會需要一條 USB 連接線，然後在手機上前往類似「設定 > USB 偏好設定」的位置，並把連線設為「檔案傳輸」、「Android Auto」或類似的選項。（因裝置而異。）",
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "834ea99"
   },
-  "settings.fileOperations.mtpConnectionWarning.label": "Warn when a device connects",
+  "settings.fileOperations.mtpConnectionWarning.label": "裝置連接時發出警告",
   "@settings.fileOperations.mtpConnectionWarning.label": {
     "sourceHash": "070b984"
   },
-  "settings.fileOperations.mtpConnectionWarning.description": "Show a notification when an Android or camera device connects over USB.",
+  "settings.fileOperations.mtpConnectionWarning.description": "當 Android 或相機裝置透過 USB 連接時顯示一則通知。",
   "@settings.fileOperations.mtpConnectionWarning.description": {
     "sourceHash": "9c7a648"
   },
-  "settings.fileExplorer.git.showRepoChip.label": "Show repository chip",
+  "settings.fileExplorer.git.showRepoChip.label": "顯示存放庫標記",
   "@settings.fileExplorer.git.showRepoChip.label": {
     "sourceHash": "7504b23"
   },
-  "settings.fileExplorer.git.showRepoChip.description": "Display the current branch, ahead/behind, and dirty state above the file list when inside a git repository.",
+  "settings.fileExplorer.git.showRepoChip.description": "在 git 存放庫中時，於檔案清單上方顯示目前的分支、領先/落後，以及有改動的狀態。",
   "@settings.fileExplorer.git.showRepoChip.description": {
     "sourceHash": "7b8a9ba"
   },
-  "settings.fileExplorer.git.showStatusColumn.label": "Show git status column",
+  "settings.fileExplorer.git.showStatusColumn.label": "顯示 git 狀態欄",
   "@settings.fileExplorer.git.showStatusColumn.label": {
     "sourceHash": "0f6a836"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "Add a column showing per-file git status (modified, untracked, etc.) in Full mode.",
+  "settings.fileExplorer.git.showStatusColumn.description": "在完整模式下加上一欄，顯示每個檔案的 git 狀態（已修改、未追蹤等）。",
   "@settings.fileExplorer.git.showStatusColumn.description": {
     "sourceHash": "7ff07e4"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.label": "Show virtual git portal",
+  "settings.fileExplorer.git.showVirtualGitPortal.label": "顯示虛擬 git 入口",
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "When entering `.git`, show branches, tags, commits, and worktrees as browsable virtual folders. Disable to see the raw `.git` contents instead.",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "進入 `.git` 時，把分支、標籤、提交和工作樹顯示為可瀏覽的虛擬資料夾。停用後則改為查看原始的 `.git` 內容。",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
-  "settings.viewer.wordWrap.label": "Word wrap",
+  "settings.viewer.wordWrap.label": "自動換行",
   "@settings.viewer.wordWrap.label": {
     "sourceHash": "9e210f3"
   },
-  "settings.viewer.wordWrap.description": "Wrap long lines at the window edge in the file viewer instead of scrolling horizontally.",
+  "settings.viewer.wordWrap.description": "在檔案檢視器中讓長行在視窗邊緣換行，而不是橫向捲動。",
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
-  "settings.developer.mcpEnabled.label": "Enable MCP server",
+  "settings.developer.mcpEnabled.label": "啟用 MCP 伺服器",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
   },
-  "settings.developer.mcpEnabled.description": "Start a Model Context Protocol server for AI assistant integration.",
+  "settings.developer.mcpEnabled.description": "啟動一個 Model Context Protocol 伺服器，以整合 AI 助理。",
   "@settings.developer.mcpEnabled.description": {
     "sourceHash": "10f4102"
   },
-  "settings.developer.mcpPort.label": "Port",
+  "settings.developer.mcpPort.label": "連接埠",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"
   },
-  "settings.developer.mcpPort.description": "Preferred port for the MCP server. Leave at 0 to let the OS pick an ephemeral port (recommended; the actual port is shown below when running). Pin a specific port if external tooling needs it.",
+  "settings.developer.mcpPort.description": "MCP 伺服器偏好使用的連接埠。保持為 0 可以讓作業系統挑選一個臨時連接埠（建議；執行時實際的連接埠會顯示在下方）。如果外部工具需要，可以固定某個特定的連接埠。",
   "@settings.developer.mcpPort.description": {
     "sourceHash": "174e807"
   },
-  "settings.developer.verboseLogging.label": "Verbose console output (developer)",
+  "settings.developer.verboseLogging.label": "詳細的主控台輸出（開發者）",
   "@settings.developer.verboseLogging.label": {
     "sourceHash": "036a824"
   },
-  "settings.developer.verboseLogging.description": "Bumps the dev terminal and browser devtools console to debug level. The on-disk log file always captures debug detail regardless, so error reports are unaffected by this toggle. RUST_LOG always wins for the terminal.",
+  "settings.developer.verboseLogging.description": "把開發終端機和瀏覽器 devtools 主控台提升到 debug 層級。磁碟上的記錄檔無論如何都會記下 debug 細節，因此這個開關不影響錯誤報告。對終端機而言，RUST_LOG 一律優先。",
   "@settings.developer.verboseLogging.description": {
     "sourceHash": "5c69c0d"
   },
-  "settings.updates.autoCheck.label": "Automatically check for updates",
+  "settings.updates.autoCheck.label": "自動檢查更新",
   "@settings.updates.autoCheck.label": {
     "sourceHash": "409e6a1"
   },
-  "settings.updates.autoCheck.description": "Periodically check for new versions in the background.",
+  "settings.updates.autoCheck.description": "在背景定期檢查有沒有新版本。",
   "@settings.updates.autoCheck.description": {
     "sourceHash": "1ff0b1a"
   },
-  "settings.whatsNew.showOnUpdate.label": "Show what’s new after updates",
+  "settings.whatsNew.showOnUpdate.label": "更新後顯示新功能",
   "@settings.whatsNew.showOnUpdate.label": {
     "sourceHash": "991a90b"
   },
-  "settings.whatsNew.showOnUpdate.description": "After Cmdr updates itself, show a quick summary of what changed.",
+  "settings.whatsNew.showOnUpdate.description": "在 Cmdr 完成自我更新後，顯示一份改動的簡要摘要。",
   "@settings.whatsNew.showOnUpdate.description": {
     "sourceHash": "4d4d7e6"
   },
-  "settings.whatsNew.lastSeenVersion.label": "Last seen changelog version",
+  "settings.whatsNew.lastSeenVersion.label": "上次看到的更新日誌版本",
   "@settings.whatsNew.lastSeenVersion.label": {
     "sourceHash": "4790ce6"
   },
-  "settings.whatsNew.lastSeenVersion.description": "Internal: the version we last showed in the \"What’s new\" popup. Advances silently on every launch so re-enabling the popup never replays a months-deep backlog. Hidden from the UI.",
+  "settings.whatsNew.lastSeenVersion.description": "內部：我們在「新功能」彈出視窗中上次展示的版本。每次啟動都會靜靜往前推進，因此重新啟用彈出視窗時絕不會回放積壓數月的內容。對介面隱藏。",
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d4f7a52"
   },
-  "settings.analytics.enabled.label": "Send usage stats",
+  "settings.analytics.enabled.label": "傳送使用統計",
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Please enable this to help us see which features matter during the open beta. It''s not tied to your name or email but a random id. Cmdr never sends file names, paths, search terms, or prompts. When off, Cmdr doesn''t send any stats.",
+  "settings.analytics.enabled.description": "請開啟這一項，幫助我們在公開測試期間了解哪些功能重要。統計不會關聯到你的姓名或電子郵件，而是關聯到一個隨機識別碼。Cmdr 絕不會傳送檔名、路徑、搜尋字詞或提示詞。關閉後，Cmdr 不會傳送任何統計。",
   "@settings.analytics.enabled.description": {
     "sourceHash": "7c67750"
   },
-  "settings.analytics.email.label": "Beta contact email",
+  "settings.analytics.email.label": "測試版聯絡用電子郵件",
   "@settings.analytics.email.label": {
     "sourceHash": "71e5c9a"
   },
-  "settings.analytics.email.description": "Example: you@example.com",
+  "settings.analytics.email.description": "例如：you@example.com",
   "@settings.analytics.email.description": {
     "sourceHash": "03574f9"
   },
-  "settings.updates.crashReports.label": "Send crash reports",
+  "settings.updates.crashReports.label": "傳送當機報告",
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, macOS version, and where in the code the problem happened. Never file names or personal data.",
+  "settings.updates.crashReports.description": "當 Cmdr 當機或在背景遇到問題時，自動傳送一份報告。內含 App 版本、macOS 版本，以及程式碼中出問題的位置。絕不含檔名或個人資料。",
   "@settings.updates.crashReports.description": {
     "sourceHash": "e726766"
   },
-  "settings.updates.errorReports.label": "Send error reports automatically",
+  "settings.updates.errorReports.label": "自動傳送錯誤報告",
   "@settings.updates.errorReports.label": {
     "sourceHash": "471575d"
   },
-  "settings.updates.errorReports.description": "Send a small log snippet to the developer when an error occurs. Helps fix bugs faster. Off by default. You can always send a manual report from the Help menu.",
+  "settings.updates.errorReports.description": "出問題時傳送一小段記錄摘錄給開發者。有助於更快修正 bug。預設為關閉。你隨時可以從「說明」選單手動傳送報告。",
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
   },
-  "settings.updates.attachEmailToReports.label": "Attach my email to reports by default",
+  "settings.updates.attachEmailToReports.label": "預設在報告中附上我的電子郵件",
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
-  "settings.updates.attachEmailToReports.description": "When you send a crash or error report, include your beta contact email so we can reply. You can change this per report.",
+  "settings.updates.attachEmailToReports.description": "當你傳送當機或錯誤報告時，附上你的測試版聯絡用電子郵件，以便我們回覆。你可以為每份報告單獨更改這一項。",
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
-  "settings.advanced.prefetchBufferSize.label": "Prefetch buffer size",
+  "settings.advanced.prefetchBufferSize.label": "預先擷取緩衝區大小",
   "@settings.advanced.prefetchBufferSize.label": {
     "sourceHash": "4043154"
   },
-  "settings.advanced.prefetchBufferSize.description": "Number of items to prefetch around the visible range for smoother scrolling.",
+  "settings.advanced.prefetchBufferSize.description": "在可見範圍周圍預先擷取的項目數量，讓捲動更順暢。",
   "@settings.advanced.prefetchBufferSize.description": {
     "sourceHash": "39f13c9"
   },
-  "settings.advanced.virtualizationBufferRows.label": "Virtualization buffer (rows)",
+  "settings.advanced.virtualizationBufferRows.label": "虛擬化緩衝區（橫列）",
   "@settings.advanced.virtualizationBufferRows.label": {
     "sourceHash": "07b7869"
   },
-  "settings.advanced.virtualizationBufferRows.description": "Extra rows to render above and below the visible area.",
+  "settings.advanced.virtualizationBufferRows.description": "在可見區域上方和下方額外算繪的橫列數。",
   "@settings.advanced.virtualizationBufferRows.description": {
     "sourceHash": "82a0e9a"
   },
-  "settings.advanced.virtualizationBufferColumns.label": "Virtualization buffer (columns)",
+  "settings.advanced.virtualizationBufferColumns.label": "虛擬化緩衝區（直欄）",
   "@settings.advanced.virtualizationBufferColumns.label": {
     "sourceHash": "a9e8dba"
   },
-  "settings.advanced.virtualizationBufferColumns.description": "Extra columns to render in brief view.",
+  "settings.advanced.virtualizationBufferColumns.description": "在簡潔顯示方式中額外算繪的直欄數。",
   "@settings.advanced.virtualizationBufferColumns.description": {
     "sourceHash": "a1cbd98"
   },
-  "settings.advanced.fileWatcherDebounce.label": "File watcher debounce",
+  "settings.advanced.fileWatcherDebounce.label": "檔案監看去抖動",
   "@settings.advanced.fileWatcherDebounce.label": {
     "sourceHash": "6a3842d"
   },
-  "settings.advanced.fileWatcherDebounce.description": "Delay after file system changes before refreshing.",
+  "settings.advanced.fileWatcherDebounce.description": "檔案系統發生改動後，到重新整理之前的延遲。",
   "@settings.advanced.fileWatcherDebounce.description": {
     "sourceHash": "084a2a7"
   },
-  "settings.advanced.diskSpaceChangeThreshold.label": "Disk space change threshold (MB)",
+  "settings.advanced.diskSpaceChangeThreshold.label": "磁碟空間變化閾值（MB）",
   "@settings.advanced.diskSpaceChangeThreshold.label": {
     "sourceHash": "1d95fc6"
   },
-  "settings.advanced.diskSpaceChangeThreshold.description": "Minimum change in available disk space before updating the status bar. The status bar polls disk space every few seconds; small changes below this threshold are ignored to reduce visual noise.",
+  "settings.advanced.diskSpaceChangeThreshold.description": "更新狀態列之前，可用磁碟空間所需的最小變化量。狀態列每隔幾秒輪詢一次磁碟空間；低於這個閾值的細微變化會被忽略，以減少視覺干擾。",
   "@settings.advanced.diskSpaceChangeThreshold.description": {
     "sourceHash": "f09c3cb"
   },
-  "settings.fileViewer.suppressBinaryWarning.label": "Suppress the raw-view warning for binary files",
+  "settings.fileViewer.suppressBinaryWarning.label": "對二進位檔案不顯示原始內容檢視警告",
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 opens Cmdr''s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click ''Never show this warning again'' in the banner) to suppress the warning for good.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 會開啟 Cmdr 的檔案檢視器，它顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、壓縮檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明 ⇧Space（快速查看）或 Enter（在關聯的 App 中開啟）很可能才是你想要的。開啟這一項（或點按橫幅中的「不再顯示這個警告」）就能永久關閉這個警告。",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "b3711da"
   },
-  "settings.fileExplorer.suppressQuickLookHint.label": "Suppress the Space-key Quick Look hint",
+  "settings.fileExplorer.suppressQuickLookHint.label": "不顯示 Space 鍵的快速查看提示",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click ''Don''t show again'' in the toast) to suppress the reminder for good.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切換檔案選取，用 ⇧Space 觸發快速查看（Finder 用單獨的 Space 觸發快速查看）。每次你在檔案清單中按 Space，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或點按提示中的「不再顯示」）就能永久關閉這個提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.label": "Number of closed tabs to remember per pane",
+  "settings.fileExplorer.tabs.closedTabHistorySize.label": "每個窗格記住的已關閉分頁數量",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "How many recently closed tabs to keep per pane for \"Reopen closed tab\" (⌘⇧T). Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "為「重新開啟已關閉的分頁」（⌘⇧T）在每個窗格保留多少個最近關閉的分頁。數值越高，能往回重新開啟的歷史越多；數值越低，越早釋出記憶體。只適用於在目前工作階段中關閉的分頁。",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "fe01a43"
   },
-  "settings.advanced.dragThreshold.label": "Drag threshold",
+  "settings.advanced.dragThreshold.label": "拖移閾值",
   "@settings.advanced.dragThreshold.label": {
     "sourceHash": "d624e2a"
   },
-  "settings.advanced.dragThreshold.description": "Minimum distance in pixels before a drag operation starts.",
+  "settings.advanced.dragThreshold.description": "拖移操作開始前，指標需要移動的最小像素距離。",
   "@settings.advanced.dragThreshold.description": {
     "sourceHash": "7704bfa"
   },
-  "settings.fileExplorer.typeToJump.resetDelay.label": "Type-to-jump reset delay",
+  "settings.fileExplorer.typeToJump.resetDelay.label": "輸入跳轉的重設延遲",
   "@settings.fileExplorer.typeToJump.resetDelay.label": {
     "sourceHash": "16ac047"
   },
-  "settings.fileExplorer.typeToJump.resetDelay.description": "How long the type-to-jump buffer stays alive after the last keystroke. Lower values reset faster between searches; higher values are more forgiving for slow typists.",
+  "settings.fileExplorer.typeToJump.resetDelay.description": "最後一次按鍵之後，輸入跳轉的緩衝區還會保留多久。數值越低，多次搜尋之間重設得越快；數值越高，對打字慢的人越寬容。",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileOperations.maxConflictsToShow.label": "Maximum conflicts to show",
+  "settings.fileOperations.maxConflictsToShow.label": "最多顯示的衝突數",
   "@settings.fileOperations.maxConflictsToShow.label": {
     "sourceHash": "d9cdb0c"
   },
-  "settings.fileOperations.maxConflictsToShow.description": "Maximum number of file conflicts to display in the preview before an operation.",
+  "settings.fileOperations.maxConflictsToShow.description": "操作前的預覽中，最多顯示多少個檔案衝突。",
   "@settings.fileOperations.maxConflictsToShow.description": {
     "sourceHash": "1f6bcb9"
   },
-  "settings.fileOperations.progressUpdateInterval.label": "Progress update interval",
+  "settings.fileOperations.progressUpdateInterval.label": "進度更新間隔",
   "@settings.fileOperations.progressUpdateInterval.label": {
     "sourceHash": "6bcefed"
   },
-  "settings.fileOperations.progressUpdateInterval.description": "How often to refresh progress during file operations. Lower values feel more responsive but use more CPU.",
+  "settings.fileOperations.progressUpdateInterval.description": "檔案操作期間重新整理進度的頻率。數值越低，感覺越靈敏，但會佔用更多 CPU。",
   "@settings.fileOperations.progressUpdateInterval.description": {
     "sourceHash": "84e4876"
   },
-  "settings.advanced.maxLogStorageMb.label": "Maximum disk space for log files (MB)",
+  "settings.advanced.maxLogStorageMb.label": "記錄檔的最大磁碟空間（MB）",
   "@settings.advanced.maxLogStorageMb.label": {
     "sourceHash": "d6af6b4"
   },
-  "settings.advanced.maxLogStorageMb.description": "Maximum disk space for log files. Set to 0 to disable log storage; error reports cannot be sent without logs. Changes to a non-zero value take effect on next app launch.",
+  "settings.advanced.maxLogStorageMb.description": "記錄檔的最大磁碟空間。設為 0 可以停用記錄檔儲存；沒有記錄就無法傳送錯誤報告。改成非零值後，會在下次啟動 App 時生效。",
   "@settings.advanced.maxLogStorageMb.description": {
     "sourceHash": "725bb26"
   },
-  "settings.advanced.mountTimeout.label": "Mount timeout",
+  "settings.advanced.mountTimeout.label": "裝載逾時",
   "@settings.advanced.mountTimeout.label": {
     "sourceHash": "b5bce4f"
   },
-  "settings.advanced.mountTimeout.description": "Timeout for mounting network shares.",
+  "settings.advanced.mountTimeout.description": "裝載網路共享的逾時。",
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.showSafeSaveFiles.label": "Show other apps' temporary files",
+  "settings.advanced.showSafeSaveFiles.label": "顯示其他 App 的暫存檔案",
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "When apps like TextEdit and Preview save a file, macOS writes the new version alongside it under a temporary name (ending in \".sb-\") and swaps it in. Turn this off to keep those out of the file list.",
+  "settings.advanced.showSafeSaveFiles.description": "「文字編輯」和「預覽程式」這類 App 儲存檔案時，macOS 會在旁邊用暫存名稱（以「.sb-」結尾）寫入新版本，然後再換掉。關閉這一項就能讓它們不出現在檔案清單中。",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
-  "settings.advanced.showStagingTempFiles.label": "Show Cmdr's temporary files",
+  "settings.advanced.showStagingTempFiles.label": "顯示 Cmdr 的暫存檔案",
   "@settings.advanced.showStagingTempFiles.label": {
     "sourceHash": "5a7636d"
   },
-  "settings.advanced.showStagingTempFiles.description": "While copying, Cmdr writes each file under a temporary name and renames it once the file is complete, so a crash can't leave a half-written file under a real name. Leftovers from an interrupted copy are always shown.",
+  "settings.advanced.showStagingTempFiles.description": "複製時，Cmdr 會先用暫存名稱寫入每個檔案，寫完後再重新命名，這樣當機就不會留下用真實名稱存下的半個檔案。中斷的複製留下的殘餘檔案一律會顯示。",
   "@settings.advanced.showStagingTempFiles.description": {
     "sourceHash": "2d88a78"
   },
-  "settings.advanced.logLlmCalls.label": "Log AI model calls",
+  "settings.advanced.logLlmCalls.label": "記錄 AI 模型呼叫",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your Mac and include the file names and paths Cmdr sends to your provider.",
+  "settings.advanced.logLlmCalls.description": "為了方便除錯，把每次 AI 請求和回應存到本機資料夾（llm-logs）中。這些檔案會留在你的 Mac 上，其中包含 Cmdr 傳送給你的提供者的檔名和路徑。",
   "@settings.advanced.logLlmCalls.description": {
     "sourceHash": "86b3d34"
   },
-  "settings.advanced.serviceResolveTimeout.label": "Service resolve timeout",
+  "settings.advanced.serviceResolveTimeout.label": "服務解析逾時",
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
   },
-  "settings.advanced.serviceResolveTimeout.description": "Timeout for resolving network services via Bonjour.",
+  "settings.advanced.serviceResolveTimeout.description": "透過 Bonjour 解析網路服務的逾時。",
   "@settings.advanced.serviceResolveTimeout.description": {
     "sourceHash": "5cf231d"
   },
-  "settings.search.recentSearches.maxCount.label": "Recent searches to remember",
+  "settings.search.recentSearches.maxCount.label": "要記住的最近搜尋數",
   "@settings.search.recentSearches.maxCount.label": {
     "sourceHash": "51ad13d"
   },
-  "settings.search.recentSearches.maxCount.description": "How many recent searches to keep for the in-dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
+  "settings.search.recentSearches.maxCount.description": "為對話框內的頁尾和歷史彈出式視窗保留多少筆最近的搜尋。有新的產生時，較舊的會被移除。0 會停用歷史（頁尾和彈出式視窗會隱藏，也不再記錄新項目）。",
   "@settings.search.recentSearches.maxCount.description": {
     "sourceHash": "d21b038"
   },
-  "settings.selection.recentSelections.maxCount.label": "Recent selections to remember",
+  "settings.selection.recentSelections.maxCount.label": "要記住的最近選取數",
   "@settings.selection.recentSelections.maxCount.label": {
     "sourceHash": "e8a5d37"
   },
-  "settings.selection.recentSelections.maxCount.description": "How many recent selections to keep for the Select / Deselect files dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
+  "settings.selection.recentSelections.maxCount.description": "為「選取／取消選取檔案」對話框的頁尾和歷史彈出式視窗保留多少筆最近的選取。有新的產生時，較舊的會被移除。0 會停用歷史（頁尾和彈出式視窗會隱藏，也不再記錄新項目）。",
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
-  "settings.onboarding.upgradeNudgeShown.label": "Onboarding upgrade nudge shown",
+  "settings.onboarding.upgradeNudgeShown.label": "已顯示入門引導的升級提醒",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
   },
-  "settings.onboarding.upgradeNudgeShown.description": "Internal: tracks whether the one-time \"the Onboarding menu item now exists\" toast has fired for an existing user after the wizard revamp. Hidden from the UI.",
+  "settings.onboarding.upgradeNudgeShown.description": "內部：記錄精靈改版後，是否已為現有使用者觸發過一次性的「現在有了入門引導選單項目」提示。對介面隱藏。",
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
-  "settings.onboarding.completed.label": "Onboarding completed",
+  "settings.onboarding.completed.label": "已完成入門引導",
   "@settings.onboarding.completed.label": {
     "sourceHash": "4730c4f"
   },
-  "settings.onboarding.fullDiskAccessChoice.label": "Full Disk Access choice",
+  "settings.onboarding.fullDiskAccessChoice.label": "「完全取用磁碟」的選擇",
   "@settings.onboarding.fullDiskAccessChoice.label": {
     "sourceHash": "4d73a2b"
   },
-  "settings.onboarding.termsAcceptedVersion.label": "Accepted terms version",
+  "settings.onboarding.termsAcceptedVersion.label": "已接受的條款版本",
   "@settings.onboarding.termsAcceptedVersion.label": {
     "sourceHash": "f4bdd97"
   },
-  "settings.onboarding.termsAcceptedAt.label": "Terms accepted at",
+  "settings.onboarding.termsAcceptedAt.label": "接受條款的時間",
   "@settings.onboarding.termsAcceptedAt.label": {
     "sourceHash": "b35cf3b"
   },
-  "settings.advanced.updateCheckInterval.label": "Update check interval",
+  "settings.advanced.updateCheckInterval.label": "更新檢查間隔",
   "@settings.advanced.updateCheckInterval.label": {
     "sourceHash": "91912bc"
   },
-  "settings.advanced.updateCheckInterval.description": "How often to check for updates in the background.",
+  "settings.advanced.updateCheckInterval.description": "在背景檢查更新的頻率。",
   "@settings.advanced.updateCheckInterval.description": {
     "sourceHash": "2bdd38a"
   },
-  "settings.tint.none": "No tint",
+  "settings.tint.none": "不著色",
   "@settings.tint.none": {
     "sourceHash": "ac86605"
   },
-  "settings.tint.red": "Red",
+  "settings.tint.red": "紅色",
   "@settings.tint.red": {
     "sourceHash": "ba19e9c"
   },
-  "settings.tint.orange": "Orange",
+  "settings.tint.orange": "橙色",
   "@settings.tint.orange": {
     "sourceHash": "78e7771"
   },
-  "settings.tint.amber": "Amber",
+  "settings.tint.amber": "琥珀色",
   "@settings.tint.amber": {
     "sourceHash": "a5cccbc"
   },
-  "settings.tint.lime": "Lime",
+  "settings.tint.lime": "萊姆色",
   "@settings.tint.lime": {
     "sourceHash": "c9665c9"
   },
-  "settings.tint.green": "Green",
+  "settings.tint.green": "綠色",
   "@settings.tint.green": {
     "sourceHash": "d486dfb"
   },
-  "settings.tint.teal": "Teal",
+  "settings.tint.teal": "藍綠色",
   "@settings.tint.teal": {
     "sourceHash": "fa15a5c"
   },
-  "settings.tint.cyan": "Cyan",
+  "settings.tint.cyan": "青色",
   "@settings.tint.cyan": {
     "sourceHash": "e95bb22"
   },
-  "settings.tint.blue": "Blue",
+  "settings.tint.blue": "藍色",
   "@settings.tint.blue": {
     "sourceHash": "ec7d56a"
   },
-  "settings.tint.indigo": "Indigo",
+  "settings.tint.indigo": "靛藍色",
   "@settings.tint.indigo": {
     "sourceHash": "d81ab14"
   },
-  "settings.tint.purple": "Purple",
+  "settings.tint.purple": "紫色",
   "@settings.tint.purple": {
     "sourceHash": "7d465fb"
   },
-  "settings.tint.pink": "Pink",
+  "settings.tint.pink": "粉紅色",
   "@settings.tint.pink": {
     "sourceHash": "bd38ed7"
   },
-  "settings.tint.brown": "Brown",
+  "settings.tint.brown": "棕色",
   "@settings.tint.brown": {
     "sourceHash": "18f2855"
   },
-  "settings.section.appearance": "Appearance",
+  "settings.section.appearance": "外觀",
   "@settings.section.appearance": {
     "sourceHash": "3907fa7"
   },
-  "settings.section.colorsAndFormats": "Colors and formats",
+  "settings.section.colorsAndFormats": "顏色和格式",
   "@settings.section.colorsAndFormats": {
     "sourceHash": "c5e0ce4"
   },
-  "settings.section.zoomAndDensity": "Zoom and density",
+  "settings.section.zoomAndDensity": "縮放和密度",
   "@settings.section.zoomAndDensity": {
     "sourceHash": "7af249b"
   },
-  "settings.section.fileAndFolderSizes": "File and folder sizes",
+  "settings.section.fileAndFolderSizes": "檔案和資料夾大小",
   "@settings.section.fileAndFolderSizes": {
     "sourceHash": "37d2ca1"
   },
-  "settings.section.listing": "Listing",
+  "settings.section.listing": "列表",
   "@settings.section.listing": {
     "sourceHash": "fc7f1aa"
   },
-  "settings.section.behavior": "Behavior",
+  "settings.section.behavior": "行為",
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
-  "settings.section.navigationAndFileOps": "Navigation & file ops",
+  "settings.section.navigationAndFileOps": "導覽與檔案操作",
   "@settings.section.navigationAndFileOps": {
     "sourceHash": "4e26af0"
   },
-  "settings.navigationAndFileOps.card.navigation": "Navigation",
+  "settings.navigationAndFileOps.card.navigation": "導覽",
   "@settings.navigationAndFileOps.card.navigation": {
     "sourceHash": "3db65f8"
   },
-  "settings.navigationAndFileOps.card.fileOperations": "File operations",
+  "settings.navigationAndFileOps.card.fileOperations": "檔案操作",
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
-  "settings.section.archives": "Archives",
+  "settings.section.archives": "壓縮檔",
   "@settings.section.archives": {
     "sourceHash": "e404aa8"
   },
-  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Double-click the pane background to go up a folder",
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "點兩下窗格背景前往上層資料夾",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
   },
-  "settings.behavior.doubleClickPaneNavigatesToParent.description": "That''s the empty space around the file list, not a file row.",
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "也就是檔案清單周圍的空白區域，而不是某個檔案所在的橫列。",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "sourceHash": "734b6c2"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Double-click-to-parent hint shown",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "已顯示點兩下前往上層資料夾的提示",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
     "sourceHash": "e830535"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Whether the one-time double-click-to-parent hint has been shown.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "是否已顯示過一次性的點兩下前往上層資料夾提示。",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.notifications": "Notifications",
+  "settings.section.notifications": "通知",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
   },
-  "settings.section.search": "Search",
+  "settings.section.search": "搜尋",
   "@settings.section.search": {
     "sourceHash": "49c266b"
   },
-  "settings.section.indexing": "Indexing",
+  "settings.section.indexing": "索引",
   "@settings.section.indexing": {
     "sourceHash": "cc24d96"
   },
-  "settings.section.driveIndexing": "Drive indexing",
+  "settings.section.driveIndexing": "磁碟機索引",
   "@settings.section.driveIndexing": {
     "sourceHash": "38d916b"
   },
-  "settings.section.imageIndexing": "Image indexing",
+  "settings.section.imageIndexing": "影像索引",
   "@settings.section.imageIndexing": {
     "sourceHash": "442068b"
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "“AI” is kept verbatim throughout Cmdr’s zh-Hant catalogue (AI 模型, 雲端 AI, 設定 › AI), matching Apple’s and Microsoft’s Traditional Chinese UI, which keep the initialism rather than writing 人工智慧 in short labels."
   },
-  "settings.section.aiProvider": "Provider",
+  "settings.section.aiProvider": "提供者",
   "@settings.section.aiProvider": {
     "sourceHash": "472590a"
   },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
-    "sourceHash": "aafb1ce"
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product feature name, kept verbatim across the whole catalogue per the @key description (“keep it as-is”)."
   },
-  "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr is read-only: it reads names, paths, and sizes to answer, and never changes anything.",
+  "settings.askCmdr.intro": "和 AI 聊聊你的檔案、磁碟機和歷史記錄。Ask Cmdr 是唯讀的：它讀取名稱、路徑和大小來回答問題，絕不會更動任何東西。",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
   },
-  "settings.askCmdr.status.on": "Ask Cmdr is on",
+  "settings.askCmdr.status.on": "Ask Cmdr 已開啟",
   "@settings.askCmdr.status.on": {
     "sourceHash": "1003ff7"
   },
-  "settings.askCmdr.status.off": "Ask Cmdr is off",
+  "settings.askCmdr.status.off": "Ask Cmdr 已關閉",
   "@settings.askCmdr.status.off": {
     "sourceHash": "0420c9a"
   },
-  "settings.askCmdr.status.needsReview": "Ask Cmdr is paused",
+  "settings.askCmdr.status.needsReview": "Ask Cmdr 已暫停",
   "@settings.askCmdr.status.needsReview": {
     "sourceHash": "9b7a74e"
   },
-  "settings.askCmdr.status.changed": "It changed since you turned it on, so it’s waiting for your OK. Read what’s new below, then switch it back on.",
+  "settings.askCmdr.status.changed": "自你開啟以來它有了變化，正在等你確認。請先讀讀下面的新內容，然後再重新開啟。",
   "@settings.askCmdr.status.changed": {
     "sourceHash": "190838b"
   },
-  "settings.askCmdr.status.onSince": "On since {date}",
+  "settings.askCmdr.status.onSince": "自 {date} 起開啟",
   "@settings.askCmdr.status.onSince": {
     "sourceHash": "2f573fd"
   },
-  "settings.askCmdr.turnOn": "Turn on Ask Cmdr",
+  "settings.askCmdr.turnOn": "開啟 Ask Cmdr",
   "@settings.askCmdr.turnOn": {
     "sourceHash": "0d656c4"
   },
-  "settings.askCmdr.turnBackOn": "Turn back on",
+  "settings.askCmdr.turnBackOn": "重新開啟",
   "@settings.askCmdr.turnBackOn": {
     "sourceHash": "b8bc676"
   },
-  "settings.askCmdr.turnOff": "Turn off Ask Cmdr",
+  "settings.askCmdr.turnOff": "關閉 Ask Cmdr",
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "What Ask Cmdr sends",
+  "settings.askCmdr.disclosure.title": "Ask Cmdr 會傳送的內容",
   "@settings.askCmdr.disclosure.title": {
     "sourceHash": "8ccd3b9"
   },
-  "settings.askCmdr.provider.title": "Provider and model",
+  "settings.askCmdr.provider.title": "提供者和模型",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr uses the AI provider and key you set up in Settings › AI ({provider}).",
+  "settings.askCmdr.provider.shared": "Ask Cmdr 使用你在「設定 › AI」中設定好的 AI 提供者和金鑰（{provider}）。",
   "@settings.askCmdr.provider.shared": {
     "sourceHash": "c84fd32"
   },
-  "settings.askCmdr.provider.off": "Turn on an AI provider in Settings › AI to use Ask Cmdr.",
+  "settings.askCmdr.provider.off": "在「設定 › AI」中開啟一個 AI 提供者，就能使用 Ask Cmdr。",
   "@settings.askCmdr.provider.off": {
     "sourceHash": "8b378ae"
   },
-  "settings.askCmdr.interactiveModel.label": "Ask Cmdr model",
+  "settings.askCmdr.interactiveModel.label": "Ask Cmdr 模型",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "The model Ask Cmdr chats with. Leave blank to use the same model as Cmdr’s other AI features. Example: claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "Ask Cmdr 聊天時使用的模型。留空則使用和 Cmdr 其他 AI 功能相同的模型。例如：claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
     "sourceHash": "e3f64a5"
   },
-  "settings.askCmdr.interactiveModel.placeholder": "Same as Cmdr’s AI",
+  "settings.askCmdr.interactiveModel.placeholder": "和 Cmdr 的 AI 相同",
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
-  "settings.askCmdr.chatMemorySize.label": "Chat memory size",
+  "settings.askCmdr.chatMemorySize.label": "聊天記憶大小",
   "@settings.askCmdr.chatMemorySize.label": {
     "sourceHash": "fad1ff1"
   },
-  "settings.askCmdr.chatMemorySize.description": "How much of the conversation Cmdr sends to the model. Automatic follows your model’s known limit.",
+  "settings.askCmdr.chatMemorySize.description": "Cmdr 會把多少對話內容傳給模型。自動會跟隨你的模型的已知上限。",
   "@settings.askCmdr.chatMemorySize.description": {
     "sourceHash": "d70d3b4"
   },
-  "settings.askCmdr.chatMemorySize.opt.auto": "Automatic (recommended)",
+  "settings.askCmdr.chatMemorySize.opt.auto": "自動（建議）",
   "@settings.askCmdr.chatMemorySize.opt.auto": {
     "sourceHash": "4331988"
   },
-  "settings.askCmdr.chatMemorySize.overWindow": "Your model may refuse a message this long. Cmdr keeps the value you set.",
+  "settings.askCmdr.chatMemorySize.overWindow": "你的模型可能會拒絕這麼長的訊息。Cmdr 會保留你設定的值。",
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
-  "settings.askCmdr.proactive.title": "On its own",
+  "settings.askCmdr.proactive.title": "主動提醒",
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "Let Ask Cmdr start conversations",
+  "settings.askCmdr.proactive.label": "讓 Ask Cmdr 主動發起對話",
   "@settings.askCmdr.proactive.label": {
     "sourceHash": "1db4497"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr watches the folders you work in and starts a chat when it has something to suggest. Nothing runs until you approve it.",
+  "settings.askCmdr.proactive.description": "Ask Cmdr 會留意你正在使用的資料夾，有東西可以建議時就主動開啟對話。在你批准之前，什麼都不會執行。",
   "@settings.askCmdr.proactive.description": {
     "sourceHash": "9bf4e15"
   },
-  "settings.askCmdr.wakeDelay.label": "How soon Ask Cmdr looks",
+  "settings.askCmdr.wakeDelay.label": "Ask Cmdr 多快去查看",
   "@settings.askCmdr.wakeDelay.label": {
     "sourceHash": "f80bb5a"
   },
-  "settings.askCmdr.wakeDelay.description": "How soon Ask Cmdr looks at a folder that just changed. Longer means a calmer assistant.",
+  "settings.askCmdr.wakeDelay.description": "Ask Cmdr 多快去查看剛剛發生變化的資料夾。時間越長，助理越安靜。",
   "@settings.askCmdr.wakeDelay.description": {
     "sourceHash": "b53dd9b"
   },
-  "settings.askCmdr.wakeDelay.summary": "Busy folders get a look within {hot}, quieter ones within {warm}.",
+  "settings.askCmdr.wakeDelay.summary": "忙碌的資料夾會在 {hot} 內查看，安靜的則在 {warm} 內查看。",
   "@settings.askCmdr.wakeDelay.summary": {
     "sourceHash": "ad03c00"
   },
-  "settings.askCmdr.wakeToast.label": "Show a notice when a suggestion appears",
+  "settings.askCmdr.wakeToast.label": "有建議出現時顯示提示",
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "A small message in the corner when Ask Cmdr stages something for you to review.",
+  "settings.askCmdr.wakeToast.description": "當 Ask Cmdr 準備好待你查看的內容時，在角落顯示一則小訊息。",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "f07a46e"
   },
-  "settings.askCmdr.memory.title": "What Ask Cmdr remembers",
+  "settings.askCmdr.memory.title": "Ask Cmdr 記住的內容",
   "@settings.askCmdr.memory.title": {
     "sourceHash": "4b102db"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr keeps a small folder of notes about you, and sends it with every message. Have a look, or start it over.",
+  "settings.askCmdr.memory.description": "Ask Cmdr 會保留一個關於你的小筆記資料夾，並隨每則訊息一起傳送。可以看看，也可以清空重來。",
   "@settings.askCmdr.memory.description": {
     "sourceHash": "bcd73ea"
   },
-  "settings.askCmdr.memory.open": "Open memory folder",
+  "settings.askCmdr.memory.open": "開啟筆記資料夾",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "Ask Cmdr’s notes are gone. It starts over from here.",
+  "settings.askCmdr.memory.forgotten": "Ask Cmdr 的筆記已經清空，它從這裡重新開始。",
   "@settings.askCmdr.memory.forgotten": {
     "sourceHash": "a50ed99"
   },
-  "settings.askCmdr.spend.title": "Spending",
+  "settings.askCmdr.spend.title": "花費",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"
   },
-  "settings.askCmdr.spend.empty": "No usage yet. Your token use and estimated cost will show up here.",
+  "settings.askCmdr.spend.empty": "還沒有使用記錄。你的 token 用量和預估費用會顯示在這裡。",
   "@settings.askCmdr.spend.empty": {
     "sourceHash": "baaf9d6"
   },
-  "settings.askCmdr.spend.disclaimer": "These are estimates. Your provider bills you directly, so check your provider’s dashboard for the exact amount.",
+  "settings.askCmdr.spend.disclaimer": "這些只是預估金額。你的提供者會直接向你收費，確切金額請查看你提供者的儀表板。",
   "@settings.askCmdr.spend.disclaimer": {
     "sourceHash": "81fd190"
   },
-  "settings.section.fileSystems": "File systems",
+  "settings.section.fileSystems": "檔案系統",
   "@settings.section.fileSystems": {
     "sourceHash": "d1fad23"
   },
-  "settings.section.smbNetworkShares": "SMB/Network shares",
+  "settings.section.smbNetworkShares": "SMB/網路共享",
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
-  "settings.section.mtp": "MTP (Android/Kindle/cameras)",
+  "settings.section.mtp": "MTP（Android/Kindle/相機）",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "“Git” is the version-control tool’s proper name, kept verbatim. Microsoft’s zh-Hant terminology keeps tool names in Latin; glossary.md records the Git family (分支, 提交, 存放庫) as translated AROUND the kept name."
   },
-  "settings.section.viewer": "Viewer",
+  "settings.section.viewer": "檢視器",
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.navigationAndFileOps.card.operationLog": "Operation log",
+  "settings.navigationAndFileOps.card.operationLog": "操作記錄",
   "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
-  "settings.operationLog.intro": "Cmdr logs your file operations so you can review your history and undo actions. Choose how long to keep the log and how much disk space it can use.",
+  "settings.operationLog.intro": "Cmdr 會記錄你的檔案操作，方便你回顧歷史並復原動作。請選擇記錄要保留多久，以及可以佔用多少磁碟空間。",
   "@settings.operationLog.intro": {
     "sourceHash": "0c62f4f"
   },
-  "settings.operationLog.maxAge.label": "Keep history for",
+  "settings.operationLog.maxAge.label": "保留歷史記錄",
   "@settings.operationLog.maxAge.label": {
     "sourceHash": "ca05015"
   },
-  "settings.operationLog.maxAge.description": "How long Cmdr keeps logged operations before automatically removing the oldest ones.",
+  "settings.operationLog.maxAge.description": "Cmdr 在自動移除最早的記錄之前，要保留已記錄的操作多久。",
   "@settings.operationLog.maxAge.description": {
     "sourceHash": "7d35887"
   },
-  "settings.operationLog.maxAge.opt.forever": "Forever",
+  "settings.operationLog.maxAge.opt.forever": "永久",
   "@settings.operationLog.maxAge.opt.forever": {
     "sourceHash": "55f980c"
   },
-  "settings.operationLog.maxAge.opt.days30": "30 days",
+  "settings.operationLog.maxAge.opt.days30": "30 天",
   "@settings.operationLog.maxAge.opt.days30": {
     "sourceHash": "ffd7280"
   },
-  "settings.operationLog.maxAge.opt.days90": "90 days",
+  "settings.operationLog.maxAge.opt.days90": "90 天",
   "@settings.operationLog.maxAge.opt.days90": {
     "sourceHash": "38825b0"
   },
-  "settings.operationLog.maxAge.opt.year1": "1 year",
+  "settings.operationLog.maxAge.opt.year1": "1 年",
   "@settings.operationLog.maxAge.opt.year1": {
     "sourceHash": "91647ba"
   },
-  "settings.operationLog.maxSize.label": "Maximum size",
+  "settings.operationLog.maxSize.label": "最大大小",
   "@settings.operationLog.maxSize.label": {
     "sourceHash": "5a9f1ff"
   },
-  "settings.operationLog.maxSize.description": "The most disk space the operation log can use. When it fills up, Cmdr removes the oldest operations first.",
+  "settings.operationLog.maxSize.description": "操作記錄最多可以佔用多少磁碟空間。佔滿後，Cmdr 會先移除最早的操作。",
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
   "settings.operationLog.maxSize.opt.mb100": "100 MB",
   "@settings.operationLog.maxSize.opt.mb100": {
-    "sourceHash": "991d5de"
+    "sourceHash": "991d5de",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim: a numeral plus the MB/GB symbol, neither of which is localised in Traditional Chinese UI. Matches the app’s own size-unit setting."
   },
   "settings.operationLog.maxSize.opt.mb250": "250 MB",
   "@settings.operationLog.maxSize.opt.mb250": {
-    "sourceHash": "028b133"
+    "sourceHash": "028b133",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim: a numeral plus the MB/GB symbol, neither of which is localised in Traditional Chinese UI. Matches the app’s own size-unit setting."
   },
   "settings.operationLog.maxSize.opt.gb1": "1 GB",
   "@settings.operationLog.maxSize.opt.gb1": {
-    "sourceHash": "6c31b63"
+    "sourceHash": "6c31b63",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim: a numeral plus the MB/GB symbol, neither of which is localised in Traditional Chinese UI. Matches the app’s own size-unit setting."
   },
   "settings.operationLog.maxSize.opt.gb2": "2 GB",
   "@settings.operationLog.maxSize.opt.gb2": {
-    "sourceHash": "b2dd624"
+    "sourceHash": "b2dd624",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim: a numeral plus the MB/GB symbol, neither of which is localised in Traditional Chinese UI. Matches the app’s own size-unit setting."
   },
   "settings.operationLog.maxSize.opt.gb3": "3 GB",
   "@settings.operationLog.maxSize.opt.gb3": {
-    "sourceHash": "485f66b"
+    "sourceHash": "485f66b",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim: a numeral plus the MB/GB symbol, neither of which is localised in Traditional Chinese UI. Matches the app’s own size-unit setting."
   },
   "settings.operationLog.maxSize.opt.gb5": "5 GB",
   "@settings.operationLog.maxSize.opt.gb5": {
-    "sourceHash": "43644bc"
+    "sourceHash": "43644bc",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim: a numeral plus the MB/GB symbol, neither of which is localised in Traditional Chinese UI. Matches the app’s own size-unit setting."
   },
-  "settings.section.mcpServer": "MCP server",
+  "settings.section.mcpServer": "MCP 伺服器",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
   },
-  "settings.section.updatesAndPrivacy": "Updates & privacy",
+  "settings.section.updatesAndPrivacy": "更新與隱私",
   "@settings.section.updatesAndPrivacy": {
     "sourceHash": "74062eb"
   },
-  "settings.section.advanced": "Advanced",
+  "settings.section.advanced": "進階",
   "@settings.section.advanced": {
     "sourceHash": "9f088db"
   },
-  "settings.section.keyboardShortcuts": "Keyboard shortcuts",
+  "settings.section.keyboardShortcuts": "鍵盤快速鍵",
   "@settings.section.keyboardShortcuts": {
     "sourceHash": "e9bef0b"
   },
-  "settings.section.license": "License",
+  "settings.section.license": "授權",
   "@settings.section.license": {
     "sourceHash": "c011d60"
   },
-  "settings.summary.colorsAndFormats": "Theme, app color, date and size coloring, and date/time format.",
+  "settings.summary.colorsAndFormats": "主題、App 顏色、日期和大小的著色，以及日期/時間格式。",
   "@settings.summary.colorsAndFormats": {
     "sourceHash": "ad30daf"
   },
-  "settings.summary.zoomAndDensity": "Text size and UI density for the whole app.",
+  "settings.summary.zoomAndDensity": "整個 App 的文字大小和介面密度。",
   "@settings.summary.zoomAndDensity": {
     "sourceHash": "e32bbcf"
   },
-  "settings.summary.fileAndFolderSizes": "How sizes are shown in the file list and warnings about size mismatches.",
+  "settings.summary.fileAndFolderSizes": "大小在檔案清單中的顯示方式，以及大小不一致的警告。",
   "@settings.summary.fileAndFolderSizes": {
     "sourceHash": "cdd8214"
   },
-  "settings.summary.listing": "Document icons, directory sorting, and Brief mode column width.",
+  "settings.summary.listing": "文件圖像、目錄排序，以及簡潔模式的欄寬。",
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.navigationAndFileOps": "Double-click-to-parent navigation, and behavior when renaming files.",
+  "settings.summary.navigationAndFileOps": "點兩下前往上層資料夾，以及重新命名檔案時的行為。",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
   },
-  "settings.summary.archives": "What pressing Enter does on archives and app bundles: browse inside, open, or ask.",
+  "settings.summary.archives": "在壓縮檔和 App 套件上按 Enter 鍵時的行為：進去瀏覽、開啟，或者詢問。",
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.notifications": "Downloads notifications, the global go-to-latest-download shortcut, and low-disk-space warnings.",
+  "settings.summary.notifications": "下載通知、跳到最新下載項目的全域快速鍵，以及磁碟空間不足的警告。",
   "@settings.summary.notifications": {
     "sourceHash": "e681776"
   },
-  "settings.summary.search": "Live-applied filename and regex searches, and the recent-searches cap.",
+  "settings.summary.search": "即時套用的檔名和正規表示式搜尋，以及最近搜尋的上限。",
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "Enable networking, direct SMB connections, share cache, and timeouts.",
+  "settings.summary.smbNetworkShares": "啟用網路功能、直接 SMB 連線、共享快取和逾時。",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
   },
-  "settings.summary.mtp": "Detect Android, Kindle, and camera devices over USB.",
+  "settings.summary.mtp": "透過 USB 偵測 Android、Kindle 和相機裝置。",
   "@settings.summary.mtp": {
     "sourceHash": "f01960a"
   },
-  "settings.summary.git": "Repository chip, per-file status column, and the virtual `.git` portal.",
+  "settings.summary.git": "存放庫標記、每個檔案的狀態欄，以及虛擬的 `.git` 入口。",
   "@settings.summary.git": {
     "sourceHash": "fa23394"
   },
-  "settings.summary.mcpServer": "Configure the Model Context Protocol server for AI integrations.",
+  "settings.summary.mcpServer": "設定 Model Context Protocol 伺服器，以整合 AI。",
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.aiProvider": "Turn AI off, connect a cloud provider, or run a model locally.",
+  "settings.summary.aiProvider": "關閉 AI、連接雲端提供者，或在本機執行模型。",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
   },
-  "settings.summary.askCmdr": "Chat with an AI about your files, drives, and history, and pick the model it uses.",
+  "settings.summary.askCmdr": "和 AI 聊聊你的檔案、磁碟機和歷史記錄，並挑選它使用的模型。",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.driveIndexing": "Background drive indexing so search finds your files fast.",
+  "settings.summary.driveIndexing": "在背景為磁碟機建立索引，讓搜尋快速找到你的檔案。",
   "@settings.summary.driveIndexing": {
     "sourceHash": "ef8be32"
   },
-  "settings.summary.imageIndexing": "Search the text inside your images. Runs on your Mac, and nothing leaves it.",
+  "settings.summary.imageIndexing": "搜尋影像中的文字。在你的 Mac 上執行，什麼都不會外傳。",
   "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
-  "settings.summary.noSubsections": "This section has no subsections.",
+  "settings.summary.noSubsections": "這個部分沒有子部分。",
   "@settings.summary.noSubsections": {
     "sourceHash": "ba4b5b5"
   },
-  "settings.control.resetToDefault": "Reset to default",
+  "settings.control.resetToDefault": "重設為預設值",
   "@settings.control.resetToDefault": {
     "sourceHash": "bc5b45a"
   },
-  "settings.control.restartRequired": "Restart required",
+  "settings.control.restartRequired": "需要重新啟動",
   "@settings.control.restartRequired": {
     "sourceHash": "b468711"
   },
-  "settings.control.customValuePlaceholder": "Enter custom value",
+  "settings.control.customValuePlaceholder": "輸入自訂的值",
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"
   },
-  "settings.control.customOption": "Custom...",
+  "settings.control.customOption": "自訂…",
   "@settings.control.customOption": {
     "sourceHash": "b497c0b"
   },
-  "settings.control.customPrefix": "Custom: {value}",
+  "settings.control.customPrefix": "自訂：{value}",
   "@settings.control.customPrefix": {
     "sourceHash": "58c3782"
   },
-  "settings.control.backToPresetsAriaLabel": "Back to presets",
+  "settings.control.backToPresetsAriaLabel": "返回預設組合",
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
   },
-  "settings.sidebar.searchPlaceholder": "Search settings...",
+  "settings.sidebar.searchPlaceholder": "搜尋設定…",
   "@settings.sidebar.searchPlaceholder": {
     "sourceHash": "6801207"
   },
-  "settings.sidebar.clearSearch": "Clear search",
+  "settings.sidebar.clearSearch": "清除搜尋",
   "@settings.sidebar.clearSearch": {
     "sourceHash": "3b7ea51"
   },
-  "settings.sidebar.sections": "Settings sections",
+  "settings.sidebar.sections": "設定的各個部分",
   "@settings.sidebar.sections": {
     "sourceHash": "e26d51d"
   },
-  "settings.appearance.themeColorSwatchAria": "Open System Settings to change the system theme color",
+  "settings.appearance.themeColorSwatchAria": "開啟「系統設定」以更改系統主題色",
   "@settings.appearance.themeColorSwatchAria": {
     "sourceHash": "4cad022"
   },
-  "settings.appearance.appColorHintPrefix": "To change your system theme color, go to",
+  "settings.appearance.appColorHintPrefix": "若要更改系統主題色，請前往",
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "“{systemSettings} > {appearance}”: a System Settings navigation path built from two OS-localised macOS-label tokens joined by “ > ”. The tokens are filled in by macOS itself (系統設定, 外觀 in Traditional Chinese), so the string carries no translatable text of its own."
   },
-  "settings.appearance.appColorHintLinkOther": "your system appearance settings",
+  "settings.appearance.appColorHintLinkOther": "你的系統外觀設定",
   "@settings.appearance.appColorHintLinkOther": {
     "sourceHash": "0aad057"
   },
-  "settings.appearance.datePreviewLabel": "Preview:",
+  "settings.appearance.datePreviewLabel": "預覽：",
   "@settings.appearance.datePreviewLabel": {
     "sourceHash": "75954c5"
   },
-  "settings.appearance.dateInvalidFormat": "Invalid format",
+  "settings.appearance.dateInvalidFormat": "格式不正確",
   "@settings.appearance.dateInvalidFormat": {
     "sourceHash": "b14c1c9"
   },
-  "settings.appearance.hideFormatHelp": "Hide format help",
+  "settings.appearance.hideFormatHelp": "隱藏格式說明",
   "@settings.appearance.hideFormatHelp": {
     "sourceHash": "391c6b3"
   },
-  "settings.appearance.showFormatHelp": "Show format help",
+  "settings.appearance.showFormatHelp": "顯示格式說明",
   "@settings.appearance.showFormatHelp": {
     "sourceHash": "01cb92f"
   },
-  "settings.appearance.formatPlaceholdersTitle": "Format placeholders",
+  "settings.appearance.formatPlaceholdersTitle": "格式預留位置",
   "@settings.appearance.formatPlaceholdersTitle": {
     "sourceHash": "9099bde"
   },
-  "settings.appearance.formatHelpYear": "4-digit year (2025)",
+  "settings.appearance.formatHelpYear": "4 位數年份（2025）",
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "2-digit month (01-12)",
+  "settings.appearance.formatHelpMonth": "2 位數月份（01-12）",
   "@settings.appearance.formatHelpMonth": {
     "sourceHash": "b11b1a6"
   },
-  "settings.appearance.formatHelpDay": "2-digit day (01-31)",
+  "settings.appearance.formatHelpDay": "2 位數日期（01-31）",
   "@settings.appearance.formatHelpDay": {
     "sourceHash": "cb5c2d8"
   },
-  "settings.appearance.formatHelpHour": "2-digit hour (00-23)",
+  "settings.appearance.formatHelpHour": "2 位數小時（00-23）",
   "@settings.appearance.formatHelpHour": {
     "sourceHash": "01feb4d"
   },
-  "settings.appearance.formatHelpMinute": "2-digit minute (00-59)",
+  "settings.appearance.formatHelpMinute": "2 位數分鐘（00-59）",
   "@settings.appearance.formatHelpMinute": {
     "sourceHash": "6dffd33"
   },
-  "settings.appearance.formatHelpSecond": "2-digit second (00-59)",
+  "settings.appearance.formatHelpSecond": "2 位數秒數（00-59）",
   "@settings.appearance.formatHelpSecond": {
     "sourceHash": "982834c"
   },
-  "settings.appearance.tintGroupDescription": "Adds a faint background tint to panes so you can tell volume types apart at a glance.",
+  "settings.appearance.tintGroupDescription": "為窗格加上一層淡淡的背景著色，讓你一眼就能分辨卷宗類型。",
   "@settings.appearance.tintGroupDescription": {
     "sourceHash": "fae3040"
   },
-  "settings.appearance.tintSwatchAria": "Choose a tint color for {label}",
+  "settings.appearance.tintSwatchAria": "為{label}挑選一種著色顏色",
   "@settings.appearance.tintSwatchAria": {
     "sourceHash": "b9030b5"
   },
-  "settings.appearance.tintColorsAria": "Tint colors",
+  "settings.appearance.tintColorsAria": "著色顏色",
   "@settings.appearance.tintColorsAria": {
     "sourceHash": "c649cd7"
   },
-  "settings.appearance.tintTriggerAria": "{label} (currently: {colorName})",
+  "settings.appearance.tintTriggerAria": "{label}（目前：{colorName}）",
   "@settings.appearance.tintTriggerAria": {
     "sourceHash": "d9a874a"
   },
-  "settings.ai.providerAria": "AI provider",
+  "settings.ai.providerAria": "AI 提供者",
   "@settings.ai.providerAria": {
     "sourceHash": "8791254"
   },
-  "settings.ai.loading": "Loading...",
+  "settings.ai.loading": "正在載入…",
   "@settings.ai.loading": {
     "sourceHash": "47d2a51"
   },
-  "settings.ai.tooltipOff": "AI features are turned off. Cmdr works fully without AI: suggestions and smart features are simply hidden.",
+  "settings.ai.tooltipOff": "AI 功能已關閉。沒有 AI，Cmdr 一樣能完整運作：只是不顯示建議和智慧功能。",
   "@settings.ai.tooltipOff": {
     "sourceHash": "2b31468"
   },
-  "settings.ai.tooltipCloud": "Bring your own API key for fast, high-quality AI. Works with OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, or any local server you''re running (Ollama, LM Studio, etc.). Requires an internet connection (unless using a local server). No disk space or memory used by Cmdr.",
+  "settings.ai.tooltipCloud": "自備 API 金鑰，取得快速、高品質的 AI。支援 OpenAI、Anthropic（Claude）、Google（Gemini）、xAI（Grok）、Groq、DeepSeek、OpenRouter，或你自己執行的任何本機伺服器（Ollama、LM Studio 等）。需要連上網路（除非使用本機伺服器）。不會佔用 Cmdr 的磁碟空間或記憶體。",
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
-  "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy: nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple Silicon (M1+).",
+  "settings.ai.tooltipLocal": "在你的裝置上完整執行一個小型語言模型。隱私最大化：沒有任何內容離開你的電腦。可以離線運作。佔用約 2 GB 磁碟空間和約 400 MB 記憶體（隨脈絡大小而變）。需要 Apple 晶片（M1 以上）。",
   "@settings.ai.tooltipLocal": {
     "sourceHash": "bf83043"
   },
-  "settings.ai.tooltipLocalDisabled": "Local AI requires Apple Silicon (M1 or later). Use Cloud AI instead.",
+  "settings.ai.tooltipLocalDisabled": "本機 AI 需要 Apple 晶片（M1 或更新）。請改用雲端 AI。",
   "@settings.ai.tooltipLocalDisabled": {
     "sourceHash": "147cb2e"
   },
-  "settings.fileSystemWatching.indexSize": "Index size",
+  "settings.fileSystemWatching.indexSize": "索引大小",
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.fileSystemWatching.clearing": "Clearing...",
+  "settings.fileSystemWatching.clearing": "正在清除…",
   "@settings.fileSystemWatching.clearing": {
     "sourceHash": "07a8243"
   },
-  "settings.fileSystemWatching.clearIndex": "Clear index",
+  "settings.fileSystemWatching.clearIndex": "清除索引",
   "@settings.fileSystemWatching.clearIndex": {
     "sourceHash": "14e9925"
   },
-  "settings.fileSystemWatching.noIndex": "No index",
+  "settings.fileSystemWatching.noIndex": "沒有索引",
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Deletes every drive's index. Indexing builds it again, and so does searching a folder Cmdr hasn't indexed.",
+  "settings.fileSystemWatching.clearIndexDescription": "刪除每一部磁碟機的索引。建立索引時會重新產生，在 Cmdr 還沒建立索引的資料夾裡搜尋時也會。",
   "@settings.fileSystemWatching.clearIndexDescription": {
     "sourceHash": "370e2bc"
   },
-  "settings.fileSystemWatching.cardDownloads": "Downloads",
+  "settings.fileSystemWatching.cardDownloads": "下載項目",
   "@settings.fileSystemWatching.cardDownloads": {
     "sourceHash": "d5fdc1a"
   },
-  "settings.fileSystemWatching.cardLowDiskSpace": "Low disk space",
+  "settings.fileSystemWatching.cardLowDiskSpace": "磁碟空間不足",
   "@settings.fileSystemWatching.cardLowDiskSpace": {
     "sourceHash": "5b1f5bf"
   },
-  "settings.appearance.card.language": "Language",
+  "settings.appearance.card.language": "語言",
   "@settings.appearance.card.language": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.card.theme": "Theme",
+  "settings.appearance.card.theme": "主題",
   "@settings.appearance.card.theme": {
     "sourceHash": "efb52e7"
   },
-  "settings.appearance.card.listColoring": "List coloring",
+  "settings.appearance.card.listColoring": "列表著色",
   "@settings.appearance.card.listColoring": {
     "sourceHash": "6e50578"
   },
-  "settings.appearance.card.dateAndTime": "Date and time",
+  "settings.appearance.card.dateAndTime": "日期和時間",
   "@settings.appearance.card.dateAndTime": {
     "sourceHash": "a079c3b"
   },
-  "settings.appearance.card.paneTints": "Pane tints",
+  "settings.appearance.card.paneTints": "窗格著色",
   "@settings.appearance.card.paneTints": {
     "sourceHash": "8bc83d1"
   },
-  "settings.appearance.card.namesAndIcons": "Names and icons",
+  "settings.appearance.card.namesAndIcons": "名稱和圖像",
   "@settings.appearance.card.namesAndIcons": {
     "sourceHash": "8386169"
   },
-  "settings.appearance.card.briefMode": "Brief mode",
+  "settings.appearance.card.briefMode": "簡潔模式",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
   },
-  "settings.network.card.connection": "Connection",
+  "settings.network.card.connection": "連線",
   "@settings.network.card.connection": {
     "sourceHash": "639a40e"
   },
-  "settings.network.card.performanceAndTimeouts": "Performance and timeouts",
+  "settings.network.card.performanceAndTimeouts": "效能和逾時",
   "@settings.network.card.performanceAndTimeouts": {
     "sourceHash": "51014ee"
   },
-  "settings.advanced.card.performance": "Performance",
+  "settings.advanced.card.performance": "效能",
   "@settings.advanced.card.performance": {
     "sourceHash": "442aded"
   },
-  "settings.advanced.card.fileWatching": "File watching",
+  "settings.advanced.card.fileWatching": "檔案監看",
   "@settings.advanced.card.fileWatching": {
     "sourceHash": "c65b844"
   },
-  "settings.advanced.card.networkAndMounts": "Network and mounts",
+  "settings.advanced.card.networkAndMounts": "網路和裝載",
   "@settings.advanced.card.networkAndMounts": {
     "sourceHash": "cdde638"
   },
-  "settings.advanced.card.hintsAndWarnings": "Hints and warnings",
+  "settings.advanced.card.hintsAndWarnings": "提示和警告",
   "@settings.advanced.card.hintsAndWarnings": {
     "sourceHash": "8754216"
   },
-  "settings.advanced.card.input": "Input",
+  "settings.advanced.card.input": "輸入",
   "@settings.advanced.card.input": {
     "sourceHash": "36ecb4f"
   },
-  "settings.advanced.card.fileOperations": "File operations",
+  "settings.advanced.card.fileOperations": "檔案操作",
   "@settings.advanced.card.fileOperations": {
     "sourceHash": "ed23515"
   },
-  "settings.advanced.card.historyAndLimits": "History and limits",
+  "settings.advanced.card.historyAndLimits": "歷史和上限",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
   },
-  "settings.advanced.card.loggingAndDiagnostics": "Logging and diagnostics",
+  "settings.advanced.card.loggingAndDiagnostics": "記錄和診斷",
   "@settings.advanced.card.loggingAndDiagnostics": {
     "sourceHash": "5d74805"
   },
-  "settings.advanced.card.updates": "Updates",
+  "settings.advanced.card.updates": "更新",
   "@settings.advanced.card.updates": {
     "sourceHash": "22e2bad"
   },
-  "settings.updates.card.updates": "Updates",
+  "settings.updates.card.updates": "更新",
   "@settings.updates.card.updates": {
     "sourceHash": "22e2bad"
   },
-  "settings.updates.card.privacyAndDataSharing": "Privacy and data sharing",
+  "settings.updates.card.privacyAndDataSharing": "隱私和資料分享",
   "@settings.updates.card.privacyAndDataSharing": {
     "sourceHash": "ae4aabf"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under Keyboard shortcuts → Go to latest download (global).",
+  "settings.fileSystemWatching.globalShortcutHint": "在「鍵盤快速鍵 → 前往最新下載項目（全域）」底下更改這個快速鍵。",
   "@settings.fileSystemWatching.globalShortcutHint": {
     "sourceHash": "1af3da4"
   },
-  "settings.network.localNetworkAccessLabel": "{localNetwork} access",
+  "settings.network.localNetworkAccessLabel": "{localNetwork}存取權",
   "@settings.network.localNetworkAccessLabel": {
     "sourceHash": "61ce300"
   },
-  "settings.network.permissionIntroPrefix": "Cmdr needs {localNetwork} to find SMB servers, list available shares, and connect directly for faster file transfers. The first time you open Network or use ",
+  "settings.network.permissionIntroPrefix": "Cmdr 需要{localNetwork}才能找到 SMB 伺服器、列出可用的共享，並直接連線以加快檔案傳輸。當你第一次開啟「網路」或使用 ",
   "@settings.network.permissionIntroPrefix": {
     "sourceHash": "4f7f54f"
   },
-  "settings.network.permissionIntroConnectLink": "Connect to server…",
+  "settings.network.permissionIntroConnectLink": "連接伺服器…",
   "@settings.network.permissionIntroConnectLink": {
     "sourceHash": "6188f47"
   },
-  "settings.network.permissionIntroSuffix": ", macOS will ask. Say yes.",
+  "settings.network.permissionIntroSuffix": "時，macOS 會詢問你。請選擇允許。",
   "@settings.network.permissionIntroSuffix": {
     "sourceHash": "657bee8"
   },
-  "settings.network.manageAnytimePrefix": "Manage this anytime in",
+  "settings.network.manageAnytimePrefix": "你隨時可以在這裡管理這一項：",
   "@settings.network.manageAnytimePrefix": {
     "sourceHash": "10b34d4"
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "“{systemSettings} > {privacyAndSecurity} > {localNetwork}”: a System Settings navigation path built from three OS-localised macOS-label tokens joined by “ > ”. macOS fills them in (系統設定, 隱私權與安全性, 區域網路), so the string carries no translatable text of its own."
   },
-  "settings.network.permissionWithout": "Without it, Cmdr can still read and write files on shares that are already mounted, but you can''t discover new servers or use our faster direct connection.",
+  "settings.network.permissionWithout": "沒有它，Cmdr 仍可在已經裝載的共享上讀寫檔案，但你無法探索新的伺服器，也無法使用我們更快的直接連線。",
   "@settings.network.permissionWithout": {
     "sourceHash": "4beca45"
   },
-  "settings.network.customTimeoutUnit": "seconds",
+  "settings.network.customTimeoutUnit": "秒",
   "@settings.network.customTimeoutUnit": {
     "sourceHash": "59f006d"
   },
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Example email address “you@example.com”: a recognizable placeholder shape whose @-pattern is what hints “email”. Apple keeps example addresses in this Latin form in its Traditional Chinese localisations too."
   },
-  "settings.updates.checkForUpdates": "Check for updates",
+  "settings.updates.checkForUpdates": "檢查更新",
   "@settings.updates.checkForUpdates": {
     "sourceHash": "f26f327"
   },
-  "settings.updates.errorPrefix": "Error:",
+  "settings.updates.errorPrefix": "錯誤：",
   "@settings.updates.errorPrefix": {
     "sourceHash": "6170629"
   },
-  "settings.updates.sendErrorReport": "Send error report",
+  "settings.updates.sendErrorReport": "傳送錯誤報告",
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "Check your inbox to confirm your email. Thanks for helping out!",
+  "settings.updates.emailConfirmHint": "查看你的收件匣來確認電子郵件。謝謝你的幫忙！",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "Sorry, we couldn''t sign you up right now. Try again?",
+  "settings.updates.emailSignupError": "抱歉，我們現在沒辦法幫你完成註冊。要再試一次嗎？",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Stored only on your Mac. We never send it together with your usage stats, so those can''t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
+  "settings.updates.emailPrivacyNote": "只會存在你的 Mac 上。我們絕不會把它和你的使用統計一起傳送，所以那些統計無法被關聯到你本人。它只用來聯絡你，以及在你傳送報告時選擇性地附上。若要停止收到電子郵件，請使用我們任何一封信裡的取消訂閱連結。",
   "@settings.updates.emailPrivacyNote": {
     "sourceHash": "f22c213"
   },
-  "settings.logging.openLogFile": "Open log file",
+  "settings.logging.openLogFile": "開啟記錄檔",
   "@settings.logging.openLogFile": {
     "sourceHash": "ec1bc04"
   },
-  "settings.logging.copied": "Copied!",
+  "settings.logging.copied": "已複製！",
   "@settings.logging.copied": {
     "sourceHash": "ea61bc1"
   },
-  "settings.logging.copyDiagnostics": "Copy diagnostic info",
+  "settings.logging.copyDiagnostics": "複製診斷資訊",
   "@settings.logging.copyDiagnostics": {
     "sourceHash": "b8e7644"
   },
-  "settings.mcp.checkPort": "Check port",
+  "settings.mcp.checkPort": "檢查連接埠",
   "@settings.mcp.checkPort": {
     "sourceHash": "de685bf"
   },
-  "settings.mcp.runningOnPort": "Server is running on port {runningPort}",
+  "settings.mcp.runningOnPort": "伺服器正在連接埠 {runningPort} 上執行",
   "@settings.mcp.runningOnPort": {
     "sourceHash": "a9dd980"
   },
-  "settings.mcp.ephemeral": "(ephemeral)",
+  "settings.mcp.ephemeral": "（臨時）",
   "@settings.mcp.ephemeral": {
     "sourceHash": "42fb229"
   },
-  "settings.mcp.portInUseFallback": "(port {port} was in use)",
+  "settings.mcp.portInUseFallback": "（連接埠 {port} 已被佔用）",
   "@settings.mcp.portInUseFallback": {
     "sourceHash": "bf23daa"
   },
-  "settings.mcp.checkingPort": "Checking port availability...",
+  "settings.mcp.checkingPort": "正在檢查連接埠是否可用…",
   "@settings.mcp.checkingPort": {
     "sourceHash": "c5432bf"
   },
-  "settings.mcp.portAvailable": "Port {port} is available",
+  "settings.mcp.portAvailable": "連接埠 {port} 可以使用",
   "@settings.mcp.portAvailable": {
     "sourceHash": "4559f69"
   },
-  "settings.mcp.portInUseStillRunning": "Port {port} is in use, still running on port {runningPort}",
+  "settings.mcp.portInUseStillRunning": "連接埠 {port} 已被佔用，仍在連接埠 {runningPort} 上執行",
   "@settings.mcp.portInUseStillRunning": {
     "sourceHash": "e188629"
   },
-  "settings.mcp.portInUse": "Port {port} is in use",
+  "settings.mcp.portInUse": "連接埠 {port} 已被佔用",
   "@settings.mcp.portInUse": {
     "sourceHash": "4f746de"
   },
-  "settings.mcp.usePortInstead": "Use port {suggestedPort} instead",
+  "settings.mcp.usePortInstead": "改用連接埠 {suggestedPort}",
   "@settings.mcp.usePortInstead": {
     "sourceHash": "a0d7a0d"
   },
-  "settings.advanced.warningBanner": "These settings are for advanced users. Incorrect values may cause performance issues or unexpected behavior.",
+  "settings.advanced.warningBanner": "這些設定是給進階使用者的。不正確的值可能造成效能問題或非預期的行為。",
   "@settings.advanced.warningBanner": {
     "sourceHash": "b1dbbf4"
   },
-  "settings.advanced.resetAll": "Reset all to defaults",
+  "settings.advanced.resetAll": "全部重設為預設值",
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
-  "settings.advanced.resetAllConfirm": "Reset all advanced settings to their defaults? This cannot be undone.",
+  "settings.advanced.resetAllConfirm": "要把所有進階設定重設為預設值嗎？這無法復原。",
   "@settings.advanced.resetAllConfirm": {
     "sourceHash": "be08f2a"
   },
-  "settings.advanced.resetAllConfirmTitle": "Reset advanced settings",
+  "settings.advanced.resetAllConfirmTitle": "重設進階設定",
   "@settings.advanced.resetAllConfirmTitle": {
     "sourceHash": "a1d9808"
   },
-  "settings.advanced.defaultPrefix": "Default:",
+  "settings.advanced.defaultPrefix": "預設值：",
   "@settings.advanced.defaultPrefix": {
     "sourceHash": "d1f6d9e"
   },
-  "settings.applier.logStorageRestart": "Restart Cmdr to apply the log storage change.",
+  "settings.applier.logStorageRestart": "重新啟動 Cmdr 來套用記錄檔儲存的更改。",
   "@settings.applier.logStorageRestart": {
     "sourceHash": "b833dee"
   },
-  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, one {{enrichedText} of {totalText} image in your covered folders} other {{enrichedText} of {totalText} images in your covered folders}}",
+  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, other {涵蓋範圍內的 {totalText} 張影像中，已有 {enrichedText} 張建立索引}}",
   "@settings.mediaIndex.progress.coveredOfTotal": {
     "sourceHash": "73d547e"
   },
-  "settings.mediaIndex.progress.coveredDone": "{total, plural, one {{totalText} image in your covered folders} other {{totalText} images in your covered folders}}",
+  "settings.mediaIndex.progress.coveredDone": "{total, plural, other {已為涵蓋範圍內的全部 {totalText} 張影像建立索引}}",
   "@settings.mediaIndex.progress.coveredDone": {
     "sourceHash": "98e10c0"
   },
-  "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} more image indexed from broader settings, still searchable} other {{keptText} more images indexed from broader settings, still searchable}}",
+  "settings.mediaIndex.progress.kept": "{kept, plural, other {另有 {keptText} 張影像是依較寬的設定建立索引的，仍然可以搜尋}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
   },
-  "settings.mediaIndex.scope.label": "Which folders to index",
+  "settings.mediaIndex.scope.label": "要為哪些資料夾建立索引",
   "@settings.mediaIndex.scope.label": {
     "sourceHash": "fa14b86"
   },
-  "settings.mediaIndex.scope.description": "Pick the folders yourself, or let Cmdr work out which ones matter to you.",
+  "settings.mediaIndex.scope.description": "你可以自己挑選資料夾，也可以讓 Cmdr 判斷哪些對你重要。",
   "@settings.mediaIndex.scope.description": {
     "sourceHash": "051ad07"
   },
-  "settings.mediaIndex.scope.opt.chosen": "Only folders I choose",
+  "settings.mediaIndex.scope.opt.chosen": "只有我挑選的資料夾",
   "@settings.mediaIndex.scope.opt.chosen": {
     "sourceHash": "a573613"
   },
-  "settings.mediaIndex.scope.opt.importance": "Automatically, by folder importance",
+  "settings.mediaIndex.scope.opt.importance": "自動，依資料夾的重要性",
   "@settings.mediaIndex.scope.opt.importance": {
     "sourceHash": "0a66efe"
   },
-  "settings.mediaIndex.chosenFolders.title": "Folders to index",
+  "settings.mediaIndex.chosenFolders.title": "要建立索引的資料夾",
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
   },
-  "settings.mediaIndex.chosenFolders.help": "Photos in these folders are indexed whatever else you pick above. Removing a folder stops new indexing; what''s already indexed stays searchable.",
+  "settings.mediaIndex.chosenFolders.help": "不管你上面選了哪一項，這些資料夾裡的照片都會建立索引。移除資料夾只會停止新的索引；已經建立索引的內容仍然可以搜尋。",
   "@settings.mediaIndex.chosenFolders.help": {
     "sourceHash": "c48ff3f"
   },
-  "settings.mediaIndex.chosenFolders.empty": "No folders yet. Add one to start indexing its photos.",
+  "settings.mediaIndex.chosenFolders.empty": "還沒有資料夾。加一個，就能開始為裡面的照片建立索引。",
   "@settings.mediaIndex.chosenFolders.empty": {
     "sourceHash": "da00cf9"
   },
-  "settings.mediaIndex.chosenFolders.add": "Add a folder…",
+  "settings.mediaIndex.chosenFolders.add": "加入資料夾…",
   "@settings.mediaIndex.chosenFolders.add": {
     "sourceHash": "6505f14"
   },
-  "settings.mediaIndex.chosenFolders.remove": "Remove",
+  "settings.mediaIndex.chosenFolders.remove": "移除",
   "@settings.mediaIndex.chosenFolders.remove": {
     "sourceHash": "c3812fc"
   },
-  "settings.mediaIndex.chosenFolders.removeAria": "Remove {folder} from indexing",
+  "settings.mediaIndex.chosenFolders.removeAria": "把 {folder} 移出索引",
   "@settings.mediaIndex.chosenFolders.removeAria": {
     "sourceHash": "338e30a"
   },
-  "settings.window.title": "Settings",
+  "settings.window.title": "設定",
   "@settings.window.title": {
     "sourceHash": "74a883a"
   },
-  "settings.window.loading": "Loading settings…",
+  "settings.window.loading": "正在載入設定…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
   }
