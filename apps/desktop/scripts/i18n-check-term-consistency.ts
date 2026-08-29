@@ -290,7 +290,18 @@ export function report(outcomes: readonly LocaleOutcome[], write?: (line: string
   }
 
   if (issues === 0) {
-    out('Term consistency: every locale names one thing one way (or says why not).')
+    // A baselined locale exits clean on purpose: the count only ratchets down,
+    // and the check stays warn-only. What it may NOT do is imply the
+    // divergences are gone, so the all-clear names what is still waiting.
+    const awaiting = outcomes.filter(({ baseline }) => baseline !== undefined)
+    const untriaged = awaiting.reduce((total, { divergences }) => total + divergences.length, 0)
+    out(
+      untriaged === 0
+        ? 'Term consistency: every locale names one thing one way (or says why not).'
+        : `Term consistency: every triaged locale names one thing one way (or says why not). ` +
+            `${String(untriaged)} divergences across ${String(awaiting.length)} ` +
+            `${awaiting.length === 1 ? 'locale' : 'locales'} are still untriaged.`,
+    )
     return EXIT_CLEAN
   }
   return EXIT_ISSUES

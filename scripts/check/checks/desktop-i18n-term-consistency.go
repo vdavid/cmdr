@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // RunDesktopI18nTermConsistency flags a locale that gives ONE English string two
@@ -45,6 +46,14 @@ func RunDesktopI18nTermConsistency(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
+		// The script's LAST line is its own summary, and it's the only line that
+		// knows how many divergences are still sitting behind a `notYetReviewed`
+		// baseline. Echoing it beats recomputing a count here that could quietly
+		// disagree, and beats the old "one thing has one name in each of N
+		// locales", which was untrue while 263 divergences awaited triage.
+		if summary := lastNonEmptyLine(output); summary != "" {
+			return Success(summary), nil
+		}
 		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
 			return Success(fmt.Sprintf("one thing has one name in each of %d %s", n, Pluralize(n, "locale", "locales"))), nil
 		}
@@ -68,4 +77,16 @@ func RunDesktopI18nTermConsistency(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	return CheckResult{}, fmt.Errorf("couldn't run the i18n term-consistency check\n%s", indentOutput(output))
+}
+
+// lastNonEmptyLine returns the final non-blank line of `output`, or "" when
+// there isn't one. Positional, so it carries no assumption about the wording.
+func lastNonEmptyLine(output string) string {
+	lines := strings.Split(output, "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		if line := strings.TrimSpace(lines[i]); line != "" {
+			return line
+		}
+	}
+	return ""
 }

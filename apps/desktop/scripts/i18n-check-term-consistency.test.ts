@@ -7,7 +7,8 @@
  * the base value where it doesn't), which is what catches a half-forked term.
  */
 import { describe, it, expect } from 'vitest'
-import { findDivergences, normalizeForComparison, isAllowed } from './i18n-check-term-consistency.ts'
+import { findDivergences, normalizeForComparison, isAllowed, report } from './i18n-check-term-consistency.ts'
+import type { LocaleOutcome } from './i18n-check-term-consistency.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
 
 const cat = (messages: Record<string, string>): Catalog => ({ messages, metadata: {} })
@@ -88,5 +89,51 @@ describe('isAllowed', () => {
   })
   it('rejects a source that is not listed', () => {
     expect(isAllowed('Done', [{ source: 'Running', reason: 'process vs task' }])).toBe(false)
+  })
+})
+
+describe('report: the summary line has to be true', () => {
+  const outcome = (locale: string, divergent: number, baseline?: number): LocaleOutcome => ({
+    locale,
+    isOverlay: false,
+    divergences: Array.from({ length: divergent }, (_, index) => ({
+      source: `term ${String(index)}`,
+      renderings: [
+        { value: 'a', keys: ['x.a'] },
+        { value: 'b', keys: ['x.b'] },
+      ],
+    })),
+    unallowed: [],
+    staleAllows: [],
+    baseline,
+  })
+
+  const linesFor = (outcomes: LocaleOutcome[]): { lines: string[]; code: number } => {
+    const lines: string[] = []
+    const code = report(outcomes, (line) => lines.push(line))
+    return { lines, code }
+  }
+
+  it('names the untriaged total instead of claiming every locale is consistent', () => {
+    // A baselined locale exits clean, which is the right design: the count only
+    // ratchets down and the check stays warn-only. But it may not then say the
+    // problem does not exist.
+    const { lines, code } = linesFor([outcome('hu', 28, 28), outcome('de', 20, 20)])
+    expect(code).toBe(0)
+    const summary = lines[lines.length - 1]
+    expect(summary).toContain('48')
+    expect(summary).toContain('2 locales')
+    expect(summary).not.toBe('Term consistency: every locale names one thing one way (or says why not).')
+  })
+
+  it('still claims the clean sweep when nothing is awaiting triage', () => {
+    const { lines, code } = linesFor([outcome('en-GB', 0)])
+    expect(code).toBe(0)
+    expect(lines[lines.length - 1]).toBe('Term consistency: every locale names one thing one way (or says why not).')
+  })
+
+  it('leaves the warn path alone: a grown baseline still exits non-zero', () => {
+    const { code } = linesFor([outcome('hu', 30, 28)])
+    expect(code).toBe(1)
   })
 })
