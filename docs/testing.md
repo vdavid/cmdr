@@ -645,13 +645,13 @@ E2E test hooks split along two axes:
 
 - **Hard hooks** (binary shape) live behind Cargo features:
   - `playwright-e2e`: feature-gated Tauri commands (`inject_listing_error`, `set_test_throttle`,
-    `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake`, `stage_agent_rollup`) and the
-    tauri-plugin-playwright socket bridge. `force_agent_wake` is the worked example of why the split exists: it REPLACES
-    the proactive loop's timer, which a soft hook may never do. It also narrows the wake to the folder it staged, so the
-    indexer's own rollups can't join the digest; `stage_agent_rollup` stages one without waking, which is how a spec
-    proves that. Its `quiet` argument picks which script the wake's fake assistant plays (the ordinary reply, or the
-    `nothing_to_suggest` call that makes a wake delete its own thread); the flag is sticky, so a spec wanting an
-    ordinary wake afterwards passes it explicitly.
+    `set_test_rollback_throttle`, `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake`,
+    `stage_agent_rollup`) and the tauri-plugin-playwright socket bridge. `force_agent_wake` is the worked example of why
+    the split exists: it REPLACES the proactive loop's timer, which a soft hook may never do. It also narrows the wake
+    to the folder it staged, so the indexer's own rollups can't join the digest; `stage_agent_rollup` stages one without
+    waking, which is how a spec proves that. Its `quiet` argument picks which script the wake's fake assistant plays
+    (the ordinary reply, or the `nothing_to_suggest` call that makes a wake delete its own thread); the flag is sticky,
+    so a spec wanting an ordinary wake afterwards passes it explicitly.
   - `virtual-mtp`: virtual MTP device with deterministic fixtures.
   - `smb-e2e`: virtual SMB hosts injected into mDNS discovery.
 
@@ -683,6 +683,12 @@ E2E test hooks split along two axes:
 - **`CMDR_VIRTUAL_MTP=1` (or `=<dir>`)**: Dev opt-in: `pnpm dev` registers the virtual MTP device. See
   `tooling/virtual-mtp.md`.
 - **`CMDR_E2E_COPY_THROTTLE_MS`**: Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.
+- **`CMDR_E2E_ROLLBACK_THROTTLE_MS`**: Per-item sleep inside the operation-log ROLLBACK engine's file loop
+  (`operation_log/rollback.rs`), so a spec can watch a reversal run and press Cancel inside it. Its own knob rather than
+  a reuse of the copy throttle: pacing the reversal must not also pace the copy that staged it. Parsed once into a
+  `LazyLock` (a rollback item can be one `unlink`, and the engine streams up to a million of them) and inert outside
+  `CMDR_E2E_MODE`, so a stray variable can never pace a user's rollback. The deferred-directory phase is deliberately
+  NOT paced: it polls no cancellation, so slowing it buys dead time rather than a window.
 - **`CMDR_E2E_SCAN_PREVIEW_DELAY_MS`**: Holds every scan-preview worker at its starting line before it walks, so a spec
   can act while a transfer is still counting (`background-while-scanning.spec.ts`). Fixture trees are tiny and
   `data-scan-state` signals "counting done", the opposite of what such a test needs. `set_test_scan_preview_delay`
@@ -701,6 +707,7 @@ E2E test hooks split along two axes:
 **Existing soft hooks** (IPC-driven, feature-gated to `playwright-e2e`):
 
 - **`set_test_throttle(ms)`**: Mid-run override of `CMDR_E2E_COPY_THROTTLE_MS`; clears with `null`.
+- **`set_test_rollback_throttle(ms)`**: Mid-run override of `CMDR_E2E_ROLLBACK_THROTTLE_MS`; clears with `null`.
 - **`flush_file_watcher()`**: Synchronously re-reads every active watch, bypassing debouncer + FSEvents latency.
 - **`inject_listing_error()`**: Inject an IoError into a volume's next list_directory for retry coverage.
 - **`fail_next_brief_column_widths(count)`**: Fail the next `count` Brief column-width computations, so a spec can watch

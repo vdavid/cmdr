@@ -59,6 +59,23 @@ pub fn set_test_throttle(ms: Option<u64>) -> Result<(), String> {
     Ok(())
 }
 
+/// Pauses the rollback engine `ms` before each item it reverses.
+///
+/// `None` clears the override. The rollback of an E2E-sized operation is over in
+/// single-digit milliseconds, so a spec about a reversal IN PROGRESS (watch it run,
+/// press Cancel, assert that what came back stayed back) would otherwise be racing
+/// the engine. This buys it a deterministic window. Separate knob from
+/// `set_test_throttle` on purpose: pacing the reversal must not also pace the copy
+/// that staged it. Feature-gated to `playwright-e2e` so the command isn't available
+/// in production binaries.
+#[cfg(feature = "playwright-e2e")]
+#[tauri::command]
+#[specta::specta]
+pub fn set_test_rollback_throttle(ms: Option<u64>) -> Result<(), String> {
+    crate::test_mode::set_rollback_throttle_override(ms);
+    Ok(())
+}
+
 /// Holds every scan preview at its starting line for `ms` before it walks.
 ///
 /// `None` clears the override. E2E fixture trees are deliberately tiny, so a

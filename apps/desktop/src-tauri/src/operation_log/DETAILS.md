@@ -350,6 +350,18 @@ Rollback eligibility is Done-only at both boundaries: mutation code journals rol
 and `read_rollback_units_page` filters `outcome = done`. The executor also rejects any non-Done unit defensively. A
 skipped or unsuccessful planned rename must never make an untouched destination eligible for rename-back.
 
+### The E2E pacing hook in the item loop
+
+The file loop pauses `crate::test_mode::effective_rollback_throttle_ms()` before each item. In production both its
+sources are unset, so it costs one atomic load and one `LazyLock` deref per item and changes nothing; under E2E it is
+what gives a spec a window to press Cancel on a reversal that would otherwise be over in single-digit milliseconds.
+Its own knob rather than a reuse of the copy throttle, because a spec has to stage a fast copy and then reverse it
+slowly. Pinned by
+`rollback/tests.rs::the_e2e_throttle_hook_paces_the_item_loop`, which measures elapsed time rather than trusting the
+helper to exist: whoever splits this loop into a planner and an executor must carry the three lines across, or every
+rollback E2E goes back to racing the engine. The deferred-directory phase is deliberately NOT paced (it polls no
+cancellation, so a pause there is dead time). Hook conventions: `docs/testing.md` § "E2E env-var hooks".
+
 ### Undoing a job: several operations, newest first
 
 `write_operations/rollback.rs::undo_operations` is the frontend-facing entry (IPC:

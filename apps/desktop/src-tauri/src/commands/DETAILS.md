@@ -225,7 +225,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   via `#[cfg]` on the function itself (not the module).
 - **`e2e.rs`**: E2E/test-support hooks, always compiled in (reading an unset env var is a no-op in production):
   `get_e2e_start_path`, `is_e2e_mode`, `ask_cmdr_fake_active`, `is_force_onboarding`, `set_test_throttle`,
-  `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake` (stages one folder's activity on the wake
+  `set_test_rollback_throttle` (the same idea for the operation-log rollback engine's item loop, on its own knob so
+  pacing a reversal doesn't pace the copy that staged it), `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake` (stages one folder's activity on the wake
   loop's real channel and makes it act now, on that folder alone; it skips the timer and the proactive toggle, never a
   gate, and its `quiet` flag picks which script the wake's fake assistant plays), `stage_agent_rollup` (the same
   staging without the wake, so a spec can prove the force reports on its own folder) — both in

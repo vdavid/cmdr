@@ -25,6 +25,7 @@
 //! `set_test_throttle` IPC command from a test, read on every copy loop tick.
 
 use std::path::PathBuf;
+use std::sync::LazyLock;
 use std::sync::atomic::{AtomicI64, AtomicU8, Ordering};
 
 /// Runtime override for the per-file copy throttle, settable via the
@@ -61,6 +62,67 @@ pub fn effective_copy_throttle_ms() -> Option<u64> {
         return Some(override_val as u64);
     }
     e2e_copy_throttle_ms()
+}
+
+/// Runtime override for the per-item ROLLBACK throttle, settable via the
+/// `set_test_rollback_throttle` IPC command (feature-gated to `playwright-e2e`).
+/// Same `-1`-means-unset shape as the copy throttle above.
+///
+/// Separate from the copy throttle on purpose: a spec that wants a window inside a
+/// REVERSAL would otherwise have to slow every copy in the process down to get one,
+/// including the copy it staged the reversal with.
+static ROLLBACK_THROTTLE_OVERRIDE: AtomicI64 = AtomicI64::new(-1);
+
+/// The `CMDR_E2E_ROLLBACK_THROTTLE_MS` fallback, parsed once.
+///
+/// Cached rather than re-read per call, unlike its copy-throttle sibling: the copy
+/// loop's tick costs a file's worth of I/O, while a rollback item can be a single
+/// `unlink`, and the engine streams up to a million of them. One `LazyLock` deref
+/// per item is a price worth paying; a `getenv` plus a `String` allocation per item
+/// is not.
+///
+/// Gated on [`is_e2e_mode`], so a stray variable in a production environment can
+/// never pace a user's rollback. The IPC override above needs no such gate: its
+/// command doesn't exist outside `playwright-e2e` builds.
+static ROLLBACK_THROTTLE_ENV_MS: LazyLock<Option<u64>> = LazyLock::new(|| {
+    if !is_e2e_mode() {
+        return None;
+    }
+    std::env::var("CMDR_E2E_ROLLBACK_THROTTLE_MS")
+        .ok()
+        .and_then(|raw| raw.trim().parse::<u64>().ok())
+        .filter(|ms| *ms > 0)
+});
+
+/// Sets the IPC-driven rollback throttle override.
+///
+/// `None` clears it and falls back to `CMDR_E2E_ROLLBACK_THROTTLE_MS`. `Some(ms)`
+/// pauses the rollback engine that long before each item it reverses, which is what
+/// gives an E2E spec a known window in which to watch a reversal run and press
+/// Cancel on it. `Some(0)` reads as "no pause": a zero-length sleep would still
+/// yield to the runtime on every item.
+pub fn set_rollback_throttle_override(ms: Option<u64>) {
+    let v = match ms {
+        Some(n) => n.min(i64::MAX as u64) as i64,
+        None => -1,
+    };
+    ROLLBACK_THROTTLE_OVERRIDE.store(v, Ordering::Relaxed);
+}
+
+/// How long the rollback engine pauses before reversing each item: the IPC override
+/// wins, then `CMDR_E2E_ROLLBACK_THROTTLE_MS`, then nothing.
+///
+/// `None` in every real build, and `None` is the production path: the call site
+/// (`operation_log::rollback::execute_rollback`) does nothing at all with it.
+pub fn effective_rollback_throttle_ms() -> Option<u64> {
+    let override_val = ROLLBACK_THROTTLE_OVERRIDE.load(Ordering::Relaxed);
+    if override_val > 0 {
+        return Some(override_val as u64);
+    }
+    if override_val == 0 {
+        return None;
+    }
+    *ROLLBACK_THROTTLE_ENV_MS
 }
 
 /// `CMDR_E2E_MODE=1` signals that the running binary is under an E2E run.
@@ -386,6 +448,33 @@ mod tests {
         assert_eq!(parse(Some("200")), Some(200));
         // Reference call to ensure the public helper survives `#![deny(unused)]`.
         let _ = e2e_copy_throttle_ms();
+    }
+
+    /// The rollback throttle round-trips through its own override, independent of
+    /// the copy throttle: a spec that wants a window inside a REVERSAL must not
+    /// have to slow every copy in the process down to get one.
+    #[test]
+    fn rollback_throttle_override_round_trip() {
+        let prior = ROLLBACK_THROTTLE_OVERRIDE.load(Ordering::Relaxed);
+
+        set_rollback_throttle_override(Some(25));
+        assert_eq!(effective_rollback_throttle_ms(), Some(25));
+        // The two throttles are separate knobs; setting one leaves the other alone.
+        assert_ne!(effective_copy_throttle_ms(), Some(25));
+
+        // Zero is "no pause", not "pause for zero": a sleep of 0 would still yield
+        // to the runtime on every item of a million-item reversal.
+        set_rollback_throttle_override(Some(0));
+        assert_eq!(effective_rollback_throttle_ms(), None);
+
+        set_rollback_throttle_override(None);
+        assert_eq!(
+            effective_rollback_throttle_ms(),
+            None,
+            "cleared, and the env fallback is inert outside E2E mode"
+        );
+
+        ROLLBACK_THROTTLE_OVERRIDE.store(prior, Ordering::Relaxed);
     }
 
     /// The IPC-set override beats the env var; clearing it goes back to env.

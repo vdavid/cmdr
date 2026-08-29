@@ -762,6 +762,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::file_system::fail_next_brief_column_widths,
                     crate::commands::e2e::set_test_throttle,
                     crate::commands::e2e::set_test_scan_preview_delay,
+                    crate::commands::e2e::set_test_rollback_throttle,
                     crate::commands::e2e::flush_file_watcher,
                     crate::commands::e2e::force_agent_wake,
                     crate::commands::e2e::stage_agent_rollup,
