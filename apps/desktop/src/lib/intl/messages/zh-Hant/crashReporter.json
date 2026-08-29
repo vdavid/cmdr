@@ -1,73 +1,73 @@
 {
-  "crashReporter.dialog.title.crash": "Send crash report?",
+  "crashReporter.dialog.title.crash": "要傳送當機報告嗎？",
   "@crashReporter.dialog.title.crash": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.title.report": "Send report?",
+  "crashReporter.dialog.title.report": "要傳送報告嗎？",
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "Cmdr quit unexpectedly last time. Here''s a crash report with details that can help fix this.",
+  "crashReporter.dialog.body.ended": "Cmdr 上次意外結束了。這裡有一份當機報告，裡面的細節有助於修正這個問題。",
   "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
   },
-  "crashReporter.dialog.body.keptRunning": "Cmdr ran into a problem in the background last time and kept running. Here''s a report with details that can help fix this.",
+  "crashReporter.dialog.body.keptRunning": "Cmdr 上次在背景遇到了問題，之後仍繼續執行。這裡有一份報告，裡面的細節有助於修正這個問題。",
   "@crashReporter.dialog.body.keptRunning": {
     "sourceHash": "1ed6290"
   },
-  "crashReporter.dialog.body.unknown": "Cmdr ran into a problem last time. Here''s a report with details that can help fix this.",
+  "crashReporter.dialog.body.unknown": "Cmdr 上次遇到了問題。這裡有一份報告，裡面的細節有助於修正這個問題。",
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "962305e"
   },
-  "crashReporter.dialog.privacyNote": "It includes the app version, macOS version, and which part of the code ran into the problem. No file names or personal data.",
+  "crashReporter.dialog.privacyNote": "內含 App 版本、macOS 版本，以及程式碼中遇到問題的部分。不含檔名或個人資料。",
   "@crashReporter.dialog.privacyNote": {
     "sourceHash": "c6875a7"
   },
-  "crashReporter.dialog.reportIdLabel": "Report ID:",
+  "crashReporter.dialog.reportIdLabel": "報告 ID：",
   "@crashReporter.dialog.reportIdLabel": {
     "sourceHash": "df3d47e"
   },
-  "crashReporter.dialog.reportIdHelp": "Mention this if you reach out about the issue.",
+  "crashReporter.dialog.reportIdHelp": "如果你為這個問題聯絡我們，請提到這個 ID。",
   "@crashReporter.dialog.reportIdHelp": {
     "sourceHash": "c63b08a"
   },
-  "crashReporter.dialog.showDetails": "Show report details",
+  "crashReporter.dialog.showDetails": "顯示報告詳細資訊",
   "@crashReporter.dialog.showDetails": {
     "sourceHash": "11756f2"
   },
-  "crashReporter.dialog.copy": "Copy",
+  "crashReporter.dialog.copy": "複製",
   "@crashReporter.dialog.copy": {
     "sourceHash": "e21f935"
   },
-  "crashReporter.dialog.copied": "Copied",
+  "crashReporter.dialog.copied": "已複製",
   "@crashReporter.dialog.copied": {
     "sourceHash": "8d525e5"
   },
-  "crashReporter.dialog.alwaysSend": "Always send crash reports",
+  "crashReporter.dialog.alwaysSend": "一律傳送當機報告",
   "@crashReporter.dialog.alwaysSend": {
     "sourceHash": "8306c0e"
   },
-  "crashReporter.dialog.dismiss": "Dismiss",
+  "crashReporter.dialog.dismiss": "關閉",
   "@crashReporter.dialog.dismiss": {
     "sourceHash": "48845bf"
   },
-  "crashReporter.dialog.send": "Send report",
+  "crashReporter.dialog.send": "傳送報告",
   "@crashReporter.dialog.send": {
     "sourceHash": "a44d353"
   },
-  "crashReporter.dialog.sending": "Sending...",
+  "crashReporter.dialog.sending": "正在傳送…",
   "@crashReporter.dialog.sending": {
     "sourceHash": "286a3af"
   },
-  "crashReporter.sentToast.message.crash": "Crash report sent. Thanks for helping improve Cmdr.",
+  "crashReporter.sentToast.message.crash": "當機報告已傳送。謝謝你幫忙改進 Cmdr。",
   "@crashReporter.sentToast.message.crash": {
     "sourceHash": "734d62a"
   },
-  "crashReporter.sentToast.message.report": "Report sent. Thanks for helping improve Cmdr.",
+  "crashReporter.sentToast.message.report": "報告已傳送。謝謝你幫忙改進 Cmdr。",
   "@crashReporter.sentToast.message.report": {
     "sourceHash": "a676ed5"
   },
-  "crashReporter.sentToast.changeSettings": "Change in Settings > Updates",
+  "crashReporter.sentToast.changeSettings": "在「設定 > 更新與隱私」中更改",
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   }
