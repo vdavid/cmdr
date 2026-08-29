@@ -584,6 +584,36 @@ async fn a_canceled_volume_copy_still_journals_the_directories_it_created() {
     );
 }
 
+/// The CONCURRENT driver's half of the same claim. Three top-level sources put the
+/// copy on `copy_concurrent.rs` (`source_paths.len() >= 3`), whose interrupted
+/// sources come back through `record_failure` rather than the serial `Err` arm —
+/// a second place that has to journal, and one the single-source case above
+/// never reaches.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_interrupted_concurrent_volume_copy_journals_every_child_it_finished() {
+    let fixture = VolumeLoop::new("op-vol-interrupted-concurrent");
+    for album in ["a", "b", "c"] {
+        fixture.mkdir(&format!("/{album}")).await;
+        for i in 0..3 {
+            fixture.put(&format!("/{album}/f{i}.bin"), &vec![b'x'; 80_000]).await;
+        }
+    }
+
+    fixture.copy_stopping_after_bytes(&["/a", "/b", "/c"], 200_000).await;
+
+    let survivors = fixture.dest_files_under("/").await;
+    assert!(
+        !survivors.is_empty(),
+        "the fixture must leave at least one finished child behind"
+    );
+    assert_eq!(
+        fixture.journaled_dests(EntryType::File),
+        survivors,
+        "every destination the canceled copy left behind owes a row, got {:?}",
+        fixture.items()
+    );
+}
+
 /// **Gap 2.** Volume journaling happens per top-level source at COMPLETION, so a
 /// directory source interrupted mid-stream contributed no rows at all — every
 /// child it had already finished existed on disk and nowhere in the journal, and
