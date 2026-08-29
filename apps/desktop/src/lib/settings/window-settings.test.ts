@@ -213,3 +213,51 @@ describe('initWindowLanguageSync', () => {
     expect(unlistenOsLocale).toHaveBeenCalled()
   })
 })
+
+describe('initWindowLanguageSync and the document language', () => {
+  // The sibling block above mocks `setLocale`, which is right for asserting WHAT
+  // it's called with but blind to what it does. This one runs the real thing, so
+  // it covers the wiring a secondary window actually depends on: init reaches
+  // `setLocale`, and `setLocale` announces the language to the DOM. Without it,
+  // `<html lang>` could regress to `app.html`'s static `en` with every unit test
+  // still green.
+  beforeEach(() => {
+    vi.resetModules()
+    document.documentElement.lang = 'en'
+  })
+
+  afterEach(() => {
+    vi.doUnmock('./settings-store')
+    vi.doUnmock('$lib/intl/os-locales')
+    document.documentElement.lang = 'en'
+  })
+
+  async function loadSyncSpeaking(language: string) {
+    vi.doMock('./settings-store', () => ({
+      getSetting: () => language,
+      onSpecificSettingChange: () => () => {},
+    }))
+    vi.doMock('$lib/intl/os-locales', () => ({
+      loadSystemLocales: () => Promise.resolve({ ui: null, format: null }),
+      pickUiLocale: (setting: string) => (setting === 'system' ? null : setting),
+      watchSystemLocales: () => Promise.resolve(() => {}),
+    }))
+    return import('./window-settings')
+  }
+
+  it('announces the window language on the root element at init', async () => {
+    const { initWindowLanguageSync } = await loadSyncSpeaking('zh-Hant')
+
+    initWindowLanguageSync()
+
+    expect(document.documentElement.lang).toBe('zh-Hant')
+  })
+
+  it('announces the catalog the window reads, not a language we ship nothing for', async () => {
+    const { initWindowLanguageSync } = await loadSyncSpeaking('ja-JP')
+
+    initWindowLanguageSync()
+
+    expect(document.documentElement.lang).toBe('en')
+  })
+})
