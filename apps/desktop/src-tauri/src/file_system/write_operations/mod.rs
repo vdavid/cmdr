@@ -738,6 +738,8 @@ mod approved_op_parity_tests;
 #[cfg(test)]
 mod journal_capture_tests;
 #[cfg(test)]
+mod journal_capture_volume_tests;
+#[cfg(test)]
 mod scan_bridge_tests;
 #[cfg(test)]
 mod scan_preview_listing_progress_tests;
