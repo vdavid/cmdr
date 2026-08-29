@@ -164,11 +164,11 @@ Format, the confidence scale, and the full process: `docs/guides/i18n-translatio
   conflict rows · high
 - permanently (delete) → endgültig ("Endgültig löschen", "endgültig gelöscht") · der Katalog durchgehend
   (`menu.file.deletePermanently`, `commands.fileDeletePermanently.label`,
-  `fileExplorer.functionKeyBar.deletePermanentlyAction`/`.permanentlyLabel`, `errors.mutation.trashNotSupported`)
-  · high. ❌ Nicht "dauerhaft" für das Löschen: das Wort ist im Katalog für den ANDEREN Sinn von "permanently"
-  reserviert, nämlich "for good" bei einer Einstellung ("die Warnung dauerhaft unterdrücken",
-  `settings.fileViewer.suppressBinaryWarning.description`). Der Löschdialog sagte als Einziger "dauerhaft
-  gelöscht" direkt neben der Taste "Endgültig löschen".
+  `fileExplorer.functionKeyBar.deletePermanentlyAction`/`.permanentlyLabel`, `errors.mutation.trashNotSupported`) ·
+  high. ❌ Nicht "dauerhaft" für das Löschen: das Wort ist im Katalog für den ANDEREN Sinn von "permanently" reserviert,
+  nämlich "for good" bei einer Einstellung ("die Warnung dauerhaft unterdrücken",
+  `settings.fileViewer.suppressBinaryWarning.description`). Der Löschdialog sagte als Einziger "dauerhaft gelöscht"
+  direkt neben der Taste "Endgültig löschen".
 - under cursor → unter dem Cursor · standard DE; "Cursor" kept (common DE UI term) · high
 - full disk access (macOS permission) → vollständiger Festplattenzugriff; System Settings pane → "Vollständiger
   Festplattenzugriff", "Privacy & Security"→"Datenschutz & Sicherheit" · macOS SystemSettings (Festplattenzugriff; de
@@ -363,8 +363,8 @@ Format, the confidence scale, and the full process: `docs/guides/i18n-translatio
   format name verbatim · high
 - too large (a file for a filesystem) → "zu groß" ("Datei zu groß für dieses Laufwerk") · standard DE; pairs with
   drive→Laufwerk · high
-- limit (Substantiv, allgemein) → Limit ("Tab-Limit", "kein Limit", "Spaltenbreitenlimit", "Verlauf und Limits");
-  das Verb "limit to" → "begrenzen auf" · der Katalog durchgehend · high. Die eine Ausnahme steht direkt darunter.
+- limit (Substantiv, allgemein) → Limit ("Tab-Limit", "kein Limit", "Spaltenbreitenlimit", "Verlauf und Limits"); das
+  Verb "limit to" → "begrenzen auf" · der Katalog durchgehend · high. Die eine Ausnahme steht direkt darunter.
 - limit (filesystem size cap) → Begrenzung ("keine solche Begrenzung") · KDE Dolphin ("No limit" → "Keine Begrenzung"),
   MS terminology (Begrenzung) · high
 - "and N more files" (trailing line under a truncated file list) → "und {countText} weitere {count, plural, one {Datei}
@@ -468,12 +468,12 @@ confirms `Vorgang`).
 - operation → `Vorgang` (plural `Vorgänge`) · macOS Finder ("Der Vorgang kann nicht abgeschlossen werden.",
   "Kopiervorgang"/"Löschvorgang") + the settled Cmdr `de` catalog (`errors.listing.*` use `Vorgang` throughout,
   `settings.operationLog.maxSize.description` "die ältesten Vorgänge") · high. NOT the loanword "Operation", with
-  exactly two carve-outs, and they are the whole list: (a) the PROTOCOL-level sense, where an "Operation" is one
-  request on the wire (`settings.network.smbConcurrency.label`, `settings.network.customTimeout.description`), and
-  (b) the Settings section and card TITLES that are named after that heritage
-  (`settings.section.navigationAndFileOps`, `settings.navigationAndFileOps.card.fileOperations`,
-  `settings.advanced.card.fileOperations` = "Dateioperationen"). Anything a USER started is a `Vorgang`, including
-  in a tooltip or a settings DESCRIPTION: those had leaked to "Operationen" and are back.
+  exactly two carve-outs, and they are the whole list: (a) the PROTOCOL-level sense, where an "Operation" is one request
+  on the wire (`settings.network.smbConcurrency.label`, `settings.network.customTimeout.description`), and (b) the
+  Settings section and card TITLES that are named after that heritage (`settings.section.navigationAndFileOps`,
+  `settings.navigationAndFileOps.card.fileOperations`, `settings.advanced.card.fileOperations` = "Dateioperationen").
+  Anything a USER started is a `Vorgang`, including in a tooltip or a settings DESCRIPTION: those had leaked to
+  "Operationen" and are back.
 - operation log → `Vorgangsprotokoll` · already settled with the retention settings (`settings.section.operationLog` →
   "Vorgangsprotokoll", log → Protokoll) · high. The dialog title (`operationLog.dialog.title`) and the command label
   (`commands.logOperationLog.label`) MUST match this Settings-section name.
@@ -1568,9 +1568,9 @@ muss damit genau die Taste treffen, auf der „Anhalten“ steht. Der richtige W
 geben, die der natürliche Aria-Satz ohnehin benutzt, und den Aria-Satz nicht zu verbiegen.
 
 - **pause (Taste) → `Anhalten`; resume → `Fortsetzen`; paused → `Angehalten`** · macOS Podcasts
-  (`PLAY_BUTTON_PAUSE`/`AX_PAUSE` = „Anhalten“, `EPISODE_ACTION_RESUME` = „Fortsetzen“, geprüft auf macOS 26.6.2,
-  Build 25G83, 2026-08-30); macOS Finder (`NE101`/`PE108.1` = „Fortsetzen“) · `high`. ❌ Nicht das Lehnwort „Pause“ auf
-  der Taste: der restliche Katalog sagt durchgehend „anhalten“ (`queue.toolbar.pauseAll` = „Alle anhalten“,
+  (`PLAY_BUTTON_PAUSE`/`AX_PAUSE` = „Anhalten“, `EPISODE_ACTION_RESUME` = „Fortsetzen“, geprüft auf macOS 26.6.2, Build
+  25G83, 2026-08-30); macOS Finder (`NE101`/`PE108.1` = „Fortsetzen“) · `high`. ❌ Nicht das Lehnwort „Pause“ auf der
+  Taste: der restliche Katalog sagt durchgehend „anhalten“ (`queue.toolbar.pauseAll` = „Alle anhalten“,
   `queue.row.status` = „Angehalten“), und die beiden Aria-Sätze („Diese Übertragung anhalten“, „Diesen Vorgang
   anhalten“) verlangen genau dieses Wort.
 - **case-sensitive → `Groß-/Kleinschreibung beachten`** · macOS zeigt die Verneinung „Groß-/Kleinschreibung ignorieren“,
@@ -1587,13 +1587,13 @@ nächste Durchgang sie nicht „vereinheitlicht“.
 
 ### Aufgelöst
 
-- **`View` (die F3-Aktion, Datei im eingebauten Betrachter öffnen) → `Ansehen`**, überall:
-  `commands.fileView.label`, `menu.file.view`, `fileExplorer.functionKeyBar.viewLabel` · der Katalog hatte sich längst
-  festgelegt, ohne dass die Tasten es mitbekamen: `settings.appearance.showFunctionKeyBar.description` zählt die Tasten
-  der F-Tasten-Reihe als „(Umbenennen, **Ansehen**, Kopieren usw.)“ auf, während die Taste selbst „Anzeigen“ hieß. Dazu
-  `askCmdr.wakeToast.action` und `suggestedOps.review` (= „Ansehen“ / „Dateien ansehen“) und der Glossareintrag
-  view/see → ansehen · `high`. ❌ Nicht `Anzeigen`: das ist im Katalog der SHOW-Sinn (etwas sichtbar machen), und die
-  beiden auseinanderzuhalten ist der ganze Zweck des Eintrags. ❌ Nicht `Vorschau`: das ist das Substantiv für das
+- **`View` (die F3-Aktion, Datei im eingebauten Betrachter öffnen) → `Ansehen`**, überall: `commands.fileView.label`,
+  `menu.file.view`, `fileExplorer.functionKeyBar.viewLabel` · der Katalog hatte sich längst festgelegt, ohne dass die
+  Tasten es mitbekamen: `settings.appearance.showFunctionKeyBar.description` zählt die Tasten der F-Tasten-Reihe als
+  „(Umbenennen, **Ansehen**, Kopieren usw.)“ auf, während die Taste selbst „Anzeigen“ hieß. Dazu
+  `askCmdr.wakeToast.action` und `suggestedOps.review` (= „Ansehen“ / „Dateien ansehen“) und der Glossareintrag view/see
+  → ansehen · `high`. ❌ Nicht `Anzeigen`: das ist im Katalog der SHOW-Sinn (etwas sichtbar machen), und die beiden
+  auseinanderzuhalten ist der ganze Zweck des Eintrags. ❌ Nicht `Vorschau`: das ist das Substantiv für das
   Betrachter-Fenster, kein Imperativ, und `menu.file.view` verlangt laut `@key` ausdrücklich ein Verb. Double Commander
   `de` sagt für dieselbe Aktion `Betrachten` (`tfrmmain.actview.caption`) — richtig, aber Tier 3, und der Katalog hat
   schon ein Wort.
@@ -1624,11 +1624,11 @@ nächste Durchgang sie nicht „vereinheitlicht“.
 - **`paused` (Zustand) → `angehalten`, auch im Satz** · `settings.askCmdr.status.needsReview` sagte „Ask Cmdr ist
   pausiert“, `queue.row.status` sagt „Angehalten“ · `high`.
 - **Die beiden Beta-E-Mail-Paare sagen wieder dasselbe** · `onboarding.stepBeta.signup.success` und
-  `settings.updates.emailConfirmHint` teilen sich einen englischen Satz, ebenso
-  `onboarding.stepBeta.signup.failure` und `settings.updates.emailSignupError`. Gewählt: „Sieh in deinem Postfach nach,
-  …“ (idiomatischer als „Schau in dein Postfach“) und „Tut uns leid, die Anmeldung hat gerade nicht geklappt. Erneut
-  versuchen?“ — natives Bedauern statt des Lehnworts „Sorry“, die schuldfreie Formulierung („hat nicht geklappt“ statt
-  „wir konnten dich nicht anmelden“), und das im Glossar festgelegte „Erneut versuchen“ · `high`.
+  `settings.updates.emailConfirmHint` teilen sich einen englischen Satz, ebenso `onboarding.stepBeta.signup.failure` und
+  `settings.updates.emailSignupError`. Gewählt: „Sieh in deinem Postfach nach, …“ (idiomatischer als „Schau in dein
+  Postfach“) und „Tut uns leid, die Anmeldung hat gerade nicht geklappt. Erneut versuchen?“ — natives Bedauern statt des
+  Lehnworts „Sorry“, die schuldfreie Formulierung („hat nicht geklappt“ statt „wir konnten dich nicht anmelden“), und
+  das im Glossar festgelegte „Erneut versuchen“ · `high`.
 
 ### Absichtliche Grenzen (bitte nicht vereinheitlichen)
 
@@ -1639,19 +1639,18 @@ nächste Durchgang sie nicht „vereinheitlicht“.
   „Darstellung“ (Substantiv, es hält die Ansichtsoptionen), `@menu.bar.view` verlangt genau dieses Wort. Siehe oben ·
   `high`.
 - **`Zoom`: `Zoom` ist die Textgröße, `Zoomen` ist das Fenster** · `menu.window.zoom` ist macOS' Fenster-Menüpunkt
-  (grüner Knopf), den macOS `de` „Zoomen“ nennt; `menu.view.zoom` ist das Untermenü für Cmdrs Textgröße. Das `@key`
-  sagt selbst, dass hier macOS' Wort gilt, auch wenn es vom Textzoom abweicht · `high`.
-- **`Purple`: `Lila` ist die Finder-Tag-Farbe, `Violett` ist die Farbpalette** · `@menu.tag.purple` verlangt den
-  exakten macOS-Namen dieser Tag-Farbe, und macOS `de` sagt „Lila“; `settings.tint.purple` ist Cmdrs eigene
-  Volume-Einfärbung und folgt dem Glossar-Farbnamen „Violett“ · `high`.
+  (grüner Knopf), den macOS `de` „Zoomen“ nennt; `menu.view.zoom` ist das Untermenü für Cmdrs Textgröße. Das `@key` sagt
+  selbst, dass hier macOS' Wort gilt, auch wenn es vom Textzoom abweicht · `high`.
+- **`Purple`: `Lila` ist die Finder-Tag-Farbe, `Violett` ist die Farbpalette** · `@menu.tag.purple` verlangt den exakten
+  macOS-Namen dieser Tag-Farbe, und macOS `de` sagt „Lila“; `settings.tint.purple` ist Cmdrs eigene Volume-Einfärbung
+  und folgt dem Glossar-Farbnamen „Violett“ · `high`.
 - **`Checking`: `Wird geprüft` prüft etwas nach, `Wird gesucht` sucht nach Updates** · macOS `de` übersetzt „Checking
   for updates…“ als „Nach Updates suchen …“ (Software Update, geprüft auf macOS 26.6.2, 2026-08-30), also ist Suchen
   hier das Idiom. `ai.cloud.checking` und `licensing.dialog.checking` prüfen dagegen eine Verbindung bzw. einen
   Schlüssel · `high`.
-- **`Dismiss`: `Schließen` schließt ein Fenster, `Ausblenden` blendet eine Zeile aus** · alle acht
-  Dialog-/Toast-Tasten schließen etwas. `queue.row.dismiss` entfernt laut `@key` nur die Zeile aus der Liste: nichts
-  wird widerrufen, wiederholt oder gelöscht. Eine Zeile kann man nicht „schließen“, und „Ausblenden“ sagt genau, was
-  passiert · `high`.
+- **`Dismiss`: `Schließen` schließt ein Fenster, `Ausblenden` blendet eine Zeile aus** · alle acht Dialog-/Toast-Tasten
+  schließen etwas. `queue.row.dismiss` entfernt laut `@key` nur die Zeile aus der Liste: nichts wird widerrufen,
+  wiederholt oder gelöscht. Eine Zeile kann man nicht „schließen“, und „Ausblenden“ sagt genau, was passiert · `high`.
 - **`Indexing now`: `Wird gerade indiziert` meint DIESE Datei, `Indizierung läuft` meint den Durchlauf** ·
   `fileExplorer.imageIndex.file.indexing` ist der Tooltip auf dem Abzeichen EINES Bildes, also ein Passivzustand;
   `settings.mediaIndex.progressSummary.title` ist die Überschrift über der Fortschrittsliste, also nominal · `high`.
@@ -1676,12 +1675,12 @@ sind deshalb nur beim Handdurchgang aufgefallen. Alle sind behoben.
   `.opt.yes`/`.opt.no` sagten „zulassen“ / „Immer zulassen“ / „Nie zulassen“, während der Dialog, der genau diese
   Einstellung schreibt (`fileExplorer.extensionChange.alwaysAllow`), „erlauben“ sagt — ebenso
   `askCmdr.renameReview.allow`, `onboarding.stepFda.ifAllow` und `notifications.permissionDenied` · `high`.
-- **`Stop` → `stoppen`, nie `anhalten`** · `askCmdr.wake.stop` sagte „Anhalten, was Ask Cmdr gerade tut“, und
-  „anhalten“ ist im Katalog das Wort für PAUSE (`queue.row.pause` = „Anhalten“, `queue.row.status` = „Angehalten“). In
-  einer Sitzung, in der man eine Übertragung wirklich anhalten kann, ist das kein Stilproblem, sondern eine falsche
-  Zusage · `high`.
-- **`Coming soon` → `Bald verfügbar`** · `settings.mediaIndex.clip.comingSoon` sagte als Einziges „Demnächst
-  verfügbar“ · `high`.
+- **`Stop` → `stoppen`, nie `anhalten`** · `askCmdr.wake.stop` sagte „Anhalten, was Ask Cmdr gerade tut“, und „anhalten“
+  ist im Katalog das Wort für PAUSE (`queue.row.pause` = „Anhalten“, `queue.row.status` = „Angehalten“). In einer
+  Sitzung, in der man eine Übertragung wirklich anhalten kann, ist das kein Stilproblem, sondern eine falsche Zusage ·
+  `high`.
+- **`Coming soon` → `Bald verfügbar`** · `settings.mediaIndex.clip.comingSoon` sagte als Einziges „Demnächst verfügbar“
+  · `high`.
 - **`changelog` → `Änderungsprotokoll`, auch im Kompositum** · `settings.whatsNew.lastSeenVersion.label` sagte
   „Changelog-Version“; jetzt „Zuletzt gesehene Version des Änderungsprotokolls“ · `high`.
 

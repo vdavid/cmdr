@@ -523,9 +523,9 @@ macOS Finder zh-CN + the two-pane/explorer file-manager family (Total/Double Com
   normalization rule. · `high`
 - **pressing Enter / the Enter key** · keep `Enter` verbatim, phrased `按 Enter 键` · matches the dominant existing
   catalog usage (`settings.search.autoApply.description` `按 Enter 键`, `⌘Enter`); macOS doesn't surface a Return-key
-  word in this pile, and AppKit keeps key names Latin in `zh-CN` (`FunctionKeyNames.json`: `Escape` → `Escape`,
-  `Tab` → `Tab`, verified on macOS 26.6.2, 2026-08-30), so `Enter` stays verbatim and `回车键` is wrong. Every call
-  site now says `按 Enter 键` + verb (`按 Enter 键搜索` ×2, `按 Enter 键筛选`, `按 Enter 键时的行为` ×4). · `confirmed`
+  word in this pile, and AppKit keeps key names Latin in `zh-CN` (`FunctionKeyNames.json`: `Escape` → `Escape`, `Tab` →
+  `Tab`, verified on macOS 26.6.2, 2026-08-30), so `Enter` stays verbatim and `回车键` is wrong. Every call site now
+  says `按 Enter 键` + verb (`按 Enter 键搜索` ×2, `按 Enter 键筛选`, `按 Enter 键时的行为` ×4). · `confirmed`
 - **read-only archive** · `只读压缩文件` · settled `只读` (glossary) + `压缩文件`; mirrors `只读宗卷` / `只读设备`
   pattern. · `high`
 - **archive_edit (queue arm, "Editing archive" = changing a zip's entries)** · `正在编辑压缩文件` · `正在[动词]` sibling
@@ -1472,44 +1472,47 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 
 ## 术语漂移审计：同一英文串的多种译法（全目录，2026-08-30）
 
-`desktop-i18n-term-consistency` 把 `zh` 报出 28 处「同一条英文、两种中文」。逐条查证后：15 处是真漂移，已收敛；
-13 处是**真正的语义分界**，两种译法各自正确，故意保留。分界必须写成规则，否则下一轮翻译会「修」回去。
+`desktop-i18n-term-consistency` 把 `zh`
+报出 28 处「同一条英文、两种中文」。逐条查证后：15 处是真漂移，已收敛；13 处是**真正的语义分界**，两种译法各自正确，故意保留。分界必须写成规则，否则下一轮翻译会「修」回去。
 
 ### 收敛掉的 15 处（真漂移）
 
-- **Dismiss** · `关闭` · macOS `zh-CN` 把 `Dismiss Popover` 译作 `关闭弹出窗口`；同一份语料里 `忽略` 专门留给真正的
-  「ignore」（`Ignore Spelling` → `忽略拼写`、`Ignored` → `已忽略`、`ignores ownership` → `忽略所有权`）（macOS 26.6.2
-  语料，2026-08-30 核对） · `confirmed`。目录里原有 5 个键写成 `忽略`，其中
-  `errorReporter.sentToast.dismiss` 是**报告发送成功**后的提示，按钮却写着「忽略」，等于让用户「无视」自己刚做成的事。
-  九个 Dismiss 全部统一为 `关闭`。
+- **Dismiss** · `关闭` · macOS `zh-CN` 把 `Dismiss Popover` 译作 `关闭弹出窗口`；同一份语料里 `忽略`
+  专门留给真正的「ignore」（`Ignore Spelling` → `忽略拼写`、`Ignored` → `已忽略`、`ignores ownership` →
+  `忽略所有权`）（macOS 26.6.2 语料，2026-08-30 核对） · `confirmed`。目录里原有 5 个键写成 `忽略`，其中
+  `errorReporter.sentToast.dismiss`
+  是**报告发送成功**后的提示，按钮却写着「忽略」，等于让用户「无视」自己刚做成的事。九个 Dismiss 全部统一为 `关闭`。
   - 连带：`queue.row.dismissAria` 原为 `忽略这项操作`，改为 `关闭这项操作的记录`。**不要写成 `关闭这项操作`**：中文的
     `关闭+操作` 会被读成「终止这项操作」，而这个按钮只是让那一行不再显示，什么都不撤销、不重试、不删除。
-- **Example:（占位符示例）** · `示例：` · 完整词 Example 用 `示例`（GNOME Nautilus `Examples:` → `示例:`），缩写 e.g.
-  才用 `例如`（KDE Dolphin `(e.g. smb://…)` → `(例如： smb://…)`） · `high`。`onboarding.cloudSetup.*` 的 4 个键原写
-  `例如：`，与 `ai.cloud.*` 的 `示例：` 打架；英文两处都是完整词 `Example:`，故统一为 `示例：`。
+- **Example:（占位符示例）** · `示例：` · 完整词 Example 用 `示例`（GNOME Nautilus `Examples:` →
+  `示例:`），缩写 e.g. 才用 `例如`（KDE Dolphin `(e.g. smb://…)` → `(例如： smb://…)`） ·
+  `high`。`onboarding.cloudSetup.*` 的 4 个键原写 `例如：`，与 `ai.cloud.*` 的 `示例：` 打架；英文两处都是完整词
+  `Example:`，故统一为 `示例：`。
 - **On disk（占用磁盘的物理大小）** · `占用磁盘` · Double Commander `zh-CN` `Size on disk:` → `占用磁盘空间`；
-  `占用空间` 太笼统，逻辑大小也是「占空间」 · `high`。`settings.listing.sizeDisplay.opt.physical` 原为 `占用空间`，
-  与 `fileExplorer.dirSize.onDiskLabel` / `selectionTooltip.onDiskHeader` / `mismatchTooltipPrefix` 的 `占用磁盘`
+  `占用空间` 太笼统，逻辑大小也是「占空间」 · `high`。`settings.listing.sizeDisplay.opt.physical` 原为 `占用空间`，与
+  `fileExplorer.dirSize.onDiskLabel` / `selectionTooltip.onDiskHeader` / `mismatchTooltipPrefix` 的 `占用磁盘`
   不一致；两处的对立面都是 `内容`（Content），同一组对立不该有两个名字。
 - **From（传输的来源）** · `来源` · 目录已经用 `来源` 指代传输源（`transferDialog.scanStopped` `没能统计完来源`、
   `scanUnresponsive` `来源没有响应`、`sourceGroupTitle` `来源`／`targetGroupTitle` `目标`） · `high`。
   `fileOperations.scanPhase.fromLabel` 原为 `来自：`，是唯一的例外，改为 `来源：`。
-- **Go to home folder** · `前往个人文件夹` · `fileExplorer.errorPane.goHome` 原为 `打开个人文件夹`；这个按钮是导航，
-  不是「打开」，且 `commands.navGoHome.label` 已定 `前往`（macOS 的 `Go` 菜单即 `前往`） · `high`。
+- **Go to home folder** · `前往个人文件夹` · `fileExplorer.errorPane.goHome` 原为
+  `打开个人文件夹`；这个按钮是导航，不是「打开」，且 `commands.navGoHome.label` 已定 `前往`（macOS 的 `Go` 菜单即
+  `前往`） · `high`。
 - **Go to latest download** · `前往最新下载` · 去掉 `settings.behavior…globalGoToLatestShortcut.enabled.label` 多出的
   `的`，与 `commands.downloadsGoToLatest.label`／`menu.go.goToLatestDownload` 对齐 · `high`。
 - **Tab limit reached** · `已达到标签页数量上限` · `commands.handler.tabLimitReached` 原写 `已达`，与
   `fileExplorer.tabs.limitReached` 的 `已达到` 不一致；取更完整的 `已达到` · `high`。
 - **Press Enter to search** · `按 Enter 键搜索` · 见本文件「pressing Enter / the Enter key」条目 · `confirmed`。
-  `search.runHint` 原为 `按回车键搜索`（把键名译成了中文），`queryUi.bar.runHint` 原为 `按 Enter 搜索`（少了 `键`）。
-  两处都改成本文件早已定下的 `按 Enter 键`＋动词，`回车键` 从目录里彻底消失。
-- **计数名词要带量词** · `个文件` / `个目录` · `fileExplorer.summary.fileNoun`／`dirNoun` 原为光秃的 `文件`／`目录`，
-  拼出来是「3 / 10 文件」——中文数词后面必须有量词，这不只是不一致，是不合语法 · `confirmed`。目录其余每一处计数都写
+  `search.runHint` 原为 `按回车键搜索`（把键名译成了中文），`queryUi.bar.runHint` 原为 `按 Enter 搜索`（少了
+  `键`）。两处都改成本文件早已定下的 `按 Enter 键`＋动词，`回车键` 从目录里彻底消失。
+- **计数名词要带量词** · `个文件` / `个目录` · `fileExplorer.summary.fileNoun`／`dirNoun` 原为光秃的
+  `文件`／`目录`，拼出来是「3 / 10 文件」——中文数词后面必须有量词，这不只是不一致，是不合语法 ·
+  `confirmed`。目录其余每一处计数都写
   `个文件`／`个目录`（`transferDialog.filesPart`、`dirSize.fileCount`、`scanPhase.throughputFiles` `个文件/秒`）。
-- **两条重复的散文** · `onboarding.stepBeta.signup.success` 与 `settings.updates.emailConfirmHint` 是同一句英文，
-  统一为 `请查看收件箱，确认你的邮箱。谢谢你的帮助！`；`onboarding.stepBeta.signup.failure` 与
-  `settings.updates.emailSignupError` 统一为 `抱歉，我们现在没能帮你注册。要再试一次吗？`（`没能` 比 `无法` 更软，
-  合乎风格指南「不用响亮的失败词」）。
+- **两条重复的散文** · `onboarding.stepBeta.signup.success` 与 `settings.updates.emailConfirmHint` 是同一句英文，统一为
+  `请查看收件箱，确认你的邮箱。谢谢你的帮助！`；`onboarding.stepBeta.signup.failure` 与
+  `settings.updates.emailSignupError` 统一为 `抱歉，我们现在没能帮你注册。要再试一次吗？`（`没能` 比 `无法`
+  更软，合乎风格指南「不用响亮的失败词」）。
 
 ### 故意保留的 13 处分界（英文一词多义，中文必须分开）
 
@@ -1519,40 +1522,42 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
   时保留拉丁 `App`（`settings.appearance.dateColors.opt.app`、`…downloadsNotifications.opt.inApp` `App 内`，同组还有
   `macOS`）· `high`。界线：`App` 与 `macOS` 对举时保留原形，单独当范围词时译。
 - **Back** · 导航返回 `返回`（macOS `Back`／`Go Back`／`go back` 一律 `返回`，Tier 1）；**向导的上一步** `上一步`
-  （`onboarding.wizard.back`，与 `onboarding.wizard.next` `下一步` 成对）· `confirmed`。界线：回到上一个位置 vs
-  回到上一个步骤。
-- **Both** · 单独的开关格 `两者`（`queryUi.filters.type.both`，兄弟项 `文件`／`文件夹`；macOS `Keep Both` → `保留两者`）；
-  与 `都不用` 成对的选项写 `两者都用`（`…downloadsNotifications.opt.both`／`.neither`）· `high`。界线：光杆名词 vs
-  必须与否定项对仗的动宾短语。
-- **Done** · 清单步骤读屏时念的那一声 `完成`（`indexing.step.statusDone`；macOS SystemSettings `Done` → `完成`）；
-  操作的生命周期状态 `已完成`（`operationLog.status.done`／`.outcome.done`）· `high`。界线：一声宣告 vs 一个状态值。
-- **Error** · 面向用户的状态格 `出现问题`（`fileExplorer.network.browser.status.error`；英文 `@key` 自己就写了
-  「风格指南若有更友好的说法就别用 error 的字面词」，而本语言风格指南正是这么规定的）；开发者／诊断前缀 `错误`
+  （`onboarding.wizard.back`，与 `onboarding.wizard.next` `下一步` 成对）·
+  `confirmed`。界线：回到上一个位置 vs 回到上一个步骤。
+- **Both** · 单独的开关格 `两者`（`queryUi.filters.type.both`，兄弟项 `文件`／`文件夹`；macOS `Keep Both` →
+  `保留两者`）；与 `都不用` 成对的选项写 `两者都用`（`…downloadsNotifications.opt.both`／`.neither`）·
+  `high`。界线：光杆名词 vs 必须与否定项对仗的动宾短语。
+- **Done** · 清单步骤读屏时念的那一声 `完成`（`indexing.step.statusDone`；macOS SystemSettings `Done` →
+  `完成`）；操作的生命周期状态 `已完成`（`operationLog.status.done`／`.outcome.done`）·
+  `high`。界线：一声宣告 vs 一个状态值。
+- **Error** · 面向用户的状态格 `出现问题`（`fileExplorer.network.browser.status.error`；英文 `@key`
+  自己就写了「风格指南若有更友好的说法就别用 error 的字面词」，而本语言风格指南正是这么规定的）；开发者／诊断前缀 `错误`
   （`settings.updates.errorPrefix`，英文 `@key` 明说这里 `Error` 可以照用）· `confirmed`。**界线由英文的 `@key`
   描述自己划定**，不是译者的偏好。
 - **Modified** · 文件的修改日期 `修改日期`（macOS Finder `ArrangeByMenu` `Modified` → `修改日期`，Tier 1）；
   **快捷键被用户改过** `已修改`（`shortcuts.section.filterModified`，兄弟项 `shortcuts.section.modifiedTooltip`
   `已从默认值更改`）· `confirmed`。这里英文的 `Modified` 根本不是日期，套 `修改日期` 会彻底错。
-- **Put back** · 从废纸篓放回原处 `放回原处`（macOS Finder `Put Back` → `放回原处`，Tier 1；`fileOperations.trash.undone`）；
-  **撤销重命名**后把旧名字还原 `已恢复`（`askCmdr.renameUndo.undone`／`.partial`）· `confirmed`。界线：`放回原处`
-  明说「回到原来的位置」，而重命名撤销根本没动位置，照搬会撒谎。
+- **Put back** · 从废纸篓放回原处 `放回原处`（macOS Finder `Put Back` → `放回原处`，Tier
+  1；`fileOperations.trash.undone`）； **撤销重命名**后把旧名字还原 `已恢复`（`askCmdr.renameUndo.undone`／`.partial`）·
+  `confirmed`。界线：`放回原处` 明说「回到原来的位置」，而重命名撤销根本没动位置，照搬会撒谎。
 - **Regex** · 局促的模式芯片用简称 `正则`（`queryUi.mode.regex.label`、`queryUi.ai.patternLabel.regex`、
   `queryUi.recent.mode.regex`）；**悬停提示与无障碍名**写全称 `正则表达式`（`viewer.search.regex`，该按钮的可见文字只是
-  `.*` 字形，读屏用户需要完整术语）· `high`。全称有 Tier 3 全票支持（KDE `Regular Expression` → `正则表达式`、
-  Double Commander、Xfce）。界线：地方紧就缩，读屏和提示就展开。
+  `.*` 字形，读屏用户需要完整术语）· `high`。全称有 Tier 3 全票支持（KDE `Regular Expression` → `正则表达式`、Double
+  Commander、Xfce）。界线：地方紧就缩，读屏和提示就展开。
 - **Running** · 本地 AI 服务器进程在跑 `运行中`（`ai.local.statusRunning`）；一项任务在进行 `进行中`
   （`operationLog.status.running`）· `high`。检查脚本自己的注释就把这一对列为正当分歧。
 - **Scanning** · 带省略号的进行时 `正在扫描…`（`fileOperations.shared.scanningTooltip`）；两步指示器里的**步骤名**
-  `扫描`（`fileOperations.transferProgress.stageScanning`）· `confirmed`。macOS AppKit 做的正是同一个区分：
-  `Searching` → `搜索`，`Searching…` → `正在搜索…`。目录其余每处进行时都写 `正在扫描`。
+  `扫描`（`fileOperations.transferProgress.stageScanning`）· `confirmed`。macOS AppKit 做的正是同一个区分： `Searching`
+  → `搜索`，`Searching…` → `正在搜索…`。目录其余每处进行时都写 `正在扫描`。
 - **Select** · 动词／菜单标题 `选择`（`menu.bar.select`、`onboarding.stepAi.table.rowSelect`）；下拉框未选时的占位符
   `请选择`（`ui.select.placeholder`，英文是 `Select...`）· `high`。界线：命令用户去做 vs 提示用户还没做。
-- **Unreachable** · 主机连不上 `无法连接`（`fileExplorer.network.browser.status.unreachable`）；标签页指向的
-  文件夹／宗卷够不着 `无法访问`（`fileExplorer.tabBar.unreachableAriaLabel`）· `high`。界线：连接的对象是服务器，
-  访问的对象是路径；宗卷已推出时说「无法连接」是错的，压根没有连接可言。
+- **Unreachable** · 主机连不上
+  `无法连接`（`fileExplorer.network.browser.status.unreachable`）；标签页指向的文件夹／宗卷够不着
+  `无法访问`（`fileExplorer.tabBar.unreachableAriaLabel`）·
+  `high`。界线：连接的对象是服务器，访问的对象是路径；宗卷已推出时说「无法连接」是错的，压根没有连接可言。
 - **View** · 动词，用内置查看器打开 `查看`（`menu.file.view`、`commands.fileView.label`、
-  `fileExplorer.functionKeyBar.viewLabel`）；名词，菜单栏的「显示」菜单 `显示`（`menu.bar.view`）· `confirmed`。
-  已记在 `style.md`，此处只做交叉引用。
+  `fileExplorer.functionKeyBar.viewLabel`）；名词，菜单栏的「显示」菜单 `显示`（`menu.bar.view`）· `confirmed`。已记在
+  `style.md`，此处只做交叉引用。
 
 ### 复核这批时的坑
 
@@ -1562,28 +1567,30 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 
 ## 术语漂移审计：英文不同、中文该同的那一半（手工排查，2026-08-30）
 
-`desktop-i18n-term-consistency` 只看得见**英文完全相同**的键。英文稍有出入的漂移它一概看不到，而这一半往往更难看：
-菜单栏和命令面板本来就用不同的英文措辞指同一个动作。按 `docs/guides/i18n-translation.md` 的三趟脚本排查后：
+`desktop-i18n-term-consistency`
+只看得见**英文完全相同**的键。英文稍有出入的漂移它一概看不到，而这一半往往更难看：菜单栏和命令面板本来就用不同的英文措辞指同一个动作。按
+`docs/guides/i18n-translation.md` 的三趟脚本排查后：
 
 ### 收敛掉的（脚本看不见，但用户看得见）
 
-- **Go back / Back（历史导航）** · `返回` · macOS `zh-CN` 把 `Back`、`Go Back`、`go back` 一律译作 `返回`，Finder
-  更是把 `Back/Forward` 直接给成 `返回/前进`；整份 macOS 语料里 `后退` 出现 **0 次**（macOS 26.6.2 语料，2026-08-30
-  核对） · `confirmed`。`commands.navBack.label`（命令面板）与 `fileExplorer.errorPane.goBack` 原写 `后退`，而
+- **Go back / Back（历史导航）** · `返回` · macOS `zh-CN` 把 `Back`、`Go Back`、`go back` 一律译作 `返回`，Finder更是把
+  `Back/Forward` 直接给成 `返回/前进`；整份 macOS 语料里 `后退` 出现 **0 次**（macOS 26.6.2 语料，2026-08-30 核对） ·
+  `confirmed`。`commands.navBack.label`（命令面板）与 `fileExplorer.errorPane.goBack` 原写 `后退`，而
   `menu.go.back`（菜单栏）写 `返回` —— **同一个动作，菜单栏和命令面板各叫各的**。兄弟键 `commands.navForward.label`
   早就是 `前进`，本来就该配 `返回`。
 - **Dismiss 的两个漏网键** · `queue.toolbar.dismissAll` `全部忽略` → `全部关闭`，`ui.toast.dismissAria` `忽略通知` →
   `关闭通知`。英文分别是 `Dismiss all` 和 `Dismiss notification`，与 `Dismiss` 不是同一条串，所以脚本报不出来。
 - **Example: 的两个漏网键** · `fileOperations.mkdir.placeholder`／`mkfile.placeholder` 的 `例如：` → `示例：`。
 - **copying** · `拷贝` · `askCmdr.decision.verbCopy` 原写 `复制`，而目录里 43 处 copy 都是 `拷贝`，`复制` 是留给
-  **duplicate** 的（`commands.fileDuplicate.label`、`menu.file.duplicate`） · `confirmed`。这个词会落进 Ask Cmdr
-  的批准／拒绝句里（「要…这些文件吗」），在一句确认提示里把 copy 说成 `复制` 正好撞上「制作副本」那个命令。
-  同组其余六个动词（`移动`、`删除`、`重命名`、`压缩`、`解压`、`移到废纸篓`）本来就都跟目录一致，只有它跑偏。
-- **archive（压缩包，名词）** · `压缩文件` · `fileOperations.transferDialog.pathErrorNotZip` 原写 `归档名称`，
-  与词汇表既定的 `压缩文件` 不一致 · `high`。注意 askCmdr 的 `存档`／`已存档` 是**另一个义项**（把聊天收起来），不动。
+  **duplicate** 的（`commands.fileDuplicate.label`、`menu.file.duplicate`） · `confirmed`。这个词会落进 Ask
+  Cmdr 的批准／拒绝句里（「要…这些文件吗」），在一句确认提示里把 copy 说成 `复制`
+  正好撞上「制作副本」那个命令。同组其余六个动词（`移动`、`删除`、`重命名`、`压缩`、`解压`、`移到废纸篓`）本来就都跟目录一致，只有它跑偏。
+- **archive（压缩包，名词）** · `压缩文件` · `fileOperations.transferDialog.pathErrorNotZip` 原写
+  `归档名称`，与词汇表既定的 `压缩文件` 不一致 · `high`。注意 askCmdr 的 `存档`／`已存档`
+  是**另一个义项**（把聊天收起来），不动。
 - **click** · `点按` · 风格指南早就定了（macOS `zh-CN` 全用 `点按`，`Click Calculate to show` → `点按“计算”以显示`
-  等多处，`点击` 0 次），并留了「其余的顺手收敛」的话。这一趟把 8 个键的 `点击` 收敛为 `点按`，`点击` 作为单独的词从
-  目录里消失。
+  等多处，`点击` 0 次），并留了「其余的顺手收敛」的话。这一趟把 8 个键的 `点击` 收敛为 `点按`，`点击`
+  作为单独的词从目录里消失。
 
 ### 顺手修掉的一处英文残留
 
@@ -1595,12 +1602,12 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 - **`双击` 与 `右键点击` 不跟着 `点按` 走。** 单独的 click 用 Apple 的 `点按`（Tier 1）；但复合词 double-click /
   right-click 在 macOS 语料里查无实据，而 Tier 3 四家（GNOME、Xfce、KDE、Double Commander）**一致**写 `双击`、
   `右键点击`。没有 Tier 1 反证就不要动它们，尤其别凭印象改成 `连按`／`右键点按`。 · `high`
-- **`Queued` = `等待中`**（`operationLog.status.queued`），不写 `已排队`。它跟 `进行中`／`已完成` 是同一组状态值，
-  跟队列这个名词（`队列`）不必同形。 · `high`
+- **`Queued` = `等待中`**（`operationLog.status.queued`），不写 `已排队`。它跟 `进行中`／`已完成`
+  是同一组状态值，跟队列这个名词（`队列`）不必同形。 · `high`
 
 ### 排查结论：这几对近义词目前是干净的
 
-`copy 拷贝` / `duplicate 复制`、`undo 撤销` / `roll back 回滚`、`tab 标签页` / `tag 标签`、
-`API key 密钥` / `license key 许可证密钥`、`remove 移除` / `delete 删除`、`folder 文件夹` / `dir 目录`、
-`cancel 取消` / `stop 停止`、`open 打开` / `go to 前往` —— 全目录逐键对照，除上面那条 `verbCopy` 外没有互串。
-下次复审可以从这份清单接着往下走。
+`copy 拷贝` / `duplicate 复制`、`undo 撤销` / `roll back 回滚`、`tab 标签页` / `tag 标签`、 `API key 密钥` /
+`license key 许可证密钥`、`remove 移除` / `delete 删除`、`folder 文件夹` / `dir 目录`、 `cancel 取消` /
+`stop 停止`、`open 打开` / `go to 前往` —— 全目录逐键对照，除上面那条 `verbCopy`
+外没有互串。下次复审可以从这份清单接着往下走。

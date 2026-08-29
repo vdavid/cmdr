@@ -6,14 +6,14 @@ axes: the OS-platform norm (Apple/Microsoft/GNOME, conservative) and consumer/re
 
 Decisions (2026-06-20): 12 register-flip candidates resolved to informal on consumer-brand evidence (it, hu, pl, ro, sl,
 sr, bs, el, plus hr, tr, ka, lv after a deeper second-pass dig), and zh confirmed informal 你, with no carve-out:
-Apple's Simplified purchase chrome is 102 你 / zero 您, and the macOS Tahoe 26 licence agreement itself is 353 你 / zero
-您, so Simplified has no formal register to carve out. (The one 您-heavy legal text on a stock Mac is Feedback
+Apple's Simplified purchase chrome is 102 你 / zero 您, and the macOS Tahoe 26 licence agreement itself is 353 你 /
+zero 您, so Simplified has no formal register to carve out. (The one 您-heavy legal text on a stock Mac is Feedback
 Assistant's separately drafted click-through; its mtime matches every other bundle, so mtime can't date it.) Cmdr ships
 no agreement prose anyway: its licensing strings are purchase chrome. Traditional zh-Hant splits differently, since
 Apple's Traditional SLA prose IS 您 while its purchase UI is 你; `zh-Hant/style.md` § Formality owns that boundary.
-tr=sen bucks the OS-vendor norm (Apple/MS use siz) as a deliberate brand choice. All other languages
-keep the OS/retail-confirmed register. This is the authoritative formality record; reconcile each `<tag>/style.md`
-Formality section to it.
+tr=sen bucks the OS-vendor norm (Apple/MS use siz) as a deliberate brand choice. All other languages keep the
+OS/retail-confirmed register. This is the authoritative formality record; reconcile each `<tag>/style.md` Formality
+section to it.
 
 | id  | language        | OS evidence                                                                    | OS suggestion                          | retail evidence                                                                                     | retail suggestion   | decision                               |
 | --- | --------------- | ------------------------------------------------------------------------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------- | -------------------------------------- |

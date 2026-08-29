@@ -20,9 +20,9 @@ These are calls a translator can't make alone. The rest of this guide assumes th
   from each other (the script guard blocks it in all three layers), so **never auto-convert one into the other**: the
   vocabulary differs, not just the character shapes. See the script decision point below and `../script-decisions.md`.
   No longer open.
-- **Formal vs neutral "you" (`您` vs `你`): RESOLVED to `你`, with no register carve-out** (consumer-brand evidence,
-  and Apple's Simplified copy uses `你` in its licence agreement too; see Formality and
-  `../formal-informal-decisions.md`). No longer open.
+- **Formal vs neutral "you" (`您` vs `你`): RESOLVED to `你`, with no register carve-out** (consumer-brand evidence, and
+  Apple's Simplified copy uses `你` in its licence agreement too; see Formality and `../formal-informal-decisions.md`).
+  No longer open.
 
 ## Voice and tone
 
@@ -60,14 +60,14 @@ naturally and isn't cryptically clipped.
   `AppStoreKit.framework` and `App Store.app` `zh_CN.lproj`) and so is the macOS Tahoe 26 software licence agreement
   itself (353 `你`, zero `您`, `Setup Assistant.app` `zh_CN.lproj/OSXSoftwareLicense.rtf`) (verified on macOS 26.6.2,
   `plutil` / `textutil` over the live bundles, 2026-08-30).
-- **Trap when re-checking this:** the one `您`-heavy legal text on a stock Mac is Feedback Assistant's `License.rtf`
-  (93 `您`, zero `你`), a separately drafted click-through agreement stamped `EA1920`, 2024-09-09. Its file mtime
-  matches every other bundle's, so mtime won't date it; read the agreement's own footer stamp. Don't let that one file
-  talk you back into a formal-register island.
+- **Trap when re-checking this:** the one `您`-heavy legal text on a stock Mac is Feedback Assistant's `License.rtf` (93
+  `您`, zero `你`), a separately drafted click-through agreement stamped `EA1920`, 2024-09-09. Its file mtime matches
+  every other bundle's, so mtime won't date it; read the agreement's own footer stamp. Don't let that one file talk you
+  back into a formal-register island.
 - **The one real `您`: a salutation Cmdr puts in the USER's mouth.** `licensing.dialog.mailtoBody` pre-fills an email
-  the user sends to Cmdr's support address, so the addressee is us, not the reader, and `您好` is the ordinary
-  Chinese business-letter opener there. That's a different axis from how Cmdr addresses its user, so the formality
-  ruling doesn't reach it. `zh-Hant` independently kept the same single exception.
+  the user sends to Cmdr's support address, so the addressee is us, not the reader, and `您好` is the ordinary Chinese
+  business-letter opener there. That's a different axis from how Cmdr addresses its user, so the formality ruling
+  doesn't reach it. `zh-Hant` independently kept the same single exception.
 - **Buttons and menu items: bare verb, no politener.** macOS labels actions as plain verbs: `拷贝`/`拷貝` (copy),
   `移动`/`搬移` (move), `打开`/`打開` (open), `删除`/`刪除` (delete), `取消` (cancel). This is the correct register for
   Cmdr's buttons and menus: concise and direct, polite by default because a bare verb isn't rude in Chinese.
@@ -218,5 +218,5 @@ inflection.
 ## Glossary
 
 The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/zh-CN/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+terms, each sourced from the reference pile (`_ignored/i18n/zh-CN/`; recipes in
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

@@ -1645,8 +1645,8 @@ puntuación y espacios). Quien usa control por voz dice lo que LEE, así que el 
 forma que la frase accesible ya usa de forma natural, en vez de forzar la frase accesible.
 
 - **case-sensitive → `Distinguir mayúsculas y minúsculas`** (forma completa, la de macOS) · macOS es
-  (`Distinguir mayúsculas y minúsculas` en el panel de búsqueda de AppKit; la negativa es `Ignorar
-  mayúsculas/minúsculas`), verificado en el montón de referencia 2026-08-30 · `high`. La forma recortada
+  (`Distinguir mayúsculas y minúsculas` en el panel de búsqueda de AppKit; la negativa es
+  `Ignorar mayúsculas/minúsculas`), verificado en el montón de referencia 2026-08-30 · `high`. La forma recortada
   `Distinguir mayúsculas` queda descartada: `viewer.search.caseSensitive` ya publicaba la completa, así que el mismo
   interruptor se llamaba de dos maneras según dónde lo abrieras. En texto corrido el adjetivo va en tercera persona y
   minúscula (`queryUi.recent.caseSensitive` = `distingue mayúsculas y minúsculas`), porque se suma a una lista de datos
@@ -1674,11 +1674,11 @@ están; las trece restantes son fronteras DELIBERADAS y quedan anotadas abajo pa
   funciona porque el submenú Zoom ya pone el objeto; la paleta de comandos no tiene ese contexto, así que gana la forma
   con objeto, que además concuerda con `commands.handler.zoomIncreased` (`Zoom aumentado al {size}%`).
 - **`Ver > Zoom > 100%` no existía**: `commands.handler.zoomResetHintMenu` mandaba al usuario a un menú llamado `Ver`,
-  pero la barra de menús se llama `Visualización` (`menu.bar.view`). Ahora la pista nombra el menú real · `high`.
-  (El mismo fallo estaba en `de`, y se corrigió allí.)
+  pero la barra de menús se llama `Visualización` (`menu.bar.view`). Ahora la pista nombra el menú real · `high`. (El
+  mismo fallo estaba en `de`, y se corrigió allí.)
 - **`Go to path` → `Ir a la ruta`** en las cuatro claves · el comando y el menú decían `Ir a una ruta…` y el diálogo que
-  abren se titulaba `Ir a la ruta`. macOS `es` usa el artículo determinado en toda esta familia (`Ir a la carpeta
-  Documentos`, `Ir a la carpeta Aplicaciones`) · `high`.
+  abren se titulaba `Ir a la ruta`. macOS `es` usa el artículo determinado en toda esta familia
+  (`Ir a la carpeta Documentos`, `Ir a la carpeta Aplicaciones`) · `high`.
 - **`Toggle` → `Activar o desactivar …`** · `menu.context.toggleSelection` decía `Alternar selección`; macOS `es` usa
   `Activar o desactivar …` (AppKit, `Activar o desactivar el bloque de cita`) y el propio catálogo ya usa el par
   explícito en `commands.viewShowHidden.label` (`Mostrar u ocultar archivos ocultos`) · `high`.
@@ -1689,22 +1689,23 @@ están; las trece restantes son fronteras DELIBERADAS y quedan anotadas abajo pa
   `.renameConflict.modified` decían `Modificado`, así que la columna de la lista de archivos y la de resultados de
   búsqueda se llamaban distinto una al lado de la otra. macOS `es` da `Modificación` y `Fecha de modificación` · `high`.
 - **Sin artículo en las órdenes cortas**: `Copiar nombre de archivo` (no `Copiar el nombre del archivo`, que rompía la
-  simetría con su vecino `menu.edit.copyPath` = `Copiar ruta`), `Mostrar archivos ocultos`, `Actualizar los hosts de
-  red`, `Resultados de búsqueda` · `high`.
+  simetría con su vecino `menu.edit.copyPath` = `Copiar ruta`), `Mostrar archivos ocultos`,
+  `Actualizar los hosts de red`, `Resultados de búsqueda` · `high`.
 - **`Preview:` → `Vista previa:`** · `settings.appearance.datePreviewLabel` decía `Previsualización:` contra el
   `Vista previa` ya asentado · `high`.
 - **`New name` → `Nombre nuevo`** · `suggestedOps.columnNewName` decía `Nuevo nombre`; el par de `askCmdr.renameReview`
   (`newName`, `editName` = `Nombre nuevo para {name}`) ya tenía la forma pospuesta · `high`.
-- **Registro peninsular neutro, según `style.md`**: `Algo ha ido mal` (no `Algo salió mal`) y `Límite de pestañas
-  alcanzado` (no `Se alcanzó el límite…`, que además usa el pretérito indefinido latinoamericano). Los dos pares de
-  correo beta dicen ya lo mismo: `Vaya, no hemos podido darte de alta ahora mismo. ¿Lo intentas de nuevo?` · `high`.
-- **`Stop` → `Detener`** en las tres (`search.walkHandoff.stop` decía `Parar`); **`Drive indexing` → `Indexación de
-  unidades`** en las tres; **`Create new file` → `Crear archivo nuevo`** también en el nombre hablado del botón F7;
-  **`Connect to server…` → `Conectarse a un servidor…`** también en el enlace de ajustes, que su propio `@key` mandaba
-  traducir igual que el comando; **`Brief mode` → `Modo breve`** (mayúscula inicial solo, según la guía de estilo);
-  **`Indexing now` → `Indexando ahora`** en las dos (el reflexivo `Indexándose` sobraba); **`Go to home folder` → `Ir a
-  la carpeta de inicio`** también en el botón de la pantalla de error; **`This volume doesn't support trash` → `Este
-  volumen no admite la papelera.`** en las dos · `high`.
+- **Registro peninsular neutro, según `style.md`**: `Algo ha ido mal` (no `Algo salió mal`) y
+  `Límite de pestañas alcanzado` (no `Se alcanzó el límite…`, que además usa el pretérito indefinido latinoamericano).
+  Los dos pares de correo beta dicen ya lo mismo:
+  `Vaya, no hemos podido darte de alta ahora mismo. ¿Lo intentas de nuevo?` · `high`.
+- **`Stop` → `Detener`** en las tres (`search.walkHandoff.stop` decía `Parar`); **`Drive indexing` →
+  `Indexación de unidades`** en las tres; **`Create new file` → `Crear archivo nuevo`** también en el nombre hablado del
+  botón F7; **`Connect to server…` → `Conectarse a un servidor…`** también en el enlace de ajustes, que su propio `@key`
+  mandaba traducir igual que el comando; **`Brief mode` → `Modo breve`** (mayúscula inicial solo, según la guía de
+  estilo); **`Indexing now` → `Indexando ahora`** en las dos (el reflexivo `Indexándose` sobraba); **`Go to home folder`
+  → `Ir a la carpeta de inicio`** también en el botón de la pantalla de error; **`This volume doesn't support trash` →
+  `Este volumen no admite la papelera.`** en las dos · `high`.
 
 ### Fronteras deliberadas (no unificar)
 
@@ -1729,16 +1730,15 @@ están; las trece restantes son fronteras DELIBERADAS y quedan anotadas abajo pa
   `Buscar` ahí se leería como una orden · `high`.
 - **`Put back …`: `restaurar` son NOMBRES, `devolver a su sitio` son SITIOS** · el inglés reutiliza una frase para dos
   deshacer distintos; macOS Finder `es` llama `Devolver` al Put Back de la papelera · `high`.
-- **`you@example.com`: Ajustes la deja literal, los diálogos la traducen** ·
-  `@settings.updates.emailPlaceholder` dice "keep it exactly" (y lo respalda un `sameAsSourceJustification`), mientras
-  `@common.attachEmailPlaceholder` y `@onboarding.stepBeta.emailPlaceholder` permiten una dirección de ejemplo local ·
-  `high`.
-- **Cuatro "divergencias" que no lo son, y por qué siguen apareciendo**: `Connected` / `Connected!`,
-  `Copied` / `Copied!`, `Send report` / `Send report?` y `Start using Cmdr` / `Start using Cmdr!` tienen inglés
-  DISTINTO (la exclamación o la interrogación está en el original, y los `@key` la piden). `i18n-terms` las agrupa igual
-  porque su normalizador quita la puntuación FINAL pero no la apertura española `¡` / `¿`, así que `¡Copiado!` se
-  reduce a `¡Copiado` y ya no coincide con `Copiado`. No toques estos ocho valores: el fallo está en el normalizador,
-  no en la traducción.
+- **`you@example.com`: Ajustes la deja literal, los diálogos la traducen** · `@settings.updates.emailPlaceholder` dice
+  "keep it exactly" (y lo respalda un `sameAsSourceJustification`), mientras `@common.attachEmailPlaceholder` y
+  `@onboarding.stepBeta.emailPlaceholder` permiten una dirección de ejemplo local · `high`.
+- **Cuatro "divergencias" que no lo son, y por qué siguen apareciendo**: `Connected` / `Connected!`, `Copied` /
+  `Copied!`, `Send report` / `Send report?` y `Start using Cmdr` / `Start using Cmdr!` tienen inglés DISTINTO (la
+  exclamación o la interrogación está en el original, y los `@key` la piden). `i18n-terms` las agrupa igual porque su
+  normalizador quita la puntuación FINAL pero no la apertura española `¡` / `¿`, así que `¡Copiado!` se reduce a
+  `¡Copiado` y ya no coincide con `Copiado`. No toques estos ocho valores: el fallo está en el normalizador, no en la
+  traducción.
 
 ## Palabras que se separaron sin que ningún check pudiera verlo (2026-08-30)
 
@@ -1749,7 +1749,7 @@ solo aparecen en la pasada manual. Todas están corregidas.
   `Carpeta contenedora`, o sea que el menú Ir y la paleta de comandos (`commands.navParent.label` =
   `Ir a la carpeta superior`) nombraban distinto la misma acción, y las otras diez claves del catálogo también dicen
   `carpeta superior` · `high`. Contraprueba, para que nadie la vuelva a descubrir: macOS `es` SÍ dice
-  `Carpeta contenedora` / `Ir a la carpeta contenedora`, pero eso traduce el inglés de Apple *Enclosing Folder*, que no
+  `Carpeta contenedora` / `Ir a la carpeta contenedora`, pero eso traduce el inglés de Apple _Enclosing Folder_, que no
   es la frase de Cmdr (`Parent folder`), así que la regla de "usa la palabra de Finder" no se aplica limpiamente aquí y
   gana la coherencia interna.
 - **`default` → `por omisión`, sin excepciones** · cinco claves decían `predeterminado`
@@ -1766,12 +1766,12 @@ solo aparecen en la pasada manual. Todas están corregidas.
 - **`rename` (verbo) → `renombrar`, incluso en prosa** · `errors.mutation.cantRenameVolumeRoot` y
   `askCmdr.renameUndo.applied` usaban la perífrasis `cambiar el nombre`, que el glosario reserva para el SUSTANTIVO
   (`cambio de nombre`) · `high`.
-- **`entries` → `entradas` y `dirs` → `carpetas`** · `indexing.scan.counters` decía `{entriesText} ítems, {dirsText}
-  dirs`: dos palabras distintas para lo mismo que `queryUi.results.indexReadyStatus` llama `entradas`, y un `dirs` sin
-  traducir · `high`.
+- **`entries` → `entradas` y `dirs` → `carpetas`** · `indexing.scan.counters` decía
+  `{entriesText} ítems, {dirsText} dirs`: dos palabras distintas para lo mismo que `queryUi.results.indexReadyStatus`
+  llama `entradas`, y un `dirs` sin traducir · `high`.
 - **`permanently` → `permanentemente`** · `errors.write.trashNotSupported.suggestion` decía `de forma permanente` ·
-  `high`. La etiqueta corta de la barra de teclas F sigue siendo `Permanente`: es el hueco más estrecho de la interfaz
-  y ahí cabe solo el adjetivo.
+  `high`. La etiqueta corta de la barra de teclas F sigue siendo `Permanente`: es el hueco más estrecho de la interfaz y
+  ahí cabe solo el adjetivo.
 - **`trash` → `papelera` en minúscula dentro de una frase** · `fileExplorer.renameConflict.overwriteTrash` decía
   `a la Papelera`; macOS `es` escribe `Trasladar a la papelera`, `Ir a la papelera`, `Vaciar papelera`, y reserva la
   mayúscula para cuando `Papelera` va sola como nombre del sitio · `high`.

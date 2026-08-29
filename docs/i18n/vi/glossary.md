@@ -54,9 +54,9 @@ GNOME Nautilus Tier 3); macOS wins ties since Cmdr is a macOS app:
   "keep Keychain verbatim" note. Applied to `ai.secretError.keychainTitle/Body` and the three
   `fileExplorer.network`/`navigation` strings referencing the credential store.
 - **favorites / favorite: `mục ưa thích`** · macOS Finder ("Mục ưa thích", "Máy chủ ưa thích"). `high`.
-- **tab (UI tab): `tab`; Finder tag: `thẻ`** · macOS Finder vi keeps the loanword for the UI tab ("Hiển thị Tất cả
-  Tab", "Ẩn Thanh Tab") and reserves `Thẻ` for a Finder tag ("Thẻ…", "Thêm thẻ…"), macOS 26.6.2, verified 2026-08-30.
-  ⚠️ The earlier "Thẻ ưa thích" citation was a TAG string ("Favorite Tags"), not a tab one. Swept 2026-08-30; see the
+- **tab (UI tab): `tab`; Finder tag: `thẻ`** · macOS Finder vi keeps the loanword for the UI tab ("Hiển thị Tất cả Tab",
+  "Ẩn Thanh Tab") and reserves `Thẻ` for a Finder tag ("Thẻ…", "Thêm thẻ…"), macOS 26.6.2, verified 2026-08-30. ⚠️ The
+  earlier "Thẻ ưa thích" citation was a TAG string ("Favorite Tags"), not a tab one. Swept 2026-08-30; see the
   drift-audit section below. `high`.
 - **refresh / rescan: `làm mới` / `quét lại`** · refresh → MS "làm mới"; rescan → "quét lại" (scan = "quét", natural).
   `high` / `tentative`.
@@ -754,8 +754,8 @@ lại, không thể, gỡ, mức độ quan trọng). New or newly-sourced below
   status-bar family, which had drifted to `ảnh`. English splits them deliberately, and the same feature's settings pane
   already ships `Tìm kiếm hình ảnh` (the card) and `Lập chỉ mục nội dung hình ảnh`, so the pane labels and their
   tooltips now read `hình ảnh` and only the concrete per-drive photo counts keep `ảnh`. `high`.
-- **folder/file size: `kích cỡ`** (not `kích thước`) · macOS vi uses `kích cỡ` 33 times and `kích thước` zero times,
-  and Microsoft terminology agrees; the whole catalog now says `kích cỡ`, including the physical-dimension sense
+- **folder/file size: `kích cỡ`** (not `kích thước`) · macOS vi uses `kích cỡ` 33 times and `kích thước` zero times, and
+  Microsoft terminology agrees; the whole catalog now says `kích cỡ`, including the physical-dimension sense
   (`Đổi kích cỡ khung` = resize panes). Full evidence: the drift-audit section below. `high`.
 - **indexing pass: `lượt quét`** · `lượt` (round/turn) + the settled `quét` (scan); "on the next pass" →
   `ở lượt quét tiếp theo`. `tentative` (no pile string; constructed on settled parts).
@@ -1691,35 +1691,35 @@ thủ công (ba lượt quét mà kiểm tra không thấy được, vì tiếng
 quét toàn catalog bên dưới, tổng cộng 221 giá trị đã đổi.
 
 Mọi bằng chứng Tier 1 trong mục này lấy từ máy Mac đang chạy, **macOS 26.6.2 (build 25G83), kiểm chứng 2026-08-30**:
-`Finder.app/Contents/Resources/{vi,en_GB}.lproj/*.strings` (nhãn theo nib), `LocalizableMerged.strings` (chuỗi ngắn),
-và các `*.loctable` của AppKit / các app hệ thống (macOS 26 đã chuyển phần lớn chuỗi ra `.loctable`, xem
+`Finder.app/Contents/Resources/{vi,en_GB}.lproj/*.strings` (nhãn theo nib), `LocalizableMerged.strings` (chuỗi ngắn), và
+các `*.loctable` của AppKit / các app hệ thống (macOS 26 đã chuyển phần lớn chuỗi ra `.loctable`, xem
 `docs/i18n/reference-pile/how-to-mine.md`).
 
 ### Bảy đợt quét toàn catalog
 
-- **size → `kích cỡ`, KHÔNG BAO GIỜ `kích thước`** (52 chuỗi) · macOS `vi` dùng `kích cỡ` **33 lần** và `kích thước`
-  **0 lần** trong toàn bộ Finder + AppKit + System Settings. Đúng ngay bề mặt của Cmdr: tiêu đề cột danh sách
+- **size → `kích cỡ`, KHÔNG BAO GIỜ `kích thước`** (52 chuỗi) · macOS `vi` dùng `kích cỡ` **33 lần** và `kích thước` **0
+  lần** trong toàn bộ Finder + AppKit + System Settings. Đúng ngay bề mặt của Cmdr: tiêu đề cột danh sách
   (`ListView.strings 54.headerCell.title` → `Kích cỡ`), `Sort By > Size` (`MenuBar 300891.title`), `Get Info`
-  (`InfoWindowGeneralView evJ-mS-qpx.title` → `Kích cỡ:`), `LocalizableMerged N223`. Thuật ngữ Microsoft đồng ý
-  (`size` → `kích cỡ`, id=1413833); Nautilus và Thunar dịch "Size" là `Kích cỡ`, chỉ Dolphin nói `Kích thước` · `high`.
-  Trước đợt này catalog chia 52/18 nghiêng về `kích thước`, và cột `Size` của khung tệp (`Kích cỡ`) mâu thuẫn ngay với
-  cột `Size` của bảng kết quả tìm kiếm (`Kích thước`). Ngoại lệ duy nhất giữ nguyên: **`Cỡ chữ`** cho "Text size" (cùng
-  gốc `cỡ`, đã dùng nhất quán ở `settings.appearance.textSize.label` và `settings.summary.zoomAndDensity`).
+  (`InfoWindowGeneralView evJ-mS-qpx.title` → `Kích cỡ:`), `LocalizableMerged N223`. Thuật ngữ Microsoft đồng ý (`size`
+  → `kích cỡ`, id=1413833); Nautilus và Thunar dịch "Size" là `Kích cỡ`, chỉ Dolphin nói `Kích thước` · `high`. Trước
+  đợt này catalog chia 52/18 nghiêng về `kích thước`, và cột `Size` của khung tệp (`Kích cỡ`) mâu thuẫn ngay với cột
+  `Size` của bảng kết quả tìm kiếm (`Kích thước`). Ngoại lệ duy nhất giữ nguyên: **`Cỡ chữ`** cho "Text size" (cùng gốc
+  `cỡ`, đã dùng nhất quán ở `settings.appearance.textSize.label` và `settings.summary.zoomAndDensity`).
 - **show → `hiển thị`, KHÔNG `hiện`** (41 chuỗi) · macOS `vi` viết `Hiển thị` **147 lần** và **không lần nào** dùng
-  `hiện` làm động từ "show": mọi `hiện` trong kho đều là `hiện tại` / `hiện có` (= "current") hoặc đuôi của
-  `thực hiện` / `xuất hiện`. Bằng chứng đúng chuỗi: "Show in Finder" và "Reveal in Finder" đều là `Hiển thị trong
-  Finder` (Photos `IPXMain.loctable`, Music `MainMenu.loctable`), "Show" trần là `Hiển thị` (AppKit `Common.loctable`),
-  "Show Package Contents" là `Hiển thị nội dung gói` (`MenuBar 300771.title`) · `high`. Đây cũng là lý do ngữ nghĩa:
-  một nhãn mở đầu bằng `Hiện` đọc thành "hiện tại…". `Show less` giữ `Thu gọn` (cặp co/giãn quen thuộc), và
-  "show up here" / "the one-time hint" dùng `xuất hiện` vì tiếng Anh nói "appear", không phải "display".
+  `hiện` làm động từ "show": mọi `hiện` trong kho đều là `hiện tại` / `hiện có` (= "current") hoặc đuôi của `thực hiện`
+  / `xuất hiện`. Bằng chứng đúng chuỗi: "Show in Finder" và "Reveal in Finder" đều là `Hiển thị trong Finder` (Photos
+  `IPXMain.loctable`, Music `MainMenu.loctable`), "Show" trần là `Hiển thị` (AppKit `Common.loctable`), "Show Package
+  Contents" là `Hiển thị nội dung gói` (`MenuBar 300771.title`) · `high`. Đây cũng là lý do ngữ nghĩa: một nhãn mở đầu
+  bằng `Hiện` đọc thành "hiện tại…". `Show less` giữ `Thu gọn` (cặp co/giãn quen thuộc), và "show up here" / "the
+  one-time hint" dùng `xuất hiện` vì tiếng Anh nói "appear", không phải "display".
 - **download → `tải về`, KHÔNG `tải xuống`** (17 chuỗi) · macOS `vi`: `tải về` **35 lần**, `tải xuống` **0 lần**, cả ở
   nghĩa động từ (`Đang tải về`) lẫn danh từ (`Xóa bản tải về`, `Bản tải về Không có tiêu đề`). Thuật ngữ Microsoft nói
   `nội dung tải xuống`, nhưng đó là quy ước Windows và Cmdr là ứng dụng macOS (nguyên tắc "macOS thắng Microsoft" trong
   `docs/guides/i18n-translation.md`) · `high`. Một mục đã tải về là **`bản tải về`**, theo đúng `Xóa bản tải về` của
   Finder.
-- **search → `tìm kiếm`; find → `tìm`** (15 chuỗi) · AppKit `vi` chia đúng như vậy: `Search` → `Tìm kiếm`, `Searching`
-  → `Tìm kiếm`, còn `Find` → `Tìm` (và Finder `MenuBar 300783.title` "Find" → `Tìm`) · `high`. Nên chỗ nào tiếng Anh
-  viết "Search" thì tiếng Việt viết đủ `tìm kiếm`: `Tìm kiếm lệnh…`, `Tìm kiếm trong`, `Tìm kiếm ảnh theo mô tả`.
+- **search → `tìm kiếm`; find → `tìm`** (15 chuỗi) · AppKit `vi` chia đúng như vậy: `Search` → `Tìm kiếm`, `Searching` →
+  `Tìm kiếm`, còn `Find` → `Tìm` (và Finder `MenuBar 300783.title` "Find" → `Tìm`) · `high`. Nên chỗ nào tiếng Anh viết
+  "Search" thì tiếng Việt viết đủ `tìm kiếm`: `Tìm kiếm lệnh…`, `Tìm kiếm trong`, `Tìm kiếm ảnh theo mô tả`.
 - **tab (thẻ giao diện) → `tab`; tag (thẻ Finder) → `thẻ`** (28 chuỗi) · đây là đợt quét mà `style.md` đã ghi nợ. Bằng
   chứng Tier 1: Finder `vi` viết `Hiển thị Tất cả Tab` (`MenuBar WhJ-Wn-z5P.title`) và `Ẩn Thanh Tab`
   (`Wup-0E-2Ap.title`), Safari `vi` viết `Tab mới` / `Đóng tab` / `Ghim tab`; trong khi menu thẻ của Finder là `Thẻ…`
@@ -1758,38 +1758,38 @@ và các `*.loctable` của AppKit / các app hệ thống (macOS 26 đã chuy�
   `Mở thư mục chính` ở màn hình lỗi, `Đến tệp tải về mới nhất` ở cài đặt) đã về một mối. Nhãn trợ năng của ô nhập cũng
   theo: `Đường dẫn cần đi tới`.
 - **"Go back" / "Go forward" (lịch sử duyệt) → `Trở lại` / `Tiếp theo`** · Finder `MenuBar 211.title` / `249.title` ·
-  `high`. `commands.navBack.label` đang là `Quay lại` và `commands.navForward.label` đang là `Đi tới` — cái sau còn
-  đụng thẳng vào họ "go to" ở trên. Bảng lệnh và thanh menu giờ gọi cùng một hành động bằng cùng một từ. Ranh giới với
+  `high`. `commands.navBack.label` đang là `Quay lại` và `commands.navForward.label` đang là `Đi tới` — cái sau còn đụng
+  thẳng vào họ "go to" ở trên. Bảng lệnh và thanh menu giờ gọi cùng một hành động bằng cùng một từ. Ranh giới với
   `Quay lại` ghi ở cuối mục này.
 - **"Put back" → `đưa trở lại`** · Finder `LocalizableMerged N153.1` "Put Back" (đúng lệnh khôi phục từ Thùng rác) →
   `Đưa trở lại`, và `PE130_V1/V2` "could not be put back" → `Không thể đưa trở lại` · `high`.
   `fileOperations.trash.undone` vốn đã đúng; hai khóa `askCmdr.renameUndo.*` dùng `Đã đặt lại` nên đã đổi theo. Tiếng
   Anh cố ý dùng chung một câu cho cả hai, ta giữ y vậy.
-- **"error report" → `báo cáo trục trặc`; "crash report" → `báo cáo sự cố`** (10 chuỗi) · mục
-  "Bổ sung: `thoát bất ngờ`…" ở trên đã chốt `báo cáo sự cố` = crash report, và Tier 1 xác nhận: Problem Reporter `vi`
-  dịch "Problem Report for %@" là `Báo cáo Sự cố cho %@` · `high`. Nhưng chín khóa `errorReporter.*` + menu + bảng lệnh
-  vẫn gọi **error report** là `báo cáo sự cố`, tức là hai luồng báo cáo khác nhau của Cmdr mang y hệt một tên: menu
-  Trợ giúp nói `Gửi báo cáo sự cố…` còn hộp thoại sự cố nói `Gửi báo cáo sự cố?`. Tệ hơn, `settings.updates` lại giữ
-  đúng phép chia (`Gửi báo cáo sự cố` cho crash, `Tự động gửi báo cáo trục trặc` cho error), nên Cài đặt mâu thuẫn với
-  menu. Giờ `trục trặc` dành riêng cho error report, và hai công tắc cạnh nhau trong Cài đặt lại phân biệt được.
+- **"error report" → `báo cáo trục trặc`; "crash report" → `báo cáo sự cố`** (10 chuỗi) · mục "Bổ sung:
+  `thoát bất ngờ`…" ở trên đã chốt `báo cáo sự cố` = crash report, và Tier 1 xác nhận: Problem Reporter `vi` dịch
+  "Problem Report for %@" là `Báo cáo Sự cố cho %@` · `high`. Nhưng chín khóa `errorReporter.*` + menu + bảng lệnh vẫn
+  gọi **error report** là `báo cáo sự cố`, tức là hai luồng báo cáo khác nhau của Cmdr mang y hệt một tên: menu Trợ giúp
+  nói `Gửi báo cáo sự cố…` còn hộp thoại sự cố nói `Gửi báo cáo sự cố?`. Tệ hơn, `settings.updates` lại giữ đúng phép
+  chia (`Gửi báo cáo sự cố` cho crash, `Tự động gửi báo cáo trục trặc` cho error), nên Cài đặt mâu thuẫn với menu. Giờ
+  `trục trặc` dành riêng cho error report, và hai công tắc cạnh nhau trong Cài đặt lại phân biệt được.
 - **"Unreachable" → `không tới được`** · không nguồn nào trong kho có từ "unreachable" tiếng Việt, nên chọn theo chính
   catalog: `errors.listing.networkUnreachable.title` và `.hostUnreachable.title` đã là `Không tới được mạng` /
   `Không tới được máy chủ` · `tentative`. Hai ứng viên kia đều đụng khái niệm khác: `không kết nối được` đụng hành động
   connect/disconnect (`kết nối` / `ngắt kết nối`), `không truy cập được` đụng quyền truy cập (`quyền truy cập`). Ba khóa
   đã theo: hai ô trạng thái và `fileExplorer.navigation.volumesStillUnreachable`.
-- **"Low disk space" → `Sắp hết dung lượng đĩa`** · macOS `PhotosUI.loctable` "Low Disk Space" → `Sắp hết dung lượng
-  ổ đĩa` · `high`. `Thiếu dung lượng đĩa` nói "không đủ", còn tiếng Anh (và macOS) nói "sắp cạn".
+- **"Low disk space" → `Sắp hết dung lượng đĩa`** · macOS `PhotosUI.loctable` "Low Disk Space" →
+  `Sắp hết dung lượng ổ đĩa` · `high`. `Thiếu dung lượng đĩa` nói "không đủ", còn tiếng Anh (và macOS) nói "sắp cạn".
 - **"Searching..." → `Đang tìm kiếm...`** · theo mục `search` ở trên; `viewer.search.searching` là chỗ duy nhất còn
   `Đang tìm...`.
 - **"Refresh network hosts" → `Làm mới các máy chủ mạng`** · nhãn trợ năng của nút quét lại vốn dài hơn nhãn lệnh cùng
   nội dung; lấy theo `commands.networkRefresh.label`. "Refresh listing" cũng về `Làm mới danh sách tệp` thay cho
   `Tải lại…` (glossary: refresh → `làm mới`).
 - **"Tab limit reached" → `Đã đạt giới hạn số tab`** · `số` giữ lại vì giới hạn là ở SỐ LƯỢNG tab; `giới hạn tab` trần
-  đọc mơ hồ (giới hạn *của* một tab?).
+  đọc mơ hồ (giới hạn _của_ một tab?).
 - **Hai câu đăng ký beta** · `onboarding.stepBeta.signup.*` và `settings.updates.email*` là hai bản của cùng một câu.
   Lấy bản onboarding: **`hộp thư đến`** (Tier 1 — Mail `vi` dịch "Inbox" là `Hộp thư đến`), và **`chung tay`** cho
-  "helping out" (ấm hơn `giúp đỡ`, hợp giọng biết ơn của câu). Câu hỏng lấy `chưa đăng ký được cho bạn`, đặt `được`
-  ngay sau động từ.
+  "helping out" (ấm hơn `giúp đỡ`, hợp giọng biết ơn của câu). Câu hỏng lấy `chưa đăng ký được cho bạn`, đặt `được` ngay
+  sau động từ.
 - **"Modified" (nghĩa ngày sửa) → `Đã sửa đổi`** · Finder `InfoWindowGeneralView fBB-wo-vu6.title` "Modified:" →
   `Đã sửa đổi:` và Nautilus dịch cột "Modified" là `Đã sửa đổi` · `high`. (Finder dịch "Date Modified" là
   `Ngày sửa đổi`, nhưng tiếng Anh của Cmdr chỉ có một chữ "Modified".) Bốn khóa `queryUi.*` dùng `Sửa đổi` đã theo cột
@@ -1800,15 +1800,15 @@ và các `*.loctable` của AppKit / các app hệ thống (macOS 26 đã chuy�
 - **`Back` → `Trở lại` (menu Đi) VÀ `Quay lại` (nút lùi trong một luồng)** · macOS chia đúng như vậy: Finder
   `MenuBar 211.title` (Go > Back, tức lịch sử duyệt) là `Trở lại`, còn nút "Back" của các trợ lý cài đặt và bảng hệ
   thống là `Quay lại` (`Buddy.loctable` = Setup Assistant, `Localizable-AppleID`, `Localizable-iCloud`,
-  `Localizable-Age-Attestation`, `GKDefaultPrivacyViewController_OSX`) · `high`. Quy tắc: **đi lùi trong LỊCH SỬ thư
-  mục → `Trở lại`; quay về MÀN HÌNH hoặc bước trước trong một luồng → `Quay lại`.** Nên `menu.go.back` +
+  `Localizable-Age-Attestation`, `GKDefaultPrivacyViewController_OSX`) · `high`. Quy tắc: **đi lùi trong LỊCH SỬ thư mục
+  → `Trở lại`; quay về MÀN HÌNH hoặc bước trước trong một luồng → `Quay lại`.** Nên `menu.go.back` +
   `commands.navBack.label` + `fileExplorer.errorPane.goBack` là `Trở lại`, còn bốn nút của trình duyệt mạng và trình
   hướng dẫn nhập môn (`fileExplorer.network.back`, `.share.backArrow`, `fileExplorer.networkMount.back`,
   `onboarding.wizard.back`) là `Quay lại`, cùng với `Quay lại danh sách máy chủ` / `Quay lại trò chuyện`.
-- **`Error` → `Sự cố` (ô trạng thái) VÀ `Lỗi:` (tiền tố chẩn đoán)** · hai `@key.description` nói ngược nhau một cách
-  cố ý: `fileExplorer.network.browser.status.error` bảo "tránh chữ 'error' nếu ngôn ngữ có cách nói thân thiện hơn",
-  còn `settings.updates.errorPrefix` bảo "ngữ cảnh chẩn đoán nên chữ 'Error' chấp nhận được" · `high`. Đúng luôn với
-  quy tắc giọng văn ở `style.md`: đừng dùng `lỗi` làm nhãn trạng thái trần. Giữ cả hai.
+- **`Error` → `Sự cố` (ô trạng thái) VÀ `Lỗi:` (tiền tố chẩn đoán)** · hai `@key.description` nói ngược nhau một cách cố
+  ý: `fileExplorer.network.browser.status.error` bảo "tránh chữ 'error' nếu ngôn ngữ có cách nói thân thiện hơn", còn
+  `settings.updates.errorPrefix` bảo "ngữ cảnh chẩn đoán nên chữ 'Error' chấp nhận được" · `high`. Đúng luôn với quy tắc
+  giọng văn ở `style.md`: đừng dùng `lỗi` làm nhãn trạng thái trần. Giữ cả hai.
 - **`Modified` → `Đã sửa đổi` (ngày sửa) VÀ `Đã thay đổi` (phím tắt người dùng đã đổi)** ·
   `shortcuts.section.filterModified` không nói về ngày: nó lọc ra những lệnh mà người dùng đã đổi phím tắt · `high`.
   Tiếng Anh dùng lại một chữ cho hai khái niệm; tiếng Việt tách ra thì rõ hơn, và gộp lại sẽ khiến bộ lọc phím tắt đọc

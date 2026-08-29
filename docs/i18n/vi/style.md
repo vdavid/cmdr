@@ -181,9 +181,9 @@ Vietnamese has no grammatical number, so one form covers all counts.
   ordinary problems the app survives (macOS Finder "Nếu bạn tiếp tục gặp sự cố…", AppKit "Đã có sự cố khi truy xuất…",
   verified 2026-08-23), so `gặp sự cố` is safe in a string that must NOT claim Cmdr quit. What claims quitting is the
   verb: `thoát bất ngờ` (macOS AppKit `AppKitErrors`). Keep that split, because the crash-dialog body now has three
-  variants
-  (`crashReporter.dialog .body.ended` / `.keptRunning` / `.unknown`) and only `.ended` may say the app quit. Same trap
-  in the noun: `báo cáo sự cố` means "crash report", so a string that says just "a report" must read `báo cáo` alone.
+  variants (`crashReporter.dialog .body.ended` / `.keptRunning` / `.unknown`) and only `.ended` may say the app quit.
+  Same trap in the noun: `báo cáo sự cố` means "crash report", so a string that says just "a report" must read `báo cáo`
+  alone.
 - **Sibling copy variants share every sentence they can.** Where English varies only the first sentence across a set of
   keys (the three crash-dialog bodies), translate the shared tail ONCE and reuse it verbatim, so the dialog reads as one
   string with a swapped opener. Wording details and the settled values: `glossary.md` § Ba biến thể phần thân.
@@ -205,15 +205,15 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **Nhắc tới một menu của ứng dụng thì viết `menu <Tên>`**, lấy tên đúng như `menu.bar.*` (macOS Finder `vi`):
   `từ menu Trợ giúp`. Catalog đã có sẵn câu này trong `settings.updates.errorReports.description`; dùng lại y hệt thay
   vì viết một biến thể mới.
-- **"Back" has two right answers, and macOS draws the line.** Going back in the folder HISTORY is `Trở lại` (Finder
-  Go > Back); returning to the previous SCREEN or step inside a flow is `Quay lại` (macOS Setup Assistant, the Apple ID
-  and iCloud sheets). Don't flatten them: `glossary.md` § Rà soát trôi thuật ngữ.
+- **"Back" has two right answers, and macOS draws the line.** Going back in the folder HISTORY is `Trở lại` (Finder Go >
+  Back); returning to the previous SCREEN or step inside a flow is `Quay lại` (macOS Setup Assistant, the Apple ID and
+  iCloud sheets). Don't flatten them: `glossary.md` § Rà soát trôi thuật ngữ.
 - **Two report flows, two names.** A crash report is `báo cáo sự cố` (macOS Problem Reporter), an error report is
   `báo cáo trục trặc`. They sit next to each other as two toggles in Settings > Updates & privacy, so one word for both
   would make the panel unreadable.
-- **`xóa` destroys, `gỡ bỏ` un-lists.** Delete (and anything that really erases bytes, like "Remove download") is
-  `xóa`; taking an item off a list while it lives on is `gỡ bỏ`. macOS says `Xóa` for both because Finder never shows
-  the two side by side; Cmdr does.
+- **`xóa` destroys, `gỡ bỏ` un-lists.** Delete (and anything that really erases bytes, like "Remove download") is `xóa`;
+  taking an item off a list while it lives on is `gỡ bỏ`. macOS says `Xóa` for both because Finder never shows the two
+  side by side; Cmdr does.
 - **"Error" as a bare status cell is `Sự cố`; as a diagnostic prefix it's `Lỗi:`.** The `@key.description` of each key
   says which surface it is. Both are deliberate; see `glossary.md`.
 - Record any case-by-case rulings here so they aren't relitigated.

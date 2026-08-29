@@ -67,14 +67,14 @@ server, bokmärke, etc.) live in `style.md` § Terminology; this list is the set
   `tentative`.
 - **startup disk: `startskiva`** · macOS Finder ("Startskiva", "Startskivevärde"). Boot drive. `high`.
 - **Privacy & Security (macOS pane): `Integritet och säkerhet`** · macOS SystemSettings. `high`.
-- **Full Disk Access (macOS permission): `Full skivtillgång`** · three live macOS bundles agree, including the very
-  pane the user lands in: `Security.prefPane`, `SecurityPrivacyExtension.appex`, and `Sharing.appex`
-  (`Localizable.loctable`, macOS 26.6.2 build 25G83, verified 2026-08-30). `high`. ❌ Not the descriptive
-  `fullständig åtkomst till skivan`: the runtime already substitutes Apple's real label into `{full_disk_access}`
-  (`system-strings.svelte.ts` hydrates it from the OS), so a paraphrase elsewhere left the app calling one setting two
-  names. Capitalized in English ("Requires Full Disk Access") = the setting name, so `Full skivtillgång`; lowercase in
-  running prose keeps the same words uncapitalized (`full skivtillgång`), which is what makes the setting findable.
-  Agreement note: `tillgång` is an en-word, so `Full skivtillgång är ganska kraftfull`, never `kraftfullt`.
+- **Full Disk Access (macOS permission): `Full skivtillgång`** · three live macOS bundles agree, including the very pane
+  the user lands in: `Security.prefPane`, `SecurityPrivacyExtension.appex`, and `Sharing.appex` (`Localizable.loctable`,
+  macOS 26.6.2 build 25G83, verified 2026-08-30). `high`. ❌ Not the descriptive `fullständig åtkomst till skivan`: the
+  runtime already substitutes Apple's real label into `{full_disk_access}` (`system-strings.svelte.ts` hydrates it from
+  the OS), so a paraphrase elsewhere left the app calling one setting two names. Capitalized in English ("Requires Full
+  Disk Access") = the setting name, so `Full skivtillgång`; lowercase in running prose keeps the same words
+  uncapitalized (`full skivtillgång`), which is what makes the setting findable. Agreement note: `tillgång` is an
+  en-word, so `Full skivtillgång är ganska kraftfull`, never `kraftfullt`.
 - **Local Network (macOS permission): `Lokalt nätverk`** · live macOS `SecurityPrivacyExtension.appex` (2026-08-30).
   `high`.
 - **Privacy & Security (macOS pane): `Integritet och säkerhet`; Quick Look: `Överblick`** · both re-verified live on
