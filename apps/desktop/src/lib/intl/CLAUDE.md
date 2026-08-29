@@ -10,7 +10,7 @@ for numbers, sizes, dates.
   (`messages.svelte.ts`) is the reactive switch.
 - `os-locales.ts`: the OS's two answers. `loadSystemLocales()` fetches the Rust pair per window, `pickUiLocale(setting)`
   maps the language half (`null` = no override), `watchSystemLocales()` follows a live change.
-- `language-analytics.ts`: the language events, base subtags only; they hang off the PICK, never a settings subscription
+- `language-analytics.ts`: the language events, shipped catalog tags only; they hang off the PICK, never a subscription
   (`src-tauri/src/analytics/DETAILS.md`).
 - `number-format.ts`: memoized `Intl.NumberFormat` factory (`getNumberFormatter`), plus `formatInteger` and
   `getGroupSeparator` (the byte-triad separator).

@@ -28,6 +28,7 @@ vi.mock('$lib/settings', () => ({
 }))
 
 import { _setLocaleForTests } from './locale'
+import { availableLocales } from './messages.svelte'
 import { _setSystemLocalesForTests } from './os-locales'
 import {
   noteStartupLanguage,
@@ -55,7 +56,7 @@ beforeEach(() => {
 })
 
 describe('trackLanguageResolved', () => {
-  it('reports an auto-selected language as the base subtag alone', () => {
+  it('reports an auto-selected language as the catalog it lands on', () => {
     languageSetting = 'system'
     detected('pt-BR')
     running('pt-BR')
@@ -64,7 +65,41 @@ describe('trackLanguageResolved', () => {
 
     expect(trackEvent).toHaveBeenCalledTimes(1)
     expect(trackEvent.mock.calls[0][0]).toBe('language_resolved')
+    // We ship `pt`, not `pt-BR`, so `pt` is the catalog on screen.
     expect(trackEvent.mock.calls[0][1]).toEqual({ detected: 'pt', active: 'pt', source: 'auto' })
+  })
+
+  it('keeps a regional catalog whole, which is the whole point of shipping one', () => {
+    languageSetting = 'en-GB'
+    detected('en-GB')
+    running('en-GB')
+
+    trackLanguageResolved()
+
+    expect(trackEvent.mock.calls[0][1]).toEqual({ detected: 'en-GB', active: 'en-GB', source: 'explicit' })
+  })
+
+  it('keeps a script variant whole, so Traditional never reads as Simplified', () => {
+    languageSetting = 'zh-Hant'
+    detected('zh-Hant')
+    running('zh-Hant')
+
+    trackLanguageResolved()
+
+    expect(trackEvent.mock.calls[0][1]).toEqual({ detected: 'zh-Hant', active: 'zh-Hant', source: 'explicit' })
+  })
+
+  it('reports a language we ship nothing for as the English the user actually reads', () => {
+    // The vocabulary is exactly the shipped tags plus `none`. A rare OS tag we
+    // have no catalog for would narrow a population further than the question
+    // needs, and it would also be a lie: this install runs in English.
+    languageSetting = 'system'
+    detected(null)
+    running('ja-JP')
+
+    trackLanguageResolved()
+
+    expect(trackEvent.mock.calls[0][1]).toEqual({ detected: 'none', active: 'en', source: 'fallback' })
   })
 
   it('reports an explicit pick as explicit, and still says what the OS offered', () => {
@@ -75,6 +110,18 @@ describe('trackLanguageResolved', () => {
     trackLanguageResolved()
 
     expect(trackEvent.mock.calls[0][1]).toEqual({ detected: 'hu', active: 'de', source: 'explicit' })
+  })
+
+  it('never reports a tag we do not ship a catalog for', () => {
+    languageSetting = 'system'
+    detected('pt-BR')
+    running('pt-PT')
+
+    trackLanguageResolved()
+
+    const props = trackEvent.mock.calls[0][1] as { detected: string; active: string }
+    expect(availableLocales()).toContain(props.detected)
+    expect(availableLocales()).toContain(props.active)
   })
 
   it('reports no OS match as a fallback with no detected language', () => {
@@ -132,6 +179,21 @@ describe('trackLanguageChanged', () => {
     trackLanguageChanged('settings', 'system')
 
     expect(trackEvent.mock.calls[0][1]).toEqual({ from: 'de', surface: 'settings' })
+  })
+
+  it('reports the regional catalog somebody walked away from, not its base language', () => {
+    languageSetting = 'en-GB'
+    detected('en-GB')
+    running('en-GB')
+    trackLanguageResolved()
+    trackEvent.mockClear()
+
+    trackLanguageChanged('settings', 'en')
+
+    // `en-GB` → `en` is a real walk-away from the British overlay. Reduced to a
+    // base subtag both sides read `en`, and the event would vanish entirely.
+    expect(trackEvent).toHaveBeenCalledTimes(1)
+    expect(trackEvent.mock.calls[0][1]).toEqual({ from: 'en-GB', surface: 'settings' })
   })
 
   it('carries the previous language forward across consecutive picks', () => {

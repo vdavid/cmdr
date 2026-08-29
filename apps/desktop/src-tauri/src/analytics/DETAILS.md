@@ -284,7 +284,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   the first, a `duration_bucket` on the other two. See below.
 - `first_folder_size_shown` (frontend, `$lib/indexing/first-size-timing.ts`, once per launch): `seconds_bucket` +
   `covering` bool. See below for its population.
-- `language_resolved` / `language_changed` (frontend, `$lib/intl/language-analytics.ts`): base language subtags only.
+- `language_resolved` / `language_changed` (frontend, `$lib/intl/language-analytics.ts`): shipped catalog tags only.
   See below.
 
 ## Session length, in detail
@@ -323,8 +323,31 @@ Both events live in `$lib/intl/language-analytics.ts`.
   `AppearanceSection`'s row) through `SettingSelect`'s `onPicked`. Props: `from` (the language they left) and `surface`
   (`onboarding` / `settings`).
 
-**Both send the BASE subtag only** (`hu`, never `hu-HU`; `pt-BR` → `pt`). A rare language plus a region narrows a
-population further than the question needs, and the base subtag answers it completely.
+**Both send a SHIPPED CATALOG TAG and nothing else.** Every value on `detected`, `active`, and `from` is one of
+`availableLocales()` or the categorical `none`; `catalogLanguage()` in `language-analytics.ts` is the single funnel that
+guarantees it, by running every tag through `resolvedCatalogLocale()`. So `pt-BR` → `pt`, `zh-Hant-TW` → `zh-Hant`, and
+`ja-JP` → `en`, because we ship no Japanese and that install is reading English.
+
+**Why not a raw OS tag**: a rare language plus a region narrows a population further than either question needs. That
+constraint is unchanged; what the funnel changes is where the line sits. A closed vocabulary of thirteen public tags
+identifies nobody, and it's the SAME vocabulary the heartbeat already carries — `appearance.language` sits on
+`config_shape.rs`'s `CATEGORICAL_STRING_KEYS` precisely because "a fixed set of shipped tags plus the `system`
+sentinel" is PII-free. Reporting the tag here adds no information the pipeline didn't already hold; it puts it where
+the question can be answered.
+
+**Why not the base subtag** (the older shape: `hu` never `hu-HU`, and `zh-Hant` reduced to `zh`): the reasoning behind
+it was that the base subtag "answers the question completely", which stopped being true the moment catalogs became
+regional. Three of the thirteen are now `zh-Hant`, `en-GB`, and `en-AU`, and under reduction all three were invisible:
+`zh-Hant` reported as `zh`, both English overlays as `en`. Worse, `language_changed` — the ONE quality signal — dropped
+a walk-away from `en-GB` to `en` entirely, because `from` and `to` both read `en` and the "pick landed where you
+already were" guard swallowed it. The regional catalogs were unmeasurable by construction, which is exactly the
+evidence needed to justify building more of them.
+
+**What the funnel gives up**, deliberately: an install whose OS asks for a language we don't ship used to leak that
+language through `active` (the webview's own tag, `ja` for a Japanese Mac). That was never the documented intent —
+`active` means "what the app runs in", and the app runs in English — and it was the exact rare-tag case the privacy
+line is drawn against. "Which unshipped language did they want" is a real product question, but it needs its own event
+and its own privacy call, not an accidental byproduct of a reduction that was doing something else.
 
 **`language_changed` is the only quality signal we get.** Nothing in the UI asks how a translation reads, and nothing
 will (David: no machine-translation notice anywhere), so a user walking away from their own language is the strongest

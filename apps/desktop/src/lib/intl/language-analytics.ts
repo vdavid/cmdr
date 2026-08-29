@@ -10,14 +10,14 @@
  * locale is bad.
  *
  * Both events ride the existing consent gate through `trackEvent`, and both
- * carry the BASE language subtag only (`hu`, never `hu-HU`): a rare language
- * plus a region narrows a population further than the question needs, and the
- * base subtag answers it completely.
+ * carry a SHIPPED CATALOG TAG and nothing else (`src-tauri/src/analytics/DETAILS.md`
+ * § The language events).
  */
 
 import { trackEvent } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
 import { getUiLocale } from './locale'
+import { resolvedCatalogLocale } from './messages.svelte'
 import { pickUiLocale } from './os-locales'
 
 /** Where a hand pick happened. The onboarding frame and the Settings picker are the only two. */
@@ -30,7 +30,7 @@ type LanguageSource = 'auto' | 'explicit' | 'fallback'
 const NO_LANGUAGE = 'none'
 
 /**
- * The base subtag this window is running in, as last reported. It's the `from`
+ * The catalog tag this window is running in, as last reported. It's the `from`
  * of the next hand pick, and it deliberately does NOT follow the live locale:
  * the picker applies each highlighted row as a preview (keyboard AND hover), so
  * reading the current locale at pick time would report the row the user skimmed
@@ -42,14 +42,21 @@ let activeLanguage: string | null = null
 let resolvedSent = false
 
 /**
- * The base language subtag of a BCP-47 tag: `pt-BR` → `pt`, `zh-Hant-TW` →
- * `zh`. `null` (no OS answer at all) becomes the categorical {@link NO_LANGUAGE}
- * rather than a missing prop, so "we found nothing" and "the event predates the
- * prop" stay distinguishable in the data.
+ * The SHIPPED CATALOG a tag lands on: `pt-BR` → `pt`, `zh-Hant-TW` → `zh-Hant`,
+ * `ja-JP` → `en` (we ship no Japanese). `null` (no OS answer at all) becomes the
+ * categorical {@link NO_LANGUAGE} rather than a missing prop, so "we found
+ * nothing" and "the event predates the prop" stay distinguishable in the data.
+ *
+ * ❌ Never report a raw OS tag. This funnel is what keeps the reported
+ * vocabulary closed: every value is one of `availableLocales()` or
+ * {@link NO_LANGUAGE}, a public, enumerable set that the heartbeat's
+ * `appearance.language` snapshot already carries. A rare unshipped tag would
+ * narrow a population further than either question needs, AND it would be
+ * false — an install with no matching catalog is reading English.
  */
-function baseLanguage(tag: string | null): string {
+function catalogLanguage(tag: string | null): string {
   if (tag === null || tag.length === 0) return NO_LANGUAGE
-  return tag.split('-')[0].toLowerCase()
+  return resolvedCatalogLocale(tag)
 }
 
 /**
@@ -62,7 +69,7 @@ function baseLanguage(tag: string | null): string {
  * without a seed its first pick would have nothing to report as `from`.
  */
 export function noteStartupLanguage(): void {
-  activeLanguage ??= baseLanguage(getUiLocale())
+  activeLanguage ??= catalogLanguage(getUiLocale())
 }
 
 /**
@@ -78,8 +85,8 @@ export function trackLanguageResolved(): void {
   if (resolvedSent) return
   resolvedSent = true
 
-  const detected = baseLanguage(pickUiLocale('system'))
-  const active = baseLanguage(getUiLocale())
+  const detected = catalogLanguage(pickUiLocale('system'))
+  const active = catalogLanguage(getUiLocale())
   activeLanguage = active
 
   const source: LanguageSource =
@@ -102,7 +109,7 @@ export function trackLanguageResolved(): void {
  * @param picked the `appearance.language` value they chose (`'system'` included)
  */
 export function trackLanguageChanged(surface: LanguageSurface, picked: string): void {
-  const to = baseLanguage(pickUiLocale(picked))
+  const to = catalogLanguage(pickUiLocale(picked))
   const from = activeLanguage
   if (from === null || from === to) {
     activeLanguage = to
