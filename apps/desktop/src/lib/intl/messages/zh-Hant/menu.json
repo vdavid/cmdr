@@ -1,0 +1,518 @@
+{
+  "menu.bar.file": "File",
+  "@menu.bar.file": {
+    "sourceHash": "50009ce"
+  },
+  "menu.bar.edit": "Edit",
+  "@menu.bar.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.bar.select": "Select",
+  "@menu.bar.select": {
+    "sourceHash": "2a78025"
+  },
+  "menu.bar.view": "View",
+  "@menu.bar.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.bar.go": "Go",
+  "@menu.bar.go": {
+    "sourceHash": "6cc8519"
+  },
+  "menu.bar.tab": "Tab",
+  "@menu.bar.tab": {
+    "sourceHash": "90ddf19"
+  },
+  "menu.bar.window": "Window",
+  "@menu.bar.window": {
+    "sourceHash": "19734a1"
+  },
+  "menu.bar.help": "Help",
+  "@menu.bar.help": {
+    "sourceHash": "b79cac9"
+  },
+  "menu.app.about": "About Cmdr",
+  "@menu.app.about": {
+    "sourceHash": "efe010f"
+  },
+  "menu.app.acknowledgements": "Acknowledgements",
+  "@menu.app.acknowledgements": {
+    "sourceHash": "c9015d5"
+  },
+  "menu.app.licenseDetails": "See license details",
+  "@menu.app.licenseDetails": {
+    "sourceHash": "0e660e8"
+  },
+  "menu.app.licenseEnter": "Enter license key…",
+  "@menu.app.licenseEnter": {
+    "sourceHash": "24a8d77"
+  },
+  "menu.app.checkForUpdates": "Check for updates…",
+  "@menu.app.checkForUpdates": {
+    "sourceHash": "52d6f7d"
+  },
+  "menu.app.changelog": "Changelog",
+  "@menu.app.changelog": {
+    "sourceHash": "ead07c8"
+  },
+  "menu.app.onboarding": "Onboarding…",
+  "@menu.app.onboarding": {
+    "sourceHash": "c4cc4aa"
+  },
+  "menu.app.settings": "Settings…",
+  "@menu.app.settings": {
+    "sourceHash": "7a04083"
+  },
+  "menu.app.services": "Services",
+  "@menu.app.services": {
+    "sourceHash": "604dce4"
+  },
+  "menu.app.hide": "Hide Cmdr",
+  "@menu.app.hide": {
+    "sourceHash": "8f86f89"
+  },
+  "menu.app.hideOthers": "Hide Others",
+  "@menu.app.hideOthers": {
+    "sourceHash": "1753e22"
+  },
+  "menu.app.showAll": "Show All",
+  "@menu.app.showAll": {
+    "sourceHash": "e1c3264"
+  },
+  "menu.app.quit": "Quit Cmdr",
+  "@menu.app.quit": {
+    "sourceHash": "b3455b4"
+  },
+  "menu.file.open": "Open",
+  "@menu.file.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.file.view": "View",
+  "@menu.file.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.file.edit": "Edit in editor",
+  "@menu.file.edit": {
+    "sourceHash": "691ca0f"
+  },
+  "menu.file.copy": "Copy…",
+  "@menu.file.copy": {
+    "sourceHash": "7f743d4"
+  },
+  "menu.file.move": "Move…",
+  "@menu.file.move": {
+    "sourceHash": "cd799da"
+  },
+  "menu.file.duplicate": "Duplicate",
+  "@menu.file.duplicate": {
+    "sourceHash": "02cdaab"
+  },
+  "menu.file.compress": "Compress…",
+  "@menu.file.compress": {
+    "sourceHash": "66b9d2c"
+  },
+  "menu.file.newFolder": "New folder…",
+  "@menu.file.newFolder": {
+    "sourceHash": "6cca529"
+  },
+  "menu.file.delete": "Delete",
+  "@menu.file.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "menu.file.deletePermanently": "Delete permanently",
+  "@menu.file.deletePermanently": {
+    "sourceHash": "280b10c"
+  },
+  "menu.file.rename": "Rename",
+  "@menu.file.rename": {
+    "sourceHash": "3064d79"
+  },
+  "menu.file.showInFinder": "Show in Finder",
+  "@menu.file.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "menu.file.showInFileManager": "Show in file manager",
+  "@menu.file.showInFileManager": {
+    "sourceHash": "3ca4dad"
+  },
+  "menu.file.getInfo": "Get info",
+  "@menu.file.getInfo": {
+    "sourceHash": "91c64ca"
+  },
+  "menu.file.quickLook": "Quick look",
+  "@menu.file.quickLook": {
+    "sourceHash": "f5616ce"
+  },
+  "menu.edit.undo": "Undo",
+  "@menu.edit.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "menu.edit.redo": "Redo",
+  "@menu.edit.redo": {
+    "sourceHash": "7427398"
+  },
+  "menu.edit.cut": "Cut",
+  "@menu.edit.cut": {
+    "sourceHash": "1f45f02"
+  },
+  "menu.edit.copy": "Copy",
+  "@menu.edit.copy": {
+    "sourceHash": "e21f935"
+  },
+  "menu.edit.paste": "Paste",
+  "@menu.edit.paste": {
+    "sourceHash": "f3380f7"
+  },
+  "menu.edit.moveHere": "Move here",
+  "@menu.edit.moveHere": {
+    "sourceHash": "56f1247"
+  },
+  "menu.edit.copyPath": "Copy path",
+  "@menu.edit.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.edit.copyFilename": "Copy filename",
+  "@menu.edit.copyFilename": {
+    "sourceHash": "5cdf7f8"
+  },
+  "menu.edit.searchFiles": "Search files…",
+  "@menu.edit.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.select.all": "Select all",
+  "@menu.select.all": {
+    "sourceHash": "1fc9a38"
+  },
+  "menu.select.deselectAll": "Deselect all",
+  "@menu.select.deselectAll": {
+    "sourceHash": "9675494"
+  },
+  "menu.select.files": "Select files…",
+  "@menu.select.files": {
+    "sourceHash": "b7f202e"
+  },
+  "menu.select.deselectFiles": "Deselect files…",
+  "@menu.select.deselectFiles": {
+    "sourceHash": "6fb10d5"
+  },
+  "menu.view.leftPane": "Left pane",
+  "@menu.view.leftPane": {
+    "sourceHash": "1c5078a"
+  },
+  "menu.view.rightPane": "Right pane",
+  "@menu.view.rightPane": {
+    "sourceHash": "b2d98e6"
+  },
+  "menu.view.fullView": "Full view",
+  "@menu.view.fullView": {
+    "sourceHash": "93f9dde"
+  },
+  "menu.view.briefView": "Brief view",
+  "@menu.view.briefView": {
+    "sourceHash": "7bfd572"
+  },
+  "menu.view.showHiddenFiles": "Show hidden files",
+  "@menu.view.showHiddenFiles": {
+    "sourceHash": "b5ede7f"
+  },
+  "menu.view.sortBy": "Sort by",
+  "@menu.view.sortBy": {
+    "sourceHash": "c912902"
+  },
+  "menu.view.zoom": "Zoom",
+  "@menu.view.zoom": {
+    "sourceHash": "509c517"
+  },
+  "menu.view.switchPane": "Switch pane",
+  "@menu.view.switchPane": {
+    "sourceHash": "377471f"
+  },
+  "menu.view.swapPanes": "Swap panes",
+  "@menu.view.swapPanes": {
+    "sourceHash": "cc29396"
+  },
+  "menu.view.commandPalette": "Command palette…",
+  "@menu.view.commandPalette": {
+    "sourceHash": "6b1c93d"
+  },
+  "menu.view.operationQueue": "Operation queue",
+  "@menu.view.operationQueue": {
+    "sourceHash": "fa91417"
+  },
+  "menu.view.operationLog": "Operation log",
+  "@menu.view.operationLog": {
+    "sourceHash": "2c97965"
+  },
+  "menu.view.suggestedOps": "Suggested ops",
+  "@menu.view.suggestedOps": {
+    "sourceHash": "4f24ca6"
+  },
+  "menu.view.askCmdr": "Ask Cmdr",
+  "@menu.view.askCmdr": {
+    "sourceHash": "aafb1ce"
+  },
+  "menu.sort.name": "Name",
+  "@menu.sort.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "menu.sort.extension": "Extension",
+  "@menu.sort.extension": {
+    "sourceHash": "395aeb9"
+  },
+  "menu.sort.dateModified": "Date modified",
+  "@menu.sort.dateModified": {
+    "sourceHash": "eb5e7a5"
+  },
+  "menu.sort.size": "Size",
+  "@menu.sort.size": {
+    "sourceHash": "1af8519"
+  },
+  "menu.sort.dateCreated": "Date created",
+  "@menu.sort.dateCreated": {
+    "sourceHash": "fa91f76"
+  },
+  "menu.sort.ascending": "Ascending",
+  "@menu.sort.ascending": {
+    "sourceHash": "7718459"
+  },
+  "menu.sort.descending": "Descending",
+  "@menu.sort.descending": {
+    "sourceHash": "79479a6"
+  },
+  "menu.zoom.percent75": "75%",
+  "@menu.zoom.percent75": {
+    "sourceHash": "10963ac"
+  },
+  "menu.zoom.percent100": "100%",
+  "@menu.zoom.percent100": {
+    "sourceHash": "32e4899"
+  },
+  "menu.zoom.percent125": "125%",
+  "@menu.zoom.percent125": {
+    "sourceHash": "38cb31c"
+  },
+  "menu.zoom.percent150": "150%",
+  "@menu.zoom.percent150": {
+    "sourceHash": "00a4e80"
+  },
+  "menu.zoom.in": "Zoom in",
+  "@menu.zoom.in": {
+    "sourceHash": "0e47f09"
+  },
+  "menu.zoom.out": "Zoom out",
+  "@menu.zoom.out": {
+    "sourceHash": "bc7b631"
+  },
+  "menu.go.back": "Back",
+  "@menu.go.back": {
+    "sourceHash": "76900f1"
+  },
+  "menu.go.forward": "Forward",
+  "@menu.go.forward": {
+    "sourceHash": "f1c65e1"
+  },
+  "menu.go.parentFolder": "Parent folder",
+  "@menu.go.parentFolder": {
+    "sourceHash": "158f5a0"
+  },
+  "menu.go.home": "Home",
+  "@menu.go.home": {
+    "sourceHash": "3a78695"
+  },
+  "menu.go.goToPath": "Go to path…",
+  "@menu.go.goToPath": {
+    "sourceHash": "936edc5"
+  },
+  "menu.go.goToLatestDownload": "Go to latest download",
+  "@menu.go.goToLatestDownload": {
+    "sourceHash": "492d0b6"
+  },
+  "menu.go.addToFavorites": "Add to favorites",
+  "@menu.go.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.tab.newTab": "New tab",
+  "@menu.tab.newTab": {
+    "sourceHash": "1e08fda"
+  },
+  "menu.tab.closeTab": "Close tab",
+  "@menu.tab.closeTab": {
+    "sourceHash": "50a3f95"
+  },
+  "menu.tab.reopenClosedTab": "Reopen closed tab",
+  "@menu.tab.reopenClosedTab": {
+    "sourceHash": "5ca5397"
+  },
+  "menu.tab.nextTab": "Next tab",
+  "@menu.tab.nextTab": {
+    "sourceHash": "1ef9522"
+  },
+  "menu.tab.previousTab": "Previous tab",
+  "@menu.tab.previousTab": {
+    "sourceHash": "c88d5e7"
+  },
+  "menu.tab.pinTab": "Pin tab",
+  "@menu.tab.pinTab": {
+    "sourceHash": "bf5083a"
+  },
+  "menu.tab.unpinTab": "Unpin tab",
+  "@menu.tab.unpinTab": {
+    "sourceHash": "20553dd"
+  },
+  "menu.tab.closeOtherTabs": "Close other tabs",
+  "@menu.tab.closeOtherTabs": {
+    "sourceHash": "0ddc2c5"
+  },
+  "menu.window.minimize": "Minimize",
+  "@menu.window.minimize": {
+    "sourceHash": "d72e311"
+  },
+  "menu.window.zoom": "Zoom",
+  "@menu.window.zoom": {
+    "sourceHash": "509c517"
+  },
+  "menu.help.keyboardShortcuts": "Keyboard shortcuts",
+  "@menu.help.keyboardShortcuts": {
+    "sourceHash": "e9bef0b"
+  },
+  "menu.help.whatsNew": "What's new",
+  "@menu.help.whatsNew": {
+    "sourceHash": "135e912"
+  },
+  "menu.help.sendFeedback": "Send feedback…",
+  "@menu.help.sendFeedback": {
+    "sourceHash": "60e1072"
+  },
+  "menu.help.sendErrorReport": "Send error report…",
+  "@menu.help.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "menu.context.edit": "Edit",
+  "@menu.context.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.context.toggleSelection": "Toggle selection",
+  "@menu.context.toggleSelection": {
+    "sourceHash": "6cb5515"
+  },
+  "menu.context.copyNamed": "Copy \"{name}\"",
+  "@menu.context.copyNamed": {
+    "sourceHash": "e2cc661"
+  },
+  "menu.context.addToFavorites": "Add to favorites",
+  "@menu.context.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.context.makeAvailableOffline": "Make available offline",
+  "@menu.context.makeAvailableOffline": {
+    "sourceHash": "b75c09f"
+  },
+  "menu.context.removeDownload": "Remove download",
+  "@menu.context.removeDownload": {
+    "sourceHash": "5dfc369"
+  },
+  "menu.context.openWith": "Open with",
+  "@menu.context.openWith": {
+    "sourceHash": "fe94d58"
+  },
+  "menu.context.openWithDefault": "{app} (default)",
+  "@menu.context.openWithDefault": {
+    "sourceHash": "32a7cca"
+  },
+  "menu.context.openWithOther": "Other…",
+  "@menu.context.openWithOther": {
+    "sourceHash": "1e37529"
+  },
+  "menu.tag.red": "Red",
+  "@menu.tag.red": {
+    "sourceHash": "ba19e9c"
+  },
+  "menu.tag.orange": "Orange",
+  "@menu.tag.orange": {
+    "sourceHash": "78e7771"
+  },
+  "menu.tag.yellow": "Yellow",
+  "@menu.tag.yellow": {
+    "sourceHash": "19dd83f"
+  },
+  "menu.tag.green": "Green",
+  "@menu.tag.green": {
+    "sourceHash": "d486dfb"
+  },
+  "menu.tag.blue": "Blue",
+  "@menu.tag.blue": {
+    "sourceHash": "ec7d56a"
+  },
+  "menu.tag.purple": "Purple",
+  "@menu.tag.purple": {
+    "sourceHash": "7d465fb"
+  },
+  "menu.tag.gray": "Gray",
+  "@menu.tag.gray": {
+    "sourceHash": "0d5adda"
+  },
+  "menu.mediaIndex.addFolder": "Add to indexed folders",
+  "@menu.mediaIndex.addFolder": {
+    "sourceHash": "c0a87cd"
+  },
+  "menu.mediaIndex.addFolderExcluded": "Add to indexed folders (excluded)",
+  "@menu.mediaIndex.addFolderExcluded": {
+    "sourceHash": "fc7c7ce"
+  },
+  "menu.mediaIndex.coveredByParent": "Indexed through a parent folder",
+  "@menu.mediaIndex.coveredByParent": {
+    "sourceHash": "9dffdcd"
+  },
+  "menu.mediaIndex.removeFolder": "Remove from indexed folders",
+  "@menu.mediaIndex.removeFolder": {
+    "sourceHash": "7079859"
+  },
+  "menu.mediaIndex.excludeFolder": "Don't index images in this folder",
+  "@menu.mediaIndex.excludeFolder": {
+    "sourceHash": "811f28c"
+  },
+  "menu.mediaIndex.includeFolder": "Index images here again",
+  "@menu.mediaIndex.includeFolder": {
+    "sourceHash": "0a8a3a0"
+  },
+  "menu.breadcrumb.copyPath": "Copy path",
+  "@menu.breadcrumb.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.volume.eject": "Eject ({name})",
+  "@menu.volume.eject": {
+    "sourceHash": "913d6ea"
+  },
+  "menu.volume.ejectBusy": "Eject ({name}) (busy)",
+  "@menu.volume.ejectBusy": {
+    "sourceHash": "e2145a6"
+  },
+  "menu.volume.renameFavorite": "Rename",
+  "@menu.volume.renameFavorite": {
+    "sourceHash": "3064d79"
+  },
+  "menu.volume.removeFavorite": "Remove",
+  "@menu.volume.removeFavorite": {
+    "sourceHash": "c3812fc"
+  },
+  "menu.network.disconnect": "Disconnect",
+  "@menu.network.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "menu.network.forgetServer": "Forget server",
+  "@menu.network.forgetServer": {
+    "sourceHash": "e43c85d"
+  },
+  "menu.network.forgetSavedPassword": "Forget saved password",
+  "@menu.network.forgetSavedPassword": {
+    "sourceHash": "ed68566"
+  },
+  "menu.viewer.close": "Close",
+  "@menu.viewer.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "menu.viewer.wordWrap": "Word wrap",
+  "@menu.viewer.wordWrap": {
+    "sourceHash": "9e210f3"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "updates.checkToast.errorPrefix": "Error: {message}",
+  "@updates.checkToast.errorPrefix": {
+    "sourceHash": "020abfd"
+  },
+  "updates.checkToast.sendErrorReport": "Send error report",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.ready": "A new version of Cmdr is ready.",
+  "@updates.toast.ready": {
+    "sourceHash": "622668e"
+  },
+  "updates.toast.readyDetail": "Restart now, or you''ll get it the next time you open Cmdr.",
+  "@updates.toast.readyDetail": {
+    "sourceHash": "aab853f"
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "sourceHash": "41b26f1"
+  },
+  "updates.toast.versionChangeAria": "Updating from version {prev} to version {next}",
+  "@updates.toast.versionChangeAria": {
+    "sourceHash": "911d79c"
+  },
+  "updates.toast.later": "Later",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Restart now",
+  "@updates.toast.restart": {
+    "sourceHash": "09af100"
+  },
+  "updates.moveToApplicationsDialog.title": "Move Cmdr to your Applications folder",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "A new version is ready, but macOS is running Cmdr from a temporary read-only copy of itself. That''s what happens when you open an app straight from where you downloaded it, and it means updates have nowhere to land.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "510a3a6"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "A new version is ready, but Cmdr is running from a read-only spot, usually a disk image that''s still mounted. That means updates have nowhere to land.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "94edc89"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Quit Cmdr, drag it into your Applications folder, and open it from there. Every update after that arrives on its own.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Got it",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "updates.status.noUpdates": "No updates found. Current version: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Checking…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Update found, downloading v{next} (current: v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "Installing v{next} (current: v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.ready": "Update v{next} ready. Restart to apply.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

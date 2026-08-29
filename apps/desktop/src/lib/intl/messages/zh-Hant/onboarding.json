@@ -1,0 +1,526 @@
+{
+  "onboarding.wizard.title": "Cmdr onboarding",
+  "@onboarding.wizard.title": {
+    "sourceHash": "3b97a1b"
+  },
+  "onboarding.wizard.progressLabel": "Onboarding progress",
+  "@onboarding.wizard.progressLabel": {
+    "sourceHash": "ad8a0da"
+  },
+  "onboarding.wizard.stepProgress": "Step {step} of {total}{isOptional, select, true { (optional)} other {}}",
+  "@onboarding.wizard.stepProgress": {
+    "sourceHash": "41705d0"
+  },
+  "onboarding.wizard.back": "Back",
+  "@onboarding.wizard.back": {
+    "sourceHash": "76900f1"
+  },
+  "onboarding.wizard.backAria": "Go to previous step",
+  "@onboarding.wizard.backAria": {
+    "sourceHash": "a729451"
+  },
+  "onboarding.wizard.next": "Next",
+  "@onboarding.wizard.next": {
+    "sourceHash": "1ff57a2"
+  },
+  "onboarding.wizard.finish": "Finish",
+  "@onboarding.wizard.finish": {
+    "sourceHash": "a6c7a84"
+  },
+  "onboarding.wizard.restart": "Restart Cmdr",
+  "@onboarding.wizard.restart": {
+    "sourceHash": "e62c550"
+  },
+  "onboarding.stepFda.granted.title": "You granted full disk access!",
+  "@onboarding.stepFda.granted.title": {
+    "sourceHash": "6740141"
+  },
+  "onboarding.stepFda.granted.body": "Nice, that''s all Cmdr needs. Restart it now to start using everything.",
+  "@onboarding.stepFda.granted.body": {
+    "sourceHash": "32acf9d"
+  },
+  "onboarding.stepFda.granted.hint": "Cmdr picks up the new permission on the next launch. Your spot in onboarding is saved, so you''ll land right back here.",
+  "@onboarding.stepFda.granted.hint": {
+    "sourceHash": "e0e33a3"
+  },
+  "onboarding.stepFda.alreadyGranted.title": "Cmdr currently has full disk access",
+  "@onboarding.stepFda.alreadyGranted.title": {
+    "sourceHash": "403273d"
+  },
+  "onboarding.stepFda.alreadyGranted.body": "You can revoke it any time in {systemSettings}.",
+  "@onboarding.stepFda.alreadyGranted.body": {
+    "sourceHash": "98fb9f4"
+  },
+  "onboarding.stepFda.welcome.title": "Welcome to Cmdr!",
+  "@onboarding.stepFda.welcome.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepFda.revoked.intro": "It looks like you accepted full disk access before but then revoked it.",
+  "@onboarding.stepFda.revoked.intro": {
+    "sourceHash": "9087914"
+  },
+  "onboarding.stepFda.revoked.noAccess": "The app currently has no full disk access.",
+  "@onboarding.stepFda.revoked.noAccess": {
+    "sourceHash": "415a3f3"
+  },
+  "onboarding.stepFda.revoked.ifIntentional": "If that was intentional, click <deny>Deny</deny> and the app won''t bother you again.",
+  "@onboarding.stepFda.revoked.ifIntentional": {
+    "sourceHash": "9709b73"
+  },
+  "onboarding.stepFda.revoked.ifNot": "If it <em>wasn''t</em> intentional, consider allowing full disk access again. Here are the pros and cons:",
+  "@onboarding.stepFda.revoked.ifNot": {
+    "sourceHash": "24667ee"
+  },
+  "onboarding.stepFda.firstAsk.lede": "<strong>You probably just want to start using the app.</strong> Sorry to bother you with this first, but it''s needed.",
+  "@onboarding.stepFda.firstAsk.lede": {
+    "sourceHash": "7f19b2a"
+  },
+  "onboarding.stepFda.firstAsk.explain": "You see, Cmdr is a file manager, and it needs to access your disk to see all your files. macOS doesn''t automatically grant permission to this.",
+  "@onboarding.stepFda.firstAsk.explain": {
+    "sourceHash": "f60c41b"
+  },
+  "onboarding.stepFda.firstAsk.askPermission": "Would you like to give this app full disk access? Here''s what that means:",
+  "@onboarding.stepFda.firstAsk.askPermission": {
+    "sourceHash": "94e5db7"
+  },
+  "onboarding.stepFda.pro": "<strong>Pro:</strong> The app will access your entire disk without nagging you for permissions to each folder like Downloads, Documents, and Desktop.",
+  "@onboarding.stepFda.pro": {
+    "sourceHash": "e00bada"
+  },
+  "onboarding.stepFda.con": "<strong>Con:</strong> Full disk access is pretty powerful. It lets the app read any file on your Mac. Only grant this if you trust Cmdr. Cmdr uses this right respectfully, and is <sourceLink>source-available</sourceLink> if you feel unsure.",
+  "@onboarding.stepFda.con": {
+    "sourceHash": "745753e"
+  },
+  "onboarding.stepFda.ifAllow": "If you decide to allow:",
+  "@onboarding.stepFda.ifAllow": {
+    "sourceHash": "09c5053"
+  },
+  "onboarding.stepFda.openSettings": "Open {systemSettings}",
+  "@onboarding.stepFda.openSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "onboarding.stepFda.step1": "Click <strong>Open {systemSettings}</strong> below",
+  "@onboarding.stepFda.step1": {
+    "sourceHash": "1e462a1"
+  },
+  "onboarding.stepFda.step2.ventura": "Find <strong>Cmdr</strong> in the list and toggle it on",
+  "@onboarding.stepFda.step2.ventura": {
+    "sourceHash": "03e71c6"
+  },
+  "onboarding.stepFda.step2.older": "Find <strong>Cmdr</strong> at the end of the list and toggle it on",
+  "@onboarding.stepFda.step2.older": {
+    "sourceHash": "0dd40f1"
+  },
+  "onboarding.stepFda.step2.tip": "Tip: Is Cmdr not in the list? Click the \"+\" button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.",
+  "@onboarding.stepFda.step2.tip": {
+    "sourceHash": "1bdc656"
+  },
+  "onboarding.stepFda.step3": "Confirm and click <strong>Quit & Reopen</strong>",
+  "@onboarding.stepFda.step3": {
+    "sourceHash": "cf59f30"
+  },
+  "onboarding.stepFda.deny": "Deny",
+  "@onboarding.stepFda.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "onboarding.stepFda.postAction.intro": "Cmdr needs to restart so the new permission takes effect.",
+  "@onboarding.stepFda.postAction.intro": {
+    "sourceHash": "cac5247"
+  },
+  "onboarding.stepFda.postAction.body": "When you''re ready, click <restart>Restart Cmdr</restart> below. If you change your mind, click <deny>Deny</deny> above instead.",
+  "@onboarding.stepFda.postAction.body": {
+    "sourceHash": "f87a5fc"
+  },
+  "onboarding.stepAi.bannerTitle.granted": "Full disk access granted",
+  "@onboarding.stepAi.bannerTitle.granted": {
+    "sourceHash": "f5872be"
+  },
+  "onboarding.stepAi.bannerBody.granted": "Thanks for granting full disk access! Now, the app can access your disk. Great!",
+  "@onboarding.stepAi.bannerBody.granted": {
+    "sourceHash": "236f3f5"
+  },
+  "onboarding.stepAi.bannerTitle.denied": "No full disk access",
+  "@onboarding.stepAi.bannerTitle.denied": {
+    "sourceHash": "0aa10cf"
+  },
+  "onboarding.stepAi.bannerBody.denied": "You chose not to enable full disk access. We respect that. You''ll then shortly get a few permission requests from macOS for Cmdr to access your Desktop, Downloads, and similar folders. Accept or reject these at will. You can change all of this later in your {systemSettings}.",
+  "@onboarding.stepAi.bannerBody.denied": {
+    "sourceHash": "ccb4ae5"
+  },
+  "onboarding.stepAi.bannerTitle.stuck": "Cmdr doesn''t seem to have full disk access yet",
+  "@onboarding.stepAi.bannerTitle.stuck": {
+    "sourceHash": "88c9c19"
+  },
+  "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn''t seem to have gotten it. You might need to restart the app (do it now, we''ll continue from here!), or go to your <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little \"+\" button at the bottom.",
+  "@onboarding.stepAi.bannerBody.stuck": {
+    "sourceHash": "79d5765"
+  },
+  "onboarding.stepAi.welcomeLinux.title": "Welcome to Cmdr!",
+  "@onboarding.stepAi.welcomeLinux.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepAi.welcomeLinux.subtitle": "Let''s set up AI.",
+  "@onboarding.stepAi.welcomeLinux.subtitle": {
+    "sourceHash": "a96e109"
+  },
+  "onboarding.stepAi.title": "Now, let''s talk AI",
+  "@onboarding.stepAi.title": {
+    "sourceHash": "a580449"
+  },
+  "onboarding.stepAi.intro": "Cmdr has a bunch of AI features that you <em>may</em> want and may not want. AI is a controversial topic these days.",
+  "@onboarding.stepAi.intro": {
+    "sourceHash": "3b6b6c6"
+  },
+  "onboarding.stepAi.comparisonIntro": "Here is how you do common actions with and without AI:",
+  "@onboarding.stepAi.comparisonIntro": {
+    "sourceHash": "440ea64"
+  },
+  "onboarding.stepAi.table.colFeature": "Feature",
+  "@onboarding.stepAi.table.colFeature": {
+    "sourceHash": "3d377ae"
+  },
+  "onboarding.stepAi.table.colWithout": "Without AI",
+  "@onboarding.stepAi.table.colWithout": {
+    "sourceHash": "aadb0ba"
+  },
+  "onboarding.stepAi.table.colWith": "With AI",
+  "@onboarding.stepAi.table.colWith": {
+    "sourceHash": "c83835a"
+  },
+  "onboarding.stepAi.table.rowSearch": "Search",
+  "@onboarding.stepAi.table.rowSearch": {
+    "sourceHash": "49c266b"
+  },
+  "onboarding.stepAi.table.searchWithout": "You type something like <code>*fish*.ppt</code>, and select the \"after 1st of this month\" filter.",
+  "@onboarding.stepAi.table.searchWithout": {
+    "sourceHash": "872cb1e"
+  },
+  "onboarding.stepAi.table.searchWith": "You say \"my recent fish-related presentations\", agent sets your filters.",
+  "@onboarding.stepAi.table.searchWith": {
+    "sourceHash": "b69cd82"
+  },
+  "onboarding.stepAi.table.rowRename": "Mass-rename",
+  "@onboarding.stepAi.table.rowRename": {
+    "sourceHash": "9246b56"
+  },
+  "onboarding.stepAi.table.renameWithout": "You use the batch rename UI to manually set the rename pattern, review and apply.",
+  "@onboarding.stepAi.table.renameWithout": {
+    "sourceHash": "b12d997"
+  },
+  "onboarding.stepAi.table.renameWith": "You say \"add ISO date prefix\", agent sets your rename pattern, you review and apply at will.",
+  "@onboarding.stepAi.table.renameWith": {
+    "sourceHash": "7fba3f5"
+  },
+  "onboarding.stepAi.table.rowSelect": "Select",
+  "@onboarding.stepAi.table.rowSelect": {
+    "sourceHash": "2a78025"
+  },
+  "onboarding.stepAi.table.selectWithoutBound": "You press the <chip></chip> key and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
+  "@onboarding.stepAi.table.selectWithoutBound": {
+    "sourceHash": "83f83b9"
+  },
+  "onboarding.stepAi.table.selectWithoutUnbound": "You open \"Select files…\" and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
+  "@onboarding.stepAi.table.selectWithoutUnbound": {
+    "sourceHash": "4cdc972"
+  },
+  "onboarding.stepAi.table.selectWith": "You say \"select all image files\", agent suggests a selection, you review and apply at will.",
+  "@onboarding.stepAi.table.selectWith": {
+    "sourceHash": "07f1063"
+  },
+  "onboarding.stepAi.resumeCue": "You picked this last time. Confirm or change below.",
+  "@onboarding.stepAi.resumeCue": {
+    "sourceHash": "586e2ae"
+  },
+  "onboarding.stepAi.choiceLegend": "Based on this, do you want AI or not?",
+  "@onboarding.stepAi.choiceLegend": {
+    "sourceHash": "0748af8"
+  },
+  "onboarding.stepAi.choiceGroupAria": "AI choice",
+  "@onboarding.stepAi.choiceGroupAria": {
+    "sourceHash": "9083caa"
+  },
+  "onboarding.stepAi.cloud.label": "Yes, I want AI",
+  "@onboarding.stepAi.cloud.label": {
+    "sourceHash": "ba08450"
+  },
+  "onboarding.stepAi.cloud.recommended": "(recommended)",
+  "@onboarding.stepAi.cloud.recommended": {
+    "sourceHash": "1185133"
+  },
+  "onboarding.stepAi.cloud.help": "Use any cloud provider with your own API key. Fast, high-quality models. Pick a provider below.",
+  "@onboarding.stepAi.cloud.help": {
+    "sourceHash": "96f3940"
+  },
+  "onboarding.stepAi.cloud.pickerTitle": "Select a provider",
+  "@onboarding.stepAi.cloud.pickerTitle": {
+    "sourceHash": "71e2ca7"
+  },
+  "onboarding.stepAi.local.label": "Yes, I want AI, but I want to be super private",
+  "@onboarding.stepAi.local.label": {
+    "sourceHash": "f371401"
+  },
+  "onboarding.stepAi.local.help": "A bit dumber model that takes up about 2 GB of space and a bit of CPU at every use. Still an okay solution. No data leaves your machine. Cmdr tries to deliver updates for the best small local model available.",
+  "@onboarding.stepAi.local.help": {
+    "sourceHash": "fd47d34"
+  },
+  "onboarding.stepAi.local.note": "Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.",
+  "@onboarding.stepAi.local.note": {
+    "sourceHash": "af89d60"
+  },
+  "onboarding.stepAi.localTooltip": "Local LLM requires Apple Silicon. Cloud works on Intel.",
+  "@onboarding.stepAi.localTooltip": {
+    "sourceHash": "dc194e8"
+  },
+  "onboarding.stepAi.off.label": "Thanks but no thanks, no AI for me",
+  "@onboarding.stepAi.off.label": {
+    "sourceHash": "c2a8322"
+  },
+  "onboarding.stepAi.off.help": "Cmdr works fully without AI. You can turn it on later in Settings.",
+  "@onboarding.stepAi.off.help": {
+    "sourceHash": "3f261be"
+  },
+  "onboarding.stepBeta.footer.start": "Start using Cmdr!",
+  "@onboarding.stepBeta.footer.start": {
+    "sourceHash": "e29bbc7"
+  },
+  "onboarding.stepBeta.footer.continue": "One more optional setup step",
+  "@onboarding.stepBeta.footer.continue": {
+    "sourceHash": "4024130"
+  },
+  "onboarding.stepBeta.title": "Help improve Cmdr!",
+  "@onboarding.stepBeta.title": {
+    "sourceHash": "6e8be73"
+  },
+  "onboarding.stepBeta.greeting": "Hi, I''m <david>David</david>! I build Cmdr, and you''re one of the very first people using it. Thanks for your trust! ❤️",
+  "@onboarding.stepBeta.greeting": {
+    "sourceHash": "f7ade14"
+  },
+  "onboarding.stepBeta.openBeta": "Cmdr is in open beta, which means it''s overall solid and usable, but some parts are still rough. See any <alpha></alpha> badges marking the most work-in-progress areas.",
+  "@onboarding.stepBeta.openBeta": {
+    "sourceHash": "5b0a107"
+  },
+  "onboarding.stepBeta.feedbackIntro": "Your feedback helps me spot bugs and prioritize features. Here is how you can engage:",
+  "@onboarding.stepBeta.feedbackIntro": {
+    "sourceHash": "4e238dd"
+  },
+  "onboarding.stepBeta.feedback.inAppBound": "<strong>In-app:</strong> See <strong>Help > Send feedback…</strong> in the menu, or find it in the command palette with <chip></chip>.",
+  "@onboarding.stepBeta.feedback.inAppBound": {
+    "sourceHash": "8fabdee"
+  },
+  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>In-app:</strong> See <strong>Help > Send feedback…</strong> in the menu, or find it in the command palette.",
+  "@onboarding.stepBeta.feedback.inAppUnbound": {
+    "sourceHash": "26447c9"
+  },
+  "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Add issues, vote on issues.",
+  "@onboarding.stepBeta.feedback.github": {
+    "sourceHash": "f4fb26a"
+  },
+  "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>: Click the link, hop on to the server, meet me and others.",
+  "@onboarding.stepBeta.feedback.discord": {
+    "sourceHash": "c899232"
+  },
+  "onboarding.stepBeta.feedback.call": "<call>Schedule a call with me</call>: I won''t be doing this for very long, but while Cmdr is an open beta, I''d love to talk to you about your files!",
+  "@onboarding.stepBeta.feedback.call": {
+    "sourceHash": "5e198ee"
+  },
+  "onboarding.stepBeta.star": "And one more very important way you can help in one minute: star the repo <github>here on GitHub</github>. Once it hits 225 stars, Homebrew lets me enable <code>brew install cmdr</code>.",
+  "@onboarding.stepBeta.star": {
+    "sourceHash": "30c25f2"
+  },
+  "onboarding.stepBeta.analyticsLede": "To learn what''s working and what isn''t, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files. They''re tied to a random id, not to your name or email. It''s on now, and you can turn it off anytime.",
+  "@onboarding.stepBeta.analyticsLede": {
+    "sourceHash": "0c76239"
+  },
+  "onboarding.stepBeta.analyticsTitle": "Send usage stats",
+  "@onboarding.stepBeta.analyticsTitle": {
+    "sourceHash": "89b309e"
+  },
+  "onboarding.stepBeta.analyticsCaption": "Note that it''s ON by default to encourage people to send me data during the Beta. You can change this any time in Settings.",
+  "@onboarding.stepBeta.analyticsCaption": {
+    "sourceHash": "9821e5d"
+  },
+  "onboarding.stepBeta.crashReportsNote": "Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped. Never your files. You can turn both of these off in Settings whenever you like.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "18cd0b3"
+  },
+  "onboarding.stepBeta.emailTitle": "Stay in touch (optional)",
+  "@onboarding.stepBeta.emailTitle": {
+    "sourceHash": "cf691fa"
+  },
+  "onboarding.stepBeta.emailPlaceholder": "you@example.com",
+  "@onboarding.stepBeta.emailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "onboarding.stepBeta.signup.success": "Check your inbox to confirm your email. Thanks for helping out!",
+  "@onboarding.stepBeta.signup.success": {
+    "sourceHash": "b96010e"
+  },
+  "onboarding.stepBeta.signup.failure": "Sorry, we couldn''t sign you up right now. Try again?",
+  "@onboarding.stepBeta.signup.failure": {
+    "sourceHash": "0aac3a9"
+  },
+  "onboarding.stepBeta.emailNote": "Drop your email and I''ll reach out with the occasional question or update. The email address you enter here is stored only on your Mac and it''s never connected to your usage stats, the two are intentionally two separate subsystems.",
+  "@onboarding.stepBeta.emailNote": {
+    "sourceHash": "9d262c8"
+  },
+  "onboarding.stepBeta.terms.title": "Oh, and this too please",
+  "@onboarding.stepBeta.terms.title": {
+    "sourceHash": "f2a6e08"
+  },
+  "onboarding.stepBeta.terms.lede": "It''s a legal obligation to have it here.",
+  "@onboarding.stepBeta.terms.lede": {
+    "sourceHash": "c59e47e"
+  },
+  "onboarding.stepBeta.terms.consent": "I''ve read and agree to the <terms>terms and conditions</terms>.",
+  "@onboarding.stepBeta.terms.consent": {
+    "sourceHash": "620a4b6"
+  },
+  "onboarding.stepBeta.terms.blockedTooltip": "Accept the terms and conditions to continue.",
+  "@onboarding.stepBeta.terms.blockedTooltip": {
+    "sourceHash": "f03426e"
+  },
+  "onboarding.stepOptional.footer.start": "Start using Cmdr",
+  "@onboarding.stepOptional.footer.start": {
+    "sourceHash": "d11e058"
+  },
+  "onboarding.stepOptional.title": "You''re almost ready",
+  "@onboarding.stepOptional.title": {
+    "sourceHash": "6ad977a"
+  },
+  "onboarding.stepOptional.lede": "You chose to walk through a detailed setup, so here are a few easy choices. If you don''t care too much, just click the button below. These are all options, and the defaults are picked for your benefit.",
+  "@onboarding.stepOptional.lede": {
+    "sourceHash": "b1242c9"
+  },
+  "onboarding.stepOptional.recommendedOn": "Recommended: on. You can change this any time in Settings.",
+  "@onboarding.stepOptional.recommendedOn": {
+    "sourceHash": "05e5598"
+  },
+  "onboarding.stepOptional.networking.title": "Networking",
+  "@onboarding.stepOptional.networking.title": {
+    "sourceHash": "204de4b"
+  },
+  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like. The only cost is a macOS permission dialog that pops up and asks you to allow \"Local network access\", and one for \"Accepting incoming connections\". Both dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
+  "@onboarding.stepOptional.networking.desc": {
+    "sourceHash": "a27866b"
+  },
+  "onboarding.stepOptional.indexing.title": "Drive indexing",
+  "@onboarding.stepOptional.indexing.title": {
+    "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.descIntro": "Drive indexing is totally cool! Gives you two main things:",
+  "@onboarding.stepOptional.indexing.descIntro": {
+    "sourceHash": "6b86a1f"
+  },
+  "onboarding.stepOptional.indexing.benefit1": "Instant search of your whole drive. Think Spotlight, but even faster.",
+  "@onboarding.stepOptional.indexing.benefit1": {
+    "sourceHash": "5fa0e9f"
+  },
+  "onboarding.stepOptional.indexing.benefit2": "Real-time folder sizes for your whole drive. You always know how much stuff you have in each folder.",
+  "@onboarding.stepOptional.indexing.benefit2": {
+    "sourceHash": "6fe5223"
+  },
+  "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first starting the app, or starting it after a long time. It''s a cheap feature considering the benefits.",
+  "@onboarding.stepOptional.indexing.descCost": {
+    "sourceHash": "739f4f8"
+  },
+  "onboarding.stepOptional.updates.title": "Automatic updates",
+  "@onboarding.stepOptional.updates.title": {
+    "sourceHash": "147b1b6"
+  },
+  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates. If disabled, you''ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
+  "@onboarding.stepOptional.updates.desc": {
+    "sourceHash": "81147a5"
+  },
+  "onboarding.stepOptional.mtp.title": "MTP (Android phones, Kindles, cameras)",
+  "@onboarding.stepOptional.mtp.title": {
+    "sourceHash": "473e8e9"
+  },
+  "onboarding.stepOptional.mtp.desc": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP. The cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can''t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it''s running. When you quit Cmdr, this is politely restored. But it''s a bit of a cost, so:",
+  "@onboarding.stepOptional.mtp.desc": {
+    "sourceHash": "ba2265d"
+  },
+  "onboarding.cloudPicker.listAria": "Cloud AI providers",
+  "@onboarding.cloudPicker.listAria": {
+    "sourceHash": "9494a49"
+  },
+  "onboarding.cloudSetup.title": "Set up {provider}",
+  "@onboarding.cloudSetup.title": {
+    "sourceHash": "c10333a"
+  },
+  "onboarding.cloudSetup.step.signup": "Sign up at <signupLink>{provider}</signupLink> (if you don''t have an account)",
+  "@onboarding.cloudSetup.step.signup": {
+    "sourceHash": "d89f1e1"
+  },
+  "onboarding.cloudSetup.step.createKey": "Create an API key <keyLink>here</keyLink>",
+  "@onboarding.cloudSetup.step.createKey": {
+    "sourceHash": "5705da6"
+  },
+  "onboarding.cloudSetup.step.endpoint": "Endpoint URL",
+  "@onboarding.cloudSetup.step.endpoint": {
+    "sourceHash": "2578179"
+  },
+  "onboarding.cloudSetup.step.endpointPlaceholder": "Example: https://api.example.com/v1",
+  "@onboarding.cloudSetup.step.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "onboarding.cloudSetup.step.pasteKey": "Paste your API key",
+  "@onboarding.cloudSetup.step.pasteKey": {
+    "sourceHash": "e35b296"
+  },
+  "onboarding.cloudSetup.apiKeyAria": "API key",
+  "@onboarding.cloudSetup.apiKeyAria": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Example: sk-abc123...",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
+    "sourceHash": "f9701a2"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Example: sk-ant-abc123...",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
+    "sourceHash": "5a4d18d"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "API key",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "Your key is saved. Type a new one to replace it.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "sourceHash": "974ffdf"
+  },
+  "onboarding.cloudSetup.status.checking": "Checking your key…",
+  "@onboarding.cloudSetup.status.checking": {
+    "sourceHash": "e8c3a83"
+  },
+  "onboarding.cloudSetup.status.authError": "That key didn''t work",
+  "@onboarding.cloudSetup.status.authError": {
+    "sourceHash": "2f23f3b"
+  },
+  "onboarding.cloudSetup.status.connectionError": "Can''t reach the service right now",
+  "@onboarding.cloudSetup.status.connectionError": {
+    "sourceHash": "67cb2e5"
+  },
+  "onboarding.cloudSetup.status.genericError": "Something went wrong",
+  "@onboarding.cloudSetup.status.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "onboarding.cloudSetup.status.connected": "Connected!",
+  "@onboarding.cloudSetup.status.connected": {
+    "sourceHash": "78ae377"
+  },
+  "onboarding.cloudSetup.step.pickModel": "Pick a model",
+  "@onboarding.cloudSetup.step.pickModel": {
+    "sourceHash": "f159730"
+  },
+  "onboarding.cloudSetup.modelAria": "Model",
+  "@onboarding.cloudSetup.modelAria": {
+    "sourceHash": "5e2c614"
+  },
+  "onboarding.cloudSetup.modelPlaceholderExample": "Example: {model}",
+  "@onboarding.cloudSetup.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "onboarding.cloudSetup.modelPlaceholder": "Model name",
+  "@onboarding.cloudSetup.modelPlaceholder": {
+    "sourceHash": "a3c3370"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Delete complete: {countText} {count, plural, one {file} other {files}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.compress.split": "Compressed {phrase}.",
+  "@transfer.compress.split": {
+    "sourceHash": "daf7381"
+  },
+  "transfer.compress.fileOnly": "Compressed {countText} {count, plural, one {file} other {files}}.",
+  "@transfer.compress.fileOnly": {
+    "sourceHash": "af9d928"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {file} other {files}} and {foldersText} {folders, plural, one {folder} other {folders}}} foldersOnly {{foldersText} {folders, plural, one {folder} other {folders}}} other {{filesText} {files, plural, one {file} other {files}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {Copied} other {Moved}} {phrase}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {Copied} other {Moved}} {phrase}, skipped {skippedText} {skipped, plural, one {file} other {files}} (already at the target).",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Copy} other {Move}} complete: {verb, select, copy {copied} other {moved}} {transferredText} {transferred, plural, one {file} other {files}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Copy} other {Move}} complete: file already at the target, not {verb, select, copy {copied} other {moved}}.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copy} other {Move}} complete: skipped all {skippedText} files (already at the target), nothing was {verb, select, copy {copied} other {moved}}.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "Copy complete: copied {transferredText}, skipped {skippedText}. All {processedText} of your selected {processed, plural, one {file} other {files}} are now at the target.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Move complete: moved {transferredText}, skipped {skippedText}. {skippedText} {skipped, plural, one {file} other {files}} {skipped, plural, one {was} other {were}} already at the target.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

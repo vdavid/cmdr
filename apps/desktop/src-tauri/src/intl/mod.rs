@@ -339,17 +339,60 @@ mod tests {
         assert_eq!(resolve_ui_locale(&[], SHIPPED), None);
     }
 
+    /// A table with the Traditional catalog removed, so the tests that pin what
+    /// the guard does with NOTHING Traditional to offer keep testing that, now
+    /// that `zh-Hant` ships. The `zh` entry mirrors the generated one.
+    const SIMPLIFIED_ONLY: &[ShippedLocale] = &[
+        ShippedLocale {
+            tag: "zh",
+            script: "hans",
+            default_script: "hans",
+            region_scripts: &[("tw", "hant"), ("hk", "hant"), ("mo", "hant")],
+        },
+        ShippedLocale {
+            tag: "sv",
+            script: "latn",
+            default_script: "latn",
+            region_scripts: &[],
+        },
+    ];
+
     #[test]
     fn a_traditional_reader_never_lands_on_the_simplified_catalog() {
-        // Our `zh` catalog is Simplified. For a Traditional reader it's worse
-        // than English, which is at least a language they chose to list.
-        assert_eq!(resolve_ui_locale(&prefs(&["zh-Hant-TW"]), SHIPPED), None);
+        // Every way a reader can ask for Traditional reaches the Traditional
+        // catalog, and none of them reaches Simplified `zh`.
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-Hant-TW"]), SHIPPED),
+            Some("zh-Hant".to_string())
+        );
         // Explicit script, no region.
-        assert_eq!(resolve_ui_locale(&prefs(&["zh-Hant"]), SHIPPED), None);
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-Hant"]), SHIPPED),
+            Some("zh-Hant".to_string())
+        );
         // No script subtag: the REGION says Traditional (CLDR likely subtags).
-        assert_eq!(resolve_ui_locale(&prefs(&["zh-TW"]), SHIPPED), None);
-        assert_eq!(resolve_ui_locale(&prefs(&["zh-HK"]), SHIPPED), None);
-        assert_eq!(resolve_ui_locale(&prefs(&["zh-MO"]), SHIPPED), None);
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-TW"]), SHIPPED),
+            Some("zh-Hant".to_string())
+        );
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-HK"]), SHIPPED),
+            Some("zh-Hant".to_string())
+        );
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-MO"]), SHIPPED),
+            Some("zh-Hant".to_string())
+        );
+    }
+
+    #[test]
+    fn with_no_traditional_catalog_a_traditional_reader_gets_english() {
+        // The guard's own rule, independent of what we happen to ship: a
+        // Simplified catalog in front of a Traditional reader is worse than
+        // English, a language they at least chose to list.
+        assert_eq!(resolve_ui_locale(&prefs(&["zh-Hant-TW"]), SIMPLIFIED_ONLY), None);
+        assert_eq!(resolve_ui_locale(&prefs(&["zh-TW"]), SIMPLIFIED_ONLY), None);
+        assert_eq!(resolve_ui_locale(&prefs(&["zh-HK"]), SIMPLIFIED_ONLY), None);
     }
 
     #[test]
@@ -357,7 +400,7 @@ mod tests {
         // The guard doesn't end the walk, it only rules out one catalog: the
         // user's next choice still gets its turn.
         assert_eq!(
-            resolve_ui_locale(&prefs(&["zh-Hant-TW", "sv-SE"]), SHIPPED),
+            resolve_ui_locale(&prefs(&["zh-Hant-TW", "sv-SE"]), SIMPLIFIED_ONLY),
             Some("sv".to_string())
         );
     }

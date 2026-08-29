@@ -1,0 +1,226 @@
+{
+  "search.dialog.title": "Search",
+  "@search.dialog.title": {
+    "sourceHash": "49c266b"
+  },
+  "search.runHint": "Press Enter to search",
+  "@search.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "search.action.showAll.label": "Show all in main window",
+  "@search.action.showAll.label": {
+    "sourceHash": "782075a"
+  },
+  "search.action.showAll.tooltip": "Open the search results in the active pane",
+  "@search.action.showAll.tooltip": {
+    "sourceHash": "4e8c58a"
+  },
+  "search.action.goToFile.label": "Go to file",
+  "@search.action.goToFile.label": {
+    "sourceHash": "70299e6"
+  },
+  "search.action.goToFile.tooltip": "Open the file in the active pane",
+  "@search.action.goToFile.tooltip": {
+    "sourceHash": "2627d2e"
+  },
+  "search.recent.runAria": "Run recent {mode} search: {query}",
+  "@search.recent.runAria": {
+    "sourceHash": "fb0939c"
+  },
+  "search.systemDirExclude.default": "Excludes common system and build folders",
+  "@search.systemDirExclude.default": {
+    "sourceHash": "dcdf28a"
+  },
+  "search.systemDirExclude.heading": "These folders are hidden:",
+  "@search.systemDirExclude.heading": {
+    "sourceHash": "5ee8d52"
+  },
+  "search.notAFolderToast": "Search results aren''t a folder. Paste into a real folder instead.",
+  "@search.notAFolderToast": {
+    "sourceHash": "c449358"
+  },
+  "search.searchableFolder.disabledTooltip": "Current folder is search results, which isn''t searchable. Open a real folder first.",
+  "@search.searchableFolder.disabledTooltip": {
+    "sourceHash": "a90d24e"
+  },
+  "search.imageResults.title": "Text in images",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "{totalText} found",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "showing {shownText} of {totalText}",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.indexing": "Still indexing images, so results may be incomplete.",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "This drive''s images aren''t indexed yet. They''ll become searchable once indexing runs.",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "287b58e"
+  },
+  "search.imageResults.empty": "No images contain this text.",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
+  "search.imageResults.networkOff": "Turn on image indexing for this network drive in Settings to search the text inside its photos.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "This drive is disconnected, so these are the photos indexed so far.",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
+  "search.imageResults.findSimilar": "Find similar images",
+  "@search.imageResults.findSimilar": {
+    "sourceHash": "708c3bd"
+  },
+  "search.imageResults.matchedDescription": "Matched your description",
+  "@search.imageResults.matchedDescription": {
+    "sourceHash": "3b30350"
+  },
+  "search.imageResults.similarTo": "Similar to {name}",
+  "@search.imageResults.similarTo": {
+    "sourceHash": "fc94bbb"
+  },
+  "search.imageResults.backToResults": "Back to search",
+  "@search.imageResults.backToResults": {
+    "sourceHash": "22252a1"
+  },
+  "search.imageResults.similarEmpty": "No similar images found.",
+  "@search.imageResults.similarEmpty": {
+    "sourceHash": "d3ef9f7"
+  },
+  "search.walkHandoff.running": "Still searching for {label}",
+  "@search.walkHandoff.running": {
+    "sourceHash": "79a7339"
+  },
+  "search.walkHandoff.counts": "{matchCount, plural, one {# match} other {# matches}} so far, {folderCount, plural, one {# folder} other {# folders}} scanned",
+  "@search.walkHandoff.counts": {
+    "sourceHash": "8e68f3f"
+  },
+  "search.walkHandoff.reopen": "Reopen search",
+  "@search.walkHandoff.reopen": {
+    "sourceHash": "6b49872"
+  },
+  "search.walkHandoff.stop": "Stop",
+  "@search.walkHandoff.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "search.walkHandoff.hideTooltip": "Hide this. The search keeps running.",
+  "@search.walkHandoff.hideTooltip": {
+    "sourceHash": "7ee94f1"
+  },
+  "search.walkHandoff.finished": "{count, plural, one {Found # match} other {Found # matches}} for {label}.",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "0cbc210"
+  },
+  "search.walkHandoff.stoppedShort": "The results for {label} may be short: Cmdr didn''t get through everything.",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "3a2a5dd"
+  },
+  "search.walkHandoff.superseded": "Cmdr stopped adding to the results for {label}, because your new search took over.",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "83aa5a2"
+  },
+  "search.coverage.uncovered.local": "Cmdr hasn''t indexed {drive} yet, so this search skipped:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "Cmdr doesn''t index network drives unless you ask, so this search skipped:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.uncovered.indexing": "Cmdr is still indexing {drive} and hasn''t reached these folders yet, so this search skipped:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
+  "search.coverage.unresolved": "{count, plural, one {Cmdr''s index doesn''t cover this folder yet, so this search skipped it:} other {Cmdr''s index doesn''t cover these folders yet, so this search skipped them:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.walk.cancelled": "You stopped this search, so it shows what Cmdr had found by then. Everything it read on the way is saved, so searching again picks up from there.",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "ea9caa1"
+  },
+  "search.coverage.walk.interrupted": "This search stopped early, so there may be more on {drive}. Searching again picks up where it left off.",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "4c6a0a4"
+  },
+  "search.coverage.walk.abandoned": "Some folders stopped answering, so Cmdr moved on without them and this list may be short. Searching again gives them another try.",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {One spot on this drive stopped answering, so Cmdr moved on without it and this list may be short. Cmdr comes back to it later, and searching again gives it another try.} other {{countText} spots on this drive stopped answering, so Cmdr moved on without them and this list may be short. Cmdr comes back to them later, and searching again gives them another try.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
+  },
+  "search.coverage.denied": "{count, plural, one {Cmdr wasn''t allowed to look inside this folder, so nothing from it is in the results:} other {Cmdr wasn''t allowed to look inside these folders, so nothing from them is in the results:}}",
+  "@search.coverage.denied": {
+    "sourceHash": "2c0eb72"
+  },
+  "search.coverage.deniedFullDiskAccess": "With full disk access, Cmdr can search folders like these.",
+  "@search.coverage.deniedFullDiskAccess": {
+    "sourceHash": "8de9168"
+  },
+  "search.coverage.setUpFullDiskAccess": "Set up full disk access",
+  "@search.coverage.setUpFullDiskAccess": {
+    "sourceHash": "98226cc"
+  },
+  "search.coverage.declined": "{count, plural, one {Cmdr doesn''t look inside snapshot folders, so nothing from this one is in the results:} other {Cmdr doesn''t look inside snapshot folders, so nothing from these is in the results:}}",
+  "@search.coverage.declined": {
+    "sourceHash": "ea5be72"
+  },
+  "search.coverage.stillCovering": "{count, plural, one {Another search is going through this folder right now, so its files will turn up in a moment:} other {Another search is going through these folders right now, so their files will turn up in a moment:}}",
+  "@search.coverage.stillCovering": {
+    "sourceHash": "acd21dc"
+  },
+  "search.coverage.unnamedDrive": "this drive",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Index this drive",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "Don''t ask again",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "Indexing {drive} now. Searches here will be instant once it finishes.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "Drive indexing is off in Settings, so nothing indexes. Turn it on under Indexing > Drive indexing.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr is already searching {drive}. Indexing starts as soon as that finishes.",
+  "@search.coverage.toast.deferredUntilSearchEnds": {
+    "sourceHash": "d62392a"
+  },
+  "search.coverage.toast.notStarted": "Cmdr can''t index {drive} right now. You can try again from the drive menu.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
+  "search.snapshot.defaultLabel": "Search",
+  "@search.snapshot.defaultLabel": {
+    "sourceHash": "49c266b"
+  },
+  "search.snapshot.cappedLabel": "{label} (first {capText} of {totalText})",
+  "@search.snapshot.cappedLabel": {
+    "sourceHash": "35523ac"
+  },
+  "search.runTitle": "Search, including folders that aren''t indexed yet",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "Press Enter and Cmdr will look through it now.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
+  }
+}

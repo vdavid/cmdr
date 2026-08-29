@@ -1,0 +1,258 @@
+{
+  "indexing.status.ariaLabel": "Drive indexing status",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.drive.heading": "{name}",
+  "@indexing.drive.heading": {
+    "sourceHash": "5e291d7"
+  },
+  "indexing.scan.label": "Indexing your drive...",
+  "@indexing.scan.label": {
+    "sourceHash": "3758d47"
+  },
+  "indexing.scan.counters": "{entriesText} entries, {dirsText} dirs",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.countersElapsed": "{counters} · {elapsed}",
+  "@indexing.scan.countersElapsed": {
+    "sourceHash": "aeb0b57"
+  },
+  "indexing.scan.etaRough": "roughly {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.phase.priorityFolders": "Indexing the folders you use most",
+  "@indexing.phase.priorityFolders": {
+    "sourceHash": "09dd19d"
+  },
+  "indexing.phase.home": "Indexing the rest of your home folder",
+  "@indexing.phase.home": {
+    "sourceHash": "8c31671"
+  },
+  "indexing.phase.wholeDrive": "Indexing the rest of the drive",
+  "@indexing.phase.wholeDrive": {
+    "sourceHash": "1e1d606"
+  },
+  "indexing.run.firstIndex": "First index",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
+  },
+  "indexing.run.firstScan": "First full scan",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Full rescan",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.changeCheck": "Checking for changes",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
+  "indexing.run.update": "Quick update",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
+  "indexing.step.findFiles": "Find files",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
+  },
+  "indexing.step.saveFileList": "Save the file list",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.updateFileList": "Update the file list",
+  "@indexing.step.updateFileList": {
+    "sourceHash": "ef0a3d2"
+  },
+  "indexing.step.computeFolderSizes": "Compute folder sizes",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "Catch up on recent changes",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "Update index",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "{countText} found",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesPhased": "First time through, so this takes a while. Your folders become searchable as Cmdr reaches them.",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
+  },
+  "indexing.step.findFilesFirstScan": "First scan, so this can take a while",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesChangeCheck": "Checking every folder against the index. Your folder sizes stay visible while this runs.",
+  "@indexing.step.findFilesChangeCheck": {
+    "sourceHash": "8c23f1f"
+  },
+  "indexing.step.statusDone": "Done",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "In progress",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "Not started",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
+  },
+  "indexing.aggregation.loading": "Loading folders...",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "f553c87"
+  },
+  "indexing.aggregation.sorting": "Sorting folders...",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "3a7c827"
+  },
+  "indexing.aggregation.computing": "Computing folder sizes...",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "19f54fc"
+  },
+  "indexing.aggregation.writing": "Saving folder sizes...",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "9466e98"
+  },
+  "indexing.replay.detail": "{eventsText} events processed",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.progress.percentEta": "{percent}%, {eta}",
+  "@indexing.progress.percentEta": {
+    "sourceHash": "26b29da"
+  },
+  "indexing.eta.almostDone": "Almost done",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "{secondsText}s left",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "{minutesText}m left",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "{hours, plural, one {{hoursText} hour} other {{hoursText} hours}} {minutes, plural, one {{minutesText} minute} other {{minutesText} minutes}} left",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "{hours, plural, one {{hoursText} hour} other {{hoursText} hours}} left",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
+  },
+  "indexing.rescan.staleIndex": "Your drive index is outdated. It looks like the app hasn''t run for a while. Running a fresh scan to catch up.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "The system''s file change log doesn''t go back far enough. Running a fresh scan to rebuild the index.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.watcherStartFailed": "Couldn''t start the file change watcher. Running a fresh scan to get the index up to date.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Heavy filesystem activity overwhelmed the event buffer. Running a fresh scan to stay accurate.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "The previous scan didn''t finish (the app may have been closed). Restarting the scan from scratch.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "A burst of filesystem activity overflowed the watcher channel. Running a fresh scan to stay accurate.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Running a fresh drive scan to keep the index accurate.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "Index {name}?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr can index this drive in the background so folder sizes and search work here. It only runs while the drive is connected.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Enable indexing",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "Don''t ask again for this drive",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "Don''t ask again for any drives",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "This drive''s index may be out of date",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "While {name} was disconnected, files on it may have changed. Folder sizes and search results might be a bit off until you rescan. The yellow status next to the drive always shows when this happens, and a rescan refreshes it.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "Never show again",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Close",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Image indexing",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, one {{doneText} of {totalText} image} other {{doneText} of {totalText} images}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/min",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4"
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373"
+  },
+  "indexing.enrich.pausedIdle": "Waiting until you''re idle",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "d63ee91"
+  },
+  "indexing.enrich.pausedDisconnected": "Paused, resumes on reconnect",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "Image indexing starts after the drive scan",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
+  },
+  "indexing.enrich.imagesBarLabel": "Images indexed",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Image data processed",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
+  }
+}

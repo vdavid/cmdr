@@ -1,0 +1,130 @@
+{
+  "queue.windowTitle": "Operation queue",
+  "@queue.windowTitle": {
+    "sourceHash": "fa91417"
+  },
+  "queue.heading": "Operations",
+  "@queue.heading": {
+    "sourceHash": "358cc20"
+  },
+  "queue.empty.title": "Nothing in the queue",
+  "@queue.empty.title": {
+    "sourceHash": "ef2b1ef"
+  },
+  "queue.empty.body": "Copies, moves, and deletes show up here while they run, so you can pause, resume, or cancel them.",
+  "@queue.empty.body": {
+    "sourceHash": "c24a288"
+  },
+  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} other {Working}}",
+  "@queue.row.label": {
+    "sourceHash": "9f18acf"
+  },
+  "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Cancelled} failed {Couldn''t finish} other {Running}}",
+  "@queue.row.status": {
+    "sourceHash": "2bbdaaa"
+  },
+  "queue.row.statusAwaitingAnswer": "Needs your answer",
+  "@queue.row.statusAwaitingAnswer": {
+    "sourceHash": "84ec74a"
+  },
+  "queue.row.awaitingAnswerTooltip": "Answer the prompt in the main window and this operation carries on.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "sourceHash": "bf51776"
+  },
+  "queue.row.pause": "Pause",
+  "@queue.row.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "queue.row.resume": "Resume",
+  "@queue.row.resume": {
+    "sourceHash": "d640c74"
+  },
+  "queue.row.foreground": "Show",
+  "@queue.row.foreground": {
+    "sourceHash": "0df6f1c"
+  },
+  "queue.row.foregroundAria": "Show this operation in the main window",
+  "@queue.row.foregroundAria": {
+    "sourceHash": "ece64ad"
+  },
+  "queue.row.cancel": "Cancel",
+  "@queue.row.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "queue.row.pauseAria": "Pause this operation",
+  "@queue.row.pauseAria": {
+    "sourceHash": "a836434"
+  },
+  "queue.row.resumeAria": "Resume this operation",
+  "@queue.row.resumeAria": {
+    "sourceHash": "be841fc"
+  },
+  "queue.row.cancelAria": "Cancel this operation",
+  "@queue.row.cancelAria": {
+    "sourceHash": "236ec68"
+  },
+  "queue.row.dismiss": "Dismiss",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Dismiss this operation",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
+  "queue.row.selectAria": "Select this operation",
+  "@queue.row.selectAria": {
+    "sourceHash": "6618ecc"
+  },
+  "queue.list.aria": "Operations",
+  "@queue.list.aria": {
+    "sourceHash": "358cc20"
+  },
+  "queue.toolbar.pauseAll": "Pause all",
+  "@queue.toolbar.pauseAll": {
+    "sourceHash": "0b6258b"
+  },
+  "queue.toolbar.resumeAll": "Resume all",
+  "@queue.toolbar.resumeAll": {
+    "sourceHash": "43e673c"
+  },
+  "queue.toolbar.cancelSelected": "Cancel selected",
+  "@queue.toolbar.cancelSelected": {
+    "sourceHash": "34e18e5"
+  },
+  "queue.toolbar.dismissAll": "Dismiss all",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
+  "queue.toolbar.selectedCount": "{count, plural, one {# selected} other {# selected}}",
+  "@queue.toolbar.selectedCount": {
+    "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Couldn''t finish copying} move {Couldn''t finish moving} delete {Couldn''t finish deleting} trash {Couldn''t finish moving to trash} rename {Couldn''t finish renaming} create_folder {Couldn''t finish creating the folder} create_file {Couldn''t finish creating the file} archive_edit {Couldn''t finish editing the archive} other {Couldn''t finish}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "Show in operation queue",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}. Open the operation queue to see why.",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} percent. Open the operation queue.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.scanningAriaLabel": "{label}, scanning. Open the operation queue.",
+  "@queue.chip.scanningAriaLabel": {
+    "sourceHash": "791fc9f"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} item} other { · {countText} items}}{hasDestination, select, yes { · to {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "6680100"
+  }
+}

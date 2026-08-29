@@ -1,0 +1,34 @@
+{
+  "whatsNew.dialog.title": "What’s new in Cmdr",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Nothing to see here yet. New changes will show up here after an update.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.showMore": "Show more",
+  "@whatsNew.dialog.showMore": {
+    "sourceHash": "f5c9bd1"
+  },
+  "whatsNew.dialog.showLess": "Show less",
+  "@whatsNew.dialog.showLess": {
+    "sourceHash": "94ea9b1"
+  },
+  "whatsNew.dialog.seeFullChangelog": "See full changelog",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Not interested in changelogs",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Close",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Got it, no more update notes. Re-enable them anytime in Settings > Updates & privacy.",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

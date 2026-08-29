@@ -1,0 +1,26 @@
+{
+  "common.attachEmail": "Attach my email address ({emailAddress} – <change>change</change>) so you can follow up",
+  "@common.attachEmail": {
+    "sourceHash": "6ce573e"
+  },
+  "common.attachEmailInputLabel": "Your email address",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "That doesn''t look like an email address",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "515c7cf"
+  },
+  "common.attachEmailPlaceholder": "you@example.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "common.attachEmailPrompt": "Attach my email address so you can follow up",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "703760b"
+  },
+  "common.downloadsFdaHint": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "315e1d8"
+  }
+}
