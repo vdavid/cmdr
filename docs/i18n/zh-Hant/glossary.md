@@ -320,6 +320,61 @@ machine"). All **`confirmed`** — this is what the user's own Mac says (verifie
 - **Downloads (the folder)** · `下載項目` · AP-TW (12), AP-HK (11) · `confirmed`
 - **Documents (the folder)** · `文件` · AP-TW/HK · `confirmed`
 
+### Crash, reports, and updates
+
+Mined from the live macOS bundles this catalog's readers actually run (macOS 26.6.2, build 25G83, key-match,
+2026-08-29): `CrashReporterSupport`, `Problem Reporter`, `Console`, `Software Update`, `App Store`, and Safari's
+download UI. Those surfaces are Cmdr's exact analogues, so they outrank the general pile here.
+
+- **crash (noun)** · `當機` · AP-TW (Console `Crash Reports` → 當機報告; the Privacy pane's 「…共享當機和使用狀況資料」);
+  **AP-HK says 故障** · `high`. ❗ Microsoft's `損毀` is a false friend: in Apple's Traditional localizations 損毀 means
+  _corrupt/damaged_ (「%@」已損毀，無法開啟), so using it for a crash would say Cmdr is corrupted.
+- **quit unexpectedly** · `意外結束` · AP-HK (`AppKitErrors`: 「…它於重新開啟視窗時意外結束」) · `high`. AP-TW's
+  crash reporter writes `未預期的結束` (`CrashReporterSupport/unexpectedly_quit_header`) and AP-HK's writes `突然結束`.
+  All three are read in both regions, so this is register rather than the TW/HK vocabulary split the Taiwan-default rule
+  governs, and `未預期的` is exactly the bureaucratic register `style.md` § Voice and tone rules out. Chosen for the
+  spoken voice, recorded so it isn't "corrected" to Apple-TW's nominalization later.
+- **error report** · `錯誤報告` · already shipped in `settings.json`, `updates.json`, and `errorReporter.json` ·
+  `high`. Apple's nearest term is `問題報告` (Problem Reporter, TW = HK) and it's the more Apple-native pick, but
+  `錯誤報告` is the name three shipped files already give the feature and a single name beats a better one. `錯誤` as a
+  terminal-state NOUN is Apple's own practice (`Install Error` → 安裝錯誤); the house ban is on `錯誤`/`失敗` as the
+  verb of a sentence about what went wrong.
+- **report / send a report** · `報告` / `傳送報告` · AP-TW = AP-HK (`CrashReporterSupport`: 「…並傳送報告給Apple」) ·
+  `high`. **Don't send** → `不要傳送`; **Ignore** → `忽略`; **Don't ask me again** → `別再詢問` (all Problem Reporter,
+  TW = HK).
+- **diagnostic information** · `診斷資訊` · AP-TW (Feedback Assistant); **AP-HK says 診斷資料** · `high`. ❗ Microsoft's
+  first `diagnostic data` hit is `遙測` (telemetry) — the wrong sense.
+- **stack trace** · `堆疊追蹤` · MS (HKG, TWN) · `high`. ❗ The TBX's first hit is a bare `追蹤`; the right entry is three
+  entries later.
+- **details** · `詳細資訊` · AP-TW (Problem Reporter `Show Details` → 顯示詳細資訊); **AP-HK says 詳細資料** · `high`
+- **anonymously** · `以匿名方式` · AP-TW = AP-HK (Problem Reporter: 「此資訊是以匿名方式收集。」) · `high`
+- **personal data** · `個人資料` · AP-TW = AP-HK · `high`
+- **timestamp** · `時間戳記` · AP-TW = AP-HK (Notes), MS (HKG, TWN) · `high`
+- **log** · `記錄` (log file `記錄檔`) · AP-TW = AP-HK (Console `Log File` → 記錄檔), MS, TC · `high`. ❌ Never `日誌`,
+  which is the Mainland form; DC's zh-TW leaks it once as conversion residue.
+- **history** · `歷史記錄` · TC (`歷史記錄`, `資料夾歷史記錄`) · `high`. MS's `歷程記錄` is Windows house style.
+- **update (an available one, noun)** · `更新項目` · AP-TW (`Check for Updates` → 檢查更新項目; `Unable to check for
+  updates` → 無法檢查更新項目; App Store `Updates` → 更新項目) · `high`. AP-HK trends shorter (`更新`). The bare verb
+  stays `更新`.
+- **up to date** · `已是最新狀態` · AP-TW; **AP-HK says 是最新版本** · `high`
+- **restart** · `重新啟動` for relaunching an APP, which is all Cmdr does · `high`. ❗ AP-TW says `重新開機` where the
+  MACHINE restarts (Software Update); don't carry that over, and note AP-HK uses `重新啟動` for both.
+- **release notes** · `發行備註` · MS (HKG, TWN) · `high`. Apple ships `更多資訊⋯` instead and has no term.
+- **operation** · `操作` · AP-TW = AP-HK (`The operation could not be completed.` → 無法完成操作。), DC · `high`.
+  ❗ AP-TW sometimes writes `作業` and MS renders _operation_ as `作業`; take `操作`, the form both Apple locales use in
+  the canonical string and the only one AP-HK ever uses.
+- **client** · `用戶端` · MS (HKG, TWN) · `high`
+- **manifest** · `資訊清單` · MS (`application manifest` → 應用程式資訊清單) · `high`
+
+**Failure-sentence shapes** (Apple's four, for the `無法` + verb rule in `style.md` § Voice and tone):
+
+1. `無法` + verb + object `。` — `The open file operation failed.` → `無法執行開啟檔案的操作。`
+2. `無法` + verb + object `，因為` + reason `。` — the default. `無法下載軟體，因為網路發生問題。`
+3. `因為` + reason `，無法` + verb `。` — when the reason is what the user must act on.
+4. state phrase `，因此無法` + verb `。` — when a named actor is the blocker. `磁碟正由「%@」使用中，因此無法退出。`
+
+Recovery lines pair as `請確定你已連接網際網路，然後再試一次。` and `當目前的操作完成後，再試一次。` (AP-TW).
+
 ### Miscellaneous
 
 - **user** · `使用者` · AP-TW (36), TC (51) · `high`. AP-HK avoids the noun entirely (0 for 使用者, 用戶, and 用家),

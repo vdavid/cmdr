@@ -1,5 +1,5 @@
 {
-  "updates.checkToast.errorPrefix": "無法檢查更新：{message}",
+  "updates.checkToast.errorPrefix": "無法檢查更新項目：{message}",
   "@updates.checkToast.errorPrefix": {
     "sourceHash": "020abfd"
   },
@@ -52,7 +52,7 @@
   "@updates.moveToApplicationsDialog.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "updates.status.noUpdates": "沒有找到更新。目前版本：v{version}",
+  "updates.status.noUpdates": "沒有找到更新項目。目前版本：v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"
   },
@@ -60,7 +60,7 @@
   "@updates.status.checking": {
     "sourceHash": "ec963ff"
   },
-  "updates.status.downloading": "找到更新，正在下載 v{next}（目前：v{prev}）…",
+  "updates.status.downloading": "找到更新項目，正在下載 v{next}（目前：v{prev}）…",
   "@updates.status.downloading": {
     "sourceHash": "480c6da"
   },
@@ -68,7 +68,7 @@
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
-  "updates.status.ready": "更新 v{next} 已準備好。重新啟動即可套用。",
+  "updates.status.ready": "更新項目 v{next} 已準備好。重新啟動即可套用。",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"
   }
