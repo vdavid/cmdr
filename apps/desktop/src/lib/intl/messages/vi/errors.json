@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "Bạn không có quyền chuyển tệp vào thùng rác ở đây.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang bị khóa. Mở khóa nó trong Finder (Lấy thông tin > bỏ chọn “Đã khóa”) rồi thử lại.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {

@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "Nincs engedélyed itt fájlokat a Kukába helyezni.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Ellenőrizd, hogy van írási hozzáférésed a szülőmappához. Lehet, hogy a fájl zárolva van. Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {

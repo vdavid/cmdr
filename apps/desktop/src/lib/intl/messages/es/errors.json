@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "No tienes permiso para mover archivos a la papelera aquí.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté bloqueado. Desbloquéalo en Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {

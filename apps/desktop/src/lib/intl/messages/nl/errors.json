@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "Je hebt geen bevoegdheid om hier bestanden naar de prullenmand te verplaatsen.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien vergrendeld. Ontgrendel het in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {

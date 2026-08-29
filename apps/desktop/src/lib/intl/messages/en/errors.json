@@ -1921,7 +1921,7 @@
   "errors.write.permissionDenied.message.copy": "You don't have permission to copy files here.",
   "errors.write.permissionDenied.message.move": "You don't have permission to move files here.",
   "errors.write.permissionDenied.message.delete": "You don't have permission to delete files here.",
-  "errors.write.permissionDenied.message.trash": "You don't have permission to move to trash files here.",
+  "errors.write.permissionDenied.message.trash": "You don't have permission to move files to the trash here.",
   "errors.write.permissionDenied.suggestion.deleteMac": "Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.",
   "errors.write.permissionDenied.suggestion.deleteOther": "Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.",
   "errors.write.permissionDenied.suggestion.default": "Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.",

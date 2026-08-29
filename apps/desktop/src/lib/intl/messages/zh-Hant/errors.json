@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "你沒有權限在這裡把檔案移至垃圾桶。",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "確認你對上層資料夾有寫入權。這個檔案可能被鎖定了。在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。",
   "@errors.write.permissionDenied.suggestion.deleteMac": {

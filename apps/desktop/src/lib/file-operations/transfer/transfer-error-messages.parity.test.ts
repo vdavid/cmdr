@@ -499,7 +499,7 @@ const cases: Case[] = [
     mac: true,
     expected: {
       title: "Couldn't access this location",
-      message: "You don't have permission to move to trash files here.",
+      message: "You don't have permission to move files to the trash here.",
       suggestion:
         'Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.',
     },

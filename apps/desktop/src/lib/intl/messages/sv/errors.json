@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "Du har inte behörighet att flytta filer till papperskorgen här.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara låst. Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {

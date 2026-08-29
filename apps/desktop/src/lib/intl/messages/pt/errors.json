@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "Você não tem permissão para mover arquivos para o Lixo aqui.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Verifique se você tem acesso de gravação à pasta principal. O arquivo pode estar bloqueado. Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {

@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "Vous n'avez pas l'autorisation de placer des fichiers dans la corbeille ici.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Vérifiez que vous avez l'accès en écriture au dossier parent. Le fichier est peut-être verrouillé. Déverrouillez-le dans Finder (Lire les informations > décochez Verrouillé) et réessayez.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {

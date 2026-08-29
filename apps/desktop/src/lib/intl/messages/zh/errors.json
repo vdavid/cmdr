@@ -1347,7 +1347,7 @@
   },
   "errors.write.permissionDenied.message.trash": "你没有权限在这里把文件移到废纸篓。",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "8381d02"
+    "sourceHash": "b68bafc"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "确认你对上一级文件夹有写入权限。文件可能被锁定了。在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
