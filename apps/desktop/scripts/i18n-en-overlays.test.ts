@@ -57,6 +57,13 @@ const AU_DIVERGES_FROM_GB: readonly string[] = [
   'menu.select.deselectAll',
   'menu.select.deselectFiles',
   'settings.selection.recentSelections.maxCount.description',
+  // The dialog those menu items open. Its title and primary button carry the same
+  // verb, so leaving them out is what made `en-AU` read "Unselect files…" in the
+  // menu bar and "Deselect files" in the window it opened. The positive verb does
+  // NOT fork: `Select` and `Select All` are identical in `en-GB` and `en-AU`.
+  'selection.dialog.title.remove',
+  'selection.action.deselect.label',
+  'selection.action.deselect.tooltip',
   // `en-GB` forks the adverb to "go forwards"; `en-AU` keeps the American form, so
   // this key is absent from `en-AU` entirely and inherits base `en`.
   'commands.navForward.label',
