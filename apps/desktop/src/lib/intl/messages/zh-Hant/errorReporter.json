@@ -1,177 +1,178 @@
 {
-  "errorReporter.dialog.title": "Send error report",
+  "errorReporter.dialog.title": "傳送錯誤報告",
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "This sends Cmdr''s recent log files to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.",
+  "errorReporter.dialog.description": "這會把 Cmdr 最近的記錄檔傳給團隊，讓我們修正出問題的地方。記錄會先在你的電腦上遮蔽處理：檔案路徑、主機名稱、IP 位址和電子郵件地址都會在傳送前清掉。",
   "@errorReporter.dialog.description": {
     "sourceHash": "dd11284"
   },
-  "errorReporter.dialog.referenceIdLabel": "Reference ID:",
+  "errorReporter.dialog.referenceIdLabel": "參考 ID：",
   "@errorReporter.dialog.referenceIdLabel": {
     "sourceHash": "ef8c421"
   },
-  "errorReporter.dialog.copy": "Copy",
+  "errorReporter.dialog.copy": "複製",
   "@errorReporter.dialog.copy": {
     "sourceHash": "e21f935"
   },
-  "errorReporter.dialog.copied": "Copied",
+  "errorReporter.dialog.copied": "已複製",
   "@errorReporter.dialog.copied": {
     "sourceHash": "8d525e5"
   },
-  "errorReporter.dialog.noteLabel": "Add a note (optional)",
+  "errorReporter.dialog.noteLabel": "加上備註（選填）",
   "@errorReporter.dialog.noteLabel": {
     "sourceHash": "6bb0c6b"
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only string: two already-formatted numbers rendered as a fraction, with the slash as the only literal character. Traditional Chinese writes a character counter the same way (Apple zh-TW and zh-HK use Arabic numerals and a half-width solidus for counters), so there is no word here to translate; the surrounding label `errorReporter.dialog.noteLabel` carries the meaning."
   },
-  "errorReporter.dialog.notePlaceholder": "What were you trying to do? What did you expect to happen?",
+  "errorReporter.dialog.notePlaceholder": "你當時想做什麼？你預期會發生什麼？",
   "@errorReporter.dialog.notePlaceholder": {
     "sourceHash": "003300b"
   },
-  "errorReporter.dialog.noteTooLong": "Note is too long. Maximum is {maxText} characters.",
+  "errorReporter.dialog.noteTooLong": "備註太長了。上限是 {maxText} 個字元。",
   "@errorReporter.dialog.noteTooLong": {
     "sourceHash": "835aa78"
   },
-  "errorReporter.dialog.detailsToggle": "What''s about to be sent",
+  "errorReporter.dialog.detailsToggle": "即將傳送的內容",
   "@errorReporter.dialog.detailsToggle": {
     "sourceHash": "b1069f7"
   },
-  "errorReporter.dialog.manifestHeading": "Manifest",
+  "errorReporter.dialog.manifestHeading": "資訊清單",
   "@errorReporter.dialog.manifestHeading": {
     "sourceHash": "3c99f1f"
   },
-  "errorReporter.dialog.sampleFirstHeading": "Sample of first {count, plural, one {# line} other {# lines}}",
+  "errorReporter.dialog.sampleFirstHeading": "開頭 {count, plural, other {# 行}}的範例",
   "@errorReporter.dialog.sampleFirstHeading": {
     "sourceHash": "7a2e538"
   },
-  "errorReporter.dialog.sampleLastHeading": "Sample of last {count, plural, one {# line} other {# lines}}",
+  "errorReporter.dialog.sampleLastHeading": "結尾 {count, plural, other {# 行}}的範例",
   "@errorReporter.dialog.sampleLastHeading": {
     "sourceHash": "a36f420"
   },
-  "errorReporter.dialog.noLogLines": "(no log lines available)",
+  "errorReporter.dialog.noLogLines": "（沒有可顯示的記錄行）",
   "@errorReporter.dialog.noLogLines": {
     "sourceHash": "a2d54fd"
   },
-  "errorReporter.dialog.totalLines": "Total log lines (after redaction): {countText}",
+  "errorReporter.dialog.totalLines": "記錄總行數（遮蔽處理後）：{countText}",
   "@errorReporter.dialog.totalLines": {
     "sourceHash": "9c5cab7"
   },
-  "errorReporter.dialog.preparing": "Preparing preview…",
+  "errorReporter.dialog.preparing": "正在準備預覽…",
   "@errorReporter.dialog.preparing": {
     "sourceHash": "11e66e1"
   },
-  "errorReporter.dialog.prepareFailed": "Couldn''t prepare preview: {error}",
+  "errorReporter.dialog.prepareFailed": "無法準備預覽：{error}",
   "@errorReporter.dialog.prepareFailed": {
     "sourceHash": "21c4dd4"
   },
-  "errorReporter.dialog.saveToDisk": "Save bundle to disk (debug)",
+  "errorReporter.dialog.saveToDisk": "將報告封存檔儲存到磁碟（除錯用）",
   "@errorReporter.dialog.saveToDisk": {
     "sourceHash": "36d6589"
   },
-  "errorReporter.dialog.cancel": "Cancel",
+  "errorReporter.dialog.cancel": "取消",
   "@errorReporter.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "errorReporter.dialog.send": "Send report",
+  "errorReporter.dialog.send": "傳送報告",
   "@errorReporter.dialog.send": {
     "sourceHash": "a44d353"
   },
-  "errorReporter.dialog.sending": "Sending…",
+  "errorReporter.dialog.sending": "正在傳送…",
   "@errorReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },
-  "errorReporter.dialog.sendFailedToast": "Couldn''t send error report: {error}",
+  "errorReporter.dialog.sendFailedToast": "無法傳送錯誤報告：{error}",
   "@errorReporter.dialog.sendFailedToast": {
     "sourceHash": "38c0695"
   },
-  "errorReporter.dialog.saveFailedToast": "Couldn''t save bundle: {error}",
+  "errorReporter.dialog.saveFailedToast": "無法儲存報告封存檔：{error}",
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
-  "errorReporter.amend.title": "Add to your error report",
+  "errorReporter.amend.title": "為你的錯誤報告補充內容",
   "@errorReporter.amend.title": {
     "sourceHash": "b19796b"
   },
-  "errorReporter.amend.description": "Cmdr already sent this report. Write a note, or attach your email, and it''ll join what the team already has.",
+  "errorReporter.amend.description": "Cmdr 已經把這份報告送出去了。寫個備註，或附上你的電子郵件地址，就會一起加到團隊手上的那一份裡。",
   "@errorReporter.amend.description": {
     "sourceHash": "276771e"
   },
-  "errorReporter.amend.noteLabel": "Your note",
+  "errorReporter.amend.noteLabel": "你的備註",
   "@errorReporter.amend.noteLabel": {
     "sourceHash": "5331e47"
   },
-  "errorReporter.amend.detailsToggle": "What was sent",
+  "errorReporter.amend.detailsToggle": "已傳送的內容",
   "@errorReporter.amend.detailsToggle": {
     "sourceHash": "cb2415e"
   },
-  "errorReporter.amend.submit": "Add to report",
+  "errorReporter.amend.submit": "加到報告裡",
   "@errorReporter.amend.submit": {
     "sourceHash": "e05fdbe"
   },
-  "errorReporter.amend.submitting": "Adding…",
+  "errorReporter.amend.submitting": "正在加入…",
   "@errorReporter.amend.submitting": {
     "sourceHash": "c6de6f4"
   },
-  "errorReporter.amend.unavailable": "That report can''t take a note any more. To get your notes to the team, send a new report from the Help menu.",
+  "errorReporter.amend.unavailable": "那份報告已經沒辦法再加東西了。想把你的備註送到團隊那裡，請從「輔助說明」選單傳送一份新的報告。",
   "@errorReporter.amend.unavailable": {
     "sourceHash": "cbb7a33"
   },
-  "errorReporter.amend.close": "Close",
+  "errorReporter.amend.close": "關閉",
   "@errorReporter.amend.close": {
     "sourceHash": "7d9eb7a"
   },
-  "errorReporter.amend.addFailedToast": "Couldn''t add your note: {error}",
+  "errorReporter.amend.addFailedToast": "無法加入你的備註：{error}",
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "69df136"
   },
-  "errorReporter.sentToast.message": "Error report sent. Your reference ID is",
+  "errorReporter.sentToast.message": "錯誤報告已傳送。你的參考 ID 是",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
   },
-  "errorReporter.sentToast.dismiss": "Dismiss",
+  "errorReporter.sentToast.dismiss": "忽略",
   "@errorReporter.sentToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.sentToast.copyId": "Copy ID",
+  "errorReporter.sentToast.copyId": "複製 ID",
   "@errorReporter.sentToast.copyId": {
     "sourceHash": "72ac0d5"
   },
-  "errorReporter.sentToast.copied": "Copied",
+  "errorReporter.sentToast.copied": "已複製",
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
   },
-  "errorReporter.amendedToast.message": "Note added to your report. Your reference ID is",
+  "errorReporter.amendedToast.message": "備註已加到你的報告。你的參考 ID 是",
   "@errorReporter.amendedToast.message": {
     "sourceHash": "5471d7f"
   },
-  "errorReporter.bundleSavedToast.message": "Saved bundle to disk",
+  "errorReporter.bundleSavedToast.message": "已將報告封存檔儲存到磁碟",
   "@errorReporter.bundleSavedToast.message": {
     "sourceHash": "7c1604d"
   },
-  "errorReporter.bundleSavedToast.dismiss": "Dismiss",
+  "errorReporter.bundleSavedToast.dismiss": "忽略",
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.bundleSavedToast.reveal": "Reveal in Finder",
+  "errorReporter.bundleSavedToast.reveal": "在 Finder 中顯示",
   "@errorReporter.bundleSavedToast.reveal": {
     "sourceHash": "cc84938"
   },
-  "errorReporter.autoSentToast.title": "Error report sent",
+  "errorReporter.autoSentToast.title": "錯誤報告已傳送",
   "@errorReporter.autoSentToast.title": {
     "sourceHash": "b69ee37"
   },
-  "errorReporter.autoSentToast.referenceIdLabel": "Reference ID:",
+  "errorReporter.autoSentToast.referenceIdLabel": "參考 ID：",
   "@errorReporter.autoSentToast.referenceIdLabel": {
     "sourceHash": "ef8c421"
   },
-  "errorReporter.autoSentToast.changeSettings": "Change settings",
+  "errorReporter.autoSentToast.changeSettings": "更改設定",
   "@errorReporter.autoSentToast.changeSettings": {
     "sourceHash": "873512a"
   },
-  "errorReporter.autoSentToast.viewOrAddNotes": "View or add notes to the report",
+  "errorReporter.autoSentToast.viewOrAddNotes": "查看報告或加上備註",
   "@errorReporter.autoSentToast.viewOrAddNotes": {
     "sourceHash": "81a00a0"
   }
