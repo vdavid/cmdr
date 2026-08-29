@@ -122,7 +122,10 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 - **settings** · `設定` · AP-TW (160), AP-HK (160), MS · `confirmed`. `設置` = 0 in both Apple corpora.
 - **preferences** · `偏好設定` · AP-TW = AP-HK · `confirmed`
 - **appearance** · `外觀` · AP-TW = AP-HK (SystemSettings) · `confirmed`
-- **theme** · `佈景主題` · MS · `high`. Not in Apple's bundles.
+- **theme** · `主題` · AP-TW = AP-HK live (`Theme` → 主題, `Use Theme Color` → 使用主題顏色, Appearance pane, macOS
+  26.6.2) · `high`. ❌ **Not `佈景主題`**, which is a Windows-ism: zero in both Apple corpora and zero across 12,418
+  live zh_TW strings; only MS's TBX carries it (21). When the label means the OS light/dark switch rather than a named
+  theme, Apple calls that surface `外觀`.
 - **dark / light mode** · `深色模式` / `淺色模式` · MS · `high`. The appearance-mode strings aren't in the mined Apple
   bundles (深色/淺色 = 0 there), so MS is the only evidence.
 - **language** · `語言` · AP-TW = AP-HK, MS · `confirmed`
@@ -203,10 +206,12 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 
 ### Search, filters, and the query UI
 
-- **regular expression** · `正規表示式` (tight chip: `正規`) · TC (`正規表示式`), and already shipped in
-  `settings.search.autoApply.description` · `high`. MS and DC say `規則運算式`, which is Windows house style; TC is the
-  lineage match, `正規表示式` is what Taiwanese developers write, and it's the only candidate that yields a natural
-  two-character chip clipping the way the `zh` catalog's `正则` does.
+- **regular expression** · `正規表示式`, tight chip `正規式` · TC ships both (`WCMD.LNG` 5616 `正規表示式(&2)`, 5615
+  `正規式(&X)`) · `high`. MS and DC say `規則運算式`, which is Windows house style; TC is the lineage match and
+  `正規表示式` is what Taiwanese developers write. ❌ **Never bare `正規`**: it's a bound morpheme, not a noun, and
+  Microsoft's only six `正規*` entries are `正規化` = _normalization_, so a chip reading `正規` parses as a truncated
+  "normaliz-". TC's own short form `正規式` is the chip; the full form goes in aria labels and tooltips, which have
+  room.
 - **wildcard** · `萬用字元` · MS, THU · `high`. ❌ Not `通配符`, which is the Simplified form.
 - **comparator / comparison operator** · `比較運算子` · MS · `high`
 - **byte (the unit word)** · `位元組` · MS · `high`. ❗ Simplified writes `字节`; Traditional does NOT.
@@ -341,7 +346,9 @@ contamination** (`重復分頁`, `刷新`, `在新分頁中打開`), so weight T
 - **active / source pane** · `作用中窗格` / `來源窗格` · TC (`來源視窗`, `目前視窗`), DC (`來源面板`) · `high`
 - **target pane** · `目標窗格` · TC (`目標視窗`), DC (`目標面板`) · `high`
 - **swap panes** · `交換窗格` · TC (`左右視窗交換`), DC (`交換面板`) · `high`
-- **file list** · `檔案清單` · TC (`列印檔案清單:`, `檔案清單字型`), DC (`更新檔案清單`), MS · `high`
+- **file list** · `檔案列表` · follows the `list` ruling below · `high`. ⚠️ **Reversed on evidence**: TC's `檔案清單`
+  was adopted as a two-pane term Finder supposedly lacks, but Finder does not lack lists, so the lineage argument
+  doesn't apply. See `list (generic UI list)`.
 - **command line** · `命令列` · TC (`顯示命令列`, `命令列歷史記錄`) · `high`
 - **function-key bar** · `功能鍵列` · TC (`顯示功能鍵列`, `顯示/隱藏 功能鍵列`) · `high`
 - **button bar** · `按鈕列` · TC calls its drive-button row `磁碟按鈕列` · `high`. Drop the `磁碟` qualifier unless the
@@ -472,8 +479,12 @@ Register for this whole surface is `你`, not `您`: `style.md` § Formality.
   taken by _eject_.
 - **command** · `指令` · TC + the file managers (78) and MS (66); Apple has none · `high`. Used for both the command
   palette's commands and a terminal command. **`命令列`** stays the fixed compound for _command line_ (TC-attested).
-- **list (generic UI list)** · `列表` · AP-TW (53), AP-HK (58) · `high`. MS and TC prefer `清單`, and `檔案清單` stays
-  the orthodox two-pane term for _file list_; Apple wins for a plain "list".
+- **list (generic UI list)** · `列表` · AP-TW (53), AP-HK (58), live TW (75), live HK (71) · `high`. ❌ **Never
+  `清單`**: it is ZERO in all four Apple corpora, while `列表` covers both the view mode (`列表顯示方式`) and every
+  generic list Apple ships, including our exact cases — a server list (`Finder/LocalizableMerged.json:MN3`, "clear the
+  list of recent servers" → `清除…的列表`), a user list, and "remove from the list". TW and HK AGREE, so the Apple-zh-TW
+  outlier rule doesn't fire and Apple beats Microsoft (which prefers `清單` 318/7). **No context split exists** — one
+  word for all of them, `檔案列表` included. `資訊清單` ("Manifest") is an unrelated fixed compound and stays.
 - **clipboard** · `剪貼板` · AP-TW (8), AP-HK (8) · `high`. TC says `剪貼簿`, which is the commoner word in Taiwan
   generally, but Apple's two Traditional locales agree and Cmdr is a Mac app.
 - **feedback** · `意見反應` · MS (22) · `high`. The standard Taiwanese product term; `回饋` means feedback in the
@@ -501,6 +512,64 @@ Register for this whole surface is `你`, not `您`: `style.md` § Formality.
 - **screen** · `螢幕` · standard Traditional usage · `high`
 - **font** · `字體` / `字型` · TC (`檔案清單字型`) · `high`. Prefer `字型` for a typeface.
 - **percent / number formatting** · Arabic numerals, half-width digits, `%` directly after the number · AP · `high`
+
+### Terms the consistency audit settled
+
+Each of these shipped with TWO renderings because separate translation passes each settled it privately. Ruled by mining
+the pile PLUS the live macOS bundles (a 12,418-string zh_TW corpus from `/System/Library/ExtensionKit/`,
+`/System/Applications`, and `/System/Library/CoreServices`, with its zh_HK twin; macOS 26.6.2, build 25G83, 2026-08-29).
+**`AP live` below means that corpus.** Don't re-litigate one without new evidence of that weight.
+
+- **operation** · `操作` · AP-HK 74/0; AP-TW splits 61/14 and all 14 `作業` are minimal pairs where zh-HK writes `操作`
+  (`LA17`, `NE83`, `PE87` = `執行此項作業的權限` TW vs `執行此操作的權限` HK); THU 28/0, DC 31/1, TC 22/7 · `high`.
+  Textbook § Apple-zh-TW outlier rule; MS's `作業` is the lone dissenter. ❗ `作業` survives ONLY as _job/session/OS_:
+  `作業系統`, `列印作業`, `作業階段`, `背景作業`.
+- **always** · `總是` · AP live HK 63 `總是` / **0** `永遠` / **0** `一律`; AP live TW mixes 38/27/2 with no boundary
+  (`Always Allow` → 永遠允許 but `Always Show` → 總是顯示) · `high`. Because TW has no internal norm, `總是` is the only
+  form BOTH audiences see, which is the outlier rule's rationale even though its formal trigger doesn't fire. `一律` is
+  weakest everywhere and is retired. ❗ Don't touch `永遠` when the English is _never_
+  (`shortcuts.conflict.systemShortcut`: "may never reach Cmdr").
+- **Dismiss** · `關閉` · AP live: 13 distinct `Dismiss` keys, all `關閉`, TW = HK (`Dismiss All` → 關閉全部; AppKit
+  `Dismiss Popover` → 關閉彈出式項目); MS agrees · `high`. ❗ **`忽略` is Apple's word for _Ignore_ (10/10)**, so a
+  toast offering `忽略` promises to ignore what it actually closes. Distinct from `Close`, which is also `關閉`; the
+  collision is Apple's and is fine.
+- **Go to / Jump to** · `前往` / `跳至` · a real two-word split, and **the boundary is the English verb** · `high`.
+  `前往` is Finder's Go menu (`前往檔案夾`, `前往位置`, `前往上層資料夾`, 36/36 in both locales); `跳至` is Jump/Skip to
+  (`跳至下一頁`, `跳至結尾處`, AP live 4/0). ❌ Never `跳到` (Apple's older AppKit media-seek form, zero in the live
+  corpus) and ❌ never `跳過去` (unattested, and it reads as `跳過` = _skip_, the opposite promise on a jump-to-download
+  toast).
+- **unknown** · `未知` · AP-TW 12/0, AP-HK 12/0, AP live TW 56/0 (`未知的錯誤`, `未知的顯示器`) · `high`. ❗ `不明` is
+  NOT a Simplified form (AP-CN also says `未知`); it's simply the rarer one.
+- **forget** · `忘記` · AP live TW 30 / HK 32; `忘掉` is **zero** in every source · `high`. Apple's
+  `SHEET_FORGET_NETWORK` "Forget This Network…" → `忘記此網路設定⋯` (HK `忘記此網絡⋯`), Bluetooth "Forget This Device…"
+  → `忘記此裝置設定⋯`. Covers the server, the drive index, the saved password, and Ask Cmdr's memory alike.
+- **ready** · `準備就緒` (a bare status) / `準備好` (before a verb) · both AP live, TW = HK · `high`. A status chip or
+  label reading just "Ready" is `準備就緒` (`索引已準備就緒`); "ready to <verb>" inside a sentence keeps `準備好` +
+  verb. ❌ Bare `就緒` never stands alone in Apple, and MS only welds it into proper nouns (`AI 就緒`).
+- **on disk** · `磁碟上` · AP-TW/HK `IN_G1` `^1 (^0 on disk)` → `^1（磁碟上^0）`, 9/9 in the pile and 7/7 live · `high`.
+  Pairs with `內容` (Content), exactly as English pairs "On disk" with "Content". ❗ `佔用` is **zero** in all four
+  Apple corpora, so neither `佔用磁碟` nor `佔用空間` was attested; both are retired.
+- **running / in progress** · `執行中` / `進行中` · a legitimate split; **the boundary is process vs task** · `high`.
+  `執行中` when the subject is a program, server, or feature (`Finder正在執行時…`, `執行中的應用程式`) — Cmdr's local AI
+  server. `進行中` when the subject is an operation or task (`某些操作仍在進行中`, `配對進行中`) — Cmdr's background
+  file operations.
+- **view mode suffix** · `顯示方式`, never `模式` · AP-TW 49 / AP-HK 41 (live 13/11), and Apple's settings-label strings
+  use it too (`總是以列表顯示方式打開`) · `high`. Apple reserves `模式` for BEHAVIOUR modes (`深色模式`, `勿擾模式`,
+  `高耗電模式`). So a Settings card heading for a view is `簡潔顯示方式`, not `簡潔模式`.
+- **column** · see the `column` entry above; the split is `直欄` (the noun and any header), `欄寬` (the fixed compound
+  _column width_, AP-TW live `欄寬控點`; HK writes `直欄闊度`, so Taiwan-default picks `欄寬`), and bare `欄` only as a
+  classifier when counting (`{n} 欄`). ❌ Bare `欄` never stands alone as a noun.
+
+**Open, for David** (recorded rather than silently applied):
+
+- **`簡潔` vs `簡要` for the Brief view.** `簡潔` is KDE Dolphin's word for **"Compact"**, and Apple's only `簡潔` is
+  Writing Tools' "Make Concise". The orthodox pair renders "Brief" as `簡要` on an exact msgid match
+  (`double-commander/doublecmd.po`: "Brief view" → `簡要`, "Show as Brief, Full or Thumbnails" →
+  `以簡要、完整或縮圖方式檢視`). The fully-sourced pair would be `簡要顯示方式` / `完整顯示方式`. That's shipped copy
+  changing on Tier-3 evidence from a source this guide already flags as contaminated, so it stays as shipped until David
+  rules.
+- **`總是` vs `永遠允許` on the permission strings.** If the Taiwan-default rule is applied literally rather than the
+  both-audiences argument above, "Always allow" specifically has an exact Apple-TW key match at `永遠允許`.
 
 ## Notes
 

@@ -172,10 +172,11 @@ anyway: 程式 (176/177), 設定 (160/160), 儲存 (123/123), 搜尋 (82/82), �
 - **Apple (zh-TW + zh-HK agreeing) is the top authority**, with the outlier refinement above.
 - **Where Apple is silent, Microsoft's zh-Hant TBX fills
   in**: 窗格 (pane), 佇列 (queue), 篩選 (filter), 鍵盤快速鍵 (keyboard shortcut), 深色模式 (dark
-  mode), 對話方塊 (dialog), 磁碟機 (drive as a device), 佈景主題 (theme).
-- **For the two-pane concepts every OS vendor lacks, the orthodox pair is the lineage match**: 檔案清單 (file
-  list), 命令列 (command line), 功能鍵列 (function-key bar), 常用資料夾 (directory
-  hotlist), 比對資料夾, 同步資料夾, 多檔重新命名. Details and the pane trap: `glossary.md` § Two-pane vocabulary.
+  mode), 對話方塊 (dialog), 磁碟機 (drive as a device). ❗ Check Apple's LIVE bundles before concluding it is silent:
+  `theme` was filled in from MS as `佈景主題` and is in fact `主題` in Apple's Appearance pane.
+- **For the two-pane concepts every OS vendor lacks, the orthodox pair is the lineage match**: 命令列 (command
+  line), 功能鍵列 (function-key bar), 常用資料夾 (directory hotlist), 比對資料夾, 同步資料夾, 多檔重新命名. Details and
+  the pane trap: `glossary.md` § Two-pane vocabulary.
 
 ### Gender and inclusive language: inherently neutral
 
