@@ -1,517 +1,522 @@
 {
-  "menu.bar.file": "File",
+  "menu.bar.file": "檔案",
   "@menu.bar.file": {
     "sourceHash": "50009ce"
   },
-  "menu.bar.edit": "Edit",
+  "menu.bar.edit": "編輯",
   "@menu.bar.edit": {
     "sourceHash": "464c4ff"
   },
-  "menu.bar.select": "Select",
+  "menu.bar.select": "選取",
   "@menu.bar.select": {
     "sourceHash": "2a78025"
   },
-  "menu.bar.view": "View",
+  "menu.bar.view": "顯示方式",
   "@menu.bar.view": {
     "sourceHash": "dcc839a"
   },
-  "menu.bar.go": "Go",
+  "menu.bar.go": "前往",
   "@menu.bar.go": {
     "sourceHash": "6cc8519"
   },
-  "menu.bar.tab": "Tab",
+  "menu.bar.tab": "分頁",
   "@menu.bar.tab": {
     "sourceHash": "90ddf19"
   },
-  "menu.bar.window": "Window",
+  "menu.bar.window": "視窗",
   "@menu.bar.window": {
     "sourceHash": "19734a1"
   },
-  "menu.bar.help": "Help",
+  "menu.bar.help": "輔助說明",
   "@menu.bar.help": {
     "sourceHash": "b79cac9"
   },
-  "menu.app.about": "About Cmdr",
+  "menu.app.about": "關於 Cmdr",
   "@menu.app.about": {
     "sourceHash": "efe010f"
   },
-  "menu.app.acknowledgements": "Acknowledgements",
+  "menu.app.acknowledgements": "致謝",
   "@menu.app.acknowledgements": {
     "sourceHash": "c9015d5"
   },
-  "menu.app.licenseDetails": "See license details",
+  "menu.app.licenseDetails": "查看授權詳細資訊",
   "@menu.app.licenseDetails": {
     "sourceHash": "0e660e8"
   },
-  "menu.app.licenseEnter": "Enter license key…",
+  "menu.app.licenseEnter": "輸入授權金鑰…",
   "@menu.app.licenseEnter": {
     "sourceHash": "24a8d77"
   },
-  "menu.app.checkForUpdates": "Check for updates…",
+  "menu.app.checkForUpdates": "檢查更新…",
   "@menu.app.checkForUpdates": {
     "sourceHash": "52d6f7d"
   },
-  "menu.app.changelog": "Changelog",
+  "menu.app.changelog": "變更記錄",
   "@menu.app.changelog": {
     "sourceHash": "ead07c8"
   },
-  "menu.app.onboarding": "Onboarding…",
+  "menu.app.onboarding": "入門引導…",
   "@menu.app.onboarding": {
     "sourceHash": "c4cc4aa"
   },
-  "menu.app.settings": "Settings…",
+  "menu.app.settings": "設定…",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
-  "menu.app.services": "Services",
+  "menu.app.services": "服務",
   "@menu.app.services": {
     "sourceHash": "604dce4"
   },
-  "menu.app.hide": "Hide Cmdr",
+  "menu.app.hide": "隱藏 Cmdr",
   "@menu.app.hide": {
     "sourceHash": "8f86f89"
   },
-  "menu.app.hideOthers": "Hide Others",
+  "menu.app.hideOthers": "隱藏其他",
   "@menu.app.hideOthers": {
     "sourceHash": "1753e22"
   },
-  "menu.app.showAll": "Show All",
+  "menu.app.showAll": "顯示全部",
   "@menu.app.showAll": {
     "sourceHash": "e1c3264"
   },
-  "menu.app.quit": "Quit Cmdr",
+  "menu.app.quit": "結束 Cmdr",
   "@menu.app.quit": {
     "sourceHash": "b3455b4"
   },
-  "menu.file.open": "Open",
+  "menu.file.open": "開啟",
   "@menu.file.open": {
     "sourceHash": "ed077f3"
   },
-  "menu.file.view": "View",
+  "menu.file.view": "檢視",
   "@menu.file.view": {
     "sourceHash": "dcc839a"
   },
-  "menu.file.edit": "Edit in editor",
+  "menu.file.edit": "用編輯器編輯",
   "@menu.file.edit": {
     "sourceHash": "691ca0f"
   },
-  "menu.file.copy": "Copy…",
+  "menu.file.copy": "複製…",
   "@menu.file.copy": {
     "sourceHash": "7f743d4"
   },
-  "menu.file.move": "Move…",
+  "menu.file.move": "移動…",
   "@menu.file.move": {
     "sourceHash": "cd799da"
   },
-  "menu.file.duplicate": "Duplicate",
+  "menu.file.duplicate": "製作副本",
   "@menu.file.duplicate": {
     "sourceHash": "02cdaab"
   },
-  "menu.file.compress": "Compress…",
+  "menu.file.compress": "壓縮…",
   "@menu.file.compress": {
     "sourceHash": "66b9d2c"
   },
-  "menu.file.newFolder": "New folder…",
+  "menu.file.newFolder": "新增資料夾…",
   "@menu.file.newFolder": {
     "sourceHash": "6cca529"
   },
-  "menu.file.delete": "Delete",
+  "menu.file.delete": "刪除",
   "@menu.file.delete": {
     "sourceHash": "e2d0a54"
   },
-  "menu.file.deletePermanently": "Delete permanently",
+  "menu.file.deletePermanently": "永久刪除",
   "@menu.file.deletePermanently": {
     "sourceHash": "280b10c"
   },
-  "menu.file.rename": "Rename",
+  "menu.file.rename": "重新命名",
   "@menu.file.rename": {
     "sourceHash": "3064d79"
   },
-  "menu.file.showInFinder": "Show in Finder",
+  "menu.file.showInFinder": "在 Finder 中顯示",
   "@menu.file.showInFinder": {
     "sourceHash": "c2a9c77"
   },
-  "menu.file.showInFileManager": "Show in file manager",
+  "menu.file.showInFileManager": "在檔案管理程式中顯示",
   "@menu.file.showInFileManager": {
     "sourceHash": "3ca4dad"
   },
-  "menu.file.getInfo": "Get info",
+  "menu.file.getInfo": "取得資訊",
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
-  "menu.file.quickLook": "Quick look",
+  "menu.file.quickLook": "快速查看",
   "@menu.file.quickLook": {
     "sourceHash": "f5616ce"
   },
-  "menu.edit.undo": "Undo",
+  "menu.edit.undo": "還原",
   "@menu.edit.undo": {
     "sourceHash": "a8283ad"
   },
-  "menu.edit.redo": "Redo",
+  "menu.edit.redo": "重做",
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.cut": "Cut",
+  "menu.edit.cut": "剪下",
   "@menu.edit.cut": {
     "sourceHash": "1f45f02"
   },
-  "menu.edit.copy": "Copy",
+  "menu.edit.copy": "複製",
   "@menu.edit.copy": {
     "sourceHash": "e21f935"
   },
-  "menu.edit.paste": "Paste",
+  "menu.edit.paste": "貼上",
   "@menu.edit.paste": {
     "sourceHash": "f3380f7"
   },
-  "menu.edit.moveHere": "Move here",
+  "menu.edit.moveHere": "移動至此",
   "@menu.edit.moveHere": {
     "sourceHash": "56f1247"
   },
-  "menu.edit.copyPath": "Copy path",
+  "menu.edit.copyPath": "複製路徑",
   "@menu.edit.copyPath": {
     "sourceHash": "720ff41"
   },
-  "menu.edit.copyFilename": "Copy filename",
+  "menu.edit.copyFilename": "複製檔名",
   "@menu.edit.copyFilename": {
     "sourceHash": "5cdf7f8"
   },
-  "menu.edit.searchFiles": "Search files…",
+  "menu.edit.searchFiles": "搜尋檔案…",
   "@menu.edit.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.select.all": "Select all",
+  "menu.select.all": "全選",
   "@menu.select.all": {
     "sourceHash": "1fc9a38"
   },
-  "menu.select.deselectAll": "Deselect all",
+  "menu.select.deselectAll": "取消全選",
   "@menu.select.deselectAll": {
     "sourceHash": "9675494"
   },
-  "menu.select.files": "Select files…",
+  "menu.select.files": "選取檔案…",
   "@menu.select.files": {
     "sourceHash": "b7f202e"
   },
-  "menu.select.deselectFiles": "Deselect files…",
+  "menu.select.deselectFiles": "取消選取檔案…",
   "@menu.select.deselectFiles": {
     "sourceHash": "6fb10d5"
   },
-  "menu.view.leftPane": "Left pane",
+  "menu.view.leftPane": "左窗格",
   "@menu.view.leftPane": {
     "sourceHash": "1c5078a"
   },
-  "menu.view.rightPane": "Right pane",
+  "menu.view.rightPane": "右窗格",
   "@menu.view.rightPane": {
     "sourceHash": "b2d98e6"
   },
-  "menu.view.fullView": "Full view",
+  "menu.view.fullView": "完整顯示方式",
   "@menu.view.fullView": {
     "sourceHash": "93f9dde"
   },
-  "menu.view.briefView": "Brief view",
+  "menu.view.briefView": "簡潔顯示方式",
   "@menu.view.briefView": {
     "sourceHash": "7bfd572"
   },
-  "menu.view.showHiddenFiles": "Show hidden files",
+  "menu.view.showHiddenFiles": "顯示隱藏檔案",
   "@menu.view.showHiddenFiles": {
     "sourceHash": "b5ede7f"
   },
-  "menu.view.sortBy": "Sort by",
+  "menu.view.sortBy": "排序方式",
   "@menu.view.sortBy": {
     "sourceHash": "c912902"
   },
-  "menu.view.zoom": "Zoom",
+  "menu.view.zoom": "縮放",
   "@menu.view.zoom": {
     "sourceHash": "509c517"
   },
-  "menu.view.switchPane": "Switch pane",
+  "menu.view.switchPane": "切換窗格",
   "@menu.view.switchPane": {
     "sourceHash": "377471f"
   },
-  "menu.view.swapPanes": "Swap panes",
+  "menu.view.swapPanes": "交換窗格",
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
   },
-  "menu.view.commandPalette": "Command palette…",
+  "menu.view.commandPalette": "命令選擇區…",
   "@menu.view.commandPalette": {
     "sourceHash": "6b1c93d"
   },
-  "menu.view.operationQueue": "Operation queue",
+  "menu.view.operationQueue": "操作佇列",
   "@menu.view.operationQueue": {
     "sourceHash": "fa91417"
   },
-  "menu.view.operationLog": "Operation log",
+  "menu.view.operationLog": "操作記錄",
   "@menu.view.operationLog": {
     "sourceHash": "2c97965"
   },
-  "menu.view.suggestedOps": "Suggested ops",
+  "menu.view.suggestedOps": "建議的操作",
   "@menu.view.suggestedOps": {
     "sourceHash": "4f24ca6"
   },
   "menu.view.askCmdr": "Ask Cmdr",
   "@menu.view.askCmdr": {
-    "sourceHash": "aafb1ce"
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name of the built-in AI panel, built on the brand word 「Cmdr」 which is do-not-translate; Chinese doesn't inflect, so the name stays bare. Kept verbatim to match the `zh` catalog and `commands.askCmdrToggle.label`."
   },
-  "menu.sort.name": "Name",
+  "menu.sort.name": "名稱",
   "@menu.sort.name": {
     "sourceHash": "dcd1d52"
   },
-  "menu.sort.extension": "Extension",
+  "menu.sort.extension": "副檔名",
   "@menu.sort.extension": {
     "sourceHash": "395aeb9"
   },
-  "menu.sort.dateModified": "Date modified",
+  "menu.sort.dateModified": "修改日期",
   "@menu.sort.dateModified": {
     "sourceHash": "eb5e7a5"
   },
-  "menu.sort.size": "Size",
+  "menu.sort.size": "大小",
   "@menu.sort.size": {
     "sourceHash": "1af8519"
   },
-  "menu.sort.dateCreated": "Date created",
+  "menu.sort.dateCreated": "製作日期",
   "@menu.sort.dateCreated": {
     "sourceHash": "fa91f76"
   },
-  "menu.sort.ascending": "Ascending",
+  "menu.sort.ascending": "遞增",
   "@menu.sort.ascending": {
     "sourceHash": "7718459"
   },
-  "menu.sort.descending": "Descending",
+  "menu.sort.descending": "遞減",
   "@menu.sort.descending": {
     "sourceHash": "79479a6"
   },
   "menu.zoom.percent75": "75%",
   "@menu.zoom.percent75": {
-    "sourceHash": "10963ac"
+    "sourceHash": "10963ac",
+    "sameAsSourceJustification": "Traditional Chinese writes percentages with half-width Arabic numerals and the ASCII sign tight against the number, exactly as English does, so only the number could ever differ."
   },
   "menu.zoom.percent100": "100%",
   "@menu.zoom.percent100": {
-    "sourceHash": "32e4899"
+    "sourceHash": "32e4899",
+    "sameAsSourceJustification": "Traditional Chinese writes percentages with half-width Arabic numerals and the ASCII sign tight against the number, exactly as English does, so only the number could ever differ."
   },
   "menu.zoom.percent125": "125%",
   "@menu.zoom.percent125": {
-    "sourceHash": "38cb31c"
+    "sourceHash": "38cb31c",
+    "sameAsSourceJustification": "Traditional Chinese writes percentages with half-width Arabic numerals and the ASCII sign tight against the number, exactly as English does, so only the number could ever differ."
   },
   "menu.zoom.percent150": "150%",
   "@menu.zoom.percent150": {
-    "sourceHash": "00a4e80"
+    "sourceHash": "00a4e80",
+    "sameAsSourceJustification": "Traditional Chinese writes percentages with half-width Arabic numerals and the ASCII sign tight against the number, exactly as English does, so only the number could ever differ."
   },
-  "menu.zoom.in": "Zoom in",
+  "menu.zoom.in": "放大",
   "@menu.zoom.in": {
     "sourceHash": "0e47f09"
   },
-  "menu.zoom.out": "Zoom out",
+  "menu.zoom.out": "縮小",
   "@menu.zoom.out": {
     "sourceHash": "bc7b631"
   },
-  "menu.go.back": "Back",
+  "menu.go.back": "返回",
   "@menu.go.back": {
     "sourceHash": "76900f1"
   },
-  "menu.go.forward": "Forward",
+  "menu.go.forward": "往前",
   "@menu.go.forward": {
     "sourceHash": "f1c65e1"
   },
-  "menu.go.parentFolder": "Parent folder",
+  "menu.go.parentFolder": "上層資料夾",
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },
-  "menu.go.home": "Home",
+  "menu.go.home": "個人專屬",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "Go to path…",
+  "menu.go.goToPath": "前往路徑…",
   "@menu.go.goToPath": {
     "sourceHash": "936edc5"
   },
-  "menu.go.goToLatestDownload": "Go to latest download",
+  "menu.go.goToLatestDownload": "前往最新下載項目",
   "@menu.go.goToLatestDownload": {
     "sourceHash": "492d0b6"
   },
-  "menu.go.addToFavorites": "Add to favorites",
+  "menu.go.addToFavorites": "加入喜好項目",
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
   },
-  "menu.tab.newTab": "New tab",
+  "menu.tab.newTab": "新增分頁",
   "@menu.tab.newTab": {
     "sourceHash": "1e08fda"
   },
-  "menu.tab.closeTab": "Close tab",
+  "menu.tab.closeTab": "關閉分頁",
   "@menu.tab.closeTab": {
     "sourceHash": "50a3f95"
   },
-  "menu.tab.reopenClosedTab": "Reopen closed tab",
+  "menu.tab.reopenClosedTab": "重新開啟已關閉的分頁",
   "@menu.tab.reopenClosedTab": {
     "sourceHash": "5ca5397"
   },
-  "menu.tab.nextTab": "Next tab",
+  "menu.tab.nextTab": "下一個分頁",
   "@menu.tab.nextTab": {
     "sourceHash": "1ef9522"
   },
-  "menu.tab.previousTab": "Previous tab",
+  "menu.tab.previousTab": "上一個分頁",
   "@menu.tab.previousTab": {
     "sourceHash": "c88d5e7"
   },
-  "menu.tab.pinTab": "Pin tab",
+  "menu.tab.pinTab": "釘選分頁",
   "@menu.tab.pinTab": {
     "sourceHash": "bf5083a"
   },
-  "menu.tab.unpinTab": "Unpin tab",
+  "menu.tab.unpinTab": "取消釘選分頁",
   "@menu.tab.unpinTab": {
     "sourceHash": "20553dd"
   },
-  "menu.tab.closeOtherTabs": "Close other tabs",
+  "menu.tab.closeOtherTabs": "關閉其他分頁",
   "@menu.tab.closeOtherTabs": {
     "sourceHash": "0ddc2c5"
   },
-  "menu.window.minimize": "Minimize",
+  "menu.window.minimize": "縮到最小",
   "@menu.window.minimize": {
     "sourceHash": "d72e311"
   },
-  "menu.window.zoom": "Zoom",
+  "menu.window.zoom": "縮放",
   "@menu.window.zoom": {
     "sourceHash": "509c517"
   },
-  "menu.help.keyboardShortcuts": "Keyboard shortcuts",
+  "menu.help.keyboardShortcuts": "鍵盤快速鍵",
   "@menu.help.keyboardShortcuts": {
     "sourceHash": "e9bef0b"
   },
-  "menu.help.whatsNew": "What's new",
+  "menu.help.whatsNew": "新功能",
   "@menu.help.whatsNew": {
     "sourceHash": "135e912"
   },
-  "menu.help.sendFeedback": "Send feedback…",
+  "menu.help.sendFeedback": "傳送意見反應…",
   "@menu.help.sendFeedback": {
     "sourceHash": "60e1072"
   },
-  "menu.help.sendErrorReport": "Send error report…",
+  "menu.help.sendErrorReport": "傳送錯誤報告…",
   "@menu.help.sendErrorReport": {
     "sourceHash": "063c94e"
   },
-  "menu.context.edit": "Edit",
+  "menu.context.edit": "編輯",
   "@menu.context.edit": {
     "sourceHash": "464c4ff"
   },
-  "menu.context.toggleSelection": "Toggle selection",
+  "menu.context.toggleSelection": "切換選取",
   "@menu.context.toggleSelection": {
     "sourceHash": "6cb5515"
   },
-  "menu.context.copyNamed": "Copy \"{name}\"",
+  "menu.context.copyNamed": "複製「{name}」",
   "@menu.context.copyNamed": {
     "sourceHash": "e2cc661"
   },
-  "menu.context.addToFavorites": "Add to favorites",
+  "menu.context.addToFavorites": "加入喜好項目",
   "@menu.context.addToFavorites": {
     "sourceHash": "7f3c078"
   },
-  "menu.context.makeAvailableOffline": "Make available offline",
+  "menu.context.makeAvailableOffline": "設為離線可用",
   "@menu.context.makeAvailableOffline": {
     "sourceHash": "b75c09f"
   },
-  "menu.context.removeDownload": "Remove download",
+  "menu.context.removeDownload": "移除下載項目",
   "@menu.context.removeDownload": {
     "sourceHash": "5dfc369"
   },
-  "menu.context.openWith": "Open with",
+  "menu.context.openWith": "開啟檔案的應用程式",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"
   },
-  "menu.context.openWithDefault": "{app} (default)",
+  "menu.context.openWithDefault": "{app}（預設）",
   "@menu.context.openWithDefault": {
     "sourceHash": "32a7cca"
   },
-  "menu.context.openWithOther": "Other…",
+  "menu.context.openWithOther": "其他…",
   "@menu.context.openWithOther": {
     "sourceHash": "1e37529"
   },
-  "menu.tag.red": "Red",
+  "menu.tag.red": "紅色",
   "@menu.tag.red": {
     "sourceHash": "ba19e9c"
   },
-  "menu.tag.orange": "Orange",
+  "menu.tag.orange": "橙色",
   "@menu.tag.orange": {
     "sourceHash": "78e7771"
   },
-  "menu.tag.yellow": "Yellow",
+  "menu.tag.yellow": "黃色",
   "@menu.tag.yellow": {
     "sourceHash": "19dd83f"
   },
-  "menu.tag.green": "Green",
+  "menu.tag.green": "綠色",
   "@menu.tag.green": {
     "sourceHash": "d486dfb"
   },
-  "menu.tag.blue": "Blue",
+  "menu.tag.blue": "藍色",
   "@menu.tag.blue": {
     "sourceHash": "ec7d56a"
   },
-  "menu.tag.purple": "Purple",
+  "menu.tag.purple": "紫色",
   "@menu.tag.purple": {
     "sourceHash": "7d465fb"
   },
-  "menu.tag.gray": "Gray",
+  "menu.tag.gray": "灰色",
   "@menu.tag.gray": {
     "sourceHash": "0d5adda"
   },
-  "menu.mediaIndex.addFolder": "Add to indexed folders",
+  "menu.mediaIndex.addFolder": "加入索引資料夾",
   "@menu.mediaIndex.addFolder": {
     "sourceHash": "c0a87cd"
   },
-  "menu.mediaIndex.addFolderExcluded": "Add to indexed folders (excluded)",
+  "menu.mediaIndex.addFolderExcluded": "加入索引資料夾（已排除）",
   "@menu.mediaIndex.addFolderExcluded": {
     "sourceHash": "fc7c7ce"
   },
-  "menu.mediaIndex.coveredByParent": "Indexed through a parent folder",
+  "menu.mediaIndex.coveredByParent": "已透過上層資料夾建立索引",
   "@menu.mediaIndex.coveredByParent": {
     "sourceHash": "9dffdcd"
   },
-  "menu.mediaIndex.removeFolder": "Remove from indexed folders",
+  "menu.mediaIndex.removeFolder": "從索引資料夾中移除",
   "@menu.mediaIndex.removeFolder": {
     "sourceHash": "7079859"
   },
-  "menu.mediaIndex.excludeFolder": "Don't index images in this folder",
+  "menu.mediaIndex.excludeFolder": "不要為這個資料夾中的影像建立索引",
   "@menu.mediaIndex.excludeFolder": {
     "sourceHash": "811f28c"
   },
-  "menu.mediaIndex.includeFolder": "Index images here again",
+  "menu.mediaIndex.includeFolder": "重新為這裡的影像建立索引",
   "@menu.mediaIndex.includeFolder": {
     "sourceHash": "0a8a3a0"
   },
-  "menu.breadcrumb.copyPath": "Copy path",
+  "menu.breadcrumb.copyPath": "複製路徑",
   "@menu.breadcrumb.copyPath": {
     "sourceHash": "720ff41"
   },
-  "menu.volume.eject": "Eject ({name})",
+  "menu.volume.eject": "退出（{name}）",
   "@menu.volume.eject": {
     "sourceHash": "913d6ea"
   },
-  "menu.volume.ejectBusy": "Eject ({name}) (busy)",
+  "menu.volume.ejectBusy": "退出（{name}）（使用中）",
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.renameFavorite": "Rename",
+  "menu.volume.renameFavorite": "重新命名",
   "@menu.volume.renameFavorite": {
     "sourceHash": "3064d79"
   },
-  "menu.volume.removeFavorite": "Remove",
+  "menu.volume.removeFavorite": "移除",
   "@menu.volume.removeFavorite": {
     "sourceHash": "c3812fc"
   },
-  "menu.network.disconnect": "Disconnect",
+  "menu.network.disconnect": "中斷連線",
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"
   },
-  "menu.network.forgetServer": "Forget server",
+  "menu.network.forgetServer": "忘記伺服器",
   "@menu.network.forgetServer": {
     "sourceHash": "e43c85d"
   },
-  "menu.network.forgetSavedPassword": "Forget saved password",
+  "menu.network.forgetSavedPassword": "清除已儲存的密碼",
   "@menu.network.forgetSavedPassword": {
     "sourceHash": "ed68566"
   },
-  "menu.viewer.close": "Close",
+  "menu.viewer.close": "關閉",
   "@menu.viewer.close": {
     "sourceHash": "7d9eb7a"
   },
-  "menu.viewer.wordWrap": "Word wrap",
+  "menu.viewer.wordWrap": "自動換行",
   "@menu.viewer.wordWrap": {
     "sourceHash": "9e210f3"
   }

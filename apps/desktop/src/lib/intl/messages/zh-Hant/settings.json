@@ -1151,7 +1151,7 @@
   "@settings.updates.errorReports.label": {
     "sourceHash": "471575d"
   },
-  "settings.updates.errorReports.description": "出問題時傳送一小段記錄摘錄給開發者。有助於更快修正 bug。預設為關閉。你隨時可以從「說明」選單手動傳送報告。",
+  "settings.updates.errorReports.description": "出問題時傳送一小段記錄摘錄給開發者。有助於更快修正 bug。預設為關閉。你隨時可以從「輔助說明」選單手動傳送報告。",
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
   },
