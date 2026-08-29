@@ -10,9 +10,9 @@ The living term glossary for translating Cmdr into Traditional Chinese: one entr
   pan-Traditional consensus form over Apple's zh-TW one, deliberately.
 - **This folder is the language home.** Capture new term decisions here, other findings as sibling files.
 
-Source abbreviations: **AP-TW** / **AP-HK** / **AP-CN** = macOS Finder + AppKit + SystemSettings in that locale;
-**MS** = Microsoft zh-Hant terminology TBX; **NAU** / **DOL** / **THU** = GNOME Nautilus / KDE Dolphin / Xfce Thunar
-(zh-TW); **TC** / **DC** = Total Commander / Double Commander (zh-TW). All evidence verified 2026-08-29.
+Source abbreviations: **AP-TW** / **AP-HK** / **AP-CN** = macOS Finder + AppKit + SystemSettings in that locale; **MS**
+= Microsoft zh-Hant terminology TBX; **NAU** / **DOL** / **THU** = GNOME Nautilus / KDE Dolphin / Xfce Thunar (zh-TW);
+**TC** / **DC** = Total Commander / Double Commander (zh-TW). All evidence verified 2026-08-29.
 
 Format, the confidence scale, and the full process: `docs/guides/i18n-translation.md`.
 
@@ -31,7 +31,8 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 
 ### Core file-manager nouns
 
-- **file** · `檔案` · AP-TW (414), AP-HK (183), MS · `high`. ❗ Simplified 文件 = file, but Traditional 文件 = *document*.
+- **file** · `檔案` · AP-TW (414), AP-HK (183), MS · `high`. ❗ Simplified 文件 = file, but Traditional 文件 =
+  _document_.
 - **document** · `文件` · AP-TW/HK (`Documents` → 文件), MS · `high`
 - **directory** · `目錄` · MS, TC (13), DC (13), NAU (20), DOL (25), THU (34); Apple barely uses it · `high`. Prefer
   `資料夾` in user-facing copy; keep `目錄` where the English deliberately says "directory" (a technical/path sense).
@@ -62,7 +63,7 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 - **delete** · `刪除` · AP-TW = AP-HK, MS · `confirmed`
 - **rename** · `重新命名` · AP-TW = AP-HK = AP-CN, MS, all file managers · `confirmed`
 - **duplicate** · `製作副本` · AP-HK · `high`. **Deliberately the HK form**: AP-TW's `複製` is the word we already use
-  for *copy*, and Cmdr ships both commands (`commands.fileDuplicate.*`). DOL's `在此建立複本` and NAU's `再製` are the
+  for _copy_, and Cmdr ships both commands (`commands.fileDuplicate.*`). DOL's `在此建立複本` and NAU's `再製` are the
   alternatives we passed over.
 - **Trash (noun)** · `垃圾桶` · AP-TW = AP-HK (`Trash` and `Bin` both) · `confirmed`. AP-CN says 废纸篓; a real term
   split, not just character shape.
@@ -101,21 +102,21 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 ### UI chrome
 
 - **pane (the two-pane sense)** · `窗格` · MS; also what Cmdr's `zh` catalog uses · `high`. ❗ Apple has no word for it
-  (its `設定面板` is a *settings* pane). TC calls a pane `視窗` (collides with window) and DC calls it `面板` (collides
+  (its `設定面板` is a _settings_ pane). TC calls a pane `視窗` (collides with window) and DC calls it `面板` (collides
   with a settings panel), so `窗格` is the only unambiguous choice. See § Two-pane vocabulary.
 - **window** · `視窗` · AP-TW = AP-HK, MS, universal · `confirmed`
 - **sidebar** · `側邊欄` · AP-TW = AP-HK, NAU, MS · `confirmed`
 - **toolbar** · `工具列` · AP-TW = AP-HK, MS, DOL, THU, DC · `confirmed`
 - **status bar** · `狀態列` · AP-TW = AP-HK, MS, DOL, THU · `confirmed`
-- **column** · `直欄` · AP-TW = AP-HK (`Columns` → 直欄, `Column View` → 直欄顯示方式) · `high`. MS says `資料行`;
-  Apple wins.
+- **column** · `直欄` · AP-TW = AP-HK (`Columns` → 直欄, `Column View` → 直欄顯示方式) · `high`. MS says `資料行`; Apple
+  wins.
 - **sort** · `排序` · AP-TW, MS, all five file managers; AP-HK says 排列 · `high`
 - **view (menu noun / view mode)** · `顯示方式` · AP-TW = AP-HK (`View` → 顯示方式) · `high`
 - **view (verb, "to look at")** · `檢視` · AP (`to View %@` → 檢視), MS, TC (`View` menu → 檢視) · `high`. ❗ Don't swap
   the two: see `style.md` § Notes.
 - **preview** · `預覽` · AP-TW = AP-HK, MS, DOL, THU · `confirmed`
-- **Quick Look** · `快速查看` · AP-TW = AP-HK = AP-CN · `confirmed`. Translated, not kept English (which is why it's
-  not on the do-not-translate list).
+- **Quick Look** · `快速查看` · AP-TW = AP-HK = AP-CN · `confirmed`. Translated, not kept English (which is why it's not
+  on the do-not-translate list).
 - **menu** · `選單` · AP-HK, TC, DOL · `high`. MS's `功能表` is Windows house style; Cmdr is a Mac app.
 - **dialog** · `對話方塊` · MS · `high`. Not in Apple's bundles.
 - **settings** · `設定` · AP-TW (160), AP-HK (160), MS · `confirmed`. `設置` = 0 in both Apple corpora.
@@ -129,8 +130,8 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
   taken by the Shortcuts app.
 - **search** · `搜尋` · AP-TW (82), AP-HK (82), MS · `confirmed`. `搜索` is the Simplified form (AP-CN 69).
 - **filter** · `篩選` · MS, DC (`Quick Filter` → 快速篩選) · `high`. NAU/DOL say `過濾`; not in Apple's bundles.
-- **index / indexing** · `索引` (noun) / `建立索引` (verb) · AP (`Updating tag index` → 更新標籤索引,
-  `Indexed` → 已製作索引), MS · `high`
+- **index / indexing** · `索引` (noun) / `建立索引` (verb) · AP (`Updating tag index` → 更新標籤索引, `Indexed`
+  → 已製作索引), MS · `high`
 - **tag** · `標籤` · AP-TW = AP-HK (Finder `Tags` → 標籤) · `high`. ❗ Reserved for tags only; tab is `分頁`.
 - **bookmark** · `書籤` · AP (`NSBookmarksTemplate`), NAU, DOL, THU · `confirmed`
 - **favorite** · `喜好項目` · AP-TW = AP-HK (SystemSettings `FAVORITE_LABEL`; also `喜好的伺服器：`) · `high`. MS says
@@ -144,7 +145,7 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 - **retry** · `再試一次` · AP-TW; AP-HK says 再試, MS says 重試 · `high`
 - **skip** · `略過` · AP-TW = AP-HK, NAU, THU, DC · `confirmed`. MS says `跳過`; the zh-Hant sources are unanimous on
   `略過`.
-- **pause / resume** · `暫停` / `繼續` · AP-TW = AP-HK (`Resume` → 繼續), MS (pause) · `high`. ❗ MS renders *resume* as
+- **pause / resume** · `暫停` / `繼續` · AP-TW = AP-HK (`Resume` → 繼續), MS (pause) · `high`. ❗ MS renders _resume_ as
   `履歷表` (the CV sense) — do not use MS here.
 - **overwrite** · `覆寫` · AP-TW = AP-HK (`Overwrite at Destination` → 覆寫目標), MS · `high`. TC/DC say `覆蓋`.
 - **replace** · `取代` · AP-TW = AP-HK, NAU, THU, MS · `confirmed`
@@ -156,8 +157,8 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
   use it.
 - **copying… (in progress)** · `正在複製…` · AP-HK (`正在將「^1」複製到「^2」`); AP-TW uses 拷貝 per the override ·
   `high`
-- **in progress (the pattern)** · `正在` + verb · AP-HK is consistently `正在…`; AP-TW mixes a `…中` suffix
-  (`載入中⋯`) · `high`. Cmdr uses `正在…` everywhere, matching its `zh` catalog.
+- **in progress (the pattern)** · `正在` + verb · AP-HK is consistently `正在…`; AP-TW mixes a `…中` suffix (`載入中⋯`)
+  · `high`. Cmdr uses `正在…` everywhere, matching its `zh` catalog.
 - **done / finished** · `完成` · AP-TW = AP-HK = AP-CN, MS · `confirmed`
 - **failed** · ❌ don't write `失敗` in a sentence; rewrite as `無法` + verb · AP-TW/HK do this systematically
   (`Failed to save…` → `無法儲存…`) · `high`. See `style.md` § Voice and tone.
@@ -178,8 +179,8 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
   ruling · `tentative`. Not attested as a standalone noun in any source; the pile only has the adjective and
   `共享與權限：` / `分享與權限：`. Revisit if a reviewer appears.
 - **network** · `網路` · AP-TW (33), MS, TC; AP-HK says 網絡 (15) · `high`
-- **connect** · `連線` (noun/label) / `連接` (verb in a sentence) · AP-TW = AP-HK (`Connect` → 連線;
-  `連接伺服器⋯`), MS · `high`
+- **connect** · `連線` (noun/label) / `連接` (verb in a sentence) · AP-TW = AP-HK (`Connect` → 連線; `連接伺服器⋯`), MS
+  · `high`
 - **disconnect** · `中斷連線` · AP-TW = AP-HK, MS · `confirmed`
 - **remote** · `遠端` · AP-TW, MS, THU; AP-HK says 遙距 · `high`
 - **local** · `本機` · AP-TW = AP-HK, MS, NAU · `confirmed`
@@ -190,8 +191,8 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 - **size** · `大小` · AP-TW = AP-HK = AP-CN, MS · `confirmed`
 - **modified date** · `修改日期` · AP-TW = AP-HK = AP-CN · `confirmed`
 - **created date** · `製作日期` · AP-TW = AP-HK · `high`. AP-CN says 创建日期.
-- **USB device** · `USB 裝置` · **composed**: `USB` is unattested in the Traditional macOS bundles and in MS, and
-  `裝置` = device is standard · `tentative`
+- **USB device** · `USB 裝置` · **composed**: `USB` is unattested in the Traditional macOS bundles and in MS, and `裝置`
+  = device is standard · `tentative`
 - **eject / device removal** · see `退出` above.
 
 ### Two-pane vocabulary (Total Commander + Double Commander, the orthodox lineage)
@@ -201,8 +202,8 @@ contamination** (`重復分頁`, `刷新`, `在新分頁中打開`), so weight T
 
 - **pane** · `窗格` · see the entry above; ❗ TC says `視窗` and DC says `面板`, and **both collide** with terms we
   already use (window / settings panel). This is the one two-pane term where we don't take the orthodox pair's word.
-- **left / right pane** · `左窗格` / `右窗格` · composed on `窗格` from TC's `左邊視窗` / `右邊視窗` and DC's
-  `左面板` / `右面板` · `high`
+- **left / right pane** · `左窗格` / `右窗格` · composed on `窗格` from TC's `左邊視窗` / `右邊視窗` and DC's `左面板` /
+  `右面板` · `high`
 - **active / source pane** · `作用中窗格` / `來源窗格` · TC (`來源視窗`, `目前視窗`), DC (`來源面板`) · `high`
 - **target pane** · `目標窗格` · TC (`目標視窗`), DC (`目標面板`) · `high`
 - **swap panes** · `交換窗格` · TC (`左右視窗交換`), DC (`交換面板`) · `high`
@@ -218,15 +219,15 @@ contamination** (`重復分頁`, `刷新`, `在新分頁中打開`), so weight T
 - **synchronize directories** · `同步資料夾` · TC, DC · `high`
 - **multi-rename** · `多檔重新命名` · TC; DC says 多重命名工具 · `high`
 - **attributes** · `屬性` · DC · `high`
-- TC menu roots, useful for section names: `檔案操作`, `設定`, `網路`, `剪貼簿`, `瀏覽`, `工具`, `檢視`, `排序`,
-  `標記`, `說明`, `使用者`.
+- TC menu roots, useful for section names: `檔案操作`, `設定`, `網路`, `剪貼簿`, `瀏覽`, `工具`, `檢視`, `排序`, `標記`,
+  `說明`, `使用者`.
 
 ### macOS feature and System Settings names
 
 Read straight off the shipped OS by English-key match (`Localizable.loctable` under `System Settings.app` and
 `/System/Library/ExtensionKit/Extensions`, recipe in `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this
-machine"). All **`confirmed`** — this is what the user's own Mac says (verified on macOS 26.6.2, build 25G83,
-key-match, 2026-08-29).
+machine"). All **`confirmed`** — this is what the user's own Mac says (verified on macOS 26.6.2, build 25G83, key-match,
+2026-08-29).
 
 - **System Settings** · `系統設定` · TW = HK. Quote it in running text: `「系統設定」`.
 - **Full Disk Access** · `完全取用磁碟` · TW; **HK says 完整磁碟取用** — Taiwan default applies.
@@ -242,8 +243,8 @@ key-match, 2026-08-29).
 - **Text size** · `文字大小` · TW = HK
 - **Login Items** · `登入項目` · TW = HK
 - **Language & Region** · `語言與地區` · TW = HK
-- **Desktop & Dock** · `桌面與 Dock` · TW = HK (Apple writes it tight, `桌面與Dock`; we space the Latin per
-  `style.md` § Spacing)
+- **Desktop & Dock** · `桌面與 Dock` · TW = HK (Apple writes it tight, `桌面與Dock`; we space the Latin per `style.md` §
+  Spacing)
 - **Downloads (the folder)** · `下載項目` · AP-TW (12), AP-HK (11) · `confirmed`
 - **Documents (the folder)** · `文件` · AP-TW/HK · `confirmed`
 
@@ -252,17 +253,17 @@ key-match, 2026-08-29).
 - **user** · `使用者` · AP-TW (36), TC (51) · `high`. AP-HK avoids the noun entirely (0 for 使用者, 用戶, and 用家),
   phrasing in second person instead; when a sentence reads naturally with `你`, prefer that over the noun.
 - **quit (the app)** · `結束` · AP-TW = AP-HK, by key match (`"Quit"` → `結束`) · `confirmed`. ❗ Not `退出`, which is
-  taken by *eject*.
+  taken by _eject_.
 - **command** · `指令` · TC + the file managers (78) and MS (66); Apple has none · `high`. Used for both the command
-  palette's commands and a terminal command. **`命令列`** stays the fixed compound for *command line* (TC-attested).
-- **list (generic UI list)** · `列表` · AP-TW (53), AP-HK (58) · `high`. MS and TC prefer `清單`, and `檔案清單`
-  stays the orthodox two-pane term for *file list*; Apple wins for a plain "list".
+  palette's commands and a terminal command. **`命令列`** stays the fixed compound for _command line_ (TC-attested).
+- **list (generic UI list)** · `列表` · AP-TW (53), AP-HK (58) · `high`. MS and TC prefer `清單`, and `檔案清單` stays
+  the orthodox two-pane term for _file list_; Apple wins for a plain "list".
 - **clipboard** · `剪貼板` · AP-TW (8), AP-HK (8) · `high`. TC says `剪貼簿`, which is the commoner word in Taiwan
   generally, but Apple's two Traditional locales agree and Cmdr is a Mac app.
 - **feedback** · `意見反應` · MS (22) · `high`. The standard Taiwanese product term; `回饋` means feedback in the
   control-loop sense. Not in Apple's bundles.
 - **Terminal (the app)** · `終端機` · TC + file managers (58), MS (86) · `high`
-- **process (a running OS process)** · `程序` · AP-TW (2), AP-HK (2), MS (109) · `high`. No collision with *program*,
+- **process (a running OS process)** · `程序` · AP-TW (2), AP-HK (2), MS (109) · `high`. No collision with _program_,
   which is `程式`.
 - **email address** · `電子郵件地址` · MS (`電子郵件` 129, `地址` 47) · `high`. ❗ `位址` is the network-address sense
   (an IP or URL), not an email one.

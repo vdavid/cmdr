@@ -63,8 +63,8 @@ naturally and isn't cryptically clipped.
 
 **RESOLVED: ship both scripts as separate catalogs.** This one is Simplified (`zh`); Traditional is `zh-Hant`, written
 to a pan-Traditional consensus that serves Taiwan, Hong Kong, and Macau from one catalog. Recorded in
-`../script-decisions.md`; the Traditional terminology rulings live in `../zh-Hant/style.md` and `../zh-Hant/glossary.md`,
-not here. The structure and evidence below stand.
+`../script-decisions.md`; the Traditional terminology rulings live in `../zh-Hant/style.md` and
+`../zh-Hant/glossary.md`, not here. The structure and evidence below stand.
 
 - **Two written standards, not mutually substitutable.** Simplified Chinese (`zh-Hans`) is the standard in Mainland
   China and Singapore; Traditional Chinese (`zh-Hant`) is standard in Taiwan, Hong Kong, and Macau. They differ in
@@ -79,9 +79,9 @@ not here. The structure and evidence below stand.
 - **Tag convention:** use script subtags `zh-Hans` / `zh-Hant`, not region tags, as the base catalogs (region only if a
   zh-HK or zh-SG override is later needed). This matches Cmdr's base-preferred BCP-47 convention and the reference
   pile's own sibling-folder layout (`zh-Hans`, `zh-Hant`, `zh-CN`, `zh-TW`, `zh-HK`).
-- **Shipped shape:** `zh` (Simplified) and `zh-Hant` (Traditional) both ship, as independent full translations.
-  `zh-HK` stays a later optional overlay of `zh-Hant`, wanted only if Hong Kong readers ask for the handful of terms
-  `zh-Hant` decided the Taiwan way.
+- **Shipped shape:** `zh` (Simplified) and `zh-Hant` (Traditional) both ship, as independent full translations. `zh-HK`
+  stays a later optional overlay of `zh-Hant`, wanted only if Hong Kong readers ask for the handful of terms `zh-Hant`
+  decided the Taiwan way.
 - **Don't auto-convert one into the other.** Simplified↔Traditional is NOT a safe character-by-character mapping:
   one-to-many mappings (e.g. 干/乾/幹 all simplify to 干) and divergent term choices mean a naive conversion produces
   wrong words. Each variant is its own translation pass, cross-checked against that variant's macOS source.
@@ -91,8 +91,8 @@ not here. The structure and evidence below stand.
 - Chinese has mature, universally-understood native IT vocabulary, so prefer the established Chinese term over an
   English loan or a transliteration. macOS is the highest-authority source (what a user literally sees in Finder); use
   it to break ties, with Microsoft and GNOME as cross-checks.
-- Simplified and Traditional differ in TERMS, not just character shapes (Trash is `废纸篓` here but `垃圾桶` there;
-  save is `保存` vs `儲存`; search is `搜索` vs `搜尋`; settings is `设置` vs `設定`). Keep this catalog self-consistent
+- Simplified and Traditional differ in TERMS, not just character shapes (Trash is `废纸篓` here but `垃圾桶` there; save
+  is `保存` vs `儲存`; search is `搜索` vs `搜尋`; settings is `设置` vs `設定`). Keep this catalog self-consistent
   against its own zh-CN macOS source; the Traditional side of every such pair is `zh-Hant`'s call, recorded in
   `../zh-Hant/glossary.md`.
 
@@ -190,8 +190,8 @@ inflection.
   brand words (Cmdr, macOS) as-is.
 - **Each script is its own pass.** Never machine-convert Simplified↔Traditional (one-to-many mappings + divergent
   terms); cross-check each variant against its own macOS source.
-- **Quotation marks:** this catalog quotes filenames with `“…”`, following macOS zh-CN. Traditional uses corner
-  brackets instead, which is one more reason a converted catalog reads wrong; its rule is in `../zh-Hant/style.md`.
+- **Quotation marks:** this catalog quotes filenames with `“…”`, following macOS zh-CN. Traditional uses corner brackets
+  instead, which is one more reason a converted catalog reads wrong; its rule is in `../zh-Hant/style.md`.
 
 ### ICU mechanics (catalog-level, easy to miss)
 
