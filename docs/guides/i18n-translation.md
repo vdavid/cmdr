@@ -187,11 +187,11 @@ deliberately identical, sourced like any other term decision. Example, in `messa
 
 ```jsonc
 {
-    "errors.provider.dropbox.displayName": "Dropbox",
-    "@errors.provider.dropbox.displayName": {
-        "sourceHash": "1a2b3c4",
-        "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list).",
-    },
+  "errors.provider.dropbox.displayName": "Dropbox",
+  "@errors.provider.dropbox.displayName": {
+    "sourceHash": "1a2b3c4",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list).",
+  },
 }
 ```
 

@@ -100,7 +100,7 @@ describe('every overlay key genuinely forks and is anchored to en', () => {
       ['en-AU', au],
     ] as const) {
       for (const key of Object.keys(cat.messages)) {
-        const stamped = cat.metadata[key]?.sourceHash
+        const stamped = (cat.metadata[key] as { sourceHash?: string } | undefined)?.sourceHash
         const expected = sourceHash(en.messages[key])
         if (stamped !== expected) wrong.push(`${tag}: ${key} (stamped ${String(stamped)}, want ${expected})`)
       }
@@ -184,7 +184,10 @@ describe('the rulings the catalogs are supposed to encode', () => {
       expect(cat.messages['licensing.dialog.labelKey'], tag).toBe('Licence key')
       expect(cat.messages['menu.app.licenseEnter'], tag).toBe('Enter licence key…')
       const nouns = Object.entries(cat.messages).filter(([, v]) => /\blicens(e|es)\b/i.test(v))
-      expect(nouns.map(([k]) => k), tag).toEqual([])
+      expect(
+        nouns.map(([k]) => k),
+        tag,
+      ).toEqual([])
     }
   })
 })

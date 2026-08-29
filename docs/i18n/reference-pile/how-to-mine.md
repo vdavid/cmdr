@@ -15,12 +15,12 @@ for them before trusting a source.
 
 1. **The base tag can be incomplete, or the WRONG variant — always look for siblings.** Run `ls -d <tag>*` and read any
    `_see-also.txt`, not just `ls <tag>/`. A language's evidence is often split across region/script siblings:
-    - **pt**: bare `pt/` is EUROPEAN (`Language: pt`, and an AppKit-only macOS with no Finder). The complete Brazilian
-      set is `pt-BR/`. Cmdr's `pt` ships Brazilian, so mining bare `pt/` is a variant trap — mine `pt-BR/`.
-    - **zh**: there is no bare `zh/` from the sources; Simplified is split across `zh-Hans/` (Microsoft) + `zh-CN/`
-      (macOS, file managers), Traditional across `zh-Hant/` + `zh-TW/`. A composed `zh/` base (symlinks to the
-      Simplified sources) exists for convenience — see `inventory.md` § Composed base folders.
-    - **bn**: bare `bn/` has Microsoft terminology + the file managers; the Microsoft style guide is under `bn-IN/`.
+   - **pt**: bare `pt/` is EUROPEAN (`Language: pt`, and an AppKit-only macOS with no Finder). The complete Brazilian
+     set is `pt-BR/`. Cmdr's `pt` ships Brazilian, so mining bare `pt/` is a variant trap — mine `pt-BR/`.
+   - **zh**: there is no bare `zh/` from the sources; Simplified is split across `zh-Hans/` (Microsoft) + `zh-CN/`
+     (macOS, file managers), Traditional across `zh-Hant/` + `zh-TW/`. A composed `zh/` base (symlinks to the Simplified
+     sources) exists for convenience — see `inventory.md` § Composed base folders.
+   - **bn**: bare `bn/` has Microsoft terminology + the file managers; the Microsoft style guide is under `bn-IN/`.
 2. **No macOS tier for every language.** Apple doesn't localize into some languages (e.g. Bengali: `bn/macOS/` doesn't
    exist). When `<tag>/macOS/` is absent, the Tier-1 "macOS wins" tiebreak is gone — Microsoft terminology becomes the
    anchor, the file managers carry the file-manager domain, and more terms honestly stay `tentative`. Don't read the
