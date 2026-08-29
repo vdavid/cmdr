@@ -63,11 +63,11 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
-  "queue.row.dismiss": "忽略",
+  "queue.row.dismiss": "關閉",
   "@queue.row.dismiss": {
     "sourceHash": "48845bf"
   },
-  "queue.row.dismissAria": "忽略這項操作",
+  "queue.row.dismissAria": "關閉這項操作",
   "@queue.row.dismissAria": {
     "sourceHash": "ff1b528"
   },
@@ -91,7 +91,7 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
-  "queue.toolbar.dismissAll": "全部忽略",
+  "queue.toolbar.dismissAll": "全部關閉",
   "@queue.toolbar.dismissAll": {
     "sourceHash": "97fac9e"
   },

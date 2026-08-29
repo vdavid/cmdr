@@ -7,7 +7,7 @@
   "@licensing.acknowledgements.srTitle": {
     "sourceHash": "c9015d5"
   },
-  "licensing.acknowledgements.note": "看看這份清單有多長！我由衷感謝這些 Cmdr 賴以打造的函式庫，以及它們的作者和維護者付出的心力。",
+  "licensing.acknowledgements.note": "看看這份列表有多長！我由衷感謝這些 Cmdr 賴以打造的函式庫，以及它們的作者和維護者付出的心力。",
   "@licensing.acknowledgements.note": {
     "sourceHash": "7d0542d"
   },
@@ -28,11 +28,11 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.jumpToRust": "跳到 Rust crates",
+  "licensing.acknowledgements.jumpToRust": "跳至 Rust crates",
   "@licensing.acknowledgements.jumpToRust": {
     "sourceHash": "60d4a21"
   },
-  "licensing.acknowledgements.jumpToNpm": "跳到 npm 套件",
+  "licensing.acknowledgements.jumpToNpm": "跳至 npm 套件",
   "@licensing.acknowledgements.jumpToNpm": {
     "sourceHash": "9f55ebb"
   },
@@ -40,7 +40,7 @@
   "@licensing.acknowledgements.fullTexts": {
     "sourceHash": "1760aeb"
   },
-  "licensing.acknowledgements.loading": "正在載入清單…",
+  "licensing.acknowledgements.loading": "正在載入列表…",
   "@licensing.acknowledgements.loading": {
     "sourceHash": "0b6efaa"
   },

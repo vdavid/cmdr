@@ -1,9 +1,9 @@
 {
-  "errors.listing.interrupted.title": "作業被中斷",
+  "errors.listing.interrupted.title": "操作被中斷",
   "@errors.listing.interrupted.title": {
     "sourceHash": "132d124"
   },
-  "errors.listing.interrupted.explanation": "有一項系統作業還沒完成就被中斷了。這幾乎都是偶發的，通常是某個信號或背景程序一時擋了路。",
+  "errors.listing.interrupted.explanation": "有一項系統操作還沒完成就被中斷了。這幾乎都是偶發的，通常是某個信號或背景程序一時擋了路。",
   "@errors.listing.interrupted.explanation": {
     "sourceHash": "7f88a37"
   },
@@ -147,7 +147,7 @@
   "@errors.listing.cancelledErrno.title": {
     "sourceHash": "13ca2ee"
   },
-  "errors.listing.cancelledErrno.explanation": "這項作業還沒完成就被取消了。",
+  "errors.listing.cancelledErrno.explanation": "這項操作還沒完成就被取消了。",
   "@errors.listing.cancelledErrno.explanation": {
     "sourceHash": "da19c15"
   },
@@ -203,7 +203,7 @@
   "@errors.listing.alreadyExistsErrno.suggestion": {
     "sourceHash": "8761a72"
   },
-  "errors.listing.crossDeviceOperation.title": "跨裝置作業",
+  "errors.listing.crossDeviceOperation.title": "跨裝置操作",
   "@errors.listing.crossDeviceOperation.title": {
     "sourceHash": "a50dc58"
   },
@@ -243,7 +243,7 @@
   "@errors.listing.diskFullErrno.title": {
     "sourceHash": "293beb8"
   },
-  "errors.listing.diskFullErrno.explanation": "這個卷宗上的可用空間不夠，沒辦法完成這項作業。",
+  "errors.listing.diskFullErrno.explanation": "這個卷宗上的可用空間不夠，沒辦法完成這項操作。",
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "30d0741"
   },
@@ -267,11 +267,11 @@
   "@errors.listing.notSupportedErrno.title": {
     "sourceHash": "74e8477"
   },
-  "errors.listing.notSupportedErrno.explanation": "這個檔案系統不支援這項作業。不同的檔案系統（例如 FAT32、NTFS 或網路共享資料夾）支援的功能不一樣，而這個不支援 Cmdr 想做的事。",
+  "errors.listing.notSupportedErrno.explanation": "這個檔案系統不支援這項操作。不同的檔案系統（例如 FAT32、NTFS 或網路共享資料夾）支援的功能不一樣，而這個不支援 Cmdr 想做的事。",
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "198aa15"
   },
-  "errors.listing.notSupportedErrno.suggestion": "換個做法試試，或用 Finder 來完成這項作業。如果你在用外接磁碟機，它可能格式化成了有限制的檔案系統（例如 FAT32 存不了大於 4 GB 的檔案）。",
+  "errors.listing.notSupportedErrno.suggestion": "換個做法試試，或用 Finder 來完成這項操作。如果你在用外接磁碟機，它可能格式化成了有限制的檔案系統（例如 FAT32 存不了大於 4 GB 的檔案）。",
   "@errors.listing.notSupportedErrno.suggestion": {
     "sourceHash": "169d5cf"
   },
@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee5c696"
   },
-  "errors.listing.attributeNotFound.suggestion": "這個檔案系統可能不支援 Cmdr 需要的中繼資料。換一個卷宗試試這項作業，或先把檔案複製到你 Mac 的內建磁碟機上。",
+  "errors.listing.attributeNotFound.suggestion": "這個檔案系統可能不支援 Cmdr 需要的中繼資料。換一個卷宗試試這項操作，或先把檔案複製到你 Mac 的內建磁碟機上。",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "3c357ac"
   },
@@ -423,7 +423,7 @@
   "@errors.listing.unexpectedSystemResponse.title": {
     "sourceHash": "e854b77"
   },
-  "errors.listing.unexpectedSystemResponse.explanation": "系統對這項作業回了一個預期之外的結果。卷宗的檔案系統有不一致，或卷宗處於不尋常的狀態時，就可能這樣。",
+  "errors.listing.unexpectedSystemResponse.explanation": "系統對這項操作回了一個預期之外的結果。卷宗的檔案系統有不一致，或卷宗處於不尋常的狀態時，就可能這樣。",
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "eeddaa7"
   },
@@ -519,7 +519,7 @@
   "@errors.listing.cancelled.title": {
     "sourceHash": "13ca2ee"
   },
-  "errors.listing.cancelled.explanation": "這項作業還沒完成就被取消了。",
+  "errors.listing.cancelled.explanation": "這項操作還沒完成就被取消了。",
   "@errors.listing.cancelled.explanation": {
     "sourceHash": "da19c15"
   },
@@ -531,7 +531,7 @@
   "@errors.listing.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.listing.deviceDisconnected.explanation": "作業進行到一半時，存放 `{path}` 的裝置斷線了。USB 線鬆脫、手機進入睡眠，或網路磁碟機掉線時，就可能這樣。",
+  "errors.listing.deviceDisconnected.explanation": "操作進行到一半時，存放 `{path}` 的裝置斷線了。USB 線鬆脫、手機進入睡眠，或網路磁碟機掉線時，就可能這樣。",
   "@errors.listing.deviceDisconnected.explanation": {
     "sourceHash": "c8b7b10"
   },
@@ -567,7 +567,7 @@
   "@errors.listing.storageFull.title": {
     "sourceHash": "293beb8"
   },
-  "errors.listing.storageFull.explanation": "這個卷宗上的可用空間不夠，沒辦法完成這項作業。",
+  "errors.listing.storageFull.explanation": "這個卷宗上的可用空間不夠，沒辦法完成這項操作。",
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "30d0741"
   },
@@ -591,11 +591,11 @@
   "@errors.listing.notSupported.title": {
     "sourceHash": "74e8477"
   },
-  "errors.listing.notSupported.explanation": "這種卷宗不支援這項作業。有些卷宗（例如手機儲存空間或某些網路磁碟機）並不支援所有作業。",
+  "errors.listing.notSupported.explanation": "這種卷宗不支援這項操作。有些卷宗（例如手機儲存空間或某些網路磁碟機）並不支援所有操作。",
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "9ecb575"
   },
-  "errors.listing.notSupported.suggestion": "換個做法試試，或用 Finder 來完成這項作業。",
+  "errors.listing.notSupported.suggestion": "換個做法試試，或用 Finder 來完成這項操作。",
   "@errors.listing.notSupported.suggestion": {
     "sourceHash": "d4e3965"
   },
@@ -1069,7 +1069,7 @@
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
-  "errors.write.sourceNotFound.suggestion": "它可能被移動、重新命名或刪除了。試試重新整理檔案清單。",
+  "errors.write.sourceNotFound.suggestion": "它可能被移動、重新命名或刪除了。試試重新整理檔案列表。",
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
@@ -1153,19 +1153,19 @@
   "@errors.write.cancelled.title.trash": {
     "sourceHash": "52a8954"
   },
-  "errors.write.cancelled.message.copy": "這次複製作業已經取消。",
+  "errors.write.cancelled.message.copy": "這次複製操作已經取消。",
   "@errors.write.cancelled.message.copy": {
     "sourceHash": "da308bc"
   },
-  "errors.write.cancelled.message.move": "這次移動作業已經取消。",
+  "errors.write.cancelled.message.move": "這次移動操作已經取消。",
   "@errors.write.cancelled.message.move": {
     "sourceHash": "6369672"
   },
-  "errors.write.cancelled.message.delete": "這次刪除作業已經取消。",
+  "errors.write.cancelled.message.delete": "這次刪除操作已經取消。",
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "這次移至垃圾桶的作業已經取消。",
+  "errors.write.cancelled.message.trash": "這次移至垃圾桶的操作已經取消。",
   "@errors.write.cancelled.message.trash": {
     "sourceHash": "9585f1b"
   },

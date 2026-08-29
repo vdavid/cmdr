@@ -132,7 +132,7 @@
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
   },
-  "errorReporter.sentToast.dismiss": "忽略",
+  "errorReporter.sentToast.dismiss": "關閉",
   "@errorReporter.sentToast.dismiss": {
     "sourceHash": "48845bf"
   },
@@ -152,7 +152,7 @@
   "@errorReporter.bundleSavedToast.message": {
     "sourceHash": "7c1604d"
   },
-  "errorReporter.bundleSavedToast.dismiss": "忽略",
+  "errorReporter.bundleSavedToast.dismiss": "關閉",
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },

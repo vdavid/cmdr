@@ -43,7 +43,7 @@
   "@crashReporter.dialog.copied": {
     "sourceHash": "8d525e5"
   },
-  "crashReporter.dialog.alwaysSend": "一律傳送當機報告",
+  "crashReporter.dialog.alwaysSend": "總是傳送當機報告",
   "@crashReporter.dialog.alwaysSend": {
     "sourceHash": "8306c0e"
   },

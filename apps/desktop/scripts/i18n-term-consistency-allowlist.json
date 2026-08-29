@@ -4,14 +4,6 @@
     "en-GB": [],
     "zh-Hant": [
       {
-        "source": "{count, plural, one {dir} other {dirs}}",
-        "reason": "The status-bar selection summary drops the measure word (`{目錄}`) because it composes as `3 / 10 目錄` with a `/` connector already separating the numbers; the scan stats render a bare tally (`4 個目錄`) and need it. Same word, two grammatical frames."
-      },
-      {
-        "source": "{count, plural, one {file} other {files}}",
-        "reason": "Same frame split as the `dirs` noun above: `{檔案}` in the `/`-connected status-bar summary, `{個檔案}` after a bare tally in the delete and transfer scan stats."
-      },
-      {
         "source": "App",
         "reason": "Two senses of one English word. The Settings colour options mean the app AS A SOURCE of a colour (kept as the Latin `App`, per the brand-word rule); the shortcuts scope means `in-app`, which needs `App 內` to contrast with the system-wide scope beside it."
       },
@@ -40,6 +32,10 @@
         "reason": "English reuses one sentence for two undos. Ask Cmdr's is undoing a RENAME, so `已還原` (restored the previous names). The file-operations one is restoring items from the Trash, which macOS Traditional names `放回原處` (put back where it came from). Swapping either would describe the wrong action."
       },
       {
+        "source": "Regex",
+        "reason": "Total Commander, the source the glossary already cites for the full `正規表示式`, ships its own short chip `正規式` (WCMD.LNG IDs 5615/6626). The search-mode chips are tight and take it; `viewer.search.regex` is an aria label plus tooltip whose visible text is the fixed `.*` glyph, so it has room for the full form and a screen reader wants it. Bare `正規` is banned in both: it's a bound morpheme, and Microsoft's only `正規*` entries are `正規化` = normalization."
+      },
+      {
         "source": "Running",
         "reason": "`執行中` is a local AI server PROCESS that is up. `進行中` is an operation in progress in the log. Traditional Chinese splits these; a running process is not a task making progress."
       },
@@ -58,6 +54,14 @@
       {
         "source": "View",
         "reason": "The canonical split. `檢視` is the verb: open the file viewer (F3), which is `commands.fileView` and `menu.file.view`. `menu.bar.view` is the View MENU, which macOS Traditional calls `顯示方式` (display mode) because it holds the view-mode choices. Merging them would rename either the F3 command or the menu."
+      },
+      {
+        "source": "{count, plural, one {dir} other {dirs}}",
+        "reason": "The status-bar selection summary drops the measure word (`{目錄}`) because it composes as `3 / 10 目錄` with a `/` connector already separating the numbers; the scan stats render a bare tally (`4 個目錄`) and need it. Same word, two grammatical frames."
+      },
+      {
+        "source": "{count, plural, one {file} other {files}}",
+        "reason": "Same frame split as the `dirs` noun above: `{檔案}` in the `/`-connected status-bar summary, `{個檔案}` after a bare tally in the delete and transfer scan stats."
       }
     ]
   },

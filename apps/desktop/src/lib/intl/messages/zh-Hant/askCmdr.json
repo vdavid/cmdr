@@ -396,7 +396,7 @@
   "@askCmdr.consent.whatsNew.body": {
     "sourceHash": "88751a5"
   },
-  "askCmdr.forget.title": "要忘掉 Ask Cmdr 記住的所有東西嗎？",
+  "askCmdr.forget.title": "要忘記 Ask Cmdr 記住的所有東西嗎？",
   "@askCmdr.forget.title": {
     "sourceHash": "95f576a"
   },
@@ -404,7 +404,7 @@
   "@askCmdr.forget.message": {
     "sourceHash": "5687160"
   },
-  "askCmdr.forget.confirm": "忘掉全部",
+  "askCmdr.forget.confirm": "忘記全部",
   "@askCmdr.forget.confirm": {
     "sourceHash": "11d164a"
   },
@@ -424,7 +424,7 @@
   "@askCmdr.cost.estimate": {
     "sourceHash": "e448a4a"
   },
-  "askCmdr.cost.unknown": "費用不明",
+  "askCmdr.cost.unknown": "費用未知",
   "@askCmdr.cost.unknown": {
     "sourceHash": "d05144e"
   },

@@ -583,7 +583,7 @@
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
-  "fileExplorer.network.share.forgetPassword": "清除已儲存的密碼",
+  "fileExplorer.network.share.forgetPassword": "忘記已儲存的密碼",
   "@fileExplorer.network.share.forgetPassword": {
     "sourceHash": "ed68566"
   },
@@ -888,7 +888,7 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
-  "fileExplorer.list.fileListAriaLabel": "檔案清單",
+  "fileExplorer.list.fileListAriaLabel": "檔案列表",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"
   },
@@ -908,7 +908,7 @@
   "@fileExplorer.dirSize.contentLabel": {
     "sourceHash": "47bd290"
   },
-  "fileExplorer.dirSize.onDiskLabel": "佔用磁碟",
+  "fileExplorer.dirSize.onDiskLabel": "磁碟上",
   "@fileExplorer.dirSize.onDiskLabel": {
     "sourceHash": "00ca4da"
   },
@@ -944,7 +944,7 @@
   "@fileExplorer.dirSize.dirPlaceholder": {
     "sourceHash": "1cb5400"
   },
-  "fileExplorer.dirSize.mismatchTooltipPrefix": "內容大小和佔用磁碟的大小相差很多。",
+  "fileExplorer.dirSize.mismatchTooltipPrefix": "內容大小和磁碟上大小相差很多。",
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
@@ -968,7 +968,7 @@
   "@fileExplorer.selectionTooltip.ofTotal": {
     "sourceHash": "1269b5a"
   },
-  "fileExplorer.selectionTooltip.onDiskHeader": "佔用磁碟：",
+  "fileExplorer.selectionTooltip.onDiskHeader": "磁碟上：",
   "@fileExplorer.selectionTooltip.onDiskHeader": {
     "sourceHash": "9795f99"
   },
@@ -1048,7 +1048,7 @@
   "@fileExplorer.selectionInfo.dir": {
     "sourceHash": "d313ad9"
   },
-  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "大小尚未就緒",
+  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "大小尚未準備就緒",
   "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
     "sourceHash": "4f2542d"
   },
@@ -1168,7 +1168,7 @@
   "@fileExplorer.extensionChange.description": {
     "sourceHash": "d0f428b"
   },
-  "fileExplorer.extensionChange.alwaysAllow": "一律允許更改副檔名",
+  "fileExplorer.extensionChange.alwaysAllow": "總是允許更改副檔名",
   "@fileExplorer.extensionChange.alwaysAllow": {
     "sourceHash": "52a5c5e"
   },

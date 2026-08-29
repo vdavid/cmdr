@@ -199,7 +199,7 @@
   "@ai.cloud.connected": {
     "sourceHash": "2296556"
   },
-  "ai.cloud.connectedNoModels": "已連線（沒有可用的模型清單）",
+  "ai.cloud.connectedNoModels": "已連線（沒有可用的模型列表）",
   "@ai.cloud.connectedNoModels": {
     "sourceHash": "54f2b6f"
   },
@@ -223,7 +223,7 @@
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"
   },
-  "ai.cloud.unknownError": "不明的狀況",
+  "ai.cloud.unknownError": "未知的狀況",
   "@ai.cloud.unknownError": {
     "sourceHash": "27c2ccd"
   },
@@ -295,7 +295,7 @@
   "@ai.local.serverLabel": {
     "sourceHash": "aef7de2"
   },
-  "ai.local.modelUnknown": "不明",
+  "ai.local.modelUnknown": "未知",
   "@ai.local.modelUnknown": {
     "sourceHash": "b764cdc"
   },

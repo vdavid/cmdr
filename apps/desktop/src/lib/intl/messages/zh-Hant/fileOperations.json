@@ -151,7 +151,7 @@
   "@fileOperations.mkdir.timeoutMessage": {
     "sourceHash": "751aec6"
   },
-  "fileOperations.mkdir.timeoutRefresh": "重新整理檔案清單",
+  "fileOperations.mkdir.timeoutRefresh": "重新整理檔案列表",
   "@fileOperations.mkdir.timeoutRefresh": {
     "sourceHash": "b0e5436"
   },
@@ -495,7 +495,7 @@
   "@fileOperations.transferProgress.annotationNewer": {
     "sourceHash": "92afdbd"
   },
-  "fileOperations.transferProgress.smallerDisabledTooltip": "無法比較：目標資料夾的大小不明。",
+  "fileOperations.transferProgress.smallerDisabledTooltip": "無法比較：目標資料夾的大小未知。",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
     "sourceHash": "3bb25be"
   },

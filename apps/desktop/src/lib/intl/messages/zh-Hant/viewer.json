@@ -314,7 +314,7 @@
   "@viewer.reloadToast.reload": {
     "sourceHash": "bdc090e"
   },
-  "viewer.reloadToast.dismissTooltip": "忽略，不重新載入",
+  "viewer.reloadToast.dismissTooltip": "關閉，不重新載入",
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },

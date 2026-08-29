@@ -19,7 +19,7 @@
   "@shortcuts.scope.mainWindow": {
     "sourceHash": "89dd3f3"
   },
-  "shortcuts.scope.fileList": "檔案清單",
+  "shortcuts.scope.fileList": "檔案列表",
   "@shortcuts.scope.fileList": {
     "sourceHash": "0728b8e"
   },

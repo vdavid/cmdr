@@ -67,7 +67,7 @@
   "@queryUi.mode.content.aria": {
     "sourceHash": "5bce643"
   },
-  "queryUi.mode.regex.label": "正規",
+  "queryUi.mode.regex.label": "正規式",
   "@queryUi.mode.regex.label": {
     "sourceHash": "0f27125"
   },
@@ -91,7 +91,7 @@
   "@queryUi.empty.tipAi": {
     "sourceHash": "e83a0d6"
   },
-  "queryUi.empty.indexReady": "索引已就緒 · {countText} 個{count, plural, other {項目}}",
+  "queryUi.empty.indexReady": "索引已準備就緒 · {countText} 個{count, plural, other {項目}}",
   "@queryUi.empty.indexReady": {
     "sourceHash": "838fcf8"
   },
@@ -124,7 +124,7 @@
     "sourceHash": "18d00f7",
     "sameAsSourceJustification": "Technical term \"glob\" (a filename wildcard pattern). Unattested in every Traditional source: 0 hits across the macOS zh-TW/zh-HK bundles, the Microsoft zh-Hant TBX, Total Commander, and Double Commander, and no Chinese coinage is in common use. The `en` description sanctions keeping it where the language has no common equivalent, and its sibling `queryUi.ai.patternLabel.regex` DOES get a Chinese value (`正規`), so this is a per-term judgment rather than a skipped file."
   },
-  "queryUi.ai.patternLabel.regex": "正規",
+  "queryUi.ai.patternLabel.regex": "正規式",
   "@queryUi.ai.patternLabel.regex": {
     "sourceHash": "0f27125"
   },
@@ -184,7 +184,7 @@
   "@queryUi.results.indexUnavailable": {
     "sourceHash": "80e98d0"
   },
-  "queryUi.results.indexReadyStatus": "索引已就緒（{countText} 個項目）",
+  "queryUi.results.indexReadyStatus": "索引已準備就緒（{countText} 個項目）",
   "@queryUi.results.indexReadyStatus": {
     "sourceHash": "b8febe6"
   },
@@ -212,7 +212,7 @@
   "@queryUi.results.criteria.modified": {
     "sourceHash": "fc2268a"
   },
-  "queryUi.results.indexNotReady": "磁碟機索引還沒就緒。首次掃描完成後就能搜尋。",
+  "queryUi.results.indexNotReady": "磁碟機索引還沒準備就緒。首次掃描完成後就能搜尋。",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
@@ -325,7 +325,7 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "The abbreviation \"AI\", used bare and untranslated throughout Traditional Chinese tech writing. This catalog already carries it bare in the settings strings agent 1 translated (`settings.ai.provider.opt.cloud` = 雲端 AI, `settings.advanced.logLlmCalls.label` = 記錄 AI 模型呼叫), so spelling it out here would contradict the rest of the app. Its sibling mode names `queryUi.recent.mode.regex` and `.filename` are both translated."
   },
-  "queryUi.recent.mode.regex": "正規",
+  "queryUi.recent.mode.regex": "正規式",
   "@queryUi.recent.mode.regex": {
     "sourceHash": "0f27125"
   },
@@ -466,7 +466,7 @@
   "@queryUi.filters.countOnly.label": {
     "sourceHash": "a28dbfe"
   },
-  "queryUi.filters.countOnly.tooltip": "只顯示有幾個檔案符合，不列出清單",
+  "queryUi.filters.countOnly.tooltip": "只顯示有幾個檔案符合，不列出列表",
   "@queryUi.filters.countOnly.tooltip": {
     "sourceHash": "7351921"
   },

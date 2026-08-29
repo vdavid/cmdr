@@ -120,7 +120,7 @@
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"
   },
-  "commands.navGoToPath.description": "讓焦點窗格跳到你輸入、貼上或最近用過的路徑。",
+  "commands.navGoToPath.description": "讓焦點窗格跳至你輸入、貼上或最近用過的路徑。",
   "@commands.navGoToPath.description": {
     "sourceHash": "fc6a00c"
   },
@@ -352,11 +352,11 @@
   "@commands.navRight.label": {
     "sourceHash": "21b59f0"
   },
-  "commands.navFirstInFull.label": "跳到第一個檔案",
+  "commands.navFirstInFull.label": "跳至第一個檔案",
   "@commands.navFirstInFull.label": {
     "sourceHash": "f0ea135"
   },
-  "commands.navLastInFull.label": "跳到最後一個檔案",
+  "commands.navLastInFull.label": "跳至最後一個檔案",
   "@commands.navLastInFull.label": {
     "sourceHash": "e6d6a52"
   },

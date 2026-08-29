@@ -61,11 +61,11 @@
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
   },
-  "indexing.step.saveFileList": "儲存檔案清單",
+  "indexing.step.saveFileList": "儲存檔案列表",
   "@indexing.step.saveFileList": {
     "sourceHash": "92af072"
   },
-  "indexing.step.updateFileList": "更新檔案清單",
+  "indexing.step.updateFileList": "更新檔案列表",
   "@indexing.step.updateFileList": {
     "sourceHash": "ef0a3d2"
   },

@@ -7,11 +7,11 @@
   "@downloads.toast.inSubdir": {
     "sourceHash": "eea56f4"
   },
-  "downloads.toast.learnIntro": "教你一個跳到下載項目的妙招",
+  "downloads.toast.learnIntro": "教你一個跳至下載項目的妙招",
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "App 內：按 <chip>{key}</chip> 就能跳到這裡",
+  "downloads.toast.inAppHint": "App 內：按 <chip>{key}</chip> 就能跳至這裡",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
@@ -19,15 +19,15 @@
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
-  "downloads.toast.summaryBoth": "App 內按 <inApp>{inAppKey}</inApp> 跳過去，全域則按 <global>{globalKey}</global>。",
+  "downloads.toast.summaryBoth": "App 內按 <inApp>{inAppKey}</inApp> 跳至下載項目，全域則按 <global>{globalKey}</global>。",
   "@downloads.toast.summaryBoth": {
     "sourceHash": "59c4131"
   },
-  "downloads.toast.summaryInApp": "App 內按 <inApp>{inAppKey}</inApp> 跳過去。",
+  "downloads.toast.summaryInApp": "App 內按 <inApp>{inAppKey}</inApp> 跳至下載項目。",
   "@downloads.toast.summaryInApp": {
     "sourceHash": "2c0fd22"
   },
-  "downloads.toast.summaryGlobal": "全域按 <global>{globalKey}</global> 跳過去。",
+  "downloads.toast.summaryGlobal": "全域按 <global>{globalKey}</global> 跳至下載項目。",
   "@downloads.toast.summaryGlobal": {
     "sourceHash": "1bd00be"
   },
@@ -43,7 +43,7 @@
   "@downloads.toast.stopShowing": {
     "sourceHash": "36faf9f"
   },
-  "downloads.toast.jumpToFile": "跳到檔案",
+  "downloads.toast.jumpToFile": "跳至檔案",
   "@downloads.toast.jumpToFile": {
     "sourceHash": "4511f65"
   },
@@ -63,7 +63,7 @@
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"
   },
-  "downloads.empty.dismiss": "忽略",
+  "downloads.empty.dismiss": "關閉",
   "@downloads.empty.dismiss": {
     "sourceHash": "48845bf"
   },
@@ -75,7 +75,7 @@
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },
-  "downloads.fda.dismiss": "忽略",
+  "downloads.fda.dismiss": "關閉",
   "@downloads.fda.dismiss": {
     "sourceHash": "48845bf"
   },
@@ -83,7 +83,7 @@
   "@downloads.fda.openSystemSettings": {
     "sourceHash": "18196b3"
   },
-  "downloads.warnToast.message": "{binding} 這組快速鍵可以從任何地方跳到你最新的下載項目。要繼續開著嗎？",
+  "downloads.warnToast.message": "{binding} 這組快速鍵可以從任何地方跳至你最新的下載項目。要繼續開著嗎？",
   "@downloads.warnToast.message": {
     "sourceHash": "b174604"
   },
@@ -135,11 +135,11 @@
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "28a5ba2"
   },
-  "downloads.toggleDescription.bound": "在任何 App 中按 {binding} 就能跳到你最近的下載項目。",
+  "downloads.toggleDescription.bound": "在任何 App 中按 {binding} 就能跳至你最近的下載項目。",
   "@downloads.toggleDescription.bound": {
     "sourceHash": "be43b35"
   },
-  "downloads.toggleDescription.unbound": "從任何 App 跳到你最近的下載項目。",
+  "downloads.toggleDescription.unbound": "從任何 App 跳至你最近的下載項目。",
   "@downloads.toggleDescription.unbound": {
     "sourceHash": "187cdec"
   }

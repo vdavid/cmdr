@@ -151,11 +151,11 @@
   "@search.coverage.walk.interrupted": {
     "sourceHash": "4c6a0a4"
   },
-  "search.coverage.walk.abandoned": "有些資料夾沒有回應，所以 Cmdr 先跳過它們繼續跑，這份清單可能不完整。再搜尋一次就會再試一遍。",
+  "search.coverage.walk.abandoned": "有些資料夾沒有回應，所以 Cmdr 先跳過它們繼續跑，這份列表可能不完整。再搜尋一次就會再試一遍。",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
   },
-  "search.coverage.walk.abandonedCount": "{count, plural, other {這個磁碟機上有 {countText} 個地方沒有回應，所以 Cmdr 先跳過它們繼續跑，這份清單可能不完整。Cmdr 之後會回頭處理，再搜尋一次也會再試一遍。}}",
+  "search.coverage.walk.abandonedCount": "{count, plural, other {這個磁碟機上有 {countText} 個地方沒有回應，所以 Cmdr 先跳過它們繼續跑，這份列表可能不完整。Cmdr 之後會回頭處理，再搜尋一次也會再試一遍。}}",
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },

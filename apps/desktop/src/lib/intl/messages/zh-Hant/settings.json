@@ -55,7 +55,7 @@
   "@settings.appearance.sizeColors.label": {
     "sourceHash": "7598e9a"
   },
-  "settings.appearance.sizeColors.description": "依等級為檔案清單中的檔案大小上色。彩虹使用綠/黃/橙/紅/紫。App 使用 App 顏色的不同深淺。",
+  "settings.appearance.sizeColors.description": "依等級為檔案列表中的檔案大小上色。彩虹使用綠/黃/橙/紅/紫。App 使用 App 顏色的不同深淺。",
   "@settings.appearance.sizeColors.description": {
     "sourceHash": "ecb064a"
   },
@@ -76,7 +76,7 @@
   "@settings.appearance.dateColors.label": {
     "sourceHash": "25e5672"
   },
-  "settings.appearance.dateColors.description": "依新舊程度為檔案清單中的修改日期上色。App 讓較舊的日期逐漸淡向預設的文字顏色。枯萎讓最新的檔案顯綠、漸舊顯黃、最舊顯棕。",
+  "settings.appearance.dateColors.description": "依新舊程度為檔案列表中的修改日期上色。App 讓較舊的日期逐漸淡向預設的文字顏色。枯萎讓最新的檔案顯綠、漸舊顯黃、最舊顯棕。",
   "@settings.appearance.dateColors.description": {
     "sourceHash": "382ce25"
   },
@@ -97,7 +97,7 @@
   "@settings.appearance.dateTimeFormat.label": {
     "sourceHash": "fcfc2a6"
   },
-  "settings.appearance.dateTimeFormat.description": "檔案清單中日期和時間的顯示方式。",
+  "settings.appearance.dateTimeFormat.description": "檔案列表中日期和時間的顯示方式。",
   "@settings.appearance.dateTimeFormat.description": {
     "sourceHash": "628571a"
   },
@@ -198,7 +198,7 @@
   "@settings.listing.sizeDisplay.label": {
     "sourceHash": "114b4a5"
   },
-  "settings.listing.sizeDisplay.description": "智慧會顯示內容大小和佔用空間中較小的一個。這對兩者不同的磁碟映像檔和壓縮檔很有幫助。",
+  "settings.listing.sizeDisplay.description": "智慧會顯示內容大小和磁碟上大小中較小的一個。這對兩者不同的磁碟映像檔和壓縮檔很有幫助。",
   "@settings.listing.sizeDisplay.description": {
     "sourceHash": "52567b4"
   },
@@ -210,7 +210,7 @@
   "@settings.listing.sizeDisplay.opt.logical": {
     "sourceHash": "47bd290"
   },
-  "settings.listing.sizeDisplay.opt.physical": "佔用空間",
+  "settings.listing.sizeDisplay.opt.physical": "磁碟上",
   "@settings.listing.sizeDisplay.opt.physical": {
     "sourceHash": "00ca4da"
   },
@@ -249,7 +249,7 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "檔案清單中檔案大小的顯示方式：二進位（KiB、MiB，其中 1 KiB = 1,024 位元組）或 SI 十進位（KB、MB，其中 1 KB = 1,000 位元組）。",
+  "settings.appearance.fileSizeFormat.description": "檔案列表中檔案大小的顯示方式：二進位（KiB、MiB，其中 1 KiB = 1,024 位元組）或 SI 十進位（KB、MB，其中 1 KB = 1,000 位元組）。",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },
@@ -265,7 +265,7 @@
   "@settings.listing.sizeMismatchWarning.label": {
     "sourceHash": "791c344"
   },
-  "settings.listing.sizeMismatchWarning.description": "當資料夾的內容大小和佔用空間相差超過 50% 且超過 200 MB 時，顯示一個警告圖示。",
+  "settings.listing.sizeMismatchWarning.description": "當資料夾的內容大小和磁碟上大小相差超過 50% 且超過 200 MB 時，顯示一個警告圖示。",
   "@settings.listing.sizeMismatchWarning.description": {
     "sourceHash": "1b232eb"
   },
@@ -321,7 +321,7 @@
   "@settings.listing.directorySortMode.opt.likeFiles": {
     "sourceHash": "d888403"
   },
-  "settings.listing.directorySortMode.opt.alwaysByName": "永遠按名稱",
+  "settings.listing.directorySortMode.opt.alwaysByName": "總是按名稱",
   "@settings.listing.directorySortMode.opt.alwaysByName": {
     "sourceHash": "7687e38"
   },
@@ -353,7 +353,7 @@
   "@settings.fileOperations.allowFileExtensionChanges.description": {
     "sourceHash": "e331325"
   },
-  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "永遠允許",
+  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "總是允許",
   "@settings.fileOperations.allowFileExtensionChanges.opt.yes": {
     "sourceHash": "977618b"
   },
@@ -469,7 +469,7 @@
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
-  "settings.mediaIndex.clip.ready": "已就緒 — 透過描述搜尋你的照片。",
+  "settings.mediaIndex.clip.ready": "已準備就緒 — 透過描述搜尋你的照片。",
   "@settings.mediaIndex.clip.ready": {
     "sourceHash": "c17e03d"
   },
@@ -545,7 +545,7 @@
   "@settings.mediaIndex.showFileStatusIcons.label": {
     "sourceHash": "a0a2372"
   },
-  "settings.mediaIndex.showFileStatusIcons.description": "在檔案清單中為每張影像加上一個小標記，顯示它是否已建立搜尋索引。",
+  "settings.mediaIndex.showFileStatusIcons.description": "在檔案列表中為每張影像加上一個小標記，顯示它是否已建立搜尋索引。",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
   },
@@ -557,19 +557,19 @@
   "@settings.mediaIndex.networkVolumes.description": {
     "sourceHash": "8f3c883"
   },
-  "settings.mediaIndex.alwaysIndexVolumes.label": "永遠建立索引的磁碟機",
+  "settings.mediaIndex.alwaysIndexVolumes.label": "總是建立索引的磁碟機",
   "@settings.mediaIndex.alwaysIndexVolumes.label": {
     "sourceHash": "a975b70"
   },
-  "settings.mediaIndex.alwaysIndexVolumes.description": "內部：使用者標記為永遠為其照片建立索引的磁碟機。",
+  "settings.mediaIndex.alwaysIndexVolumes.description": "內部：使用者標記為總是為其照片建立索引的磁碟機。",
   "@settings.mediaIndex.alwaysIndexVolumes.description": {
     "sourceHash": "b543f01"
   },
-  "settings.mediaIndex.alwaysIndexFolders.label": "永遠建立索引的資料夾",
+  "settings.mediaIndex.alwaysIndexFolders.label": "總是建立索引的資料夾",
   "@settings.mediaIndex.alwaysIndexFolders.label": {
     "sourceHash": "5b2f6b5"
   },
-  "settings.mediaIndex.alwaysIndexFolders.description": "內部：使用者標記為永遠為其照片建立索引的資料夾。",
+  "settings.mediaIndex.alwaysIndexFolders.description": "內部：使用者標記為總是為其照片建立索引的資料夾。",
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
@@ -597,7 +597,7 @@
   "@settings.mediaIndex.networkVolumes.optInHelp": {
     "sourceHash": "a2da6d4"
   },
-  "settings.mediaIndex.networkVolumes.alwaysLabel": "永遠為這部磁碟機建立索引",
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "總是為這部磁碟機建立索引",
   "@settings.mediaIndex.networkVolumes.alwaysLabel": {
     "sourceHash": "123af5e"
   },
@@ -605,7 +605,7 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "永遠為 {name} 上的照片建立索引",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "總是為 {name} 上的照片建立索引",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
     "sourceHash": "10ee003"
   },
@@ -689,7 +689,7 @@
   "@settings.mediaIndex.importanceThreshold.deltaRemove": {
     "sourceHash": "1c1486e"
   },
-  "settings.mediaIndex.importanceThreshold.floor": "像 node_modules 和系統快取這類垃圾內容，一律會略過。",
+  "settings.mediaIndex.importanceThreshold.floor": "像 node_modules 和系統快取這類垃圾內容，總是會略過。",
   "@settings.mediaIndex.importanceThreshold.floor": {
     "sourceHash": "8839d14"
   },
@@ -822,7 +822,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "在任何 App 中按 ⌃⌥⌘J 就能跳到你最近的下載項目。需要「完全取用磁碟」權限。",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "在任何 App 中按 ⌃⌥⌘J 就能跳至你最近的下載項目。需要「完全取用磁碟」權限。",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
@@ -883,7 +883,7 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "在你輸入時自動執行檔名和正規表示式搜尋（停止輸入 1 秒後）。AI 搜尋因為會產生費用，所以一律等你按 Enter 鍵。關閉時，按 Enter 鍵或點按執行按鈕來搜尋。",
+  "settings.search.autoApply.description": "在你輸入時自動執行檔名和正規表示式搜尋（停止輸入 1 秒後）。AI 搜尋因為會產生費用，所以總是等你按 Enter 鍵。關閉時，按 Enter 鍵或點按執行按鈕來搜尋。",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
@@ -1047,7 +1047,7 @@
   "@settings.fileExplorer.git.showRepoChip.label": {
     "sourceHash": "7504b23"
   },
-  "settings.fileExplorer.git.showRepoChip.description": "在 git 存放庫中時，於檔案清單上方顯示目前的分支、領先/落後，以及有改動的狀態。",
+  "settings.fileExplorer.git.showRepoChip.description": "在 git 存放庫中時，於檔案列表上方顯示目前的分支、領先/落後，以及有改動的狀態。",
   "@settings.fileExplorer.git.showRepoChip.description": {
     "sourceHash": "7b8a9ba"
   },
@@ -1095,7 +1095,7 @@
   "@settings.developer.verboseLogging.label": {
     "sourceHash": "036a824"
   },
-  "settings.developer.verboseLogging.description": "把開發終端機和瀏覽器 devtools 主控台提升到 debug 層級。磁碟上的記錄檔無論如何都會記下 debug 細節，因此這個開關不影響錯誤報告。對終端機而言，RUST_LOG 一律優先。",
+  "settings.developer.verboseLogging.description": "把開發終端機和瀏覽器 devtools 主控台提升到 debug 層級。磁碟上的記錄檔無論如何都會記下 debug 細節，因此這個開關不影響錯誤報告。對終端機而言，RUST_LOG 總是優先。",
   "@settings.developer.verboseLogging.description": {
     "sourceHash": "5c69c0d"
   },
@@ -1215,7 +1215,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切換檔案選取，用 ⇧Space 觸發快速查看（Finder 用單獨的 Space 觸發快速查看）。每次你在檔案清單中按 Space，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或點按提示中的「不再顯示」）就能永久關閉這個提醒。",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切換檔案選取，用 ⇧Space 觸發快速查看（Finder 用單獨的 Space 觸發快速查看）。每次你在檔案列表中按 Space，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或點按提示中的「不再顯示」）就能永久關閉這個提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },
@@ -1279,7 +1279,7 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "「文字編輯」和「預覽程式」這類 App 儲存檔案時，macOS 會在旁邊用暫存名稱（以「.sb-」結尾）寫入新版本，然後再換掉。關閉這一項就能讓它們不出現在檔案清單中。",
+  "settings.advanced.showSafeSaveFiles.description": "「文字編輯」和「預覽程式」這類 App 儲存檔案時，macOS 會在旁邊用暫存名稱（以「.sb-」結尾）寫入新版本，然後再換掉。關閉這一項就能讓它們不出現在檔案列表中。",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
@@ -1287,7 +1287,7 @@
   "@settings.advanced.showStagingTempFiles.label": {
     "sourceHash": "5a7636d"
   },
-  "settings.advanced.showStagingTempFiles.description": "複製時，Cmdr 會先用暫存名稱寫入每個檔案，寫完後再重新命名，這樣當機就不會留下用真實名稱存下的半個檔案。中斷的複製留下的殘餘檔案一律會顯示。",
+  "settings.advanced.showStagingTempFiles.description": "複製時，Cmdr 會先用暫存名稱寫入每個檔案，寫完後再重新命名，這樣當機就不會留下用真實名稱存下的半個檔案。中斷的複製留下的殘餘檔案總是會顯示。",
   "@settings.advanced.showStagingTempFiles.description": {
     "sourceHash": "2d88a78"
   },
@@ -1451,7 +1451,7 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
   },
-  "settings.behavior.doubleClickPaneNavigatesToParent.description": "也就是檔案清單周圍的空白區域，而不是某個檔案所在的橫列。",
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "也就是檔案列表周圍的空白區域，而不是某個檔案所在的橫列。",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "sourceHash": "734b6c2"
   },
@@ -1756,7 +1756,7 @@
   "@settings.summary.zoomAndDensity": {
     "sourceHash": "e32bbcf"
   },
-  "settings.summary.fileAndFolderSizes": "大小在檔案清單中的顯示方式，以及大小不一致的警告。",
+  "settings.summary.fileAndFolderSizes": "大小在檔案列表中的顯示方式，以及大小不一致的警告。",
   "@settings.summary.fileAndFolderSizes": {
     "sourceHash": "cdd8214"
   },
@@ -1772,7 +1772,7 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.notifications": "下載通知、跳到最新下載項目的全域快速鍵，以及磁碟空間不足的警告。",
+  "settings.summary.notifications": "下載通知、跳至最新下載項目的全域快速鍵，以及磁碟空間不足的警告。",
   "@settings.summary.notifications": {
     "sourceHash": "e681776"
   },
@@ -2005,7 +2005,7 @@
   "@settings.appearance.card.namesAndIcons": {
     "sourceHash": "8386169"
   },
-  "settings.appearance.card.briefMode": "簡潔模式",
+  "settings.appearance.card.briefMode": "簡潔顯示方式",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
   },

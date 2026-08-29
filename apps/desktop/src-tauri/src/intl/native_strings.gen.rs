@@ -1493,7 +1493,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
             ("menu.mediaIndex.includeFolder", "重新為這裡的影像建立索引"),
             ("menu.mediaIndex.removeFolder", "從索引資料夾中移除"),
             ("menu.network.disconnect", "中斷連線"),
-            ("menu.network.forgetSavedPassword", "清除已儲存的密碼"),
+            ("menu.network.forgetSavedPassword", "忘記已儲存的密碼"),
             ("menu.network.forgetServer", "忘記伺服器"),
             ("menu.select.all", "全選"),
             ("menu.select.deselectAll", "取消全選"),

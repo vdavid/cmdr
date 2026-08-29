@@ -508,7 +508,7 @@
   "@menu.network.forgetServer": {
     "sourceHash": "e43c85d"
   },
-  "menu.network.forgetSavedPassword": "清除已儲存的密碼",
+  "menu.network.forgetSavedPassword": "忘記已儲存的密碼",
   "@menu.network.forgetSavedPassword": {
     "sourceHash": "ed68566"
   },
