@@ -1,257 +1,260 @@
 {
-  "indexing.status.ariaLabel": "Drive indexing status",
+  "indexing.status.ariaLabel": "磁碟機索引狀態",
   "@indexing.status.ariaLabel": {
     "sourceHash": "49edebb"
   },
   "indexing.drive.heading": "{name}",
   "@indexing.drive.heading": {
-    "sourceHash": "5e291d7"
+    "sourceHash": "5e291d7",
+    "sameAsSourceJustification": "The whole value is the `{name}` placeholder: a drive's own display name, substituted at runtime and never translated. There is no text around it to render in Traditional Chinese, and every locale's catalog holds the same bare placeholder."
   },
-  "indexing.scan.label": "Indexing your drive...",
+  "indexing.scan.label": "正在為你的磁碟機建立索引…",
   "@indexing.scan.label": {
     "sourceHash": "3758d47"
   },
-  "indexing.scan.counters": "{entriesText} entries, {dirsText} dirs",
+  "indexing.scan.counters": "{entriesText} 個項目、{dirsText} 個資料夾",
   "@indexing.scan.counters": {
     "sourceHash": "fd4d242"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
-    "sourceHash": "aeb0b57"
+    "sourceHash": "aeb0b57",
+    "sameAsSourceJustification": "Joins two already-formatted, already-translated fragments (`indexing.scan.counters` and a clock like `2:34`) with a middle dot. The separator is punctuation, not a word, and Apple's Traditional localizations use the same spaced middle dot to join status facts, so there is nothing here to translate; the translated content lives in `indexing.scan.counters`."
   },
-  "indexing.scan.etaRough": "roughly {eta}",
+  "indexing.scan.etaRough": "大約 {eta}",
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.phase.priorityFolders": "Indexing the folders you use most",
+  "indexing.phase.priorityFolders": "正在為你最常用的資料夾建立索引",
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
   },
-  "indexing.phase.home": "Indexing the rest of your home folder",
+  "indexing.phase.home": "正在為你個人專屬資料夾的其餘部分建立索引",
   "@indexing.phase.home": {
     "sourceHash": "8c31671"
   },
-  "indexing.phase.wholeDrive": "Indexing the rest of the drive",
+  "indexing.phase.wholeDrive": "正在為磁碟機的其餘部分建立索引",
   "@indexing.phase.wholeDrive": {
     "sourceHash": "1e1d606"
   },
-  "indexing.run.firstIndex": "First index",
+  "indexing.run.firstIndex": "首次建立索引",
   "@indexing.run.firstIndex": {
     "sourceHash": "4de62ce"
   },
-  "indexing.run.firstScan": "First full scan",
+  "indexing.run.firstScan": "首次完整掃描",
   "@indexing.run.firstScan": {
     "sourceHash": "bb804db"
   },
-  "indexing.run.rescan": "Full rescan",
+  "indexing.run.rescan": "完整重新掃描",
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
   },
-  "indexing.run.changeCheck": "Checking for changes",
+  "indexing.run.changeCheck": "正在檢查變更",
   "@indexing.run.changeCheck": {
     "sourceHash": "9b43638"
   },
-  "indexing.run.update": "Quick update",
+  "indexing.run.update": "快速更新",
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
   },
-  "indexing.step.findFiles": "Find files",
+  "indexing.step.findFiles": "尋找檔案",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
   },
-  "indexing.step.saveFileList": "Save the file list",
+  "indexing.step.saveFileList": "儲存檔案清單",
   "@indexing.step.saveFileList": {
     "sourceHash": "92af072"
   },
-  "indexing.step.updateFileList": "Update the file list",
+  "indexing.step.updateFileList": "更新檔案清單",
   "@indexing.step.updateFileList": {
     "sourceHash": "ef0a3d2"
   },
-  "indexing.step.computeFolderSizes": "Compute folder sizes",
+  "indexing.step.computeFolderSizes": "計算資料夾大小",
   "@indexing.step.computeFolderSizes": {
     "sourceHash": "65c86f6"
   },
-  "indexing.step.catchUp": "Catch up on recent changes",
+  "indexing.step.catchUp": "補上最近的變更",
   "@indexing.step.catchUp": {
     "sourceHash": "ef74b56"
   },
-  "indexing.step.updateIndex": "Update index",
+  "indexing.step.updateIndex": "更新索引",
   "@indexing.step.updateIndex": {
     "sourceHash": "494e5b8"
   },
-  "indexing.summary.found": "{countText} found",
+  "indexing.summary.found": "找到 {countText} 個",
   "@indexing.summary.found": {
     "sourceHash": "fe3038e"
   },
-  "indexing.step.findFilesPhased": "First time through, so this takes a while. Your folders become searchable as Cmdr reaches them.",
+  "indexing.step.findFilesPhased": "第一次跑，所以要花一點時間。Cmdr 走到哪個資料夾，那個資料夾就能搜尋了",
   "@indexing.step.findFilesPhased": {
     "sourceHash": "dbeb379"
   },
-  "indexing.step.findFilesFirstScan": "First scan, so this can take a while",
+  "indexing.step.findFilesFirstScan": "第一次掃描，所以可能要花一點時間",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
   },
-  "indexing.step.findFilesChangeCheck": "Checking every folder against the index. Your folder sizes stay visible while this runs.",
+  "indexing.step.findFilesChangeCheck": "正在拿每個資料夾跟索引比對。這段期間你的資料夾大小都看得到。",
   "@indexing.step.findFilesChangeCheck": {
     "sourceHash": "8c23f1f"
   },
-  "indexing.step.statusDone": "Done",
+  "indexing.step.statusDone": "完成",
   "@indexing.step.statusDone": {
     "sourceHash": "11a6767"
   },
-  "indexing.step.statusActive": "In progress",
+  "indexing.step.statusActive": "進行中",
   "@indexing.step.statusActive": {
     "sourceHash": "c1f88e9"
   },
-  "indexing.step.statusPending": "Not started",
+  "indexing.step.statusPending": "尚未開始",
   "@indexing.step.statusPending": {
     "sourceHash": "ba35f0c"
   },
-  "indexing.aggregation.loading": "Loading folders...",
+  "indexing.aggregation.loading": "正在載入資料夾…",
   "@indexing.aggregation.loading": {
     "sourceHash": "f553c87"
   },
-  "indexing.aggregation.sorting": "Sorting folders...",
+  "indexing.aggregation.sorting": "正在排序資料夾…",
   "@indexing.aggregation.sorting": {
     "sourceHash": "3a7c827"
   },
-  "indexing.aggregation.computing": "Computing folder sizes...",
+  "indexing.aggregation.computing": "正在計算資料夾大小…",
   "@indexing.aggregation.computing": {
     "sourceHash": "19f54fc"
   },
-  "indexing.aggregation.writing": "Saving folder sizes...",
+  "indexing.aggregation.writing": "正在儲存資料夾大小…",
   "@indexing.aggregation.writing": {
     "sourceHash": "9466e98"
   },
-  "indexing.replay.detail": "{eventsText} events processed",
+  "indexing.replay.detail": "已處理 {eventsText} 個事件",
   "@indexing.replay.detail": {
     "sourceHash": "e80c077"
   },
-  "indexing.progress.percentEta": "{percent}%, {eta}",
+  "indexing.progress.percentEta": "{percent}%，{eta}",
   "@indexing.progress.percentEta": {
     "sourceHash": "26b29da"
   },
-  "indexing.eta.almostDone": "Almost done",
+  "indexing.eta.almostDone": "快好了",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
   },
-  "indexing.eta.secondsLeft": "{secondsText}s left",
+  "indexing.eta.secondsLeft": "剩餘 {secondsText} 秒",
   "@indexing.eta.secondsLeft": {
     "sourceHash": "3a67288"
   },
-  "indexing.eta.minutesLeft": "{minutesText}m left",
+  "indexing.eta.minutesLeft": "剩餘 {minutesText} 分鐘",
   "@indexing.eta.minutesLeft": {
     "sourceHash": "bcb3615"
   },
-  "indexing.eta.hoursMinutesLeft": "{hours, plural, one {{hoursText} hour} other {{hoursText} hours}} {minutes, plural, one {{minutesText} minute} other {{minutesText} minutes}} left",
+  "indexing.eta.hoursMinutesLeft": "剩餘 {hours, plural, other {{hoursText} 小時}} {minutes, plural, other {{minutesText} 分鐘}}",
   "@indexing.eta.hoursMinutesLeft": {
     "sourceHash": "8b2b4c0"
   },
-  "indexing.eta.hoursLeft": "{hours, plural, one {{hoursText} hour} other {{hoursText} hours}} left",
+  "indexing.eta.hoursLeft": "剩餘 {hours, plural, other {{hoursText} 小時}}",
   "@indexing.eta.hoursLeft": {
     "sourceHash": "1d50900"
   },
-  "indexing.rescan.staleIndex": "Your drive index is outdated. It looks like the app hasn''t run for a while. Running a fresh scan to catch up.",
+  "indexing.rescan.staleIndex": "你的磁碟機索引已經過時了。看起來這個 App 有一陣子沒開了。正在重新掃描一次來跟上。",
   "@indexing.rescan.staleIndex": {
     "sourceHash": "ddac60e"
   },
-  "indexing.rescan.journalGap": "The system''s file change log doesn''t go back far enough. Running a fresh scan to rebuild the index.",
+  "indexing.rescan.journalGap": "系統的檔案變更記錄回溯得不夠久。正在重新掃描一次來重建索引。",
   "@indexing.rescan.journalGap": {
     "sourceHash": "5f1075b"
   },
-  "indexing.rescan.replayOverflow": "A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.",
+  "indexing.rescan.replayOverflow": "上次執行之後有大量檔案變更。與其一筆一筆重播，Cmdr 直接重新掃描一次。",
   "@indexing.rescan.replayOverflow": {
     "sourceHash": "70c7481"
   },
-  "indexing.rescan.watcherStartFailed": "Couldn''t start the file change watcher. Running a fresh scan to get the index up to date.",
+  "indexing.rescan.watcherStartFailed": "無法啟動檔案變更監看程式。正在重新掃描一次，讓索引跟上。",
   "@indexing.rescan.watcherStartFailed": {
     "sourceHash": "831e44d"
   },
-  "indexing.rescan.reconcilerBufferOverflow": "Heavy filesystem activity overwhelmed the event buffer. Running a fresh scan to stay accurate.",
+  "indexing.rescan.reconcilerBufferOverflow": "檔案系統活動太頻繁，把事件緩衝區塞滿了。正在重新掃描一次以維持準確。",
   "@indexing.rescan.reconcilerBufferOverflow": {
     "sourceHash": "d6000e4"
   },
-  "indexing.rescan.incompletePreviousScan": "The previous scan didn''t finish (the app may have been closed). Restarting the scan from scratch.",
+  "indexing.rescan.incompletePreviousScan": "上次掃描沒有跑完（App 可能被關掉了）。正在從頭重新開始掃描。",
   "@indexing.rescan.incompletePreviousScan": {
     "sourceHash": "3ca5217"
   },
-  "indexing.rescan.watcherChannelOverflow": "A burst of filesystem activity overflowed the watcher channel. Running a fresh scan to stay accurate.",
+  "indexing.rescan.watcherChannelOverflow": "一陣密集的檔案系統活動把監看程式的通道塞滿了。正在重新掃描一次以維持準確。",
   "@indexing.rescan.watcherChannelOverflow": {
     "sourceHash": "b7ce086"
   },
-  "indexing.rescan.fallback": "Running a fresh drive scan to keep the index accurate.",
+  "indexing.rescan.fallback": "正在重新掃描磁碟機，讓索引保持準確。",
   "@indexing.rescan.fallback": {
     "sourceHash": "cd99826"
   },
-  "indexing.firstConnect.title": "Index {name}?",
+  "indexing.firstConnect.title": "要為 {name} 建立索引嗎？",
   "@indexing.firstConnect.title": {
     "sourceHash": "0734a24"
   },
-  "indexing.firstConnect.body": "Cmdr can index this drive in the background so folder sizes and search work here. It only runs while the drive is connected.",
+  "indexing.firstConnect.body": "Cmdr 可以在背景為這個磁碟機建立索引，讓資料夾大小和搜尋在這裡也能用。它只會在磁碟機連接時執行。",
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
-  "indexing.firstConnect.enable": "Enable indexing",
+  "indexing.firstConnect.enable": "啟用索引",
   "@indexing.firstConnect.enable": {
     "sourceHash": "3dc7ddf"
   },
-  "indexing.firstConnect.silenceDrive": "Don''t ask again for this drive",
+  "indexing.firstConnect.silenceDrive": "這個磁碟機別再問了",
   "@indexing.firstConnect.silenceDrive": {
     "sourceHash": "99bed41"
   },
-  "indexing.firstConnect.silenceAll": "Don''t ask again for any drives",
+  "indexing.firstConnect.silenceAll": "所有磁碟機都別再問了",
   "@indexing.firstConnect.silenceAll": {
     "sourceHash": "511c970"
   },
-  "indexing.staleDialog.title": "This drive''s index may be out of date",
+  "indexing.staleDialog.title": "這個磁碟機的索引可能過時了",
   "@indexing.staleDialog.title": {
     "sourceHash": "21a78ee"
   },
-  "indexing.staleDialog.body": "While {name} was disconnected, files on it may have changed. Folder sizes and search results might be a bit off until you rescan. The yellow status next to the drive always shows when this happens, and a rescan refreshes it.",
+  "indexing.staleDialog.body": "{name} 沒有連接的期間，上面的檔案可能有變動。在你重新掃描之前，資料夾大小和搜尋結果可能會有一點出入。發生這種情況時，磁碟機旁邊一定會顯示黃色狀態，重新掃描就會更新它。",
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
-  "indexing.staleDialog.neverShowAgain": "Never show again",
+  "indexing.staleDialog.neverShowAgain": "不要再顯示",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"
   },
-  "indexing.staleDialog.close": "Close",
+  "indexing.staleDialog.close": "關閉",
   "@indexing.staleDialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "indexing.enrich.label": "Image indexing",
+  "indexing.enrich.label": "影像索引",
   "@indexing.enrich.label": {
     "sourceHash": "442068b"
   },
-  "indexing.enrich.progress": "{done, plural, one {{doneText} of {totalText} image} other {{doneText} of {totalText} images}}",
+  "indexing.enrich.progress": "{done, plural, other {{doneText} 個影像（共 {totalText} 個）}}",
   "@indexing.enrich.progress": {
     "sourceHash": "b307416"
   },
-  "indexing.enrich.rate": "{rateText}/min",
+  "indexing.enrich.rate": "{rateText} 個/分鐘",
   "@indexing.enrich.rate": {
     "sourceHash": "255f3b4"
   },
   "indexing.enrich.rateEta": "{rate} · {eta}",
   "@indexing.enrich.rateEta": {
-    "sourceHash": "ac6a373"
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "Joins two already-formatted, already-translated fragments (`indexing.enrich.rate` and an ETA phrase from the `indexing.eta.*` family) with a middle dot separator. Same shape as `indexing.scan.countersElapsed`: punctuation only, with every translatable word living in the two fragments it joins."
   },
-  "indexing.enrich.pausedIdle": "Waiting until you''re idle",
+  "indexing.enrich.pausedIdle": "等你閒下來再繼續",
   "@indexing.enrich.pausedIdle": {
     "sourceHash": "d63ee91"
   },
-  "indexing.enrich.pausedDisconnected": "Paused, resumes on reconnect",
+  "indexing.enrich.pausedDisconnected": "已暫停，重新連接後會繼續",
   "@indexing.enrich.pausedDisconnected": {
     "sourceHash": "1483989"
   },
-  "indexing.enrich.queued": "Image indexing starts after the drive scan",
+  "indexing.enrich.queued": "影像索引會在磁碟機掃描之後開始",
   "@indexing.enrich.queued": {
     "sourceHash": "09e94f5"
   },
-  "indexing.enrich.imagesBarLabel": "Images indexed",
+  "indexing.enrich.imagesBarLabel": "已建立索引的影像",
   "@indexing.enrich.imagesBarLabel": {
     "sourceHash": "f4b2ca5"
   },
-  "indexing.enrich.bytesBarLabel": "Image data processed",
+  "indexing.enrich.bytesBarLabel": "已處理的影像資料",
   "@indexing.enrich.bytesBarLabel": {
     "sourceHash": "58952a9"
   }
