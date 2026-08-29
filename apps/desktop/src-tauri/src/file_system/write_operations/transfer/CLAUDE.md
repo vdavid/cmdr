@@ -4,8 +4,7 @@ Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), via `transfer_
 intent, cancel/rollback, ETA, the conflict mutex, settle: `../CLAUDE.md`. Frontend:
 `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
 
-Local-FS lives in `copy/` (+ `CopyTransaction` rollback), `move_op/` (dispatcher plus one file per engine), and
-`copy_strategy.rs`. The cross-volume engine
+Local-FS lives in `copy/` (+ `CopyTransaction` rollback), `move_op/`, and `copy_strategy.rs`. The cross-volume engine
 is `volume/`, a facade reached only as `transfer::volume::<item>`; its merge, conflict, staging, and failure contracts
 are `volume/CLAUDE.md`. All four cores run through `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
 
