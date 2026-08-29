@@ -1,669 +1,675 @@
 {
-  "queryUi.bar.placeholder.ai": "Describe what you''re looking for",
+  "queryUi.bar.placeholder.ai": "描述你要找的東西",
   "@queryUi.bar.placeholder.ai": {
     "sourceHash": "fbfb9a8"
   },
-  "queryUi.bar.placeholder.regex": "Regular expression pattern",
+  "queryUi.bar.placeholder.regex": "正規表示式",
   "@queryUi.bar.placeholder.regex": {
     "sourceHash": "342a120"
   },
-  "queryUi.bar.placeholder.filename": "Filename pattern (use * and ? as wildcards)",
+  "queryUi.bar.placeholder.filename": "檔名樣式（用 * 和 ? 當萬用字元）",
   "@queryUi.bar.placeholder.filename": {
     "sourceHash": "bafb340"
   },
-  "queryUi.bar.aria.ai": "Natural language search query",
+  "queryUi.bar.aria.ai": "自然語言搜尋查詢",
   "@queryUi.bar.aria.ai": {
     "sourceHash": "05ac017"
   },
-  "queryUi.bar.aria.regex": "Regex search pattern",
+  "queryUi.bar.aria.regex": "正規表示式搜尋樣式",
   "@queryUi.bar.aria.regex": {
     "sourceHash": "9c7754a"
   },
-  "queryUi.bar.aria.filename": "Filename search pattern",
+  "queryUi.bar.aria.filename": "檔名搜尋樣式",
   "@queryUi.bar.aria.filename": {
     "sourceHash": "de1e4cf"
   },
-  "queryUi.bar.runTitle.ai": "Run AI search",
+  "queryUi.bar.runTitle.ai": "執行 AI 搜尋",
   "@queryUi.bar.runTitle.ai": {
     "sourceHash": "8a25dfd"
   },
-  "queryUi.bar.runTitle.default": "Run search",
+  "queryUi.bar.runTitle.default": "執行搜尋",
   "@queryUi.bar.runTitle.default": {
     "sourceHash": "63714be"
   },
-  "queryUi.bar.runHint": "Press Enter to search",
+  "queryUi.bar.runHint": "按 Enter 鍵搜尋",
   "@queryUi.bar.runHint": {
     "sourceHash": "406d32e"
   },
-  "queryUi.bar.runLabel": "Search",
+  "queryUi.bar.runLabel": "搜尋",
   "@queryUi.bar.runLabel": {
     "sourceHash": "49c266b"
   },
-  "queryUi.mode.ai.label": "Ask anything",
+  "queryUi.mode.ai.label": "隨便問",
   "@queryUi.mode.ai.label": {
     "sourceHash": "4aff15d"
   },
-  "queryUi.mode.ai.aria": "AI mode: ask anything (Alt+A)",
+  "queryUi.mode.ai.aria": "AI 模式：隨便問（Alt+A）",
   "@queryUi.mode.ai.aria": {
     "sourceHash": "1708462"
   },
-  "queryUi.mode.filename.label": "Filename",
+  "queryUi.mode.filename.label": "檔名",
   "@queryUi.mode.filename.label": {
     "sourceHash": "971b974"
   },
-  "queryUi.mode.filename.aria": "Filename mode (Alt+F)",
+  "queryUi.mode.filename.aria": "檔名模式（Alt+F）",
   "@queryUi.mode.filename.aria": {
     "sourceHash": "62a5f87"
   },
-  "queryUi.mode.content.label": "Content",
+  "queryUi.mode.content.label": "內容",
   "@queryUi.mode.content.label": {
     "sourceHash": "47bd290"
   },
-  "queryUi.mode.content.tooltip": "Coming soon: full-text search inside files",
+  "queryUi.mode.content.tooltip": "即將推出：搜尋檔案內的文字",
   "@queryUi.mode.content.tooltip": {
     "sourceHash": "ff69d7a"
   },
-  "queryUi.mode.content.aria": "Content mode (coming soon)",
+  "queryUi.mode.content.aria": "內容模式（即將推出）",
   "@queryUi.mode.content.aria": {
     "sourceHash": "5bce643"
   },
-  "queryUi.mode.regex.label": "Regex",
+  "queryUi.mode.regex.label": "正規",
   "@queryUi.mode.regex.label": {
     "sourceHash": "0f27125"
   },
-  "queryUi.mode.regex.aria": "Regex mode (Alt+R)",
+  "queryUi.mode.regex.aria": "正規表示式模式（Alt+R）",
   "@queryUi.mode.regex.aria": {
     "sourceHash": "7c0b401"
   },
-  "queryUi.mode.groupAria": "Search mode",
+  "queryUi.mode.groupAria": "搜尋模式",
   "@queryUi.mode.groupAria": {
     "sourceHash": "75f00aa"
   },
-  "queryUi.empty.tryLine": "Try…",
+  "queryUi.empty.tryLine": "試試看…",
   "@queryUi.empty.tryLine": {
     "sourceHash": "469fb7f"
   },
-  "queryUi.empty.tip": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘H</historyKey> shows recent searches.",
+  "queryUi.empty.tip": "提示：<newKey>⌘N</newKey> 重新開始，<historyKey>⌘H</historyKey> 顯示最近的搜尋。",
   "@queryUi.empty.tip": {
     "sourceHash": "6d00976"
   },
-  "queryUi.empty.tipAi": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘H</historyKey> shows recent searches, <aiKey>⌘Enter</aiKey> runs an AI search.",
+  "queryUi.empty.tipAi": "提示：<newKey>⌘N</newKey> 重新開始，<historyKey>⌘H</historyKey> 顯示最近的搜尋，<aiKey>⌘Enter</aiKey> 執行 AI 搜尋。",
   "@queryUi.empty.tipAi": {
     "sourceHash": "e83a0d6"
   },
-  "queryUi.empty.indexReady": "Index ready · {countText} {count, plural, one {entry} other {entries}}",
+  "queryUi.empty.indexReady": "索引已就緒 · {countText} 個{count, plural, other {項目}}",
   "@queryUi.empty.indexReady": {
     "sourceHash": "838fcf8"
   },
-  "queryUi.ai.lead": "Here''s what the agent did:",
+  "queryUi.ai.lead": "這是代理程式做的事：",
   "@queryUi.ai.lead": {
     "sourceHash": "bf7c5a2"
   },
-  "queryUi.ai.empty": "Nothing to filter on yet. Try rephrasing?",
+  "queryUi.ai.empty": "目前還沒有可以篩選的條件。換個說法試試？",
   "@queryUi.ai.empty": {
     "sourceHash": "df836a8"
   },
-  "queryUi.ai.refine": "Refine…",
+  "queryUi.ai.refine": "調整…",
   "@queryUi.ai.refine": {
     "sourceHash": "488102b"
   },
-  "queryUi.ai.refineAria": "Refine the AI search (coming soon)",
+  "queryUi.ai.refineAria": "調整這次 AI 搜尋（即將推出）",
   "@queryUi.ai.refineAria": {
     "sourceHash": "fc95971"
   },
-  "queryUi.ai.refineTooltip": "Coming soon: chat back to the agent",
+  "queryUi.ai.refineTooltip": "即將推出：回頭和代理程式對話",
   "@queryUi.ai.refineTooltip": {
     "sourceHash": "4846194"
   },
-  "queryUi.ai.stripAria": "What the agent did with your last AI search",
+  "queryUi.ai.stripAria": "代理程式對你上次 AI 搜尋做了什麼",
   "@queryUi.ai.stripAria": {
     "sourceHash": "53ffa17"
   },
   "queryUi.ai.patternLabel.glob": "Glob",
   "@queryUi.ai.patternLabel.glob": {
-    "sourceHash": "18d00f7"
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "Technical term \"glob\" (a filename wildcard pattern). Unattested in every Traditional source: 0 hits across the macOS zh-TW/zh-HK bundles, the Microsoft zh-Hant TBX, Total Commander, and Double Commander, and no Chinese coinage is in common use. The `en` description sanctions keeping it where the language has no common equivalent, and its sibling `queryUi.ai.patternLabel.regex` DOES get a Chinese value (`正規`), so this is a per-term judgment rather than a skipped file."
   },
-  "queryUi.ai.patternLabel.regex": "Regex",
+  "queryUi.ai.patternLabel.regex": "正規",
   "@queryUi.ai.patternLabel.regex": {
     "sourceHash": "0f27125"
   },
-  "queryUi.ai.patternLabel.generic": "Pattern",
+  "queryUi.ai.patternLabel.generic": "樣式",
   "@queryUi.ai.patternLabel.generic": {
     "sourceHash": "4288ade"
   },
-  "queryUi.ai.filter.size": "Size",
+  "queryUi.ai.filter.size": "大小",
   "@queryUi.ai.filter.size": {
     "sourceHash": "1af8519"
   },
-  "queryUi.ai.filter.modified": "Modified",
+  "queryUi.ai.filter.modified": "修改日期",
   "@queryUi.ai.filter.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.ai.filter.type": "Type",
+  "queryUi.ai.filter.type": "類型",
   "@queryUi.ai.filter.type": {
     "sourceHash": "baaddf7"
   },
-  "queryUi.ai.typeSummary.filesOnly": "Files only",
+  "queryUi.ai.typeSummary.filesOnly": "只有檔案",
   "@queryUi.ai.typeSummary.filesOnly": {
     "sourceHash": "4bae1c3"
   },
-  "queryUi.ai.typeSummary.foldersOnly": "Folders only",
+  "queryUi.ai.typeSummary.foldersOnly": "只有資料夾",
   "@queryUi.ai.typeSummary.foldersOnly": {
     "sourceHash": "ad851fb"
   },
-  "queryUi.results.col.name": "Name",
+  "queryUi.results.col.name": "名稱",
   "@queryUi.results.col.name": {
     "sourceHash": "dcd1d52"
   },
-  "queryUi.results.col.path": "Path",
+  "queryUi.results.col.path": "路徑",
   "@queryUi.results.col.path": {
     "sourceHash": "62fa5a5"
   },
-  "queryUi.results.col.size": "Size",
+  "queryUi.results.col.size": "大小",
   "@queryUi.results.col.size": {
     "sourceHash": "1af8519"
   },
-  "queryUi.results.col.modified": "Modified",
+  "queryUi.results.col.modified": "修改日期",
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.results.listboxAria": "Search results",
+  "queryUi.results.listboxAria": "搜尋結果",
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
   },
-  "queryUi.results.scanningWithCount": "Scanning in progress ({countText} entries)...",
+  "queryUi.results.scanningWithCount": "正在掃描（{countText} 個項目）…",
   "@queryUi.results.scanningWithCount": {
     "sourceHash": "0c05667"
   },
-  "queryUi.results.scanning": "Scan in progress...",
+  "queryUi.results.scanning": "正在掃描…",
   "@queryUi.results.scanning": {
     "sourceHash": "091ba9a"
   },
-  "queryUi.results.indexUnavailable": "Drive index not available",
+  "queryUi.results.indexUnavailable": "磁碟機索引無法使用",
   "@queryUi.results.indexUnavailable": {
     "sourceHash": "80e98d0"
   },
-  "queryUi.results.indexReadyStatus": "Index ready ({countText} entries)",
+  "queryUi.results.indexReadyStatus": "索引已就緒（{countText} 個項目）",
   "@queryUi.results.indexReadyStatus": {
     "sourceHash": "b8febe6"
   },
-  "queryUi.results.resultCount": "{shownText} of {totalText} results",
+  "queryUi.results.resultCount": "{totalText} 個結果中顯示了 {shownText} 個",
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
-  "queryUi.results.countOnly.sentence": "{count, plural, one {This search yields <total>{countText}</total> result} other {This search yields <total>{countText}</total> results}}",
+  "queryUi.results.countOnly.sentence": "{count, plural, other {這次搜尋找到 <total>{countText}</total> 個結果}}",
   "@queryUi.results.countOnly.sentence": {
     "sourceHash": "b265ac5"
   },
-  "queryUi.results.countOnly.showResults": "Show results",
+  "queryUi.results.countOnly.showResults": "顯示結果",
   "@queryUi.results.countOnly.showResults": {
     "sourceHash": "90efa19"
   },
-  "queryUi.results.criteria.query": "Query: {query}",
+  "queryUi.results.criteria.query": "查詢：{query}",
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
   },
-  "queryUi.results.criteria.size": "Size filter active",
+  "queryUi.results.criteria.size": "大小篩選已啟用",
   "@queryUi.results.criteria.size": {
     "sourceHash": "24f552d"
   },
-  "queryUi.results.criteria.modified": "Modified filter active",
+  "queryUi.results.criteria.modified": "修改日期篩選已啟用",
   "@queryUi.results.criteria.modified": {
     "sourceHash": "fc2268a"
   },
-  "queryUi.results.indexNotReady": "Drive index not ready. Search is available after the initial scan completes.",
+  "queryUi.results.indexNotReady": "磁碟機索引還沒就緒。首次掃描完成後就能搜尋。",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
-  "queryUi.results.scanProgressWithCount": "Scan in progress ({countText} entries)...",
+  "queryUi.results.scanProgressWithCount": "正在掃描（{countText} 個項目）…",
   "@queryUi.results.scanProgressWithCount": {
     "sourceHash": "3c5b987"
   },
-  "queryUi.results.scanProgress": "Scan in progress...",
+  "queryUi.results.scanProgress": "正在掃描…",
   "@queryUi.results.scanProgress": {
     "sourceHash": "091ba9a"
   },
-  "queryUi.results.loadingIndex": "Loading drive index...",
+  "queryUi.results.loadingIndex": "正在載入磁碟機索引…",
   "@queryUi.results.loadingIndex": {
     "sourceHash": "ab62214"
   },
-  "queryUi.results.searching": "Searching...",
+  "queryUi.results.searching": "正在搜尋…",
   "@queryUi.results.searching": {
     "sourceHash": "78c9d9f"
   },
-  "queryUi.results.noMatchHeading": "No files match these criteria:",
+  "queryUi.results.noMatchHeading": "沒有檔案符合這些條件：",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
-  "queryUi.results.live.resolvingCoverage": "Working out what's already indexed...",
+  "queryUi.results.live.resolvingCoverage": "正在確認哪些內容已經建立索引…",
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "07b501d"
   },
-  "queryUi.results.live.waitingForAnotherWalk": "Waiting for another scan of these folders...",
+  "queryUi.results.live.waitingForAnotherWalk": "正在等另一次掃描讀完這些資料夾…",
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "21163fe"
   },
-  "queryUi.results.live.readingIndex": "Reading what's already indexed...",
+  "queryUi.results.live.readingIndex": "正在讀取已經建立索引的部分…",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"
   },
-  "queryUi.results.live.walking": "Looking through folders that aren't indexed yet...",
+  "queryUi.results.live.walking": "正在逐一查看還沒建立索引的資料夾…",
   "@queryUi.results.live.walking": {
     "sourceHash": "b2dbe67"
   },
-  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {match} other {matches}} so far",
+  "queryUi.results.live.matchesSoFar": "目前找到 {countText} 個{count, plural, other {結果}}",
   "@queryUi.results.live.matchesSoFar": {
     "sourceHash": "5c09eb4"
   },
-  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {folder} other {folders}} scanned",
+  "queryUi.results.live.foldersScanned": "已查看 {countText} 個{count, plural, other {資料夾}}",
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
-  "queryUi.results.live.incomplete": "{shownText} of {totalText} results. Cmdr didn't finish looking.",
+  "queryUi.results.live.incomplete": "{totalText} 個結果中顯示了 {shownText} 個。Cmdr 沒有找完。",
   "@queryUi.results.live.incomplete": {
     "sourceHash": "7dccf6e"
   },
-  "queryUi.results.live.incompleteEmpty": "Nothing found before this search stopped. Cmdr didn't finish looking.",
+  "queryUi.results.live.incompleteEmpty": "搜尋停下來之前什麼都沒找到。Cmdr 沒有找完。",
   "@queryUi.results.live.incompleteEmpty": {
     "sourceHash": "bfa15df"
   },
-  "queryUi.results.live.capped": "Showing the first {shownText} of {totalText} matches.",
+  "queryUi.results.live.capped": "{totalText} 個結果中顯示了前 {shownText} 個。",
   "@queryUi.results.live.capped": {
     "sourceHash": "7c0475d"
   },
-  "queryUi.results.live.stop": "Stop",
+  "queryUi.results.live.stop": "停止",
   "@queryUi.results.live.stop": {
     "sourceHash": "cae7d57"
   },
-  "queryUi.results.live.stopTooltip": "Stop searching. Everything found so far stays on screen.",
+  "queryUi.results.live.stopTooltip": "停止搜尋。已經找到的內容會留在畫面上。",
   "@queryUi.results.live.stopTooltip": {
     "sourceHash": "e72f5d7"
   },
-  "queryUi.results.live.scanningAria": "Currently looking in {path}",
+  "queryUi.results.live.scanningAria": "目前正在查看 {path}",
   "@queryUi.results.live.scanningAria": {
     "sourceHash": "0071028"
   },
-  "queryUi.results.countOnly.soFar": "{count, plural, one {This search has found <total>{countText}</total> result so far} other {This search has found <total>{countText}</total> results so far}}",
+  "queryUi.results.countOnly.soFar": "{count, plural, other {這次搜尋目前找到 <total>{countText}</total> 個結果}}",
   "@queryUi.results.countOnly.soFar": {
     "sourceHash": "dbdb208"
   },
-  "queryUi.pathPills.hiddenAria": "Hidden path segments: {segments}",
+  "queryUi.pathPills.hiddenAria": "隱藏的路徑片段：{segments}",
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.trailingTooltip": "Show all recent searches",
+  "queryUi.recent.trailingTooltip": "顯示所有最近的搜尋",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
   },
-  "queryUi.recent.allButtonAria": "All recent searches",
+  "queryUi.recent.allButtonAria": "所有最近的搜尋",
   "@queryUi.recent.allButtonAria": {
     "sourceHash": "c4faef7"
   },
-  "queryUi.recent.filterPlaceholder": "Filter recent searches",
+  "queryUi.recent.filterPlaceholder": "篩選最近的搜尋",
   "@queryUi.recent.filterPlaceholder": {
     "sourceHash": "37e55fe"
   },
-  "queryUi.recent.emptyMessage": "No recent searches match that filter.",
+  "queryUi.recent.emptyMessage": "沒有最近的搜尋符合這個篩選條件。",
   "@queryUi.recent.emptyMessage": {
     "sourceHash": "7007fba"
   },
-  "queryUi.recent.popoverAria": "All recent searches",
+  "queryUi.recent.popoverAria": "所有最近的搜尋",
   "@queryUi.recent.popoverAria": {
     "sourceHash": "c4faef7"
   },
-  "queryUi.recent.listboxAria": "Recent searches",
+  "queryUi.recent.listboxAria": "最近的搜尋",
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> to move · <selectKey>Enter</selectKey> to fill the field · right-click to remove",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> 移動 · <selectKey>Enter</selectKey> 填入搜尋框 · 按右鍵移除",
   "@queryUi.recent.popoverHint": {
     "sourceHash": "a7ccaef"
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "The abbreviation \"AI\", used bare and untranslated throughout Traditional Chinese tech writing. This catalog already carries it bare in the settings strings agent 1 translated (`settings.ai.provider.opt.cloud` = 雲端 AI, `settings.advanced.logLlmCalls.label` = 記錄 AI 模型呼叫), so spelling it out here would contradict the rest of the app. Its sibling mode names `queryUi.recent.mode.regex` and `.filename` are both translated."
   },
-  "queryUi.recent.mode.regex": "Regex",
+  "queryUi.recent.mode.regex": "正規",
   "@queryUi.recent.mode.regex": {
     "sourceHash": "0f27125"
   },
-  "queryUi.recent.mode.filename": "Filename",
+  "queryUi.recent.mode.filename": "檔名",
   "@queryUi.recent.mode.filename": {
     "sourceHash": "971b974"
   },
-  "queryUi.age.justNow": "just now",
+  "queryUi.age.justNow": "剛剛",
   "@queryUi.age.justNow": {
     "sourceHash": "7ddb44d"
   },
-  "queryUi.age.minutes": "{count}m ago",
+  "queryUi.age.minutes": "{count} 分鐘前",
   "@queryUi.age.minutes": {
     "sourceHash": "0a03167"
   },
-  "queryUi.age.hours": "{count}h ago",
+  "queryUi.age.hours": "{count} 小時前",
   "@queryUi.age.hours": {
     "sourceHash": "520c737"
   },
-  "queryUi.age.days": "{count}d ago",
+  "queryUi.age.days": "{count} 天前",
   "@queryUi.age.days": {
     "sourceHash": "a412343"
   },
-  "queryUi.age.weeks": "{count}w ago",
+  "queryUi.age.weeks": "{count} 週前",
   "@queryUi.age.weeks": {
     "sourceHash": "7c7a56d"
   },
-  "queryUi.age.months": "{count}mo ago",
+  "queryUi.age.months": "{count} 個月前",
   "@queryUi.age.months": {
     "sourceHash": "e3ca968"
   },
-  "queryUi.age.years": "{count}y ago",
+  "queryUi.age.years": "{count} 年前",
   "@queryUi.age.years": {
     "sourceHash": "e0d32e9"
   },
-  "queryUi.recent.scopeSummary": "scope: {scope}",
+  "queryUi.recent.scopeSummary": "範圍：{scope}",
   "@queryUi.recent.scopeSummary": {
     "sourceHash": "e5e6dff"
   },
-  "queryUi.recent.caseSensitive": "case-sensitive",
+  "queryUi.recent.caseSensitive": "區分大小寫",
   "@queryUi.recent.caseSensitive": {
     "sourceHash": "3934758"
   },
-  "queryUi.recent.systemDirsIncluded": "system dirs included",
+  "queryUi.recent.systemDirsIncluded": "包含系統目錄",
   "@queryUi.recent.systemDirsIncluded": {
     "sourceHash": "b7996cc"
   },
-  "queryUi.recent.resultCount": "{countText} results last time",
+  "queryUi.recent.resultCount": "上次有 {countText} 個結果",
   "@queryUi.recent.resultCount": {
     "sourceHash": "d048174"
   },
-  "queryUi.recent.rowResultCount": "{countText} {count, plural, one {result} other {results}}",
+  "queryUi.recent.rowResultCount": "{countText} 個{count, plural, other {結果}}",
   "@queryUi.recent.rowResultCount": {
     "sourceHash": "e8c3318"
   },
-  "queryUi.recent.sizeRange": "size {minText}–{maxText}",
+  "queryUi.recent.sizeRange": "大小 {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {
     "sourceHash": "96bd04f"
   },
-  "queryUi.recent.sizeMin": "size > {minText}",
+  "queryUi.recent.sizeMin": "大小 > {minText}",
   "@queryUi.recent.sizeMin": {
     "sourceHash": "0aab700"
   },
-  "queryUi.recent.sizeMax": "size < {maxText}",
+  "queryUi.recent.sizeMax": "大小 < {maxText}",
   "@queryUi.recent.sizeMax": {
     "sourceHash": "7850b6e"
   },
-  "queryUi.recent.modifiedRange": "modified {after}…{before}",
+  "queryUi.recent.modifiedRange": "修改於 {after}…{before}",
   "@queryUi.recent.modifiedRange": {
     "sourceHash": "e99ce85"
   },
-  "queryUi.recent.modifiedAfter": "after {after}",
+  "queryUi.recent.modifiedAfter": "{after} 之後",
   "@queryUi.recent.modifiedAfter": {
     "sourceHash": "4135ddf"
   },
-  "queryUi.recent.modifiedBefore": "before {before}",
+  "queryUi.recent.modifiedBefore": "{before} 之前",
   "@queryUi.recent.modifiedBefore": {
     "sourceHash": "f0a5bd6"
   },
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
-    "sourceHash": "54a225b"
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "Placeholder-only string: two already-translated fragments joined by a middle dot `·`. Both `{mode}` and `{age}` arrive in Traditional Chinese from `queryUi.recent.mode.*` and `queryUi.age.*`; the separator is a punctuation mark this catalog uses unchanged (`queryUi.empty.indexReady`, `queryUi.recent.popoverHint`)."
   },
-  "queryUi.dialog.actionsAria": "Dialog actions",
+  "queryUi.dialog.actionsAria": "對話方塊動作",
   "@queryUi.dialog.actionsAria": {
     "sourceHash": "62d23d5"
   },
-  "queryUi.dialog.aiTranslateFailedToast": "Couldn''t run the AI search just now. Try again?",
+  "queryUi.dialog.aiTranslateFailedToast": "剛才無法執行 AI 搜尋。要再試一次嗎？",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
   },
-  "queryUi.dialog.runQueryToast": "Couldn''t finish that search. {message}",
+  "queryUi.dialog.runQueryToast": "無法完成這次搜尋。{message}",
   "@queryUi.dialog.runQueryToast": {
     "sourceHash": "02a3bba"
   },
-  "queryUi.dialog.runQueryUnknownReason": "The reason isn''t clear. Try a narrower query?",
+  "queryUi.dialog.runQueryUnknownReason": "原因不清楚。要不要試試更精確的查詢？",
   "@queryUi.dialog.runQueryUnknownReason": {
     "sourceHash": "4f79b0f"
   },
-  "queryUi.filters.toolbarAria": "Search filters",
+  "queryUi.filters.toolbarAria": "搜尋篩選條件",
   "@queryUi.filters.toolbarAria": {
     "sourceHash": "f484e72"
   },
-  "queryUi.filters.type.both": "Both",
+  "queryUi.filters.type.both": "兩者",
   "@queryUi.filters.type.both": {
     "sourceHash": "b6c1d86"
   },
-  "queryUi.filters.type.files": "Files",
+  "queryUi.filters.type.files": "檔案",
   "@queryUi.filters.type.files": {
     "sourceHash": "abc7e98"
   },
-  "queryUi.filters.type.folders": "Folders",
+  "queryUi.filters.type.folders": "資料夾",
   "@queryUi.filters.type.folders": {
     "sourceHash": "c4d6bb2"
   },
-  "queryUi.filters.type.aria": "Filter by type",
+  "queryUi.filters.type.aria": "依類型篩選",
   "@queryUi.filters.type.aria": {
     "sourceHash": "51035b5"
   },
-  "queryUi.filters.chip.pattern": "Pattern",
+  "queryUi.filters.chip.pattern": "樣式",
   "@queryUi.filters.chip.pattern": {
     "sourceHash": "4288ade"
   },
-  "queryUi.filters.chip.size": "Size",
+  "queryUi.filters.chip.size": "大小",
   "@queryUi.filters.chip.size": {
     "sourceHash": "1af8519"
   },
-  "queryUi.filters.chip.modified": "Modified",
+  "queryUi.filters.chip.modified": "修改日期",
   "@queryUi.filters.chip.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.filters.chip.scope": "Search in",
+  "queryUi.filters.chip.scope": "搜尋範圍",
   "@queryUi.filters.chip.scope": {
     "sourceHash": "fa79255"
   },
-  "queryUi.filters.countOnly.label": "Count only",
+  "queryUi.filters.countOnly.label": "只算數量",
   "@queryUi.filters.countOnly.label": {
     "sourceHash": "a28dbfe"
   },
-  "queryUi.filters.countOnly.tooltip": "Show just how many files match, not the list",
+  "queryUi.filters.countOnly.tooltip": "只顯示有幾個檔案符合，不列出清單",
   "@queryUi.filters.countOnly.tooltip": {
     "sourceHash": "7351921"
   },
-  "queryUi.filters.scope.includesSystemFolders": "includes system folders",
+  "queryUi.filters.scope.includesSystemFolders": "包含系統資料夾",
   "@queryUi.filters.scope.includesSystemFolders": {
     "sourceHash": "3bb9784"
   },
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
-    "sourceHash": "bbd5deb"
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "Placeholder-only string: `{prefix}` is a math glyph (>, <, =), `{valueText}` a number, `{unit}` a size unit like MB. Nothing outside the placeholders is human-readable text, and Traditional Chinese writes sizes with the same Latin unit symbols and Arabic numerals (style.md § Punctuation). Same shape as `queryUi.filters.size.summary.range`."
   },
   "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
   "@queryUi.filters.size.summary.range": {
-    "sourceHash": "ba7eadc"
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "Placeholder-only string: two numbers, two Latin unit symbols, and an en dash for the range. Traditional Chinese uses the en dash for ranges exactly as English does (style.md § Punctuation), so there is nothing to translate. Same shape as `queryUi.filters.size.summary.single`."
   },
-  "queryUi.filters.date.summary.after": "after {date}",
+  "queryUi.filters.date.summary.after": "{date} 之後",
   "@queryUi.filters.date.summary.after": {
     "sourceHash": "f70f7dc"
   },
-  "queryUi.filters.date.summary.before": "before {date}",
+  "queryUi.filters.date.summary.before": "{date} 之前",
   "@queryUi.filters.date.summary.before": {
     "sourceHash": "e503949"
   },
   "queryUi.filters.date.summary.range": "{after} – {before}",
   "@queryUi.filters.date.summary.range": {
-    "sourceHash": "801560e"
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "Placeholder-only string: two ISO dates joined by an en dash. ISO 8601 dates stay in their Latin form in every locale (they are Cmdr's house date format), and the en dash is the range mark in Traditional Chinese too. Same shape as `queryUi.filters.size.summary.range`."
   },
-  "queryUi.size.comparator.any": "any",
+  "queryUi.size.comparator.any": "不限",
   "@queryUi.size.comparator.any": {
     "sourceHash": "d6a7cd2"
   },
-  "queryUi.size.comparator.between": "between",
+  "queryUi.size.comparator.between": "介於",
   "@queryUi.size.comparator.between": {
     "sourceHash": "fbb27fb"
   },
-  "queryUi.size.unit.byte": "byte",
+  "queryUi.size.unit.byte": "位元組",
   "@queryUi.size.unit.byte": {
     "sourceHash": "1c31626"
   },
-  "queryUi.size.unit.bytes": "bytes",
+  "queryUi.size.unit.bytes": "位元組",
   "@queryUi.size.unit.bytes": {
     "sourceHash": "277089d"
   },
-  "queryUi.size.customCell": "custom…",
+  "queryUi.size.customCell": "自訂…",
   "@queryUi.size.customCell": {
     "sourceHash": "564a4d3"
   },
-  "queryUi.size.customInputPlaceholder": "custom",
+  "queryUi.size.customInputPlaceholder": "自訂",
   "@queryUi.size.customInputPlaceholder": {
     "sourceHash": "6cdfd27"
   },
-  "queryUi.size.popover.label": "Size",
+  "queryUi.size.popover.label": "大小",
   "@queryUi.size.popover.label": {
     "sourceHash": "1af8519"
   },
-  "queryUi.size.popover.aria": "Size filter options",
+  "queryUi.size.popover.aria": "大小篩選選項",
   "@queryUi.size.popover.aria": {
     "sourceHash": "087d449"
   },
-  "queryUi.size.aria.comparator": "Comparator",
+  "queryUi.size.aria.comparator": "比較運算子",
   "@queryUi.size.aria.comparator": {
     "sourceHash": "9a348d5"
   },
-  "queryUi.size.aria.minValue": "Minimum size value",
+  "queryUi.size.aria.minValue": "最小大小數值",
   "@queryUi.size.aria.minValue": {
     "sourceHash": "242e7b0"
   },
-  "queryUi.size.aria.minUnit": "Minimum size unit",
+  "queryUi.size.aria.minUnit": "最小大小單位",
   "@queryUi.size.aria.minUnit": {
     "sourceHash": "4803db9"
   },
-  "queryUi.size.aria.maxValue": "Maximum size value",
+  "queryUi.size.aria.maxValue": "最大大小數值",
   "@queryUi.size.aria.maxValue": {
     "sourceHash": "a79a52b"
   },
-  "queryUi.size.aria.maxUnit": "Maximum size unit",
+  "queryUi.size.aria.maxUnit": "最大大小單位",
   "@queryUi.size.aria.maxUnit": {
     "sourceHash": "7ab449b"
   },
-  "queryUi.size.aria.customMin": "Custom minimum size value",
+  "queryUi.size.aria.customMin": "自訂最小大小數值",
   "@queryUi.size.aria.customMin": {
     "sourceHash": "d841b6a"
   },
-  "queryUi.size.aria.customMax": "Custom maximum size value",
+  "queryUi.size.aria.customMax": "自訂最大大小數值",
   "@queryUi.size.aria.customMax": {
     "sourceHash": "4761acf"
   },
-  "queryUi.date.comparator.any": "any",
+  "queryUi.date.comparator.any": "不限",
   "@queryUi.date.comparator.any": {
     "sourceHash": "d6a7cd2"
   },
-  "queryUi.date.comparator.after": "after",
+  "queryUi.date.comparator.after": "之後",
   "@queryUi.date.comparator.after": {
     "sourceHash": "f395923"
   },
-  "queryUi.date.comparator.before": "before",
+  "queryUi.date.comparator.before": "之前",
   "@queryUi.date.comparator.before": {
     "sourceHash": "6db7d80"
   },
-  "queryUi.date.comparator.between": "between",
+  "queryUi.date.comparator.between": "介於",
   "@queryUi.date.comparator.between": {
     "sourceHash": "fbb27fb"
   },
-  "queryUi.date.customCell": "custom…",
+  "queryUi.date.customCell": "自訂…",
   "@queryUi.date.customCell": {
     "sourceHash": "564a4d3"
   },
-  "queryUi.date.popover.label": "Modified",
+  "queryUi.date.popover.label": "修改日期",
   "@queryUi.date.popover.label": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.date.popover.aria": "Modified filter options",
+  "queryUi.date.popover.aria": "修改日期篩選選項",
   "@queryUi.date.popover.aria": {
     "sourceHash": "e0fd68c"
   },
-  "queryUi.date.aria.comparator": "Comparator",
+  "queryUi.date.aria.comparator": "比較運算子",
   "@queryUi.date.aria.comparator": {
     "sourceHash": "9a348d5"
   },
-  "queryUi.date.aria.value": "Date value",
+  "queryUi.date.aria.value": "日期數值",
   "@queryUi.date.aria.value": {
     "sourceHash": "8696a46"
   },
-  "queryUi.date.aria.maxValue": "Maximum date value",
+  "queryUi.date.aria.maxValue": "最大日期數值",
   "@queryUi.date.aria.maxValue": {
     "sourceHash": "733e9f1"
   },
-  "queryUi.date.aria.custom": "Custom date value",
+  "queryUi.date.aria.custom": "自訂日期數值",
   "@queryUi.date.aria.custom": {
     "sourceHash": "531707c"
   },
-  "queryUi.date.aria.customMax": "Custom maximum date value",
+  "queryUi.date.aria.customMax": "自訂最大日期數值",
   "@queryUi.date.aria.customMax": {
     "sourceHash": "fae3317"
   },
-  "queryUi.date.preset.today": "today {time}",
+  "queryUi.date.preset.today": "今天 {time}",
   "@queryUi.date.preset.today": {
     "sourceHash": "171a27d"
   },
-  "queryUi.date.preset.yesterday": "yesterday {time}",
+  "queryUi.date.preset.yesterday": "昨天 {time}",
   "@queryUi.date.preset.yesterday": {
     "sourceHash": "b40b2e7"
   },
-  "queryUi.date.preset.thisWeek": "this {weekday} {time}",
+  "queryUi.date.preset.thisWeek": "這個{weekday} {time}",
   "@queryUi.date.preset.thisWeek": {
     "sourceHash": "9259c67"
   },
-  "queryUi.date.preset.lastWeek": "last {weekday} {time}",
+  "queryUi.date.preset.lastWeek": "上個{weekday} {time}",
   "@queryUi.date.preset.lastWeek": {
     "sourceHash": "1e4419c"
   },
-  "queryUi.date.preset.thisMonth": "1st of {month} {time}",
+  "queryUi.date.preset.thisMonth": "{month}1日 {time}",
   "@queryUi.date.preset.thisMonth": {
     "sourceHash": "030ee23"
   },
-  "queryUi.date.preset.lastMonth": "1st of {month}, {year}, {time}",
+  "queryUi.date.preset.lastMonth": "{year} 年{month}1日 {time}",
   "@queryUi.date.preset.lastMonth": {
     "sourceHash": "0838509"
   },
-  "queryUi.date.preset.yearStart": "1st of January, {year}, {time}",
+  "queryUi.date.preset.yearStart": "{year} 年1月1日 {time}",
   "@queryUi.date.preset.yearStart": {
     "sourceHash": "f86a864"
   },
-  "queryUi.scope.popover.label": "Search in",
+  "queryUi.scope.popover.label": "搜尋範圍",
   "@queryUi.scope.popover.label": {
     "sourceHash": "fa79255"
   },
-  "queryUi.scope.popover.aria": "Search in folders",
+  "queryUi.scope.popover.aria": "搜尋範圍：選擇資料夾",
   "@queryUi.scope.popover.aria": {
     "sourceHash": "989db5d"
   },
-  "queryUi.scope.hint": "Comma-separated paths. Prefix with <bang>!</bang> to exclude. Wildcards <star>*</star> and <question>?</question> work.",
+  "queryUi.scope.hint": "用逗號分隔的路徑。前面加 <bang>!</bang> 表示排除。可以用萬用字元 <star>*</star> 和 <question>?</question>。",
   "@queryUi.scope.hint": {
     "sourceHash": "3335512"
   },
-  "queryUi.scope.textareaAria": "Scope folders",
+  "queryUi.scope.textareaAria": "範圍資料夾",
   "@queryUi.scope.textareaAria": {
     "sourceHash": "0d82c92"
   },
-  "queryUi.scope.toggle.hideBoring": "Hide boring folders",
+  "queryUi.scope.toggle.hideBoring": "隱藏無聊的資料夾",
   "@queryUi.scope.toggle.hideBoring": {
     "sourceHash": "972df96"
   },
-  "queryUi.scope.toggle.caseSensitive": "Case-sensitive",
+  "queryUi.scope.toggle.caseSensitive": "區分大小寫",
   "@queryUi.scope.toggle.caseSensitive": {
     "sourceHash": "9d15f82"
   },
-  "queryUi.scope.toggle.caseSensitiveAria": "Case-sensitive matching",
+  "queryUi.scope.toggle.caseSensitiveAria": "比對時區分大小寫",
   "@queryUi.scope.toggle.caseSensitiveAria": {
     "sourceHash": "2700434"
   },
-  "queryUi.scope.useCurrentFolder": "Use current folder",
+  "queryUi.scope.useCurrentFolder": "使用目前的資料夾",
   "@queryUi.scope.useCurrentFolder": {
     "sourceHash": "3df292c"
   },
-  "queryUi.scope.thisVolume": "This volume",
+  "queryUi.scope.thisVolume": "這個卷宗",
   "@queryUi.scope.thisVolume": {
     "sourceHash": "fd56065"
   },
-  "queryUi.scope.currentFolder": "Current folder",
+  "queryUi.scope.currentFolder": "目前的資料夾",
   "@queryUi.scope.currentFolder": {
     "sourceHash": "1a5db52"
   }
