@@ -31,6 +31,10 @@
   "@operationLog.dialog.loadMore": {
     "sourceHash": "baef697"
   },
+  "operationLog.dialog.rollBack": "Hoàn tác",
+  "@operationLog.dialog.rollBack": {
+    "sourceHash": "931f703"
+  },
   "operationLog.dialog.close": "Đóng",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -130,6 +134,30 @@
   "operationLog.rollback.partiallyRolledBack": "Đã hoàn tác một phần",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.refusalAlreadyRollingBack": "Thao tác này đang được hoàn tác rồi. Hãy theo dõi trong hàng đợi.",
+  "@operationLog.rollback.refusalAlreadyRollingBack": {
+    "sourceHash": "282a49a"
+  },
+  "operationLog.rollback.refusalAlreadyRolledBack": "Thao tác này đã trở lại như cũ rồi.",
+  "@operationLog.rollback.refusalAlreadyRolledBack": {
+    "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalNotRollbackable": "Không thể hoàn tác thao tác này.",
+  "@operationLog.rollback.refusalNotRollbackable": {
+    "sourceHash": "921533d"
+  },
+  "operationLog.rollback.refusalVolumeUnavailable": "Hãy kết nối ổ đĩa mà thao tác này đã dùng, rồi thử lại.",
+  "@operationLog.rollback.refusalVolumeUnavailable": {
+    "sourceHash": "935d109"
+  },
+  "operationLog.rollback.refusalUnknown": "Thao tác này không còn trong lịch sử của bạn nữa.",
+  "@operationLog.rollback.refusalUnknown": {
+    "sourceHash": "f94c33d"
+  },
+  "operationLog.rollback.refusalUnexpected": "Cmdr không khởi động được việc hoàn tác. Hãy thử lại sau giây lát.",
+  "@operationLog.rollback.refusalUnexpected": {
+    "sourceHash": "bef54f1"
   },
   "operationLog.outcome.done": "Xong",
   "@operationLog.outcome.done": {

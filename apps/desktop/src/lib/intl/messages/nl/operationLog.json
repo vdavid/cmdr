@@ -31,6 +31,10 @@
   "@operationLog.dialog.loadMore": {
     "sourceHash": "baef697"
   },
+  "operationLog.dialog.rollBack": "Terugdraaien",
+  "@operationLog.dialog.rollBack": {
+    "sourceHash": "931f703"
+  },
   "operationLog.dialog.close": "Sluit",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -131,6 +135,30 @@
   "operationLog.rollback.partiallyRolledBack": "Gedeeltelijk teruggedraaid",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.refusalAlreadyRollingBack": "Deze wordt al teruggedraaid. Volg het in de wachtrij.",
+  "@operationLog.rollback.refusalAlreadyRollingBack": {
+    "sourceHash": "282a49a"
+  },
+  "operationLog.rollback.refusalAlreadyRolledBack": "Deze is al terug zoals hij was.",
+  "@operationLog.rollback.refusalAlreadyRolledBack": {
+    "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalNotRollbackable": "Deze bewerking is niet terug te draaien.",
+  "@operationLog.rollback.refusalNotRollbackable": {
+    "sourceHash": "921533d"
+  },
+  "operationLog.rollback.refusalVolumeUnavailable": "Sluit de schijf aan die deze bewerking gebruikte en probeer het opnieuw.",
+  "@operationLog.rollback.refusalVolumeUnavailable": {
+    "sourceHash": "935d109"
+  },
+  "operationLog.rollback.refusalUnknown": "Deze bewerking staat niet meer in je geschiedenis.",
+  "@operationLog.rollback.refusalUnknown": {
+    "sourceHash": "f94c33d"
+  },
+  "operationLog.rollback.refusalUnexpected": "Cmdr kon het terugdraaien niet starten. Probeer het zo meteen opnieuw.",
+  "@operationLog.rollback.refusalUnexpected": {
+    "sourceHash": "bef54f1"
   },
   "operationLog.outcome.done": "Gereed",
   "@operationLog.outcome.done": {

@@ -297,6 +297,7 @@
              left to undo, and the row beneath already says so. -->
         {#if rollbackAsked && canRollback}
             <RollbackConfirmDialog
+                variant="stopAndDelete"
                 onConfirm={() => {
                     rollbackAsked = false
                     void op?.rollback()

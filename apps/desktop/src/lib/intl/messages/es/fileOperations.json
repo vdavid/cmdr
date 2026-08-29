@@ -657,6 +657,22 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Esto elimina los archivos y carpetas que creó la operación. Cmdr omite todo aquello de lo que no está seguro, así que puede que quede alguno.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "88584f4"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Esto devuelve los archivos al lugar del que salieron. Cmdr omite todo aquello de lo que no está seguro, así que puede que alguno se quede donde está.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "7d55114"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Esto devuelve a los archivos sus nombres anteriores. Cmdr omite todo aquello de lo que no está seguro, así que puede que alguno conserve el nombre que tiene ahora.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "819690f"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "Dejarlo así",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
+  },
   "fileOperations.rollbackConfirm.keep": "Conservar los archivos",
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"

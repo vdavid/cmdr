@@ -1,7 +1,9 @@
 /**
- * Client-side labels for the operation-log dialog.
+ * Client-side labels for the operation-log dialog, plus the two other things the
+ * dialog derives from a typed enum: which rollback confirmation to raise, and which
+ * sentence to show when a rollback is refused.
  *
- * Every label is derived from a TYPED enum field, never a display string the
+ * Every one of them comes from a TYPED enum field, never a display string the
  * backend rendered: the per-operation summary
  * ("Moved 214 items") is formatted here from `kind` + `itemCount` via an ICU
  * plural key, so it localizes per viewer and shows a thousands separator. Status,
@@ -9,8 +11,17 @@
  * an exhaustive switch (a new variant is a compile error until it's mapped).
  */
 
-import type { Initiator, ItemOutcome, OpKind, ArchiveSubkind, ExecutionStatus, RollbackState } from '$lib/ipc/bindings'
+import type {
+  Initiator,
+  ItemOutcome,
+  OpKind,
+  ArchiveSubkind,
+  ExecutionStatus,
+  RollbackRefusal,
+  RollbackState,
+} from '$lib/ipc/bindings'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import type { RollbackConfirmVariant } from '$lib/file-operations/rollback-confirm-variant'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
 
@@ -114,5 +125,56 @@ export function itemOutcomeLabel(outcome: ItemOutcome): string {
       return tString('operationLog.outcome.failed')
     case 'rolledBack':
       return tString('operationLog.outcome.rolledBack')
+  }
+}
+
+/**
+ * Which confirmation to put in front of Roll back, because what a rollback DOES
+ * depends on what was done: undoing a copy deletes, undoing a move carries the files
+ * home, undoing a rename only changes names back.
+ *
+ * Mirrors the backend's `inverse_kind` (`operation_log/rollback.rs`) arm for arm,
+ * including its `delete → delete` arm: a permanent delete is never rollbackable, so
+ * the button never appears on one, and the arm exists so a NEW `OpKind` is a compile
+ * error here rather than a confidently wrong sentence in front of a user.
+ */
+export function rollbackConfirmVariant(kind: OpKind): RollbackConfirmVariant {
+  switch (kind) {
+    case 'copy':
+    case 'createFolder':
+    case 'createFile':
+    case 'archiveEdit':
+    case 'delete':
+      return 'undoByDeleting'
+    case 'move':
+    case 'trash':
+      return 'undoByMovingBack'
+    case 'rename':
+      return 'undoByRenamingBack'
+  }
+}
+
+/**
+ * The sentence for a refused rollback. `null` covers the press that never reached the
+ * backend at all, which carries no reason to report.
+ *
+ * The button only shows on a row the journal calls rollbackable, so every reason here
+ * is a race the user lost: another window, the agent, or an external AI client got
+ * there first, or a drive left. Each earns its own words, because "it can't be rolled
+ * back" and "it already was" ask for different next moves.
+ */
+export function rollbackRefusalNotice(refusal: RollbackRefusal | null): MessageKey {
+  if (refusal === null) return 'operationLog.rollback.refusalUnexpected'
+  switch (refusal.kind) {
+    case 'unknownOperation':
+      return 'operationLog.rollback.refusalUnknown'
+    case 'alreadyRollingBack':
+      return 'operationLog.rollback.refusalAlreadyRollingBack'
+    case 'alreadyRolledBack':
+      return 'operationLog.rollback.refusalAlreadyRolledBack'
+    case 'notRollbackable':
+      return 'operationLog.rollback.refusalNotRollbackable'
+    case 'volumeUnavailable':
+      return 'operationLog.rollback.refusalVolumeUnavailable'
   }
 }

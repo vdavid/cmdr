@@ -657,6 +657,22 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Ez törli a fájlokat és mappákat, amiket a művelet létrehozott. Amiben a Cmdr nem biztos, azt kihagyja, szóval maradhat belőlük egy-kettő.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "88584f4"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Ez visszaviszi a fájlokat oda, ahonnan jöttek. Amiben a Cmdr nem biztos, azt kihagyja, szóval egy-kettő ottmaradhat.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "7d55114"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Ez visszaadja a fájlok régi nevét. Amiben a Cmdr nem biztos, azt kihagyja, szóval egy-kettő megtarthatja a mostani nevét.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "819690f"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "Maradjon így",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
+  },
   "fileOperations.rollbackConfirm.keep": "Fájlok megtartása",
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"

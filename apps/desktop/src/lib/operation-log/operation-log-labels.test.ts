@@ -7,13 +7,25 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { ArchiveSubkind, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState } from '$lib/ipc/bindings'
+import { tString } from '$lib/intl/messages.svelte'
+import type {
+  ArchiveSubkind,
+  ExecutionStatus,
+  Initiator,
+  ItemOutcome,
+  OpKind,
+  RollbackRefusal,
+  RollbackState,
+} from '$lib/ipc/bindings'
+import type { RollbackConfirmVariant } from '$lib/file-operations/rollback-confirm-variant'
 import {
   operationSummary,
   initiatorLabel,
   executionStatusLabel,
   rollbackStateLabel,
   itemOutcomeLabel,
+  rollbackConfirmVariant,
+  rollbackRefusalNotice,
 } from './operation-log-labels'
 
 describe('operationSummary', () => {
@@ -99,5 +111,51 @@ describe('enum labels', () => {
     for (const [value, label] of Object.entries(cases)) {
       expect(itemOutcomeLabel(value as ItemOutcome)).toBe(label)
     }
+  })
+})
+
+describe('rollbackConfirmVariant', () => {
+  it('picks the wording by what the inverse DOES, mirroring the backend’s inverse_kind', () => {
+    const cases: Record<OpKind, RollbackConfirmVariant> = {
+      copy: 'undoByDeleting',
+      createFolder: 'undoByDeleting',
+      createFile: 'undoByDeleting',
+      archiveEdit: 'undoByDeleting',
+      // Never reachable: a permanent delete is gated as not-rollbackable, so no
+      // button ever appears on one. Mapped anyway so a new kind is a compile error.
+      delete: 'undoByDeleting',
+      move: 'undoByMovingBack',
+      trash: 'undoByMovingBack',
+      rename: 'undoByRenamingBack',
+    }
+    for (const [kind, variant] of Object.entries(cases)) {
+      expect(rollbackConfirmVariant(kind as OpKind)).toBe(variant)
+    }
+  })
+
+  it('never words a move or a rename as a delete', () => {
+    // The one mistake this mapping exists to prevent: reusing the copy wording on
+    // an operation whose reversal takes nothing away.
+    expect(rollbackConfirmVariant('move')).not.toBe('undoByDeleting')
+    expect(rollbackConfirmVariant('rename')).not.toBe('undoByDeleting')
+  })
+})
+
+describe('rollbackRefusalNotice', () => {
+  it('gives every refusal its own sentence', () => {
+    const cases: [RollbackRefusal, string][] = [
+      [{ kind: 'unknownOperation' }, 'This operation isn’t in your history anymore.'],
+      [{ kind: 'alreadyRollingBack' }, 'This one is already rolling back. Watch it in the queue.'],
+      [{ kind: 'alreadyRolledBack' }, 'This one is already back the way it was.'],
+      [{ kind: 'notRollbackable', detail: 'overwrote' }, 'This operation can’t be rolled back.'],
+      [{ kind: 'volumeUnavailable', detail: { volumeId: 'smb-nas' } }, 'Connect the drive this operation used, then try again.'],
+    ]
+    for (const [refusal, notice] of cases) {
+      expect(tString(rollbackRefusalNotice(refusal))).toBe(notice)
+    }
+  })
+
+  it('falls back to a reason-free line when the press never reached the backend', () => {
+    expect(tString(rollbackRefusalNotice(null))).toBe('Cmdr couldn’t start the rollback. Try again in a moment.')
   })
 })

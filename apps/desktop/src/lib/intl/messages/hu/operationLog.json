@@ -31,6 +31,10 @@
   "@operationLog.dialog.loadMore": {
     "sourceHash": "baef697"
   },
+  "operationLog.dialog.rollBack": "Visszagörgetés",
+  "@operationLog.dialog.rollBack": {
+    "sourceHash": "931f703"
+  },
   "operationLog.dialog.close": "Bezárás",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -130,6 +134,30 @@
   "operationLog.rollback.partiallyRolledBack": "Részben visszagörgetve",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.refusalAlreadyRollingBack": "Ennek a visszagörgetése már fut. A műveleti sorban látod.",
+  "@operationLog.rollback.refusalAlreadyRollingBack": {
+    "sourceHash": "282a49a"
+  },
+  "operationLog.rollback.refusalAlreadyRolledBack": "Ez már úgy van, ahogy korábban volt.",
+  "@operationLog.rollback.refusalAlreadyRolledBack": {
+    "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalNotRollbackable": "Ez a művelet nem görgethető vissza.",
+  "@operationLog.rollback.refusalNotRollbackable": {
+    "sourceHash": "921533d"
+  },
+  "operationLog.rollback.refusalVolumeUnavailable": "Csatlakoztasd a meghajtót, amit ez a művelet használt, aztán próbáld újra.",
+  "@operationLog.rollback.refusalVolumeUnavailable": {
+    "sourceHash": "935d109"
+  },
+  "operationLog.rollback.refusalUnknown": "Ez a művelet már nincs benne az előzményeidben.",
+  "@operationLog.rollback.refusalUnknown": {
+    "sourceHash": "f94c33d"
+  },
+  "operationLog.rollback.refusalUnexpected": "A Cmdr nem tudta elindítani a visszagörgetést. Próbáld újra egy pillanat múlva.",
+  "@operationLog.rollback.refusalUnexpected": {
+    "sourceHash": "bef54f1"
   },
   "operationLog.outcome.done": "Kész",
   "@operationLog.outcome.done": {

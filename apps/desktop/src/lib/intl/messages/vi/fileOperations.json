@@ -656,6 +656,22 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Việc này sẽ xóa các tệp và thư mục mà thao tác đã tạo ra. Cmdr bỏ qua những gì nó không chắc chắn, nên có thể còn sót lại vài thứ.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "88584f4"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Việc này sẽ đưa các tệp về lại nơi chúng xuất phát. Cmdr bỏ qua những gì nó không chắc chắn, nên vài tệp có thể vẫn nằm nguyên chỗ cũ.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "7d55114"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Việc này sẽ trả lại tên cũ cho các tệp. Cmdr bỏ qua những gì nó không chắc chắn, nên vài tệp có thể vẫn giữ tên hiện tại.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "819690f"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "Cứ để nguyên",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
+  },
   "fileOperations.rollbackConfirm.keep": "Giữ lại",
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"

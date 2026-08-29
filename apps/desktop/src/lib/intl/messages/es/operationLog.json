@@ -31,6 +31,10 @@
   "@operationLog.dialog.loadMore": {
     "sourceHash": "baef697"
   },
+  "operationLog.dialog.rollBack": "Revertir",
+  "@operationLog.dialog.rollBack": {
+    "sourceHash": "931f703"
+  },
   "operationLog.dialog.close": "Cerrar",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -130,6 +134,30 @@
   "operationLog.rollback.partiallyRolledBack": "Revertido en parte",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.refusalAlreadyRollingBack": "Esta ya se está revirtiendo. Puedes seguirla en la cola.",
+  "@operationLog.rollback.refusalAlreadyRollingBack": {
+    "sourceHash": "282a49a"
+  },
+  "operationLog.rollback.refusalAlreadyRolledBack": "Esta ya está como estaba antes.",
+  "@operationLog.rollback.refusalAlreadyRolledBack": {
+    "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalNotRollbackable": "Esta operación no se puede revertir.",
+  "@operationLog.rollback.refusalNotRollbackable": {
+    "sourceHash": "921533d"
+  },
+  "operationLog.rollback.refusalVolumeUnavailable": "Conecta la unidad que usó esta operación y vuelve a intentarlo.",
+  "@operationLog.rollback.refusalVolumeUnavailable": {
+    "sourceHash": "935d109"
+  },
+  "operationLog.rollback.refusalUnknown": "Esta operación ya no está en tu historial.",
+  "@operationLog.rollback.refusalUnknown": {
+    "sourceHash": "f94c33d"
+  },
+  "operationLog.rollback.refusalUnexpected": "Cmdr no pudo iniciar la reversión. Inténtalo de nuevo en un momento.",
+  "@operationLog.rollback.refusalUnexpected": {
+    "sourceHash": "bef54f1"
   },
   "operationLog.outcome.done": "Hecho",
   "@operationLog.outcome.done": {

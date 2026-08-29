@@ -3,8 +3,10 @@
  *
  * The alpha "Operation log" dialog: a newest-first list of file operations, each an
  * expandable button (`aria-expanded` + `aria-controls`) that reveals its per-item
- * rows. Covers the empty state, a populated collapsed list, and an expanded operation
- * (whose revealed region must satisfy the `aria-controls` reference).
+ * rows, and each reversible one carrying a Roll back button beside it. Covers the
+ * empty state, a populated collapsed list, an expanded operation (whose revealed
+ * region must satisfy the `aria-controls` reference), the confirmation stacked over
+ * the log, and the refusal notice a lost race leaves on a row.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -13,16 +15,19 @@ import OperationLogDialog from './OperationLogDialog.svelte'
 import { operationLogState } from './operation-log-trigger.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { OperationRow, OperationItemView } from '$lib/ipc/bindings'
+import { RollbackRefusalFailure } from './rollback-refusal'
 
 const getDetailMock = vi.fn((_id: string, _limit: number, _offset: number) =>
   Promise.resolve({ operation: op('op-1', 'move'), items: [item(0), item(1)], totalItems: 2 }),
 )
+const rollbackMock = vi.fn((_id: string) => Promise.resolve({ inverseOpId: 'op-inverse' }))
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   getRecentOperationLogEntries: vi.fn(() => Promise.resolve([])),
   getOperationLogDetail: (id: string, limit: number, offset: number) => getDetailMock(id, limit, offset),
+  rollbackOperation: (id: string) => rollbackMock(id),
 }))
 
 function op(opId: string, kind: OperationRow['kind']): OperationRow {
@@ -99,6 +104,50 @@ describe('OperationLogDialog a11y', () => {
     resetState([op('op-1', 'move'), op('op-2', 'copy')])
     const target = mountDialog()
     await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  /** The row's Roll back button: the one control on a row that isn't the row itself. */
+  function rollbackButton(target: HTMLElement): HTMLButtonElement | null {
+    return target.querySelector<HTMLButtonElement>('.op-row button.btn')
+  }
+
+  /** Press Roll back and let the stacked confirmation mount. */
+  async function openConfirmation(target: HTMLElement): Promise<void> {
+    const button = rollbackButton(target)
+    if (button === null) throw new Error('expected a Roll back button on a rollbackable row')
+    button.click()
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-dialog-id="rollback-confirmation"]')).not.toBeNull()
+    })
+    await tick()
+  }
+
+  it('the rollback confirmation stacked over the log has no a11y violations', async () => {
+    resetState([op('op-1', 'move')])
+    mountDialog()
+    await tick()
+    // Both dialogs are in the document at once, so audit the whole body: a stacked
+    // dialog is exactly where duplicate ids and orphaned `aria-describedby` show up.
+    await openConfirmation(document.body)
+    await expectNoA11yViolations(document.body)
+  })
+
+  it('a refusal notice on a row has no a11y violations', async () => {
+    rollbackMock.mockRejectedValueOnce(new RollbackRefusalFailure({ kind: 'alreadyRollingBack' }))
+    resetState([op('op-1', 'copy')])
+    const target = mountDialog()
+    await tick()
+    await openConfirmation(document.body)
+
+    const confirm = [...document.querySelectorAll<HTMLButtonElement>('[data-dialog-id="rollback-confirmation"] button')]
+    const rollBack = confirm.find((b) => b.textContent.trim() === 'Roll back')
+    if (rollBack === undefined) throw new Error('expected a Roll back button in the confirmation')
+    rollBack.click()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.op-refusal')).not.toBeNull()
+    })
+
     await expectNoA11yViolations(target)
   })
 

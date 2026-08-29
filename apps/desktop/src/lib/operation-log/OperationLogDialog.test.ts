@@ -12,17 +12,20 @@ import type { OperationLogDetail } from '$lib/tauri-commands'
 import OperationLogDialog from './OperationLogDialog.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { operationLogState, closeOperationLog } from './operation-log-trigger.svelte'
+import { RollbackRefusalFailure } from './rollback-refusal'
 
 const getOperationLogDetailMock =
   vi.fn<
     (payload: { operationId: string; itemLimit: number; itemOffset: number }) => Promise<OperationLogDetail | null>
   >()
+const rollbackOperationMock = vi.fn<(operationId: string) => Promise<{ inverseOpId: string }>>()
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   getRecentOperationLogEntries: vi.fn(() => Promise.resolve([])),
   getOperationLogDetail: (id: string, l: number, o: number) =>
     getOperationLogDetailMock({ operationId: id, itemLimit: l, itemOffset: o }),
+  rollbackOperation: (id: string) => rollbackOperationMock(id),
 }))
 
 // Avoid pulling the reactive-settings chain; a stable stamp is all the row needs.
@@ -78,7 +81,10 @@ async function mountDialog(): Promise<HTMLElement> {
 describe('OperationLogDialog', () => {
   beforeEach(() => {
     closeOperationLog()
+    document.body.innerHTML = ''
     getOperationLogDetailMock.mockReset()
+    rollbackOperationMock.mockReset()
+    rollbackOperationMock.mockResolvedValue({ inverseOpId: 'op-inverse' })
   })
 
   it('renders one grouped row per operation with a client-formatted summary', async () => {
@@ -152,5 +158,121 @@ describe('OperationLogDialog', () => {
     setEntries([opRow({ opId: 'op-copy' }), opRow({ opId: 'op-del', kind: 'delete', itemCount: 5 })])
     const target = await mountDialog()
     await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * The per-row Roll back button. The reversal itself belongs to the operation queue
+ * the moment the command returns, so what's pinned here is the route into it: who
+ * gets a button, that the question always comes first, and that the confirmed press
+ * names the right operation.
+ */
+describe('OperationLogDialog rollback', () => {
+  beforeEach(() => {
+    closeOperationLog()
+    document.body.innerHTML = ''
+    rollbackOperationMock.mockReset()
+    rollbackOperationMock.mockResolvedValue({ inverseOpId: 'op-inverse' })
+  })
+
+  /** The Roll back buttons on the rows, in row order. */
+  function rollbackButtons(target: HTMLElement): HTMLButtonElement[] {
+    return [...target.querySelectorAll<HTMLButtonElement>('.op-row button.btn')]
+  }
+
+  /** Every button in the stacked confirmation, in DOM order (safe answer first). */
+  function confirmButtons(): HTMLButtonElement[] {
+    return [...document.querySelectorAll<HTMLButtonElement>('[data-dialog-id="rollback-confirmation"] button.btn')]
+  }
+
+  /** Answer the confirmation, failing loudly rather than silently doing nothing. */
+  function answerConfirmation(label: string): void {
+    const button = confirmButtons().find((b) => b.textContent.trim() === label)
+    if (button === undefined) throw new Error(`no "${label}" button in the rollback confirmation`)
+    button.click()
+  }
+
+  it('offers the button only on a row the journal says can be reversed', async () => {
+    setEntries([
+      opRow({ opId: 'op-can', rollbackState: 'rollbackable' }),
+      opRow({ opId: 'op-cannot', rollbackState: 'notRollbackable' }),
+      opRow({ opId: 'op-done', rollbackState: 'rolledBack' }),
+      opRow({ opId: 'op-busy', rollbackState: 'rollingBack' }),
+    ])
+    const target = await mountDialog()
+
+    const buttons = rollbackButtons(target)
+    expect(buttons).toHaveLength(1)
+    expect(buttons[0].textContent.trim()).toBe('Roll back')
+    // Short name, described by its row: four identical "Roll back" buttons would
+    // otherwise be indistinguishable to a screen reader.
+    expect(buttons[0].getAttribute('aria-describedby')).toBe('op-head-op-can')
+  })
+
+  it('asks before it does anything, and dispatches nothing if the answer is no', async () => {
+    setEntries([opRow({ opId: 'op-copy', kind: 'copy' })])
+    const target = await mountDialog()
+
+    rollbackButtons(target)[0].click()
+    await tick()
+
+    expect(document.querySelector('[data-dialog-id="rollback-confirmation"]')).not.toBeNull()
+    expect(rollbackOperationMock).not.toHaveBeenCalled()
+
+    // The safe answer comes first and holds focus, so a reflex Enter can't reverse anything.
+    expect(confirmButtons()[0].textContent.trim()).toBe('Leave it as is')
+    answerConfirmation('Leave it as is')
+    await tick()
+
+    expect(document.querySelector('[data-dialog-id="rollback-confirmation"]')).toBeNull()
+    expect(rollbackOperationMock).not.toHaveBeenCalled()
+  })
+
+  it('words the question by what the rollback will DO, so undoing a move never reads as a delete', async () => {
+    setEntries([opRow({ opId: 'op-move', kind: 'move' })])
+    const target = await mountDialog()
+    rollbackButtons(target)[0].click()
+    await tick()
+
+    const body = document.querySelector('#rollback-confirmation-body')?.textContent ?? ''
+    expect(body).toContain('moves the files back where they came from')
+    // The reversal of a move deletes nothing, so the copy must not say it does.
+    expect(body).not.toContain('deletes')
+  })
+
+  it('fires the command with the row’s own id once confirmed, and marks the row rolling back', async () => {
+    setEntries([opRow({ opId: 'op-first' }), opRow({ opId: 'op-second' })])
+    const target = await mountDialog()
+
+    rollbackButtons(target)[1].click()
+    await tick()
+    answerConfirmation('Roll back')
+
+    await vi.waitFor(() => {
+      expect(rollbackOperationMock).toHaveBeenCalledWith('op-second')
+    })
+    // The badge is the whole of the feedback: the reversal is the queue's from here.
+    await vi.waitFor(() => {
+      expect(target.textContent).toContain('Rolling back')
+    })
+    expect(rollbackOperationMock).toHaveBeenCalledTimes(1)
+    // The button goes with the state change, so a second press can't double-dispatch.
+    expect(rollbackButtons(target)).toHaveLength(1)
+  })
+
+  it('says WHY when the reversal is refused, rather than looking like nothing happened', async () => {
+    rollbackOperationMock.mockRejectedValue(new RollbackRefusalFailure({ kind: 'alreadyRollingBack' }))
+    setEntries([opRow({ opId: 'op-raced' })])
+    const target = await mountDialog()
+
+    rollbackButtons(target)[0].click()
+    await tick()
+    answerConfirmation('Roll back')
+
+    await vi.waitFor(() => {
+      expect(target.querySelector('.op-refusal')?.textContent).toContain('already rolling back')
+    })
+    // A lost race leaves the row exactly as it was, so the user can act on the notice.
+    expect(rollbackButtons(target)).toHaveLength(1)
   })
 })

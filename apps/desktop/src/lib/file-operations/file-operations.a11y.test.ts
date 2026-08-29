@@ -143,7 +143,10 @@ describe('RollbackConfirmDialog a11y', () => {
   async function mountDialog(): Promise<HTMLElement> {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(RollbackConfirmDialog, { target, props: { onConfirm: () => {}, onCancel: () => {} } })
+    mount(RollbackConfirmDialog, {
+      target,
+      props: { variant: 'stopAndDelete', onConfirm: () => {}, onCancel: () => {} },
+    })
     await tick()
     return target
   }

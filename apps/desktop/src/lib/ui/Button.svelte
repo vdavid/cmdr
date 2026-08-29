@@ -24,6 +24,12 @@
         onclick?: (e: MouseEvent) => void
         'aria-label'?: string
         /**
+         * Id of the element that says WHICH thing this button acts on. For a button
+         * repeated once per row, this is what keeps the name short ("Roll back") while
+         * still telling a screen reader which row it belongs to.
+         */
+        'aria-describedby'?: string
+        /**
          * Focus this button after mount. Uses `requestAnimationFrame` so it lands
          * after a parent `ModalDialog`'s post-`tick()` overlay focus, which would
          * otherwise win and steal focus to the scrim.
@@ -41,6 +47,7 @@
         type = 'button',
         onclick,
         'aria-label': ariaLabel,
+        'aria-describedby': ariaDescribedby,
         autoFocus = false,
         children,
     }: Props = $props()
@@ -62,6 +69,7 @@
     aria-disabled={ariaDisabled ? 'true' : undefined}
     {onclick}
     aria-label={ariaLabel}
+    aria-describedby={ariaDescribedby}
     use:tooltip={tooltipContent}
 >
     {@render children()}

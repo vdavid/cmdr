@@ -102,6 +102,7 @@
          (`$lib/ui/DETAILS.md` § ModalDialog). -->
     {#if rollbackAsked}
         <RollbackConfirmDialog
+            variant="stopAndDelete"
             onConfirm={() => {
                 rollbackAsked = false
                 void cancelConflictPrompt(true)

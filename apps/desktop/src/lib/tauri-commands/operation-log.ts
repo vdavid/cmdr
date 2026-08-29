@@ -8,13 +8,23 @@ import {
   type OperationRow,
   type OperationItemView,
   type OperationUndoOutcome,
+  type RollbackDispatch,
   type SkipBreakdown,
   type SkipReason,
   type UndoReport,
 } from '$lib/ipc/bindings'
+import { throwRollbackRefusal } from '$lib/operation-log/rollback-refusal'
 import { throwIpcError } from './ipc-types'
 
-export type { OperationRow, OperationItemView, OperationUndoOutcome, SkipBreakdown, SkipReason, UndoReport }
+export type {
+  OperationRow,
+  OperationItemView,
+  OperationUndoOutcome,
+  RollbackDispatch,
+  SkipBreakdown,
+  SkipReason,
+  UndoReport,
+}
 
 /** One operation's header plus a page of its items, dir prefixes resolved to full paths. */
 export interface OperationLogDetail {
@@ -60,5 +70,22 @@ export async function getOperationLogDetail(
 export async function undoOperations(operationIds: string[]): Promise<UndoReport> {
   const res = await commands.undoOperations(operationIds)
   if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Roll ONE operation back, and hand the reversal to the operation queue.
+ *
+ * Resolves as soon as the inverse is queued, not when it finishes: from that moment
+ * the reversal is a normal managed operation, so the status corner and the queue
+ * window own it. An `Ok` also means the operation is already recorded as rolling
+ * back, so a caller can flip its own row without re-reading the journal.
+ *
+ * A refusal arrives TYPED (`asRollbackRefusal`), because each reason gets its own
+ * sentence: already rolling back, already rolled back, a drive that went away.
+ */
+export async function rollbackOperation(operationId: string): Promise<RollbackDispatch> {
+  const res = await commands.rollbackOperation(operationId)
+  if (res.status === 'error') throwRollbackRefusal(res.error)
   return res.data
 }

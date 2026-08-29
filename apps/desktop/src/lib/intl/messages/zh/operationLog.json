@@ -31,6 +31,10 @@
   "@operationLog.dialog.loadMore": {
     "sourceHash": "baef697"
   },
+  "operationLog.dialog.rollBack": "回滚",
+  "@operationLog.dialog.rollBack": {
+    "sourceHash": "931f703"
+  },
   "operationLog.dialog.close": "关闭",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -130,6 +134,30 @@
   "operationLog.rollback.partiallyRolledBack": "已部分回滚",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.refusalAlreadyRollingBack": "这项已经在回滚了。可以在队列里查看。",
+  "@operationLog.rollback.refusalAlreadyRollingBack": {
+    "sourceHash": "282a49a"
+  },
+  "operationLog.rollback.refusalAlreadyRolledBack": "这项已经回到原来的样子了。",
+  "@operationLog.rollback.refusalAlreadyRolledBack": {
+    "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalNotRollbackable": "这项操作无法回滚。",
+  "@operationLog.rollback.refusalNotRollbackable": {
+    "sourceHash": "921533d"
+  },
+  "operationLog.rollback.refusalVolumeUnavailable": "请连接这项操作用过的驱动器，然后重试。",
+  "@operationLog.rollback.refusalVolumeUnavailable": {
+    "sourceHash": "935d109"
+  },
+  "operationLog.rollback.refusalUnknown": "这项操作已经不在你的历史记录里了。",
+  "@operationLog.rollback.refusalUnknown": {
+    "sourceHash": "f94c33d"
+  },
+  "operationLog.rollback.refusalUnexpected": "Cmdr 无法开始回滚。请稍后重试。",
+  "@operationLog.rollback.refusalUnexpected": {
+    "sourceHash": "bef54f1"
   },
   "operationLog.outcome.done": "已完成",
   "@operationLog.outcome.done": {

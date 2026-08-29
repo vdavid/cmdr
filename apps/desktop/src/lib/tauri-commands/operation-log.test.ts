@@ -7,23 +7,35 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-/** The tauri-specta `Result<T, E>` wire shape the bindings return. */
-type Res<T> = { status: 'ok'; data: T } | { status: 'error'; error: string }
+/**
+ * The tauri-specta `Result<T, E>` wire shape the bindings return. `E` defaults to
+ * `string`, which is what most commands carry; `rollbackOperation`'s is a typed
+ * refusal object.
+ */
+type Res<T, E = string> = { status: 'ok'; data: T } | { status: 'error'; error: E }
 
 const getRecentMock = vi.fn<(payload: { limit: number; offset: number }) => Promise<Res<unknown>>>()
 const getDetailMock =
   vi.fn<(payload: { operationId: string; itemLimit: number; itemOffset: number }) => Promise<Res<unknown>>>()
 const undoMock = vi.fn<(ids: string[]) => Promise<Res<unknown>>>()
+const rollbackMock = vi.fn<(id: string) => Promise<Res<unknown, { kind: string }>>>()
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
     getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock({ limit, offset }),
     getOperationLogDetail: (id: string, l: number, o: number) =>
       getDetailMock({ operationId: id, itemLimit: l, itemOffset: o }),
     undoOperations: (ids: string[]) => undoMock(ids),
+    rollbackOperation: (id: string) => rollbackMock(id),
   },
 }))
 
-import { getRecentOperationLogEntries, getOperationLogDetail, undoOperations } from './operation-log'
+import {
+  getRecentOperationLogEntries,
+  getOperationLogDetail,
+  undoOperations,
+  rollbackOperation,
+} from './operation-log'
+import { asRollbackRefusal } from '$lib/operation-log/rollback-refusal'
 
 describe('getRecentOperationLogEntries', () => {
   beforeEach(() => getRecentMock.mockReset())
@@ -83,5 +95,23 @@ describe('undoOperations', () => {
   it('throws on an error result rather than reporting an undo of nothing', async () => {
     undoMock.mockResolvedValue({ status: 'error', error: 'journal is locked' })
     await expect(undoOperations(['op-1'])).rejects.toThrow('journal is locked')
+  })
+})
+
+describe('rollbackOperation', () => {
+  beforeEach(() => rollbackMock.mockReset())
+
+  it("returns the inverse operation's id once the reversal is queued", async () => {
+    rollbackMock.mockResolvedValue({ status: 'ok', data: { inverseOpId: 'op-2' } })
+    expect(await rollbackOperation('op-1')).toEqual({ inverseOpId: 'op-2' })
+    expect(rollbackMock).toHaveBeenCalledWith('op-1')
+  })
+
+  it('throws the refusal TYPED, so the caller can word each reason itself', async () => {
+    rollbackMock.mockResolvedValue({ status: 'error', error: { kind: 'alreadyRollingBack' } })
+    // A flattened string here would put wire JSON in front of the user; the typed
+    // value is what lets the history dialog pick the right sentence.
+    const thrown = await rollbackOperation('op-1').catch((e: unknown) => e)
+    expect(asRollbackRefusal(thrown)).toEqual({ kind: 'alreadyRollingBack' })
   })
 })

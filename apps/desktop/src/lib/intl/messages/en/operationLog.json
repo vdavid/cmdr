@@ -44,6 +44,10 @@
     "description": "Button that loads the next 50 operations into the Operation log dialog.",
     "screenshot": "operation-log-more-pages.png"
   },
+  "operationLog.dialog.rollBack": "Roll back",
+  "@operationLog.dialog.rollBack": {
+    "description": "Button on a row of the Operation log that undoes that operation. It appears only on rows that can be reversed, next to the \"Can roll back\" badge, and asks for confirmation before anything happens. Match the wording of the \"Roll back\" button in the confirmation that follows it. Keep it short: it sits inside a list row."
+  },
   "operationLog.dialog.close": "Close",
   "@operationLog.dialog.close": {
     "description": "Button that closes the Operation log dialog.",
@@ -187,6 +191,31 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "description": "Rollback status: some but not all of this operation was reversed.",
     "screenshot": "operation-log-more-pages.png"
+  },
+
+  "operationLog.rollback.refusalAlreadyRollingBack": "This one is already rolling back. Watch it in the queue.",
+  "@operationLog.rollback.refusalAlreadyRollingBack": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back but a reversal of that same operation is already under way, started somewhere else (another window, the AI agent, or an external AI client). \"The queue\" is Cmdr’s operation queue window, where running operations are listed."
+  },
+  "operationLog.rollback.refusalAlreadyRolledBack": "This one is already back the way it was.",
+  "@operationLog.rollback.refusalAlreadyRolledBack": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back but the operation has already been reversed, so there is nothing left to undo."
+  },
+  "operationLog.rollback.refusalNotRollbackable": "This operation can’t be rolled back.",
+  "@operationLog.rollback.refusalNotRollbackable": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back but the operation turns out not to be reversible after all (the row on screen was out of date). The badge on the same row already carries the same words as a status, so keep the two consistent. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.rollback.refusalVolumeUnavailable": "Connect the drive this operation used, then try again.",
+  "@operationLog.rollback.refusalVolumeUnavailable": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back but a disk, phone, or network share the operation touched isn’t connected right now. Actionable: reconnect it and press the button again. \"Drive\" covers external disks and network shares alike."
+  },
+  "operationLog.rollback.refusalUnknown": "This operation isn’t in your history anymore.",
+  "@operationLog.rollback.refusalUnknown": {
+    "description": "Shown on a row of the Operation log when the user presses Roll back but Cmdr can no longer find that operation in its records, most often because the history has aged out since the list was loaded. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.rollback.refusalUnexpected": "Cmdr couldn’t start the rollback. Try again in a moment.",
+  "@operationLog.rollback.refusalUnexpected": {
+    "description": "Shown on a row of the Operation log when pressing Roll back doesn’t reach Cmdr’s backend at all, so there is no specific reason to give. Friendly and actionable; avoids the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
   },
 
   "operationLog.outcome.done": "Done",

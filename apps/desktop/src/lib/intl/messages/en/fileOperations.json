@@ -1134,6 +1134,22 @@
     "screenshot": "rollback-confirmation-idle.png"
   },
 
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "This deletes the files and folders the operation created. Cmdr skips anything it isn''t sure about, so a few may stay behind.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED operation that created things: a copy, a new file, a new folder, or a compress. Two facts, both load-bearing: rolling back deletes what the operation made, and Cmdr leaves alone every file it can''t match against what it recorded (the user changed it since, or it was never recorded), so the reversal can come out partial. Sibling wordings cover undoing a move and undoing a rename; keep the second sentence parallel across all three."
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "This moves the files back where they came from. Cmdr skips anything it isn''t sure about, so a few may stay where they are.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED move, or a move to the trash. Nothing is deleted here, so keep the tone calm rather than a warning: the files travel back to where they started. Second sentence: Cmdr leaves alone every file it can''t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and rename wordings."
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "This gives the files their old names back. Cmdr skips anything it isn''t sure about, so a few may keep the names they have now.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED rename, whether one file or a batch of hundreds. Nothing moves and nothing is deleted; only the names change back, so keep the tone calm. Second sentence: Cmdr leaves alone every file it can''t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and move wordings."
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "Leave it as is",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "description": "Button that closes the Rollback confirmation without doing anything, shown when the user is undoing a FINISHED operation from their history. \"It\" is the operation: leave it standing as it is. The sibling button \"Keep them\" covers the other case, an operation still running, where \"them\" is the files it has written so far."
+  },
   "fileOperations.rollbackConfirm.keep": "Keep them",
   "@fileOperations.rollbackConfirm.keep": {
     "description": "Button that closes the Rollback confirmation without doing anything: the operation carries on and the files it has written stay. \"Them\" is those files.",

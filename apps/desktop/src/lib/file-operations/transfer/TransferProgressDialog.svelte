@@ -582,6 +582,7 @@
      operation settles, because there is nothing left to undo. -->
 {#if rollbackAsked && !operationSettled}
     <RollbackConfirmDialog
+        variant="stopAndDelete"
         onConfirm={() => {
             rollbackAsked = false
             void progress.handleCancel(true)

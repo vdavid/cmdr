@@ -659,6 +659,22 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Cela supprime les fichiers et dossiers que l''opération a créés. Cmdr laisse de côté tout ce dont il n''est pas sûr, il peut donc en rester quelques-uns.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "88584f4"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Cela replace les fichiers là d''où ils viennent. Cmdr laisse de côté tout ce dont il n''est pas sûr, certains peuvent donc rester où ils sont.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "7d55114"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Cela redonne aux fichiers leurs anciens noms. Cmdr laisse de côté tout ce dont il n''est pas sûr, certains peuvent donc garder leur nom actuel.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "819690f"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "Laisser tel quel",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
+  },
   "fileOperations.rollbackConfirm.keep": "Conserver les fichiers",
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"

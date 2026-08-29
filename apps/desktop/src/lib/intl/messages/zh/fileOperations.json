@@ -655,6 +655,22 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "这会删除这项操作创建的文件和文件夹。Cmdr 会跳过没有把握的部分，所以可能会剩下一些。",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "88584f4"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "这会把文件挪回原来的位置。Cmdr 会跳过没有把握的部分，所以可能有些会留在原处。",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "7d55114"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "这会把文件的旧名字还回来。Cmdr 会跳过没有把握的部分，所以可能有些会保留现在的名字。",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "819690f"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "保持原样",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
+  },
   "fileOperations.rollbackConfirm.keep": "保留文件",
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"

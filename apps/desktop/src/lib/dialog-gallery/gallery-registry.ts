@@ -156,8 +156,13 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     label: 'Rollback confirmation',
     hostWindow: 'main',
     status: 'ready',
-    note: 'Deleting nothing: the rollback lives in the onConfirm prop, which the gallery leaves empty. In the app it stacks over whichever surface offered Rollback — the progress dialog, the main window`s clash prompt, or a row in the operation queue window.',
-    states: [{ id: 'idle', label: 'Confirm' }],
+    note: 'Deleting nothing: the rollback lives in the onConfirm prop, which the gallery leaves empty. In the app it stacks over whichever surface offered Rollback — the progress dialog, the main window`s clash prompt, a row in the operation queue window, or a row in the operation log. One state per wording: what rolling back DOES differs per operation, so undoing a move must not be worded as a delete.',
+    states: [
+      { id: 'stopAndDelete', label: 'Running copy or move' },
+      { id: 'undoByDeleting', label: 'Undo a finished copy' },
+      { id: 'undoByMovingBack', label: 'Undo a finished move' },
+      { id: 'undoByRenamingBack', label: 'Undo a finished rename' },
+    ],
   },
   {
     dialogId: 'operation-conflict',

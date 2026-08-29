@@ -660,6 +660,22 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Das löscht die Dateien und Ordner, die der Vorgang angelegt hat. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges davon übrig.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "88584f4"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Das verschiebt die Dateien dorthin zurück, wo sie hergekommen sind. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges liegen.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "7d55114"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Das gibt den Dateien ihre alten Namen zurück. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also behält womöglich einiges seinen jetzigen Namen.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "819690f"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "So lassen",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
+  },
   "fileOperations.rollbackConfirm.keep": "Dateien behalten",
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"

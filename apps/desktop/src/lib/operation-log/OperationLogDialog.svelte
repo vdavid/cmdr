@@ -19,16 +19,31 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { formatDateTime } from '$lib/settings/reactive-settings.svelte'
-    import { getOperationLogDetail, type OperationItemView, type OperationRow } from '$lib/tauri-commands'
+    import RollbackConfirmDialog from '$lib/file-operations/RollbackConfirmDialog.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
+    import {
+        getOperationLogDetail,
+        rollbackOperation,
+        type OperationItemView,
+        type OperationRow,
+    } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
     import { SvelteMap, SvelteSet } from 'svelte/reactivity'
-    import { operationLogState, closeOperationLog, loadMoreOperations } from './operation-log-trigger.svelte'
+    import { asRollbackRefusal } from './rollback-refusal'
+    import {
+        operationLogState,
+        closeOperationLog,
+        loadMoreOperations,
+        markOperationRollingBack,
+    } from './operation-log-trigger.svelte'
     import {
         operationSummary,
         initiatorLabel,
         executionStatusLabel,
         rollbackStateLabel,
         itemOutcomeLabel,
+        rollbackConfirmVariant,
+        rollbackRefusalNotice,
     } from './operation-log-labels'
 
     const log = getAppLogger('operationLogDialog')
@@ -52,8 +67,53 @@
     const expanded = new SvelteSet<string>()
     const itemsByOp = new SvelteMap<string, ItemsState>()
 
+    // Which row is asking its rollback question, which rows have a dispatch in
+    // flight, and the last refusal each row earned. Keyed by opId so the list can
+    // reorder or grow under them.
+    let rollbackAskedId = $state<string | null>(null)
+    const dispatching = new SvelteSet<string>()
+    const refusals = new SvelteMap<string, MessageKey>()
+
+    /**
+     * The row whose question is up, resolved fresh from the list each time. A row
+     * that stops being rollbackable while the question is open (a reversal started
+     * elsewhere) takes the question down with it, the way the queue row does: there's
+     * nothing left for an answer to act on.
+     */
+    const rollbackAsked = $derived.by(() => {
+        if (rollbackAskedId === null) return null
+        const op = operationLogState.entries.find((entry) => entry.opId === rollbackAskedId)
+        return op?.rollbackState === 'rollbackable' ? op : null
+    })
+
     function handleClose() {
         closeOperationLog()
+    }
+
+    function askRollback(opId: string) {
+        refusals.delete(opId)
+        rollbackAskedId = opId
+    }
+
+    /**
+     * Hand the reversal to the operation queue and let go of it. There's no progress
+     * dialog here on purpose: the user is reading their history, not watching a
+     * transfer, and the status corner already surfaces what's running.
+     */
+    async function confirmRollback(opId: string) {
+        rollbackAskedId = null
+        if (dispatching.has(opId)) return
+        dispatching.add(opId)
+        try {
+            await rollbackOperation(opId)
+            markOperationRollingBack(opId)
+        } catch (e) {
+            const refusal = asRollbackRefusal(e)
+            refusals.set(opId, rollbackRefusalNotice(refusal))
+            log.warn("Couldn't roll {opId} back: {reason}", { opId, reason: refusal?.kind ?? String(e) })
+        } finally {
+            dispatching.delete(opId)
+        }
     }
 
     async function toggleOperation(op: OperationRow) {
@@ -108,30 +168,52 @@
                     {#each operationLogState.entries as op (op.opId)}
                         {@const isOpen = expanded.has(op.opId)}
                         {@const items = itemsByOp.get(op.opId)}
+                        {@const refusal = refusals.get(op.opId)}
                         <li class="op">
-                            <button
-                                type="button"
-                                class="op-head"
-                                aria-expanded={isOpen}
-                                aria-controls="op-items-{op.opId}"
-                                onclick={() => void toggleOperation(op)}
-                            >
-                                <Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={16} />
-                                <span class="op-summary"
-                                    >{operationSummary(op.kind, op.archiveSubkind, op.itemCount)}</span
+                            <div class="op-row">
+                                <button
+                                    type="button"
+                                    class="op-head"
+                                    id="op-head-{op.opId}"
+                                    aria-expanded={isOpen}
+                                    aria-controls="op-items-{op.opId}"
+                                    onclick={() => void toggleOperation(op)}
                                 >
-                                <span class="op-meta">
-                                    <span>{initiatorLabel(op.initiator)}</span>
-                                    <span aria-hidden="true">·</span>
-                                    <span>{formatDateTime(op.endedAt ?? op.startedAt)}</span>
-                                </span>
-                                <span class="op-badges">
-                                    <span class="op-badge">{executionStatusLabel(op.executionStatus)}</span>
-                                    <span class="op-badge op-badge-rollback"
-                                        >{rollbackStateLabel(op.rollbackState)}</span
+                                    <Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={16} />
+                                    <span class="op-summary"
+                                        >{operationSummary(op.kind, op.archiveSubkind, op.itemCount)}</span
                                     >
-                                </span>
-                            </button>
+                                    <span class="op-meta">
+                                        <span>{initiatorLabel(op.initiator)}</span>
+                                        <span aria-hidden="true">·</span>
+                                        <span>{formatDateTime(op.endedAt ?? op.startedAt)}</span>
+                                    </span>
+                                    <span class="op-badges">
+                                        <span class="op-badge">{executionStatusLabel(op.executionStatus)}</span>
+                                        <span class="op-badge op-badge-rollback"
+                                            >{rollbackStateLabel(op.rollbackState)}</span
+                                        >
+                                    </span>
+                                </button>
+
+                                <!-- Only on a row the journal says can be reversed. The name stays
+                                     "Roll back" for every row; `aria-describedby` is what tells a
+                                     screen reader WHICH row this one belongs to. -->
+                                {#if op.rollbackState === 'rollbackable'}
+                                    <Button
+                                        size="mini"
+                                        disabled={dispatching.has(op.opId)}
+                                        aria-describedby="op-head-{op.opId}"
+                                        onclick={() => { askRollback(op.opId); }}
+                                    >
+                                        {tString('operationLog.dialog.rollBack')}
+                                    </Button>
+                                {/if}
+                            </div>
+
+                            {#if refusal != null}
+                                <p class="op-refusal" role="status">{tString(refusal)}</p>
+                            {/if}
 
                             {#if isOpen}
                                 <div class="op-items" id="op-items-{op.opId}">
@@ -199,6 +281,16 @@
     </div>
 </ModalDialog>
 
+<!-- Stacked over the log: same subtree, so DOM order puts it on top and its focus
+     trap takes over until it goes (`$lib/ui/DETAILS.md` § ModalDialog). -->
+{#if rollbackAsked !== null}
+    <RollbackConfirmDialog
+        variant={rollbackConfirmVariant(rollbackAsked.kind)}
+        onConfirm={() => void confirmRollback(rollbackAsked.opId)}
+        onCancel={() => (rollbackAskedId = null)}
+    />
+{/if}
+
 <style>
     /* Fills `fillBody`'s slot so an edge drag lands in the list, not in dead space
        above the Close button. The panel's own max-height does the capping. */
@@ -255,11 +347,21 @@
         border-radius: var(--radius-md);
     }
 
+    /* The head button and the row's action sit side by side: a button can't nest in
+       a button, and the head has to stay the expand target on its own. */
+    .op-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding-right: var(--spacing-md);
+    }
+
     .op-head {
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
         padding: var(--spacing-sm) var(--spacing-md);
         background: transparent;
         border: none;
@@ -310,6 +412,13 @@
     .op-badge-rollback {
         background: var(--color-accent-subtle);
         color: var(--color-text-primary);
+    }
+
+    .op-refusal {
+        margin: 0;
+        padding: 0 var(--spacing-md) var(--spacing-sm) var(--spacing-2xl);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
     }
 
     .op-items {

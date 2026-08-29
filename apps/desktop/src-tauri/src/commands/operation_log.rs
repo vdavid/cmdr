@@ -5,15 +5,24 @@
 //! module; these commands only open a short-lived read-only connection off the IPC
 //! thread and forward the call. The Debug panel and alpha dialog consume them.
 //!
-//! [`undo_operations`] is the write side: the frontend-facing entry to the rollback
-//! engine (the MCP `operations_rollback` tool is the other consumer). It resolves
-//! only when every operation has been reversed, so the caller gets one complete,
-//! ordered tally instead of running its own dispatch-then-poll loop.
+//! Two write-side entries, for two different surfaces:
+//!
+//! - [`rollback_operation`] reverses ONE operation and returns as soon as the inverse
+//!   is queued. The history dialog's per-row Roll back button uses it: the reversal
+//!   belongs to the operation queue from that moment on, and the queue is where the
+//!   user watches it.
+//! - [`undo_operations`] reverses SEVERAL and resolves only once they're all done,
+//!   with the tally. Ask Cmdr's rename undo needs that tally to report what came
+//!   back, which a dispatch can't say yet.
+//!
+//! Both sit on the same engine (`crate::operation_log::rollback`); the MCP
+//! `operations_rollback` tool is the third consumer.
 
 use tauri::AppHandle;
 
-use crate::file_system::write_operations::rollback::{UndoReport, undo_operations as run_undo};
+use crate::file_system::write_operations::rollback::{UndoReport, dispatch_rollback, undo_operations as run_undo};
 use crate::operation_log::query::{self, OperationDetail};
+use crate::operation_log::rollback::{RollbackDispatch, RollbackRefusal};
 use crate::operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
 use crate::operation_log::types::Initiator;
 
@@ -68,6 +77,34 @@ pub async fn get_operation_log_detail(
         query::get_operation(conn, &operation_id, item_limit, item_offset)
     })
     .await
+}
+
+/// Roll one logged operation back, and hand the reversal to the operation queue.
+///
+/// Returns after DISPATCH, not after the reversal finishes: the inverse is a normal
+/// managed operation, so it shows up in the queue and the status corner like any
+/// transfer, and that's where the user follows it. The gate runs synchronously
+/// before this returns, so an `Ok` means the operation is already recorded as
+/// `rolling_back` and the caller can say so without a re-read.
+///
+/// A domain refusal (unknown / already rolling back / already rolled back / not
+/// rollbackable / a volume disconnected) crosses TYPED, so the dialog words it
+/// itself instead of parsing a sentence.
+///
+/// `Initiator::User`: whoever ran the original operation, pressing Roll back is the
+/// user's own action.
+#[tauri::command]
+#[specta::specta]
+pub async fn rollback_operation(app: AppHandle, operation_id: String) -> Result<RollbackDispatch, RollbackRefusal> {
+    // The gate opens a read connection and reads the operation's row before it
+    // spawns anything, so it runs on the blocking pool like every other DB touch here.
+    tauri::async_runtime::spawn_blocking(move || dispatch_rollback(&app, &operation_id, Initiator::User))
+        .await
+        // The gate panicked, so nothing was dispatched and nothing changed on disk.
+        // `UnknownOperation` is already this module's answer for "we couldn't
+        // establish this operation" (an absent writer and an unopenable journal both
+        // return it), which is exactly what happened.
+        .unwrap_or(Err(RollbackRefusal::UnknownOperation))
 }
 
 /// Undo the given operations as one action, **newest first** (a multi-batch rename

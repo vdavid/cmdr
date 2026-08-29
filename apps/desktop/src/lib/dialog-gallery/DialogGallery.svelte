@@ -66,6 +66,7 @@
     // shape `lib/search/ImageSearchResults.svelte` uses for `routes/viewer/media-view`.
     import ViewerCopyDialogs from '../../routes/viewer/ViewerCopyDialogs.svelte'
     import RollbackConfirmDialog from '../file-operations/RollbackConfirmDialog.svelte'
+    import type { RollbackConfirmFixture } from './fixtures/rollback'
     import { getAppLogger } from '$lib/logging/logger'
     import { untrack } from 'svelte'
     import { closeGalleryDialog, getOpenGalleryDialog, type GalleryDiskFixture } from './gallery-state.svelte'
@@ -90,7 +91,7 @@
     type RenderPlan =
         | { kind: 'alert'; props: AlertFixture }
         | { kind: 'about' }
-        | { kind: 'rollback-confirmation' }
+        | { kind: 'rollback-confirmation'; props: RollbackConfirmFixture }
         | { kind: 'acknowledgements' }
         | { kind: 'commercial-reminder' }
         | { kind: 'expiration'; props: ExpirationFixture }
@@ -163,8 +164,8 @@
      * this many dialogs; each entry still owns its own typed fixture lookup, so
      * nothing here is cast.
      *
-     * The last five take callbacks only: there's no fixture to miss, and the single
-     * state each exposes is what its gallery row discloses.
+     * The callback-only ones take no fixture, so there's none to miss; what states
+     * each exposes is what its gallery row discloses.
      */
     const planResolvers: Partial<
         Record<SoftDialogId, (stateId: string, disk: GalleryDiskFixture | undefined) => RenderPlan>
@@ -231,8 +232,12 @@
         'go-to-path': (id, disk) =>
             withDiskFixture(fixtureRecords['go-to-path'][id], disk, (props) => ({ kind: 'go-to-path', props })),
 
+        'rollback-confirmation': (id) =>
+            withFixture(fixtureRecords['rollback-confirmation'][id], (f) => ({
+                kind: 'rollback-confirmation',
+                props: f,
+            })),
         about: () => ({ kind: 'about' }),
-        'rollback-confirmation': () => ({ kind: 'rollback-confirmation' }),
         acknowledgements: () => ({ kind: 'acknowledgements' }),
         'commercial-reminder': () => ({ kind: 'commercial-reminder' }),
         license: () => ({ kind: 'license' }),
@@ -357,6 +362,6 @@
     {:else if plan?.kind === 'forget-memory'}
         <ForgetMemoryDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'rollback-confirmation'}
-        <RollbackConfirmDialog onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
+        <RollbackConfirmDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {/if}
 {/key}

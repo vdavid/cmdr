@@ -2614,6 +2614,24 @@ export const commands = {
       string
     >(__TAURI_INVOKE('get_operation_log_detail', { operationId, itemLimit, itemOffset })),
   /**
+   *  Roll one logged operation back, and hand the reversal to the operation queue.
+   *
+   *  Returns after DISPATCH, not after the reversal finishes: the inverse is a normal
+   *  managed operation, so it shows up in the queue and the status corner like any
+   *  transfer, and that's where the user follows it. The gate runs synchronously
+   *  before this returns, so an `Ok` means the operation is already recorded as
+   *  `rolling_back` and the caller can say so without a re-read.
+   *
+   *  A domain refusal (unknown / already rolling back / already rolled back / not
+   *  rollbackable / a volume disconnected) crosses TYPED, so the dialog words it
+   *  itself instead of parsing a sentence.
+   *
+   *  `Initiator::User`: whoever ran the original operation, pressing Roll back is the
+   *  user's own action.
+   */
+  rollbackOperation: (operationId: string) =>
+    typedError<RollbackDispatch, RollbackRefusal>(__TAURI_INVOKE('rollback_operation', { operationId })),
+  /**
    *  Undo the given operations as one action, **newest first** (a multi-batch rename
    *  run is the case this exists for; the order is data-safety-critical, see
    *  `rollback::undo_order`). Pass the ids in the order they were APPLIED.
@@ -9598,6 +9616,16 @@ export type Reversibility =
    *  existing archive (the seed is unconditional and the prior bytes are gone).
    */
   | 'irreversible'
+
+/**
+ *  What a rollback DISPATCH returns to the FE/MCP: the inverse op's id. The
+ *  reversal itself is an async managed op, so the caller polls the ORIGINAL op's
+ *  `rollback_state` until it leaves `rolling_back` to observe the terminal result
+ *  (the MCP tools' "dispatch then poll" contract).
+ */
+export type RollbackDispatch = {
+  inverseOpId: string
+}
 
 /**
  *  Why a rollback request is refused at the operation level (before any item

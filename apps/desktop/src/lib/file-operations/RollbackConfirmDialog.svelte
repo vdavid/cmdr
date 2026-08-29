@@ -2,29 +2,69 @@
     /**
      * The one question in front of Rollback.
      *
-     * Rollback deletes every destination the operation has written, and a
-     * destination it OVERWROTE is one of those: no backup of the replaced
+     * ⚠️ **The body has to match the operation.** Undoing a copy deletes what the copy
+     * wrote, and a destination it OVERWROTE is one of those: no backup of the replaced
      * original is kept (`write_operations/transfer/CLAUDE.md` § "Overwrite isn't
-     * reversible"). So the button that sits beside a harmless Cancel can take
-     * away a file the user had before the operation started, and that is what
-     * this asks about. Rationale and the surfaces that raise it:
-     * `DETAILS.md` § "Rollback asks first".
+     * reversible"). Undoing a move deletes NOTHING; the files travel home. Wording every
+     * rollback as a delete would scare people off an operation that takes nothing away,
+     * and wording every one as a restore would hide a real deletion. Hence `variant`.
+     * Rationale and the surfaces that raise it: `DETAILS.md` § "Rollback asks first".
      *
-     * Presentational: each host owns the pending-rollback state and calls its
-     * own rollback in `onConfirm`.
+     * The safe answer takes focus in every variant, so a reflex Enter never rolls back.
+     * Presentational: each host owns the pending-rollback state and calls its own
+     * rollback in `onConfirm`.
      */
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
     import { tString } from '$lib/intl/messages.svelte'
+    import type { RollbackConfirmVariant } from './rollback-confirm-variant'
 
     interface Props {
-        /** Go ahead: delete what the operation wrote. */
+        variant: RollbackConfirmVariant
+        /** Go ahead: reverse the operation. */
         onConfirm: () => void
         /** Leave the operation exactly as it is. Also what Escape and × do. */
         onCancel: () => void
     }
 
-    const { onConfirm, onCancel }: Props = $props()
+    const { variant, onConfirm, onCancel }: Props = $props()
+
+    /**
+     * Body + cancel wording + whether the confirming button reads as destructive.
+     * Only the two deleting variants get `danger`: red on "put my files back" would
+     * cry wolf, and this app spends that colour on operations that take something away.
+     */
+    function wording(v: RollbackConfirmVariant): { body: MessageKey; cancel: MessageKey; destructive: boolean } {
+        switch (v) {
+            case 'stopAndDelete':
+                return {
+                    body: 'fileOperations.rollbackConfirm.body',
+                    cancel: 'fileOperations.rollbackConfirm.keep',
+                    destructive: true,
+                }
+            case 'undoByDeleting':
+                return {
+                    body: 'fileOperations.rollbackConfirm.bodyUndoByDeleting',
+                    cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
+                    destructive: true,
+                }
+            case 'undoByMovingBack':
+                return {
+                    body: 'fileOperations.rollbackConfirm.bodyUndoByMovingBack',
+                    cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
+                    destructive: false,
+                }
+            case 'undoByRenamingBack':
+                return {
+                    body: 'fileOperations.rollbackConfirm.bodyUndoByRenamingBack',
+                    cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
+                    destructive: false,
+                }
+        }
+    }
+
+    const words = $derived(wording(variant))
 </script>
 
 <ModalDialog
@@ -37,15 +77,15 @@
     {#snippet title()}{tString('fileOperations.rollbackConfirm.title')}{/snippet}
 
     <p id="rollback-confirmation-body" class="rollback-confirm-body">
-        {tString('fileOperations.rollbackConfirm.body')}
+        {tString(words.body)}
     </p>
 
     {#snippet footer()}
-        <!-- The safe answer takes focus, so a reflex Enter keeps the files. -->
-        <Button variant="secondary" autoFocus onclick={onCancel}
-            >{tString('fileOperations.rollbackConfirm.keep')}</Button
+        <!-- The safe answer takes focus, so a reflex Enter keeps things as they are. -->
+        <Button variant="secondary" autoFocus onclick={onCancel}>{tString(words.cancel)}</Button>
+        <Button variant={words.destructive ? 'danger' : 'primary'} onclick={onConfirm}
+            >{tString('fileOperations.rollbackConfirm.rollBack')}</Button
         >
-        <Button variant="danger" onclick={onConfirm}>{tString('fileOperations.rollbackConfirm.rollBack')}</Button>
     {/snippet}
 </ModalDialog>
 

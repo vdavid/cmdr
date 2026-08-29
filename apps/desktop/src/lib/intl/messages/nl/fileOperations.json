@@ -658,6 +658,22 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Dit verwijdert de bestanden en mappen die de bewerking heeft aangemaakt. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat achterblijven.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "88584f4"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Dit zet de bestanden terug waar ze vandaan kwamen. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat blijven staan.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "7d55114"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Dit geeft de bestanden hun oude namen terug. Cmdr slaat alles over waar het niet zeker van is, dus sommige houden misschien hun huidige naam.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "819690f"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "Laat het zo",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
+  },
   "fileOperations.rollbackConfirm.keep": "Behoud de bestanden",
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"

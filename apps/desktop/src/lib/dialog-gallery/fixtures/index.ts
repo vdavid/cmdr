@@ -34,6 +34,7 @@ import { expirationFixtures } from './licensing'
 import { onboardingFixtures } from './onboarding'
 import { quitFixtures } from './quit'
 import { extensionChangeFixtures, renameConflictFixtures } from './rename'
+import { rollbackConfirmFixtures } from './rollback'
 import { selectionAddFixtures, selectionRemoveFixtures } from './selection'
 import {
   bulkRenameFixtures,
@@ -68,6 +69,7 @@ export const fixtureRecords = {
   ptpcamerad: ptpcameradFixtures,
   'quit-confirmation': quitFixtures,
   'rename-conflict': renameConflictFixtures,
+  'rollback-confirmation': rollbackConfirmFixtures,
   'selection-add': selectionAddFixtures,
   'selection-remove': selectionRemoveFixtures,
   'transfer-confirmation': transferFixtures,

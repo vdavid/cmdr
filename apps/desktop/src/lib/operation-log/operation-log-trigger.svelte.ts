@@ -89,3 +89,18 @@ export async function loadMoreOperations(): Promise<void> {
     operationLogState.loadingMore = false
   }
 }
+
+/**
+ * Flip a row to "rolling back" once its dispatch has landed.
+ *
+ * Not a guess: the backend's gate records `rolling_back` in the journal
+ * synchronously, before the dispatch returns, so this only repeats what the journal
+ * already says. It's also the whole of the user's feedback that the press landed,
+ * since the reversal belongs to the operation queue from that moment on: the row's
+ * badge changes under their cursor, and the status corner picks the operation up.
+ */
+export function markOperationRollingBack(opId: string): void {
+  operationLogState.entries = operationLogState.entries.map((entry) =>
+    entry.opId === opId ? { ...entry, rollbackState: 'rollingBack' } : entry,
+  )
+}
