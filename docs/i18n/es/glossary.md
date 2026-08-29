@@ -1588,3 +1588,52 @@ informe ya no admite añadidos, el diálogo lo dice y remite al menú Ayuda.
 - Ningún valor lleva apóstrofo, así que no hay nada que duplicar para ICU; `{error}` va literal en
   `No se pudo añadir tu nota: {error}`, con el mismo molde que `errorReporter.dialog.sendFailedToast`. Los once difieren
   del inglés, así que ninguno necesita `sameAsSourceJustification`.
+
+## El diálogo de seleccionar / deseleccionar archivos (`selection.*`, 2026-08-29)
+
+Fuentes de la tanda: macOS 26 Finder `es` (`MenuBar.json`, ids `172.title` / `300488.title`), terminología de Microsoft
+`es`, Total Commander `es` (`WCMD.LNG.utf8` 7603/7604/7613/7614, `WCMD.INC.utf8` 522/524/3304-3316) y Double Commander
+`es` (`doublecmd.po`, `&Unselect All`). El diálogo es ICU, así que los apóstrofos irían dobles; ningún valor de la tanda
+lleva ninguno.
+
+- **select → `Seleccionar`; deselect → `Deseleccionar`** · macOS Finder da `Seleccionar todo` (`172.title`); para el
+  contrario **el Finder NO da un verbo**: dice `No seleccionar nada` (`300488.title`), una frase de alcance total que no
+  sirve para "deseleccionar los archivos que coincidan". La terminología de Microsoft tampoco da verbo simple
+  (`deselect` → `anular la selección`, todas las regiones). El verbo viene de la familia ortodoxa de dos paneles, que es
+  justo la superficie de Cmdr: Total Commander `es` rotula el mismo diálogo `Seleccionar por nombre/extensión:` /
+  `&Deseleccionar por nombre /extensión:` y los botones `&Seleccionar` / `&Deseleccionar`, y Double Commander `es` dice
+  `&Deseleccionar todo`. · high para `Seleccionar` (Tier 1); **`Deseleccionar` es high dentro de la familia ortodoxa
+  (Tier 3) pero no tiene respaldo Tier 1**, así que queda anotado: si algún día se revisa, la alternativa con respaldo
+  Tier 2 sería `Anular la selección de…`, demasiado larga para un título y un botón.
+- **Los tres sitios que nombran el diálogo tienen que decir lo mismo**: `menu.select.files` /
+  `menu.select.deselectFiles` (`Seleccionar archivos…` / `Deseleccionar archivos…`),
+  `commands.selectionSelectFiles.label` / `commands.selectionDeselectFiles.label`,
+  `settings.selection.recentSelections.maxCount.description` (`el diálogo Seleccionar / Deseleccionar archivos`) y ahora
+  los títulos `selection.dialog.title.add` / `.remove`. El bug que arregla esta tanda era justamente que el título no
+  coincidía con el menú que lo abre · high.
+- **`Select these files` → `Seleccionar estos archivos`; `Deselect these files` → `Deseleccionar estos archivos`** ·
+  mismo par de verbos que los títulos, en infinitivo (convención de botón del `style.md`) · high.
+- **`… in the focused pane` → `… en el panel activo`** · `panel activo` es la forma ya publicada del catálogo
+  (`commands.navGoToPath.description` "Lleva el panel activo a…", `commands.favoritesAdd.description` "la carpeta actual
+  del panel activo") · high. **Los tooltips empiezan literalmente por el texto del botón** y solo le añaden el
+  complemento (`Seleccionar estos archivos en el panel activo`): el botón y su tooltip se leen como una sola frase, y
+  reordenarlos rompería esa lectura.
+- **`Press Enter to filter` → `Pulsa Intro para filtrar`** · calco del hermano `search.runHint`
+  (`Pulsa Intro para buscar`), que ya fija `press → pulsar` e `Enter → Intro` (§ tanda de `commands.json` +
+  `queryUi.json`) · high para la estructura; `Intro` sigue `tentative` como nombre de tecla (convención de teclado de
+  Apple, sin hit directo en el corpus).
+- **`recent selections` → `selecciones recientes`** · ya publicado en
+  `settings.selection.recentSelections.maxCount.label` (`Selecciones recientes que recordar`) · high. Los cinco textos
+  del popover copian la gramática y el registro de sus gemelos de búsqueda `queryUi.recent.*`, cambiando `búsquedas` por
+  `selecciones`: `Mostrar todas las selecciones recientes`, `Todas las selecciones recientes`,
+  `Filtrar selecciones recientes`, `Ninguna selección reciente coincide con ese filtro.`, `Selecciones recientes`.
+- **`selection.recent.popoverAria` y `.listboxAria` comparten el mismo inglés (`Recent selections`)**, así que tienen
+  que decir exactamente lo mismo en `es` o salta `i18n-terms`. Ambas: `Selecciones recientes`.
+- **`Apply recent {mode} selection: {query}` → `Aplicar selección {mode} reciente: {query}`** · calco del molde ya
+  publicado en `search.recent.runAria` (`Ejecutar búsqueda {mode} reciente: {query}`) · high. `{mode}` llega ya
+  traducido (`IA`, `Regex`, `Nombre de archivo`) y `{query}` es texto libre del usuario: el molde los deja a los dos en
+  posición neutra, sin concordancia que resolver.
+- **`Matching what is shown in the list (the full path).` → `Coincide con lo que muestra la lista (la ruta completa).`**
+  · `coincidir` es el verbo del catálogo para "match" (`commands.selectionSelectFiles.description` "los archivos
+  coincidentes") y `ruta completa` ya está fijado (`fileOperations.validation.pathTooLong`) · high. Sujeto tácito (el
+  patrón), que es lo que mantiene el aviso corto y tranquilo en vez de sonar a advertencia.

@@ -1,0 +1,62 @@
+{
+  "selection.dialog.title.add": "Selecteer bestanden",
+  "@selection.dialog.title.add": {
+    "sourceHash": "e04221c"
+  },
+  "selection.dialog.title.remove": "Deselecteer bestanden",
+  "@selection.dialog.title.remove": {
+    "sourceHash": "537ddbe"
+  },
+  "selection.runHint": "Druk op Enter om te filteren",
+  "@selection.runHint": {
+    "sourceHash": "c8d00d2"
+  },
+  "selection.action.select.label": "Selecteer deze bestanden",
+  "@selection.action.select.label": {
+    "sourceHash": "9f385e8"
+  },
+  "selection.action.select.tooltip": "Selecteer deze bestanden in het actieve paneel",
+  "@selection.action.select.tooltip": {
+    "sourceHash": "d427136"
+  },
+  "selection.action.deselect.label": "Deselecteer deze bestanden",
+  "@selection.action.deselect.label": {
+    "sourceHash": "c0d3db4"
+  },
+  "selection.action.deselect.tooltip": "Deselecteer deze bestanden in het actieve paneel",
+  "@selection.action.deselect.tooltip": {
+    "sourceHash": "bf77e53"
+  },
+  "selection.notice.snapshotPane": "Er wordt vergeleken met wat in de lijst staat (het volledige pad).",
+  "@selection.notice.snapshotPane": {
+    "sourceHash": "aa4306e"
+  },
+  "selection.recent.trailingTooltip": "Toon alle recente selecties",
+  "@selection.recent.trailingTooltip": {
+    "sourceHash": "c694665"
+  },
+  "selection.recent.allButtonAria": "Alle recente selecties",
+  "@selection.recent.allButtonAria": {
+    "sourceHash": "b6ea4d8"
+  },
+  "selection.recent.filterPlaceholder": "Filter recente selecties",
+  "@selection.recent.filterPlaceholder": {
+    "sourceHash": "1f8347f"
+  },
+  "selection.recent.emptyMessage": "Geen overeenkomende recente selecties",
+  "@selection.recent.emptyMessage": {
+    "sourceHash": "f404527"
+  },
+  "selection.recent.popoverAria": "Recente selecties",
+  "@selection.recent.popoverAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.listboxAria": "Recente selecties",
+  "@selection.recent.listboxAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.applyAria": "Pas recente {mode}-selectie toe: {query}",
+  "@selection.recent.applyAria": {
+    "sourceHash": "717317a"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "selection.dialog.title.add": "Markera filer",
+  "@selection.dialog.title.add": {
+    "sourceHash": "e04221c"
+  },
+  "selection.dialog.title.remove": "Avmarkera filer",
+  "@selection.dialog.title.remove": {
+    "sourceHash": "537ddbe"
+  },
+  "selection.runHint": "Tryck på Retur för att filtrera",
+  "@selection.runHint": {
+    "sourceHash": "c8d00d2"
+  },
+  "selection.action.select.label": "Markera de här filerna",
+  "@selection.action.select.label": {
+    "sourceHash": "9f385e8"
+  },
+  "selection.action.select.tooltip": "Markera de här filerna i den fokuserade panelen",
+  "@selection.action.select.tooltip": {
+    "sourceHash": "d427136"
+  },
+  "selection.action.deselect.label": "Avmarkera de här filerna",
+  "@selection.action.deselect.label": {
+    "sourceHash": "c0d3db4"
+  },
+  "selection.action.deselect.tooltip": "Avmarkera de här filerna i den fokuserade panelen",
+  "@selection.action.deselect.tooltip": {
+    "sourceHash": "bf77e53"
+  },
+  "selection.notice.snapshotPane": "Matchningen sker mot det som visas i listan (hela sökvägen).",
+  "@selection.notice.snapshotPane": {
+    "sourceHash": "aa4306e"
+  },
+  "selection.recent.trailingTooltip": "Visa alla senaste markeringar",
+  "@selection.recent.trailingTooltip": {
+    "sourceHash": "c694665"
+  },
+  "selection.recent.allButtonAria": "Alla senaste markeringar",
+  "@selection.recent.allButtonAria": {
+    "sourceHash": "b6ea4d8"
+  },
+  "selection.recent.filterPlaceholder": "Filtrera senaste markeringar",
+  "@selection.recent.filterPlaceholder": {
+    "sourceHash": "1f8347f"
+  },
+  "selection.recent.emptyMessage": "Inga matchande senaste markeringar",
+  "@selection.recent.emptyMessage": {
+    "sourceHash": "f404527"
+  },
+  "selection.recent.popoverAria": "Senaste markeringar",
+  "@selection.recent.popoverAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.listboxAria": "Senaste markeringar",
+  "@selection.recent.listboxAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.applyAria": "Använd senaste {mode}-markering: {query}",
+  "@selection.recent.applyAria": {
+    "sourceHash": "717317a"
+  }
+}

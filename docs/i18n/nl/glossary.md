@@ -1887,3 +1887,38 @@ DATZELFDE rapport wordt gehangen. Er gaat niets een tweede keer omhoog. Gemijnd 
   voorwerp kan in het Nederlands niet vóór beide werkwoorden staan, dus het rapport wordt bij het eerste werkwoord
   genoemd en `notities` bij het tweede. De kortere `Bekijk of vul het rapport aan` viel af: `aanvullen` benoemt de
   notitie niet, terwijl het venster er precies om draait.
+
+## Het selectievenster: bestanden selecteren en deselecteren (`selection.*`, 2026-08-29)
+
+- **select (bestanden via een patroon) → `Selecteer`; deselect → `Deselecteer`** · macOS Finder `nl`, `MenuBar.json`
+  `172.title` = „Selecteer alles” (Tier 1, nagekeken op het draaiende systeem, macOS 26.6.2, build 25G83, 2026-08-29).
+  Finders tegenhanger van „Deselect All” (`MenuBar.json` `300488.title`) is „Maak selectie ongedaan”: dat is de hele
+  selectie, en er past geen lijdend voorwerp in. Het overgankelijke werkwoord staat wél bij Apple, in Finder
+  `LocalizableMerged` `NE18`: „Selecteer het, kies 'Archief' > 'Toon info' en deselecteer het aankruisvak 'Beveiligd'.”
+  Double Commander `nl` (de orthodoxe tweepaneelmanager uit Cmdrs lijn) doet hetzelfde: „Unselect a Gro&up...” →
+  „Deselecteer een groep...”, „&Unselect All” → „Deselecteer alles” · `high`. Microsofts „selectie opheffen” (term-id
+  `44742`, NLD/BEL) is de Windows-vorm en verliest van macOS.
+- **De catalogus wijkt hier bewust van Finders „Maak selectie ongedaan” af.** `menu.select.deselectAll` gebruikt
+  `Deselecteer alles` (Double Commander, en het rijmt op `Selecteer alles`), terwijl `menu.select.deselectFiles`,
+  `commands.selectionDeselectFiles.label` en `selection.dialog.title.remove` allemaal `Deselecteer bestanden` zeggen. De
+  dialoogtitel moet gelijk blijven aan het menu-item dat hem opent; dat is precies wat dit katalogusdeel repareert.
+- **recent selections → `recente selecties`** · gespiegeld aan de zusters in `queryUi.recent.*` („recente
+  zoekopdrachten”), zelfde zinsbouw, alleen `zoekopdrachten` → `selecties`. `selectie` is Finders eigen woord („Nieuwe
+  map met selectie”, „Open selectie”) · `high`.
+- **`selection.recent.applyAria` volgt `search.recent.runAria`** · daar staat „Voer recente {mode}-zoekopdracht uit:
+  {query}”, hier „Pas recente {mode}-selectie toe: {query}”. `apply` → `Pas toe` uit macOS AppKit (`NSFontOptionsPanel`
+  `100411.title` en `NSPreferences` `7TY-1Z-cs2.title` = „Pas toe”) · `high`. Het scheidbare partikel `toe` staat
+  achteraan, zoals `style.md` voorschrijft; `{query}` staat helemaal achteraan na de dubbele punt, zodat elke
+  gebruikerstekst past.
+- **De Enter-toets heet in het Nederlands `Enter`** · `search.runHint` zegt al „Druk op Enter om te zoeken”, dus „Druk
+  op Enter om te filteren” · `high`. Niet `Return`, niet `Invoer`.
+- **De tooltip is een eigen zin en hoeft de knoptekst niet te herhalen.** `QueryDialog.svelte` bouwt de toegankelijke
+  naam van de knop uit `config.primaryAction.ariaLabel ?? config.primaryAction.label`, dus uit de label-sleutel; de
+  tooltip hangt via `use:tooltip` aan een binnenste `span`. WCAG 2.5.3 klopt daarmee al door de opbouw, en de catalogus
+  laat de twee elders bewust uiteenlopen (`search.action.showAll.label` tegenover zijn `.tooltip`). Hier loopt het
+  Nederlands toevallig wél door („Selecteer deze bestanden in het actieve paneel”), en dat is prima, maar het is geen
+  eis. `actieve paneel` komt uit `commands.navGoToPath.description` en `commands.favoritesAdd.description` · `high`.
+- **`selection.notice.snapshotPane` → „Er wordt vergeleken met wat in de lijst staat (het volledige pad).”** ·
+  geruststellend, geen waarschuwing, zoals het `@key` vraagt; `het volledige pad` is de catalogusvorm (zie
+  `errors.listing.nameTooLongErrno.explanation`) · `high`.
+- Geen `sameAsSourceJustification` nodig: alle vijftien waarden verschillen van het Engels.

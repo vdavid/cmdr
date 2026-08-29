@@ -1512,3 +1512,38 @@ Bericht angehängt wird. Es geht kein zweiter Bericht raus, und genau das muss d
   lesbar sind · high. Das Possessiv fällt weg: zwei `dein` hintereinander („zu deinem Bericht. Deine Referenz-ID“) liest
   sich holprig, und das deutsche UI setzt das Possessiv ohnehin sparsamer als das Englische.
 - Kein `sameAsSourceJustification` nötig: alle elf Werte unterscheiden sich vom Englischen.
+
+## Der Auswahldialog: Dateien auswählen und abwählen (`selection.*`, 2026-08-29)
+
+- **select (Dateien über ein Muster) → `auswählen`; deselect → `abwählen`** · macOS Finder `de`, `MenuBar.json`
+  `172.title` = „Alles auswählen“ (Tier 1, gegengeprüft am laufenden System, macOS 26.6.2, Build 25G83, 2026-08-29).
+  Finders Gegenstück zu „Deselect All“ (`MenuBar.json` `300488.title`) ist „Auswahl aufheben“ — ein Ausdruck ohne
+  Objektstelle, mit dem sich „Dateien …“ nicht bilden lässt. Das transitive Verb kommt aus Microsoft Terminology
+  (`deselect` → „Abwählen“, Term-ID `2612123`, AUT/DEU/CHE/LUX) und aus Double Commander `de`, dem orthodoxen
+  Zwei-Fenster-Manager in Cmdrs Linie („Unselect a Gro&up...“ → „Gru&ppe abwählen …“, „&Unselect All“ → „Alle
+  a&bwählen“, „Unselect all files with same name“ → „Alle Dateien mit gleichem Namen abwählen“) · `high`.
+- **„Auswahl aufheben“ und „abwählen“ stehen nebeneinander, und das ist Absicht.** `menu.select.deselectAll` bleibt
+  Finders „Auswahl aufheben“ (die ganze Auswahl fällt weg), während `menu.select.deselectFiles`,
+  `commands.selectionDeselectFiles.label` und `selection.dialog.title.remove` „Dateien abwählen“ sagen (ein Objekt fällt
+  weg). Wer die drei „vereinheitlicht“, bricht den Dialogtitel gegen den Menüpunkt, der ihn öffnet — genau der Fehler,
+  den dieser Katalogbereich behebt.
+- **recent selections → `Letzte Auswahlen`** · gespiegelt an den Geschwistern in `queryUi.recent.*` („Letzte Suchen“),
+  gleiche Grammatik, nur `Suchen` → `Auswahlen`. Plural von `Auswahl` ist `Auswahlen` · `high`.
+- **`selection.recent.applyAria` folgt `search.recent.runAria`** · dort steht „Letzte {mode}-Suche ausführen: {query}“,
+  hier „Letzte {mode}-Auswahl anwenden: {query}“. `apply` → `anwenden` aus macOS AppKit (`NSFontOptionsPanel`
+  `100411.title` und `NSPreferences` `7TY-1Z-cs2.title` = „Anwenden“) · `high`. Die `{mode}-`-Komposition ist vom
+  Geschwister übernommen; `{query}` steht am Satzende hinter dem Doppelpunkt, damit beliebiger Nutzertext passt.
+- **Die Enter-Taste heißt im Deutschen `Enter`** · `search.runHint` sagt bereits „Zum Suchen Enter drücken“, also „Zum
+  Filtern Enter drücken“ · `high`. Kein „Eingabetaste“, kein „Return“.
+- **Der Tooltip ist ein eigener Satz und nimmt die natürliche Wortstellung.** Er muss die Beschriftung der Taste NICHT
+  wiederholen: `QueryDialog.svelte` baut den zugänglichen Namen der Taste aus
+  `config.primaryAction.ariaLabel ?? config.primaryAction.label`, also aus dem Label-Schlüssel, während der Tooltip an
+  einem inneren `span` per `use:tooltip` hängt. WCAG 2.5.3 ist damit schon durch den Aufbau erfüllt, und der Katalog
+  lässt die beiden anderswo bewusst auseinanderlaufen (`search.action.showAll.label` gegenüber seinem `.tooltip`). Also
+  verbfinal, wie im Deutschen üblich: „Diese Dateien im fokussierten Bereich auswählen“ / „… abwählen“ · `high`.
+- **`fokussierter Bereich` → `im fokussierten Bereich`** · aus `commands.navGoToPath.description` („Den fokussierten
+  Bereich zu einem … Pfad springen lassen.“) und `commands.favoritesAdd.description` · `high`.
+- **`selection.notice.snapshotPane` → „Abgeglichen wird, was in der Liste steht (der vollständige Pfad).“** ·
+  beruhigend, keine Warnung, wie das `@key` verlangt; `der vollständige Pfad` ist die Katalogform (siehe
+  `errors.listing.nameTooLongErrno.explanation`) · `high`.
+- Kein `sameAsSourceJustification` nötig: alle fünfzehn Werte unterscheiden sich vom Englischen.

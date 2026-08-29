@@ -7,13 +7,14 @@
  * state survival across a close + reopen (the module-singleton contract).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
 import SelectionDialog from './SelectionDialog.svelte'
 import { clearSelectionState, selectionQueryState } from './selection-state.svelte'
 import type { FileEntry } from '$lib/file-explorer/types'
 import type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/bindings'
+import { setLocale, _setCatalogForTests } from '$lib/intl/messages.svelte'
 
 let aiProvider: 'off' | 'local' | 'cloud' = 'off'
 let autoApplySetting = true
@@ -186,6 +187,53 @@ describe('SelectionDialog', () => {
     const { getTitle, cleanup } = await mountDialog({ mode: 'remove' })
     expect(getTitle()).toBe('Deselect files')
     cleanup()
+  })
+
+  describe('every visible string resolves through the catalog', () => {
+    // A stand-in locale carrying only the four strings under test. Everything else
+    // falls back to `en`, so a failure here is about THIS dialog's wiring and not
+    // about a half-translated catalog.
+    const TEST_LOCALE = 'zz'
+
+    beforeEach(() => {
+      _setCatalogForTests(TEST_LOCALE, {
+        'selection.dialog.title.remove': 'TITLE-REMOVE',
+        'selection.action.deselect.label': 'ACTION-DESELECT',
+        'selection.runHint': 'RUN-HINT',
+        'selection.notice.snapshotPane': 'SNAPSHOT-NOTICE',
+      })
+      setLocale(TEST_LOCALE)
+    })
+
+    afterEach(() => {
+      setLocale(null)
+      _setCatalogForTests(TEST_LOCALE, null)
+    })
+
+    // Pre-fix, the title and the primary button were English literals in the
+    // component, so `en-AU`'s "Unselect files…" menu item opened a dialog headed
+    // "Deselect files". These four assertions are that contradiction, pinned.
+    it('takes the title, the primary action, and the snapshot notice from the active locale', async () => {
+      const { overlay, getTitle, cleanup } = await mountDialog({ mode: 'remove', isSnapshotPane: true })
+      expect(getTitle()).toBe('TITLE-REMOVE')
+      expect(overlay.textContent).toContain('ACTION-DESELECT')
+      expect(overlay.querySelector('.query-dialog__notice')?.textContent.trim()).toBe('SNAPSHOT-NOTICE')
+      cleanup()
+    })
+
+    it("shows the dialog's own run hint, not the shared search one", async () => {
+      // The hint only appears once the typed query is ahead of the last run, which
+      // means auto-apply has to be off.
+      autoApplySetting = false
+      const { overlay, cleanup } = await mountDialog({ mode: 'add' })
+      const input = overlay.querySelector('input')
+      if (!input) throw new Error('query input not found')
+      input.value = '*.png'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      await tick()
+      expect(overlay.querySelector('.run-hint')?.textContent.trim()).toBe('RUN-HINT')
+      cleanup()
+    })
   })
 
   it('pressing Enter on a non-empty filename query commits matched indices and closes', async () => {

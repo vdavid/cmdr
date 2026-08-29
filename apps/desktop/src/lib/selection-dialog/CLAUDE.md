@@ -21,6 +21,9 @@ lives in `apps/desktop/src-tauri/src/selection/CLAUDE.md`.
 - **Don't reintroduce an empty-pattern early-return in `buildMatchQuery` that ignores the filters,** or the size / date
   / type controls go decorative. The matcher's `compilePattern` still returns `null` on an empty pattern, so the
   wrapper, not the matcher, owns the substitution.
+- **Each mode-dependent string is TWO catalog keys, never one ICU `select`** (`selection.json`). `en-AU` forks only the
+  `Deselect` half ("Unselect"), so a merged message would drag the un-forked half into that overlay and rot there. A
+  `.tooltip` is its own sentence, free to reorder (the accessible name comes from `.label`). `DETAILS.md` § Decisions.
 - **Type-filter and folder-size accessors build through the single `buildAccessors()` helper.** Both accessor sites
   (`runQuery` preview AND `commitMatches`) use it, so preview and commit can't disagree on size/type semantics. Don't
   re-inline a second accessor literal. (`getSizeFor` returns `entry.size` for files and `entry.recursiveSize` for

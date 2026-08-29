@@ -1,0 +1,62 @@
+{
+  "selection.dialog.title.add": "選取檔案",
+  "@selection.dialog.title.add": {
+    "sourceHash": "e04221c"
+  },
+  "selection.dialog.title.remove": "取消選取檔案",
+  "@selection.dialog.title.remove": {
+    "sourceHash": "537ddbe"
+  },
+  "selection.runHint": "按 Enter 鍵篩選",
+  "@selection.runHint": {
+    "sourceHash": "c8d00d2"
+  },
+  "selection.action.select.label": "選取這些檔案",
+  "@selection.action.select.label": {
+    "sourceHash": "9f385e8"
+  },
+  "selection.action.select.tooltip": "在焦點窗格中選取這些檔案",
+  "@selection.action.select.tooltip": {
+    "sourceHash": "d427136"
+  },
+  "selection.action.deselect.label": "取消選取這些檔案",
+  "@selection.action.deselect.label": {
+    "sourceHash": "c0d3db4"
+  },
+  "selection.action.deselect.tooltip": "在焦點窗格中取消選取這些檔案",
+  "@selection.action.deselect.tooltip": {
+    "sourceHash": "bf77e53"
+  },
+  "selection.notice.snapshotPane": "比對的是列表中顯示的內容（完整路徑）。",
+  "@selection.notice.snapshotPane": {
+    "sourceHash": "aa4306e"
+  },
+  "selection.recent.trailingTooltip": "顯示所有最近的選取",
+  "@selection.recent.trailingTooltip": {
+    "sourceHash": "c694665"
+  },
+  "selection.recent.allButtonAria": "所有最近的選取",
+  "@selection.recent.allButtonAria": {
+    "sourceHash": "b6ea4d8"
+  },
+  "selection.recent.filterPlaceholder": "篩選最近的選取",
+  "@selection.recent.filterPlaceholder": {
+    "sourceHash": "1f8347f"
+  },
+  "selection.recent.emptyMessage": "沒有最近的選取符合篩選條件",
+  "@selection.recent.emptyMessage": {
+    "sourceHash": "f404527"
+  },
+  "selection.recent.popoverAria": "最近的選取",
+  "@selection.recent.popoverAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.listboxAria": "最近的選取",
+  "@selection.recent.listboxAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.applyAria": "套用最近的 {mode} 選取：{query}",
+  "@selection.recent.applyAria": {
+    "sourceHash": "717317a"
+  }
+}

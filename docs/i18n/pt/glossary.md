@@ -1487,3 +1487,47 @@ isso claro.
 - "See why" (o botão do aviso rápido do Ask Cmdr) · **Ver por quê** · a forma separada e acentuada, porque a pergunta
   fecha a frase; é a mesma escolha já feita em `queue.chip.failed` ("para ver por quê") · confirmed. `porquê` avulso não
   é forma correta em pt-BR: o substantivo pediria artigo (`Ver o porquê`). `askCmdr.wakeToast.openThread`.
+
+## A caixa de diálogo de selecionar / desmarcar arquivos (`selection.*`, 2026-08-29)
+
+Fontes do lote: macOS 26 Finder `pt-BR` (`MenuBar.json`, ids `172.title` / `300488.title`), Double Commander `pt-BR`
+(`doublecmd.po`, `&Unselect All`) e Total Commander `pt-BR` (`WCMD.LNG.utf8` 7603/7604/7613/7614). A área é ICU, então
+apóstrofos seriam duplos; nenhum valor do lote tem apóstrofo.
+
+- **select → `Selecionar`; deselect → `Desmarcar`** · macOS Finder `pt-BR` diz `Selecionar Tudo` (`172.title`) e
+  **`Desmarcar Tudo`** (`300488.title`) · confirmed (Tier 1, já registrado neste glossário). ❌ Não `Desselecionar`:
+  essa é a forma do Finder `pt-PT`, e o `pt` do Cmdr é brasileiro. As fontes Tier 3 divergem e não pesam aqui: Double
+  Commander `pt-BR` usa a perífrase `Remover seleção`, e o Total Commander `pt-BR` está meio traduzido nessa tela
+  (`&Remove selection by name/extensão:` ainda em inglês), então nenhum dos dois derruba o Finder.
+- **Os três lugares que nomeiam a caixa de diálogo dizem a mesma coisa**: `menu.select.files` /
+  `menu.select.deselectFiles` (`Selecionar arquivos…` / `Desmarcar arquivos…`), `commands.selectionSelectFiles.label` /
+  `commands.selectionDeselectFiles.label`, `settings.selection.recentSelections.maxCount.description`
+  (`a caixa de diálogo Selecionar / Desmarcar arquivos`) e agora os títulos `selection.dialog.title.add` / `.remove`. O
+  bug que este lote conserta era o título discordar do menu que o abre · high.
+- **`Select these files` → `Selecionar estes arquivos`; `Deselect these files` → `Desmarcar estes arquivos`** · mesmo
+  par de verbos dos títulos, no infinitivo-imperativo de botão (`style.md` § Formality) · high.
+- **`… in the focused pane` → `… no painel em foco`** · forma já publicada no catálogo
+  (`commands.navGoToPath.description` "Leve o painel em foco para…", `commands.favoritesAdd.description` "a pasta atual
+  do painel em foco") · high. **As dicas começam literalmente com o texto do botão** e só acrescentam o complemento
+  (`Selecionar estes arquivos no painel em foco`): botão e dica se leem como uma frase só.
+- **`Press Enter to filter` → `Pressione Enter para filtrar`** · decalque do irmão `search.runHint`
+  (`Pressione Enter para buscar`) · high. **A tecla se chama `Enter` em pt-BR**, sem tradução (é o que está gravado no
+  teclado); o verbo é `Pressione`, como no irmão.
+- **`recent selections` → `seleções recentes`** · já publicado em `settings.selection.recentSelections.maxCount.label`
+  (`Seleções recentes a lembrar`) · high. Os cinco textos do pop-over copiam a gramática e o registro dos gêmeos de
+  busca `queryUi.recent.*`, trocando `buscas` por `seleções`: `Mostrar todas as seleções recentes`,
+  `Todas as seleções recentes`, `Filtrar seleções recentes`, `Nenhuma seleção recente corresponde a esse filtro.`,
+  `Seleções recentes`.
+- **`selection.recent.popoverAria` e `.listboxAria` têm o mesmo inglês (`Recent selections`)**, então precisam de um
+  valor idêntico em `pt` ou o `i18n-terms` acusa. As duas: `Seleções recentes`.
+- **`Apply recent {mode} selection: {query}` → `Aplicar seleção {mode} recente: {query}`** · decalque do molde já
+  publicado em `search.recent.runAria` (`Executar busca {mode} recente: {query}`) · high. `{mode}` chega traduzido
+  (`IA`, `Regex`, `Nome de arquivo`) e `{query}` é texto livre da pessoa: o molde deixa os dois em posição neutra, sem
+  concordância a resolver.
+- **`Matching what is shown in the list (the full path).` →
+  `Corresponde ao que aparece na lista (o caminho completo).`** · `corresponder` é o verbo do catálogo para "match"
+  (`commands.selectionSelectFiles.description` "os arquivos correspondentes") e `caminho completo` já está fixado
+  (`fileOperations.validation.pathTooLong`) · high. Sujeito oculto (o padrão), que mantém o aviso curto e tranquilo em
+  vez de soar como alerta.
+- Varredura pt-PT do lote (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
+  `alterar o nome`): zero ocorrências.

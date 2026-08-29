@@ -33,6 +33,7 @@
         trackEvent,
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { tString } from '$lib/intl/messages.svelte'
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
     import { getBadgeStatus } from '$lib/feature-status'
     import type {
@@ -106,9 +107,7 @@
     const folderNamesSnapshot: string[] = entries.map((e) => e.name)
 
     // R7 banner: snapshot panes match against the full friendly path, not the basename.
-    const noticeBanner = isSnapshotPane
-        ? 'Matching what is shown in the list (the full path).'
-        : undefined
+    const noticeBanner = isSnapshotPane ? tString('selection.notice.snapshotPane') : undefined
 
     /**
      * AI translation: hands the prompt plus a sampled folder listing to the Rust
@@ -449,7 +448,10 @@
             mode: entry.mode,
             ageLabel: formatAge(entry.timestamp),
             metaLabel: rowMeta(widened),
-            ariaLabel: `Apply recent ${modeName(entry.mode)} selection: ${entry.query}`,
+            ariaLabel: tString('selection.recent.applyAria', {
+                mode: modeName(entry.mode),
+                query: entry.query,
+            }),
         }
     }
     const recentKey: RecentItemKey<SelectionHistoryEntry> = (entry) => entry.id
@@ -498,8 +500,24 @@
         onClearAiPattern: () => {},
     })
 
-    const primaryLabel = $derived(mode === 'add' ? 'Select these files' : 'Deselect these files')
-    const title = $derived(mode === 'add' ? 'Select files' : 'Deselect files')
+    // Select and Deselect are two separate keys, not one ICU `select` on `mode`: they're
+    // the same two actions the Select menu already names with separate catalog keys, and a
+    // regional overlay (en-AU says "Unselect") must be able to fork the remove side alone.
+    const primaryLabel = $derived(
+        mode === 'add'
+            ? tString('selection.action.select.label')
+            : tString('selection.action.deselect.label'),
+    )
+    const primaryTooltip = $derived(
+        mode === 'add'
+            ? tString('selection.action.select.tooltip')
+            : tString('selection.action.deselect.tooltip'),
+    )
+    const title = $derived(
+        mode === 'add'
+            ? tString('selection.dialog.title.add')
+            : tString('selection.dialog.title.remove'),
+    )
 
     const config: QueryDialogConfig<SelectionHistoryEntry> = $derived({
         title,
@@ -515,18 +533,18 @@
         visibleChips: { size: true, date: true, scope: false, pattern: true },
         showPathColumn: false,
 
-        runHintCopy: 'Press Enter to filter',
+        runHintCopy: tString('selection.runHint'),
 
         historyStore: recentSelectionsStore,
         recentItems: {
             adapter: recentAdapter,
             keyFn: recentKey,
-            triggerAriaLabel: 'All recent selections',
-            triggerTooltip: 'Show all recent selections',
-            filterPlaceholder: 'Filter recent selections',
-            emptyMessage: 'No matching recent selections',
-            popoverAriaLabel: 'Recent selections',
-            listboxAriaLabel: 'Recent selections',
+            triggerAriaLabel: tString('selection.recent.allButtonAria'),
+            triggerTooltip: tString('selection.recent.trailingTooltip'),
+            filterPlaceholder: tString('selection.recent.filterPlaceholder'),
+            emptyMessage: tString('selection.recent.emptyMessage'),
+            popoverAriaLabel: tString('selection.recent.popoverAria'),
+            listboxAriaLabel: tString('selection.recent.listboxAria'),
         },
         onLoadHistory: async () => {
             await loadRecentSelections()
@@ -564,7 +582,7 @@
         primaryAction: {
             label: primaryLabel,
             shortcutHint: '⏎',
-            tooltip: `${primaryLabel} in the focused pane`,
+            tooltip: primaryTooltip,
             ariaLabel: primaryLabel,
             handler: commitMatches,
         },

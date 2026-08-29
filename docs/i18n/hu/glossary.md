@@ -1872,3 +1872,44 @@ Natív anyanyelvi ellenőrzésre megjelölve:
 - `errorReporter.amend.description`: a második tagmondat (`és odakerül a többi mellé, ami már a csapatnál van`) az angol
   „it''ll join what the team already has” szándékosan lezser képét viszi tovább; érthető és tegező, de több egyformán jó
   magyar megoldás létezik rá.
+
+## Kijelölés és a kijelölés törlése: a Select / Deselect párbeszéd (`selection.*`, 2026-08-29)
+
+- **select → `kijelölés`, deselect → `kijelölés törlése`** · macOS 26.6.2 Finder `hu`
+  (`Finder.app/Contents/Resources/hu.lproj/MenuBar.strings`, `172.title` = `Összes kijelölése`, `300488.title` =
+  `Kijelölés törlése`; ellenőrizve 2026-08-29) · high. Ez a natív menük szakaszának `Deselect all` döntését erősíti meg,
+  és innen jön a párbeszéd két címe: `Fájlok kijelölése` / `Fájlok kijelölésének törlése`, szóról szóra a
+  `menu.select.files` / `menu.select.deselectFiles` alakja, hogy a cím és az őt megnyitó menüpont ne mondjon mást.
+- **A katalógus drift, amit ez a menet NEM javított**: a `commands.selectionDeselectFiles.label`
+  (`Fájlok kijelölésének megszüntetése…`) és a `commands.selectionDeselectAll.label` (`Kijelölés megszüntetése`) még a
+  `megszüntetése` alakot viszi. Ez a Tier-3 ortodox pár szava (Total Commander `hu` „Csoportkijelölés megszüntetése”,
+  `WCMD.INC` 522; Double Commander `hu` „Csoport kijelölésének megszüntetése”), a Tier-1 Finderé viszont a `törlése`. A
+  Finder nyer, tehát a `commands.json` két kulcsát egy külön menetben a `törlése` alakra kell hozni. Addig a
+  parancspaletta és a menü két szót használ ugyanarra.
+- **A súgóbuboréknak NEM kell tartalmaznia a feliratot** (`selection.action.*`). A gomb hozzáférhető neve a felirat
+  kulcsából jön (`QueryDialog.svelte`: `aria-label={config.primaryAction.ariaLabel ?? config.primaryAction.label}`), a
+  súgóbuborék pedig egy belső `span` `use:tooltip` akciója, tehát a WCAG 2.5.3 már a felépítésből adódóan teljesül. A
+  ház precedense ugyanezt mondja: a `search.action.showAll.label` (`Összes megjelenítése a főablakban`) és a `.tooltip`
+  (`A találatok megnyitása az aktív panelen`) szándékosan más szavakat használ. A buborék tehát szabadon fogalmazható;
+  csak ugyanazt a műveletet nevezze meg, mint a felirat, és mondja ki, hogy a fókuszált panelen történik.
+- **Ettől függetlenül a felirat így is a buborék eleje lett**, mert a két legközelebbi testvér ezt a formát viszi:
+  főnévi szerkezet + helyhatározó (`A találatok megnyitása az aktív panelen`, `A fájl megnyitása az aktív panelen`). Nem
+  kényszerből, hanem mert ez a kulcscsalád háziformája.
+- **A `fájlok kijelölésének törlése` alak nyelvtani döntés, nem a buborékért van**: az `itt látható fájlok` birtokos
+  szerkezete EGY szintű (pont a `menu.select.deselectFiles` alakja), míg az
+  `Ezeknek a fájloknak a kijelölésének a törlése` kétszintű birtokos lánc lenne. Ez a felirat önmagában is jobb,
+  akárhogy szól majd a buborék.
+- **focused pane → `a fókuszált panel`** · a katalógus szava (`commands.navGoToPath.description`,
+  `commands.favoritesAdd.description`) · high. Helyhatározóban `a fókuszált panelen`. A `search.action.*.tooltip`
+  `az aktív panelen` alakja az angol „active pane” párja, tehát nem ugyanaz a kulcscsalád.
+- **`selection.runHint` a `search.runHint` mintája**: `Nyomd meg az Entert a szűréshez` (a testvér
+  `Nyomd meg az Entert a kereséshez`). Az Enter billentyű neve `Enter`, tárgyesetben `az Entert`, ahogy a katalógus
+  mindenütt írja.
+- **`selection.recent.*` a `queryUi.recent.*` ikertestvére**, csak a „keresés” helyén `kijelölés` áll:
+  `Az összes legutóbbi kijelölés megjelenítése`, `Összes legutóbbi kijelölés`, `Legutóbbi kijelölések szűrése`,
+  `Nincs a szűrőnek megfelelő legutóbbi kijelölés.`, `Legutóbbi kijelölések` (a popover és a lista az angolban is
+  szándékosan azonos). Az `applyAria` a `search.recent.runAria` szerkezetét viszi:
+  `Legutóbbi {mode} kijelölés alkalmazása: {query}`. A `{query}` a felhasználó nyers szövege, ezért a mondat végén,
+  kettőspont után áll, így bármi elfér benne.
+- Mind a 15 érték eltér az angoltól, tehát nincs szükség `sameAsSourceJustification`-re. Egyik értékben sincs aposztróf,
+  így az ICU `''` szabálya nem lép be; a `{mode}` és a `{query}` változatlan.

@@ -556,6 +556,7 @@
                 disabled={config.inputsDisabled}
                 aiHighlight={runner.highlightedFields.has('query')}
                 {showRunHint}
+                runHintCopy={config.runHintCopy ?? tString('queryUi.bar.runHint')}
                 runTitleOverride={config.runTitleOverride}
                 showEnterHint={enterAction === 'run-search'}
                 recentOpen={recent.isOpen}

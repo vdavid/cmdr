@@ -1646,3 +1646,39 @@ những gì đã gửi và viết thêm ghi chú **vào chính báo cáo đó**;
   đúng ý `@key.description`. Nhờ người bản ngữ soát lại câu này nếu có dịp.
 - Cả 11 giá trị đều khác tiếng Anh, nên không cần `sameAsSourceJustification`. Không giá trị nào chứa dấu nháy đơn, nên
   không phát sinh chuyện nhân đôi `''` của ICU; `{error}` giữ nguyên.
+
+## Chọn và bỏ chọn: hộp thoại Select / Deselect (`selection.*`, 2026-08-29)
+
+- **select → `chọn`, deselect → `bỏ chọn`** · macOS 26.6.2 Finder `vi`
+  (`Finder.app/Contents/Resources/vi.lproj/MenuBar.strings`, `172.title` = `Chọn tất cả`, `300488.title` =
+  `Bỏ chọn tất cả`; kiểm chứng 2026-08-29) · `high`. Catalog đã dùng đúng cặp này ở `menu.select.files` /
+  `menu.select.deselectFiles` (`Chọn tệp…` / `Bỏ chọn tệp…`) VÀ ở `commands.selectionSelectFiles.label` /
+  `commands.selectionDeselectFiles.label`, nên tiêu đề hộp thoại lấy nguyên: `Chọn tệp` / `Bỏ chọn tệp`. Không có chỗ
+  nào lệch nhau trong bản `vi`.
+- **focused pane → `khung đang hoạt động` trong hai tooltip này**, KHÔNG dùng `khung đang chọn` · `tentative`.
+  `commands.navGoToPath.description` và `commands.favoritesAdd.description` đang dịch "focused pane" là
+  `khung đang chọn`, nhưng đặt vào chính hộp thoại chọn tệp thì câu thành "Chọn các tệp này trong khung đang chọn": ba
+  chữ `chọn` trong một dòng, và `đang chọn` đọc mơ hồ (khung đang chọn cái gì?). Hai tooltip nút chân hộp thoại song
+  sinh (`search.action.showAll.tooltip`, `.goToFile.tooltip`) đã dùng `trong khung đang hoạt động`, nên lấy theo chúng:
+  cùng loại chuỗi, cùng vị trí trên màn hình. ⚠️ Ghi lại cho lượt sau: nếu muốn thống nhất một cách dịch duy nhất cho
+  "focused pane", `khung có tiêu điểm` là bản có nguồn Tier 1 (macOS Finder `vi` `300766.title` = "Đặt tiêu điểm vào
+  trường tìm kiếm"; thuật ngữ Microsoft: focus → `tiêu điểm`), còn `khung đang chọn` thì không có nguồn nào.
+- **Tooltip KHÔNG bắt buộc phải chứa nhãn** (`selection.action.*`). Tên trợ năng của nút lấy từ khóa nhãn
+  (`QueryDialog.svelte`: `aria-label={config.primaryAction.ariaLabel ?? config.primaryAction.label}`), còn tooltip là
+  một `use:tooltip` trên `span` bên trong, nên WCAG 2.5.3 đã thỏa mãn sẵn. Tiền lệ trong catalog cũng vậy:
+  `search.action.showAll.label` (`Hiện tất cả trong cửa sổ chính`) và `.tooltip`
+  (`Mở kết quả tìm kiếm trong khung đang hoạt động`) cố ý dùng chữ khác nhau. Tooltip chỉ cần gọi đúng thao tác của nhãn
+  và nói rõ thay đổi rơi vào khung đang hoạt động.
+- **Dù vậy hai tooltip vẫn mở đầu bằng nhãn**, vì đó là khuôn của hai khóa anh em gần nhất
+  (`Mở tệp trong khung đang hoạt động`): `Chọn các tệp này` / `Bỏ chọn các tệp này` + ` trong khung đang hoạt động`.
+  Tiếng Việt không biến hình nên câu đọc tự nhiên, không phải gò ép.
+- **`selection.runHint` theo khuôn `search.runHint`**: `Nhấn Enter để lọc` (song sinh với `Nhấn Enter để tìm kiếm`). Tên
+  phím giữ nguyên `Enter`, đúng quy ước `nhấn Enter` đã ghi ở mục trên.
+- **`selection.recent.*` là bản sao của `queryUi.recent.*`**, chỉ đổi "tìm kiếm" thành `lựa chọn`:
+  `Hiện tất cả lựa chọn gần đây`, `Tất cả lựa chọn gần đây`, `Lọc các lựa chọn gần đây`,
+  `Không có lựa chọn gần đây nào khớp với bộ lọc đó.`, `Lựa chọn gần đây` (bản tiếng Anh cố ý để popover và listbox
+  trùng nhau). `applyAria` theo khuôn `search.recent.runAria` (`Chạy lại tìm kiếm {mode} gần đây: {query}`):
+  `Áp dụng lựa chọn {mode} gần đây: {query}`. `{query}` là chữ người dùng tự gõ nên đặt cuối câu, sau dấu hai chấm, để
+  chứa được bất cứ thứ gì.
+- Cả 15 giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
+  không phát sinh chuyện nhân đôi `''` của ICU; `{mode}` và `{query}` giữ nguyên.

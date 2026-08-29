@@ -1,0 +1,14 @@
+{
+  "selection.dialog.title.remove": "Unselect files",
+  "@selection.dialog.title.remove": {
+    "sourceHash": "537ddbe"
+  },
+  "selection.action.deselect.label": "Unselect these files",
+  "@selection.action.deselect.label": {
+    "sourceHash": "c0d3db4"
+  },
+  "selection.action.deselect.tooltip": "Unselect these files in the focused pane",
+  "@selection.action.deselect.tooltip": {
+    "sourceHash": "bf77e53"
+  }
+}

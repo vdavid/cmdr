@@ -9,11 +9,13 @@ macOS 26.6.2 (build 25G83), 2026-08-29.
 
 ## In Cmdr's catalog today
 
-| en / en-GB      | en-AU        | Source                                                                                    |
-| --------------- | ------------ | ----------------------------------------------------------------------------------------- |
-| Deselect all    | Unselect all | `Finder/MenuBar.json:300488.title` (`Deselect All` → `Unselect All`)                      |
-| deselect (verb) | unselect     | `Finder/LocalizableMerged.json:NE18`, `:NE43`, `:PE14`, `:BN43`                           |
-| go forwards     | go forward   | `AppKit/AccessibilityImageDescriptions.json:NSGoForwardTemplate` (AU keeps the `en` form) |
+| en / en-GB          | en-AU          | Source                                                                                    |
+| ------------------- | -------------- | ----------------------------------------------------------------------------------------- |
+| Deselect all        | Unselect all   | `Finder/MenuBar.json:300488.title` (`Deselect All` → `Unselect All`)                      |
+| Deselect files      | Unselect files | Same source; the Select-menu item, the command, and the dialog title all carry it         |
+| deselect (verb)     | unselect       | `Finder/LocalizableMerged.json:NE18`, `:NE43`, `:PE14`, `:BN43`                           |
+| Select / Select all | (no fork)      | `Finder/MenuBar.json` reads `Select` and `Select All` identically in `en-GB` and `en-AU`  |
+| go forwards         | go forward     | `AppKit/AccessibilityImageDescriptions.json:NSGoForwardTemplate` (AU keeps the `en` form) |
 
 ## Attested, but no matching Cmdr string yet
 
@@ -42,6 +44,11 @@ and generic-destructive-button in both), and keeping the Oxford comma. Two calls
   `:NSTouchBarGoForwardTemplate` as `go forward` in `en-AU`. The Go-MENU noun stays `Forward` in both variants
   (`Finder/MenuBar.json:249.title`, identical in `en-GB` and `en-AU`; the base-`en` pile ships no `MenuBar.json`), so
   `menu.go.forward` is forked nowhere.
+- **Only the removing verb forks, and it forks everywhere the verb appears.** `Select` is identical across `en`,
+  `en-GB`, and `en-AU`, so a Select/Deselect pair forks on one side only. Fork BOTH halves of a label + tooltip pair
+  together (`selection.action.deselect.label` and `.tooltip`): the tooltip repeats the button's wording, and forking one
+  alone leaves a button reading `Unselect these files` under a tooltip reading
+  `Deselect these files in the focused pane`.
 - **`Show less` stays**, and more plainly than in `en-GB`: `en-AU` doesn't even take the countable-noun correction, so
   `Finder/LocalizableMerged.json:FI8.1` still reads `show less options` where `en-GB` says `show fewer options`. The
   bare button is `Show Less` in every locale, so `whatsNew.dialog.showLess` inherits.

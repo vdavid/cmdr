@@ -14,6 +14,16 @@ are passed in as preformatted `*Text` params (with a raw integer alongside only 
 mode badges (`AI` / `.*` / `Aa` in `modeBadge`), unit abbreviations (`kB` / `KB` / `MB` / `GB`), and the regex
 slash-wrap are typography, not copy, and stay literal. Parity net: `queryui-i18n-parity.test.ts`.
 
+**Consumer-supplied copy overrides the `queryUi.*` default, and the fallback lives at the call site.** A few strings
+belong to the DIALOG rather than to the shared primitive, because the two consumers name the same control with different
+verbs: `config.runHintCopy` (Search "Press Enter to search" / Selection "Press Enter to filter") and
+`config.recentItems.triggerAriaLabel` / `.triggerTooltip` / `.filterPlaceholder` / `.emptyMessage` / `.popoverAriaLabel`
+/ `.listboxAriaLabel` (recent searches vs recent selections). Each is optional and resolved as
+`config.X ?? tString('queryUi.…')` where it's passed down, so a new consumer gets a sensible shared default and an
+existing one keeps its own voice. ❌ Don't re-hardcode a `tString('queryUi.…')` inside the child component when the
+config already carries the string: that silently ignores what the consumer asked for, which is how the Selection dialog
+spent its life telling users to "Press Enter to search".
+
 Home for primitives shared between the Search dialog (`lib/search/`) and the Selection dialog (`lib/selection-dialog/`).
 Owns the unified query bar, mode chips, AI prompt strip, filter chips strip (size, modified, scope, pattern),
 virtualized results table with path pills and per-row menus, the query field's recent-items dropdown, and the

@@ -1970,3 +1970,51 @@ Les 11 valeurs sont ICU (apostrophes doublées), espace ASCII avant `:`, aucun U
   Afficher le fichier ») et utilise `Voir` pour consulter une information (`menu.app.licenseDetails` « Voir les détails
   de la licence », `whatsNew.dialog.seeFullChangelog`), ce qui est le sens ici. `Afficher` coûterait aussi trois
   caractères de plus.
+
+## La fenêtre sélectionner / désélectionner des fichiers (`selection.*`, 2026-08-29)
+
+Sources du lot : macOS 26 Finder `fr` (`MenuBar.json`, ids `172.title` / `300488.title`), Total Commander `fr`
+(`WCMD.INC.utf8` 542/544/3304-3316) et Double Commander `fr` (`doublecmd.po`, `&Unselect All`). La zone passe par ICU,
+donc les apostrophes se doubleraient ; aucune valeur du lot n'en contient (les tournures retenues les évitent toutes).
+
+- **select → `Sélectionner` ; deselect → `Désélectionner`** · macOS Finder `fr` : `Tout sélectionner` (`172.title`) et
+  **`Tout désélectionner`** (`300488.title`) · high (Tier 1), déjà posé plus haut pour le menu Présentation. La famille
+  orthodoxe confirme le verbe pour la surface exacte de Cmdr : Total Commander `fr` dit
+  `Désélectionner tous les fichiers` / `Désélectionner un groupe`, Double Commander `fr` dit `Tout désélectionner`.
+  Aucune source ne diverge, ce qui rend le français le plus simple des trois langues romanes du lot.
+- **Les trois endroits qui nomment la fenêtre disent la même chose** : `menu.select.files` / `menu.select.deselectFiles`
+  (`Sélectionner des fichiers…` / `Désélectionner des fichiers…`), `commands.selectionSelectFiles.label` /
+  `commands.selectionDeselectFiles.label`, `settings.selection.recentSelections.maxCount.description`
+  (`la boîte de dialogue Sélectionner / Désélectionner des fichiers`) et désormais les titres
+  `selection.dialog.title.add` / `.remove`. Le bug corrigé par ce lot, c'était justement le titre qui contredisait
+  l'élément de menu qui l'ouvre · high.
+- **`Select these files` → `Sélectionner ces fichiers` ; `Deselect these files` → `Désélectionner ces fichiers`** · même
+  paire de verbes que les titres, à l'infinitif (convention de libellé du `style.md`) · high. Le titre prend
+  `des fichiers` (indéfini, la fenêtre ne sait pas encore lesquels) et le bouton `ces fichiers` (le résultat affiché
+  au-dessus) : c'est l'anglais qui fait la même distinction (`Select files` / `Select these files`).
+- **`… in the focused pane` → `… dans le panneau actif`** · forme déjà publiée dans le catalogue
+  (`commands.navGoToPath.description` « Placer le panneau actif sur un chemin… », `commands.favoritesAdd.description` «
+  le dossier actuel du panneau actif ») · high. **Les infobulles commencent littéralement par le texte du bouton** et
+  n'ajoutent que le complément (`Sélectionner ces fichiers dans le panneau actif`) : le bouton et son infobulle se
+  lisent d'un seul tenant.
+- **`Press Enter to filter` → `Appuyez sur Entrée pour filtrer`** · décalque du frère `search.runHint` (« Appuyez sur
+  Entrée pour lancer la recherche ») · high. **La touche s'appelle `Entrée`** (entrée déjà posée plus haut : `Enter` →
+  `la touche Entrée`), jamais `Enter`. `filtrer` seul suffit ici, là où `rechercher` demandait la périphrase « lancer la
+  recherche ».
+- **`recent selections` → `sélections récentes`** · déjà publié dans
+  `settings.selection.recentSelections.maxCount.label` (« Sélections récentes à mémoriser ») · high. Les cinq textes du
+  popover reprennent la grammaire et le registre de leurs jumeaux de recherche `queryUi.recent.*`, en remplaçant
+  `recherches` par `sélections` : `Afficher toutes les sélections récentes`, `Toutes les sélections récentes`,
+  `Filtrer les sélections récentes`, `Aucune sélection récente ne correspond à ce filtre.`, `Sélections récentes`.
+- **`selection.recent.popoverAria` et `.listboxAria` partagent le même anglais (`Recent selections`)** : leur valeur
+  `fr` doit être strictement identique, sinon `i18n-terms` le signale. Les deux : `Sélections récentes`.
+- **`Apply recent {mode} selection: {query}` → `Appliquer la sélection {mode} récente : {query}`** · décalque du moule
+  déjà publié dans `search.recent.runAria` (« Relancer la recherche {mode} récente : {query} »), espace ASCII avant le
+  deux-points comme partout dans le catalogue (`style.md` § Punctuation spacing) · high. `{mode}` arrive déjà traduit
+  (`IA`, `Regex`, `Nom de fichier`) et `{query}` est du texte libre : le moule laisse les deux dans une position neutre,
+  sans accord à résoudre.
+- **`Matching what is shown in the list (the full path).` →
+  `Correspond à ce que la liste affiche (le chemin complet).`** · `correspondre` est le verbe du catalogue pour « match
+  » (`commands.selectionSelectFiles.description` « les fichiers correspondants ») et `chemin complet` est déjà posé
+  (`errors.listing.nameTooLongErrno.*`) · high. Sujet sous-entendu (le motif), et `la liste affiche` plutôt que
+  `ce qui s'affiche dans la liste` : actif, plus court, et aucune apostrophe à doubler.

@@ -12,25 +12,32 @@ from British.
 `inheritableAncestors` (`apps/desktop/src/lib/intl/locale-inheritance.ts`) resolves a tag's ancestors by dropping
 subtags, so `en-AU` inherits from `en` and nothing else. `en-GB` is a sibling, not an ancestor.
 
-**So every British form this locale shares has to be written into this catalog too.** 148 of its 155 keys are
+**So every British form this locale shares has to be written into this catalog too.** 149 of its 159 keys are
 byte-identical to `en-GB`. That duplication is the price of the inheritance rule, and there's no chain that removes it:
 adding one would mean telling a checker that `en-AU` may fall back to a catalog the runtime never consults. When you
 edit one catalog, edit the other.
 
 ## Where AU diverges from GB
 
-Only two places, out of 155 keys.
+Only two places, out of 159 keys.
 
-### `Deselect` → `Unselect` (7 keys, AU-only)
+### `Deselect` → `Unselect` (10 keys, AU-only)
 
 Australian Finder's Edit menu reads `Unselect All` where the British one reads `Deselect All`
 (`Finder/MenuBar.json:300488.title`), and the swap runs consistently through the prose:
 `Finder/LocalizableMerged.json:NE18` (`deselect “Locked”` → `unselect ‘Locked’`), `:NE43` (`is deselected` →
 `is unselected`), `:PE14`, `:BN43`. Verified in the reference pile, 2026-08-29.
 
-So Cmdr's whole selection surface forks: the two commands, their descriptions, the two native menu items, and the
-settings description that names the dialog. `menu.select.deselectAll` and `menu.select.deselectFiles` reach the real
-macOS menu bar through `native_strings.gen.rs`, so this is the visible proof the overlay hits native surfaces.
+So Cmdr's whole selection surface forks: the two commands, their descriptions, the two native menu items, the settings
+description that names the dialog, and the dialog itself (`selection.dialog.title.remove`,
+`selection.action.deselect.label`, `selection.action.deselect.tooltip`). `menu.select.deselectAll` and
+`menu.select.deselectFiles` reach the real macOS menu bar through `native_strings.gen.rs`, so this is the visible proof
+the overlay hits native surfaces.
+
+**The dialog three are why the fork has to be complete.** The menu item and the dialog it opens are the same sentence to
+a user: while the dialog's title and button were hardcoded English, `en-AU` read `Unselect files…` in the menu bar and
+`Deselect files` in the window that opened. The positive verb doesn't fork — `Select` and `Select All` are identical in
+`en-GB` and `en-AU` (`Finder/MenuBar.json`) — so only the removing side of each pair is here.
 
 ### `Go forward` stays (1 key NOT forked)
 

@@ -121,6 +121,11 @@ Considered and deliberately NOT forked, so nobody re-litigates them:
 - **Quote punctuation moving outside (`“%@.”` → `“%@”.`).** Real in `en-GB`, but moot: no user-visible Cmdr string puts
   a full stop inside a closing quote (checked, zero matches).
 - **`dialog` → `dialogue`.** Zero attestations. Apple never forks it. `dialog` stays.
+- **`Deselect` → `Unselect`.** An `en-AU` fork only. British Finder keeps the American `Deselect`, in the menu
+  (`Finder/MenuBar.json` `Deselect All`) and in all four prose attestations (`Finder/LocalizableMerged.json`:
+  `deselect “Locked”`, `is deselected` ×2, `deselect the Locked tickbox`), where `en-AU` writes `unselect` throughout.
+  Verified in the reference pile, 2026-08-29. So the whole `selection.*` area, the two Select menu items, and the
+  selection commands inherit base `en` here. Don't mirror `docs/i18n/en-AU/glossary.md` on this one.
 - **Date and time formats.** `en-GB` day-first, 24-hour is real (`Finder/LocalizableMerged.json:DATE_FORMATTER1`), but
   Cmdr formats dates through `$lib/intl/number-format.ts` and the OS region, not through catalog strings. Nothing to
   fork.

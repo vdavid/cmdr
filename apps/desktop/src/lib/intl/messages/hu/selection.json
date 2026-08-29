@@ -1,0 +1,62 @@
+{
+  "selection.dialog.title.add": "Fájlok kijelölése",
+  "@selection.dialog.title.add": {
+    "sourceHash": "e04221c"
+  },
+  "selection.dialog.title.remove": "Fájlok kijelölésének törlése",
+  "@selection.dialog.title.remove": {
+    "sourceHash": "537ddbe"
+  },
+  "selection.runHint": "Nyomd meg az Entert a szűréshez",
+  "@selection.runHint": {
+    "sourceHash": "c8d00d2"
+  },
+  "selection.action.select.label": "Az itt látható fájlok kijelölése",
+  "@selection.action.select.label": {
+    "sourceHash": "9f385e8"
+  },
+  "selection.action.select.tooltip": "Az itt látható fájlok kijelölése a fókuszált panelen",
+  "@selection.action.select.tooltip": {
+    "sourceHash": "d427136"
+  },
+  "selection.action.deselect.label": "Az itt látható fájlok kijelölésének törlése",
+  "@selection.action.deselect.label": {
+    "sourceHash": "c0d3db4"
+  },
+  "selection.action.deselect.tooltip": "Az itt látható fájlok kijelölésének törlése a fókuszált panelen",
+  "@selection.action.deselect.tooltip": {
+    "sourceHash": "bf77e53"
+  },
+  "selection.notice.snapshotPane": "A minta ahhoz illeszkedik, ami a listában látszik (a teljes útvonalhoz).",
+  "@selection.notice.snapshotPane": {
+    "sourceHash": "aa4306e"
+  },
+  "selection.recent.trailingTooltip": "Az összes legutóbbi kijelölés megjelenítése",
+  "@selection.recent.trailingTooltip": {
+    "sourceHash": "c694665"
+  },
+  "selection.recent.allButtonAria": "Összes legutóbbi kijelölés",
+  "@selection.recent.allButtonAria": {
+    "sourceHash": "b6ea4d8"
+  },
+  "selection.recent.filterPlaceholder": "Legutóbbi kijelölések szűrése",
+  "@selection.recent.filterPlaceholder": {
+    "sourceHash": "1f8347f"
+  },
+  "selection.recent.emptyMessage": "Nincs a szűrőnek megfelelő legutóbbi kijelölés.",
+  "@selection.recent.emptyMessage": {
+    "sourceHash": "f404527"
+  },
+  "selection.recent.popoverAria": "Legutóbbi kijelölések",
+  "@selection.recent.popoverAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.listboxAria": "Legutóbbi kijelölések",
+  "@selection.recent.listboxAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.applyAria": "Legutóbbi {mode} kijelölés alkalmazása: {query}",
+  "@selection.recent.applyAria": {
+    "sourceHash": "717317a"
+  }
+}

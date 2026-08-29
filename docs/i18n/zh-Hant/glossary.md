@@ -83,7 +83,13 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
 - **cut** · `剪下` · AP-TW = AP-HK, MS · `confirmed`
 - **paste** · `貼上` · AP-TW = AP-HK, MS · `confirmed`
 - **select all** · `全選` · AP-TW = AP-HK, MS · `confirmed`
-- **select (verb)** · `選取` · AP, MS · `confirmed`
+- **select (verb)** · `選取` · AP, MS · `confirmed`. AP-TW keeps `選擇` for _choose one thing_ (`A27` `選擇啟動磁碟`,
+  `N173` `選擇替身「^0」要打開的項目`) and uses `選取` for picking items out of a list (`SB18`
+  `已選取^0個項目（共^1個）`, `IN_S49` `選取`). Cmdr's Select-files dialog is the list sense.
+- **deselect (verb)** · `取消選取` · MS (`deselect` id 44722 → 取消選取 id 44741), AP-TW = AP-HK (`MenuBar.json`
+  `300488.title` `Deselect All` → `取消全選`) · `high`. ⚠️ **Simplified diverges on that SAME Microsoft entry** (id
+  44722 → `取消选择`), because its select verb is `选择`. Not a character mapping; never convert either way. See §
+  Select / Deselect files dialog.
 - **refresh** · `重新整理` · AP (`NSRefreshFreestandingTemplate`), MS, DC, NAU · `confirmed`. **reload** → `重新載入`
   (DOL). ❌ Avoid `刷新` (Simplified-influenced; it leaks into DC's zh-TW file).
 - **eject** · `退出` · AP-TW = AP-HK, MS, NAU, THU · `confirmed`. (AP-CN's `推出` is a typo in Apple's own data.)
@@ -656,6 +662,39 @@ Read off the exact strings Finder's own Tags UI shows (`macOS/Finder/Localizable
 - ❌ **Don't "Taiwanize" orange to `橘色`**: Finder itself says `橙色` in Taiwan (33 TW / 28 HK live, against `橘色`
   2/2). `灰色` has no competitor (49/50). Both are TW = HK on exact-key matches too.
 - `TG_COLOR_0` = "No Color" → `沒有顏色` (TW = HK), if a clear-tags string ever needs it.
+
+### Select / Deselect files dialog (`selection.*`, 2026-08-29)
+
+The dialog the Select menu opens (`selection.*`, 15 keys). Verbs settled under Operations above; this is the phrasing
+around them.
+
+- **"Select these files" / "Deselect these files" (footer buttons)** · `選取這些檔案` / `取消選取這些檔案` · built
+  straight on the two verbs, so the buttons agree with `menu.select.files` / `menu.select.deselectFiles` (`選取檔案…` /
+  `取消選取檔案…`) and with the dialog titles · `high`
+- **"… in the focused pane" (the buttons' tooltips)** · locative fronted, natural Chinese order:
+  `在焦點窗格中選取這些檔案` / `在焦點窗格中取消選取這些檔案` · `high`. **A tooltip is its own sentence and need NOT
+  open with its button's label**: the button's accessible name comes from the `…label` key (`QueryDialog.svelte` uses
+  `primaryAction.ariaLabel ?? primaryAction.label`), and the tooltip is separate `use:tooltip` hover copy, so WCAG 2.5.3
+  is satisfied by construction. English trails the scope because that is English word order; Chinese puts `在…中` before
+  the verb, so front it. `焦點窗格` is what the catalog already says (`commands.navGoToPath.description`,
+  `commands.favoritesAdd.description`).
+- **"Press Enter to filter"** · `按 Enter 鍵篩選` · the catalog is unanimous on `按 Enter 鍵` (`search.runHint`,
+  `queryUi.bar.runHint`, five `settings.*` strings) and on `篩選` (`queryUi.recent.filterPlaceholder`) · `high`. `Enter`
+  stays Latin; there is no Traditional key name in the pile.
+- **"recent selections" (the popover of past queries)** · `最近的選取` · the verb used as a noun, in parallel with the
+  `queryUi.recent.*` twins' `最近的搜尋`; all five popover keys mirror those twins word for word with `搜尋` → `選取` ·
+  `high`. ❗ **Not `最近的選取範圍`**: `選取範圍` is the SET of selected files
+  (`commands.selectionSelectFiles.description` `加入選取範圍`), while these rows are past QUERIES.
+- **"Matching what is shown in the list (the full path)."** · `比對的是列表中顯示的內容（完整路徑）。` · `比對` is the
+  catalog's match verb (`queryUi.scope.toggle.caseSensitiveAria` `比對時區分大小寫`, `suggestedOps.fromPattern`
+  `以樣式比對出來的`); `列表` per the `list (generic UI list)` ruling (❌ never `清單`); `完整路徑` is already in
+  `errors.listing.nameTooLongErrno.*` · `high`
+- **"Apply recent {mode} selection: {query}"** · `套用最近的 {mode} 選取：{query}` · `套用` = apply (entry above,
+  `ai.local.applyContextSize`); full-width colon like `queryUi.recent.scopeSummary` (`範圍：{scope}`); spaces around
+  `{mode}` because it can arrive Latin (`AI`) · `high`. `{query}` is uncontrolled user text and sits last, after the
+  colon, so anything can land there.
+- All 15 values differ from English, so none needs a `sameAsSourceJustification`. No apostrophes in the batch, so ICU's
+  `''` rule doesn't bite here.
 
 ## Notes
 

@@ -212,6 +212,8 @@ settings/errors/explorer terms where they overlap (`窗格`/`标签页`/`搜索`
   → 剪切, `Paste` → 粘贴, `Select All` → 全选). NOTE: F5/F6 transfer ops keep the function-key-bar `拷贝`/`移动`;
   clipboard ops use `拷贝到剪贴板`/`剪切`/`粘贴`. · `confirmed`
 - **select all / deselect all** · `全选` / `取消全选` · macOS (`Select All` → 全选) · `confirmed`
+- **select / deselect (the bare verbs)** · `选择` / `取消选择` · macOS Finder `zh-CN`, MS `zh-Hans` TBX · `high`. Full
+  evidence, and why Traditional says `選取`/`取消選取` on the same Microsoft entry, in § 选择/取消选择文件对话框.
 - **ascending / descending** · `升序` / `降序` · standard sort terms · `confirmed`
 - **sort by / sort order** · `按…排序` / `排序方向` · macOS Finder (`Sort By` → 排序方式) · `high`
 - **swap / switch (panes/tabs)** · `交换` / `切换` · standard · `high`
@@ -1430,3 +1432,39 @@ Conventions worth keeping for this family:
 - **"Couldn''t add your note: {error}"** · `无法添加你的备注：{error}` · 与同目录的
   `无法发送错误报告：{error}`、`无法保存报告包：{error}` 同一句式，全角冒号 · `high`。
 - 十一条值都与英文不同，无需 `sameAsSourceJustification`。中文没有撇号，ICU 的 `''` 规则在这一批里用不上。
+
+## 选择/取消选择文件对话框（`selection.*`，2026-08-29）
+
+Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，英文一侧读 `en-GB/macOS/Finder/`），Microsoft
+`zh-Hans` TBX 补充动词条目，Nautilus/Double Commander `zh-CN` 作旁证。
+
+- **select（动词，从文件列表里挑出项目）** · `选择` · macOS Finder `zh-CN`（`MenuBar.json` `172.title` `Select All` →
+  `全选`；`LocalizableMerged.json` `N30` `请选择“^0”`、`SB18` `选择了^0项（共^1项）`）、MS `zh-Hans` TBX（`select` id
+  109605 → `选择` id 109623）、NAU `zh-CN`（`Select Items Matching` → `选择匹配的项目`） · `high`。与目录里已有的
+  `menu.select.files` / `commands.selectionSelectFiles.label`（`选择文件…`）一致，对话框标题因此和打开它的菜单项对得上。
+- **deselect（动词）** · `取消选择` · MS `zh-Hans` TBX（`deselect` id 44722 → `取消选择` id 2612168）、macOS Finder
+  `zh-CN`（`MenuBar.json` `300488.title` `Deselect All` → `取消全选`；`LocalizableMerged.json` `NE18`
+  `取消选择“锁定”`）、DC `zh-CN`（`Unselect a Group…` → `取消选择一组文件`） · `high`。
+- ⚠️ **繁简在这里是真正的用词分歧，不是字形转换。** 同一条 Microsoft 词条（id 44722）繁体给的是
+  `取消選取`，因为繁体的 select 是 `選取` 而不是 `選擇`；Apple 的繁体也把 `選擇` 留给「choose 一个东西」，`選取`
+  才是「从列表里挑项目」。两边各自按自己的 macOS 源翻，永远不要互转。繁体一侧见 `../zh-Hant/glossary.md`。
+- **"Select these files" / "Deselect these files"（对话框底部主按钮）** · `选择这些文件` / `取消选择这些文件`
+  ·在上面两个动词上直接构词 · `high`。
+- **"… in the focused pane"（按钮的悬停提示）** · 处所状语提到句首：`在焦点窗格中选择这些文件` /
+  `在焦点窗格中取消选择这些文件` · `high`。**提示语是独立的一句，不必以按钮文字开头**：按钮的无障碍名取自 `…label`
+  键（`QueryDialog.svelte` 用 `primaryAction.ariaLabel ?? primaryAction.label`），提示只是 `use:tooltip`
+  的悬停文案，WCAG 2.5.3已由构造保证。英文那句把范围放在句尾是英文的语序，中文照搬会别扭，所以按中文语序把 `在…中`
+  提到动词前面。 `焦点窗格`
+  是目录里已经定下的说法（`commands.navGoToPath.description`、`commands.favoritesAdd.description`）。
+- **"Press Enter to filter"** · `按 Enter 键筛选` · 沿用本文件「pressing Enter / the Enter key」条目定下的
+  `按 Enter 键`（目录里另有 9 处这么写）加上 `筛选`（`queryUi.recent.filterPlaceholder` `筛选最近的搜索`） · `high`。❗
+  **有意不跟 `search.runHint` 的 `按回车键搜索`**：那一条本文件早就记成唯一的历史遗留写法，该被收敛，不该被复制。
+- **"recent selections"（最近用过的查询弹窗）** · `最近的选择` · 上面的动词当名词用，与 `queryUi.recent.*` 的孪生键
+  `最近的搜索` 完全对仗 · `high`。五个弹窗键逐字照搬孪生键，只把 `搜索` 换成 `选择`。
+- **"Matching what is shown in the list (the full path)."** · `匹配的是列表中显示的内容（完整路径）。` · `匹配`
+  是目录的 match 动词（`queryUi.scope.toggle.caseSensitiveAria` `区分大小写匹配`、
+  `commands.selectionSelectFiles.description` `将匹配的文件加入选择`），`列表` 与 `完整路径` 也都是现成的说法 · `high`。
+- **"Apply recent {mode} selection: {query}"** · `应用最近的 {mode} 选择：{query}` · `应用` =
+  Apply（`ai.local.applyContextSize`）；全角冒号与 `queryUi.recent.scopeSummary`（`范围：{scope}`）一致；`{mode}`
+  两侧加空格，因为它可能是拉丁文的 `AI` · `high`。`{query}` 是不可控的用户输入，放在冒号后的句尾，落什么进来都读得通。
+- 15 条值全部与英文不同，无需 `sameAsSourceJustification`。这批里没有撇号，ICU 的 `''` 规则用不上。

@@ -47,6 +47,7 @@ const enforcedAreaPathFragments = [
   '/lib/onboarding/',
   '/lib/query-ui/',
   '/lib/search/',
+  '/lib/selection-dialog/',
   '/lib/file-viewer/',
   '/lib/licensing/',
   '/lib/crash-reporter/',

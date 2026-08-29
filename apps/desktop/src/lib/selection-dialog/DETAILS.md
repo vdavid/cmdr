@@ -143,6 +143,24 @@ special-casing at the pane API layer.
   Commander's behaviour.
 - **Recent-selection entries are added on commit, not on auto-apply.** Same gate as Search's "Open in pane" rule:
   history stays signal-rich (results worth acting on) instead of keystroke-noisy.
+- **Select and Deselect are SEPARATE catalog keys, never one ICU `select` on `mode`.** The dialog's copy lives in
+  `$lib/intl/messages/en/selection.json`, and each mode-dependent string is two keys (`selection.dialog.title.add` /
+  `.remove`, `selection.action.select.*` / `.deselect.*`). Three reasons, in order of weight: (1) `en-AU` is an overlay
+  that forks ONLY `Deselect` → `Unselect` (Australian Finder's Edit menu), and a single `select` message would force the
+  overlay to carry the untouched `Select` branch too, where it silently rots on the next English copy edit; (2)
+  `commands.selectionSelectFiles.label` / `commands.selectionDeselectFiles.label` and the two `menu.select.*` items
+  already name these same two actions as separate keys, so the dialog matches its own menu; (3) a translator reasons
+  about one button label at a time instead of ICU branch plumbing. The `tooltip` is its own key per mode rather than
+  `${label} in the focused pane`: a runtime-concatenated sentence can't be reordered by a translator whose grammar needs
+  the pane first.
+- **The tooltip is its own sentence, not the label plus a suffix.** English happens to read "Deselect these files" /
+  "Deselect these files in the focused pane", but that repetition is a coincidence of English word order, not a
+  contract: `search.action.showAll` pairs "Show all in main window" with "Open the search results in the active pane".
+  WCAG 2.5.3 is satisfied without it, because `QueryDialog` builds the button's accessible name from
+  `primaryAction.ariaLabel ?? primaryAction.label` and never from the tooltip. So a translator writes whatever reads
+  naturally in their language: German and Chinese front the locative and shouldn't be bent into a parenthetical to make
+  the label surface as the tooltip's opening words. What the tooltip owes is the same action as its label, plus where
+  the change lands.
 
 ## Dependencies
 

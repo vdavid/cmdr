@@ -46,8 +46,14 @@
         mode: SearchMode
         disabled: boolean
         aiHighlight: boolean
-        /** True when the bar should show the "Press Enter to search" hint. Owned by the parent. */
+        /** True when the bar should show the run hint. Owned by the parent. */
         showRunHint?: boolean
+        /**
+         * The run hint itself. Each dialog names its own verb ("Press Enter to search" for
+         * Search, "Press Enter to filter" for Selection), so the bar renders what it's
+         * handed rather than a shared string.
+         */
+        runHintCopy: string
         /**
          * Replaces the run button's tooltip and accessible name. Search sets it so the
          * button says what Enter actually does now: search past the index, into folders
@@ -87,6 +93,7 @@
         disabled,
         aiHighlight,
         showRunHint = false,
+        runHintCopy,
         runTitleOverride,
         showEnterHint = true,
         recentOpen = false,
@@ -169,7 +176,7 @@
             </TextInput>
         </div>
         {#if showRunHint}
-            <span class="run-hint" aria-hidden="true">{tString('queryUi.bar.runHint')}</span>
+            <span class="run-hint" aria-hidden="true">{runHintCopy}</span>
         {/if}
     </div>
     <!-- Button reads "Search ⏎" when ⏎ owns the run action; just "Search" when the

@@ -1575,3 +1575,36 @@ en notering som fästs på **samma** rapport (inget skickas en andra gång). Åt
   `noteringar` till objekt även för `visa`, men det är rapporten man visar) och `Visa eller komplettera rapporten`
   (kompakt och korrekt, men tappar ordet `notering` som binder knappen till fältet `Din notering` i dialogen).
 - **Inga `sameAsSourceJustification`** · alla elva värden skiljer sig från engelskan.
+
+## Markeringsdialogen: markera och avmarkera filer (`selection.*`, 2026-08-29)
+
+- **select (filer via ett mönster) → `markera`; deselect → `avmarkera`** · macOS Finder `sv`, `MenuBar.json` `172.title`
+  = ”Markera allt” och `300488.title` = ”Avmarkera allt” (Tier 1, kontrollerat mot det körande systemet, macOS 26.6.2,
+  build 25G83, 2026-08-29). Microsoft Terminology säger detsamma (`deselect` → ”avmarkera”, term-id `44738`, SWE), och
+  Total Commander `sv` (`WCMD.INC.utf8` rad 239–248: ”Markera alla filer”, ”Avmarkera grupp: enbart filer”) håller samma
+  par i den ortodoxa tvåpanelsvärlden · `high`. Svenskan har alltså ett riktigt transitivt verb för båda hållen, till
+  skillnad från tyskan och nederländskan, så hela familjen (`menu.select.*`,
+  `commands.selectionSelectFiles`/`…DeselectFiles`, `selection.dialog.title.*`, `selection.action.*`) använder samma
+  ordpar rakt igenom.
+- **`Markera` är att markera objekt, `Välj` är att välja ett alternativ.** Redan satt i § Select-menyn ovan; det är
+  därför dialogtiteln heter `Markera filer` och inte `Välj filer`.
+- **recent selections → `senaste markeringar`** · speglat på syskonen i `queryUi.recent.*` (”senaste sökningar”), samma
+  grammatik, bara `sökningar` → `markeringar`. `markering` är den satta termen för selection (§ Terms) · `high`.
+- **`selection.recent.applyAria` följer `search.recent.runAria`** · där står ”Kör senaste {mode}-sökning: {query}”, här
+  ”Använd senaste {mode}-markering: {query}”. `apply` → `Använd` från macOS AppKit (`NSFontOptionsPanel` `100411.title`
+  och `NSPreferences` `7TY-1Z-cs2.title` = ”Använd”) · `high`. `{query}` ligger sist efter kolon, så vilken användartext
+  som helst får plats.
+- **Enter-tangenten heter `Retur` på svenska** · `search.runHint` säger redan ”Tryck på Retur för att söka”, alltså
+  ”Tryck på Retur för att filtrera” · `high`. ⚠️ `queryUi.recent.popoverHint` säger fortfarande `Enter` i sin
+  `<selectKey>`-tagg; det är en avvikelse värd en egen städrunda, inte något den här passen ändrade.
+- **Verktygstipset är en egen mening och behöver inte upprepa knapptexten.** `QueryDialog.svelte` bygger knappens
+  tillgängliga namn av `config.primaryAction.ariaLabel ?? config.primaryAction.label`, alltså av label-nyckeln, medan
+  verktygstipset sitter på ett inre `span` via `use:tooltip`. WCAG 2.5.3 är därmed uppfyllt av konstruktionen, och
+  katalogen låter de två skilja sig åt på annat håll (`search.action.showAll.label` mot dess `.tooltip`). Här råkar
+  svenskan flyta ihop ändå (”Markera de här filerna i den fokuserade panelen”), vilket är bra men inget krav.
+  `den fokuserade panelen` kommer från `commands.navGoToPath.description` och `commands.favoritesAdd.description`;
+  `de här` är katalogens närdemonstrativ (inte `dessa`, som katalogen sparar till distansbruk) · `high`.
+- **`selection.notice.snapshotPane` → ”Matchningen sker mot det som visas i listan (hela sökvägen).”** · lugnande, inte
+  en varning, som `@key` kräver; `hela sökvägen` är katalogens form (se `errors.listing.nameTooLongErrno.explanation`) ·
+  `high`.
+- Inga `sameAsSourceJustification` · alla femton värden skiljer sig från engelskan.

@@ -242,6 +242,7 @@ describe('SearchBar a11y', () => {
       disabled: false,
       aiHighlight: false,
       showRunHint: false,
+      runHintCopy: 'Press Enter to search',
       recentOpen: false,
       onInput: () => {},
       onRun: () => {},

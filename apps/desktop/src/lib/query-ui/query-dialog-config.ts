@@ -223,8 +223,12 @@ export interface QueryDialogConfig<E = unknown> {
   /** Whether the results table shows the Path column. */
   showPathColumn: boolean
 
-  /** Copy for the QueryBar's right-gutter run hint. */
-  runHintCopy: string
+  /**
+   * Copy for the QueryBar's right-gutter run hint. Each dialog names its own verb
+   * ("Press Enter to search" / "Press Enter to filter"). Omit it to take the shared
+   * `queryUi.bar.runHint` default.
+   */
+  runHintCopy?: string
   /**
    * Overrides the run button's tooltip and accessible name (filename / regex modes; AI
    * mode keeps its own). Search sets it so the button VOICES what Enter does that

@@ -12,7 +12,15 @@ import { mount, tick } from 'svelte'
 import QueryBar from './QueryBar.svelte'
 import type { SearchMode } from './query-filter-state.svelte'
 
-function mountBar(overrides: Partial<{ query: string; mode: SearchMode; showRunHint: boolean; recentOpen: boolean }>): {
+function mountBar(
+  overrides: Partial<{
+    query: string
+    mode: SearchMode
+    showRunHint: boolean
+    runHintCopy: string
+    recentOpen: boolean
+  }>,
+): {
   target: HTMLDivElement
   input: HTMLInputElement
   onInput: ReturnType<typeof vi.fn>
@@ -38,6 +46,8 @@ function mountBar(overrides: Partial<{ query: string; mode: SearchMode; showRunH
       disabled: false,
       aiHighlight: false,
       showRunHint: overrides.showRunHint ?? false,
+      // The bar renders whatever hint it's handed; each dialog names its own verb.
+      runHintCopy: overrides.runHintCopy ?? 'Press Enter to search',
       recentOpen: overrides.recentOpen ?? false,
       onInput,
       onRun,
@@ -170,12 +180,21 @@ describe('QueryBar', () => {
     cleanup()
   })
 
-  it('shows the "Press Enter to search" hint only when showRunHint is true', async () => {
+  it('shows the run hint it was handed, and only when showRunHint is true', async () => {
     const { target, cleanup } = mountBar({ showRunHint: true })
     await tick()
     const hint = target.querySelector('.run-hint')
     expect(hint?.textContent).toMatch(/Press Enter to search/i)
     cleanup()
+
+    // The copy is the caller's, not the bar's: Selection hands it a "filter" verb.
+    const { target: filterTarget, cleanup: cleanupFilter } = mountBar({
+      showRunHint: true,
+      runHintCopy: 'Press Enter to filter',
+    })
+    await tick()
+    expect(filterTarget.querySelector('.run-hint')?.textContent).toMatch(/Press Enter to filter/i)
+    cleanupFilter()
 
     const { target: noHintTarget, cleanup: cleanup2 } = mountBar({ showRunHint: false })
     await tick()
