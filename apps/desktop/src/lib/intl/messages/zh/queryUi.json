@@ -31,7 +31,7 @@
   "@queryUi.bar.runTitle.default": {
     "sourceHash": "63714be"
   },
-  "queryUi.bar.runHint": "按 Enter 搜索",
+  "queryUi.bar.runHint": "按 Enter 键搜索",
   "@queryUi.bar.runHint": {
     "sourceHash": "406d32e"
   },

@@ -359,7 +359,7 @@
   "@fileOperations.transferDialog.confirmCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.scanPhase.fromLabel": "来自：",
+  "fileOperations.scanPhase.fromLabel": "来源：",
   "@fileOperations.scanPhase.fromLabel": {
     "sourceHash": "dc45d36"
   },

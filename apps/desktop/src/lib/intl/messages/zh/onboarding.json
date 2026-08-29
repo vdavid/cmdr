@@ -352,7 +352,7 @@
     "sourceHash": "53e6cdc",
     "sameAsSourceJustification": "Example email address \"you@example.com\": a recognizable placeholder format, kept literal so the @-pattern still reads as an email hint. Apple/Microsoft zh keep example addresses in this Latin form."
   },
-  "onboarding.stepBeta.signup.success": "请查看收件箱确认你的邮箱。谢谢你的帮助！",
+  "onboarding.stepBeta.signup.success": "请查看收件箱，确认你的邮箱。谢谢你的帮助！",
   "@onboarding.stepBeta.signup.success": {
     "sourceHash": "b96010e"
   },
@@ -460,7 +460,7 @@
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"
   },
-  "onboarding.cloudSetup.step.endpointPlaceholder": "例如：https://api.example.com/v1",
+  "onboarding.cloudSetup.step.endpointPlaceholder": "示例：https://api.example.com/v1",
   "@onboarding.cloudSetup.step.endpointPlaceholder": {
     "sourceHash": "dbc7343"
   },
@@ -472,11 +472,11 @@
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "例如：sk-abc123...",
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "示例：sk-abc123...",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
     "sourceHash": "f9701a2"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "例如：sk-ant-abc123...",
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "示例：sk-ant-abc123...",
   "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
     "sourceHash": "5a4d18d"
   },
@@ -516,7 +516,7 @@
   "@onboarding.cloudSetup.modelAria": {
     "sourceHash": "5e2c614"
   },
-  "onboarding.cloudSetup.modelPlaceholderExample": "例如：{model}",
+  "onboarding.cloudSetup.modelPlaceholderExample": "示例：{model}",
   "@onboarding.cloudSetup.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },

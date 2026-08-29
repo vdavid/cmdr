@@ -63,7 +63,7 @@
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"
   },
-  "downloads.empty.dismiss": "忽略",
+  "downloads.empty.dismiss": "关闭",
   "@downloads.empty.dismiss": {
     "sourceHash": "48845bf"
   },
@@ -75,7 +75,7 @@
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },
-  "downloads.fda.dismiss": "忽略",
+  "downloads.fda.dismiss": "关闭",
   "@downloads.fda.dismiss": {
     "sourceHash": "48845bf"
   },

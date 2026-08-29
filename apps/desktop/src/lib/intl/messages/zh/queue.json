@@ -63,11 +63,11 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
-  "queue.row.dismiss": "忽略",
+  "queue.row.dismiss": "关闭",
   "@queue.row.dismiss": {
     "sourceHash": "48845bf"
   },
-  "queue.row.dismissAria": "忽略这项操作",
+  "queue.row.dismissAria": "关闭这项操作的记录",
   "@queue.row.dismissAria": {
     "sourceHash": "ff1b528"
   },

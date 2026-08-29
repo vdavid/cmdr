@@ -3,7 +3,7 @@
   "@search.dialog.title": {
     "sourceHash": "49c266b"
   },
-  "search.runHint": "按回车键搜索",
+  "search.runHint": "按 Enter 键搜索",
   "@search.runHint": {
     "sourceHash": "406d32e"
   },

@@ -131,7 +131,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "打开个人文件夹",
+  "fileExplorer.errorPane.goHome": "前往个人文件夹",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -1096,11 +1096,11 @@
   "@fileExplorer.tabBar.newTabAriaLabel": {
     "sourceHash": "1e08fda"
   },
-  "fileExplorer.summary.fileNoun": "{count, plural, other {文件}}",
+  "fileExplorer.summary.fileNoun": "{count, plural, other {个文件}}",
   "@fileExplorer.summary.fileNoun": {
     "sourceHash": "46012b1"
   },
-  "fileExplorer.summary.dirNoun": "{count, plural, other {目录}}",
+  "fileExplorer.summary.dirNoun": "{count, plural, other {个目录}}",
   "@fileExplorer.summary.dirNoun": {
     "sourceHash": "1c5273d"
   },

@@ -210,7 +210,7 @@
   "@settings.listing.sizeDisplay.opt.logical": {
     "sourceHash": "47bd290"
   },
-  "settings.listing.sizeDisplay.opt.physical": "占用空间",
+  "settings.listing.sizeDisplay.opt.physical": "占用磁盘",
   "@settings.listing.sizeDisplay.opt.physical": {
     "sourceHash": "00ca4da"
   },
@@ -818,7 +818,7 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新的下载",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新下载",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
@@ -2115,11 +2115,11 @@
   "@settings.updates.sendErrorReport": {
     "sourceHash": "c327e68"
   },
-  "settings.updates.emailConfirmHint": "查收你的收件箱来确认邮箱。感谢你的帮助！",
+  "settings.updates.emailConfirmHint": "请查看收件箱，确认你的邮箱。谢谢你的帮助！",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
   },
-  "settings.updates.emailSignupError": "抱歉，我们现在无法为你完成注册。要再试一次吗？",
+  "settings.updates.emailSignupError": "抱歉，我们现在没能帮你注册。要再试一次吗？",
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
