@@ -696,6 +696,47 @@ around them.
 - All 15 values differ from English, so none needs a `sameAsSourceJustification`. No apostrophes in the batch, so ICU's
   `''` rule doesn't bite here.
 
+### Finishing an interrupted rollback (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+The Operation log gained a state: a rollback cancelled halfway leaves the row "partly rolled back", and that row's
+button changes from "Roll back" to "Finish rolling back". All five values anchor on the rollback vocabulary this catalog
+already ships; nothing was coined.
+
+- **"Finish rolling back"** · `完成復原` · built on the settled `復原` (`operationLog.dialog.rollBack` `復原`,
+  `rollingBack` `正在復原`, `partiallyRolledBack` `已部分復原`; the `還原` = undo / `復原` = roll back split under §
+  Progress, rollback, and destructive actions still holds) · `medium-high`. `完成` says "carry this one to the end", not
+  "start a fresh one", and it reads unambiguously beside the `已部分復原` badge on the same row. `繼續復原` ("continue")
+  would be blunter about not restarting, but English says Finish rather than Continue, and `繼續` is already spent on
+  `queue.row.resume`. Worth a second look if a native reviewer ever reads this batch.
+- ⚠️ **`operationLog.dialog.finishRollBack` and `fileOperations.rollbackConfirm.finishRollBack` must stay
+  byte-identical** (both `完成復原`): one English string, one action, the log-row button and the confirmation it opens.
+  `i18n-terms` warns when one English string gets two renderings inside a locale, so never reword one alone.
+- **"Finish rolling this back?"** · `要完成這項操作的復原嗎？` · same `要…嗎？` question shape and same `這項操作` as
+  its sibling `fileOperations.rollbackConfirm.title` (`要把這項操作復原嗎？`) · `high`. The `完成…的復原` frame matches
+  the confirming button `完成復原`.
+- **The notice under the row reuses two shipped sentences verbatim** ·
+  `Cmdr 能復原的都復原了，其餘的維持原樣。完成復原會再走一遍，仍然會略過沒有把握的部分。` · `維持原樣` is
+  `fileOperations.rollbackConfirm.leaveAsIs` as it stands, and `略過沒有把握的部分` is lifted word for word from
+  `fileOperations.rollbackConfirm.bodyUndoByDeleting` (`Cmdr 會略過沒有把握的部分，所以可能會留下一些。`), keeping the
+  catalog's `略過` = skip · `high`. `再走一遍` renders "takes another pass". The sentence deliberately promises no
+  complete reversal: files Cmdr can't match against its record get skipped again. No `失敗` and no `錯誤`, per
+  `style.md` § Voice and tone.
+- **"in {folder}"** · `位於 {folder}` · `high`. This one is a **trailing locative**, because
+  `queue.row.reversalDeleting` (`正在刪除這項操作建立的東西`) and this key render as two separate elements in that fixed
+  order, so Chinese's usual preverbal `在…中` order isn't available here. `位於` is the form Chinese uses to append a
+  location, and two sources back it: this catalog already renders the identical English string `in {subdir}`
+  (`downloads.toast.inSubdir`) as `位於 {subdir}`, and KDE Dolphin appends the same shape (zh-TW `位於 %7` in
+  `%1，%2 %3 %4 %5 %6，位於 %7`; zh-CN `位于 %1` for `in location %1`). The row then reads
+  `正在刪除這項操作建立的東西 位於 Backup`, where `位於` fixes the folder as a PLACE, so it can't be read as the thing
+  about to be deleted, which is the bug the key exists to fix. (Dolphin zh-TW's live string for `in location %1` is
+  `在位置 %1`; `位於` is shorter and is what this catalog already uses.)
+- **The folder name takes no brackets** (`位於 {folder}`, never `位於「{folder}」`) · matches
+  `downloads.toast.inSubdir`, and matches the bare folder names every other queue row puts in that same slot · `high`.
+  ⚠️ **Deliberately unlike `de` and `es`**, which quote it (`in „{folder}“`, `en “{folder}”`). If quoting is ever
+  standardized across locales, Traditional takes `「…」` per `style.md` § Punctuation, never `“…”`.
+- All five values differ from English, so none needs a `sameAsSourceJustification`. No apostrophes in the batch, so
+  ICU's `''` rule doesn't bite here.
+
 ## Notes
 
 - **AP-TW's ellipsis glyph is `⋯` (U+22EF)** in strings quoted throughout this file (`連接伺服器⋯`). That's Apple's

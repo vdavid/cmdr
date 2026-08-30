@@ -35,6 +35,10 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
+  "operationLog.dialog.finishRollBack": "Voltooi terugdraaien",
+  "@operationLog.dialog.finishRollBack": {
+    "sourceHash": "dbe3771"
+  },
   "operationLog.dialog.close": "Sluit",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -135,6 +139,10 @@
   "operationLog.rollback.partiallyRolledBack": "Gedeeltelijk teruggedraaid",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr heeft teruggedraaid wat het kon en de rest gelaten zoals die was. Bij het voltooien gaat Cmdr er nog een keer overheen en slaat alles over waar het nog steeds niet zeker van is.",
+  "@operationLog.rollback.partiallyRolledBackNotice": {
+    "sourceHash": "77e6f25"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Deze wordt al teruggedraaid. Volg het in de wachtrij.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {

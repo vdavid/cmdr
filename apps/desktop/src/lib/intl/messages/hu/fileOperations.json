@@ -669,6 +669,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.titleFinish": "Befejezed a művelet visszagörgetését?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "sourceHash": "cfc998a"
+  },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Ez törli a fájlokat és mappákat, amiket a művelet létrehozott. Amiben a Cmdr nem biztos, azt kihagyja, szóval maradhat belőlük egy-kettő.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
@@ -692,6 +696,10 @@
   "fileOperations.rollbackConfirm.rollBack": "Visszagörgetés",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Visszagörgetés befejezése",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "sourceHash": "dbe3771"
   },
   "fileOperations.errorDialog.technicalDetails": "Technikai részletek",
   "@fileOperations.errorDialog.technicalDetails": {

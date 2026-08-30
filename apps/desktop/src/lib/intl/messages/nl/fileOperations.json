@@ -670,6 +670,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.titleFinish": "Het terugdraaien van deze bewerking voltooien?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "sourceHash": "cfc998a"
+  },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Dit verwijdert de bestanden en mappen die de bewerking heeft aangemaakt. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat achterblijven.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
@@ -693,6 +697,10 @@
   "fileOperations.rollbackConfirm.rollBack": "Terugdraaien",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Voltooi terugdraaien",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "sourceHash": "dbe3771"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische details",
   "@fileOperations.errorDialog.technicalDetails": {

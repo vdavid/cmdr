@@ -22,12 +22,13 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
 
 ## The rollback flow
 
-1. A row shows Roll back only while `rollbackState === 'rollbackable'`. Every other state either has nothing to reverse
-   or is already reversing, and the badge beside it already says which.
+1. A row offers a button on exactly the two states the backend's own gate admits, and `rowRollbackAction` mirrors that
+   gate: `rollbackable` earns "Roll back", `partiallyRolledBack` earns "Finish rolling back". The other three
+   (`notRollbackable`, `rollingBack`, `rolledBack`) get nothing, because a press could only ever come back as a refusal.
 2. Pressing it sets `rollbackAskedId` and stacks `RollbackConfirmDialog` with the variant
-   `rollbackConfirmVariant(op.kind)` picks. Nothing has happened yet.
+   `rollbackConfirmVariant(op.kind)` picks, plus `finishing` when the action is `finish`. Nothing has happened yet.
 3. `rollbackAsked` re-resolves the row out of `operationLogState.entries` on every read and yields `null` once it stops
-   being rollbackable. A reversal started elsewhere while the question is up therefore takes the question down, the way
+   offering an action. A reversal started elsewhere while the question is up therefore takes the question down, the way
    `QueueRow` withdraws its own: there'd be nothing left for an answer to act on.
 4. Confirming calls `rollbackOperation(opId)` and, on the `Ok`, flips the row to `rollingBack`. The `dispatching` set
    guards the window between the two so a double press can't double-dispatch.
@@ -48,6 +49,29 @@ round trip and a spinner for nothing.
 **The consequence to keep in mind.** The dialog never learns how the reversal ENDED. Reopening the log (or reading the
 queue) is how a user sees `rolledBack` versus `partiallyRolledBack`. If that ever needs to be live, subscribe to the
 operation's settle event rather than polling.
+
+### Decision: a partly-reversed operation offers to finish, and the engine is what makes that safe
+
+A reversal a user cancels midway leaves the operation `partiallyRolledBack` with the untouched items still sitting at
+the destination. Offering nothing there is a dead end reached by an ordinary action (cancelling), so the row offers to
+finish. The reason that's safe is in the ENGINE, not in this dialog:
+
+- **The op-level gate already allows it.** `check_rollbackable` (`src-tauri/src/operation_log/rollback.rs`) refuses
+  `rollingBack`, `rolledBack`, and `notRollbackable`, and passes `rollbackable` and `partiallyRolledBack` alike. The
+  `rolling_back` write happens synchronously before the dispatch returns, so two passes can never overlap.
+- **Every per-item inverse is recheck-then-act, and re-entrant by construction.** A second pass re-streams every
+  `rollback_unit` row of the ORIGINAL operation and rechecks each against its recorded snapshot. An item the first pass
+  removed reads as `NotFound` ⇒ `SkipReason::AlreadyGone`, which `counts_as_reversed`, so it's credited without any
+  filesystem call. An item the first pass restored is gone from the dest for the same reason. Nothing is acted on twice,
+  and a run whose leftovers all clear lands `rolledBack`.
+- **The two data-safety guards still stand on the second pass.** Drift and unverifiable snapshots skip, and a restore
+  never overwrites a different entry. So a file the user created at a reversed item's old path after the cancel is
+  skipped, not clobbered.
+
+That's why the copy promises a pass rather than a completion: the same state also covers a reversal that RAN to the end
+and skipped items it couldn't verify, and those skip again. `partiallyRolledBackNotice` says "Finishing takes another
+pass and skips anything Cmdr still isn't sure about" for exactly that reason. ❌ Don't reword it into a promise that the
+rest will come back.
 
 ### Decision: the confirmation is worded by the inverse, not by the operation
 
@@ -77,13 +101,17 @@ out partial, which is the honest read today.
 
 ## Where the tests live
 
-- `OperationLogDialog.test.ts` drives the rollback flow against a MOCKED backend: which rows offer the button, that
-  nothing is dispatched on a "no", the kind-aware wording, and the refusal notice.
+- `OperationLogDialog.test.ts` drives the rollback flow against a MOCKED backend: which rows offer the button and with
+  which words, that nothing is dispatched on a "no", the kind-aware wording, the standing notices, and the refusal
+  notice. `operation-log-labels.test.ts` owns the two exhaustive maps behind the rows (`rowRollbackAction`,
+  `rowStandingNotice`), so the component tests don't re-enumerate every state.
 - `apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts` drives the same flow against the REAL engine and
   real files, which is what pins the things a mock can't: that a real move is journaled as a move (so the question
   really does word itself as a restore), that a wire value like `alreadyRolledBack` is one the backend actually emits,
   and that a reversal launched from this dialog reaches the disk. It also covers the engine's three live controls end to
-  end: forward progress, a pause that resumes where it left off, and a cancel inside one large file.
+  end: forward progress, a pause that resumes where it left off, and a cancel inside one large file. Its cancel-midway
+  spec then FINISHES the reversal from the row, which is the only place the re-entry argument above is checked against a
+  real journal and real files rather than reasoned about.
 
 ## Refusal notices
 
@@ -97,6 +125,12 @@ the reasons aren't one situation. A directory merge and a resolved name clash LO
 need; an overwrite and a permanent delete kept no bytes to restore; a zip-inner edit is a gap Cmdr hasn't closed yet; an
 incomplete journal is Cmdr declining to guess. A single "this can't be rolled back" left the user unable to tell which,
 and unable to tell whether they'd done something wrong.
+
+`rowStandingNotice` is the one place that decides which states speak: it's exhaustive over `RollbackState`, so a new
+state has to choose between explaining itself and staying silent rather than falling silent by default. Two states
+speak: `notRollbackable` (its reason, per above) and `partiallyRolledBack` (one fixed sentence, since the journal
+records no per-state detail the UI could word). A row's action button points its `aria-describedby` at both its own head
+and, when there is one, that line.
 
 **The ROW is where those sentences actually land.** The Roll back button renders only on a `rollbackable` row, so a
 `notRollbackable` one never offers a press to refuse: routed only through the refusal path, every reason above would be

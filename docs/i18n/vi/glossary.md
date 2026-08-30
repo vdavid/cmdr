@@ -1860,3 +1860,41 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   `Localizable.loctable`, `SECTION_NETWORK`), `Cài đặt chung` (same table, `GENERAL_SECTION`), and `Dung lượng`
   (`StorageSettingsIntentsExtension.appex/AppIntents.loctable`, `SETTINGS_DEEPLINKS.ROOT.TITLE`), all on macOS 26.6.2
   (build 25G83), verified 2026-08-30. No restamp: `en` didn't change, the Vietnamese was just incomplete. · `high`
+
+## Thao tác mới hoàn tác được một nửa: làm tiếp cho hết (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+- **`Finish rolling back` → `Tiếp tục hoàn tác`** · giữ nguyên họ từ `hoàn tác` đã chốt (§ roll back / rollback) và lấy
+  khuôn của macOS Finder `vi` cho một thao tác tệp còn dở: `Tiếp tục sao chép`, cùng câu “Đã phát hiện thấy bản sao một
+  phần của thư mục “^0”. Bạn có muốn tiếp tục sao chép không?” (Tier 1, đúng tình huống của ta: một thao tác dở dang
+  được làm tiếp) · `high`. `Tiếp tục X` chỉ có nghĩa làm tiếp cái đã bắt đầu, không bao giờ đọc thành bắt đầu một lượt
+  mới.
+- **`Tiếp tục` dùng lại có chủ ý, không phải lỡ trùng.** `queue.row.resume`, `queue.toolbar.resumeAll` và
+  `licensing.dialog.continue` đều đang là `Tiếp tục`. Hai bề mặt khác nhau (cửa sổ hàng đợi và hộp thoại nhật ký thao
+  tác), và cả hai nghĩa đều là “làm tiếp cái đang dở”, nên dùng chung là trung thực. `i18n-terms` chỉ cảnh báo khi MỘT
+  chuỗi tiếng Anh có hai bản dịch, chứ không cảnh báo hai chuỗi tiếng Anh dùng chung một bản dịch.
+- **❌ Không dùng `Hoàn tất việc hoàn tác`.** Khuôn của Finder `vi` cho việc làm nốt một thao tác tệp là `Hoàn tất` +
+  danh động từ (`Hoàn tất sao chép`, `Đang hoàn tất nén`), nên xét nguồn thì nó hợp lệ. Nhưng `hoàn tất` và `hoàn tác`
+  chỉ khác nhau một dấu, đứng cạnh nhau thành líu lưỡi và rất dễ đọc nhầm, nhất là khi `queue.row.status` đã có
+  `Chưa hoàn tất được` ngay trong cùng tính năng. Vì thế chọn `Tiếp tục`.
+- **Hai khóa `finishRollBack` phải giống nhau từng byte.** `operationLog.dialog.finishRollBack` và
+  `fileOperations.rollbackConfirm.finishRollBack` cùng một chuỗi tiếng Anh và cùng một hành động (nút ở hàng mở đúng hộp
+  thoại đó), nên `i18n-terms` sẽ cảnh báo nếu chúng lệch nhau. Sửa thì sửa cả hai.
+- **`Finish rolling this back?` → `Tiếp tục hoàn tác thao tác này?`** · đúng khuôn câu hỏi của khóa anh em
+  `fileOperations.rollbackConfirm.title` (`Hoàn tác thao tác này?`), chỉ thêm `Tiếp tục` ở đầu · `high`.
+- **Nút `Tiếp tục hoàn tác` và nhãn `Đã hoàn tác` không đụng nhau.** Chúng không bao giờ nằm cùng một hàng: hàng đó hoặc
+  mang nhãn `Đã hoàn tác một phần` kèm nút, hoặc mang `Đã hoàn tác` mà không có nút.
+- **Dòng chú thích lấy lại chữ của `fileOperations.rollbackConfirm.bodyUndoByDeleting`** ·
+  `Cmdr đã hoàn tác những gì có thể và để nguyên phần còn lại. Việc tiếp tục sẽ chạy thêm một lượt nữa và bỏ qua những gì Cmdr vẫn không chắc chắn.`
+  `bỏ qua những gì … không chắc chắn` là nguyên văn của `bodyUndoByDeleting`, `để nguyên` giữ giọng của
+  `rollbackConfirm.leaveAsIs` (`Cứ để nguyên`), còn `lượt` là từ catalog đã dùng cho một lượt chạy
+  (`fileExplorer.navigation.driveIndex.queuedBehindScan` = `Lượt quét bạn yêu cầu`) · `high`. Câu này cố ý không hứa
+  hoàn tác trọn vẹn.
+- **`vẫn` đặt ở `không chắc chắn`, không đặt ở `bỏ qua`** · tiếng Anh nói “still isn’t sure about”, tức là cái chưa chắc
+  thì vẫn chưa chắc, chứ không phải “vẫn bỏ qua” · `high`.
+- **`in {folder}` → `trong {folder}`** · giới từ catalog vẫn dùng cho việc làm gì đó bên trong một thư mục
+  (`fileOperations.operationConflict.context` = `Đang xử lý trong {destination}`,
+  `fileExplorer.navigation.driveIndex.deferredRescan` = `Cmdr đang tìm kiếm trong {name}`) · `high`. Cả hàng đọc thành
+  `Đang xóa những gì đã tạo trong Backup`, đúng ý cần: xóa thứ nằm TRONG thư mục đó, không phải xóa chính thư mục. Tiếng
+  Việt không biến hình nên tên thư mục nào cũng vừa, và không cần thêm dấu ngoặc kép.
+- Cả năm giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
+  không phát sinh `''` của ICU; `{folder}` giữ nguyên.

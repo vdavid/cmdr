@@ -669,6 +669,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.titleFinish": "¿Terminar de revertir esta operación?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "sourceHash": "cfc998a"
+  },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Esto elimina los archivos y carpetas que creó la operación. Cmdr omite todo aquello de lo que no está seguro, así que puede que quede alguno.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
@@ -692,6 +696,10 @@
   "fileOperations.rollbackConfirm.rollBack": "Revertir",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Terminar de revertir",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "sourceHash": "dbe3771"
   },
   "fileOperations.errorDialog.technicalDetails": "Detalles técnicos",
   "@fileOperations.errorDialog.technicalDetails": {

@@ -1810,3 +1810,28 @@ el nombre anterior.
   anteriores…"; `askCmdr.renameUndo.unavailable`, "No hay nada que restaurar."), y `devolver … a su sitio` sigue siendo
   el de la papelera (`fileOperations.trash.undone`) · `high`. El verbo concuerda con el nombre, no con el archivo, así
   que la rama `one` dice `Se restauró el nombre anterior de 1 archivo.`
+
+## Una operación revertida a medias: terminar la reversión (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+- **`Finish rolling back` → `Terminar de revertir`** · se queda dentro de la familia que el catálogo ya usa para esta
+  función (`operationLog.dialog.rollBack` = `Revertir`, `rollingBack` = `Revirtiendo`, `rolledBack` = `Revertido`,
+  `partiallyRolledBack` = `Revertido en parte`) · high. La perífrasis `terminar de` + infinitivo dice "acabar lo que
+  quedó a medias" y nunca "empezar de nuevo"; `Completar la reversión` era la alternativa, más larga y más formal para
+  un botón dentro de una fila. El valor es idéntico en `operationLog.dialog.finishRollBack` y
+  `fileOperations.rollbackConfirm.finishRollBack` (mismo inglés, o salta `i18n-terms`).
+- **`Finish rolling this back?` → `¿Terminar de revertir esta operación?`** · calcado del hermano
+  `fileOperations.rollbackConfirm.title` (`¿Revertir esta operación?`), mismo registro y misma forma de pregunta en
+  infinitivo · high. El `this` del inglés se resuelve como `esta operación`, igual que hace el hermano.
+- **El aviso repite literalmente el molde de `fileOperations.rollbackConfirm.bodyUndoByDeleting`** · "Cmdr revirtió lo
+  que pudo y dejó el resto como estaba. Si terminas la reversión, Cmdr repasa la operación otra vez y vuelve a omitir
+  todo aquello de lo que sigue sin estar seguro." `omite todo aquello de lo que no está seguro` viene de ahí,
+  `reversión` de `transferProgress.rollbackUnavailableTooltip` y `refusalUnexpected`, y `como estaba` de
+  `refusalAlreadyRolledBack` (`Esta ya está como estaba antes.`) · high. Pretérito (`revirtió`, `dejó`) por la regla de
+  la acción recién terminada del `style.md`. El `Si terminas…` convierte el gerundio inglés ("Finishing takes another
+  pass") en trato directo `tú`, que es lo que pide el `style.md`; la frase sigue sin prometer una reversión completa.
+- **`in {folder}` → `en “{folder}”`** · macOS `es` escribe así el nombre de una carpeta o un elemento dentro de una
+  frase (`en “^0”`, 14 apariciones en Finder/AppKit; también `en la carpeta “%@”`) · high. Las comillas son funcionales:
+  marcan el nombre como cita para que "Eliminando lo creado en “Backup”" no se lea como que la carpeta misma se va. Sin
+  artículo ni concordancia, así que cualquier nombre encaja; `en la carpeta {folder}` diría lo mismo pero ocupa más en
+  una línea que el label ya comparte con el progreso.
+- No hace falta `sameAsSourceJustification`: los cinco valores se diferencian del inglés.

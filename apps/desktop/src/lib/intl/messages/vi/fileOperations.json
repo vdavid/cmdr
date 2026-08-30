@@ -668,6 +668,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.titleFinish": "Tiếp tục hoàn tác thao tác này?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "sourceHash": "cfc998a"
+  },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Việc này sẽ xóa các tệp và thư mục mà thao tác đã tạo ra. Cmdr bỏ qua những gì nó không chắc chắn, nên có thể còn sót lại vài thứ.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
@@ -691,6 +695,10 @@
   "fileOperations.rollbackConfirm.rollBack": "Hoàn tác",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Tiếp tục hoàn tác",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "sourceHash": "dbe3771"
   },
   "fileOperations.errorDialog.technicalDetails": "Chi tiết kỹ thuật",
   "@fileOperations.errorDialog.technicalDetails": {

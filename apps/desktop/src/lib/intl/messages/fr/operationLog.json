@@ -35,6 +35,10 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
+  "operationLog.dialog.finishRollBack": "Terminer le retour en arrière",
+  "@operationLog.dialog.finishRollBack": {
+    "sourceHash": "dbe3771"
+  },
   "operationLog.dialog.close": "Fermer",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -135,6 +139,10 @@
   "operationLog.rollback.partiallyRolledBack": "Retour en arrière partiel",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr est revenu en arrière sur ce qu''il a pu et a laissé le reste tel quel. Terminer le retour en arrière demande un nouveau passage, et Cmdr laisse de côté tout ce dont il n''est toujours pas sûr.",
+  "@operationLog.rollback.partiallyRolledBackNotice": {
+    "sourceHash": "77e6f25"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Un retour en arrière est déjà en cours pour celle-ci. Suivez-le dans la file d''attente.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {

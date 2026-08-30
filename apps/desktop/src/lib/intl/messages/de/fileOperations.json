@@ -672,6 +672,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.titleFinish": "Rollback abschließen?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "sourceHash": "cfc998a"
+  },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Das löscht die Dateien und Ordner, die der Vorgang angelegt hat. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges davon übrig.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
@@ -695,6 +699,10 @@
   "fileOperations.rollbackConfirm.rollBack": "Rollback",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Rollback abschließen",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "sourceHash": "dbe3771"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische Details",
   "@fileOperations.errorDialog.technicalDetails": {

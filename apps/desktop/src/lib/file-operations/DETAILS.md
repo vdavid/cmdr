@@ -279,6 +279,15 @@ the button reads the same on every surface.
   `inverse_kind`; the picker is `rollbackConfirmVariant` in `reversal-wording.ts`, and the reasoning behind the wording
   is `$lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the inverse".
 
+**A second axis, orthogonal to `variant`: `finishing`.** An operation that's already PARTLY rolled back offers to pick
+its reversal back up rather than to start one, so the dialog swaps its title
+(`fileOperations.rollbackConfirm.titleFinish`, "Finish rolling this back?") and its confirming button
+(`…finishRollBack`, matching the words on the row's own button). The BODY doesn't change: what the reversal does to the
+files is the same either way, and its second sentence already says Cmdr skips what it isn't sure about, which is exactly
+what a second pass does again. So `variant` keeps answering "what does this do to my files" and `finishing` answers "is
+this a fresh reversal or the rest of one", and neither has to know about the other. Which rows offer which:
+`$lib/operation-log/DETAILS.md` § "The rollback flow".
+
 **What it deliberately doesn't say.** ❌ No file count, tempting as one is: the running counter includes files the
 operation SKIPPED, so any number here would be wrong on exactly the operation that had clashes — which is most of the
 ones anybody rolls back. The undo variants say nothing about a count either, and nothing that promises completeness.

@@ -192,21 +192,31 @@ describe('OperationLogDialog rollback', () => {
     button.click()
   }
 
-  it('offers the button only on a row the journal says can be reversed', async () => {
+  it('offers the button on exactly the rows the backend gate would let through', async () => {
     setEntries([
       opRow({ opId: 'op-can', rollbackState: 'rollbackable' }),
+      opRow({ opId: 'op-part', rollbackState: 'partiallyRolledBack' }),
       opRow({ opId: 'op-cannot', rollbackState: 'notRollbackable' }),
       opRow({ opId: 'op-done', rollbackState: 'rolledBack' }),
       opRow({ opId: 'op-busy', rollbackState: 'rollingBack' }),
     ])
     const target = await mountDialog()
 
+    // Two, and only two: `check_rollbackable` admits `rollbackable` and
+    // `partiallyRolledBack` and refuses the other three, so offering a press on one
+    // of those could only ever earn a refusal.
     const buttons = rollbackButtons(target)
-    expect(buttons).toHaveLength(1)
+    expect(buttons).toHaveLength(2)
+    // Each says what ITS press does. A partly-reversed operation offered "Roll back"
+    // would promise a fresh reversal of work that's already half undone.
     expect(buttons[0].textContent.trim()).toBe('Roll back')
-    // Short name, described by its row: four identical "Roll back" buttons would
-    // otherwise be indistinguishable to a screen reader.
+    expect(buttons[1].textContent.trim()).toBe('Finish rolling back')
+    // Described by its row: buttons sharing a name would otherwise be
+    // indistinguishable to a screen reader.
     expect(buttons[0].getAttribute('aria-describedby')).toBe('op-head-op-can')
+    // The partly-reversed row also points at the line explaining what became of its
+    // files, so the button and its context are heard together.
+    expect(buttons[1].getAttribute('aria-describedby')).toBe('op-head-op-part op-reason-op-part')
   })
 
   it('asks before it does anything, and dispatches nothing if the answer is no', async () => {
@@ -274,6 +284,90 @@ describe('OperationLogDialog rollback', () => {
     })
     // A lost race leaves the row exactly as it was, so the user can act on the notice.
     expect(rollbackButtons(target)).toHaveLength(1)
+  })
+})
+
+describe('OperationLogDialog partly rolled back', () => {
+  beforeEach(() => {
+    closeOperationLog()
+    document.body.innerHTML = ''
+    rollbackOperationMock.mockReset()
+    rollbackOperationMock.mockResolvedValue({ inverseOpId: 'op-inverse' })
+  })
+
+  function rollbackButtons(target: HTMLElement): HTMLButtonElement[] {
+    return [...target.querySelectorAll<HTMLButtonElement>('.op-row button.btn')]
+  }
+
+  function confirmButtons(): HTMLButtonElement[] {
+    return [...document.querySelectorAll<HTMLButtonElement>('[data-dialog-id="rollback-confirmation"] button.btn')]
+  }
+
+  /**
+   * Cancelling a reversal is an ordinary thing to do, and the state it lands in used
+   * to be a dead end: a badge, no button, and no words. Everything below is about
+   * that person finding their way out.
+   */
+  it('says what became of the files, without making the user press anything', async () => {
+    setEntries([opRow({ opId: 'op-part', kind: 'copy', rollbackState: 'partiallyRolledBack' })])
+    const target = await mountDialog()
+
+    expect(target.textContent).toContain('Partly rolled back')
+    expect(target.querySelector('.op-reason')?.textContent.trim()).toBe(
+      'Cmdr rolled back what it could and left the rest as it was. Finishing takes another pass and skips anything Cmdr still isn’t sure about.',
+    )
+  })
+
+  it('frames the question as finishing the reversal, while the body still says what happens to the files', async () => {
+    setEntries([opRow({ opId: 'op-part', kind: 'copy', rollbackState: 'partiallyRolledBack' })])
+    const target = await mountDialog()
+
+    rollbackButtons(target)[0].click()
+    await tick()
+
+    const title = document.querySelector('#rollback-confirmation-title')?.textContent.trim() ?? ''
+    expect(title).toBe('Finish rolling this back?')
+    // The kind-aware body is untouched: what this does to the files doesn't change
+    // because half of it already happened.
+    expect(document.querySelector('#rollback-confirmation-body')?.textContent).toContain(
+      'deletes the files and folders the operation created',
+    )
+    // The confirming button repeats the words the row's button used, so the two
+    // read as one action rather than two.
+    expect(confirmButtons().map((b) => b.textContent.trim())).toEqual(['Leave it as is', 'Finish rolling back'])
+  })
+
+  it('picks the reversal back up on the same operation once confirmed', async () => {
+    setEntries([
+      opRow({ opId: 'op-fresh', rollbackState: 'rollbackable' }),
+      opRow({ opId: 'op-part', rollbackState: 'partiallyRolledBack' }),
+    ])
+    const target = await mountDialog()
+
+    rollbackButtons(target)[1].click()
+    await tick()
+    const confirm = confirmButtons().find((b) => b.textContent.trim() === 'Finish rolling back')
+    if (confirm === undefined) throw new Error('no "Finish rolling back" button in the confirmation')
+    confirm.click()
+
+    // The same command as a first rollback: the engine re-attempts every item and
+    // credits the ones already reversed, so finishing needs no separate entry point.
+    await vi.waitFor(() => {
+      expect(rollbackOperationMock).toHaveBeenCalledWith('op-part')
+    })
+    expect(rollbackOperationMock).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => {
+      expect(target.textContent).toContain('Rolling back')
+    })
+  })
+
+  it('has no a11y violations with a partly-reversed row rendered', async () => {
+    setEntries([
+      opRow({ opId: 'op-part', rollbackState: 'partiallyRolledBack' }),
+      opRow({ opId: 'op-can', rollbackState: 'rollbackable' }),
+    ])
+    const target = await mountDialog()
+    await expectNoA11yViolations(target)
   })
 })
 

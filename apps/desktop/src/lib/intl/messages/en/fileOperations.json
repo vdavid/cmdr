@@ -1166,6 +1166,10 @@
     "description": "Body of the Rollback confirmation. Two facts, both load-bearing: it removes everything written so far (not only the half-written file that a plain Cancel drops), and a file that was overwritten during the operation is gone for good, because no copy of the original was kept. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong.",
     "screenshot": "rollback-confirmation-idle.png"
   },
+  "fileOperations.rollbackConfirm.titleFinish": "Finish rolling this back?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "description": "Title of the same dialog when the operation is already PARTLY rolled back, so pressing the button carries on from where the rollback stopped rather than starting a fresh one. The body under it is unchanged and still says what happens to the files. Sibling of fileOperations.rollbackConfirm.title, which covers the first time round."
+  },
 
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "This deletes the files and folders the operation created. Cmdr skips anything it isn''t sure about, so a few may stay behind.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
@@ -1193,6 +1197,10 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "description": "The confirming button on the Rollback confirmation: stop the operation and delete what it has written. Styled as the destructive choice. Matches the \"Rollback\" button that opened this dialog.",
     "screenshot": "rollback-confirmation-idle.png"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Finish rolling back",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "description": "The confirming button on the same dialog when the operation is already PARTLY rolled back: carry on from where the rollback stopped. Word it exactly like the \"Finish rolling back\" button in the Operation log that opened this dialog (operationLog.dialog.finishRollBack), so the two read as the same action."
   },
 
   "fileOperations.errorDialog.technicalDetails": "Technical details",

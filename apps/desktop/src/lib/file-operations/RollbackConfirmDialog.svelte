@@ -22,13 +22,20 @@
 
     interface Props {
         variant: RollbackConfirmVariant
+        /**
+         * The operation is already PARTLY rolled back, so this press carries on from
+         * where the reversal stopped instead of starting a fresh one. It swaps the
+         * title and the confirming button; the body stays whatever `variant` says,
+         * because what happens to the files is the same either way.
+         */
+        finishing?: boolean
         /** Go ahead: reverse the operation. */
         onConfirm: () => void
         /** Leave the operation exactly as it is. Also what Escape and × do. */
         onCancel: () => void
     }
 
-    const { variant, onConfirm, onCancel }: Props = $props()
+    const { variant, finishing = false, onConfirm, onCancel }: Props = $props()
 
     /**
      * Body + cancel wording + whether the confirming button reads as destructive.
@@ -74,7 +81,9 @@
     onclose={onCancel}
     containerStyle="max-width: 440px"
 >
-    {#snippet title()}{tString('fileOperations.rollbackConfirm.title')}{/snippet}
+    {#snippet title()}{tString(
+            finishing ? 'fileOperations.rollbackConfirm.titleFinish' : 'fileOperations.rollbackConfirm.title',
+        )}{/snippet}
 
     <p id="rollback-confirmation-body" class="rollback-confirm-body">
         {tString(words.body)}
@@ -84,7 +93,11 @@
         <!-- The safe answer takes focus, so a reflex Enter keeps things as they are. -->
         <Button variant="secondary" autoFocus onclick={onCancel}>{tString(words.cancel)}</Button>
         <Button variant={words.destructive ? 'danger' : 'primary'} onclick={onConfirm}
-            >{tString('fileOperations.rollbackConfirm.rollBack')}</Button
+            >{tString(
+                finishing
+                    ? 'fileOperations.rollbackConfirm.finishRollBack'
+                    : 'fileOperations.rollbackConfirm.rollBack',
+            )}</Button
         >
     {/snippet}
 </ModalDialog>

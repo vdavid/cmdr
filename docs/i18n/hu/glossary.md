@@ -2038,3 +2038,40 @@ Apple-szóhasználat.
 `Finder.app/Contents/Resources/hu.lproj/MenuBar.strings` `300730.title` / `300729.title`, 2026-08-30 · high. Az Apple
 szóhasználata, a magyar mondatkezdő nagybetűvel (ami itt egybeesik az Apple alakjával). A `menu.*` család natív, ICU
 nélkül renderelődik: aposztróf ott EGYSZER írandó.
+
+## Egy félbehagyott visszagörgetés befejezése (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+- **`Finish rolling back` → `Visszagörgetés befejezése`** · macOS 26 Finder `hu`: `Másolás befejezése` (`NE108`, „Finish
+  Copying”) és `Tömörítés befejezése` (`AR4`, „Finish Compressing”), tehát a `<főnév> befejezése` az Apple saját magyar
+  alakja erre a műveletre (ellenőrizve 2026-08-30) · high. A `visszagörgetés` szótő a katalógusé
+  (`operationLog.dialog.rollBack`, `rollingBack`, `partiallyRolledBack`), a nominális címkeforma pedig a `style.md` §
+  Formality házirendje. A `befejezése` egyértelműen azt mondja, hogy VÉGIGVISZI a félbemaradt visszagörgetést, sosem
+  azt, hogy újat indít.
+- **A két `finishRollBack` kulcsnak betű szerint azonosnak kell maradnia.** Az `operationLog.dialog.finishRollBack` és a
+  `fileOperations.rollbackConfirm.finishRollBack` angolja és művelete ugyanaz (`Finish rolling back`); ha a magyar
+  értékük eltér, az `i18n-terms` figyelmeztet. A `Roll back` párnál a katalógus már így csinálja: `Visszagörgetés`
+  mindkét helyen.
+- **`Finish rolling this back?` → `Befejezed a művelet visszagörgetését?`** · a testvér
+  `fileOperations.rollbackConfirm.title` („Visszagörgeted ezt a műveletet?”) regiszterét viszi: tegező kérdés, ugyanaz a
+  `művelet` főnév · high. A mutató névmás szándékosan marad el: az `ennek a műveletnek a visszagörgetését` kétszintű
+  birtokos lánc egy párbeszédcímben, az angol pedig maga is rövidít a testvéréhez képest (`Finish rolling this back?` a
+  `Roll this operation back?` mellett). Egy modális ablakban úgyis egyetlen műveletről van szó.
+- **A sor alatti magyarázó mondat a `fileOperations.rollbackConfirm.bodyUndoByDeleting` szavait viszi tovább**: „A Cmdr
+  visszagörgette, amit tudott, a többit pedig úgy hagyta, ahogy volt. A befejezéshez még egy kör kell, és amiben a Cmdr
+  továbbra sem biztos, azt megint kihagyja.” A `kihagyja` szóról szóra a testvéré, az `úgy hagyta, ahogy volt` pedig az
+  `operationLog.rollback.refusalAlreadyRolledBack` („Ez már úgy van, ahogy korábban volt.”) és a
+  `rollbackConfirm.leaveAsIs` („Maradjon így”) hangját tartja · high. A mondat szándékosan nem ígér teljes visszaállást:
+  ami maradt, az lehet olyan fájl, amit a Cmdr nem tud a saját feljegyzéséhez kötni, és azt megint kihagyja.
+- **Mérlegelés, nem forrás: `another pass` → `még egy kör`** · tentative. A pile egyik forrásában sincs erre alak, tehát
+  ez saját döntés: a `még egy kör` köznyelvi és illik a tegező hanghoz. A `még egy átfutás` hivatalosabb, a
+  `még egy menet` sportosabb; egyik sem jobban sourcolt. Ha egy későbbi menet jobbat talál, ez a hely cserélhető.
+- **`in {folder}` → `a(z) {folder} mappában`: a ragot a KÖZNÉVRE tesszük, sosem a névre** · high. Tetszőleges
+  mappanévhez nem lehet helyes toldalékot választani, mert a `-ban`/`-ben` illeszkedése és a névelő `a`/`az` alakja is a
+  névtől függ. Ezért a `{folder}` jelzőként áll, a `-ban` rag pedig a `mappa` szóra kerül, ami mindig ugyanaz. Az `a(z)`
+  a katalógus háziformája placeholder előtt (harminc körüli előfordulás, például
+  `Eltávolítod a(z) {hostName} gépet a szerverlistából?`), és a macOS `hu` is így ír (`A(z) „^0”…`). A
+  `queue.row.reversalDeleting` mellett a sor így szól: „A létrehozottak törlése a(z) Backup mappában” — a helyhatározó
+  mondja ki, hogy a törlés a mappán BELÜL történik, különben a magában álló név úgy hat, mintha maga a mappa tűnne el.
+  Ezt a hibát javítja a kulcs.
+- Mind az öt érték eltér az angoltól, tehát nincs szükség `sameAsSourceJustification`-re. Egyetlen új értékben sincs
+  aposztróf, így az ICU `''` szabálya nem lép be; a `{folder}` változatlan.

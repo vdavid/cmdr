@@ -546,6 +546,13 @@ resolves any op a crash left `rolling_back`: from its unfinalized inverse op's r
 idempotently: every per-item inverse is a recheck-then-act, and an already-reversed item reads as `AlreadyGone` (counted
 as a no-op success).
 
+That re-entrancy is load-bearing beyond the crash path: the history dialog's **Finish rolling back** button on a
+`partially_rolled_back` row is nothing but a second `rollback_operation` call on the SAME op, which the gate admits and
+the item loop re-streams from the top. The items the first pass reversed cost one metadata read each and no write.
+❌ So don't make `check_rollbackable` refuse `PartiallyRolledBack`, and ❌ don't let any inverse act without its
+recheck: either one turns that button into a double-act. The UI side is
+`apps/desktop/src/lib/operation-log/DETAILS.md` § "a partly-reversed operation offers to finish".
+
 ### The retention race it closes
 
 The paged cursor spans successive short-lived read connections, not one WAL snapshot, so a concurrent `Prune` could

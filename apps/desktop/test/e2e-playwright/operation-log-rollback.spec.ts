@@ -283,7 +283,9 @@ function rowReasonNotice(page: TauriPage, opId: string): Promise<string> {
  * this suite rather than only the a11y tests.
  */
 function rollBackButtonFor(opId: string): string {
-  return `${LOG_DIALOG} button[aria-describedby="op-head-${opId}"]`
+  // `~=` rather than `=`: a partly-reversed row's button also points at the line
+  // explaining what became of its files, so its `aria-describedby` is a token LIST.
+  return `${LOG_DIALOG} button[aria-describedby~="op-head-${opId}"]`
 }
 
 /** Whether the row for `opId` still offers a Roll back button. */
@@ -291,9 +293,13 @@ async function rowHasRollBackButton(page: TauriPage, opId: string): Promise<bool
   return (await page.count(rollBackButtonFor(opId))) > 0
 }
 
-/** Presses the Roll back button on `opId`'s row, and waits for the question. */
-async function pressRollBack(page: TauriPage, opId: string): Promise<void> {
-  await clickButtonByText(page, rollBackButtonFor(opId), 'Roll back')
+/**
+ * Presses the row's own rollback button and waits for the question. `label` is what
+ * that button SAYS, which is also the assertion: a row offering the wrong words for
+ * its state can't be pressed here at all.
+ */
+async function pressRollBack(page: TauriPage, opId: string, label = 'Roll back'): Promise<void> {
+  await clickButtonByText(page, rollBackButtonFor(opId), label)
   await expect.poll(() => page.count(CONFIRM_DIALOG), { timeout: 5000 }).toBe(1)
 }
 
@@ -304,16 +310,31 @@ function confirmBody(page: TauriPage): Promise<string> {
   )
 }
 
-/** Answers the confirmation with "Roll back", and waits for it to close. */
-async function confirmRollBack(page: TauriPage): Promise<void> {
-  await clickButtonByText(page, `${CONFIRM_DIALOG} button`, 'Roll back')
+/** Answers the confirmation with its confirming button, and waits for it to close. */
+async function confirmRollBack(page: TauriPage, label = 'Roll back'): Promise<void> {
+  await clickButtonByText(page, `${CONFIRM_DIALOG} button`, label)
   await expect.poll(() => page.count(CONFIRM_DIALOG), { timeout: 5000 }).toBe(0)
+}
+
+/** The confirmation's title — the sentence that frames what the press will do. */
+function confirmTitle(page: TauriPage): Promise<string> {
+  return page.evaluate<string>(
+    `(function() { var t = document.querySelector('#rollback-confirmation-title'); return t ? t.textContent.trim() : ''; })()`,
+  )
 }
 
 /** Answers the confirmation with the safe choice, leaving the operation alone. */
 async function declineRollBack(page: TauriPage): Promise<void> {
   await clickButtonByText(page, `${CONFIRM_DIALOG} button`, 'Leave it as is')
   await expect.poll(() => page.count(CONFIRM_DIALOG), { timeout: 5000 }).toBe(0)
+}
+
+/** Closes the history dialog and opens it again, which is what re-reads page one.
+ *  The open dialog never learns how a reversal ENDED (`DETAILS.md` § "straight to
+ *  the queue"), so a test about the row AFTER a reversal has to reopen it. */
+async function reopenOperationLog(page: TauriPage): Promise<void> {
+  await escapeOverlayUntilGone(page, '.modal-overlay')
+  await openOperationLog(page)
 }
 
 /** Sets (or with `null`, clears) the per-item rollback pause. */
@@ -490,7 +511,7 @@ test.describe('Rolling an operation back from the history dialog', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'right', 'rb-partial'))).toBe(true)
   })
 
-  test('cancelling a reversal keeps what it already reversed and leaves the rest', async ({ tauriPage }) => {
+  test('cancelling a reversal keeps what it reversed, and the row offers to finish the rest', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     const fixtureRoot = getFixtureRoot()
     const count = 6
@@ -525,6 +546,38 @@ test.describe('Rolling an operation back from the history dialog', () => {
     expect(gone).toBeLessThan(count)
     // Every source file is untouched throughout: cancelling the undo of a COPY can
     // never cost the user the original.
+    for (let i = 0; i < count; i++) {
+      expect(fs.existsSync(sourceFile(fixtureRoot, 'rb-cancel', i))).toBe(true)
+    }
+
+    // ── And now the way out. Cancelling a reversal is an ordinary thing to do, and
+    // the state it lands in used to be a dead end: a badge, no button, no words, and
+    // the leftovers stranded at the destination with no path forward in the UI.
+    await setRollbackThrottle(page, null)
+    await reopenOperationLog(page)
+
+    expect(await rowRollbackBadge(page, opId)).toBe('Partly rolled back')
+    // The row says what became of the files without being asked, the way a
+    // not-rollbackable one does. It promises no more than the engine delivers:
+    // finishing takes another pass and may skip again.
+    const notice = await rowReasonNotice(page, opId)
+    expect(notice).toBe(
+      'Cmdr rolled back what it could and left the rest as it was. Finishing takes another pass and skips anything Cmdr still isn’t sure about.',
+    )
+
+    // The button is worded by what THIS press does. `pressRollBack` clicks by text,
+    // so a row still offering "Roll back" here fails to find anything to press.
+    await pressRollBack(page, opId, 'Finish rolling back')
+    expect(await confirmTitle(page)).toBe('Finish rolling this back?')
+    await confirmRollBack(page, 'Finish rolling back')
+
+    // The second pass re-streams every item and rechecks each against the journal:
+    // the ones the first pass removed read as already gone and are credited without
+    // acting, so the run has no skips and the operation lands FULLY reversed.
+    expect(await settledRollbackState(page, opId)).toBe('rolledBack')
+    expect(goneCount(fixtureRoot, 'rb-cancel', count)).toBe(count)
+    expect(fs.existsSync(path.join(fixtureRoot, 'right', 'rb-cancel'))).toBe(false)
+    // Still every source file, after two passes over them.
     for (let i = 0; i < count; i++) {
       expect(fs.existsSync(sourceFile(fixtureRoot, 'rb-cancel', i))).toBe(true)
     }

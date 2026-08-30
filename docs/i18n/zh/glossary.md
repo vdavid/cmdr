@@ -1648,3 +1648,37 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   string (`user@example.com` likewise). Compare Vietnamese, where the same source DOES localize the local part. So a
   Latin-script local part is the Chinese convention, all three keys already agree, and the existing
   `sameAsSourceJustification` stands. `example.com` is RFC 2606's reserved domain. · `high`
+
+## 完成中断的回滚（`operationLog.dialog.finishRollBack`、`operationLog.rollback.partiallyRolledBackNotice`、`fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`、`queue.row.reversalInFolder`，2026-08-30）
+
+操作日志多了一种状态：回滚做到一半被取消，那一行就变成“已部分回滚”，按钮从“回滚”换成“完成回滚”。这一批五条值全部锚在目录已有的回滚词汇上，没有新造词。
+
+- **"Finish rolling back" → `完成回滚`** · 沿用目录里定好的 `回滚`（`operationLog.dialog.rollBack` =
+  `回滚`、`rollingBack` = `正在回滚`、`partiallyRolledBack` = `已部分回滚`，见本文件 `roll back (reverse an operation)`
+  条）· `medium-high`。`完成` 说的是“把这一次回滚做完”，不会读成“重新回滚一次”；和同一行的徽章 `已部分回滚`
+  连起来看，意思很清楚。备选 `继续回滚` 在“不是新开一次”这一点上更直白，但英文写的是 Finish 而不是 Continue，而且 `继续`
+  已经给了 `queue.row.resume`，再用一次会撞车。母语审校时这条值得再看一眼。
+- ⚠️ **`operationLog.dialog.finishRollBack` 和 `fileOperations.rollbackConfirm.finishRollBack` 必须逐字相同**（都写
+  `完成回滚`）· 同一个英文串、同一个动作，一个是日志行上的按钮，一个是它打开的确认框上的按钮；同一 locale 里同串异译会被
+  `i18n-terms` 报警。改动其中一条就要同时改另一条。
+- **"Finish rolling this back?" → `要完成这项操作的回滚吗？`** · 与孪生键
+  `fileOperations.rollbackConfirm.title`（`要回滚这项操作吗？`）同一个 `要…吗？` 句式、同一个 `这项操作` · `high`。用
+  `完成…的回滚` 这个框架，和确认按钮 `完成回滚` 对得上。
+- **提示行 `partiallyRolledBackNotice` 逐字复用两条现成说法** ·
+  `Cmdr 能回滚的都回滚了，其余的保持原样。完成回滚会再走一遍，仍然会跳过没有把握的部分。` · `保持原样` 直接取自
+  `fileOperations.rollbackConfirm.leaveAsIs`；`跳过没有把握的部分` 逐字取自
+  `fileOperations.rollbackConfirm.bodyUndoByDeleting`（`Cmdr 会跳过没有把握的部分，所以可能会剩下一些。`）·
+  `high`。`再走一遍` 对应 "takes another
+  pass"。这句有意不承诺“全都能回滚回来”：跟记录对不上的文件还是会被跳过。全句不出现“错误”“失败”。
+- **"in {folder}" → `位于 {folder}`** ·
+  `high`。这是**后置的处所短语**：`queue.row.reversalDeleting`（`正在删除新建的内容`）和这一条是并排渲染的两个独立元素，顺序固定，所以中文常规的“在…中 + 动词”语序在这里用不上。`位于`
+  正是中文用来把地点接在后面的说法，而且有两处现成依据：目录里同一个英文串
+  `in {subdir}`（`downloads.toast.inSubdir`）已经写成 `位于 {subdir}`；KDE Dolphin `zh-CN` 把 `in location %1` 译成
+  `位于 %1`，也是当尾巴接在别的片段后面（`%1 个选中的项目，网格布局，位于 %2`）。整行读作
+  `正在删除新建的内容 位于 Backup`，`位于`
+  把文件夹坐实成“地点”，不会再被读成“这个文件夹要被删了”——那正是这个键要修的毛病。
+- **文件夹名不加引号**（写 `位于 {folder}`，不写 `位于“{folder}”`）· 与同串的 `downloads.toast.inSubdir`
+  一致，也与队列行里别的行一样：那一格平时就只放一个裸的文件夹名 · `high`。⚠️ 这一点**和 `de`、`es`
+  有意不同**，那两个 locale 写的是 `in „{folder}“` / `en “{folder}”`。以后若决定各 locale 统一加引号，简体按 style
+  guide 用 `“…”`。
+- 五条值都与英文不同，无需 `sameAsSourceJustification`。这批里没有撇号，ICU 的 `''` 规则用不上。

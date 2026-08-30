@@ -35,6 +35,10 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
+  "operationLog.dialog.finishRollBack": "Tiếp tục hoàn tác",
+  "@operationLog.dialog.finishRollBack": {
+    "sourceHash": "dbe3771"
+  },
   "operationLog.dialog.close": "Đóng",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -134,6 +138,10 @@
   "operationLog.rollback.partiallyRolledBack": "Đã hoàn tác một phần",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr đã hoàn tác những gì có thể và để nguyên phần còn lại. Việc tiếp tục sẽ chạy thêm một lượt nữa và bỏ qua những gì Cmdr vẫn không chắc chắn.",
+  "@operationLog.rollback.partiallyRolledBackNotice": {
+    "sourceHash": "77e6f25"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Thao tác này đang được hoàn tác rồi. Hãy theo dõi trong hàng đợi.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {

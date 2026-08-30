@@ -43,7 +43,9 @@
         rollbackStateLabel,
         itemOutcomeLabel,
         rollbackRefusalNotice,
-        notRollbackableNotice,
+        rowRollbackAction,
+        rowRollbackActionLabel,
+        rowStandingNotice,
     } from './operation-log-labels'
     import { rollbackConfirmVariant } from '$lib/file-operations/reversal-wording'
 
@@ -76,15 +78,17 @@
     const refusals = new SvelteMap<string, MessageKey>()
 
     /**
-     * The row whose question is up, resolved fresh from the list each time. A row
-     * that stops being rollbackable while the question is open (a reversal started
-     * elsewhere) takes the question down with it, the way the queue row does: there's
-     * nothing left for an answer to act on.
+     * The row whose question is up, resolved fresh from the list each time, paired
+     * with the action its button offered. A row that stops offering one while the
+     * question is open (a reversal started elsewhere) takes the question down with
+     * it, the way the queue row does: there's nothing left for an answer to act on.
      */
     const rollbackAsked = $derived.by(() => {
         if (rollbackAskedId === null) return null
         const op = operationLogState.entries.find((entry) => entry.opId === rollbackAskedId)
-        return op?.rollbackState === 'rollbackable' ? op : null
+        if (op === undefined) return null
+        const action = rowRollbackAction(op.rollbackState)
+        return action === null ? null : { op, action }
     })
 
     function handleClose() {
@@ -174,9 +178,10 @@
                              points at it, so the two can't drift into an orphaned reference. A
                              refusal the user just earned outranks the standing explanation. -->
                         {@const reasonNotice =
-                            refusal == null && op.rollbackState === 'notRollbackable' && op.notRollbackableReason != null
-                                ? notRollbackableNotice(op.notRollbackableReason)
+                            refusal == null
+                                ? rowStandingNotice(op.rollbackState, op.notRollbackableReason)
                                 : null}
+                        {@const action = rowRollbackAction(op.rollbackState)}
                         <li class="op">
                             <div class="op-row">
                                 <button
@@ -205,17 +210,22 @@
                                     </span>
                                 </button>
 
-                                <!-- Only on a row the journal says can be reversed. The name stays
-                                     "Roll back" for every row; `aria-describedby` is what tells a
-                                     screen reader WHICH row this one belongs to. -->
-                                {#if op.rollbackState === 'rollbackable'}
+                                <!-- Only on a row the backend's own gate would let through, and
+                                     worded by what the press does: "Roll back" starts one,
+                                     "Finish rolling back" picks a stopped one up.
+                                     `aria-describedby` tells a screen reader WHICH row this
+                                     button belongs to, and on a row that carries a standing
+                                     explanation, why it says what it says. -->
+                                {#if action !== null}
                                     <Button
                                         size="mini"
                                         disabled={dispatching.has(op.opId)}
-                                        aria-describedby="op-head-{op.opId}"
+                                        aria-describedby={reasonNotice != null
+                                            ? `op-head-${op.opId} op-reason-${op.opId}`
+                                            : `op-head-${op.opId}`}
                                         onclick={() => { askRollback(op.opId); }}
                                     >
-                                        {tString('operationLog.dialog.rollBack')}
+                                        {rowRollbackActionLabel(action)}
                                     </Button>
                                 {/if}
                             </div>
@@ -223,10 +233,12 @@
                             {#if refusal != null}
                                 <p class="op-refusal" role="status">{tString(refusal)}</p>
                             {:else if reasonNotice != null}
-                                <!-- The badge says a row can't be reversed; this says why. It renders
-                                     on sight because such a row never offers the button whose refusal
-                                     would otherwise carry the sentence. A NULL reason (an operation
-                                     still running) renders nothing rather than a dangling label. -->
+                                <!-- The badge names the state; this says what it means for the
+                                     user's files. A `notRollbackable` row can't earn the sentence
+                                     from a refusal (it offers no button), and a partly-reversed one
+                                     would otherwise leave someone who cancelled a reversal guessing.
+                                     Which states speak, and when they stay quiet:
+                                     `rowStandingNotice`. -->
                                 <p class="op-reason" id="op-reason-{op.opId}">{tString(reasonNotice)}</p>
                             {/if}
 
@@ -300,8 +312,9 @@
      trap takes over until it goes (`$lib/ui/DETAILS.md` § ModalDialog). -->
 {#if rollbackAsked !== null}
     <RollbackConfirmDialog
-        variant={rollbackConfirmVariant(rollbackAsked.kind)}
-        onConfirm={() => void confirmRollback(rollbackAsked.opId)}
+        variant={rollbackConfirmVariant(rollbackAsked.op.kind)}
+        finishing={rollbackAsked.action === 'finish'}
+        onConfirm={() => void confirmRollback(rollbackAsked.op.opId)}
         onCancel={() => (rollbackAskedId = null)}
     />
 {/if}

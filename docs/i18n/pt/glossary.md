@@ -1653,3 +1653,33 @@ própria Apple.
 palavras da Apple (`Mostrar Tudo` / `Ocultar Outros`), com a capitalização do Cmdr: a barra de menus é toda em sentence
 case, então só a primeira letra fica maiúscula. A família `menu.*` é nativa e não passa pelo ICU: um apóstrofo ali se
 escreve uma vez só.
+
+## Uma operação revertida pela metade: concluir a reversão (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+- **`Finish rolling back` → `Concluir a reversão`** · o verbo vem do macOS Finder pt-BR `NE108` ("Finish Copying" →
+  "Concluir Cópia", Tier 1, `pt-BR/macOS/Finder/LocalizableMerged.json`, conferido em 2026-08-30), em sentence case como
+  manda o `docs/style-guide.md`, já que o Finder usa Title Case e o Cmdr não. O substantivo `a reversão` é o que o
+  próprio catálogo já publica em `operationLog.rollback.refusalUnexpected` ("não conseguiu iniciar a reversão"), o que
+  fecha o par `iniciar a reversão` / `concluir a reversão` · high. Diz terminar o que ficou pela metade, nunca começar
+  de novo.
+- **O valor tem que continuar idêntico em `operationLog.dialog.finishRollBack` e
+  `fileOperations.rollbackConfirm.finishRollBack`.** Os dois traduzem o mesmo inglês `Finish rolling back` (sourceHash
+  `dbe3771`), então o `i18n-terms` acusa assim que um dos dois for ajustado sozinho. Mexa nos dois ou em nenhum.
+- **`Finish rolling this back?` → `Concluir esta reversão?`** · decalque do irmão `fileOperations.rollbackConfirm.title`
+  (`Reverter esta operação?`): mesmo registro e mesma pergunta no infinitivo, verbo + `esta` + substantivo · high. O
+  `this` do inglês vira `esta reversão`, e não `esta operação`, porque o que se conclui é a reversão, não a operação.
+- **O aviso embaixo da linha repete o molde de `fileOperations.rollbackConfirm.bodyUndoByDeleting`** · "O Cmdr reverteu
+  o que conseguiu e deixou o resto como estava. Ao concluir a reversão, o Cmdr percorre a operação mais uma vez e volta
+  a pular tudo aquilo de que não tem certeza." A oração `pula tudo aquilo de que não tem certeza` sai literalmente de
+  `bodyUndoByDeleting`, `como estava` vem de `refusalAlreadyRolledBack` ("Esta já voltou ao que era.") e `volta a` cobre
+  o "still" do inglês · high. A frase de propósito não promete uma reversão completa.
+- **`Para concluir` foi recusado** · em português a locução lê primeiro como marcador de discurso ("em conclusão"), o
+  que trocaria o sentido da segunda frase. `Ao concluir a reversão` deixa o Cmdr como sujeito implícito e não tem essa
+  leitura dupla. `percorrer` também foi escolhido de propósito no lugar de `revisar`, que já é o verbo do catálogo para
+  "review" (`Rever` pt-PT → `Revisar` pt-BR) e criaria colisão de termo.
+- **`in {folder}` → `em {folder}`** · preposição pura, sem artigo e sem aspas: o nome que chega é próprio ("Apagando o
+  que foi criado em Backup") · high. Diferente do `de` e do `es`, que puseram aspas; aqui os vizinhos do catálogo também
+  deixam o placeholder solto, e o inglês igualmente. Sem artigo e sem concordância, qualquer nome cabe.
+- Não faz falta `sameAsSourceJustification`: os cinco valores se diferenciam do inglês.
+- Varredura pt-PT do lote (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
+  `alterar o nome`): zero ocorrências.

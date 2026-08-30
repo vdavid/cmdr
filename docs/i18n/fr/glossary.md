@@ -2196,3 +2196,36 @@ CE QUI revient : l'ancien nom.
   mot pour mot ce qu'affiche le menu de l'app sur macOS 26 `fr` (Finder `MenuBar.strings`, `300730.title` /
   `300729.title`, vérifié sur macOS 26.6.2, build 25G83, 2026-08-30), et ils correspondent à `commands.appShowAll.label`
   / `commands.appHideOthers.label` · `high`.
+
+## Une opération à moitié revenue en arrière : terminer le retour (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+- **`Finish rolling back` → `Terminer le retour en arrière`** · reste dans le champ lexical que le catalogue tient déjà
+  pour cette fonction (`operationLog.dialog.rollBack` = « Revenir en arrière »,
+  `operationLog.rollback.partiallyRolledBack` = « Retour en arrière partiel ») · high. Le moule `Terminer + <nom>` est
+  celui d'Apple : macOS Finder `fr` écrit « Terminer la copie » pour `Finish Copying` (vérifié sur macOS 26 Finder `fr`,
+  2026-08-30). `Terminer` dit « mener à son terme », jamais « relancer », ce qui est tout l'enjeu de la clé : la ligne
+  propose de FINIR un retour interrompu, pas d'en lancer un nouveau.
+- **Les deux clés `finishRollBack` doivent rester strictement identiques.** `operationLog.dialog.finishRollBack` et
+  `fileOperations.rollbackConfirm.finishRollBack` partagent le même anglais (`Finish rolling back`) et la même action ;
+  si leurs valeurs `fr` divergent, `i18n-terms` le signale. Le catalogue faisait déjà ce couple pour `Roll back` («
+  Revenir en arrière » des deux côtés).
+- **`Finish rolling this back?` → `Terminer le retour en arrière sur cette opération ?`** · décalque du frère
+  `fileOperations.rollbackConfirm.title` (« Revenir en arrière sur cette opération ? ») : même infinitif, même
+  `cette opération`, même espace ASCII avant le point d'interrogation (`style.md` § Punctuation spacing) · high.
+- **L'avis sous la ligne recycle `fileOperations.rollbackConfirm.bodyUndoByDeleting`** : « Cmdr est revenu en arrière
+  sur ce qu''il a pu et a laissé le reste tel quel. Terminer le retour en arrière demande un nouveau passage, et Cmdr
+  laisse de côté tout ce dont il n''est toujours pas sûr. » La seconde moitié reprend mot pour mot le frère (« laisse de
+  côté tout ce dont il n''est pas sûr »), et `a laissé le reste tel quel` tient le ton de `rollbackConfirm.leaveAsIs` («
+  Laisser tel quel ») · high. La phrase ne promet volontairement pas un retour complet : ce qui reste peut être des
+  fichiers que Cmdr n'arrive pas à rapprocher de ce qu'il a enregistré, et ceux-là seront de nouveau laissés de côté.
+  `revenu` s'accorde au masculin (Cmdr), comme partout ailleurs dans le catalogue.
+- **Point faible du lot : `another pass` → `un nouveau passage`** · tentative. Aucune source du corpus ne rend l'idée «
+  repasser une fois de plus sur l'opération » ; le tour reste compréhensible, mais il n'est pas sourcé. Deux pistes
+  écartées : `reprend l'opération`, qui se lit comme relancer l'opération d'origine (exactement le contresens que cette
+  clé existe pour éviter), et `une seconde passe`, du jargon. À revoir en priorité si un relecteur natif se présente.
+- **`in {folder}` → `dans {folder}`** · high. Le français n'accorde rien après `dans`, donc n'importe quel nom de
+  dossier passe sans retouche. Avec `queue.row.reversalDeleting` la ligne se lit « Suppression de ce qui a été créé dans
+  Backup » : c'est la préposition qui dit que la suppression a lieu à l'INTÉRIEUR du dossier. Sans elle, le nom seul
+  laisse croire que le dossier lui-même va disparaître, et c'est le bug que cette clé corrige.
+- Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais. Seul l'avis contient des apostrophes,
+  doublées comme le veut l'ICU ; le `{folder}` est inchangé.

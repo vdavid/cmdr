@@ -31,8 +31,13 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
   recorded. ❌ No copy here may promise a complete reversal.
 - **A refusal is typed.** Catch it with `asRollbackRefusal`, word it with `rollbackRefusalNotice`; ❌ never render the
   wire value, and never let a refused press look like nothing happened.
-- **A `notRollbackable` row explains itself on sight** (`notRollbackableNotice` off `notRollbackableReason`): it never
-  offers the button whose refusal would otherwise carry the reason. Pinned by the component, a11y, and E2E suites.
+- **A row offers a button on exactly the states `check_rollbackable` admits** (`rowRollbackAction`): `rollbackable` says
+  "Roll back", `partiallyRolledBack` says "Finish rolling back". ❌ Never widen it past that gate, and ❌ never word a
+  finish as a fresh rollback. Finishing is safe because every per-item inverse rechecks then acts, so an item the first
+  pass reversed reads as gone and is credited without touching a thing; `DETAILS.md` has the full argument.
+- **Both states whose badge leaves a person guessing explain themselves on sight** (`rowStandingNotice`, exhaustive over
+  `RollbackState`): a `notRollbackable` row carries its stored reason, a partly-reversed one says what became of the
+  files. Pinned by the component, a11y, and E2E suites.
 - **`entries.length` is the paging offset**, one source of truth, so an append can't desync from what's shown.
 
 Flows, the routing decision, the copy contract, and the caching rules: `DETAILS.md`.

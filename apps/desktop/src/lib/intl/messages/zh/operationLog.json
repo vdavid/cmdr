@@ -35,6 +35,10 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
+  "operationLog.dialog.finishRollBack": "完成回滚",
+  "@operationLog.dialog.finishRollBack": {
+    "sourceHash": "dbe3771"
+  },
   "operationLog.dialog.close": "关闭",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -134,6 +138,10 @@
   "operationLog.rollback.partiallyRolledBack": "已部分回滚",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr 能回滚的都回滚了，其余的保持原样。完成回滚会再走一遍，仍然会跳过没有把握的部分。",
+  "@operationLog.rollback.partiallyRolledBackNotice": {
+    "sourceHash": "77e6f25"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "这项已经在回滚了。可以在队列里查看。",
   "@operationLog.rollback.refusalAlreadyRollingBack": {

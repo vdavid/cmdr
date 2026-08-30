@@ -1722,3 +1722,34 @@ zurückkommt: der alte Name.
   wörtlich das, was macOS 26 `de` im Programm-Menü zeigt (Finder `MenuBar.strings`, `300730.title` / `300729.title`,
   geprüft auf macOS 26.6.2, Build 25G83, 2026-08-30), und sie stimmen mit `commands.appShowAll.label` /
   `commands.appHideOthers.label` überein · `high`.
+
+## Ein halb zurückgenommener Vorgang: das Rollback zu Ende bringen (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+- **`Finish rolling back` → `Rollback abschließen`** · bleibt im Substantiv-Wortfeld, das der Katalog für dieses Feature
+  schon führt (`operationLog.dialog.rollBack` = „Rollback“, `rollingBack` = „Rollback läuft“) · `high`. `abschließen`
+  sagt „zu Ende bringen“, nie „neu starten“; `fortsetzen` wäre die Alternative, ist aber schon an `queue.row.resume`
+  vergeben. Der Wert steht identisch in `operationLog.dialog.finishRollBack` und
+  `fileOperations.rollbackConfirm.finishRollBack` (gleicher englischer String, sonst schlägt `i18n-terms` an).
+- **Die Taste `Rollback abschließen` und das Abzeichen `Rollback abgeschlossen` (`rolledBack`) sind Absicht.** Sie
+  stehen nie in derselben Zeile: die Zeile trägt entweder das Abzeichen „Teilweiser Rollback“ plus die Taste oder das
+  Abzeichen „Rollback abgeschlossen“ ohne Taste. Nach dem Drücken liest sich der Wechsel als Fortschritt.
+- **`Finish rolling this back?` → `Rollback abschließen?`** · gleiche Frageform wie das Geschwister
+  `fileOperations.rollbackConfirm.title` („Diesen Vorgang rückgängig machen?“), also blanker Infinitiv plus Fragezeichen
+  · `high`. Ohne Artikel, weil der Katalog beim Genus von `Rollback` uneins ist (siehe unten).
+- **Offen: das Genus von `Rollback`.** `operationLog.rollback.partiallyRolledBack` sagt „Teilweiser Rollback“
+  (maskulin), `refusalUnexpected` sagt „das Rollback nicht starten“ (neutrum). Duden führt beide, aber der Katalog
+  sollte sich für eines entscheiden. Die neuen Werte umgehen den Artikel, also blockiert nichts; ein späterer Durchgang
+  sollte es vereinheitlichen · `tentative`.
+- **Der Hinweis unter der Zeile echot `fileOperations.rollbackConfirm.bodyUndoByDeleting`** · „Cmdr hat rückgängig
+  gemacht, was möglich war, und den Rest so gelassen, wie er war. Beim Abschließen geht Cmdr alles noch einmal durch und
+  überspringt alles, bei dem es sich immer noch nicht sicher ist.“ Das Verb `rückgängig machen` kommt aus
+  `rollbackConfirm.title`, `überspringt alles, bei dem es sich nicht sicher ist` wörtlich aus `bodyUndoByDeleting`, und
+  `so gelassen, wie er war` hält den Ton von `leaveAsIs` („So lassen“) · `high`. Der Satz verspricht bewusst keine
+  vollständige Rücknahme.
+- **`in {folder}` → `in „{folder}“`** · macOS `de` schreibt genau so, wenn ein Ordner- oder Objektname in einen Satz
+  fällt (`in „^0“`, 11 Treffer in Finder/AppKit; GNOME Nautilus schreibt „im Ordner »%s«“) · `high`. Die
+  Anführungszeichen sind hier funktional: sie machen aus dem Namen ein Zitat, damit „Angelegtes wird gelöscht in
+  „Backup““ nicht so klingt, als ginge der Ordner selbst weg. `im Ordner „{folder}“` wäre noch deutlicher, kostet aber
+  Breite in einer Zeile, die sich das Label schon mit dem Fortschritt teilt. Kein Artikel, kein Kasus am Namen, also
+  passt jeder Name.
+- Kein `sameAsSourceJustification` nötig: alle fünf Werte unterscheiden sich vom Englischen.

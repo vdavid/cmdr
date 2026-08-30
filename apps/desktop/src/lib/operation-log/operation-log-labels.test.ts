@@ -8,6 +8,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { tString } from '$lib/intl/messages.svelte'
+import type { MessageKey } from '$lib/intl/keys.gen'
 import type {
   ArchiveSubkind,
   ExecutionStatus,
@@ -25,6 +26,9 @@ import {
   rollbackStateLabel,
   itemOutcomeLabel,
   rollbackRefusalNotice,
+  rowRollbackAction,
+  rowRollbackActionLabel,
+  rowStandingNotice,
 } from './operation-log-labels'
 
 describe('operationSummary', () => {
@@ -181,6 +185,58 @@ describe('rollbackRefusalNotice', () => {
       for (const banned of ['error', 'failed', 'invalid', 'you should have']) {
         expect(sentence).not.toContain(banned)
       }
+    }
+  })
+})
+
+describe('rowRollbackAction', () => {
+  it('offers a press on exactly the states the backend gate admits', () => {
+    // Mirrors `check_rollbackable` (`operation_log/rollback.rs`) arm for arm. Offering
+    // one on any other state would be a button whose only possible answer is a refusal.
+    const cases: Record<RollbackState, 'start' | 'finish' | null> = {
+      rollbackable: 'start',
+      partiallyRolledBack: 'finish',
+      notRollbackable: null,
+      rollingBack: null,
+      rolledBack: null,
+    }
+    for (const [state, action] of Object.entries(cases)) {
+      expect(rowRollbackAction(state as RollbackState)).toBe(action)
+    }
+  })
+
+  it('names what THIS press does, so a half-undone operation never promises a fresh reversal', () => {
+    expect(rowRollbackActionLabel('start')).toBe('Roll back')
+    expect(rowRollbackActionLabel('finish')).toBe('Finish rolling back')
+  })
+})
+
+describe('rowStandingNotice', () => {
+  it('explains the two states whose badge leaves a person guessing, and stays quiet on the rest', () => {
+    // A partly-reversed row is the one someone lands on after cancelling a reversal:
+    // some files came back, some didn't, and the badge alone says neither.
+    expect(tString(rowStandingNotice('partiallyRolledBack', null) as MessageKey)).toBe(
+      'Cmdr rolled back what it could and left the rest as it was. Finishing takes another pass and skips anything Cmdr still isn’t sure about.',
+    )
+    expect(tString(rowStandingNotice('notRollbackable', 'permanentDelete') as MessageKey)).toBe(
+      'A permanent delete leaves nothing to put back.',
+    )
+    // A not-rollbackable row with no recorded reason is an operation still running;
+    // a dangling label would be worse than silence.
+    expect(rowStandingNotice('notRollbackable', null)).toBeNull()
+    expect(rowStandingNotice('rollbackable', null)).toBeNull()
+    expect(rowStandingNotice('rollingBack', null)).toBeNull()
+    expect(rowStandingNotice('rolledBack', null)).toBeNull()
+  })
+
+  it('promises no more than the engine delivers: a finish may skip again', () => {
+    // A reversal lands partial for two reasons the UI can't tell apart: a cancel
+    // midway, and items the engine couldn't verify (which a second pass skips
+    // again). Copy that promised completion would be wrong half the time.
+    const sentence = tString(rowStandingNotice('partiallyRolledBack', null) as MessageKey).toLowerCase()
+    expect(sentence).toContain('skips')
+    for (const banned of ['error', 'failed', 'will finish', 'completely']) {
+      expect(sentence).not.toContain(banned)
     }
   })
 })

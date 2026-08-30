@@ -669,6 +669,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.titleFinish": "Ångra klart den här åtgärden?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "sourceHash": "cfc998a"
+  },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Det här raderar filerna och mapparna som åtgärden skapade. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
@@ -692,6 +696,10 @@
   "fileOperations.rollbackConfirm.rollBack": "Ångra",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Ångra klart",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "sourceHash": "dbe3771"
   },
   "fileOperations.errorDialog.technicalDetails": "Tekniska detaljer",
   "@fileOperations.errorDialog.technicalDetails": {

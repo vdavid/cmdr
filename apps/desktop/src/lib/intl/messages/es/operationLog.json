@@ -35,6 +35,10 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
+  "operationLog.dialog.finishRollBack": "Terminar de revertir",
+  "@operationLog.dialog.finishRollBack": {
+    "sourceHash": "dbe3771"
+  },
   "operationLog.dialog.close": "Cerrar",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
@@ -134,6 +138,10 @@
   "operationLog.rollback.partiallyRolledBack": "Revertido en parte",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr revirtió lo que pudo y dejó el resto como estaba. Si terminas la reversión, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
+  "@operationLog.rollback.partiallyRolledBackNotice": {
+    "sourceHash": "77e6f25"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Esta ya se está revirtiendo. Puedes seguirla en la cola.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {

@@ -114,6 +114,73 @@ export function rollbackStateLabel(state: RollbackState): string {
   }
 }
 
+/**
+ * What the row's own button offers, or `null` when the row offers nothing to press.
+ *
+ * `finish` is a `partiallyRolledBack` row picking a reversal back up. The engine
+ * admits that state through the same gate as `rollbackable`
+ * (`operation_log/rollback.rs`, `check_rollbackable`) and re-attempts every item
+ * with a fresh recheck, so an item the first pass already reversed reads as gone
+ * and is credited without acting. ❌ Never widen this to a state the backend gate
+ * refuses: the row would offer a press that can only come back as a refusal.
+ */
+export type RowRollbackAction = 'start' | 'finish'
+
+export function rowRollbackAction(state: RollbackState): RowRollbackAction | null {
+  switch (state) {
+    case 'rollbackable':
+      return 'start'
+    case 'partiallyRolledBack':
+      return 'finish'
+    // Nothing to reverse, or a reversal is already running.
+    case 'notRollbackable':
+    case 'rollingBack':
+    case 'rolledBack':
+      return null
+  }
+}
+
+/**
+ * The button's words, which name what THIS press does: starting a reversal and
+ * picking a stopped one back up are different promises, and a row that offers
+ * "Roll back" on an operation already half reversed would be making the wrong one.
+ */
+export function rowRollbackActionLabel(action: RowRollbackAction): string {
+  switch (action) {
+    case 'start':
+      return tString('operationLog.dialog.rollBack')
+    case 'finish':
+      return tString('operationLog.dialog.finishRollBack')
+  }
+}
+
+/**
+ * The sentence a row carries ON SIGHT, with no press to earn it, or `null` when the
+ * badge says everything there is to say.
+ *
+ * Two states need one. A `notRollbackable` row never offers the button whose refusal
+ * would otherwise carry its reason, so the reason has no other way to reach the
+ * reader. A `partiallyRolledBack` row DOES offer a button, but its badge alone leaves
+ * a person who cancelled a reversal unable to tell what became of their files.
+ *
+ * Exhaustive over `RollbackState`, so a new state has to decide whether it explains
+ * itself rather than falling silent by default.
+ */
+export function rowStandingNotice(state: RollbackState, reason: NotRollbackableReason | null): MessageKey | null {
+  switch (state) {
+    case 'notRollbackable':
+      // A NULL reason is an operation still running, which opens `not_rollbackable`
+      // until finalize decides. A dangling label would be worse than silence.
+      return reason === null ? null : notRollbackableNotice(reason)
+    case 'partiallyRolledBack':
+      return 'operationLog.rollback.partiallyRolledBackNotice'
+    case 'rollbackable':
+    case 'rollingBack':
+    case 'rolledBack':
+      return null
+  }
+}
+
 /** A per-item outcome shown in the expanded item list. */
 export function itemOutcomeLabel(outcome: ItemOutcome): string {
   switch (outcome) {

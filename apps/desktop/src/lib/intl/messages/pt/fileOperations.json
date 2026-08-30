@@ -670,6 +670,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "8d61f81"
   },
+  "fileOperations.rollbackConfirm.titleFinish": "Concluir esta reversão?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "sourceHash": "cfc998a"
+  },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Isso apaga os arquivos e pastas que a operação criou. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar para trás.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
@@ -693,6 +697,10 @@
   "fileOperations.rollbackConfirm.rollBack": "Reverter",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Concluir a reversão",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "sourceHash": "dbe3771"
   },
   "fileOperations.errorDialog.technicalDetails": "Detalhes técnicos",
   "@fileOperations.errorDialog.technicalDetails": {

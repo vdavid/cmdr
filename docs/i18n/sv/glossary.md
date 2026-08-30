@@ -1823,3 +1823,46 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 - **Email placeholder** · `du@example.com` on all three keys (`settings.updates.emailPlaceholder`,
   `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`), already consistent. `du` is the catalog's
   pronoun; `example.com` is the RFC 2606 reserved domain and stays. · `high`
+
+## En halvt ångrad åtgärd: att ångra klart (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+- **`Finish rolling back` → `Ångra klart`** · partikelverbet bygger på den satta rollback-termen `ångra` (§
+  Rollback-familjen) och på macOS Finder `sv`, som skriver precis den konstruktionen om en avbruten filoperation: ”Du
+  kan kopiera klart nu eller behålla en återupptagbar kopia och slutföra senare.” Katalogen har redan samma mönster i
+  `errors.listing.connectionDropped.explanation` (”innan Cmdr hann läsa klart”) och
+  `fileOperations.transferDialog.scanStopped` (”kunde inte mäta klart källan”) · `high`. Formen säger ”göra färdigt det
+  som stannade”, aldrig ”börja om”.
+- **❌ Inte `Slutför ångringen`.** Finder `sv` har visserligen knappformen `Slutför kopiering` (och
+  `Slutför komprimering`), så substantivmönstret är belagt, men två saker fäller det: § Rollback-familjen har redan dömt
+  ut substantivet `ångring` som ”korrekt men styltigt i ett gränssnitt” (det var därför `transferProgress.smbNativeNote`
+  skrevs om till verbform), och `@key` säger uttryckligen att knappen ska vara kort eftersom den sitter inne i en
+  listrad — `Ångra klart` är 11 tecken mot 17. Det är ett belagt alternativ om någon vill byta, men då byter hela paret
+  samtidigt.
+- **De två `finishRollBack`-nycklarna måste vara identiska tecken för tecken.** `operationLog.dialog.finishRollBack` och
+  `fileOperations.rollbackConfirm.finishRollBack` har samma engelska sträng och samma handling (raden öppnar just den
+  dialogen), så `i18n-terms` varnar om de får två olika svenska namn. Skriv om båda eller ingen.
+- **`Finish rolling this back?` → `Ångra klart den här åtgärden?`** · samma ram som syskonet
+  `fileOperations.rollbackConfirm.title` (”Ångra den här åtgärden?”), bara med partikeln inskjuten: bar infinitiv plus
+  frågetecken, som `main.quit.title` · `high`. Objektet står efter partikeln (”ångra klart åtgärden”, precis som ”läsa
+  klart boken”).
+- **Knappen `Ångra klart` och pastillen `Ångrad` krockar inte.** De står aldrig på samma rad: raden bär antingen
+  `Delvis ångrad` plus knappen, eller `Ångrad` utan knapp. Efter tryck läses växlingen som framsteg.
+- **Notisen ekar `fileOperations.rollbackConfirm.bodyUndoByDeleting`** · ”Cmdr ångrade det som gick och lät resten ligga
+  kvar. Att ångra klart går igenom åtgärden en gång till och hoppar över allt som fortfarande är osäkert.”
+  `hoppar över allt som … är osäkert` är ordagrant från `bodyUndoByDeleting`, `ligga kvar` speglar dess ”så en del kan
+  bli kvar”, och `lät resten ligga kvar` håller tonen från `rollbackConfirm.leaveAsIs` (”Låt det vara”) · `high`.
+  Meningen lovar medvetet ingen fullständig ångring.
+- **❌ Inte ”lät resten vara som den var” i notisen.** Engelskans ”left the rest as it was” kan läsas som ”som det var
+  före åtgärden”, alltså tvärtemot vad som hänt. `ligga kvar` säger otvetydigt att resten ligger där åtgärden lämnade
+  den.
+- **”takes another pass” → `går igenom åtgärden en gång till`** · `@key` glossar uttrycket som ”goes over the operation
+  once more”, och den formen är vanlig svenska · `high`. `tar ett varv till` fungerar också men säger inte vad som gås
+  igenom.
+- **Inget komma före `och` i första meningen** · satserna delar subjekt (Cmdr), och style.md:s regel om två korta
+  huvudsatser gäller ändå · `high`.
+- **`in {folder}` → `i {folder}`** · katalogens egen preposition för att arbeta inne i en mapp
+  (`fileOperations.operationConflict.context` = ”Arbetar i {destination}”) · `high`. Raden läses ”Raderar det som
+  skapades i Backup”, alltså som en bestämning av var sakerna skapades, vilket är precis den läsning nyckeln finns för.
+  Inga citattecken behövs: svenskan sätter ingen kasusändelse på namnet, så vilket mappnamn som helst passar.
+- Inga `sameAsSourceJustification` · alla fem värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
+  så ICU:s dubblering `''` blir aldrig aktuell. `{folder}` står oförändrad.

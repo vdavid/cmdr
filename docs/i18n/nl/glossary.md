@@ -2052,3 +2052,34 @@ Acht `errors.*`-sleutels droegen Engelse paneelnamen. Die zijn nu runtime-tokens
 `Finder.app/Contents/Resources/nl.lproj/MenuBar.strings` `300730.title` / `300729.title`, 2026-08-30 · high. Apple's
 eigen woorden, en meteen ook de kale gebiedende wijs die `style.md` voor knoppen en menu-items voorschrijft. De
 `menu.*`-familie rendert zonder ICU, dus een apostrof schrijf je daar één keer.
+
+## Een half teruggedraaide bewerking afmaken (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+
+- **`Finish rolling back` → `Voltooi terugdraaien`** · macOS Finder `nl` geeft precies deze vorm: `NE108` („Finish
+  Copying” → „Voltooi kopiëren”) is een bare-stem imperatief `Voltooi` plus een infinitief als lijdend voorwerp (Tier 1,
+  `nl/macOS/Finder/LocalizableMerged.json`, nagekeken 2026-08-30). `terugdraaien` is het al vastgelegde werkwoord uit
+  `operationLog.dialog.rollBack` („Terugdraaien”) · `high`. Het zegt afmaken, nooit opnieuw beginnen;
+  `Verder terugdraaien` was het alternatief, maar dat belooft alleen doorgaan, geen einde.
+- **De waarde moet identiek blijven in `operationLog.dialog.finishRollBack` en
+  `fileOperations.rollbackConfirm.finishRollBack`.** Beide vertalen hetzelfde Engelse `Finish rolling back` (sourceHash
+  `dbe3771`), dus `i18n-terms` slaat aan zodra één van de twee wordt bijgeschaafd. Wijzig ze samen of geen van beide.
+- **`Finish rolling this back?` → `Het terugdraaien van deze bewerking voltooien?`** · zelfde vraagvorm in de infinitief
+  als de zus `fileOperations.rollbackConfirm.title` („Deze bewerking terugdraaien?”), zoals elke ja/nee-dialoogtitel in
+  deze catalogus. Het genominaliseerde `het terugdraaien … voltooien` staat zo bij Apple („Je kunt het kopiëren nu
+  voltooien”, Finder `nl`) · `high`. De Engelse `this` wordt `deze bewerking`, precies zoals de zus hem oplost.
+- **De toelichting onder de rij echoot `fileOperations.rollbackConfirm.bodyUndoByDeleting`** · „Cmdr heeft teruggedraaid
+  wat het kon en de rest gelaten zoals die was. Bij het voltooien gaat Cmdr er nog een keer overheen en slaat alles over
+  waar het nog steeds niet zeker van is.” De bijzin `slaat alles over waar het niet zeker van is` komt letterlijk uit
+  `bodyUndoByDeleting`, `nog steeds` draagt het Engelse „still”, en `er nog een keer overheen gaan` is „takes another
+  pass” · `high`. De zin belooft bewust geen volledige terugdraaiing.
+- **`in {folder}` → `in {folder}`, identiek aan het Engels** · het Nederlands deelt het voorzetsel `in` voor een
+  maplocatie, en macOS Finder `nl` schrijft het net zo („Search in ^1” → „Zoek in '^1'”, „items in ^0” → „onderdelen in
+  '^0'”, `FF20.3_V1` en `PE23`) · `high`. Daarom draagt deze sleutel als enige van de vijf een
+  `sameAsSourceJustification`; zonder die verantwoording meldt `i18n-coverage` hem als mogelijk onvertaald.
+- **Geen aanhalingstekens om `{folder}`, anders dan `de` en `es` kozen.** De naaste buren in deze catalogus laten het
+  ook bloot (`fileOperations.operationConflict.context` „Bezig in {destination}”, `viewer.saveAs.saved` „Selectie
+  bewaard in {name}”), en het Engels doet het evenmin. Samen leest de rij als „Bezig met het aangemaakte verwijderen in
+  Backup”.
+- **Overloop nakijken in het bewerkingslogboek.** De dialoogtitel is 45 tekens tegen 25 in het Engels, en de knop
+  `Voltooi terugdraaien` is 20 tegen 19, maar die knop vervangt in een lijstrij het veel kortere `Terugdraaien` (12),
+  naast het label `Gedeeltelijk teruggedraaid`. Controleer beide tegen de pseudolocale voordat de locale meegaat.

@@ -48,6 +48,10 @@
   "@operationLog.dialog.rollBack": {
     "description": "Button on a row of the Operation log that undoes that operation. It appears only on rows that can be reversed, next to the \"Can roll back\" badge, and asks for confirmation before anything happens. Match the wording of the \"Roll back\" button in the confirmation that follows it. Keep it short: it sits inside a list row."
   },
+  "operationLog.dialog.finishRollBack": "Finish rolling back",
+  "@operationLog.dialog.finishRollBack": {
+    "description": "Button on a row of the Operation log whose rollback stopped partway, so some of that operation came back and some of it didn't. It replaces the \"Roll back\" button on that row, sits next to the \"Partly rolled back\" badge, and asks for confirmation before anything happens. Pressing it carries on from where the rollback stopped rather than starting a fresh one, so the wording says finish rather than start. Match the wording of the \"Finish rolling back\" button in the confirmation that follows it. Keep it short: it sits inside a list row."
+  },
   "operationLog.dialog.close": "Close",
   "@operationLog.dialog.close": {
     "description": "Button that closes the Operation log dialog.",
@@ -191,6 +195,10 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "description": "Rollback status: some but not all of this operation was reversed.",
     "screenshot": "operation-log-more-pages.png"
+  },
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr rolled back what it could and left the rest as it was. Finishing takes another pass and skips anything Cmdr still isn’t sure about.",
+  "@operationLog.rollback.partiallyRolledBackNotice": {
+    "description": "Shown under a row of the Operation log that is partly rolled back, next to the \"Finish rolling back\" button. Two jobs: tell the user what happened to their files (some came back, the rest are still where the operation left them), and say what finishing will do. Deliberately doesn't promise a complete reversal: the leftovers may be files Cmdr can't match against what it recorded, and those get skipped again. \"Takes another pass\" means it goes over the operation once more. Reassuring and matter-of-fact; avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
   },
 
   "operationLog.rollback.refusalAlreadyRollingBack": "This one is already rolling back. Watch it in the queue.",
