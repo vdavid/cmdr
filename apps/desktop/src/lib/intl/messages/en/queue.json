@@ -49,6 +49,16 @@
     "description": "Names an operation row that is UNDOING a finished rename: the files get their old names back, and nothing moves or is deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRenamingBack).",
     "screenshot": "queue.png"
   },
+  "queue.row.reversalInFolder": "in {folder}",
+  "@queue.row.reversalInFolder": {
+    "description": "Names the folder a removal reversal is clearing, shown right after the row label \"Deleting what it created\". A reversal that only deletes has no destination to point an arrow at, so its one folder name would otherwise sit alone and read like the folder itself is about to go. The preposition is what says the deleting happens INSIDE that folder. Keep it to a few words: it shares one line with the label, and the full path is in the tooltip.",
+    "placeholders": {
+      "folder": {
+        "type": "String",
+        "example": "Backup"
+      }
+    }
+  },
 
   "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Canceled} failed {Couldn''t finish} other {Running}}",
   "@queue.row.status": {

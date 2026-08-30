@@ -31,6 +31,10 @@
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
   },
+  "queue.row.reversalInFolder": "em {folder}",
+  "@queue.row.reversalInFolder": {
+    "sourceHash": "da9d7fa"
+  },
   "queue.row.status": "{status, select, queued {Aguardando} running {Em andamento} paused {Pausado} done {Concluído} cancelled {Cancelado} failed {Não foi possível concluir} other {Em andamento}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"

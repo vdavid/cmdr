@@ -31,6 +31,10 @@
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
   },
+  "queue.row.reversalInFolder": "trong {folder}",
+  "@queue.row.reversalInFolder": {
+    "sourceHash": "da9d7fa"
+  },
   "queue.row.status": "{status, select, queued {Đang chờ} running {Đang chạy} paused {Đã tạm dừng} done {Xong} cancelled {Đã hủy} failed {Chưa hoàn tất được} other {Đang chạy}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"

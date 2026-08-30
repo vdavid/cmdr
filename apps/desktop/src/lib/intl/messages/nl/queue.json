@@ -31,6 +31,11 @@
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
   },
+  "queue.row.reversalInFolder": "in {folder}",
+  "@queue.row.reversalInFolder": {
+    "sourceHash": "da9d7fa",
+    "sameAsSourceJustification": "Dutch shares the preposition \"in\" with English for a folder location (macOS nl Finder: \"Search in ^1\" -> \"Zoek in '^1'\", \"items in ^0\" -> \"onderdelen in '^0'\"); the rest of the string is the placeholder. Nearby nl catalog strings keep it bare and unquoted too (\"Bezig in {destination}\", \"Selectie bewaard in {name}\")."
+  },
   "queue.row.status": "{status, select, queued {Wachten} running {Bezig} paused {Gepauzeerd} done {Gereed} cancelled {Geannuleerd} failed {Niet voltooid} other {Bezig}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"

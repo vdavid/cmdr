@@ -2296,6 +2296,7 @@ export type MessageKey =
   | 'queue.row.resume'
   | 'queue.row.resumeAria'
   | 'queue.row.reversalDeleting'
+  | 'queue.row.reversalInFolder'
   | 'queue.row.reversalMovingBack'
   | 'queue.row.reversalRenamingBack'
   | 'queue.row.selectAria'

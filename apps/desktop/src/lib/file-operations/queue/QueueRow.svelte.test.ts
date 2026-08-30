@@ -261,6 +261,31 @@ describe('QueueRow', () => {
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Paused')
   })
 
+  it('names the folder a removal reversal is clearing, so it cannot read as the folder going away', () => {
+    // A removal reversal has no destination, so no arrow renders and the one path
+    // it does show sits against "Deleting what it created". Bare, that reads as
+    // "delete /Volumes/Backup" — the exact misread this preposition removes.
+    const base = buildReversalRow('copy', 'delete')
+    render({
+      row: {
+        ...base,
+        snapshot: { ...base.snapshot, source: '/Volumes/Backup', destination: null },
+      },
+    })
+    expect(target.querySelector('.summary-row')?.textContent.replace(/\s+/g, ' ').trim()).toBe(
+      'Deleting what it created in Backup',
+    )
+  })
+
+  it('leaves a restoring reversal its arrow, which already says which way the files go', () => {
+    render({ row: buildReversalRow('move', 'move') })
+    const summary = target.querySelector('.summary-row')?.textContent.replace(/\s+/g, ' ').trim() ?? ''
+    expect(summary).toContain('report.pdf')
+    // Only the destination-less shape needs the preposition; adding it here would
+    // read as "putting files back in report.pdf".
+    expect(summary).not.toContain('in report.pdf')
+  })
+
   it('offers no Rollback on a reversal: there is nothing left to undo', () => {
     render({ row: buildReversalRow('move', 'move') })
     expect(rollbackButton()).toBeNull()

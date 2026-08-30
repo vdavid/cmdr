@@ -198,6 +198,17 @@
     const sourceName = $derived(basename(snapshot.source))
     const destName = $derived(basename(snapshot.destination))
 
+    /** A removal reversal has no destination, so the arrow that gives every other
+     *  row its direction never renders and the lone folder name sits against
+     *  "Deleting what it created" reading as the thing about to go. The preposition
+     *  is what puts it back where it belongs: the reversal clears files INSIDE that
+     *  folder. Only this shape needs it; every other row already has its arrow. */
+    const sourcePhrase = $derived(
+        reversalVariant === 'undoByDeleting' && snapshot.destination === null
+            ? tString('queue.row.reversalInFolder', { folder: sourceName })
+            : sourceName,
+    )
+
     /** Rollback is one click from unrecoverable (a file it overwrote has no
      *  backup), and it sits beside a Cancel that keeps everything. So the click
      *  raises the question instead of the deletion. `../DETAILS.md` §
@@ -222,7 +233,7 @@
     <div class="summary-row">
         <span class="op-label">{label}</span>
         {#if snapshot.source}
-            <span class="path" use:tooltip={{ text: snapshot.source, overflowOnly: true }}>{sourceName}</span>
+            <span class="path" use:tooltip={{ text: snapshot.source, overflowOnly: true }}>{sourcePhrase}</span>
         {/if}
         {#if snapshot.destination}
             <span class="arrow" aria-hidden="true">&#x2192;</span>

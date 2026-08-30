@@ -31,6 +31,10 @@
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
   },
+  "queue.row.reversalInFolder": "a(z) {folder} mappában",
+  "@queue.row.reversalInFolder": {
+    "sourceHash": "da9d7fa"
+  },
   "queue.row.status": "{status, select, queued {Várakozik} running {Fut} paused {Szüneteltetve} done {Kész} cancelled {Megszakítva} failed {Nem sikerült befejezni} other {Fut}}",
   "@queue.row.status": {
     "sourceHash": "8e9ce48"

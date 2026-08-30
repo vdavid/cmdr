@@ -285,6 +285,15 @@ click deletes the same files. Rollback hides again once the op IS rolling back, 
 `write-progress` phase: rollback is an `OperationIntent`, so the lifecycle status stays `running` throughout, and the
 status cell shows "Rolling back..." instead.
 
+The summary beside the label is `basename(source)`, then an arrow and `basename(destination)` when there is one, with
+the full paths in tooltips. A REMOVAL reversal (undoing a copy, a new file or folder, or a compress) has no destination,
+so no arrow renders and its single folder name lands right against "Deleting what it created", reading as though that
+folder is the thing about to go. So that one shape wraps the name in `queue.row.reversalInFolder` ("in {folder}"), which
+puts it back where it belongs: the reversal is clearing files INSIDE it. Only that shape needs it; every other row
+already has the arrow to say which way things move, and "Putting files back in report.pdf" would be a fresh nonsense.
+The Rust side of the summary is `InverseSummary` / `summarize_inverse` (`src-tauri/src/operation_log/rollback.rs`),
+which fills `from` for a removal and both `from` and `to` for a restore.
+
 A row is a five-column grid whose chrome (select, type icon, source→dest summary, status, actions) sits on line 1, with
 the shared `../TransferProgressReadout.svelte` spanning line 2 from the summary column to the end. The readout gets the
 full row width rather than a slot beside the buttons because its columns are fixed-width: sharing a line with the status
