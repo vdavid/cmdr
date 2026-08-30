@@ -16,6 +16,9 @@ volume arbitrates through. The registry and phase machine are `../CLAUDE.md`.
   its caller chose, because its ground changes hands the moment it lets go and the next holder reads the DATABASE to
   decide what is virgin. **`CoverOutcome::abandoned_ground` is independent of every other field**: ❌ any caller
   reporting completeness must consult it.
+- **A typed disconnect ends the WHOLE frontier, not one root** (`RootOutcome::VolumeGone`): the roots behind it share
+  the volume's one session, so re-asking buys a dead round trip each. ⚠️ Skipped is not condemned — nothing walks them,
+  so nothing marks them and they stay frontier. ❌ Never widen the trigger past `is_terminal_disconnect`.
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly), ❌
   never behind `with_running_manager` — a walk ending in a `Detached`/`ShuttingDown` window would hold that ground
   forever.

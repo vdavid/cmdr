@@ -2,10 +2,11 @@
 //!
 //! Two kinds of thing live here. `drain` is what every one of them does to a
 //! walk. The rest is the `Volume`-trait scaffolding `network_tests.rs` and
-//! `network_give_up_tests.rs` run on: a share driven through the public handle,
-//! and the hand-rolled backends that record, stall, double, refuse, or go away. They're here rather than beside the tests
-//! because they're ~350 lines of `Pin<Box<dyn Future>>` ceremony that says nothing
-//! about what any single test is checking.
+//! `network_give_up_tests.rs` run on: a share driven through the public handle, and
+//! the hand-rolled backends that record, stall, double, refuse, or stop answering.
+//! They're here rather than beside the tests because they're ~600 lines of
+//! `Pin<Box<dyn Future>>` ceremony that says nothing about what any single test is
+//! checking.
 //!
 //! The single-file fixtures stay with their tests: the temp-tree `Fixture` in
 //! `tests.rs`, the `ColdDrive` in `cold_drive_tests.rs`.
@@ -159,12 +160,19 @@ impl Share {
 
     /// Start a walk over one scope, with the token that stops it.
     pub(super) fn walk(&self, scope: &str) -> (CoverWalk, CancellationToken) {
+        self.walk_all(&[scope])
+    }
+
+    /// The same over a whole frontier, walked in the order given. What a search
+    /// asks for once its scope has more than one uncovered node under it, which is
+    /// the ordinary shape on a share nobody has indexed.
+    pub(super) fn walk_all(&self, scopes: &[&str]) -> (CoverWalk, CancellationToken) {
         let cancel = CancellationToken::new();
         let walk = self
             .index
             .cover(
                 self.volume_id,
-                vec![scope.to_string()],
+                scopes.iter().map(|s| (*s).to_string()).collect(),
                 CoverageDimension::Listing,
                 cancel.clone(),
             )
@@ -560,5 +568,144 @@ impl Volume for GoesAway {
     }
     fn is_directory<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<bool, VolumeError>> {
         self.inner.is_directory(path)
+    }
+}
+
+// ── A share that can be taken away mid-test ──────────────────────────
+
+/// How a share stops being there, in the two shapes the walk reads as the VOLUME
+/// going away rather than one directory refusing.
+#[derive(Clone, Copy)]
+pub(super) enum Gone {
+    /// The backend knows its session died and says so. Its own arm in the walk,
+    /// which stops on the first one.
+    Typed,
+    /// A connection reset, which arrives as a plain `IoError` and is
+    /// indistinguishable from one unlistable directory until enough of them pile
+    /// up. What the consecutive-failure backstop exists for.
+    Untyped,
+}
+
+impl Gone {
+    fn as_error(self) -> VolumeError {
+        match self {
+            Self::Typed => VolumeError::DeviceDisconnected("test: the session is gone".into()),
+            Self::Untyped => VolumeError::IoError {
+                message: "test: connection reset by peer".into(),
+                raw_os_error: None,
+            },
+        }
+    }
+}
+
+/// A share a test can take away partway through, recording every listing it was
+/// asked for.
+///
+/// ⚠️ The RECORD is the point, not a count of failures. "The walk stopped after the
+/// first root" is a claim about which round trips it paid for, and neither the
+/// outcome nor a wall clock can tell that apart from a walk that visited every root
+/// and failed fast at each.
+pub(super) struct StopsAnswering {
+    inner: InMemoryVolume,
+    /// How this share fails once it has gone. `None` while it is healthy.
+    gone: Mutex<Option<Gone>>,
+    /// Listings still answered before it goes. A test aiming at the backstop needs
+    /// one: a root that won't list is its OWN branch in the walk and never reaches
+    /// the failure run.
+    answers_left: AtomicI64,
+    /// Paths that time out while the share itself stays healthy.
+    wedged: Mutex<Vec<PathBuf>>,
+    listed: Mutex<Vec<PathBuf>>,
+}
+
+impl StopsAnswering {
+    /// Answer `answers` more listings, then fail every one after that.
+    pub(super) fn go_away_after(&self, answers: i64, how: Gone) {
+        self.answers_left.store(answers, Ordering::SeqCst);
+        *self.gone.lock_ignore_poison() = Some(how);
+    }
+
+    /// Time out on these paths while the share itself keeps answering: one wedged
+    /// directory on a live share, which is the case that must NOT read as a
+    /// disconnect.
+    pub(super) fn wedge(&self, paths: &[String]) {
+        *self.wedged.lock_ignore_poison() = paths.iter().map(PathBuf::from).collect();
+    }
+
+    /// Stop timing out, as a directory that comes back does.
+    pub(super) fn unwedge_everything(&self) {
+        self.wedged.lock_ignore_poison().clear();
+    }
+
+    /// Every listing this share has been asked for, in order.
+    pub(super) fn listings(&self) -> Vec<PathBuf> {
+        self.listed.lock_ignore_poison().clone()
+    }
+
+    /// The listings since `mark`, so a two-phase test asserts on what the SECOND
+    /// walk paid for rather than on the setup that came before it.
+    pub(super) fn listings_since(&self, mark: usize) -> Vec<PathBuf> {
+        self.listed.lock_ignore_poison()[mark..].to_vec()
+    }
+}
+
+impl Volume for StopsAnswering {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Fut<'a, Result<Vec<FileEntry>, VolumeError>> {
+        self.listed.lock_ignore_poison().push(path.to_path_buf());
+        if let Some(how) = *self.gone.lock_ignore_poison()
+            && self.answers_left.fetch_sub(1, Ordering::SeqCst) <= 0
+        {
+            return Box::pin(async move { Err(how.as_error()) });
+        }
+        if self.wedged.lock_ignore_poison().iter().any(|wedged| wedged == path) {
+            return Box::pin(async { Err(VolumeError::ConnectionTimeout("test: no answer".into())) });
+        }
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<FileEntry, VolumeError>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Fut<'a, bool> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<bool, VolumeError>> {
+        self.inner.is_directory(path)
+    }
+}
+
+impl Share {
+    /// A share that answers until a test takes it away, handed back alongside the
+    /// backend that decides when.
+    pub(super) fn that_stops_answering(
+        volume_id: &'static str,
+        build: impl FnOnce(&Tree) -> Vec<FileEntry>,
+    ) -> (Self, Arc<StopsAnswering>) {
+        let mut backend = None;
+        let share = Self::with_volume(volume_id, |root| {
+            let tree = Tree(root.to_string());
+            let volume = Arc::new(StopsAnswering {
+                inner: InMemoryVolume::with_entries("Share", build(&tree)).with_root(root),
+                gone: Mutex::new(None),
+                answers_left: AtomicI64::new(0),
+                wedged: Mutex::new(Vec::new()),
+                listed: Mutex::new(Vec::new()),
+            });
+            backend = Some(Arc::clone(&volume));
+            volume as Arc<dyn Volume>
+        });
+        (share, backend.expect("the backend is built while registering"))
     }
 }

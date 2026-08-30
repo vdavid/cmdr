@@ -524,6 +524,10 @@ fn walk_roots(
                 break;
             }
             RootOutcome::Failed => {}
+            // The roots behind it are on that same volume and that same session, so
+            // asking each of them buys a round trip that can't come back: up to
+            // `LIST_TIMEOUT` (120 s) apiece, times a frontier of thousands.
+            RootOutcome::VolumeGone => break,
         }
     }
     outcome
@@ -675,6 +679,19 @@ impl Ground {
                 match result {
                     Ok(summary) => (Some(summary), RootOutcome::Covered),
                     Err(VolumeScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
+                    // The one classification that says something about the VOLUME
+                    // rather than about this root. ⚠️ Narrower than "the root failed"
+                    // on purpose: a `Timeout` is one wedged directory on a share that
+                    // is otherwise answering, and an `EmptyRoot` is no health claim
+                    // at all.
+                    Err(e) if e.is_terminal_disconnect() => {
+                        log::warn!(
+                            "Cover: '{}' went away while walking {}: {e}; leaving the rest of the frontier for the next search",
+                            context.volume_id,
+                            root.display(),
+                        );
+                        (None, RootOutcome::VolumeGone)
+                    }
                     Err(e) => {
                         log::warn!("Cover: couldn't walk {}: {e}", root.display());
                         (None, RootOutcome::Failed)
@@ -738,6 +755,17 @@ enum RootOutcome {
     Cancelled,
     /// It couldn't run. The node stays frontier and the next search asks again.
     Failed,
+    /// The VOLUME is gone, and this root is only where the walk found out. Every
+    /// root behind it is on the same volume and the same session, so the frontier
+    /// loop stops rather than re-asking a question that can't be answered.
+    ///
+    /// ⚠️ [`Failed`](Self::Failed) for this root plus a verdict about the rest, and
+    /// that is the whole of it: a root the loop skips is walked by nothing, so it is
+    /// marked by nothing and stays frontier. ❌ Never write, mark, or count anything
+    /// for a skipped root — that would turn "the NAS is asleep" into thousands of
+    /// folders written out of search. `DETAILS.md` § "A dead volume is concluded
+    /// once, not per root".
+    VolumeGone,
 }
 
 mod bootstrap;

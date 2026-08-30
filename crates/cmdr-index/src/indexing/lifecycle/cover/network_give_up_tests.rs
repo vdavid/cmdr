@@ -12,7 +12,7 @@
 //! The rest of the trait-walk suite is `network_tests.rs`, and the harness both
 //! run on is `test_support.rs`.
 
-use super::test_support::{Share, Tree, drain};
+use super::test_support::{Gone, Share, StopsAnswering, Tree, drain};
 
 /// The tree every give-up test walks: one directory that won't list, a sibling
 /// that will, and something one level under the sibling.
@@ -370,5 +370,161 @@ fn a_shares_give_ups_arm_the_retry_backoff() {
         share.retry_window_is_open(),
         "the share's own index carries an open retry window, so the ground it gave up \
          on is reopened on the backoff rather than written off for good"
+    );
+}
+
+// ── When it is the SHARE that failed, not the root ───────────────────
+
+/// Three sibling roots on one share, each with a row and none of them covered.
+///
+/// A frontier root is a directory the index has a row for and no listing of, and
+/// the only thing that writes such a row is a walk that saw the name and couldn't
+/// read inside it — so the setup wedges all three through a first walk. Nothing
+/// answers after them, so none is written off, which is the same rule the tests
+/// above pin.
+fn three_uncovered_roots(share: &Share, backend: &StopsAnswering) -> [String; 3] {
+    let roots = [share.path("scope/a"), share.path("scope/b"), share.path("scope/c")];
+    backend.wedge(&roots);
+    let (_, outcome) = drain(share.walk(&share.path("scope")).0);
+    assert_eq!(outcome.roots_covered, 1, "the scope itself was walked");
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the three roots to settle onto the frontier",
+        || share.coverage(&share.path("scope")).frontier.len() == 3,
+    );
+    backend.unwedge_everything();
+    roots
+}
+
+/// The share is gone, and the walk concludes that ONCE.
+///
+/// ⚠️ The frontier loop is the expensive half. A root that can't be listed costs up
+/// to `LIST_TIMEOUT` (120 s) over a share, and a cold NAS hands the walk a frontier
+/// of thousands — so rediscovering "there is nothing there" per root turns a dead
+/// share into hours of round trips that were never going to answer. What the loop
+/// stops on is the TYPED verdict (`VolumeScanError::is_terminal_disconnect`), never
+/// elapsed silence.
+#[test]
+fn a_share_that_is_gone_stops_the_whole_frontier_rather_than_every_root() {
+    let (share, backend) = Share::that_stops_answering("cover-share-gone-frontier-test", |t| {
+        vec![t.dir("scope"), t.dir("scope/a"), t.dir("scope/b"), t.dir("scope/c")]
+    });
+    let roots = three_uncovered_roots(&share, &backend);
+    let mark = backend.listings().len();
+    backend.go_away_after(0, Gone::Typed);
+
+    let scopes: Vec<&str> = roots.iter().map(String::as_str).collect();
+    let (_, outcome) = drain(share.walk_all(&scopes).0);
+
+    let paid = backend.listings_since(mark);
+    assert_eq!(
+        paid.len(),
+        1,
+        "one root's listing said the share is gone, and the walk asked no other root the same question: {paid:?}"
+    );
+    assert_eq!(outcome.roots_covered, 0, "it covered nothing, and says so");
+    assert!(
+        !outcome.cancelled,
+        "nobody stopped it — it concluded, which is different"
+    );
+}
+
+/// The same conclusion reached the other way, and it condemns nothing.
+///
+/// A connection reset arrives untyped, so the walk only learns the share is gone
+/// once the consecutive-failure backstop trips inside one root. That verdict is
+/// worth exactly as much as the typed one, so the roots behind it are skipped too —
+/// and ⚠️ SKIPPED is all they are: not one of them is written off, and every one is
+/// still on the frontier for the search after the NAS wakes up.
+#[test]
+fn the_failure_backstop_tripping_in_one_root_spares_the_roots_behind_it() {
+    let (share, backend) = Share::that_stops_answering("cover-share-backstop-frontier-test", |t| {
+        let mut entries = vec![t.dir("scope"), t.dir("scope/a"), t.dir("scope/b"), t.dir("scope/c")];
+        // Comfortably past `CONSECUTIVE_FAILURE_ABORT`, so the run of failures
+        // inside `a` reaches the backstop rather than draining the queue.
+        for i in 0..40 {
+            entries.push(t.dir(&format!("scope/a/d{i}")));
+        }
+        entries
+    });
+    let [a, b, c] = three_uncovered_roots(&share, &backend);
+    let mark = backend.listings().len();
+    // One more answer: `a`'s own listing. A root that won't list is its own branch
+    // in the walk and never reaches the failure run.
+    backend.go_away_after(1, Gone::Untyped);
+
+    let (_, outcome) = drain(share.walk_all(&[&a, &b, &c]).0);
+
+    let paid = backend.listings_since(mark);
+    assert!(
+        !paid.contains(&std::path::PathBuf::from(&b)) && !paid.contains(&std::path::PathBuf::from(&c)),
+        "the walk had already concluded the share is gone, so it asked neither of the roots behind it: {paid:?}"
+    );
+    assert_eq!(outcome.roots_covered, 0, "it gave up on the share, not on a folder");
+
+    let covered = share.coverage(&share.path("scope"));
+    assert!(
+        covered.abandoned.is_empty(),
+        "❌ a share that went away writes off nothing, the skipped roots least of all: {covered:?}"
+    );
+    // `a` itself listed before the share went, so it IS covered and its 40 children
+    // took its place on the frontier. What matters is that none of them, and neither
+    // root behind them, was written off for a share that will answer again.
+    for still_to_walk in [&b, &c] {
+        assert!(
+            covered.frontier.contains(still_to_walk),
+            "{still_to_walk} stays frontier, so the search after the share wakes up simply walks it: {covered:?}"
+        );
+    }
+    assert_eq!(
+        covered.frontier.len(),
+        42,
+        "and so does every directory the walk had queued under `a`: {covered:?}"
+    );
+}
+
+/// One wedged directory is NOT the share going away, and the roots behind it are
+/// walked normally.
+///
+/// ⚠️ The case the short-circuit must not swallow, and the reason it keys on the
+/// typed verdict rather than on a root that failed: a directory that won't answer
+/// is ordinary on a healthy share, and reading it as a disconnect would strand
+/// every root behind it over a share that was answering the whole time.
+///
+/// `ConnectionTimeout` stands in for the walk's own `LIST_TIMEOUT` race, which a
+/// unit test can't provoke without waiting 120 s. It is the closest thing to a
+/// disconnect that still isn't one, which is exactly the line under test.
+#[test]
+fn a_root_that_times_out_leaves_the_rest_of_the_frontier_walked() {
+    let (share, backend) = Share::that_stops_answering("cover-share-wedged-root-test", |t| {
+        vec![
+            t.dir("scope"),
+            t.dir("scope/a"),
+            t.file("scope/a/inside-a.txt", 1),
+            t.dir("scope/b"),
+            t.file("scope/b/inside-b.txt", 2),
+            t.dir("scope/c"),
+            t.file("scope/c/inside-c.txt", 3),
+        ]
+    });
+    let [a, b, c] = three_uncovered_roots(&share, &backend);
+    // The share itself keeps answering; one root doesn't.
+    backend.wedge(std::slice::from_ref(&a));
+
+    let (_, outcome) = drain(share.walk_all(&[&a, &b, &c]).0);
+
+    assert_eq!(
+        outcome.roots_covered, 2,
+        "the two answering roots were walked; only the wedged one wasn't"
+    );
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the two walked roots to leave the frontier",
+        || share.coverage(&share.path("scope")).frontier == vec![a.clone()],
+    );
+    let covered = share.coverage(&share.path("scope"));
+    assert!(
+        !covered.frontier.contains(&b) && !covered.frontier.contains(&c),
+        "neither root behind the wedged one was stranded: {covered:?}"
     );
 }

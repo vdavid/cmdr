@@ -50,7 +50,36 @@ reason, so a cancelled walk can't leave the pool standing.
 **Terminal states.** `CoverOutcome.cancelled` separates "the index answers for this scope now" from "somebody stopped
 us", which are different phases in the UI. Neither is a failure: a cancelled walk still left every directory it read
 marked, so the next walk resumes rather than restarts. One frontier root that can't be walked doesn't stop the others —
-it stays frontier, and the next `coverage` call names it again.
+it stays frontier, and the next `coverage` call names it again. The one thing that DOES stop them is the volume itself
+going away, below.
+
+**A dead volume is concluded once, not per root** (`RootOutcome::VolumeGone`). Re-discovering that a share has stopped
+answering costs whatever the frontier size multiplies it by: over a share a listing that can't be answered runs to
+`LIST_TIMEOUT` (120 s), a cold NAS hands the walk a frontier of thousands of roots, and browsing that share drops the
+in-flight budget to one (`network_scanner/scan_pace.rs`), so those roots serialize. So the loop stops at the first root
+whose walk ends `VolumeScanError::is_terminal_disconnect()`.
+
+- **The trigger is exactly that predicate**, which the whole-volume scan's completion handler already acts on: a typed
+  `DeviceDisconnected`, or the consecutive-failure backstop reaching the same verdict about a reset that arrived
+  untyped. ❌ Never widen it to "the root failed". A `Timeout` is one wedged directory on a share that is otherwise
+  answering, and an `EmptyRoot` is not a health claim at all — reading either as a disconnect would strand every root
+  behind an ordinary bad folder.
+- **Skipping is sound because one walk is one volume.** Every root in a frontier belongs to the same `volume_id`, so it
+  resolves to one `Arc<dyn Volume>` and, over SMB, one session (connection health belongs to the SHARE, not to a mount
+  root — `crates/cmdr-smb/src/volume/state.rs`). A second export that is still up is a different volume id and a
+  different walk, so partial reachability can't be hit here.
+- **Skipped is not condemned, and that is what makes it safe.** A root the loop never reaches is walked by nothing, so
+  it is marked by nothing and stays frontier — indistinguishable from a root that failed. The walk declines to pay for a
+  listing that was going to fail; it gives up no recoverable ground. The marking rule this rests on is single-sourced in
+  `network_scanner/DETAILS.md` § "A failed listing is held until the share answers again".
+- **The same conclusion is drawn elsewhere in this crate**, which is the precedent to copy rather than a new idea:
+  `media_index/network/enrich.rs` pauses a whole enrichment pass on the first typed disconnect and resumes off the
+  registration bus, for the reason a retry would only re-hit the dead transport.
+- **What it does NOT catch**, so nobody reads the bound as tighter than it is: a root whose OWN listing fails is its own
+  branch (`network_scanner/cover_scan.rs`, the `dir_path == root` arm), and an untyped `IoError` or a `LIST_TIMEOUT`
+  there is not a health claim, so a share that is dead at every root listing still pays one round trip per root. The
+  same holds one step earlier, in `bootstrap::ensure_walkable`: a root with no `entries` row is stat'd before it is
+  walked, and that stat is per root too.
 
 **Ownership and cancellation.** `cover_context_for` matches `IndexPhase::Running` only, so a walk reuses the volume's
 existing writer and never stands a second one up (two writers on one DB race the id counter and the accumulator maps).
