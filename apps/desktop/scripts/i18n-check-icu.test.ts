@@ -38,6 +38,18 @@ describe('icuError: pure classifier', () => {
     // A lone apostrophe + literal <…> is valid raw copy but invalid ICU; must be skipped.
     expect(icuError('errors.x.suggestion', "Here's why, see <folder-path>")).toBeNull()
   })
+
+  it('flags an ICU-doubled apostrophe in a NATIVE value, which Rust prints verbatim', () => {
+    // `menu.*` reaches the real macOS menu bar through Rust, with no ICU engine to
+    // collapse the pair, so `''` puts two apostrophes in the menu bar.
+    expect(icuError('menu.app.hide', "Hide Cmdr''s window")).toMatch(/doubled apostrophe/)
+    expect(icuError('errors.x.suggestion', "Cmdr can''t reach it")).toMatch(/doubled apostrophe/)
+  })
+
+  it('leaves a SINGLE apostrophe alone in a raw value, and a doubled one alone in an ICU value', () => {
+    expect(icuError('menu.app.hide', "Hide Cmdr's window")).toBeNull()
+    expect(icuError('a.b', "Cmdr can''t reach it")).toBeNull()
+  })
 })
 
 describe('runIcuCheck against the committed fixture', () => {
@@ -79,6 +91,25 @@ describe('runIcuCheck negative cases (temp catalog copies)', () => {
     expect(text.match(/^ {2}- /gm)?.length).toBe(1)
   })
 
+  it('flags a raw value that carries ICU escaping', () => {
+    const xa = read()
+    xa['errors.fixture.suggestion'] = "Ċṁḋŕ çáñ''ţ ŕéáçḣ {system_settings}."
+    writeXa(xa)
+    const { code, text } = run()
+    expect(code).toBe(EXIT_ISSUES)
+    expect(text).toMatch(/errors\.fixture\.suggestion → .*doubled apostrophe/)
+  })
+
+  it('checks the BASE catalog too: its raw families follow the same rule', () => {
+    const enFile = join(root, 'en', 'fixture.json')
+    const en = JSON.parse(readFileSync(enFile, 'utf8')) as Record<string, string>
+    en['errors.fixture.suggestion'] = "Cmdr can''t reach {system_settings}."
+    writeFileSync(enFile, JSON.stringify(en, null, 2) + '\n', 'utf8')
+    const { code, text } = run()
+    expect(code).toBe(EXIT_ISSUES)
+    expect(text).toMatch(/en: 1 message/)
+  })
+
   it('does NOT flag a raw errors.* value that is invalid ICU', () => {
     const xa = read()
     // Lone apostrophe + literal <…>: invalid ICU, valid raw error copy.
@@ -101,10 +132,10 @@ describe('no-locales path (only en)', () => {
     rmSync(root, { recursive: true, force: true })
   })
 
-  it('is a clean no-op', () => {
+  it('still checks en itself, since the family grammar is its rule too', () => {
     expect(localesToCheck(root)).toEqual([])
     const { lines, write } = capture()
     expect(runIcuCheck({ messagesRoot: root, write })).toBe(EXIT_CLEAN)
-    expect(lines.join('\n')).toMatch(/no non-en locales to check/)
+    expect(lines.join('\n')).toMatch(/en: clean\./)
   })
 })

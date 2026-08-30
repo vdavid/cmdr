@@ -512,8 +512,9 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "i18n-icu",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		// ERROR class: a non-`en` ICU message that doesn't compile via
-		// intl-messageformat throws at render time. Real CI gate.
+		// ERROR class: an ICU message that doesn't compile via intl-messageformat
+		// throws at render time, and ICU escaping in a RAW value renders verbatim
+		// (`''` puts two apostrophes in the real macOS menu bar). Real CI gate.
 		DependsOn: nil,
 		IsFast:    true,
 		Inputs:    inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),

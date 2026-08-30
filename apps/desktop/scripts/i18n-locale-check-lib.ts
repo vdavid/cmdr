@@ -207,6 +207,14 @@ export interface RunLocaleCheckOptions {
   summaryLine?: SummaryLine
   messagesRoot?: string
   write?: (line: string) => void
+  /**
+   * Inspect `en` as well. Off by default, because most of these checks ask how a
+   * locale stands against its SOURCE, and `en` is that source. A check whose rule
+   * is about a catalog's own syntax rather than its relationship to a source (the
+   * ICU/raw family grammar) applies to `en` too, and turns this on. `en` is then
+   * handed itself as its source, which is the honest answer for such a rule.
+   */
+  includeBaseLocale?: boolean
 }
 
 /**
@@ -228,9 +236,10 @@ export function runLocaleCheck({
   summaryLine,
   messagesRoot,
   write,
+  includeBaseLocale = false,
 }: RunLocaleCheckOptions): number {
   const available = listLocales(messagesRoot)
-  const locales = nonBaseLocales(available)
+  const locales = includeBaseLocale ? available : nonBaseLocales(available)
   // One catalog read per tag, however many locales point at it as their source.
   const loaded = new Map<string, Catalog>()
   const load = (tag: string): Catalog => {

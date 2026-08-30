@@ -393,7 +393,8 @@ assembler). Translate each fragment so the assembled phrase reads naturally in y
 your language orders the parts differently, the *Join key is where the order is expressed.
 
 RAW FAMILIES (no ICU): errors.* plus the NATIVE ones Rust draws (menu.*, licensing.windowTitle.*, main.instanceLock.*).
-In all of them, use NORMAL apostrophes (doesn't, not doesn''t — a doubled '' renders as TWO apostrophes on a real menu),
+In all of them, use NORMAL apostrophes (doesn't, not doesn''t — a doubled '' renders as TWO apostrophes on a real menu,
+which desktop-i18n-icu now fails the build over),
 keep {token} verbatim as a literal replacement target (never add ICU formatting), treat <…> as literal text, and pass
 markdown (#, **, backticks) through untouched. The catalog's @key context flags these. Full note: i18n.md § Error
 pipeline; the native split is isRawKey() in apps/desktop/scripts/i18n-catalog-lib.ts.

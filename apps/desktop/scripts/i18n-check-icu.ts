@@ -8,13 +8,22 @@
  * is a runtime crash, not a typo, so this FAILS the build (Go wrapper maps exit
  * 1 → ERROR).
  *
- * The raw `errors.*` family is EXCLUDED (`isRawKey`): it resolves through
- * `getMessage()` (a raw lookup, no ICU), and its `{system_settings}` tokens,
- * literal `<…>` text, markdown, and lone apostrophes deliberately are NOT valid
- * ICU: running them through the ICU parser would false-flag valid raw copy. The
- * raw family's structure is guarded by the parity check's `{token}` comparison
- * instead. (The pseudolocale generator makes the same split via `isRawKey`, so
- * the fixture's raw value stays raw and is correctly skipped here.)
+ * The RAW families (`isRawKey`: `errors.*` plus the native `menu.*` /
+ * `licensing.windowTitle.*` / `main.instanceLock.*` that Rust draws) are not
+ * parsed as ICU. They resolve through `getMessage()` / `menu_t`, and their
+ * `{system_settings}` tokens, literal `<…>` text, markdown, and lone apostrophes
+ * deliberately are NOT valid ICU: running them through the parser would
+ * false-flag valid raw copy. Their `{token}`s are guarded by the parity check.
+ *
+ * What they get INSTEAD is the mirror rule: a raw value must not carry ICU
+ * escaping. `''` is ICU's escape for one apostrophe, and nothing collapses it on
+ * the raw path, so `Cmdr can''t` puts two apostrophes in the real macOS menu bar.
+ * The two rules together are one question, "is this value written in the grammar
+ * of its own family?", which is why one check owns both.
+ *
+ * `en` is checked too (`includeBaseLocale`), unlike in the other locale checks:
+ * this rule is about a catalog's own syntax, not about how a translation stands
+ * against its source, so the base catalog is subject to it as much as any locale.
  *
  * Run: `pnpm i18n:check-icu` (desktop) or `node scripts/i18n-check-icu.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
@@ -24,13 +33,20 @@ import { parseMessage, isRawKey } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
- * Returns the ICU parse error for a locale value, or `null` if it compiles (or is
- * a raw key, which isn't ICU). Exposed for unit tests.
- * @param key the message key (used to skip the raw `errors.*` family)
+ * Returns what's wrong with a value's syntax for ITS family, or `null` if it's
+ * fine: an ICU parse error for an ICU key, ICU escaping for a raw one. Exposed
+ * for unit tests.
+ * @param key the message key (decides which family's grammar applies)
  * @param localeValue the locale's value
  */
 export function icuError(key: string, localeValue: string): string | null {
-  if (isRawKey(key)) return null // raw errors.* aren't ICU; the parity check guards their tokens
+  if (isRawKey(key)) {
+    // No ICU engine on this path, so `''` is not an escape, it's two apostrophes
+    // on screen (in the real macOS menu bar, for the native families).
+    return localeValue.includes("''")
+      ? "ICU-doubled apostrophe ('') in a raw value: nothing collapses it here, so it renders as two apostrophes; write a single '"
+      : null
+  }
   const r = parseMessage(localeValue)
   if (r.ok) return null
   // Collapse newlines so a multi-line parser message stays on one finding line.
@@ -44,10 +60,12 @@ export function icuError(key: string, localeValue: string): string | null {
  */
 export function runIcuCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
   return runLocaleCheck({
-    title: 'ICU validity',
+    title: 'Message syntax',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
-    summaryLine: (count) => `${String(count)} message(s) that don't compile as ICU (would crash at runtime):`,
+    includeBaseLocale: true,
+    summaryLine: (count) =>
+      `${String(count)} message(s) not written in their family's grammar (invalid ICU, or ICU escaping in a raw value):`,
     inspectLocale: ({ catalog, findings }) => {
       for (const [key, localeValue] of Object.entries(catalog.messages)) {
         const detail = icuError(key, localeValue)
@@ -64,7 +82,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     process.exit(runIcuCheck({ messagesRoot }))
   } catch (err) {
-    console.error(`Couldn't run the ICU-validity check: ${err instanceof Error ? err.message : String(err)}`)
+    console.error(`Couldn't run the message-syntax check: ${err instanceof Error ? err.message : String(err)}`)
     process.exit(EXIT_ERROR)
   }
 }
