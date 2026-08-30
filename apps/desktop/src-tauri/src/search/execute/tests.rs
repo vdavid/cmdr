@@ -14,7 +14,9 @@ use crate::search::ranking::ImportanceWeights;
 use crate::search::types::{PatternType, SearchResultEntry};
 use cmdr_index::ROOT_VOLUME_ID;
 
+mod live_drive;
 mod live_e2e;
+mod stalled_walk;
 
 // ── Synthetic index builder ──────────────────────────────────────────
 

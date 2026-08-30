@@ -176,6 +176,13 @@ pub struct CoverageMap {
     /// ⚠️ A reading, not a reservation: it can go stale immediately, and the walk
     /// request stays the authority on what a walk actually took.
     pub being_walked: Vec<String>,
+    /// How far the walks named in [`being_walked`](Self::being_walked) have got,
+    /// as one number that means something only by CHANGING between two readings:
+    /// it counts directory reads STARTED, so a caller waiting on that ground can
+    /// tell a slow walk from one that has stopped making progress. ❌ Never show
+    /// it and ❌ never read a single value as a count — it sums per-walk counters
+    /// and drops when a walk lets go (`cover::walk_pulse`).
+    pub walk_pulse: u64,
 }
 
 /// One directory's verdict during the descent.
@@ -245,6 +252,7 @@ pub(crate) fn coverage_on_volume(
         abandoned: Vec::new(),
         token: CoverageToken::UNINDEXED,
         being_walked: Vec::new(),
+        walk_pulse: 0,
     };
 
     let Some(pool) = get_read_pool_for(volume_id) else {
@@ -305,9 +313,11 @@ pub(crate) fn coverage_for_scope(
         declined,
         abandoned,
         token,
-        // Filled by `Index::coverage`, which sits above the walks: this half is a
-        // read of one database, and who is walking right now is process state.
+        // Both filled by `Index::coverage`, which sits above the walks: this half
+        // is a read of one database, and who is walking right now, and how far
+        // they have got, is process state.
         being_walked: Vec::new(),
+        walk_pulse: 0,
     })
 }
 

@@ -597,10 +597,7 @@ fn a_background_walk_hands_its_ground_to_the_walk_somebody_is_waiting_on() {
     let taken = Claim::preempt(
         &f.volume_id,
         vec![f.path("big")],
-        Holder::Walking {
-            yield_to: CancellationToken::new(),
-            for_whom: WalkFor::TheUser,
-        },
+        Holder::a_walk(CancellationToken::new(), WalkFor::TheUser),
         std::time::Duration::from_secs(30),
     );
     assert_eq!(taken.mine(), [f.path("big")], "precondition: the ground changed hands");

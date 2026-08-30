@@ -312,14 +312,15 @@ Three files, split along what a run decides before it emits anything: `execute.r
 the covered half both paths share; `execute/coverage.rs` holds the coverage model (`CoverageQuestion`,
 `UnreadableGround`, `coverage_of`, `coverage_scopes`, `coverage_kind`, `arena_for_coverage`), which is decided against
 the index alone and says nothing about reporting; `execute/live_run.rs` is the run itself (`start_live`,
-`run_live_collected`, `run_live_blocking`, `groundwork`, `wait_for_the_other_walk`). `start_live`,
+`run_live_collected`, `run_live_blocking`, `groundwork`, `wait_for_the_other_walk`, `StallWatch`). `start_live`,
 `run_live_collected`, and the two `AGENT_WAIT_*` budgets re-export through `execute` so callers keep one path.
 
 ### The shape
 
 1. **Ask what's uncovered** — `Index::coverage(volume, scope, Listing)` per scope path, merged. Frontier roots plus the
    directories nothing will walk, plus a `CoverageToken` naming the state of the index the answer describes, plus which
-   of those roots another walk is covering right now (`being_walked`).
+   of those roots another walk is covering right now (`being_walked`), and how far those walks have got
+   (`walk_pulse`).
 
    `UnreadableGround` keeps the three "nothing will walk this" lists apart exactly as the index does
    (`crates/cmdr-index`'s `UnreadableCause`, canonically `indexing/store/DETAILS.md` § "What coverage needs"):
@@ -354,6 +355,21 @@ reading as "no files found", under a note promising the files would turn up in a
 multi-second snapshot for nothing), then redoes the groundwork once and answers from what the walk wrote. That redo
 reloads the arena on a token mismatch without consulting the walk mark (`AfterAnotherWalk::Yes`): a run that watched a
 walk end knows rows landed, and the mark is a global one-shot somebody else may have taken.
+
+**The wait ends early on a walk that has STOPPED, never on a clock.** A walk is bounded, but the bound scales badly: a
+share that stopped answering fails one listing per 120 s `LIST_TIMEOUT`, and a share the user is browsing drops the walk
+to one listing in flight (`network_scanner/scan_pace.rs`), so 32 consecutive failures serialize into roughly an hour,
+times the number of frontier roots. So each poll reads `CoverageQuestion::walk_pulse` — the directory reads the walks
+holding this ground have STARTED (`lifecycle/cover/live/DETAILS.md` § "The pulse of a walk") — and `StallWatch` gives up
+after `OTHER_WALK_STALL` (30 s) without a single one.
+
+Why 30 s is defensible: one read may legitimately take the full 120 s timeout, but a cover walk keeps up to 64 listings
+in flight, so a healthy walk keeps STARTING reads while a slow one is outstanding. A walk that starts none for 30 s is
+one whose concurrency has collapsed onto a mount that isn't answering. ⚠️ The give-up is deliberately not a new state:
+the run `break`s out with no walk, which sets the same `unwalkable` flag a volume nobody can walk sets, so it answers
+with what it has as `WalkEnding::Interrupted` — a lower bound, in the words the UI already has. It does NOT stop the
+other walk, whose rows still land in the index for the next search. `execute/tests/stalled_walk.rs` pins all of it;
+`StallWatch` takes its clock as an argument, so the 30 s is tested at full size.
 
 ❌ Not when the index answered with something: those rows are worth showing now, and holding them back for somebody
 else's frontier would break Decision 11's promise that a refined query keeps what its predecessor covered. That run

@@ -364,6 +364,44 @@ fn a_whole_volume_holder_is_not_walking_the_ground_it_speaks_for() {
     );
 }
 
+/// The pulse a waiter reads: one number per WALK, however many roots it holds,
+/// moving only when the walk starts a directory read. A pulse that jumped with
+/// the shape of a frontier would read as progress nobody made, and a search
+/// waiting on a dead share would go on waiting.
+#[test]
+fn the_pulse_of_a_walk_counts_it_once_and_follows_its_reads() {
+    let dirs_scanned = Arc::new(AtomicU64::new(0));
+    let _walk = Claim::take(
+        "pulse-vol",
+        vec!["/a".to_string(), "/b".to_string()],
+        Holder::walking(CancellationToken::new(), WalkFor::TheIndex, Arc::clone(&dirs_scanned)),
+    );
+
+    let frontier = ["/a".to_string(), "/b".to_string(), "/a/inner".to_string()];
+    assert_eq!(
+        walk_pulse("pulse-vol", &frontier),
+        0,
+        "a walk that has started nothing yet"
+    );
+
+    dirs_scanned.fetch_add(3, Ordering::Relaxed);
+    assert_eq!(
+        walk_pulse("pulse-vol", &frontier),
+        3,
+        "three reads started, counted once each — not once per root the walk holds"
+    );
+}
+
+/// A scan is not a walk here either: it holds the volume without covering any
+/// particular root, so its progress can't stand in for the walk a waiter is
+/// waiting on.
+#[test]
+fn a_whole_volume_holder_has_no_pulse_to_read() {
+    let _scan = Claim::take("pulse-scan-vol", vec!["/".to_string()], Holder::Rewriting);
+
+    assert_eq!(walk_pulse("pulse-scan-vol", &["/deep".to_string()]), 0);
+}
+
 /// A partial grant survives every mode: the walk takes the roots it can and
 /// reports the rest, rather than the all-or-nothing answer that would make a
 /// wide frontier an all-or-nothing bet.
@@ -500,10 +538,7 @@ const A_SHORT_WAIT: Duration = Duration::from_millis(50);
 
 /// A walk somebody is waiting on, with a token nothing else holds.
 fn a_walk_someone_waits_on() -> Holder {
-    Holder::Walking {
-        yield_to: CancellationToken::new(),
-        for_whom: WalkFor::TheUser,
-    }
+    Holder::a_walk(CancellationToken::new(), WalkFor::TheUser)
 }
 
 /// The yield channel itself: a refusal that only NAMED the holder left the
@@ -515,10 +550,7 @@ fn a_background_walk_holding_ground_somebody_wants_is_asked_to_stop() {
     let _background = Claim::take(
         "asked-vol",
         vec!["/a".to_string()],
-        Holder::Walking {
-            yield_to: stop.clone(),
-            for_whom: WalkFor::TheIndex,
-        },
+        Holder::a_walk(stop.clone(), WalkFor::TheIndex),
     );
     assert!(!stop.is_cancelled(), "nobody has asked it for anything yet");
 
@@ -549,10 +581,7 @@ fn ground_a_yielding_walk_lets_go_of_is_already_the_waiters() {
     let background = Claim::take(
         "handover-vol",
         vec!["/a".to_string()],
-        Holder::Walking {
-            yield_to: stop.clone(),
-            for_whom: WalkFor::TheIndex,
-        },
+        Holder::a_walk(stop.clone(), WalkFor::TheIndex),
     );
 
     let waiter = std::thread::spawn(|| {
@@ -590,10 +619,7 @@ fn a_walk_somebody_is_waiting_on_is_never_asked_to_yield() {
     let _first = Claim::take(
         "no-ping-pong-vol",
         vec!["/a".to_string()],
-        Holder::Walking {
-            yield_to: stop.clone(),
-            for_whom: WalkFor::TheUser,
-        },
+        Holder::a_walk(stop.clone(), WalkFor::TheUser),
     );
 
     let second = Claim::preempt(

@@ -500,6 +500,10 @@ impl Index {
     /// A running SCAN is deliberately not that: it holds the volume without
     /// covering any particular root, and its ground comes back on its own terms
     /// rather than a walk's (`cover::ground_being_walked`).
+    ///
+    /// It says how far those walks have got, too ([`CoverageMap::walk_pulse`]),
+    /// which is what lets a caller stop waiting on one that has stopped moving
+    /// instead of on the clock.
     pub fn coverage(
         &self,
         volume_id: &str,
@@ -508,6 +512,7 @@ impl Index {
     ) -> Result<CoverageMap, IndexError> {
         let mut map = crate::indexing::read::coverage::coverage_on_volume(volume_id, scope_path, dimension)?;
         map.being_walked = cover::ground_being_walked(volume_id, &map.frontier);
+        map.walk_pulse = cover::walk_pulse(volume_id, &map.frontier);
         Ok(map)
     }
 

@@ -284,10 +284,12 @@ pub(crate) fn start(
     // hanging off it. The caller's token still stops this walk, because that is
     // what a parent does.
     let walk_cancel = cancel.child_token();
-    let holder = Holder::Walking {
-        yield_to: walk_cancel.clone(),
-        for_whom,
-    };
+    // ONE pulse for the whole frontier, not one per root: a consumer watching a
+    // walk of eight roots wants a count that keeps climbing, not one that restarts.
+    // Made before the claim so the holder carries it: a walk in the table nobody
+    // can read progress from is a walk somebody may wait an hour on.
+    let heartbeat = WalkHeartbeat::new();
+    let holder = Holder::walking(walk_cancel.clone(), for_whom, heartbeat.dirs_scanned_counter());
 
     // Taken on the CALLER's thread, so the answer is already true by the time
     // this returns: a caller that starts two walks in a row can't have the second
@@ -330,9 +332,6 @@ pub(crate) fn start(
     super::state::begin_branch_coverage(&context.volume_id, claim.mine());
 
     let (sender, batches) = sync_channel(BATCH_QUEUE_DEPTH);
-    // ONE pulse for the whole frontier, not one per root: a consumer watching a
-    // walk of eight roots wants a count that keeps climbing, not one that restarts.
-    let heartbeat = WalkHeartbeat::new();
     let walk_heartbeat = heartbeat.clone();
     let thread = std::thread::Builder::new()
         .name("index-cover".into())
@@ -752,6 +751,7 @@ pub(crate) use live::WalkFor;
 pub(in crate::indexing) use live::somebody_is_asking_for_ground;
 pub(in crate::indexing) use live::{
     Claim, Holder, Mode, a_rescan_can_start, forget_rescan, ground_being_walked, remember_rescan, take_rescan,
+    walk_pulse,
 };
 
 #[cfg(test)]

@@ -206,14 +206,15 @@ saying which state of the index the answer describes. The covered half is never 
 over the same subtree, so a caller runs its own query over the scope unfiltered and gets exactly the covered rows.
 That's the whole reason there's no deduplication anywhere in the search path.
 
-One field of the answer is not a read of the database at all: `being_walked` names the frontier roots a walk is covering
-RIGHT NOW, and `Index::coverage` fills it from the in-flight claims
+Two fields of the answer are not a read of the database at all. `being_walked` names the frontier roots a walk is
+covering RIGHT NOW, and `Index::coverage` fills it from the in-flight claims
 (`../lifecycle/cover/live/mod.rs::ground_being_walked`) after the query returns — this module stays a pure read, and the
 layering that keeps `read/` from importing lifecycle state holds. It's a reading, not a reservation: it can go stale
 immediately, and `Claim::take` stays the authority on what a walk actually got. What it's for: only one walk may have a
 patch of ground, so a caller that would otherwise commit to a walk taking NOTHING can tell the difference between
 "nobody has been here" and "somebody is here already", and wait rather than answer empty (`search/DETAILS.md` § The
-shape).
+shape). `walk_pulse` rides along beside it from the same place, and says how far those walks have got, so a caller
+waiting on one can stop when it stops moving (`../lifecycle/cover/live/DETAILS.md` § "The pulse of a walk").
 
 **The product intent this serves**: indexing stays optional, so a search that runs to completion returns the same files
 with or without an index, only slower, on every volume kind. The walk that fills the gap writes what it finds into the

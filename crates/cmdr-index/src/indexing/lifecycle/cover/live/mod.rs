@@ -64,7 +64,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Condvar, Mutex, OnceLock};
+use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use tokio_util::sync::CancellationToken;
@@ -145,10 +145,26 @@ pub(in crate::indexing) enum Holder {
         yield_to: CancellationToken,
         /// Whether it may be asked to hand its ground over.
         for_whom: WalkFor,
+        /// The walk's own [`WalkHeartbeat`](crate::indexing::scanner::WalkHeartbeat)
+        /// count of directory reads STARTED, so somebody waiting on this ground
+        /// can tell a slow walk from a stopped one ([`walk_pulse`]).
+        dirs_scanned: Arc<AtomicU64>,
     },
 }
 
 impl Holder {
+    /// A cover walk holding ground, with the pulse whoever waits on it reads.
+    pub(in crate::indexing) fn walking(
+        yield_to: CancellationToken,
+        for_whom: WalkFor,
+        dirs_scanned: Arc<AtomicU64>,
+    ) -> Self {
+        Holder::Walking {
+            yield_to,
+            for_whom,
+            dirs_scanned,
+        }
+    }
     /// How much of the volume this holder speaks for.
     fn mode(&self) -> Mode {
         match self {
@@ -157,14 +173,18 @@ impl Holder {
         }
     }
 
+    /// A cover walk whose pulse never moves, for the tests that care about the
+    /// ground or the yield rather than about progress.
+    #[cfg(test)]
+    pub(in crate::indexing) fn a_walk(yield_to: CancellationToken, for_whom: WalkFor) -> Self {
+        Holder::walking(yield_to, for_whom, Arc::new(AtomicU64::new(0)))
+    }
+
     /// A background cover walk holding ground nobody has asked it for, for the
     /// tests that care about the ground rather than about who yields.
     #[cfg(test)]
     pub(in crate::indexing) fn a_background_walk() -> Self {
-        Holder::Walking {
-            yield_to: CancellationToken::new(),
-            for_whom: WalkFor::TheIndex,
-        }
+        Holder::a_walk(CancellationToken::new(), WalkFor::TheIndex)
     }
 }
 
@@ -621,6 +641,7 @@ fn ask_the_background_walks_to_yield(claimed: &VolumeClaims, ticket: u64) {
             if let Holder::Walking {
                 yield_to,
                 for_whom: WalkFor::TheIndex,
+                ..
             } = holder
             {
                 if !yield_to.is_cancelled() {
@@ -718,6 +739,45 @@ pub(in crate::indexing) fn ground_being_walked(volume_id: &str, frontier: &[Stri
         .filter(|root| claimed.overlapping_holder(root, walking_holder))
         .cloned()
         .collect()
+}
+
+/// How much walking the walks holding `frontier` have done, as one number.
+///
+/// ⚠️ It means something only by CHANGING. The value is a sum of per-walk
+/// counters, so it says nothing on its own: a caller reads it twice and learns
+/// whether ANY walk over its ground started a directory read in between. A walk
+/// that is merely slow keeps moving it (a cover walk keeps up to 64 listings in
+/// flight, so a hung directory doesn't stop the others starting); one whose
+/// concurrency has collapsed onto a dead mount doesn't. ❌ Never show it: it isn't
+/// a folder count, and it drops when a walk lets go.
+///
+/// 0 when nothing is walking that ground, which is also what a walk that has
+/// started no read yet reports — harmless, because the caller only compares
+/// readings, and [`ground_being_walked`] is what says whether anyone is there.
+pub(in crate::indexing) fn walk_pulse(volume_id: &str, frontier: &[String]) -> u64 {
+    let live = in_flight().lock_ignore_poison();
+    let Some(claimed) = live.get(volume_id) else {
+        return 0;
+    };
+    // One walk holds one counter however many roots it took, so the same `Arc`
+    // comes back once per root it holds. Counted once: a pulse that jumped with
+    // the SHAPE of a frontier rather than with the walking would read as progress
+    // nobody made.
+    let mut counted: Vec<*const AtomicU64> = Vec::new();
+    let mut pulse = 0;
+    for root in frontier {
+        for holder in claimed.holders_overlapping(root) {
+            let Holder::Walking { dirs_scanned, .. } = holder else {
+                continue;
+            };
+            if counted.contains(&Arc::as_ptr(dirs_scanned)) {
+                continue;
+            }
+            counted.push(Arc::as_ptr(dirs_scanned));
+            pulse += dirs_scanned.load(Ordering::Relaxed);
+        }
+    }
+    pulse
 }
 
 /// What a claim costs at frontier scale. `#[ignore]`d.

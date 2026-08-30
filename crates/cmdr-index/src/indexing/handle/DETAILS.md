@@ -80,6 +80,11 @@ the layer that must not import lifecycle state. A `Vec<String>` on a type the su
 the same argument M8's two unreadable lists took. What it buys: a caller can tell "nobody has been here" from "somebody
 is here already" and wait rather than answer empty, without a method of its own.
 
+**`CoverageMap::walk_pulse` is the same shape of field**, filled from `cover::walk_pulse` in the same place and for the
+same caller: `being_walked` says somebody is there, this says whether they are still moving, so a run waiting for that
+ground can give up on a walk that has stopped instead of on a clock. A `u64` on a type the surface already carries, and
+❌ never shown — it only means something by changing (`../lifecycle/cover/live/DETAILS.md` § "The pulse of a walk").
+
 ⚠️ **It means another WALK, not "the claim table has an entry".** A full scan holds the volume root without covering any
 particular root of the frontier it was asked about, so `ground_being_walked` filters to `Additive` holders and a running
 scan never appears here. Unfiltered, every frontier root would read as being walked for the whole of a scan, and the

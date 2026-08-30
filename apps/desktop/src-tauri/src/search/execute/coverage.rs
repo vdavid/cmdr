@@ -66,6 +66,12 @@ pub(super) struct CoverageQuestion {
     /// can't have them: one walk per patch of ground, or the two orphan each
     /// other's subtrees.
     being_walked: Vec<String>,
+    /// How far those walks had got as this was read (`cover::walk_pulse`): a
+    /// number that means something only against the NEXT reading of it, which is
+    /// how a waiting run tells a slow walk from a stopped one. Summed over the
+    /// scopes, so a walk holding two of them counts twice — harmless, since only
+    /// the change is ever read.
+    pub(super) walk_pulse: u64,
 }
 
 /// Ask the index what it can't answer for, over every scope path in turn.
@@ -76,6 +82,7 @@ pub(super) fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestio
         tokens: Vec::new(),
         answered_at: std::time::Instant::now(),
         being_walked: Vec::new(),
+        walk_pulse: 0,
     };
     for scope in scopes {
         match index().coverage(volume_id, scope, CoverageDimension::Listing) {
@@ -83,6 +90,7 @@ pub(super) fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestio
                 question.unreadable.extend(&map);
                 question.frontier.extend(map.frontier);
                 question.being_walked.extend(map.being_walked);
+                question.walk_pulse += map.walk_pulse;
                 question.tokens.push(map.token);
             }
             Err(e) => {

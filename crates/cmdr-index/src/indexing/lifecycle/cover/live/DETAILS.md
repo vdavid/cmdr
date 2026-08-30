@@ -38,6 +38,27 @@ Two consequences worth stating, because both are easy to get backwards:
 - **A whole-volume claim outlives the call that takes it.** `start_scan` and `start_volume_scan` return while their
   walks run, so the claim travels into the task that ends the run. Custody and the release sites: `../../DETAILS.md`.
 
+## The pulse of a walk (`walk_pulse`)
+
+A holder also carries its walk's `WalkHeartbeat` count of directory reads STARTED, and `walk_pulse(volume_id, frontier)`
+sums that over the walks holding the frontier asked about. It exists for one caller: a search parked on ground somebody
+else is walking (`apps/desktop/src-tauri/src/search/DETAILS.md` § The shape), which otherwise has no way to tell a walk
+that is slow from a walk that has stopped.
+
+Three properties make it usable, and all three are easy to get wrong:
+
+- **It means something only by CHANGING.** The value is a sum, and it DROPS when a walk lets go of its ground, so no
+  single reading is a count of anything. A caller compares two readings.
+- **Reads STARTED, never finished**, which is what makes a slow walk distinguishable at all: a cover walk keeps up to 64
+  listings in flight, so it keeps starting reads while a hung one is outstanding. A walk whose pulse is frozen is one
+  whose concurrency has collapsed onto a mount that isn't answering.
+- **One walk counts once**, however many roots it holds — the same `Arc` comes back from `holders_overlapping` per root,
+  and `walk_pulse` dedupes on pointer identity. A pulse that moved with the SHAPE of a frontier would read as progress
+  nobody made.
+
+`Holder::Rewriting` has none: a scan is not walking any particular root, the same reason `ground_being_walked` filters
+it out.
+
 ## Asking a walk for its ground
 
 A refusal that only NAMES the holder leaves a person waiting on a background walk they can't reach. So a walk somebody

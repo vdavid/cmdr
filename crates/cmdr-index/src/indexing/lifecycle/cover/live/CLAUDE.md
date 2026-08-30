@@ -27,7 +27,8 @@ all take a `Claim` here, and a scan entry's single-flight question is a claim at
   `../tests::flushing_a_stopped_walk_cannot_be_tidied_away` pins it in the source.
 - **`ground_being_walked` answers for `Additive` holders ONLY**: a scan owns the volume without covering any root of the
   frontier it was asked about, so ❌ never let one answer — it would send a search off to wait for a walk that isn't
-  coming.
+  coming. Its sibling `walk_pulse` is how a waiter tells that walk apart from a stopped one; ❌ never read one value as
+  a count, it only means something by changing (`DETAILS.md`).
 - **Path-keyed `BTreeMap`, ❌ never a `Vec` scan**: `take` checks each root against the ones it already took, so a
   linear test is quadratic in the frontier's own width (446.77 ms at 2,503 roots, on the search's own thread). Its
   ranges only approximate the component-aware overlap predicate; ❌ don't delete

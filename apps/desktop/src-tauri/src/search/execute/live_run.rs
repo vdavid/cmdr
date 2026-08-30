@@ -180,8 +180,12 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
                 // `finish` rather than a drop: it claimed nothing, so this only
                 // closes the session it opened and joins its thread.
                 let _ = walk.finish();
-                wait_for_the_other_walk(&target.volume_id, &scopes, run, &mut stream, &deferred);
-                if run.is_cancelled() {
+                let waited = wait_for_the_other_walk(&target.volume_id, &scopes, run, &mut stream, &deferred);
+                if run.is_cancelled() || waited == OtherWalk::Stalled {
+                    // A walk that has stopped making progress is one nothing is
+                    // coming from, so this run stops waiting on it and answers
+                    // with what it has: `unwalkable` below reports the lower
+                    // bound, exactly as it does for a volume nobody can walk.
                     break;
                 }
                 match groundwork(&query, &target, &scopes, run, AfterAnotherWalk::Yes) {
@@ -408,6 +412,72 @@ fn index_gave_nothing(ground: &Groundwork) -> bool {
 /// query itself is a row lookup on a scope nothing has listed.
 const OTHER_WALK_POLL: std::time::Duration = std::time::Duration::from_millis(200);
 
+/// How long the walk a run is waiting on may start no new directory read before
+/// the run gives up on it.
+///
+/// ❌ Not a deadline on the WAIT: a walk of a whole NAS legitimately runs for
+/// minutes and is waited on for all of them. This is a deadline on SILENCE, and
+/// the two differ because a cover walk keeps up to 64 listings in flight
+/// (`network_scanner/scan_pace.rs`): a healthy walk keeps starting directory
+/// reads while a slow one is outstanding, so the pulse moves however slow the
+/// drive is.
+///
+/// One read can legitimately take the full 120 s `LIST_TIMEOUT`, and a share the
+/// user is browsing drops the walk to ONE listing in flight, so 30 s is the
+/// judgement call: past it, a walk whose concurrency has collapsed onto a mount
+/// that isn't answering has started nothing new for a quarter of a single read's
+/// worst case. The cost of being wrong is small and honest — the run answers with
+/// what it has and reports itself a lower bound, and the other walk keeps going —
+/// while the cost of not asking is a search parked for the ~64 minutes a dead
+/// share's 32 consecutive timeouts take at one listing at a time.
+const OTHER_WALK_STALL: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// How a wait on somebody else's walk ended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum OtherWalk {
+    /// The ground is this run's to walk now, or nobody is waiting for it any
+    /// more: the other walk finished, gave up, or this run was stopped.
+    Released,
+    /// They still hold the ground and have stopped moving through it. Waiting
+    /// longer would be waiting on nothing.
+    Stalled,
+}
+
+/// Whether the walk a run is waiting on is still working, judged only by whether
+/// it keeps STARTING directory reads (`cover::walk_pulse`).
+///
+/// Takes its clock as an argument so the threshold can be tested at its real
+/// size against a moved instant, rather than shrunk until a test can outlive it.
+pub(super) struct StallWatch {
+    /// The last pulse read, and when it last CHANGED. `None` until the first
+    /// reading, which can't tell us anything on its own.
+    pulse: Option<u64>,
+    moved_at: std::time::Instant,
+    stall_after: std::time::Duration,
+}
+
+impl StallWatch {
+    pub(super) fn new(stall_after: std::time::Duration, now: std::time::Instant) -> Self {
+        Self {
+            pulse: None,
+            moved_at: now,
+            stall_after,
+        }
+    }
+
+    /// Fold one reading in, and say whether the walk has gone quiet for too long.
+    pub(super) fn observe(&mut self, pulse: u64, now: std::time::Instant) -> OtherWalk {
+        if self.pulse != Some(pulse) {
+            self.pulse = Some(pulse);
+            self.moved_at = now;
+        }
+        if now.duration_since(self.moved_at) >= self.stall_after {
+            return OtherWalk::Stalled;
+        }
+        OtherWalk::Released
+    }
+}
+
 /// Wait until the ground this run needs stops being another walk's.
 ///
 /// ❌ The coverage question only, never the arena: rebuilding a multi-second
@@ -415,18 +485,19 @@ const OTHER_WALK_POLL: std::time::Duration = std::time::Duration::from_millis(20
 /// waiting for. The full groundwork runs ONCE, after this returns.
 ///
 /// It ends when the ground is free — the other walk finished, or stopped and left
-/// a smaller frontier behind — or when somebody stops this run. ❌ No deadline:
-/// the only alternative to waiting is the empty answer this exists to remove, and
-/// every caller can stop it. Escape and the dialog closing cancel; an agent's wait
-/// is its own transport budget, and past it the reply says the walk is still
-/// going.
+/// a smaller frontier behind — when somebody stops this run, or when the walk it
+/// waits on stops making progress ([`OTHER_WALK_STALL`]). ❌ No deadline on a walk
+/// that IS working: the only alternative to waiting is the empty answer this
+/// exists to remove, and every caller can stop it. Escape and the dialog closing
+/// cancel; an agent's wait is its own transport budget, and past it the reply says
+/// the walk is still going.
 fn wait_for_the_other_walk(
     volume_id: &str,
     scopes: &[String],
     run: &LiveRun,
     stream: &mut ResultStream<'_>,
     held_by_another: &[String],
-) {
+) -> OtherWalk {
     log::debug!("Live search: '{volume_id}' is being walked by another search; waiting for it");
     // Name the ground somebody else holds, once. It rides the same `current_path` the
     // walk uses, so the dialog's existing path row shows it and a waiting run says WHAT
@@ -437,14 +508,64 @@ fn wait_for_the_other_walk(
     if let Some(root) = held_by_another.first() {
         stream.set_walk_progress(0, Some(root.clone()));
     }
+    let mut stall = StallWatch::new(stall_after(), std::time::Instant::now());
     loop {
         // Say so every turn: the run is working, and this is the phase it's in.
         // ❌ Not `ResolvingCoverage` — coverage is resolved, and the answer was
         // "somebody else has this ground". What's left is their clock, not ours.
         stream.announce(SearchPhase::WaitingForAnotherWalk);
         std::thread::sleep(OTHER_WALK_POLL);
-        if run.is_cancelled() || !every_frontier_root_is_another_walks(&coverage_of(volume_id, scopes)) {
-            return;
+        if run.is_cancelled() {
+            return OtherWalk::Released;
+        }
+        let question = coverage_of(volume_id, scopes);
+        if !every_frontier_root_is_another_walks(&question) {
+            return OtherWalk::Released;
+        }
+        if stall.observe(question.walk_pulse, std::time::Instant::now()) == OtherWalk::Stalled {
+            log::info!(
+                "Live search: the walk holding '{volume_id}' has started no directory read for {:?}; answering with what we have",
+                stall_after()
+            );
+            return OtherWalk::Stalled;
         }
     }
+}
+
+/// The stall threshold a run waits under.
+///
+/// Production is [`OTHER_WALK_STALL`] itself. A test may compress it
+/// ([`compress_stall_for_test`]) because what it pins end to end is the give-up
+/// and what the run reports after it, and 30 s of the suite's wall clock buys
+/// neither; the NUMBER is pinned by `StallWatch`'s own tests, which move a clock
+/// instead of a threshold.
+fn stall_after() -> std::time::Duration {
+    #[cfg(test)]
+    {
+        let millis = STALL_FOR_TEST.load(std::sync::atomic::Ordering::Relaxed);
+        if millis > 0 {
+            return std::time::Duration::from_millis(millis);
+        }
+    }
+    OTHER_WALK_STALL
+}
+
+#[cfg(test)]
+static STALL_FOR_TEST: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Compress the stall threshold for as long as the guard lives. ⚠️ Process-wide,
+/// so a test using it takes the same locks its siblings do.
+#[cfg(test)]
+pub(super) fn compress_stall_for_test(stall_after: std::time::Duration) -> impl Drop {
+    struct Restore;
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            STALL_FOR_TEST.store(0, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
+    STALL_FOR_TEST.store(
+        u64::try_from(stall_after.as_millis()).unwrap_or(u64::MAX),
+        std::sync::atomic::Ordering::Relaxed,
+    );
+    Restore
 }
