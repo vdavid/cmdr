@@ -348,13 +348,20 @@ covered: `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` §
 Retries hide bugs. If a test flakes, find the race and fix it (Rust IPC race, missing await, watcher debounce, etc.).
 Drop retries when the cause is gone.
 
-**Carve-out — CI-only, for load-induced environment flake on the shared Docker VM.** The Playwright config sets
-`retries: process.env.CI ? 1 : 0`. This is allowed because the Linux Docker lane runs every spec sequentially on a host
-that also builds the app, so a busy host can stretch a `waitForSelector` / nav wait past its budget independently of any
-app-level race. Local dev stays at zero retries, so a real race still surfaces immediately rather than being papered
-over. Playwright marks a retried-pass as `flaky` in its `list` reporter, so the retry stays a tracked, visible event,
-not a silenced one. The anti-pattern above still stands for masking a real race in app/IPC code — the carve-out is
-narrow: CI-only, environment flake, signal preserved.
+**Carve-out — both E2E lanes, for load-induced environment flake.** The Playwright config sets `retries = 1`
+unconditionally. Both lanes run every spec sequentially against a real app on a host doing other work: the Linux lane
+shares a Docker VM that also builds the app, and the macOS lane runs on a machine somebody is using, where WKWebView
+starves `rAF` in occluded windows (§ "The occlusion trap"). Either can stretch a `waitForSelector` past its budget with
+no app-level race involved.
+
+❗ Retrying only one lane is worse than retrying neither, and cost two weeks of misreading: with `retries: 0` on macOS
+an identical flake was recorded a hard `fail` there and a rescued `flaky` on Linux, so the two lanes' counts could not
+be compared, macOS read as failing ~45% of runs, and `search-recent` looked Linux-only while failing on both. Keep the
+lanes symmetric.
+
+Signal preservation is what makes this a carve-out rather than the anti-pattern: a retried pass is `flaky` in the JSON
+report and downgrades the run to a **warn** naming every rescued spec (below). The anti-pattern still stands for
+masking a real race in app/IPC code.
 
 **Carve-out, Rust: named real-FSEvents tests only.** `.config/nextest.toml` grants `retries` to a filtered set of tests
 that block on a SINGLE real OS watch delivery, where a coalesced or dropped event is unrecoverable within the run (the
@@ -374,11 +381,29 @@ raw output that sorts every failing test into:
   no panic. Look for a genuine hang, or starvation under load.
 - **Blew its own in-test `wait_until` deadline**: the test's own deadline expired below the cap, and the diagnosis
   quotes the wait's description. Raising the nextest cap does nothing here; raise or load-scale the wait instead.
-- **Leak**: assertions passed, but a handle or process outlived the test.
+- **Leak**: assertions passed, but a handle or process outlived the test. ❗ On macOS, treat this as noise until proven
+  otherwise, and never as a resource-leak metric: it is dominated by a spawn artifact, not by anything Cmdr holds. See
+  below.
 - **Ordinary assertion or panic.**
 
 Reach for the cap only when the first class shows up. Guessing between these is how a deflaking pass ends up tuning the
 knob that wasn't binding. The parsing lives in `scripts/check/checks/rust-test-diagnostics.go`.
+
+#### ❗ A macOS LEAK usually means nothing leaked
+
+nextest checks for leaks AFTER reaping the child, so the kernel has already closed its fds: only another LIVE process
+holding an inherited duplicate of the pipe can withhold EOF. Threads, tokio tasks, sessions, and containers cannot do
+it. Darwin has no `pipe2(O_CLOEXEC)`, so Rust's std sets `FD_CLOEXEC` in a second, non-atomic syscall, and a concurrent
+`posix_spawn` can inherit the write end in between. The label therefore lands on whichever process EXITS FIRST, which
+makes it a duration signal, not a resource one.
+
+Evidence (`~/cmdr-test-log.csv`, 2026-08-12 to 2026-08-30): the tests it marks average 0.25-1.2 s when leaky and
+1.7-2.4 s when not; the long `smb_transfer_semantics_*` / `smb_stress_*` tests took zero leaks in 496 runs; and the
+Linux lane, which has `pipe2`, records 0.008 leaks per run against macOS's 0.30 across both macOS lanes. `leak-timeout`
+is set to 1 s with `result = "pass"` (`.config/nextest.toml`), which suppresses most of it.
+
+❌ Don't chase a leaky test as a resource leak without first checking it isn't simply the shortest process in its lane.
+One investigation lost a morning to "an SMB fixture leaks" before the duration inversion showed up.
 
 ### A red run re-runs its failures alone before believing them
 
@@ -424,8 +449,8 @@ because that suite is massively parallel. E2E gets the retry-pass warn below ins
 ### Playwright retry-passes warn too
 
 Both E2E lanes apply the same rule as the Rust suite: a spec rescued by its retry is a flake, not a pass, so the run is
-downgraded to a **warn** naming every rescued spec. This matters most on the Linux lane, which runs with `CI=true` and
-therefore inherits `retries: 1`. The verdict reads Playwright's structured JSON report (`stats.flaky` and each test's
+downgraded to a **warn** naming every rescued spec. Both lanes carry `retries = 1`, so both report rescues. The verdict
+reads Playwright's structured JSON report (`stats.flaky` and each test's
 `expected`/`unexpected`/`flaky`/`skipped` status), not the `list` reporter's text. A genuinely failing spec is
 `unexpected`, not `flaky`, so it stays a failure and isn't double-counted. Mechanics:
 `scripts/check/checks/e2e-flaky.go`.

@@ -339,6 +339,23 @@ retries = 0
 test-threads = "num-cpus"
 # Fail fast - stop on first failure
 fail-fast = false
+# How long to wait for a finished test's stdout/stderr pipes to reach EOF before
+# calling the test "leaky". nextest's shipped default is 200 ms, which on macOS
+# mislabels ~30% of our runs.
+#
+# Why it is a false positive here: the check runs AFTER the child is reaped, so the
+# kernel has already closed its fds — only ANOTHER live process holding an inherited
+# duplicate of the pipe can withhold EOF. Darwin has no `pipe2(O_CLOEXEC)`, so Rust's
+# std sets `FD_CLOEXEC` in a second, non-atomic syscall, and a concurrent `posix_spawn`
+# can inherit the write end in between. The victim is always the SHORTER-lived process
+# of the pair, which is why the label tracks duration rather than resources: the tests
+# it lands on average 0.25-1.2 s when marked leaky and 1.7-2.4 s when not, and the
+# Linux lane (which does have `pipe2`) sees 0.008 leaks per run against macOS's 0.30.
+#
+# ❗ Keep `result = "pass"`. A macOS spawn artifact must not turn a run red, and a
+# genuine leak still surfaces — 800 ms later, on a test that already passed. Only a
+# test that would be labelled leaky ever pays this wait, and only once.
+leak-timeout = { period = "1s", result = "pass" }
 # Hard cap on every test (see policy at top of file). period × terminate-after
 # = 8 s × 1 = kill after 8 s of wall-clock.
 slow-timeout = { period = "8s", terminate-after = 1 }
