@@ -156,6 +156,12 @@ test.describe('Archive browsing', () => {
     // beforeEach wipes and rewrites `left/`, so the path can already read `left/` (a prior
     // test ended here, making the nav a no-op) while the pane still shows the mid-refresh
     // empty view. Poll for a known fixture entry so the file-watcher has caught up.
+    //
+    // ❗ Flush FIRST rather than only polling. `restoreFixtureTree` rewrites `sample.zip`
+    // whenever the preceding test mutated it, and a remove/create of the same name inside
+    // one debounce window is exactly the burst whose diff can land out of order — the poll
+    // then spends its whole budget on a listing that has already stopped moving.
+    await flushFileWatcher(tauriPage)
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.zip'), { timeout: 5000 }).toBeTruthy()
     await setArchiveEnterBehavior({ zip: 'browse', bundle: 'browse' })
   })
@@ -596,6 +602,12 @@ test.describe('Archive Enter-behavior menu', () => {
     // beforeEach wipes and rewrites `left/`, so the path can already read `left/` (a prior
     // test ended here, making the nav a no-op) while the pane still shows the mid-refresh
     // empty view. Poll for a known fixture entry so the file-watcher has caught up.
+    //
+    // ❗ Flush FIRST rather than only polling. `restoreFixtureTree` rewrites `sample.zip`
+    // whenever the preceding test mutated it, and a remove/create of the same name inside
+    // one debounce window is exactly the burst whose diff can land out of order — the poll
+    // then spends its whole budget on a listing that has already stopped moving.
+    await flushFileWatcher(tauriPage)
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.zip'), { timeout: 5000 }).toBeTruthy()
     // The headline flow: zip set to Ask (the default), so Enter pops the menu.
     await setArchiveEnterBehavior({ zip: 'ask', bundle: 'ask' })
