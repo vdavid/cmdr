@@ -735,6 +735,29 @@ parked waiting for another walk", and `wait_for_the_other_walk` has no deadline,
 footer button reports a bare timeout and names nothing. `search-recent.spec.ts` reads it on failure. ❌ Don't read the
 localized status TEXT for this: `cmdr/no-error-string-match` forbids it, and the copy is free to change.
 
+### The waiting phase is the one with nothing to show
+
+`waitingForAnotherWalk` reports no match count and no folder of its own: the run has scanned nothing, because another
+walk holds the ground it needs. Everything else in the status bar is therefore blank, and a wait that is working looked
+exactly like one that is wedged.
+
+Two things fill it. The backend names the ground somebody else holds by riding the same `current_path` the walk uses
+(`search/execute/live_run.rs::wait_for_the_other_walk`), so the existing path row shows it; `dirs_found` deliberately
+stays 0, since borrowing the other walk's count would credit this run with work it has not done. And `LiveRunView`
+carries `phaseSince`, which `liveWaitElapsed` turns into the `m:ss` reading beside it.
+
+❗ `phaseSince` is stamped on the phase TRANSITION and carried forward while the phase holds. The waiting phase
+re-announces every 200 ms, so stamping it per update pegs the reading at zero — which is exactly the "is it alive?"
+question the reading exists to answer. `QueryResults` scopes its 1 s tick to the waiting phase, so no other phase
+re-renders on it.
+
+The reading is a wordless `m:ss` on purpose: a clock face beside a spinner reads the same in every locale, so the one
+thing on screen proving the run is alive costs no translation and cannot drift from its 12 catalogs. It keeps counting
+in minutes past 60 rather than rolling into hours, because this wait has no deadline of its own and `97:12` is the
+honest reading. ❌ Don't reuse `scanningAria` for the path here: another scan is reading that folder, not this search.
+
+How long the wait can actually run, and when it now gives up: `apps/desktop/src-tauri/src/search/DETAILS.md`.
+
 **Gotcha**: ⌘⏎ and ⇧⏎ are explicit no-ops in the dialog. Bare Enter is the only key that runs a search or opens the
 cursor row (dispatched via `enterAction` per D8). The dialog's `handleModifierShortcuts` swallows both modifier
 combinations with `preventDefault` so the bare-Enter handler never sees a modified Enter.

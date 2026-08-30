@@ -45,7 +45,7 @@ fn a_walk_that_keeps_starting_directory_reads_is_waited_on_however_long_it_takes
         assert_eq!(
             watch.observe(step, now),
             OtherWalk::Released,
-            "a walk that is still starting reads is still worth waiting for, {step} readings in"
+            "a walk that is still starting reads is still worth waiting for, at reading {step}"
         );
     }
 }

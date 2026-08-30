@@ -276,7 +276,7 @@
         if (!isWaiting) return
         waitNow = Date.now()
         const timer = setInterval(() => (waitNow = Date.now()), 1000)
-        return () => clearInterval(timer)
+        return () => { clearInterval(timer); }
     })
     const waitElapsed = $derived(live === null ? '' : liveWaitElapsed(live, waitNow))
 
