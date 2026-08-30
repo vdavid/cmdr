@@ -665,6 +665,12 @@ E2E test hooks split along two axes:
   All soft hooks should be wired through `crate::test_mode` so the list of test hooks is grep-able from one place. New
   env-var-driven hooks land there with a helper function. Don't sprinkle `std::env::var(...)` reads through subsystems.
 
+  ⚠️ **Several are gated on `CMDR_E2E_MODE=1` on top of their own variable**, so that a stray value in a developer's or
+  a user's environment can't change what the app does. Setting only the hook's own variable then does NOTHING, and
+  nothing says so: the app starts, the run looks normal, and the behavior you asked for is quietly absent. Each gated
+  entry below leads with the requirement. When you add a gate, say so in the entry's FIRST sentence rather than as a
+  safety aside at the end, and remember `CMDR_E2E_MODE=1` itself requires `CMDR_DATA_DIR`.
+
 **Existing soft hooks** (env vars):
 
 - **`CMDR_E2E_MODE=1`**: Canonical "we're under E2E" marker; subsystems can flip behaviors. **Requires
@@ -682,24 +688,28 @@ E2E test hooks split along two axes:
 - **`CMDR_E2E_SKIP_MTP_FIXTURES=1`**: Non-MTP shards skip `globalSetup`'s MTP fixture reset.
 - **`CMDR_VIRTUAL_MTP=1` (or `=<dir>`)**: Dev opt-in: `pnpm dev` registers the virtual MTP device. See
   `tooling/virtual-mtp.md`.
-- **`CMDR_E2E_COPY_THROTTLE_MS`**: Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.
-- **`CMDR_E2E_ROLLBACK_THROTTLE_MS`**: Per-item sleep inside the operation-log ROLLBACK engine's file loop
-  (`operation_log/rollback.rs`), so a spec can watch a reversal run and press Cancel inside it. Its own knob rather than
-  a reuse of the copy throttle: pacing the reversal must not also pace the copy that staged it. Parsed once into a
-  `LazyLock` (a rollback item can be one `unlink`, and the engine streams up to a million of them) and inert outside
-  `CMDR_E2E_MODE`, so a stray variable can never pace a user's rollback. It sits ABOVE the loop's stop and pause gates,
-  so a click landing inside the window is honored for THAT item. The deferred-directory phase is deliberately NOT paced:
-  it removes empty leftovers, so slowing it buys dead time rather than a window. A RUST test takes the pacing through
+- **`CMDR_E2E_COPY_THROTTLE_MS`** (no E2E-mode gate; the variable alone is enough, and it's re-read every file):
+  Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.
+- **`CMDR_E2E_ROLLBACK_THROTTLE_MS`** (**needs `CMDR_E2E_MODE=1` too**, else it does nothing at all): Per-item sleep
+  inside the operation-log ROLLBACK engine's file loop (`operation_log/rollback.rs`), so a spec can watch a reversal run
+  and press Cancel inside it. Its own knob rather than a reuse of the copy throttle: pacing the reversal must not also
+  pace the copy that staged it. Parsed once into a `LazyLock` (a rollback item can be one `unlink`, and the engine
+  streams up to a million of them), which also means the value is read ONCE per process: changing it needs a relaunch,
+  not just a new export. The `set_test_rollback_throttle` IPC override below carries no E2E-mode gate and no caching, so
+  it's the one to reach for when driving a running app by hand. It sits ABOVE the loop's stop and pause gates, so a
+  click landing inside the window is honored for THAT item. The deferred-directory phase is deliberately NOT paced: it
+  removes empty leftovers, so slowing it buys dead time rather than a window. A RUST test takes the pacing through
   `test_mode::pace_rollback_for_test`, which serializes the tests that use it — the override is one process-wide value,
   and two tests setting it at once un-pace each other.
-- **`CMDR_E2E_SCAN_PREVIEW_DELAY_MS`**: Holds every scan-preview worker at its starting line before it walks, so a spec
-  can act while a transfer is still counting (`background-while-scanning.spec.ts`). Fixture trees are tiny and
-  `data-scan-state` signals "counting done", the opposite of what such a test needs. `set_test_scan_preview_delay`
-  overrides it per test, which is what the spec uses; the var is the process-wide fallback. Both are inert outside
-  `CMDR_E2E_MODE`.
-- **`CMDR_E2E_WALK_THROTTLE_MS`**: Per-directory sleep before a search's COVER walk reads one, so a spec has a window in
-  which to watch a live search still running (`search-walk-handoff.spec.ts`). Background scans are never throttled. Read
-  in `crates/cmdr-index/src/indexing/scanner/mod.rs` (`cover_walk_throttle`) rather than `crate::test_mode`, because the
+- **`CMDR_E2E_SCAN_PREVIEW_DELAY_MS`** (**needs `CMDR_E2E_MODE=1` too**, and so does its IPC override, unlike the
+  rollback throttle's): Holds every scan-preview worker at its starting line before it walks, so a spec can act while a
+  transfer is still counting (`background-while-scanning.spec.ts`). Fixture trees are tiny and `data-scan-state` signals
+  "counting done", the opposite of what such a test needs. `set_test_scan_preview_delay` overrides it per test, which is
+  what the spec uses; the var is the process-wide fallback.
+- **`CMDR_E2E_WALK_THROTTLE_MS`** (no E2E-mode gate; the variable alone is enough): Per-directory sleep before a
+  search's COVER walk reads one, so a spec has a window in which to watch a live search still running
+  (`search-walk-handoff.spec.ts`). Background scans are never throttled. Read in
+  `crates/cmdr-index/src/indexing/scanner/mod.rs` (`cover_walk_throttle`) rather than `crate::test_mode`, because the
   index crate can't reach the app; it's cached in a `LazyLock`, so an unset var costs one deref per walk.
 - **`CMDR_PLAYWRIGHT_SOCKET`**: Override the plugin's Unix socket path (one socket per shard).
 - **`CMDR_SHOTS_PID` / `CMDR_SHOTS_OUT_DIR` / `CMDR_SHOTS_BROWSE_ROOT`**: read by the marketing capture's spec, never by
