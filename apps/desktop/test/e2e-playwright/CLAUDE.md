@@ -23,15 +23,16 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
 - **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
   `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window there: that hides a scoped
   page that can't call a Tauri command.
-- **`ensureAppReady()` resets route, volume, AND directories, in that order** (without it, navigation silently no-ops).
-  File-op specs also need `recreateFixtures()`: the tree is shared.
+- **`ensureAppReady()` resets route, volume, AND directories, in that order** (without it, navigation silently no-ops);
+  file-op specs also need `recreateFixtures()`. Its `leftPane` list is an `every()`, so one NARROWER than the fixture
+  passes on a partial listing: pass `expectedLeftPaneEntries(fixtureRoot)`. DETAILS § "Fixture-churn readiness".
 - **Need the other pane focused? Click its `.file-pane` and read `.is-focused` back.** ❌ Never the `pane.switch`
   TOGGLE, nor `cmdr://state`'s `focused:`: a toggle on that stale mirror lands in the wrong pane. DETAILS § "Claiming a
   pane's focus".
 - **One global `afterEach` guards TWO leaks: UI artifacts, and a dirty `left/` + `right/`.** A mutating spec restores
-  the tree (`restoreFixtureTree(getFixtureRoot())`) or the guard names it. ❌ Don't relax it. **Holding an op? Drain it
-  BEFORE the restore, in ONE hook** (`afterEach`s run in DECLARATION order): a restore under a live op deletes its
-  source, and the retained `SourceNotFound` poisons the next.
+  the tree (`restoreFixtureTree(getFixtureRoot())`) or the guard names it. ❌ Don't relax it. **Holding an op?
+  `drainOperations()` BEFORE the restore, in ONE hook** (`afterEach`s run in DECLARATION order): a restore under a live
+  op deletes its source, and the retained `SourceNotFound` poisons the next.
 - **"Rows appeared" doesn't prove a WALK**: the instance indexes its tree at launch, so a spec needing one takes the
   index away first (`search-walk-ground.ts`).
 - **"STOPPED ANSWERING" means read UP, not down**: a silent app fails every later test instantly, on purpose. DETAILS §

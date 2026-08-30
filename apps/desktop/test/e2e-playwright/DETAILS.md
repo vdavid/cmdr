@@ -1034,3 +1034,35 @@ Both facts are measured, not inferred (probe spec against the E2E binary, macOS 
 `ensureAppReady` the two agree (`dom=left mirror=left`); one `mcp-volume-select` at the right pane splits them
 (`dom=right mirror=left`); and one `pane.switch` dispatched at that split state moves focus to `dom=left`, the opposite
 of what the dispatcher wanted.
+
+### Fixture-churn readiness
+
+`ensureAppReady`'s `leftPane` poll is `expected.every(name => pane has it)`, so a list narrower than what the builder
+wrote is satisfied by a PARTIAL listing. The conflict builders write their entries one at a time, and the watcher
+coalescer can deliver a diff between two writes, so a spec naming one file (`{ leftPane: ['alpha'] }`) sailed through
+readiness with a pane holding only `alpha` and then spent its budget in `selectItemsByName` looking for rows that were
+on disk but not on screen.
+
+`expectedLeftPaneEntries(fixtureRoot)` (`conflict-helpers.ts`) reads the top level of `left/` back from disk instead, so
+the expectation cannot drift from what was written. ❗ Call it AFTER the builder. It includes `bulk/`, which is correct
+for readiness; selection lists like `LAYOUT_B_ITEMS` stay narrow on purpose, since sweeping the ~170 MB tree into a
+transfer pushes the op past the per-test budget.
+
+**This does not close the whole hole, and the residue is a product bug.** A Linux run on 2026-08-30 had `ensureAppReady`
+confirm the full list (twice, including the re-confirm after `flushFileWatcher`), and the very next statement found the
+pane missing `bravo`, `charlie`, and `delta.txt` for ~10 s before the retry passed in 651 ms. The entries were there and
+were then REMOVED, which points at a stale removal batch landing on top of a fresher listing in
+`file-explorer/pane/listing-diff-sync.svelte.ts` rather than at anything a spec can fix. Loads are generation-guarded
+(`pane/listing-token.ts`); the incremental diff path is the suspect. ❌ Don't paper over a recurrence with a longer wait
+or a retry inside `selectItemsByName` — the pane never self-corrects, so no wait is long enough, and the same defect is
+reachable by a user during any heavy external burst (an unzip, a `git checkout`, an rsync into a watched folder).
+
+### Draining a held operation
+
+`drainOperations(tauriPage)` (`helpers/app-lifecycle.ts`) cancels everything `list_operations` reports and polls until
+the queue empties, dismissing failures inside the loop because an op can die while already spinning. Every call is
+best-effort so a teardown never masks the test's own verdict.
+
+It exists because `conflict-move`'s `afterEach` restored the fixture tree while a deliberately paused move still held
+its sources: the restore deleted them, and the retained `SourceNotFound` queued ahead of the NEXT test's transfer, which
+then saw "1 operation ahead of this one" and never opened its conflict dialog. One leak, three red tests.

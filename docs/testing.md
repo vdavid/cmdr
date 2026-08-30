@@ -360,8 +360,8 @@ be compared, macOS read as failing ~45% of runs, and `search-recent` looked Linu
 lanes symmetric.
 
 Signal preservation is what makes this a carve-out rather than the anti-pattern: a retried pass is `flaky` in the JSON
-report and downgrades the run to a **warn** naming every rescued spec (below). The anti-pattern still stands for
-masking a real race in app/IPC code.
+report and downgrades the run to a **warn** naming every rescued spec (below). The anti-pattern still stands for masking
+a real race in app/IPC code.
 
 **Carve-out, Rust: named real-FSEvents tests only.** `.config/nextest.toml` grants `retries` to a filtered set of tests
 that block on a SINGLE real OS watch delivery, where a coalesced or dropped event is unrecoverable within the run (the
@@ -397,10 +397,10 @@ it. Darwin has no `pipe2(O_CLOEXEC)`, so Rust's std sets `FD_CLOEXEC` in a secon
 `posix_spawn` can inherit the write end in between. The label therefore lands on whichever process EXITS FIRST, which
 makes it a duration signal, not a resource one.
 
-Evidence (`~/cmdr-test-log.csv`, 2026-08-12 to 2026-08-30): the tests it marks average 0.25-1.2 s when leaky and
-1.7-2.4 s when not; the long `smb_transfer_semantics_*` / `smb_stress_*` tests took zero leaks in 496 runs; and the
-Linux lane, which has `pipe2`, records 0.008 leaks per run against macOS's 0.30 across both macOS lanes. `leak-timeout`
-is set to 1 s with `result = "pass"` (`.config/nextest.toml`), which suppresses most of it.
+Evidence (`~/cmdr-test-log.csv`, 2026-08-12 to 2026-08-30): the tests it marks average 0.25-1.2 s when leaky and 1.7-2.4
+s when not; the long `smb_transfer_semantics_*` / `smb_stress_*` tests took zero leaks in 496 runs; and the Linux lane,
+which has `pipe2`, records 0.008 leaks per run against macOS's 0.30 across both macOS lanes. `leak-timeout` is set to 1
+s with `result = "pass"` (`.config/nextest.toml`), which suppresses most of it.
 
 ❌ Don't chase a leaky test as a resource leak without first checking it isn't simply the shortest process in its lane.
 One investigation lost a morning to "an SMB fixture leaks" before the duration inversion showed up.
@@ -450,10 +450,9 @@ because that suite is massively parallel. E2E gets the retry-pass warn below ins
 
 Both E2E lanes apply the same rule as the Rust suite: a spec rescued by its retry is a flake, not a pass, so the run is
 downgraded to a **warn** naming every rescued spec. Both lanes carry `retries = 1`, so both report rescues. The verdict
-reads Playwright's structured JSON report (`stats.flaky` and each test's
-`expected`/`unexpected`/`flaky`/`skipped` status), not the `list` reporter's text. A genuinely failing spec is
-`unexpected`, not `flaky`, so it stays a failure and isn't double-counted. Mechanics:
-`scripts/check/checks/e2e-flaky.go`.
+reads Playwright's structured JSON report (`stats.flaky` and each test's `expected`/`unexpected`/`flaky`/`skipped`
+status), not the `list` reporter's text. A genuinely failing spec is `unexpected`, not `flaky`, so it stays a failure
+and isn't double-counted. Mechanics: `scripts/check/checks/e2e-flaky.go`.
 
 ### Every red or slow test lands in a log you can rank
 

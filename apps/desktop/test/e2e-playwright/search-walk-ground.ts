@@ -148,7 +148,8 @@ export async function restoreLocalVolumeIndex(): Promise<void> {
  * ❌ Don't replace this with a plain wait — the run parks forever, so no wait is long enough.
  */
 export async function ensureLocalIndexAnswers(scope: string, pattern: string, expected: string): Promise<void> {
-  const answers = async (): Promise<boolean> => (await mcpCall('search', { pattern, scope, limit: 1 })).includes(expected)
+  const answers = async (): Promise<boolean> =>
+    (await mcpCall('search', { pattern, scope, limit: 1 })).includes(expected)
   if (await answers()) return
 
   await restoreLocalVolumeIndex()
