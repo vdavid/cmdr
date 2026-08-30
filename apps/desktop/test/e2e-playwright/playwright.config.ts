@@ -56,12 +56,21 @@ const outputDir = process.env.CMDR_E2E_OUTPUT_DIR ?? './test-results'
 // and no shard needs a retry for an app-level race. See
 // `src-tauri/src/mtp/DETAILS.md` § "Virtual device watcher in E2E".
 //
-// CI-only retry for load-induced environment flake on the shared Docker VM:
-// the Linux lane sets `CI=true` and runs this exact config, so it inherits one
-// retry, while local dev stays at zero so a real race surfaces immediately
-// instead of being papered over. A retried pass shows as `flaky` in the `list`
-// reporter, keeping the signal visible. See docs/testing.md § retries carve-out.
-const retries = process.env.CI ? 1 : 0
+// One retry on BOTH lanes, for load-induced environment flake.
+//
+// The Linux lane sets `CI=true`; the macOS lane runs on a machine somebody is using,
+// which is the same hazard and empirically a worse one (WKWebView starves `rAF` in
+// occluded windows — docs/testing.md § "The occlusion trap"). Retrying only Linux made
+// the two lanes' numbers incomparable rather than making macOS stricter: an identical
+// flake was recorded `flaky` there and a hard `fail` here, so macOS looked like it
+// failed 45% of runs and its real catches were buried. `search-recent` flaked on both
+// lanes for two weeks while reading as Linux-only for exactly this reason.
+//
+// ❗ This is not permission to paper over a race. A retried pass is reported as `flaky`
+// and DOWNGRADES the run to a warn on both lanes (`scripts/check/checks/e2e-flaky.go`),
+// which is the whole carve-out: narrowly scoped, environment flake, signal preserved.
+// See docs/testing.md § retries carve-out.
+const retries = 1
 
 export default defineConfig({
   testDir: '.',
