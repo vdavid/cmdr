@@ -123,11 +123,25 @@ export async function restoreLocalVolumeIndex(): Promise<void> {
   // window gets an auto-applied run with nothing to serve (seen on the Linux lane,
   // where `search-recent` failed once and passed on the retry). Asking for a real
   // answer is what makes the handover complete.
-  await expect
-    .poll(async () => mcpCall('search', { pattern: 'file-a*', scope: `${getFixtureRoot()}/left`, limit: 1 }), {
-      timeout: 20_000,
-    })
-    .toContain('file-a.txt')
+  await expect.poll(indexAnswers, { timeout: 20_000 }).toBe(true)
+}
+
+/**
+ * The one probe that proves the local index can serve a search: a narrow pattern over
+ * `left/`, asking for a file the fixture always has.
+ *
+ * ❗ Keep every caller on THIS shape. A probe invented per caller looks equivalent and
+ * isn't: a broader pattern over the fixture ROOT reads as "the index is empty" even on a
+ * healthy index, because a live query refuses a scope whose frontier isn't covered
+ * (`search/DETAILS.md` Decision 16) — which sends the caller into a rebuild it didn't
+ * need and can't afford. That cost a red CI run.
+ *
+ * Proving `left/` is enough for a run scoped at the fixture root: those rows sit UNDER
+ * the root, so a root-scoped index read returns them and `index_gave_nothing` is false.
+ */
+async function indexAnswers(): Promise<boolean> {
+  const answer = await mcpCall('search', { pattern: 'file-a*', scope: `${getFixtureRoot()}/left`, limit: 1 })
+  return answer.includes('file-a.txt')
 }
 
 /**
@@ -147,11 +161,9 @@ export async function restoreLocalVolumeIndex(): Promise<void> {
  * Cheap when it already holds: one MCP `search` and no repair, which is the normal case.
  * ❌ Don't replace this with a plain wait — the run parks forever, so no wait is long enough.
  */
-export async function ensureLocalIndexAnswers(scope: string, pattern: string, expected: string): Promise<void> {
-  const answers = async (): Promise<boolean> =>
-    (await mcpCall('search', { pattern, scope, limit: 1 })).includes(expected)
-  if (await answers()) return
-
+export async function ensureLocalIndexAnswers(): Promise<void> {
+  if (await indexAnswers()) return
+  // `restoreLocalVolumeIndex` ends on the same probe, so it either leaves the index
+  // answering or throws saying it couldn't. Re-polling here would only duplicate that.
   await restoreLocalVolumeIndex()
-  await expect.poll(answers, { timeout: 20_000 }).toBe(true)
 }

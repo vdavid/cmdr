@@ -730,10 +730,10 @@ instead of unmounting: the `aria-live="polite"` region has to exist before its c
 mount/unmount would change the dialog's height every time the bar found something to say.
 
 The bar also carries `data-live-phase` (`live?.phase ?? 'idle'`), the typed `QueryStreamPhase` from `query-stream.ts`.
-It is a diagnostic handle, not styling: a stalled run's phase is the difference between "the walk never started" and
-"it parked waiting for another walk", and `wait_for_the_other_walk` has no deadline, so a spec that only sees a
-disabled footer button reports a bare timeout and names nothing. `search-recent.spec.ts` reads it on failure. ❌ Don't
-read the localized status TEXT for this: `cmdr/no-error-string-match` forbids it, and the copy is free to change.
+It is a diagnostic handle, not styling: a stalled run's phase is the difference between "the walk never started" and "it
+parked waiting for another walk", and `wait_for_the_other_walk` has no deadline, so a spec that only sees a disabled
+footer button reports a bare timeout and names nothing. `search-recent.spec.ts` reads it on failure. ❌ Don't read the
+localized status TEXT for this: `cmdr/no-error-string-match` forbids it, and the copy is free to change.
 
 **Gotcha**: ⌘⏎ and ⇧⏎ are explicit no-ops in the dialog. Bare Enter is the only key that runs a search or opens the
 cursor row (dispatched via `enterAction` per D8). The dialog's `handleModifierShortcuts` swallows both modifier

@@ -30,11 +30,13 @@ const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main windo
 
 test.describe('Search dialog: recent searches', () => {
   test('Open-in-pane persists the query to the backend recent-search store', async ({ tauriPage }) => {
-    // 15 s of HEADROOM, not a wait anybody expects to spend: an index-served run
-    // lands results in well under a second, so the body finishes in ~1.3 s. The
-    // budget covers the one slow branch, `ensureLocalIndexAnswers` having to rebuild
-    // an index a previous spec left empty.
-    test.setTimeout(15000)
+    // 45 s of HEADROOM, not a wait anybody expects to spend: an index-served run lands
+    // results in well under a second, so the body finishes in ~1.3 s and the cap is
+    // never approached. It covers only the rare branch where `ensureLocalIndexAnswers`
+    // has to REBUILD an index a previous spec left empty, which waits on a full rescan
+    // (30 s) plus a probe (20 s) and cannot fit in a tight budget. ❗ A 15 s cap turned
+    // that branch into a guaranteed red instead of a slow pass.
+    test.setTimeout(45000)
     // Defensive `.search-overlay` cleanup. The global afterEach safety net in
     // fixtures.ts auto-cleans leaked overlays after each test, BUT this spec's
     // beforeEach drives the search dialog into a specific prefill state via
@@ -54,7 +56,7 @@ test.describe('Search dialog: recent searches', () => {
     // complete leaves the auto-run below with nothing to read, and if another spec's
     // walk still claims the ground the run parks with no deadline at all. An
     // index-served run can't park, and it lands results in ~0.3 s.
-    await ensureLocalIndexAnswers(getFixtureRoot(), 'file*', 'file-a.txt')
+    await ensureLocalIndexAnswers()
 
     // Open the dialog via the MCP `open_search_dialog` tool, prefilling a
     // Filename-mode query and asking for autoRun. This bypasses the dialog's
