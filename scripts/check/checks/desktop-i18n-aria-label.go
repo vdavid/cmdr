@@ -57,13 +57,12 @@ func RunDesktopI18nAriaLabel(ctx *CheckContext) (CheckResult, error) {
 		if broken == 1 {
 			tail = "name that no longer contains its visible label"
 		}
-		msg := fmt.Sprintf(
+		return CheckResult{}, fmt.Errorf(
 			"%d translated accessible %s (WCAG 2.5.3): a voice-control user can't press a control whose name "+
 				"doesn't repeat what they see. Fix by giving the LABEL the form the natural aria sentence already "+
 				"uses, then cutting the label out of that sentence:\n%s",
 			broken, tail, indentOutput(output),
 		)
-		return CheckResult{Code: ResultWarning, Message: msg, Total: -1, Issues: broken, Changes: -1}, nil
 	}
 
 	return CheckResult{}, fmt.Errorf("couldn't run the i18n aria-label check\n%s", indentOutput(output))

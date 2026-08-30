@@ -481,10 +481,10 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "i18n-aria",
 		App:         AppDesktop,
 		Tech:        "\U0001F3A8 Svelte",
-		// WARN class: a translated accessible name that stopped containing its
-		// visible label (WCAG 2.5.3). Known violations ship in `de`, `es`, `pt`, and
-		// `zh`, so it can't gate CI yet; escalate to ERROR once those are fixed.
-		NotInCI:   "warn-only until the four locales with known broken pairs are fixed",
+		// ERROR class: a translated accessible name that stopped containing its
+		// visible label (WCAG 2.5.3) makes the control unpressable by voice control.
+		// Every locale is clean, so there is nothing to grandfather and the gate holds
+		// the line rather than describing where it once was.
 		DependsOn: nil,
 		IsFast:    true,
 		Inputs:    inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),

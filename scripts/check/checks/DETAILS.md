@@ -1373,8 +1373,8 @@ doubles as production code.
   i18n-terms (warn-only, nickname of desktop-i18n-term-consistency; the only CROSS-key check: two keys sharing one
   English value must render one way in a locale, judged on the EFFECTIVE value so a half-forked overlay term is caught,
   with a reasoned allowlist and a ratchet-down `notYetReviewed` baseline for locales that predate it), i18n-aria-label
-  (warn-only, desktop-i18n-aria-label; a translated `fooAria` must still CONTAIN its visible `foo` label (WCAG 2.5.3),
-  gated on English getting it right, so it needs no allowlist). Those eight locale checks share one classification of
+  (ERROR, desktop-i18n-aria-label; a translated `fooAria` must still CONTAIN its visible `foo` label (WCAG 2.5.3),
+  gated on English getting it right, so it needs no allowlist and grandfathers nothing). Those eight locale checks share one classification of
   every locale as a full translation or an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`;
   rule table in `docs/guides/i18n.md` § Overlay catalogs). The Go side deliberately doesn't mirror it:
   `nonEnLocaleCount` counts catalog dirs for the success lines and nothing more, because classifying needs CLDR script
