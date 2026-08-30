@@ -63,6 +63,12 @@ Three shapes are worth knowing here:
   `"Show All"`, `"Zoom"`, …) and only interpolates the app name into `About`/`Hide`/`Quit`; macOS does NOT localize them
   for us, because these are plain `NSMenuItem`s muda creates, not system-provided ones. (Verified by reading muda
   0.19.3's predefined-item source, 2026-08-19.) So a `None` text argument ships an English label into a translated menu.
+- **Cmdr's capitalization wins over Apple's, including on the standard items.** `menu.app.showAll` is `Show all` and
+  `menu.app.hideOthers` is `Hide others`, though Apple writes both Title Case. This menu bar is sentence case
+  throughout (`Go to path…` against Apple's `Go to Folder…`), the palette and shortcuts list name the same commands
+  through `commands.app*.label`, and, per the bullet above, these are our own `NSMenuItem`s sitting next to no
+  system-supplied sibling to match. ❌ Don't "restore" Apple's casing on those two: it reopens the split where one
+  command had two names.
 
 ### Rebuilding on a language change
 

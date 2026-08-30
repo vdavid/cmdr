@@ -1357,10 +1357,10 @@ doubles as production code.
   i18n capture report and the catalogs' `@key.screenshot` couplings; runs the coupler's `--check`, reads no PNGs),
   i18n-stale (warn-only; a non-`en` translation whose `@key.sourceHash` no longer matches the value it was translated
   from), i18n-parity (ERROR; each locale key's `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must
-  equal that of the value it renders instead of, since a mismatch crashes at runtime), i18n-icu (ERROR; every message
-  is written in its own family's grammar: an ICU message must compile via `intl-messageformat`, and a RAW value
-  (`errors.*` plus the native `menu.*`) must carry no ICU escaping, since a doubled `''` renders verbatim there; the one
-  locale check that inspects `en` too, the rule being about a catalog's own syntax), i18n-tag-param-collision (ERROR; a message
+  equal that of the value it renders instead of, since a mismatch crashes at runtime), i18n-icu (ERROR; every message is
+  written in its own family's grammar: an ICU message must compile via `intl-messageformat`, and a RAW value (`errors.*`
+  plus the native `menu.*`) must carry no ICU escaping, since a doubled `''` renders verbatim there; the one locale
+  check that inspects `en` too, the rule being about a catalog's own syntax), i18n-tag-param-collision (ERROR; a message
   naming a `<tag>` and a `{param}` alike renders the param as a stringified handler, because `Trans` lets the tag win
   the merged lookup), i18n-trans-snippets (ERROR; a message `<tag>` with no matching `snippets={{ … }}` key at the call
   site renders as nothing, so its inner text silently vanishes; catches a rename finished on only one side), i18n-plural
@@ -1368,23 +1368,22 @@ doubles as production code.
   i18n-coverage (ERROR; for a full translation, keys missing from the locale or still showing English without a
   `@key.sameAsSourceJustification`, either of which ships a half-translated locale. "Still English" is byte-identical OR
   English text under a plural/select branch set the locale legitimately changed, which byte comparison alone reads as
-  translated; for an OVERLAY the rules invert, and
-  a key identical to what it overrides, or unknown to it, is the finding), i18n-dont-translate (warn-only; a curated
-  brand/system token English carries but the locale dropped), i18n-terms (warn-only, nickname of
-  desktop-i18n-term-consistency; the only CROSS-key check: two keys sharing one English value must render one way in a
-  locale, judged on the EFFECTIVE value so a half-forked overlay term is caught, with a reasoned allowlist and a
-  ratchet-down `notYetReviewed` baseline for locales that predate it), i18n-aria-label (warn-only,
-  desktop-i18n-aria-label; a translated `fooAria` must still CONTAIN its visible `foo` label (WCAG 2.5.3), gated on
-  English getting it right, so it needs no allowlist). Those eight locale checks share one classification of every
-  locale as a full translation or an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`; rule
-  table in `docs/guides/i18n.md` § Overlay catalogs). The Go side deliberately doesn't mirror it: `nonEnLocaleCount`
-  counts catalog dirs for the success lines and nothing more, because classifying needs CLDR script data (`zh-Hant` is
-  NOT an overlay of Simplified `zh`) that Node's `Intl` has and Go doesn't, and an approximate second copy would drift
-  exactly where it matters. i18n-terms goes one step further and echoes the script's own last line as its success
-  message, so the untriaged-divergence total is stated once, by the layer that computed it. Then bundle-size (warn-only;
-  builds a production-shaped frontend into a private dir and compares its total against a committed baseline, since the
-  app embeds this output so every byte ships in each silent update and is parsed before first paint), knip, type-drift,
-  tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+  translated; for an OVERLAY the rules invert, and a key identical to what it overrides, or unknown to it, is the
+  finding), i18n-dont-translate (warn-only; a curated brand/system token English carries but the locale dropped),
+  i18n-terms (warn-only, nickname of desktop-i18n-term-consistency; the only CROSS-key check: two keys sharing one
+  English value must render one way in a locale, judged on the EFFECTIVE value so a half-forked overlay term is caught,
+  with a reasoned allowlist and a ratchet-down `notYetReviewed` baseline for locales that predate it), i18n-aria-label
+  (warn-only, desktop-i18n-aria-label; a translated `fooAria` must still CONTAIN its visible `foo` label (WCAG 2.5.3),
+  gated on English getting it right, so it needs no allowlist). Those eight locale checks share one classification of
+  every locale as a full translation or an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`;
+  rule table in `docs/guides/i18n.md` § Overlay catalogs). The Go side deliberately doesn't mirror it:
+  `nonEnLocaleCount` counts catalog dirs for the success lines and nothing more, because classifying needs CLDR script
+  data (`zh-Hant` is NOT an overlay of Simplified `zh`) that Node's `Intl` has and Go doesn't, and an approximate second
+  copy would drift exactly where it matters. i18n-terms goes one step further and echoes the script's own last line as
+  its success message, so the untriaged-divergence total is stated once, by the layer that computed it. Then bundle-size
+  (warn-only; builds a production-shaped frontend into a private dir and compares its total against a committed
+  baseline, since the app embeds this output so every byte ships in each silent update and is parsed before first
+  paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input
