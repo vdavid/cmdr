@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};
 use std::time::{Duration, Instant};
 
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::WatchCoverage;
 
 use crate::file_system::listing::metadata::{FileEntry, TagRef};
@@ -822,8 +823,84 @@ pub(super) fn spawn_full_refresh(
     tauri::async_runtime::spawn(notify_full_refresh(volume_id, parent_path, listings));
 }
 
+/// One directory's refresh turnstile: an async lock plus a flag saying whether a
+/// refresh is already queued behind the running one.
+struct RefreshSlot {
+    lock: std::sync::Arc<tokio::sync::Mutex<()>>,
+    queued: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+/// Per-directory turnstiles for [`notify_full_refresh`], keyed by the pair that
+/// identifies the directory a refresh re-reads.
+static REFRESH_SLOTS: LazyLock<RwLock<HashMap<(String, PathBuf), RefreshSlot>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Hands out (creating on first use) the turnstile for one directory.
+fn refresh_slot(volume_id: &str, parent_path: &Path) -> RefreshSlot {
+    let key = (volume_id.to_string(), parent_path.to_path_buf());
+    if let Some(slot) = REFRESH_SLOTS.read_ignore_poison().get(&key) {
+        return RefreshSlot {
+            lock: slot.lock.clone(),
+            queued: slot.queued.clone(),
+        };
+    }
+    let mut slots = REFRESH_SLOTS.write_ignore_poison();
+    // Drop turnstiles nobody holds any more. A slot is one `String` + `PathBuf` + two
+    // `Arc`s, but there is one per directory that ever saw a refresh, so without this a
+    // long session browsing a big tree accumulates them for directories it left hours
+    // ago. `strong_count == 1` means this map holds the only reference: no refresh is
+    // running or queued there, so removing it can't strand a waiter.
+    slots.retain(|_, slot| std::sync::Arc::strong_count(&slot.lock) > 1);
+    let slot = slots.entry(key).or_insert_with(|| RefreshSlot {
+        lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
+        queued: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+    });
+    RefreshSlot {
+        lock: slot.lock.clone(),
+        queued: slot.queued.clone(),
+    }
+}
+
 /// Re-reads a directory via the Volume trait, computes a diff, and queues it.
-async fn notify_full_refresh(
+///
+/// ❗ Refreshes of the SAME directory are serialized, and read-then-write is atomic
+/// against each other because of it. Without that, a burst of writes fires several
+/// refreshes at once and each does its own read before replacing the cached listing
+/// wholesale, so a read that STARTED earlier can LAND later and reinstate a directory
+/// state that has already been superseded. Nothing re-reads afterwards, so the pane
+/// keeps showing the older truth until an unrelated event corrects it: files that are
+/// on disk read as missing for as long as the folder stays quiet. That is reachable by
+/// any heavy external burst — an unzip, a `git checkout`, an rsync into a watched
+/// folder — and it cost an E2E flake before it was understood
+/// (`a_slow_refresh_cannot_overwrite_the_listing_a_newer_one_already_wrote`).
+///
+/// At most one refresh runs and one waits per directory: a third arrival returns
+/// immediately, because the one already queued will start its read after the running
+/// one finishes and so cannot answer with anything staler. That bounds a storm to two
+/// reads instead of one per event, which is also why this is cheaper than what it
+/// replaces, not just safer.
+///
+/// `pub(super)` so a test can await one directly rather than through the spawn.
+pub(super) async fn notify_full_refresh(
+    volume_id: String,
+    parent_path: PathBuf,
+    listings: Vec<(String, SortColumn, SortOrder, DirectorySortMode)>,
+) {
+    let slot = refresh_slot(&volume_id, &parent_path);
+    // Claim the single waiting berth. Losing the race means somebody is already queued
+    // to read AFTER the current refresh, which covers this request too.
+    if slot.queued.swap(true, Ordering::AcqRel) {
+        return;
+    }
+    let _turn = slot.lock.lock().await;
+    // The berth is free again the moment this refresh OWNS the turn: its own read is
+    // still ahead, so a request arriving now must be allowed to queue behind it.
+    slot.queued.store(false, Ordering::Release);
+    notify_full_refresh_locked(volume_id, parent_path, listings).await;
+}
+
+/// The body of one refresh, with the directory's turn already held.
+async fn notify_full_refresh_locked(
     volume_id: String,
     parent_path: PathBuf,
     listings: Vec<(String, SortColumn, SortOrder, DirectorySortMode)>,

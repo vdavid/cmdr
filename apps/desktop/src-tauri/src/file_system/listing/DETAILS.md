@@ -458,3 +458,35 @@ That's not a regression: local listings run inside `spawn_blocking`, which `abor
 
 Pinned by `streaming_test::test_cancel_unwinds_the_listing_instead_of_aborting_it`, which drives a fake volume that
 only ends when its token flips and fails if its future is dropped first.
+
+## Serializing full refreshes
+
+A `FullRefresh` re-reads the directory through the Volume trait, diffs the result against the cached listing, and then
+REPLACES that listing wholesale. Read and write are two steps, so two refreshes of the same directory running at once
+can finish in the opposite order to the one they started in, and the loser writes a snapshot the winner has already
+superseded.
+
+**Why that is worse than a flicker.** Nothing schedules a re-read afterwards. The listing keeps the older truth until
+some unrelated event happens to touch the directory again, so entries that exist on disk are simply absent from the
+pane — for as long as the folder stays quiet. Watched folders take bursts all the time (an unzip, a `git checkout`, an
+rsync, a build writing output), and a burst is exactly what fires several refreshes at once.
+
+`notify_full_refresh` therefore takes a per-directory turnstile, keyed on `(volume_id, parent_path)` — the pair that
+identifies what a refresh re-reads — before doing anything. Holding it across the read makes read-then-write atomic
+against other refreshes of that directory, which is the whole guarantee: a refresh that starts later reads later, so it
+cannot answer with a staler directory.
+
+**At most one runs and one waits.** A third arrival returns immediately rather than queueing: the refresh already
+queued starts its read after the running one finishes, so it will observe everything the third arrival would have. That
+turns a storm of N events into two reads instead of N, which matters most on the big directories where a refresh is
+expensive. Both properties are pinned by
+`a_slow_refresh_cannot_overwrite_the_listing_a_newer_one_already_wrote` and
+`a_storm_of_refreshes_costs_two_reads_of_the_directory_not_one_per_event`, which script a fake volume so the slow read
+is the one that started first (otherwise the interleaving is timing-dependent and the test is itself a flake).
+
+The turnstile map prunes entries whose only remaining reference is the map itself, so a long session browsing a wide
+tree doesn't accumulate one per directory it has left.
+
+❌ Don't "optimize" this back into concurrent refreshes. The cost it removes is real and the failure it prevents is
+silent: the pane looks settled and correct, which is why it went unexplained through several E2E flakes before the
+duration evidence pinned it.

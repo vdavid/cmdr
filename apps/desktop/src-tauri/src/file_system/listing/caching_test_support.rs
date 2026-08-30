@@ -298,3 +298,116 @@ impl Volume for WatchCoverageVolume {
         self.inner.open_read_stream(path)
     }
 }
+
+/// A `Volume` whose `list_directory` answers from a SCRIPT: each call pops the next
+/// `(delay, entries)` pair, so a test can make an early read finish late.
+///
+/// This is what makes the full-refresh ordering hazard reproducible. Two refreshes
+/// of one directory each do read-then-write-the-cache; if the read that started
+/// FIRST also finishes LAST, it writes a snapshot the newer one has already
+/// superseded, and the cache keeps the older truth until some later event happens
+/// to correct it. Without a scripted delay the interleaving is timing-dependent and
+/// a test for it would itself be a flake.
+pub(crate) struct ScriptedListVolume {
+    inner: InMemoryVolume,
+    script: std::sync::Mutex<std::collections::VecDeque<(std::time::Duration, Vec<FileEntry>)>>,
+}
+
+impl ScriptedListVolume {
+    pub(crate) fn new(name: &str, script: Vec<(std::time::Duration, Vec<FileEntry>)>) -> Self {
+        Self {
+            inner: InMemoryVolume::new(name),
+            script: std::sync::Mutex::new(script.into_iter().collect()),
+        }
+    }
+
+    /// Scripted reads not yet consumed. A test asserts on this to count how many
+    /// times the directory was actually read.
+    pub(crate) fn unread(&self) -> usize {
+        self.script.lock().map(|s| s.len()).unwrap_or(0)
+    }
+}
+
+impl Volume for ScriptedListVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        let next = self.script.lock().ok().and_then(|mut s| s.pop_front());
+        Box::pin(async move {
+            match next {
+                Some((delay, entries)) => {
+                    // allowed-test-sleep: the scripted latency IS the subject — it is what makes the
+                    // read that started first finish last, deterministically.
+                    tokio::time::sleep(delay).await;
+                    Ok(entries)
+                }
+                None => Ok(Vec::new()),
+            }
+        })
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        self.inner.get_metadata(path)
+    }
+
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        self.inner.exists(path)
+    }
+
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        self.inner.is_directory(path)
+    }
+
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        self.inner.get_space_info()
+    }
+
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        self.inner.scan_for_copy(path)
+    }
+
+    fn scan_for_copy_batch<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        self.inner.scan_for_copy_batch(paths)
+    }
+
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        source_items: &'a [SourceItemInfo],
+        dest_path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
+        self.inner.scan_for_conflicts(source_items, dest_path)
+    }
+
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.inner.open_read_stream(path)
+    }
+}

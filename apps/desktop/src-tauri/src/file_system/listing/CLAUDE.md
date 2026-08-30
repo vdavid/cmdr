@@ -21,12 +21,14 @@ non-blocking I/O and progress events.
   (`file_system::staging`), so `CachedListing::rows` is the ONLY filter point, on READ, never on cache fill. Every path
   goes through the path map: `indices_of_paths` for a batch, `index_of_path` for one (rides a map, never builds one).
   ❗ A MUTATING caller resolves BEFORE `entries_mut`, which drops both maps. `entries` is private, so no accessor can
-  grow its own filter or leave a stale one — three had, each a row off. Re-deriving per item wedged a 74k directory,
-  cost 418 ms per 500-path tag chunk at 300k rows, and made a 500-path watcher removal 1,000 walks. A tag write skips `entries_mut` deliberately: a tag is no name, sort key, or path.
+  grow its own filter or leave a stale one — three had, each a row off. Re-deriving per item wedged a 74k directory
+  (the measured costs are in `DETAILS.md`). A tag write skips `entries_mut` deliberately: a tag is no name, sort key, or path.
   `visible_rows_test.rs` and `path_index_test.rs` pin the counts. `DETAILS.md` § "Row numbers" and § "Entries by path".
 - **Listing read commands are `async`.** A sync `#[tauri::command]` runs on the main thread in Tauri 2, so one slow
   accessor stops the app answering IPC at all.
 - **Watcher diffs must update the cache AND emit an event**, else stale data or no update.
+- **Refreshes of ONE directory stay serialized** (`notify_full_refresh`): concurrently, an older read lands last and
+  strands a pane missing files with nothing to re-read it. `DETAILS.md` § "Serializing full refreshes".
 - **The full re-read watcher path re-sorts `new_entries` before `compute_diff`** (looks like a double-sort, isn't):
   `list_directory_core` always returns Name/Asc, so without it add/remove indices come out wrong.
 - **All `directory-diff` emits go through `diff_emitter::enqueue_diff`, never `app.emit`.** Direct emits bypass the

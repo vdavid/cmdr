@@ -826,3 +826,155 @@ fn spawn_full_refresh_survives_a_thread_with_no_tokio_runtime() {
         "dispatching a FullRefresh from a runtime-less thread must not panic"
     );
 }
+
+// ============================================================================
+// Concurrent FullRefresh ordering
+// ============================================================================
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_slow_refresh_cannot_overwrite_the_listing_a_newer_one_already_wrote() {
+    // The hazard, seen as an E2E flake on 2026-08-30: a burst of writes into a watched
+    // folder fires several `FullRefresh`es, each of which reads the directory and then
+    // REPLACES the cached listing wholesale. Read and write are not atomic together, so
+    // a read that started earlier can land later and reinstate a directory state that
+    // has already been superseded. Nothing re-reads afterwards, so the pane keeps
+    // showing the older truth until some unrelated event happens to correct it: files
+    // that are on disk are simply missing, for as long as the folder stays quiet.
+    //
+    // Scripted so the FIRST read is the SLOW one: refresh A sees the folder mid-write
+    // (`alpha` only) and takes 150 ms; refresh B sees it complete and returns at once.
+    use super::caching::notify_full_refresh;
+    use super::caching_test_support::ScriptedListVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    let volume_id = unique_test_id("refresh-order-vol");
+    let dir = PathBuf::from(format!("/test/{}", unique_test_id("refresh-order-dir")));
+
+    let mid_write = vec![make_entry("alpha", true, None)];
+    let complete = vec![
+        make_entry("alpha", true, None),
+        make_entry("bravo", true, None),
+        make_entry("charlie", true, None),
+        make_entry("delta.txt", false, Some(4)),
+    ];
+
+    get_volume_manager().register(
+        &volume_id,
+        Arc::new(ScriptedListVolume::new(
+            "scripted",
+            vec![
+                (Duration::from_millis(150), mid_write.clone()),
+                (Duration::from_millis(0), complete.clone()),
+            ],
+        )),
+    );
+
+    let listing = TestListing::new()
+        .volume(&volume_id)
+        .path(dir.clone())
+        .entries(mid_write.clone())
+        .insert("refresh-order");
+
+    let listings = vec![(
+        listing.id().to_string(),
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )];
+
+    // A starts first and reads the mid-write folder slowly; B starts second and reads
+    // the finished folder immediately. Both are in flight at once, exactly as two
+    // watcher events during one burst are.
+    let a = notify_full_refresh(volume_id.clone(), dir.clone(), listings.clone());
+    let b = async {
+        // allowed-test-sleep: a deliberate head start, so A is provably the refresh that
+        // started first. The ORDER is the subject; there is no condition to wait on.
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        notify_full_refresh(volume_id.clone(), dir.clone(), listings.clone()).await;
+    };
+    tokio::join!(a, b);
+
+    let names: Vec<String> = listing.entries().into_iter().map(|e| e.name).collect();
+    assert_eq!(
+        names,
+        vec!["alpha", "bravo", "charlie", "delta.txt"],
+        "the cached listing must end at the newest directory state; the slow refresh's \
+         stale snapshot reinstated entries that no longer reflect the folder"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_storm_of_refreshes_costs_two_reads_of_the_directory_not_one_per_event() {
+    // Serializing refreshes would be enough for correctness on its own, but it would
+    // also queue one read per watcher event, and a burst on a big directory is exactly
+    // when that is most expensive. At most one refresh runs and one waits: a third
+    // arrival returns immediately, because the one already queued starts its read AFTER
+    // the running one finishes and so cannot answer with anything staler.
+    use super::caching::notify_full_refresh;
+    use super::caching_test_support::ScriptedListVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    let volume_id = unique_test_id("refresh-storm-vol");
+    let dir = PathBuf::from(format!("/test/{}", unique_test_id("refresh-storm-dir")));
+    let settled = vec![make_entry("alpha", true, None), make_entry("bravo", true, None)];
+
+    // Six scripted reads available; a slow first one guarantees the rest pile up.
+    let volume = Arc::new(ScriptedListVolume::new(
+        "scripted",
+        (0..6)
+            .map(|i| {
+                (
+                    if i == 0 {
+                        Duration::from_millis(120)
+                    } else {
+                        Duration::from_millis(0)
+                    },
+                    settled.clone(),
+                )
+            })
+            .collect(),
+    ));
+    get_volume_manager().register(&volume_id, volume.clone());
+
+    let listing = TestListing::new()
+        .volume(&volume_id)
+        .path(dir.clone())
+        .entries(Vec::new())
+        .insert("refresh-storm");
+    let listings = vec![(
+        listing.id().to_string(),
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )];
+
+    let first = notify_full_refresh(volume_id.clone(), dir.clone(), listings.clone());
+    let rest = async {
+        // allowed-test-sleep: the burst has to land while the first read is still in
+        // flight, which is a head start, not a condition anything can signal.
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        // Five more events land while the first read is still in flight, all at once —
+        // awaiting them in turn would serialize the ARRIVALS and never test coalescing.
+        let mut handles = Vec::new();
+        for _ in 0..5 {
+            let (v, d, l) = (volume_id.clone(), dir.clone(), listings.clone());
+            handles.push(tokio::spawn(async move { notify_full_refresh(v, d, l).await }));
+        }
+        for h in handles {
+            let _ = h.await;
+        }
+    };
+    tokio::join!(first, rest);
+
+    assert_eq!(
+        volume.unread(),
+        4,
+        "six events during one burst must cost two directory reads (one running, one queued), not six"
+    );
+    let names: Vec<String> = listing.entries().into_iter().map(|e| e.name).collect();
+    assert_eq!(names, vec!["alpha", "bravo"], "and the listing still ends settled");
+}
