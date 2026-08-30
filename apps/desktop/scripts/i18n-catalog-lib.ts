@@ -17,7 +17,10 @@
  *     the `plural`/`select` categories per argument. A single source of truth for
  *     "what tokens/structure does this message have", plus its mirror image,
  *     `visibleLiterals`: the copy with every identifier stripped, which is what a
- *     vocabulary sweep must match words against.
+ *     vocabulary sweep must match words against. `showsOnlySourceText` compares two
+ *     messages on that same axis: same words in the same arrangement, whatever
+ *     plural/select branch set each one uses, which is how the coverage check sees
+ *     an untranslated counter whose branch categories are correctly the locale's own.
  *  3. Source hashing: `sourceHash(value)` is a git-style 7-char hex of an English
  *     value, stamped into `@key.sourceHash` by the pseudolocale generator and
  *     compared by the stale check.
