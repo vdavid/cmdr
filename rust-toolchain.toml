@@ -8,7 +8,14 @@ channel = "1.97.1"
 # of which need their respective components installed. Declare them here so
 # the runner picks them up automatically — without this, every CI Rust job
 # fails at the rustfmt step.
-components = ["rustfmt", "clippy"]
+# `rust-analyzer` backs no CI check; it powers code intelligence for editors and
+# for agent sessions (Claude Code's LSP tool spawns the rustup `rust-analyzer`
+# shim, which resolves against this pin). Listing it here is what keeps it alive
+# across pin bumps: added manually with `rustup component add`, it vanishes the
+# next time Renovate moves `channel`, and the breakage reads like a rust-analyzer
+# bug rather than a missing component. Costs a small extra toolchain sync per CI
+# job, since `Swatinem/rust-cache` caches `target/` and the registry, not `~/.rustup`.
+components = ["rustfmt", "clippy", "rust-analyzer"]
 # Release builds the universal binary from both arch targets, so the pinned
 # channel needs both available. Listing them here makes rustup auto-sync them
 # the first time the toolchain is resolved; no separate `rustup target add`
