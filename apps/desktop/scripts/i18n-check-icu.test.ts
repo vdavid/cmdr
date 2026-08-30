@@ -1,10 +1,12 @@
 /**
- * Tests for the ICU-validity check (`i18n-check-icu.ts`).
+ * Tests for the message-syntax check (`i18n-check-icu.ts`), which holds each
+ * family to its own grammar: ICU keys must compile, raw keys must not carry ICU
+ * escaping.
  *
  * Clean path: the committed pseudolocale fixture is valid ICU (its raw
- * `errors.*` value is correctly skipped). Negative path: corrupt one ICU value
- * to break parsing and assert exactly that key is flagged; plus a guard that a
- * raw `errors.*` value that ISN'T valid ICU is NOT flagged.
+ * `errors.*` value is correctly skipped). Negative paths: corrupt one ICU value
+ * to break parsing, put a doubled `''` in a raw value, and do the same in `en`
+ * itself; plus a guard that a raw value that ISN'T valid ICU is NOT flagged.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'

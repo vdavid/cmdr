@@ -58,9 +58,10 @@ runtime `../CLAUDE.md`). The apostrophe-doubling rule above is the OPPOSITE here
   them).
 
 The unit on which this raw/ICU split is decided is the KEY PREFIX (`errors.`), single-sourced as `isRawKey()` in
-`apps/desktop/src/lib/error-messages/CLAUDE.md`. The locale checks honor it: the ICU-validity check (`desktop-i18n-icu`)
-SKIPS `errors.*` (so valid raw copy isn't flagged as invalid ICU), and the parity check (`desktop-i18n-parity`) compares
-the raw `{token}` set instead of an ICU placeholder set for these keys. Translator-facing version of this note:
+`apps/desktop/src/lib/error-messages/CLAUDE.md`. The locale checks honor it: the message-syntax check
+(`desktop-i18n-icu`) doesn't ICU-parse a raw value (so valid raw copy isn't flagged as invalid ICU) and instead holds it
+to the mirror rule, no ICU escaping (a doubled `''` renders verbatim here), and the parity check
+(`desktop-i18n-parity`) compares the raw `{token}` set instead of an ICU placeholder set for these keys. Translator-facing version of this note:
 `docs/guides/i18n.md` § Error pipeline.
 
 ## `@key` metadata schema
