@@ -535,7 +535,8 @@ fn wait_for_the_other_walk(
 /// The stall threshold a run waits under.
 ///
 /// Production is [`OTHER_WALK_STALL`] itself. A test may compress it
-/// ([`compress_stall_for_test`]) because what it pins end to end is the give-up
+/// (`compress_stall_for_test`, plain backticks because it is `cfg(test)` and rustdoc
+/// builds without it) because what it pins end to end is the give-up
 /// and what the run reports after it, and 30 s of the suite's wall clock buys
 /// neither; the NUMBER is pinned by `StallWatch`'s own tests, which move a clock
 /// instead of a threshold.
