@@ -20,6 +20,7 @@
 
 import { test, expect } from './fixtures.js'
 import { ensureAppReady, getFixtureRoot, pollUntil } from './helpers.js'
+import { ensureLocalIndexAnswers } from './search-walk-ground.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 
 // The footer action button is labelled "Show all in main window" and is always in the DOM,
@@ -29,9 +30,10 @@ const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main windo
 
 test.describe('Search dialog: recent searches', () => {
   test('Open-in-pane persists the query to the backend recent-search store', async ({ tauriPage }) => {
-    // 15 s: opens the dialog through MCP (which roundtrips through HTTP),
-    // waits for the index to land a result, then polls the persistence
-    // IPC. The 8 s default is too tight for the combined latency.
+    // 15 s of HEADROOM, not a wait anybody expects to spend: an index-served run
+    // lands results in well under a second, so the body finishes in ~1.3 s. The
+    // budget covers the one slow branch, `ensureLocalIndexAnswers` having to rebuild
+    // an index a previous spec left empty.
     test.setTimeout(15000)
     // Defensive `.search-overlay` cleanup. The global afterEach safety net in
     // fixtures.ts auto-cleans leaked overlays after each test, BUT this spec's
@@ -45,6 +47,14 @@ test.describe('Search dialog: recent searches', () => {
     })()`)
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
+
+    // ❗ Prove the index can answer for this scope BEFORE opening the dialog. The
+    // live-walk specs earlier in this shard (`search-live`, `search-walk-handoff`)
+    // empty the local index and put it back from an `afterAll`; a restore that didn't
+    // complete leaves the auto-run below with nothing to read, and if another spec's
+    // walk still claims the ground the run parks with no deadline at all. An
+    // index-served run can't park, and it lands results in ~0.3 s.
+    await ensureLocalIndexAnswers(getFixtureRoot(), 'file*', 'file-a.txt')
 
     // Open the dialog via the MCP `open_search_dialog` tool, prefilling a
     // Filename-mode query and asking for autoRun. This bypasses the dialog's
@@ -67,10 +77,24 @@ test.describe('Search dialog: recent searches', () => {
       autoRun: true,
     })
 
-    // The footer's "Open in pane" only enables once `resultCount > 0`. Waiting
-    // for the button is the observable signal that the search ran and landed
-    // results.
-    await tauriPage.waitForSelector(OPEN_IN_PANE_BUTTON, 5000)
+    // The footer's "Open in pane" only enables once `resultCount > 0`, so the button
+    // is the observable signal that the search ran and landed results. Poll rather
+    // than `waitForSelector` so a failure reports the phase the run is sitting in
+    // (`data-live-phase` on the status bar) instead of a bare timeout — the whole
+    // difference between "it parked waiting for another walk" and "it never started".
+    await expect
+      .poll(
+        async () => {
+          const enabled = (await tauriPage.count(OPEN_IN_PANE_BUTTON)) > 0
+          if (enabled) return 'enabled'
+          return await tauriPage.evaluate<string>(`(function(){
+              var bar = document.querySelector('.search-overlay .status-bar');
+              return 'live-phase=' + (bar ? bar.getAttribute('data-live-phase') : 'no status bar');
+          })()`)
+        },
+        { timeout: 5000 },
+      )
+      .toBe('enabled')
 
     await tauriPage.click(OPEN_IN_PANE_BUTTON)
 

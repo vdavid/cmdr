@@ -129,3 +129,28 @@ export async function restoreLocalVolumeIndex(): Promise<void> {
     })
     .toContain('file-a.txt')
 }
+
+/**
+ * Makes sure the local index can answer for `scope`, repairing it if it can't.
+ *
+ * A search whose index holds nothing for its scope can PARK: when every frontier root
+ * is already claimed by another walk, `search/execute/live_run.rs::wait_for_the_other_walk`
+ * waits for that walk with no deadline (by design — the alternative is the empty answer
+ * it exists to remove). A spec that treats the dialog's results as bounded then dies on
+ * whatever wait it used, having proven nothing.
+ *
+ * Both preconditions are inherited, not caused: [`makeLocalVolumeUnindexed`] empties the
+ * index and [`restoreLocalVolumeIndex`] puts it back from an `afterAll`, so a restore that
+ * didn't complete lands on a later spec in the shard. An index-served run can't park, so
+ * proving one is the whole guard.
+ *
+ * Cheap when it already holds: one MCP `search` and no repair, which is the normal case.
+ * ❌ Don't replace this with a plain wait — the run parks forever, so no wait is long enough.
+ */
+export async function ensureLocalIndexAnswers(scope: string, pattern: string, expected: string): Promise<void> {
+  const answers = async (): Promise<boolean> => (await mcpCall('search', { pattern, scope, limit: 1 })).includes(expected)
+  if (await answers()) return
+
+  await restoreLocalVolumeIndex()
+  await expect.poll(answers, { timeout: 20_000 }).toBe(true)
+}

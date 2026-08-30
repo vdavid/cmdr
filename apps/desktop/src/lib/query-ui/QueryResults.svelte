@@ -601,7 +601,15 @@
          own progress, where it has got to, and the way to stop it. The `aria-live` region is
          the INNER span, carrying a throttled copy, because the visible numbers move ten times
          a second and a screen reader can't be asked to read that. -->
-    <div class="status-bar" class:is-empty={!statusText && !streaming}>
+    <!-- `data-live-phase` names the phase a stalled run is sitting in, so a test (or a bug
+         report) says WHICH wait it died in rather than "the button never enabled". The union
+         is typed (`query-stream.ts`), which keeps readers off the localized status copy that
+         `cmdr/no-error-string-match` forbids matching on. -->
+    <div
+        class="status-bar"
+        class:is-empty={!statusText && !streaming}
+        data-live-phase={live?.phase ?? 'idle'}
+    >
         <span class="status-text">{statusText}</span>
         {#if walkProgress}
             <span class="status-progress">{walkProgress}</span>
