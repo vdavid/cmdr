@@ -473,6 +473,7 @@ fn the_failure_backstop_tripping_in_one_root_spares_the_roots_behind_it() {
     for still_to_walk in [&b, &c] {
         assert!(
             covered.frontier.contains(still_to_walk),
+            // allowed-pluralize-noun: `still_to_walk` is a PATH, not a count, so "stays" is right.
             "{still_to_walk} stays frontier, so the search after the share wakes up simply walks it: {covered:?}"
         );
     }
