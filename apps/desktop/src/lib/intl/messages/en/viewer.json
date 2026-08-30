@@ -202,8 +202,7 @@
   "viewer.toolbar.viewMode.viewAsText": "View as text",
   "@viewer.toolbar.viewMode.viewAsText": {
     "description": "Option in the view-mode dropdown (shown for an image or PDF) that switches to reading the file's raw text instead of the rendered media.",
-    "screenshot": "viewer-search.png",
-    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+    "screenshot": "viewer-view-mode.png"
   },
   "viewer.toolbar.viewMode.viewAsImage": "View as image",
   "@viewer.toolbar.viewMode.viewAsImage": {
@@ -220,8 +219,7 @@
   "viewer.kind.image": "Image",
   "@viewer.kind.image": {
     "description": "Label for the image content kind, shown in the view-mode dropdown and the status bar.",
-    "screenshot": "viewer-search.png",
-    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+    "screenshot": "viewer-view-mode.png"
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
@@ -361,8 +359,7 @@
   "viewer.statusBar.hint.image": "Click 100% / fit · Scroll zoom · Drag pan",
   "@viewer.statusBar.hint.image": {
     "description": "Status-bar hint listing the image interactions: clicking toggles between 100% and fit-to-window, scrolling zooms, dragging pans. Middle-dot separators between the three; keep \"100%\". \"fit\" = fit to window, \"pan\" = move the view around.",
-    "screenshot": "viewer-search.png",
-    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+    "screenshot": "viewer-view-mode.png"
   },
   "viewer.statusBar.hint.text": "W wrap · F tail · ⌘F search",
   "@viewer.statusBar.hint.text": {
@@ -376,8 +373,7 @@
       "width": "image width in pixels, already formatted (e.g. 1,920)",
       "height": "image height in pixels, already formatted (e.g. 1,080)"
     },
-    "screenshot": "viewer-search.png",
-    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+    "screenshot": "viewer-view-mode.png"
   },
   "viewer.image.loading": "Loading image",
   "@viewer.image.loading": {

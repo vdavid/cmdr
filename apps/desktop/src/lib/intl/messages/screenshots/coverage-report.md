@@ -16,7 +16,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2232 / 3181 keys have a screenshot (70%):** 1277 direct (40%) and 955 representative (30%). 818 remain
+**Total: 2233 / 3181 keys have a screenshot (70%):** 1282 direct (40%) and 951 representative (30%). 817 remain
 uncoupled, and 131 are native surfaces a webview capture cannot reach.
 
 | Area           | Direct | Representative | Uncoupled | Native | Total | Any % |
@@ -31,7 +31,7 @@ uncoupled, and 131 are native surfaces a webview capture cannot reach.
 | errorReporter  |     17 |              0 |        27 |      0 |    44 |   39% |
 | errors         |     68 |            335 |         0 |      0 |   403 |  100% |
 | feedback       |      7 |              0 |         6 |      0 |    13 |   54% |
-| fileExplorer   |    121 |             86 |       164 |      0 |   371 |   56% |
+| fileExplorer   |    122 |             86 |       163 |      0 |   371 |   56% |
 | fileOperations |    105 |             48 |        46 |      0 |   199 |   77% |
 | goToPath       |      5 |              0 |         5 |      0 |    10 |   50% |
 | indexing       |     33 |              0 |        31 |      0 |    64 |   52% |
@@ -53,22 +53,22 @@ uncoupled, and 131 are native surfaces a webview capture cannot reach.
 | transfer       |      2 |              0 |        10 |      0 |    12 |   17% |
 | ui             |     13 |              0 |         9 |      0 |    22 |   59% |
 | updates        |      5 |             13 |         0 |      0 |    18 |  100% |
-| viewer         |     25 |             68 |         0 |      0 |    93 |  100% |
+| viewer         |     29 |             64 |         0 |      0 |    93 |  100% |
 | whatsNew       |      6 |              0 |         2 |      0 |     8 |   75% |
 
 ## Surfaces to review
 
-The run captured 143 surfaces. This section is regenerated every run, so it stays true as the UI changes.
+The run captured 145 surfaces. This section is regenerated every run, so it stays true as the UI changes.
 
-### No unique keys (20)
+### No unique keys (21)
 
 Every key on these surfaces also renders on another captured surface, so dropping one costs no coverage: its keys would
 simply couple to whichever surface keeps them. Worth considering, NOT an automatic delete. A surface can be the clearest
 picture of a key several surfaces share, and being the clearest is reason enough to keep it. To drop one, remove its
 staging (or add it to `DROPPED_GALLERY_STATES` for a gallery state) in `test/e2e-playwright/`.
 
-- `search-dialog` (93 keys, none unique)
-- `select-dialog` (85 keys, none unique)
+- `search-dialog` (92 keys, none unique)
+- `select-dialog` (84 keys, none unique)
 - `transfer-confirmation-copy` (79 keys, none unique)
 - `transfer-dialog` (72 keys, none unique)
 - `onboarding-optional` (69 keys, none unique)
@@ -84,9 +84,10 @@ staging (or add it to `DROPPED_GALLERY_STATES` for a gallery state) in `test/e2e
 - `onboarding-fda` (56 keys, none unique)
 - `expiration-organization` (55 keys, none unique)
 - `transfer-error-source_not_found` (54 keys, none unique)
-- `alert-long` (51 keys, none unique)
+- `alert-long` (50 keys, none unique)
 - `main-window` (49 keys, none unique)
 - `empty-pane` (45 keys, none unique)
+- `viewer-encoding` (15 keys, none unique)
 
 ### Captured at a reduced UI zoom (2)
 
