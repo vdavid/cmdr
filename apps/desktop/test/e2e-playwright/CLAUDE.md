@@ -15,11 +15,11 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
 - **❌ Never `keyboard.press('Escape')`** to close an overlay: under Linux Xvfb it can vanish as an opaque timeout. Use
   `dismissOverlay` / `expectAndDismissToast` / `dismissAllToasts`, or `escapeOverlayUntilGone` when press one isn't a
   close; no double-Escape in `beforeEach`.
-- **Two ways a helper claims success it never got.** Bare `await pollUntil(...)` returns `false` on timeout, so the test
-  goes green: use `expect.poll(...).toBeTruthy()` (`bare-poll` flags it). And `.click()` on a `disabled` button
+- **Three ways a helper claims success it never got.** Bare `await pollUntil(...)` returns `false` on timeout, so the
+  test goes green: use `expect.poll(...).toBeTruthy()` (`bare-poll` flags it). `.click()` on a `disabled` button
   dispatches NOTHING yet returns normally: press via `clickButtonByText` / `resolveConflict`, which wait for
-  actionability (a dialog disables its buttons for the previous answer's whole IPC round trip). One lost answer wedged
-  196 tests.
+  actionability. And `.click()` drives no Ark `Select` (its trigger toggles on `pointerdown`): use `pointerClick`, and
+  assert its `'clicked'`. One lost answer wedged 196 tests.
 - **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
   `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window there: that hides a scoped
   page that can't call a Tauri command.

@@ -21,6 +21,8 @@ import {
   closeScopedWindow,
   dispatchMenuCommand,
   getFixtureRoot,
+  pointerClick,
+  pollUntil,
   CTRL_OR_META,
 } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
@@ -352,7 +354,8 @@ export async function captureOperationChipSurfaces(
  * Each viewer state opens a fresh viewer window (own webview context + sink),
  * focuses it (occluded child windows throttle paint), captures, and closes it.
  * Per-surface isolation via `captureSurface` means one viewer state failing
- * doesn't stop the rest. They all reuse the one text fixture.
+ * doesn't stop the rest. Most reuse the one text fixture; view-mode needs the IMAGE
+ * fixture, because its picker is inert on a genuine text file.
  */
 export async function captureViewerSubsurfaces(
   main: TauriPage,
@@ -369,6 +372,9 @@ export async function captureViewerSubsurfaces(
     return
   }
   const textFixture = join(startRoot, 'left', 'file-a.txt')
+  // The view-mode picker only has something to switch to on a MEDIA file; on a plain
+  // text file it renders inert. See the picker block below.
+  const mediaFixture = join(startRoot, 'left', 'sample.png')
 
   // Opens a viewer window on `filePath`, runs `prep` (the surface-specific
   // trigger), captures under `label`, and closes the window. Each window has its
@@ -417,37 +423,68 @@ export async function captureViewerSubsurfaces(
 
   // View-mode + encoding picker dropdowns (the two toolbar `Select`s). Their group
   // labels + items (`viewer.toolbar.viewMode.*` / `viewer.kind.*` /
-  // `viewer.toolbar.encoding.*`) mount in `.select-content` only while OPEN. Ark UI
-  // opens on `pointerdown`, not a synthetic `click`, so the trigger gets a full
-  // pointer sequence. BEST-EFFORT: if the dropdown still doesn't open under the
-  // occluded-child-window native eval, the surface is moved from `failed` to
-  // `skipped` (the trigger copy is already on the base `viewer` surface). The
-  // `nth` picks the view-mode trigger (first) vs the encoding trigger (last).
-  const openPicker = (nth: 'first' | 'last') => `(function(){
-    var triggers = document.querySelectorAll('.viewer-toolbar-pickers .select-trigger');
-    var t = ${nth === 'first' ? 'triggers[0]' : 'triggers[triggers.length - 1]'};
-    if (!t) return;
-    var opts = { bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: 'mouse', isPrimary: true };
-    t.dispatchEvent(new PointerEvent('pointerdown', opts));
-    t.dispatchEvent(new PointerEvent('pointerup', opts));
-    t.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-  })()`
-  await viewerSurface('viewer-view-mode', textFixture, '.select-content', async (v) => {
-    await v.evaluate(openPicker('first'))
-  })
-  await viewerSurface('viewer-encoding', textFixture, '.select-content', async (v) => {
-    await v.evaluate(openPicker('last'))
-  })
-  // Demote any picker that couldn't open from a hard failure to a documented skip,
-  // so a flaky Ark dropdown can't fail the whole refresh.
+  // `viewer.toolbar.encoding.*`) mount in `.select-content` only while OPEN, so each
+  // needs its trigger driven. `nth` picks the view-mode trigger (first) vs the
+  // encoding trigger (last).
+  //
+  // Gotcha/Why: BOTH pickers disable themselves when there's nothing to choose, and a
+  // disabled trigger ignores every gesture, however realistic. `ViewModePicker` is
+  // inert on a genuine text file (one option, nothing to switch to), which is why
+  // view-mode captures against the IMAGE fixture: only a media file renders the
+  // `viewer.toolbar.viewMode.viewAsText` / `viewer.kind.*` copy worth photographing.
+  // `EncodingPicker` is disabled on media and while `isIndexing`, so encoding stays on
+  // the text fixture and waits for the index to settle.
+  const pickerTrigger = (nth: 'first' | 'last') => `(function () {
+        var triggers = document.querySelectorAll('.viewer-toolbar-pickers .select-trigger');
+        return ${nth === 'first' ? 'triggers[0]' : 'triggers[triggers.length - 1]'} || null;
+    })()`
+
+  // Waits for the trigger to be mounted AND enabled, then drives it. Each failure
+  // names itself: without this the surface no-ops silently and only surfaces 5 s
+  // later as a bare `timeout waiting for .select-content`, which says nothing about
+  // whether the toolbar was late, the picker was inert, or Ark ignored the gesture.
+  const openPicker =
+    (nth: 'first' | 'last', what: string) =>
+    async (v: TauriPage): Promise<void> => {
+      const expr = pickerTrigger(nth)
+      const ready = await pollUntil(
+        v,
+        async () =>
+          v.evaluate<boolean>(`(function () {
+                var t = ${expr};
+                return !!t && !t.hasAttribute('data-disabled') && !t.disabled;
+            })()`),
+        5000,
+      )
+      if (!ready) {
+        const present = await v.evaluate<boolean>(`!!${expr}`)
+        throw new Error(
+          present
+            ? `the ${what} picker's trigger stayed DISABLED for 5 s (this fixture can't open it)`
+            : `the ${what} picker's trigger never mounted (waited 5 s)`,
+        )
+      }
+      const outcome = await pointerClick(v, expr)
+      if (outcome !== 'clicked') throw new Error(`the ${what} picker's trigger was ${outcome} when clicked`)
+    }
+
+  // Gate on Ark's own open state, not bare presence: `.select-content` stays MOUNTED
+  // while closed (the encoding spec reads its items before opening one), so a plain
+  // `.select-content` would go green on a dropdown that never opened.
+  const OPEN_CONTENT = '.select-content[data-state="open"]'
+  await viewerSurface('viewer-view-mode', mediaFixture, OPEN_CONTENT, openPicker('first', 'view-mode'))
+  await viewerSurface('viewer-encoding', textFixture, OPEN_CONTENT, openPicker('last', 'encoding'))
+  // Demote a picker that still couldn't open from a hard failure to a documented
+  // skip, so one stuck dropdown can't fail the whole refresh. `captureSurface` has
+  // already logged WHY above; this line only records the demotion.
   for (const label of ['viewer-view-mode', 'viewer-encoding']) {
     const idx = failed.indexOf(label)
     if (idx >= 0) {
       failed.splice(idx, 1)
       if (!skipped.includes(label)) skipped.push(label)
       console.warn(
-        `[i18n-capture] ${label} SKIPPED: the Ark Select dropdown didn't open in the occluded viewer ` +
-          `window (its trigger copy is already on the base \`viewer\` surface).`,
+        `[i18n-capture] ${label} SKIPPED: see the FAILED line above for the reason ` +
+          `(its trigger copy is already on the base \`viewer\` surface).`,
       )
     }
   }

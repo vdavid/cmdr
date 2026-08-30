@@ -13,7 +13,7 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { closeScopedWindow, openViewerWindow } from './helpers.js'
+import { closeScopedWindow, openViewerWindow, pointerClick } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 const ENC_FIXTURE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cmdr-viewer-enc-'))
@@ -117,32 +117,9 @@ test.describe('File viewer encoding picker', () => {
     // first is the view-mode picker, which is disabled).
     // A bare `.click()` doesn't drive an Ark/zag `Select` on webkit2gtk: the trigger
     // toggles on `pointerdown` and items select on `pointerup`, neither of which a
-    // synthetic click fires (it works on macOS WebKit by luck). Drive a realistic
-    // pointer+mouse sequence instead, the same shape the file-list specs use.
-    const fireClick = (elExpr: string): string => `
-      (function () {
-        const el = ${elExpr}
-        if (!el) return false
-        const r = el.getBoundingClientRect()
-        const o = {
-          bubbles: true,
-          cancelable: true,
-          composed: true,
-          button: 0,
-          clientX: r.left + r.width / 2,
-          clientY: r.top + r.height / 2,
-          pointerId: 1,
-          pointerType: 'mouse',
-          isPrimary: true,
-        }
-        el.dispatchEvent(new PointerEvent('pointerdown', o))
-        el.dispatchEvent(new MouseEvent('mousedown', o))
-        el.dispatchEvent(new PointerEvent('pointerup', o))
-        el.dispatchEvent(new MouseEvent('mouseup', o))
-        el.dispatchEvent(new MouseEvent('click', o))
-        return true
-      })()
-    `
+    // synthetic click fires (it works on macOS WebKit by luck). `pointerClick` drives
+    // the realistic pointer+mouse sequence, and reports a missing or disabled target
+    // instead of no-opping into a later timeout.
 
     const encodingTriggerExpr = `
       (function () {
@@ -169,7 +146,7 @@ test.describe('File viewer encoding picker', () => {
       .toBe(true)
 
     // Open the encoding listbox.
-    await viewer.evaluate(fireClick(encodingTriggerExpr))
+    expect(await pointerClick(viewer, encodingTriggerExpr)).toBe('clicked')
 
     // Wait for Ark to report the listbox open via its own `data-state`, rather than an
     // `offsetParent` visibility probe (offsetParent is null for the floating-positioned
@@ -189,7 +166,7 @@ test.describe('File viewer encoding picker', () => {
       .toBe('open')
 
     // Pick UTF-8.
-    await viewer.evaluate(fireClick(inEncodingPicker('[data-part="item"][data-value="utf8"]')))
+    expect(await pointerClick(viewer, inEncodingPicker('[data-part="item"][data-value="utf8"]'))).toBe('clicked')
 
     await expect.poll(async () => viewer.evaluate<string | null>(selectedValue), { timeout: 3000 }).toBe('utf8')
 

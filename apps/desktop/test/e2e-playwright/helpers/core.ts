@@ -283,6 +283,48 @@ export async function clickEntryInPane(tauriPage: PageLike, paneIndex: number, r
   }
 }
 
+/** What a `pointerClick` did, or why it did nothing. */
+export type PointerClickOutcome = 'clicked' | 'missing' | 'disabled'
+
+/**
+ * Dispatches a full mouse gesture on whatever `elementExpr` resolves to, and
+ * reports what happened.
+ *
+ * Ark/zag widgets (`ui/Select` above all) toggle on `pointerdown` and commit on
+ * `pointerup`, so a bare `.click()` drives nothing on webkit2gtk and lands on
+ * macOS WebKit only by luck. The full pointer+mouse sequence, with coordinates
+ * read off the element, is what makes them respond on both.
+ *
+ * ❌ Don't reduce the result to a boolean. A trigger that isn't mounted, one
+ * that's disabled, and a widget that ignored a real gesture are three different
+ * bugs; a caller that can't tell them apart spends its whole `waitForSelector`
+ * timeout before reporting none of them.
+ *
+ * `elementExpr` is a JS expression returning the element or null, so a caller
+ * can pick by index where a CSS selector can't.
+ */
+export async function pointerClick(page: PageLike, elementExpr: string): Promise<PointerClickOutcome> {
+  return page.evaluate<PointerClickOutcome>(`(function () {
+        var el = ${elementExpr};
+        if (!el) return 'missing';
+        if (el.disabled || el.hasAttribute('data-disabled') || el.getAttribute('aria-disabled') === 'true') {
+            return 'disabled';
+        }
+        var r = el.getBoundingClientRect();
+        var o = {
+            bubbles: true, cancelable: true, composed: true, button: 0,
+            clientX: r.left + r.width / 2, clientY: r.top + r.height / 2,
+            pointerId: 1, pointerType: 'mouse', isPrimary: true,
+        };
+        el.dispatchEvent(new PointerEvent('pointerdown', o));
+        el.dispatchEvent(new MouseEvent('mousedown', o));
+        el.dispatchEvent(new PointerEvent('pointerup', o));
+        el.dispatchEvent(new MouseEvent('mouseup', o));
+        el.dispatchEvent(new MouseEvent('click', o));
+        return 'clicked';
+    })()`)
+}
+
 /**
  * Finds the index of a file by name in the focused pane's entry list.
  * Returns the target index and total entry count, or an error object.

@@ -603,6 +603,28 @@ line-level scan for a discarded `Promise<boolean>` return, and the trap here had
 (`expect(clicked).toBe(true)`): the lie was inside the predicate, which claimed a press it never made. Same family of
 bug ("a helper reports success it never achieved"), opposite side of the assertion.
 
+### Ark/zag widgets need a real pointer sequence
+
+`clickButtonByText` covers ordinary buttons. An Ark/zag widget (`ui/Select` above all) needs more: its trigger toggles
+on `pointerdown` and its items commit on `pointerup`, neither of which `element.click()` fires. That shape works on
+macOS WebKit by luck and drives nothing under webkit2gtk. Use `pointerClick` (`helpers/core.ts`), which dispatches the
+full `pointerdown → mousedown → pointerup → mouseup → click` with coordinates read off the element.
+
+It returns `'clicked' | 'missing' | 'disabled'` rather than a boolean, deliberately. A trigger that never mounted, one
+that is inert, and a widget that ignored a real gesture are three different bugs; collapsing them costs the caller its
+whole downstream timeout and then names none of them. Assert the outcome (`expect(...).toBe('clicked')`).
+
+Two traps specific to `Select`, both of which cost a silent 5 s each in the i18n capture:
+
+- **A picker disables itself when there is nothing to choose, and no gesture opens a disabled trigger.**
+  `ViewModePicker` is inert on a genuine text file (one option, nothing to switch to), so it can only be photographed
+  against a MEDIA fixture; `EncodingPicker` is disabled on media and while `isIndexing`. Wait for ENABLED, not merely
+  present.
+- **❌ Don't wait on bare `.select-content` to prove a dropdown opened.** Ark keeps the content MOUNTED while closed
+  (the encoding spec reads its items before opening one), so that selector can go green on a picker that never opened.
+  Gate on `.select-content[data-state="open"]`, Ark's own state, which stays readable where an `offsetParent` visibility
+  probe does not.
+
 ## Closing overlays and toasts
 
 **The rule**: never use `tauriPage.keyboard.press('Escape')` to close a dialog, popover, dropdown, or palette in E2E
