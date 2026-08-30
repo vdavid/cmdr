@@ -55,13 +55,13 @@ import {
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
+  expectedLeftPaneEntries,
   expectDialogCounters,
   getFixtureRoot,
   TRANSFER_DIALOG,
   type ExpectedDialogCounters,
 } from './helpers.js'
 import {
-  expectedLeftPaneEntries,
   createFileOverFileFixture,
   createFolderOverFolderFixture,
   createFolderOverFileFixture,

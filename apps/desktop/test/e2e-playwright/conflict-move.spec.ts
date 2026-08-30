@@ -14,13 +14,13 @@ import {
   drainOperations,
   ensureAppReady,
   expectAndDismissToast,
+  expectedLeftPaneEntries,
   getFixtureRoot,
   pollUntil,
   TRANSFER_DIALOG,
 } from './helpers.js'
 import {
   createConflictFixturesB,
-  expectedLeftPaneEntries,
   readFile,
   fileExists,
   selectItemsByName,

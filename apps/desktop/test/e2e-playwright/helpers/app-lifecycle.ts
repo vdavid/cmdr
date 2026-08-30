@@ -7,6 +7,8 @@
  * suite's CLAUDE.md § "`ensureAppReady` focus contract".
  */
 
+import fs from 'fs'
+import path from 'path'
 import { ensureMcpClient, mcpReadResource } from '../../e2e-shared/mcp-client.js'
 import {
   type PageLike,
@@ -18,6 +20,28 @@ import {
   pollUntil,
 } from './core.js'
 import { navigateToRoute } from './navigation.js'
+
+/**
+ * What the left pane must show once a spec has written its fixture: every
+ * top-level entry of `left/`, read back from disk.
+ *
+ * `ensureAppReady`'s readiness poll is `expected.every(name => pane has it)`, so a
+ * list NARROWER than the fixture passes on a partial listing. Fixture builders write
+ * entries one at a time and the watcher coalescer can deliver a diff between two of
+ * them, so a pane that latched a listing taken mid-write satisfies a few-name check
+ * while missing the rest, and the spec fails later on a row that is on disk but not
+ * on screen. Deriving the list from disk can't drift from what the spec wrote, which
+ * a hand-maintained literal did.
+ *
+ * ❗ Call AFTER the fixture is written, never before: it reads the tree that exists
+ * right now.
+ */
+export function expectedLeftPaneEntries(fixtureRoot: string): string[] {
+  return fs
+    .readdirSync(path.join(fixtureRoot, 'left'))
+    .filter((name) => !name.startsWith('.'))
+    .sort()
+}
 
 // ── App readiness ────────────────────────────────────────────────────────────
 

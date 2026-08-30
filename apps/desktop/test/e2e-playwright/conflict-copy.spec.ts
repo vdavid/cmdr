@@ -14,6 +14,7 @@ import {
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
+  expectedLeftPaneEntries,
   expectDialogCounters,
   getFixtureRoot,
   moveCursorToFile,
@@ -30,7 +31,6 @@ function selectionCounts(fixtureRoot: string, names: string[]): { files: number;
   return countTree(names.map((name) => path.join(leftDir, name)))
 }
 import {
-  expectedLeftPaneEntries,
   createConflictFixturesA,
   createConflictFixturesB,
   readFile,

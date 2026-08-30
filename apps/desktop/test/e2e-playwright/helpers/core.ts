@@ -505,15 +505,29 @@ export async function renameEditorValue(tauriPage: PageLike): Promise<string> {
  * Replaces the rename editor's value the way typing does (the native value
  * setter plus an `input` event, since Svelte reads `e.target.value`), then waits
  * for the reactive update to mirror it back.
+ *
+ * ❗ A missing editor is reported as such. It used to surface as
+ * `null is not an object (evaluating 'input.focus')` from inside the evaluate, which
+ * names this helper's internals instead of what actually went wrong: the editor
+ * closed on its own between the caller's last wait and this call.
  */
 export async function setRenameInput(tauriPage: PageLike, value: string): Promise<void> {
-  await tauriPage.evaluate(`(function() {
+  const typed = await tauriPage.evaluate<boolean>(`(function() {
             var input = document.querySelector('.rename-input');
+            if (!input) return false;
             input.focus();
             var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
             desc.set.call(input, ${JSON.stringify(value)});
             input.dispatchEvent(new Event('input', { bubbles: true }));
+            return true;
         })()`)
+  if (!typed) {
+    throw new Error(
+      `setRenameInput(${JSON.stringify(value)}): the inline rename editor is not open. ` +
+        `It either never opened, or something cancelled it after it did: a listing diff that carries a ` +
+        `\`remove\` for the edited path closes it (suite DETAILS § "Fixture-churn readiness").`,
+    )
+  }
   await expect.poll(async () => renameEditorValue(tauriPage), { timeout: 3000 }).toBe(value)
 }
 

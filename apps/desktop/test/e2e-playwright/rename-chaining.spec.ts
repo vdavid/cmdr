@@ -14,7 +14,14 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot, moveCursorToFile, renameEditorValue, setRenameInput } from './helpers.js'
+import {
+  ensureAppReady,
+  expectedLeftPaneEntries,
+  getFixtureRoot,
+  moveCursorToFile,
+  renameEditorValue,
+  setRenameInput,
+} from './helpers.js'
 
 test.beforeEach(() => {
   recreateFixtures(getFixtureRoot())
@@ -36,7 +43,11 @@ test.describe('Chained rename', () => {
     // so the third row is this test's own; the leak guard's restore takes it
     // away again afterwards.
     fs.writeFileSync(path.join(fixtureRoot, 'left', 'file-c.txt'), 'chained rename fixture\n')
-    await ensureAppReady(tauriPage, { leftPane: ['file-a.txt', 'file-b.txt', 'file-c.txt'] })
+    // Every top-level row, not just the three this test types over: `ensureAppReady`'s
+    // poll is an `every()`, so a narrower list is satisfied by a pane that is still
+    // catching up on `recreateFixtures`' churn, and the chain then runs against a
+    // listing the app is still rewriting underneath it.
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     expect(await moveCursorToFile(tauriPage, 'file-a.txt')).toBe(true)
     await tauriPage.keyboard.press('F2')
@@ -92,7 +103,7 @@ test.describe('Chained rename', () => {
     for (const hop of hops) {
       fs.writeFileSync(path.join(fixtureRoot, 'left', `hop-${String(hop)}.txt`), `content of hop ${String(hop)}\n`)
     }
-    await ensureAppReady(tauriPage, { leftPane: hops.map((hop) => `hop-${String(hop)}.txt`) })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     expect(await moveCursorToFile(tauriPage, 'hop-1.txt')).toBe(true)
     await tauriPage.keyboard.press('F2')

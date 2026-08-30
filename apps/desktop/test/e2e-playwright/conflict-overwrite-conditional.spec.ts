@@ -24,11 +24,11 @@ import {
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
+  expectedLeftPaneEntries,
   getFixtureRoot,
   TRANSFER_DIALOG,
 } from './helpers.js'
 import {
-  expectedLeftPaneEntries,
   clearFixtureDirs,
   resolveConflict,
   clickTransferStart,

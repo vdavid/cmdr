@@ -20,27 +20,6 @@ type PageLike = TauriPage | BrowserPageAdapter
 // ── Fixture helpers ──────────────────────────────────────────────────────────
 
 /**
- * What the left pane must show once a fixture builder has run: every top-level
- * entry of `left/`, read back from disk.
- *
- * `ensureAppReady`'s readiness poll is `expected.every(name => pane has it)`, so a
- * list NARROWER than the fixture passes on a partial listing. A pane that latched a
- * listing taken mid-write — the builders write entries one at a time, and the watcher
- * coalescer can deliver a diff between two of them — then satisfies a one-name check
- * while missing the rest, and the spec fails later on a selection that can't find its
- * rows. Deriving the list from disk can't drift from what the builder wrote, which a
- * hand-maintained literal did.
- *
- * ❗ Call AFTER the builder, never before: it reads the tree that exists right now.
- */
-export function expectedLeftPaneEntries(fixtureRoot: string): string[] {
-  return fs
-    .readdirSync(path.join(fixtureRoot, 'left'))
-    .filter((name) => !name.startsWith('.'))
-    .sort()
-}
-
-/**
  * Clears left/ and right/ directories (preserving left/bulk/) and creates
  * Layout A: simple nested conflicts at 3 depth levels.
  */

@@ -17,12 +17,12 @@ import {
   flushFileWatcher,
   ensureAppReady,
   expectAndDismissToast,
+  expectedLeftPaneEntries,
   getFixtureRoot,
   moveCursorToFile,
   TRANSFER_DIALOG,
 } from './helpers.js'
 import {
-  expectedLeftPaneEntries,
   createSymlinkFixture,
   createTypeMismatchFixture,
   clearFixtureDirs,

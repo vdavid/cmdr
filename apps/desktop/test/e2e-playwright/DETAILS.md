@@ -1043,19 +1043,27 @@ coalescer can deliver a diff between two writes, so a spec naming one file (`{ l
 readiness with a pane holding only `alpha` and then spent its budget in `selectItemsByName` looking for rows that were
 on disk but not on screen.
 
-`expectedLeftPaneEntries(fixtureRoot)` (`conflict-helpers.ts`) reads the top level of `left/` back from disk instead, so
-the expectation cannot drift from what was written. ❗ Call it AFTER the builder. It includes `bulk/`, which is correct
-for readiness; selection lists like `LAYOUT_B_ITEMS` stay narrow on purpose, since sweeping the ~170 MB tree into a
-transfer pushes the op past the per-test budget.
+`expectedLeftPaneEntries(fixtureRoot)` (`helpers/app-lifecycle.ts`, beside the `ensureAppReady` whose contract it exists
+to satisfy) reads the top level of `left/` back from disk instead, so the expectation cannot drift from what was
+written. ❗ Call it AFTER the builder. It includes `bulk/`, which is correct for readiness; selection lists like
+`LAYOUT_B_ITEMS` stay narrow on purpose, since sweeping the ~170 MB tree into a transfer pushes the op past the per-test
+budget.
 
-**This does not close the whole hole, and the residue is a product bug.** A Linux run on 2026-08-30 had `ensureAppReady`
-confirm the full list (twice, including the re-confirm after `flushFileWatcher`), and the very next statement found the
-pane missing `bravo`, `charlie`, and `delta.txt` for ~10 s before the retry passed in 651 ms. The entries were there and
-were then REMOVED, which points at a stale removal batch landing on top of a fresher listing in
-`file-explorer/pane/listing-diff-sync.svelte.ts` rather than at anything a spec can fix. Loads are generation-guarded
-(`pane/listing-token.ts`); the incremental diff path is the suspect. ❌ Don't paper over a recurrence with a longer wait
-or a retry inside `selectItemsByName` — the pane never self-corrects, so no wait is long enough, and the same defect is
-reachable by a user during any heavy external burst (an unzip, a `git checkout`, an rsync into a watched folder).
+**The residue was a backend bug, and it is fixed.** A partial listing is only half of what used to break these specs: a
+Linux run had `ensureAppReady` confirm the full list twice, including the re-confirm after `flushFileWatcher`, and the
+very next statement found the pane missing `bravo`, `charlie`, and `delta.txt` for ~10 s. The entries were there and
+were then REMOVED. Two concurrent `FullRefresh`es of one directory raced, and the one that had read the folder mid-write
+landed second, overwriting the cache with its staler snapshot and emitting removals for rows that were on disk. A
+per-directory turnstile now makes read-then-write atomic: `apps/desktop/src-tauri/src/file_system/listing/DETAILS.md` §
+"Serializing full refreshes".
+
+A recurrence shows up two ways, not one. Rows that readiness confirmed go missing and never come back; and an open
+inline rename editor VANISHES, because `pane/listing-diff-sync.svelte.ts` cancels a rename when a diff carries a
+`remove` for the path under the editor, so a spurious removal reads to it as "the user's file just disappeared". A
+`rename-chaining` step that polls `renameEditorValue` and gets `''` for its whole budget is that second face. ❌ Don't
+paper over either one with a longer wait or a retry inside `selectItemsByName` — the pane never self-corrects, so no
+wait is long enough, and the same defect is reachable by a user during any heavy external burst (an unzip, a
+`git checkout`, an rsync into a watched folder).
 
 ### Draining a held operation
 
