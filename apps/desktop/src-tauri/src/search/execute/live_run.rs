@@ -180,7 +180,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
                 // `finish` rather than a drop: it claimed nothing, so this only
                 // closes the session it opened and joins its thread.
                 let _ = walk.finish();
-                wait_for_the_other_walk(&target.volume_id, &scopes, run, &mut stream);
+                wait_for_the_other_walk(&target.volume_id, &scopes, run, &mut stream, &deferred);
                 if run.is_cancelled() {
                     break;
                 }
@@ -420,8 +420,23 @@ const OTHER_WALK_POLL: std::time::Duration = std::time::Duration::from_millis(20
 /// every caller can stop it. Escape and the dialog closing cancel; an agent's wait
 /// is its own transport budget, and past it the reply says the walk is still
 /// going.
-fn wait_for_the_other_walk(volume_id: &str, scopes: &[String], run: &LiveRun, stream: &mut ResultStream<'_>) {
+fn wait_for_the_other_walk(
+    volume_id: &str,
+    scopes: &[String],
+    run: &LiveRun,
+    stream: &mut ResultStream<'_>,
+    held_by_another: &[String],
+) {
     log::debug!("Live search: '{volume_id}' is being walked by another search; waiting for it");
+    // Name the ground somebody else holds, once. It rides the same `current_path` the
+    // walk uses, so the dialog's existing path row shows it and a waiting run says WHAT
+    // it waits on instead of only that it waits. `dirs_found` stays 0: this run has
+    // scanned nothing, and borrowing the other walk's count would credit us with its
+    // work. ❌ Don't move this inside the loop — the value never changes, and rewriting
+    // it every 200 ms would restart the path row's shorten-middle animation.
+    if let Some(root) = held_by_another.first() {
+        stream.set_walk_progress(0, Some(root.clone()));
+    }
     loop {
         // Say so every turn: the run is working, and this is the phase it's in.
         // ❌ Not `ResolvingCoverage` — coverage is resolved, and the answer was

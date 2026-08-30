@@ -135,6 +135,16 @@ export interface LiveRunView {
   capped: boolean
   /** Still going, so it can still be stopped. */
   running: boolean
+  /**
+   * `Date.now()` when the run entered [`phase`], so a phase that shows no moving
+   * numbers can still show that it is alive.
+   *
+   * Only `waitingForAnotherWalk` needs it today: that phase reports no match count and
+   * no path of its own, so without an elapsed readout a long wait is indistinguishable
+   * from a hang. Stamped on the TRANSITION, never per update, or the reading resets
+   * every 200 ms and always says zero.
+   */
+  phaseSince: number
   /** Set by the terminal update: the answer is a lower bound. */
   incomplete: boolean
 }
@@ -195,6 +205,25 @@ export function liveWalkProgress(view: LiveRunView): string {
     count: view.dirsFound,
     countText: formatInteger(view.dirsFound),
   })
+}
+
+/**
+ * How long this run has been waiting on somebody else's walk, for the same slot
+ * `liveWalkProgress` fills while walking.
+ *
+ * The waiting phase is the one with nothing else to show — no count of its own, no
+ * folder it is reading — so this is what separates "still going" from "wedged" on
+ * screen. `wait_for_the_other_walk` has no deadline by design, so the number can climb
+ * a long way; minutes stay readable past an hour, which is the honest ceiling here.
+ */
+export function liveWaitElapsed(view: LiveRunView, now: number): string {
+  if (!view.running || view.phase !== 'waitingForAnotherWalk') return ''
+  const seconds = Math.max(0, Math.floor((now - view.phaseSince) / 1000))
+  // `m:ss`, deliberately wordless: a clock face beside a spinner reads the same in every
+  // locale, so the one thing on screen that proves the run is alive costs no translation
+  // and can't drift from its 12 catalogs. Minutes keep counting past 60 rather than
+  // rolling into hours — this wait has no deadline, and "97:12" is the honest reading.
+  return `${String(Math.floor(seconds / 60))}:${String(seconds % 60).padStart(2, '0')}`
 }
 
 /** How often a live run may interrupt a screen reader. */

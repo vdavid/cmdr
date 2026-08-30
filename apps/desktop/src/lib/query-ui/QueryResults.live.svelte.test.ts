@@ -44,6 +44,7 @@ function liveView(overrides: Partial<LiveRunView> = {}): LiveRunView {
     dirsFound: 0,
     currentPath: null,
     capped: false,
+    phaseSince: 0,
     running: true,
     incomplete: false,
     ...overrides,

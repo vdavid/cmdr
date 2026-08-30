@@ -133,6 +133,7 @@ function takeProgress(event: LiveRunProgress): void {
       capped: event.capped,
       running: true,
       incomplete: false,
+      phaseSince: Date.now(),
     },
   })
   if (resumedInto) resumedInto.onProgress(event)

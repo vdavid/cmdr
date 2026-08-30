@@ -246,6 +246,10 @@
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "21163fe"
   },
+  "queryUi.results.live.waitingOnPathAria": "Outra passagem está lendo {path}",
+  "@queryUi.results.live.waitingOnPathAria": {
+    "sourceHash": "a54a689"
+  },
   "queryUi.results.live.readingIndex": "Lendo o que já está indexado...",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"

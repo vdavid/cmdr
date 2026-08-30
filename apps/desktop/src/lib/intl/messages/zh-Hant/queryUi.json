@@ -244,6 +244,10 @@
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "21163fe"
   },
+  "queryUi.results.live.waitingOnPathAria": "另一次掃描正在讀取 {path}",
+  "@queryUi.results.live.waitingOnPathAria": {
+    "sourceHash": "a54a689"
+  },
   "queryUi.results.live.readingIndex": "正在讀取已經建立索引的部分…",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"

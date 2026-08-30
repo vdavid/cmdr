@@ -63,6 +63,7 @@ function view(overrides: Partial<LiveRunView> = {}): LiveRunView {
     dirsFound: 12,
     currentPath: '/w/deep',
     capped: false,
+    phaseSince: 0,
     running: true,
     incomplete: false,
     ...overrides,

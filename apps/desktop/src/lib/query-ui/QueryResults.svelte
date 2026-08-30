@@ -41,6 +41,7 @@
     import {
         createAnnouncementThrottle,
         livePhaseLabel,
+        liveWaitElapsed,
         liveStatusLine,
         liveWalkProgress,
         type LiveRunView,
@@ -265,6 +266,19 @@
     const statusText = $derived(getStatusText())
     /** The walk's own progress, beside the count. Empty unless a walk is what's running. */
     const walkProgress = $derived(live === null ? '' : liveWalkProgress(live))
+
+    // A waiting run reports no count and no folder of its own, so an elapsed reading is
+    // the only thing on screen that moves. Ticking is scoped to the waiting phase: no
+    // other phase reads `waitNow`, so nothing else re-renders on it.
+    let waitNow = $state(Date.now())
+    const isWaiting = $derived(live !== null && live.running && live.phase === 'waitingForAnotherWalk')
+    $effect(() => {
+        if (!isWaiting) return
+        waitNow = Date.now()
+        const timer = setInterval(() => (waitNow = Date.now()), 1000)
+        return () => clearInterval(timer)
+    })
+    const waitElapsed = $derived(live === null ? '' : liveWaitElapsed(live, waitNow))
 
     /**
      * What the status bar's live region actually says. A live run emits a batch every
@@ -611,13 +625,15 @@
         data-live-phase={live?.phase ?? 'idle'}
     >
         <span class="status-text">{statusText}</span>
-        {#if walkProgress}
-            <span class="status-progress">{walkProgress}</span>
+        {#if walkProgress || waitElapsed}
+            <span class="status-progress">{walkProgress || waitElapsed}</span>
         {/if}
         {#if streaming && live?.currentPath}
             <span
                 class="status-path"
-                aria-label={tString('queryUi.results.live.scanningAria', { path: live.currentPath })}
+                aria-label={isWaiting
+                    ? tString('queryUi.results.live.waitingOnPathAria', { path: live.currentPath })
+                    : tString('queryUi.results.live.scanningAria', { path: live.currentPath })}
                 use:useShortenMiddle={{ text: live.currentPath, preferBreakAt: '/', startRatio: 0.3 }}
             ></span>
         {/if}

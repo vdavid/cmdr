@@ -2242,6 +2242,7 @@ export type MessageKey =
   | 'queryUi.results.live.stop'
   | 'queryUi.results.live.stopTooltip'
   | 'queryUi.results.live.waitingForAnotherWalk'
+  | 'queryUi.results.live.waitingOnPathAria'
   | 'queryUi.results.live.walking'
   | 'queryUi.results.loadingIndex'
   | 'queryUi.results.noMatchHeading'

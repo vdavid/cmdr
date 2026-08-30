@@ -405,6 +405,7 @@ describe('WalkHandoffToastContent a11y', () => {
         dirsFound: 5678,
         currentPath: '/Volumes/Backups/photos/2019',
         capped: false,
+        phaseSince: 0,
         running: true,
         incomplete: false,
       },

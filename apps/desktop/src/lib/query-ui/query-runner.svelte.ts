@@ -225,6 +225,11 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       capped: update.capped,
       running: true,
       incomplete: false,
+      // ❗ Carry the stamp forward while the phase HOLDS; re-stamp only on a change.
+      // The waiting phase re-announces every 200 ms, so stamping per update would peg
+      // the elapsed reading at zero — which is exactly the "is it alive?" question it
+      // exists to answer.
+      phaseSince: live !== null && live.phase === update.phase ? live.phaseSince : Date.now(),
     }
     config.state.setTotalCount(update.matchCount)
     if (update.entries.length === 0) return
@@ -250,6 +255,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       capped: end.capped,
       running: false,
       incomplete: end.incomplete,
+      phaseSince: live?.phaseSince ?? Date.now(),
     }
     config.state.setTotalCount(end.matchCount)
     config.state.setIsSearching(false)
@@ -345,6 +351,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       capped: false,
       running: true,
       incomplete: false,
+      phaseSince: Date.now(),
     }
     config.state.setIsSearching(true)
 

@@ -17,6 +17,7 @@ import {
   livePhaseLabel,
   LIVE_ANNOUNCE_INTERVAL_MS,
   type LiveRunView,
+  liveWaitElapsed,
 } from './query-stream'
 
 beforeAll(() => {
@@ -33,6 +34,7 @@ function view(overrides: Partial<LiveRunView> = {}): LiveRunView {
     dirsFound: 340,
     currentPath: '/Volumes/naspi/photos',
     capped: false,
+    phaseSince: 0,
     running: true,
     incomplete: false,
     ...overrides,
@@ -147,5 +149,36 @@ describe('liveWalkProgress and livePhaseLabel', () => {
     // The run holds no ground, so it is scanning nothing. "0 folders scanned" beside a
     // sentence about waiting reads as a stuck walk.
     expect(liveWalkProgress(view({ phase: 'waitingForAnotherWalk', dirsFound: 0 }))).toBe('')
+  })
+})
+
+describe('liveWaitElapsed', () => {
+  // The waiting phase reports no match count and no folder of its own, so this reading
+  // is the only thing on screen that moves. If it ever returns '' or a frozen 0:00 for
+  // a running wait, a long park becomes indistinguishable from a hang again.
+  it('counts up from the moment the phase started, as m:ss', () => {
+    const waiting = view({ phase: 'waitingForAnotherWalk', phaseSince: 10_000 })
+    expect(liveWaitElapsed(waiting, 10_000)).toBe('0:00')
+    expect(liveWaitElapsed(waiting, 18_400)).toBe('0:08')
+    expect(liveWaitElapsed(waiting, 10_000 + 62_000)).toBe('1:02')
+  })
+
+  it('keeps counting in minutes past an hour rather than rolling over', () => {
+    // `wait_for_the_other_walk` has no deadline, and a walk over a dead share's frontier
+    // can run for a very long time. "97:12" is the honest reading; "1:37:12" would imply
+    // a precision the wait doesn't have, and 0:00 again would be a lie.
+    const waiting = view({ phase: 'waitingForAnotherWalk', phaseSince: 0 })
+    expect(liveWaitElapsed(waiting, 5_832_000)).toBe('97:12')
+  })
+
+  it('says nothing for any phase but waiting, or once the run has stopped', () => {
+    expect(liveWaitElapsed(view({ phase: 'walking', phaseSince: 0 }), 60_000)).toBe('')
+    expect(liveWaitElapsed(view({ phase: 'readingIndex', phaseSince: 0 }), 60_000)).toBe('')
+    expect(liveWaitElapsed(view({ phase: 'waitingForAnotherWalk', running: false }), 60_000)).toBe('')
+  })
+
+  it('never reads negative when the clock disagrees with the stamp', () => {
+    const waiting = view({ phase: 'waitingForAnotherWalk', phaseSince: 50_000 })
+    expect(liveWaitElapsed(waiting, 40_000)).toBe('0:00')
   })
 })

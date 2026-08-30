@@ -102,6 +102,7 @@ export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamS
           capped: false,
           running: true,
           incomplete: false,
+          phaseSince: Date.now(),
         },
       })
       const stop = await observeSearchRun(runId, {

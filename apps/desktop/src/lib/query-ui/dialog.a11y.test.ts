@@ -468,6 +468,7 @@ describe('SearchResults a11y: a live run', () => {
     dirsFound: 4312,
     currentPath: '/Volumes/naspi/photos/2019',
     capped: false,
+    phaseSince: 0,
     running: true,
     incomplete: false,
   }

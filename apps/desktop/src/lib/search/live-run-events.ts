@@ -32,6 +32,7 @@ export function liveViewOf(event: LiveRunProgress): LiveRunView {
     capped: event.capped,
     running: true,
     incomplete: false,
+    phaseSince: Date.now(),
   }
 }
 

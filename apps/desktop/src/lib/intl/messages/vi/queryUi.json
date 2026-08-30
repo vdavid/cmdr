@@ -246,6 +246,10 @@
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "21163fe"
   },
+  "queryUi.results.live.waitingOnPathAria": "Một lượt duyệt khác đang đọc {path}",
+  "@queryUi.results.live.waitingOnPathAria": {
+    "sourceHash": "a54a689"
+  },
   "queryUi.results.live.readingIndex": "Đang đọc phần đã lập chỉ mục...",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"

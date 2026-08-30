@@ -247,6 +247,10 @@
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "21163fe"
   },
+  "queryUi.results.live.waitingOnPathAria": "Een andere doorloop leest {path}",
+  "@queryUi.results.live.waitingOnPathAria": {
+    "sourceHash": "a54a689"
+  },
   "queryUi.results.live.readingIndex": "Lezen wat er al geïndexeerd is...",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"
