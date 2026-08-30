@@ -860,15 +860,20 @@ run with the terminal in front is the normal case). Ark/zag position every dropd
 `document.hidden === false`), and ❌ never conclude a positioning bug from an occluded run. Hit-testing lies the same
 way: `elementFromPoint` happily returns an element at `opacity: 0`.
 
-**Gotcha**: a spec that MEASURES a dialog has to gate on the dialog's CONTENT, not on `.modal-dialog`. **Why**: a panel
-whose body loads over IPC mounts in a spinner state (the trigger flips `open` and `loading` in one synchronous block),
-so the panel element exists for as long as the read takes and its height is the spinner's. The rows then land and the
-panel grows by hundreds of pixels, up to its own `max-height`. A `before` rect taken in that window belongs to a
-different layout than the `after` one, and the diff reads as a wholesale wrong number rather than a drift, which sends
-you looking for a second dialog in the DOM. `dialog-resize.spec.ts`'s `SETTLED` map is the shape: one selector per
-dialog naming only what the settled body renders (for the operation log, rows OR the nothing-yet / read-failed notice).
-Whether it bites depends on how fast the read is, so it presents as a load-dependent flake. Same rule, different
-consumer, as `StagedSurface.readySelector` in the capture run.
+**Gotcha**: a spec that READS or MEASURES a dialog whose body loads over IPC has to gate on the dialog's CONTENT, never
+on its frame — not `.modal-dialog`, and not a body element like `#operation-log-body` either. **Why**: such a panel
+mounts in a spinner state (the trigger flips `open` and `loading` in one synchronous block), so the frame exists for as
+long as the read takes. Two consumers, one cause. A spec that MEASURES sees the panel at the spinner's height, then
+watches the rows land and the panel grow by hundreds of pixels up to its own `max-height`; a `before` rect taken in that
+window belongs to a different layout than the `after` one, and the diff reads as a wholesale wrong number rather than a
+drift, which sends you looking for a second dialog in the DOM. A spec that READS a row gets an empty string back,
+because the row it asked for isn't in the DOM yet. ❗ The window is not a slow-machine edge case: a probe over 120 opens
+of the operation log saw the frame before the list **120 times out of 120**, so a caller that gates on the frame is
+racing the fetch on EVERY open and wins only because the fetch usually answers before the next round trip does. On a
+loaded shard it doesn't, which is why this presents as a load-dependent flake rather than a hard failure.
+`dialog-resize.spec.ts`'s `SETTLED` map is the shape to copy: one selector per dialog naming only what the settled body
+renders (for the operation log, rows OR the nothing-yet / read-failed notice, all three terminal so it can't hang on an
+empty log). Same rule, different consumer, as `StagedSurface.readySelector` in the capture run.
 
 **Gotcha**: `npx playwright test` alone will fail with `ECONNREFUSED`. **Why**: The test suite does NOT launch the Cmdr
 binary. It connects to an already-running app via `/tmp/tauri-playwright.sock`. Use `pnpm check desktop-e2e-playwright`

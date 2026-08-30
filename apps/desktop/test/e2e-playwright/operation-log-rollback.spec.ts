@@ -235,7 +235,23 @@ async function cancelEverything(page: TauriPage): Promise<void> {
 
 // ── Driving the dialog ───────────────────────────────────────────────────────
 
-/** Opens the history dialog the way the View menu does, and waits for it. */
+/**
+ * Opens the history dialog the way the View menu does, and waits until it has
+ * FINISHED READING the journal.
+ *
+ * ❌ Not "the body element exists": the body is the dialog's frame, and it goes into
+ * the DOM the moment the dialog mounts, while `openOperationLog()`'s
+ * `get_recent_operation_log_entries` round trip is still in flight and the frame
+ * holds a spinner. That window is not an occasional slow-machine thing — a probe
+ * over 120 opens saw the frame before the list 120 times — so a caller that read a
+ * row on the next round trip was racing that fetch on EVERY open, and won only
+ * because the fetch usually answers first. On a loaded Linux shard it doesn't, and
+ * the row reads back as an empty string.
+ *
+ * So the wait is on what the read PRODUCES: the list, or the notice that stands in
+ * for it when the journal is empty or the read failed. All three are terminal, so
+ * this can't hang on a legitimately empty log.
+ */
 async function openOperationLog(page: TauriPage): Promise<void> {
   await page.evaluate(`(function() {
     window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
@@ -243,7 +259,13 @@ async function openOperationLog(page: TauriPage): Promise<void> {
     });
   })()`)
   await expect
-    .poll(() => page.evaluate<boolean>(`document.querySelector('#operation-log-body') !== null`), { timeout: 5000 })
+    .poll(
+      () =>
+        page.evaluate<boolean>(
+          `document.querySelector('#operation-log-body .op-list, #operation-log-body .notice') !== null`,
+        ),
+      { timeout: 5000 },
+    )
     .toBe(true)
 }
 
