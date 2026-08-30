@@ -1357,14 +1357,18 @@ doubles as production code.
   i18n capture report and the catalogs' `@key.screenshot` couplings; runs the coupler's `--check`, reads no PNGs),
   i18n-stale (warn-only; a non-`en` translation whose `@key.sourceHash` no longer matches the value it was translated
   from), i18n-parity (ERROR; each locale key's `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must
-  equal that of the value it renders instead of, since a mismatch crashes at runtime), i18n-icu (ERROR; every
-  non-`errors.*` locale message must compile via `intl-messageformat`), i18n-tag-param-collision (ERROR; a message
+  equal that of the value it renders instead of, since a mismatch crashes at runtime), i18n-icu (ERROR; every message
+  is written in its own family's grammar: an ICU message must compile via `intl-messageformat`, and a RAW value
+  (`errors.*` plus the native `menu.*`) must carry no ICU escaping, since a doubled `''` renders verbatim there; the one
+  locale check that inspects `en` too, the rule being about a catalog's own syntax), i18n-tag-param-collision (ERROR; a message
   naming a `<tag>` and a `{param}` alike renders the param as a stringified handler, because `Trans` lets the tag win
   the merged lookup), i18n-trans-snippets (ERROR; a message `<tag>` with no matching `snippets={{ … }}` key at the call
   site renders as nothing, so its inner text silently vanishes; catches a rename finished on only one side), i18n-plural
   (ERROR; each plural covers its locale's required CLDR categories, gated on the English source's plural shape),
-  i18n-coverage (ERROR; for a full translation, keys missing from the locale or byte-identical to English without a
-  `@key.sameAsSourceJustification`, either of which ships a half-translated locale; for an OVERLAY the rules invert, and
+  i18n-coverage (ERROR; for a full translation, keys missing from the locale or still showing English without a
+  `@key.sameAsSourceJustification`, either of which ships a half-translated locale. "Still English" is byte-identical OR
+  English text under a plural/select branch set the locale legitimately changed, which byte comparison alone reads as
+  translated; for an OVERLAY the rules invert, and
   a key identical to what it overrides, or unknown to it, is the finding), i18n-dont-translate (warn-only; a curated
   brand/system token English carries but the locale dropped), i18n-terms (warn-only, nickname of
   desktop-i18n-term-consistency; the only CROSS-key check: two keys sharing one English value must render one way in a
