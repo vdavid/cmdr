@@ -711,7 +711,7 @@
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Deleting what it created} one {Deleting the file it created} other {Deleting the {countText} files it created}}...",
@@ -722,7 +722,7 @@
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Putting the old names back} one {Putting the old name back} other {Putting {countText} old names back}}...",
@@ -733,7 +733,7 @@
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleCancelling": "Canceling...",
@@ -1158,13 +1158,13 @@
   "fileOperations.rollbackConfirm.title": "Roll this operation back?",
   "@fileOperations.rollbackConfirm.title": {
     "description": "Title of the dialog that appears when the user presses Rollback on a running copy or move. \"Roll back\" means undoing the work done so far by deleting what the operation has written.",
-    "screenshot": "rollback-confirmation-idle.png"
+    "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
 
   "fileOperations.rollbackConfirm.body": "This deletes every file the operation has written so far. Any file it replaced won''t come back.",
   "@fileOperations.rollbackConfirm.body": {
     "description": "Body of the Rollback confirmation. Two facts, both load-bearing: it removes everything written so far (not only the half-written file that a plain Cancel drops), and a file that was overwritten during the operation is gone for good, because no copy of the original was kept. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong.",
-    "screenshot": "rollback-confirmation-idle.png"
+    "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Finish rolling this back?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -1173,30 +1173,34 @@
 
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "This deletes the files and folders the operation created. Cmdr skips anything it isn''t sure about, so a few may stay behind.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
-    "description": "Body of the Rollback confirmation when the user undoes a FINISHED operation that created things: a copy, a new file, a new folder, or a compress. Two facts, both load-bearing: rolling back deletes what the operation made, and Cmdr leaves alone every file it can''t match against what it recorded (the user changed it since, or it was never recorded), so the reversal can come out partial. Sibling wordings cover undoing a move and undoing a rename; keep the second sentence parallel across all three."
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED operation that created things: a copy, a new file, a new folder, or a compress. Two facts, both load-bearing: rolling back deletes what the operation made, and Cmdr leaves alone every file it can''t match against what it recorded (the user changed it since, or it was never recorded), so the reversal can come out partial. Sibling wordings cover undoing a move and undoing a rename; keep the second sentence parallel across all three.",
+    "screenshot": "rollback-confirmation-undoByDeleting.png"
   },
   "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "This moves the files back where they came from. Cmdr skips anything it isn''t sure about, so a few may stay where they are.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
-    "description": "Body of the Rollback confirmation when the user undoes a FINISHED move, or a move to the trash. Nothing is deleted here, so keep the tone calm rather than a warning: the files travel back to where they started. Second sentence: Cmdr leaves alone every file it can''t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and rename wordings."
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED move, or a move to the trash. Nothing is deleted here, so keep the tone calm rather than a warning: the files travel back to where they started. Second sentence: Cmdr leaves alone every file it can''t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and rename wordings.",
+    "screenshot": "rollback-confirmation-undoByMovingBack.png"
   },
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "This gives the files their old names back. Cmdr skips anything it isn''t sure about, so a few may keep the names they have now.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
-    "description": "Body of the Rollback confirmation when the user undoes a FINISHED rename, whether one file or a batch of hundreds. Nothing moves and nothing is deleted; only the names change back, so keep the tone calm. Second sentence: Cmdr leaves alone every file it can''t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and move wordings."
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED rename, whether one file or a batch of hundreds. Nothing moves and nothing is deleted; only the names change back, so keep the tone calm. Second sentence: Cmdr leaves alone every file it can''t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and move wordings.",
+    "screenshot": "rollback-confirmation-undoByRenamingBack.png"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Leave it as is",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
-    "description": "Button that closes the Rollback confirmation without doing anything, shown when the user is undoing a FINISHED operation from their history. \"It\" is the operation: leave it standing as it is. The sibling button \"Keep them\" covers the other case, an operation still running, where \"them\" is the files it has written so far."
+    "description": "Button that closes the Rollback confirmation without doing anything, shown when the user is undoing a FINISHED operation from their history. \"It\" is the operation: leave it standing as it is. The sibling button \"Keep them\" covers the other case, an operation still running, where \"them\" is the files it has written so far.",
+    "screenshot": "rollback-confirmation-undoByDeleting.png"
   },
   "fileOperations.rollbackConfirm.keep": "Keep them",
   "@fileOperations.rollbackConfirm.keep": {
     "description": "Button that closes the Rollback confirmation without doing anything: the operation carries on and the files it has written stay. \"Them\" is those files.",
-    "screenshot": "rollback-confirmation-idle.png"
+    "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
 
   "fileOperations.rollbackConfirm.rollBack": "Roll back",
   "@fileOperations.rollbackConfirm.rollBack": {
     "description": "The confirming button on the Rollback confirmation: stop the operation and delete what it has written. Styled as the destructive choice. Matches the \"Rollback\" button that opened this dialog.",
-    "screenshot": "rollback-confirmation-idle.png"
+    "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
   "fileOperations.rollbackConfirm.finishRollBack": "Finish rolling back",
   "@fileOperations.rollbackConfirm.finishRollBack": {

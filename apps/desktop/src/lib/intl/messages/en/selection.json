@@ -1,59 +1,73 @@
 {
   "selection.dialog.title.add": "Select files",
   "@selection.dialog.title.add": {
-    "description": "Title at the top of the dialog that ADDS matching files to the pane's selection, opened from the Select menu (\"Select files…\") or its shortcut. Pairs with \"Deselect files\", the title of the same dialog in its removing mode; keep the two recognizably the same phrase apart from the verb. A terse heading, so keep it short."
+    "description": "Title at the top of the dialog that ADDS matching files to the pane's selection, opened from the Select menu (\"Select files…\") or its shortcut. Pairs with \"Deselect files\", the title of the same dialog in its removing mode; keep the two recognizably the same phrase apart from the verb. A terse heading, so keep it short.",
+    "screenshot": "select-dialog.png"
   },
   "selection.dialog.title.remove": "Deselect files",
   "@selection.dialog.title.remove": {
-    "description": "Title at the top of the dialog that REMOVES matching files from the pane's selection, opened from the Select menu (\"Deselect files…\") or its shortcut. Same dialog as \"Select files\", in its removing mode; keep the two recognizably the same phrase apart from the verb. Use the same word your macOS Finder's Edit menu uses for undoing a selection, so the dialog agrees with the menu item that opened it. A terse heading, so keep it short."
+    "description": "Title at the top of the dialog that REMOVES matching files from the pane's selection, opened from the Select menu (\"Deselect files…\") or its shortcut. Same dialog as \"Select files\", in its removing mode; keep the two recognizably the same phrase apart from the verb. Use the same word your macOS Finder's Edit menu uses for undoing a selection, so the dialog agrees with the menu item that opened it. A terse heading, so keep it short.",
+    "screenshot": "selection-remove-mixed-folder.png"
   },
   "selection.runHint": "Press Enter to filter",
   "@selection.runHint": {
-    "description": "Subtle hint at the right edge of the Select / Deselect dialog's query field, shown while the typed pattern hasn't run yet. Tells the user the list of matches is filtered when they press Enter. \"Enter\" is the name of the Return/Enter key: use whatever your macOS keyboard calls that key. Sits in a narrow strip beside the field, so keep it short."
+    "description": "Subtle hint at the right edge of the Select / Deselect dialog's query field, shown while the typed pattern hasn't run yet. Tells the user the list of matches is filtered when they press Enter. \"Enter\" is the name of the Return/Enter key: use whatever your macOS keyboard calls that key. Sits in a narrow strip beside the field, so keep it short.",
+    "screenshot": "select-dialog.png"
   },
   "selection.action.select.label": "Select these files",
   "@selection.action.select.label": {
-    "description": "Primary footer button in the Select files dialog. Pressing it adds every file matching the query to the focused pane's selection and closes the dialog. \"These files\" means the matches previewed in the list above the button. A button label with a keyboard glyph beside it, so keep it short."
+    "description": "Primary footer button in the Select files dialog. Pressing it adds every file matching the query to the focused pane's selection and closes the dialog. \"These files\" means the matches previewed in the list above the button. A button label with a keyboard glyph beside it, so keep it short.",
+    "screenshot": "select-dialog.png"
   },
   "selection.action.select.tooltip": "Select these files in the focused pane",
   "@selection.action.select.tooltip": {
-    "description": "Hover tooltip for the \"Select these files\" button. Names where the selection lands: the pane the user was working in when they opened the dialog (Cmdr shows two panes side by side, one of which has keyboard focus). Repeat the button's own wording at the start so the two read as one phrase."
+    "description": "Hover tooltip for the \"Select these files\" button. Names where the selection lands: the pane the user was working in when they opened the dialog (Cmdr shows two panes side by side, one of which has keyboard focus). Repeat the button's own wording at the start so the two read as one phrase.",
+    "screenshot": "select-dialog.png"
   },
   "selection.action.deselect.label": "Deselect these files",
   "@selection.action.deselect.label": {
-    "description": "Primary footer button in the Deselect files dialog. Pressing it removes every file matching the query from the focused pane's selection and closes the dialog. \"These files\" means the matches previewed in the list above the button. Use the same verb as the \"Deselect files\" title. A button label with a keyboard glyph beside it, so keep it short."
+    "description": "Primary footer button in the Deselect files dialog. Pressing it removes every file matching the query from the focused pane's selection and closes the dialog. \"These files\" means the matches previewed in the list above the button. Use the same verb as the \"Deselect files\" title. A button label with a keyboard glyph beside it, so keep it short.",
+    "screenshot": "selection-remove-mixed-folder.png"
   },
   "selection.action.deselect.tooltip": "Deselect these files in the focused pane",
   "@selection.action.deselect.tooltip": {
-    "description": "Hover tooltip for the \"Deselect these files\" button. Names where the change lands: the pane the user was working in when they opened the dialog (Cmdr shows two panes side by side, one of which has keyboard focus). Repeat the button's own wording at the start so the two read as one phrase."
+    "description": "Hover tooltip for the \"Deselect these files\" button. Names where the change lands: the pane the user was working in when they opened the dialog (Cmdr shows two panes side by side, one of which has keyboard focus). Repeat the button's own wording at the start so the two read as one phrase.",
+    "screenshot": "selection-remove-mixed-folder.png"
   },
   "selection.notice.snapshotPane": "Matching what is shown in the list (the full path).",
   "@selection.notice.snapshotPane": {
-    "description": "One-line note above the results in the Select / Deselect dialog, shown only when the focused pane holds search results rather than a folder. Those rows show each file's whole location, not just its name, so the pattern is matched against that whole location. Reassuring, not a warning."
+    "description": "One-line note above the results in the Select / Deselect dialog, shown only when the focused pane holds search results rather than a folder. Those rows show each file's whole location, not just its name, so the pattern is matched against that whole location. Reassuring, not a warning.",
+    "screenshot": "selection-add-snapshot-pane.png"
   },
   "selection.recent.trailingTooltip": "Show all recent selections",
   "@selection.recent.trailingTooltip": {
-    "description": "Hover tooltip on the small chevron button inside the Select / Deselect dialog's query field, which opens the list of queries the user ran before. A keyboard-shortcut glyph appears next to it."
+    "description": "Hover tooltip on the small chevron button inside the Select / Deselect dialog's query field, which opens the list of queries the user ran before. A keyboard-shortcut glyph appears next to it.",
+    "screenshot": "select-dialog.png"
   },
   "selection.recent.allButtonAria": "All recent selections",
   "@selection.recent.allButtonAria": {
-    "description": "Screen-reader name for the chevron button inside the Select / Deselect dialog's query field that opens the list of queries the user ran before."
+    "description": "Screen-reader name for the chevron button inside the Select / Deselect dialog's query field that opens the list of queries the user ran before.",
+    "screenshot": "select-dialog.png"
   },
   "selection.recent.filterPlaceholder": "Filter recent selections",
   "@selection.recent.filterPlaceholder": {
-    "description": "Placeholder text (and screen-reader name) for the small search field at the top of the recent-selections popover, which narrows the list of past queries as the user types."
+    "description": "Placeholder text (and screen-reader name) for the small search field at the top of the recent-selections popover, which narrows the list of past queries as the user types.",
+    "screenshot": "select-dialog.png"
   },
   "selection.recent.emptyMessage": "No matching recent selections",
   "@selection.recent.emptyMessage": {
-    "description": "Shown inside the recent-selections popover when the user's filter text matches none of their past queries."
+    "description": "Shown inside the recent-selections popover when the user's filter text matches none of their past queries.",
+    "screenshot": "select-dialog.png"
   },
   "selection.recent.popoverAria": "Recent selections",
   "@selection.recent.popoverAria": {
-    "description": "Screen-reader name for the recent-selections popover as a whole (the panel that holds the filter field and the list of past queries)."
+    "description": "Screen-reader name for the recent-selections popover as a whole (the panel that holds the filter field and the list of past queries).",
+    "screenshot": "select-dialog.png"
   },
   "selection.recent.listboxAria": "Recent selections",
   "@selection.recent.listboxAria": {
-    "description": "Screen-reader name for the list of past queries inside the recent-selections popover. Sits inside the panel named by the popover's own label, so the two are deliberately worded the same."
+    "description": "Screen-reader name for the list of past queries inside the recent-selections popover. Sits inside the panel named by the popover's own label, so the two are deliberately worded the same.",
+    "screenshot": "select-dialog.png"
   },
   "selection.recent.applyAria": "Apply recent {mode} selection: {query}",
   "@selection.recent.applyAria": {

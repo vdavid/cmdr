@@ -26,7 +26,8 @@
 
   "common.attachEmailPrompt": "Attach my email address so you can follow up",
   "@common.attachEmailPrompt": {
-    "description": "Label for the same opt-in checkbox as common.attachEmail, used when the app has no address on file yet: ticking it reveals a field to type one in. Shared by the crash-report, error-report, and feedback dialogs. \"You\" is the Cmdr team; the user is the one speaking. Keep it parallel to common.attachEmail, minus the parenthesized address and its link."
+    "description": "Label for the same opt-in checkbox as common.attachEmail, used when the app has no address on file yet: ticking it reveals a field to type one in. Shared by the crash-report, error-report, and feedback dialogs. \"You\" is the Cmdr team; the user is the one speaking. Keep it parallel to common.attachEmail, minus the parenthesized address and its link.",
+    "screenshot": "error-report.png"
   },
 
   "common.downloadsFdaHint": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",

@@ -46,11 +46,13 @@
   },
   "operationLog.dialog.rollBack": "Roll back",
   "@operationLog.dialog.rollBack": {
-    "description": "Button on a row of the Operation log that undoes that operation. It appears only on rows that can be reversed, next to the \"Can roll back\" badge, and asks for confirmation before anything happens. Match the wording of the \"Roll back\" button in the confirmation that follows it. Keep it short: it sits inside a list row."
+    "description": "Button on a row of the Operation log that undoes that operation. It appears only on rows that can be reversed, next to the \"Can roll back\" badge, and asks for confirmation before anything happens. Match the wording of the \"Roll back\" button in the confirmation that follows it. Keep it short: it sits inside a list row.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.dialog.finishRollBack": "Finish rolling back",
   "@operationLog.dialog.finishRollBack": {
-    "description": "Button on a row of the Operation log whose rollback stopped partway, so some of that operation came back and some of it didn't. It replaces the \"Roll back\" button on that row, sits next to the \"Partly rolled back\" badge, and asks for confirmation before anything happens. Pressing it carries on from where the rollback stopped rather than starting a fresh one, so the wording says finish rather than start. Match the wording of the \"Finish rolling back\" button in the confirmation that follows it. Keep it short: it sits inside a list row."
+    "description": "Button on a row of the Operation log whose rollback stopped partway, so some of that operation came back and some of it didn't. It replaces the \"Roll back\" button on that row, sits next to the \"Partly rolled back\" badge, and asks for confirmation before anything happens. Pressing it carries on from where the rollback stopped rather than starting a fresh one, so the wording says finish rather than start. Match the wording of the \"Finish rolling back\" button in the confirmation that follows it. Keep it short: it sits inside a list row.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.dialog.close": "Close",
   "@operationLog.dialog.close": {
@@ -198,56 +200,80 @@
   },
   "operationLog.rollback.partiallyRolledBackNotice": "Cmdr rolled back what it could and left the rest as it was. Finishing takes another pass and skips anything Cmdr still isn’t sure about.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "description": "Shown under a row of the Operation log that is partly rolled back, next to the \"Finish rolling back\" button. Two jobs: tell the user what happened to their files (some came back, the rest are still where the operation left them), and say what finishing will do. Deliberately doesn't promise a complete reversal: the leftovers may be files Cmdr can't match against what it recorded, and those get skipped again. \"Takes another pass\" means it goes over the operation once more. Reassuring and matter-of-fact; avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown under a row of the Operation log that is partly rolled back, next to the \"Finish rolling back\" button. Two jobs: tell the user what happened to their files (some came back, the rest are still where the operation left them), and say what finishing will do. Deliberately doesn't promise a complete reversal: the leftovers may be files Cmdr can't match against what it recorded, and those get skipped again. \"Takes another pass\" means it goes over the operation once more. Reassuring and matter-of-fact; avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png"
   },
 
   "operationLog.rollback.refusalAlreadyRollingBack": "This one is already rolling back. Watch it in the queue.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back but a reversal of that same operation is already under way, started somewhere else (another window, the AI agent, or an external AI client). \"The queue\" is Cmdr’s operation queue window, where running operations are listed."
+    "description": "Shown on a row of the Operation log when the user presses Roll back but a reversal of that same operation is already under way, started somewhere else (another window, the AI agent, or an external AI client). \"The queue\" is Cmdr’s operation queue window, where running operations are listed.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalAlreadyRolledBack": "This one is already back the way it was.",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back but the operation has already been reversed, so there is nothing left to undo."
+    "description": "Shown on a row of the Operation log when the user presses Roll back but the operation has already been reversed, so there is nothing left to undo.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalOverwrote": "This operation replaced files that were already there. Cmdr doesn’t keep copies of what it replaces, so the originals can’t come back.",
   "@operationLog.rollback.refusalOverwrote": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back on a copy or move that overwrote files at the destination. Cmdr deliberately keeps no backup of a replaced file, so the reversal isn’t offered. Explain the limit without sounding like something went wrong; avoid the words error and failed. Apostrophes are curly typographic apostrophes (U+2019)."
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a copy or move that overwrote files at the destination. Cmdr deliberately keeps no backup of a replaced file, so the reversal isn’t offered. Explain the limit without sounding like something went wrong; avoid the words error and failed. Apostrophes are curly typographic apostrophes (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalPermanentDelete": "A permanent delete leaves nothing to put back.",
   "@operationLog.rollback.refusalPermanentDelete": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back on a permanent delete (not a move to the trash, which Cmdr can undo). Nothing was kept, so there’s no next step to offer. Keep it short and matter-of-fact; don’t hint at a recovery that doesn’t exist."
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a permanent delete (not a move to the trash, which Cmdr can undo). Nothing was kept, so there’s no next step to offer. Keep it short and matter-of-fact; don’t hint at a recovery that doesn’t exist.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.rollback.refusalArchiveOverwrite": "This archive replaced an older one with the same name. Cmdr doesn’t keep copies of what it replaces, so the older one can’t come back.",
   "@operationLog.rollback.refusalArchiveOverwrite": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back on a compress that wrote its archive over an archive already sitting at that path. \"Archive\" is a zip/tar/7z file. Same limit as the general overwrite case: no backup of replaced bytes. Apostrophes are curly typographic apostrophes (U+2019)."
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a compress that wrote its archive over an archive already sitting at that path. \"Archive\" is a zip/tar/7z file. Same limit as the general overwrite case: no backup of replaced bytes. Apostrophes are curly typographic apostrophes (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalZipEditUnsupported": "Cmdr can’t undo changes made inside an archive yet.",
   "@operationLog.rollback.refusalZipEditUnsupported": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back on an edit made INSIDE an archive (adding or removing files within a zip without unpacking it). Reversing that is planned but not built, so \"yet\" is honest and should survive translation. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown on a row of the Operation log when the user presses Roll back on an edit made INSIDE an archive (adding or removing files within a zip without unpacking it). Reversing that is planned but not built, so \"yet\" is honest and should survive translation. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalJournalIncomplete": "Cmdr’s record of this operation isn’t complete, so rolling it back could touch the wrong files.",
   "@operationLog.rollback.refusalJournalIncomplete": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back but Cmdr’s own history of what the operation did has gaps, so a reversal could act on files it shouldn’t. Cmdr refuses to protect the user’s data, which the sentence should convey without alarm; avoid the words error and failed. \"Record\" means Cmdr’s internal history of the operation. Apostrophes are curly typographic apostrophes (U+2019)."
+    "description": "Shown on a row of the Operation log when the user presses Roll back but Cmdr’s own history of what the operation did has gaps, so a reversal could act on files it shouldn’t. Cmdr refuses to protect the user’s data, which the sentence should convey without alarm; avoid the words error and failed. \"Record\" means Cmdr’s internal history of the operation. Apostrophes are curly typographic apostrophes (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalDirectoryMerge": "This move merged the folder into one that was already there. Cmdr can’t tell which files came along and which were already inside, so there’s no safe way back.",
   "@operationLog.rollback.refusalDirectoryMerge": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back on a move that put a folder where a folder of the same name already existed, so the two were merged. Merging was the right thing to do and the sentence must NOT read as a mistake; only the undo is unavailable, because the merged folder now mixes files that arrived with files that were already inside. Avoid the words error and failed. Apostrophes are curly typographic apostrophes (U+2019)."
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a move that put a folder where a folder of the same name already existed, so the two were merged. Merging was the right thing to do and the sentence must NOT read as a mistake; only the undo is unavailable, because the merged folder now mixes files that arrived with files that were already inside. Avoid the words error and failed. Apostrophes are curly typographic apostrophes (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalStagedConflictResolved": "This move ran into a name that was already taken and asked what to do about it. That answer is part of the result now, so there’s no single way back.",
   "@operationLog.rollback.refusalStagedConflictResolved": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back on a move between drives that hit a name clash at the destination and asked the user how to handle it (keep both, or skip). Because that answer changed where files ended up, a reversal has no one correct meaning. Neutral about the answer given: it isn’t a wrong choice, it’s what makes the undo ambiguous. Apostrophes are curly typographic apostrophes (U+2019)."
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a move between drives that hit a name clash at the destination and asked the user how to handle it (keep both, or skip). Because that answer changed where files ended up, a reversal has no one correct meaning. Neutral about the answer given: it isn’t a wrong choice, it’s what makes the undo ambiguous. Apostrophes are curly typographic apostrophes (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalVolumeUnavailable": "Connect the drive this operation used, then try again.",
   "@operationLog.rollback.refusalVolumeUnavailable": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back but a disk, phone, or network share the operation touched isn’t connected right now. Actionable: reconnect it and press the button again. \"Drive\" covers external disks and network shares alike."
+    "description": "Shown on a row of the Operation log when the user presses Roll back but a disk, phone, or network share the operation touched isn’t connected right now. Actionable: reconnect it and press the button again. \"Drive\" covers external disks and network shares alike.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalUnknown": "This operation isn’t in your history anymore.",
   "@operationLog.rollback.refusalUnknown": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back but Cmdr can no longer find that operation in its records, most often because the history has aged out since the list was loaded. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown on a row of the Operation log when the user presses Roll back but Cmdr can no longer find that operation in its records, most often because the history has aged out since the list was loaded. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr couldn’t start the rollback. Try again in a moment.",
   "@operationLog.rollback.refusalUnexpected": {
-    "description": "Shown on a row of the Operation log when pressing Roll back doesn’t reach Cmdr’s backend at all, so there is no specific reason to give. Friendly and actionable; avoids the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown on a row of the Operation log when pressing Roll back doesn’t reach Cmdr’s backend at all, so there is no specific reason to give. Friendly and actionable; avoids the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
 
   "operationLog.outcome.done": "Done",

@@ -151,27 +151,32 @@
 
   "errorReporter.amend.title": "Add to your error report",
   "@errorReporter.amend.title": {
-    "description": "Title of the dialog when the user is adding a note to a report Cmdr already sent by itself (auto-send). Reached from the \"Error report sent\" toast, never from the Help menu. \"Cmdr\" is the product name (do not translate)."
+    "description": "Title of the dialog when the user is adding a note to a report Cmdr already sent by itself (auto-send). Reached from the \"Error report sent\" toast, never from the Help menu. \"Cmdr\" is the product name (do not translate).",
+    "screenshot": "error-report-amend.png"
   },
 
   "errorReporter.amend.description": "Cmdr already sent this report. Write a note, or attach your email, and it''ll join what the team already has.",
   "@errorReporter.amend.description": {
-    "description": "Main explanation in the add-a-note dialog: the report is already with the team, and whatever the user writes here is attached to that same report (no second report is sent). It also tells them why the button stays disabled until they write a note or attach an email. Reassuring. \"Cmdr\" is the product name (do not translate)."
+    "description": "Main explanation in the add-a-note dialog: the report is already with the team, and whatever the user writes here is attached to that same report (no second report is sent). It also tells them why the button stays disabled until they write a note or attach an email. Reassuring. \"Cmdr\" is the product name (do not translate).",
+    "screenshot": "error-report-amend.png"
   },
 
   "errorReporter.amend.noteLabel": "Your note",
   "@errorReporter.amend.noteLabel": {
-    "description": "Label above the free-text box in the add-a-note dialog. Unlike the send dialog''s label, this one is not marked optional: a note or an email address is needed before the button works."
+    "description": "Label above the free-text box in the add-a-note dialog. Unlike the send dialog''s label, this one is not marked optional: a note or an email address is needed before the button works.",
+    "screenshot": "error-report-amend.png"
   },
 
   "errorReporter.amend.detailsToggle": "What was sent",
   "@errorReporter.amend.detailsToggle": {
-    "description": "Toggle that expands a panel showing exactly what was already uploaded (manifest and sample log lines). Past tense: it describes the report that has already gone. Preceded by a disclosure triangle; followed by the bundle size in parentheses."
+    "description": "Toggle that expands a panel showing exactly what was already uploaded (manifest and sample log lines). Past tense: it describes the report that has already gone. Preceded by a disclosure triangle; followed by the bundle size in parentheses.",
+    "screenshot": "error-report-amend.png"
   },
 
   "errorReporter.amend.submit": "Add to report",
   "@errorReporter.amend.submit": {
-    "description": "Primary button that attaches the user''s note to the report that was already sent. Keep it short (a tight button)."
+    "description": "Primary button that attaches the user''s note to the report that was already sent. Keep it short (a tight button).",
+    "screenshot": "error-report-amend.png"
   },
 
   "errorReporter.amend.submitting": "Adding…",
@@ -181,12 +186,14 @@
 
   "errorReporter.amend.unavailable": "That report can''t take a note any more. To get your notes to the team, send a new report from the Help menu.",
   "@errorReporter.amend.unavailable": {
-    "description": "Shown instead of the note box when the report can no longer be added to, either because Cmdr restarted since it was sent or because the server left no way to add to it. Points the user at Help > Send error report instead. \"Help\" is the name of the app''s Help menu; use the wording macOS uses for that menu in your language. Avoid the words \"error\" and \"failed\" in the translated wording."
+    "description": "Shown instead of the note box when the report can no longer be added to, either because Cmdr restarted since it was sent or because the server left no way to add to it. Points the user at Help > Send error report instead. \"Help\" is the name of the app''s Help menu; use the wording macOS uses for that menu in your language. Avoid the words \"error\" and \"failed\" in the translated wording.",
+    "screenshot": "error-report-amend.png"
   },
 
   "errorReporter.amend.close": "Close",
   "@errorReporter.amend.close": {
-    "description": "Button that closes the dialog when there is nothing to add to. It is the only button in that state. Keep it short (a tight button)."
+    "description": "Button that closes the dialog when there is nothing to add to. It is the only button in that state. Keep it short (a tight button).",
+    "screenshot": "error-report-amend.png"
   },
 
   "errorReporter.amend.addFailedToast": "Couldn''t add your note: {error}",
