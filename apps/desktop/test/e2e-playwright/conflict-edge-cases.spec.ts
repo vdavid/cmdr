@@ -22,6 +22,7 @@ import {
   TRANSFER_DIALOG,
 } from './helpers.js'
 import {
+  expectedLeftPaneEntries,
   createSymlinkFixture,
   createTypeMismatchFixture,
   clearFixtureDirs,
@@ -218,7 +219,7 @@ test.describe('Symlink conflicts', () => {
   test('Copy with Overwrite All replaces regular file with symlink', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createSymlinkFixture(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['link-target.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, ['link-target.txt', 'my-link'])
     await dispatchMenuCommand(tauriPage, 'file.copy')
@@ -250,7 +251,7 @@ test.describe('Symlink conflicts', () => {
   test('Copy with Skip All preserves dest file, copies non-conflicting', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createSymlinkFixture(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['link-target.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, ['link-target.txt', 'my-link'])
     await dispatchMenuCommand(tauriPage, 'file.copy')
@@ -279,7 +280,7 @@ test.describe('Type mismatch conflicts', () => {
   test('Copy with Overwrite All handles file-over-directory', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createTypeMismatchFixture(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['reports.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, ['reports.txt', 'config'])
     await dispatchMenuCommand(tauriPage, 'file.copy')

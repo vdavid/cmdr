@@ -11,6 +11,7 @@ import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   clickButtonByText,
   dispatchMenuCommand,
+  drainOperations,
   ensureAppReady,
   expectAndDismissToast,
   getFixtureRoot,
@@ -19,6 +20,7 @@ import {
 } from './helpers.js'
 import {
   createConflictFixturesB,
+  expectedLeftPaneEntries,
   readFile,
   fileExists,
   selectItemsByName,
@@ -41,7 +43,13 @@ test.beforeEach(() => {
 // Putting the shared `left/` + `right/` tree back is this spec's job: the
 // post-test leak guard fails whoever leaves it dirty, and the restore is
 // surgical, so it only rewrites what actually drifted.
-test.afterEach(() => {
+//
+// ❗ Drain FIRST, in this one hook. Every test here starts a move, and a rollback
+// test can still be holding it: restoring under a live op deletes its source, and the
+// retained `SourceNotFound` queues behind the next test's transfer so its dialog never
+// opens. Suite CLAUDE.md § the fixture-tree leak guard.
+test.afterEach(async ({ tauriPage }) => {
+  await drainOperations(tauriPage)
   restoreFixtureTree(getFixtureRoot())
 })
 
@@ -49,7 +57,7 @@ test.describe('Move multi-item merge (Layout B)', () => {
   test('Move multi-item with Overwrite All merges and removes source', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesB(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.move')
@@ -85,7 +93,7 @@ test.describe('Move multi-item merge (Layout B)', () => {
   test('Move multi-item with Skip preserves source of skipped files', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesB(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.move')
@@ -125,7 +133,7 @@ test.describe('Move rollback', () => {
   test('Move rollback button is available and cancels operation', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesB(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.move')

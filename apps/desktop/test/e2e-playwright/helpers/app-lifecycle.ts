@@ -290,3 +290,34 @@ export async function ensureAppReady(
     )
   }
 }
+
+/**
+ * Cancels every operation still in flight and waits for the queue to empty.
+ *
+ * ❗ A mutating spec that may still be HOLDING an op must call this BEFORE
+ * `restoreFixtureTree`, in ONE `afterEach` (Playwright runs same-suite `afterEach`s in
+ * declaration order, so two hooks hide the order). A restore that runs under a live op
+ * deletes that op's source out from under it, which costs a `Couldn't finish…` toast,
+ * and the retained failure then poisons the NEXT test: it gets admitted behind the
+ * queued op, sees "1 operation ahead of this one", and its own dialog never opens
+ * inside the poll it allows.
+ *
+ * The dismiss sits inside the loop on purpose: an op can die while it is already
+ * spinning, so one dismiss before the poll would miss it. Every call is best-effort —
+ * a teardown that throws would mask the test's own verdict.
+ */
+export async function drainOperations(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`(async function() {
+    try {
+      var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
+      var ids = ops.map(function(o) { return o.operationId; });
+      if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
+    } catch (e) {}
+    for (var i = 0; i < 60; i++) {
+      try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
+      var remaining = await window.__TAURI_INTERNALS__.invoke('list_operations');
+      if (!remaining || remaining.length === 0) break;
+      await new Promise(function(r) { setTimeout(r, 100); });
+    }
+  })()`)
+}

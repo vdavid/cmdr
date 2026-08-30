@@ -28,6 +28,7 @@ import {
   TRANSFER_DIALOG,
 } from './helpers.js'
 import {
+  expectedLeftPaneEntries,
   clearFixtureDirs,
   resolveConflict,
   clickTransferStart,
@@ -112,7 +113,7 @@ test.describe('Conditional conflict policies (upfront radios)', () => {
   test('Overwrite all smaller: only strictly-smaller dest is replaced', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createSizeFixture(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['equal.txt', 'larger.txt', 'smaller.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     // Scope to the size fixture's own files (not `selectAll`, which sweeps in
     // the ~170 MB bulk/ tree these tests don't need).
@@ -140,7 +141,7 @@ test.describe('Conditional conflict policies (upfront radios)', () => {
   test('Overwrite all older: only strictly-older dest is replaced', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createMtimeFixture(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['equal.txt', 'newer.txt', 'older.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     // Scope to the mtime fixture's own files (not `selectAll`, which sweeps in
     // the ~170 MB bulk/ tree these tests don't need).
@@ -170,7 +171,7 @@ test.describe('Conditional conflict policies (per-file dialog buttons)', () => {
   test('"Overwrite all older" button in per-file dialog applies to all remaining conflicts', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createMtimeFixture(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['equal.txt', 'newer.txt', 'older.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     // Scope to the mtime fixture's own files (not `selectAll`, which sweeps in
     // the ~170 MB bulk/ tree these tests don't need).

@@ -61,6 +61,7 @@ import {
   type ExpectedDialogCounters,
 } from './helpers.js'
 import {
+  expectedLeftPaneEntries,
   createFileOverFileFixture,
   createFolderOverFolderFixture,
   createFolderOverFileFixture,
@@ -140,7 +141,7 @@ test.describe('Single clash: baseline file/folder smoke', () => {
   test('file→file Overwrite lands source bytes', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFileOverFileFixture(fixtureRoot, 'doc.txt')
-    await ensureAppReady(tauriPage, { leftPane: ['doc.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     // Source doc.txt holds "source-doc.txt" (14 bytes); single file, no dirs.
     const conflict = await startCopyAskForEach(tauriPage, ['doc.txt'], { bytes: '14 bytes', files: 1, dirs: 0 })
@@ -155,7 +156,7 @@ test.describe('Single clash: baseline file/folder smoke', () => {
   test('file→file Skip keeps dest bytes', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFileOverFileFixture(fixtureRoot, 'doc.txt')
-    await ensureAppReady(tauriPage, { leftPane: ['doc.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await startCopyAskForEach(tauriPage, ['doc.txt'])
     await resolveConflict(tauriPage, 'Skip')
@@ -167,7 +168,7 @@ test.describe('Single clash: baseline file/folder smoke', () => {
   test('folder→folder Overwrite merges into dest', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFolderOverFolderFixture(fixtureRoot, 'box')
-    await ensureAppReady(tauriPage, { leftPane: ['box'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     // Top-level folder→folder is a merge, not a replace, so the only prompt
     // is the inner shared.txt file→file clash. Overwrite it.
@@ -189,7 +190,7 @@ test.describe('Single clash: folder→file (existing file, incoming folder)', ()
   test('folder→file Skip keeps the dest file', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFolderOverFileFixture(fixtureRoot, 'thing')
-    await ensureAppReady(tauriPage, { leftPane: ['thing'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     // Source thing/ is a folder holding one sentinel.txt → 1 file, 1 folder.
     const conflict = await startCopyAskForEach(tauriPage, ['thing'], { files: 1, dirs: 1 })
@@ -206,7 +207,7 @@ test.describe('Single clash: folder→file (existing file, incoming folder)', ()
   test('folder→file Rename keeps both', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFolderOverFileFixture(fixtureRoot, 'thing')
-    await ensureAppReady(tauriPage, { leftPane: ['thing'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await startCopyAskForEach(tauriPage, ['thing'])
     await resolveConflict(tauriPage, 'Rename')
@@ -223,7 +224,7 @@ test.describe('Single clash: folder→file (existing file, incoming folder)', ()
   test('folder→file Overwrite swaps file for folder', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFolderOverFileFixture(fixtureRoot, 'thing')
-    await ensureAppReady(tauriPage, { leftPane: ['thing'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await startCopyAskForEach(tauriPage, ['thing'])
     await resolveConflict(tauriPage, 'Overwrite')
@@ -240,7 +241,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
   test('file→folder Skip keeps the dest folder', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFileOverFolderFixture(fixtureRoot, 'item')
-    await ensureAppReady(tauriPage, { leftPane: ['item'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     // Source item is a file holding "source-item" (11 bytes); single file, no dirs.
     const conflict = await startCopyAskForEach(tauriPage, ['item'], { bytes: '11 bytes', files: 1, dirs: 0 })
@@ -257,7 +258,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
   test('file→folder Rename keeps both', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFileOverFolderFixture(fixtureRoot, 'item')
-    await ensureAppReady(tauriPage, { leftPane: ['item'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     const conflict = await startCopyAskForEach(tauriPage, ['item'])
     expect(conflict.isFileOverFolder).toBe(true)
@@ -273,7 +274,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
   test('file→folder Overwrite swaps folder for file', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFileOverFolderFixture(fixtureRoot, 'item')
-    await ensureAppReady(tauriPage, { leftPane: ['item'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     const conflict = await startCopyAskForEach(tauriPage, ['item'])
     expect(conflict.isFileOverFolder).toBe(true)
@@ -295,7 +296,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     writeFile(fixtureRoot, 'right/1-item/inside.txt', 'dest-inside-1')
     writeFile(fixtureRoot, 'left/2-item', 'source-2-item')
     writeFile(fixtureRoot, 'right/2-item/inside.txt', 'dest-inside-2')
-    await ensureAppReady(tauriPage, { leftPane: ['1-item'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     const first = await startCopyAskForEach(tauriPage, ['1-item', '2-item'])
     expect(first.isFileOverFolder).toBe(true)
@@ -317,7 +318,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     writeFile(fixtureRoot, 'right/1-item/inside.txt', 'dest-inside-1')
     writeFile(fixtureRoot, 'left/2-item', 'source-2-item')
     writeFile(fixtureRoot, 'right/2-item/inside.txt', 'dest-inside-2')
-    await ensureAppReady(tauriPage, { leftPane: ['1-item'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     const first = await startCopyAskForEach(tauriPage, ['1-item', '2-item'])
     expect(first.isFileOverFolder).toBe(true)
@@ -363,7 +364,7 @@ test.describe('Bucket spread: normal-first → file→folder', () => {
     test(`${variant.choice} ${verb} normal → file→folder`, async ({ tauriPage }) => {
       const fixtureRoot = getFixtureRoot()
       createOrderedPairFixture(fixtureRoot, { normalName: '1-normal.txt', pairName: '2-folder' })
-      await ensureAppReady(tauriPage, { leftPane: ['1-normal.txt'] })
+      await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
       const first = await startCopyAskForEach(tauriPage, ['1-normal.txt', '2-folder'])
       // First clash MUST be the normal (file→file) one.
@@ -426,7 +427,7 @@ test.describe('Bucket spread: mixed independent buckets', () => {
     // 4-fold: file→folder (should follow file_to_folder bucket = Skip, silent)
     writeFile(fixtureRoot, 'left/4-fold', 'source-4-fold')
     writeFile(fixtureRoot, 'right/4-fold/inside.txt', 'dest-inside-4')
-    await ensureAppReady(tauriPage, { leftPane: ['1-norm.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     const first = await startCopyAskForEach(tauriPage, ['1-norm.txt', '2-fold', '3-norm.txt', '4-fold'])
     expect(first.isFileOverFolder).toBe(false)
@@ -466,7 +467,7 @@ test.describe('Cross-type Overwrite atomicity', () => {
   test('folder→file Overwrite leaves no temp artifacts', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFolderOverFileFixture(fixtureRoot, 'swap')
-    await ensureAppReady(tauriPage, { leftPane: ['swap'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await startCopyAskForEach(tauriPage, ['swap'])
     await resolveConflict(tauriPage, 'Overwrite')
@@ -482,7 +483,7 @@ test.describe('Cross-type Overwrite atomicity', () => {
   test('file→folder Overwrite leaves no temp artifacts', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createFileOverFolderFixture(fixtureRoot, 'swap')
-    await ensureAppReady(tauriPage, { leftPane: ['swap'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     const conflict = await startCopyAskForEach(tauriPage, ['swap'])
     expect(conflict.isFileOverFolder).toBe(true)

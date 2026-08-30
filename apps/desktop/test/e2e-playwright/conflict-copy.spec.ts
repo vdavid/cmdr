@@ -30,6 +30,7 @@ function selectionCounts(fixtureRoot: string, names: string[]): { files: number;
   return countTree(names.map((name) => path.join(leftDir, name)))
 }
 import {
+  expectedLeftPaneEntries,
   createConflictFixturesA,
   createConflictFixturesB,
   readFile,
@@ -68,7 +69,7 @@ test.describe('Copy with conflict policies (Layout A)', () => {
   test('Copy with Overwrite All resolves nested conflicts', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesA(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_A_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
@@ -103,7 +104,7 @@ test.describe('Copy with conflict policies (Layout A)', () => {
   test('Copy with Skip All preserves destination files', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesA(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_A_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
@@ -136,7 +137,7 @@ test.describe('Copy multi-item merge (Layout B)', () => {
   test('Copy multi-item with Overwrite All merges correctly', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesB(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
@@ -169,7 +170,7 @@ test.describe('Copy multi-item merge (Layout B)', () => {
   test('Copy multi-item with Skip preserves conflicting files', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesB(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
@@ -204,7 +205,7 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
   test('Copy with mixed per-file conflict decisions', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesA(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_A_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
@@ -316,7 +317,7 @@ test.describe('Rename conflict resolution', () => {
   test('Copy with Rename All keeps all files with numbered suffixes', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createConflictFixturesA(fixtureRoot)
-    await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
+    await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
 
     await selectItemsByName(tauriPage, LAYOUT_A_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
